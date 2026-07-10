@@ -1,5 +1,8 @@
 import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { isSameDay } from "@/common/date/utils/compare";
 import { calculateCooldown } from "@/common/date/utils/cooldown";
 import { now } from "@/common/date/utils/core";
@@ -14,7 +17,7 @@ import {
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
 
@@ -37,7 +40,11 @@ export class NudgeService {
 		private readonly followService: FollowService,
 		private readonly paginationService: PaginationService,
 		private readonly notificationQueueService: NotificationQueueService,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
 		private readonly entitlementService: EntitlementService,
 	) {}
 
@@ -91,9 +98,9 @@ export class NudgeService {
 		this.#validateNotSelf(senderId, receiverId);
 		await this.#validateFriendship(senderId, receiverId);
 
-		const nudge = await this.database.$transaction(async (tx) => {
+		const nudge = await this.uow.run(async () => {
 			// 3. Todo 존재 및 소유자 확인
-			const todo = await this.nudgeRepository.findTodoForNudge(todoId, tx);
+			const todo = await this.nudgeRepository.findTodoForNudge(todoId);
 
 			if (!todo) {
 				throw BusinessExceptions.todoNotFound(todoId);
@@ -118,27 +125,28 @@ export class NudgeService {
 			}
 
 			// 4. 일일 제한 체크
+			// getFeatureLimitInTx는 명시적 tx 클라이언트를 받으므로 CLS의 활성 트랜잭션을 전달
 			const entitlement = await this.entitlementService.getFeatureLimitInTx(
-				tx,
+				this.txHost.tx,
 				senderId,
 				Feature.NUDGE,
 			);
 
 			const todayStart = startOfDayInTimezone(now(), tz);
-			const used = await this.nudgeRepository.countTodayNudges(
-				{ senderId, date: todayStart },
-				tx,
-			);
+			const used = await this.nudgeRepository.countTodayNudges({
+				senderId,
+				date: todayStart,
+			});
 
 			this.entitlementService.enforceLimit(entitlement, used, (_used, limit) =>
 				BusinessExceptions.nudgeDailyLimitExceeded(limit),
 			);
 
 			// 5. 쿨다운 체크
-			const lastNudge = await this.nudgeRepository.findLastNudgeForTodo(
-				{ senderId, todoId },
-				tx,
-			);
+			const lastNudge = await this.nudgeRepository.findLastNudgeForTodo({
+				senderId,
+				todoId,
+			});
 
 			if (lastNudge) {
 				const cooldown = calculateCooldown(
@@ -154,10 +162,12 @@ export class NudgeService {
 			}
 
 			// 6. Nudge 생성
-			return this.nudgeRepository.createNudge(
-				{ senderId, receiverId, todoId, message },
-				tx,
-			);
+			return this.nudgeRepository.createNudge({
+				senderId,
+				receiverId,
+				todoId,
+				message,
+			});
 		});
 
 		this.#logger.log(
@@ -203,13 +213,12 @@ export class NudgeService {
 		// 2. 친구 관계 확인
 		await this.#validateFriendship(senderId, receiverId);
 
-		const remindNudge = await this.database.$transaction(async (tx) => {
+		const remindNudge = await this.uow.run(async () => {
 			// 3. 친구의 오늘 할일 존재 여부 체크
 			const today = todayInTimezone(tz);
 			const todayTodoCount = await this.nudgeRepository.countTodayTodos(
 				receiverId,
 				today,
-				tx,
 			);
 
 			if (todayTodoCount > 0) {
@@ -220,7 +229,6 @@ export class NudgeService {
 			const lastRemind = await this.nudgeRepository.findLastRemindNudge(
 				senderId,
 				receiverId,
-				tx,
 			);
 
 			if (lastRemind) {
@@ -237,10 +245,11 @@ export class NudgeService {
 			}
 
 			// 5. ReminderNudge 생성
-			return this.nudgeRepository.createRemindNudge(
-				{ senderId, receiverId, message },
-				tx,
-			);
+			return this.nudgeRepository.createRemindNudge({
+				senderId,
+				receiverId,
+				message,
+			});
 		});
 
 		this.#logger.log(

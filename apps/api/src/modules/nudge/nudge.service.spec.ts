@@ -9,14 +9,13 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NudgeBuilder } from "@test/builders";
-import {
-	asTxClient,
-	createMockTxClient,
-	type MockTransactionClient,
-} from "@test/mocks/transaction.mock";
+import { createMockPrisma, createUnitOfWorkMock } from "@test/mocks";
+import { UNIT_OF_WORK } from "@/common/database";
 import { addDays, subtractDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import {
@@ -24,7 +23,7 @@ import {
 	Feature,
 } from "@/common/entitlement/entitlement.service";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
 import { NudgeRepository } from "./nudge.repository";
@@ -36,29 +35,27 @@ describe("NudgeService — 찔러보기 서비스", () => {
 	let followService: Mocked<FollowService>;
 	let paginationService: Mocked<PaginationService>;
 	let notificationQueueService: Mocked<NotificationQueueService>;
-	let database: Mocked<DatabaseService>;
 	let entitlementService: Mocked<EntitlementService>;
 
-	let mockTx: MockTransactionClient;
-
 	beforeEach(async () => {
-		mockTx = createMockTxClient();
-
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(NudgeService).compile();
+		// UNIT_OF_WORK는 passthrough, TransactionHost.tx는 Prisma mock으로 스텁
+		// (getFeatureLimitInTx에 CLS 활성 트랜잭션을 전달하는 경로)
+		const { unit, unitRef } = await TestBed.solitary(NudgeService)
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: createMockPrisma() }))
+			.compile();
 
 		service = unit;
 		nudgeRepository = unitRef.get(NudgeRepository);
 		followService = unitRef.get(FollowService);
 		paginationService = unitRef.get(PaginationService);
 		notificationQueueService = unitRef.get(NotificationQueueService);
-		database = unitRef.get(DatabaseService);
 		entitlementService = unitRef.get(EntitlementService);
-
-		// DatabaseService.$transaction passthrough mock 설정
-		database.$transaction.mockImplementation((callback) =>
-			callback(asTxClient(mockTx)),
-		);
 
 		// EntitlementService 기본 mock 설정 (FREE 사용자)
 		entitlementService.getFeatureLimitInTx.mockResolvedValue({
@@ -177,15 +174,12 @@ describe("NudgeService — 찔러보기 서비스", () => {
 				"sender-id",
 				"receiver-id",
 			);
-			expect(nudgeRepository.createNudge).toHaveBeenCalledWith(
-				{
-					senderId: "sender-id",
-					receiverId: "receiver-id",
-					todoId: 100,
-					message: "할일 화이팅!",
-				},
-				expect.anything(),
-			);
+			expect(nudgeRepository.createNudge).toHaveBeenCalledWith({
+				senderId: "sender-id",
+				receiverId: "receiver-id",
+				todoId: 100,
+				message: "할일 화이팅!",
+			});
 			expect(result).toBeDefined();
 			expect(result.id).toBe(1);
 		});

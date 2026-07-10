@@ -9,25 +9,35 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { NudgeBuilder } from "@test/builders";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import { NudgeRepository } from "./nudge.repository";
 
 describe("NudgeRepository — 찔러보기 리포지토리", () => {
 	let repository: NudgeRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
 		// ID 카운터 리셋
 		NudgeBuilder.resetIdCounter();
 
-		const { unit, unitRef } = await TestBed.solitary(NudgeRepository).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(NudgeRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("findById", () => {
@@ -36,7 +46,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 			const mockNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
 				.withId(1)
 				.build();
-			(db.nudge.findUnique as jest.Mock).mockResolvedValue(mockNudge);
+			jest.mocked(db.nudge.findUnique).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.findById(1);
@@ -50,7 +60,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 
 		it("존재하지 않는 Nudge는 null을 반환한다", async () => {
 			// Given
-			(db.nudge.findUnique as jest.Mock).mockResolvedValue(null);
+			jest.mocked(db.nudge.findUnique).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findById(999);
@@ -67,7 +77,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 				.withId(1)
 				.asRead()
 				.build();
-			(db.nudge.update as jest.Mock).mockResolvedValue(mockNudge);
+			jest.mocked(db.nudge.update).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.markAsRead(1);
@@ -92,7 +102,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 					.withId(2)
 					.buildWithRelations(),
 			];
-			(db.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
+			jest.mocked(db.nudge.findMany).mockResolvedValue(mockNudges);
 
 			// When
 			const result = await repository.findReceivedNudges({
@@ -121,7 +131,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 					.withId(3)
 					.buildWithRelations(),
 			];
-			(db.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
+			jest.mocked(db.nudge.findMany).mockResolvedValue(mockNudges);
 
 			// When
 			const result = await repository.findReceivedNudges({
@@ -154,7 +164,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 					.withId(2)
 					.buildWithRelations(),
 			];
-			(db.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
+			jest.mocked(db.nudge.findMany).mockResolvedValue(mockNudges);
 
 			// When
 			const result = await repository.findSentNudges({
@@ -177,7 +187,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 		it("오늘 보낸 Nudge 수를 조회한다", async () => {
 			// Given
 			const today = new Date("2024-01-15T12:00:00Z");
-			(db.nudge.count as jest.Mock).mockResolvedValue(3);
+			jest.mocked(db.nudge.count).mockResolvedValue(3);
 
 			// When
 			const result = await repository.countTodayNudges({
@@ -207,7 +217,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 				"receiver-id",
 				100,
 			).build();
-			(db.nudge.findFirst as jest.Mock).mockResolvedValue(mockNudge);
+			jest.mocked(db.nudge.findFirst).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.findLastNudgeForTodo({
@@ -228,7 +238,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 
 		it("Nudge가 없으면 null을 반환한다", async () => {
 			// Given
-			(db.nudge.findFirst as jest.Mock).mockResolvedValue(null);
+			jest.mocked(db.nudge.findFirst).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findLastNudgeForTodo({
@@ -249,7 +259,7 @@ describe("NudgeRepository — 찔러보기 리포지토리", () => {
 				"receiver-id",
 				100,
 			).build();
-			(db.nudge.findFirst as jest.Mock).mockResolvedValue(mockNudge);
+			jest.mocked(db.nudge.findFirst).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.findLastNudgeToUser(
