@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import type { ThrottlerStorage } from "@nestjs/throttler";
 import type { ThrottlerStorageRecord } from "@nestjs/throttler/dist/throttler-storage-record.interface";
 import type Redis from "ioredis";
+import { RedisErrorLogSampler } from "../redis/redis-error-log-sampler";
 
 /**
  * Lua 스크립트: atomic throttle increment + block 처리
@@ -89,6 +90,7 @@ function parseThrottleResult(raw: unknown): ThrottlerStorageRecord {
  */
 export class RedisThrottlerStorage implements ThrottlerStorage {
 	readonly #logger = new Logger(RedisThrottlerStorage.name);
+	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 	readonly #redis: Redis;
 	readonly #keyPrefix = "throttle:";
 
@@ -119,9 +121,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
 
 			return parseThrottleResult(raw);
 		} catch (error) {
-			this.#logger.warn(
-				`Redis throttle error (fail-open): ${error instanceof Error ? error.message : error}`,
-			);
+			this.#errorSampler.warn("THROTTLE_INCREMENT", error);
 
 			// fail-open: Redis 장애 시 요청 허용
 			return {

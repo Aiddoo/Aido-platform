@@ -180,24 +180,3 @@ export interface CacheStats {
 	keys: number;
 	memoryUsage?: number; // bytes (인메모리 전용)
 }
-
-export interface CacheConfig {
-	type: "memory" | "redis";
-	defaultTtlMs: number;
-	maxItems: number;
-	cleanupIntervalMs?: number;
-	redis?: RedisConfig;
-}
-
-export interface RedisConfig {
-	host: string;
-	port: number;
-	password?: string;
-	db?: number;
-	/** 키 프리픽스 (기본값: 'aido:') */
-	keyPrefix?: string;
-	/** 연결 타임아웃 (밀리초) */
-	connectTimeout?: number;
-	/** 명령 타임아웃 (밀리초) */
-	commandTimeout?: number;
-}

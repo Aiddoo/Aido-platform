@@ -474,7 +474,7 @@ Prisma Unique Constraint 위반 시 비즈니스 예외로 자동 매핑:
 BullModule.forRootAsync({
   inject: [REDIS_CLIENT],
   useFactory: (redis: Redis) => ({
-    connection: redis as never,
+    connection: redis,
     defaultJobOptions: {
       attempts: 3,
       backoff: { type: "exponential" as const, delay: 1_000 },
@@ -832,12 +832,37 @@ this.encryptionService.decryptSafe(account.accessToken)
 | `ExceptionModule` | `common/exception/` | `GlobalExceptionFilter` |
 | `ResponseModule` | `common/response/` | `ResponseTransformInterceptor` |
 | `PaginationModule` | `common/pagination/` | `PaginationService` |
-| `RedisModule` | `common/redis/` | `REDIS_CLIENT` (ioredis) |
+| `RedisModule` | `common/redis/` | `REDIS_CLIENT` (BullMQ 전용), `REDIS_COMMAND_CLIENT` (명령용 fail-fast) |
 | `LockModule` | `common/lock/` | `ILockProvider` (Redis/InMemory Strategy) |
 | `EntitlementModule` | `common/entitlement/` | `EntitlementService` (플랜별 제한) |
 | `DedupModule` | `common/dedup/` | 알림 중복 방지 |
 
 > `@Global()` 모듈은 `imports` 없이 어디서든 DI 가능.
+
+### 5.1.1 Redis 연결 이원화 & 장애 격리 (포트 계약)
+
+Redis 장애 시 API가 hang하지 않도록 연결을 용도별로 분리한다:
+
+| 토큰 | 옵션 | 사용처 |
+|------|------|--------|
+| `REDIS_CLIENT` | `maxRetriesPerRequest: null`, 오프라인 큐 유지 | **BullMQ 전용** (블로킹 명령 호환). 다른 곳에 주입 금지 |
+| `REDIS_COMMAND_CLIENT` | `enableOfflineQueue: false`, `commandTimeout` 1.5s, `maxRetriesPerRequest: 1` | 캐시/락/스로틀/dedup/푸시 레이트리미터/헬스 ping — 단절 시 즉시 reject |
+
+포트별 장애 계약 (인터페이스 JSDoc에 명문화, 새 어댑터도 준수 필수):
+
+| 포트 | 정책 | 장애 시 동작 |
+|------|------|------------|
+| `ICacheService` | fail-open | 읽기=미스 취급(→DB 폴백), 쓰기=무시. 계약 스펙: `cache-adapter.contract.ts` |
+| `ILockProvider` | fail-closed | acquire=null(busy), release=무시(TTL 정리), isLocked=true |
+| `IDedupProvider` | fail-open | 비중복 취급 (DB unique index가 최종 방어선) |
+| `ThrottlerStorage` (`THROTTLER_STORAGE`) | fail-open | 요청 허용 |
+
+관련 규칙:
+- 에러 로그는 `RedisErrorLogSampler`(30초 윈도우당 1회 + suppressed 카운트)로 남긴다
+- `JwtStrategy`는 세션 캐시 실패 시 DB로 폴백 — Redis 완전 다운이어도 인증 정상
+- `JwtAuthGuard.handleRequest`는 비-HttpException(인프라 오류)을 401로 위장하지 않고 rethrow (401은 클라 강제 로그아웃 유발 — 5xx는 토큰 보존)
+- `/health`의 `queues`는 절대 down(503)을 만들지 않는다 — Redis 다운 시 `up + degraded: true` (재시작으로 해결 불가하므로 ALB가 태스크를 죽이면 안 됨)
+- 연결 종료는 `onApplicationShutdown`에서 quit(3s 타임아웃) → disconnect 폴백
 
 ### 5.2 Dynamic Module 패턴
 
