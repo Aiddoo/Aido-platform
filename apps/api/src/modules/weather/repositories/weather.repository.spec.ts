@@ -7,10 +7,12 @@
  * pnpm --filter @aido/api test weather.repository.spec
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { UserLocationBuilder } from "@test/builders";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 import {
 	type UpsertLocationData,
 	WeatherRepository,
@@ -18,23 +20,30 @@ import {
 
 describe("WeatherRepository — 날씨 리포지토리", () => {
 	let repository: WeatherRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
 		UserLocationBuilder.resetIdCounter();
 
-		const { unit, unitRef } =
-			await TestBed.solitary(WeatherRepository).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(WeatherRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("findByUserId", () => {
 		it("사용자 ID로 위치를 조회해야 한다", async () => {
 			// Given
 			const location = UserLocationBuilder.create("user-1").build();
-			(db.userLocation.findUnique as jest.Mock).mockResolvedValue(location);
+			jest.mocked(db.userLocation.findUnique).mockResolvedValue(location);
 
 			// When
 			const result = await repository.findByUserId("user-1");
@@ -48,30 +57,13 @@ describe("WeatherRepository — 날씨 리포지토리", () => {
 
 		it("위치가 없으면 null을 반환해야 한다", async () => {
 			// Given
-			(db.userLocation.findUnique as jest.Mock).mockResolvedValue(null);
+			jest.mocked(db.userLocation.findUnique).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findByUserId("user-999");
 
 			// Then
 			expect(result).toBeNull();
-		});
-
-		it("트랜잭션 클라이언트를 사용해야 한다", async () => {
-			// Given
-			const mockFindUnique = jest.fn().mockResolvedValue(null);
-			const txClient = {
-				userLocation: { findUnique: mockFindUnique },
-			} as unknown as Parameters<typeof repository.findByUserId>[1];
-
-			// When
-			await repository.findByUserId("user-1", txClient);
-
-			// Then — tx 클라이언트의 findUnique가 호출됨
-			expect(mockFindUnique).toHaveBeenCalledWith({
-				where: { userId: "user-1" },
-			});
-			expect(db.userLocation.findUnique).not.toHaveBeenCalled();
 		});
 	});
 
@@ -86,7 +78,7 @@ describe("WeatherRepository — 날씨 리포지토리", () => {
 		it("위치를 생성 또는 업데이트해야 한다", async () => {
 			// Given
 			const expected = UserLocationBuilder.create("user-1").build();
-			(db.userLocation.upsert as jest.Mock).mockResolvedValue(expected);
+			jest.mocked(db.userLocation.upsert).mockResolvedValue(expected);
 
 			// When
 			const result = await repository.upsert("user-1", upsertData);
@@ -99,27 +91,12 @@ describe("WeatherRepository — 날씨 리포지토리", () => {
 			});
 			expect(result).toEqual(expected);
 		});
-
-		it("트랜잭션 클라이언트를 사용해야 한다", async () => {
-			// Given
-			const mockUpsert = jest.fn().mockResolvedValue({});
-			const txClient = {
-				userLocation: { upsert: mockUpsert },
-			} as unknown as Parameters<typeof repository.upsert>[2];
-
-			// When
-			await repository.upsert("user-1", upsertData, txClient);
-
-			// Then
-			expect(mockUpsert).toHaveBeenCalled();
-			expect(db.userLocation.upsert).not.toHaveBeenCalled();
-		});
 	});
 
 	describe("delete", () => {
 		it("사용자의 위치를 삭제해야 한다", async () => {
 			// Given
-			(db.userLocation.deleteMany as jest.Mock).mockResolvedValue({
+			jest.mocked(db.userLocation.deleteMany).mockResolvedValue({
 				count: 1,
 			});
 
@@ -130,23 +107,6 @@ describe("WeatherRepository — 날씨 리포지토리", () => {
 			expect(db.userLocation.deleteMany).toHaveBeenCalledWith({
 				where: { userId: "user-1" },
 			});
-		});
-
-		it("트랜잭션 클라이언트를 사용해야 한다", async () => {
-			// Given
-			const mockDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
-			const txClient = {
-				userLocation: { deleteMany: mockDeleteMany },
-			} as unknown as Parameters<typeof repository.delete>[1];
-
-			// When
-			await repository.delete("user-1", txClient);
-
-			// Then
-			expect(mockDeleteMany).toHaveBeenCalledWith({
-				where: { userId: "user-1" },
-			});
-			expect(db.userLocation.deleteMany).not.toHaveBeenCalled();
 		});
 	});
 });

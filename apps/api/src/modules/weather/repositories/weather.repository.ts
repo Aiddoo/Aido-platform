@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 
-import type { TransactionClient } from "@/common/database/prisma.types";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import type { UserLocation } from "@/generated/prisma/client";
 
 export interface UpsertLocationData {
@@ -13,31 +14,33 @@ export interface UpsertLocationData {
 
 @Injectable()
 export class WeatherRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
 
-	async findByUserId(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<UserLocation | null> {
-		const db = tx ?? this.database;
-		return db.userLocation.findUnique({ where: { userId } });
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
+
+	async findByUserId(userId: string): Promise<UserLocation | null> {
+		return this.client.userLocation.findUnique({ where: { userId } });
 	}
 
 	async upsert(
 		userId: string,
 		data: UpsertLocationData,
-		tx?: TransactionClient,
 	): Promise<UserLocation> {
-		const db = tx ?? this.database;
-		return db.userLocation.upsert({
+		return this.client.userLocation.upsert({
 			where: { userId },
 			create: { userId, ...data },
 			update: data,
 		});
 	}
 
-	async delete(userId: string, tx?: TransactionClient): Promise<void> {
-		const db = tx ?? this.database;
-		await db.userLocation.deleteMany({ where: { userId } });
+	async delete(userId: string): Promise<void> {
+		await this.client.userLocation.deleteMany({ where: { userId } });
 	}
 }
