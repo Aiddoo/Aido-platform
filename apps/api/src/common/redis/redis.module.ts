@@ -16,6 +16,7 @@ import {
 	buildCommandRedisOptions,
 	type RedisConnectionSettings,
 } from "./redis-client.factory";
+import { withTimeout } from "./with-timeout";
 
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
 const QUIT_TIMEOUT_MS = 3_000;
@@ -130,7 +131,7 @@ export class RedisModule implements OnApplicationShutdown {
 
 		try {
 			// Redis 다운 중 종료 시 quit이 오프라인 큐에 걸려 hang할 수 있다
-			await RedisModule.withTimeout(client.quit(), QUIT_TIMEOUT_MS);
+			await withTimeout(client.quit(), QUIT_TIMEOUT_MS, "Redis quit");
 			RedisModule.logger.log(`Redis[${name}] disconnected`);
 		} catch {
 			client.disconnect();
@@ -166,20 +167,5 @@ export class RedisModule implements OnApplicationShutdown {
 		});
 
 		return client;
-	}
-
-	private static withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-		let timer: NodeJS.Timeout | undefined;
-		const timeout = new Promise<never>((_, reject) => {
-			timer = setTimeout(() => {
-				reject(new Error(`Redis quit timed out after ${ms}ms`));
-			}, ms);
-		});
-
-		return Promise.race([promise, timeout]).finally(() => {
-			if (timer) {
-				clearTimeout(timer);
-			}
-		});
 	}
 }
