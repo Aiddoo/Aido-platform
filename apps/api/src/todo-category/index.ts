@@ -1,6 +1,4 @@
-export * from "./dtos";
-export * from "./todo-category.mapper";
-export * from "./todo-category.module";
-export * from "./todo-category.repository";
-export * from "./todo-category.service";
-export * from "./types";
+export { TodoCategoryFacade } from "./application/facades/todo-category.facade";
+export { DEFAULT_CATEGORIES } from "./domain/default-categories";
+export { TodoCategoryModule } from "./todo-category.module";
+export { TodoCategoryRepository } from "./todo-category.repository";

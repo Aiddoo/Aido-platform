@@ -1,15 +1,26 @@
 import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import type { Prisma, TodoCategory } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
-import type { TodoCategoryWithCount } from "./types/todo-category.types";
+/** 기본 카테고리 시딩 입력 */
+export interface SeedCategoryInput {
+	userId: string;
+	name: string;
+	color: string;
+	sortOrder: number;
+}
 
 /**
- * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
- * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다(기존 `tx ?? this.database`와 등가).
+ * TodoCategoryRepository — 회원가입 기본 카테고리 시딩 전용 레거시 저장소.
+ *
+ * auth·oauth 회원가입은 아직 레거시 `database.$transaction(tx)`를 사용하며, 기본 카테고리 생성을
+ * 그 트랜잭션에 명시적으로 참여시키기 위해 `tx`를 받는 이 경로를 유지한다. auth 이관(Wave 7) 시
+ * 삭제하고 `TodoCategoryFacade` CLS 경로로 통합한다. 컨트롤러 경로는 클린아키텍처 어댑터가 담당한다.
+ *
+ * 트랜잭션은 CLS로 전파된다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를, 없으면 베이스
+ * DatabaseService를 반환한다.
  */
 @Injectable()
 export class TodoCategoryRepository {
@@ -24,185 +35,13 @@ export class TodoCategoryRepository {
 		return this.txHost.tx;
 	}
 
-	/**
-	 * 카테고리 생성
-	 */
-	async create(data: Prisma.TodoCategoryCreateInput): Promise<TodoCategory> {
-		return this.client.todoCategory.create({ data });
-	}
-
-	/**
-	 * 여러 카테고리 생성 (회원가입 시 기본 카테고리용)
-	 *
-	 * @param tx 과도기 파라미터 — auth/oauth가 아직 `$transaction(tx)`를 스레딩하므로
-	 *           해당 모듈이 CLS로 이관되기 전까지 유지합니다 (전달 시 tx 우선).
-	 */
+	/** 기본 카테고리 일괄 생성 (레거시 명시적 tx 경로 지원) */
 	async createMany(
-		data: Prisma.TodoCategoryCreateManyInput[],
+		data: SeedCategoryInput[],
 		tx?: TransactionClient,
 	): Promise<number> {
 		const client = tx ?? this.client;
 		const result = await client.todoCategory.createMany({ data });
 		return result.count;
-	}
-
-	/**
-	 * ID로 카테고리 조회
-	 */
-	async findById(id: number): Promise<TodoCategory | null> {
-		return this.client.todoCategory.findUnique({
-			where: { id },
-		});
-	}
-
-	/**
-	 * 사용자의 카테고리 조회 (소유권 확인용)
-	 */
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-	): Promise<TodoCategory | null> {
-		return this.client.todoCategory.findFirst({
-			where: { id, userId },
-		});
-	}
-
-	/**
-	 * 사용자의 카테고리 목록 조회 (Todo 개수 포함)
-	 */
-	async findManyByUserId(userId: string): Promise<TodoCategoryWithCount[]> {
-		return this.client.todoCategory.findMany({
-			where: { userId },
-			include: {
-				_count: {
-					select: { todos: true },
-				},
-			},
-			orderBy: { sortOrder: "asc" },
-		});
-	}
-
-	/**
-	 * 사용자의 카테고리 개수 조회
-	 */
-	async countByUserId(userId: string): Promise<number> {
-		return this.client.todoCategory.count({
-			where: { userId },
-		});
-	}
-
-	/**
-	 * 사용자의 동일 이름 카테고리 존재 여부 확인
-	 */
-	async existsByUserIdAndName(
-		userId: string,
-		name: string,
-		excludeId?: number,
-	): Promise<boolean> {
-		const category = await this.client.todoCategory.findFirst({
-			where: {
-				userId,
-				name,
-				...(excludeId && { id: { not: excludeId } }),
-			},
-		});
-		return category !== null;
-	}
-
-	/**
-	 * 카테고리 수정
-	 */
-	async update(
-		id: number,
-		data: Prisma.TodoCategoryUpdateInput,
-	): Promise<TodoCategory> {
-		return this.client.todoCategory.update({
-			where: { id },
-			data,
-		});
-	}
-
-	/**
-	 * 카테고리 삭제
-	 */
-	async delete(id: number): Promise<TodoCategory> {
-		return this.client.todoCategory.delete({
-			where: { id },
-		});
-	}
-
-	/**
-	 * 카테고리의 Todo 개수 조회
-	 */
-	async getTodoCount(id: number): Promise<number> {
-		return this.client.todo.count({
-			where: { categoryId: id },
-		});
-	}
-
-	/**
-	 * 카테고리의 모든 Todo를 다른 카테고리로 이동
-	 */
-	async moveTodosToCategory(
-		fromCategoryId: number,
-		toCategoryId: number,
-	): Promise<number> {
-		const result = await this.client.todo.updateMany({
-			where: { categoryId: fromCategoryId },
-			data: { categoryId: toCategoryId },
-		});
-		return result.count;
-	}
-
-	/**
-	 * 사용자의 최대 sortOrder 조회
-	 */
-	async getMaxSortOrder(userId: string): Promise<number> {
-		const result = await this.client.todoCategory.aggregate({
-			where: { userId },
-			_max: { sortOrder: true },
-		});
-		return result._max.sortOrder ?? -1;
-	}
-
-	/**
-	 * 특정 sortOrder 범위의 카테고리들의 sortOrder를 일괄 조정
-	 */
-	async shiftSortOrders(
-		userId: string,
-		fromSortOrder: number,
-		toSortOrder: number | null,
-		delta: number,
-	): Promise<number> {
-		const where: Prisma.TodoCategoryWhereInput = {
-			userId,
-			sortOrder: {
-				gte: fromSortOrder,
-				...(toSortOrder !== null && { lte: toSortOrder }),
-			},
-		};
-
-		const result = await this.client.todoCategory.updateMany({
-			where,
-			data: {
-				sortOrder: { increment: delta },
-			},
-		});
-
-		return result.count;
-	}
-
-	/**
-	 * ID로 카테고리 조회 (Todo 개수 포함)
-	 */
-	async findByIdWithCount(id: number): Promise<TodoCategoryWithCount | null> {
-		return this.client.todoCategory.findUnique({
-			where: { id },
-			include: {
-				_count: {
-					select: { todos: true },
-				},
-			},
-		});
 	}
 }

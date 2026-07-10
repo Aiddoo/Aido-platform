@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { TodoCategoryRepository } from "../../../todo-category/todo-category.repository";
+import { TodoCategoryFacade } from "@/todo-category";
 import type {
 	UserCategory,
 	UserCategoryReaderPort,
@@ -8,18 +8,14 @@ import type {
 /**
  * UserCategoryReaderPort의 어댑터.
  *
- * todo-category 모듈의 저장소에 위임하여 프롬프트용 최소 카테고리 정보만 노출한다
- * (미이관 의존 → 위임 어댑터 패턴). todo-category 클린아키 이관 시 내부만 교체.
+ * todo-category 파사드에 위임하여 프롬프트용 최소 카테고리 정보만 노출한다.
  */
 @Injectable()
 export class TodoCategoryReaderAdapter implements UserCategoryReaderPort {
-	constructor(
-		private readonly todoCategoryRepository: TodoCategoryRepository,
-	) {}
+	constructor(private readonly todoCategoryFacade: TodoCategoryFacade) {}
 
 	async findByUserId(userId: string): Promise<UserCategory[]> {
-		const categories =
-			await this.todoCategoryRepository.findManyByUserId(userId);
+		const categories = await this.todoCategoryFacade.listForUser(userId);
 		return categories.map((c) => ({ id: c.id, name: c.name }));
 	}
 }

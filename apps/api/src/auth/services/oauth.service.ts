@@ -22,8 +22,7 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
-import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
-import { DEFAULT_CATEGORIES } from "@/todo-category/types/todo-category.types";
+import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
 import { UserConsentRepository } from "@/user-settings/repositories/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/repositories/user-preference.repository";
 import {

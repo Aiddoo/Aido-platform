@@ -58,6 +58,9 @@ const TARGET_DIRS = [
 	"src/nudge/domain",
 	"src/nudge/application",
 	"src/nudge/infrastructure",
+	"src/todo-category/domain",
+	"src/todo-category/application",
+	"src/todo-category/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */
