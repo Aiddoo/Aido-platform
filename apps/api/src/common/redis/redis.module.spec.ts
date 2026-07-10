@@ -135,6 +135,29 @@ describe("RedisModule — Redis 연결 모듈", () => {
 			jest.useRealTimers();
 		});
 
+		it("두 번 호출돼도 quit/disconnect는 한 번만 실행된다 (멱등)", async () => {
+			// Given — main.ts의 enableShutdownHooks + 자체 SIGTERM 핸들러가
+			// app.close()를 중복 호출하는 상황
+			const bullClient = createFakeClient({
+				quit: jest.fn().mockReturnValue(
+					new Promise((resolve) => {
+						setTimeout(() => resolve("OK"), 10);
+					}),
+				),
+			});
+			const module = new RedisModule(bullClient, null);
+
+			// When — 동시 중복 호출
+			await Promise.all([
+				module.onApplicationShutdown(),
+				module.onApplicationShutdown(),
+			]);
+
+			// Then
+			expect(bullClient.quit).toHaveBeenCalledTimes(1);
+			expect(bullClient.disconnect).not.toHaveBeenCalled();
+		});
+
 		it("이미 종료된(end) 클라이언트는 건드리지 않는다", async () => {
 			// Given
 			const endedClient = createFakeClient({ status: "end" });

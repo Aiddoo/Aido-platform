@@ -23,7 +23,7 @@ services:
     image: redis:7-alpine
     container_name: aido-dev-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - dev_redis_data:/data
     healthcheck:

@@ -53,6 +53,7 @@ export interface RedisLifecycleClient {
 @Module({})
 export class RedisModule implements OnApplicationShutdown {
 	private static readonly logger = new Logger(RedisModule.name);
+	private shutdownPromise: Promise<void> | null = null;
 
 	constructor(
 		@Optional()
@@ -115,6 +116,13 @@ export class RedisModule implements OnApplicationShutdown {
 	 * "Connection is closed." unhandled rejection을 일으킨다.
 	 */
 	async onApplicationShutdown(): Promise<void> {
+		// main.ts의 enableShutdownHooks + 자체 SIGTERM 핸들러가 app.close()를
+		// 중복 호출할 수 있으므로 멱등하게 처리한다
+		this.shutdownPromise ??= this.closeClients();
+		await this.shutdownPromise;
+	}
+
+	private async closeClients(): Promise<void> {
 		await Promise.allSettled([
 			this.shutdownClient(this.commandClient, "command"),
 			this.shutdownClient(this.bullClient, "main"),
