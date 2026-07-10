@@ -5,7 +5,8 @@ import {
 	HealthIndicatorService,
 } from "@nestjs/terminus";
 import { REDIS_COMMAND_CLIENT } from "@/common/redis/redis.constants";
-import { withTimeout } from "@/common/redis/with-timeout";
+import { toErrorMessage } from "@/common/utils/error-message.util";
+import { withTimeout } from "@/common/utils/with-timeout.util";
 import { ADMIN_NOTIFICATION_QUEUE } from "@/modules/admin-notification/queue/admin-notification-queue.constants";
 import { AI_REPORT_QUEUE } from "@/modules/ai-report/processors/report-generation.processor";
 import { AI_SUGGESTION_QUEUE } from "@/modules/ai-suggestion/processors/suggestion-analysis.processor";
@@ -69,7 +70,7 @@ export class BullHealthIndicator {
 			} catch (error) {
 				return indicator.up({
 					degraded: true,
-					reason: `redis unavailable: ${toMessage(error)}`,
+					reason: `redis unavailable: ${toErrorMessage(error)}`,
 				});
 			}
 		}
@@ -84,7 +85,7 @@ export class BullHealthIndicator {
 		} catch (error) {
 			return indicator.up({
 				degraded: true,
-				reason: toMessage(error),
+				reason: toErrorMessage(error),
 			});
 		}
 	}
@@ -108,8 +109,4 @@ export class BullHealthIndicator {
 
 		return results;
 	}
-}
-
-function toMessage(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
 }

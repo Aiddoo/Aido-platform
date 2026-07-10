@@ -7,6 +7,7 @@ import { type CachedSession, CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import { toErrorMessage } from "@/common/utils/error-message.util";
 import { SessionRepository } from "../repositories/session.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { SessionService } from "../services/session.service";
@@ -133,7 +134,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			return await this.cacheService.getSession(sessionId);
 		} catch (error) {
 			this.#logger.warn(
-				`Session cache read failed — falling back to DB: ${toMessage(error)}`,
+				`Session cache read failed — falling back to DB: ${toErrorMessage(error)}`,
 			);
 			return undefined;
 		}
@@ -150,7 +151,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			await this.cacheService.setSession(sessionId, session);
 		} catch (error) {
 			this.#logger.warn(
-				`Session cache write failed — skipping: ${toMessage(error)}`,
+				`Session cache write failed — skipping: ${toErrorMessage(error)}`,
 			);
 		}
 	}
@@ -168,8 +169,4 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			throw BusinessExceptions.accountSuspended("User");
 		}
 	}
-}
-
-function toMessage(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
 }

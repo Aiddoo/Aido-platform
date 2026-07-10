@@ -10,13 +10,13 @@ import {
 } from "@nestjs/common";
 import Redis, { type RedisOptions } from "ioredis";
 import { TypedConfigService } from "../config/services/config.service";
+import { withTimeout } from "../utils/with-timeout.util";
 import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants";
 import {
 	buildBullRedisOptions,
 	buildCommandRedisOptions,
 	type RedisConnectionSettings,
 } from "./redis-client.factory";
-import { withTimeout } from "./with-timeout";
 
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
 const QUIT_TIMEOUT_MS = 3_000;
