@@ -22,7 +22,7 @@ import { dirname, join, relative, resolve } from "node:path";
 const ROOT = join(import.meta.dirname, "..");
 
 /** 클린아키텍처 전환이 완료된 모듈 (전환 시 여기에 추가) */
-const CLEAN_MODULES = ["todo", "inquiry"];
+const CLEAN_MODULES = ["todo", "inquiry", "admin"];
 
 /** 재귀적으로 .ts 파일 수집 */
 function collectTsFiles(dir) {

@@ -1,6 +1,5 @@
 import {
 	broadcastNotificationSchema,
-	broadcastResultSchema,
 	targetedNotificationSchema,
 } from "@aido/validators";
 import { createZodDto } from "nestjs-zod";
@@ -18,8 +17,3 @@ export class BroadcastNotificationDto extends createZodDto(
 export class TargetedNotificationDto extends createZodDto(
 	targetedNotificationSchema,
 ) {}
-
-/**
- * 알림 발송 결과 응답 DTO
- */
-export class BroadcastResultDto extends createZodDto(broadcastResultSchema) {}

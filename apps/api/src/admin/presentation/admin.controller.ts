@@ -15,8 +15,8 @@ import {
 	Admin,
 	CurrentUser,
 	type CurrentUserPayload,
-} from "../auth/decorators";
-import { AdminService } from "./admin.service";
+} from "../../auth/decorators";
+import { AdminFacade } from "../application/facades/admin.facade";
 import {
 	BroadcastNotificationDto,
 	BroadcastResultDto,
@@ -36,7 +36,7 @@ import {
 @ApiBearerAuth()
 @Controller("admin/notifications")
 export class AdminController {
-	constructor(private readonly adminService: AdminService) {}
+	constructor(private readonly adminFacade: AdminFacade) {}
 
 	@Post("broadcast")
 	@Admin()
@@ -61,7 +61,12 @@ export class AdminController {
 		@CurrentUser() _user: CurrentUserPayload,
 		@Body() dto: BroadcastNotificationDto,
 	): Promise<BroadcastResultDto> {
-		return this.adminService.broadcastNotification(dto);
+		return this.adminFacade.broadcastNotification(
+			dto.title,
+			dto.body,
+			dto.targetFilter,
+			dto.action,
+		);
 	}
 
 	@Post("targeted")
@@ -81,6 +86,11 @@ export class AdminController {
 		@CurrentUser() _user: CurrentUserPayload,
 		@Body() dto: TargetedNotificationDto,
 	): Promise<BroadcastResultDto> {
-		return this.adminService.sendTargetedNotification(dto);
+		return this.adminFacade.sendTargetedNotification(
+			dto.title,
+			dto.body,
+			dto.userIds,
+			dto.action,
+		);
 	}
 }
