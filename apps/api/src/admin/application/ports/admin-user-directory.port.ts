@@ -1,10 +1,7 @@
-import type { BroadcastNotificationInput } from "@aido/validators";
+import type { BroadcastTargetFilter } from "../../domain/broadcast-message";
 
 /** AdminUserDirectoryPort DI 토큰 */
 export const ADMIN_USER_DIRECTORY = Symbol("ADMIN_USER_DIRECTORY");
-
-/** 브로드캐스트 대상 필터 (검증된 요청에서 파생) */
-export type BroadcastTargetFilter = BroadcastNotificationInput["targetFilter"];
 
 /**
  * 관리자 사용자 조회 포트 — 알림 대상 사용자 선별을 추상화한다.

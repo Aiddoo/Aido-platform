@@ -1,17 +1,7 @@
-import type { NotificationAction } from "@aido/validators";
+import type { AdminBroadcastMessage } from "../../domain/broadcast-message";
 
 /** AdminBroadcastNotifierPort DI 토큰 */
 export const ADMIN_BROADCAST_NOTIFIER = Symbol("ADMIN_BROADCAST_NOTIFIER");
-
-/** 관리자 발송 알림 한 건 (벤더 중립) */
-export interface AdminBroadcastMessage {
-	userId: string;
-	type: "ADMIN_BROADCAST" | "ADMIN_TARGETED";
-	title: string;
-	body: string;
-	action?: NotificationAction;
-	metadata?: { externalUrl: string };
-}
 
 /**
  * 관리자 브로드캐스트 발송 포트.

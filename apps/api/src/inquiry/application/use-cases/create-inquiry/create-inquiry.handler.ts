@@ -1,7 +1,8 @@
+import { ErrorCode } from "@aido/errors";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import { now } from "@/shared/domain/date/utils/core";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { buildInquirySubmission } from "../../../domain/services/inquiry-submission";
 import {
 	INQUIRY_MAILER,
@@ -32,7 +33,7 @@ export class CreateInquiryHandler
 		const result = await this.mailer.deliver(submission);
 
 		if (!result.success) {
-			throw BusinessExceptions.inquiryEmailFailed({
+			throw new ApplicationException(ErrorCode.INQUIRY_1501, {
 				userId: command.userId,
 				error: result.error,
 			});

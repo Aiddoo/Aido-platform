@@ -1,7 +1,7 @@
 import type { NotificationAction } from "@aido/validators";
 import { Command } from "@nestjs/cqrs";
-import type { BroadcastResult } from "../../../domain/broadcast";
-import type { BroadcastTargetFilter } from "../../ports/admin-user-directory.port";
+import type { BroadcastTargetFilter } from "../../../domain/broadcast-message";
+import type { BroadcastResult } from "../../../domain/broadcast-result";
 
 /**
  * 전체/조건부 알림 브로드캐스트 커맨드.

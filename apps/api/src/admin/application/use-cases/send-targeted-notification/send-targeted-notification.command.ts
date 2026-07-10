@@ -1,6 +1,6 @@
 import type { NotificationAction } from "@aido/validators";
 import { Command } from "@nestjs/cqrs";
-import type { BroadcastResult } from "../../../domain/broadcast";
+import type { BroadcastResult } from "../../../domain/broadcast-result";
 
 /**
  * 특정 사용자 알림 발송 커맨드.

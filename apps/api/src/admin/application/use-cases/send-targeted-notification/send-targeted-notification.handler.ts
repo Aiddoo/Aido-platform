@@ -1,11 +1,12 @@
+import { ErrorCode } from "@aido/errors";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
 	type BroadcastResult,
 	buildBroadcastResult,
-	deriveBroadcastMetadata,
-} from "../../../domain/broadcast";
+} from "../../../domain/broadcast-result";
+import { BroadcastCampaign } from "../../../domain/entities/broadcast-campaign";
 import {
 	ADMIN_BROADCAST_NOTIFIER,
 	type AdminBroadcastNotifierPort,
@@ -32,14 +33,23 @@ export class SendTargetedNotificationHandler
 	async execute(
 		command: SendTargetedNotificationCommand,
 	): Promise<BroadcastResult> {
-		const { title, body, userIds, action } = command;
-		const metadata = deriveBroadcastMetadata(action);
+		// 타겟 발송은 필터가 없으므로 캠페인의 대상 필터는 사용하지 않는다(ALL 자리표시).
+		// 제목/본문 불변식 검증과 메시지 조립만 캠페인에 위임한다.
+		const campaign = BroadcastCampaign.create({
+			title: command.title,
+			body: command.body,
+			targetFilter: "ALL",
+			action: command.action,
+		});
 
-		const existingUserIds =
-			await this.userDirectory.findExistingUserIds(userIds);
+		const existingUserIds = await this.userDirectory.findExistingUserIds(
+			command.userIds,
+		);
 
 		if (existingUserIds.length === 0) {
-			throw BusinessExceptions.adminNotificationTargetNotFound();
+			throw new ApplicationException(ErrorCode.ADMIN_1402, {
+				requested: command.userIds.length,
+			});
 		}
 
 		this.#logger.log(
@@ -47,14 +57,7 @@ export class SendTargetedNotificationHandler
 		);
 
 		const { count } = await this.notifier.sendBatch(
-			existingUserIds.map((userId) => ({
-				userId,
-				type: "ADMIN_TARGETED" as const,
-				title,
-				body,
-				action,
-				metadata,
-			})),
+			campaign.toMessages(existingUserIds, "ADMIN_TARGETED"),
 		);
 
 		this.#logger.log(

@@ -1,8 +1,8 @@
 import type { NotificationAction } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
-import type { BroadcastResult } from "../../domain/broadcast";
-import type { BroadcastTargetFilter } from "../ports/admin-user-directory.port";
+import type { BroadcastTargetFilter } from "../../domain/broadcast-message";
+import type { BroadcastResult } from "../../domain/broadcast-result";
 import { BroadcastNotificationCommand } from "../use-cases/broadcast-notification/broadcast-notification.command";
 import { SendTargetedNotificationCommand } from "../use-cases/send-targeted-notification/send-targeted-notification.command";
 

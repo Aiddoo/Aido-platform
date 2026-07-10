@@ -23,7 +23,7 @@ import { CommandHandlers } from "@/admin/application/use-cases";
 import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "@/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
 import { NotificationService } from "@/notification/notification.service";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
@@ -136,7 +136,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 			// Given - 대상 사용자가 없음 (빈 페이지로 즉시 종료)
 			mockUserDb.findMany.mockResolvedValueOnce([]);
 
-			// When & Then
+			// When & Then - 대상 없음은 ADMIN_1402(ApplicationException)로 실패
 			await expect(
 				facade.broadcastNotification(
 					"테스트 알림",
@@ -144,7 +144,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 					"ALL",
 					undefined,
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
