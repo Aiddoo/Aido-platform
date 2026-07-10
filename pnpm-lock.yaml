@@ -149,8 +149,8 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       expo-server-sdk:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^6.1.0
+        version: 6.1.0
       google-auth-library:
         specifier: ^10.9.0
         version: 10.9.0
@@ -5802,8 +5802,8 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-server-sdk@5.0.0:
-    resolution: {integrity: sha512-GEp1XYLU80iS/hdRo3c2n092E8TgTXcHSuw6Lw68dSoWaAgiLPI2R+e5hp5+hGF1TtJZOi2nxtJX63+XA3iz9g==}
+  expo-server-sdk@6.1.0:
+    resolution: {integrity: sha512-ISuax1AQ7cpM5RAqcu8gVcoLL0ZKskJ5OLoMWmdITBe9nYjTucjdGyBq817YkIvTcj1pAUwx+9toUT7l/V7thA==}
     engines: {node: '>=20'}
 
   expo-server@57.0.0:
@@ -15614,7 +15614,7 @@ snapshots:
     dependencies:
       expo: 57.0.2(@babel/core@7.29.0)(@expo/dom-webview@57.0.0)(@expo/metro-runtime@57.0.3)(expo-router@57.0.3)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.0(@babel/core@7.29.0)(@react-native/jest-preset@0.86.0(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.0(@babel/core@7.29.0)(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(react-native@0.86.0(@babel/core@7.29.0)(@react-native/jest-preset@0.86.0(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.0)(@react-native/jest-preset@0.86.0(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
 
-  expo-server-sdk@5.0.0:
+  expo-server-sdk@6.1.0:
     dependencies:
       promise-limit: 2.7.0
       promise-retry: 2.0.1

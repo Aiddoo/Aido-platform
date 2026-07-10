@@ -19,13 +19,20 @@ const mockSendPushNotificationsAsync = jest.fn();
 const mockChunkPushNotifications = jest.fn();
 
 jest.mock("expo-server-sdk", () => {
-	const actualExpo = jest.requireActual("expo-server-sdk");
+	// v6부터 ESM-only라 jest 29(CJS)에서 requireActual 불가 —
+	// isExpoPushToken은 실제 구현과 동일한 판정식으로 직접 제공
+	const isExpoPushToken = (token: unknown): boolean =>
+		typeof token === "string" &&
+		(token.startsWith("ExponentPushToken[") ||
+			token.startsWith("ExpoPushToken[")) &&
+		token.endsWith("]");
+
 	return {
 		__esModule: true,
 		default: class MockExpo {
 			sendPushNotificationsAsync = mockSendPushNotificationsAsync;
 			chunkPushNotifications = mockChunkPushNotifications;
-			static isExpoPushToken = actualExpo.default.isExpoPushToken;
+			static isExpoPushToken = isExpoPushToken;
 		},
 	};
 });

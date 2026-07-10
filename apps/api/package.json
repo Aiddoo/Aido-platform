@@ -54,7 +54,7 @@
 		"bullmq": "^5.80.0",
 		"dayjs": "catalog:",
 		"es-hangul": "^2.4.0",
-		"expo-server-sdk": "^5.0.0",
+		"expo-server-sdk": "^6.1.0",
 		"google-auth-library": "^10.9.0",
 		"helmet": "^8.2.0",
 		"ioredis": "5.10.1",
