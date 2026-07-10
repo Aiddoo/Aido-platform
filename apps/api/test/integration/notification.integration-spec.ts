@@ -19,6 +19,7 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
@@ -118,6 +119,11 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: DatabaseService,
 					useValue: mockDatabaseService,
+				},
+				{
+					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 tx ?? database와 등가)
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
 				},
 				{
 					provide: TypedConfigService,

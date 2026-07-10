@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { subtractDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import type {
 	Notification,
 	NotificationType,
@@ -15,24 +17,30 @@ import type {
 	NotificationWithRelations,
 	PushTokenWithRelations,
 	RegisterPushTokenData,
-	TransactionClient,
 } from "./types/notification.types";
 
 @Injectable()
 export class NotificationRepository {
 	readonly #logger = new Logger(NotificationRepository.name);
 
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * 알림 생성
 	 */
 	async createNotification(
 		data: CreateNotificationData,
-		tx?: TransactionClient,
 	): Promise<Notification> {
-		const client = tx ?? this.database;
-		return client.notification.create({
+		return this.client.notification.create({
 			data: {
 				userId: data.userId,
 				type: data.type,
@@ -54,10 +62,8 @@ export class NotificationRepository {
 	 */
 	async createManyNotifications(
 		dataList: CreateNotificationData[],
-		tx?: TransactionClient,
 	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
-		const result = await client.notification.createMany({
+		const result = await this.client.notification.createMany({
 			data: dataList.map((data) => ({
 				userId: data.userId,
 				type: data.type,
@@ -89,10 +95,8 @@ export class NotificationRepository {
 	 */
 	async findNotificationById(
 		id: number,
-		tx?: TransactionClient,
 	): Promise<NotificationWithRelations | null> {
-		const client = tx ?? this.database;
-		return client.notification.findUnique({
+		return this.client.notification.findUnique({
 			where: { id },
 		});
 	}
@@ -102,12 +106,10 @@ export class NotificationRepository {
 	 */
 	async findNotificationsByUser(
 		params: FindNotificationsParams,
-		tx?: TransactionClient,
 	): Promise<NotificationWithRelations[]> {
 		const { userId, cursor, size, unreadOnly, types } = params;
-		const client = tx ?? this.database;
 
-		return client.notification.findMany({
+		return this.client.notification.findMany({
 			where: {
 				userId,
 				...(unreadOnly && { isRead: false }),
@@ -125,9 +127,8 @@ export class NotificationRepository {
 	/**
 	 * 알림 읽음 처리
 	 */
-	async markAsRead(id: number, tx?: TransactionClient): Promise<Notification> {
-		const client = tx ?? this.database;
-		return client.notification.update({
+	async markAsRead(id: number): Promise<Notification> {
+		return this.client.notification.update({
 			where: { id },
 			data: {
 				isRead: true,
@@ -139,12 +140,8 @@ export class NotificationRepository {
 	/**
 	 * 사용자의 모든 알림 읽음 처리
 	 */
-	async markAllAsRead(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
-		return client.notification.updateMany({
+	async markAllAsRead(userId: string): Promise<{ count: number }> {
+		return this.client.notification.updateMany({
 			where: {
 				userId,
 				isRead: false,
@@ -159,9 +156,8 @@ export class NotificationRepository {
 	/**
 	 * 읽지 않은 알림 수 조회
 	 */
-	async countUnread(userId: string, tx?: TransactionClient): Promise<number> {
-		const client = tx ?? this.database;
-		return client.notification.count({
+	async countUnread(userId: string): Promise<number> {
+		return this.client.notification.count({
 			where: {
 				userId,
 				isRead: false,
@@ -172,12 +168,8 @@ export class NotificationRepository {
 	/**
 	 * 알림 삭제
 	 */
-	async deleteNotification(
-		id: number,
-		tx?: TransactionClient,
-	): Promise<Notification> {
-		const client = tx ?? this.database;
-		return client.notification.delete({
+	async deleteNotification(id: number): Promise<Notification> {
+		return this.client.notification.delete({
 			where: { id },
 		});
 	}
@@ -187,12 +179,10 @@ export class NotificationRepository {
 	 */
 	async deleteOldNotifications(
 		daysOld: number = 90,
-		tx?: TransactionClient,
 	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
 		const cutoffDate = subtractDays(daysOld);
 
-		return client.notification.deleteMany({
+		return this.client.notification.deleteMany({
 			where: {
 				createdAt: {
 					lt: cutoffDate,
@@ -205,16 +195,12 @@ export class NotificationRepository {
 	 * 특정 타입 + notificationDate 조합의 알림 존재 여부 확인
 	 * - DAILY_COMPLETE 중복 방지용 (단건)
 	 */
-	async existsNotification(
-		params: {
-			userId: string;
-			type: NotificationType;
-			notificationDate: Date;
-		},
-		tx?: TransactionClient,
-	): Promise<boolean> {
-		const client = tx ?? this.database;
-		const count = await client.notification.count({
+	async existsNotification(params: {
+		userId: string;
+		type: NotificationType;
+		notificationDate: Date;
+	}): Promise<boolean> {
+		const count = await this.client.notification.count({
 			where: {
 				userId: params.userId,
 				type: params.type,
@@ -228,20 +214,15 @@ export class NotificationRepository {
 	 * 지정 기간 내 동일 조건 알림 존재 여부 확인
 	 * - nullable 타입 (NUDGE, CHEER, FOLLOW 등) 서비스 레이어 dedup용
 	 */
-	async existsRecentNotification(
-		params: {
-			userId: string;
-			type: NotificationType;
-			since: Date;
-			friendId?: string;
-			todoId?: number;
-			nudgeId?: number;
-			cheerId?: number;
-		},
-		tx?: TransactionClient,
-	): Promise<boolean> {
-		const client = tx ?? this.database;
-
+	async existsRecentNotification(params: {
+		userId: string;
+		type: NotificationType;
+		since: Date;
+		friendId?: string;
+		todoId?: number;
+		nudgeId?: number;
+		cheerId?: number;
+	}): Promise<boolean> {
 		const where: Record<string, unknown> = {
 			userId: params.userId,
 			type: params.type,
@@ -252,7 +233,7 @@ export class NotificationRepository {
 		if (params.nudgeId !== undefined) where.nudgeId = params.nudgeId;
 		if (params.cheerId !== undefined) where.cheerId = params.cheerId;
 
-		const count = await client.notification.count({ where });
+		const count = await this.client.notification.count({ where });
 		return count > 0;
 	}
 
@@ -260,17 +241,13 @@ export class NotificationRepository {
 	 * metadata JSON 경로 기반 알림 존재 여부 확인
 	 * - WINBACK 단계별 중복 방지용
 	 */
-	async existsNotificationWithMetadata(
-		params: {
-			userId: string;
-			type: NotificationType;
-			metadataPath: string[];
-			metadataValue: string;
-		},
-		tx?: TransactionClient,
-	): Promise<boolean> {
-		const client = tx ?? this.database;
-		const count = await client.notification.count({
+	async existsNotificationWithMetadata(params: {
+		userId: string;
+		type: NotificationType;
+		metadataPath: string[];
+		metadataValue: string;
+	}): Promise<boolean> {
+		const count = await this.client.notification.count({
 			where: {
 				userId: params.userId,
 				type: params.type,
@@ -288,17 +265,13 @@ export class NotificationRepository {
 	 * - FRIEND_COMPLETED / MORNING_REMINDER / EVENING_REMINDER 중복 방지용
 	 * - N+1 방지를 위해 단일 쿼리로 처리
 	 */
-	async findAlreadyNotifiedUserIds(
-		params: {
-			userIds: string[];
-			type: NotificationType;
-			notificationDate: Date;
-			friendId?: string;
-		},
-		tx?: TransactionClient,
-	): Promise<Set<string>> {
-		const client = tx ?? this.database;
-		const rows = await client.notification.findMany({
+	async findAlreadyNotifiedUserIds(params: {
+		userIds: string[];
+		type: NotificationType;
+		notificationDate: Date;
+		friendId?: string;
+	}): Promise<Set<string>> {
+		const rows = await this.client.notification.findMany({
 			where: {
 				userId: { in: params.userIds },
 				type: params.type,
@@ -314,17 +287,12 @@ export class NotificationRepository {
 	/**
 	 * 푸시 토큰 등록 (upsert)
 	 */
-	async registerPushToken(
-		data: RegisterPushTokenData,
-		tx?: TransactionClient,
-	): Promise<PushToken> {
-		const client = tx ?? this.database;
-
+	async registerPushToken(data: RegisterPushTokenData): Promise<PushToken> {
 		// deviceId가 없으면 기본값 사용
 		const deviceId = data.deviceId ?? "default";
 		const platform = data.platform ?? "IOS";
 
-		return client.pushToken.upsert({
+		return this.client.pushToken.upsert({
 			where: {
 				userId_deviceId: {
 					userId: data.userId,
@@ -352,10 +320,8 @@ export class NotificationRepository {
 	 */
 	async findPushTokenByToken(
 		token: string,
-		tx?: TransactionClient,
 	): Promise<PushTokenWithRelations | null> {
-		const client = tx ?? this.database;
-		return client.pushToken.findFirst({
+		return this.client.pushToken.findFirst({
 			where: { token },
 		});
 	}
@@ -365,12 +331,10 @@ export class NotificationRepository {
 	 */
 	async findPushTokensByUser(
 		params: FindPushTokensParams,
-		tx?: TransactionClient,
 	): Promise<PushTokenWithRelations[]> {
 		const { userId, activeOnly } = params;
-		const client = tx ?? this.database;
 
-		return client.pushToken.findMany({
+		return this.client.pushToken.findMany({
 			where: {
 				userId,
 				...(activeOnly && { isActive: true }),
@@ -384,10 +348,8 @@ export class NotificationRepository {
 	 */
 	async findActivePushTokensByUsers(
 		userIds: string[],
-		tx?: TransactionClient,
 	): Promise<PushTokenWithRelations[]> {
-		const client = tx ?? this.database;
-		return client.pushToken.findMany({
+		return this.client.pushToken.findMany({
 			where: {
 				userId: { in: userIds },
 				isActive: true,
@@ -399,13 +361,8 @@ export class NotificationRepository {
 	 * 푸시 토큰 비활성화
 	 * @returns 비활성화된 토큰 수
 	 */
-	async deactivatePushToken(
-		token: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-
-		const result = await client.pushToken.updateMany({
+	async deactivatePushToken(token: string): Promise<number> {
+		const result = await this.client.pushToken.updateMany({
 			where: { token },
 			data: { isActive: false },
 		});
@@ -416,13 +373,8 @@ export class NotificationRepository {
 	/**
 	 * 사용자의 특정 디바이스 푸시 토큰 삭제
 	 */
-	async deletePushToken(
-		userId: string,
-		deviceId: string,
-		tx?: TransactionClient,
-	): Promise<PushToken> {
-		const client = tx ?? this.database;
-		return client.pushToken.delete({
+	async deletePushToken(userId: string, deviceId: string): Promise<PushToken> {
+		return this.client.pushToken.delete({
 			where: {
 				userId_deviceId: {
 					userId,
@@ -435,12 +387,8 @@ export class NotificationRepository {
 	/**
 	 * 사용자의 모든 푸시 토큰 삭제
 	 */
-	async deleteAllPushTokensByUser(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
-		return client.pushToken.deleteMany({
+	async deleteAllPushTokensByUser(userId: string): Promise<{ count: number }> {
+		return this.client.pushToken.deleteMany({
 			where: { userId },
 		});
 	}
@@ -448,12 +396,8 @@ export class NotificationRepository {
 	/**
 	 * 잘못된 토큰들 일괄 비활성화
 	 */
-	async deactivateInvalidTokens(
-		tokens: string[],
-		tx?: TransactionClient,
-	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
-		return client.pushToken.updateMany({
+	async deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }> {
+		return this.client.pushToken.updateMany({
 			where: {
 				token: { in: tokens },
 			},

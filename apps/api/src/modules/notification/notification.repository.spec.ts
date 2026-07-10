@@ -9,10 +9,12 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import { NotificationRepository } from "./notification.repository";
 import type {
@@ -24,19 +26,25 @@ import type {
 
 describe("NotificationRepository — 알림 리포지토리", () => {
 	let repository: NotificationRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
 		// ID 카운터 리셋
 		NotificationBuilder.resetIdCounter();
 		PushTokenBuilder.resetIdCounter();
 
-		const { unit, unitRef } = await TestBed.solitary(
-			NotificationRepository,
-		).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(NotificationRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("createNotification", () => {
@@ -680,30 +688,6 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 					createdAt: { gte: since },
 				},
 			});
-		});
-
-		it("트랜잭션 클라이언트를 사용해야 한다", async () => {
-			// Given
-			const mockCount = jest.fn().mockResolvedValue(1);
-			const txClient = {
-				notification: { count: mockCount },
-			} as unknown as Parameters<typeof repository.existsRecentNotification>[1];
-			(db.notification.count as jest.Mock).mockResolvedValue(0);
-
-			// When
-			await repository.existsRecentNotification(
-				{
-					userId: "user-1",
-					type: "CHEER_RECEIVED",
-					since,
-					friendId: "friend-1",
-				},
-				txClient,
-			);
-
-			// Then — tx 클라이언트의 count가 호출됨
-			expect(mockCount).toHaveBeenCalled();
-			expect(db.notification.count).not.toHaveBeenCalled();
 		});
 	});
 

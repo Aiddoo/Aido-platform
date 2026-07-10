@@ -121,10 +121,7 @@ describe("NotificationService — 알림 서비스", () => {
 			const result = await service.createAndSend(data);
 
 			// Then - 알림 생성 및 푸시 위임 확인
-			expect(notificationRepo.createNotification).toHaveBeenCalledWith(
-				data,
-				undefined,
-			);
+			expect(notificationRepo.createNotification).toHaveBeenCalledWith(data);
 			expect(result).toEqual(notification);
 			expect(pushDeliveryService.fireAndForgetPush).toHaveBeenCalledWith(
 				data,
@@ -229,7 +226,6 @@ describe("NotificationService — 알림 서비스", () => {
 			// Then - 일괄 생성 및 배치 푸시 위임 확인
 			expect(notificationRepo.createManyNotifications).toHaveBeenCalledWith(
 				dataList,
-				undefined,
 			);
 			expect(result.count).toBe(2);
 			expect(pushDeliveryService.fireAndForgetBatchPush).toHaveBeenCalledWith(

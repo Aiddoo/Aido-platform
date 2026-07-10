@@ -1,16 +1,10 @@
 import type { NotificationActionType } from "@aido/validators";
-import type { TransactionClient as _TransactionClient } from "@/common/database/prisma.types";
 import type {
 	Notification,
 	NotificationType,
 	Prisma,
 	PushToken,
 } from "@/generated/prisma/client";
-
-/**
- * 트랜잭션 클라이언트 타입 (공통 타입 re-export)
- */
-export type TransactionClient = _TransactionClient;
 
 /**
  * 알림 목록 조회 파라미터

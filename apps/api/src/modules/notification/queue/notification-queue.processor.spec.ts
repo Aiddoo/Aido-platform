@@ -9,10 +9,15 @@
  * pnpm --filter @aido/api test notification-queue.processor
  * ```
  */
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import type { Job } from "bullmq";
-import { DatabaseService } from "@/database/database.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
+import type { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 import { NotificationService } from "../notification.service";
 import { PushDeliveryService } from "../push-delivery.service";
@@ -41,21 +46,31 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 	let processor: NotificationQueueProcessor;
 	let notificationService: Mocked<NotificationService>;
 	let pushDeliveryService: Mocked<PushDeliveryService>;
-	let database: Mocked<DatabaseService>;
+	let uow: UnitOfWorkPort;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
 		jest.spyOn(Math, "random").mockReturnValue(0);
 
-		const { unit, unitRef } = await TestBed.solitary(
-			NotificationQueueProcessor,
-		).compile();
+		// UNIT_OF_WORK — run이 콜백을 즉시 실행하는 passthrough mock
+		uow = createUnitOfWorkMock();
+		// CLS 트랜잭션 스텁 — tx가 항상 Prisma mock을 반환
+		db = createMockPrisma();
+
+		const { unit, unitRef } = await TestBed.solitary(NotificationQueueProcessor)
+			.mock(UNIT_OF_WORK)
+			.impl(() => uow)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		processor = unit;
 		notificationService = unitRef.get(NotificationService);
 		pushDeliveryService = unitRef.get(PushDeliveryService);
-		database = unitRef.get(DatabaseService);
 		pushDeliveryService.getUserLocale.mockResolvedValue("ko");
-		database.userPreference.findMany.mockResolvedValue([] as never);
+		db.userPreference.findMany.mockResolvedValue([]);
 	});
 
 	afterEach(() => {
@@ -343,7 +358,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				NotificationJobName.FRIEND_COMPLETED,
 				friendCompletedData,
 			);
-			database.$transaction.mockImplementation((fn) => fn(database as never));
 			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
 				new Set(),
 			);
@@ -363,7 +377,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 					type: "FRIEND_COMPLETED",
 					friendId: "friend-1",
 				}),
-				database,
 			);
 			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith(
 				expect.arrayContaining([
@@ -379,7 +392,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 						type: "FRIEND_COMPLETED",
 					}),
 				]),
-				database,
 			);
 		});
 
@@ -389,7 +401,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				NotificationJobName.FRIEND_COMPLETED,
 				friendCompletedData,
 			);
-			database.$transaction.mockImplementation((fn) => fn(database as never));
 			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
 				new Set(["user-1"]),
 			);
@@ -399,15 +410,12 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith(
-				[
-					expect.objectContaining({
-						userId: "user-2",
-						type: "FRIEND_COMPLETED",
-					}),
-				],
-				database,
-			);
+			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith([
+				expect.objectContaining({
+					userId: "user-2",
+					type: "FRIEND_COMPLETED",
+				}),
+			]);
 		});
 
 		it("전원 이미 받은 경우 생성하지 않는다", async () => {
@@ -416,7 +424,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				NotificationJobName.FRIEND_COMPLETED,
 				friendCompletedData,
 			);
-			database.$transaction.mockImplementation((fn) => fn(database as never));
 			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
 				new Set(["user-1", "user-2"]),
 			);
@@ -440,7 +447,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(uow.run).not.toHaveBeenCalled();
 			expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 		});
 
@@ -454,7 +461,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				"Unique constraint failed",
 				{ code: "P2002", clientVersion: "5.0.0" },
 			);
-			database.$transaction.mockRejectedValue(prismaError);
+			jest.mocked(uow.run).mockRejectedValue(prismaError);
 
 			// When & Then — 에러 전파 없음
 			await expect(processor.process(job)).resolves.not.toThrow();
@@ -466,7 +473,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				NotificationJobName.FRIEND_COMPLETED,
 				friendCompletedData,
 			);
-			database.$transaction.mockRejectedValue(new Error("DB error"));
+			jest.mocked(uow.run).mockRejectedValue(new Error("DB error"));
 
 			// When & Then — 에러 전파 없음
 			await expect(processor.process(job)).resolves.not.toThrow();
@@ -481,7 +488,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("마일스톤 알림을 발송한다", async () => {
 			// Given - 기존 마일스톤 알림 없음
-			(database.notification.findFirst as jest.Mock).mockResolvedValue(null);
+			(db.notification.findFirst as jest.Mock).mockResolvedValue(null);
 			notificationService.createAndSend.mockResolvedValue(null);
 
 			const job = createMockJob(
@@ -504,7 +511,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("이미 달성한 마일스톤은 스킵한다", async () => {
 			// Given - 기존 마일스톤 알림 존재
-			(database.notification.findFirst as jest.Mock).mockResolvedValue({
+			(db.notification.findFirst as jest.Mock).mockResolvedValue({
 				id: 1,
 				userId: "user-milestone",
 			});
@@ -523,7 +530,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("에러 발생 시 로깅만 하고 throw하지 않는다", async () => {
 			// Given
-			(database.notification.findFirst as jest.Mock).mockResolvedValue(null);
+			(db.notification.findFirst as jest.Mock).mockResolvedValue(null);
 			notificationService.createAndSend.mockRejectedValue(
 				new Error("DB error"),
 			);

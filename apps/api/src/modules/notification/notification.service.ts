@@ -28,7 +28,6 @@ import { PushDeliveryService } from "./push-delivery.service";
 import type {
 	CreateNotificationData,
 	FindNotificationsParams,
-	TransactionClient,
 } from "./types/notification.types";
 
 @Injectable()
@@ -90,12 +89,11 @@ export class NotificationService {
 	 */
 	async createAndSendWithDedup(
 		data: CreateNotificationData,
-		tx?: TransactionClient,
 	): Promise<Notification | null> {
 		const strategy = NotificationService.DEDUP_STRATEGIES[data.type];
 
 		if (!strategy) {
-			return this.createAndSend(data, tx);
+			return this.createAndSend(data);
 		}
 
 		const dedupKey = this.#buildDedupKey(data, strategy);
@@ -132,10 +130,8 @@ export class NotificationService {
 				...contextFields,
 			};
 
-			const exists = await this.notificationRepository.existsRecentNotification(
-				params,
-				tx,
-			);
+			const exists =
+				await this.notificationRepository.existsRecentNotification(params);
 			if (exists) {
 				this.#logger.debug(
 					`Notification dedup: skipped ${data.type} for userId=${data.userId}`,
@@ -143,7 +139,7 @@ export class NotificationService {
 				return null;
 			}
 
-			return await this.createAndSend(data, tx);
+			return await this.createAndSend(data);
 		} finally {
 			await release();
 		}
@@ -177,14 +173,10 @@ export class NotificationService {
 	 */
 	async createAndSend(
 		data: CreateNotificationData,
-		tx?: TransactionClient,
 	): Promise<Notification | null> {
 		let notification: Notification;
 		try {
-			notification = await this.notificationRepository.createNotification(
-				data,
-				tx,
-			);
+			notification = await this.notificationRepository.createNotification(data);
 		} catch (error) {
 			if (
 				error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -224,17 +216,14 @@ export class NotificationService {
 	 */
 	async createAndSendBatch(
 		dataList: CreateNotificationData[],
-		tx?: TransactionClient,
 	): Promise<{ count: number }> {
 		if (dataList.length === 0) {
 			return { count: 0 };
 		}
 
 		// 1. DB 먼저 (최종 방어선 — unique index)
-		const result = await this.notificationRepository.createManyNotifications(
-			dataList,
-			tx,
-		);
+		const result =
+			await this.notificationRepository.createManyNotifications(dataList);
 
 		// 2. 푸시 발송 + unread count 무효화
 		this.pushDeliveryService.fireAndForgetBatchPush(dataList);
@@ -376,15 +365,12 @@ export class NotificationService {
 	 * - Sentinel 있음 = warm → Redis 결과 신뢰
 	 * - Sentinel 없음 = cold start → DB fallback + warm-up
 	 */
-	async findAlreadyNotifiedUserIds(
-		params: {
-			userIds: string[];
-			type: NotificationType;
-			notificationDate: Date;
-			friendId?: string;
-		},
-		tx?: TransactionClient,
-	): Promise<Set<string>> {
+	async findAlreadyNotifiedUserIds(params: {
+		userIds: string[];
+		type: NotificationType;
+		notificationDate: Date;
+		friendId?: string;
+	}): Promise<Set<string>> {
 		const setKey = DedupKeys.notified(params.type, params.notificationDate);
 
 		// 단일 SMISMEMBER: sentinel + userIds → atomic cold-start 감지
@@ -400,10 +386,8 @@ export class NotificationService {
 		}
 
 		// Cold start: DB fallback + Redis warm-up
-		const fromDb = await this.notificationRepository.findAlreadyNotifiedUserIds(
-			params,
-			tx,
-		);
+		const fromDb =
+			await this.notificationRepository.findAlreadyNotifiedUserIds(params);
 
 		void this.dedupProvider.addMembers(
 			setKey,

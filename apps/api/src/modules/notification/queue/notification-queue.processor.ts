@@ -1,9 +1,12 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger } from "@nestjs/common";
+import { Inject, Logger } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Job } from "bullmq";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import type { SupportedLocale } from "@/common/decorators";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 
 import { NotificationService } from "../notification.service";
@@ -32,7 +35,11 @@ export class NotificationQueueProcessor extends WorkerHost {
 	constructor(
 		private readonly notificationService: NotificationService,
 		private readonly pushDeliveryService: PushDeliveryService,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
 	) {
 		super();
 	}
@@ -244,17 +251,14 @@ export class NotificationQueueProcessor extends WorkerHost {
 		try {
 			const today = todayInTimezone(data.timezone);
 
-			await this.database.$transaction(async (tx) => {
+			await this.uow.run(async () => {
 				const alreadyNotified =
-					await this.notificationService.findAlreadyNotifiedUserIds(
-						{
-							userIds: data.notifyUserIds,
-							type: "FRIEND_COMPLETED",
-							notificationDate: today,
-							friendId: data.friendId,
-						},
-						tx,
-					);
+					await this.notificationService.findAlreadyNotifiedUserIds({
+						userIds: data.notifyUserIds,
+						type: "FRIEND_COMPLETED",
+						notificationDate: today,
+						friendId: data.friendId,
+					});
 
 				const newUserIds = data.notifyUserIds.filter(
 					(id) => !alreadyNotified.has(id),
@@ -268,7 +272,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				}
 
 				// 수신자별 푸시 언어로 메시지 생성 (로케일별 1회 조립)
-				const preferences = await tx.userPreference.findMany({
+				const preferences = await this.txHost.tx.userPreference.findMany({
 					where: { userId: { in: newUserIds } },
 					select: { userId: true, locale: true },
 				});
@@ -300,7 +304,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 					};
 				});
 
-				await this.notificationService.createAndSendBatch(notifications, tx);
+				await this.notificationService.createAndSendBatch(notifications);
 
 				this.#logger.log(
 					`Friend completion notifications sent: friendId=${data.friendId}, count=${newUserIds.length}`,
@@ -327,7 +331,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 	async #handleMilestoneReached(data: MilestoneReachedJobData): Promise<void> {
 		try {
 			// 평생 1회 Dedup: 동일 milestone metadata 존재 시 스킵
-			const existing = await this.database.notification.findFirst({
+			const existing = await this.txHost.tx.notification.findFirst({
 				where: {
 					userId: data.userId,
 					metadata: { path: ["milestone"], equals: data.milestone },
