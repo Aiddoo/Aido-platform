@@ -20,10 +20,13 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { NudgeBuilder, TodoBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { UNIT_OF_WORK } from "@/common/database";
 import { subtractDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
@@ -100,6 +103,15 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: DatabaseService,
 					useValue: mockDatabaseService,
+				},
+				{
+					provide: UNIT_OF_WORK,
+					useValue: createUnitOfWorkMock(),
+				},
+				{
+					// 리포지토리가 CLS에서 tx를 읽는 구조 — 활성 tx 없음 = 베이스 클라이언트 폴백
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
 				},
 				{
 					provide: TypedConfigService,

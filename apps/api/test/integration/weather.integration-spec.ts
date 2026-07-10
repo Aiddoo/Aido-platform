@@ -13,6 +13,7 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserLocationBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
@@ -118,6 +119,11 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 				WeatherService,
 				WeatherRepository,
 				{ provide: DatabaseService, useValue: mockDatabaseService },
+				{
+					// 리포지토리가 CLS에서 tx를 읽는 구조 — 활성 tx 없음 = 베이스 클라이언트 폴백
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
+				},
 				{ provide: WEATHER_PROVIDER, useValue: mockWeatherProvider },
 				{ provide: AIR_QUALITY_PROVIDER, useValue: mockAirQualityProvider },
 				{
