@@ -73,7 +73,6 @@
       "@suites/di.nestjs",
       "@suites/doubles.jest"
     ],
-    "overrides": {},
     "packageExtensions": {
       "uniwind@*": {
         "dependencies": {
