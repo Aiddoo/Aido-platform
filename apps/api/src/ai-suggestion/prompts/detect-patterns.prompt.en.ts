@@ -1,8 +1,8 @@
-import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
 import {
 	PROMPT_OUTPUT_DISCIPLINE_EN,
 	PROMPT_SECURITY_GUARD_EN,
-} from "../../ai/shared/prompt-sections";
+} from "@/shared/domain/prompt/prompt-sections";
+import { sanitizeForPrompt } from "@/shared/domain/prompt/sanitize";
 import type { SuggestionContext, SuggestionHistoryItem } from "../types";
 import type { SuggestionPrompt } from "./detect-patterns.prompt";
 

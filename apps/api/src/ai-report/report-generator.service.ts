@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { AI_PROVIDER, type AiProvider } from "@/ai/providers/ai.provider";
+import { AI_PROVIDER, type AiProvider } from "@/ai";
 import type { SupportedLocale } from "@/shared/presentation/decorators";
 import {
 	buildReportPrompt,

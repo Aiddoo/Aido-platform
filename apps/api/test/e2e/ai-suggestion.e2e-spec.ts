@@ -12,7 +12,7 @@
  */
 
 import request from "supertest";
-import { AI_PROVIDER } from "@/ai/providers/ai.provider";
+import { AI_PROVIDER } from "@/ai";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { FakeAiProvider } from "../mocks/fake-ai.provider";

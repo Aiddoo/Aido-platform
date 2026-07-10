@@ -1,11 +1,11 @@
 import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
-import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
 import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
-} from "../../ai/shared/prompt-sections";
+} from "@/shared/domain/prompt/prompt-sections";
+import { sanitizeForPrompt } from "@/shared/domain/prompt/sanitize";
+import type { SupportedLocale } from "@/shared/presentation/decorators";
 import type { SuggestionContext, SuggestionHistoryItem } from "../types";
 import { buildSuggestionPromptEn } from "./detect-patterns.prompt.en";
 

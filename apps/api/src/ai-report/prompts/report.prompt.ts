@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { ReportType } from "@/generated/prisma/client";
 import { now } from "@/shared/domain/date/utils/core";
+import { PROMPT_OUTPUT_DISCIPLINE } from "@/shared/domain/prompt/prompt-sections";
 import type { SupportedLocale } from "@/shared/presentation/decorators";
-import { PROMPT_OUTPUT_DISCIPLINE } from "../../ai/shared/prompt-sections";
 import type { AggregatedReportData } from "../types";
 import { getKoreanSeasonalContext } from "../utils/korean-seasonal-context";
 import { selectProfileTemplate } from "../utils/profile-template-selector";

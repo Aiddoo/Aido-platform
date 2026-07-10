@@ -9,7 +9,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { AI_PROVIDER, type AiProvider } from "@/ai/providers/ai.provider";
+import { AI_PROVIDER, type AiProvider } from "@/ai";
 
 import { ReportGeneratorService } from "./report-generator.service";
 import type { AggregatedReportData, GenerateReportParams } from "./types";

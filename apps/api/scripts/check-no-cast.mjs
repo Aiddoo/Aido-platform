@@ -10,6 +10,10 @@
  * - src/(*)/{domain,application,infrastructure}/** (spec 포함 — 마이그레이션된 코드 + 신규 테스트)
  * - src/shared/domain/**
  *
+ * 제외: 프롬프트 템플릿 디렉터리(`/prompts/`, `/prompt/`). LLM 시스템 프롬프트는
+ *      자연어 산문("as values", "as is", "interpret as" 등)이 많아 라인 기반 `as`
+ *      휴리스틱이 대량 오탐한다. 프롬프트는 로직이 아닌 텍스트 데이터이므로 제외한다.
+ *
  * 실행: node scripts/check-no-cast.mjs  (실패 시 exit 1)
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -39,6 +43,9 @@ const TARGET_DIRS = [
 	"src/weather/domain",
 	"src/weather/application",
 	"src/weather/infrastructure",
+	"src/ai/domain",
+	"src/ai/application",
+	"src/ai/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */
@@ -69,8 +76,15 @@ const NON_NULL = /[A-Za-z0-9_)\]]!(?![=])/;
 
 const violations = [];
 
+/** 프롬프트 템플릿 디렉터리는 산문 오탐 방지를 위해 스캔에서 제외한다. */
+const isPromptFile = (file) =>
+	file.includes("/prompts/") || file.includes("/prompt/");
+
 for (const dir of TARGET_DIRS) {
 	for (const file of collectTsFiles(dir)) {
+		if (isPromptFile(file)) {
+			continue;
+		}
 		const lines = readFileSync(file, "utf8").split("\n");
 		lines.forEach((line, idx) => {
 			// 한 줄 주석 제거 후 검사 — 주석 속 영단어 `as`/`!`(예: `// as a result`, `// Don't!`) 오탐 방지

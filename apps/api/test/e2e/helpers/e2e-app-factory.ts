@@ -23,7 +23,7 @@ import {
 } from "@/admin-notification/providers/admin-notifier.interface";
 import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue/admin-notification-queue.constants";
 import { AdminNotificationProcessor } from "@/admin-notification/queue/admin-notification-queue.processor";
-import { AI_PROVIDER } from "@/ai/providers/ai.provider";
+import { AI_PROVIDER } from "@/ai";
 import { ReportGenerationJob } from "@/ai-report/jobs/report-generation.job";
 import {
 	AI_REPORT_QUEUE,

@@ -13,7 +13,7 @@
  */
 
 import request from "supertest";
-import { AI_PROVIDER } from "@/ai/providers/ai.provider";
+import { AI_PROVIDER } from "@/ai";
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 

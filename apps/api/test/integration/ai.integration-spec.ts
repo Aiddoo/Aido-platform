@@ -2,7 +2,7 @@
  * AiController 통합 테스트
  *
  * @description
- * AiController가 AiService와 함께 올바르게 작동하는지 검증합니다.
+ * AiController가 AiFacade와 함께 올바르게 작동하는지 검증합니다.
  * HTTP 요청/응답 흐름을 포함한 통합 테스트입니다.
  *
  * 실행 명령:
@@ -17,14 +17,14 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import { AiController } from "@/ai/ai.controller";
-import { AiService } from "@/ai/ai.service";
-import { AiUsageGuard } from "@/ai/guards/ai-usage.guard";
+import { AiFacade } from "@/ai";
+import { AiUsageGuard } from "@/ai/infrastructure/guards/ai-usage.guard";
+import { AiController } from "@/ai/presentation/ai.controller";
 import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
 
 describe("AI 통합 테스트 (Mock DB)", () => {
 	let app: INestApplication;
-	let aiService: jest.Mocked<AiService>;
+	let aiFacade: jest.Mocked<AiFacade>;
 
 	const mockUser = {
 		userId: "test-user-id",
@@ -34,7 +34,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 	beforeAll(async () => {
 		suppressLogger();
 
-		const mockAiService = {
+		const mockAiFacade = {
 			parseTodo: jest.fn(),
 		};
 
@@ -52,8 +52,8 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 			controllers: [AiController],
 			providers: [
 				{
-					provide: AiService,
-					useValue: mockAiService,
+					provide: AiFacade,
+					useValue: mockAiFacade,
 				},
 			],
 		})
@@ -69,7 +69,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 
 		await app.init();
 
-		aiService = moduleFixture.get(AiService);
+		aiFacade = moduleFixture.get(AiFacade);
 	});
 
 	afterAll(async () => {
@@ -101,7 +101,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 					processingTimeMs: 245,
 				},
 			};
-			aiService.parseTodo.mockResolvedValue(mockResult);
+			aiFacade.parseTodo.mockResolvedValue(mockResult);
 
 			// When - API 요청 (X-Timezone 헤더 포함)
 			const response = await request(app.getHttpServer())
@@ -116,7 +116,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				data: mockResult.data,
 				meta: mockResult.meta,
 			});
-			expect(aiService.parseTodo).toHaveBeenCalledWith(
+			expect(aiFacade.parseTodo).toHaveBeenCalledWith(
 				validRequest.text,
 				mockUser.userId,
 				"Asia/Seoul",
@@ -144,7 +144,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 					processingTimeMs: 245,
 				},
 			};
-			aiService.parseTodo.mockResolvedValue(mockResult);
+			aiFacade.parseTodo.mockResolvedValue(mockResult);
 
 			// When - categoryId가 포함된 API 요청
 			const response = await request(app.getHttpServer())
@@ -154,7 +154,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				.expect(200);
 
 			// Then - categoryId가 서비스에 전달되고 응답에 포함
-			expect(aiService.parseTodo).toHaveBeenCalledWith(
+			expect(aiFacade.parseTodo).toHaveBeenCalledWith(
 				"내일 오후 3시에 팀 미팅",
 				mockUser.userId,
 				"Asia/Seoul",
@@ -182,7 +182,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 					processingTimeMs: 300,
 				},
 			};
-			aiService.parseTodo.mockResolvedValue(mockResult);
+			aiFacade.parseTodo.mockResolvedValue(mockResult);
 
 			// When - API 요청
 			const response = await request(app.getHttpServer())
@@ -207,7 +207,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 
 			// Then - 400 에러 반환
 			expect(response.body.message).toBeDefined();
-			expect(aiService.parseTodo).not.toHaveBeenCalled();
+			expect(aiFacade.parseTodo).not.toHaveBeenCalled();
 		});
 
 		it("text 필드 누락 시 400 에러", async () => {
@@ -221,12 +221,12 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 
 			// Then - 400 에러 반환
 			expect(response.body.message).toBeDefined();
-			expect(aiService.parseTodo).not.toHaveBeenCalled();
+			expect(aiFacade.parseTodo).not.toHaveBeenCalled();
 		});
 
 		it("AI 서비스 불가 시 503 에러", async () => {
 			// Given - AI 서비스 에러 설정
-			aiService.parseTodo.mockRejectedValue(
+			aiFacade.parseTodo.mockRejectedValue(
 				new BusinessException(ErrorCode.AI_1301),
 			);
 
@@ -243,7 +243,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 
 		it("파싱 실패 시 422 에러", async () => {
 			// Given - 파싱 실패 에러 설정
-			aiService.parseTodo.mockRejectedValue(
+			aiFacade.parseTodo.mockRejectedValue(
 				new BusinessException(ErrorCode.AI_1302, {
 					details: "Invalid response format",
 				}),
@@ -272,7 +272,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 
 			// Then - 400 에러 반환
 			expect(response.body.message).toBeDefined();
-			expect(aiService.parseTodo).not.toHaveBeenCalled();
+			expect(aiFacade.parseTodo).not.toHaveBeenCalled();
 		});
 
 		it("허용되지 않은 필드는 무시되고 정상 처리", async () => {
@@ -293,7 +293,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 					processingTimeMs: 100,
 				},
 			};
-			aiService.parseTodo.mockResolvedValue(mockResult);
+			aiFacade.parseTodo.mockResolvedValue(mockResult);
 
 			// When - 허용되지 않은 필드 포함 요청
 			const response = await request(app.getHttpServer())
@@ -306,7 +306,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				.expect(200);
 
 			// Then - unknownField는 무시되고 정상 처리
-			expect(aiService.parseTodo).toHaveBeenCalledWith(
+			expect(aiFacade.parseTodo).toHaveBeenCalledWith(
 				"테스트",
 				mockUser.userId,
 				"Asia/Seoul",
@@ -334,7 +334,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 					processingTimeMs: 100,
 				},
 			};
-			aiService.parseTodo.mockResolvedValue(mockResult);
+			aiFacade.parseTodo.mockResolvedValue(mockResult);
 
 			// When - X-Timezone 헤더 없이 요청
 			await request(app.getHttpServer())
@@ -343,7 +343,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				.expect(200);
 
 			// Then - UTC가 기본값으로 전달
-			expect(aiService.parseTodo).toHaveBeenCalledWith(
+			expect(aiFacade.parseTodo).toHaveBeenCalledWith(
 				"테스트",
 				mockUser.userId,
 				"UTC",
