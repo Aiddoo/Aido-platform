@@ -11,6 +11,7 @@ import type {
 	VerifiedProfile,
 } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { readJson } from "@/shared/infrastructure/http/read-json";
 
 interface OAuthConfig {
 	clientId: string | undefined;
@@ -96,13 +97,13 @@ export class GoogleOAuthProvider implements OAuthIdentityProvider {
 			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
-		const tokenData = (await tokenResponse.json()) as {
+		const tokenData = await readJson<{
 			access_token: string;
 			id_token: string;
 			token_type: string;
 			refresh_token?: string;
 			expires_in: number;
-		};
+		}>(tokenResponse);
 
 		return { token: tokenData.id_token };
 	}

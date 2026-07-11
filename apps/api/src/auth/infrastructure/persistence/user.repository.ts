@@ -275,10 +275,16 @@ export class UserRepository {
 		gracePeriodDays: number,
 	): Promise<{ id: string; email: string; deletedAt: Date }[]> {
 		const cutoff = subtractDays(gracePeriodDays);
-		return this.database.user.findMany({
+		const rows = await this.database.user.findMany({
 			where: { deletedAt: { not: null, lt: cutoff } },
 			select: { id: true, email: true, deletedAt: true },
-		}) as Promise<{ id: string; email: string; deletedAt: Date }[]>;
+		});
+		// WHERE deletedAt not null 이 보장하지만 Prisma 타입은 Date|null 이므로
+		// 타입 가드 필터로 non-null을 좁힌다(캐스트 없이 정합).
+		return rows.filter(
+			(row): row is { id: string; email: string; deletedAt: Date } =>
+				row.deletedAt !== null,
+		);
 	}
 
 	async hardDelete(id: string, tx?: TransactionClient): Promise<void> {

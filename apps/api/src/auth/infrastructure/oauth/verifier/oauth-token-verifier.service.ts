@@ -4,29 +4,12 @@ import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
 import type { VerifiedProfile } from "@/auth/application/ports/oauth-identity-provider.port";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-
-/**
- * jose 라이브러리 래퍼 타입 (ESM 동적 import용)
- *
- * jose는 ESM-only 모듈이므로 동적 import를 사용합니다.
- * 타입 안전성을 위해 필요한 함수들을 래핑합니다.
- */
-interface JoseWrapper {
-	createRemoteJWKSet: (url: URL) => JWKSFunction;
-	jwtVerify: <T>(
-		jwt: string,
-		jwks: JWKSFunction,
-		options?: { issuer?: string; audience?: string },
-	) => Promise<{ payload: T }>;
-	isJWTExpiredError: (error: unknown) => boolean;
-	isJWTClaimValidationError: (error: unknown) => boolean;
-}
-
-// JWKS 함수 타입 (createRemoteJWKSet 반환값)
-type JWKSFunction = (
-	protectedHeader: unknown,
-	token: unknown,
-) => Promise<unknown>;
+import { readJson } from "@/shared/infrastructure/http/read-json";
+import {
+	type JoseWrapper,
+	type JWKSFunction,
+	loadJose,
+} from "@/shared/infrastructure/jose/jose-wrapper";
 
 export type { VerifiedProfile };
 
@@ -73,37 +56,13 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	}
 
 	async onModuleInit(): Promise<void> {
-		this.#jose = await this.#loadJose();
+		this.#jose = await loadJose();
 		this.#logger.log("Jose library loaded successfully");
-	}
-
-	async #loadJose(): Promise<JoseWrapper> {
-		const jose = await import("jose");
-		return {
-			createRemoteJWKSet: (url: URL) =>
-				jose.createRemoteJWKSet(url) as JWKSFunction,
-			jwtVerify: <T>(
-				jwt: string,
-				jwks: JWKSFunction,
-				options?: { issuer?: string; audience?: string },
-			) =>
-				jose.jwtVerify(
-					jwt,
-					jwks as Parameters<typeof jose.jwtVerify>[1],
-					options,
-				) as Promise<{
-					payload: T;
-				}>,
-			isJWTExpiredError: (error: unknown): boolean =>
-				error instanceof jose.errors.JWTExpired,
-			isJWTClaimValidationError: (error: unknown): boolean =>
-				error instanceof jose.errors.JWTClaimValidationFailed,
-		};
 	}
 
 	async #getJose(): Promise<JoseWrapper> {
 		if (!this.#jose) {
-			this.#jose = await this.#loadJose();
+			this.#jose = await loadJose();
 		}
 		return this.#jose;
 	}
@@ -272,7 +231,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				});
 			}
 
-			const data = (await response.json()) as {
+			const data = await readJson<{
 				id: number;
 				kakao_account?: {
 					email?: string;
@@ -283,7 +242,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 						profile_image_url?: string;
 					};
 				};
-			};
+			}>(response);
 
 			const kakaoAccount = data.kakao_account;
 
@@ -333,7 +292,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				});
 			}
 
-			const data = (await response.json()) as {
+			const data = await readJson<{
 				resultcode: string;
 				message: string;
 				response?: {
@@ -343,7 +302,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 					nickname?: string;
 					profile_image?: string;
 				};
-			};
+			}>(response);
 
 			if (data.resultcode !== "00" || !data.response) {
 				throw new ApplicationException(ErrorCode.SOCIAL_0202, {

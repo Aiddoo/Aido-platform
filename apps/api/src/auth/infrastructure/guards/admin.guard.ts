@@ -24,8 +24,10 @@ export class AdminGuard implements CanActivate {
 	constructor(readonly _reflector: Reflector) {}
 
 	canActivate(context: ExecutionContext): boolean {
-		const request = context.switchToHttp().getRequest<Request>();
-		const user = request.user as CurrentUserPayload | undefined;
+		const request = context
+			.switchToHttp()
+			.getRequest<Request & { user?: CurrentUserPayload }>();
+		const user = request.user;
 
 		if (!user) {
 			throw new ApplicationException(ErrorCode.AUTH_0101, {

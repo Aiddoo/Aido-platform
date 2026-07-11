@@ -2,9 +2,9 @@ import { createHash, randomInt } from "node:crypto";
 import { ErrorCode } from "@aido/errors";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import type { VerificationType } from "@/auth/domain/types";
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
 import { EmailFacade } from "@/email";
-import type { VerificationType } from "@/generated/prisma/client";
 import {
 	addMinutes,
 	subtractSeconds,

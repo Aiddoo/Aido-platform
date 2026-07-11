@@ -24,7 +24,7 @@ export {
 // API 전용 상수
 // ============================================
 
-import type { AccountProvider } from "@/generated/prisma/client";
+import type { AccountProvider } from "@/auth/domain/types";
 
 /**
  * 이메일 검증이 보장되는 신뢰된 OAuth Provider 목록

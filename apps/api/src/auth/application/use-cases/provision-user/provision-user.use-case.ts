@@ -1,11 +1,7 @@
 import { Injectable } from "@nestjs/common";
+import type { AccountProvider, UserStatus } from "@/auth/domain/types";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import type {
-	AccountProvider,
-	User,
-	UserStatus,
-} from "@/generated/prisma/client";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
 import {
@@ -37,6 +33,12 @@ export interface ProvisionUserInput {
 	};
 }
 
+/** 프로비저닝 결과 — 호출측이 사용하는 최소 신원 정보 */
+export interface ProvisionedUser {
+	id: string;
+	email: string;
+}
+
 /**
  * 신규 사용자 프로비저닝 공통 시퀀스 — 이메일 회원가입과 소셜 신규가입의 수렴점.
  *
@@ -58,7 +60,7 @@ export class ProvisionUserUseCase {
 	async execute(
 		input: ProvisionUserInput,
 		tx: TransactionClient,
-	): Promise<User> {
+	): Promise<ProvisionedUser> {
 		const user = await this.userRepository.create(
 			{
 				email: input.email,
@@ -68,22 +70,26 @@ export class ProvisionUserUseCase {
 			tx,
 		);
 
-		if (input.account.kind === "credential") {
-			await this.accountRepository.createCredentialAccount(
-				user.id,
-				input.account.hashedPassword,
-				tx,
-			);
-		} else {
-			await this.accountRepository.createOAuthAccount(
-				{
-					userId: user.id,
-					provider: input.account.provider,
-					providerAccountId: input.account.providerAccountId,
-					refreshToken: input.account.refreshToken,
-				},
-				tx,
-			);
+		const account = input.account;
+		switch (account.kind) {
+			case "credential":
+				await this.accountRepository.createCredentialAccount(
+					user.id,
+					account.hashedPassword,
+					tx,
+				);
+				break;
+			case "oauth":
+				await this.accountRepository.createOAuthAccount(
+					{
+						userId: user.id,
+						provider: account.provider,
+						providerAccountId: account.providerAccountId,
+						refreshToken: account.refreshToken,
+					},
+					tx,
+				);
+				break;
 		}
 
 		await this.userRepository.createProfile(user.id, input.profile, tx);

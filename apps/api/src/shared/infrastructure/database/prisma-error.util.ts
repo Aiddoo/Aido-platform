@@ -22,3 +22,18 @@ export function isRecordNotFoundError(error: unknown): boolean {
 		error.code === "P2025"
 	);
 }
+
+/**
+ * 유니크 위반(P2002)의 대상 필드 목록.
+ *
+ * `error.meta.target`은 Prisma가 `string[]`로 채우지만 타입은 넓으므로,
+ * 이 벤더 경계에서만 배열 여부를 좁혀 반환한다(어댑터/애플리케이션은 no-cast 유지).
+ * 대상 정보가 없으면 `undefined`.
+ */
+export function uniqueConstraintTargets(error: unknown): string[] | undefined {
+	if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+		return undefined;
+	}
+	const target = error.meta?.target;
+	return Array.isArray(target) ? (target as string[]) : undefined;
+}

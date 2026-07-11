@@ -19,7 +19,7 @@ export class AccountPurgeProcessor extends WorkerHost {
 	readonly #logger = new Logger(AccountPurgeProcessor.name);
 
 	/** @see AccountPurgeJob — 순환 참조 방지를 위해 setter injection */
-	#purgeJob!: AccountPurgeJob;
+	#purgeJob?: AccountPurgeJob;
 	setPurgeJob(job: AccountPurgeJob) {
 		this.#purgeJob = job;
 	}
@@ -44,6 +44,9 @@ export class AccountPurgeProcessor extends WorkerHost {
 
 	async process(_job: Job<AccountPurgeJobData>): Promise<void> {
 		this.#logger.debug("Processing account purge job...");
+		if (!this.#purgeJob) {
+			throw new Error("AccountPurgeJob not wired (setPurgeJob 미호출)");
+		}
 		await this.#purgeJob.purgeDeletedAccounts();
 	}
 }

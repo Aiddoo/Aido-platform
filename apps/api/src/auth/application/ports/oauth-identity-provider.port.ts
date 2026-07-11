@@ -1,4 +1,4 @@
-import type { AccountProvider } from "@/generated/prisma/client";
+import type { AccountProvider } from "@/auth/domain/types";
 
 /**
  * OAuth 신원 제공자 통합 포트.

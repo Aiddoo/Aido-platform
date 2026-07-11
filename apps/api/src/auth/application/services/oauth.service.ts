@@ -19,6 +19,7 @@ import {
 	TRUSTED_EMAIL_PROVIDERS,
 } from "@/auth/domain/constants/auth.constants";
 import { generateRandomName } from "@/auth/domain/services/random-name.util";
+import type { AccountProvider } from "@/auth/domain/types";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
 import {
@@ -27,11 +28,6 @@ import {
 } from "@/auth/infrastructure/persistence/oauth-state.repository";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import {
-	type AccountProvider,
-	type OAuthState,
-	Prisma,
-} from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import {
@@ -43,6 +39,7 @@ import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
@@ -142,7 +139,7 @@ export class OAuthService {
 		return redirectUri;
 	}
 
-	async #validateAndGetOAuthState(state: string): Promise<OAuthState> {
+	async #validateAndGetOAuthState(state: string) {
 		const existingState = await this.oauthStateRepository.findByState(state);
 		if (!existingState) {
 			this.#logger.warn(`Invalid OAuth state: ${state}`);
@@ -463,10 +460,7 @@ export class OAuthService {
 				);
 			});
 		} catch (error) {
-			if (
-				error instanceof Prisma.PrismaClientKnownRequestError &&
-				error.code === "P2002"
-			) {
+			if (isUniqueConstraintViolation(error)) {
 				throw this.#getAlreadyLinkedExceptionForProvider(
 					provider,
 					providerAccountId,

@@ -15,8 +15,7 @@ const USER_TAG_LENGTH = 8;
 export function generateUserTag(): string {
 	const bytes = randomBytes(USER_TAG_LENGTH);
 	let tag = "";
-	for (let i = 0; i < USER_TAG_LENGTH; i++) {
-		const byte = bytes[i] as number;
+	for (const byte of bytes) {
 		tag += USER_TAG_ALPHABET[byte % USER_TAG_ALPHABET.length];
 	}
 	return tag;

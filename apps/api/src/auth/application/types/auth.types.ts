@@ -1,10 +1,6 @@
+import type { SubscriptionStatus, UserRole } from "@aido/validators";
+import type { AccountProvider, UserStatus } from "@/auth/domain/types";
 import type { TokenPair } from "@/auth/infrastructure/adapters/token.service";
-import type {
-	AccountProvider,
-	SubscriptionStatus,
-	UserRole,
-	UserStatus,
-} from "@/generated/prisma/client";
 
 /**
  * 회원가입 결과

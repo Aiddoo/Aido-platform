@@ -1,11 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import type {
-	Prisma,
-	SecurityEvent,
-	SecurityLog,
-} from "@/generated/prisma/client";
+import type { SecurityEvent, SecurityLog } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { DatabaseService } from "@/shared/infrastructure/database";
+import { toInputJson } from "@/shared/infrastructure/database/json.util";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface CreateSecurityLogData {
@@ -31,7 +28,8 @@ export class SecurityLogRepository {
 				event: data.event,
 				ipAddress: data.ipAddress,
 				userAgent: data.userAgent,
-				metadata: data.metadata as Prisma.JsonObject | undefined,
+				metadata:
+					data.metadata === undefined ? undefined : toInputJson(data.metadata),
 			},
 		});
 	}

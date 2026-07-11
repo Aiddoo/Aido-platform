@@ -1,11 +1,11 @@
 import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
+import type { AccountProvider } from "@/auth/domain/types";
 import type { TokenPair } from "@/auth/infrastructure/adapters/token.service";
 import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import type { AccountProvider } from "@/generated/prisma/client";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { SessionService } from "../../services/session.service";
 

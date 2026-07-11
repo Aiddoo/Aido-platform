@@ -33,6 +33,7 @@ import {
 	SECURITY_EVENT,
 	TOKEN_REUSE_GRACE_PERIOD_MS,
 } from "@/auth/domain/constants/auth.constants";
+import type { UserStatus } from "@/auth/domain/types";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -40,7 +41,6 @@ import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { Prisma, type UserStatus } from "@/generated/prisma/client";
 import {
 	addMilliseconds,
 	subtractDays,
@@ -56,6 +56,7 @@ import { maskEmail } from "@/shared/domain/utils/mask.util";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 import { SessionService } from "./session.service";
@@ -156,17 +157,10 @@ export class AuthService {
 				};
 			});
 		} catch (error) {
-			if (
-				error instanceof Prisma.PrismaClientKnownRequestError &&
-				error.code === "P2002"
-			) {
-				const rawTarget = error.meta?.target;
-				const target = Array.isArray(rawTarget)
-					? (rawTarget as string[])
-					: undefined;
-				if (target?.includes("email")) {
-					throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
-				}
+			// 사전 findByEmail 체크와 create 사이의 레이스로 이메일 유니크 위반이
+			// 발생하면 EMAIL_0501로 정규화(그 외 유니크 위반은 원본 재전파).
+			if (uniqueConstraintTargets(error)?.includes("email")) {
+				throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
 			}
 			throw error;
 		}
