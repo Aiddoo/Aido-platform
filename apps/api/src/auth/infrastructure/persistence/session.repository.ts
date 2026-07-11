@@ -1,28 +1,33 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { CreateSessionData } from "@/auth/application/types";
 import { AUTH_DEFAULTS } from "@/auth/domain/constants/auth.constants";
 import type { Session } from "@/generated/prisma/client";
 import { now } from "@/shared/domain/date/utils/core";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 @Injectable()
 export class SessionRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	// refreshTokenHash가 없는 경우 unique 제약 조건을 위해 임시 placeholder 해시 사용
-	async create(
-		data: CreateSessionData,
-		tx?: TransactionClient,
-	): Promise<Session> {
-		const client = tx ?? this.database;
-
+	async create(data: CreateSessionData): Promise<Session> {
 		// refreshTokenHash가 없으면 임시 placeholder 생성 (unique 제약 조건 충족)
 		const refreshTokenHash =
 			data.refreshTokenHash ?? `pending_${randomUUID().replace(/-/g, "")}`;
 
-		return client.session.create({
+		return this.client.session.create({
 			data: {
 				userId: data.userId,
 				refreshTokenHash,
@@ -42,29 +47,27 @@ export class SessionRepository {
 	async updateRefreshTokenHash(
 		id: string,
 		refreshTokenHash: string,
-		tx?: TransactionClient,
 	): Promise<Session> {
-		const client = tx ?? this.database;
-		return client.session.update({
+		return this.client.session.update({
 			where: { id },
 			data: { refreshTokenHash },
 		});
 	}
 
 	async findById(id: string): Promise<Session | null> {
-		return this.database.session.findUnique({
+		return this.client.session.findUnique({
 			where: { id },
 		});
 	}
 
 	async findByRefreshTokenHash(hash: string): Promise<Session | null> {
-		return this.database.session.findUnique({
+		return this.client.session.findUnique({
 			where: { refreshTokenHash: hash },
 		});
 	}
 
 	async findByTokenFamily(tokenFamily: string): Promise<Session | null> {
-		return this.database.session.findFirst({
+		return this.client.session.findFirst({
 			where: {
 				tokenFamily,
 				revokedAt: null,
@@ -73,7 +76,7 @@ export class SessionRepository {
 	}
 
 	async findActiveByUserId(userId: string): Promise<Session[]> {
-		return this.database.session.findMany({
+		return this.client.session.findMany({
 			where: {
 				userId,
 				revokedAt: null,
@@ -100,12 +103,9 @@ export class SessionRepository {
 			expectedTokenVersion: number; // 낙관적 잠금용
 			expiresAt: Date;
 		},
-		tx?: TransactionClient,
 	): Promise<Session | null> {
-		const client = tx ?? this.database;
-
 		// 조건부 업데이트 - 버전 불일치 또는 폐기된 세션이면 count = 0
-		const result = await client.session.updateMany({
+		const result = await this.client.session.updateMany({
 			where: {
 				id,
 				tokenVersion: data.expectedTokenVersion,
@@ -125,24 +125,18 @@ export class SessionRepository {
 		}
 
 		// 업데이트 성공 시 해당 세션 반환
-		return client.session.findUnique({ where: { id } });
+		return this.client.session.findUnique({ where: { id } });
 	}
 
-	async updateLastUsedAt(id: string, tx?: TransactionClient): Promise<void> {
-		const client = tx ?? this.database;
-		await client.session.update({
+	async updateLastUsedAt(id: string): Promise<void> {
+		await this.client.session.update({
 			where: { id },
 			data: { lastUsedAt: now() },
 		});
 	}
 
-	async revoke(
-		id: string,
-		reason: string,
-		tx?: TransactionClient,
-	): Promise<Session> {
-		const client = tx ?? this.database;
-		return client.session.update({
+	async revoke(id: string, reason: string): Promise<Session> {
+		return this.client.session.update({
 			where: { id },
 			data: {
 				revokedAt: now(),
@@ -155,10 +149,8 @@ export class SessionRepository {
 	async revokeByTokenFamily(
 		tokenFamily: string,
 		reason: string,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.session.updateMany({
+		const result = await this.client.session.updateMany({
 			where: {
 				tokenFamily,
 				revokedAt: null,
@@ -175,10 +167,8 @@ export class SessionRepository {
 		userId: string,
 		reason: string,
 		excludeSessionId?: string,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.session.updateMany({
+		const result = await this.client.session.updateMany({
 			where: {
 				userId,
 				revokedAt: null,
@@ -193,7 +183,7 @@ export class SessionRepository {
 	}
 
 	async deleteExpired(): Promise<number> {
-		const result = await this.database.session.deleteMany({
+		const result = await this.client.session.deleteMany({
 			where: {
 				OR: [{ expiresAt: { lt: now() } }, { revokedAt: { not: null } }],
 			},

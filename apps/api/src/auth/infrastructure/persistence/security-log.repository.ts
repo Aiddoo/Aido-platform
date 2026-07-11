@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { SecurityEvent, SecurityLog } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { toInputJson } from "@/shared/infrastructure/database/json.util";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface CreateSecurityLogData {
 	userId?: string;
@@ -15,14 +16,19 @@ export interface CreateSecurityLogData {
 
 @Injectable()
 export class SecurityLogRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
 
-	async create(
-		data: CreateSecurityLogData,
-		tx?: TransactionClient,
-	): Promise<SecurityLog> {
-		const client = tx ?? this.database;
-		return client.securityLog.create({
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
+
+	async create(data: CreateSecurityLogData): Promise<SecurityLog> {
+		return this.client.securityLog.create({
 			data: {
 				userId: data.userId,
 				event: data.event,
@@ -41,7 +47,7 @@ export class SecurityLogRepository {
 			events?: SecurityEvent[];
 		},
 	): Promise<SecurityLog[]> {
-		return this.database.securityLog.findMany({
+		return this.client.securityLog.findMany({
 			where: {
 				userId,
 				...(options?.events && { event: { in: options.events } }),
@@ -60,7 +66,7 @@ export class SecurityLogRepository {
 			limit?: number;
 		},
 	): Promise<SecurityLog[]> {
-		return this.database.securityLog.findMany({
+		return this.client.securityLog.findMany({
 			where: {
 				event,
 				createdAt: { gte: since },
@@ -76,7 +82,7 @@ export class SecurityLogRepository {
 		ipAddress: string,
 		since: Date,
 	): Promise<SecurityLog[]> {
-		return this.database.securityLog.findMany({
+		return this.client.securityLog.findMany({
 			where: {
 				ipAddress,
 				createdAt: { gte: since },
@@ -97,7 +103,7 @@ export class SecurityLogRepository {
 	async deleteOld(retentionDays = 90): Promise<number> {
 		const cutoff = subtractDays(retentionDays);
 
-		const result = await this.database.securityLog.deleteMany({
+		const result = await this.client.securityLog.deleteMany({
 			where: {
 				createdAt: { lt: cutoff },
 			},
@@ -109,7 +115,7 @@ export class SecurityLogRepository {
 		since: Date,
 		until?: Date,
 	): Promise<{ event: SecurityEvent; count: number }[]> {
-		const result = await this.database.securityLog.groupBy({
+		const result = await this.client.securityLog.groupBy({
 			by: ["event"],
 			where: {
 				createdAt: {

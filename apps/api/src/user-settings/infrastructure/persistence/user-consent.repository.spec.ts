@@ -9,18 +9,19 @@
  * pnpm --filter @aido/api test user-consent.repository
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { UserConsentBuilder } from "@test/builders";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import type { UserConsent } from "@/generated/prisma/client";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { UserConsentRepository } from "./user-consent.repository";
 
 describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 	let repository: UserConsentRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	const userId = "user-123";
 	const now = new Date("2024-01-15T10:00:00Z");
@@ -40,12 +41,16 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 		jest.setSystemTime(now);
 
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(
-			UserConsentRepository,
-		).compile();
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(UserConsentRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	afterEach(() => {
@@ -78,23 +83,18 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 			expect(result).toBeNull();
 		});
 
-		it("트랜잭션 내에서 조회한다", async () => {
+		it("활성 트랜잭션 클라이언트로 조회한다", async () => {
 			// Given
-			const txClient = createMockTxClient();
-			txClient.userConsent.findUnique.mockResolvedValue(mockConsent);
+			db.userConsent.findUnique.mockResolvedValue(mockConsent);
 
 			// When
-			const result = await repository.findByUserId(
-				userId,
-				asTxClient(txClient),
-			);
+			const result = await repository.findByUserId(userId);
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(txClient.userConsent.findUnique).toHaveBeenCalledWith({
+			expect(db.userConsent.findUnique).toHaveBeenCalledWith({
 				where: { userId },
 			});
-			expect(db.userConsent.findUnique).not.toHaveBeenCalled();
 		});
 	});
 
@@ -156,9 +156,8 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 생성한다", async () => {
+		it("활성 트랜잭션 클라이언트로 생성한다", async () => {
 			// Given
-			const txClient = createMockTxClient();
 			const createdConsent: UserConsent = {
 				id: "consent-new",
 				userId,
@@ -167,19 +166,14 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				agreedTermsVersion: null,
 				marketingAgreedAt: null,
 			};
-			txClient.userConsent.create.mockResolvedValue(createdConsent);
+			db.userConsent.create.mockResolvedValue(createdConsent);
 
 			// When
-			const result = await repository.create(
-				userId,
-				undefined,
-				asTxClient(txClient),
-			);
+			const result = await repository.create(userId, undefined);
 
 			// Then
 			expect(result).toEqual(createdConsent);
-			expect(txClient.userConsent.create).toHaveBeenCalled();
-			expect(db.userConsent.create).not.toHaveBeenCalled();
+			expect(db.userConsent.create).toHaveBeenCalled();
 		});
 	});
 
@@ -256,22 +250,18 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 upsert한다", async () => {
+		it("활성 트랜잭션 클라이언트로 upsert한다", async () => {
 			// Given
-			const txClient = createMockTxClient();
-			txClient.userConsent.upsert.mockResolvedValue(mockConsent);
+			db.userConsent.upsert.mockResolvedValue(mockConsent);
 
 			// When
-			const result = await repository.upsert(
-				userId,
-				{ agreedTermsVersion: "1.0.0" },
-				asTxClient(txClient),
-			);
+			const result = await repository.upsert(userId, {
+				agreedTermsVersion: "1.0.0",
+			});
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(txClient.userConsent.upsert).toHaveBeenCalled();
-			expect(db.userConsent.upsert).not.toHaveBeenCalled();
+			expect(db.userConsent.upsert).toHaveBeenCalled();
 		});
 	});
 
@@ -322,22 +312,18 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 업데이트한다", async () => {
+		it("활성 트랜잭션 클라이언트로 업데이트한다", async () => {
 			// Given
-			const txClient = createMockTxClient();
-			txClient.userConsent.update.mockResolvedValue(mockConsent);
+			db.userConsent.update.mockResolvedValue(mockConsent);
 
 			// When
-			const result = await repository.updateMarketingConsent(
-				userId,
-				{ agreed: true },
-				asTxClient(txClient),
-			);
+			const result = await repository.updateMarketingConsent(userId, {
+				agreed: true,
+			});
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(txClient.userConsent.update).toHaveBeenCalled();
-			expect(db.userConsent.update).not.toHaveBeenCalled();
+			expect(db.userConsent.update).toHaveBeenCalled();
 		});
 	});
 
@@ -400,22 +386,18 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 upsert한다", async () => {
+		it("활성 트랜잭션 클라이언트로 upsert한다", async () => {
 			// Given
-			const txClient = createMockTxClient();
-			txClient.userConsent.upsert.mockResolvedValue(mockConsent);
+			db.userConsent.upsert.mockResolvedValue(mockConsent);
 
 			// When
-			const result = await repository.upsertMarketingConsent(
-				userId,
-				{ agreed: true },
-				asTxClient(txClient),
-			);
+			const result = await repository.upsertMarketingConsent(userId, {
+				agreed: true,
+			});
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(txClient.userConsent.upsert).toHaveBeenCalled();
-			expect(db.userConsent.upsert).not.toHaveBeenCalled();
+			expect(db.userConsent.upsert).toHaveBeenCalled();
 		});
 	});
 });

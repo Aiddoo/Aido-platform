@@ -28,6 +28,7 @@ import {
 } from "@/auth/infrastructure/persistence/oauth-state.repository";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import {
@@ -37,8 +38,6 @@ import {
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
@@ -63,7 +62,7 @@ export class OAuthService {
 	readonly #logger = new Logger(OAuthService.name);
 
 	constructor(
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
 		private readonly userRepository: UserRepository,
 		private readonly accountRepository: AccountRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
@@ -437,27 +436,21 @@ export class OAuthService {
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
 		try {
-			await this.database.$transaction(async (tx) => {
-				await this.accountRepository.createOAuthAccount(
-					{
-						userId,
-						provider,
-						providerAccountId,
-						refreshToken,
-					},
-					tx,
-				);
+			await this.uow.run(async () => {
+				await this.accountRepository.createOAuthAccount({
+					userId,
+					provider,
+					providerAccountId,
+					refreshToken,
+				});
 
-				await this.securityLogRepository.create(
-					{
-						userId,
-						event: SECURITY_EVENT.OAUTH_LINKED,
-						ipAddress: ip,
-						userAgent,
-						metadata: { provider, providerAccountId },
-					},
-					tx,
-				);
+				await this.securityLogRepository.create({
+					userId,
+					event: SECURITY_EVENT.OAUTH_LINKED,
+					ipAddress: ip,
+					userAgent,
+					metadata: { provider, providerAccountId },
+				});
 			});
 		} catch (error) {
 			if (isUniqueConstraintViolation(error)) {
@@ -527,19 +520,16 @@ export class OAuthService {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		await this.database.$transaction(async (tx) => {
-			await this.accountRepository.deleteAccount(userId, provider, tx);
+		await this.uow.run(async () => {
+			await this.accountRepository.deleteAccount(userId, provider);
 
-			await this.securityLogRepository.create(
-				{
-					userId,
-					event: SECURITY_EVENT.OAUTH_UNLINKED,
-					ipAddress: ip,
-					userAgent,
-					metadata: { provider },
-				},
-				tx,
-			);
+			await this.securityLogRepository.create({
+				userId,
+				event: SECURITY_EVENT.OAUTH_UNLINKED,
+				ipAddress: ip,
+				userAgent,
+				metadata: { provider },
+			});
 		});
 
 		this.#logger.log(`Account unlinked: ${provider} for user ${userId}`);
@@ -703,7 +693,7 @@ export class OAuthService {
 		refreshToken?: string;
 		profileImage?: string;
 	}) {
-		return this.database.$transaction(async (tx) => {
+		return this.uow.run(async () => {
 			const MAX_NAME_LENGTH = 20;
 			const effectiveName = data.userName
 				? data.userName.slice(0, MAX_NAME_LENGTH)
@@ -712,37 +702,31 @@ export class OAuthService {
 
 			// User + OAuth 계정 + 프로필 + 동의 + 푸시설정 + 기본 카테고리 프로비저닝
 			// (이메일 회원가입과 공유하는 수렴 시퀀스)
-			const user = await this.provisionUserUseCase.execute(
-				{
-					email: data.email,
-					status: "ACTIVE",
-					emailVerifiedAt: now(),
-					account: {
-						kind: "oauth",
-						provider: data.provider,
-						providerAccountId: data.providerAccountId,
-						refreshToken: data.refreshToken,
-					},
-					profile: { name: effectiveName, profileImage: data.profileImage },
-					consent: {
-						termsAgreedAt: currentTime,
-						privacyAgreedAt: currentTime,
-						marketingAgreedAt: currentTime,
-					},
+			const user = await this.provisionUserUseCase.execute({
+				email: data.email,
+				status: "ACTIVE",
+				emailVerifiedAt: now(),
+				account: {
+					kind: "oauth",
+					provider: data.provider,
+					providerAccountId: data.providerAccountId,
+					refreshToken: data.refreshToken,
 				},
-				tx,
-			);
+				profile: { name: effectiveName, profileImage: data.profileImage },
+				consent: {
+					termsAgreedAt: currentTime,
+					privacyAgreedAt: currentTime,
+					marketingAgreedAt: currentTime,
+				},
+			});
 
-			await this.securityLogRepository.create(
-				{
-					userId: user.id,
-					event: SECURITY_EVENT.REGISTRATION,
-					ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
-					userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
-					metadata: { provider: data.provider },
-				},
-				tx,
-			);
+			await this.securityLogRepository.create({
+				userId: user.id,
+				event: SECURITY_EVENT.REGISTRATION,
+				ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
+				userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+				metadata: { provider: data.provider },
+			});
 
 			return user;
 		});
@@ -764,26 +748,22 @@ export class OAuthService {
 			throw new ApplicationException(ErrorCode.USER_0601, { userId: user.id });
 		}
 
-		const result = await this.database.$transaction(async (tx) => {
-			await this.#restoreDeletedAccount(
-				user,
-				{ ip: options.ip, userAgent: options.userAgent },
-				tx,
-			);
+		const result = await this.uow.run(async () => {
+			await this.#restoreDeletedAccount(user, {
+				ip: options.ip,
+				userAgent: options.userAgent,
+			});
 
-			const outcome = await this.issueLoginUseCase.execute(
-				{
-					userId: user.id,
-					email: user.email,
-					role: userRecord.role,
-					provider: options.provider,
-					ip: options.ip,
-					userAgent: options.userAgent,
-					deviceFingerprint: options.userAgent,
-					securityMetadata: { provider: options.provider },
-				},
-				tx,
-			);
+			const outcome = await this.issueLoginUseCase.execute({
+				userId: user.id,
+				email: user.email,
+				role: userRecord.role,
+				provider: options.provider,
+				ip: options.ip,
+				userAgent: options.userAgent,
+				deviceFingerprint: options.userAgent,
+				securityMetadata: { provider: options.provider },
+			});
 
 			return {
 				userId: user.id,
@@ -816,20 +796,17 @@ export class OAuthService {
 			throw new ApplicationException(ErrorCode.USER_0601, { userId });
 		}
 
-		return this.database.$transaction(async (tx) => {
-			const outcome = await this.issueLoginUseCase.execute(
-				{
-					userId,
-					email,
-					role: user.role,
-					provider: options.provider,
-					ip: options.ip,
-					userAgent: options.userAgent,
-					deviceFingerprint: options.userAgent,
-					securityMetadata: { provider: options.provider },
-				},
-				tx,
-			);
+		return this.uow.run(async () => {
+			const outcome = await this.issueLoginUseCase.execute({
+				userId,
+				email,
+				role: user.role,
+				provider: options.provider,
+				ip: options.ip,
+				userAgent: options.userAgent,
+				deviceFingerprint: options.userAgent,
+				securityMetadata: { provider: options.provider },
+			});
 
 			return {
 				userId,
@@ -852,23 +829,19 @@ export class OAuthService {
 	async #restoreDeletedAccount(
 		user: { id: string; deletedAt: Date | null },
 		metadata: { ip: string; userAgent: string },
-		tx: TransactionClient,
 	): Promise<void> {
-		await this.userRepository.restore(user.id, tx);
+		await this.userRepository.restore(user.id);
 
-		await this.securityLogRepository.create(
-			{
-				userId: user.id,
-				event: SECURITY_EVENT.ACCOUNT_RESTORED,
-				ipAddress: metadata.ip,
-				userAgent: metadata.userAgent,
-				metadata: {
-					deletedAt: toISOStringOrNull(user.deletedAt ?? null),
-					restoredAt: toISOString(now()),
-				},
+		await this.securityLogRepository.create({
+			userId: user.id,
+			event: SECURITY_EVENT.ACCOUNT_RESTORED,
+			ipAddress: metadata.ip,
+			userAgent: metadata.userAgent,
+			metadata: {
+				deletedAt: toISOStringOrNull(user.deletedAt ?? null),
+				restoredAt: toISOString(now()),
 			},
-			tx,
-		);
+		});
 	}
 
 	#validateUserStatus(status: string): void {
@@ -969,49 +942,15 @@ export class OAuthService {
 					provider,
 				});
 
-				await this.database.$transaction(async (tx) => {
-					await this.accountRepository.createOAuthAccount(
-						{
-							userId: existingUser.id,
-							provider,
-							providerAccountId,
-							refreshToken: options.appleRefreshToken,
-						},
-						tx,
-					);
-
-					await this.securityLogRepository.create(
-						{
-							userId: existingUser.id,
-							event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
-							ipAddress: options.ip,
-							userAgent: options.userAgent,
-							metadata: {
-								provider,
-								autoLinked: true,
-								reason: "trusted_provider_verified_email",
-							},
-						},
-						tx,
-					);
-				});
-
-				return { ...loginResult, accountRestored: true };
-			}
-
-			await this.database.$transaction(async (tx) => {
-				await this.accountRepository.createOAuthAccount(
-					{
+				await this.uow.run(async () => {
+					await this.accountRepository.createOAuthAccount({
 						userId: existingUser.id,
 						provider,
 						providerAccountId,
 						refreshToken: options.appleRefreshToken,
-					},
-					tx,
-				);
+					});
 
-				await this.securityLogRepository.create(
-					{
+					await this.securityLogRepository.create({
 						userId: existingUser.id,
 						event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
 						ipAddress: options.ip,
@@ -1021,9 +960,31 @@ export class OAuthService {
 							autoLinked: true,
 							reason: "trusted_provider_verified_email",
 						},
+					});
+				});
+
+				return { ...loginResult, accountRestored: true };
+			}
+
+			await this.uow.run(async () => {
+				await this.accountRepository.createOAuthAccount({
+					userId: existingUser.id,
+					provider,
+					providerAccountId,
+					refreshToken: options.appleRefreshToken,
+				});
+
+				await this.securityLogRepository.create({
+					userId: existingUser.id,
+					event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
+					ipAddress: options.ip,
+					userAgent: options.userAgent,
+					metadata: {
+						provider,
+						autoLinked: true,
+						reason: "trusted_provider_verified_email",
 					},
-					tx,
-				);
+				});
 			});
 
 			return this.#createSessionAndTokens(existingUser.id, existingUser.email, {

@@ -7,7 +7,7 @@ import {
 	type UpdateProfileInput,
 	type VerifyEmailInput,
 } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	AdminNotificationFacade,
 	type UserRegisteredEventPayload,
@@ -41,6 +41,7 @@ import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import {
 	addMilliseconds,
 	subtractDays,
@@ -54,8 +55,6 @@ import {
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
@@ -67,7 +66,7 @@ export class AuthService {
 	readonly #logger = new Logger(AuthService.name);
 
 	constructor(
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
 		private readonly userRepository: UserRepository,
 		private readonly accountRepository: AccountRepository,
 		private readonly sessionRepository: SessionRepository,
@@ -114,42 +113,33 @@ export class AuthService {
 			verificationCode: string;
 		};
 		try {
-			result = await this.database.$transaction(async (tx) => {
+			result = await this.uow.run(async () => {
 				// User + 크레덴셜 계정 + 프로필 + 동의 + 푸시설정 + 기본 카테고리 프로비저닝
 				// (소셜 신규가입과 공유하는 수렴 시퀀스)
 				const currentTime = now();
-				const newUser = await this.provisionUserUseCase.execute(
-					{
-						email,
-						status: "PENDING_VERIFY",
-						account: { kind: "credential", hashedPassword },
-						profile: { name },
-						consent: {
-							termsAgreedAt: termsAgreed ? currentTime : undefined,
-							privacyAgreedAt: privacyAgreed ? currentTime : undefined,
-							marketingAgreedAt: marketingAgreed ? currentTime : undefined,
-						},
+				const newUser = await this.provisionUserUseCase.execute({
+					email,
+					status: "PENDING_VERIFY",
+					account: { kind: "credential", hashedPassword },
+					profile: { name },
+					consent: {
+						termsAgreedAt: termsAgreed ? currentTime : undefined,
+						privacyAgreedAt: privacyAgreed ? currentTime : undefined,
+						marketingAgreedAt: marketingAgreed ? currentTime : undefined,
 					},
-					tx,
-				);
+				});
 
 				// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
 				const verificationResult =
-					await this.verificationService.createEmailVerification(
-						newUser.id,
-						tx,
-					);
+					await this.verificationService.createEmailVerification(newUser.id);
 
 				// 보안 로그 기록
-				await this.securityLogRepository.create(
-					{
-						userId: newUser.id,
-						event: SECURITY_EVENT.REGISTRATION,
-						ipAddress: ip,
-						userAgent,
-					},
-					tx,
-				);
+				await this.securityLogRepository.create({
+					userId: newUser.id,
+					event: SECURITY_EVENT.REGISTRATION,
+					ipAddress: ip,
+					userAgent,
+				});
 
 				return {
 					user: newUser,
@@ -233,46 +223,34 @@ export class AuthService {
 		}
 
 		// 트랜잭션으로 인증 처리
-		const result = await this.database.$transaction(async (tx) => {
+		const result = await this.uow.run(async () => {
 			// 인증 코드 검증
-			await this.verificationService.verifyCode(
-				user.id,
-				code,
-				"EMAIL_VERIFY",
-				tx,
-			);
+			await this.verificationService.verifyCode(user.id, code, "EMAIL_VERIFY");
 
 			// 이메일 인증 완료 처리 (상태 ACTIVE로 변경)
-			await this.userRepository.markEmailVerified(user.id, tx);
+			await this.userRepository.markEmailVerified(user.id);
 
 			// 세션 생성 + 토큰 발급
-			const { tokens } = await this.sessionService.createSessionWithTokens(
-				{
-					userId: user.id,
-					email,
-					role: user.role,
-					deviceFingerprint: userAgent,
-					userAgent,
-					ipAddress: ip,
-				},
-				tx,
-			);
+			const { tokens } = await this.sessionService.createSessionWithTokens({
+				userId: user.id,
+				email,
+				role: user.role,
+				deviceFingerprint: userAgent,
+				userAgent,
+				ipAddress: ip,
+			});
 
 			// 보안 로그 기록
-			await this.securityLogRepository.create(
-				{
-					userId: user.id,
-					event: SECURITY_EVENT.EMAIL_VERIFIED,
-					ipAddress: ip,
-					userAgent,
-				},
-				tx,
-			);
+			await this.securityLogRepository.create({
+				userId: user.id,
+				event: SECURITY_EVENT.EMAIL_VERIFIED,
+				ipAddress: ip,
+				userAgent,
+			});
 
 			// 프로필 조회
 			const userWithProfile = await this.userRepository.findByIdWithProfile(
 				user.id,
-				tx,
 			);
 
 			return {
@@ -315,11 +293,8 @@ export class AuthService {
 		}
 
 		// 트랜잭션으로 인증 코드 생성 (쿨다운 체크 포함)
-		const verificationResult = await this.database.$transaction(async (tx) => {
-			return await this.verificationService.createEmailVerification(
-				user.id,
-				tx,
-			);
+		const verificationResult = await this.uow.run(async () => {
+			return await this.verificationService.createEmailVerification(user.id);
 		});
 
 		// 트랜잭션 후 이메일 발송
@@ -461,24 +436,21 @@ export class AuthService {
 		}
 
 		// 5. 세션 생성 + JWT 토큰 발급 (트랜잭션, 이메일·소셜 공통 발급 시퀀스)
-		const result = await this.database.$transaction(async (tx) => {
+		const result = await this.uow.run(async () => {
 			// 유예 기간 내 탈퇴 계정 복구
 			if (needsRestore) {
-				await this.#restoreDeletedAccount(user, { ip, userAgent }, tx);
+				await this.#restoreDeletedAccount(user, { ip, userAgent });
 			}
 
-			return this.issueLoginUseCase.execute(
-				{
-					userId: user.id,
-					email,
-					role: user.role,
-					provider: "CREDENTIAL",
-					ip,
-					userAgent,
-					deviceFingerprint: deviceName ?? userAgent,
-				},
-				tx,
-			);
+			return this.issueLoginUseCase.execute({
+				userId: user.id,
+				email,
+				role: user.role,
+				provider: "CREDENTIAL",
+				ip,
+				userAgent,
+				deviceFingerprint: deviceName ?? userAgent,
+			});
 		});
 
 		// 복구된 계정의 캐시 무효화
@@ -945,28 +917,24 @@ export class AuthService {
 
 		// 4. 트랜잭션: soft delete + 세션 전체 폐기 + 보안 로그
 		const deletedAt = now();
-		await this.database.$transaction(async (tx) => {
-			await this.userRepository.softDelete(userId, tx);
+		await this.uow.run(async () => {
+			await this.userRepository.softDelete(userId);
 			await this.sessionRepository.revokeAllByUserId(
 				userId,
 				REVOKE_REASON.ACCOUNT_DELETION,
 				undefined,
-				tx,
 			);
-			await this.securityLogRepository.create(
-				{
-					userId,
-					event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
-					ipAddress: ip,
-					userAgent,
-					metadata: {
-						reason: input.reason ?? null,
-						gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
-						providers: accounts.map((a) => a.provider),
-					},
+			await this.securityLogRepository.create({
+				userId,
+				event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
+				ipAddress: ip,
+				userAgent,
+				metadata: {
+					reason: input.reason ?? null,
+					gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
+					providers: accounts.map((a) => a.provider),
 				},
-				tx,
-			);
+			});
 		});
 
 		// 5. 캐시 무효화: 모든 기기의 세션 캐시 즉시 삭제
@@ -1012,23 +980,19 @@ export class AuthService {
 	async #restoreDeletedAccount(
 		user: { id: string; deletedAt: Date | null },
 		metadata: { ip: string; userAgent: string },
-		tx: TransactionClient,
 	): Promise<void> {
-		await this.userRepository.restore(user.id, tx);
+		await this.userRepository.restore(user.id);
 
-		await this.securityLogRepository.create(
-			{
-				userId: user.id,
-				event: SECURITY_EVENT.ACCOUNT_RESTORED,
-				ipAddress: metadata.ip,
-				userAgent: metadata.userAgent,
-				metadata: {
-					deletedAt: toISOStringOrNull(user.deletedAt ?? null),
-					restoredAt: toISOString(now()),
-				},
+		await this.securityLogRepository.create({
+			userId: user.id,
+			event: SECURITY_EVENT.ACCOUNT_RESTORED,
+			ipAddress: metadata.ip,
+			userAgent: metadata.userAgent,
+			metadata: {
+				deletedAt: toISOStringOrNull(user.deletedAt ?? null),
+				restoredAt: toISOString(now()),
 			},
-			tx,
-		);
+		});
 	}
 
 	#checkUserStatus(status: UserStatus, email: string): void {

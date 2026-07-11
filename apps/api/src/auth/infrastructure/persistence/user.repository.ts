@@ -1,5 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { generateUserTag } from "@/auth/domain/services/user-tag.util";
 import type {
 	AccountProvider,
@@ -12,7 +14,7 @@ import type {
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface UserWithAccount {
@@ -53,10 +55,19 @@ export class UserRepository {
 	readonly #logger = new Logger(UserRepository.name);
 	private static readonly MAX_USER_TAG_RETRIES = 5;
 
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	async findByEmail(email: string): Promise<User | null> {
-		return this.database.user.findUnique({
+		return this.client.user.findUnique({
 			where: { email },
 		});
 	}
@@ -64,7 +75,7 @@ export class UserRepository {
 	async findByEmailWithCredential(
 		email: string,
 	): Promise<UserWithAccount | null> {
-		return this.database.user.findUnique({
+		return this.client.user.findUnique({
 			where: { email },
 			select: {
 				id: true,
@@ -84,17 +95,13 @@ export class UserRepository {
 	}
 
 	async findById(id: string): Promise<User | null> {
-		return this.database.user.findUnique({
+		return this.client.user.findUnique({
 			where: { id },
 		});
 	}
 
-	async findByIdWithProfile(
-		id: string,
-		tx?: TransactionClient,
-	): Promise<UserWithProfile | null> {
-		const client = tx ?? this.database;
-		return client.user.findUnique({
+	async findByIdWithProfile(id: string): Promise<UserWithProfile | null> {
+		return this.client.user.findUnique({
 			where: { id },
 			select: {
 				id: true,
@@ -123,7 +130,7 @@ export class UserRepository {
 	}
 
 	async existsByEmail(email: string): Promise<boolean> {
-		const count = await this.database.user.count({
+		const count = await this.client.user.count({
 			where: { email },
 		});
 		return count > 0;
@@ -134,14 +141,11 @@ export class UserRepository {
 		data: Omit<Prisma.UserCreateInput, "userTag"> & {
 			userTag?: string;
 		},
-		tx?: TransactionClient,
 	): Promise<User> {
-		const client = tx ?? this.database;
-
 		// userTag가 제공되지 않으면 자동 생성
-		const userTag = data.userTag ?? (await this.#generateUniqueUserTag(client));
+		const userTag = data.userTag ?? (await this.#generateUniqueUserTag());
 
-		return client.user.create({
+		return this.client.user.create({
 			data: {
 				...data,
 				userTag,
@@ -149,12 +153,10 @@ export class UserRepository {
 		});
 	}
 
-	async #generateUniqueUserTag(
-		client: TransactionClient | DatabaseService,
-	): Promise<string> {
+	async #generateUniqueUserTag(): Promise<string> {
 		for (let i = 0; i < UserRepository.MAX_USER_TAG_RETRIES; i++) {
 			const tag = generateUserTag();
-			const exists = await client.user.findUnique({
+			const exists = await this.client.user.findUnique({
 				where: { userTag: tag },
 				select: { id: true },
 			});
@@ -172,21 +174,15 @@ export class UserRepository {
 		});
 	}
 
-	async updateStatus(
-		id: string,
-		status: UserStatus,
-		tx?: TransactionClient,
-	): Promise<User> {
-		const client = tx ?? this.database;
-		return client.user.update({
+	async updateStatus(id: string, status: UserStatus): Promise<User> {
+		return this.client.user.update({
 			where: { id },
 			data: { status },
 		});
 	}
 
-	async markEmailVerified(id: string, tx?: TransactionClient): Promise<User> {
-		const client = tx ?? this.database;
-		return client.user.update({
+	async markEmailVerified(id: string): Promise<User> {
+		return this.client.user.update({
 			where: { id },
 			data: {
 				emailVerifiedAt: now(),
@@ -195,16 +191,15 @@ export class UserRepository {
 		});
 	}
 
-	async updateLastLoginAt(id: string, tx?: TransactionClient): Promise<void> {
-		const client = tx ?? this.database;
-		await client.user.update({
+	async updateLastLoginAt(id: string): Promise<void> {
+		await this.client.user.update({
 			where: { id },
 			data: { lastLoginAt: now() },
 		});
 	}
 
 	async updateLastActiveAt(id: string): Promise<void> {
-		await this.database.user.update({
+		await this.client.user.update({
 			where: { id },
 			data: { lastActiveAt: now() },
 		});
@@ -213,10 +208,8 @@ export class UserRepository {
 	async createProfile(
 		userId: string,
 		data: { name?: string; profileImage?: string },
-		tx?: TransactionClient,
 	): Promise<void> {
-		const client = tx ?? this.database;
-		await client.userProfile.create({
+		await this.client.userProfile.create({
 			data: {
 				userId,
 				name: data.name ?? null,
@@ -228,12 +221,9 @@ export class UserRepository {
 	async updateProfile(
 		userId: string,
 		data: { name?: string | null; profileImage?: string | null },
-		tx?: TransactionClient,
 	): Promise<{ name: string | null; profileImage: string | null }> {
-		const client = tx ?? this.database;
-
 		// upsert로 프로필이 없는 경우에도 생성
-		const profile = await client.userProfile.upsert({
+		const profile = await this.client.userProfile.upsert({
 			where: { userId },
 			create: {
 				userId,
@@ -255,17 +245,15 @@ export class UserRepository {
 		return profile;
 	}
 
-	async softDelete(id: string, tx?: TransactionClient): Promise<User> {
-		const client = tx ?? this.database;
-		return client.user.update({
+	async softDelete(id: string): Promise<User> {
+		return this.client.user.update({
 			where: { id },
 			data: { deletedAt: now(), status: "SUSPENDED" },
 		});
 	}
 
-	async restore(id: string, tx?: TransactionClient): Promise<User> {
-		const client = tx ?? this.database;
-		return client.user.update({
+	async restore(id: string): Promise<User> {
+		return this.client.user.update({
 			where: { id },
 			data: { deletedAt: null, status: "ACTIVE" },
 		});
@@ -275,7 +263,7 @@ export class UserRepository {
 		gracePeriodDays: number,
 	): Promise<{ id: string; email: string; deletedAt: Date }[]> {
 		const cutoff = subtractDays(gracePeriodDays);
-		const rows = await this.database.user.findMany({
+		const rows = await this.client.user.findMany({
 			where: { deletedAt: { not: null, lt: cutoff } },
 			select: { id: true, email: true, deletedAt: true },
 		});
@@ -287,19 +275,21 @@ export class UserRepository {
 		);
 	}
 
-	async hardDelete(id: string, tx?: TransactionClient): Promise<void> {
-		const client = tx ?? this.database;
-		await client.user.delete({ where: { id } });
+	async hardDelete(id: string): Promise<void> {
+		await this.client.user.delete({ where: { id } });
 	}
 
 	/**
 	 * AI 사용량 정보 조회
+	 *
+	 * `tx?`는 ai 모듈의 위임 어댑터(PrismaAiUsageRepository)가 자신의 CLS 트랜잭션
+	 * 클라이언트를 넘겨 참여시키기 위한 호환 파라미터다. 생략 시 활성 트랜잭션(CLS)에 참여한다.
 	 */
 	async findAiUsage(
 		userId: string,
 		tx?: TransactionClient,
 	): Promise<{ aiUsageCount: number; aiUsageResetAt: Date | null } | null> {
-		const client = tx ?? this.database;
+		const client = tx ?? this.client;
 		return client.user.findUnique({
 			where: { id: userId },
 			select: { aiUsageCount: true, aiUsageResetAt: true },
@@ -313,7 +303,7 @@ export class UserRepository {
 		userId: string,
 		tx?: TransactionClient,
 	): Promise<void> {
-		const client = tx ?? this.database;
+		const client = tx ?? this.client;
 		await client.user.update({
 			where: { id: userId },
 			data: { aiUsageCount: { increment: 1 } },
@@ -327,7 +317,7 @@ export class UserRepository {
 		userId: string,
 		tx?: TransactionClient,
 	): Promise<void> {
-		const client = tx ?? this.database;
+		const client = tx ?? this.client;
 		await client.user.update({
 			where: { id: userId },
 			data: {
@@ -344,7 +334,7 @@ export class UserRepository {
 	 * count=0 상태에서 중복 호출되더라도 matched row 0 으로 no-op 처리됩니다.
 	 */
 	async decrementAiUsage(userId: string): Promise<void> {
-		await this.database.user.updateMany({
+		await this.client.user.updateMany({
 			where: { id: userId, aiUsageCount: { gt: 0 } },
 			data: { aiUsageCount: { decrement: 1 } },
 		});

@@ -29,6 +29,7 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
 import { EmailFacade } from "@/email";
 import { NotificationQueueService } from "@/notification";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -85,6 +86,13 @@ export async function createAuthTestModule(
 				// CLS 트랜잭션 스텁 — 활성 트랜잭션이 없을 때 tx가 실제 DB 클라이언트를 반환
 				provide: TransactionHost,
 				useValue: { tx: databaseService },
+			},
+			{
+				// uow.run passthrough — 리포지토리가 TransactionHost.tx(실제 DB)로 참여
+				provide: UNIT_OF_WORK,
+				useValue: {
+					run: (fn: () => Promise<unknown>) => fn(),
+				},
 			},
 			{
 				provide: EmailFacade,

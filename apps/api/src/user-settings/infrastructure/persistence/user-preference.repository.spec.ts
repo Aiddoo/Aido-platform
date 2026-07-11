@@ -9,11 +9,12 @@
  * pnpm --filter @aido/api test user-preference.repository
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { UserPreferenceBuilder } from "@test/builders";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import {
 	type UpdatePreferenceData,
 	UserPreferenceRepository,
@@ -21,7 +22,7 @@ import {
 
 describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", () => {
 	let repository: UserPreferenceRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	// Builder로 기본 테스트 설정 생성
 	const mockUserPreference = UserPreferenceBuilder.create("user-123")
@@ -32,12 +33,16 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(
-			UserPreferenceRepository,
-		).compile();
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(UserPreferenceRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 
 		// ID 카운터 리셋
 		UserPreferenceBuilder.resetIdCounter();
@@ -69,23 +74,18 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 			expect(result).toBeNull();
 		});
 
-		it("트랜잭션 내에서 조회한다", async () => {
+		it("활성 트랜잭션 클라이언트로 조회한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
-			mockTx.userPreference.findUnique.mockResolvedValue(mockUserPreference);
+			db.userPreference.findUnique.mockResolvedValue(mockUserPreference);
 
 			// When
-			const result = await repository.findByUserId(
-				"user-123",
-				asTxClient(mockTx),
-			);
+			const result = await repository.findByUserId("user-123");
 
 			// Then
 			expect(result).toEqual(mockUserPreference);
-			expect(mockTx.userPreference.findUnique).toHaveBeenCalledWith({
+			expect(db.userPreference.findUnique).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 			});
-			expect(db.userPreference.findUnique).not.toHaveBeenCalled();
 		});
 	});
 
@@ -140,33 +140,27 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 			});
 		});
 
-		it("트랜잭션 내에서 생성한다", async () => {
+		it("활성 트랜잭션 클라이언트로 생성한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
 			const expectedPreference = UserPreferenceBuilder.create("user-123")
 				.withId("tx-pref-123")
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			mockTx.userPreference.create.mockResolvedValue(expectedPreference);
+			db.userPreference.create.mockResolvedValue(expectedPreference);
 
 			// When
-			const result = await repository.create(
-				"user-123",
-				undefined,
-				asTxClient(mockTx),
-			);
+			const result = await repository.create("user-123", undefined);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockTx.userPreference.create).toHaveBeenCalledWith({
+			expect(db.userPreference.create).toHaveBeenCalledWith({
 				data: {
 					userId: "user-123",
 					pushEnabled: true,
 					nightPushEnabled: true,
 				},
 			});
-			expect(db.userPreference.create).not.toHaveBeenCalled();
 		});
 	});
 
@@ -231,9 +225,8 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 			});
 		});
 
-		it("트랜잭션 내에서 upsert한다", async () => {
+		it("활성 트랜잭션 클라이언트로 upsert한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
 			const updateData: UpdatePreferenceData = {
 				pushEnabled: true,
 				nightPushEnabled: true,
@@ -243,19 +236,14 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			mockTx.userPreference.upsert.mockResolvedValue(expectedPreference);
+			db.userPreference.upsert.mockResolvedValue(expectedPreference);
 
 			// When
-			const result = await repository.upsert(
-				"user-123",
-				updateData,
-				asTxClient(mockTx),
-			);
+			const result = await repository.upsert("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockTx.userPreference.upsert).toHaveBeenCalled();
-			expect(db.userPreference.upsert).not.toHaveBeenCalled();
+			expect(db.userPreference.upsert).toHaveBeenCalled();
 		});
 	});
 
@@ -370,9 +358,8 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 			});
 		});
 
-		it("트랜잭션 내에서 업데이트한다", async () => {
+		it("활성 트랜잭션 클라이언트로 업데이트한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
 			const updateData: UpdatePreferenceData = {
 				pushEnabled: true,
 			};
@@ -381,24 +368,19 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(false)
 				.build();
-			mockTx.userPreference.update.mockResolvedValue(expectedPreference);
+			db.userPreference.update.mockResolvedValue(expectedPreference);
 
 			// When
-			const result = await repository.update(
-				"user-123",
-				updateData,
-				asTxClient(mockTx),
-			);
+			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockTx.userPreference.update).toHaveBeenCalledWith({
+			expect(db.userPreference.update).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				data: {
 					pushEnabled: true,
 				},
 			});
-			expect(db.userPreference.update).not.toHaveBeenCalled();
 		});
 	});
 });

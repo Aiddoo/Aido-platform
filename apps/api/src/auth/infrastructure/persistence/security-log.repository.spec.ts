@@ -11,12 +11,13 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { SecurityLogBuilder } from "@test/builders";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import type { SecurityLog } from "@/generated/prisma/client";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { SecurityLogRepository } from "./security-log.repository";
 
@@ -32,7 +33,7 @@ interface SecurityLogGroupByResult {
 
 describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 	let repository: SecurityLogRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	const mockSecurityLog = SecurityLogBuilder.create("user-123", "LOGIN_SUCCESS")
 		.withId(1)
@@ -44,12 +45,16 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(
-			SecurityLogRepository,
-		).compile();
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(SecurityLogRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("create", () => {
@@ -112,18 +117,16 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 클라이언트를 사용하여 생성한다", async () => {
+		it("활성 트랜잭션 클라이언트로 생성한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
-			mockTx.securityLog.create.mockResolvedValue(mockSecurityLog);
+			db.securityLog.create.mockResolvedValue(mockSecurityLog);
 
 			// When
-			const result = await repository.create(createData, asTxClient(mockTx));
+			const result = await repository.create(createData);
 
 			// Then
 			expect(result).toEqual(mockSecurityLog);
-			expect(mockTx.securityLog.create).toHaveBeenCalled();
-			expect(db.securityLog.create).not.toHaveBeenCalled();
+			expect(db.securityLog.create).toHaveBeenCalled();
 		});
 	});
 
@@ -392,7 +395,9 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 				{ event: "LOGIN_FAILURE", _count: { event: 20 } },
 				{ event: "PASSWORD_CHANGED", _count: { event: 5 } },
 			];
-			db.securityLog.groupBy.mockResolvedValue(groupByResult as never);
+			jest
+				.mocked(db.securityLog.groupBy)
+				.mockResolvedValue(groupByResult as never);
 
 			// When
 			const result = await repository.countByEvent(since, until);
@@ -420,7 +425,9 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			const groupByResult: SecurityLogGroupByResult[] = [
 				{ event: "LOGIN_SUCCESS", _count: { event: 50 } },
 			];
-			db.securityLog.groupBy.mockResolvedValue(groupByResult as never);
+			jest
+				.mocked(db.securityLog.groupBy)
+				.mockResolvedValue(groupByResult as never);
 
 			// When
 			const result = await repository.countByEvent(since);
@@ -440,7 +447,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 		it("이벤트가 없으면 빈 배열을 반환한다", async () => {
 			// Given
-			db.securityLog.groupBy.mockResolvedValue([]);
+			jest.mocked(db.securityLog.groupBy).mockResolvedValue([]);
 
 			// When
 			const result = await repository.countByEvent(since);

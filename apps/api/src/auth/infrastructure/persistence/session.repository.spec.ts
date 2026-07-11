@@ -11,17 +11,18 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder } from "@test/builders";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { SessionRepository } from "./session.repository";
 
 describe("SessionRepository — 세션 리포지토리", () => {
 	let repository: SessionRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	// Builder로 기본 테스트 세션 생성
 	const mockSession = SessionBuilder.create("user-123")
@@ -35,11 +36,16 @@ describe("SessionRepository — 세션 리포지토리", () => {
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } =
-			await TestBed.solitary(SessionRepository).compile();
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(SessionRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("create", () => {
@@ -96,8 +102,8 @@ describe("SessionRepository — 세션 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 세션을 생성한다", async () => {
-			// Given - 트랜잭션 클라이언트와 세션 생성 데이터 준비
+		it("활성 트랜잭션 클라이언트로 세션을 생성한다", async () => {
+			// Given - 세션 생성 데이터 준비
 			const createData = {
 				userId: "user-123",
 				tokenFamily: "family-123",
@@ -107,14 +113,13 @@ describe("SessionRepository — 세션 리포지토리", () => {
 				ipAddress: "127.0.0.1",
 				expiresAt: new Date("2024-12-31"),
 			};
-			const mockTx = createMockTxClient();
-			mockTx.session.create.mockResolvedValue(mockSession);
+			db.session.create.mockResolvedValue(mockSession);
 
-			// When - 트랜잭션 내에서 세션 생성 실행
-			await repository.create(createData, asTxClient(mockTx));
+			// When - 활성 트랜잭션 클라이언트로 세션 생성 실행
+			await repository.create(createData);
 
-			// Then - 트랜잭션 클라이언트를 통해 생성되었는지 검증
-			expect(mockTx.session.create).toHaveBeenCalled();
+			// Then - 활성 트랜잭션 클라이언트를 통해 생성되었는지 검증
+			expect(db.session.create).toHaveBeenCalled();
 		});
 	});
 

@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import type { AccountProvider, UserStatus } from "@/auth/domain/types";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
 import {
 	UserConsentRepository,
@@ -44,7 +43,7 @@ export interface ProvisionedUser {
  *
  * (1) User 생성 → (2) 계정(크레덴셜/OAuth) 연결 → (3) 프로필 →
  * (4) 약관 동의 → (5) 푸시 설정 기본값 → (6) 기본 카테고리 시딩.
- * 호출측이 연 트랜잭션(tx)에 참여하며, 보안 로그·이메일 인증 코드 발급·세션 발급 등
+ * 호출측이 연 트랜잭션(CLS)에 참여하며, 보안 로그·이메일 인증 코드 발급·세션 발급 등
  * 경로별 처리는 호출측이 담당한다(IssueLoginUseCase와 동일한 범위 규율).
  */
 @Injectable()
@@ -57,18 +56,12 @@ export class ProvisionUserUseCase {
 		private readonly todoCategoryRepository: TodoCategoryRepository,
 	) {}
 
-	async execute(
-		input: ProvisionUserInput,
-		tx: TransactionClient,
-	): Promise<ProvisionedUser> {
-		const user = await this.userRepository.create(
-			{
-				email: input.email,
-				status: input.status,
-				emailVerifiedAt: input.emailVerifiedAt,
-			},
-			tx,
-		);
+	async execute(input: ProvisionUserInput): Promise<ProvisionedUser> {
+		const user = await this.userRepository.create({
+			email: input.email,
+			status: input.status,
+			emailVerifiedAt: input.emailVerifiedAt,
+		});
 
 		const account = input.account;
 		switch (account.kind) {
@@ -76,31 +69,26 @@ export class ProvisionUserUseCase {
 				await this.accountRepository.createCredentialAccount(
 					user.id,
 					account.hashedPassword,
-					tx,
 				);
 				break;
 			case "oauth":
-				await this.accountRepository.createOAuthAccount(
-					{
-						userId: user.id,
-						provider: account.provider,
-						providerAccountId: account.providerAccountId,
-						refreshToken: account.refreshToken,
-					},
-					tx,
-				);
+				await this.accountRepository.createOAuthAccount({
+					userId: user.id,
+					provider: account.provider,
+					providerAccountId: account.providerAccountId,
+					refreshToken: account.refreshToken,
+				});
 				break;
 		}
 
-		await this.userRepository.createProfile(user.id, input.profile, tx);
+		await this.userRepository.createProfile(user.id, input.profile);
 
-		await this.userConsentRepository.create(user.id, input.consent, tx);
+		await this.userConsentRepository.create(user.id, input.consent);
 
-		await this.userPreferenceRepository.create(
-			user.id,
-			{ pushEnabled: true, nightPushEnabled: true },
-			tx,
-		);
+		await this.userPreferenceRepository.create(user.id, {
+			pushEnabled: true,
+			nightPushEnabled: true,
+		});
 
 		await this.todoCategoryRepository.createMany(
 			DEFAULT_CATEGORIES.map((category) => ({
@@ -109,7 +97,6 @@ export class ProvisionUserUseCase {
 				color: category.color,
 				sortOrder: category.sortOrder,
 			})),
-			tx,
 		);
 
 		return user;

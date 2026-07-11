@@ -1,21 +1,29 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Account, AccountProvider } from "@/generated/prisma/client";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 
 @Injectable()
 export class AccountRepository {
 	constructor(
-		private readonly database: DatabaseService,
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
 		private readonly encryptionService: EncryptionService,
 	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	async findByUserIdAndProvider(
 		userId: string,
 		provider: AccountProvider,
 	): Promise<Account | null> {
-		return this.database.account.findUnique({
+		return this.client.account.findUnique({
 			where: {
 				userId_provider: { userId, provider },
 			},
@@ -26,7 +34,7 @@ export class AccountRepository {
 		provider: AccountProvider,
 		providerAccountId: string,
 	): Promise<Account | null> {
-		return this.database.account.findUnique({
+		return this.client.account.findUnique({
 			where: {
 				provider_providerAccountId: { provider, providerAccountId },
 			},
@@ -36,10 +44,8 @@ export class AccountRepository {
 	async createCredentialAccount(
 		userId: string,
 		hashedPassword: string,
-		tx?: TransactionClient,
 	): Promise<Account> {
-		const client = tx ?? this.database;
-		return client.account.create({
+		return this.client.account.create({
 			data: {
 				userId,
 				provider: "CREDENTIAL",
@@ -52,10 +58,8 @@ export class AccountRepository {
 	async updatePassword(
 		userId: string,
 		hashedPassword: string,
-		tx?: TransactionClient,
 	): Promise<Account> {
-		const client = tx ?? this.database;
-		return client.account.update({
+		return this.client.account.update({
 			where: {
 				userId_provider: { userId, provider: "CREDENTIAL" },
 			},
@@ -63,20 +67,16 @@ export class AccountRepository {
 		});
 	}
 
-	async createOAuthAccount(
-		data: {
-			userId: string;
-			provider: AccountProvider;
-			providerAccountId: string;
-			accessToken?: string;
-			refreshToken?: string;
-			accessTokenExpiresAt?: Date;
-			scope?: string;
-		},
-		tx?: TransactionClient,
-	): Promise<Account> {
-		const client = tx ?? this.database;
-		return client.account.create({
+	async createOAuthAccount(data: {
+		userId: string;
+		provider: AccountProvider;
+		providerAccountId: string;
+		accessToken?: string;
+		refreshToken?: string;
+		accessTokenExpiresAt?: Date;
+		scope?: string;
+	}): Promise<Account> {
+		return this.client.account.create({
 			data: {
 				userId: data.userId,
 				provider: data.provider,
@@ -101,10 +101,8 @@ export class AccountRepository {
 			refreshToken?: string;
 			accessTokenExpiresAt?: Date;
 		},
-		tx?: TransactionClient,
 	): Promise<Account> {
-		const client = tx ?? this.database;
-		return client.account.update({
+		return this.client.account.update({
 			where: {
 				userId_provider: { userId, provider },
 			},
@@ -123,10 +121,8 @@ export class AccountRepository {
 	async deleteAccount(
 		userId: string,
 		provider: AccountProvider,
-		tx?: TransactionClient,
 	): Promise<Account> {
-		const client = tx ?? this.database;
-		return client.account.delete({
+		return this.client.account.delete({
 			where: {
 				userId_provider: { userId, provider },
 			},
@@ -134,7 +130,7 @@ export class AccountRepository {
 	}
 
 	async findAllByUserId(userId: string): Promise<Account[]> {
-		return this.database.account.findMany({
+		return this.client.account.findMany({
 			where: { userId },
 		});
 	}

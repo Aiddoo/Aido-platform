@@ -1,5 +1,5 @@
 import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Queue } from "bullmq";
 import dayjs from "dayjs";
 import {
@@ -13,8 +13,8 @@ import {
 	type AccountPurgeJobData,
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
-import { DatabaseService } from "@/shared/infrastructure/database";
 
 /**
  * 계정 정리 스케줄러
@@ -27,7 +27,7 @@ export class AccountPurgeJob implements OnModuleInit {
 	readonly #logger = new Logger(AccountPurgeJob.name);
 
 	constructor(
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
 		private readonly userRepository: UserRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
 		@InjectQueue(ACCOUNT_PURGE_QUEUE)
@@ -94,8 +94,8 @@ export class AccountPurgeJob implements OnModuleInit {
 		for (const user of users) {
 			try {
 				// Hard delete (cascade로 관련 데이터 정리)
-				await this.database.$transaction(async (tx) => {
-					await this.userRepository.hardDelete(user.id, tx);
+				await this.uow.run(async () => {
+					await this.userRepository.hardDelete(user.id);
 				});
 
 				// 트랜잭션 커밋 후 보안 로그 기록

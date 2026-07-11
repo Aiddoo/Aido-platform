@@ -10,7 +10,6 @@ import {
 	subtractSeconds,
 } from "@/shared/domain/date/utils/arithmetic";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface VerificationCodeResult {
 	code: string;
@@ -30,24 +29,18 @@ export class VerificationService {
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
 	async createEmailVerification(
 		userId: string,
-		tx: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
-		await this.#checkResendCooldown(userId, "EMAIL_VERIFY", tx);
+		await this.#checkResendCooldown(userId, "EMAIL_VERIFY");
 
 		// 기존 미사용 인증 코드 무효화
 		await this.verificationRepository.invalidateAllByUserIdAndType(
 			userId,
 			"EMAIL_VERIFY",
-			tx,
 		);
 
 		// 새 인증 코드 생성
-		const result = await this.#createVerificationCode(
-			userId,
-			"EMAIL_VERIFY",
-			tx,
-		);
+		const result = await this.#createVerificationCode(userId, "EMAIL_VERIFY");
 
 		this.#logger.log(`Verification code created for user ${userId}`);
 		return result;
@@ -71,24 +64,18 @@ export class VerificationService {
 	async createAndSendPasswordReset(
 		userId: string,
 		email: string,
-		tx?: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
-		await this.#checkResendCooldown(userId, "PASSWORD_RESET", tx);
+		await this.#checkResendCooldown(userId, "PASSWORD_RESET");
 
 		// 기존 미사용 인증 코드 무효화
 		await this.verificationRepository.invalidateAllByUserIdAndType(
 			userId,
 			"PASSWORD_RESET",
-			tx,
 		);
 
 		// 새 인증 코드 생성
-		const result = await this.#createVerificationCode(
-			userId,
-			"PASSWORD_RESET",
-			tx,
-		);
+		const result = await this.#createVerificationCode(userId, "PASSWORD_RESET");
 
 		// 이메일 발송
 		const emailResult = await this.emailFacade.sendPasswordResetCode(email, {
@@ -109,24 +96,18 @@ export class VerificationService {
 	async createAndSendPasswordSetup(
 		userId: string,
 		email: string,
-		tx?: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
-		await this.#checkResendCooldown(userId, "PASSWORD_SETUP", tx);
+		await this.#checkResendCooldown(userId, "PASSWORD_SETUP");
 
 		// 기존 미사용 인증 코드 무효화
 		await this.verificationRepository.invalidateAllByUserIdAndType(
 			userId,
 			"PASSWORD_SETUP",
-			tx,
 		);
 
 		// 새 인증 코드 생성
-		const result = await this.#createVerificationCode(
-			userId,
-			"PASSWORD_SETUP",
-			tx,
-		);
+		const result = await this.#createVerificationCode(userId, "PASSWORD_SETUP");
 
 		// 이메일 발송
 		const emailResult = await this.emailFacade.sendPasswordSetupCode(email, {
@@ -149,15 +130,10 @@ export class VerificationService {
 		userId: string,
 		code: string,
 		type: VerificationType,
-		tx?: TransactionClient,
 	): Promise<boolean> {
 		// 해당 사용자의 유효한 인증 코드 조회 (시도 횟수 포함)
 		const verification =
-			await this.verificationRepository.findValidByUserIdAndType(
-				userId,
-				type,
-				tx,
-			);
+			await this.verificationRepository.findValidByUserIdAndType(userId, type);
 
 		// 유효한 인증 코드가 없음
 		if (!verification) {
@@ -185,7 +161,7 @@ export class VerificationService {
 		}
 
 		// 사용 처리
-		await this.verificationRepository.markAsUsed(verification.id, tx);
+		await this.verificationRepository.markAsUsed(verification.id);
 
 		this.#logger.log(`Verification code verified for user ${userId}`);
 		return true;
@@ -194,7 +170,6 @@ export class VerificationService {
 	async #checkResendCooldown(
 		userId: string,
 		type: VerificationType,
-		tx?: TransactionClient,
 	): Promise<void> {
 		const cooldownSince = subtractSeconds(
 			VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
@@ -205,7 +180,6 @@ export class VerificationService {
 				userId,
 				type,
 				cooldownSince,
-				tx,
 			);
 
 		if (recentCount > 0) {
@@ -218,7 +192,6 @@ export class VerificationService {
 	async #createVerificationCode(
 		userId: string,
 		type: VerificationType,
-		tx?: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 6자리 랜덤 숫자 생성
 		const code = this.#generateCode();
@@ -228,15 +201,12 @@ export class VerificationService {
 		const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);
 
 		// DB에 저장 (해시된 토큰)
-		await this.verificationRepository.create(
-			{
-				userId,
-				type,
-				token: tokenHash,
-				expiresAt,
-			},
-			tx,
-		);
+		await this.verificationRepository.create({
+			userId,
+			type,
+			token: tokenHash,
+			expiresAt,
+		});
 
 		return { code, expiresAt };
 	}

@@ -7,7 +7,6 @@ import { SessionRepository } from "@/auth/infrastructure/persistence/session.rep
 import { addMilliseconds } from "@/shared/domain/date/utils/arithmetic";
 import { isExpired } from "@/shared/domain/date/utils/compare";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface CreateSessionParams {
 	userId: string;
@@ -49,12 +48,12 @@ export class SessionService {
 	/**
 	 * 세션 생성 → 토큰 발급 → refreshTokenHash 업데이트를 원자적으로 수행
 	 *
+	 * 트랜잭션은 CLS로 전파된다 — 호출측이 uow.run으로 연 트랜잭션에 참여한다.
+	 *
 	 * @param params 세션 생성에 필요한 사용자/디바이스 정보
-	 * @param tx 트랜잭션 클라이언트 (선택)
 	 */
 	async createSessionWithTokens(
 		params: CreateSessionParams,
-		tx?: TransactionClient,
 	): Promise<CreateSessionResult> {
 		const tokenFamily = this.tokenService.generateTokenFamily();
 
@@ -63,18 +62,15 @@ export class SessionService {
 		const expiresAt = addMilliseconds(expiresInSeconds * 1000);
 
 		// 1. 세션 생성 (refreshTokenHash 없이)
-		const session = await this.sessionRepository.create(
-			{
-				userId: params.userId,
-				tokenFamily,
-				tokenVersion: 1,
-				deviceFingerprint: params.deviceFingerprint,
-				userAgent: params.userAgent,
-				ipAddress: params.ipAddress,
-				expiresAt,
-			},
-			tx,
-		);
+		const session = await this.sessionRepository.create({
+			userId: params.userId,
+			tokenFamily,
+			tokenVersion: 1,
+			deviceFingerprint: params.deviceFingerprint,
+			userAgent: params.userAgent,
+			ipAddress: params.ipAddress,
+			expiresAt,
+		});
 
 		// 2. 실제 세션 ID로 토큰 발급
 		const tokens = await this.tokenService.generateTokenPair(
@@ -93,7 +89,6 @@ export class SessionService {
 		await this.sessionRepository.updateRefreshTokenHash(
 			session.id,
 			refreshTokenHash,
-			tx,
 		);
 
 		return {

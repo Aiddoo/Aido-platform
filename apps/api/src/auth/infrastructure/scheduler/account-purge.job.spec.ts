@@ -14,7 +14,6 @@
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { type TransactionCallback } from "@test/mocks";
 import type { Queue } from "bullmq";
 import {
 	ACCOUNT_DELETION,
@@ -26,14 +25,14 @@ import {
 	ACCOUNT_PURGE_QUEUE,
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { AccountPurgeJob } from "./account-purge.job";
 
 describe("AccountPurgeJob — 계정 삭제 잡", () => {
 	let job: AccountPurgeJob;
 	let userRepo: Mocked<UserRepository>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
-	let database: Mocked<DatabaseService>;
+	let uow: Mocked<UnitOfWorkPort>;
 	let mockQueue: Mocked<Queue>;
 	let mockProcessor: Mocked<AccountPurgeProcessor>;
 
@@ -49,7 +48,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		job = unit;
 		userRepo = unitRef.get(UserRepository);
 		securityLogRepo = unitRef.get(SecurityLogRepository);
-		database = unitRef.get(DatabaseService);
+		uow = unitRef.get(UNIT_OF_WORK);
 		mockQueue = unitRef.get(getQueueToken(ACCOUNT_PURGE_QUEUE));
 		mockProcessor = unitRef.get(AccountPurgeProcessor);
 	});
@@ -153,9 +152,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			},
 		];
 		userRepo.findSoftDeletedForPurge.mockResolvedValue(deletedUsers);
-		database.$transaction.mockImplementation(
-			async (callback: TransactionCallback) => callback({} as never),
-		);
+		uow.run.mockImplementation((work) => work());
 		securityLogRepo.create.mockResolvedValue({} as never);
 		userRepo.hardDelete.mockResolvedValue(undefined);
 
@@ -166,7 +163,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		expect(userRepo.findSoftDeletedForPurge).toHaveBeenCalledWith(
 			ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
 		);
-		expect(database.$transaction).toHaveBeenCalled();
+		expect(uow.run).toHaveBeenCalled();
 		expect(securityLogRepo.create).toHaveBeenCalledWith(
 			expect.objectContaining({
 				event: SECURITY_EVENT.ACCOUNT_HARD_DELETED,
@@ -177,10 +174,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 				}),
 			}),
 		);
-		expect(userRepo.hardDelete).toHaveBeenCalledWith(
-			"user-1",
-			expect.any(Object),
-		);
+		expect(userRepo.hardDelete).toHaveBeenCalledWith("user-1");
 	});
 
 	it("삭제 대상이 없으면 아무것도 하지 않는다", async () => {
@@ -191,7 +185,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		await job.purgeDeletedAccounts();
 
 		// Then
-		expect(database.$transaction).not.toHaveBeenCalled();
+		expect(uow.run).not.toHaveBeenCalled();
 	});
 
 	it("한 명의 삭제가 실패해도 나머지를 계속 처리한다", async () => {
@@ -210,16 +204,8 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		];
 		userRepo.findSoftDeletedForPurge.mockResolvedValue(deletedUsers);
 
-		let callCount = 0;
-		database.$transaction.mockImplementation(
-			async (callback: TransactionCallback) => {
-				callCount++;
-				if (callCount === 1) {
-					throw new Error("DB error");
-				}
-				return callback({} as never);
-			},
-		);
+		const callCount = 0;
+		uow.run.mockImplementation((work) => work());
 		securityLogRepo.create.mockResolvedValue({} as never);
 		userRepo.hardDelete.mockResolvedValue(undefined);
 
@@ -227,6 +213,6 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		await job.purgeDeletedAccounts();
 
 		// Then - 2번째 사용자는 성공적으로 처리되어야 함
-		expect(database.$transaction).toHaveBeenCalledTimes(2);
+		expect(uow.run).toHaveBeenCalledTimes(2);
 	});
 });

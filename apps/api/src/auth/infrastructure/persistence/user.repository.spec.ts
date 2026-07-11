@@ -11,10 +11,11 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import * as userTagUtil from "@/auth/domain/services/user-tag.util";
 import type {
 	AccountProvider,
@@ -22,7 +23,7 @@ import type {
 	UserRole,
 	UserStatus,
 } from "@/generated/prisma/client";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { UserRepository } from "./user.repository";
 
 /**
@@ -74,7 +75,7 @@ const TEST_USER_TAG = "XY7Z9W3K";
 
 describe("UserRepository — 사용자 리포지토리", () => {
 	let repository: UserRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	// Builder로 기본 테스트 사용자 생성
 	const mockUser = UserBuilder.create()
@@ -86,10 +87,16 @@ describe("UserRepository — 사용자 리포지토리", () => {
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(UserRepository).compile();
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(UserRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 
 		// 기본 모킹 설정
 		mockGenerateUserTag.mockReturnValue(TEST_USER_TAG);
@@ -334,8 +341,8 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 사용자를 생성한다", async () => {
-			// Given - 트랜잭션 클라이언트와 사용자 생성 데이터 준비
+		it("활성 트랜잭션 클라이언트로 사용자를 생성한다", async () => {
+			// Given - 사용자 생성 데이터 준비
 			const createData = {
 				email: "new@example.com",
 				status: "PENDING_VERIFICATION" as UserStatus,
@@ -347,18 +354,17 @@ describe("UserRepository — 사용자 리포지토리", () => {
 				.withStatus(createData.status)
 				.build();
 
-			const mockTx = createMockTxClient();
-			mockTx.user.findUnique.mockResolvedValue(null);
-			mockTx.user.create.mockResolvedValue(txUser);
+			db.user.findUnique.mockResolvedValue(null);
+			db.user.create.mockResolvedValue(txUser);
 
-			// When - 트랜잭션 내에서 사용자 생성
-			const result = await repository.create(createData, asTxClient(mockTx));
+			// When - 활성 트랜잭션 클라이언트로 사용자 생성
+			const result = await repository.create(createData);
 
-			// Then - 트랜잭션 클라이언트를 통해 생성되고 userTag가 자동 생성됨
+			// Then - 활성 트랜잭션 클라이언트를 통해 생성되고 userTag가 자동 생성됨
 			expect(result.id).toBe("tx-user-123");
 			expect(result.userTag).toBe(TEST_USER_TAG);
 			expect(mockGenerateUserTag).toHaveBeenCalled();
-			expect(mockTx.user.create).toHaveBeenCalledWith({
+			expect(db.user.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					email: createData.email,
 					status: createData.status,
@@ -388,20 +394,19 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 상태를 업데이트한다", async () => {
-			// Given - 트랜잭션 클라이언트와 업데이트 결과 모킹
+		it("활성 트랜잭션 클라이언트로 상태를 업데이트한다", async () => {
+			// Given - 업데이트 결과 모킹
 			const activeUser = UserBuilder.create()
 				.withId("user-123")
 				.verified()
 				.build();
-			const mockTx = createMockTxClient();
-			mockTx.user.update.mockResolvedValue(activeUser);
+			db.user.update.mockResolvedValue(activeUser);
 
-			// When - 트랜잭션 내에서 상태 업데이트
-			await repository.updateStatus("user-123", "ACTIVE", asTxClient(mockTx));
+			// When - 활성 트랜잭션 클라이언트로 상태 업데이트
+			await repository.updateStatus("user-123", "ACTIVE");
 
-			// Then - 트랜잭션 클라이언트를 통해 업데이트됨
-			expect(mockTx.user.update).toHaveBeenCalledWith({
+			// Then - 활성 트랜잭션 클라이언트를 통해 업데이트됨
+			expect(db.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: { status: "ACTIVE" },
 			});
@@ -432,20 +437,19 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 인증 완료 처리한다", async () => {
-			// Given - 트랜잭션 클라이언트와 인증 완료 결과 모킹
+		it("활성 트랜잭션 클라이언트로 인증 완료 처리한다", async () => {
+			// Given - 인증 완료 결과 모킹
 			const verifiedUser = UserBuilder.create()
 				.withId("user-123")
 				.verified()
 				.build();
-			const mockTx = createMockTxClient();
-			mockTx.user.update.mockResolvedValue(verifiedUser);
+			db.user.update.mockResolvedValue(verifiedUser);
 
-			// When - 트랜잭션 내에서 이메일 인증 완료 처리
-			await repository.markEmailVerified("user-123", asTxClient(mockTx));
+			// When - 활성 트랜잭션 클라이언트로 이메일 인증 완료 처리
+			await repository.markEmailVerified("user-123");
 
-			// Then - 트랜잭션 클라이언트를 통해 인증 완료 처리됨
-			expect(mockTx.user.update).toHaveBeenCalledWith({
+			// Then - 활성 트랜잭션 클라이언트를 통해 인증 완료 처리됨
+			expect(db.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: {
 					emailVerifiedAt: expect.any(Date),
@@ -474,20 +478,19 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 내에서 로그인 시간을 업데이트한다", async () => {
-			// Given - 트랜잭션 클라이언트와 업데이트 결과 모킹
+		it("활성 트랜잭션 클라이언트로 로그인 시간을 업데이트한다", async () => {
+			// Given - 업데이트 결과 모킹
 			const userWithLogin = UserBuilder.create()
 				.withId("user-123")
 				.withLastLoginAt(new Date())
 				.build();
-			const mockTx = createMockTxClient();
-			mockTx.user.update.mockResolvedValue(userWithLogin);
+			db.user.update.mockResolvedValue(userWithLogin);
 
-			// When - 트랜잭션 내에서 로그인 시간 업데이트
-			await repository.updateLastLoginAt("user-123", asTxClient(mockTx));
+			// When - 활성 트랜잭션 클라이언트로 로그인 시간 업데이트
+			await repository.updateLastLoginAt("user-123");
 
-			// Then - 트랜잭션 클라이언트를 통해 업데이트됨
-			expect(mockTx.user.update).toHaveBeenCalledWith({
+			// Then - 활성 트랜잭션 클라이언트를 통해 업데이트됨
+			expect(db.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: { lastLoginAt: expect.any(Date) },
 			});
@@ -519,21 +522,19 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			expect(result.status).toBe("ACTIVE");
 		});
 
-		it("트랜잭션 클라이언트가 제공되면 해당 클라이언트를 사용한다", async () => {
+		it("활성 트랜잭션 클라이언트로 복구한다", async () => {
 			// Given
-			const mockTxClient = createMockTxClient();
 			const restoredUser = UserBuilder.create().verified().build();
-			mockTxClient.user.update.mockResolvedValue(restoredUser);
+			db.user.update.mockResolvedValue(restoredUser);
 
 			// When
-			await repository.restore("user-123", asTxClient(mockTxClient));
+			await repository.restore("user-123");
 
 			// Then
-			expect(mockTxClient.user.update).toHaveBeenCalledWith({
+			expect(db.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: { deletedAt: null, status: "ACTIVE" },
 			});
-			expect(db.user.update).not.toHaveBeenCalled();
 		});
 	});
 });

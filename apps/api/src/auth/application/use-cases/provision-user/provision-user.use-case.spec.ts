@@ -3,7 +3,6 @@ import { TestBed } from "@suites/unit";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import type { User } from "@/generated/prisma/client";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
 import {
 	UserConsentRepository,
@@ -22,7 +21,6 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 	let preferenceRepo: Mocked<UserPreferenceRepository>;
 	let categoryRepo: Mocked<TodoCategoryRepository>;
 
-	const tx = {} as unknown as TransactionClient;
 	const createdUser = { id: "user-1", email: "user@example.com" } as User;
 
 	beforeEach(async () => {
@@ -47,37 +45,28 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 	};
 
 	it("크레덴셜: 유저→크레덴셜계정→프로필→동의→설정→카테고리 순서로 생성하고 유저를 반환한다", async () => {
-		const result = await useCase.execute(credentialInput, tx);
+		const result = await useCase.execute(credentialInput);
 
-		expect(userRepo.create).toHaveBeenCalledWith(
-			{
-				email: "user@example.com",
-				status: "PENDING_VERIFY",
-				emailVerifiedAt: undefined,
-			},
-			tx,
-		);
+		expect(userRepo.create).toHaveBeenCalledWith({
+			email: "user@example.com",
+			status: "PENDING_VERIFY",
+			emailVerifiedAt: undefined,
+		});
 		expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith(
 			"user-1",
 			"hashed-pw",
-			tx,
 		);
 		expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
-		expect(userRepo.createProfile).toHaveBeenCalledWith(
-			"user-1",
-			{ name: "홍길동" },
-			tx,
-		);
-		expect(consentRepo.create).toHaveBeenCalledWith(
-			"user-1",
-			{ termsAgreedAt: new Date("2026-01-01T00:00:00Z") },
-			tx,
-		);
-		expect(preferenceRepo.create).toHaveBeenCalledWith(
-			"user-1",
-			{ pushEnabled: true, nightPushEnabled: true },
-			tx,
-		);
+		expect(userRepo.createProfile).toHaveBeenCalledWith("user-1", {
+			name: "홍길동",
+		});
+		expect(consentRepo.create).toHaveBeenCalledWith("user-1", {
+			termsAgreedAt: new Date("2026-01-01T00:00:00Z"),
+		});
+		expect(preferenceRepo.create).toHaveBeenCalledWith("user-1", {
+			pushEnabled: true,
+			nightPushEnabled: true,
+		});
 		expect(categoryRepo.createMany).toHaveBeenCalledWith(
 			DEFAULT_CATEGORIES.map((category) => ({
 				userId: "user-1",
@@ -85,7 +74,6 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 				color: category.color,
 				sortOrder: category.sortOrder,
 			})),
-			tx,
 		);
 		expect(result).toBe(createdUser);
 	});
@@ -110,30 +98,23 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 			},
 		};
 
-		await useCase.execute(oauthInput, tx);
+		await useCase.execute(oauthInput);
 
-		expect(userRepo.create).toHaveBeenCalledWith(
-			{
-				email: "social@example.com",
-				status: "ACTIVE",
-				emailVerifiedAt: verifiedAt,
-			},
-			tx,
-		);
-		expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
-			{
-				userId: "user-1",
-				provider: "GOOGLE",
-				providerAccountId: "google-123",
-				refreshToken: "refresh-token",
-			},
-			tx,
-		);
+		expect(userRepo.create).toHaveBeenCalledWith({
+			email: "social@example.com",
+			status: "ACTIVE",
+			emailVerifiedAt: verifiedAt,
+		});
+		expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith({
+			userId: "user-1",
+			provider: "GOOGLE",
+			providerAccountId: "google-123",
+			refreshToken: "refresh-token",
+		});
 		expect(accountRepo.createCredentialAccount).not.toHaveBeenCalled();
-		expect(userRepo.createProfile).toHaveBeenCalledWith(
-			"user-1",
-			{ name: "랜덤이름", profileImage: "https://img/1.png" },
-			tx,
-		);
+		expect(userRepo.createProfile).toHaveBeenCalledWith("user-1", {
+			name: "랜덤이름",
+			profileImage: "https://img/1.png",
+		});
 	});
 });

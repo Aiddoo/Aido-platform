@@ -6,7 +6,6 @@ import type { TokenPair } from "@/auth/infrastructure/adapters/token.service";
 import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { SessionService } from "../../services/session.service";
 
 export interface IssueLoginInput {
@@ -34,7 +33,7 @@ export interface IssueLoginOutcome {
  *
  * (1) 세션 생성 + JWT 토큰 발급 → (2) 로그인 성공 기록 →
  * (3) LOGIN_SUCCESS 보안 로그 → (4) 프로필 조회.
- * 호출측이 연 트랜잭션(tx)에 참여하며, 탈퇴 복구·캐시 무효화·accountRestored
+ * 호출측이 연 트랜잭션(CLS)에 참여하며, 탈퇴 복구·캐시 무효화·accountRestored
  * 플래그 등 provider별 처리는 호출측이 담당한다.
  */
 @Injectable()
@@ -46,48 +45,35 @@ export class IssueLoginUseCase {
 		private readonly userRepository: UserRepository,
 	) {}
 
-	async execute(
-		input: IssueLoginInput,
-		tx: TransactionClient,
-	): Promise<IssueLoginOutcome> {
+	async execute(input: IssueLoginInput): Promise<IssueLoginOutcome> {
 		const { sessionId, tokens } =
-			await this.sessionService.createSessionWithTokens(
-				{
-					userId: input.userId,
-					email: input.email,
-					role: input.role,
-					deviceFingerprint: input.deviceFingerprint,
-					userAgent: input.userAgent,
-					ipAddress: input.ip,
-				},
-				tx,
-			);
-
-		await this.loginAttemptRepository.create(
-			{
-				email: input.email,
-				provider: input.provider,
-				ipAddress: input.ip,
-				userAgent: input.userAgent,
-				success: true,
-			},
-			tx,
-		);
-
-		await this.securityLogRepository.create(
-			{
+			await this.sessionService.createSessionWithTokens({
 				userId: input.userId,
-				event: SECURITY_EVENT.LOGIN_SUCCESS,
-				ipAddress: input.ip,
+				email: input.email,
+				role: input.role,
+				deviceFingerprint: input.deviceFingerprint,
 				userAgent: input.userAgent,
-				...(input.securityMetadata ? { metadata: input.securityMetadata } : {}),
-			},
-			tx,
-		);
+				ipAddress: input.ip,
+			});
+
+		await this.loginAttemptRepository.create({
+			email: input.email,
+			provider: input.provider,
+			ipAddress: input.ip,
+			userAgent: input.userAgent,
+			success: true,
+		});
+
+		await this.securityLogRepository.create({
+			userId: input.userId,
+			event: SECURITY_EVENT.LOGIN_SUCCESS,
+			ipAddress: input.ip,
+			userAgent: input.userAgent,
+			...(input.securityMetadata ? { metadata: input.securityMetadata } : {}),
+		});
 
 		const userWithProfile = await this.userRepository.findByIdWithProfile(
 			input.userId,
-			tx,
 		);
 
 		return {

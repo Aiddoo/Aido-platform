@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { UserPreference } from "@/generated/prisma/client";
 import type { TimeFormat } from "@/generated/prisma/enums";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import type { UserPreferenceRepositoryPort } from "../../application/ports/user-preference.repository.port";
 
@@ -25,14 +26,19 @@ export interface UpdatePreferenceData {
 
 @Injectable()
 export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
 
-	async findByUserId(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<UserPreference | null> {
-		const client = tx ?? this.database;
-		return client.userPreference.findUnique({
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
+
+	async findByUserId(userId: string): Promise<UserPreference | null> {
+		return this.client.userPreference.findUnique({
 			where: { userId },
 		});
 	}
@@ -40,10 +46,8 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	async create(
 		userId: string,
 		data?: Partial<UpdatePreferenceData>,
-		tx?: TransactionClient,
 	): Promise<UserPreference> {
-		const client = tx ?? this.database;
-		return client.userPreference.create({
+		return this.client.userPreference.create({
 			data: {
 				userId,
 				pushEnabled: data?.pushEnabled ?? true,
@@ -71,10 +75,8 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	async upsert(
 		userId: string,
 		data: UpdatePreferenceData,
-		tx?: TransactionClient,
 	): Promise<UserPreference> {
-		const client = tx ?? this.database;
-		return client.userPreference.upsert({
+		return this.client.userPreference.upsert({
 			where: { userId },
 			create: {
 				userId,
@@ -104,10 +106,8 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	async update(
 		userId: string,
 		data: UpdatePreferenceData,
-		tx?: TransactionClient,
 	): Promise<UserPreference> {
-		const client = tx ?? this.database;
-		return client.userPreference.update({
+		return this.client.userPreference.update({
 			where: { userId },
 			data: this.buildUpdatePayload(data),
 		});
@@ -161,13 +161,9 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	/**
 	 * 여러 사용자의 푸시 설정 배치 조회 (N+1 방지용)
 	 */
-	async findByUserIds(
-		userIds: string[],
-		tx?: TransactionClient,
-	): Promise<UserPreference[]> {
+	async findByUserIds(userIds: string[]): Promise<UserPreference[]> {
 		if (userIds.length === 0) return [];
-		const client = tx ?? this.database;
-		return client.userPreference.findMany({
+		return this.client.userPreference.findMany({
 			where: { userId: { in: userIds } },
 		});
 	}
@@ -182,10 +178,8 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 			longestStreak: number;
 			lastCompletedDate: Date | null;
 		},
-		tx?: TransactionClient,
 	): Promise<void> {
-		const client = tx ?? this.database;
-		await client.userPreference.update({
+		await this.client.userPreference.update({
 			where: { userId },
 			data: {
 				currentStreak: data.currentStreak,
@@ -198,13 +192,8 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	/**
 	 * 사용자 타임존 upsert (없으면 생성, 있으면 갱신)
 	 */
-	async upsertTimezone(
-		userId: string,
-		timezone: string,
-		tx?: TransactionClient,
-	): Promise<void> {
-		const client = tx ?? this.database;
-		await client.userPreference.upsert({
+	async upsertTimezone(userId: string, timezone: string): Promise<void> {
+		await this.client.userPreference.upsert({
 			where: { userId },
 			create: { userId, timezone },
 			update: { timezone },
@@ -214,13 +203,8 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	/**
 	 * 사용자 푸시 언어 upsert (없으면 생성, 있으면 갱신) — 토큰 등록 시 Accept-Language 동기화
 	 */
-	async upsertLocale(
-		userId: string,
-		locale: string,
-		tx?: TransactionClient,
-	): Promise<void> {
-		const client = tx ?? this.database;
-		await client.userPreference.upsert({
+	async upsertLocale(userId: string, locale: string): Promise<void> {
+		await this.client.userPreference.upsert({
 			where: { userId },
 			create: { userId, locale },
 			update: { locale },

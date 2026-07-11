@@ -13,7 +13,6 @@ import { LOGIN_ATTEMPT } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder, UserBuilder } from "@test/builders";
-import { type TransactionCallback } from "@test/mocks";
 import { AdminNotificationFacade } from "@/admin-notification";
 import {
 	REVOKE_REASON,
@@ -35,10 +34,9 @@ import {
 	type User,
 } from "@/generated/prisma/client";
 import type { AccountProvider } from "@/generated/prisma/enums";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { TodoCategoryRepository } from "@/todo-category";
 import {
 	UserConsentRepository,
@@ -59,7 +57,7 @@ describe("AuthService — 인증 서비스", () => {
 	let tokenService: Mocked<TokenService>;
 	let verificationService: Mocked<VerificationService>;
 	let cacheService: Mocked<CacheService>;
-	let database: Mocked<DatabaseService>;
+	let uow: Mocked<UnitOfWorkPort>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
 	let sessionService: Mocked<SessionService>;
@@ -84,7 +82,7 @@ describe("AuthService — 인증 서비스", () => {
 		tokenService = unitRef.get(TokenService);
 		verificationService = unitRef.get(VerificationService);
 		cacheService = unitRef.get(CacheService);
-		database = unitRef.get(DatabaseService);
+		uow = unitRef.get(UNIT_OF_WORK);
 		securityLogRepo = unitRef.get(SecurityLogRepository);
 		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
 		sessionService = unitRef.get(SessionService);
@@ -99,8 +97,8 @@ describe("AuthService — 인증 서비스", () => {
 			securityLogRepo as unknown as SecurityLogRepository,
 			userRepo as unknown as UserRepository,
 		);
-		issueLogin.execute.mockImplementation((input, tx) =>
-			realIssueLogin.execute(input, tx),
+		issueLogin.execute.mockImplementation((input) =>
+			realIssueLogin.execute(input),
 		);
 
 		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — register 테스트가
@@ -123,8 +121,8 @@ describe("AuthService — 인증 서비스", () => {
 			preferenceRepoStub,
 			categoryRepoStub,
 		);
-		provisionUser.execute.mockImplementation((input, tx) =>
-			realProvisionUser.execute(input, tx),
+		provisionUser.execute.mockImplementation((input) =>
+			realProvisionUser.execute(input),
 		);
 	});
 
@@ -146,18 +144,7 @@ describe("AuthService — 인증 서비스", () => {
 		) => {
 			userRepo.findByEmail.mockResolvedValue(null);
 			passwordService.hash.mockResolvedValue("hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					const mockTx = {
-						userConsent: { create: jest.fn() },
-						userPreference: { create: jest.fn() },
-						todoCategory: {
-							createMany: jest.fn().mockResolvedValue({ count: 2 }),
-						},
-					};
-					return callback(mockTx as unknown as TransactionClient);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 			userRepo.create.mockResolvedValue(mockUser);
 			userRepo.createProfile.mockResolvedValue(undefined);
 			accountRepo.createCredentialAccount.mockResolvedValue(
@@ -237,7 +224,6 @@ describe("AuthService — 인증 서비스", () => {
 			expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith(
 				mockUser.id,
 				"hashed-password",
-				expect.any(Object),
 			);
 		});
 
@@ -279,13 +265,12 @@ describe("AuthService — 인증 서비스", () => {
 					userId: mockUser.id,
 					event: SECURITY_EVENT.REGISTRATION,
 				}),
-				expect.any(Object),
 			);
 		});
 
 		it("P2002 unique constraint(이메일 중복) 시 emailAlreadyRegistered를 던져야 한다", async () => {
 			// Given - 트랜잭션에서 P2002 발생 (동시 가입 race condition)
-			database.$transaction.mockRejectedValue(
+			uow.run.mockRejectedValue(
 				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
 					code: "P2002",
 					meta: { target: ["email"] },
@@ -311,7 +296,7 @@ describe("AuthService — 인증 서비스", () => {
 					clientVersion: "7.0.0",
 				},
 			);
-			database.$transaction.mockRejectedValue(prismaError);
+			uow.run.mockRejectedValue(prismaError);
 
 			// When & Then - emailAlreadyRegistered가 아닌 원본 에러가 던져져야 함
 			await expect(service.register(registerInput)).rejects.toThrow(
@@ -376,10 +361,7 @@ describe("AuthService — 인증 서비스", () => {
 			mockUser: ReturnType<typeof UserBuilder.prototype.build>,
 		) => {
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			userRepo.markEmailVerified.mockResolvedValue({} as User);
 			sessionService.createSessionWithTokens.mockResolvedValue({
@@ -490,7 +472,6 @@ describe("AuthService — 인증 서비스", () => {
 					userId: mockUser.id,
 					event: SECURITY_EVENT.EMAIL_VERIFIED,
 				}),
-				expect.any(Object),
 			);
 		});
 
@@ -532,10 +513,7 @@ describe("AuthService — 인증 서비스", () => {
 				password: "hashed-password",
 			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			sessionService.createSessionWithTokens.mockResolvedValue({
 				sessionId: "session-id",
 				tokens: mockTokens,
@@ -652,7 +630,6 @@ describe("AuthService — 인증 서비스", () => {
 					userId: mockUser.id,
 					event: SECURITY_EVENT.LOGIN_SUCCESS,
 				}),
-				expect.any(Object),
 			);
 		});
 
@@ -676,7 +653,6 @@ describe("AuthService — 인증 서비스", () => {
 					provider: "CREDENTIAL",
 					success: true,
 				}),
-				expect.any(Object),
 			);
 		});
 
@@ -1294,10 +1270,7 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.findActiveByUserId.mockResolvedValue([
 				SessionBuilder.create(userId).withId(sessionId).build(),
 			]);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
@@ -1313,15 +1286,11 @@ describe("AuthService — 인증 서비스", () => {
 			// Then
 			expect(result.message).toContain("탈퇴 처리되었습니다");
 			expect(result.gracePeriodDays).toBe(30);
-			expect(userRepo.softDelete).toHaveBeenCalledWith(
-				userId,
-				expect.any(Object),
-			);
+			expect(userRepo.softDelete).toHaveBeenCalledWith(userId);
 			expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
 				userId,
 				REVOKE_REASON.ACCOUNT_DELETION,
 				undefined,
-				expect.any(Object),
 			);
 		});
 
@@ -1384,10 +1353,7 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.findActiveByUserId.mockResolvedValue([
 				SessionBuilder.create(userId).withId(sessionId).build(),
 			]);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
@@ -1445,10 +1411,7 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.findActiveByUserId.mockResolvedValue([
 				SessionBuilder.create(userId).withId(sessionId).build(),
 			]);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
@@ -1457,13 +1420,12 @@ describe("AuthService — 인증 서비스", () => {
 			await service.deleteAccount(userId, sessionId, {}, metadata);
 
 			// Then
-			expect(database.$transaction).toHaveBeenCalled();
+			expect(uow.run).toHaveBeenCalled();
 			expect(securityLogRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId,
 					event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
 				}),
-				expect.any(Object),
 			);
 		});
 	});
@@ -1512,10 +1474,7 @@ describe("AuthService — 인증 서비스", () => {
 			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			sessionService.createSessionWithTokens.mockResolvedValue({
 				sessionId: "session-123",
 				tokens: {
@@ -1542,17 +1501,13 @@ describe("AuthService — 인증 서비스", () => {
 			expect(result.accountRestored).toBe(true);
 
 			// 복구 호출 확인
-			expect(userRepo.restore).toHaveBeenCalledWith(
-				deletedUser.id,
-				expect.anything(),
-			);
+			expect(userRepo.restore).toHaveBeenCalledWith(deletedUser.id);
 			// ACCOUNT_RESTORED 보안 로그 확인
 			expect(securityLogRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					event: "ACCOUNT_RESTORED",
 					userId: deletedUser.id,
 				}),
-				expect.anything(),
 			);
 			// 캐시 무효화 확인
 			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
@@ -1693,10 +1648,7 @@ describe("AuthService — 인증 서비스", () => {
 				.build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
 				expiresAt: new Date(),
@@ -1750,10 +1702,7 @@ describe("AuthService — 인증 서비스", () => {
 				.build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "654321",
 				expiresAt: new Date(),

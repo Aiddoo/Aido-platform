@@ -14,7 +14,6 @@ import { Logger } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
-import { type TransactionCallback } from "@test/mocks";
 import { AdminNotificationFacade } from "@/admin-notification";
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
@@ -37,10 +36,10 @@ import { OAuthStateRepository } from "@/auth/infrastructure/persistence/oauth-st
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { type AccountProvider, Prisma } from "@/generated/prisma/client";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "@/shared/infrastructure/database";
 import { TodoCategoryRepository } from "@/todo-category";
 import {
 	UserConsentRepository,
@@ -69,7 +68,7 @@ interface OAuthProfile {
 
 describe("OAuthService — OAuth 인증 서비스", () => {
 	let service: OAuthService;
-	let database: Mocked<DatabaseService>;
+	let uow: Mocked<UnitOfWorkPort>;
 	let userRepo: Mocked<UserRepository>;
 	let accountRepo: Mocked<AccountRepository>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
@@ -98,7 +97,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 		const { unit, unitRef } = await TestBed.solitary(OAuthService).compile();
 
 		service = unit;
-		database = unitRef.get(DatabaseService);
+		uow = unitRef.get(UNIT_OF_WORK);
 		userRepo = unitRef.get(UserRepository);
 		accountRepo = unitRef.get(AccountRepository);
 		securityLogRepo = unitRef.get(SecurityLogRepository);
@@ -122,8 +121,8 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			securityLogRepo as unknown as SecurityLogRepository,
 			userRepo as unknown as UserRepository,
 		);
-		issueLogin.execute.mockImplementation((input, tx) =>
-			realIssueLogin.execute(input, tx),
+		issueLogin.execute.mockImplementation((input) =>
+			realIssueLogin.execute(input),
 		);
 
 		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — 소셜 신규가입
@@ -146,8 +145,8 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			preferenceRepoStub,
 			categoryRepoStub,
 		);
-		provisionUser.execute.mockImplementation((input, tx) =>
-			realProvisionUser.execute(input, tx),
+		provisionUser.execute.mockImplementation((input) =>
+			realProvisionUser.execute(input),
 		);
 
 		// ConfigService 기본 설정
@@ -279,18 +278,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			lastLoginAt: mockUser.lastLoginAt,
 			profile: { name: "테스트유저", profileImage: null },
 		} as never);
-		database.$transaction.mockImplementation(
-			async (callback: TransactionCallback) => {
-				const mockTx = {
-					userConsent: { create: jest.fn() },
-					userPreference: { create: jest.fn() },
-					todoCategory: {
-						createMany: jest.fn().mockResolvedValue({ count: 2 }),
-					},
-				};
-				return callback(mockTx as never);
-			},
-		);
+		uow.run.mockImplementation((work) => work());
 		// #createSessionAndTokens / #restoreAndCreateSession에서 role 조회용
 		userRepo.findById.mockResolvedValue(mockUser);
 	};
@@ -401,7 +389,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						email: "test@privaterelay.appleid.com",
 						status: "ACTIVE",
 					}),
-					expect.anything(),
 				);
 				expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 					expect.objectContaining({
@@ -409,14 +396,12 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						provider: "APPLE",
 						providerAccountId: "apple-user-123",
 					}),
-					expect.anything(),
 				);
 				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "user-123",
 						event: SECURITY_EVENT.REGISTRATION,
 					}),
-					expect.anything(),
 				);
 			});
 
@@ -481,7 +466,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					expect.objectContaining({
 						email: "apple_apple-user-456@social.aido.kr",
 					}),
-					expect.anything(),
 				);
 			});
 		});
@@ -516,13 +500,11 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						provider: "APPLE",
 						providerAccountId: "apple-user-123",
 					}),
-					expect.anything(),
 				);
 				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
 					}),
-					expect.anything(),
 				);
 			});
 		});
@@ -608,11 +590,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When
 			const result = await service.linkAccount(
@@ -623,15 +601,12 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
-			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
-				{
-					userId: "user-123",
-					provider: "APPLE",
-					providerAccountId: "apple-account-456",
-					refreshToken: undefined,
-				},
-				expect.anything(),
-			);
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith({
+				userId: "user-123",
+				provider: "APPLE",
+				providerAccountId: "apple-account-456",
+				refreshToken: undefined,
+			});
 			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
 				"user-123",
 			);
@@ -667,11 +642,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					clientVersion: "7.0.0",
 				}),
 			);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When & Then - KAKAO provider
 			await expect(
@@ -688,11 +659,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When
 			await service.linkAccount(
@@ -715,7 +682,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						providerAccountId: "google-account-789",
 					},
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -751,11 +717,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			]);
 			accountRepo.deleteAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When
 			const result = await service.unlinkAccount("user-123", "APPLE");
@@ -765,7 +727,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			expect(accountRepo.deleteAccount).toHaveBeenCalledWith(
 				"user-123",
 				"APPLE",
-				expect.anything(),
 			);
 			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
 				"user-123",
@@ -788,11 +749,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			]);
 			accountRepo.deleteAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When
 			await service.unlinkAccount("user-123", "APPLE", mockMetadata);
@@ -806,7 +763,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					userAgent: mockMetadata.userAgent,
 					metadata: { provider: "APPLE" },
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -946,11 +902,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 	describe("linkSocialAccountWithToken", () => {
 		beforeEach(() => {
 			// linkAccount 내부에서 사용하는 $transaction mock
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
 		});
@@ -983,7 +935,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					provider: "APPLE",
 					providerAccountId: "apple-id-123",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -1016,7 +967,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					provider: "GOOGLE",
 					providerAccountId: "google-id-123",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -1049,7 +999,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					provider: "KAKAO",
 					providerAccountId: "kakao-id-123",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -1082,7 +1031,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					provider: "NAVER",
 					providerAccountId: "naver-id-123",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -1541,7 +1489,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						userAgent: mockMetadata.userAgent,
 						success: true,
 					}),
-					expect.anything(),
 				);
 			});
 		});
@@ -1614,7 +1561,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						userAgent: mockMetadata.userAgent,
 						success: true,
 					}),
-					expect.anything(),
 				);
 			});
 		});
@@ -1687,7 +1633,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						userAgent: mockMetadata.userAgent,
 						success: true,
 					}),
-					expect.anything(),
 				);
 			});
 		});
@@ -1760,7 +1705,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						userAgent: mockMetadata.userAgent,
 						success: true,
 					}),
-					expect.anything(),
 				);
 			});
 		});
@@ -1832,7 +1776,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						provider: "GOOGLE",
 						providerAccountId: "google-user-456",
 					}),
-					expect.anything(),
 				);
 
 				// SecurityLog에 OAUTH_AUTO_LINKED 기록 확인
@@ -1845,7 +1788,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 							autoLinked: true,
 						}),
 					}),
-					expect.anything(),
 				);
 
 				// 신규 사용자 생성은 하지 않음
@@ -1931,7 +1873,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						provider: "APPLE",
 						providerAccountId: "apple-user-456",
 					}),
-					expect.anything(),
 				);
 
 				// SecurityLog에 OAUTH_AUTO_LINKED 기록 확인
@@ -1944,7 +1885,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 							autoLinked: true,
 						}),
 					}),
-					expect.anything(),
 				);
 			});
 		});
@@ -2851,11 +2791,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When
 			const result = await service.linkAccountWithExchangeCode(
@@ -2878,7 +2814,6 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					provider: "GOOGLE",
 					providerAccountId: "google-123",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -2996,11 +2931,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When
 			const result = await service.linkAccountWithExchangeCode(
@@ -3076,11 +3007,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 			securityLogRepo.create.mockResolvedValue({} as never);
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => {
-					return callback({} as never);
-				},
-			);
+			uow.run.mockImplementation((work) => work());
 
 			// When
 			const result = await service.linkAccountWithExchangeCode(

@@ -49,6 +49,7 @@ import {
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import { EmailFacade } from "@/email";
 import { NotificationQueueService } from "@/notification";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
@@ -135,6 +136,11 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					// CLS 트랜잭션 스텁 — 활성 트랜잭션이 없을 때 tx가 실제 DB 클라이언트를 반환
 					provide: TransactionHost,
 					useValue: { tx: databaseService },
+				},
+				{
+					// uow.run passthrough — 리포지토리가 TransactionHost.tx(실제 DB)로 참여
+					provide: UNIT_OF_WORK,
+					useValue: { run: (fn: () => Promise<unknown>) => fn() },
 				},
 				{
 					provide: EmailFacade,

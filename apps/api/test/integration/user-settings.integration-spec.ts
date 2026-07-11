@@ -13,6 +13,7 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserConsentBuilder, UserPreferenceBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
@@ -88,6 +89,11 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 					useExisting: UserConsentRepository,
 				},
 				{ provide: DatabaseService, useValue: mockDatabaseService },
+				{
+					// CLS 트랜잭션 스텁 — tx가 mock DB 클라이언트를 반환
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
+				},
 				{ provide: EntitlementService, useValue: mockEntitlementService },
 				{ provide: CacheService, useValue: mockCacheService },
 				{ provide: REMINDER_SCHEDULE_ENQUEUER, useValue: mockReminderEnqueuer },

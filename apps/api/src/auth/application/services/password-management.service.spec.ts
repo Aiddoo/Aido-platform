@@ -13,7 +13,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
-import { type TransactionCallback } from "@test/mocks";
 import {
 	REVOKE_REASON,
 	SECURITY_EVENT,
@@ -24,9 +23,8 @@ import { SecurityLogRepository } from "@/auth/infrastructure/persistence/securit
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { type Account, type SecurityLog } from "@/generated/prisma/client";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { PasswordManagementService } from "./password-management.service";
 import { VerificationService } from "./verification.service";
 
@@ -37,7 +35,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 	let sessionRepo: Mocked<SessionRepository>;
 	let passwordService: Mocked<PasswordService>;
 	let verificationService: Mocked<VerificationService>;
-	let database: Mocked<DatabaseService>;
+	let uow: Mocked<UnitOfWorkPort>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 
 	beforeEach(async () => {
@@ -51,7 +49,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 		sessionRepo = unitRef.get(SessionRepository);
 		passwordService = unitRef.get(PasswordService);
 		verificationService = unitRef.get(VerificationService);
-		database = unitRef.get(DatabaseService);
+		uow = unitRef.get(UNIT_OF_WORK);
 		securityLogRepo = unitRef.get(SecurityLogRepository);
 	});
 
@@ -142,10 +140,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				password: "old-hashed-password",
 			} as unknown as Account);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
@@ -214,10 +209,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				password: "old-hashed-password",
 			} as unknown as Account);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
@@ -231,7 +223,6 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				mockUser.id,
 				REVOKE_REASON.PASSWORD_RESET,
 				undefined,
-				expect.any(Object),
 			);
 		});
 
@@ -250,10 +241,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				password: "old-hashed-password",
 			} as unknown as Account);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
@@ -271,7 +259,6 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 						reason: REVOKE_REASON.PASSWORD_RESET,
 					}),
 				}),
-				expect.any(Object),
 			);
 		});
 	});
@@ -292,10 +279,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
@@ -351,10 +335,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
@@ -367,7 +348,6 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 					userId,
 					event: SECURITY_EVENT.PASSWORD_CHANGED,
 				}),
-				expect.any(Object),
 			);
 		});
 
@@ -385,10 +365,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				} as unknown as Account);
 				passwordService.verify.mockResolvedValue(true);
 				passwordService.hash.mockResolvedValue("new-hashed-password");
-				database.$transaction.mockImplementation(
-					async (callback: TransactionCallback) =>
-						callback({} as TransactionClient),
-				);
+				uow.run.mockImplementation((work) => work());
 				accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 				sessionRepo.revokeAllByUserId.mockResolvedValue(3);
 				securityLogRepo.create.mockResolvedValue({} as SecurityLog);
@@ -407,7 +384,6 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 					userId,
 					REVOKE_REASON.PASSWORD_CHANGED,
 					sessionId,
-					expect.any(Object),
 				);
 			});
 
@@ -520,10 +496,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
 			passwordService.hash.mockResolvedValue("hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) =>
-					callback({} as TransactionClient),
-			);
+			uow.run.mockImplementation((work) => work());
 			verificationService.verifyCode.mockResolvedValue(true);
 			accountRepo.createCredentialAccount.mockResolvedValue(
 				{} as unknown as Account,
@@ -560,7 +533,6 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith(
 				userId,
 				"hashed-password",
-				expect.any(Object),
 			);
 		});
 
@@ -577,7 +549,6 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 					userId,
 					event: SECURITY_EVENT.PASSWORD_SETUP,
 				}),
-				expect.any(Object),
 			);
 		});
 
@@ -653,7 +624,6 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				userId,
 				code,
 				"PASSWORD_SETUP",
-				expect.any(Object),
 			);
 		});
 	});

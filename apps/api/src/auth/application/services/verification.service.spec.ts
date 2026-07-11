@@ -80,7 +80,6 @@ describe("VerificationService — 인증 코드 서비스", () => {
 					userId,
 					type: "PASSWORD_RESET",
 				}),
-				undefined,
 			);
 		});
 
@@ -95,7 +94,6 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				userId,
 				"PASSWORD_RESET",
 				expect.any(Date),
-				undefined,
 			);
 		});
 
@@ -108,7 +106,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			// Then
 			expect(
 				verificationRepo.invalidateAllByUserIdAndType,
-			).toHaveBeenCalledWith(userId, "PASSWORD_RESET", undefined);
+			).toHaveBeenCalledWith(userId, "PASSWORD_RESET");
 		});
 
 		it("재발송 쿨다운 중이면 VERIFICATION_COOLDOWN 에러를 던진다", async () => {
@@ -158,7 +156,6 @@ describe("VerificationService — 인증 코드 서비스", () => {
 					userId,
 					type: "PASSWORD_SETUP",
 				}),
-				undefined,
 			);
 		});
 
@@ -194,7 +191,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			// Then
 			expect(
 				verificationRepo.invalidateAllByUserIdAndType,
-			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP", undefined);
+			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP");
 		});
 
 		it("재발송 쿨다운을 확인한다", async () => {
@@ -208,33 +205,23 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				userId,
 				"PASSWORD_SETUP",
 				expect.any(Date),
-				undefined,
 			);
 		});
 
-		it("트랜잭션을 전달한다", async () => {
-			// Given
-			const mockTx = {} as Parameters<
-				typeof service.createAndSendPasswordSetup
-			>[2];
-
+		it("리포지토리 호출은 활성 트랜잭션(CLS)에 참여한다 — tx 인자를 전달하지 않는다", async () => {
 			// When
-			await service.createAndSendPasswordSetup(userId, email, mockTx);
+			await service.createAndSendPasswordSetup(userId, email);
 
 			// Then
 			expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
 				userId,
 				"PASSWORD_SETUP",
 				expect.any(Date),
-				mockTx,
 			);
 			expect(
 				verificationRepo.invalidateAllByUserIdAndType,
-			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP", mockTx);
-			expect(verificationRepo.create).toHaveBeenCalledWith(
-				expect.any(Object),
-				mockTx,
-			);
+			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP");
+			expect(verificationRepo.create).toHaveBeenCalledWith(expect.any(Object));
 		});
 
 		it("이메일 발송 실패해도 결과를 반환한다", async () => {
@@ -292,7 +279,6 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			expect(result).toBe(true);
 			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
 				mockVerification.id,
-				undefined,
 			);
 		});
 
@@ -342,40 +328,33 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			// Then
 			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
 				mockVerification.id,
-				undefined,
 			);
 		});
 
-		it("트랜잭션을 전달한다", async () => {
-			// Given
-			const mockTx = {} as Parameters<typeof service.verifyCode>[3];
-
+		it("리포지토리 호출은 활성 트랜잭션(CLS)에 참여한다 — tx 인자를 전달하지 않는다", async () => {
 			// When
-			await service.verifyCode(userId, code, type, mockTx);
+			await service.verifyCode(userId, code, type);
 
 			// Then
 			expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(
 				userId,
 				type,
-				mockTx,
 			);
 			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
 				mockVerification.id,
-				mockTx,
 			);
 		});
 
 		it("실패 시 시도 횟수는 트랜잭션 외부에서 증가시킨다", async () => {
 			// Given
-			const mockTx = {} as Parameters<typeof service.verifyCode>[3];
 			const wrongCode = "999999";
 
 			// When & Then
-			await expect(
-				service.verifyCode(userId, wrongCode, type, mockTx),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.verifyCode(userId, wrongCode, type)).rejects.toThrow(
+				ApplicationException,
+			);
 
-			// incrementAttempts는 트랜잭션 없이 호출됨 (롤백 방지)
+			// incrementAttempts는 트랜잭션 없이(베이스 클라이언트로) 호출됨 (롤백 방지)
 			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(
 				mockVerification.id,
 			);
@@ -397,7 +376,6 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(
 				userId,
 				passwordResetType,
-				undefined,
 			);
 		});
 	});

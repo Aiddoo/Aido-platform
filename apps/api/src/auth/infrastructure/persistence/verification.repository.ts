@@ -1,24 +1,32 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Verification, VerificationType } from "@/generated/prisma/client";
 import { now } from "@/shared/domain/date/utils/core";
 import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 @Injectable()
 export class VerificationRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+		// incrementAttempts는 활성 트랜잭션을 우회해야 하므로 베이스 클라이언트를 별도 주입한다.
+		private readonly database: DatabaseService,
+	) {}
 
-	async create(
-		data: {
-			userId: string;
-			type: VerificationType;
-			token: string; // SHA-256 해시
-			expiresAt: Date;
-		},
-		tx?: TransactionClient,
-	): Promise<Verification> {
-		const client = tx ?? this.database;
-		return client.verification.create({
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
+
+	async create(data: {
+		userId: string;
+		type: VerificationType;
+		token: string; // SHA-256 해시
+		expiresAt: Date;
+	}): Promise<Verification> {
+		return this.client.verification.create({
 			data: {
 				userId: data.userId,
 				type: data.type,
@@ -29,7 +37,7 @@ export class VerificationRepository {
 	}
 
 	async findByToken(tokenHash: string): Promise<Verification | null> {
-		return this.database.verification.findUnique({
+		return this.client.verification.findUnique({
 			where: { token: tokenHash },
 		});
 	}
@@ -38,7 +46,7 @@ export class VerificationRepository {
 		userId: string,
 		type: VerificationType,
 	): Promise<Verification | null> {
-		return this.database.verification.findFirst({
+		return this.client.verification.findFirst({
 			where: {
 				userId,
 				type,
@@ -53,10 +61,8 @@ export class VerificationRepository {
 	async findValidByUserIdAndType(
 		userId: string,
 		type: VerificationType,
-		tx?: TransactionClient,
 	): Promise<Verification | null> {
-		const client = tx ?? this.database;
-		return client.verification.findFirst({
+		return this.client.verification.findFirst({
 			where: {
 				userId,
 				type,
@@ -67,20 +73,21 @@ export class VerificationRepository {
 		});
 	}
 
-	async markAsUsed(id: number, tx?: TransactionClient): Promise<Verification> {
-		const client = tx ?? this.database;
-		return client.verification.update({
+	async markAsUsed(id: number): Promise<Verification> {
+		return this.client.verification.update({
 			where: { id },
 			data: { usedAt: now() },
 		});
 	}
 
-	async incrementAttempts(
-		id: number,
-		tx?: TransactionClient,
-	): Promise<Verification> {
-		const client = tx ?? this.database;
-		return client.verification.update({
+	/**
+	 * 인증 시도 횟수 증가.
+	 *
+	 * 브루트포스 보호를 위해 실패 횟수는 항상 영구 저장되어야 하므로, 호출측이 연
+	 * 트랜잭션(CLS)에 참여하지 않고 베이스 클라이언트로 독립 커밋한다(롤백 시에도 유지).
+	 */
+	async incrementAttempts(id: number): Promise<Verification> {
+		return this.database.verification.update({
 			where: { id },
 			data: { attempts: { increment: 1 } },
 		});
@@ -104,12 +111,9 @@ export class VerificationRepository {
 		userId: string,
 		type: VerificationType,
 		maxAttempts: number,
-		tx?: TransactionClient,
 	): Promise<Verification | null> {
-		const client = tx ?? this.database;
-
 		// 조건부 업데이트 - 조건 불충족 시 count = 0
-		const result = await client.verification.updateMany({
+		const result = await this.client.verification.updateMany({
 			where: {
 				token: tokenHash,
 				userId,
@@ -126,7 +130,7 @@ export class VerificationRepository {
 		}
 
 		// 업데이트 성공 시 해당 레코드 반환
-		return client.verification.findUnique({
+		return this.client.verification.findUnique({
 			where: { token: tokenHash },
 		});
 	}
@@ -134,11 +138,9 @@ export class VerificationRepository {
 	async invalidateAllByUserIdAndType(
 		userId: string,
 		type: VerificationType,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
 		// 만료 시간을 현재 시간으로 설정하여 무효화
-		const result = await client.verification.updateMany({
+		const result = await this.client.verification.updateMany({
 			where: {
 				userId,
 				type,
@@ -154,10 +156,8 @@ export class VerificationRepository {
 		userId: string,
 		type: VerificationType,
 		since: Date,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-		return client.verification.count({
+		return this.client.verification.count({
 			where: {
 				userId,
 				type,

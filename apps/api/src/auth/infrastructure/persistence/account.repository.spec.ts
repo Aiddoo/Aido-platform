@@ -11,18 +11,20 @@
  * ```
  */
 
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder } from "@test/builders";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 
 import { AccountRepository } from "./account.repository";
 
 describe("AccountRepository — 계정 리포지토리", () => {
 	let repository: AccountRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 	let encryptionService: Mocked<EncryptionService>;
 
 	// Builder로 기본 테스트 계정 생성
@@ -49,11 +51,16 @@ describe("AccountRepository — 계정 리포지토리", () => {
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } =
-			await TestBed.solitary(AccountRepository).compile();
+		db = createMockPrisma();
+
+		const { unit, unitRef } = await TestBed.solitary(AccountRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 		encryptionService = unitRef.get(EncryptionService);
 
 		// encrypt를 입력값 그대로 반환하도록 설정
@@ -159,21 +166,19 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 클라이언트를 사용하여 생성한다", async () => {
+		it("활성 트랜잭션 클라이언트를 사용하여 생성한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
-			mockTx.account.create.mockResolvedValue(mockCredentialAccount);
+			db.account.create.mockResolvedValue(mockCredentialAccount);
 
 			// When
 			const result = await repository.createCredentialAccount(
 				"user-123",
 				"hashed-password",
-				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(mockCredentialAccount);
-			expect(mockTx.account.create).toHaveBeenCalledWith({
+			expect(db.account.create).toHaveBeenCalledWith({
 				data: {
 					userId: "user-123",
 					provider: "CREDENTIAL",
@@ -181,7 +186,6 @@ describe("AccountRepository — 계정 리포지토리", () => {
 					password: "hashed-password",
 				},
 			});
-			expect(db.account.create).not.toHaveBeenCalled();
 		});
 	});
 
@@ -212,32 +216,29 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 클라이언트를 사용하여 업데이트한다", async () => {
+		it("활성 트랜잭션 클라이언트를 사용하여 업데이트한다", async () => {
 			// Given
 			const updatedAccount = AccountBuilder.create("user-123")
 				.withId(1)
 				.asCredential()
 				.withPassword("new-hashed-password")
 				.build();
-			const mockTx = createMockTxClient();
-			mockTx.account.update.mockResolvedValue(updatedAccount);
+			db.account.update.mockResolvedValue(updatedAccount);
 
 			// When
 			const result = await repository.updatePassword(
 				"user-123",
 				"new-hashed-password",
-				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(updatedAccount);
-			expect(mockTx.account.update).toHaveBeenCalledWith({
+			expect(db.account.update).toHaveBeenCalledWith({
 				where: {
 					userId_provider: { userId: "user-123", provider: "CREDENTIAL" },
 				},
 				data: { password: "new-hashed-password" },
 			});
-			expect(db.account.update).not.toHaveBeenCalled();
 		});
 	});
 
@@ -305,21 +306,16 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 클라이언트를 사용하여 생성한다", async () => {
+		it("활성 트랜잭션 클라이언트를 사용하여 생성한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
-			mockTx.account.create.mockResolvedValue(mockOAuthAccount);
+			db.account.create.mockResolvedValue(mockOAuthAccount);
 
 			// When
-			const result = await repository.createOAuthAccount(
-				oAuthData,
-				asTxClient(mockTx),
-			);
+			const result = await repository.createOAuthAccount(oAuthData);
 
 			// Then
 			expect(result).toEqual(mockOAuthAccount);
-			expect(mockTx.account.create).toHaveBeenCalled();
-			expect(db.account.create).not.toHaveBeenCalled();
+			expect(db.account.create).toHaveBeenCalled();
 		});
 	});
 
@@ -394,15 +390,14 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 클라이언트를 사용하여 갱신한다", async () => {
+		it("활성 트랜잭션 클라이언트를 사용하여 갱신한다", async () => {
 			// Given
 			const updatedOAuthAccount = AccountBuilder.create("user-123")
 				.withId(2)
 				.asGoogle("google-user-id")
 				.withOAuthTokens("new-access-token", "new-refresh-token")
 				.build();
-			const mockTx = createMockTxClient();
-			mockTx.account.update.mockResolvedValue(updatedOAuthAccount);
+			db.account.update.mockResolvedValue(updatedOAuthAccount);
 			const tokens = {
 				accessToken: "new-access-token",
 				refreshToken: "new-refresh-token",
@@ -413,13 +408,11 @@ describe("AccountRepository — 계정 리포지토리", () => {
 				"user-123",
 				"GOOGLE",
 				tokens,
-				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(updatedOAuthAccount);
-			expect(mockTx.account.update).toHaveBeenCalled();
-			expect(db.account.update).not.toHaveBeenCalled();
+			expect(db.account.update).toHaveBeenCalled();
 		});
 	});
 
@@ -440,26 +433,20 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			});
 		});
 
-		it("트랜잭션 클라이언트를 사용하여 삭제한다", async () => {
+		it("활성 트랜잭션 클라이언트를 사용하여 삭제한다", async () => {
 			// Given
-			const mockTx = createMockTxClient();
-			mockTx.account.delete.mockResolvedValue(mockOAuthAccount);
+			db.account.delete.mockResolvedValue(mockOAuthAccount);
 
 			// When
-			const result = await repository.deleteAccount(
-				"user-123",
-				"GOOGLE",
-				asTxClient(mockTx),
-			);
+			const result = await repository.deleteAccount("user-123", "GOOGLE");
 
 			// Then
 			expect(result).toEqual(mockOAuthAccount);
-			expect(mockTx.account.delete).toHaveBeenCalledWith({
+			expect(db.account.delete).toHaveBeenCalledWith({
 				where: {
 					userId_provider: { userId: "user-123", provider: "GOOGLE" },
 				},
 			});
-			expect(db.account.delete).not.toHaveBeenCalled();
 		});
 	});
 

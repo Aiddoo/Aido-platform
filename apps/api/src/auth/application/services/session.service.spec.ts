@@ -119,7 +119,6 @@ describe("SessionService — 세션 서비스", () => {
 					userAgent: mockParams.userAgent,
 					ipAddress: mockParams.ipAddress,
 				}),
-				undefined, // tx 없이 호출
 			);
 		});
 
@@ -141,7 +140,6 @@ describe("SessionService — 세션 서비스", () => {
 				expect.objectContaining({
 					expiresAt: expect.any(Date),
 				}),
-				undefined,
 			);
 		});
 
@@ -184,31 +182,24 @@ describe("SessionService — 세션 서비스", () => {
 			expect(sessionRepo.updateRefreshTokenHash).toHaveBeenCalledWith(
 				mockSessionId,
 				mockRefreshTokenHash,
-				undefined, // tx 없이 호출
 			);
 		});
 
-		it("트랜잭션 클라이언트가 전달되면 Repository 호출에 tx를 전달한다", async () => {
+		it("Repository 호출은 활성 트랜잭션(CLS)에 참여한다 — tx 인자를 전달하지 않는다", async () => {
 			// Given
 			const mockSession = SessionBuilder.create(mockUserId)
 				.withId(mockSessionId)
 				.build();
 			setupCreateSessionSuccess(mockSession);
 
-			const mockTx = {} as never; // 트랜잭션 mock
-
 			// When
-			await service.createSessionWithTokens(mockParams, mockTx);
+			await service.createSessionWithTokens(mockParams);
 
 			// Then
-			expect(sessionRepo.create).toHaveBeenCalledWith(
-				expect.any(Object),
-				mockTx,
-			);
+			expect(sessionRepo.create).toHaveBeenCalledWith(expect.any(Object));
 			expect(sessionRepo.updateRefreshTokenHash).toHaveBeenCalledWith(
 				mockSessionId,
 				mockRefreshTokenHash,
-				mockTx,
 			);
 		});
 

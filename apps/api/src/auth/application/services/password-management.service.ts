@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { RequestMetadata } from "@/auth/application/types";
 import { assertNotDeleted } from "@/auth/application/utils/auth-validation.utils";
 import {
@@ -12,9 +12,9 @@ import { AccountRepository } from "@/auth/infrastructure/persistence/account.rep
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
-import { DatabaseService } from "@/shared/infrastructure/database";
 import { VerificationService } from "./verification.service";
 
 @Injectable()
@@ -22,7 +22,7 @@ export class PasswordManagementService {
 	readonly #logger = new Logger(PasswordManagementService.name);
 
 	constructor(
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
 		private readonly userRepository: UserRepository,
 		private readonly accountRepository: AccountRepository,
 		private readonly sessionRepository: SessionRepository,
@@ -90,37 +90,32 @@ export class PasswordManagementService {
 		const hashedPassword = await this.passwordService.hash(newPassword);
 
 		// 트랜잭션으로 인증 검증 + 비밀번호 변경 + 세션 무효화 + 로그 기록
-		await this.database.$transaction(async (tx) => {
+		await this.uow.run(async () => {
 			// 인증 코드 검증 (PASSWORD_RESET 타입)
 			await this.verificationService.verifyCode(
 				user.id,
 				code,
 				"PASSWORD_RESET",
-				tx,
 			);
 
 			// 비밀번호 업데이트
-			await this.accountRepository.updatePassword(user.id, hashedPassword, tx);
+			await this.accountRepository.updatePassword(user.id, hashedPassword);
 
 			// 모든 세션 무효화 (보안상)
 			await this.sessionRepository.revokeAllByUserId(
 				user.id,
 				REVOKE_REASON.PASSWORD_RESET,
 				undefined, // excludeSessionId - 모든 세션 무효화
-				tx,
 			);
 
 			// 보안 로그 기록
-			await this.securityLogRepository.create(
-				{
-					userId: user.id,
-					event: SECURITY_EVENT.PASSWORD_CHANGED,
-					ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
-					userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
-					metadata: { email, reason: REVOKE_REASON.PASSWORD_RESET },
-				},
-				tx,
-			);
+			await this.securityLogRepository.create({
+				userId: user.id,
+				event: SECURITY_EVENT.PASSWORD_CHANGED,
+				ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
+				userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+				metadata: { email, reason: REVOKE_REASON.PASSWORD_RESET },
+			});
 		});
 
 		this.#logger.log(`Password reset completed for: ${maskEmail(email)}`);
@@ -165,28 +160,24 @@ export class PasswordManagementService {
 		const hashedPassword = await this.passwordService.hash(newPassword);
 
 		// 트랜잭션으로 비밀번호 변경 + 세션 폐기 + 로그 기록
-		await this.database.$transaction(async (tx) => {
+		await this.uow.run(async () => {
 			// 비밀번호 업데이트
-			await this.accountRepository.updatePassword(userId, hashedPassword, tx);
+			await this.accountRepository.updatePassword(userId, hashedPassword);
 
 			// 현재 세션 제외 전체 세션 폐기
 			await this.sessionRepository.revokeAllByUserId(
 				userId,
 				REVOKE_REASON.PASSWORD_CHANGED,
 				currentSessionId,
-				tx,
 			);
 
 			// 보안 로그 기록
-			await this.securityLogRepository.create(
-				{
-					userId,
-					event: SECURITY_EVENT.PASSWORD_CHANGED,
-					ipAddress: ip,
-					userAgent,
-				},
-				tx,
-			);
+			await this.securityLogRepository.create({
+				userId,
+				event: SECURITY_EVENT.PASSWORD_CHANGED,
+				ipAddress: ip,
+				userAgent,
+			});
 		});
 
 		this.#logger.log(`Password changed for user: ${userId}`);
@@ -248,32 +239,23 @@ export class PasswordManagementService {
 		const hashedPassword = await this.passwordService.hash(newPassword);
 
 		// 4. 트랜잭션: 인증 코드 검증 + CREDENTIAL 계정 생성 + 보안 로그
-		await this.database.$transaction(async (tx) => {
+		await this.uow.run(async () => {
 			// 인증 코드 검증 (PASSWORD_SETUP 타입)
-			await this.verificationService.verifyCode(
-				userId,
-				code,
-				"PASSWORD_SETUP",
-				tx,
-			);
+			await this.verificationService.verifyCode(userId, code, "PASSWORD_SETUP");
 
 			// CREDENTIAL 계정 생성
 			await this.accountRepository.createCredentialAccount(
 				userId,
 				hashedPassword,
-				tx,
 			);
 
 			// 보안 로그 기록
-			await this.securityLogRepository.create(
-				{
-					userId,
-					event: SECURITY_EVENT.PASSWORD_SETUP,
-					ipAddress: ip,
-					userAgent,
-				},
-				tx,
-			);
+			await this.securityLogRepository.create({
+				userId,
+				event: SECURITY_EVENT.PASSWORD_SETUP,
+				ipAddress: ip,
+				userAgent,
+			});
 		});
 
 		this.#logger.log(`Password set for social user: ${userId}`);
