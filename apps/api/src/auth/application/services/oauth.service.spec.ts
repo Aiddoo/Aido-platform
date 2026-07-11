@@ -43,6 +43,7 @@ import {
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { OAuthService } from "./oauth.service";
 import { SessionService } from "./session.service";
 
@@ -99,10 +100,27 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 		securityLogRepo = unitRef.get(SecurityLogRepository);
 		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
 		oauthStateRepo = unitRef.get(OAuthStateRepository);
-		sessionService = unitRef.get(SessionService);
+		// SessionService는 OAuthService 직접 의존이 아니라 IssueLoginUseCase의 의존이므로
+		// 발급 수렴 유스케이스에 배선할 독립 mock으로 구성한다
+		sessionService = {
+			createSessionWithTokens: jest.fn(),
+		} as unknown as Mocked<SessionService>;
 		configService = unitRef.get(TypedConfigService);
 		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
 		cacheService = unitRef.get(CacheService);
+
+		// IssueLoginUseCase(발급 수렴)를 실제 인스턴스로 위임 — 소셜 로그인 테스트가
+		// 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
+		const issueLogin = unitRef.get(IssueLoginUseCase);
+		const realIssueLogin = new IssueLoginUseCase(
+			sessionService as unknown as SessionService,
+			loginAttemptRepo as unknown as LoginAttemptRepository,
+			securityLogRepo as unknown as SecurityLogRepository,
+			userRepo as unknown as UserRepository,
+		);
+		issueLogin.execute.mockImplementation((input, tx) =>
+			realIssueLogin.execute(input, tx),
+		);
 
 		// ConfigService 기본 설정
 		setupDefaultConfigService();

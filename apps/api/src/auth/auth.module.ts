@@ -26,6 +26,7 @@ import {
 	TokenService,
 	VerificationService,
 } from "./application/services";
+import { IssueLoginUseCase } from "./application/use-cases/issue-login/issue-login.use-case";
 import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards";
 import {
 	AppleOAuthProvider,
@@ -103,6 +104,8 @@ import {
 		AuthService,
 		PasswordManagementService,
 		OAuthService,
+		// Use-cases (이메일·소셜 로그인 수렴)
+		IssueLoginUseCase,
 		// OAuth 신원 제공자 레지스트리 (provider → 벤더 어댑터 Map)
 		{
 			provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,

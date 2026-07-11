@@ -60,6 +60,7 @@ import {
 	UserConsentRepository,
 	UserPreferenceRepository,
 } from "@/user-settings";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { SessionService } from "./session.service";
 import { VerificationService } from "./verification.service";
 
@@ -83,6 +84,7 @@ export class AuthService {
 		private readonly verificationService: VerificationService,
 		private readonly cacheService: CacheService,
 		private readonly adminNotificationFacade: AdminNotificationFacade,
+		private readonly issueLoginUseCase: IssueLoginUseCase,
 	) {}
 
 	async register(
@@ -494,62 +496,25 @@ export class AuthService {
 			this.#checkUserStatus(user.status, email);
 		}
 
-		// 5. 세션 생성 + JWT 토큰 발급 (트랜잭션)
+		// 5. 세션 생성 + JWT 토큰 발급 (트랜잭션, 이메일·소셜 공통 발급 시퀀스)
 		const result = await this.database.$transaction(async (tx) => {
 			// 유예 기간 내 탈퇴 계정 복구
 			if (needsRestore) {
 				await this.#restoreDeletedAccount(user, { ip, userAgent }, tx);
 			}
 
-			// 세션 생성 + 토큰 발급
-			const { sessionId, tokens } =
-				await this.sessionService.createSessionWithTokens(
-					{
-						userId: user.id,
-						email,
-						role: user.role,
-						deviceFingerprint: deviceName ?? userAgent,
-						userAgent,
-						ipAddress: ip,
-					},
-					tx,
-				);
-
-			// 로그인 성공 기록
-			await this.loginAttemptRepository.create(
-				{
-					email,
-					provider: "CREDENTIAL",
-					ipAddress: ip,
-					userAgent,
-					success: true,
-				},
-				tx,
-			);
-
-			// 보안 로그 기록
-			await this.securityLogRepository.create(
+			return this.issueLoginUseCase.execute(
 				{
 					userId: user.id,
-					event: SECURITY_EVENT.LOGIN_SUCCESS,
-					ipAddress: ip,
+					email,
+					role: user.role,
+					provider: "CREDENTIAL",
+					ip,
 					userAgent,
+					deviceFingerprint: deviceName ?? userAgent,
 				},
 				tx,
 			);
-
-			// 프로필 조회
-			const userWithProfile = await this.userRepository.findByIdWithProfile(
-				user.id,
-				tx,
-			);
-
-			return {
-				tokens,
-				sessionId,
-				name: userWithProfile?.profile?.name ?? null,
-				profileImage: userWithProfile?.profile?.profileImage ?? null,
-			};
 		});
 
 		// 복구된 계정의 캐시 무효화

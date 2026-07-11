@@ -41,6 +41,7 @@ import {
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { AuthService } from "./auth.service";
 import { SessionService } from "./session.service";
 import { VerificationService } from "./verification.service";
@@ -84,6 +85,19 @@ describe("AuthService — 인증 서비스", () => {
 		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
 		sessionService = unitRef.get(SessionService);
 		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
+
+		// IssueLoginUseCase(발급 수렴)를 실제 인스턴스로 위임 — 기존 login 테스트가
+		// 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
+		const issueLogin = unitRef.get(IssueLoginUseCase);
+		const realIssueLogin = new IssueLoginUseCase(
+			sessionService as unknown as SessionService,
+			loginAttemptRepo as unknown as LoginAttemptRepository,
+			securityLogRepo as unknown as SecurityLogRepository,
+			userRepo as unknown as UserRepository,
+		);
+		issueLogin.execute.mockImplementation((input, tx) =>
+			realIssueLogin.execute(input, tx),
+		);
 	});
 
 	describe("register", () => {

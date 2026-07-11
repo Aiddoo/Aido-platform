@@ -51,7 +51,7 @@ import {
 	UserConsentRepository,
 	UserPreferenceRepository,
 } from "@/user-settings";
-import { SessionService } from "./session.service";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 
 /**
  * AccountProvider → 이벤트 페이로드 provider 매핑
@@ -78,7 +78,6 @@ export class OAuthService {
 		private readonly securityLogRepository: SecurityLogRepository,
 		private readonly loginAttemptRepository: LoginAttemptRepository,
 		private readonly oauthStateRepository: OAuthStateRepository,
-		private readonly sessionService: SessionService,
 		private readonly configService: TypedConfigService,
 		private readonly encryptionService: EncryptionService,
 		private readonly adminNotificationFacade: AdminNotificationFacade,
@@ -86,6 +85,7 @@ export class OAuthService {
 		private readonly userConsentRepository: UserConsentRepository,
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly todoCategoryRepository: TodoCategoryRepository,
+		private readonly issueLoginUseCase: IssueLoginUseCase,
 		@Inject(OAUTH_IDENTITY_PROVIDER_REGISTRY)
 		private readonly registry: OAuthIdentityProviderRegistry,
 	) {}
@@ -813,53 +813,27 @@ export class OAuthService {
 				tx,
 			);
 
-			const { sessionId, tokens } =
-				await this.sessionService.createSessionWithTokens(
-					{
-						userId: user.id,
-						email: user.email,
-						role: userRecord.role,
-						deviceFingerprint: options.userAgent,
-						userAgent: options.userAgent,
-						ipAddress: options.ip,
-					},
-					tx,
-				);
-
-			await this.securityLogRepository.create(
+			const outcome = await this.issueLoginUseCase.execute(
 				{
 					userId: user.id,
-					event: SECURITY_EVENT.LOGIN_SUCCESS,
-					ipAddress: options.ip,
-					userAgent: options.userAgent,
-					metadata: { provider: options.provider },
-				},
-				tx,
-			);
-
-			await this.loginAttemptRepository.create(
-				{
 					email: user.email,
+					role: userRecord.role,
 					provider: options.provider,
-					ipAddress: options.ip,
+					ip: options.ip,
 					userAgent: options.userAgent,
-					success: true,
+					deviceFingerprint: options.userAgent,
+					securityMetadata: { provider: options.provider },
 				},
-				tx,
-			);
-
-			const userWithProfile = await this.userRepository.findByIdWithProfile(
-				user.id,
 				tx,
 			);
 
 			return {
 				userId: user.id,
-				userTag: userWithProfile?.userTag ?? "",
-				tokens,
-				sessionId,
-				name: userWithProfile?.profile?.name ?? null,
-				profileImage: userWithProfile?.profile?.profileImage ?? null,
+				userTag: outcome.userTag,
+				tokens: outcome.tokens,
+				sessionId: outcome.sessionId,
+				name: outcome.name,
+				profileImage: outcome.profileImage,
 			};
 		});
 
@@ -885,53 +859,27 @@ export class OAuthService {
 		}
 
 		return this.database.$transaction(async (tx) => {
-			const { sessionId, tokens } =
-				await this.sessionService.createSessionWithTokens(
-					{
-						userId,
-						email,
-						role: user.role,
-						deviceFingerprint: options.userAgent,
-						userAgent: options.userAgent,
-						ipAddress: options.ip,
-					},
-					tx,
-				);
-
-			await this.securityLogRepository.create(
+			const outcome = await this.issueLoginUseCase.execute(
 				{
 					userId,
-					event: SECURITY_EVENT.LOGIN_SUCCESS,
-					ipAddress: options.ip,
-					userAgent: options.userAgent,
-					metadata: { provider: options.provider },
-				},
-				tx,
-			);
-
-			await this.loginAttemptRepository.create(
-				{
 					email,
+					role: user.role,
 					provider: options.provider,
-					ipAddress: options.ip,
+					ip: options.ip,
 					userAgent: options.userAgent,
-					success: true,
+					deviceFingerprint: options.userAgent,
+					securityMetadata: { provider: options.provider },
 				},
-				tx,
-			);
-
-			const userWithProfile = await this.userRepository.findByIdWithProfile(
-				userId,
 				tx,
 			);
 
 			return {
 				userId,
-				userTag: userWithProfile?.userTag ?? "",
-				tokens,
-				sessionId,
-				name: userWithProfile?.profile?.name ?? null,
-				profileImage: userWithProfile?.profile?.profileImage ?? null,
+				userTag: outcome.userTag,
+				tokens: outcome.tokens,
+				sessionId: outcome.sessionId,
+				name: outcome.name,
+				profileImage: outcome.profileImage,
 			};
 		});
 	}

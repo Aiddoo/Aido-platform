@@ -32,6 +32,7 @@ import { AuthService } from "@/auth/application/services/auth.service";
 import { PasswordManagementService } from "@/auth/application/services/password-management.service";
 import { SessionService } from "@/auth/application/services/session.service";
 import { VerificationService } from "@/auth/application/services/verification.service";
+import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -88,6 +89,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			],
 			providers: [
 				AuthService,
+				IssueLoginUseCase,
 				AccountPurgeJob,
 				{
 					provide: getQueueToken(ACCOUNT_PURGE_QUEUE),

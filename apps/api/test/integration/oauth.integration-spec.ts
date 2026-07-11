@@ -34,6 +34,7 @@ import {
 } from "@/auth/application/ports/oauth-identity-provider.port";
 import { OAuthService } from "@/auth/application/services/oauth.service";
 import { SessionService } from "@/auth/application/services/session.service";
+import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import {
 	AppleOAuthProvider,
@@ -95,6 +96,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			],
 			providers: [
 				OAuthService,
+				IssueLoginUseCase,
 				{
 					provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
 					inject: [TypedConfigService, OAuthTokenVerifierService],
