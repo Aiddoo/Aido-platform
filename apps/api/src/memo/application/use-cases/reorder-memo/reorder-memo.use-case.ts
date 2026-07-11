@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
@@ -12,20 +11,28 @@ import {
 	MEMO_REPOSITORY,
 	type MemoRepositoryPort,
 } from "../../ports/memo.repository.port";
-import type { MemoMutationResult } from "../create-memo/create-memo.command";
-import { ReorderMemoCommand } from "./reorder-memo.command";
+import type { MemoMutationResult } from "../create-memo/create-memo.use-case";
 
 /**
- * 메모 순서 변경 핸들러.
+ * 메모 순서 변경 입력.
+ * targetMemoId 생략 시 맨 앞/뒤로 이동한다.
+ */
+export interface ReorderMemoInput {
+	userId: string;
+	memoId: number;
+	position: "before" | "after";
+	targetMemoId?: number;
+}
+
+/**
+ * 메모 순서 변경 use-case.
  *
  * 새 sortOrder와 사이 구간 시프트 계획은 도메인 서비스가 계산하고, 시프트·갱신을
  * 한 트랜잭션으로 적용한다. 자기 자신을 기준으로 지정하면 변경 없이 반환한다.
  */
-@CommandHandler(ReorderMemoCommand)
-export class ReorderMemoHandler
-	implements ICommandHandler<ReorderMemoCommand, MemoMutationResult>
-{
-	readonly #logger = new Logger(ReorderMemoHandler.name);
+@Injectable()
+export class ReorderMemoUseCase {
+	readonly #logger = new Logger(ReorderMemoUseCase.name);
 
 	constructor(
 		@Inject(UNIT_OF_WORK)
@@ -34,8 +41,8 @@ export class ReorderMemoHandler
 		private readonly repository: MemoRepositoryPort,
 	) {}
 
-	async execute(command: ReorderMemoCommand): Promise<MemoMutationResult> {
-		const { userId, memoId, targetMemoId } = command;
+	async execute(input: ReorderMemoInput): Promise<MemoMutationResult> {
+		const { userId, memoId, targetMemoId } = input;
 
 		return this.uow.run(async () => {
 			const memo = await this.repository.findByIdAndUserId(memoId, userId);
@@ -47,7 +54,7 @@ export class ReorderMemoHandler
 				return { message: "메모 순서가 변경되었습니다.", memo: memo.toView() };
 			}
 
-			const plan = await this.#planReorder(memo.sortOrder, command);
+			const plan = await this.#planReorder(memo.sortOrder, input);
 
 			await this.repository.shiftSortOrders(
 				userId,
@@ -70,9 +77,9 @@ export class ReorderMemoHandler
 
 	async #planReorder(
 		currentSortOrder: number,
-		command: ReorderMemoCommand,
+		input: ReorderMemoInput,
 	): Promise<ReorderPlan> {
-		const { userId, targetMemoId, position } = command;
+		const { userId, targetMemoId, position } = input;
 
 		if (targetMemoId) {
 			const target = await this.repository.findByIdAndUserId(

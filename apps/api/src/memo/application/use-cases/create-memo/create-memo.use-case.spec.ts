@@ -1,5 +1,5 @@
 /**
- * CreateMemoHandler 단위 테스트
+ * CreateMemoUseCase 단위 테스트
  */
 import { MEMO_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
@@ -10,8 +10,7 @@ import {
 	MEMO_REPOSITORY,
 	type MemoRepositoryPort,
 } from "../../ports/memo.repository.port";
-import { CreateMemoCommand } from "./create-memo.command";
-import { CreateMemoHandler } from "./create-memo.handler";
+import { CreateMemoUseCase } from "./create-memo.use-case";
 
 const memoEntity = (sortOrder: number): Memo =>
 	Memo.reconstitute({
@@ -24,15 +23,15 @@ const memoEntity = (sortOrder: number): Memo =>
 		updatedAt: new Date(),
 	});
 
-describe("CreateMemoHandler — 메모 생성 핸들러", () => {
-	let handler: CreateMemoHandler;
+describe("CreateMemoUseCase — 메모 생성", () => {
+	let useCase: CreateMemoUseCase;
 	let uow: Mocked<UnitOfWorkPort>;
 	let repository: Mocked<MemoRepositoryPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } =
-			await TestBed.solitary(CreateMemoHandler).compile();
-		handler = unit;
+			await TestBed.solitary(CreateMemoUseCase).compile();
+		useCase = unit;
 		uow = unitRef.get(UNIT_OF_WORK);
 		repository = unitRef.get(MEMO_REPOSITORY);
 
@@ -44,9 +43,7 @@ describe("CreateMemoHandler — 메모 생성 핸들러", () => {
 		repository.getMaxSortOrder.mockResolvedValue(7);
 		repository.create.mockResolvedValue(memoEntity(8));
 
-		const result = await handler.execute(
-			new CreateMemoCommand("user-1", "내용"),
-		);
+		const result = await useCase.execute({ userId: "user-1", content: "내용" });
 
 		expect(repository.create).toHaveBeenCalledWith("user-1", "내용", 8);
 		expect(result.message).toBe("메모가 생성되었습니다.");
@@ -57,7 +54,7 @@ describe("CreateMemoHandler — 메모 생성 핸들러", () => {
 		repository.countByUserId.mockResolvedValue(MEMO_LIMITS.MAX_PER_USER);
 
 		await expect(
-			handler.execute(new CreateMemoCommand("user-1", "내용")),
+			useCase.execute({ userId: "user-1", content: "내용" }),
 		).rejects.toMatchObject({ errorCode: "MEMO_2003" });
 		expect(repository.create).not.toHaveBeenCalled();
 	});
