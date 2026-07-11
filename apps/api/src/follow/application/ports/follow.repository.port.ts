@@ -43,6 +43,30 @@ export interface FindFollowsParams {
 	search?: string;
 }
 
+/**
+ * 사용자 검색 결과 프로젝션.
+ * 뷰어 기준 관계 flag를 포함하며, `rank`는 관련도 버킷(내부 페이지네이션용, 매퍼에서 드롭).
+ */
+export interface UserSearchResult {
+	id: string;
+	userTag: string;
+	profile: { name: string | null; profileImage: string | null } | null;
+	isFollowing: boolean;
+	isFollower: boolean;
+	isFriend: boolean;
+	requestPending: boolean;
+	rank: number;
+}
+
+/** 사용자 검색 파라미터 (정규화·디코딩 완료 상태) */
+export interface SearchUsersParams {
+	viewerId: string;
+	nfcQuery: string;
+	upperTag: string;
+	cursor?: { rank: number; id: string };
+	size: number;
+}
+
 /** 팔로우 생성 입력 */
 export interface CreateFollowInput {
 	followerId: string;
@@ -81,6 +105,13 @@ export interface FollowRepositoryPort {
 	findMutualFriends(params: FindFollowsParams): Promise<FollowWithUser[]>;
 	findReceivedRequests(params: FindFollowsParams): Promise<FollowWithUser[]>;
 	findSentRequests(params: FindFollowsParams): Promise<FollowWithUser[]>;
+
+	/** 이름/태그로 전체 활성 사용자 검색 (관련도 랭킹, size+1 반환). */
+	searchUsers(params: SearchUsersParams): Promise<UserSearchResult[]>;
+	/** 검색 조건에 매칭되는 전체 사용자 수 (커서·size 무관). */
+	countSearchUsers(
+		params: Omit<SearchUsersParams, "cursor" | "size">,
+	): Promise<number>;
 
 	findAcceptedByIdAndFollowerId(
 		id: string,

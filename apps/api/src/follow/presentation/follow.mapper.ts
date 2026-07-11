@@ -5,10 +5,18 @@
  * 변환하는 Static 메서드를 제공한다. 필드·직렬화 규칙은 레거시와 동일하다(계약 불변).
  */
 
-import type { Follow, FriendRequestUser, FriendUser } from "@aido/validators";
+import type {
+	Follow,
+	FriendRequestUser,
+	FriendUser,
+	SearchUser,
+} from "@aido/validators";
 
 import { toISOString } from "@/shared/domain/date/utils/format";
-import type { FollowWithUser } from "../application/ports/follow.repository.port";
+import type {
+	FollowWithUser,
+	UserSearchResult,
+} from "../application/ports/follow.repository.port";
 import type { Friendship } from "../domain/entities/friendship.entity";
 
 export abstract class FollowMapper {
@@ -61,6 +69,20 @@ export abstract class FollowMapper {
 			name: recipient.profile?.name ?? null,
 			profileImage: recipient.profile?.profileImage ?? null,
 			requestedAt: toISOString(follow.createdAt),
+		};
+	}
+
+	/** 사용자 검색 결과 변환 (내부 rank는 드롭, 관계 flag 전달) */
+	static toSearchUser(result: UserSearchResult): SearchUser {
+		return {
+			id: result.id,
+			userTag: result.userTag,
+			name: result.profile?.name ?? null,
+			profileImage: result.profile?.profileImage ?? null,
+			isFollowing: result.isFollowing,
+			isFollower: result.isFollower,
+			isFriend: result.isFriend,
+			requestPending: result.requestPending,
 		};
 	}
 }

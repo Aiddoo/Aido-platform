@@ -14,8 +14,10 @@ import {
   rejectFriendRequestResponseSchema,
   removeFriendResponseSchema,
   reorderFriendResponseSchema,
+  type SearchUsersResponse,
   type SendFriendRequestResponse,
   type SentRequestsResponse,
+  searchUsersResponseSchema,
   sendFriendRequestResponseSchema,
   sentRequestsResponseSchema,
 } from '@aido/validators';
@@ -31,14 +33,20 @@ import {
   type FriendRequest,
   type FriendUser,
   type PaginationParams,
+  type SearchedUser,
   type SendRequestResult,
 } from '../models/friend.model';
 import {
   toFriendRequestsPage,
   toFriendsPage,
   toFriendUser,
+  toSearchedUsersPage,
   toSendRequestResult,
 } from './friend.mapper';
+
+export interface SearchUsersParams extends PaginationParams {
+  query: string;
+}
 
 export type FriendServiceError = ApiError | FriendError;
 
@@ -193,6 +201,32 @@ export class FriendService {
     }
 
     return ok(toFriendsPage(parsed.data));
+  };
+
+  searchUsers = async (
+    params: SearchUsersParams,
+  ): Promise<Result<Page<SearchedUser>, FriendServiceError>> => {
+    const query = params.query.trim();
+
+    // HTTP 호출 전 최소 길이 가드 (2자 미만이면 네트워크 요청 없이 실패)
+    if (!FriendPolicy.isValidSearchQuery(query)) {
+      return err(FriendErrors.searchQueryTooShort());
+    }
+
+    const result = await this.#httpClient.get<SearchUsersResponse>('v1/follows/search', {
+      params: { q: query, cursor: params.cursor, limit: params.limit },
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = searchUsersResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[FriendService] Invalid searchUsers response: ${parsed.error.message}`);
+    }
+
+    return ok(toSearchedUsersPage(parsed.data));
   };
 
   reorderFriend = async (
