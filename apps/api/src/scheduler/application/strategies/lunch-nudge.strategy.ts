@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	createLocaleMessageCache,
+	NotificationFacade,
 	NotificationMessageBuilder,
-	NotificationService,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
@@ -35,7 +35,7 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 		private readonly reader: ScheduledReminderReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationService,
+		private readonly notificationService: NotificationFacade,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {

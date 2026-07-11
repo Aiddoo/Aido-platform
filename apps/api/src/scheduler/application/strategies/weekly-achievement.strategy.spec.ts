@@ -12,7 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationService } from "@/notification";
+import { NotificationFacade } from "@/notification";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { WeeklyAchievementFacade } from "@/weekly-achievement";
 
@@ -31,7 +31,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 	let strategy: WeeklyAchievementStrategy;
 	let reader: Mocked<WeeklyAchievementStatsReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationService>;
+	let notificationService: Mocked<NotificationFacade>;
 	let weeklyAchievementFacade: Mocked<WeeklyAchievementFacade>;
 
 	const TZ = "Asia/Seoul";
@@ -60,7 +60,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(WEEKLY_ACHIEVEMENT_STATS_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationService);
+		notificationService = unitRef.get(NotificationFacade);
 		weeklyAchievementFacade = unitRef.get(WeeklyAchievementFacade);
 
 		// 기본 mock 설정

@@ -1,9 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { CreateNotificationData } from "@/notification";
-import {
-	NotificationMessageBuilder,
-	NotificationService,
-} from "@/notification";
+import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
@@ -29,7 +26,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		private readonly reader: ReEngagementReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationService,
+		private readonly notificationService: NotificationFacade,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {

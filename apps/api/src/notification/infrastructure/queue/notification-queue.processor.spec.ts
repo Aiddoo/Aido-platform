@@ -23,8 +23,7 @@ import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { NotificationService } from "../../application/services/notification.service";
-import { PushDeliveryService } from "../../application/services/push-delivery.service";
+import { NotificationFacade } from "../../application/facades/notification.facade";
 import { NotificationMessageBuilder } from "../../domain/services/templates/notification-templates";
 import {
 	type BillingIssueJobData,
@@ -40,8 +39,7 @@ import { NotificationQueueProcessor } from "./notification-queue.processor";
 
 describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 	let processor: NotificationQueueProcessor;
-	let notificationService: Mocked<NotificationService>;
-	let pushDeliveryService: Mocked<PushDeliveryService>;
+	let notification: Mocked<NotificationFacade>;
 	let uow: UnitOfWorkPort;
 	let db: MockPrismaClient;
 
@@ -63,9 +61,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			.compile();
 
 		processor = unit;
-		notificationService = unitRef.get(NotificationService);
-		pushDeliveryService = unitRef.get(PushDeliveryService);
-		pushDeliveryService.getUserLocale.mockResolvedValue("ko");
+		notification = unitRef.get(NotificationFacade);
+		notification.getUserLocale.mockResolvedValue("ko");
 		db.userPreference.findMany.mockResolvedValue([]);
 	});
 
@@ -88,7 +85,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith({
+			expect(notification.createAndSendWithDedup).toHaveBeenCalledWith({
 				userId: "user-2",
 				type: "FOLLOW_NEW",
 				title: message.title,
@@ -99,7 +96,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
 			// Given
-			notificationService.createAndSendWithDedup.mockRejectedValue(
+			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
 			);
 			const data: FollowNewJobData = {
@@ -129,7 +126,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith({
+			expect(notification.createAndSendWithDedup).toHaveBeenCalledWith({
 				userId: "user-1",
 				type: "FOLLOW_ACCEPTED",
 				title: message.title,
@@ -140,7 +137,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
 			// Given
-			notificationService.createAndSendWithDedup.mockRejectedValue(
+			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
 			);
 			const data: FollowMutualJobData = {
@@ -177,7 +174,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith({
+			expect(notification.createAndSendWithDedup).toHaveBeenCalledWith({
 				userId: "user-2",
 				type: "NUDGE_RECEIVED",
 				title: message.title,
@@ -205,7 +202,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith(
+			expect(notification.createAndSendWithDedup).toHaveBeenCalledWith(
 				expect.objectContaining({
 					metadata: { message: "빨리 해!" },
 				}),
@@ -214,7 +211,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
 			// Given
-			notificationService.createAndSendWithDedup.mockRejectedValue(
+			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
 			);
 			const data: NudgeSentJobData = {
@@ -250,7 +247,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith({
+			expect(notification.createAndSendWithDedup).toHaveBeenCalledWith({
 				userId: "user-2",
 				type: "CHEER_RECEIVED",
 				title: message.title,
@@ -279,7 +276,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith({
+			expect(notification.createAndSendWithDedup).toHaveBeenCalledWith({
 				userId: "user-2",
 				type: "CHEER_RECEIVED",
 				title: message.title,
@@ -292,7 +289,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
 			// Given
-			notificationService.createAndSendWithDedup.mockRejectedValue(
+			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
 			);
 			const data: CheerSentJobData = {
@@ -319,7 +316,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSend).toHaveBeenCalledWith({
+			expect(notification.createAndSend).toHaveBeenCalledWith({
 				userId: "user-1",
 				type: "SYSTEM_NOTICE",
 				title: message.title,
@@ -329,9 +326,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 re-throw한다 (BullMQ 재시도 대상)", async () => {
 			// Given
-			notificationService.createAndSend.mockRejectedValue(
-				new Error("DB error"),
-			);
+			notification.createAndSend.mockRejectedValue(new Error("DB error"));
 			const data: BillingIssueJobData = { userId: "user-1" };
 			const job = createMockJob(NotificationJobName.BILLING_ISSUE, data);
 
@@ -354,10 +349,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				NotificationJobName.FRIEND_COMPLETED,
 				friendCompletedData,
 			);
-			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-				new Set(),
-			);
-			notificationService.createAndSendBatch.mockResolvedValue({ count: 2 });
+			notification.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+			notification.createAndSendBatch.mockResolvedValue({ count: 2 });
 
 			const message = NotificationMessageBuilder.friendCompleted("완료 친구");
 
@@ -365,16 +358,14 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(
-				notificationService.findAlreadyNotifiedUserIds,
-			).toHaveBeenCalledWith(
+			expect(notification.findAlreadyNotifiedUserIds).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userIds: ["user-1", "user-2"],
 					type: "FRIEND_COMPLETED",
 					friendId: "friend-1",
 				}),
 			);
-			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith(
+			expect(notification.createAndSendBatch).toHaveBeenCalledWith(
 				expect.arrayContaining([
 					expect.objectContaining({
 						userId: "user-1",
@@ -397,16 +388,16 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				NotificationJobName.FRIEND_COMPLETED,
 				friendCompletedData,
 			);
-			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
+			notification.findAlreadyNotifiedUserIds.mockResolvedValue(
 				new Set(["user-1"]),
 			);
-			notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+			notification.createAndSendBatch.mockResolvedValue({ count: 1 });
 
 			// When
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith([
+			expect(notification.createAndSendBatch).toHaveBeenCalledWith([
 				expect.objectContaining({
 					userId: "user-2",
 					type: "FRIEND_COMPLETED",
@@ -420,7 +411,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				NotificationJobName.FRIEND_COMPLETED,
 				friendCompletedData,
 			);
-			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
+			notification.findAlreadyNotifiedUserIds.mockResolvedValue(
 				new Set(["user-1", "user-2"]),
 			);
 
@@ -428,7 +419,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+			expect(notification.createAndSendBatch).not.toHaveBeenCalled();
 		});
 
 		it("빈 notifyUserIds는 즉시 리턴한다", async () => {
@@ -444,7 +435,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 			// Then
 			expect(uow.run).not.toHaveBeenCalled();
-			expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+			expect(notification.createAndSendBatch).not.toHaveBeenCalled();
 		});
 
 		it("P2002 unique constraint 시 graceful skip한다", async () => {
@@ -485,7 +476,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 		it("마일스톤 알림을 발송한다", async () => {
 			// Given - 기존 마일스톤 알림 없음
 			asMock(db.notification.findFirst).mockResolvedValue(null);
-			notificationService.createAndSend.mockResolvedValue(null);
+			notification.createAndSend.mockResolvedValue(null);
 
 			const job = createMockJob(
 				NotificationJobName.MILESTONE_REACHED,
@@ -496,7 +487,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+			expect(notification.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-milestone",
 					type: "WEEKLY_ACHIEVEMENT",
@@ -521,15 +512,13 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notificationService.createAndSend).not.toHaveBeenCalled();
+			expect(notification.createAndSend).not.toHaveBeenCalled();
 		});
 
 		it("에러 발생 시 로깅만 하고 throw하지 않는다", async () => {
 			// Given
 			asMock(db.notification.findFirst).mockResolvedValue(null);
-			notificationService.createAndSend.mockRejectedValue(
-				new Error("DB error"),
-			);
+			notification.createAndSend.mockRejectedValue(new Error("DB error"));
 
 			const job = createMockJob(
 				NotificationJobName.MILESTONE_REACHED,

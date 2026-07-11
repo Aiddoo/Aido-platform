@@ -7,20 +7,24 @@ import { UserSettingsModule } from "@/user-settings/user-settings.module";
 
 import { NotificationFacade } from "./application/facades/notification.facade";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
+import { PUSH_DISPATCHER } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
-import { NotificationService } from "./application/services/notification.service";
-import { PushDeliveryService } from "./application/services/push-delivery.service";
+import { FindAlreadyNotifiedUsersUseCase } from "./application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
 import { GetUnreadCountUseCase } from "./application/use-cases/get-unread-count/get-unread-count.use-case";
 import { MarkAllAsReadUseCase } from "./application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
 import { MarkAsReadUseCase } from "./application/use-cases/mark-as-read/mark-as-read.use-case";
 import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
+import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification/send-batch-notification.use-case";
+import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
+import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
 import { ExpoPushProvider } from "./infrastructure/providers/expo-push.provider";
@@ -34,8 +38,8 @@ import { NotificationController } from "./presentation/notification.controller";
  * Notification 모듈 (클린아키텍처 4계층 + 포트/어댑터)
  *
  * - presentation: NotificationController → NotificationFacade(유스케이스 조합)
- * - application: NotificationService(모듈 간 발송 엔진)·PushDeliveryService·유스케이스
- * - infrastructure: Prisma 저장소·Expo 푸시 프로바이더·rate limiter·BullMQ 프로세서
+ * - application: 조회·읽음·토큰·발송 유스케이스 + NotificationFacade
+ * - infrastructure: Prisma 저장소·Expo 푸시 프로바이더·PushDispatcher·rate limiter·BullMQ 프로세서
  *
  * Provider 추상화(PUSH_PROVIDER 포트)로 Expo → FCM/APNs 교체를 어댑터 추가만으로 대비.
  */
@@ -54,9 +58,11 @@ import { NotificationController } from "./presentation/notification.controller";
 		MarkAllAsReadUseCase,
 		RegisterPushTokenUseCase,
 		UnregisterPushTokenUseCase,
-		// Application services (모듈 간 발송 엔진 + 푸시 전송)
-		NotificationService,
-		PushDeliveryService,
+		// 크로스모듈 발송/디스패치 use-cases
+		SendNotificationUseCase,
+		SendNotificationWithDedupUseCase,
+		SendBatchNotificationUseCase,
+		FindAlreadyNotifiedUsersUseCase,
 		// Repository (포트 바인딩)
 		NotificationRepository,
 		{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
@@ -65,6 +71,8 @@ import { NotificationController } from "./presentation/notification.controller";
 			provide: USER_NOTIFICATION_SETTINGS,
 			useClass: UserNotificationSettingsAdapter,
 		},
+		// 푸시 디스패처 (전송 메커니즘 + 발송 자격 판단)
+		{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)
 		{
 			provide: PUSH_PROVIDER,
@@ -91,8 +99,7 @@ import { NotificationController } from "./presentation/notification.controller";
 		NotificationQueueProcessor,
 	],
 	exports: [
-		NotificationService,
-		PushDeliveryService,
+		NotificationFacade,
 		NotificationRepository,
 		NotificationQueueModule,
 	],

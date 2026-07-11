@@ -2,8 +2,8 @@ import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 import {
+	NotificationFacade,
 	NotificationMessageBuilder,
-	NotificationService,
 	resolveTemplateLocale,
 } from "@/notification";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -47,7 +47,7 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 
 	constructor(
 		private readonly aiSuggestionFacade: AiSuggestionFacade,
-		private readonly notificationService: NotificationService,
+		private readonly notificationService: NotificationFacade,
 		private readonly database: DatabaseService,
 	) {
 		super();

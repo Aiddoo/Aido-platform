@@ -12,10 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import {
-	NotificationMessageBuilder,
-	NotificationService,
-} from "@/notification";
+import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
@@ -28,7 +25,7 @@ import { StreakAtRiskStrategy } from "./streak-at-risk.strategy";
 describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 	let strategy: StreakAtRiskStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
-	let notificationService: Mocked<NotificationService>;
+	let notificationService: Mocked<NotificationFacade>;
 
 	const TZ = "Asia/Seoul";
 
@@ -69,7 +66,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
-		notificationService = unitRef.get(NotificationService);
+		notificationService = unitRef.get(NotificationFacade);
 
 		// 기본 mock 설정
 		reader.findStreakAtRiskUsers.mockResolvedValue([]);

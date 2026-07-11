@@ -28,19 +28,23 @@ import {
 	NotificationFacade,
 	NotificationMessageBuilder,
 	NotificationRepository,
-	NotificationService,
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
-	PushDeliveryService,
 } from "@/notification";
+import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
+import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
 import { GetUnreadCountUseCase } from "@/notification/application/use-cases/get-unread-count/get-unread-count.use-case";
 import { MarkAllAsReadUseCase } from "@/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
 import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-read/mark-as-read.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
+import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
+import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
+import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -50,11 +54,9 @@ import { LOCK_PROVIDER } from "@/shared/infrastructure/lock/interfaces/lock.inte
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 
-describe("NotificationService 통합 테스트 (Mock DB)", () => {
+describe("Notification 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let service: NotificationService;
 	let facade: NotificationFacade;
-	let pushDeliveryService: PushDeliveryService;
 	let repository: NotificationRepository;
 
 	// Mock 데이터베이스 서비스
@@ -122,13 +124,12 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				NotificationService,
-				PushDeliveryService,
 				NotificationRepository,
 				{
 					provide: NOTIFICATION_REPOSITORY,
 					useExisting: NotificationRepository,
 				},
+				{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 				NotificationFacade,
 				GetNotificationsUseCase,
 				GetUnreadCountUseCase,
@@ -136,6 +137,10 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 				MarkAllAsReadUseCase,
 				RegisterPushTokenUseCase,
 				UnregisterPushTokenUseCase,
+				SendNotificationUseCase,
+				SendNotificationWithDedupUseCase,
+				SendBatchNotificationUseCase,
+				FindAlreadyNotifiedUsersUseCase,
 				PaginationService,
 				UserPreferenceRepository,
 				UserConsentRepository,
@@ -239,9 +244,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		service = module.get<NotificationService>(NotificationService);
 		facade = module.get<NotificationFacade>(NotificationFacade);
-		pushDeliveryService = module.get<PushDeliveryService>(PushDeliveryService);
 		repository = module.get<NotificationRepository>(NotificationRepository);
 	});
 
@@ -257,14 +260,14 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합 테스트", () => {
-		it("NotificationService가 정상적으로 주입되어야 함", () => {
+		it("NotificationFacade가 정상적으로 주입되어야 함", () => {
 			// Given - DI 컨테이너가 구성됨
 
-			// When - 서비스 인스턴스 확인
+			// When - 파사드 인스턴스 확인
 
-			// Then - 서비스가 정의되어 있어야 함
-			expect(service).toBeDefined();
-			expect(service).toBeInstanceOf(NotificationService);
+			// Then - 파사드가 정의되어 있어야 함
+			expect(facade).toBeDefined();
+			expect(facade).toBeInstanceOf(NotificationFacade);
 		});
 
 		it("NotificationRepository가 정상적으로 주입되어야 함", () => {
@@ -288,15 +291,16 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockPushTokenDb.upsert.mockResolvedValue(mockToken);
 			mockPushProvider.validateToken.mockReturnValue(true);
 
-			// When - 푸시 토큰 등록
-			const result = await pushDeliveryService.registerPushToken({
-				userId: mockUserId,
-				token: mockPushToken,
-				platform: "IOS",
-			});
+			// When - 푸시 토큰 등록 (파사드는 void 반환 — 등록 자체가 목적)
+			await expect(
+				facade.registerPushToken({
+					userId: mockUserId,
+					token: mockPushToken,
+					platform: "IOS",
+				}),
+			).resolves.toBeUndefined();
 
-			// Then - 등록 결과 검증
-			expect(result).toEqual(mockToken);
+			// Then - upsert 수행 검증
 			expect(mockPushTokenDb.upsert).toHaveBeenCalled();
 		});
 
@@ -306,7 +310,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 			// When & Then - 예외 발생 검증
 			await expect(
-				pushDeliveryService.registerPushToken({
+				facade.registerPushToken({
 					userId: mockUserId,
 					token: "invalid-token",
 					platform: "IOS",
@@ -616,7 +620,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 알림 생성 및 발송
-			const result = await service.createAndSend({
+			const result = await facade.createAndSend({
 				userId: mockUserId,
 				type: "NUDGE_RECEIVED",
 				title: "테스트 알림",
@@ -640,7 +644,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockPushTokenDb.findMany.mockResolvedValue([]);
 
 			// When - 알림 생성 (푸시 토큰 없음)
-			const result = await service.createAndSend({
+			const result = await facade.createAndSend({
 				userId: mockUserId,
 				type: "NUDGE_RECEIVED",
 				title: "테스트 알림",
@@ -682,7 +686,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 배치 알림 생성 및 발송
-			const result = await service.createAndSendBatch(dataList);
+			const result = await facade.createAndSendBatch(dataList);
 
 			// Then - title이 치환된 값이어야 하며, {count}가 포함되지 않아야 함
 			expect(result.count).toBe(1);
@@ -721,7 +725,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 할일 없는 사용자용 알림 생성
-			const result = await service.createAndSend({
+			const result = await facade.createAndSend({
 				userId: mockUserId,
 				type: "MORNING_REMINDER",
 				title: message.title,
@@ -786,7 +790,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 배치 알림 생성 및 발송
-			const result = await service.createAndSendBatch(dataList);
+			const result = await facade.createAndSendBatch(dataList);
 
 			// Then - 두 사용자 모두 알림이 생성되어야 함
 			expect(result.count).toBe(2);

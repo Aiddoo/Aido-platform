@@ -12,10 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import {
-	NotificationMessageBuilder,
-	NotificationService,
-} from "@/notification";
+import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import type { IDedupProvider } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 
@@ -34,7 +31,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 	let strategy: WinbackStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationService>;
+	let notificationService: Mocked<NotificationFacade>;
 	let dedupProvider: Mocked<IDedupProvider>;
 
 	const TZ = "Asia/Seoul";
@@ -61,7 +58,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationService);
+		notificationService = unitRef.get(NotificationFacade);
 		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 
 		// pickVariant 결정론적으로 고정 (첫 번째 variant 선택)

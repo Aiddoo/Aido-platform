@@ -12,10 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import {
-	NotificationMessageBuilder,
-	NotificationService,
-} from "@/notification";
+import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
@@ -32,7 +29,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	let strategy: SocialDigestStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationService>;
+	let notificationService: Mocked<NotificationFacade>;
 
 	const TZ = "Asia/Seoul";
 
@@ -60,7 +57,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationService);
+		notificationService = unitRef.get(NotificationFacade);
 
 		// 기본 mock 설정
 		reader.findSocialDigestCandidates.mockResolvedValue([]);

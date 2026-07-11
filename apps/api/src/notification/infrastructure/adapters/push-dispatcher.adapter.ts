@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/errors";
 import {
 	NOTIFICATION_ACTION_TYPE,
 	type PushNotificationData,
@@ -10,50 +9,54 @@ import {
 	Injectable,
 	Logger,
 } from "@nestjs/common";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
 	type CachedUserPreference,
 	CacheService,
 } from "@/shared/infrastructure/cache/cache.service";
 import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
-import { isRecordNotFoundError } from "@/shared/infrastructure/database/prisma-error.util";
 import {
 	DEFAULT_LOCALE,
 	type SupportedLocale,
 	toSupportedLocale,
 } from "@/shared/presentation/decorators";
-import type { PushTokenRecord } from "../../domain/records/notification.record";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../application/ports/notification.repository.port";
+import type { CreateNotificationData } from "../../application/ports/notification-data";
+import type { PushDispatcherPort } from "../../application/ports/push-dispatcher.port";
+import {
+	PUSH_PROVIDER,
+	type PushPayload,
+	type PushProvider,
+} from "../../application/ports/push-provider.port";
+import {
+	type IPushRateLimiter,
+	PUSH_RATE_LIMITER,
+} from "../../application/ports/push-rate-limiter.port";
+import {
+	USER_NOTIFICATION_SETTINGS,
+	type UserNotificationSettingsPort,
+} from "../../application/ports/user-notification-settings.port";
 import { isNightTime } from "../../domain/services/night-time";
 import {
 	isMarketingNotification,
 	isNightExemptNotification,
 } from "../../domain/services/push-eligibility";
 import type { NotificationType } from "../../domain/types/notification-type";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../ports/notification.repository.port";
-import type {
-	CreateNotificationData,
-	RegisterPushTokenData,
-} from "../ports/notification-data";
-import {
-	PUSH_PROVIDER,
-	type PushPayload,
-	type PushProvider,
-} from "../ports/push-provider.port";
-import {
-	type IPushRateLimiter,
-	PUSH_RATE_LIMITER,
-} from "../ports/push-rate-limiter.port";
-import {
-	USER_NOTIFICATION_SETTINGS,
-	type UserNotificationSettingsPort,
-} from "../ports/user-notification-settings.port";
 
+/**
+ * 푸시 발송 디스패처 어댑터(PUSH_DISPATCHER 구현).
+ *
+ * 푸시 전송 메커니즘과 발송 자격 판단을 소유한다:
+ * 토큰 조회(캐시스루)·Expo 배치 발송·무효 토큰 정리·fire-and-forget 추적·종료 대기,
+ * 그리고 사용자 설정·야간·마케팅 동의·rate limit 기반 발송 자격 판단.
+ */
 @Injectable()
-export class PushDeliveryService implements BeforeApplicationShutdown {
-	readonly #logger = new Logger(PushDeliveryService.name);
+export class PushDispatcherAdapter
+	implements PushDispatcherPort, BeforeApplicationShutdown
+{
+	readonly #logger = new Logger(PushDispatcherAdapter.name);
 	readonly #pendingPushes = new Set<Promise<void>>();
 
 	constructor(
@@ -66,64 +69,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		private readonly rateLimiter: IPushRateLimiter,
 		private readonly cacheService: CacheService,
 	) {}
-
-	async registerPushToken(
-		data: RegisterPushTokenData,
-	): Promise<PushTokenRecord> {
-		if (!this.pushProvider.validateToken(data.token)) {
-			throw new ApplicationException(ErrorCode.NOTIFICATION_1001, {
-				token: data.token,
-			});
-		}
-
-		const pushToken = await this.notificationRepository.registerPushToken(data);
-		await this.cacheService.invalidatePushTokens(data.userId);
-
-		if (data.timezone) {
-			await this.userSettings.upsertPushTimezone(data.userId, data.timezone);
-		}
-
-		if (data.locale) {
-			await this.userSettings.upsertPushLocale(data.userId, data.locale);
-		}
-
-		if (data.timezone || data.locale) {
-			await this.cacheService.invalidateUserPreference(data.userId);
-		}
-
-		this.#logger.log(
-			`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`,
-		);
-
-		return pushToken;
-	}
-
-	async unregisterPushToken(userId: string, deviceId: string): Promise<void> {
-		try {
-			await this.notificationRepository.deletePushToken(userId, deviceId);
-			await this.cacheService.invalidatePushTokens(userId);
-			this.#logger.log(
-				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
-			);
-		} catch (error) {
-			if (isRecordNotFoundError(error)) {
-				this.#logger.warn(
-					`Push token not found: userId=${userId}, deviceId=${deviceId}`,
-				);
-				return;
-			}
-			throw error;
-		}
-	}
-
-	async unregisterAllPushTokens(userId: string): Promise<void> {
-		const result =
-			await this.notificationRepository.deleteAllPushTokensByUser(userId);
-		await this.cacheService.invalidatePushTokens(userId);
-		this.#logger.log(
-			`All push tokens unregistered: userId=${userId}, count=${result.count}`,
-		);
-	}
 
 	/**
 	 * 단일 사용자에게 푸시 발송 (fire-and-forget)

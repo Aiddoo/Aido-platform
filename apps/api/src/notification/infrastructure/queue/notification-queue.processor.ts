@@ -9,8 +9,7 @@ import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type { SupportedLocale } from "@/shared/presentation/decorators";
 
-import { NotificationService } from "../../application/services/notification.service";
-import { PushDeliveryService } from "../../application/services/push-delivery.service";
+import { NotificationFacade } from "../../application/facades/notification.facade";
 import {
 	NotificationMessageBuilder,
 	resolveTemplateLocale,
@@ -43,8 +42,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 	readonly #logger = new Logger(NotificationQueueProcessor.name);
 
 	constructor(
-		private readonly notificationService: NotificationService,
-		private readonly pushDeliveryService: PushDeliveryService,
+		private readonly notification: NotificationFacade,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 		private readonly txHost: TransactionHost<
@@ -74,7 +72,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	/** 수신자 푸시 언어 조회 — UserPreference 캐시 경유 (shouldSendPush와 캐시 공유) */
 	async #getLocale(userId: string): Promise<SupportedLocale> {
-		return this.pushDeliveryService.getUserLocale(userId);
+		return this.notification.getUserLocale(userId);
 	}
 
 	async process(job: NotificationJob): Promise<void> {
@@ -118,7 +116,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				locale,
 			);
 
-			await this.notificationService.createAndSendWithDedup({
+			await this.notification.createAndSendWithDedup({
 				userId: data.followingId,
 				type: "FOLLOW_NEW",
 				title: message.title,
@@ -145,7 +143,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				locale,
 			);
 
-			await this.notificationService.createAndSendWithDedup({
+			await this.notification.createAndSendWithDedup({
 				userId: data.userId,
 				type: "FOLLOW_ACCEPTED",
 				title: message.title,
@@ -180,7 +178,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 						locale,
 					);
 
-			await this.notificationService.createAndSendWithDedup({
+			await this.notification.createAndSendWithDedup({
 				userId: data.receiverId,
 				type: "NUDGE_RECEIVED",
 				title: message.title,
@@ -211,7 +209,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				locale,
 			);
 
-			await this.notificationService.createAndSendWithDedup({
+			await this.notification.createAndSendWithDedup({
 				userId: data.receiverId,
 				type: "CHEER_RECEIVED",
 				title: message.title,
@@ -237,7 +235,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 			const locale = await this.#getLocale(data.userId);
 			const message = NotificationMessageBuilder.billingIssue(locale);
 
-			await this.notificationService.createAndSend({
+			await this.notification.createAndSend({
 				userId: data.userId,
 				type: "SYSTEM_NOTICE",
 				title: message.title,
@@ -268,7 +266,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 			await this.uow.run(async () => {
 				const alreadyNotified =
-					await this.notificationService.findAlreadyNotifiedUserIds({
+					await this.notification.findAlreadyNotifiedUserIds({
 						userIds: data.notifyUserIds,
 						type: "FRIEND_COMPLETED",
 						notificationDate: today,
@@ -319,7 +317,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 					};
 				});
 
-				await this.notificationService.createAndSendBatch(notifications);
+				await this.notification.createAndSendBatch(notifications);
 
 				this.#logger.log(
 					`Friend completion notifications sent: friendId=${data.friendId}, count=${newUserIds.length}`,
@@ -365,7 +363,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				locale,
 			);
 
-			await this.notificationService.createAndSend({
+			await this.notification.createAndSend({
 				userId: data.userId,
 				type: "WEEKLY_ACHIEVEMENT",
 				title: message.title,

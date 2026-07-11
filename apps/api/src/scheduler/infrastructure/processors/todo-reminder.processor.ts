@@ -1,11 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Inject, Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
-import {
-	NotificationMessageBuilder,
-	NotificationService,
-	PushDeliveryService,
-} from "@/notification";
+import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 
 import {
@@ -22,7 +18,7 @@ import {
  *
  * - 잡 실행 시 투두 유효성 확인 (완료/삭제 여부)
  * - 24시간 내 동일 알림 dedup
- * - 알림 발송 (NotificationService)
+ * - 알림 발송 (NotificationFacade)
  */
 @Processor(TODO_REMINDER_QUEUE)
 export class TodoReminderProcessor extends WorkerHost {
@@ -31,8 +27,7 @@ export class TodoReminderProcessor extends WorkerHost {
 	constructor(
 		@Inject(TODO_REMINDER_READER)
 		private readonly reader: TodoReminderReaderPort,
-		private readonly notificationService: NotificationService,
-		private readonly pushDeliveryService: PushDeliveryService,
+		private readonly notification: NotificationFacade,
 	) {
 		super();
 	}
@@ -89,14 +84,14 @@ export class TodoReminderProcessor extends WorkerHost {
 
 		// 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
 		// 언어는 UserPreference 캐시 경유 (발송 여부 판정과 같은 캐시 엔트리 공유)
-		const locale = await this.pushDeliveryService.getUserLocale(userId);
+		const locale = await this.notification.getUserLocale(userId);
 		const message = NotificationMessageBuilder.todoReminder(
 			todo.title,
 			stageLabel,
 			locale,
 		);
 
-		await this.notificationService.createAndSend({
+		await this.notification.createAndSend({
 			userId,
 			type: "TODO_REMINDER",
 			title: message.title,

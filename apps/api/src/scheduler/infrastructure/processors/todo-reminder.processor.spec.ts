@@ -12,7 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
-import { NotificationService, PushDeliveryService } from "@/notification";
+import { NotificationFacade } from "@/notification";
 
 import {
 	TODO_REMINDER_READER,
@@ -34,8 +34,7 @@ const makeJob = (data: Partial<ReminderJobData> = {}) =>
 describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 	let processor: TodoReminderProcessor;
 	let reader: Mocked<TodoReminderReaderPort>;
-	let notificationService: Mocked<NotificationService>;
-	let pushDeliveryService: Mocked<PushDeliveryService>;
+	let notification: Mocked<NotificationFacade>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -44,9 +43,8 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 
 		processor = unit;
 		reader = unitRef.get(TODO_REMINDER_READER);
-		notificationService = unitRef.get(NotificationService);
-		pushDeliveryService = unitRef.get(PushDeliveryService);
-		pushDeliveryService.getUserLocale.mockResolvedValue("ko");
+		notification = unitRef.get(NotificationFacade);
+		notification.getUserLocale.mockResolvedValue("ko");
 	});
 
 	/** 리더 mock 설정 헬퍼 */
@@ -81,14 +79,14 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("유효한 투두에 대해 알림을 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notificationService.createAndSend.mockResolvedValue(null);
+			notification.createAndSend.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
 
 			// Then
-			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
-			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+			expect(notification.createAndSend).toHaveBeenCalledTimes(1);
+			expect(notification.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: USER_ID,
 					type: "TODO_REMINDER",
@@ -101,13 +99,13 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("10min 단계 알림을 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notificationService.createAndSend.mockResolvedValue(null);
+			notification.createAndSend.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ stageLabel: "10min" }));
 
 			// Then
-			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+			expect(notification.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({ metadata: { stage: "10min" } }),
 			);
 		});
@@ -115,13 +113,13 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("immediate 단계 알림을 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notificationService.createAndSend.mockResolvedValue(null);
+			notification.createAndSend.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ stageLabel: "immediate" }));
 
 			// Then
-			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+			expect(notification.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({ metadata: { stage: "immediate" } }),
 			);
 		});
@@ -135,13 +133,13 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 				notificationExists: false,
 				todoTitle: "밥먹고 약먹기",
 			});
-			notificationService.createAndSend.mockResolvedValue(null);
+			notification.createAndSend.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
 
 			// Then — DB의 최신 제목이 알림에 사용됨
-			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+			expect(notification.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
 					title: "⏰ 밥먹고 약먹기, 1시간 뒤 시작!",
 					body: "미리 해두면 마음이 편해져",
@@ -161,7 +159,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			await processor.process(makeJob());
 
 			// Then
-			expect(notificationService.createAndSend).not.toHaveBeenCalled();
+			expect(notification.createAndSend).not.toHaveBeenCalled();
 		});
 
 		it("투두가 삭제되었으면 알림을 발송하지 않는다", async () => {
@@ -172,7 +170,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			await processor.process(makeJob());
 
 			// Then
-			expect(notificationService.createAndSend).not.toHaveBeenCalled();
+			expect(notification.createAndSend).not.toHaveBeenCalled();
 		});
 	});
 
@@ -185,19 +183,19 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			await processor.process(makeJob());
 
 			// Then
-			expect(notificationService.createAndSend).not.toHaveBeenCalled();
+			expect(notification.createAndSend).not.toHaveBeenCalled();
 		});
 
 		it("동일 알림이 없으면 정상 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notificationService.createAndSend.mockResolvedValue(null);
+			notification.createAndSend.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob());
 
 			// Then
-			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
+			expect(notification.createAndSend).toHaveBeenCalledTimes(1);
 		});
 	});
 
@@ -205,9 +203,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("알림 발송 실패 시 에러가 전파된다 (BullMQ 재시도)", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notificationService.createAndSend.mockRejectedValue(
-				new Error("Push failed"),
-			);
+			notification.createAndSend.mockRejectedValue(new Error("Push failed"));
 
 			// When & Then — BullMQ가 재시도하도록 에러 전파
 			await expect(processor.process(makeJob())).rejects.toThrow("Push failed");

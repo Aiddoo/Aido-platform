@@ -1,5 +1,10 @@
-import { Injectable } from "@nestjs/common";
-import { PushDeliveryService } from "../../services/push-delivery.service";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { isRecordNotFoundError } from "@/shared/infrastructure/database/prisma-error.util";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 
 /**
  * 푸시 토큰 해제 유스케이스.
@@ -8,13 +13,46 @@ import { PushDeliveryService } from "../../services/push-delivery.service";
  */
 @Injectable()
 export class UnregisterPushTokenUseCase {
-	constructor(private readonly pushDeliveryService: PushDeliveryService) {}
+	readonly #logger = new Logger(UnregisterPushTokenUseCase.name);
+
+	constructor(
+		@Inject(NOTIFICATION_REPOSITORY)
+		private readonly notificationRepository: NotificationRepositoryPort,
+		private readonly cacheService: CacheService,
+	) {}
 
 	async execute(userId: string, deviceId?: string): Promise<void> {
 		if (deviceId) {
-			await this.pushDeliveryService.unregisterPushToken(userId, deviceId);
+			await this.#unregisterOne(userId, deviceId);
 		} else {
-			await this.pushDeliveryService.unregisterAllPushTokens(userId);
+			await this.#unregisterAll(userId);
 		}
+	}
+
+	async #unregisterOne(userId: string, deviceId: string): Promise<void> {
+		try {
+			await this.notificationRepository.deletePushToken(userId, deviceId);
+			await this.cacheService.invalidatePushTokens(userId);
+			this.#logger.log(
+				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
+			);
+		} catch (error) {
+			if (isRecordNotFoundError(error)) {
+				this.#logger.warn(
+					`Push token not found: userId=${userId}, deviceId=${deviceId}`,
+				);
+				return;
+			}
+			throw error;
+		}
+	}
+
+	async #unregisterAll(userId: string): Promise<void> {
+		const result =
+			await this.notificationRepository.deleteAllPushTokensByUser(userId);
+		await this.cacheService.invalidatePushTokens(userId);
+		this.#logger.log(
+			`All push tokens unregistered: userId=${userId}, count=${result.count}`,
+		);
 	}
 }

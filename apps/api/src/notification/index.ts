@@ -33,13 +33,11 @@ export {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
-// --- Application services (모듈 간 발송 엔진 + 푸시 전송 + 큐잉) ---
-export { NotificationService } from "./application/services/notification.service";
-export { PushDeliveryService } from "./application/services/push-delivery.service";
+// --- Locale helpers (스케줄러 전략의 로케일별 메시지 조립) ---
 export {
 	createLocaleMessageCache,
 	fetchUserLocales,
-} from "./application/services/user-locale.util";
+} from "./application/utils/user-locale.util";
 // --- Templates (메시지 빌더 + 로케일 해석) ---
 export * from "./domain/services/templates/notification-templates";
 export type { NotificationType } from "./domain/types/notification-type";

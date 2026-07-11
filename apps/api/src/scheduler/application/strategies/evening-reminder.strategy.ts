@@ -1,8 +1,8 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
+	NotificationFacade,
 	NotificationMessageBuilder,
-	NotificationService,
 	resolveTemplateLocale,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
@@ -26,7 +26,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 	constructor(
 		@Inject(SCHEDULED_REMINDER_READER)
 		private readonly reader: ScheduledReminderReaderPort,
-		private readonly notificationService: NotificationService,
+		private readonly notificationService: NotificationFacade,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
