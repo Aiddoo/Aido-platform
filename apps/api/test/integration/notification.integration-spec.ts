@@ -23,13 +23,23 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { NotificationRepository } from "@/notification/notification.repository";
-import { NotificationService } from "@/notification/notification.service";
-import { PUSH_PROVIDER } from "@/notification/providers/push-provider.interface";
-import { PushDeliveryService } from "@/notification/push-delivery.service";
-import { PUSH_RATE_LIMITER } from "@/notification/rate-limiter";
-import { NotificationMessageBuilder } from "@/notification/templates/notification-templates";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import {
+	NOTIFICATION_REPOSITORY,
+	NotificationFacade,
+	NotificationMessageBuilder,
+	NotificationRepository,
+	NotificationService,
+	PUSH_PROVIDER,
+	PUSH_RATE_LIMITER,
+	PushDeliveryService,
+} from "@/notification";
+// use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
+import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
+import { GetUnreadCountUseCase } from "@/notification/application/use-cases/get-unread-count/get-unread-count.use-case";
+import { MarkAllAsReadUseCase } from "@/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
+import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-read/mark-as-read.use-case";
+import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
+import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -44,6 +54,7 @@ import {
 describe("NotificationService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: NotificationService;
+	let facade: NotificationFacade;
 	let pushDeliveryService: PushDeliveryService;
 	let repository: NotificationRepository;
 
@@ -115,6 +126,17 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 				NotificationService,
 				PushDeliveryService,
 				NotificationRepository,
+				{
+					provide: NOTIFICATION_REPOSITORY,
+					useExisting: NotificationRepository,
+				},
+				NotificationFacade,
+				GetNotificationsUseCase,
+				GetUnreadCountUseCase,
+				MarkAsReadUseCase,
+				MarkAllAsReadUseCase,
+				RegisterPushTokenUseCase,
+				UnregisterPushTokenUseCase,
 				PaginationService,
 				UserPreferenceRepository,
 				UserConsentRepository,
@@ -196,6 +218,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 		}).compile();
 
 		service = module.get<NotificationService>(NotificationService);
+		facade = module.get<NotificationFacade>(NotificationFacade);
 		pushDeliveryService = module.get<PushDeliveryService>(PushDeliveryService);
 		repository = module.get<NotificationRepository>(NotificationRepository);
 	});
@@ -266,7 +289,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 					token: "invalid-token",
 					platform: "IOS",
 				}),
-			).rejects.toThrow(BusinessException);
+			).rejects.toMatchObject({ errorCode: "NOTIFICATION_1001" });
 		});
 	});
 
@@ -287,7 +310,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.count.mockResolvedValue(2);
 
 			// When - 알림 목록 조회
-			const result = await service.getNotifications({ userId: mockUserId });
+			const result = await facade.getNotifications({ userId: mockUserId });
 
 			// Then - 목록 및 페이지네이션 검증
 			expect(result.items).toBeDefined();
@@ -304,7 +327,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.count.mockResolvedValue(1);
 
 			// When - 읽지 않은 알림만 조회
-			await service.getNotifications({ userId: mockUserId, unreadOnly: true });
+			await facade.getNotifications({ userId: mockUserId, unreadOnly: true });
 
 			// Then - 필터 조건 검증
 			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
@@ -322,7 +345,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.findMany.mockResolvedValue([]);
 
 			// When
-			await service.getNotifications({
+			await facade.getNotifications({
 				userId: "user-1",
 				category: "SOCIAL",
 			});
@@ -353,7 +376,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.findMany.mockResolvedValue([]);
 
 			// When
-			await service.getNotifications({
+			await facade.getNotifications({
 				userId: "user-1",
 				category: "ALL",
 			});
@@ -368,7 +391,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.findMany.mockResolvedValue([]);
 
 			// When
-			await service.getNotifications({
+			await facade.getNotifications({
 				userId: "user-1",
 				category: "NOTICE",
 				unreadOnly: true,
@@ -403,8 +426,8 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 			// When - Promise.all로 병렬 호출 (컨트롤러에서 하는 것과 동일)
 			const [result, unreadCount] = await Promise.all([
-				service.getNotifications({ userId: mockUserId }),
-				service.getUnreadCount(mockUserId),
+				facade.getNotifications({ userId: mockUserId }),
+				facade.getUnreadCount(mockUserId),
 			]);
 
 			// Then
@@ -420,7 +443,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.findMany.mockResolvedValue([]);
 
 			// When
-			await service.getNotifications({
+			await facade.getNotifications({
 				userId: mockUserId,
 				category: "SOCIAL",
 				cursor: 10,
@@ -457,7 +480,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.count.mockResolvedValue(5);
 
 			// When - 읽지 않은 알림 수 조회
-			const result = await service.getUnreadCount(mockUserId);
+			const result = await facade.getUnreadCount(mockUserId);
 
 			// Then - 알림 수 검증
 			expect(result).toBe(5);
@@ -487,7 +510,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 			// When - 알림 읽음 처리
 			await expect(
-				service.markAsRead(mockUserId, mockNotificationId),
+				facade.markAsRead(mockUserId, mockNotificationId),
 			).resolves.toBeUndefined();
 
 			// Then - 읽음 처리 검증
@@ -506,9 +529,9 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.findUnique.mockResolvedValue(null);
 
 			// When & Then - 예외 발생 검증
-			await expect(service.markAsRead(mockUserId, 999)).rejects.toThrow(
-				BusinessException,
-			);
+			await expect(facade.markAsRead(mockUserId, 999)).rejects.toMatchObject({
+				errorCode: "NOTIFICATION_1004",
+			});
 		});
 
 		it("다른 사용자의 알림이면 예외를 발생시켜야 함", async () => {
@@ -520,8 +543,8 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 			// When & Then - 예외 발생 검증
 			await expect(
-				service.markAsRead(mockUserId, mockNotificationId),
-			).rejects.toThrow(BusinessException);
+				facade.markAsRead(mockUserId, mockNotificationId),
+			).rejects.toMatchObject({ errorCode: "NOTIFICATION_1005" });
 		});
 
 		it("전체 알림을 읽음 처리해야 함", async () => {
@@ -529,7 +552,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockNotificationDb.updateMany.mockResolvedValue({ count: 5 });
 
 			// When - 전체 알림 읽음 처리
-			const result = await service.markAllAsRead(mockUserId);
+			const result = await facade.markAllAsRead(mockUserId);
 
 			// Then - 전체 읽음 처리 검증
 			expect(result.count).toBe(5);

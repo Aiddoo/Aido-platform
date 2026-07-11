@@ -38,9 +38,11 @@ import {
 } from "@/auth/processors/account-purge.processor";
 import { OAuthTokenVerifierService } from "@/auth/services/oauth-token-verifier.service";
 import { EmailFacade } from "@/email";
-import { PUSH_PROVIDER } from "@/notification/providers/push-provider.interface";
-import { NOTIFICATION_QUEUE } from "@/notification/queue/notification-queue.constants";
-import { NotificationQueueProcessor } from "@/notification/queue/notification-queue.processor";
+import {
+	NOTIFICATION_QUEUE,
+	NotificationQueueProcessor,
+	PUSH_PROVIDER,
+} from "@/notification";
 import { TimezoneAwareReminderJob } from "@/scheduler/jobs/timezone-aware-reminder.job";
 import { TIMEZONE_REMINDER_QUEUE } from "@/scheduler/queue/timezone-reminder-queue.constants";
 import { TimezoneReminderProcessor } from "@/scheduler/queue/timezone-reminder-queue.processor";

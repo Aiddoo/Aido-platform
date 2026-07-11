@@ -10,7 +10,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
 
-import { NotificationService } from "../../../notification/notification.service";
+import { NotificationService } from "@/notification";
 import { AiSuggestionFacade } from "../../application/facades/ai-suggestion.facade";
 import {
 	type AiSuggestionJobData,

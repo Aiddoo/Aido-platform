@@ -26,7 +26,7 @@ import { SessionService } from "@/auth/services/session.service";
 import { TokenService } from "@/auth/services/token.service";
 import { VerificationService } from "@/auth/services/verification.service";
 import { EmailFacade } from "@/email";
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "@/notification";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";

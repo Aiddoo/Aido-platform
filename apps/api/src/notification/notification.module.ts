@@ -5,45 +5,60 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 import { UserSettingsModule } from "@/user-settings/user-settings.module";
 
-import { NotificationController } from "./notification.controller";
-import { NotificationRepository } from "./notification.repository";
-import { NotificationService } from "./notification.service";
-import { ExpoPushProvider } from "./providers/expo-push.provider";
-import { PUSH_PROVIDER } from "./providers/push-provider.interface";
-import { PushDeliveryService } from "./push-delivery.service";
-import { NotificationQueueModule } from "./queue/notification-queue.module";
-import { NotificationQueueProcessor } from "./queue/notification-queue.processor";
+import { NotificationFacade } from "./application/facades/notification.facade";
+import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
+import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
-	InMemoryPushRateLimiter,
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
-	RedisPushRateLimiter,
-} from "./rate-limiter";
+} from "./application/ports/push-rate-limiter.port";
+import { NotificationService } from "./application/services/notification.service";
+import { PushDeliveryService } from "./application/services/push-delivery.service";
+import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
+import { GetUnreadCountUseCase } from "./application/use-cases/get-unread-count/get-unread-count.use-case";
+import { MarkAllAsReadUseCase } from "./application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
+import { MarkAsReadUseCase } from "./application/use-cases/mark-as-read/mark-as-read.use-case";
+import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
+import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
+import { ExpoPushProvider } from "./infrastructure/providers/expo-push.provider";
+import { NotificationQueueModule } from "./infrastructure/queue/notification-queue.module";
+import { NotificationQueueProcessor } from "./infrastructure/queue/notification-queue.processor";
+import { InMemoryPushRateLimiter } from "./infrastructure/rate-limiter/in-memory-push-rate-limiter";
+import { RedisPushRateLimiter } from "./infrastructure/rate-limiter/redis-push-rate-limiter";
+import { NotificationController } from "./presentation/notification.controller";
 
 /**
- * Notification 모듈
+ * Notification 모듈 (클린아키텍처 4계층 + 포트/어댑터)
  *
- * 푸시 알림 및 인앱 알림 관리 기능을 담당합니다.
+ * - presentation: NotificationController → NotificationFacade(유스케이스 조합)
+ * - application: NotificationService(모듈 간 발송 엔진)·PushDeliveryService·유스케이스
+ * - infrastructure: Prisma 저장소·Expo 푸시 프로바이더·rate limiter·BullMQ 프로세서
  *
- * 서비스 구조:
- * - NotificationService: 알림 CRUD, 조회, 중복 방지
- * - PushDeliveryService: 푸시 토큰 관리, 발송, 필터링, Graceful Shutdown
- *
- * BullMQ 큐 기반 알림 처리:
- * - NotificationQueueService: 각 모듈에서 호출하여 알림 잡 등록
- * - NotificationQueueProcessor: 큐 잡 처리 (팔로우, 콕 찌르기, 응원, 결제 알림)
- *
- * Provider 추상화를 통해 Expo Push → FCM 마이그레이션 대비
+ * Provider 추상화(PUSH_PROVIDER 포트)로 Expo → FCM/APNs 교체를 어댑터 추가만으로 대비.
  */
 @Module({
+	// notification → user-settings 단방향 DI(푸시 발송 전 사용자 설정 조회).
+	// 역방향(user-settings → notification)은 경량 `@/notification/queue` 서브엔트리로만
+	// 참조하므로 ES 초기화 순환이 없다 → forwardRef 불필요.
 	imports: [NotificationQueueModule, UserSettingsModule],
 	controllers: [NotificationController],
 	providers: [
-		// Core
-		NotificationRepository,
+		// Facade + Use-cases (presentation 진입점)
+		NotificationFacade,
+		GetNotificationsUseCase,
+		GetUnreadCountUseCase,
+		MarkAsReadUseCase,
+		MarkAllAsReadUseCase,
+		RegisterPushTokenUseCase,
+		UnregisterPushTokenUseCase,
+		// Application services (모듈 간 발송 엔진 + 푸시 전송)
 		NotificationService,
 		PushDeliveryService,
-		// Push Provider (Strategy Pattern)
+		// Repository (포트 바인딩)
+		NotificationRepository,
+		{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
+		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)
 		{
 			provide: PUSH_PROVIDER,
 			useClass: ExpoPushProvider,
@@ -68,6 +83,11 @@ import {
 		// BullMQ Queue Processor
 		NotificationQueueProcessor,
 	],
-	exports: [NotificationService, PushDeliveryService, NotificationQueueModule],
+	exports: [
+		NotificationService,
+		PushDeliveryService,
+		NotificationRepository,
+		NotificationQueueModule,
+	],
 })
 export class NotificationModule {}

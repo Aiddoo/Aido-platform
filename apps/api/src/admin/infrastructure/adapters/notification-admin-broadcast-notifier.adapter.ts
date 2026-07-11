@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { NotificationService } from "@/notification/notification.service";
+import { NotificationService } from "@/notification";
 import type { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port";
 import type { AdminBroadcastMessage } from "../../domain/broadcast-message";
 

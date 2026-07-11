@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { AdminNotificationFacade } from "@/admin-notification";
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "@/notification";
 import type { SubscriptionEventNotifierPort } from "../../application/ports/subscription-event-notifier.port";
 import type { SubscriptionEventPayload } from "../../domain/events/subscription-event.payload";
 

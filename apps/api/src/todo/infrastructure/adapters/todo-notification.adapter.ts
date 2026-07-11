@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { NotificationQueueService } from "../../../notification/queue/notification-queue.service";
+import { NotificationQueueService } from "@/notification";
 import type {
 	FriendCompletedPayload,
 	MilestoneReachedPayload,

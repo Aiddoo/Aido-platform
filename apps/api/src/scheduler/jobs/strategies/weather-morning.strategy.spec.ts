@@ -13,7 +13,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationService } from "@/notification/notification.service";
+import { NotificationService } from "@/notification";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type { WeatherForecast } from "@/weather";
 import { WeatherFacade } from "@/weather";

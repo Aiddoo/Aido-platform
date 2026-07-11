@@ -23,8 +23,7 @@ import { NotificationBuilder, TodoBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
-import { NotificationService } from "@/notification/notification.service";
-import { PushDeliveryService } from "@/notification/push-delivery.service";
+import { NotificationService, PushDeliveryService } from "@/notification";
 import { TodoReminderProcessor } from "@/scheduler/reminder/processors/todo-reminder.processor";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 

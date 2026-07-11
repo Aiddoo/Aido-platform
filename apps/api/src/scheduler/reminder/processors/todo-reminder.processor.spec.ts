@@ -12,11 +12,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Job } from "bullmq";
-
+import { NotificationService, PushDeliveryService } from "@/notification";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-
-import { NotificationService } from "../../../notification/notification.service";
-import { PushDeliveryService } from "../../../notification/push-delivery.service";
 import type { ReminderJobData } from "../adapters/bullmq-reminder-scheduler.adapter";
 import { TodoReminderProcessor } from "./todo-reminder.processor";
 

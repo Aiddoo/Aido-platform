@@ -36,7 +36,7 @@ import { OAuthService } from "@/auth/services/oauth.service";
 import { OAuthTokenVerifierService } from "@/auth/services/oauth-token-verifier.service";
 import { SessionService } from "@/auth/services/session.service";
 import { TokenService } from "@/auth/services/token.service";
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "@/notification";
 import { BusinessException } from "@/shared/application/exceptions";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";

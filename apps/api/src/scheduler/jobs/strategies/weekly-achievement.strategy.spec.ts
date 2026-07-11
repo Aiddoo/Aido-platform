@@ -12,7 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationService } from "@/notification/notification.service";
+import { NotificationService } from "@/notification";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { WeeklyAchievementFacade } from "@/weekly-achievement";

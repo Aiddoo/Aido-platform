@@ -41,7 +41,19 @@ const CLEAN_MODULES = [
 	"ai-report",
 	"admin-notification",
 	"user-settings",
+	"notification",
 ];
+
+/**
+ * 배럴 외에 외부 임포트가 허용되는 모듈별 공개 서브엔트리.
+ *
+ * notification/queue: enqueue 전용 경량 심(seam). heavy 배럴(Facade·PushDelivery →
+ * user-settings 재임포트)을 피해 ES 초기화 순환을 차단하기 위한 공식 공개 경로.
+ * (user-settings ↔ notification 상호 의존을 forwardRef 없이 절단)
+ */
+const PUBLIC_SUBENTRIES = {
+	notification: ["src/notification/queue"],
+};
 
 /** 재귀적으로 .ts 파일 수집 */
 function collectTsFiles(dir) {
@@ -145,6 +157,7 @@ for (const module of CLEAN_MODULES) {
 		`src/${module}`,
 		`src/${module}/index`,
 		`src/${module}/${module}.module`,
+		...(PUBLIC_SUBENTRIES[module] ?? []),
 	]);
 	for (const file of collectTsFiles("src")) {
 		const rel = relative(ROOT, file);

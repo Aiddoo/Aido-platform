@@ -12,8 +12,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationService } from "@/notification/notification.service";
-import { NotificationMessageBuilder } from "@/notification/templates/notification-templates";
+import {
+	NotificationMessageBuilder,
+	NotificationService,
+} from "@/notification";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";

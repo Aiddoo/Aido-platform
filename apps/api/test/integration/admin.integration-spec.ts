@@ -22,7 +22,7 @@ import { ADMIN_USER_DIRECTORY } from "@/admin/application/ports/admin-user-direc
 import { CommandHandlers } from "@/admin/application/use-cases";
 import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "@/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
-import { NotificationService } from "@/notification/notification.service";
+import { NotificationService } from "@/notification";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 

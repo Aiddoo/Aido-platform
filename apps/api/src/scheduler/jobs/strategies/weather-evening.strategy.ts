@@ -1,10 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { NotificationService } from "@/notification/notification.service";
 import {
+	createLocaleMessageCache,
 	NotificationMessageBuilder,
+	NotificationService,
 	resolveTemplateLocale,
-} from "@/notification/templates/notification-templates";
-import { createLocaleMessageCache } from "@/notification/templates/user-locale.util";
+} from "@/notification";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { WeatherFacade } from "@/weather";
 

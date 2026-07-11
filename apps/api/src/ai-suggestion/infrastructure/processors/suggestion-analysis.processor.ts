@@ -1,13 +1,12 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
-
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { NotificationService } from "../../../notification/notification.service";
 import {
 	NotificationMessageBuilder,
+	NotificationService,
 	resolveTemplateLocale,
-} from "../../../notification/templates/notification-templates";
+} from "@/notification";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { AiSuggestionFacade } from "../../application/facades/ai-suggestion.facade";
 import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 import {

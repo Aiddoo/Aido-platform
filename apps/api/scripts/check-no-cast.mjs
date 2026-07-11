@@ -76,6 +76,9 @@ const TARGET_DIRS = [
 	"src/user-settings/domain",
 	"src/user-settings/application",
 	"src/user-settings/infrastructure",
+	"src/notification/domain",
+	"src/notification/application",
+	"src/notification/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */
@@ -106,9 +109,16 @@ const NON_NULL = /[A-Za-z0-9_)\]]!(?![=])/;
 
 const violations = [];
 
-/** 프롬프트 템플릿 디렉터리는 산문 오탐 방지를 위해 스캔에서 제외한다. */
+/**
+ * 산문(자연어) 데이터 파일은 스캔에서 제외한다.
+ * - `/prompts/`, `/prompt/`: LLM 시스템 프롬프트
+ * - `/templates/`: 알림 메시지 i18n 템플릿(byte-identical 문구). "as"/"!"가 포함된
+ *   사용자 대상 문구가 많아 라인 기반 휴리스틱이 대량 오탐한다. 로직이 아닌 텍스트 데이터.
+ */
 const isPromptFile = (file) =>
-	file.includes("/prompts/") || file.includes("/prompt/");
+	file.includes("/prompts/") ||
+	file.includes("/prompt/") ||
+	file.includes("/templates/");
 
 for (const dir of TARGET_DIRS) {
 	for (const file of collectTsFiles(dir)) {

@@ -1,13 +1,13 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
-
+import {
+	NotificationMessageBuilder,
+	NotificationService,
+	PushDeliveryService,
+} from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-
-import { NotificationService } from "../../../notification/notification.service";
-import { PushDeliveryService } from "../../../notification/push-delivery.service";
-import { NotificationMessageBuilder } from "../../../notification/templates/notification-templates";
 import {
 	type ReminderJobData,
 	TODO_REMINDER_QUEUE,

@@ -1,8 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { NotificationService } from "@/notification/notification.service";
-import { NotificationMessageBuilder } from "@/notification/templates/notification-templates";
-import { fetchUserLocales } from "@/notification/templates/user-locale.util";
-import type { CreateNotificationData } from "@/notification/types/notification.types";
+import type { CreateNotificationData } from "@/notification";
+import {
+	fetchUserLocales,
+	NotificationMessageBuilder,
+	NotificationService,
+} from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
