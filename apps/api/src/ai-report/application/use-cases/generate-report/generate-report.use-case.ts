@@ -101,7 +101,9 @@ export class GenerateReportUseCase {
 	#monthlyWindow(localNow: dayjs.Dayjs): ReportWindow {
 		const lastMonth = localNow.subtract(1, "month");
 		const lastMonthStart = lastMonth.startOf("month");
-		const lastMonthEnd = lastMonth.endOf("month").add(1, "day").startOf("day");
+		// 지난 달 시작에 1달을 더하면 이번 달 시작(00:00) = 지난 달 배타적 종료.
+		// (endOf/add/startOf 다단계 계산과 동일하나 타임존·DST 경계 오류를 예방)
+		const lastMonthEnd = lastMonthStart.add(1, "month");
 		const prevMonthStart = lastMonthStart.subtract(1, "month");
 		const prevMonthEnd = lastMonthStart;
 		return {
