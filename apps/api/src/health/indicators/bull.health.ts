@@ -5,7 +5,7 @@ import {
 	HealthIndicatorService,
 } from "@nestjs/terminus";
 import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue/admin-notification-queue.constants";
-import { AI_REPORT_QUEUE } from "@/ai-report/processors/report-generation.processor";
+import { AI_REPORT_QUEUE } from "@/ai-report";
 import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { TODO_REMINDER_QUEUE } from "@/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";

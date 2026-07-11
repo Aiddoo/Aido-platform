@@ -38,6 +38,7 @@ const CLEAN_MODULES = [
 	"todo-category",
 	"ai-suggestion",
 	"subscription",
+	"ai-report",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

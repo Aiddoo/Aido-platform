@@ -7,8 +7,8 @@
 
 import { buildParseMemoPrompt } from "@/ai/domain/services/prompts/parse-memo.prompt";
 import { buildParseTodoPrompt } from "@/ai/domain/services/prompts/parse-todo.prompt";
-import { buildReportPrompt } from "@/ai-report/prompts/report.prompt";
-import type { AggregatedReportData } from "@/ai-report/types";
+import { buildReportPrompt } from "@/ai-report/domain/services/prompts/report.prompt";
+import type { AggregatedReportData } from "@/ai-report/domain/types";
 import { buildSuggestionPrompt } from "@/ai-suggestion/domain/services/prompts/detect-patterns.prompt";
 import type { SuggestionContext } from "@/ai-suggestion/domain/types";
 import {

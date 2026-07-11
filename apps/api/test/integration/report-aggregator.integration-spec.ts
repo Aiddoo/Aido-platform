@@ -21,8 +21,10 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { ReportAggregatorService } from "@/ai-report/report-aggregator.service";
-import type { AggregateParams } from "@/ai-report/types";
+import { TODO_STATS_READER } from "@/ai-report/application/ports/todo-stats.reader.port";
+import { ReportAggregatorService } from "@/ai-report/application/services/report-aggregator.service";
+import type { AggregateParams } from "@/ai-report/domain/types";
+import { PrismaTodoStatsReader } from "@/ai-report/infrastructure/persistence/prisma-todo-stats.reader";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { TestDatabase } from "../setup/test-database";
@@ -48,8 +50,9 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 		module = await Test.createTestingModule({
 			providers: [
 				ReportAggregatorService,
+				{ provide: TODO_STATS_READER, useClass: PrismaTodoStatsReader },
 				{
-					// 서비스는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
+					// reader는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
 					provide: TransactionHost,
 					useValue: { tx: databaseService },
 				},

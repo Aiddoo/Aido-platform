@@ -67,6 +67,9 @@ const TARGET_DIRS = [
 	"src/subscription/domain",
 	"src/subscription/application",
 	"src/subscription/infrastructure",
+	"src/ai-report/domain",
+	"src/ai-report/application",
+	"src/ai-report/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

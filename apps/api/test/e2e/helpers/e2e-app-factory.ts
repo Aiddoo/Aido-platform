@@ -24,11 +24,9 @@ import {
 import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue/admin-notification-queue.constants";
 import { AdminNotificationProcessor } from "@/admin-notification/queue/admin-notification-queue.processor";
 import { AI_PROVIDER } from "@/ai";
-import { ReportGenerationJob } from "@/ai-report/jobs/report-generation.job";
-import {
-	AI_REPORT_QUEUE,
-	ReportGenerationProcessor,
-} from "@/ai-report/processors/report-generation.processor";
+import { AI_REPORT_QUEUE } from "@/ai-report";
+import { ReportGenerationJob } from "@/ai-report/infrastructure/jobs/report-generation.job";
+import { ReportGenerationProcessor } from "@/ai-report/infrastructure/processors/report-generation.processor";
 import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { SuggestionAnalysisJob } from "@/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
 import { SuggestionAnalysisProcessor } from "@/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
