@@ -732,6 +732,10 @@ export class AuthService {
 						throw BusinessExceptions.sessionExpired();
 					}
 
+					// JwtStrategy의 세션 캐시(30초 TTL)에 남은 회전 전 스냅샷이
+					// 갓 발급된 액세스 토큰을 401시키지 않도록 즉시 비운다
+					await this.cacheService.invalidateSession(sessionId);
+
 					await this.securityLogRepository.create({
 						userId,
 						event: SECURITY_EVENT.TOKEN_REFRESH,
@@ -811,6 +815,10 @@ export class AuthService {
 			);
 			throw BusinessExceptions.sessionExpired();
 		}
+
+		// JwtStrategy의 세션 캐시(30초 TTL)에 남은 회전 전 스냅샷이
+		// 갓 발급된 액세스 토큰을 401시키지 않도록 즉시 비운다
+		await this.cacheService.invalidateSession(sessionId);
 
 		// 보안 로그 기록
 		await this.securityLogRepository.create({

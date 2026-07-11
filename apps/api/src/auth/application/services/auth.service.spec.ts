@@ -949,6 +949,32 @@ describe("AuthService — 인증 서비스", () => {
 			jest.useRealTimers();
 		});
 
+		it("토큰 로테이션 성공 시 세션 캐시를 무효화한다", async () => {
+			// Given — JwtStrategy의 세션 캐시(30초 TTL)에 남은 스테일 스냅샷이
+			// 갓 발급된 액세스 토큰을 401시키지 않도록, 세션 연장 즉시 캐시를 비워야 한다
+			const mockSession = SessionBuilder.create(userId)
+				.withId(sessionId)
+				.withTokenVersion(1)
+				.withTokenFamily("family-id")
+				.build();
+
+			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
+			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
+			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
+			sessionRepo.rotateToken.mockResolvedValue({
+				...mockSession,
+				tokenVersion: 2,
+			} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			cacheService.invalidateSession.mockResolvedValue(undefined);
+
+			// When
+			await service.refreshTokens(refreshToken, verifiedPayload);
+
+			// Then
+			expect(cacheService.invalidateSession).toHaveBeenCalledWith(sessionId);
+		});
+
 		it("sessionId가 없는 페이로드이면 에러를 던진다", async () => {
 			// Given
 			const payloadWithoutSession = {
@@ -1038,6 +1064,8 @@ describe("AuthService — 인증 서비스", () => {
 					previousTokenHash: reusedSession.refreshTokenHash, // NOT "hashed-token"
 				}),
 			);
+			// grace 분기도 세션을 연장하므로 스테일 캐시를 무효화해야 한다
+			expect(cacheService.invalidateSession).toHaveBeenCalledWith(sessionId);
 
 			jest.useRealTimers();
 		});
