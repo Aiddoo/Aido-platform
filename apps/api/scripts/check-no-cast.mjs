@@ -79,6 +79,9 @@ const TARGET_DIRS = [
 	"src/notification/domain",
 	"src/notification/application",
 	"src/notification/infrastructure",
+	"src/scheduler/domain",
+	"src/scheduler/application",
+	"src/scheduler/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

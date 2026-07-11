@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { NotificationQueueModule } from "@/notification/queue";
-import { TimezoneReminderQueueModule } from "@/scheduler/queue/timezone-reminder-queue.module";
+import { TimezoneReminderQueueModule } from "@/scheduler/queue";
 
 import { UserSettingsFacade } from "./application/facades/user-settings.facade";
 import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/reminder-schedule.enqueuer.port";

@@ -1,8 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import {
-	type IReminderScheduler,
-	REMINDER_SCHEDULER,
-} from "../../../scheduler/reminder/interfaces/reminder-scheduler.interface";
+import { type IReminderScheduler, REMINDER_SCHEDULER } from "@/scheduler";
 import type { TodoReminderPort } from "../../application/ports/todo-reminder.port";
 
 /**

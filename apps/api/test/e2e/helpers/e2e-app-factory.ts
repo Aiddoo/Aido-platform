@@ -43,11 +43,13 @@ import {
 	NotificationQueueProcessor,
 	PUSH_PROVIDER,
 } from "@/notification";
-import { TimezoneAwareReminderJob } from "@/scheduler/jobs/timezone-aware-reminder.job";
-import { TIMEZONE_REMINDER_QUEUE } from "@/scheduler/queue/timezone-reminder-queue.constants";
-import { TimezoneReminderProcessor } from "@/scheduler/queue/timezone-reminder-queue.processor";
-import { TODO_REMINDER_QUEUE } from "@/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";
-import { TodoReminderProcessor } from "@/scheduler/reminder/processors/todo-reminder.processor";
+import {
+	TIMEZONE_REMINDER_QUEUE,
+	TimezoneAwareReminderOrchestrator,
+	TimezoneReminderProcessor,
+	TODO_REMINDER_QUEUE,
+	TodoReminderProcessor,
+} from "@/scheduler";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { DatabaseService } from "@/shared/infrastructure/database";
@@ -97,7 +99,7 @@ const BULL_PROCESSORS = [
 
 const BULL_JOBS = [
 	DailySignupSummaryScheduler,
-	TimezoneAwareReminderJob,
+	TimezoneAwareReminderOrchestrator,
 	SuggestionAnalysisJob,
 	ReportGenerationJob,
 	AccountPurgeJob,

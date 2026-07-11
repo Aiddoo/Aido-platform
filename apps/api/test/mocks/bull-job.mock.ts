@@ -30,3 +30,11 @@ export function createMockJob<T, N extends string = string>(
 export function asMock(fn: unknown): jest.Mock {
 	return fn as jest.Mock;
 }
+
+/**
+ * 부분 Job 목을 Job 타입으로 좁힌다 (queue.getJob 목 반환값용).
+ * 캐스트를 test/ 안에 격리한다.
+ */
+export function asJob(partial: unknown): Job {
+	return partial as Job;
+}

@@ -42,6 +42,7 @@ const CLEAN_MODULES = [
 	"admin-notification",
 	"user-settings",
 	"notification",
+	"scheduler",
 ];
 
 /**
@@ -53,6 +54,7 @@ const CLEAN_MODULES = [
  */
 const PUBLIC_SUBENTRIES = {
 	notification: ["src/notification/queue"],
+	scheduler: ["src/scheduler/queue"],
 };
 
 /** 재귀적으로 .ts 파일 수집 */
