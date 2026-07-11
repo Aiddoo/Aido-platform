@@ -1,0 +1,42 @@
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
+import { TODO_EVENTS } from "../../domain/events/todo-event-names";
+import { TodoUpdatedEvent } from "../../domain/events/todo-updated.event";
+import {
+	TODO_REMINDER,
+	type TodoReminderPort,
+} from "../ports/todo-reminder.port";
+
+/**
+ * Todo 수정 이벤트 핸들러
+ *
+ * 완료 요청(completed=true)일 때만 리마인더를 취소합니다.
+ * 부분 수정은 스트릭·마일스톤·친구 완료 알림을 트리거하지 않습니다
+ * (그 부수효과는 완료 토글 전용 — TodoToggledEvent가 담당, 레거시 동작 보존).
+ * 실패는 로깅만 하고 삼킵니다(fire-and-forget).
+ */
+@Injectable()
+export class TodoUpdatedHandler {
+	readonly #logger = new Logger(TodoUpdatedHandler.name);
+
+	constructor(
+		@Inject(TODO_REMINDER)
+		private readonly todoReminder: TodoReminderPort,
+	) {}
+
+	@OnEvent(TODO_EVENTS.UPDATED)
+	handle(event: TodoUpdatedEvent): void {
+		if (event.completed !== true) {
+			return;
+		}
+
+		try {
+			this.todoReminder.cancelReminder(event.todoId);
+		} catch (error) {
+			this.#logger.error(
+				`Failed to cancel reminder for updated todo ${event.todoId}: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
+	}
+}

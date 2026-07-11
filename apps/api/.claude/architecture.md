@@ -1,6 +1,6 @@
 # API 아키텍처 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 4.0.0 · **Last Updated**: 2026-07-12 · **Owner**: Aido Platform Team
 
 > NestJS 기반 백엔드 API의 전체 아키텍처 · 에러 처리 · BullMQ 큐 · 보안 · 공통 모듈
 
@@ -35,68 +35,51 @@
 
 ## 1. 아키텍처 개요
 
-### 1.1 계층 다이어그램
+### 1.1 계층 다이어그램 (클린아키텍처 use-case 표준 — 전 모듈)
+
+> **전 모듈**(auth 포함)이 클린아키텍처 4계층(domain/application/infrastructure/presentation) + Facade + Ports/Adapters + 무버스 `@Injectable` use-case 표준을 따른다. 참조 구현: **todo**. 상세 계층·의존성 규칙은 §1.4.
 
 ```
 HTTP Request
      ↓
-┌──────────────────────────────────────────────────────────┐
-│  Middleware (CORS)                                         │
-└──────────────────────────────────────────────────────────┘
+Middleware (CORS)
      ↓
-┌──────────────────────────────────────────────────────────┐
-│  Guard (JwtAuthGuard → ThrottlerGuard → AdminGuard)       │
-│  - @Public() 데코레이터로 인증 스킵                       │
-└──────────────────────────────────────────────────────────┘
+Guard (JwtAuthGuard → ThrottlerGuard → AdminGuard)   ── @Public()로 인증 스킵
      ↓
-┌──────────────────────────────────────────────────────────┐
-│  Controller                                               │
-│  - HTTP 요청/응답 처리, DTO 검증, Swagger 문서화           │
-└──────────────────────────────────────────────────────────┘
+Controller (presentation/)  ── HTTP 요청/응답, DTO 검증, Swagger. Facade만 주입
      ↓
-┌──────────────────────────────────────────────────────────┐
-│  Service                                                  │
-│  - 비즈니스 로직, BusinessExceptions 예외 발생             │
-│  - QueueService.enqueueXxx()로 비동기 위임 (fire-and-forget)│
-│  - 트랜잭션 관리 (database.$transaction)                   │
-└──────────────────────────────────────────────────────────┘
+Facade (application/facades/)  ── use-case에 한 줄 위임. 공개 시그니처 = 모듈 공개 계약
      ↓
-┌──────────────────────────────────────────────────────────┐
-│  Repository                                               │
-│  - Prisma 쿼리 캡슐화, tx 지원                            │
-│  - EncryptionService로 민감 데이터 암호화                  │
-└──────────────────────────────────────────────────────────┘
+UseCase (application/use-cases|queries/)  ── @Injectable, 단일 execute(input)
+     │  · 포트(Symbol 토큰 인터페이스)에만 의존
+     │  · UNIT_OF_WORK.run(async () => ...) — 리포지토리가 CLS에서 활성 TX를 읽음
+     │  · 규칙 위반은 ApplicationException(ErrorCode)
+     ↓                                          ↓ 도메인 이벤트 (커밋 후)
+Domain (애그리게잇·VO·정책·이벤트)          DOMAIN_EVENT_PUBLISHER.publishAll()
+     │  · 불변식 위반은 DomainException           → EventEmitter2 → @OnEvent 핸들러(부수효과)
      ↓
-┌──────────────────────────────────────────────────────────┐
-│  DatabaseService (Prisma) → PostgreSQL                    │
-└──────────────────────────────────────────────────────────┘
+Adapter (infrastructure/adapters/)  ── 포트 구현. Prisma 저장소·벤더 SDK·크로스모듈 위임
+     ↓
+Repository → DatabaseService (Prisma) → PostgreSQL
 
-     ── 비동기 (BullMQ) ──
-┌──────────────────────────────────────────────────────────┐
-│  QueueService → BullMQ Queue → Processor → Provider       │
-│  - 3회 재시도, exponential backoff (1s → 2s → 4s)          │
-│  - PushProvider (Expo) → 푸시 알림 발송                    │
-└──────────────────────────────────────────────────────────┘
+     ── 내구성 부수효과 (커밋 후 enqueue) ──
+UseCase/Adapter → QueueService.enqueueXxx() → BullMQ Queue → Processor → Provider(Expo 등)
+   · 3회 재시도, exponential backoff (1s → 2s → 4s)
 ```
 
 ### 1.2 의존성 방향 규칙
 
-| 방향 | 허용 여부 | 예시 |
-|------|----------|------|
-| Controller → Service | ✅ | `{Feature}Controller → {Feature}Service` |
-| Service → Repository | ✅ | `{Feature}Service → {Feature}Repository` |
-| Service → 다른 Service | ✅ | `{Feature}Service → {Other}Service` |
-| Service → DatabaseService | ✅ (트랜잭션용) | `database.$transaction(...)` |
-| Service → QueueService | ✅ | `queueService.enqueueXxx(...)` |
-| Processor → Provider/Repository | ✅ | 큐 작업 처리 |
-| Repository → DatabaseService | ✅ | `database.{feature}.findUnique(...)` |
-| Repository → EncryptionService | ✅ | `encryptionService.encrypt(...)` |
-| Controller → Repository | ❌ | Service 거쳐야 함 |
-| Controller → DatabaseService | ❌ | |
-| Repository → 다른 Repository | ❌ | |
-| Repository → Service | ❌ | |
+의존성 방향은 §1.4의 클린아키텍처 규칙(안쪽으로만: presentation → application → domain, infrastructure는 포트로 역전)을 따르며 `pnpm lint:boundaries`가 기계적으로 강제한다. 상세 표는 §1.4 참조.
 
-> ⚠️ 위 표는 **레거시 3계층 모듈** 기준. 클린아키텍처로 전환된 모듈(todo)은 §1.4의 규칙을 따른다.
+| 방향 | 허용 | 비고 |
+|------|------|------|
+| Controller → Facade | ✅ | 컨트롤러의 유일한 주입 지점 |
+| Facade → use-case | ✅ | 한 줄 위임 |
+| application → domain / 포트 | ✅ | use-case가 도메인·포트 사용 |
+| infrastructure → application 포트 | ✅ | 어댑터가 포트 구현 |
+| domain → application/infrastructure/@nestjs/DB | ❌ | 도메인은 프레임워크 제로 의존 |
+| application → Prisma 타입/타 모듈 내부 | ❌ | 포트·CLS UnitOfWork로 역전 |
+| 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)의 Facade만 |
 
 ### 1.3 디렉토리 구조
 
@@ -108,48 +91,36 @@ apps/api/
 ├── src/
 │   ├── main.ts                 # 애플리케이션 진입점
 │   ├── app.module.ts           # 루트 모듈
-│   ├── common/                 # 공통 모듈 (@common/* 별칭)
-│   │   ├── cache/              # CacheModule (Memory/Redis Strategy)
-│   │   ├── config/             # AppConfigModule + TypedConfigService
-│   │   ├── database/           # DatabaseService (Prisma 래퍼)
-│   │   ├── date/               # 날짜/타임존 유틸리티
-│   │   ├── dedup/              # DedupModule (알림 중복 방지)
-│   │   ├── decorators/         # @Timezone 등
-│   │   ├── encryption/         # EncryptionService (AES-256-GCM)
-│   │   ├── entitlement/        # EntitlementService (플랜별 제한)
-│   │   ├── exception/          # BusinessException + GlobalExceptionFilter
-│   │   ├── lock/               # LockModule (Redis/InMemory Strategy)
-│   │   ├── logger/             # LoggerModule (Pino)
-│   │   ├── pagination/         # PaginationService (오프셋 + 커서)
-│   │   ├── redis/              # RedisModule (REDIS_CLIENT)
-│   │   ├── response/           # ResponseTransformInterceptor
-│   │   ├── swagger/            # ApiDoc, ApiSuccessResponse 등
-│   │   └── throttle/           # RedisThrottlerStorage
-│   └── modules/                # 도메인 모듈
-│       ├── admin/              # 관리자 기능
-│       ├── admin-notification/ # 관리자 알림 (Discord 등)
-│       ├── ai/                 # AI 자연어 파싱 (Gemini)
-│       ├── ai-report/          # AI 주간/월간 리포트
-│       ├── ai-suggestion/      # AI 반복 제안
-│       ├── auth/               # 인증 (JWT, OAuth 4사)
-│       ├── cheer/              # 응원 메시지
-│       ├── daily-completion/   # 일일 완료 통계
-│       ├── email/              # 이메일 발송
-│       ├── follow/             # 팔로우 관계
-│       ├── health/             # 헬스체크
-│       ├── inquiry/            # 문의
-│       ├── notification/       # 알림 (BullMQ + 푸시)
-│       ├── nudge/              # 찌르기
-│       ├── scheduler/          # 스케줄러 (리마인더)
-│       ├── subscription/       # 구독/결제
-│       ├── todo/               # 할 일 (클린아키텍처+CQRS, §1.4)
-│       │   ├── domain/         #   애그리게잇·VO·이벤트·도메인 서비스
-│       │   ├── application/    #   포트·유스케이스(커맨드)·쿼리·이벤트 핸들러
-│       │   ├── infrastructure/ #   어댑터 (포트 구현)
-│       │   └── ...             #   controller·행 repository·mapper·dtos
-│       ├── todo-category/      # 할 일 카테고리
-│       ├── user-settings/      # 사용자 설정/프로필
-│       └── weekly-achievement/ # 주간 달성 통계
+│   ├── shared/                 # 공통 인프라·유틸 (4계층, @/shared/* 별칭)
+│   │   ├── domain/             # 공유 VO·날짜·도메인 예외(DomainException)·프롬프트
+│   │   ├── application/        # 공유 포트·exceptions(ApplicationException)·pagination·entitlement·utils
+│   │   ├── infrastructure/     # database·cache·redis·lock·encryption·throttle·events·bullmq·dedup·http·jose·config·logging·filters(GlobalExceptionFilter)
+│   │   └── presentation/       # interceptors(ResponseTransform)·swagger·decorators·dtos
+│   ├── todo/                   # 할 일 — 클린아키텍처 참조 구현 (§1.4)
+│   │   ├── domain/             #   애그리게잇·VO·이벤트·도메인 서비스
+│   │   ├── application/        #   포트·facade·use-case(쓰기)·queries(읽기)·@OnEvent 구독자
+│   │   ├── infrastructure/     #   어댑터 (포트 구현)·행 repository·mapper
+│   │   └── presentation/       #   controller·dtos
+│   │   ── 나머지 도메인 모듈도 동일한 4계층 구조 (전 모듈 클린아키) ──
+│   ├── admin/                  # 관리자 기능
+│   ├── admin-notification/     # 관리자 알림 (Discord 등)
+│   ├── ai/                     # AI 자연어 파싱 (Gemini)
+│   ├── ai-report/              # AI 주간/월간 리포트
+│   ├── ai-suggestion/          # AI 반복 제안
+│   ├── auth/                   # 인증 (JWT, OAuth 4사)
+│   ├── cheer/                  # 응원 메시지
+│   ├── daily-completion/       # 일일 완료 통계
+│   ├── email/                  # 이메일 발송
+│   ├── follow/                 # 팔로우 관계
+│   ├── health/                 # 헬스체크
+│   ├── inquiry/                # 문의
+│   ├── notification/           # 알림 (BullMQ + 푸시)
+│   ├── nudge/                  # 찌르기
+│   ├── scheduler/              # 스케줄러 (리마인더)
+│   ├── subscription/           # 구독/결제
+│   ├── todo-category/          # 할 일 카테고리
+│   ├── user-settings/          # 사용자 설정/프로필
+│   └── weekly-achievement/     # 주간 달성 통계
 └── test/
     ├── e2e/                    # E2E 테스트
     ├── integration/            # 통합 테스트
@@ -159,25 +130,29 @@ apps/api/
 
 ---
 
-### 1.4 클린아키텍처 모듈 (CQRS + DDD) — todo부터 적용
+### 1.4 클린아키텍처 모듈 (Use-case + DDD) — 전 모듈 표준
 
-todo 모듈은 3계층에서 클린아키텍처+CQRS+전술적 DDD로 완전 전환됐다. 신규 표준이며, 다른 모듈도 순차 이관 예정.
-코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처cqrs-모듈-규칙)
+**전 모듈**(auth 포함)이 이 표준으로 전환 완료됐다. **참조 구현은 todo 모듈** — 구조·패턴이 모호하면 todo를 따른다.
+**@nestjs/cqrs는 사용하지 않는다** — CommandBus/QueryBus/EventBus/CqrsModule 금지. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 EventEmitter2 기반 도메인 이벤트로 처리한다.
+코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처-모듈-규칙)
 
 ```
 HTTP Request
      ↓
-Controller ── DTO→Command/Query 매핑, 날짜·타임존 파싱만 담당
+Controller ── Facade만 주입. DTO→Input 매핑, 날짜·타임존 파싱만 담당
      ↓
-CommandBus / QueryBus ── Command<T>/Query<T> 확장으로 반환 타입 자동 추론
+Facade (application/facades/) ── use-case들을 주입해 한 줄 위임.
+     │                            공개 시그니처가 모듈의 공개 계약
      ↓
-Application: 커맨드/쿼리 핸들러 (유스케이스당 1개, SRP)
+Application: use-case (엔드포인트당 1개, SRP)
+     │  · plain @Injectable() 클래스 — 단일 async execute(input): Promise<R>
      │  · 포트(Symbol 토큰 인터페이스)에만 의존 — 8종 (repo 쓰기/읽기,
      │    category-ownership, cache, friend, streak, notification, reminder)
-     │  · TRANSACTION_MANAGER.run(tx => ...) — tx는 불투명 TransactionContext
-     │    (Prisma 타입은 application에 노출되지 않음, 인프라만 unwrapTransaction)
+     │  · UNIT_OF_WORK.run(async () => ...) — 콜백 무인자. 리포지토리가 CLS에서
+     │    활성 TX를 직접 읽음 (tx 핸들 계층 전달 없음, 전파는 Required)
      │  · load→mutate→write는 TX 안에서 (동시 수정 레이스 창 축소)
      │  · ApplicationException(ErrorCode)으로 유스케이스 규칙 위반 표현
+     │  · 커밋 후 DOMAIN_EVENT_PUBLISHER.publishAll(pullDomainEvents())
      ↓
 Domain: 애그리게잇 · 자식 엔티티 · VO · 도메인 서비스/정책 · 도메인 이벤트
      │  · 불변식 위반은 DomainException
@@ -189,8 +164,8 @@ Domain: 애그리게잇 · 자식 엔티티 · VO · 도메인 서비스/정책 
      │    id가 autoincrement라 팩토리 대신 계획 패턴)
      │  · 판단 규칙은 도메인 정책 함수 (completion-policy, reorder-position,
      │    expand-recurring-dates — 전부 순수 함수)
-     │  · 상태 전이 메서드에서 raise(event) 적립 → 핸들러가 TX 커밋 후
-     │    eventBus.publishAll(pullDomainEvents())
+     │  · 상태 전이 메서드에서 raise(event) 적립 → use-case가 TX 커밋 후
+     │    DOMAIN_EVENT_PUBLISHER.publishAll(pullDomainEvents())
      ↓
 Infrastructure: 어댑터 (포트 구현)
      │  · PrismaTodo{Read}Repository → persistence/의 행 DAO(TodoRowRepository)에
@@ -200,34 +175,46 @@ Infrastructure: 어댑터 (포트 구현)
      ↓
 TodoRowRepository (행 DAO) → DatabaseService (Prisma) → PostgreSQL
 
-     ── 부수효과 (커밋 후) ──
-@EventsHandler ── TodoCreated/Updated/Rescheduled/Deleted → 리마인더 스케줄/취소
-              └─ TodoToggled → 리마인더 취소 + 스트릭 + 친구완료/마일스톤 큐
+     ── 부수효과 (커밋 후, EventEmitter2) ──
+@OnEvent(TODO_EVENTS.X) ── TodoCreated/Updated/Rescheduled/Deleted → 리마인더 스케줄/취소
+                        └─ TodoToggled → 리마인더 취소 + 스트릭 + 친구완료/마일스톤 큐
 ```
 
-**폴더 규칙** (커맨드·쿼리 대칭):
+**도메인 이벤트 파이프라인** (use-case → EventEmitter2 → @OnEvent):
+
+- `DomainEvent` 인터페이스는 `eventName` 라우팅 키를 보유 (`shared/domain/aggregate-root.ts`). 이벤트명 상수는 모듈 소유 — 예: `todo/domain/events/todo-event-names.ts`의 `TODO_EVENTS` (`"todo.created"` 등)
+- 발행 포트는 `DOMAIN_EVENT_PUBLISHER` (`shared/application/ports/domain-event-publisher.port.ts`) — `@Global` `DomainEventsModule`이 제공, EventEmitter2 어댑터는 `shared/infrastructure/events/`
+- 발행은 **반드시 트랜잭션 커밋 후** (`UNIT_OF_WORK`의 `run` 콜백 밖). TX 안에서는 `pullDomainEvents()`로 드레인만 한다
+- EventEmitter2 `emit`은 **동기** — 퍼블리셔가 이벤트 단위 try/catch로 예외를 격리한다 (발행 실패가 호출자에 전파되지 않는 fire-and-forget 계약)
+- 구독은 `application/events/`의 `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.X)` — 핸들러 내부도 try/catch fire-and-forget + 로깅
+
+**폴더 규칙** (쓰기·읽기 대칭 — read/write 저장소 분리와 미러링):
 
 ```
 modules/todo/
-├── domain/            entities/ (todo, todo-item) · value-objects/ · events/ · services/
-├── application/       ports/ (8종) · types.ts · use-cases/<kebab>/{command,handler,spec}
-│                      · queries/<kebab>/{query,handler,spec} · events/ (5종 부수효과 핸들러)
+├── domain/            entities/ (todo, todo-item) · value-objects/ · events/ (+ todo-event-names.ts) · services/
+├── application/       ports/ (8종) · types.ts · facades/ (todo.facade.ts)
+│                      · use-cases/<kebab>/<kebab>.use-case.ts(+spec) — 쓰기
+│                      · queries/<kebab>/<kebab>.use-case.ts(+spec) — 읽기
+│                      · events/ (5종 @OnEvent 부수효과 구독자)
 ├── infrastructure/    adapters/ (포트 구현 8종) · persistence/ (행 DAO·응답 매퍼·행 타입)
-├── dtos/  todo.controller.ts  todo.module.ts  index.ts (공개 API = 커맨드 클래스)
+├── presentation/      todo.controller.ts · dtos/
+├── todo.module.ts  index.ts (공개 API = Facade + DTO)
 ```
 
 **의존성 방향 (클린아키텍처 모듈)** — `pnpm lint:boundaries`가 기계적으로 강제
 
 | 방향 | 허용 여부 | 비고 |
 |------|----------|------|
-| Controller → CommandBus/QueryBus | ✅ | 서비스 직접 호출 금지 |
-| application → domain | ✅ | 핸들러가 애그리게잇/VO/도메인 서비스 사용 |
+| Controller → Facade | ✅ | 컨트롤러가 주입하는 유일한 지점 — use-case/리포지토리 직접 주입 금지 |
+| Facade → use-case | ✅ | 한 줄 위임 (로직 금지) |
+| application → domain | ✅ | use-case가 애그리게잇/VO/도메인 서비스 사용 |
 | application → 포트(인터페이스) | ✅ | `@Inject(SYMBOL_TOKEN)` |
 | infrastructure → application 포트 | ✅ | 어댑터가 포트 구현 |
-| infrastructure → 행 DAO/타 모듈 서비스 | ✅ | 위임 전용 (쿼리 중복 금지) |
+| infrastructure → 행 DAO/타 모듈 Facade | ✅ | 위임 전용 (쿼리 중복 금지) |
 | domain → application/infrastructure/@nestjs/DB | ❌ | 도메인은 프레임워크 제로 의존 |
-| application → Prisma 타입/타 모듈 내부 | ❌ | 불투명 TransactionContext·포트로 역전 |
-| 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)·커맨드 디스패치만 (memo·ai-suggestion 참조) |
+| application → Prisma 타입/타 모듈 내부 | ❌ | CLS 기반 UnitOfWork·포트로 역전 |
+| 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)의 Facade 호출만 — 예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter`가 `TodoFacade`에 위임 |
 | domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` |
 
 > `lint:no-cast`·`lint:boundaries`는 수동 게이트다(CI 미연결 — 연결은 별도 결정).
@@ -253,8 +240,13 @@ modules/todo/
 
 ```
 예외 발생
-  ├── BusinessException (도메인 비즈니스 에러)
+  ├── ApplicationException / DomainException (모듈 코드가 던지는 타입)
+  │     → 둘 다 ErrorCodedException(ErrorCode 보유). 필터가 BusinessException으로
+  │       정규화해 errorCode + message + httpStatus 응답 생성
+  │
+  ├── BusinessException (필터의 canonical 에러 타입 + 공유 카탈로그)
   │     → 정의된 errorCode + message + httpStatus 그대로 반환
+  │     → 신규 비즈니스 로직은 직접 던지지 않음(벤더 어댑터 극소수 예외)
   │
   ├── HttpException (NestJS 내장 — 검증 실패 등)
   │     → SYS_0002 (validation) 또는 SYS_0001로 래핑
@@ -271,16 +263,20 @@ modules/todo/
 모든 에러 → GlobalExceptionFilter → 통일된 JSON 응답
 ```
 
-### 2.2 BusinessException + BusinessExceptions 팩토리
+> **모듈 코드는 `ApplicationException`(유스케이스 규칙 위반)·`DomainException`(도메인 불변식 위반)을 던진다.** 둘 다 `ErrorCode`를 보유하며, `GlobalExceptionFilter`가 이를 `BusinessException`으로 정규화한다. 같은 `errorCode`+`details`면 어느 경로든 **byte-identical HTTP 응답**을 만든다 — `BusinessException`은 필터의 내부 표현이자 공유 에러 카탈로그(P2002 매핑 등)일 뿐, 신규 로직에서 직접 던지지 않는다.
 
-> **Why**: 에러 생성의 유일한 팩토리. 에러 코드/메시지 변경 시 한 곳만 수정하면 일괄 반영.
+### 2.2 예외 계층: ApplicationException/DomainException + BusinessException 카탈로그
 
-`BusinessException`은 `HttpException`을 확장한 도메인 예외 클래스. `BusinessExceptions`는 도메인별 팩토리 메서드를 제공하는 정적 클래스.
+> **throw 표준**: 모듈 코드는 `ApplicationException`(응용 규칙)/`DomainException`(도메인 불변식)을 던진다. 둘 다 `ErrorCodedException`을 확장하고 `ErrorCode`를 보유한다. `GlobalExceptionFilter`가 이를 `BusinessException`으로 정규화해 HTTP 응답을 만든다(§2.3).
+>
+> **`BusinessException`/`BusinessExceptions`의 역할**: `HttpException`을 확장한 필터의 canonical 에러 타입 + 공유 에러 카탈로그(도메인별 정적 팩토리). Prisma P2002 constraintMap 매핑이 이 팩토리를 쓰고, 벤더 어댑터 2곳(weather KMA·ai Gemini)이 직접 던진다. **신규 비즈니스 로직에서 직접 던지지 않는다** — `ApplicationException`/`DomainException`(+`ErrorCode`)을 쓴다. `new HttpException()` 금지.
 
-**위치**: `src/common/exception/services/business-exception.service.ts`
+**위치**: `BusinessException` = `src/shared/application/exceptions/`, `ApplicationException` = `src/shared/domain/exceptions/application.exception.ts`, `DomainException` = `src/shared/domain/exceptions/domain.exception.ts`.
+
+카탈로그 위치: `src/shared/application/exceptions/services/business-exception.service.ts`
 
 ```typescript
-// BusinessException 클래스
+// BusinessException 클래스 (필터 내부 표현 — 신규 코드가 직접 인스턴스화하지 않음)
 export class BusinessException extends HttpException {
   constructor(
     public readonly errorCode: ErrorCodeType,
@@ -299,13 +295,13 @@ export class BusinessException extends HttpException {
 ```
 
 ```typescript
-// 사용법 — Service에서 팩토리 메서드 호출
-throw BusinessExceptions.todoNotFound(todoId);
-throw BusinessExceptions.aiUsageLimitExceeded(used, limit);
-throw BusinessExceptions.socialAccountNotLinked(provider, providerAccountId, email);
+// 모듈 코드 throw 표준 — ApplicationException/DomainException(+ErrorCode)
+throw new ApplicationException(ErrorCode.TODO_1201, { todoId });          // 유스케이스 규칙
+throw new DomainException(ErrorCode.TODO_1210, { itemCount, limit });     // 도메인 불변식
+// 필터가 위 예외를 아래 카탈로그의 errorCode 정의로 정규화해 HTTP 응답 생성
 ```
 
-**도메인별 팩토리 메서드 목록:**
+**공유 에러 카탈로그 — 도메인별 정적 팩토리 메서드 목록** (필터·P2002 매핑이 사용):
 
 | 도메인 | 주요 메서드 |
 |--------|-----------|
@@ -327,7 +323,7 @@ throw BusinessExceptions.socialAccountNotLinked(provider, providerAccountId, ema
 
 ### 2.3 GlobalExceptionFilter 3단계 처리
 
-**위치**: `src/common/exception/filters/global-exception.filter.ts`
+**위치**: `src/shared/application/exceptions/filters/global-exception.filter.ts`
 
 ```typescript
 @Catch()
@@ -440,15 +436,15 @@ Prisma Unique Constraint 위반 시 비즈니스 예외로 자동 매핑:
 ### 2.6 DO / DON'T
 
 **DO ✅**
-- Service에서 `BusinessExceptions.xxx()` 팩토리 메서드로 예외 발생
+- use-case에서 `new ApplicationException(ErrorCode.X, details)`, 도메인 불변식은 `new DomainException(...)`로 예외 발생
 - 새 Unique Constraint 추가 시 constraintMap에 매핑 등록
-- QueueService `enqueueXxx()` 메서드로 비동기 부수효과 위임
+- QueueService `enqueueXxx()` 메서드로 비동기 부수효과 위임 (커밋 후)
 
 **DON'T ❌**
 - Controller에서 try-catch (GlobalExceptionFilter가 담당)
-- `new HttpException()` 직접 사용 (BusinessExceptions 팩토리 사용)
+- `new HttpException()` 직접 사용, 신규 로직에서 `BusinessExceptions` 직접 던지기 (ApplicationException/DomainException 사용)
 - 에러 응답 형식 직접 구성 (GlobalExceptionFilter가 담당)
-- Repository에서 예외 발생 (Service에서 담당)
+- 리포지토리(어댑터)에서 비즈니스 예외 발생 (use-case/도메인이 담당)
 
 ---
 
@@ -495,7 +491,7 @@ BullModule.forRootAsync({
 ### 3.3 QueueService 패턴 (enqueue 담당)
 
 ```typescript
-// src/modules/{name}/queue/{name}-queue.service.ts
+// src/{name}/queue/{name}-queue.service.ts
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
@@ -525,7 +521,7 @@ export class [Feature]QueueService {
 ### 3.4 Processor 패턴 (job 처리 담당)
 
 ```typescript
-// src/modules/{name}/queue/{name}-queue.processor.ts
+// src/{name}/queue/{name}-queue.processor.ts
 import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import type { Job } from "bullmq";
 import { QUEUE_NAME } from "./{name}-queue.constants";
@@ -551,7 +547,7 @@ export class [Feature]Processor extends WorkerHost {
 ### 3.5 Job 패턴 (스케줄러 등록 담당)
 
 ```typescript
-// src/modules/{name}/jobs/{name}.job.ts
+// src/{name}/jobs/{name}.job.ts
 import { Injectable, type OnModuleInit } from "@nestjs/common";
 
 @Injectable()
@@ -569,21 +565,22 @@ export class [Feature]Job implements OnModuleInit {
 }
 ```
 
-### 3.6 Service에서 큐 사용 패턴
+### 3.6 use-case에서 큐 사용 패턴
 
 ```typescript
-// src/modules/{name}/services/{name}.service.ts
+// src/{name}/application/use-cases/create-xxx/create-xxx.use-case.ts
 @Injectable()
-export class [Feature]Service {
+export class CreateXxxUseCase {
   constructor(
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
+    @Inject(XXX_REPOSITORY) private readonly repository: XxxRepositoryPort,
     private readonly [feature]QueueService: [Feature]QueueService,
-    private readonly database: DatabaseService,
   ) {}
 
-  async create(input: CreateInput): Promise<Result> {
-    // 1. 비즈니스 로직 (트랜잭션)
-    const result = await this.database.$transaction(async (tx) => {
-      // ... DB 작업
+  async execute(input: CreateInput): Promise<Result> {
+    // 1. 비즈니스 로직 (CLS 트랜잭션 — 리포지토리가 활성 TX를 읽음)
+    const result = await this.uow.run(async () => {
+      // ... 도메인 로드→변경→저장
       return created;
     });
 
@@ -607,7 +604,7 @@ export class [Feature]Service {
 
 ### 3.8 PushProvider Strategy Pattern
 
-**위치**: `src/modules/notification/providers/`
+**위치**: `src/notification/providers/`
 
 ```typescript
 // push-provider.interface.ts
@@ -676,7 +673,7 @@ ThrottlerGuard (Rate Limiting, 글로벌)
 AdminGuard (관리자 권한, 엔드포인트별)
 ```
 
-**위치**: `src/modules/auth/guards/`
+**위치**: `src/auth/guards/`
 
 | Guard | 파일 | 역할 |
 |-------|------|------|
@@ -701,16 +698,20 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   handleRequest<TUser>(err: Error | null, user: TUser | false): TUser {
     if (err || !user) {
-      throw BusinessExceptions.invalidToken({ reason: err?.message });
+      throw new ApplicationException(ErrorCode.AUTH_0101, {
+        reason: err?.message || "Access token is missing or invalid",
+      });
     }
     return user;
   }
 }
 ```
 
+**위치**: `src/auth/infrastructure/guards/jwt-auth.guard.ts`
+
 ### 4.3 LastActiveInterceptor (글로벌)
 
-**위치**: `src/modules/auth/interceptors/last-active.interceptor.ts`
+**위치**: `src/auth/presentation/interceptors/last-active.interceptor.ts`
 
 `APP_INTERCEPTOR`로 글로벌 등록. 모든 인증된 요청에서 `User.lastActiveAt`을 업데이트.
 
@@ -739,7 +740,7 @@ export class LastActiveInterceptor implements NestInterceptor {
 
 ### 4.4 OAuth 4사 자동연동 규칙
 
-**위치**: `src/modules/auth/services/oauth.service.ts`
+**위치**: `src/auth/application/services/oauth.service.ts`
 
 **Trusted vs Untrusted Provider:**
 
@@ -753,38 +754,38 @@ export class LastActiveInterceptor implements NestInterceptor {
 ```
 같은 이메일의 기존 사용자가 있을 때:
   ├── Trusted Provider + emailVerified → 자동 계정 연동 (Auto-Link)
-  │   └── 트랜잭션: Account 생성 + SecurityLog("OAUTH_AUTO_LINKED")
+  │   └── CLS 트랜잭션: Account 생성 + SecurityLog("OAUTH_AUTO_LINKED")
   │
   └── Untrusted Provider 또는 !emailVerified → 수동 연동 요구
-      └── throw socialAccountNotLinked() + SecurityLog("OAUTH_LINK_REQUIRED")
+      └── throw ApplicationException(SOCIAL_0206) + SecurityLog("OAUTH_LINK_REQUIRED")
 ```
 
 ```typescript
-// oauth.service.ts — 핵심 로직
-private async _handleEmailConflict(...) {
-  const isTrusted = this._isTrustedProvider(provider);  // Google, Apple
+// oauth.service.ts — 핵심 로직 (uow.run = CLS 트랜잭션, 리포지토리가 활성 TX를 읽음)
+private async handleEmailConflict(...) {
+  const isTrusted = this.isTrustedProvider(provider);  // Google, Apple
   const isEmailVerified = options.emailVerified === true;
 
   if (isTrusted && isEmailVerified) {
     // Auto-link: 신뢰할 수 있는 제공자의 검증된 이메일
-    await this._database.$transaction(async (tx) => {
-      await this._accountRepository.createOAuthAccount({ ... }, tx);
-      await this._securityLogRepository.create({
+    await this.uow.run(async () => {
+      await this.accountRepository.createOAuthAccount({ ... });
+      await this.securityLogRepository.create({
         event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
         metadata: { provider, autoLinked: true, reason: 'trusted_provider_verified_email' },
-      }, tx);
+      });
     });
-    return this._createSessionAndTokens(...);
+    return this.createSessionAndTokens(...);
   }
 
   // 수동 연동 필요
-  throw BusinessExceptions.socialAccountNotLinked(provider, providerAccountId, email);
+  throw new ApplicationException(ErrorCode.SOCIAL_0206, { provider, providerAccountId, email });
 }
 ```
 
 ### 4.5 EncryptionService (AES-256-GCM)
 
-**위치**: `src/common/encryption/encryption.service.ts`
+**위치**: `src/shared/infrastructure/encryption/encryption.service.ts`
 
 | 항목 | 값 |
 |------|-----|
@@ -825,17 +826,18 @@ this.encryptionService.decryptSafe(account.accessToken)
 
 | 모듈 | 파일 | 제공 서비스 |
 |------|------|-----------|
-| `DatabaseModule` | `common/database/` | `DatabaseService` (Prisma 래퍼) |
-| `EncryptionModule` | `common/encryption/` | `EncryptionService` |
-| `CacheModule` | `common/cache/` | `ICacheService`, `CacheService` |
-| `LoggerModule` | `common/logger/` | 글로벌 Logger |
-| `ExceptionModule` | `common/exception/` | `GlobalExceptionFilter` |
-| `ResponseModule` | `common/response/` | `ResponseTransformInterceptor` |
-| `PaginationModule` | `common/pagination/` | `PaginationService` |
-| `RedisModule` | `common/redis/` | `REDIS_CLIENT` (BullMQ 전용), `REDIS_COMMAND_CLIENT` (명령용 fail-fast) |
-| `LockModule` | `common/lock/` | `ILockProvider` (Redis/InMemory Strategy) |
-| `EntitlementModule` | `common/entitlement/` | `EntitlementService` (플랜별 제한) |
-| `DedupModule` | `common/dedup/` | 알림 중복 방지 |
+| `DatabaseModule` | `shared/infrastructure/database/` | `DatabaseService` (Prisma 래퍼) |
+| `EncryptionModule` | `shared/infrastructure/encryption/` | `EncryptionService` |
+| `CacheModule` | `shared/infrastructure/cache/` | `ICacheService`, `CacheService` |
+| `LoggerModule` | `shared/infrastructure/logging/` | 글로벌 Logger |
+| `ExceptionModule` | `shared/infrastructure/filters/` | `GlobalExceptionFilter` |
+| `ResponseModule` | `shared/presentation/interceptors/` | `ResponseTransformInterceptor` |
+| `PaginationModule` | `shared/application/pagination/` | `PaginationService` |
+| `RedisModule` | `shared/infrastructure/redis/` | `REDIS_CLIENT` (BullMQ 전용), `REDIS_COMMAND_CLIENT` (명령용 fail-fast) |
+| `LockModule` | `shared/infrastructure/lock/` | `ILockProvider` (Redis/InMemory Strategy) |
+| `EntitlementModule` | `shared/application/entitlement/` | `EntitlementService` (플랜별 제한) |
+| `DedupModule` | `shared/infrastructure/dedup/` | 알림 중복 방지 |
+| `DomainEventsModule` | `shared/infrastructure/events/` | `DOMAIN_EVENT_PUBLISHER` (도메인 이벤트 발행 포트, EventEmitter2 어댑터) |
 
 > `@Global()` 모듈은 `imports` 없이 어디서든 DI 가능.
 
@@ -894,7 +896,7 @@ export class LoggerModule {
 
 ### 5.3 Strategy Pattern: CacheAdapter (Memory/Redis)
 
-**위치**: `src/common/cache/`
+**위치**: `src/shared/cache/`
 
 ```
 CacheModule.forRoot()
@@ -927,9 +929,19 @@ export type TtlValue = number | `${number}${'s' | 'm' | 'h' | 'd'}`;
 
 **TTL 표현**: `60000` (ms), `'30s'`, `'5m'`, `'1h'`, `'7d'`
 
+### 5.3.1 조회 캐싱 표준 (Redis)
+
+| 항목 | 규칙 |
+|------|------|
+| 적용 대상 | 적중률 높고 churn 낮은 조회에만 **선별 적용** — 전면 캐싱 금지 |
+| 캐시 키 | `shared/infrastructure/cache/constants/cache-keys.ts`의 `CacheKeys`에서 중앙 관리. 신규 키는 `v1` 버전 세그먼트 포함 |
+| TTL | 데이터 변동성 기반으로 결정 (`CacheKeys.TTL` 상수에 근거 주석과 함께 정의) |
+| 무효화 | 쓰기 use-case에서 **명시적 호출** (도메인 이벤트가 없는 쓰기 경로 포함) 또는 `@OnEvent` 구독으로 처리 |
+| 장애 계약 | fail-open (`ICacheService` 계약, §5.1.1) — 캐시 실패는 미스 취급, DB 폴백 |
+
 ### 5.4 TypedConfigService 래퍼
 
-**위치**: `src/common/config/services/config.service.ts`
+**위치**: `src/shared/config/services/config.service.ts`
 
 NestJS `ConfigService`를 타입 안전하게 래핑:
 
@@ -954,11 +966,11 @@ export class TypedConfigService {
 }
 ```
 
-> **Zod 스키마 기반 환경변수 검증**: `src/common/config/schemas/` 하위에 `app.schema.ts`, `security.schema.ts`, `cache.schema.ts` 등에서 `z.object()`로 정의.
+> **Zod 스키마 기반 환경변수 검증**: `src/shared/config/schemas/` 하위에 `app.schema.ts`, `security.schema.ts`, `cache.schema.ts` 등에서 `z.object()`로 정의.
 
 ### 5.5 PaginationService (오프셋 + 커서)
 
-**위치**: `src/common/pagination/services/pagination.service.ts`
+**위치**: `src/shared/pagination/services/pagination.service.ts`
 
 **오프셋 기반:**
 
@@ -1007,7 +1019,7 @@ return paginationService.createCursorPaginatedResponse<TodoItem, string>({
 ### 6.2 @Timezone() 데코레이터 + X-Timezone 헤더
 
 ```typescript
-import { Timezone } from '@/common/decorators';
+import { Timezone } from '@/shared/presentation/decorators';
 import { ApiHeader } from '@nestjs/swagger';
 
 @ApiHeader({
@@ -1035,10 +1047,10 @@ async create(
 
 ### 6.3 날짜 유틸리티
 
-**위치**: `src/common/date/`
+**위치**: `src/shared/date/`
 
 ```typescript
-import { todayInTimezone, parseLocalDateTime, startOfDayInTimezone, midnightInTimezone } from '@/common/date';
+import { todayInTimezone, parseLocalDateTime, startOfDayInTimezone, midnightInTimezone } from '@/shared/domain/date';
 
 // 사용자의 "오늘" 날짜를 UTC midnight Date로 반환
 const today = todayInTimezone(timezone);
@@ -1124,61 +1136,53 @@ providers: [
 
 ### 7.2 핵심 모듈
 
-**Auth 모듈:**
+**Auth 모듈** (4계층 클린아키. 도메인 규모상 application에 서비스 + use-case 혼재):
 
 ```
-src/modules/auth/
+src/auth/
 ├── auth.module.ts
-├── controllers/
-│   ├── auth.controller.ts       # 로그인/회원가입
-│   ├── oauth.controller.ts      # OAuth 4사
-│   ├── session.controller.ts    # 세션 관리
-│   └── account.controller.ts    # 계정 관리 (탈퇴 등)
-├── services/
-│   ├── auth.service.ts          # 로그인/회원가입/토큰 관리
-│   ├── oauth.service.ts         # OAuth 4사 연동
-│   ├── password.service.ts      # 비밀번호 해싱
-│   ├── password-management.service.ts  # 비밀번호 변경/찾기
-│   ├── session.service.ts       # 세션 관리
-│   ├── token.service.ts         # JWT 토큰 발급/검증
-│   └── verification.service.ts  # 이메일 인증 코드
-├── repositories/
-│   ├── user.repository.ts
-│   ├── account.repository.ts    # OAuth 계정 (EncryptionService 사용)
-│   ├── session.repository.ts
-│   ├── verification.repository.ts
-│   ├── login-attempt.repository.ts
-│   ├── security-log.repository.ts
-│   └── oauth-state.repository.ts
-├── guards/
-│   ├── jwt-auth.guard.ts        # @Public() 지원
-│   ├── jwt-refresh.guard.ts
-│   └── admin.guard.ts
-├── interceptors/
-│   └── last-active.interceptor.ts  # 글로벌 (APP_INTERCEPTOR)
-├── processors/
-│   └── account-purge.processor.ts  # 탈퇴 계정 정리
-├── jobs/
-│   └── account-purge.job.ts
-└── strategies/
-    ├── jwt.strategy.ts
-    └── jwt-refresh.strategy.ts
+├── presentation/
+│   ├── controllers/     # auth·oauth·session·account 컨트롤러
+│   ├── interceptors/    # last-active (글로벌 APP_INTERCEPTOR)
+│   ├── decorators/      # @Public() 등
+│   └── dtos/
+├── application/
+│   ├── services/        # auth·oauth·session·token·password·verification 서비스
+│   ├── use-cases/       # 신규 유스케이스
+│   ├── ports/           # OAuth ID 제공자 포트 등 (Symbol 토큰)
+│   ├── types/ · utils/
+├── domain/
+│   ├── services/ · value-objects/ · constants/
+└── infrastructure/
+    ├── guards/          # jwt-auth(@Public 지원)·jwt-refresh·admin
+    ├── strategies/      # jwt·jwt-refresh (Passport)
+    ├── oauth/           # 4사 provider 어댑터 + 토큰 verifier
+    ├── persistence/     # user·account(암호화)·session·verification·security-log·oauth-state 저장소
+    ├── adapters/        # 크로스모듈 포트 구현
+    ├── queue/ · scheduler/   # account-purge processor/job
 ```
 
-**Todo 모듈:**
+**Todo 모듈** (클린아키텍처 참조 구현):
 
 ```
-src/modules/todo/
+src/todo/
 ├── todo.module.ts
-├── todo.controller.ts
-├── services/
-│   └── todo.service.ts          # CRUD + 완료 + 정렬 + 큐 enqueue
-├── repositories/
-│   └── todo.repository.ts
-├── types/
-│   └── todo.types.ts
-└── mappers/
-    └── todo.mapper.ts
+├── presentation/
+│   ├── (todo.controller.ts) · dtos/
+├── application/
+│   ├── facades/         # TodoFacade — 컨트롤러의 유일한 주입 지점
+│   ├── use-cases/       # 쓰기 (엔드포인트당 1개)
+│   ├── queries/         # 읽기
+│   ├── ports/           # 저장소·캐시·크로스모듈 포트 (Symbol 토큰)
+│   └── events/          # @OnEvent 도메인 이벤트 구독자
+├── domain/
+│   ├── entities/        # Todo 애그리게잇 + TodoItem 자식 엔티티
+│   ├── value-objects/   # TodoSchedule 등
+│   ├── services/        # 정책 함수 (completion·reorder·recurring — 순수)
+│   └── events/          # TODO_EVENTS 이벤트명 + 이벤트 타입
+└── infrastructure/
+    ├── adapters/        # 포트 구현 (Prisma 저장소·크로스모듈 위임)
+    └── persistence/     # 행 DAO (TodoRowRepository) + mapper
 ```
 
 ### 7.3 소셜 모듈 (Follow, Cheer, Nudge)
@@ -1186,22 +1190,20 @@ src/modules/todo/
 **공통 패턴 — 팔로우 관계 확인 후 동작:**
 
 ```typescript
-// Service 내부 — 모든 소셜 기능 공통 패턴
-async send[Action](senderId: string, receiverId: string, ...) {
-  // 1. 팔로우 관계 확인
-  const isFriend = await this.followService.isMutualFriend(senderId, receiverId);
+// use-case.execute 내부 — 모든 소셜 기능 공통 패턴 (포트 의존)
+async execute(input: { senderId: string; receiverId: string; ... }): Promise<Result> {
+  // 1. 팔로우 관계 확인 (친구 관계는 포트로 조회)
+  const isFriend = await this.friendPort.isMutualFriend(input.senderId, input.receiverId);
   if (!isFriend) {
-    throw BusinessExceptions.notFriends(receiverId);
+    throw new ApplicationException(ErrorCode.FOLLOW_XXXX, { receiverId: input.receiverId });
   }
 
   // 2. 일일 제한 확인 (EntitlementService)
-  const entitlement = await this.entitlementService.getFeatureLimitInTx(tx, senderId, Feature.XXX);
-  this.entitlementService.enforceLimit(entitlement, todayCount, () =>
-    BusinessExceptions.xxxLimitExceeded(todayCount, entitlement.dailyLimit),
-  );
+  const entitlement = await this.entitlementService.getFeatureLimit(input.senderId, Feature.XXX);
+  this.entitlementService.enforceLimit(entitlement, todayCount);
 
-  // 3. 생성 + 비동기 큐 enqueue
-  const result = await this.[feature]Repository.create({ ... });
+  // 3. 커밋 후 비동기 큐 enqueue
+  const result = await this.uow.run(async () => this.repository.create({ ... }));
   this.notificationQueueService.enqueueXxxSent({ ... });
   return result;
 }
@@ -1288,49 +1290,45 @@ async handleTodoReminder() {
 
 ## 8. 새 기능 추가 체크리스트
 
-### 1단계: 스키마/모델 준비
+> 전 모듈 클린아키텍처 use-case 표준. 참조 구현: **todo**. 상세 코드 규칙: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처-모듈-규칙).
 
-- [ ] `prisma/schema.prisma`에 모델 추가
-- [ ] `pnpm db:migrate` 실행
-- [ ] `@aido/validators`에 Request/Response Zod 스키마 추가 ([validators.md](./validators.md))
-- [ ] NestJS DTO 추가
-- [ ] `pnpm build` 실행
+### 1단계: 스키마/DTO 준비
 
-### 2단계: API 모듈 구현
+- [ ] `prisma/schema.prisma`에 모델 추가 + `pnpm db:migrate`
+- [ ] `@aido/validators`에 Request/Response Zod 스키마 + NestJS DTO 추가 ([validators.md](./validators.md)) + `pnpm build`
+- [ ] `@aido/errors`에 필요한 ErrorCode 추가
 
-- [ ] `repositories/{name}.repository.ts` 생성 (tx 패턴 적용)
-- [ ] `services/{name}.service.ts` 생성 (BusinessExceptions 사용)
-- [ ] `{name}.controller.ts` 생성 (Swagger 문서화)
-- [ ] `{name}.module.ts` 생성
-- [ ] `types/{name}.types.ts` 생성 (필요시)
-- [ ] `app.module.ts`에 모듈 import 추가
+### 2단계: Domain
 
-### 3단계: 에러 처리
+- [ ] 애그리게잇 행동 메서드/자식 엔티티/VO/정책 함수/도메인 이벤트 작성
+- [ ] 불변식 위반은 `DomainException`, 생성은 `planCreation`, 판단 규칙은 `domain/services/` 정책 함수(순수)
 
-- [ ] 필요한 BusinessExceptions 팩토리 메서드 추가
-- [ ] 새 Unique Constraint가 있으면 constraintMap에 매핑 추가
-- [ ] `@aido/errors`에 ErrorCode 추가
+### 3단계: Application
 
-### 4단계: 큐/알림 (필요시)
+- [ ] 포트(Symbol 토큰 인터페이스) 확장 — 저장소·캐시·크로스모듈 의존은 전부 포트로
+- [ ] 쓰기는 `use-cases/<kebab>/<kebab>.use-case.ts`, 읽기는 `queries/<kebab>/<kebab>.use-case.ts` — `@Injectable()`, 단일 `execute(input)`
+- [ ] 규칙 위반은 `new ApplicationException(ErrorCode.X, details)`
+- [ ] 트랜잭션은 `UNIT_OF_WORK.run(async () => ...)`, 커밋 후 `DOMAIN_EVENT_PUBLISHER.publishAll(pullDomainEvents())`
 
-- [ ] QueueService에 `enqueueXxx()` 메서드 추가
-- [ ] Processor에 handler 메서드 추가
-- [ ] Module에 `BullModule.registerQueue()` 등록
-- [ ] `NotificationMessageBuilder`에 메시지 템플릿 추가 (알림인 경우)
+### 4단계: Infrastructure
 
-### 5단계: 테스트
+- [ ] 어댑터에 포트 구현 (Prisma 저장소는 행 DAO에 위임 + 도메인/응답 매핑, 벤더 SDK, BullMQ)
+- [ ] 큐/알림 부수효과는 `QueueService.enqueueXxx()` (커밋 후 fire-and-forget)
 
-- [ ] Repository 단위 테스트 ([unit-test.md](./unit-test.md))
-- [ ] Service 단위 테스트
-- [ ] E2E 테스트 ([e2e-test.md](./e2e-test.md))
+### 5단계: Facade / Controller / Module
 
-### 6단계: 검증
+- [ ] Facade에 한 줄 위임 메서드 추가 (공개 시그니처 = 모듈 공개 계약)
+- [ ] 컨트롤러는 Facade만 주입 + Swagger 문서화
+- [ ] 모듈 배럴(`XxxUseCases`/`XxxQueryUseCases` 배열) 등록 확인
 
-- [ ] `pnpm test` — 단위 테스트 통과
-- [ ] `pnpm typecheck` — 타입 체크 통과
-- [ ] `pnpm lint` — 린트 통과
+### 6단계: 테스트 + 검증
+
+- [ ] use-case/query spec ([unit-test.md](./unit-test.md)) → 통합 → E2E ([e2e-test.md](./e2e-test.md))
+- [ ] `pnpm test` · `pnpm typecheck` · `pnpm lint` 통과
+- [ ] `pnpm lint:boundaries` · `pnpm lint:no-cast` 통과
+- [ ] openapi 스냅샷 diff 0 (리팩터링 시 클라이언트 영향 0)
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-04-05
+**문서 버전**: 4.0.0
+**최종 수정일**: 2026-07-12

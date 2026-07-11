@@ -1,7 +1,8 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
-import { TransientAuthError } from '@src/shared/errors';
-import type { AfterResponseHook } from 'ky';
+import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
+import ky, { type AfterResponseHook } from 'ky';
+import { pathnameOf } from './error-handler';
 import type { TokenRefresher } from './token-refresher';
 
 /** 갱신 후 재시도된 요청 표시 — 재시도가 다시 401이어도 갱신을 반복하지 않는다 */
@@ -14,32 +15,31 @@ export interface TokenRefreshHookDeps {
   tokenStore: TokenStore;
   refresh: TokenRefresher;
   endSession: EndSession;
-  retry: (request: Request) => Promise<Response>;
 }
 
 /**
  * 401 응답 처리 훅.
  *
- * - 갱신 성공 시 원 요청을 인스턴스 훅 경유로 재시도한다. ky는 요청을 clone해서
- *   전송하므로 훅에 전달된 request는 body가 소비되지 않은 원본이다 (POST 재시도 안전).
+ * - 갱신 성공 시 `ky.retry()` 마커로 파이프라인 재실행을 지시한다. beforeRequest가
+ *   저장소의 새 토큰을 다시 주입하고, ky는 보관해 둔 미소비 clone으로 재전송한다(POST 안전).
+ *   **주의: 재시도 응답 객체를 훅에서 직접 반환하면 안 된다** — RN(Expo winter)의
+ *   `expo/fetch` 응답은 `globalThis.Response`의 인스턴스가 아니라서 ky가 조용히 버리고
+ *   원본 401을 살린다(1.4.x 콜드스타트 전위젯 재시도 카드의 근본 원인).
  * - 이미 다른 flight가 토큰을 회전한 뒤 도착한 401(stale token)은 갱신 없이
  *   바로 재시도한다 — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다.
- * - 서버가 리프레시 토큰을 거부(`session-invalid`)하거나 로컬 토큰이 없으면(`no-session`)
- *   원 401 응답을 반환하고 세션을 종료한다.
- * - `transient-failure`(네트워크·5xx·타임아웃·잠긴 키체인)에서는 **재시도 가능한
- *   `TransientAuthError`를 던진다.** 세션은 유효하므로, 원 401을 반환하는 대신 인프라
- *   에러로 표면화해 React Query가 5xx/네트워크와 동일하게 자동 재시도하게 한다
- *   (콜드 스타트/서버 재시작 구간에 재시도 화면 대신 로딩을 유지하고 스스로 회복).
- *
- * 세션 종료 여부는 갱신 결과(`RefreshOutcome`)만 보고 판단한다.
- * `transient-failure`에서는 절대 세션을 끝내지 않는다.
+ * - 세션이 무효로 확정되면(`invalid`) 원 401 응답을 반환하고 세션을 종료한다.
+ * - 갱신의 일시 실패(네트워크·5xx·타임아웃·잠긴 키체인)는 갱신기가 재시도 가능한
+ *   인프라 에러로 throw하며, 훅은 개입하지 않고 그대로 전파한다 — React Query가
+ *   5xx/네트워크와 동일하게 자동 재시도한다(재시도 화면 대신 로딩 유지, 세션 보존).
+ * - 갱신 직후 재발급 토큰까지 401이면(마커) 서버측 일시 불일치 신호다 — 즉시 Sentry
+ *   warning으로 남기고 원 401을 반환한다(화면별 QueryErrorBoundary가 담음, 무음 금지).
  */
 export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterResponseHook => {
-  const { tokenStore, refresh, endSession, retry } = deps;
+  const { tokenStore, refresh, endSession } = deps;
 
-  const retryWithMarker = (request: Request): Promise<Response> => {
+  const forceRetryWithMarker = (request: Request) => {
     request.headers.set(RETRY_MARKER_HEADER, '1');
-    return retry(request);
+    return ky.retry({ delay: 0 });
   };
 
   return async (request, _options, response) => {
@@ -48,30 +48,30 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     }
 
     if (request.headers.has(RETRY_MARKER_HEADER)) {
+      errorReporter.captureMessage('auth_refresh_retry_rejected', {
+        severity: 'warning',
+        feature: 'auth_cold_start',
+        statusCode: 401,
+        endpoint: pathnameOf(request.url ?? ''),
+      });
       return response;
     }
 
-    // 읽기 실패는 "토큰 없음"이 아니다 — 아래 갱신 경로가 transient로 처리하게 넘긴다.
+    // 읽기 실패는 "토큰 없음"이 아니다 — 아래 갱신 경로가 처리하게 넘긴다.
     const storedAccessToken = await tokenStore.readAccessToken().catch(() => null);
     const sentAuthorization = request.headers.get('Authorization');
     if (storedAccessToken && sentAuthorization !== `Bearer ${storedAccessToken}`) {
-      return retryWithMarker(request);
+      return forceRetryWithMarker(request);
     }
 
     const outcome = await refresh();
     switch (outcome.kind) {
       case 'refreshed':
-        return retryWithMarker(request);
-      case 'session-invalid':
+        return forceRetryWithMarker(request);
+      case 'invalid':
+        // 살아있다고 믿던 세션이었는지는 AuthProvider가 판단한다(로그아웃 상태의 401은 잡음).
         await endSession(outcome.details);
         return response;
-      case 'no-session':
-        // 살아있다고 믿던 세션이었는지는 AuthProvider가 판단한다(로그아웃 상태의 401은 잡음).
-        await endSession({ reason: 'tokens-missing' });
-        return response;
-      case 'transient-failure':
-        // 세션은 유효하다 — 재시도 가능한 인프라 에러로 표면화(원 401 반환 금지).
-        throw new TransientAuthError();
     }
   };
 };

@@ -1,8 +1,8 @@
 /**
- * EmailService 통합 테스트
+ * EmailFacade 통합 테스트
  *
  * @description
- * EmailService가 NestJS DI 컨테이너와 함께 올바르게 작동하는지 검증합니다.
+ * EmailFacade가 NestJS DI 컨테이너와 함께 올바르게 작동하는지 검증합니다.
  * Resend SDK를 모킹하여 실제 API 호출 없이 전체 서비스 동작을 테스트합니다.
  *
  * 통합 테스트의 목적:
@@ -19,9 +19,11 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { TypedConfigService } from "@/common/config/services/config.service";
-import { EMAIL_CONSTANTS } from "@/modules/email/constants/email.constants";
-import { EmailService } from "@/modules/email/email.service";
+import { EmailFacade } from "@/email";
+import { EMAIL_SENDER } from "@/email/application/ports/email-sender.port";
+import { ResendEmailSenderAdapter } from "@/email/infrastructure/adapters/resend-email-sender.adapter";
+import { EMAIL_CONSTANTS } from "@/email/infrastructure/constants/email.constants";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 // Resend 모킹용 타입
 type ResendMock = {
@@ -41,9 +43,9 @@ jest.mock("resend", () => ({
 	Resend: jest.fn().mockImplementation(() => resendMock),
 }));
 
-describe("EmailService 통합 테스트 (Mock DB)", () => {
+describe("EmailFacade 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let service: EmailService;
+	let facade: EmailFacade;
 
 	// 테스트 데이터
 	const testEmail = "integration-test@example.com";
@@ -58,7 +60,8 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				EmailService,
+				EmailFacade,
+				{ provide: EMAIL_SENDER, useClass: ResendEmailSenderAdapter },
 				{
 					provide: TypedConfigService,
 					useValue: {
@@ -74,7 +77,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		service = module.get<EmailService>(EmailService);
+		facade = module.get<EmailFacade>(EmailFacade);
 	});
 
 	afterAll(async () => {
@@ -118,14 +121,14 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 	}
 
 	describe("DI 통합", () => {
-		it("EmailService가 올바르게 인스턴스화된다", () => {
+		it("EmailFacade가 올바르게 인스턴스화된다", () => {
 			// Given - DI 컨테이너가 구성됨
 
 			// When - 서비스 인스턴스 확인
 
 			// Then - 서비스가 정의되어 있어야 함
-			expect(service).toBeDefined();
-			expect(service).toBeInstanceOf(EmailService);
+			expect(facade).toBeDefined();
+			expect(facade).toBeInstanceOf(EmailFacade);
 		});
 
 		it("ConfigService에서 설정을 올바르게 읽어온다", async () => {
@@ -137,7 +140,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -167,7 +170,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			const result = await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -202,7 +205,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			const result = await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -223,7 +226,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			const result = await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -249,7 +252,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: "123456",
 					expiryMinutes: 10,
 				}),
@@ -274,7 +277,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 비밀번호 재설정 이메일 발송
 			await flushTimersAndAwait(
-				service.sendPasswordResetCode(testEmail, {
+				facade.sendPasswordResetCode(testEmail, {
 					code: "654321",
 					expiryMinutes: 30,
 				}),
@@ -300,7 +303,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - idempotencyKey와 함께 이메일 발송
 			await flushTimersAndAwait(
-				service.sendVerificationCode(
+				facade.sendVerificationCode(
 					testEmail,
 					{ code: testCode, expiryMinutes: testExpiryMinutes },
 					idempotencyKey,
@@ -324,7 +327,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - idempotencyKey 없이 이메일 발송
 			await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -349,7 +352,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -374,7 +377,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 비밀번호 재설정 이메일 발송
 			await flushTimersAndAwait(
-				service.sendPasswordResetCode(testEmail, {
+				facade.sendPasswordResetCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -400,7 +403,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			const result = await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),
@@ -420,7 +423,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 			// When - 인증 코드 이메일 발송
 			const result = await flushTimersAndAwait(
-				service.sendVerificationCode(testEmail, {
+				facade.sendVerificationCode(testEmail, {
 					code: testCode,
 					expiryMinutes: testExpiryMinutes,
 				}),

@@ -7,8 +7,12 @@
  * (import 별칭 `X as Y`, `as const`는 허용)
  *
  * 대상:
- * - src/modules/(*)/{domain,application,infrastructure}/** (spec 포함 — 마이그레이션된 코드 + 신규 테스트)
- * - src/common/domain/**
+ * - src/(*)/{domain,application,infrastructure}/** (spec 포함 — 마이그레이션된 코드 + 신규 테스트)
+ * - src/shared/domain/**
+ *
+ * 제외: 프롬프트 템플릿 디렉터리(`/prompts/`, `/prompt/`). LLM 시스템 프롬프트는
+ *      자연어 산문("as values", "as is", "interpret as" 등)이 많아 라인 기반 `as`
+ *      휴리스틱이 대량 오탐한다. 프롬프트는 로직이 아닌 텍스트 데이터이므로 제외한다.
  *
  * 실행: node scripts/check-no-cast.mjs  (실패 시 exit 1)
  */
@@ -17,10 +21,70 @@ import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
 const TARGET_DIRS = [
-	"src/common/domain",
-	"src/modules/todo/domain",
-	"src/modules/todo/application",
-	"src/modules/todo/infrastructure",
+	"src/shared/domain",
+	"src/todo/domain",
+	"src/todo/application",
+	"src/todo/infrastructure",
+	"src/inquiry/domain",
+	"src/inquiry/application",
+	"src/inquiry/infrastructure",
+	"src/admin/domain",
+	"src/admin/application",
+	"src/admin/infrastructure",
+	"src/daily-completion/domain",
+	"src/daily-completion/application",
+	"src/daily-completion/infrastructure",
+	"src/weekly-achievement/domain",
+	"src/weekly-achievement/application",
+	"src/weekly-achievement/infrastructure",
+	"src/email/domain",
+	"src/email/application",
+	"src/email/infrastructure",
+	"src/weather/domain",
+	"src/weather/application",
+	"src/weather/infrastructure",
+	"src/ai/domain",
+	"src/ai/application",
+	"src/ai/infrastructure",
+	"src/memo/domain",
+	"src/memo/application",
+	"src/memo/infrastructure",
+	"src/follow/domain",
+	"src/follow/application",
+	"src/follow/infrastructure",
+	"src/cheer/domain",
+	"src/cheer/application",
+	"src/cheer/infrastructure",
+	"src/nudge/domain",
+	"src/nudge/application",
+	"src/nudge/infrastructure",
+	"src/todo-category/domain",
+	"src/todo-category/application",
+	"src/todo-category/infrastructure",
+	"src/ai-suggestion/domain",
+	"src/ai-suggestion/application",
+	"src/ai-suggestion/infrastructure",
+	"src/subscription/domain",
+	"src/subscription/application",
+	"src/subscription/infrastructure",
+	"src/ai-report/domain",
+	"src/ai-report/application",
+	"src/ai-report/infrastructure",
+	"src/admin-notification/domain",
+	"src/admin-notification/application",
+	"src/admin-notification/infrastructure",
+	"src/user-settings/domain",
+	"src/user-settings/application",
+	"src/user-settings/infrastructure",
+	"src/notification/domain",
+	"src/notification/application",
+	"src/notification/infrastructure",
+	"src/scheduler/domain",
+	"src/scheduler/application",
+	"src/scheduler/infrastructure",
+	"src/auth/domain",
+	"src/auth/application",
+	"src/auth/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */
@@ -51,8 +115,22 @@ const NON_NULL = /[A-Za-z0-9_)\]]!(?![=])/;
 
 const violations = [];
 
+/**
+ * 산문(자연어) 데이터 파일은 스캔에서 제외한다.
+ * - `/prompts/`, `/prompt/`: LLM 시스템 프롬프트
+ * - `/templates/`: 알림 메시지 i18n 템플릿(byte-identical 문구). "as"/"!"가 포함된
+ *   사용자 대상 문구가 많아 라인 기반 휴리스틱이 대량 오탐한다. 로직이 아닌 텍스트 데이터.
+ */
+const isPromptFile = (file) =>
+	file.includes("/prompts/") ||
+	file.includes("/prompt/") ||
+	file.includes("/templates/");
+
 for (const dir of TARGET_DIRS) {
 	for (const file of collectTsFiles(dir)) {
+		if (isPromptFile(file)) {
+			continue;
+		}
 		const lines = readFileSync(file, "utf8").split("\n");
 		lines.forEach((line, idx) => {
 			// 한 줄 주석 제거 후 검사 — 주석 속 영단어 `as`/`!`(예: `// as a result`, `// Don't!`) 오탐 방지

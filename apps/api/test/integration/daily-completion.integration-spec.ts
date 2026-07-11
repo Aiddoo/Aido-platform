@@ -2,11 +2,12 @@
  * DailyCompletion 통합 테스트 (Testcontainers)
  *
  * @description
- * DailyCompletionService와 Repository가 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
+ * DailyCompletionFacade → use-case → Prisma 어댑터가 실제 PostgreSQL DB와
+ * 함께 올바르게 작동하는지 검증합니다.
  * Testcontainers를 사용하여 독립적인 PostgreSQL 컨테이너에서 테스트합니다.
  *
  * 통합 테스트의 목적:
- * - DailyCompletionService → Repository → Prisma → PostgreSQL 전체 스택 검증
+ * - Facade → use-case → Prisma 어댑터 → PostgreSQL 전체 스택 검증
  * - 날짜별 Todo 집계 로직 검증
  * - 캘린더 데이터 조회 검증
  *
@@ -20,18 +21,22 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
-import { DatabaseService } from "@/database/database.service";
-import { DailyCompletionRepository } from "@/modules/daily-completion/daily-completion.repository";
-import { DailyCompletionService } from "@/modules/daily-completion/daily-completion.service";
+import { DailyCompletionFacade } from "@/daily-completion/application/facades/daily-completion.facade";
+import { DAILY_COMPLETION_CACHE } from "@/daily-completion/application/ports/daily-completion-cache.port";
+import { TODO_COMPLETION_REPOSITORY } from "@/daily-completion/application/ports/todo-completion.repository.port";
+import { DailyCompletionQueryUseCases } from "@/daily-completion/application/queries";
+import { PrismaTodoCompletionRepository } from "@/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { TestDatabase } from "../setup/test-database";
 
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
-	let service: DailyCompletionService;
-	let repository: DailyCompletionRepository;
+	let facade: DailyCompletionFacade;
+	let repository: PrismaTodoCompletionRepository;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
 
@@ -43,22 +48,35 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		testDb = new TestDatabase();
 		databaseService = (await testDb.start()) as DatabaseService;
 
-		// NestJS 테스트 모듈 생성
+		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(실제 DB)
 		module = await Test.createTestingModule({
 			providers: [
-				DailyCompletionService,
-				DailyCompletionRepository,
+				DailyCompletionFacade,
+				...DailyCompletionQueryUseCases,
 				{
-					provide: DatabaseService,
-					useValue: databaseService,
+					provide: TODO_COMPLETION_REPOSITORY,
+					useClass: PrismaTodoCompletionRepository,
+				},
+				{
+					// 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
+					provide: TransactionHost,
+					useValue: { tx: databaseService },
+				},
+				{
+					// 통합 테스트는 DB 경로를 검증하므로 캐시는 항상 미스인 no-op 스텁
+					provide: DAILY_COMPLETION_CACHE,
+					useValue: {
+						getRange: async () => undefined,
+						setRange: async () => undefined,
+						invalidate: async () => undefined,
+					},
 				},
 			],
 		}).compile();
 
-		service = module.get<DailyCompletionService>(DailyCompletionService);
-		repository = module.get<DailyCompletionRepository>(
-			DailyCompletionRepository,
-		);
+		await module.init();
+		facade = module.get(DailyCompletionFacade);
+		repository = module.get(TODO_COMPLETION_REPOSITORY);
 	}, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
 	// 각 테스트 전 데이터 초기화
@@ -163,14 +181,14 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		await Promise.all(promises);
 	}
 
-	describe("서비스-레포지토리 연결", () => {
-		it("service가 정의되어 있어야 한다", () => {
+	describe("배선 확인", () => {
+		it("facade가 정의되어 있어야 한다", () => {
 			// Given - DI 컨테이너가 구성됨
 
-			// When - 서비스 인스턴스 확인
+			// When - Facade 인스턴스 확인
 
-			// Then - 서비스가 정의되어 있어야 함
-			expect(service).toBeDefined();
+			// Then - Facade가 정의되어 있어야 함
+			expect(facade).toBeDefined();
 		});
 
 		it("repository가 연결되어 있어야 한다", () => {
@@ -183,7 +201,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		});
 	});
 
-	describe("DailyCompletionRepository.aggregateTodosByDateRange", () => {
+	describe("DailyCompletionRepository.aggregateByDateRange", () => {
 		it("날짜 범위 내 Todo를 날짜별로 집계해야 한다", async () => {
 			// Given
 			const user = await createTestUser();
@@ -203,7 +221,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When
-			const result = await repository.aggregateTodosByDateRange({
+			const result = await repository.aggregateByDateRange({
 				userId: user.id,
 				startDate: new Date("2026-01-01"),
 				endDate: new Date("2026-02-01"),
@@ -245,7 +263,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - user1의 Todo만 집계
-			const result = await repository.aggregateTodosByDateRange({
+			const result = await repository.aggregateByDateRange({
 				userId: user1.id,
 				startDate: new Date("2026-01-01"),
 				endDate: new Date("2026-02-01"),
@@ -283,7 +301,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - 1월 범위만 조회
-			const result = await repository.aggregateTodosByDateRange({
+			const result = await repository.aggregateByDateRange({
 				userId: user.id,
 				startDate: new Date("2026-01-01"),
 				endDate: new Date("2026-02-01"),
@@ -299,7 +317,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			const user = await createTestUser();
 
 			// When - 날짜 범위로 집계 조회
-			const result = await repository.aggregateTodosByDateRange({
+			const result = await repository.aggregateByDateRange({
 				userId: user.id,
 				startDate: new Date("2026-01-01"),
 				endDate: new Date("2026-02-01"),
@@ -310,53 +328,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		});
 	});
 
-	describe("DailyCompletionRepository.findByDate", () => {
-		it("특정 날짜의 Todo 집계를 반환해야 한다", async () => {
-			// Given
-			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				5,
-				3,
-			);
-
-			// When
-			const result = await repository.findByDate(
-				user.id,
-				dayjs.utc("2026-01-15").toDate(),
-			);
-
-			// Then
-			expect(result).not.toBeNull();
-			expect(result?.total).toBe(5);
-			expect(result?.completed).toBe(3);
-		});
-
-		it("해당 날짜에 Todo가 없으면 null을 반환해야 한다", async () => {
-			// Given - 다른 날짜에만 Todo가 있음
-			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				3,
-				1,
-			);
-
-			// When - Todo가 없는 날짜 조회
-			const result = await repository.findByDate(
-				user.id,
-				dayjs.utc("2026-01-20").toDate(),
-			);
-
-			// Then - null 반환
-			expect(result).toBeNull();
-		});
-	});
-
-	describe("DailyCompletionService.getDailyCompletionsRange", () => {
+	describe("일일 완료 조회 (Facade)", () => {
 		it("날짜 범위 내 완료 현황을 반환해야 한다", async () => {
 			// Given
 			const user = await createTestUser();
@@ -376,11 +348,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			); // 미완료
 
 			// When
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 
 			// Then
 			expect(result.completions).toHaveLength(2);
@@ -403,11 +375,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			); // 75%
 
 			// When
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 
 			// Then
 			const day15 = result.completions.find((c) => c.date === "2026-01-15");
@@ -427,11 +399,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 
 			// Then
 			const day15 = result.completions.find((c) => c.date === "2026-01-15");
@@ -465,11 +437,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 
 			// Then
 			expect(result.completions[0]?.date).toBe("2026-01-10");
@@ -482,11 +454,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			const user = await createTestUser();
 
 			// When - 완료 현황 조회
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 
 			// Then - 빈 결과 반환
 			expect(result.completions).toEqual([]);
@@ -514,22 +486,22 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - 1월만 조회
-			const janResult = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const janResult = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 
 			// Then - 1월 데이터만 반환
 			expect(janResult.completions).toHaveLength(1);
 			expect(janResult.completions[0]?.date).toBe("2026-01-31");
 
 			// When - 2월만 조회
-			const febResult = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-02-01",
-				endDate: "2026-02-28",
-			});
+			const febResult = await facade.getDailyCompletions(
+				user.id,
+				"2026-02-01",
+				"2026-02-28",
+			);
 
 			// Then - 2월 데이터만 반환
 			expect(febResult.completions).toHaveLength(1);
@@ -548,11 +520,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - 해당 날짜 조회
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-15",
-				endDate: "2026-01-15",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-15",
+				"2026-01-15",
+			);
 
 			// Then - 정확한 집계 결과 반환
 			expect(result.completions).toHaveLength(1);
@@ -573,11 +545,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - 완료 현황 조회
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 
 			// Then - 0% 완료율 반환
 			const day15 = result.completions.find((c) => c.date === "2026-01-15");
@@ -609,11 +581,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 
 			// When - 한 달 전체 조회
 			const startTime = Date.now();
-			const result = await service.getDailyCompletionsRange({
-				userId: user.id,
-				startDate: "2026-01-01",
-				endDate: "2026-01-31",
-			});
+			const result = await facade.getDailyCompletions(
+				user.id,
+				"2026-01-01",
+				"2026-01-31",
+			);
 			const duration = Date.now() - startTime;
 
 			// Then - 31일 데이터가 5초 이내에 반환됨

@@ -20,33 +20,52 @@
  * ```
  */
 
+import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
-import { TypedConfigService } from "@/common/config/services/config.service";
-import { EncryptionService } from "@/common/encryption";
-import { BusinessException } from "@/common/exception";
-import { DatabaseService } from "@/database/database.service";
-import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
-import { AccountRepository } from "@/modules/auth/repositories/account.repository";
-import { LoginAttemptRepository } from "@/modules/auth/repositories/login-attempt.repository";
-import { OAuthStateRepository } from "@/modules/auth/repositories/oauth-state.repository";
-import { SecurityLogRepository } from "@/modules/auth/repositories/security-log.repository";
-import { SessionRepository } from "@/modules/auth/repositories/session.repository";
-import { UserRepository } from "@/modules/auth/repositories/user.repository";
-import { OAuthService } from "@/modules/auth/services/oauth.service";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { SessionService } from "@/modules/auth/services/session.service";
-import { TokenService } from "@/modules/auth/services/token.service";
-import { NotificationQueueService } from "@/modules/notification/queue";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
-import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
+import { AdminNotificationFacade } from "@/admin-notification";
+import {
+	OAUTH_IDENTITY_PROVIDER_REGISTRY,
+	type OAuthIdentityProvider,
+	type OAuthIdentityProviderRegistry,
+} from "@/auth/application/ports/oauth-identity-provider.port";
+import { OAuthService } from "@/auth/application/services/oauth.service";
+import { SessionService } from "@/auth/application/services/session.service";
+import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
+import { ProvisionUserUseCase } from "@/auth/application/use-cases/provision-user/provision-user.use-case";
+import { TokenService } from "@/auth/infrastructure/adapters/token.service";
+import {
+	AppleOAuthProvider,
+	GoogleOAuthProvider,
+	KakaoOAuthProvider,
+	NaverOAuthProvider,
+} from "@/auth/infrastructure/oauth/adapters";
+import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
+import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
+import { OAuthStateRepository } from "@/auth/infrastructure/persistence/oauth-state.repository";
+import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
+import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
+import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import type { AccountProvider } from "@/generated/prisma/client";
+import { NotificationQueueService } from "@/notification";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { EncryptionService } from "@/shared/infrastructure/encryption";
+import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
+import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
+import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider";
 
 describe("OAuth 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -79,6 +98,45 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			],
 			providers: [
 				OAuthService,
+				IssueLoginUseCase,
+				ProvisionUserUseCase,
+				{
+					provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
+					inject: [TypedConfigService, OAuthTokenVerifierService],
+					useFactory: (
+						config: TypedConfigService,
+						verifier: OAuthTokenVerifierService,
+					): OAuthIdentityProviderRegistry => {
+						const logger = new Logger("OAuthIdentityProvider");
+						return new Map<AccountProvider, OAuthIdentityProvider>([
+							["APPLE", new AppleOAuthProvider(verifier)],
+							[
+								"GOOGLE",
+								new GoogleOAuthProvider(
+									() => config.googleOAuth,
+									verifier,
+									logger,
+								),
+							],
+							[
+								"KAKAO",
+								new KakaoOAuthProvider(
+									() => config.kakaoOAuth,
+									verifier,
+									logger,
+								),
+							],
+							[
+								"NAVER",
+								new NaverOAuthProvider(
+									() => config.naverOAuth,
+									verifier,
+									logger,
+								),
+							],
+						]);
+					},
+				},
 				SessionService,
 				TokenService,
 				AccountRepository,
@@ -90,9 +148,20 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				UserConsentRepository,
 				UserPreferenceRepository,
 				TodoCategoryRepository,
+				provisioningSeederTestProvider,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,
+				},
+				{
+					// CLS 트랜잭션 스텁 — 활성 트랜잭션이 없을 때 tx가 실제 DB 클라이언트를 반환
+					provide: TransactionHost,
+					useValue: { tx: databaseService },
+				},
+				{
+					// uow.run passthrough — 리포지토리가 TransactionHost.tx(실제 DB)로 참여
+					provide: UNIT_OF_WORK,
+					useValue: { run: (fn: () => Promise<unknown>) => fn() },
 				},
 				{
 					provide: CacheService,
@@ -160,10 +229,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				{
-					provide: AdminNotificationQueueService,
+					provide: AdminNotificationFacade,
 					useValue: {
-						enqueueUserRegistered: () => {},
-						enqueueSubscriptionEvent: () => {},
+						notifyUserRegistered: () => {},
+						notifySubscriptionEvent: () => {},
 					},
 				},
 				{
@@ -553,7 +622,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then: 마지막 계정 해제 시도
 			await expect(
 				oauthService.unlinkAccount(testUserId, "GOOGLE"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("연결된 계정 목록을 조회할 수 있어야 한다", async () => {
@@ -722,7 +791,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then: 현재 유저가 같은 providerAccountId로 연동 시도
 			await expect(
 				oauthService.linkAccount(testUserId, "APPLE", "conflict-apple-id"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -822,7 +891,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then
 			await expect(
 				oauthService.exchangeCodeForTokens("invalid-exchange-code"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("이미 사용된 교환 코드는 거부해야 한다", async () => {
@@ -856,7 +925,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then: 두 번째 교환 (실패)
 			await expect(
 				oauthService.exchangeCodeForTokens(exchangeCode),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -1160,7 +1229,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 						ip: "172.16.0.1",
 						userAgent: "KakaoTestAgent",
 					}),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
 				const logs = await databaseService.securityLog.findMany({
@@ -1214,7 +1283,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 						ip: "172.16.0.2",
 						userAgent: "NaverTestAgent",
 					}),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
 				const logs = await databaseService.securityLog.findMany({
@@ -1259,10 +1328,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					name: "Apple to Locked",
 				});
 
-				// Then: 에러 발생 (잠긴 사용자는 로그인 불가)
+				// Then: 에러 발생 (잠긴 사용자는 로그인 불가 — 도메인 상태 정책)
 				await expect(
 					oauthService.handleAppleMobileLogin(appleToken),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(DomainException);
 			});
 
 			it("정지된 사용자에게 자동 연동을 시도하면 에러가 발생해야 한다", async () => {
@@ -1292,10 +1361,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					name: "Google to Suspended",
 				});
 
-				// Then: 에러 발생 (정지된 사용자는 로그인 불가)
+				// Then: 에러 발생 (정지된 사용자는 로그인 불가 — 도메인 상태 정책)
 				await expect(
 					oauthService.handleGoogleMobileLogin(googleToken),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(DomainException);
 			});
 		});
 	});
@@ -1320,9 +1389,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				data: { status: "LOCKED" },
 			});
 
-			// When & Then: 다시 로그인 시도 시 실패
+			// When & Then: 다시 로그인 시도 시 실패 (도메인 상태 정책)
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(
-				BusinessException,
+				DomainException,
 			);
 		});
 
@@ -1344,9 +1413,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				data: { status: "SUSPENDED" },
 			});
 
-			// When & Then
+			// When & Then (도메인 상태 정책)
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(
-				BusinessException,
+				DomainException,
 			);
 		});
 

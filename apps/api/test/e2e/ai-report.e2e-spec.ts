@@ -13,9 +13,9 @@
  */
 
 import request from "supertest";
-import { CacheService } from "@/common/cache/cache.service";
-import { DatabaseService } from "@/database/database.service";
-import { AI_PROVIDER } from "@/modules/ai/providers/ai.provider";
+import { AI_PROVIDER } from "@/ai";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 

@@ -11,12 +11,12 @@
  */
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
-import { CacheModule } from "@/common/cache/cache.module";
-import { CacheService } from "@/common/cache/cache.service";
+import { CacheModule } from "@/shared/infrastructure/cache/cache.module";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
 	CACHE_SERVICE,
 	ICacheService,
-} from "@/common/cache/interfaces/cache.interface";
+} from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import {
 	createMockUserProfile,
 	delay,

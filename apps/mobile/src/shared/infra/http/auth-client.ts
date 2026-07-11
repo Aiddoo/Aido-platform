@@ -3,7 +3,7 @@ import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type KyInstance } from 'ky';
-import { handleApiErrors } from './error-handler';
+import { recordApiFailureBreadcrumb } from './error-handler';
 import { createTokenRefreshHook, type EndSession } from './token-refresh-hook';
 import type { TokenRefresher } from './token-refresher';
 
@@ -25,15 +25,14 @@ export const createAuthClient = ({
   refresh,
   endSession,
 }: AuthClientDeps): KyInstance => {
-  // 재시도는 인스턴스 자신의 훅을 다시 태워야 하므로 자기 참조가 필요하다.
-  const clientRef: { current: KyInstance | null } = { current: null };
-
-  clientRef.current = ky.create({
+  return ky.create({
     prefixUrl: ENV.API_URL,
     timeout: 10_000,
-    // 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`). ky가 401 훅 throw나 5xx를
-    // 자체 재시도하면 갱신 훅과 겹쳐 토큰 패밀리를 소모하고 재시도 횟수가 이중 계산된다.
-    retry: 0,
+    // 자동 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`) — ky의 자체 재시도는
+    // `shouldRetry: false`로 전부 차단한다(5xx/네트워크를 ky도 재시도하면 이중 계산).
+    // limit: 1은 401 갱신 훅의 강제 재시도(`ky.retry()`) 1회를 허용하기 위한 것으로,
+    // 강제 재시도는 shouldRetry 검사를 건너뛰고 limit만 따른다.
+    retry: { limit: 1, shouldRetry: () => false },
     headers: {
       'Content-Type': 'application/json',
       'X-Timezone': getDeviceTimezone(),
@@ -41,7 +40,8 @@ export const createAuthClient = ({
     hooks: {
       beforeRequest: [
         async (request) => {
-          // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다
+          // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다.
+          // 강제 재시도 시에도 다시 실행돼 갱신된 액세스 토큰이 주입된다.
           if (i18n.language) {
             request.headers.set('Accept-Language', i18n.language);
           }
@@ -53,22 +53,9 @@ export const createAuthClient = ({
         },
       ],
       afterResponse: [
-        handleApiErrors,
-        createTokenRefreshHook({
-          tokenStore,
-          refresh,
-          endSession,
-          retry: (request) => {
-            const client = clientRef.current;
-            if (!client) {
-              throw new Error('Auth client is not initialized');
-            }
-            return client(request);
-          },
-        }),
+        recordApiFailureBreadcrumb,
+        createTokenRefreshHook({ tokenStore, refresh, endSession }),
       ],
     },
   });
-
-  return clientRef.current;
 };

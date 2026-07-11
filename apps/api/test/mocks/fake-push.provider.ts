@@ -3,7 +3,7 @@ import type {
 	PushPayload,
 	PushProvider,
 	PushResult,
-} from "@/modules/notification/providers/push-provider.interface";
+} from "@/notification";
 
 /**
  * 테스트용 FakePushProvider

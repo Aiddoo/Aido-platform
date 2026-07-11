@@ -1,8 +1,8 @@
 /**
- * TimezoneAwareReminderJob 통합 테스트
+ * TimezoneAwareReminderOrchestrator 통합 테스트
  *
  * @description
- * TimezoneAwareReminderJob이 각 전략(Strategy)과 함께 올바르게 작동하는지 검증합니다.
+ * 오케스트레이터가 각 전략(Strategy)과 함께 올바르게 작동하는지 검증합니다.
  * 매분 스윕(handleMinuteSweep)에서 타임존별 로컬 시간에 따라 적절한 전략이 실행되는지 확인합니다.
  *
  * 통합 테스트의 목적:
@@ -18,32 +18,29 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
-import { UserPreferenceBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
+import {
+	EveningReminderStrategy,
+	LunchNudgeStrategy,
+	MonthlyReportStrategy,
+	MorningReminderStrategy,
+	NudgeSuggestStrategy,
+	OnboardingStrategy,
+	SocialDigestStrategy,
+	StreakAtRiskStrategy,
+	TimezoneAwareReminderOrchestrator,
+	WeatherEveningStrategy,
+	WeatherMorningStrategy,
+	WeeklyAchievementStrategy,
+	WeeklyReportStrategy,
+	WinbackStrategy,
+} from "@/scheduler";
+import { SCHEDULER_PREFERENCE_READER } from "@/scheduler/application/ports/scheduler-preference-reader.port";
+import { TIMEZONE_REMINDER_ENQUEUER } from "@/scheduler/application/ports/timezone-reminder-enqueuer.port";
 
-import { CacheService } from "@/common/cache/cache.service";
-import { DatabaseService } from "@/database/database.service";
-import { EveningReminderStrategy } from "@/modules/scheduler/jobs/strategies/evening-reminder.strategy";
-import { LunchNudgeStrategy } from "@/modules/scheduler/jobs/strategies/lunch-nudge.strategy";
-import { MonthlyReportStrategy } from "@/modules/scheduler/jobs/strategies/monthly-report.strategy";
-import { MorningReminderStrategy } from "@/modules/scheduler/jobs/strategies/morning-reminder.strategy";
-import { NudgeSuggestStrategy } from "@/modules/scheduler/jobs/strategies/nudge-suggest.strategy";
-import { OnboardingStrategy } from "@/modules/scheduler/jobs/strategies/onboarding.strategy";
-import { SocialDigestStrategy } from "@/modules/scheduler/jobs/strategies/social-digest.strategy";
-import { StreakAtRiskStrategy } from "@/modules/scheduler/jobs/strategies/streak-at-risk.strategy";
-import { WeatherEveningStrategy } from "@/modules/scheduler/jobs/strategies/weather-evening.strategy";
-import { WeatherMorningStrategy } from "@/modules/scheduler/jobs/strategies/weather-morning.strategy";
-import { WeeklyAchievementStrategy } from "@/modules/scheduler/jobs/strategies/weekly-achievement.strategy";
-import { WeeklyReportStrategy } from "@/modules/scheduler/jobs/strategies/weekly-report.strategy";
-import { WinbackStrategy } from "@/modules/scheduler/jobs/strategies/winback.strategy";
-import { TimezoneAwareReminderJob } from "@/modules/scheduler/jobs/timezone-aware-reminder.job";
-import { TimezoneReminderQueueService } from "@/modules/scheduler/queue";
-import { TimezoneReminderProcessor } from "@/modules/scheduler/queue/timezone-reminder-queue.processor";
-
-describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
+describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () => {
 	let module: TestingModule;
-	let job: TimezoneAwareReminderJob;
+	let orchestrator: TimezoneAwareReminderOrchestrator;
 
 	// ── Strategy mocks ──────────────────────────────────────────────────
 	const mockMorningReminder = {
@@ -80,32 +77,16 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 		execute: jest.fn().mockResolvedValue({ sent: 0 }),
 	};
 
-	// ── Infrastructure mocks ────────────────────────────────────────────
-	const mockCacheService = {
-		wrapActiveTimezones: jest
-			.fn()
-			.mockImplementation((factory: () => Promise<unknown>) => factory()),
-		wrapAllTimezones: jest
-			.fn()
-			.mockImplementation((factory: () => Promise<unknown>) => factory()),
+	// ── Port mocks ──────────────────────────────────────────────────────
+	const mockPreferenceReader = {
+		findActiveTimezones: jest.fn(),
+		findUserLocales: jest.fn(),
 	};
 
-	const mockUserPreferenceDb = {
-		findMany: jest.fn(),
-		groupBy: jest.fn(),
-	};
-
-	const mockDatabaseService = createMockDatabaseService({
-		userPreference: mockUserPreferenceDb,
-	});
-
-	const mockQueueService = {
+	const mockEnqueuer = {
 		registerSweepScheduler: jest.fn(),
+		enqueueReminderHourChanged: jest.fn(),
 		enqueueSocialDigest: jest.fn(),
-	};
-
-	const mockProcessor = {
-		setReminderJob: jest.fn(),
 	};
 
 	beforeAll(async () => {
@@ -113,79 +94,34 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				TimezoneAwareReminderJob,
+				TimezoneAwareReminderOrchestrator,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: SCHEDULER_PREFERENCE_READER,
+					useValue: mockPreferenceReader,
 				},
-				{
-					provide: CacheService,
-					useValue: mockCacheService,
-				},
-				{
-					provide: TimezoneReminderQueueService,
-					useValue: mockQueueService,
-				},
-				{
-					provide: TimezoneReminderProcessor,
-					useValue: mockProcessor,
-				},
-				{
-					provide: MorningReminderStrategy,
-					useValue: mockMorningReminder,
-				},
-				{
-					provide: EveningReminderStrategy,
-					useValue: mockEveningReminder,
-				},
-				{
-					provide: OnboardingStrategy,
-					useValue: mockOnboarding,
-				},
-				{
-					provide: WeeklyReportStrategy,
-					useValue: mockWeeklyReport,
-				},
-				{
-					provide: MonthlyReportStrategy,
-					useValue: mockMonthlyReport,
-				},
+				{ provide: TIMEZONE_REMINDER_ENQUEUER, useValue: mockEnqueuer },
+				{ provide: MorningReminderStrategy, useValue: mockMorningReminder },
+				{ provide: EveningReminderStrategy, useValue: mockEveningReminder },
+				{ provide: OnboardingStrategy, useValue: mockOnboarding },
+				{ provide: WeeklyReportStrategy, useValue: mockWeeklyReport },
+				{ provide: MonthlyReportStrategy, useValue: mockMonthlyReport },
 				{
 					provide: WeeklyAchievementStrategy,
 					useValue: mockWeeklyAchievement,
 				},
-				{
-					provide: WinbackStrategy,
-					useValue: mockWinback,
-				},
-				{
-					provide: NudgeSuggestStrategy,
-					useValue: mockNudgeSuggest,
-				},
-				{
-					provide: SocialDigestStrategy,
-					useValue: mockSocialDigest,
-				},
-				{
-					provide: LunchNudgeStrategy,
-					useValue: mockLunchNudge,
-				},
-				{
-					provide: StreakAtRiskStrategy,
-					useValue: mockStreakAtRisk,
-				},
-				{
-					provide: WeatherMorningStrategy,
-					useValue: mockWeatherMorning,
-				},
-				{
-					provide: WeatherEveningStrategy,
-					useValue: mockWeatherEvening,
-				},
+				{ provide: WinbackStrategy, useValue: mockWinback },
+				{ provide: NudgeSuggestStrategy, useValue: mockNudgeSuggest },
+				{ provide: SocialDigestStrategy, useValue: mockSocialDigest },
+				{ provide: LunchNudgeStrategy, useValue: mockLunchNudge },
+				{ provide: StreakAtRiskStrategy, useValue: mockStreakAtRisk },
+				{ provide: WeatherMorningStrategy, useValue: mockWeatherMorning },
+				{ provide: WeatherEveningStrategy, useValue: mockWeatherEvening },
 			],
 		}).compile();
 
-		job = module.get<TimezoneAwareReminderJob>(TimezoneAwareReminderJob);
+		orchestrator = module.get<TimezoneAwareReminderOrchestrator>(
+			TimezoneAwareReminderOrchestrator,
+		);
 	});
 
 	afterAll(async () => {
@@ -196,12 +132,9 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 		jest.clearAllMocks();
-		UserPreferenceBuilder.resetIdCounter();
 
-		// 기본: pushEnabled 유저의 distinct timezone 조회 결과
-		mockUserPreferenceDb.findMany.mockResolvedValue([
-			UserPreferenceBuilder.create("user-1").withTimezone("Asia/Seoul").build(),
-		]);
+		// 기본: 활성 타임존 조회 결과
+		mockPreferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 	});
 
 	afterEach(() => {
@@ -214,7 +147,7 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			jest.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
 			// When - 매분 스윕 실행
-			await job.handleMinuteSweep();
+			await orchestrator.handleMinuteSweep();
 
 			// Then - 아침 리마인더가 실행되어야 함
 			expect(mockMorningReminder.execute).toHaveBeenCalledWith(
@@ -239,7 +172,7 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			mockEveningReminder.execute.mockResolvedValue({ sent: 5 });
 
 			// When - 매분 스윕 실행
-			await job.handleMinuteSweep();
+			await orchestrator.handleMinuteSweep();
 
 			// Then - 저녁 리마인더가 실행되고 SocialDigest enqueue
 			expect(mockEveningReminder.execute).toHaveBeenCalledWith(
@@ -249,7 +182,7 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 					localMinute: 0,
 				}),
 			);
-			expect(mockQueueService.enqueueSocialDigest).toHaveBeenCalledWith({
+			expect(mockEnqueuer.enqueueSocialDigest).toHaveBeenCalledWith({
 				timezone: "Asia/Seoul",
 			});
 		});
@@ -259,7 +192,7 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			jest.setSystemTime(new Date("2026-03-16T00:00:00Z"));
 
 			// When - 매분 스윕 실행
-			await job.handleMinuteSweep();
+			await orchestrator.handleMinuteSweep();
 
 			// Then - 주간 리포트가 실행되어야 함
 			expect(mockWeeklyReport.execute).toHaveBeenCalledWith(
@@ -276,7 +209,7 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			jest.setSystemTime(new Date("2026-04-01T01:00:00Z"));
 
 			// When - 매분 스윕 실행
-			await job.handleMinuteSweep();
+			await orchestrator.handleMinuteSweep();
 
 			// Then - 월간 리포트가 실행되어야 함
 			expect(mockMonthlyReport.execute).toHaveBeenCalledWith(
@@ -293,7 +226,7 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			jest.setSystemTime(new Date("2026-03-15T23:30:00Z"));
 
 			// When - 매분 스윕 실행
-			await job.handleMinuteSweep();
+			await orchestrator.handleMinuteSweep();
 
 			// Then - 주간 달성 전략이 실행되어야 함
 			expect(mockWeeklyAchievement.execute).toHaveBeenCalledWith(
@@ -311,13 +244,9 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			// Given - 2개 타임존, 첫 번째 타임존에서 에러 발생
 			jest.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
-			mockUserPreferenceDb.findMany.mockResolvedValue([
-				UserPreferenceBuilder.create("user-ny")
-					.withTimezone("America/New_York")
-					.build(),
-				UserPreferenceBuilder.create("user-seoul")
-					.withTimezone("Asia/Seoul")
-					.build(),
+			mockPreferenceReader.findActiveTimezones.mockResolvedValue([
+				"America/New_York",
+				"Asia/Seoul",
 			]);
 
 			// America/New_York 처리 시 morningReminder에서 에러 발생
@@ -331,7 +260,7 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 매분 스윕 실행
-			await job.handleMinuteSweep();
+			await orchestrator.handleMinuteSweep();
 
 			// Then - morningReminder가 2번 호출됨 (각 타임존마다 1번)
 			expect(mockMorningReminder.execute).toHaveBeenCalledTimes(2);
@@ -345,13 +274,13 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("handleMinuteSweep 빈 타임존", () => {
-		it("pushEnabled 사용자 없는 경우 — 전략이 실행되지 않는다", async () => {
+		it("활성 타임존 없는 경우 — 전략이 실행되지 않는다", async () => {
 			// Given - 활성 타임존 없음
 			jest.setSystemTime(new Date("2026-03-15T23:00:00Z"));
-			mockUserPreferenceDb.findMany.mockResolvedValue([]);
+			mockPreferenceReader.findActiveTimezones.mockResolvedValue([]);
 
 			// When - 매분 스윕 실행
-			await job.handleMinuteSweep();
+			await orchestrator.handleMinuteSweep();
 
 			// Then - 어떤 전략도 실행되지 않아야 함
 			expect(mockMorningReminder.execute).not.toHaveBeenCalled();

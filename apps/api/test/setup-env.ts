@@ -4,7 +4,7 @@
  * Jest가 테스트 파일을 로드하기 전에 실행됨.
  * 환경변수는 .env.test 파일에서 관리 — 여기서는 런타임 패치만 수행.
  */
-import "../src/common/date/dayjs.setup";
+import "../src/shared/domain/date/dayjs.setup";
 
 /**
  * E2E 테스트에서 rate limiting 비활성화
