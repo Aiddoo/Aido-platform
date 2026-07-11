@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { mockOf } from "@test/mocks";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import type { User } from "@/generated/prisma/client";
@@ -21,7 +22,10 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 	let preferenceRepo: Mocked<UserPreferenceRepository>;
 	let categoryRepo: Mocked<TodoCategoryRepository>;
 
-	const createdUser = { id: "user-1", email: "user@example.com" } as User;
+	const createdUser = mockOf<User>({
+		id: "user-1",
+		email: "user@example.com",
+	});
 
 	beforeEach(async () => {
 		const { unit, unitRef } =

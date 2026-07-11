@@ -104,7 +104,9 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
-				expect((error as ApplicationException).errorCode).toBe("AUTH_0101");
+				if (error instanceof ApplicationException) {
+					expect(error.errorCode).toBe("AUTH_0101");
+				}
 			}
 		});
 
@@ -128,7 +130,9 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
-				expect((error as ApplicationException).errorCode).toBe("AUTH_0101");
+				if (error instanceof ApplicationException) {
+					expect(error.errorCode).toBe("AUTH_0101");
+				}
 			}
 		});
 	});

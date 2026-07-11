@@ -14,6 +14,7 @@
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { asMock } from "@test/mocks";
 import type { Queue } from "bullmq";
 import {
 	ACCOUNT_DELETION,
@@ -88,7 +89,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 
 		it("Redis가 무응답이어도 부팅(onModuleInit)이 블로킹되지 않는다", () => {
 			// Given — Redis 다운: 등록 명령이 영원히 pending
-			(mockQueue.upsertJobScheduler as jest.Mock).mockReturnValue(
+			asMock(mockQueue.upsertJobScheduler).mockReturnValue(
 				new Promise(() => {}),
 			);
 
@@ -102,7 +103,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 
 		it("스케줄러 등록 실패 시 로그만 남기고 throw하지 않는다", async () => {
 			// Given
-			(mockQueue.upsertJobScheduler as jest.Mock).mockRejectedValue(
+			asMock(mockQueue.upsertJobScheduler).mockRejectedValue(
 				new Error("Connection is closed."),
 			);
 
@@ -153,7 +154,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		];
 		userRepo.findSoftDeletedForPurge.mockResolvedValue(deletedUsers);
 		uow.run.mockImplementation((work) => work());
-		securityLogRepo.create.mockResolvedValue({} as never);
+		asMock(securityLogRepo.create).mockResolvedValue({});
 		userRepo.hardDelete.mockResolvedValue(undefined);
 
 		// When
@@ -204,9 +205,9 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		];
 		userRepo.findSoftDeletedForPurge.mockResolvedValue(deletedUsers);
 
-		const callCount = 0;
+		const _callCount = 0;
 		uow.run.mockImplementation((work) => work());
-		securityLogRepo.create.mockResolvedValue({} as never);
+		asMock(securityLogRepo.create).mockResolvedValue({});
 		userRepo.hardDelete.mockResolvedValue(undefined);
 
 		// When

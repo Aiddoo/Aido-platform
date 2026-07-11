@@ -13,6 +13,7 @@ import { LOGIN_ATTEMPT } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder, UserBuilder } from "@test/builders";
+import { asDep, asMock, mockOf } from "@test/mocks";
 import { AdminNotificationFacade } from "@/admin-notification";
 import {
 	REVOKE_REASON,
@@ -25,15 +26,7 @@ import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import {
-	type Account,
-	type LoginAttempt,
-	Prisma,
-	type SecurityLog,
-	type Session,
-	type User,
-} from "@/generated/prisma/client";
-import type { AccountProvider } from "@/generated/prisma/enums";
+import { Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
@@ -92,10 +85,10 @@ describe("AuthService — 인증 서비스", () => {
 		// 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
 		const issueLogin = unitRef.get(IssueLoginUseCase);
 		const realIssueLogin = new IssueLoginUseCase(
-			sessionService as unknown as SessionService,
-			loginAttemptRepo as unknown as LoginAttemptRepository,
-			securityLogRepo as unknown as SecurityLogRepository,
-			userRepo as unknown as UserRepository,
+			asDep(sessionService),
+			asDep(loginAttemptRepo),
+			asDep(securityLogRepo),
+			asDep(userRepo),
 		);
 		issueLogin.execute.mockImplementation((input) =>
 			realIssueLogin.execute(input),
@@ -105,18 +98,18 @@ describe("AuthService — 인증 서비스", () => {
 		// 유저·계정·프로필·동의·설정·카테고리 시딩 호출을 그대로 검증하도록 배선.
 		// 동의/설정/카테고리 저장소는 AuthService 직접 의존이 아니므로 독립 mock으로 구성한다.
 		const provisionUser = unitRef.get(ProvisionUserUseCase);
-		const consentRepoStub = {
+		const consentRepoStub = mockOf<UserConsentRepository>({
 			create: jest.fn(),
-		} as unknown as UserConsentRepository;
-		const preferenceRepoStub = {
+		});
+		const preferenceRepoStub = mockOf<UserPreferenceRepository>({
 			create: jest.fn(),
-		} as unknown as UserPreferenceRepository;
-		const categoryRepoStub = {
+		});
+		const categoryRepoStub = mockOf<TodoCategoryRepository>({
 			createMany: jest.fn(),
-		} as unknown as TodoCategoryRepository;
+		});
 		const realProvisionUser = new ProvisionUserUseCase(
-			userRepo as unknown as UserRepository,
-			accountRepo as unknown as AccountRepository,
+			asDep(userRepo),
+			asDep(accountRepo),
 			consentRepoStub,
 			preferenceRepoStub,
 			categoryRepoStub,
@@ -129,8 +122,8 @@ describe("AuthService — 인증 서비스", () => {
 	describe("register", () => {
 		const registerInput = {
 			email: "test@example.com",
-			password: "Password123!",
-			passwordConfirm: "Password123!",
+			password: "Password123@",
+			passwordConfirm: "Password123@",
 			termsAgreed: true,
 			privacyAgreed: true,
 			marketingAgreed: false,
@@ -147,15 +140,13 @@ describe("AuthService — 인증 서비스", () => {
 			uow.run.mockImplementation((work) => work());
 			userRepo.create.mockResolvedValue(mockUser);
 			userRepo.createProfile.mockResolvedValue(undefined);
-			accountRepo.createCredentialAccount.mockResolvedValue(
-				{} as unknown as Account,
-			);
+			asMock(accountRepo.createCredentialAccount).mockResolvedValue({});
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
 				expiresAt: new Date(),
 			});
 			verificationService.sendVerificationEmail.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 		};
 
 		it("새 사용자를 등록하고 인증 코드를 발송한다", async () => {
@@ -362,18 +353,18 @@ describe("AuthService — 인증 서비스", () => {
 		) => {
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			uow.run.mockImplementation((work) => work());
-			verificationService.verifyCode.mockResolvedValue(true as boolean);
-			userRepo.markEmailVerified.mockResolvedValue({} as User);
+			asMock(verificationService.verifyCode).mockResolvedValue(true);
+			asMock(userRepo.markEmailVerified).mockResolvedValue({});
 			sessionService.createSessionWithTokens.mockResolvedValue({
 				sessionId: "session-id",
 				tokens: mockTokens,
 				tokenFamily: "family-id",
 			});
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
-			userRepo.findByIdWithProfile.mockResolvedValue({
+			asMock(securityLogRepo.create).mockResolvedValue({});
+			asMock(userRepo.findByIdWithProfile).mockResolvedValue({
 				...mockUser,
 				profile: { name: "Test User", profileImage: null },
-			} as never);
+			});
 		};
 
 		it("올바른 코드로 이메일 인증에 성공한다", async () => {
@@ -495,7 +486,7 @@ describe("AuthService — 인증 서비스", () => {
 	describe("login", () => {
 		const loginInput = {
 			email: "test@example.com",
-			password: "Password123!",
+			password: "Password123@",
 		};
 
 		/**
@@ -506,12 +497,12 @@ describe("AuthService — 인증 서비스", () => {
 		) => {
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId: mockUser.id,
 				type: "CREDENTIAL",
 				password: "hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(true);
 			uow.run.mockImplementation((work) => work());
 			sessionService.createSessionWithTokens.mockResolvedValue({
@@ -519,12 +510,12 @@ describe("AuthService — 인증 서비스", () => {
 				tokens: mockTokens,
 				tokenFamily: "family-id",
 			});
-			loginAttemptRepo.create.mockResolvedValue({} as LoginAttempt);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
-			userRepo.findByIdWithProfile.mockResolvedValue({
+			asMock(loginAttemptRepo.create).mockResolvedValue({});
+			asMock(securityLogRepo.create).mockResolvedValue({});
+			asMock(userRepo.findByIdWithProfile).mockResolvedValue({
 				...mockUser,
 				profile: { name: "Test User", profileImage: null },
-			} as never);
+			});
 		};
 
 		it("올바른 자격 증명으로 토큰을 반환한다", async () => {
@@ -551,7 +542,7 @@ describe("AuthService — 인증 서비스", () => {
 			// Given
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(null);
-			loginAttemptRepo.create.mockResolvedValue({} as LoginAttempt);
+			asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
@@ -571,13 +562,13 @@ describe("AuthService — 인증 서비스", () => {
 
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId: mockUser.id,
 				password: "hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(false);
-			loginAttemptRepo.create.mockResolvedValue({} as LoginAttempt);
+			asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
@@ -597,11 +588,11 @@ describe("AuthService — 인증 서비스", () => {
 
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(pendingUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId: pendingUser.id,
 				password: "hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(true);
 
 			// When & Then
@@ -686,11 +677,11 @@ describe("AuthService — 인증 서비스", () => {
 
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(lockedUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId: lockedUser.id,
 				password: "hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(true);
 
 			// When & Then
@@ -711,8 +702,8 @@ describe("AuthService — 인증 서비스", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(sessionRepo.revoke).mockResolvedValue({});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 			cacheService.invalidateSession.mockResolvedValue(undefined);
 
 			// When
@@ -733,8 +724,8 @@ describe("AuthService — 인증 서비스", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(sessionRepo.revoke).mockResolvedValue({});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 			cacheService.invalidateSession.mockResolvedValue(undefined);
 
 			// When
@@ -801,7 +792,7 @@ describe("AuthService — 인증 서비스", () => {
 			];
 			sessionRepo.findActiveByUserId.mockResolvedValue(mockSessions);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.logoutAll(userId);
@@ -822,7 +813,7 @@ describe("AuthService — 인증 서비스", () => {
 			];
 			sessionRepo.findActiveByUserId.mockResolvedValue(mockSessions);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.logoutAll(userId);
@@ -837,7 +828,7 @@ describe("AuthService — 인증 서비스", () => {
 			// Given
 			sessionRepo.findActiveByUserId.mockResolvedValue([]);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.logoutAll(userId);
@@ -889,11 +880,11 @@ describe("AuthService — 인증 서비스", () => {
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
-			sessionRepo.rotateToken.mockResolvedValue({
+			asMock(sessionRepo.rotateToken).mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.refreshTokens(refreshToken, verifiedPayload);
@@ -914,11 +905,11 @@ describe("AuthService — 인증 서비스", () => {
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
-			sessionRepo.rotateToken.mockResolvedValue({
+			asMock(sessionRepo.rotateToken).mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.refreshTokens(refreshToken, verifiedPayload);
@@ -948,11 +939,11 @@ describe("AuthService — 인증 서비스", () => {
 			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800); // 7 days
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
-			sessionRepo.rotateToken.mockResolvedValue({
+			asMock(sessionRepo.rotateToken).mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.refreshTokens(refreshToken, verifiedPayload);
@@ -981,11 +972,11 @@ describe("AuthService — 인증 서비스", () => {
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
-			sessionRepo.rotateToken.mockResolvedValue({
+			asMock(sessionRepo.rotateToken).mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 			cacheService.invalidateSession.mockResolvedValue(undefined);
 
 			// When
@@ -1025,7 +1016,7 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
 			sessionRepo.findById.mockResolvedValue(mockSession);
 			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When & Then
 			await expect(
@@ -1065,11 +1056,11 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.findById.mockResolvedValue(reusedSession);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
 			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
-			sessionRepo.rotateToken.mockResolvedValue({
+			asMock(sessionRepo.rotateToken).mockResolvedValue({
 				...reusedSession,
 				tokenVersion: 3,
-			} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.refreshTokens(refreshToken, verifiedPayload);
@@ -1108,7 +1099,7 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
 			sessionRepo.findById.mockResolvedValue(reusedSession);
 			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When & Then
 			await expect(
@@ -1141,11 +1132,11 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.findById.mockResolvedValue(reusedSession);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
 			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
-			sessionRepo.rotateToken.mockResolvedValue({
+			asMock(sessionRepo.rotateToken).mockResolvedValue({
 				...reusedSession,
 				tokenVersion: 3,
-			} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.refreshTokens(refreshToken, verifiedPayload);
@@ -1172,10 +1163,10 @@ describe("AuthService — 인증 서비스", () => {
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
 			// previousTokenHash는 이전 grace period에서 변경됨 → 불일치
-			sessionRepo.findById.mockResolvedValue({
+			asMock(sessionRepo.findById).mockResolvedValue({
 				...sessionAfterGraceRetry,
 				previousTokenHash: "different-hash",
-			} as Session);
+			});
 
 			// When & Then
 			await expect(
@@ -1258,22 +1249,22 @@ describe("AuthService — 인증 서비스", () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findAllByUserId.mockResolvedValue([
+			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
 					id: 1,
 					userId,
-					provider: "CREDENTIAL" as AccountProvider,
+					provider: "CREDENTIAL",
 					password: "hashed-pw",
 				},
-			] as Account[]);
+			]);
 			passwordService.verify.mockResolvedValue(true);
 			sessionRepo.findActiveByUserId.mockResolvedValue([
 				SessionBuilder.create(userId).withId(sessionId).build(),
 			]);
 			uow.run.mockImplementation((work) => work());
-			userRepo.softDelete.mockResolvedValue({} as User);
+			asMock(userRepo.softDelete).mockResolvedValue({});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.deleteAccount(
@@ -1298,14 +1289,14 @@ describe("AuthService — 인증 서비스", () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findAllByUserId.mockResolvedValue([
+			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
 					id: 1,
 					userId,
-					provider: "CREDENTIAL" as AccountProvider,
+					provider: "CREDENTIAL",
 					password: "hashed-pw",
 				},
-			] as Account[]);
+			]);
 
 			// When & Then
 			await expect(
@@ -1317,14 +1308,14 @@ describe("AuthService — 인증 서비스", () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findAllByUserId.mockResolvedValue([
+			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
 					id: 1,
 					userId,
-					provider: "CREDENTIAL" as AccountProvider,
+					provider: "CREDENTIAL",
 					password: "hashed-pw",
 				},
-			] as Account[]);
+			]);
 			passwordService.verify.mockResolvedValue(false);
 
 			// When & Then
@@ -1342,21 +1333,21 @@ describe("AuthService — 인증 서비스", () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findAllByUserId.mockResolvedValue([
+			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
 					id: 1,
 					userId,
-					provider: "GOOGLE" as AccountProvider,
+					provider: "GOOGLE",
 					password: null,
 				},
-			] as Account[]);
+			]);
 			sessionRepo.findActiveByUserId.mockResolvedValue([
 				SessionBuilder.create(userId).withId(sessionId).build(),
 			]);
 			uow.run.mockImplementation((work) => work());
-			userRepo.softDelete.mockResolvedValue({} as User);
+			asMock(userRepo.softDelete).mockResolvedValue({});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.deleteAccount(
@@ -1400,21 +1391,21 @@ describe("AuthService — 인증 서비스", () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findAllByUserId.mockResolvedValue([
+			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
 					id: 1,
 					userId,
-					provider: "GOOGLE" as AccountProvider,
+					provider: "GOOGLE",
 					password: null,
 				},
-			] as Account[]);
+			]);
 			sessionRepo.findActiveByUserId.mockResolvedValue([
 				SessionBuilder.create(userId).withId(sessionId).build(),
 			]);
 			uow.run.mockImplementation((work) => work());
-			userRepo.softDelete.mockResolvedValue({} as User);
+			asMock(userRepo.softDelete).mockResolvedValue({});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.deleteAccount(userId, sessionId, {}, metadata);
@@ -1439,12 +1430,12 @@ describe("AuthService — 인증 서비스", () => {
 				.deleted(new Date(Date.now() - 31 * 24 * 60 * 60 * 1000))
 				.build();
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: 1,
 				userId: deletedUser.id,
 				provider: "CREDENTIAL",
 				password: "hashed-pw",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(true);
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 
@@ -1466,12 +1457,12 @@ describe("AuthService — 인증 서비스", () => {
 				.deleted(deletedAt)
 				.build();
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: 1,
 				userId: deletedUser.id,
 				provider: "CREDENTIAL",
 				password: "hashed-pw",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(true);
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			uow.run.mockImplementation((work) => work());
@@ -1484,10 +1475,10 @@ describe("AuthService — 인증 서비스", () => {
 				},
 				tokenFamily: "family-123",
 			});
-			userRepo.findByIdWithProfile.mockResolvedValue({
+			asMock(userRepo.findByIdWithProfile).mockResolvedValue({
 				id: deletedUser.id,
 				profile: { name: "Test", profileImage: null },
-			} as never);
+			});
 
 			// When
 			const result = await service.login({
@@ -1572,9 +1563,9 @@ describe("AuthService — 인증 서비스", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as Session);
+			asMock(sessionRepo.revoke).mockResolvedValue({});
 			cacheService.invalidateSession.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.revokeSession(userId, sessionId);
@@ -1594,9 +1585,9 @@ describe("AuthService — 인증 서비스", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as Session);
+			asMock(sessionRepo.revoke).mockResolvedValue({});
 			cacheService.invalidateSession.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.revokeSession(userId, sessionId);
@@ -1740,9 +1731,9 @@ describe("AuthService — 인증 서비스", () => {
 				name: "Test User",
 				profileImage: null,
 				createdAt: mockUser.createdAt.toISOString(),
-				providers: ["CREDENTIAL"] as AccountProvider[],
+				providers: ["CREDENTIAL"],
 			};
-			cacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
+			asMock(cacheService.wrapUserProfile).mockResolvedValue(cachedProfile);
 
 			// When
 			const result = await service.getCurrentUser(
@@ -1788,9 +1779,9 @@ describe("AuthService — 인증 서비스", () => {
 				name: "Multi Provider User",
 				profileImage: null,
 				createdAt: mockUser.createdAt.toISOString(),
-				providers: ["CREDENTIAL", "GOOGLE"] as AccountProvider[],
+				providers: ["CREDENTIAL", "GOOGLE"],
 			};
-			cacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
+			asMock(cacheService.wrapUserProfile).mockResolvedValue(cachedProfile);
 
 			// When
 			const result = await service.getCurrentUser(
@@ -1824,9 +1815,9 @@ describe("AuthService — 인증 서비스", () => {
 				name: "Test User",
 				profileImage: null,
 				createdAt: mockUser.createdAt.toISOString(),
-				providers: ["CREDENTIAL"] as AccountProvider[],
+				providers: ["CREDENTIAL"],
 			};
-			cacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
+			asMock(cacheService.wrapUserProfile).mockResolvedValue(cachedProfile);
 
 			// When
 			const result = await service.getCurrentUser(
@@ -1846,10 +1837,10 @@ describe("AuthService — 인증 서비스", () => {
 
 		it("프로필을 업데이트하고 캐시를 무효화한다", async () => {
 			// Given
-			userRepo.updateProfile.mockResolvedValue({
+			asMock(userRepo.updateProfile).mockResolvedValue({
 				name: "Updated Name",
 				profileImage: null,
-			} as never);
+			});
 			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 
 			// When
@@ -1863,10 +1854,10 @@ describe("AuthService — 인증 서비스", () => {
 
 		it("프로필 업데이트 후 캐시 무효화가 호출된다", async () => {
 			// Given
-			userRepo.updateProfile.mockResolvedValue({
+			asMock(userRepo.updateProfile).mockResolvedValue({
 				name: "Updated Name",
 				profileImage: null,
-			} as never);
+			});
 			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 
 			// When
@@ -1877,7 +1868,7 @@ describe("AuthService — 인증 서비스", () => {
 				userRepo.updateProfile.mock.invocationCallOrder[0];
 			const invalidateCallOrder =
 				cacheService.invalidateUserProfile.mock.invocationCallOrder[0];
-			expect(invalidateCallOrder).toBeGreaterThan(updateCallOrder as number);
+			expect(invalidateCallOrder).toBeGreaterThan(updateCallOrder ?? 0);
 		});
 
 		it("프로필 이미지를 URL로 업데이트할 수 있다", async () => {
@@ -1885,10 +1876,10 @@ describe("AuthService — 인증 서비스", () => {
 			const imageUpdateData = {
 				profileImage: "https://example.com/new-image.jpg",
 			};
-			userRepo.updateProfile.mockResolvedValue({
+			asMock(userRepo.updateProfile).mockResolvedValue({
 				name: "Test User",
 				profileImage: "https://example.com/new-image.jpg",
-			} as never);
+			});
 			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 
 			// When
@@ -1903,10 +1894,10 @@ describe("AuthService — 인증 서비스", () => {
 			const iconKeyUpdateData = {
 				profileImage: "scottish_fold",
 			};
-			userRepo.updateProfile.mockResolvedValue({
+			asMock(userRepo.updateProfile).mockResolvedValue({
 				name: "Test User",
 				profileImage: "scottish_fold",
-			} as never);
+			});
 			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 
 			// When

@@ -11,7 +11,7 @@
  * ```
  */
 import { TestBed } from "@suites/unit";
-import { createMockExecutionContext } from "@test/mocks";
+import { asDep, createMockExecutionContext } from "@test/mocks";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { AdminGuard } from "./admin.guard";
@@ -74,7 +74,7 @@ describe("AdminGuard — 관리자 가드", () => {
 					userId: "user-1",
 					email: "unknown@test.com",
 					sessionId: "session-1",
-					role: "UNKNOWN_ROLE" as any,
+					role: asDep("UNKNOWN_ROLE"),
 				},
 			});
 
@@ -89,7 +89,7 @@ describe("AdminGuard — 관리자 가드", () => {
 					userId: "user-1",
 					email: "empty@test.com",
 					sessionId: "session-1",
-					role: "" as any,
+					role: asDep(""),
 				},
 			});
 
@@ -116,7 +116,9 @@ describe("AdminGuard — 관리자 가드", () => {
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
-				expect((error as ApplicationException).errorCode).toBe("ADMIN_1401");
+				if (error instanceof ApplicationException) {
+					expect(error.errorCode).toBe("ADMIN_1401");
+				}
 			}
 		});
 
@@ -131,7 +133,9 @@ describe("AdminGuard — 관리자 가드", () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
 				// invalidToken 에러는 AUTH 도메인 에러 코드를 사용
-				expect((error as ApplicationException).errorCode).toMatch(/^AUTH_/);
+				if (error instanceof ApplicationException) {
+					expect(error.errorCode).toMatch(/^AUTH_/);
+				}
 			}
 		});
 	});

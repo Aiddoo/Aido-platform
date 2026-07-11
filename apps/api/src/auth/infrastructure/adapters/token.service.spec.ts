@@ -38,17 +38,20 @@ describe("TokenService — 토큰 서비스", () => {
 		configService = unitRef.get(TypedConfigService);
 
 		// JwtService 외부 라이브러리 mock 수동 설정
-		jwtService.signAsync.mockImplementation((payload, _options) => {
-			return Promise.resolve(`mock-token-${(payload as { sub: string }).sub}`);
+		jwtService.signAsync.mockImplementation((payload) => {
+			const sub =
+				typeof payload === "object" && payload !== null && "sub" in payload
+					? String(payload.sub)
+					: "";
+			return Promise.resolve(`mock-token-${sub}`);
 		});
 
 		jwtService.verifyAsync.mockImplementation((token, options) => {
-			if ((token as string).includes("invalid")) {
+			if (token.includes("invalid")) {
 				throw new Error("Invalid token");
 			}
 			// access token 또는 refresh token에 따라 type 반환
-			const isRefreshSecret =
-				(options as { secret: string })?.secret === mockConfig.jwtRefreshSecret;
+			const isRefreshSecret = options?.secret === mockConfig.jwtRefreshSecret;
 			return Promise.resolve({
 				sub: "user-id",
 				email: "test@example.com",

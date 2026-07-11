@@ -82,6 +82,9 @@ const TARGET_DIRS = [
 	"src/scheduler/domain",
 	"src/scheduler/application",
 	"src/scheduler/infrastructure",
+	"src/auth/domain",
+	"src/auth/application",
+	"src/auth/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

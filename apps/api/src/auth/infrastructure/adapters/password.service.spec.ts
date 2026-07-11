@@ -26,7 +26,7 @@ describe("PasswordService — 비밀번호 서비스", () => {
 	describe("hash", () => {
 		it("비밀번호를 해싱한다", async () => {
 			// Given
-			const password = "Test1234!";
+			const password = "Test1234@";
 
 			// When
 			const hash = await service.hash(password);
@@ -39,7 +39,7 @@ describe("PasswordService — 비밀번호 서비스", () => {
 
 		it("같은 비밀번호도 매번 다른 해시를 생성한다", async () => {
 			// Given
-			const password = "Test1234!";
+			const password = "Test1234@";
 
 			// When
 			const hash1 = await service.hash(password);
@@ -53,7 +53,7 @@ describe("PasswordService — 비밀번호 서비스", () => {
 	describe("verify", () => {
 		it("올바른 비밀번호는 검증을 통과한다", async () => {
 			// Given
-			const password = "Test1234!";
+			const password = "Test1234@";
 			const hash = await service.hash(password);
 
 			// When
@@ -65,8 +65,8 @@ describe("PasswordService — 비밀번호 서비스", () => {
 
 		it("잘못된 비밀번호는 검증에 실패한다", async () => {
 			// Given
-			const password = "Test1234!";
-			const wrongPassword = "WrongPassword!";
+			const password = "Test1234@";
+			const wrongPassword = "WrongPassword@";
 			const hash = await service.hash(password);
 
 			// When
@@ -78,7 +78,7 @@ describe("PasswordService — 비밀번호 서비스", () => {
 
 		it("빈 비밀번호는 검증에 실패한다", async () => {
 			// Given
-			const password = "Test1234!";
+			const password = "Test1234@";
 			const hash = await service.hash(password);
 
 			// When
@@ -92,7 +92,7 @@ describe("PasswordService — 비밀번호 서비스", () => {
 	describe("needsRehash", () => {
 		it("유효한 해시는 리해싱이 필요없다고 반환한다", async () => {
 			// Given
-			const password = "Test1234!";
+			const password = "Test1234@";
 			const hash = await service.hash(password);
 
 			// When

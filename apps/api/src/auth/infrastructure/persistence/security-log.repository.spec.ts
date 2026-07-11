@@ -15,7 +15,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { SecurityLogBuilder } from "@test/builders";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import type { SecurityLog } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -395,9 +395,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 				{ event: "LOGIN_FAILURE", _count: { event: 20 } },
 				{ event: "PASSWORD_CHANGED", _count: { event: 5 } },
 			];
-			jest
-				.mocked(db.securityLog.groupBy)
-				.mockResolvedValue(groupByResult as never);
+			asMock(db.securityLog.groupBy).mockResolvedValue(groupByResult);
 
 			// When
 			const result = await repository.countByEvent(since, until);
@@ -425,9 +423,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			const groupByResult: SecurityLogGroupByResult[] = [
 				{ event: "LOGIN_SUCCESS", _count: { event: 50 } },
 			];
-			jest
-				.mocked(db.securityLog.groupBy)
-				.mockResolvedValue(groupByResult as never);
+			asMock(db.securityLog.groupBy).mockResolvedValue(groupByResult);
 
 			// When
 			const result = await repository.countByEvent(since);

@@ -13,6 +13,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
+import { asMock } from "@test/mocks";
 import {
 	REVOKE_REASON,
 	SECURITY_EVENT,
@@ -22,7 +23,6 @@ import { AccountRepository } from "@/auth/infrastructure/persistence/account.rep
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { type Account, type SecurityLog } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { PasswordManagementService } from "./password-management.service";
@@ -123,7 +123,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 	describe("resetPassword", () => {
 		const email = "test@example.com";
 		const code = "123456";
-		const newPassword = "NewPassword123!";
+		const newPassword = "NewPassword123@";
 
 		it("올바른 코드로 비밀번호를 재설정한다", async () => {
 			// Given
@@ -134,17 +134,17 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				.build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId: mockUser.id,
 				password: "old-hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
-			verificationService.verifyCode.mockResolvedValue(true as boolean);
-			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
+			asMock(verificationService.verifyCode).mockResolvedValue(true);
+			asMock(accountRepo.updatePassword).mockResolvedValue({});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.resetPassword(email, code, newPassword);
@@ -203,17 +203,17 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				.build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId: mockUser.id,
 				password: "old-hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
-			verificationService.verifyCode.mockResolvedValue(true as boolean);
-			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
+			asMock(verificationService.verifyCode).mockResolvedValue(true);
+			asMock(accountRepo.updatePassword).mockResolvedValue({});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.resetPassword(email, code, newPassword);
@@ -235,17 +235,17 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				.build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId: mockUser.id,
 				password: "old-hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
-			verificationService.verifyCode.mockResolvedValue(true as boolean);
-			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
+			asMock(verificationService.verifyCode).mockResolvedValue(true);
+			asMock(accountRepo.updatePassword).mockResolvedValue({});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.resetPassword(email, code, newPassword);
@@ -265,23 +265,23 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 
 	describe("changePassword", () => {
 		const userId = "user-123";
-		const currentPassword = "CurrentPassword123!";
-		const newPassword = "NewPassword123!";
+		const currentPassword = "CurrentPassword123@";
+		const newPassword = "NewPassword123@";
 
 		it("현재 비밀번호 확인 후 새 비밀번호로 변경한다", async () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
-			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(accountRepo.updatePassword).mockResolvedValue({});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			const result = await service.changePassword(
@@ -299,11 +299,11 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(false);
 
 			// When & Then
@@ -328,16 +328,16 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// Given
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as unknown as Account);
+			});
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
-			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(accountRepo.updatePassword).mockResolvedValue({});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
 			await service.changePassword(userId, currentPassword, newPassword);
@@ -358,17 +358,17 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				// Given
 				const user = UserBuilder.create().withId(userId).verified().build();
 				userRepo.findById.mockResolvedValue(user);
-				accountRepo.findByUserIdAndProvider.mockResolvedValue({
+				asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
 					id: "account-123",
 					userId,
 					password: "current-hashed-password",
-				} as unknown as Account);
+				});
 				passwordService.verify.mockResolvedValue(true);
 				passwordService.hash.mockResolvedValue("new-hashed-password");
 				uow.run.mockImplementation((work) => work());
-				accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
+				asMock(accountRepo.updatePassword).mockResolvedValue({});
 				sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-				securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+				asMock(securityLogRepo.create).mockResolvedValue({});
 
 				// When
 				await service.changePassword(
@@ -498,10 +498,8 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			passwordService.hash.mockResolvedValue("hashed-password");
 			uow.run.mockImplementation((work) => work());
 			verificationService.verifyCode.mockResolvedValue(true);
-			accountRepo.createCredentialAccount.mockResolvedValue(
-				{} as unknown as Account,
-			);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			asMock(accountRepo.createCredentialAccount).mockResolvedValue({});
+			asMock(securityLogRepo.create).mockResolvedValue({});
 			return user;
 		};
 

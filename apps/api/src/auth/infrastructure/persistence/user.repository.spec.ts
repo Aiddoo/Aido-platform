@@ -15,7 +15,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import * as userTagUtil from "@/auth/domain/services/user-tag.util";
 import type {
 	AccountProvider,
@@ -66,9 +66,7 @@ interface UserWithProfile {
 
 // 유틸리티 함수 모킹
 jest.mock("@/auth/domain/services/user-tag.util");
-const mockGenerateUserTag = userTagUtil.generateUserTag as jest.MockedFunction<
-	typeof userTagUtil.generateUserTag
->;
+const mockGenerateUserTag = jest.mocked(userTagUtil.generateUserTag);
 
 // 테스트용 상수
 const TEST_USER_TAG = "XY7Z9W3K";
@@ -145,7 +143,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 					},
 				],
 			};
-			db.user.findUnique.mockResolvedValue(userWithAccount as never);
+			asMock(db.user.findUnique).mockResolvedValue(userWithAccount);
 
 			// When - 이메일로 사용자와 Credential 계정 조회
 			const result =
@@ -218,9 +216,9 @@ describe("UserRepository — 사용자 리포지토리", () => {
 					name: "Test User",
 					profileImage: null,
 				},
-				accounts: [{ provider: "CREDENTIAL" as AccountProvider }],
+				accounts: [{ provider: "CREDENTIAL" }],
 			};
-			db.user.findUnique.mockResolvedValue(userWithProfile as never);
+			asMock(db.user.findUnique).mockResolvedValue(userWithProfile);
 
 			// When - ID로 사용자와 프로필 조회
 			const result = await repository.findByIdWithProfile("user-123");
@@ -269,9 +267,9 @@ describe("UserRepository — 사용자 리포지토리", () => {
 				createdAt: mockUser.createdAt,
 				lastLoginAt: mockUser.lastLoginAt,
 				profile: null,
-				accounts: [{ provider: "CREDENTIAL" as AccountProvider }],
+				accounts: [{ provider: "CREDENTIAL" }],
 			};
-			db.user.findUnique.mockResolvedValue(userWithoutProfile as never);
+			asMock(db.user.findUnique).mockResolvedValue(userWithoutProfile);
 
 			// When - ID로 프로필이 없는 사용자 조회
 			const result = await repository.findByIdWithProfile("user-123");
@@ -311,9 +309,9 @@ describe("UserRepository — 사용자 리포지토리", () => {
 	describe("create", () => {
 		it("새 사용자를 생성한다", async () => {
 			// Given - 사용자 생성 데이터 준비 및 userTag 중복 없음 모킹
-			const createData = {
+			const createData: { email: string; status: UserStatus } = {
 				email: "new@example.com",
-				status: "PENDING_VERIFICATION" as UserStatus,
+				status: "PENDING_VERIFY",
 			};
 			const newUser = UserBuilder.create()
 				.withId("new-user-123")
@@ -343,9 +341,9 @@ describe("UserRepository — 사용자 리포지토리", () => {
 
 		it("활성 트랜잭션 클라이언트로 사용자를 생성한다", async () => {
 			// Given - 사용자 생성 데이터 준비
-			const createData = {
+			const createData: { email: string; status: UserStatus } = {
 				email: "new@example.com",
-				status: "PENDING_VERIFICATION" as UserStatus,
+				status: "PENDING_VERIFY",
 			};
 			const txUser = UserBuilder.create()
 				.withId("tx-user-123")

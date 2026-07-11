@@ -42,7 +42,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			verificationRepo.create.mockResolvedValue({
 				id: 1,
 				userId,
-				type: "PASSWORD_RESET" as VerificationType,
+				type: "PASSWORD_RESET",
 				token: "hashed-token",
 				expiresAt: new Date(),
 				attempts: 0,
@@ -131,7 +131,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			verificationRepo.create.mockResolvedValue({
 				id: 1,
 				userId,
-				type: "PASSWORD_SETUP" as VerificationType,
+				type: "PASSWORD_SETUP",
 				token: "hashed-token",
 				expiresAt: new Date(),
 				attempts: 0,

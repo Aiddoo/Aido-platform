@@ -14,6 +14,7 @@
 import { ConfigService } from "@nestjs/config";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { asMock } from "@test/mocks";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -162,7 +163,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("유효한 Kakao access token을 검증하면 프로필을 반환한다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: true,
 				json: () => Promise.resolve(mockKakaoResponse),
 			});
@@ -192,7 +193,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("이메일이 없는 Kakao 계정도 처리한다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: true,
 				json: () =>
 					Promise.resolve({
@@ -215,7 +216,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: false,
 				status: 401,
 			});
@@ -228,7 +229,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("기타 에러 응답은 socialTokenInvalid 에러를 발생시킨다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: false,
 				status: 400,
 			});
@@ -259,7 +260,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("유효한 Naver access token을 검증하면 프로필을 반환한다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: true,
 				json: () => Promise.resolve(mockNaverResponse),
 			});
@@ -287,7 +288,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("이름이 없으면 닉네임을 사용한다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: true,
 				json: () =>
 					Promise.resolve({
@@ -309,7 +310,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("이메일이 없으면 emailVerified는 false이다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: true,
 				json: () =>
 					Promise.resolve({
@@ -332,7 +333,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: false,
 				status: 401,
 			});
@@ -345,7 +346,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("resultcode가 00이 아니면 에러를 발생시킨다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: true,
 				json: () =>
 					Promise.resolve({
@@ -362,7 +363,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("response가 없으면 에러를 발생시킨다", async () => {
 			// Given
-			(global.fetch as jest.Mock).mockResolvedValue({
+			asMock(global.fetch).mockResolvedValue({
 				ok: true,
 				json: () =>
 					Promise.resolve({

@@ -14,6 +14,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { asDep, asMock } from "@test/mocks";
 import { SessionService } from "@/auth/application/services/session.service";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
@@ -53,10 +54,10 @@ describe("JwtStrategy — JWT 전략", () => {
 		cacheService = unitRef.get(CacheService);
 		userRepo = unitRef.get(UserRepository);
 
-		userRepo.findById.mockResolvedValue({
+		asMock(userRepo.findById).mockResolvedValue({
 			status: "ACTIVE",
 			deletedAt: null,
-		} as never);
+		});
 	});
 
 	it("refresh 타입 토큰이면 에러를 던진다", async () => {
@@ -71,7 +72,10 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("sessionId가 없으면 에러를 던진다", async () => {
 		// Given
-		const payload = { ...validPayload, sessionId: undefined } as JwtPayload;
+		const payload = asDep<JwtPayload>({
+			...validPayload,
+			sessionId: undefined,
+		});
 
 		// When & Then
 		await expect(strategy.validate(payload)).rejects.toThrow(
@@ -82,7 +86,7 @@ describe("JwtStrategy — JWT 전략", () => {
 	it("캐시 히트 시 DB 조회 없이 사용자 정보를 반환한다", async () => {
 		// Given
 		const futureDate = new Date(Date.now() + 86400000);
-		(cacheService.getSession as jest.Mock).mockResolvedValue({
+		asMock(cacheService.getSession).mockResolvedValue({
 			userId: "user-123",
 			expiresAt: futureDate,
 			revokedAt: null,
@@ -103,7 +107,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("캐시된 세션이 폐기 상태면 에러를 던진다", async () => {
 		// Given
-		(cacheService.getSession as jest.Mock).mockResolvedValue({
+		asMock(cacheService.getSession).mockResolvedValue({
 			userId: "user-123",
 			expiresAt: new Date(Date.now() + 86400000),
 			revokedAt: new Date(),
@@ -123,7 +127,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("캐시된 세션이 만료 상태면 에러를 던진다", async () => {
 		// Given
-		(cacheService.getSession as jest.Mock).mockResolvedValue({
+		asMock(cacheService.getSession).mockResolvedValue({
 			userId: "user-123",
 			expiresAt: new Date(Date.now() - 1000),
 			revokedAt: null,
@@ -142,9 +146,9 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("캐시 미스 시 DB에서 세션을 조회하고 캐시에 저장한다", async () => {
 		// Given
-		(cacheService.getSession as jest.Mock).mockResolvedValue(null);
+		asMock(cacheService.getSession).mockResolvedValue(null);
 		const futureDate = new Date(Date.now() + 86400000);
-		(sessionRepo.findById as jest.Mock).mockResolvedValue({
+		asMock(sessionRepo.findById).mockResolvedValue({
 			id: "session-456",
 			userId: "user-123",
 			expiresAt: futureDate,
@@ -168,8 +172,8 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("DB에서 세션을 찾을 수 없으면 에러를 던진다", async () => {
 		// Given
-		(cacheService.getSession as jest.Mock).mockResolvedValue(null);
-		(sessionRepo.findById as jest.Mock).mockResolvedValue(null);
+		asMock(cacheService.getSession).mockResolvedValue(null);
+		asMock(sessionRepo.findById).mockResolvedValue(null);
 		sessionService.assertSessionValid.mockImplementation(() => {
 			throw new ApplicationException(ErrorCode.SESSION_0701, {
 				sessionId: undefined,
@@ -184,8 +188,8 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("DB에서 조회한 세션이 폐기 상태면 에러를 던진다", async () => {
 		// Given
-		(cacheService.getSession as jest.Mock).mockResolvedValue(null);
-		(sessionRepo.findById as jest.Mock).mockResolvedValue({
+		asMock(cacheService.getSession).mockResolvedValue(null);
+		asMock(sessionRepo.findById).mockResolvedValue({
 			id: "session-456",
 			userId: "user-123",
 			expiresAt: new Date(Date.now() + 86400000),
@@ -206,8 +210,8 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("DB에서 조회한 세션이 만료 상태면 에러를 던진다", async () => {
 		// Given
-		(cacheService.getSession as jest.Mock).mockResolvedValue(null);
-		(sessionRepo.findById as jest.Mock).mockResolvedValue({
+		asMock(cacheService.getSession).mockResolvedValue(null);
+		asMock(sessionRepo.findById).mockResolvedValue({
 			id: "session-456",
 			userId: "user-123",
 			expiresAt: new Date(Date.now() - 1000),
@@ -231,8 +235,8 @@ describe("JwtStrategy — JWT 전략", () => {
 
 		it("세션 캐시 읽기 실패 시 DB 조회로 폴백해 정상 인증한다", async () => {
 			// Given
-			(cacheService.getSession as jest.Mock).mockRejectedValue(cacheFailure);
-			(sessionRepo.findById as jest.Mock).mockResolvedValue({
+			asMock(cacheService.getSession).mockRejectedValue(cacheFailure);
+			asMock(sessionRepo.findById).mockResolvedValue({
 				id: "session-456",
 				userId: "user-123",
 				expiresAt: futureDate,
@@ -249,9 +253,9 @@ describe("JwtStrategy — JWT 전략", () => {
 
 		it("세션 캐시 쓰기 실패는 무시하고 정상 인증한다", async () => {
 			// Given
-			(cacheService.getSession as jest.Mock).mockResolvedValue(null);
-			(cacheService.setSession as jest.Mock).mockRejectedValue(cacheFailure);
-			(sessionRepo.findById as jest.Mock).mockResolvedValue({
+			asMock(cacheService.getSession).mockResolvedValue(null);
+			asMock(cacheService.setSession).mockRejectedValue(cacheFailure);
+			asMock(sessionRepo.findById).mockResolvedValue({
 				id: "session-456",
 				userId: "user-123",
 				expiresAt: futureDate,
@@ -267,7 +271,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 		it("캐시 폴백은 의도적 401(세션 무효)을 삼키지 않는다", async () => {
 			// Given — 캐시는 정상, 세션이 진짜로 폐기된 상황
-			(cacheService.getSession as jest.Mock).mockResolvedValue({
+			asMock(cacheService.getSession).mockResolvedValue({
 				userId: "user-123",
 				expiresAt: futureDate,
 				revokedAt: new Date(),

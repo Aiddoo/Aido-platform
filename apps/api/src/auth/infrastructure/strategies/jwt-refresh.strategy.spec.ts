@@ -11,6 +11,7 @@
  * ```
  */
 
+import { asDep, mockOf } from "@test/mocks";
 import type { Request } from "express";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -28,18 +29,18 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 	};
 
 	const createMockRequest = (authHeader?: string): Request =>
-		({
+		mockOf<Request>({
 			headers: {
 				authorization: authHeader,
 			},
-		}) as unknown as Request;
+		});
 
 	beforeEach(() => {
 		// JwtRefreshStrategy는 configService.get('JWT_REFRESH_SECRET')만 필요
 		const mockConfigService = {
 			get: jest.fn().mockReturnValue("test-refresh-secret-key"),
 		};
-		strategy = new JwtRefreshStrategy(mockConfigService as any);
+		strategy = new JwtRefreshStrategy(asDep(mockConfigService));
 	});
 
 	it("유효한 refresh 페이로드면 RefreshTokenPayload를 반환한다", async () => {
@@ -73,7 +74,10 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 	it("sessionId가 없으면 에러를 던진다", async () => {
 		// Given
 		const req = createMockRequest("Bearer some-token");
-		const payload = { ...validPayload, sessionId: undefined } as JwtPayload;
+		const payload = asDep<JwtPayload>({
+			...validPayload,
+			sessionId: undefined,
+		});
 
 		// When & Then
 		await expect(strategy.validate(req, payload)).rejects.toThrow(

@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { asMock } from "@test/mocks";
 import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
@@ -45,10 +46,10 @@ describe("IssueLoginUseCase — 로그인 발급 수렴 시퀀스", () => {
 			},
 			tokenFamily: "family-1",
 		});
-		userRepo.findByIdWithProfile.mockResolvedValue({
+		asMock(userRepo.findByIdWithProfile).mockResolvedValue({
 			userTag: "TAG#1234",
 			profile: { name: "홍길동", profileImage: "https://img/1.png" },
-		} as unknown as Awaited<ReturnType<UserRepository["findByIdWithProfile"]>>);
+		});
 	});
 
 	it("세션+토큰 발급 → 로그인시도 → 보안로그 → 프로필 조회 순서로 실행하고 결과를 매핑한다", async () => {

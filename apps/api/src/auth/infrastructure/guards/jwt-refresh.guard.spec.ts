@@ -69,7 +69,9 @@ describe("JwtRefreshGuard — 가드", () => {
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
-				expect((error as ApplicationException).errorCode).toBe("AUTH_0104");
+				if (error instanceof ApplicationException) {
+					expect(error.errorCode).toBe("AUTH_0104");
+				}
 			}
 		});
 
@@ -80,7 +82,9 @@ describe("JwtRefreshGuard — 가드", () => {
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
-				expect((error as ApplicationException).errorCode).toBe("AUTH_0104");
+				if (error instanceof ApplicationException) {
+					expect(error.errorCode).toBe("AUTH_0104");
+				}
 			}
 		});
 	});

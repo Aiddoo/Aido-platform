@@ -14,3 +14,4 @@ export * from "./mock-database.factory";
 export * from "./ports";
 export * from "./prisma.mock";
 export * from "./transaction.mock";
+export * from "./typed-mock";
