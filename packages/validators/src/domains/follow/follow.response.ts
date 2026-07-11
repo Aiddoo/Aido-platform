@@ -56,6 +56,61 @@ export const followUserSchema = z
 
 export type FollowUser = z.infer<typeof followUserSchema>;
 
+export const searchUserSchema = z
+  .object({
+    id: z.cuid().describe('사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)'),
+    userTag: z.string().length(8).describe('사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)'),
+    name: z.string().nullable().describe('사용자 이름 (미설정 시 null)'),
+    profileImage: z.string().nullable().describe('프로필 이미지 URL (미설정 시 null)'),
+    isFollowing: z.boolean().describe('내가 이 사용자를 팔로우(친구 요청 수락됨) 중인지 여부'),
+    isFollower: z.boolean().describe('이 사용자가 나를 팔로우 중인지 여부'),
+    isFriend: z.boolean().describe('서로 친구인지 여부 (양방향 ACCEPTED)'),
+    requestPending: z.boolean().describe('내가 보낸 친구 요청이 대기 중인지 여부'),
+  })
+  .meta({
+    example: {
+      id: 'clz7x5p8k0005qz0z8z8z8z8z',
+      userTag: 'JOHN2026',
+      name: '존',
+      profileImage: 'https://example.com/profiles/john.jpg',
+      isFollowing: false,
+      isFollower: false,
+      isFriend: false,
+      requestPending: false,
+    },
+  });
+
+export type SearchUser = z.infer<typeof searchUserSchema>;
+
+export const searchUsersResponseSchema = z
+  .object({
+    items: z.array(searchUserSchema).describe('검색 결과 사용자 목록 (관련도 순)'),
+    totalCount: z.number().int().nonnegative().describe('전체 검색 결과 수 (음이 아닌 정수)'),
+    hasMore: z.boolean().describe('다음 페이지 존재 여부'),
+    nextCursor: z.string().nullable().describe('다음 페이지 커서 (없으면 null)'),
+  })
+  .meta({
+    example: {
+      items: [
+        {
+          id: 'clz7x5p8k0005qz0z8z8z8z8z',
+          userTag: 'JOHN2026',
+          name: '존',
+          profileImage: 'https://example.com/profiles/john.jpg',
+          isFollowing: false,
+          isFollower: false,
+          isFriend: false,
+          requestPending: false,
+        },
+      ],
+      totalCount: 12,
+      hasMore: true,
+      nextCursor: 'MzpjbHo3eDVwOGswMDA1cXowejh6OHo4ejh6',
+    },
+  });
+
+export type SearchUsersResponse = z.infer<typeof searchUsersResponseSchema>;
+
 export const friendUserSchema = z
   .object({
     followId: z.cuid().describe('팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)'),

@@ -23,5 +23,7 @@ export {
 	GetFriendsQueryDto,
 } from "./get-follows-query.request.dto";
 export { ReorderFriendDto } from "./reorder-friend.request.dto";
+export { SearchUsersResponseDto } from "./search-users.response.dto";
+export { SearchUsersQueryDto } from "./search-users-query.request.dto";
 export { UserIdParamDto } from "./user-id-param.request.dto";
 export { UserTagParamDto } from "./user-tag-param.request.dto";

@@ -3,11 +3,18 @@ import type {
   FriendsListResponse,
   FriendUser as FriendUserDTO,
   ReceivedRequestsResponse,
+  SearchUser as SearchedUserDTO,
+  SearchUsersResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
 } from '@aido/validators';
 import type { Page } from '@src/shared/types/page.type';
-import type { FriendRequest, FriendUser, SendRequestResult } from '../models/friend.model';
+import type {
+  FriendRequest,
+  FriendUser,
+  SearchedUser,
+  SendRequestResult,
+} from '../models/friend.model';
 
 // DTO → Domain 변환
 
@@ -44,4 +51,22 @@ export const toFriendRequestsPage = (
 
 export const toSendRequestResult = (dto: SendFriendRequestResponse): SendRequestResult => ({
   autoAccepted: dto.autoAccepted,
+});
+
+export const toSearchedUser = (dto: SearchedUserDTO): SearchedUser => ({
+  id: dto.id,
+  userTag: dto.userTag,
+  name: dto.name,
+  profileImage: dto.profileImage,
+  isFollowing: dto.isFollowing,
+  isFollower: dto.isFollower,
+  isFriend: dto.isFriend,
+  requestPending: dto.requestPending,
+});
+
+export const toSearchedUsersPage = (dto: SearchUsersResponse): Page<SearchedUser> => ({
+  items: dto.items.map(toSearchedUser),
+  totalCount: dto.totalCount,
+  hasMore: dto.hasMore,
+  nextCursor: dto.nextCursor,
 });

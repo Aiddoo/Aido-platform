@@ -3,6 +3,7 @@ import type {
   FriendsListResponse,
   ReceivedRequestsResponse,
   ReorderFriendResponse,
+  SearchUsersResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
 } from '@aido/validators';
@@ -135,6 +136,65 @@ export const createReorderFriendDto = (
   overrides?: Partial<ReorderFriendResponse>,
 ): ReorderFriendResponse => ({
   ...generateReorderFriendDto(),
+  ...overrides,
+});
+
+const generateSearchUsersDto = (): SearchUsersResponse => ({
+  items: [
+    // 추가 가능 (관계 없음)
+    {
+      id: 'clz7x5p8k0005qz0z8z8z8z8z',
+      userTag: 'ABCD1234',
+      name: '홍길동',
+      profileImage: 'https://example.com/avatar1.jpg',
+      isFollowing: false,
+      isFollower: false,
+      isFriend: false,
+      requestPending: false,
+    },
+    // 요청 대기 중
+    {
+      id: 'clz7x5p8k0006qz0z8z8z8z8z',
+      userTag: 'EFGH5678',
+      name: '요청중이',
+      profileImage: null,
+      isFollowing: false,
+      isFollower: false,
+      isFriend: false,
+      requestPending: true,
+    },
+    // 이미 친구
+    {
+      id: 'clz7x5p8k0007qz0z8z8z8z8z',
+      userTag: 'IJKL9012',
+      name: '내친구',
+      profileImage: null,
+      isFollowing: true,
+      isFollower: true,
+      isFriend: true,
+      requestPending: false,
+    },
+    // 동명이인 (첫 번째 홍길동과 이름 동일, 태그 다름)
+    {
+      id: 'clz7x5p8k0008qz0z8z8z8z8z',
+      userTag: 'MNOP3456',
+      name: '홍길동',
+      profileImage: null,
+      isFollowing: false,
+      isFollower: false,
+      isFriend: false,
+      requestPending: false,
+    },
+  ],
+  totalCount: 4,
+  hasMore: false,
+  nextCursor: null,
+});
+
+export const createSearchUsersDto = (
+  overrides?: Partial<SearchUsersResponse>,
+): SearchUsersResponse => ({
+  ...generateSearchUsersDto(),
   ...overrides,
 });
 

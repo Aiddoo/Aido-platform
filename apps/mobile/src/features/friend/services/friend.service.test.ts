@@ -5,6 +5,7 @@ import {
   createFriendsListDto,
   createReceivedRequestsDto,
   createReorderFriendDto,
+  createSearchUsersDto,
   createSendFriendRequestDto,
   createSentRequestsDto,
   INVALID_DTO,
@@ -355,6 +356,68 @@ describe('FriendService', () => {
       // When & Then
       await expect(service.reorderFriend('follow-1', { position: 'before' })).rejects.toThrow(
         'Invalid reorderFriend response',
+      );
+    });
+  });
+
+  // ── searchUsers ─────────────────────────
+
+  describe('searchUsers', () => {
+    test('2자 미만 검색어 → FriendError, HTTP 미호출', async () => {
+      // Given & When
+      const result = await service.searchUsers({ query: ' a ' });
+
+      // Then
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(isFriendError(result.error)).toBe(true);
+        expect(result.error.code).toBe('FRIEND_SEARCH_QUERY_TOO_SHORT');
+      }
+      expect(httpClient.get).not.toHaveBeenCalled();
+    });
+
+    test('정상 검색어 → trim된 q/cursor/limit로 GET 호출 후 Page 반환', async () => {
+      // Given
+      const dto = createSearchUsersDto();
+      httpClient.get.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.searchUsers({ query: '  홍길동  ', cursor: 'c1', limit: 20 });
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledWith('v1/follows/search', {
+        params: { q: '홍길동', cursor: 'c1', limit: 20 },
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.items).toHaveLength(4);
+        expect(result.value.nextCursor).toBeNull();
+        // 동명이인 2명이 태그로 구분됨
+        const hongs = result.value.items.filter((u) => u.name === '홍길동');
+        expect(hongs).toHaveLength(2);
+        expect(new Set(hongs.map((u) => u.userTag)).size).toBe(2);
+      }
+    });
+
+    test('HTTP 에러 → Result.err pass-through', async () => {
+      // Given
+      const apiError = createFriendApiError({ code: 'FOLLOW_0911', status: 400 });
+      httpClient.get.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.searchUsers({ query: '홍길동' });
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.searchUsers({ query: '홍길동' })).rejects.toThrow(
+        'Invalid searchUsers response',
       );
     });
   });

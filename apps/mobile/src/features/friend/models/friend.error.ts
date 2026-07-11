@@ -4,6 +4,7 @@ import { t } from '@src/shared/i18n';
 export const FriendErrorCode = {
   INVALID_TAG: 'FRIEND_INVALID_TAG',
   EMPTY_TAG: 'FRIEND_EMPTY_TAG',
+  SEARCH_QUERY_TOO_SHORT: 'FRIEND_SEARCH_QUERY_TOO_SHORT',
 } as const;
 
 export type FriendErrorCode = (typeof FriendErrorCode)[keyof typeof FriendErrorCode];
@@ -22,6 +23,8 @@ export class FriendError extends Error implements BusinessError {
 export const FriendErrors = {
   invalidTag: () => new FriendError(FriendErrorCode.INVALID_TAG, t('friend:errors.invalidTag')),
   emptyTag: () => new FriendError(FriendErrorCode.EMPTY_TAG, t('friend:errors.emptyTag')),
+  searchQueryTooShort: () =>
+    new FriendError(FriendErrorCode.SEARCH_QUERY_TOO_SHORT, t('friend:errors.searchQueryTooShort')),
 } as const;
 
 export const isFriendError = (error: unknown): error is FriendError => error instanceof FriendError;

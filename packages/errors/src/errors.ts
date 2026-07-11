@@ -184,6 +184,8 @@ export const ErrorCode = {
   FOLLOW_0908: 'FOLLOW_0908',
   FOLLOW_0909: 'FOLLOW_0909',
   FOLLOW_0910: 'FOLLOW_0910',
+  FOLLOW_0911: 'FOLLOW_0911',
+  FOLLOW_0912: 'FOLLOW_0912',
 
   // =========================================================================
   // 알림/푸시 (NOTIFICATION_1000-1099)
@@ -943,6 +945,18 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '이동할 위치의 친구를 찾을 수 없습니다.',
     description: '순서 변경 시 기준이 되는 팔로우 관계가 존재하지 않습니다.',
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.FOLLOW_0911]: {
+    code: 'FOLLOW_0911',
+    message: '검색어가 유효하지 않습니다.',
+    description: '검색어가 비어 있거나 정규화 후 유효하지 않습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.FOLLOW_0912]: {
+    code: 'FOLLOW_0912',
+    message: '유효하지 않은 검색 커서입니다.',
+    description: '페이지네이션 커서가 손상되었거나 형식이 올바르지 않습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 
   // =========================================================================

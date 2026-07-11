@@ -2102,6 +2102,87 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 		});
 	});
 
+	describe("자동 연동 트랜잭션 원자성", () => {
+		const atomicGoogleProfile: OAuthProfile = {
+			id: "google-atomic-456",
+			email: "atomic@example.com",
+			emailVerified: true,
+			name: "Atomic User",
+			picture: "https://example.com/atomic.jpg",
+		};
+
+		it("비복구 자동 연동 중 OAuth 계정 연동이 실패하면 세션을 발급하지 않고 에러를 전파한다", async () => {
+			// Given - 이메일 충돌 자동 연동 대상(활성·검증된 기존 사용자)
+			const existingUser = UserBuilder.create()
+				.withId("existing-atomic-1")
+				.withEmail("atomic@example.com")
+				.verified()
+				.build();
+
+			setupSuccessfulOAuthLogin(existingUser);
+			tokenVerifier.verifyGoogleToken.mockResolvedValue(atomicGoogleProfile);
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			userRepo.findByEmail.mockResolvedValue(existingUser);
+			uow.run.mockImplementation((work) => work());
+			// 연동(OAuth 계정 생성)이 트랜잭션 내에서 실패
+			accountRepo.createOAuthAccount.mockRejectedValue(
+				new Error("createOAuthAccount failed"),
+			);
+
+			// When & Then - 에러가 전파된다
+			await expect(
+				service.handleGoogleMobileLogin(
+					"valid-google-token",
+					undefined,
+					mockMetadata,
+				),
+			).rejects.toThrow("createOAuthAccount failed");
+
+			// 연동이 세션 생성과 하나의 트랜잭션으로 묶여 먼저 수행되므로,
+			// 연동 실패 시 세션은 발급되지 않는다(부분 커밋 없음).
+			expect(sessionService.createSessionWithTokens).not.toHaveBeenCalled();
+		});
+
+		it("복구 자동 연동 중 연동이 실패하면 커밋 후 프로필 캐시 무효화에 도달하지 않는다", async () => {
+			// Given - 유예 기간 내 탈퇴 사용자(복구 대상) + 이메일 충돌
+			const deletedUser = UserBuilder.create()
+				.withId("existing-atomic-2")
+				.withEmail("atomic-restore@example.com")
+				.verified()
+				.deleted() // deletedAt = now (유예 기간 이내 → 복구 대상)
+				.build();
+
+			setupSuccessfulOAuthLogin(deletedUser);
+			tokenVerifier.verifyGoogleToken.mockResolvedValue({
+				...atomicGoogleProfile,
+				email: "atomic-restore@example.com",
+			});
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			userRepo.findByEmail.mockResolvedValue(deletedUser);
+			// #restoreAndCreateSession이 role 조회용으로 findById 사용
+			userRepo.findById.mockResolvedValue(deletedUser);
+			asMock(userRepo.restore).mockResolvedValue(deletedUser);
+			uow.run.mockImplementation((work) => work());
+			// 트랜잭션 내부 연동 단계가 실패
+			accountRepo.createOAuthAccount.mockRejectedValue(
+				new Error("link failed in tx"),
+			);
+
+			// When & Then
+			await expect(
+				service.handleGoogleMobileLogin(
+					"valid-google-token",
+					undefined,
+					mockMetadata,
+				),
+			).rejects.toThrow("link failed in tx");
+
+			// 연동은 복구·세션과 같은 트랜잭션(커밋 전)에서 수행되므로,
+			// 실패 시 커밋 후 단계인 프로필 캐시 무효화에 도달하지 않는다(전체 롤백).
+			expect(cacheService.invalidateUserProfile).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("handleKakaoWebCallbackWithExchangeCode", () => {
 		describe("state가 DB에 없는 경우 (CSRF 보호)", () => {
 			it("state가 DB에 없으면 invalidCredentials를 throw해야 한다", async () => {
