@@ -55,12 +55,8 @@ import { maskEmail } from "@/shared/domain/utils/mask.util";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
-import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 import { SessionService } from "./session.service";
 import { VerificationService } from "./verification.service";
 
@@ -75,9 +71,6 @@ export class AuthService {
 		private readonly sessionRepository: SessionRepository,
 		private readonly loginAttemptRepository: LoginAttemptRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
-		private readonly userConsentRepository: UserConsentRepository,
-		private readonly userPreferenceRepository: UserPreferenceRepository,
-		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly passwordService: PasswordService,
 		private readonly sessionService: SessionService,
 		private readonly tokenService: TokenService,
@@ -85,6 +78,7 @@ export class AuthService {
 		private readonly cacheService: CacheService,
 		private readonly adminNotificationFacade: AdminNotificationFacade,
 		private readonly issueLoginUseCase: IssueLoginUseCase,
+		private readonly provisionUserUseCase: ProvisionUserUseCase,
 	) {}
 
 	async register(
@@ -119,52 +113,21 @@ export class AuthService {
 		};
 		try {
 			result = await this.database.$transaction(async (tx) => {
-				// User 생성 (PENDING_VERIFY 상태)
-				const newUser = await this.userRepository.create(
+				// User + 크레덴셜 계정 + 프로필 + 동의 + 푸시설정 + 기본 카테고리 프로비저닝
+				// (소셜 신규가입과 공유하는 수렴 시퀀스)
+				const currentTime = now();
+				const newUser = await this.provisionUserUseCase.execute(
 					{
 						email,
 						status: "PENDING_VERIFY",
+						account: { kind: "credential", hashedPassword },
+						profile: { name },
+						consent: {
+							termsAgreedAt: termsAgreed ? currentTime : undefined,
+							privacyAgreedAt: privacyAgreed ? currentTime : undefined,
+							marketingAgreedAt: marketingAgreed ? currentTime : undefined,
+						},
 					},
-					tx,
-				);
-
-				// Credential Account 생성
-				await this.accountRepository.createCredentialAccount(
-					newUser.id,
-					hashedPassword,
-					tx,
-				);
-
-				// 프로필 생성
-				await this.userRepository.createProfile(newUser.id, { name }, tx);
-
-				// 약관 동의 기록
-				const currentTime = now();
-				await this.userConsentRepository.create(
-					newUser.id,
-					{
-						termsAgreedAt: termsAgreed ? currentTime : undefined,
-						privacyAgreedAt: privacyAgreed ? currentTime : undefined,
-						marketingAgreedAt: marketingAgreed ? currentTime : undefined,
-					},
-					tx,
-				);
-
-				// 푸시 알림 설정 초기화 (기본값: 모두 ON)
-				await this.userPreferenceRepository.create(
-					newUser.id,
-					{ pushEnabled: true, nightPushEnabled: true },
-					tx,
-				);
-
-				// 기본 카테고리 생성 (온보딩 필수 데이터 — 트랜잭션 내 동기 처리)
-				await this.todoCategoryRepository.createMany(
-					DEFAULT_CATEGORIES.map((category) => ({
-						userId: newUser.id,
-						name: category.name,
-						color: category.color,
-						sortOrder: category.sortOrder,
-					})),
 					tx,
 				);
 

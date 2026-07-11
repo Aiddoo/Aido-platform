@@ -43,7 +43,13 @@ import {
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
+import { TodoCategoryRepository } from "@/todo-category";
+import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/user-settings";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 import { OAuthService } from "./oauth.service";
 import { SessionService } from "./session.service";
 
@@ -120,6 +126,30 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 		);
 		issueLogin.execute.mockImplementation((input, tx) =>
 			realIssueLogin.execute(input, tx),
+		);
+
+		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — 소셜 신규가입
+		// 테스트가 유저·OAuth계정·프로필·동의·설정·카테고리 시딩을 그대로 검증하도록 배선.
+		// 동의/설정/카테고리 저장소는 OAuthService 직접 의존이 아니므로 독립 mock으로 구성한다.
+		const provisionUser = unitRef.get(ProvisionUserUseCase);
+		const consentRepoStub = {
+			create: jest.fn(),
+		} as unknown as UserConsentRepository;
+		const preferenceRepoStub = {
+			create: jest.fn(),
+		} as unknown as UserPreferenceRepository;
+		const categoryRepoStub = {
+			createMany: jest.fn(),
+		} as unknown as TodoCategoryRepository;
+		const realProvisionUser = new ProvisionUserUseCase(
+			userRepo as unknown as UserRepository,
+			accountRepo as unknown as AccountRepository,
+			consentRepoStub,
+			preferenceRepoStub,
+			categoryRepoStub,
+		);
+		provisionUser.execute.mockImplementation((input, tx) =>
+			realProvisionUser.execute(input, tx),
 		);
 
 		// ConfigService 기본 설정

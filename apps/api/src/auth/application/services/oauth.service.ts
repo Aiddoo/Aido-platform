@@ -46,12 +46,8 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
-import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 
 /**
  * AccountProvider → 이벤트 페이로드 provider 매핑
@@ -82,10 +78,8 @@ export class OAuthService {
 		private readonly encryptionService: EncryptionService,
 		private readonly adminNotificationFacade: AdminNotificationFacade,
 		private readonly cacheService: CacheService,
-		private readonly userConsentRepository: UserConsentRepository,
-		private readonly userPreferenceRepository: UserPreferenceRepository,
-		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly issueLoginUseCase: IssueLoginUseCase,
+		private readonly provisionUserUseCase: ProvisionUserUseCase,
 		@Inject(OAUTH_IDENTITY_PROVIDER_REGISTRY)
 		private readonly registry: OAuthIdentityProviderRegistry,
 	) {}
@@ -715,63 +709,32 @@ export class OAuthService {
 		profileImage?: string;
 	}) {
 		return this.database.$transaction(async (tx) => {
-			const user = await this.userRepository.create(
-				{
-					email: data.email,
-					status: "ACTIVE",
-					emailVerifiedAt: now(),
-				},
-				tx,
-			);
-
-			await this.accountRepository.createOAuthAccount(
-				{
-					userId: user.id,
-					provider: data.provider,
-					providerAccountId: data.providerAccountId,
-					refreshToken: data.refreshToken,
-				},
-				tx,
-			);
-
 			const MAX_NAME_LENGTH = 20;
 			const effectiveName = data.userName
 				? data.userName.slice(0, MAX_NAME_LENGTH)
 				: generateRandomName();
-
-			await this.userRepository.createProfile(
-				user.id,
-				{ name: effectiveName, profileImage: data.profileImage },
-				tx,
-			);
-
 			const currentTime = now();
-			await this.userConsentRepository.create(
-				user.id,
-				{
-					termsAgreedAt: currentTime,
-					privacyAgreedAt: currentTime,
-					marketingAgreedAt: currentTime,
-				},
-				tx,
-			);
 
-			await this.userPreferenceRepository.create(
-				user.id,
+			// User + OAuth 계정 + 프로필 + 동의 + 푸시설정 + 기본 카테고리 프로비저닝
+			// (이메일 회원가입과 공유하는 수렴 시퀀스)
+			const user = await this.provisionUserUseCase.execute(
 				{
-					pushEnabled: true,
-					nightPushEnabled: true,
+					email: data.email,
+					status: "ACTIVE",
+					emailVerifiedAt: now(),
+					account: {
+						kind: "oauth",
+						provider: data.provider,
+						providerAccountId: data.providerAccountId,
+						refreshToken: data.refreshToken,
+					},
+					profile: { name: effectiveName, profileImage: data.profileImage },
+					consent: {
+						termsAgreedAt: currentTime,
+						privacyAgreedAt: currentTime,
+						marketingAgreedAt: currentTime,
+					},
 				},
-				tx,
-			);
-
-			await this.todoCategoryRepository.createMany(
-				DEFAULT_CATEGORIES.map((category) => ({
-					userId: user.id,
-					name: category.name,
-					color: category.color,
-					sortOrder: category.sortOrder,
-				})),
 				tx,
 			);
 

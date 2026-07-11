@@ -41,7 +41,13 @@ import {
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import { TodoCategoryRepository } from "@/todo-category";
+import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/user-settings";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 import { AuthService } from "./auth.service";
 import { SessionService } from "./session.service";
 import { VerificationService } from "./verification.service";
@@ -97,6 +103,30 @@ describe("AuthService — 인증 서비스", () => {
 		);
 		issueLogin.execute.mockImplementation((input, tx) =>
 			realIssueLogin.execute(input, tx),
+		);
+
+		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — register 테스트가
+		// 유저·계정·프로필·동의·설정·카테고리 시딩 호출을 그대로 검증하도록 배선.
+		// 동의/설정/카테고리 저장소는 AuthService 직접 의존이 아니므로 독립 mock으로 구성한다.
+		const provisionUser = unitRef.get(ProvisionUserUseCase);
+		const consentRepoStub = {
+			create: jest.fn(),
+		} as unknown as UserConsentRepository;
+		const preferenceRepoStub = {
+			create: jest.fn(),
+		} as unknown as UserPreferenceRepository;
+		const categoryRepoStub = {
+			createMany: jest.fn(),
+		} as unknown as TodoCategoryRepository;
+		const realProvisionUser = new ProvisionUserUseCase(
+			userRepo as unknown as UserRepository,
+			accountRepo as unknown as AccountRepository,
+			consentRepoStub,
+			preferenceRepoStub,
+			categoryRepoStub,
+		);
+		provisionUser.execute.mockImplementation((input, tx) =>
+			realProvisionUser.execute(input, tx),
 		);
 	});
 
