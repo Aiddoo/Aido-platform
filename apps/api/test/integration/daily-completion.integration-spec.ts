@@ -2,12 +2,12 @@
  * DailyCompletion 통합 테스트 (Testcontainers)
  *
  * @description
- * DailyCompletionFacade → QueryBus → 핸들러 → Prisma 어댑터가 실제 PostgreSQL DB와
+ * DailyCompletionFacade → use-case → Prisma 어댑터가 실제 PostgreSQL DB와
  * 함께 올바르게 작동하는지 검증합니다.
  * Testcontainers를 사용하여 독립적인 PostgreSQL 컨테이너에서 테스트합니다.
  *
  * 통합 테스트의 목적:
- * - Facade → QueryBus → 핸들러 → Prisma 어댑터 → PostgreSQL 전체 스택 검증
+ * - Facade → use-case → Prisma 어댑터 → PostgreSQL 전체 스택 검증
  * - 날짜별 Todo 집계 로직 검증
  * - 캘린더 데이터 조회 검증
  *
@@ -20,14 +20,13 @@
  * ```
  */
 
-import { CqrsModule } from "@nestjs/cqrs";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
 import { DailyCompletionFacade } from "@/daily-completion/application/facades/daily-completion.facade";
 import { TODO_COMPLETION_REPOSITORY } from "@/daily-completion/application/ports/todo-completion.repository.port";
-import { QueryHandlers } from "@/daily-completion/application/queries/handlers";
+import { DailyCompletionQueryUseCases } from "@/daily-completion/application/queries";
 import { PrismaTodoCompletionRepository } from "@/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -48,12 +47,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		testDb = new TestDatabase();
 		databaseService = (await testDb.start()) as DatabaseService;
 
-		// 클린아키 수직 배선: Facade → QueryBus → 핸들러 → Prisma 어댑터(실제 DB)
+		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(실제 DB)
 		module = await Test.createTestingModule({
-			imports: [CqrsModule.forRoot()],
 			providers: [
 				DailyCompletionFacade,
-				...QueryHandlers,
+				...DailyCompletionQueryUseCases,
 				{
 					provide: TODO_COMPLETION_REPOSITORY,
 					useClass: PrismaTodoCompletionRepository,

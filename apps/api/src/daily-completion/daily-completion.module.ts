@@ -1,8 +1,7 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 import { DailyCompletionFacade } from "./application/facades/daily-completion.facade";
 import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port";
-import { QueryHandlers } from "./application/queries/handlers";
+import { DailyCompletionQueryUseCases } from "./application/queries";
 import { PrismaTodoCompletionRepository } from "./infrastructure/adapters/prisma-todo-completion.repository";
 import { DailyCompletionController } from "./presentation/daily-completion.controller";
 
@@ -13,7 +12,6 @@ import { DailyCompletionController } from "./presentation/daily-completion.contr
  * 현재 어댑터는 Prisma groupBy로 DB 레벨 집계를 수행한다.
  */
 @Module({
-	imports: [CqrsModule],
 	controllers: [DailyCompletionController],
 	providers: [
 		DailyCompletionFacade,
@@ -21,7 +19,7 @@ import { DailyCompletionController } from "./presentation/daily-completion.contr
 			provide: TODO_COMPLETION_REPOSITORY,
 			useClass: PrismaTodoCompletionRepository,
 		},
-		...QueryHandlers,
+		...DailyCompletionQueryUseCases,
 	],
 })
 export class DailyCompletionModule {}

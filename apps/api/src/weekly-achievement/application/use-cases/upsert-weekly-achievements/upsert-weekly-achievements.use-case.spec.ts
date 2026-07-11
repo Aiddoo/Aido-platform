@@ -1,5 +1,5 @@
 /**
- * UpsertWeeklyAchievementsHandler 단위 테스트
+ * UpsertWeeklyAchievementsUseCase 단위 테스트
  *
  * 실제 DB 없이 저장소 포트를 스텁으로 대체해 빈 배열 단락·불변식 검증·위임을 확인한다.
  */
@@ -11,8 +11,7 @@ import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
 } from "../../ports/weekly-achievement.repository.port";
-import { UpsertWeeklyAchievementsCommand } from "./upsert-weekly-achievements.command";
-import { UpsertWeeklyAchievementsHandler } from "./upsert-weekly-achievements.handler";
+import { UpsertWeeklyAchievementsUseCase } from "./upsert-weekly-achievements.use-case";
 
 function record(
 	overrides: Partial<WeeklyAchievementUpsert> = {},
@@ -28,16 +27,16 @@ function record(
 	};
 }
 
-describe("UpsertWeeklyAchievementsHandler — 일괄 upsert 핸들러", () => {
-	let handler: UpsertWeeklyAchievementsHandler;
+describe("UpsertWeeklyAchievementsUseCase — 일괄 upsert use-case", () => {
+	let useCase: UpsertWeeklyAchievementsUseCase;
 	let repository: Mocked<WeeklyAchievementRepositoryPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
-			UpsertWeeklyAchievementsHandler,
+			UpsertWeeklyAchievementsUseCase,
 		).compile();
 
-		handler = unit;
+		useCase = unit;
 		repository = unitRef.get(WEEKLY_ACHIEVEMENT_REPOSITORY);
 	});
 
@@ -45,7 +44,7 @@ describe("UpsertWeeklyAchievementsHandler — 일괄 upsert 핸들러", () => {
 		// Given - 빈 레코드 배열
 
 		// When - upsert를 실행하면
-		await handler.execute(new UpsertWeeklyAchievementsCommand([]));
+		await useCase.execute({ records: [] });
 
 		// Then - 저장소 upsertMany가 호출되지 않는다
 		expect(repository.upsertMany).not.toHaveBeenCalled();
@@ -57,7 +56,7 @@ describe("UpsertWeeklyAchievementsHandler — 일괄 upsert 핸들러", () => {
 		const records = [record(), record({ userId: "user-2", week: 11 })];
 
 		// When - upsert를 실행하면
-		await handler.execute(new UpsertWeeklyAchievementsCommand(records));
+		await useCase.execute({ records });
 
 		// Then - 저장소에 그대로 위임된다
 		expect(repository.upsertMany).toHaveBeenCalledWith(records);
@@ -68,9 +67,9 @@ describe("UpsertWeeklyAchievementsHandler — 일괄 upsert 핸들러", () => {
 		const invalid = record({ totalTodos: 2, completedTodos: 5 });
 
 		// When/Then - SYS_0002 도메인 예외로 실패하고 저장소를 호출하지 않는다
-		await expect(
-			handler.execute(new UpsertWeeklyAchievementsCommand([invalid])),
-		).rejects.toMatchObject({ errorCode: "SYS_0002" });
+		await expect(useCase.execute({ records: [invalid] })).rejects.toMatchObject(
+			{ errorCode: "SYS_0002" },
+		);
 		expect(repository.upsertMany).not.toHaveBeenCalled();
 	});
 });

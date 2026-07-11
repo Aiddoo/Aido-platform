@@ -1,30 +1,37 @@
 import { ErrorCode } from "@aido/errors";
-import { Inject } from "@nestjs/common";
-import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import { Inject, Injectable } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
 	toWeeklyAchievementView,
+	type WeekLabelLocale,
 	type WeeklyAchievementView,
 } from "../../../domain/weekly-achievement";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
 } from "../../ports/weekly-achievement.repository.port";
-import { GetWeeklyAchievementQuery } from "../get-weekly-achievement.query";
 
-@QueryHandler(GetWeeklyAchievementQuery)
-export class GetWeeklyAchievementHandler
-	implements IQueryHandler<GetWeeklyAchievementQuery, WeeklyAchievementView>
-{
+export interface GetWeeklyAchievementInput {
+	userId: string;
+	year: number;
+	week: number;
+	locale: WeekLabelLocale;
+}
+
+/**
+ * 특정 연도/주차의 주간 달성 상세 조회 use-case (읽기 전용).
+ */
+@Injectable()
+export class GetWeeklyAchievementUseCase {
 	constructor(
 		@Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
 		private readonly repository: WeeklyAchievementRepositoryPort,
 	) {}
 
 	async execute(
-		query: GetWeeklyAchievementQuery,
+		input: GetWeeklyAchievementInput,
 	): Promise<WeeklyAchievementView> {
-		const { userId, year, week, locale } = query;
+		const { userId, year, week, locale } = input;
 
 		const row = await this.repository.findByYearAndWeek(userId, year, week);
 

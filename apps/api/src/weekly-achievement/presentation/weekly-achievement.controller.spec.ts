@@ -10,7 +10,7 @@ import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "../../auth/presentation/decorators";
 import { WeeklyAchievementFacade } from "../application/facades/weekly-achievement.facade";
-import type { WeeklyAchievementListView } from "../application/queries/get-weekly-achievements.query";
+import type { WeeklyAchievementListView } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
 import { WeeklyAchievementController } from "./weekly-achievement.controller";
 
 describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {

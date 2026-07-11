@@ -1,4 +1,4 @@
-import { UpsertWeeklyAchievementsHandler } from "./upsert-weekly-achievements/upsert-weekly-achievements.handler";
+import { UpsertWeeklyAchievementsUseCase } from "./upsert-weekly-achievements/upsert-weekly-achievements.use-case";
 
-/** 모듈 등록용 커맨드 핸들러 목록 */
-export const CommandHandlers = [UpsertWeeklyAchievementsHandler];
+/** 모듈 등록용 use-case 목록 */
+export const WeeklyAchievementUseCases = [UpsertWeeklyAchievementsUseCase];

@@ -2,13 +2,13 @@
  * WeeklyAchievement 통합 테스트 (Mock DB)
  *
  * @description
- * Facade → QueryBus → 핸들러 → Prisma 어댑터의 수직 배선이 PaginationService·
+ * Facade → use-case → Prisma 어댑터의 수직 배선이 PaginationService·
  * UnitOfWork와 함께 올바르게 작동하는지 검증합니다. 실제 DB 대신 모킹된
  * DatabaseService를 TransactionHost.tx로 주입합니다.
  *
  * 통합 테스트의 목적:
- * - NestJS 의존성 주입과 CQRS 버스 배선 검증
- * - Facade → 핸들러 → 어댑터 통합 검증
+ * - NestJS 의존성 주입과 use-case 배선 검증
+ * - Facade → use-case → 어댑터 통합 검증
  * - PaginationService 커서 페이지네이션 및 summary 계산 검증
  * - ApplicationException 에러 처리 검증
  *
@@ -18,7 +18,6 @@
  * ```
  */
 
-import { CqrsModule } from "@nestjs/cqrs";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
@@ -29,7 +28,8 @@ import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { WeeklyAchievementFacade } from "@/weekly-achievement/application/facades/weekly-achievement.facade";
 import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "@/weekly-achievement/application/ports/weekly-achievement.repository.port";
-import { QueryHandlers } from "@/weekly-achievement/application/queries/handlers";
+import { WeeklyAchievementQueryUseCases } from "@/weekly-achievement/application/queries";
+import { WeeklyAchievementUseCases } from "@/weekly-achievement/application/use-cases";
 import { PrismaWeeklyAchievementRepository } from "@/weekly-achievement/infrastructure/adapters/prisma-weekly-achievement.repository";
 
 describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
@@ -74,12 +74,12 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 	beforeAll(async () => {
 		suppressLogger();
 
-		// 클린아키 수직 배선: Facade → QueryBus → 핸들러 → Prisma 어댑터(mock DB)
+		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(mock DB)
 		module = await Test.createTestingModule({
-			imports: [CqrsModule.forRoot()],
 			providers: [
 				WeeklyAchievementFacade,
-				...QueryHandlers,
+				...WeeklyAchievementQueryUseCases,
+				...WeeklyAchievementUseCases,
 				PaginationService,
 				{
 					provide: WEEKLY_ACHIEVEMENT_REPOSITORY,

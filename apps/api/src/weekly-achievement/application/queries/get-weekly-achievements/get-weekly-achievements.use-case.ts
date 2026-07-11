@@ -1,5 +1,4 @@
-import { Inject } from "@nestjs/common";
-import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import { Inject, Injectable } from "@nestjs/common";
 import {
 	type CursorPaginationInfo,
 	PaginationService,
@@ -7,21 +6,35 @@ import {
 import {
 	computeSummary,
 	toWeeklyAchievementView,
+	type WeekLabelLocale,
+	type WeeklyAchievementSummary,
+	type WeeklyAchievementView,
 } from "../../../domain/weekly-achievement";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
 } from "../../ports/weekly-achievement.repository.port";
-import {
-	GetWeeklyAchievementsQuery,
-	type WeeklyAchievementListView,
-} from "../get-weekly-achievements.query";
 
-@QueryHandler(GetWeeklyAchievementsQuery)
-export class GetWeeklyAchievementsHandler
-	implements
-		IQueryHandler<GetWeeklyAchievementsQuery, WeeklyAchievementListView>
-{
+export interface GetWeeklyAchievementsInput {
+	userId: string;
+	year: number;
+	cursor: number | undefined;
+	size: number | undefined;
+	locale: WeekLabelLocale;
+}
+
+/** 주간 달성 목록 뷰 (아이템 + 커서 페이지네이션 + 연도 요약) */
+export interface WeeklyAchievementListView {
+	items: WeeklyAchievementView[];
+	pagination: CursorPaginationInfo<number>;
+	summary: WeeklyAchievementSummary;
+}
+
+/**
+ * 연도별 주간 달성 목록 조회 use-case (커서 페이지네이션 + summary, 읽기 전용).
+ */
+@Injectable()
+export class GetWeeklyAchievementsUseCase {
 	constructor(
 		@Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
 		private readonly repository: WeeklyAchievementRepositoryPort,
@@ -29,14 +42,14 @@ export class GetWeeklyAchievementsHandler
 	) {}
 
 	async execute(
-		query: GetWeeklyAchievementsQuery,
+		input: GetWeeklyAchievementsInput,
 	): Promise<WeeklyAchievementListView> {
-		const { userId, year, locale } = query;
+		const { userId, year, locale } = input;
 
 		const { cursor, size, take } =
 			this.paginationService.normalizeCursorPagination<number>({
-				cursor: query.cursor,
-				size: query.size,
+				cursor: input.cursor,
+				size: input.size,
 			});
 
 		// 페이지네이션 목록 + 연도 전체 기록(summary 계산용) 병렬 조회 (waterfall 제거)
