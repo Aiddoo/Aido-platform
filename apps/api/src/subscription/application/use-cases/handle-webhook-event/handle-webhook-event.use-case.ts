@@ -1,45 +1,47 @@
+import { ErrorCode } from "@aido/errors";
 import type {
 	RevenueCatEventType,
 	RevenueCatWebhookPayload,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
-import { NotificationQueueService } from "@/notification/queue";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { subtractMilliseconds } from "@/shared/domain/date/utils/arithmetic";
-import { isAfter, isSame } from "@/shared/domain/date/utils/compare";
 import { now } from "@/shared/domain/date/utils/core";
 import { toISOString } from "@/shared/domain/date/utils/format";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
 	type ILockProvider,
 	LOCK_PROVIDER,
 } from "@/shared/infrastructure/lock";
 
-import type { SubscriptionEventPayload } from "./events/subscription.events";
+import type { SubscriptionEventPayload } from "../../../domain/events/subscription-event.payload";
+import { resolveCancellationUserStatus } from "../../../domain/services/cancellation-user-status";
+import { TransactionId } from "../../../domain/value-objects/transaction-id.vo";
 import {
-	SubscriptionRepository,
+	SUBSCRIPTION_REPOSITORY,
+	type SubscriptionRepositoryPort,
 	type SubscriptionUser,
-} from "./subscription.repository";
+} from "../../ports/subscription.repository.port";
+import {
+	SUBSCRIPTION_CACHE,
+	type SubscriptionCachePort,
+} from "../../ports/subscription-cache.port";
+import {
+	SUBSCRIPTION_EVENT_NOTIFIER,
+	type SubscriptionEventNotifierPort,
+} from "../../ports/subscription-event-notifier.port";
 
-/**
- * 구독 서비스
- *
- * RevenueCat 웹훅 이벤트를 처리하여 구독 상태를 DB에 반영합니다.
- *
- * 플로우:
- * 1. Lock 획득 (중복 방지)
- * 2. 이벤트 타입별 DB 트랜잭션 처리
- * 3. 캐시 무효화
- * 4. 이벤트 발행 (Discord 알림 등)
- * 5. Lock 해제
- */
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 
+/**
+ * RevenueCat 웹훅 이벤트 처리 use-case.
+ *
+ * 플로우: Lock 획득 → 사용자 조회 → event.id 중복 체크 → 이벤트 타입별 트랜잭션 처리 →
+ * (DB 변경 시) 캐시 무효화 + 큐 잡 등록 → Lock 해제. 멱등성은 byte-identical하게 유지된다.
+ */
 @Injectable()
-export class SubscriptionService {
-	readonly #logger = new Logger(SubscriptionService.name);
+export class HandleWebhookEventUseCase {
+	readonly #logger = new Logger(HandleWebhookEventUseCase.name);
 
 	/** Lock TTL: 10초 */
 	static readonly LOCK_TTL = 10_000;
@@ -74,19 +76,18 @@ export class SubscriptionService {
 	]);
 
 	constructor(
-		private readonly subscriptionRepository: SubscriptionRepository,
+		@Inject(SUBSCRIPTION_REPOSITORY)
+		private readonly subscriptionRepository: SubscriptionRepositoryPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
-		private readonly cacheService: CacheService,
-		private readonly adminNotificationQueueService: AdminNotificationQueueService,
-		private readonly notificationQueueService: NotificationQueueService,
+		@Inject(SUBSCRIPTION_CACHE)
+		private readonly cache: SubscriptionCachePort,
+		@Inject(SUBSCRIPTION_EVENT_NOTIFIER)
+		private readonly notifier: SubscriptionEventNotifierPort,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
-	/**
-	 * RevenueCat 웹훅 이벤트 처리
-	 */
-	async handleWebhookEvent(payload: RevenueCatWebhookPayload): Promise<void> {
+	async execute(payload: RevenueCatWebhookPayload): Promise<void> {
 		const { event } = payload;
 		const appUserId = event.app_user_id;
 		const eventType = event.type;
@@ -98,14 +99,16 @@ export class SubscriptionService {
 		// 1. Lock 획득
 		const release = await this.lockProvider.acquire(
 			`webhook:revenuecat:${appUserId}`,
-			SubscriptionService.LOCK_TTL,
+			HandleWebhookEventUseCase.LOCK_TTL,
 		);
 
 		if (!release) {
 			this.#logger.warn(
 				`Lock contention for appUserId=${appUserId}, event=${eventType} — will retry via 429`,
 			);
-			throw BusinessExceptions.webhookLockContention(appUserId);
+			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1605, {
+				appUserId,
+			});
 		}
 
 		try {
@@ -113,7 +116,9 @@ export class SubscriptionService {
 				await this.subscriptionRepository.findUserByAppUserId(appUserId);
 
 			if (!user) {
-				throw BusinessExceptions.subscriptionUserNotFound(appUserId);
+				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
+					appUserId,
+				});
 			}
 
 			// 2. event.id 기반 중복 체크 (event.id가 있고, 기존 구독이 있는 경우)
@@ -124,7 +129,7 @@ export class SubscriptionService {
 				if (transactionId) {
 					const existing =
 						await this.subscriptionRepository.findByRevenueCatId(transactionId);
-					if (existing?.lastProcessedEventId === eventId) {
+					if (existing?.wasProcessedWith(eventId)) {
 						this.#logger.log(
 							`Duplicate event detected: eventId=${eventId}, transactionId=${transactionId} — skipping`,
 						);
@@ -152,19 +157,12 @@ export class SubscriptionService {
 
 			// 5. 캐시 무효화 + 큐 잡 등록 (DB 변경이 있었을 때만)
 			if (eventPayload) {
-				await Promise.all([
-					this.cacheService.invalidateSubscription(user.id),
-					this.cacheService.invalidateUserProfile(user.id),
-				]);
+				await this.cache.invalidate(user.id);
 
-				this.adminNotificationQueueService.enqueueSubscriptionEvent(
-					eventPayload,
-				);
+				this.notifier.notifySubscriptionEvent(eventPayload);
 
 				if (eventType === "BILLING_ISSUE") {
-					this.notificationQueueService.enqueueBillingIssue({
-						userId: user.id,
-					});
+					this.notifier.notifyBillingIssue(user.id);
 				}
 
 				this.#logger.log(
@@ -190,13 +188,13 @@ export class SubscriptionService {
 		const transactionId = this.#resolveTransactionId(event);
 
 		if (!event.purchased_at_ms) {
-			throw BusinessExceptions.webhookProcessingFailed({
+			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 				reason: "Missing purchased_at_ms for INITIAL_PURCHASE",
 				eventType: event.type,
 			});
 		}
 		if (!event.expiration_at_ms) {
-			throw BusinessExceptions.webhookProcessingFailed({
+			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 				reason: "Missing expiration_at_ms for INITIAL_PURCHASE",
 				eventType: event.type,
 			});
@@ -270,7 +268,7 @@ export class SubscriptionService {
 		const transactionId = this.#resolveTransactionId(event);
 
 		if (!event.expiration_at_ms) {
-			throw BusinessExceptions.webhookProcessingFailed({
+			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 				reason: "Missing expiration_at_ms for RENEWAL",
 				eventType: event.type,
 			});
@@ -283,15 +281,12 @@ export class SubscriptionService {
 			const existing =
 				await this.subscriptionRepository.findByRevenueCatId(transactionId);
 			if (!existing) {
-				throw BusinessExceptions.webhookProcessingFailed({
+				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 					reason: `Subscription not found for RENEWAL: ${transactionId}`,
 					eventType: event.type,
 				});
 			}
-			if (
-				existing.status === "ACTIVE" &&
-				isSame(existing.expiresAt, expiresAt)
-			) {
+			if (existing.isActiveWithSameExpiry(expiresAt)) {
 				this.#logger.log(
 					`Already renewed with same expiresAt, skipping: transactionId=${transactionId}`,
 				);
@@ -379,13 +374,8 @@ export class SubscriptionService {
 					},
 				);
 			} else {
-				// 일반 취소: 만료일까지 ACTIVE 유지
-				// 60초 grace period로 clock skew 대응
-				const gracePeriodMs = 60_000;
-				const userStatus =
-					expiresAt && isAfter(expiresAt, subtractMilliseconds(gracePeriodMs))
-						? "ACTIVE"
-						: "CANCELLED";
+				// 일반 취소: 만료일까지 ACTIVE 유지 (60초 grace period로 clock skew 대응)
+				const userStatus = resolveCancellationUserStatus(expiresAt);
 
 				await this.subscriptionRepository.updateUserSubscriptionStatus(
 					user.id,
@@ -629,7 +619,9 @@ export class SubscriptionService {
 				await this.subscriptionRepository.findUserByAppUserId(newAppUserId);
 
 			// 이미 올바른 매핑이면 skip (idempotency)
-			if (existingUser?.id === user.id) return;
+			if (existingUser?.id === user.id) {
+				return;
+			}
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
 				subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
@@ -658,13 +650,10 @@ export class SubscriptionService {
 	 * 둘 다 없으면 webhook 처리 실패로 간주합니다.
 	 */
 	#resolveTransactionId(event: RevenueCatEvent): string {
-		const transactionId = event.original_transaction_id ?? event.transaction_id;
-		if (!transactionId) {
-			throw BusinessExceptions.webhookProcessingFailed({
-				reason: "Missing transaction_id and original_transaction_id",
-				eventType: event.type,
-			});
-		}
-		return transactionId;
+		return TransactionId.resolve(
+			event.original_transaction_id,
+			event.transaction_id,
+			event.type,
+		).value;
 	}
 }

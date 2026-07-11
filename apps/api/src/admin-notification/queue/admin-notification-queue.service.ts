@@ -2,7 +2,7 @@ import type { RevenueCatEventType } from "@aido/validators";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger } from "@nestjs/common";
 import type { Queue } from "bullmq";
-import type { SubscriptionEventPayload } from "@/subscription/events/subscription.events";
+import type { SubscriptionEventPayload } from "@/subscription";
 import type { UserRegisteredEventPayload } from "../events/admin-notification.events";
 import {
 	DEFAULT_META,

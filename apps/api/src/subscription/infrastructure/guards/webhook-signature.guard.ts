@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { ErrorCode } from "@aido/errors";
 import {
 	CanActivate,
 	ExecutionContext,
@@ -6,7 +7,8 @@ import {
 	Logger,
 } from "@nestjs/common";
 import type { Request } from "express";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 /**
@@ -34,7 +36,7 @@ export class WebhookSignatureGuard implements CanActivate {
 				this.#logger.error(
 					"REVENUECAT_WEBHOOK_SECRET not configured in production",
 				);
-				throw BusinessExceptions.webhookSignatureInvalid();
+				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
 			}
 			this.#logger.warn(
 				"REVENUECAT_WEBHOOK_SECRET not configured, skipping signature verification",
@@ -45,7 +47,7 @@ export class WebhookSignatureGuard implements CanActivate {
 		const authHeader = request.headers.authorization;
 		if (!authHeader) {
 			this.#logger.warn("Missing Authorization header");
-			throw BusinessExceptions.webhookSignatureInvalid();
+			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
 		}
 
 		// Bearer prefix 포함/미포함 모두 지원 (RevenueCat은 설정값을 그대로 전송)
@@ -62,7 +64,7 @@ export class WebhookSignatureGuard implements CanActivate {
 
 		if (!isValid) {
 			this.#logger.warn("Webhook signature verification failed");
-			throw BusinessExceptions.webhookSignatureInvalid();
+			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
 		}
 
 		return true;

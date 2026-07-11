@@ -64,6 +64,9 @@ const TARGET_DIRS = [
 	"src/ai-suggestion/domain",
 	"src/ai-suggestion/application",
 	"src/ai-suggestion/infrastructure",
+	"src/subscription/domain",
+	"src/subscription/application",
+	"src/subscription/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

@@ -14,7 +14,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { flushPromises } from "@test/mocks";
 import type { Queue } from "bullmq";
-import type { SubscriptionEventPayload } from "@/subscription/events/subscription.events";
+import type { SubscriptionEventPayload } from "@/subscription";
 import type { UserRegisteredEventPayload } from "../events/admin-notification.events";
 import {
 	ADMIN_NOTIFICATION_QUEUE,

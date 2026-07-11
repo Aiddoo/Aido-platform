@@ -19,6 +19,7 @@ jest.mock("@sentry/nestjs", () => ({
 	),
 }));
 
+import { ErrorCode } from "@aido/errors";
 import * as Sentry from "@sentry/nestjs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -26,13 +27,14 @@ import { SubscriptionEventBuilder } from "@test/builders";
 import type { Request } from "express";
 
 import { PAYMENT_NOTIFIER } from "@/admin-notification/providers/admin-notifier.interface";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
+import { SubscriptionFacade } from "../application/facades/subscription.facade";
 import { SubscriptionController } from "./subscription.controller";
-import { SubscriptionService } from "./subscription.service";
 
 describe("SubscriptionController — 구독 컨트롤러", () => {
 	let controller: SubscriptionController;
-	let mockService: Mocked<SubscriptionService>;
+	let mockFacade: Mocked<SubscriptionFacade>;
 	let mockNotifier: { send: jest.Mock; name: string; isConfigured: jest.Mock };
 
 	beforeEach(async () => {
@@ -48,7 +50,7 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 			.compile();
 
 		controller = unit;
-		mockService = unitRef.get(SubscriptionService);
+		mockFacade = unitRef.get(SubscriptionFacade);
 	});
 
 	describe("handleRevenueCatWebhook", () => {
@@ -61,13 +63,13 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 		it("유효한 payload → 서비스 호출 + { received: true } 반환", async () => {
 			// Given
 			const request = { body: validPayload } as unknown as Request;
-			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+			mockFacade.handleWebhookEvent.mockResolvedValue(undefined);
 
 			// When
 			const result = await controller.handleRevenueCatWebhook(request);
 
 			// Then
-			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(mockFacade.handleWebhookEvent).toHaveBeenCalledTimes(1);
 			expect(result).toEqual({ received: true });
 		});
 
@@ -80,15 +82,31 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 			const result = await controller.handleRevenueCatWebhook(request);
 
 			// Then
-			expect(mockService.handleWebhookEvent).not.toHaveBeenCalled();
+			expect(mockFacade.handleWebhookEvent).not.toHaveBeenCalled();
 			expect(result).toEqual({ received: true });
+		});
+
+		it("Lock 경합 (SUBSCRIPTION_1605) → 재던짐 (429 유도), Sentry 미캡처", async () => {
+			// Given
+			const request = { body: validPayload } as unknown as Request;
+			const lockError = new ApplicationException(ErrorCode.SUBSCRIPTION_1605, {
+				appUserId: "user-123",
+			});
+			mockFacade.handleWebhookEvent.mockRejectedValue(lockError);
+
+			// When & Then — 그대로 재던져 GlobalExceptionFilter가 429 처리
+			await expect(controller.handleRevenueCatWebhook(request)).rejects.toBe(
+				lockError,
+			);
+			expect(Sentry.captureException).not.toHaveBeenCalled();
+			expect(mockNotifier.send).not.toHaveBeenCalled();
 		});
 
 		it("서비스 에러 → Sentry 캡처 (결제 context 포함) + Discord 알림 + { received: true }", async () => {
 			// Given
 			const request = { body: validPayload } as unknown as Request;
 			const error = new Error("Processing failed");
-			mockService.handleWebhookEvent.mockRejectedValue(error);
+			mockFacade.handleWebhookEvent.mockRejectedValue(error);
 			const mockScope = { setTag: jest.fn(), setExtra: jest.fn() };
 			(Sentry.withScope as jest.Mock).mockImplementation((cb) => cb(mockScope));
 
@@ -133,13 +151,13 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 		it("서비스 정상 처리 후 { received: true } 반환 확인", async () => {
 			// Given
 			const request = { body: validPayload } as unknown as Request;
-			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+			mockFacade.handleWebhookEvent.mockResolvedValue(undefined);
 
 			// When
 			const result = await controller.handleRevenueCatWebhook(request);
 
 			// Then
-			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(mockFacade.handleWebhookEvent).toHaveBeenCalledTimes(1);
 			expect(result).toEqual({ received: true });
 			expect(Sentry.captureException).not.toHaveBeenCalled();
 		});
@@ -152,7 +170,7 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 			const result = await controller.handleRevenueCatWebhook(request);
 
 			// Then
-			expect(mockService.handleWebhookEvent).not.toHaveBeenCalled();
+			expect(mockFacade.handleWebhookEvent).not.toHaveBeenCalled();
 			expect(result).toEqual({ received: true });
 		});
 
@@ -164,13 +182,13 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 				.withAppUserId("user-123")
 				.build();
 			const request = { body: unknownEventPayload } as unknown as Request;
-			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+			mockFacade.handleWebhookEvent.mockResolvedValue(undefined);
 
 			// When
 			const result = await controller.handleRevenueCatWebhook(request);
 
 			// Then
-			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(mockFacade.handleWebhookEvent).toHaveBeenCalledTimes(1);
 			expect(result).toEqual({ received: true });
 		});
 
@@ -181,26 +199,26 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 				.withStore("ROKU")
 				.build();
 			const request = { body: payload } as unknown as Request;
-			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+			mockFacade.handleWebhookEvent.mockResolvedValue(undefined);
 
 			// When
 			const result = await controller.handleRevenueCatWebhook(request);
 
 			// Then
-			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(mockFacade.handleWebhookEvent).toHaveBeenCalledTimes(1);
 			expect(result).toEqual({ received: true });
 		});
 
 		it("서비스 호출 시 Zod 파싱된 데이터가 전달된다", async () => {
 			// Given
 			const request = { body: validPayload } as unknown as Request;
-			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+			mockFacade.handleWebhookEvent.mockResolvedValue(undefined);
 
 			// When
 			await controller.handleRevenueCatWebhook(request);
 
 			// Then
-			expect(mockService.handleWebhookEvent).toHaveBeenCalledWith(
+			expect(mockFacade.handleWebhookEvent).toHaveBeenCalledWith(
 				expect.objectContaining({
 					event: expect.objectContaining({
 						type: "INITIAL_PURCHASE",
@@ -214,7 +232,7 @@ describe("SubscriptionController — 구독 컨트롤러", () => {
 		it("Discord 알림 실패해도 webhook 응답에 영향 없다", async () => {
 			// Given
 			const request = { body: validPayload } as unknown as Request;
-			mockService.handleWebhookEvent.mockRejectedValue(
+			mockFacade.handleWebhookEvent.mockRejectedValue(
 				new Error("Processing failed"),
 			);
 			mockNotifier.send.mockRejectedValue(new Error("Discord down"));

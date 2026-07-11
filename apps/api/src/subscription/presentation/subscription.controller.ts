@@ -22,10 +22,10 @@ import {
 	PAYMENT_NOTIFIER,
 } from "@/admin-notification/providers/admin-notifier.interface";
 import { Public } from "@/auth/decorators/public.decorator";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import { WebhookSignatureGuard } from "./guards/webhook-signature.guard";
-import { SubscriptionService } from "./subscription.service";
+import { SubscriptionFacade } from "../application/facades/subscription.facade";
+import { WebhookSignatureGuard } from "../infrastructure/guards/webhook-signature.guard";
 
 /**
  * RevenueCat Webhook 컨트롤러
@@ -43,7 +43,7 @@ export class SubscriptionController {
 	readonly #logger = new Logger(SubscriptionController.name);
 
 	constructor(
-		private readonly subscriptionService: SubscriptionService,
+		private readonly subscriptionFacade: SubscriptionFacade,
 		@Inject(PAYMENT_NOTIFIER)
 		private readonly paymentNotifier: AdminNotifier,
 	) {}
@@ -68,12 +68,12 @@ export class SubscriptionController {
 
 		// 2. 서비스 호출 (에러가 발생해도 항상 200 OK 반환)
 		try {
-			await this.subscriptionService.handleWebhookEvent(parseResult.data);
+			await this.subscriptionFacade.handleWebhookEvent(parseResult.data);
 		} catch (error) {
 			// Lock 경합 → 429 반환 (RevenueCat 재시도 유도)
 			// SUBSCRIPTION_1605는 httpStatus=429이므로 GlobalExceptionFilter가 그대로 처리
 			if (
-				error instanceof BusinessException &&
+				error instanceof ApplicationException &&
 				error.errorCode === ErrorCode.SUBSCRIPTION_1605
 			) {
 				this.#logger.warn(`Lock contention, returning 429: ${error.message}`);
