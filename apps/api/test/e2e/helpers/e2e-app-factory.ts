@@ -31,12 +31,12 @@ import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { SuggestionAnalysisJob } from "@/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
 import { SuggestionAnalysisProcessor } from "@/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
 import { AppModule } from "@/app.module";
-import { AccountPurgeJob } from "@/auth/jobs/account-purge.job";
+import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import {
 	ACCOUNT_PURGE_QUEUE,
 	AccountPurgeProcessor,
-} from "@/auth/processors/account-purge.processor";
-import { OAuthTokenVerifierService } from "@/auth/services/oauth-token-verifier.service";
+} from "@/auth/infrastructure/queue/account-purge.processor";
+import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import { EmailFacade } from "@/email";
 import {
 	NOTIFICATION_QUEUE,

@@ -5,7 +5,7 @@
  * E2E 테스트에서 OAuth 로그인 플로우를 테스트할 때 사용합니다.
  */
 
-import type { VerifiedProfile } from "@/auth/services/oauth-token-verifier.service";
+import type { VerifiedProfile } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 
 /**

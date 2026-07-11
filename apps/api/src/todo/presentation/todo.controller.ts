@@ -28,7 +28,10 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
-import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+} from "../../auth/presentation/decorators";
 import { TodoFacade } from "../application/facades/todo.facade";
 import {
 	ChangeTodoCategoryDto,

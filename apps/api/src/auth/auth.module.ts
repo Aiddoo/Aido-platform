@@ -11,27 +11,6 @@ import {
 	UserPreferenceRepository,
 } from "@/user-settings";
 import {
-	AccountController,
-	AuthController,
-	OAuthController,
-	SessionController,
-} from "./controllers";
-import { JwtAuthGuard, JwtRefreshGuard } from "./guards";
-import { AccountPurgeJob } from "./jobs/account-purge.job";
-import {
-	ACCOUNT_PURGE_QUEUE,
-	AccountPurgeProcessor,
-} from "./processors/account-purge.processor";
-import {
-	AccountRepository,
-	LoginAttemptRepository,
-	OAuthStateRepository,
-	SecurityLogRepository,
-	SessionRepository,
-	UserRepository,
-	VerificationRepository,
-} from "./repositories";
-import {
 	AuthService,
 	OAuthService,
 	OAuthTokenVerifierService,
@@ -40,8 +19,29 @@ import {
 	SessionService,
 	TokenService,
 	VerificationService,
-} from "./services";
-import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
+} from "./application/services";
+import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards";
+import {
+	AccountRepository,
+	LoginAttemptRepository,
+	OAuthStateRepository,
+	SecurityLogRepository,
+	SessionRepository,
+	UserRepository,
+	VerificationRepository,
+} from "./infrastructure/persistence";
+import {
+	ACCOUNT_PURGE_QUEUE,
+	AccountPurgeProcessor,
+} from "./infrastructure/queue/account-purge.processor";
+import { AccountPurgeJob } from "./infrastructure/scheduler/account-purge.job";
+import { JwtRefreshStrategy, JwtStrategy } from "./infrastructure/strategies";
+import {
+	AccountController,
+	AuthController,
+	OAuthController,
+	SessionController,
+} from "./presentation/controllers";
 
 /**
  * 인증 모듈

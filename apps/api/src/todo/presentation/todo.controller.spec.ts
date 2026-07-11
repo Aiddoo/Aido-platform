@@ -16,7 +16,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 
-import type { CurrentUserPayload } from "@/auth/decorators";
+import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
 import { TodoFacade } from "../application/facades/todo.facade";
 import { TodoMapper } from "../infrastructure/persistence/todo-response.mapper";

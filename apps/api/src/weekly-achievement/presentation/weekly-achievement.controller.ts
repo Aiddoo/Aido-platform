@@ -16,7 +16,10 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+} from "../../auth/presentation/decorators";
 import { WeeklyAchievementFacade } from "../application/facades/weekly-achievement.facade";
 
 import {

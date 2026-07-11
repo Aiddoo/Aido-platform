@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { UserRepository } from "../../../auth/repositories/user.repository";
+import { UserRepository } from "../../../auth/infrastructure/persistence/user.repository";
 import type {
 	AiUsageRepositoryPort,
 	AiUsageSnapshot,

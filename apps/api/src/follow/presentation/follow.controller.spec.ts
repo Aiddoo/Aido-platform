@@ -5,7 +5,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "@/auth/decorators";
+import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import { FollowFacade } from "../application/facades/follow.facade";
 import type { FollowWithUser } from "../application/ports/follow.repository.port";
 import { Friendship } from "../domain/entities/friendship.entity";

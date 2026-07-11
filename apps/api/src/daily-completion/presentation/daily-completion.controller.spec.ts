@@ -7,7 +7,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "@/auth/decorators";
+import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
 import { DailyCompletionFacade } from "../application/facades/daily-completion.facade";
 import type { DailyCompletionsRange } from "../domain/daily-completion";

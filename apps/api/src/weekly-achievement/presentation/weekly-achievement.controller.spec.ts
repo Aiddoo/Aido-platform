@@ -8,7 +8,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "../../auth/decorators";
+import type { CurrentUserPayload } from "../../auth/presentation/decorators";
 import { WeeklyAchievementFacade } from "../application/facades/weekly-achievement.facade";
 import type { WeeklyAchievementListView } from "../application/queries/get-weekly-achievements.query";
 import { WeeklyAchievementController } from "./weekly-achievement.controller";

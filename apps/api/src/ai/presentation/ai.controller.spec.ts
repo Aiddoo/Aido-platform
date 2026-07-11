@@ -13,7 +13,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "../../auth/decorators";
+import type { CurrentUserPayload } from "../../auth/presentation/decorators";
 
 import { AiFacade } from "../application/facades/ai.facade";
 import { AiUsage } from "../domain/value-objects/ai-usage.vo";

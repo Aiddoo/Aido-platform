@@ -22,8 +22,8 @@
 
 import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AuthService } from "@/auth/services/auth.service";
-import { PasswordManagementService } from "@/auth/services/password-management.service";
+import { AuthService } from "@/auth/application/services/auth.service";
+import { PasswordManagementService } from "@/auth/application/services/password-management.service";
 import { BusinessException } from "@/shared/application/exceptions";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { FakeEmailService } from "../mocks/fake-email.service";

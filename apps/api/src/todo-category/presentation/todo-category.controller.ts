@@ -26,7 +26,10 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+} from "../../auth/presentation/decorators";
 import { TodoCategoryFacade } from "../application/facades/todo-category.facade";
 import {
 	CreateTodoCategoryDto,

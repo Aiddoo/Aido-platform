@@ -3,7 +3,7 @@ import { Controller, Get, Logger } from "@nestjs/common";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
-import { Public } from "@/auth/decorators/public.decorator";
+import { Public } from "@/auth/presentation/decorators/public.decorator";
 import { ApiDoc, SWAGGER_TAGS } from "@/shared/presentation/swagger";
 import { BullHealthIndicator } from "./indicators/bull.health";
 import { DatabaseHealthIndicator } from "./indicators/database.health";

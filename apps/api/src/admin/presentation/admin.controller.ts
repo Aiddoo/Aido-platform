@@ -15,7 +15,7 @@ import {
 	Admin,
 	CurrentUser,
 	type CurrentUserPayload,
-} from "../../auth/decorators";
+} from "../../auth/presentation/decorators";
 import { AdminFacade } from "../application/facades/admin.facade";
 import {
 	BroadcastNotificationDto,

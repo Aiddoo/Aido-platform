@@ -7,7 +7,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "@/auth/decorators";
+import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
 import { AdminFacade } from "../application/facades/admin.facade";
 import { AdminController } from "./admin.controller";

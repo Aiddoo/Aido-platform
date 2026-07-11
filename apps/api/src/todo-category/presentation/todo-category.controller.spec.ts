@@ -1,7 +1,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "@/auth/decorators";
+import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import { TodoCategoryFacade } from "../application/facades/todo-category.facade";
 import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port";
 import { TodoCategory } from "../domain/entities/todo-category.entity";

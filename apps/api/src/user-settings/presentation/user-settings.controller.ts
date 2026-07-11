@@ -8,7 +8,10 @@ import {
 	Patch,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { CurrentUser, type CurrentUserPayload } from "@/auth/decorators";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+} from "@/auth/presentation/decorators";
 import {
 	ApiBadRequestError,
 	ApiDoc,

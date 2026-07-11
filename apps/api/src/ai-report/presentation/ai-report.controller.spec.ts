@@ -10,7 +10,7 @@ import type { AiReport as AiReportDto, ReportStatus } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "@/auth/decorators";
+import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import { AiReportFacade } from "../application/facades/ai-report.facade";
 import { AiReportController } from "./ai-report.controller";
 

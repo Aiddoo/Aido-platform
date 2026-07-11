@@ -10,7 +10,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { UserLocationBuilder } from "@test/builders";
-import type { CurrentUserPayload } from "../../auth/decorators";
+import type { CurrentUserPayload } from "../../auth/presentation/decorators";
 import { WeatherFacade } from "../application/facades/weather.facade";
 import type { WeatherConditions } from "../application/ports/weather-provider.port";
 import { UserLocation } from "../domain/entities/user-location.entity";

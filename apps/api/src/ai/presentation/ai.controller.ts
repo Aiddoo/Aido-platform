@@ -20,7 +20,10 @@ import {
 	ApiUnprocessableError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
-import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+} from "../../auth/presentation/decorators";
 
 import { AiFacade } from "../application/facades/ai.facade";
 import { AiUsageGuard } from "../infrastructure/guards/ai-usage.guard";
