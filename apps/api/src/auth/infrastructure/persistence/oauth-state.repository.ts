@@ -1,12 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { Injectable } from "@nestjs/common";
+import type { OAuthMode } from "@/auth/application/ports/oauth-identity-provider.port";
 import type { AccountProvider, OAuthState } from "@/generated/prisma/client";
 import { addMinutes } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 
-export type OAuthMode = "login" | "link";
+export type { OAuthMode };
 
 /**
  * OAuth State Repository

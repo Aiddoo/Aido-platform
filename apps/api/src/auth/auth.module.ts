@@ -1,15 +1,21 @@
 import { BullModule } from "@nestjs/bullmq";
-import { Module } from "@nestjs/common";
+import { Logger, Module } from "@nestjs/common";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { AdminNotificationModule } from "@/admin-notification/admin-notification.module";
 import { EmailModule } from "@/email/email.module";
+import type { AccountProvider } from "@/generated/prisma/client";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { TodoCategoryRepository } from "@/todo-category";
 import {
 	UserConsentRepository,
 	UserPreferenceRepository,
 } from "@/user-settings";
+import {
+	OAUTH_IDENTITY_PROVIDER_REGISTRY,
+	type OAuthIdentityProvider,
+	type OAuthIdentityProviderRegistry,
+} from "./application/ports/oauth-identity-provider.port";
 import {
 	AuthService,
 	OAuthService,
@@ -21,6 +27,12 @@ import {
 	VerificationService,
 } from "./application/services";
 import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards";
+import {
+	AppleOAuthProvider,
+	GoogleOAuthProvider,
+	KakaoOAuthProvider,
+	NaverOAuthProvider,
+} from "./infrastructure/oauth/adapters";
 import {
 	AccountRepository,
 	LoginAttemptRepository,
@@ -91,6 +103,44 @@ import {
 		AuthService,
 		PasswordManagementService,
 		OAuthService,
+		// OAuth 신원 제공자 레지스트리 (provider → 벤더 어댑터 Map)
+		{
+			provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
+			inject: [TypedConfigService, OAuthTokenVerifierService],
+			useFactory: (
+				configService: TypedConfigService,
+				tokenVerifier: OAuthTokenVerifierService,
+			): OAuthIdentityProviderRegistry => {
+				const logger = new Logger("OAuthIdentityProvider");
+				return new Map<AccountProvider, OAuthIdentityProvider>([
+					["APPLE", new AppleOAuthProvider(tokenVerifier)],
+					[
+						"GOOGLE",
+						new GoogleOAuthProvider(
+							() => configService.googleOAuth,
+							tokenVerifier,
+							logger,
+						),
+					],
+					[
+						"KAKAO",
+						new KakaoOAuthProvider(
+							() => configService.kakaoOAuth,
+							tokenVerifier,
+							logger,
+						),
+					],
+					[
+						"NAVER",
+						new NaverOAuthProvider(
+							() => configService.naverOAuth,
+							tokenVerifier,
+							logger,
+						),
+					],
+				]);
+			},
+		},
 		// Strategies
 		JwtStrategy,
 		JwtRefreshStrategy,

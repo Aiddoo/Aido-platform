@@ -9,22 +9,33 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
+import { Logger } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
 import { type TransactionCallback } from "@test/mocks";
 import { AdminNotificationFacade } from "@/admin-notification";
 import {
+	OAUTH_IDENTITY_PROVIDER_REGISTRY,
+	type OAuthIdentityProvider,
+} from "@/auth/application/ports/oauth-identity-provider.port";
+import {
 	LOGIN_FAILURE_REASON,
 	SECURITY_EVENT,
 } from "@/auth/domain/constants/auth.constants";
+import {
+	AppleOAuthProvider,
+	GoogleOAuthProvider,
+	KakaoOAuthProvider,
+	NaverOAuthProvider,
+} from "@/auth/infrastructure/oauth/adapters";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
 import { OAuthStateRepository } from "@/auth/infrastructure/persistence/oauth-state.repository";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { Prisma } from "@/generated/prisma/client";
+import { type AccountProvider, Prisma } from "@/generated/prisma/client";
 import {
 	BusinessException,
 	BusinessExceptions,
@@ -89,13 +100,59 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
 		oauthStateRepo = unitRef.get(OAuthStateRepository);
 		sessionService = unitRef.get(SessionService);
-		tokenVerifier = unitRef.get(OAuthTokenVerifierService);
 		configService = unitRef.get(TypedConfigService);
 		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
 		cacheService = unitRef.get(CacheService);
 
 		// ConfigService 기본 설정
 		setupDefaultConfigService();
+
+		// OAuth 신원 제공자 레지스트리: 실제 어댑터를 mock 검증기·configService에 배선
+		// (프로덕션 auth.module의 useFactory와 동일 구성을 spec으로 재현 —
+		//  OAuthService는 이제 검증기를 직접 주입받지 않고 registry.get으로 전략을 얻는다)
+		tokenVerifier = {
+			verifyToken: jest.fn(),
+			verifyAppleToken: jest.fn(),
+			verifyGoogleToken: jest.fn(),
+			verifyKakaoToken: jest.fn(),
+			verifyNaverToken: jest.fn(),
+		} as unknown as Mocked<OAuthTokenVerifierService>;
+
+		const logger = new Logger(OAuthService.name);
+		const verifier = tokenVerifier as unknown as OAuthTokenVerifierService;
+		const realProviders = new Map<AccountProvider, OAuthIdentityProvider>([
+			["APPLE", new AppleOAuthProvider(verifier)],
+			[
+				"GOOGLE",
+				new GoogleOAuthProvider(
+					() => configService.googleOAuth,
+					verifier,
+					logger,
+				),
+			],
+			[
+				"KAKAO",
+				new KakaoOAuthProvider(
+					() => configService.kakaoOAuth,
+					verifier,
+					logger,
+				),
+			],
+			[
+				"NAVER",
+				new NaverOAuthProvider(
+					() => configService.naverOAuth,
+					verifier,
+					logger,
+				),
+			],
+		]);
+		const registry = unitRef.get(OAUTH_IDENTITY_PROVIDER_REGISTRY);
+		(
+			registry as unknown as {
+				get: (p: AccountProvider) => OAuthIdentityProvider | undefined;
+			}
+		).get = (p) => realProviders.get(p);
 	});
 
 	/**

@@ -1,15 +1,15 @@
 import type { Logger } from "@nestjs/common";
 import type {
+	ExchangedToken,
+	GenerateAuthUrlParams,
+	OAuthIdentityProvider,
+	SocialLoginOptions,
+} from "@/auth/application/ports/oauth-identity-provider.port";
+import type {
 	OAuthTokenVerifierService,
 	VerifiedProfile,
 } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
-import type {
-	ExchangedToken,
-	GenerateAuthUrlParams,
-	IOAuthProviderStrategy,
-	SocialLoginOptions,
-} from "./oauth-provider.strategy";
 
 interface OAuthConfig {
 	clientId: string | undefined;
@@ -25,7 +25,7 @@ interface OAuthConfig {
  * - scope 파라미터 없음
  * - exchangeCode에 optional state 전달 (Naver API 요구사항)
  */
-export class NaverOAuthProvider implements IOAuthProviderStrategy {
+export class NaverOAuthProvider implements OAuthIdentityProvider {
 	readonly provider = "NAVER" as const;
 	readonly failureEmail = "naver_unknown@social.aido.kr";
 

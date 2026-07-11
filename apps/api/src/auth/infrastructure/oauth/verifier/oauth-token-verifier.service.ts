@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
 
+import type { VerifiedProfile } from "@/auth/application/ports/oauth-identity-provider.port";
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 
 /**
@@ -27,13 +28,7 @@ type JWKSFunction = (
 	token: unknown,
 ) => Promise<unknown>;
 
-export interface VerifiedProfile {
-	id: string;
-	email?: string | null;
-	emailVerified: boolean;
-	name?: string;
-	picture?: string;
-}
+export type { VerifiedProfile };
 
 interface AppleIdTokenClaims {
 	iss: string;

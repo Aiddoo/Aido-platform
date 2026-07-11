@@ -20,15 +20,27 @@
  * ```
  */
 
+import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { AdminNotificationFacade } from "@/admin-notification";
+import {
+	OAUTH_IDENTITY_PROVIDER_REGISTRY,
+	type OAuthIdentityProvider,
+	type OAuthIdentityProviderRegistry,
+} from "@/auth/application/ports/oauth-identity-provider.port";
 import { OAuthService } from "@/auth/application/services/oauth.service";
 import { SessionService } from "@/auth/application/services/session.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
+import {
+	AppleOAuthProvider,
+	GoogleOAuthProvider,
+	KakaoOAuthProvider,
+	NaverOAuthProvider,
+} from "@/auth/infrastructure/oauth/adapters";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
@@ -36,6 +48,7 @@ import { OAuthStateRepository } from "@/auth/infrastructure/persistence/oauth-st
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import type { AccountProvider } from "@/generated/prisma/client";
 import { NotificationQueueService } from "@/notification";
 import { BusinessException } from "@/shared/application/exceptions";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
@@ -82,6 +95,43 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			],
 			providers: [
 				OAuthService,
+				{
+					provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
+					inject: [TypedConfigService, OAuthTokenVerifierService],
+					useFactory: (
+						config: TypedConfigService,
+						verifier: OAuthTokenVerifierService,
+					): OAuthIdentityProviderRegistry => {
+						const logger = new Logger("OAuthIdentityProvider");
+						return new Map<AccountProvider, OAuthIdentityProvider>([
+							["APPLE", new AppleOAuthProvider(verifier)],
+							[
+								"GOOGLE",
+								new GoogleOAuthProvider(
+									() => config.googleOAuth,
+									verifier,
+									logger,
+								),
+							],
+							[
+								"KAKAO",
+								new KakaoOAuthProvider(
+									() => config.kakaoOAuth,
+									verifier,
+									logger,
+								),
+							],
+							[
+								"NAVER",
+								new NaverOAuthProvider(
+									() => config.naverOAuth,
+									verifier,
+									logger,
+								),
+							],
+						]);
+					},
+				},
 				SessionService,
 				TokenService,
 				AccountRepository,

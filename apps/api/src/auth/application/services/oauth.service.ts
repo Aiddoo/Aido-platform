@@ -1,9 +1,14 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	AdminNotificationFacade,
 	type UserRegisteredEventPayload,
 } from "@/admin-notification";
+import {
+	OAUTH_IDENTITY_PROVIDER_REGISTRY,
+	type OAuthIdentityProvider,
+	type OAuthIdentityProviderRegistry,
+} from "@/auth/application/ports/oauth-identity-provider.port";
 import type { LoginResult, RequestMetadata } from "@/auth/application/types";
 import {
 	ACCOUNT_DELETION,
@@ -13,14 +18,6 @@ import {
 	TRUSTED_EMAIL_PROVIDERS,
 } from "@/auth/domain/constants/auth.constants";
 import { generateRandomName } from "@/auth/domain/services/random-name.util";
-import {
-	AppleOAuthProvider,
-	GoogleOAuthProvider,
-	type IOAuthProviderStrategy,
-	KakaoOAuthProvider,
-	NaverOAuthProvider,
-} from "@/auth/infrastructure/oauth/adapters";
-import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
 import {
@@ -73,7 +70,6 @@ const ACCOUNT_PROVIDER_TO_EVENT: Record<
 @Injectable()
 export class OAuthService {
 	readonly #logger = new Logger(OAuthService.name);
-	readonly #providers: Map<AccountProvider, IOAuthProviderStrategy>;
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -83,7 +79,6 @@ export class OAuthService {
 		private readonly loginAttemptRepository: LoginAttemptRepository,
 		private readonly oauthStateRepository: OAuthStateRepository,
 		private readonly sessionService: SessionService,
-		private readonly tokenVerifier: OAuthTokenVerifierService,
 		private readonly configService: TypedConfigService,
 		private readonly encryptionService: EncryptionService,
 		private readonly adminNotificationFacade: AdminNotificationFacade,
@@ -91,38 +86,12 @@ export class OAuthService {
 		private readonly userConsentRepository: UserConsentRepository,
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly todoCategoryRepository: TodoCategoryRepository,
-	) {
-		this.#providers = new Map<AccountProvider, IOAuthProviderStrategy>([
-			["APPLE", new AppleOAuthProvider(this.tokenVerifier)],
-			[
-				"GOOGLE",
-				new GoogleOAuthProvider(
-					() => this.configService.googleOAuth,
-					this.tokenVerifier,
-					this.#logger,
-				),
-			],
-			[
-				"KAKAO",
-				new KakaoOAuthProvider(
-					() => this.configService.kakaoOAuth,
-					this.tokenVerifier,
-					this.#logger,
-				),
-			],
-			[
-				"NAVER",
-				new NaverOAuthProvider(
-					() => this.configService.naverOAuth,
-					this.tokenVerifier,
-					this.#logger,
-				),
-			],
-		]);
-	}
+		@Inject(OAUTH_IDENTITY_PROVIDER_REGISTRY)
+		private readonly registry: OAuthIdentityProviderRegistry,
+	) {}
 
-	#getStrategy(provider: AccountProvider): IOAuthProviderStrategy {
-		const strategy = this.#providers.get(provider);
+	#getStrategy(provider: AccountProvider): OAuthIdentityProvider {
+		const strategy = this.registry.get(provider);
 		if (!strategy) {
 			throw BusinessExceptions.socialProviderError(provider, {
 				reason: `Unsupported provider: ${provider}`,
@@ -531,7 +500,7 @@ export class OAuthService {
 		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
 		const { provider, idToken, accessToken, nonce } = dto;
-		const strategy = this.#providers.get(provider);
+		const strategy = this.registry.get(provider);
 
 		if (!strategy) {
 			throw BusinessExceptions.invalidCredentials();

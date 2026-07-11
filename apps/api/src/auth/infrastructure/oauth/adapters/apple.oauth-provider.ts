@@ -1,11 +1,11 @@
 import type {
+	OAuthIdentityProvider,
+	SocialLoginOptions,
+} from "@/auth/application/ports/oauth-identity-provider.port";
+import type {
 	OAuthTokenVerifierService,
 	VerifiedProfile,
 } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import type {
-	IOAuthProviderStrategy,
-	SocialLoginOptions,
-} from "./oauth-provider.strategy";
 
 /**
  * Apple OAuth 전략
@@ -15,7 +15,7 @@ import type {
  * - Apple은 첫 로그인 시에만 이름을 제공하므로 userName 파라미터만 사용
  * - profileImage 미제공
  */
-export class AppleOAuthProvider implements IOAuthProviderStrategy {
+export class AppleOAuthProvider implements OAuthIdentityProvider {
 	readonly provider = "APPLE" as const;
 	readonly failureEmail = "apple_unknown@social.aido.kr";
 

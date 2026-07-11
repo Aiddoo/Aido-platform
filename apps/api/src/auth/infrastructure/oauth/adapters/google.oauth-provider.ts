@@ -1,15 +1,15 @@
 import type { Logger } from "@nestjs/common";
 import type {
+	ExchangedToken,
+	GenerateAuthUrlParams,
+	OAuthIdentityProvider,
+	SocialLoginOptions,
+} from "@/auth/application/ports/oauth-identity-provider.port";
+import type {
 	OAuthTokenVerifierService,
 	VerifiedProfile,
 } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
-import type {
-	ExchangedToken,
-	GenerateAuthUrlParams,
-	IOAuthProviderStrategy,
-	SocialLoginOptions,
-} from "./oauth-provider.strategy";
 
 interface OAuthConfig {
 	clientId: string | undefined;
@@ -25,7 +25,7 @@ interface OAuthConfig {
  * - scope: openid email profile + access_type=offline, prompt=consent
  * - 토큰 교환 시 id_token 필드 사용
  */
-export class GoogleOAuthProvider implements IOAuthProviderStrategy {
+export class GoogleOAuthProvider implements OAuthIdentityProvider {
 	readonly provider = "GOOGLE" as const;
 	readonly failureEmail = "google_unknown@social.aido.kr";
 
