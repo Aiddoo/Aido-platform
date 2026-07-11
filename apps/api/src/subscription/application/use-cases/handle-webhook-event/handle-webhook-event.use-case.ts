@@ -15,7 +15,16 @@ import {
 } from "@/shared/infrastructure/lock";
 
 import type { SubscriptionEventPayload } from "../../../domain/events/subscription-event.payload";
-import { resolveCancellationUserStatus } from "../../../domain/services/cancellation-user-status";
+import {
+	isRefundCancellation,
+	resolveCancellationUserStatus,
+} from "../../../domain/services/cancellation-user-status";
+import {
+	nullableExpiresAt,
+	optionalExpiresAt,
+	requireExpiresAt,
+	requirePurchasedAt,
+} from "../../../domain/services/webhook-timestamps";
 import { TransactionId } from "../../../domain/value-objects/transaction-id.vo";
 import {
 	SUBSCRIPTION_REPOSITORY,
@@ -30,6 +39,7 @@ import {
 	SUBSCRIPTION_EVENT_NOTIFIER,
 	type SubscriptionEventNotifierPort,
 } from "../../ports/subscription-event-notifier.port";
+import { baseEventPayload } from "./subscription-event-payload.mapper";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 
@@ -187,21 +197,14 @@ export class HandleWebhookEventUseCase {
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
-		if (!event.purchased_at_ms) {
-			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-				reason: "Missing purchased_at_ms for INITIAL_PURCHASE",
-				eventType: event.type,
-			});
-		}
-		if (!event.expiration_at_ms) {
-			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-				reason: "Missing expiration_at_ms for INITIAL_PURCHASE",
-				eventType: event.type,
-			});
-		}
-
-		const startedAt = new Date(event.purchased_at_ms);
-		const expiresAt = new Date(event.expiration_at_ms);
+		const startedAt = requirePurchasedAt(
+			event,
+			"Missing purchased_at_ms for INITIAL_PURCHASE",
+		);
+		const expiresAt = requireExpiresAt(
+			event,
+			"Missing expiration_at_ms for INITIAL_PURCHASE",
+		);
 
 		const skipped = await this.uow.run(async () => {
 			// 멱등성 가드: 중복 webhook 재전송 대비
@@ -240,13 +243,7 @@ export class HandleWebhookEventUseCase {
 		);
 
 		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
+			...baseEventPayload(user, event, transactionId),
 			purchasedAt: toISOString(startedAt),
 			expiresAt: toISOString(expiresAt),
 			priceUsd: event.price,
@@ -267,14 +264,10 @@ export class HandleWebhookEventUseCase {
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
-		if (!event.expiration_at_ms) {
-			throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-				reason: "Missing expiration_at_ms for RENEWAL",
-				eventType: event.type,
-			});
-		}
-
-		const expiresAt = new Date(event.expiration_at_ms);
+		const expiresAt = requireExpiresAt(
+			event,
+			"Missing expiration_at_ms for RENEWAL",
+		);
 
 		const skipped = await this.uow.run(async () => {
 			// 멱등성 가드: 동일 expiresAt으로 이미 갱신되었으면 skip
@@ -316,13 +309,7 @@ export class HandleWebhookEventUseCase {
 		);
 
 		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
+			...baseEventPayload(user, event, transactionId),
 			expiresAt: toISOString(expiresAt),
 			priceUsd: event.price,
 			priceInPurchasedCurrency: event.price_in_purchased_currency,
@@ -343,10 +330,8 @@ export class HandleWebhookEventUseCase {
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
-		const webhookExpiresAt = event.expiration_at_ms
-			? new Date(event.expiration_at_ms)
-			: null;
-		const isRefund = event.cancel_reason === "CUSTOMER_SUPPORT";
+		const webhookExpiresAt = nullableExpiresAt(event);
+		const isRefund = isRefundCancellation(event.cancel_reason);
 
 		await this.uow.run(async () => {
 			// webhook expiresAt 없으면 DB 기존값 fallback
@@ -392,13 +377,7 @@ export class HandleWebhookEventUseCase {
 		);
 
 		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
+			...baseEventPayload(user, event, transactionId),
 			expiresAt: webhookExpiresAt ? toISOString(webhookExpiresAt) : undefined,
 			cancelReason: event.cancel_reason,
 		} satisfies SubscriptionEventPayload;
@@ -414,9 +393,7 @@ export class HandleWebhookEventUseCase {
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
-		const expiresAt = event.expiration_at_ms
-			? new Date(event.expiration_at_ms)
-			: undefined;
+		const expiresAt = optionalExpiresAt(event);
 
 		await this.uow.run(async () => {
 			await this.subscriptionRepository.updateStatus(transactionId, {
@@ -437,13 +414,7 @@ export class HandleWebhookEventUseCase {
 		);
 
 		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
+			...baseEventPayload(user, event, transactionId),
 			expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
 		} satisfies SubscriptionEventPayload;
 	}
@@ -476,15 +447,7 @@ export class HandleWebhookEventUseCase {
 			`Expiration processed: userId=${user.id}, transactionId=${transactionId}`,
 		);
 
-		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
-		} satisfies SubscriptionEventPayload;
+		return baseEventPayload(user, event, transactionId);
 	}
 
 	/**
@@ -501,15 +464,7 @@ export class HandleWebhookEventUseCase {
 			`Billing issue detected: userId=${user.id}, productId=${event.product_id}, store=${event.store ?? "unknown"}`,
 		);
 
-		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
-		} satisfies SubscriptionEventPayload;
+		return baseEventPayload(user, event, transactionId);
 	}
 
 	/**
@@ -522,9 +477,7 @@ export class HandleWebhookEventUseCase {
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
-		const expiresAt = event.expiration_at_ms
-			? new Date(event.expiration_at_ms)
-			: undefined;
+		const expiresAt = optionalExpiresAt(event);
 
 		await this.uow.run(async () => {
 			await this.subscriptionRepository.updateStatus(transactionId, {
@@ -544,13 +497,7 @@ export class HandleWebhookEventUseCase {
 		);
 
 		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
+			...baseEventPayload(user, event, transactionId),
 			expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
 		} satisfies SubscriptionEventPayload;
 	}
@@ -566,9 +513,7 @@ export class HandleWebhookEventUseCase {
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
-		const expiresAt = event.expiration_at_ms
-			? new Date(event.expiration_at_ms)
-			: undefined;
+		const expiresAt = optionalExpiresAt(event);
 
 		await this.uow.run(async () => {
 			await this.subscriptionRepository.updateStatus(transactionId, {
@@ -588,13 +533,7 @@ export class HandleWebhookEventUseCase {
 		);
 
 		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-			transactionId,
+			...baseEventPayload(user, event, transactionId),
 			expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
 		} satisfies SubscriptionEventPayload;
 	}
@@ -633,14 +572,7 @@ export class HandleWebhookEventUseCase {
 			`Transfer: userId=${user.id}, revenueCatUserId → ${newAppUserId}`,
 		);
 
-		return {
-			userId: user.id,
-			email: user.email,
-			name: user.profile?.name ?? undefined,
-			eventType: event.type,
-			productId: event.product_id,
-			store: event.store,
-		} satisfies SubscriptionEventPayload;
+		return baseEventPayload(user, event);
 	}
 
 	/**
