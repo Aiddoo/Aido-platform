@@ -1,10 +1,4 @@
-import {
-  ApiError,
-  NetworkError,
-  ServerError,
-  TimeoutError,
-  TransientAuthError,
-} from '@src/shared/errors';
+import { ApiError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { shouldRetryQuery } from './query-retry';
 
 describe('shouldRetryQuery', () => {
@@ -26,13 +20,14 @@ describe('shouldRetryQuery', () => {
     expect(shouldRetryQuery(0, businessError)).toBe(false);
   });
 
-  it('일시 인프라 장애(네트워크·5xx·타임아웃·토큰 갱신 일시 실패)는 넉넉한 상한(6)까지 재시도한다', () => {
+  it('일시 인프라 장애(네트워크·5xx·타임아웃)는 넉넉한 상한(6)까지 재시도한다', () => {
     // Given — 콜드 스타트/서버 재시작 구간에 서버 복귀를 기다린다(재시도 창 ≈ 22초)
+    // 토큰 갱신의 일시 실패도 갱신기가 이 세 타입으로 던지므로 같은 창을 탄다.
     const cases = [
       new NetworkError(),
+      new ServerError(500),
       new ServerError(503),
       new TimeoutError(),
-      new TransientAuthError(),
     ];
 
     // When / Then

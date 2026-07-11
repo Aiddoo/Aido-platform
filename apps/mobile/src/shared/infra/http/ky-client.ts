@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/errors';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import { ApiError } from '@src/shared/errors/api-error';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors/infra-error';
@@ -20,9 +21,12 @@ interface ServerErrorBody {
 }
 
 /**
- * Ky 기반 Result HttpClient
+ * Ky 기반 Result HttpClient — HTTP 결과 → 도메인 에러 분류의 **유일한 소유자**.
  * - 4xx 에러: Result.err(ApiError) 반환
- * - 5xx/네트워크/타임아웃: throw InfraError → ErrorBoundary
+ * - 5xx: throw ServerError (React Query가 자동 재시도)
+ * - 네트워크/타임아웃: throw NetworkError/TimeoutError (동일하게 재시도)
+ *
+ * afterResponse 훅(error-handler)은 관측(breadcrumb)만 하고 절대 throw하지 않는다.
  */
 export class KyHttpClient implements HttpClient {
   readonly #client: KyInstance;
@@ -85,7 +89,7 @@ export class KyHttpClient implements HttpClient {
         }
 
         const body = await this.#parseErrorBody(response);
-        const code = body?.error.code ?? `HTTP_${response.status}`;
+        const code = body?.error.code ?? ErrorCode.SYS_0001;
         return err(
           new ApiError(
             code,
