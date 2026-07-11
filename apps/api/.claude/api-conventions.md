@@ -609,9 +609,10 @@ pnpm docker:down
 
 ---
 
-## 9. 클린아키텍처(CQRS) 모듈 규칙
+## 9. 클린아키텍처 모듈 규칙
 
 > todo 모듈부터 적용 중인 신규 표준. 마이그레이션이 진행 중인 모듈은 레거시 Service 규칙(§3)과 공존한다.
+> **@nestjs/cqrs 사용 금지** — CommandBus/QueryBus/EventBus/CqrsModule 없음. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 `DOMAIN_EVENT_PUBLISHER` → EventEmitter2 → `@OnEvent`로 처리한다.
 
 ### 디렉터리 구조
 
@@ -621,40 +622,96 @@ modules/{name}/
     entities/{name}.entity.ts        # AggregateRoot 상속, private ctor + reconstitute + planCreation
     entities/{child}.entity.ts       # 자식 엔티티 (Entity 상속 — 예: todo-item)
     events/*.event.ts                # plain readonly-param 클래스 (과거형 사실, 전이 후 상태를 실음)
+    events/{name}-event-names.ts     # eventName 라우팅 키 상수 (예: TODO_EVENTS.CREATED = "todo.created")
     value-objects/*.vo.ts            # EntityId/ValueObject 상속, static create 검증 + reconstitute 무검증
     services/*.ts                    # 순수 도메인 정책 함수 (예: completion-policy, reorder-position)
   application/
     ports/*.port.ts                  # Symbol 토큰 + 인터페이스 (파일당 1포트, 페이로드 계약 소유)
     types.ts                         # 애플리케이션 파라미터 타입 (프레임워크·Prisma 무의존)
-    use-cases/<kebab>/               # 커맨드 1개 = 엔드포인트 1개 (SRP)
-      <kebab>.command.ts / .handler.ts / .handler.spec.ts
-    queries/<kebab>/                 # 쿼리도 동일 구조 (커맨드와 대칭)
-      <kebab>.query.ts / .handler.ts / .handler.spec.ts
-    events/*.handler.ts              # @EventsHandler 부수효과 핸들러
+    facades/{name}.facade.ts         # 컨트롤러가 주입하는 유일한 지점 — use-case 한 줄 위임
+    use-cases/<kebab>/               # 쓰기 use-case 1개 = 엔드포인트 1개 (SRP)
+      <kebab>.use-case.ts / .use-case.spec.ts
+    queries/<kebab>/                 # 읽기 use-case — 쓰기와 대칭 (read/write 저장소 분리와 미러링)
+      <kebab>.use-case.ts / .use-case.spec.ts
+    events/*.handler.ts              # @OnEvent 부수효과 구독자
   infrastructure/
-    adapters/*.ts                    # 포트 구현 — persistence DAO/타 모듈 서비스에 위임(쿼리 중복 금지)
+    adapters/*.ts                    # 포트 구현 — persistence DAO/타 모듈 Facade에 위임(쿼리 중복 금지)
     persistence/                     # 행 DAO({name}-row.repository) · 응답 매퍼 · Prisma 행 타입
+  presentation/                      # {name}.controller.ts · dtos/
 ```
 
-### 커맨드 핸들러 규칙
+**배럴 규칙:**
+
+- `use-cases/index.ts`는 `XxxUseCases` 배열, `queries/index.ts`는 `XxxQueryUseCases` 배열을 export — 모듈 providers에 스프레드로 등록
+- 공개 배럴(`src/{name}/index.ts`)은 **Facade(+DTO)만** export — 커맨드 클래스 export는 폐지. use-case·포트·리포지토리는 내부 구현으로 비공개
+
+### Use-case 규칙
 
 | 규칙 | 내용 |
 |------|------|
+| 클래스 | plain `@Injectable()` `XxxUseCase` — 단일 `async execute(input: XxxInput): Promise<R>` 메서드, 반환 타입 명시 필수 |
+| 입력 타입 | `XxxInput` 인터페이스를 같은 파일에서 export (또는 `application/types.ts` 타입의 별칭) — 커맨드/쿼리 클래스 없음 |
 | 예외 | `ApplicationException(ErrorCode.XXX, context)` — 유스케이스 규칙 위반. 도메인 불변식은 `DomainException` |
 | 트랜잭션 | `@Inject(TRANSACTION_MANAGER)` → `txManager.run(tx => ...)`. load→mutate→write를 TX 안에 묶는다. tx는 불투명 `TransactionContext` — Prisma 타입 사용 금지. `database.$transaction` 직접 호출 금지 |
-| 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 → **run resolve 후** `eventBus.publishAll(events)` (커밋 후 `@EventsHandler`가 처리) |
-| 캐시 무효화 | 영속화 후 핸들러 인라인 (`TodoCachePort` 등 캐시 포트) |
+| 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 + `pullDomainEvents()` 드레인 → **run resolve 후** `DOMAIN_EVENT_PUBLISHER.publishAll(events)` (커밋 후 `@OnEvent` 구독자가 처리) |
+| 캐시 무효화 | 영속화 후 use-case에서 명시적 호출 (`TodoCachePort` 등 캐시 포트) — 도메인 이벤트가 없는 쓰기 경로 포함. 또는 `@OnEvent` 구독으로 처리 |
 | 응답 | 애그리게잇에서 직접 만들지 않는다 — 항상 read 포트(`~ReadRepositoryPort`) 재조회 |
-| 이벤트 발행 | TX 콜백이 `todo.pullDomainEvents()`를 반환하고, 핸들러는 run resolve 후 `eventBus.publishAll(events)` (도메인은 @nestjs/cqrs 무의존) |
-| 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전 |
-| 타입 | `as`/`!` 금지(`pnpm lint:no-cast`), 임포트 경계는 `pnpm lint:boundaries` — 둘 다 수동 게이트. 커맨드/쿼리는 `Command<T>`/`Query<T>` 확장으로 버스 반환 타입 추론 |
+| 이벤트 발행 | 발행은 반드시 커밋 후(`run` 콜백 밖). EventEmitter2 `emit`은 동기 — 퍼블리셔가 이벤트 단위 try/catch로 예외 격리 (도메인·애플리케이션은 EventEmitter2 무의존, 포트만 의존) |
+| 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전, 어댑터는 타 모듈 배럴의 **Facade**에 위임 (예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter` → `TodoFacade`) |
+| 타입 | `as`/`!` 금지(`pnpm lint:no-cast`), 임포트 경계는 `pnpm lint:boundaries` — 둘 다 수동 게이트 |
 | 가독성 | JSDoc에 흐름 요약, `execute()` 본문은 번호 주석으로 위→아래 단일 경로 |
 
-### 컨트롤러 규칙 (CQRS 전환분)
+**작성 예시** (todo `create-todo` — 골격):
 
-- `CommandBus`/`QueryBus`만 주입 — 서비스 직접 호출 금지
-- DTO → Command 매핑과 날짜/타임존 파싱(`parseDateOnly`, `parseLocalDateTime`)은 컨트롤러 책임
+```typescript
+// application/use-cases/create-todo/create-todo.use-case.ts
+export interface CreateTodoInput {
+  userId: string;
+  data: CreateTodoData; // application/types.ts
+  timezone: string;
+}
+
+@Injectable()
+export class CreateTodoUseCase {
+  constructor(
+    @Inject(TODO_REPOSITORY) private readonly todoRepository: TodoRepositoryPort,
+    @Inject(TODO_READ_REPOSITORY) private readonly todoReadRepository: TodoReadRepositoryPort,
+    @Inject(TRANSACTION_MANAGER) private readonly txManager: TransactionManagerPort,
+    @Inject(DOMAIN_EVENT_PUBLISHER) private readonly eventPublisher: DomainEventPublisherPort,
+  ) {}
+
+  async execute(input: CreateTodoInput): Promise<TodoResponse> {
+    // 1. 도메인 생성 계획 (birth 불변식·기본값 — Todo.planCreation)
+    // 2. TX: 영속화 + 이벤트 드레인
+    const { todoId, events } = await this.txManager.run(async (tx) => {
+      /* 저장 → todo.pullDomainEvents() 반환 */
+    });
+    // 3. 커밋 후 도메인 이벤트 발행 (fire-and-forget — @OnEvent 구독자가 부수효과 처리)
+    this.eventPublisher.publishAll(events);
+    // 4. 응답은 read 포트 재조회
+    return this.todoReadRepository.findByIdOrThrow(todoId, input.userId);
+  }
+}
+```
+
+### Facade 규칙
+
+- 위치: `application/facades/{name}.facade.ts` — **컨트롤러(및 타 모듈 어댑터)가 주입하는 유일한 지점**
+- use-case들을 생성자 주입하고 메서드마다 **한 줄 위임** (`return this.createTodoUseCase.execute(input);`) — 로직·분기 금지
+- Facade의 공개 시그니처가 모듈의 공개 계약 — 시그니처 변경은 계약 변경으로 취급
+- 공개 배럴(`src/{name}/index.ts`)은 Facade(+DTO)만 export
+
+### 컨트롤러 규칙 (클린아키텍처 전환분)
+
+- **Facade만 주입** — use-case/리포지토리 직접 주입 금지
+- DTO → Input 매핑과 날짜/타임존 파싱(`parseDateOnly`, `parseLocalDateTime`)은 컨트롤러 책임
 - Swagger 데코레이터는 마이그레이션 중 **절대 변경 금지** (openapi-contract 스냅샷이 게이트)
+
+### 도메인 이벤트 구독 규칙
+
+- 위치: `application/events/*.handler.ts` — `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.CREATED)` 등 이벤트명 상수로 구독
+- 핸들러 내부는 try/catch fire-and-forget + 로깅 — 부수효과 실패가 다른 구독자·요청에 전파되지 않게 한다
+- 판단 규칙(마일스톤·전체완료 등)은 `domain/services/` 정책 함수 호출 — 구독자에 도메인 로직 상주 금지
 
 ### 도메인 규칙
 
@@ -668,5 +725,5 @@ modules/{name}/
 
 ---
 
-**문서 버전**: 3.1.0
-**최종 수정일**: 2026-07-04
+**문서 버전**: 3.2.0
+**최종 수정일**: 2026-07-11

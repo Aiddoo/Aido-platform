@@ -2,7 +2,7 @@
 
 > **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
 
-NestJS 기반 백엔드 API. 3계층 아키텍처(레거시) + 클린아키텍처·CQRS(신규 표준, todo부터) + BullMQ 큐 기반 알림.
+NestJS 기반 백엔드 API. 3계층 아키텍처(레거시) + 클린아키텍처 use-case 표준(신규, todo부터) + BullMQ 큐 기반 알림.
 
 ---
 
@@ -12,7 +12,7 @@ NestJS 기반 백엔드 API. 3계층 아키텍처(레거시) + 클린아키텍�
 |------|----------|
 | 전체 아키텍처 이해 (에러, BullMQ 큐, 보안, 공통 모듈) | [.claude/architecture.md](.claude/architecture.md) |
 | Controller/Service/Repository 코드 작성 | [.claude/api-conventions.md](.claude/api-conventions.md) |
-| 클린아키텍처(CQRS) 모듈 작성 (todo 표준) | [.claude/api-conventions.md §9](.claude/api-conventions.md#9-클린아키텍처cqrs-모듈-규칙) → [architecture.md §1.4](.claude/architecture.md) |
+| 클린아키텍처 모듈 작성 (use-case 표준, todo부터) | [.claude/api-conventions.md §9](.claude/api-conventions.md#9-클린아키텍처-모듈-규칙) → [architecture.md §1.4](.claude/architecture.md) |
 | Zod 스키마/DTO 추가 | [.claude/validators.md](.claude/validators.md) |
 | Prisma 스키마/마이그레이션 | [.claude/prisma.md](.claude/prisma.md) |
 | 테스트 작성 (종합) | [.claude/testing-guide.md](.claude/testing-guide.md) |
@@ -47,10 +47,11 @@ Request → Guard → Controller → Service → Repository → DB
                                    ↓
                             QueueService → BullMQ → Processor → PushProvider
 
-[클린아키텍처+CQRS — todo 모듈, 신규 표준]
-Request → Guard → Controller → CommandBus/QueryBus → Handler(use-case)
+[클린아키텍처 use-case 표준 — todo 모듈부터, 신규 표준. @nestjs/cqrs 미사용]
+Request → Guard → Controller → Facade → UseCase(execute)
                                    ↓ 포트(인터페이스)          ↓ 도메인 이벤트(커밋 후)
-                              Adapter → Repository → DB    @EventsHandler → 부수효과
+                              Adapter → Repository → DB    DOMAIN_EVENT_PUBLISHER
+                                                            → EventEmitter2 → @OnEvent 핸들러(부수효과)
 ```
 
 ---
@@ -93,11 +94,11 @@ Request → Guard → Controller → CommandBus/QueryBus → Handler(use-case)
 1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm db:migrate`
 2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
 3. **Domain** → 애그리게잇 행동 메서드/자식 엔티티/VO/정책 함수/이벤트 (불변식은 DomainException, 생성은 planCreation, 판단 규칙은 domain/services/ 정책)
-4. **Application** → 포트 확장 + `use-cases/<kebab>/` 커맨드·핸들러(+spec)
+4. **Application** → 포트 확장 + 쓰기는 `use-cases/<kebab>/<kebab>.use-case.ts`, 읽기는 `queries/<kebab>/<kebab>.use-case.ts` (+spec) — `@Injectable()` 클래스, 단일 `execute(input)`
 5. **Infrastructure** → 어댑터에 포트 구현 (레거시 Repository 위임)
-6. **Controller** → CommandBus 디스패치, Swagger 문서화
-7. **Module** → 배럴(CommandHandlers 등) 자동 등록 확인
-8. **테스트** → 핸들러 spec → e2e (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries` 통과
+6. **Facade/Controller** → Facade에 한 줄 위임 메서드 추가, 컨트롤러는 Facade 호출 + Swagger 문서화
+7. **Module** → 배럴(`XxxUseCases`/`XxxQueryUseCases` 배열) 자동 등록 확인
+8. **테스트** → use-case spec → e2e (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries` 통과
 
 **레거시 3계층 모듈에 기능 추가:**
 

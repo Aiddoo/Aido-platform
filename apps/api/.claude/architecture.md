@@ -142,11 +142,11 @@ apps/api/
 │       ├── nudge/              # 찌르기
 │       ├── scheduler/          # 스케줄러 (리마인더)
 │       ├── subscription/       # 구독/결제
-│       ├── todo/               # 할 일 (클린아키텍처+CQRS, §1.4)
+│       ├── todo/               # 할 일 (클린아키텍처 use-case 표준, §1.4)
 │       │   ├── domain/         #   애그리게잇·VO·이벤트·도메인 서비스
-│       │   ├── application/    #   포트·유스케이스(커맨드)·쿼리·이벤트 핸들러
-│       │   ├── infrastructure/ #   어댑터 (포트 구현)
-│       │   └── ...             #   controller·행 repository·mapper·dtos
+│       │   ├── application/    #   포트·facade·use-case(쓰기)·queries(읽기)·@OnEvent 구독자
+│       │   ├── infrastructure/ #   어댑터 (포트 구현)·행 repository·mapper
+│       │   └── presentation/   #   controller·dtos
 │       ├── todo-category/      # 할 일 카테고리
 │       ├── user-settings/      # 사용자 설정/프로필
 │       └── weekly-achievement/ # 주간 달성 통계
@@ -159,25 +159,29 @@ apps/api/
 
 ---
 
-### 1.4 클린아키텍처 모듈 (CQRS + DDD) — todo부터 적용
+### 1.4 클린아키텍처 모듈 (Use-case + DDD) — todo부터 적용
 
-todo 모듈은 3계층에서 클린아키텍처+CQRS+전술적 DDD로 완전 전환됐다. 신규 표준이며, 다른 모듈도 순차 이관 예정.
-코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처cqrs-모듈-규칙)
+todo 모듈은 3계층에서 클린아키텍처+전술적 DDD로 완전 전환됐다. 신규 표준이며, 다른 모듈도 순차 이관 예정.
+**@nestjs/cqrs는 사용하지 않는다** — CommandBus/QueryBus/EventBus/CqrsModule 금지. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 EventEmitter2 기반 도메인 이벤트로 처리한다.
+코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처-모듈-규칙)
 
 ```
 HTTP Request
      ↓
-Controller ── DTO→Command/Query 매핑, 날짜·타임존 파싱만 담당
+Controller ── Facade만 주입. DTO→Input 매핑, 날짜·타임존 파싱만 담당
      ↓
-CommandBus / QueryBus ── Command<T>/Query<T> 확장으로 반환 타입 자동 추론
+Facade (application/facades/) ── use-case들을 주입해 한 줄 위임.
+     │                            공개 시그니처가 모듈의 공개 계약
      ↓
-Application: 커맨드/쿼리 핸들러 (유스케이스당 1개, SRP)
+Application: use-case (엔드포인트당 1개, SRP)
+     │  · plain @Injectable() 클래스 — 단일 async execute(input): Promise<R>
      │  · 포트(Symbol 토큰 인터페이스)에만 의존 — 8종 (repo 쓰기/읽기,
      │    category-ownership, cache, friend, streak, notification, reminder)
      │  · TRANSACTION_MANAGER.run(tx => ...) — tx는 불투명 TransactionContext
      │    (Prisma 타입은 application에 노출되지 않음, 인프라만 unwrapTransaction)
      │  · load→mutate→write는 TX 안에서 (동시 수정 레이스 창 축소)
      │  · ApplicationException(ErrorCode)으로 유스케이스 규칙 위반 표현
+     │  · 커밋 후 DOMAIN_EVENT_PUBLISHER.publishAll(pullDomainEvents())
      ↓
 Domain: 애그리게잇 · 자식 엔티티 · VO · 도메인 서비스/정책 · 도메인 이벤트
      │  · 불변식 위반은 DomainException
@@ -189,8 +193,8 @@ Domain: 애그리게잇 · 자식 엔티티 · VO · 도메인 서비스/정책 
      │    id가 autoincrement라 팩토리 대신 계획 패턴)
      │  · 판단 규칙은 도메인 정책 함수 (completion-policy, reorder-position,
      │    expand-recurring-dates — 전부 순수 함수)
-     │  · 상태 전이 메서드에서 raise(event) 적립 → 핸들러가 TX 커밋 후
-     │    eventBus.publishAll(pullDomainEvents())
+     │  · 상태 전이 메서드에서 raise(event) 적립 → use-case가 TX 커밋 후
+     │    DOMAIN_EVENT_PUBLISHER.publishAll(pullDomainEvents())
      ↓
 Infrastructure: 어댑터 (포트 구현)
      │  · PrismaTodo{Read}Repository → persistence/의 행 DAO(TodoRowRepository)에
@@ -200,34 +204,46 @@ Infrastructure: 어댑터 (포트 구현)
      ↓
 TodoRowRepository (행 DAO) → DatabaseService (Prisma) → PostgreSQL
 
-     ── 부수효과 (커밋 후) ──
-@EventsHandler ── TodoCreated/Updated/Rescheduled/Deleted → 리마인더 스케줄/취소
-              └─ TodoToggled → 리마인더 취소 + 스트릭 + 친구완료/마일스톤 큐
+     ── 부수효과 (커밋 후, EventEmitter2) ──
+@OnEvent(TODO_EVENTS.X) ── TodoCreated/Updated/Rescheduled/Deleted → 리마인더 스케줄/취소
+                        └─ TodoToggled → 리마인더 취소 + 스트릭 + 친구완료/마일스톤 큐
 ```
 
-**폴더 규칙** (커맨드·쿼리 대칭):
+**도메인 이벤트 파이프라인** (use-case → EventEmitter2 → @OnEvent):
+
+- `DomainEvent` 인터페이스는 `eventName` 라우팅 키를 보유 (`shared/domain/aggregate-root.ts`). 이벤트명 상수는 모듈 소유 — 예: `todo/domain/events/todo-event-names.ts`의 `TODO_EVENTS` (`"todo.created"` 등)
+- 발행 포트는 `DOMAIN_EVENT_PUBLISHER` (`shared/application/ports/domain-event-publisher.port.ts`) — `@Global` `DomainEventsModule`이 제공, EventEmitter2 어댑터는 `shared/infrastructure/events/`
+- 발행은 **반드시 트랜잭션 커밋 후** (`UNIT_OF_WORK`/`TRANSACTION_MANAGER`의 `run` 콜백 밖). TX 안에서는 `pullDomainEvents()`로 드레인만 한다
+- EventEmitter2 `emit`은 **동기** — 퍼블리셔가 이벤트 단위 try/catch로 예외를 격리한다 (발행 실패가 호출자에 전파되지 않는 fire-and-forget 계약)
+- 구독은 `application/events/`의 `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.X)` — 핸들러 내부도 try/catch fire-and-forget + 로깅
+
+**폴더 규칙** (쓰기·읽기 대칭 — read/write 저장소 분리와 미러링):
 
 ```
 modules/todo/
-├── domain/            entities/ (todo, todo-item) · value-objects/ · events/ · services/
-├── application/       ports/ (8종) · types.ts · use-cases/<kebab>/{command,handler,spec}
-│                      · queries/<kebab>/{query,handler,spec} · events/ (5종 부수효과 핸들러)
+├── domain/            entities/ (todo, todo-item) · value-objects/ · events/ (+ todo-event-names.ts) · services/
+├── application/       ports/ (8종) · types.ts · facades/ (todo.facade.ts)
+│                      · use-cases/<kebab>/<kebab>.use-case.ts(+spec) — 쓰기
+│                      · queries/<kebab>/<kebab>.use-case.ts(+spec) — 읽기
+│                      · events/ (5종 @OnEvent 부수효과 구독자)
 ├── infrastructure/    adapters/ (포트 구현 8종) · persistence/ (행 DAO·응답 매퍼·행 타입)
-├── dtos/  todo.controller.ts  todo.module.ts  index.ts (공개 API = 커맨드 클래스)
+├── presentation/      todo.controller.ts · dtos/
+├── todo.module.ts  index.ts (공개 API = Facade + DTO)
 ```
 
 **의존성 방향 (클린아키텍처 모듈)** — `pnpm lint:boundaries`가 기계적으로 강제
 
 | 방향 | 허용 여부 | 비고 |
 |------|----------|------|
-| Controller → CommandBus/QueryBus | ✅ | 서비스 직접 호출 금지 |
-| application → domain | ✅ | 핸들러가 애그리게잇/VO/도메인 서비스 사용 |
+| Controller → Facade | ✅ | 컨트롤러가 주입하는 유일한 지점 — use-case/리포지토리 직접 주입 금지 |
+| Facade → use-case | ✅ | 한 줄 위임 (로직 금지) |
+| application → domain | ✅ | use-case가 애그리게잇/VO/도메인 서비스 사용 |
 | application → 포트(인터페이스) | ✅ | `@Inject(SYMBOL_TOKEN)` |
 | infrastructure → application 포트 | ✅ | 어댑터가 포트 구현 |
-| infrastructure → 행 DAO/타 모듈 서비스 | ✅ | 위임 전용 (쿼리 중복 금지) |
+| infrastructure → 행 DAO/타 모듈 Facade | ✅ | 위임 전용 (쿼리 중복 금지) |
 | domain → application/infrastructure/@nestjs/DB | ❌ | 도메인은 프레임워크 제로 의존 |
 | application → Prisma 타입/타 모듈 내부 | ❌ | 불투명 TransactionContext·포트로 역전 |
-| 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)·커맨드 디스패치만 (memo·ai-suggestion 참조) |
+| 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)의 Facade 호출만 — 예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter`가 `TodoFacade`에 위임 |
 | domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` |
 
 > `lint:no-cast`·`lint:boundaries`는 수동 게이트다(CI 미연결 — 연결은 별도 결정).
@@ -836,6 +852,7 @@ this.encryptionService.decryptSafe(account.accessToken)
 | `LockModule` | `common/lock/` | `ILockProvider` (Redis/InMemory Strategy) |
 | `EntitlementModule` | `common/entitlement/` | `EntitlementService` (플랜별 제한) |
 | `DedupModule` | `common/dedup/` | 알림 중복 방지 |
+| `DomainEventsModule` | `shared/infrastructure/events/` | `DOMAIN_EVENT_PUBLISHER` (도메인 이벤트 발행 포트, EventEmitter2 어댑터) |
 
 > `@Global()` 모듈은 `imports` 없이 어디서든 DI 가능.
 
@@ -926,6 +943,16 @@ export type TtlValue = number | `${number}${'s' | 'm' | 'h' | 'd'}`;
 ```
 
 **TTL 표현**: `60000` (ms), `'30s'`, `'5m'`, `'1h'`, `'7d'`
+
+### 5.3.1 조회 캐싱 표준 (Redis)
+
+| 항목 | 규칙 |
+|------|------|
+| 적용 대상 | 적중률 높고 churn 낮은 조회에만 **선별 적용** — 전면 캐싱 금지 |
+| 캐시 키 | `shared/infrastructure/cache/constants/cache-keys.ts`의 `CacheKeys`에서 중앙 관리. 신규 키는 `v1` 버전 세그먼트 포함 |
+| TTL | 데이터 변동성 기반으로 결정 (`CacheKeys.TTL` 상수에 근거 주석과 함께 정의) |
+| 무효화 | 쓰기 use-case에서 **명시적 호출** (도메인 이벤트가 없는 쓰기 경로 포함) 또는 `@OnEvent` 구독으로 처리 |
+| 장애 계약 | fail-open (`ICacheService` 계약, §5.1.1) — 캐시 실패는 미스 취급, DB 폴백 |
 
 ### 5.4 TypedConfigService 래퍼
 
@@ -1332,5 +1359,5 @@ async handleTodoReminder() {
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-04-05
+**문서 버전**: 3.1.0
+**최종 수정일**: 2026-07-11
