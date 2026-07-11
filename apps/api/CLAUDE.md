@@ -2,7 +2,7 @@
 
 > **Version**: 1.1.0 · **Last Updated**: 2026-07-11 · **Owner**: Aido Platform Team
 
-NestJS 기반 백엔드 API. 클린아키텍처 use-case 표준(전 모듈, 참조 구현: **todo**) + BullMQ 큐 기반 알림. 레거시 3계층은 **auth만** 잔존(클린아키 마이그레이션 진행 중).
+NestJS 기반 백엔드 API. **전 모듈 클린아키텍처 use-case 표준**(참조 구현: **todo**) + BullMQ 큐 기반 알림. @nestjs/cqrs 미사용(버스 없는 `@Injectable` use-case).
 
 ---
 
@@ -42,24 +42,22 @@ NestJS 기반 백엔드 API. 클린아키텍처 use-case 표준(전 모듈, 참�
 ## 아키텍처 레이어
 
 ```
-[클린아키텍처 use-case 표준 — 전 모듈 기본 경로. 참조 구현: todo. @nestjs/cqrs 미사용]
+[클린아키텍처 use-case 표준 — 전 모듈. 참조 구현: todo. @nestjs/cqrs 미사용]
 Request → Guard → Controller → Facade → UseCase(execute)
                                    ↓ 포트(인터페이스)          ↓ 도메인 이벤트(커밋 후)
                               Adapter → Repository → DB    DOMAIN_EVENT_PUBLISHER
                                                             → EventEmitter2 → @OnEvent 핸들러(부수효과)
 
-[레거시 3계층 — auth 한정, 마이그레이션 진행 중]
-Request → Guard → Controller → Service → Repository → DB
-                                   ↓
-                            QueueService → BullMQ → Processor → PushProvider
+[내구성 부수효과 — 커밋 후 enqueue]
+UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushProvider/외부 I/O
 ```
 
 ---
 
 ## 핵심 규칙
 
-- **예외**: 레거시는 `BusinessExceptions.xxx()` 팩토리, 클린아키 모듈은 `ApplicationException`/`DomainException` (`new HttpException()` 금지)
-- **트랜잭션**: 클린아키 모듈은 `UNIT_OF_WORK.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS에서 활성 TX를 읽음. 레거시(auth)는 `database.$transaction(tx => ...)` + Repository `tx?` 파라미터
+- **예외**: 모듈 코드는 `ApplicationException`/`DomainException`(둘 다 `ErrorCodedException`, `ErrorCode` 보유)을 던진다. `GlobalExceptionFilter`가 이를 정규화해 HTTP 응답을 만든다. `BusinessException`/`BusinessExceptions`는 필터의 canonical 에러 타입 + 공유 에러 카탈로그(Prisma P2002 매핑 등)이며 신규 비즈니스 로직에서 직접 던지지 않는다. `new HttpException()` 금지
+- **트랜잭션**: `UNIT_OF_WORK.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다
 - **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `pnpm lint:no-cast`로 검사 (수동 게이트, CI 미연결)
 - **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`로 검사 (수동 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
 - **API 계약 고정**: `openapi-contract.e2e-spec` 스냅샷 diff 0 = 클라이언트 영향 0 (리팩터링 게이트)
@@ -89,25 +87,15 @@ Request → Guard → Controller → Service → Repository → DB
 
 ## 새 기능 추가 순서
 
-**클린아키텍처 모듈(auth 제외 전 모듈 — 기본 경로)에 기능 추가:**
+**클린아키텍처 모듈(전 모듈)에 기능 추가:**
 
 1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm db:migrate`
 2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
 3. **Domain** → 애그리게잇 행동 메서드/자식 엔티티/VO/정책 함수/이벤트 (불변식은 DomainException, 생성은 planCreation, 판단 규칙은 domain/services/ 정책)
 4. **Application** → 포트 확장 + 쓰기는 `use-cases/<kebab>/<kebab>.use-case.ts`, 읽기는 `queries/<kebab>/<kebab>.use-case.ts` (+spec) — `@Injectable()` 클래스, 단일 `execute(input)`
-5. **Infrastructure** → 어댑터에 포트 구현 (레거시 Repository 위임)
+5. **Infrastructure** → 어댑터에 포트 구현 (Prisma 저장소·벤더 SDK·BullMQ 등)
 6. **Facade/Controller** → Facade에 한 줄 위임 메서드 추가, 컨트롤러는 Facade 호출 + Swagger 문서화
 7. **Module** → 배럴(`XxxUseCases`/`XxxQueryUseCases` 배열) 자동 등록 확인
 8. **테스트** → use-case spec → e2e (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries` 통과
-
-**레거시 3계층(auth 한정)에 기능 추가:**
-
-1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm db:migrate`
-2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
-3. **Repository** → `tx?` 패턴, EncryptionService (민감 데이터)
-4. **Service** → BusinessExceptions, 트랜잭션, QueueService enqueue
-5. **Controller** → Swagger 문서화, DTO 검증
-6. **Module** → `app.module.ts`에 등록
-7. **테스트** → Unit → Integration → E2E
 
 > 상세 체크리스트: [architecture.md - 새 기능 추가 체크리스트](.claude/architecture.md#8-새-기능-추가-체크리스트)

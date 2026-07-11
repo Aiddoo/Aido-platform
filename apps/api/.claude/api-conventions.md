@@ -1,10 +1,10 @@
 # API 코드 규칙
 
-**Version**: 1.1.0 · **Last Updated**: 2026-07-11 · **Owner**: Aido Platform Team
+**Version**: 1.2.0 · **Last Updated**: 2026-07-12 · **Owner**: Aido Platform Team
 
-> Controller, Service, Repository, Module 계층별 코드 작성 규칙
+> Controller, DTO/Swagger, Module 계층별 코드 작성 규칙
 >
-> ⚠️ **적용 범위**: §1~§8의 Service/Repository 규칙은 **레거시 3계층(auth 한정)**. 나머지 전 모듈은 **§9 클린아키텍처 모듈 규칙**(참조 구현: todo)을 따른다. Controller/DTO/Swagger 규칙은 공통.
+> ✅ **적용 범위**: **전 모듈이 클린아키텍처 use-case 표준**(참조 구현: todo)을 따른다 — 규칙은 **§9 클린아키텍처 모듈 규칙**이 정본이다. Controller/DTO/Swagger/Module 규칙(§2·§5~§8)은 공통. **§3 Service·§4 Repository는 이관 이전 3계층 패턴의 역사적 참고**이며 현재 이 패턴을 쓰는 모듈은 없다(2026-07 auth 이관 완료로 3계층 소멸).
 
 ## 관련 문서
 
@@ -23,36 +23,44 @@
 
 | 계층 | 역할 | 핵심 규칙 |
 |------|------|----------|
-| Controller | HTTP 요청/응답 처리 | 비즈니스 로직 금지, Swagger 문서화 필수 |
-| Service | 비즈니스 로직 | BusinessExceptions로 예외 발생, Repository 통해 데이터 접근 |
-| Repository | 데이터 액세스 | 예외 발생 금지, 모든 메서드에 `tx?` 파라미터 |
+| Controller | HTTP 요청/응답 처리 | 비즈니스 로직 금지, Facade만 주입, Swagger 문서화 필수 |
+| Facade | 유스케이스 조합 | 컨트롤러·크로스모듈의 유일한 주입 대상, 얇은 위임 |
+| UseCase | 비즈니스 로직 | `@Injectable` 단일 `execute()`, `ApplicationException`/`DomainException` throw, 포트로 데이터 접근 |
+| Port/Adapter | 외부 의존 추상화 | 포트=인터페이스+Symbol, 어댑터가 구현(Prisma·벤더·큐) |
+| Repository | 데이터 액세스 | 포트 구현, CLS(`TransactionHost.tx`)에서 활성 TX 읽음 |
 | Module | 의존성 주입 | 모듈 경계 정의, `app.module.ts`에 등록 |
+
+> 상세 규칙은 **§9**. 아래 §1~§8은 공통(Controller/DTO/Swagger/Module) + 역사적 참고(§3·§4)다.
 
 ---
 
 ## 1. 디렉토리 구조
 
+**전 모듈 표준 = 클린아키텍처 4계층** (참조 구현: todo). 상세는 **§9**.
+
 ```
 src/{name}/
-├── {name}.module.ts              # 모듈 정의
-├── {name}.controller.ts          # HTTP 엔드포인트
-├── services/
-│   ├── {name}.service.ts         # 비즈니스 로직
-│   └── index.ts
-├── repositories/
-│   ├── {name}.repository.ts      # 데이터 액세스
-│   └── index.ts
-├── types/
-│   ├── {name}.types.ts           # 결과 타입 정의
-│   └── index.ts
-├── constants/
-│   ├── {name}.constants.ts       # 모듈 상수
-│   └── index.ts
-├── mappers/                      # 응답 변환 (필요시)
-│   └── {name}.mapper.ts
-├── guards/                       # 인증/권한 가드 (필요시)
-├── decorators/                   # 커스텀 데코레이터 (필요시)
-└── strategies/                   # Passport 전략 (auth만)
+├── {name}.module.ts                 # DI 와이어링 (배럴 use-case 배열 등록)
+├── index.ts                         # 공개 배럴 (Facade + DTO — 외부는 이것만 임포트)
+├── domain/
+│   ├── entities/{name}.entity.ts    # AggregateRoot (private ctor + reconstitute + planCreation)
+│   ├── value-objects/*.vo.ts        # 값 객체 (불변식 = DomainException)
+│   ├── events/*.event.ts            # 도메인 이벤트
+│   └── services/*.ts                # 순수 도메인 정책
+├── application/
+│   ├── facades/{name}.facade.ts     # 컨트롤러의 유일 주입 대상
+│   ├── ports/*.port.ts              # 인터페이스 + Symbol 토큰
+│   ├── use-cases/<name>/<name>.use-case.ts   # 쓰기 (+ .spec)
+│   └── queries/<name>/<name>.use-case.ts     # 읽기 (+ 캐싱)
+├── infrastructure/
+│   ├── adapters/*.adapter.ts        # 포트 구현 (벤더·큐)
+│   ├── persistence/*.repository.ts  # Prisma 저장소 (포트 구현, CLS tx)
+│   ├── guards/                      # 인증/권한 가드 (필요시)
+│   ├── listeners/                   # @OnEvent 베스트에포트 리스너
+│   └── strategies/                  # Passport 전략 (auth 한정)
+└── presentation/
+    ├── dtos/*.request.dto.ts / *.response.dto.ts
+    └── {name}.controller.ts
 ```
 
 ---
@@ -167,7 +175,9 @@ private extractMetadata(req: Request): SessionMetadata {
 
 ## 3. Service 규칙
 
-> **Why**: 비즈니스 로직의 유일한 거처. 트랜잭션 경계를 관리하고, 큐 enqueue는 커밋 후 실행하여 데이터 정합성 보장.
+> ⚠️ **역사적 참고 (현재 미사용)** — 이관 이전 3계층의 Service 패턴이다. **신규/전 모듈은 §9의 use-case 표준**(`@Injectable` `execute()`, `ApplicationException`/`DomainException` throw, `UNIT_OF_WORK.run` CLS 트랜잭션)을 따른다. 아래는 마이그레이션 이력 이해용으로만 남긴다.
+>
+> **Why(당시)**: 비즈니스 로직의 유일한 거처. 트랜잭션 경계를 관리하고, 큐 enqueue는 커밋 후 실행하여 데이터 정합성 보장.
 
 ### 기본 구조
 
@@ -306,7 +316,9 @@ this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 
 ## 4. Repository 규칙
 
-> **Why**: DB 접근의 유일한 지점. `tx?` 파라미터로 트랜잭션 참여를 선택적으로 허용하여 Service가 트랜잭션을 제어.
+> ⚠️ **역사적 참고 (현재 미사용)** — 이관 이전의 `tx?` 파라미터 Repository 패턴이다. **전 모듈은 §9처럼** 저장소를 포트로 두고 어댑터가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다(무인자). 아래는 이력용.
+>
+> **Why(당시)**: DB 접근의 유일한 지점. `tx?` 파라미터로 트랜잭션 참여를 선택적으로 허용하여 Service가 트랜잭션을 제어.
 
 ### 기본 구조
 
@@ -530,13 +542,15 @@ import { {Feature}Service } from './{feature}.service';
 - [ ] NestJS DTO 추가
 - [ ] `pnpm build` 실행
 
-### 3. API 모듈
+### 3. API 모듈 (클린아키텍처 — 상세는 §9)
 
-- [ ] `repositories/{name}.repository.ts` 생성 (tx 패턴 적용)
-- [ ] `services/{name}.service.ts` 생성 (BusinessExceptions 사용)
-- [ ] `{name}.controller.ts` 생성 (Swagger 문서화)
-- [ ] `{name}.module.ts` 생성
-- [ ] `types/{name}.types.ts` 생성 (필요시)
+- [ ] `domain/` 애그리게잇·VO·도메인 서비스·이벤트 (불변식은 DomainException)
+- [ ] `application/ports/*.port.ts` (인터페이스 + Symbol 토큰)
+- [ ] `application/use-cases/<name>/<name>.use-case.ts` (쓰기) · `queries/<name>/<name>.use-case.ts` (읽기)
+- [ ] `application/facades/{name}.facade.ts` (컨트롤러의 유일 주입 대상)
+- [ ] `infrastructure/adapters`·`persistence` (포트 구현, Prisma·벤더·큐)
+- [ ] `presentation/{name}.controller.ts` (Facade 주입, Swagger) + `presentation/dtos`
+- [ ] `{name}.module.ts` (use-case 배럴 등록) + `index.ts` (Facade·DTO 공개)
 
 ### 4. 등록
 
@@ -544,14 +558,14 @@ import { {Feature}Service } from './{feature}.service';
 
 ### 5. 에러 처리
 
-- [ ] 필요한 BusinessExceptions 팩토리 메서드 추가
-- [ ] 새 Unique Constraint가 있으면 constraintMap에 매핑 추가
+- [ ] `@aido/errors`에 `ErrorCode` 추가 → use-case/도메인에서 `ApplicationException`/`DomainException`으로 throw
+- [ ] 새 Unique Constraint가 있으면 `GlobalExceptionFilter`의 constraintMap에 매핑 추가
 
 ### 6. 테스트
 
-- [ ] Repository 단위 테스트
-- [ ] Service 단위 테스트
-- [ ] E2E 테스트
+- [ ] use-case / 애그리게잇 / VO 단위 테스트
+- [ ] 통합 테스트 (실 저장소 + 어댑터)
+- [ ] E2E 테스트 (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries`
 
 ---
 
@@ -613,7 +627,7 @@ pnpm docker:down
 
 ## 9. 클린아키텍처 모듈 규칙
 
-> **전 모듈 표준** (참조 구현: todo). 레거시 Service 규칙(§3)은 **auth에만** 적용된다 (클린아키 마이그레이션 진행 중).
+> **전 모듈 표준** (참조 구현: todo). 2026-07 auth 이관 완료로 전 모듈이 이 표준을 따른다(§3·§4 3계층 패턴은 소멸).
 > **@nestjs/cqrs 사용 금지** — CommandBus/QueryBus/EventBus/CqrsModule 없음. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 `DOMAIN_EVENT_PUBLISHER` → EventEmitter2 → `@OnEvent`로 처리한다.
 
 ### 디렉터리 구조

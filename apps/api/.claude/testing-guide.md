@@ -54,7 +54,6 @@
 ```
 apps/api/
 ├── src/{name}/
-│   ├── {name}.service.spec.ts          # Unit 테스트 (레거시 Service — auth 한정)
 │   ├── domain/
 │   │   ├── entities/{name}.entity.spec.ts       # 애그리게잇 Unit (클린아키 모듈)
 │   │   └── value-objects/*.vo.spec.ts           # VO 불변식 Unit

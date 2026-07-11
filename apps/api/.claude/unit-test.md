@@ -270,9 +270,9 @@ it("유효하지 않은 토큰이면 예외를 던져야 한다", async () => {
   // Given - 유효하지 않은 토큰
   pushProvider.validateToken.mockReturnValue(false);
 
-  // When & Then - 예외 발생
-  await expect(service.registerPushToken({ userId: mockUserId, token: "invalid" }))
-    .rejects.toThrow(BusinessException);
+  // When & Then - ApplicationException(ErrorCode) 발생
+  await expect(useCase.execute({ userId: mockUserId, token: "invalid" }))
+    .rejects.toMatchObject({ errorCode: "NOTIFICATION_1001" });
   expect(notificationRepo.registerPushToken).not.toHaveBeenCalled();
 });
 ```
