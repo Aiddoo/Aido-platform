@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { TerminusModule } from "@nestjs/terminus";
 import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue/admin-notification-queue.constants";
 import { AI_REPORT_QUEUE } from "@/ai-report/processors/report-generation.processor";
-import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion/processors/suggestion-analysis.processor";
+import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { TODO_REMINDER_QUEUE } from "@/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";
 import { HealthController } from "./health.controller";
 import { BullHealthIndicator } from "./indicators/bull.health";

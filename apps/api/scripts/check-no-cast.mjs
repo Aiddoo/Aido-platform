@@ -61,6 +61,9 @@ const TARGET_DIRS = [
 	"src/todo-category/domain",
 	"src/todo-category/application",
 	"src/todo-category/infrastructure",
+	"src/ai-suggestion/domain",
+	"src/ai-suggestion/application",
+	"src/ai-suggestion/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

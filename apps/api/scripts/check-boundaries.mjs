@@ -36,6 +36,7 @@ const CLEAN_MODULES = [
 	"cheer",
 	"nudge",
 	"todo-category",
+	"ai-suggestion",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

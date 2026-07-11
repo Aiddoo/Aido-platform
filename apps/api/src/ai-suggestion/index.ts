@@ -1,2 +1,3 @@
-export * from "./ai-suggestion.module";
-export * from "./ai-suggestion.service";
+export { AiSuggestionModule } from "./ai-suggestion.module";
+export { AiSuggestionFacade } from "./application/facades/ai-suggestion.facade";
+export { AI_SUGGESTION_QUEUE } from "./infrastructure/queue/ai-suggestion-queue";

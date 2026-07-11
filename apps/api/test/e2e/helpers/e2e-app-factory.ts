@@ -29,11 +29,9 @@ import {
 	AI_REPORT_QUEUE,
 	ReportGenerationProcessor,
 } from "@/ai-report/processors/report-generation.processor";
-import { SuggestionAnalysisJob } from "@/ai-suggestion/jobs/suggestion-analysis.job";
-import {
-	AI_SUGGESTION_QUEUE,
-	SuggestionAnalysisProcessor,
-} from "@/ai-suggestion/processors/suggestion-analysis.processor";
+import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
+import { SuggestionAnalysisJob } from "@/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
+import { SuggestionAnalysisProcessor } from "@/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
 import { AppModule } from "@/app.module";
 import { AccountPurgeJob } from "@/auth/jobs/account-purge.job";
 import {
