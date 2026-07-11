@@ -60,12 +60,11 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
+import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
+import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider";
 
 describe("OAuth 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -148,6 +147,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				UserConsentRepository,
 				UserPreferenceRepository,
 				TodoCategoryRepository,
+				provisioningSeederTestProvider,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,

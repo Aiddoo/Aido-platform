@@ -4,11 +4,10 @@ import { mockOf } from "@test/mocks";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import type { User } from "@/generated/prisma/client";
-import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
 import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
+	USER_PROVISIONING_SEEDER,
+	type UserProvisioningSeederPort,
+} from "../../ports/user-provisioning-seeder.port";
 import {
 	type ProvisionUserInput,
 	ProvisionUserUseCase,
@@ -18,9 +17,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 	let useCase: ProvisionUserUseCase;
 	let userRepo: Mocked<UserRepository>;
 	let accountRepo: Mocked<AccountRepository>;
-	let consentRepo: Mocked<UserConsentRepository>;
-	let preferenceRepo: Mocked<UserPreferenceRepository>;
-	let categoryRepo: Mocked<TodoCategoryRepository>;
+	let seeder: Mocked<UserProvisioningSeederPort>;
 
 	const createdUser = mockOf<User>({
 		id: "user-1",
@@ -33,9 +30,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 		useCase = unit;
 		userRepo = unitRef.get(UserRepository);
 		accountRepo = unitRef.get(AccountRepository);
-		consentRepo = unitRef.get(UserConsentRepository);
-		preferenceRepo = unitRef.get(UserPreferenceRepository);
-		categoryRepo = unitRef.get(TodoCategoryRepository);
+		seeder = unitRef.get(USER_PROVISIONING_SEEDER);
 
 		userRepo.create.mockResolvedValue(createdUser);
 	});
@@ -48,7 +43,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 		consent: { termsAgreedAt: new Date("2026-01-01T00:00:00Z") },
 	};
 
-	it("크레덴셜: 유저→크레덴셜계정→프로필→동의→설정→카테고리 순서로 생성하고 유저를 반환한다", async () => {
+	it("크레덴셜: 유저→크레덴셜계정→프로필→기본값 시딩 순서로 생성하고 유저를 반환한다", async () => {
 		const result = await useCase.execute(credentialInput);
 
 		expect(userRepo.create).toHaveBeenCalledWith({
@@ -64,21 +59,10 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 		expect(userRepo.createProfile).toHaveBeenCalledWith("user-1", {
 			name: "홍길동",
 		});
-		expect(consentRepo.create).toHaveBeenCalledWith("user-1", {
+		expect(seeder.seedDefaultSettings).toHaveBeenCalledWith("user-1", {
 			termsAgreedAt: new Date("2026-01-01T00:00:00Z"),
 		});
-		expect(preferenceRepo.create).toHaveBeenCalledWith("user-1", {
-			pushEnabled: true,
-			nightPushEnabled: true,
-		});
-		expect(categoryRepo.createMany).toHaveBeenCalledWith(
-			DEFAULT_CATEGORIES.map((category) => ({
-				userId: "user-1",
-				name: category.name,
-				color: category.color,
-				sortOrder: category.sortOrder,
-			})),
-		);
+		expect(seeder.seedDefaultCategories).toHaveBeenCalledWith("user-1");
 		expect(result).toBe(createdUser);
 	});
 

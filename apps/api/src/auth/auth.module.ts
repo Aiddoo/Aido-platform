@@ -6,16 +6,14 @@ import { AdminNotificationModule } from "@/admin-notification/admin-notification
 import { EmailModule } from "@/email/email.module";
 import type { AccountProvider } from "@/generated/prisma/client";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { TodoCategoryRepository } from "@/todo-category";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
+import { TodoCategoryModule } from "@/todo-category";
+import { UserSettingsModule } from "@/user-settings";
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
 } from "./application/ports/oauth-identity-provider.port";
+import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port";
 import {
 	AuthService,
 	OAuthService,
@@ -28,6 +26,7 @@ import {
 } from "./application/services";
 import { IssueLoginUseCase } from "./application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "./application/use-cases/provision-user/provision-user.use-case";
+import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter";
 import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards";
 import {
 	AppleOAuthProvider,
@@ -77,6 +76,9 @@ import {
 		BullModule.registerQueue({ name: ACCOUNT_PURGE_QUEUE }),
 		AdminNotificationModule,
 		EmailModule,
+		// 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
+		UserSettingsModule,
+		TodoCategoryModule,
 	],
 	controllers: [
 		AuthController,
@@ -93,9 +95,11 @@ import {
 		LoginAttemptRepository,
 		SecurityLogRepository,
 		OAuthStateRepository,
-		UserConsentRepository,
-		UserPreferenceRepository,
-		TodoCategoryRepository,
+		// 프로비저닝 시딩 어댑터 (user-settings·todo-category 파사드 위임)
+		{
+			provide: USER_PROVISIONING_SEEDER,
+			useClass: UserProvisioningSeederAdapter,
+		},
 		// Services
 		PasswordService,
 		SessionService,

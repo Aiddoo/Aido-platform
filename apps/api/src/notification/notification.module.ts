@@ -12,6 +12,7 @@ import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
+import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
 import { NotificationService } from "./application/services/notification.service";
 import { PushDeliveryService } from "./application/services/push-delivery.service";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
@@ -20,6 +21,7 @@ import { MarkAllAsReadUseCase } from "./application/use-cases/mark-all-as-read/m
 import { MarkAsReadUseCase } from "./application/use-cases/mark-as-read/mark-as-read.use-case";
 import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
 import { ExpoPushProvider } from "./infrastructure/providers/expo-push.provider";
 import { NotificationQueueModule } from "./infrastructure/queue/notification-queue.module";
@@ -58,6 +60,11 @@ import { NotificationController } from "./presentation/notification.controller";
 		// Repository (포트 바인딩)
 		NotificationRepository,
 		{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
+		// 사용자 설정 접근 (UserSettingsFacade 위임 어댑터)
+		{
+			provide: USER_NOTIFICATION_SETTINGS,
+			useClass: UserNotificationSettingsAdapter,
+		},
 		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)
 		{
 			provide: PUSH_PROVIDER,

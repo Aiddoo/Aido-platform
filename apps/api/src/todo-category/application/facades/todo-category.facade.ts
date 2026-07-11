@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
+import { DEFAULT_CATEGORIES } from "../../domain/default-categories";
 import type { TodoCategory } from "../../domain/entities/todo-category.entity";
+import { TodoCategoryRepository } from "../../todo-category.repository";
 import type { TodoCategoryWithCountView } from "../ports/todo-category.repository.port";
 import {
 	type ResourceLimitInfo,
@@ -35,6 +37,7 @@ export class TodoCategoryFacade {
 		private readonly updateUseCase: UpdateTodoCategoryUseCase,
 		private readonly deleteUseCase: DeleteTodoCategoryUseCase,
 		private readonly reorderUseCase: ReorderTodoCategoryUseCase,
+		private readonly seedRepository: TodoCategoryRepository,
 	) {}
 
 	getResourceLimitInfo(userId: string): Promise<ResourceLimitInfo> {
@@ -77,5 +80,20 @@ export class TodoCategoryFacade {
 	/** 크로스모듈(ai): 사용자 카테고리 목록(비캐시) */
 	listForUser(userId: string): Promise<TodoCategoryWithCountView[]> {
 		return this.reader.listForUser(userId);
+	}
+
+	/**
+	 * 크로스모듈(auth 프로비저닝): 회원가입 시 기본 카테고리 시딩.
+	 * 호출측이 연 CLS 트랜잭션에 참여한다.
+	 */
+	async seedDefaultCategories(userId: string): Promise<void> {
+		await this.seedRepository.createMany(
+			DEFAULT_CATEGORIES.map((category) => ({
+				userId,
+				name: category.name,
+				color: category.color,
+				sortOrder: category.sortOrder,
+			})),
+		);
 	}
 }

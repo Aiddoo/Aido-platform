@@ -57,12 +57,11 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
+import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
+import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider";
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -128,6 +127,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				UserConsentRepository,
 				UserPreferenceRepository,
 				TodoCategoryRepository,
+				provisioningSeederTestProvider,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,

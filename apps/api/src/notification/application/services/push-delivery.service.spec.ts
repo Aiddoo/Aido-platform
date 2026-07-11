@@ -11,10 +11,6 @@ import type { PushToken } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
 
 import {
 	NOTIFICATION_REPOSITORY,
@@ -28,6 +24,10 @@ import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "../../application/ports/push-rate-limiter.port";
+import {
+	USER_NOTIFICATION_SETTINGS,
+	type UserNotificationSettingsPort,
+} from "../../application/ports/user-notification-settings.port";
 import { PushDeliveryService } from "./push-delivery.service";
 
 // isNightTime을 제어 가능하게 mock (dayjs 시간 경계를 결정론적으로 통제)
@@ -43,8 +43,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 	let service: PushDeliveryService;
 	let notificationRepository: Mocked<NotificationRepositoryPort>;
 	let pushProvider: Mocked<PushProvider>;
-	let userPreferenceRepository: Mocked<UserPreferenceRepository>;
-	let userConsentRepository: Mocked<UserConsentRepository>;
+	let userSettings: Mocked<UserNotificationSettingsPort>;
 	let cacheService: Mocked<CacheService>;
 
 	beforeEach(async () => {
@@ -78,8 +77,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 		service = unit;
 		notificationRepository = unitRef.get(NOTIFICATION_REPOSITORY);
 		pushProvider = unitRef.get(PUSH_PROVIDER);
-		userPreferenceRepository = unitRef.get(UserPreferenceRepository);
-		userConsentRepository = unitRef.get(UserConsentRepository);
+		userSettings = unitRef.get(USER_NOTIFICATION_SETTINGS);
 		cacheService = unitRef.get(CacheService);
 
 		// 캐시 기본 동작: pass-through (캐시 미스 시뮬레이션)
@@ -120,7 +118,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 			expect(notificationRepository.registerPushToken).toHaveBeenCalledWith(
 				data,
 			);
-			expect(userPreferenceRepository.upsertTimezone).toHaveBeenCalledWith(
+			expect(userSettings.upsertPushTimezone).toHaveBeenCalledWith(
 				"user-1",
 				"Asia/Seoul",
 			);
@@ -147,11 +145,11 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 			await service.registerPushToken(data);
 
 			// Then
-			expect(userPreferenceRepository.upsertLocale).toHaveBeenCalledWith(
+			expect(userSettings.upsertPushLocale).toHaveBeenCalledWith(
 				"user-1",
 				"en",
 			);
-			expect(userPreferenceRepository.upsertTimezone).not.toHaveBeenCalled();
+			expect(userSettings.upsertPushTimezone).not.toHaveBeenCalled();
 			expect(cacheService.invalidateUserPreference).toHaveBeenCalledWith(
 				"user-1",
 			);
@@ -172,8 +170,8 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 			await service.registerPushToken(data);
 
 			// Then
-			expect(userPreferenceRepository.upsertTimezone).not.toHaveBeenCalled();
-			expect(userPreferenceRepository.upsertLocale).not.toHaveBeenCalled();
+			expect(userSettings.upsertPushTimezone).not.toHaveBeenCalled();
+			expect(userSettings.upsertPushLocale).not.toHaveBeenCalled();
 			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 			expect(cacheService.invalidateUserPreference).not.toHaveBeenCalled();
 		});
@@ -248,7 +246,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 	describe("shouldSendPush", () => {
 		it("preference가 없으면 false를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(null);
+			userSettings.getPreferenceRecord.mockResolvedValue(null);
 
 			// When
 			const result = await service.shouldSendPush("user-1", "FOLLOW_NEW");
@@ -259,7 +257,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("pushEnabled가 false면 false를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-1").withPushDisabled().build(),
 			);
 
@@ -272,7 +270,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("야간 시간에 nightPushEnabled가 false면 false를 반환한다 (면제 타입 제외)", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-1")
 					.withTimezone("Asia/Seoul")
 					.build(),
@@ -288,7 +286,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("모든 조건 통과 시 true를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-1")
 					.withNightPushEnabled(true)
 					.withTimezone("Asia/Seoul")
@@ -304,7 +302,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("야간이지만 WEATHER_MORNING은 nightPushEnabled=false여도 발송한다", async () => {
 			// Given — 사용자가 직접 선택한 아침 시간이므로 야간 면제 필수
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-1")
 					.withTimezone("Asia/Seoul")
 					.build(),
@@ -320,7 +318,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("1시간 내 15건 초과 시 rate limit으로 false를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-rate")
 					.withNightPushEnabled(true)
 					.build(),
@@ -345,7 +343,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("다른 사용자의 rate limit은 독립적이다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-a")
 					.withNightPushEnabled(true)
 					.build(),
@@ -365,7 +363,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 	describe("getUserLocale", () => {
 		it("preference에 locale이 있으면 그대로 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-1").withLocale("en").build(),
 			);
 
@@ -378,7 +376,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("preference가 없으면 ko를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(null);
+			userSettings.getPreferenceRecord.mockResolvedValue(null);
 
 			// When
 			const result = await service.getUserLocale("user-1");
@@ -415,7 +413,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("shouldSendPush와 같은 캐시 래퍼(wrapUserPreference)를 사용한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
+			userSettings.getPreferenceRecord.mockResolvedValue(
 				UserPreferenceBuilder.create("user-1").withLocale("en").build(),
 			);
 
@@ -528,7 +526,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 			const token1 = PushTokenBuilder.create("user-1").build();
 			const token2 = PushTokenBuilder.create("user-2").build();
 
-			userPreferenceRepository.findByUserIds.mockResolvedValue([
+			userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
 				UserPreferenceBuilder.create("user-1")
 					.withNightPushEnabled(true)
 					.build(),
@@ -536,7 +534,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 					.withNightPushEnabled(true)
 					.build(),
 			]);
-			userConsentRepository.findByUserIds.mockResolvedValue([]);
+			userSettings.getConsentRecordsByUserIds.mockResolvedValue([]);
 			notificationRepository.findActivePushTokensByUsers.mockResolvedValue([
 				token1,
 				token2,
@@ -572,13 +570,13 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("설정 미충족 사용자를 필터링한다", async () => {
 			// Given — user-2는 pushEnabled=false
-			userPreferenceRepository.findByUserIds.mockResolvedValue([
+			userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
 				UserPreferenceBuilder.create("user-1")
 					.withNightPushEnabled(true)
 					.build(),
 				UserPreferenceBuilder.create("user-2").withPushDisabled().build(),
 			]);
-			userConsentRepository.findByUserIds.mockResolvedValue([]);
+			userSettings.getConsentRecordsByUserIds.mockResolvedValue([]);
 			const token1 = PushTokenBuilder.create("user-1").build();
 			notificationRepository.findActivePushTokensByUsers.mockResolvedValue([
 				token1,
@@ -616,10 +614,10 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 		it("대상자가 없으면 발송하지 않는다", async () => {
 			// Given — 모든 사용자가 pushEnabled=false
-			userPreferenceRepository.findByUserIds.mockResolvedValue([
+			userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
 				UserPreferenceBuilder.create("user-1").withPushDisabled().build(),
 			]);
-			userConsentRepository.findByUserIds.mockResolvedValue([]);
+			userSettings.getConsentRecordsByUserIds.mockResolvedValue([]);
 
 			// When
 			service.fireAndForgetBatchPush([

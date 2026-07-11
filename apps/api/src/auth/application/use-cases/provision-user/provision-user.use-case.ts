@@ -1,12 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import type { AccountProvider, UserStatus } from "@/auth/domain/types";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
 import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
+	USER_PROVISIONING_SEEDER,
+	type UserProvisioningSeederPort,
+} from "../../ports/user-provisioning-seeder.port";
 
 /** 신원 계정 유형 — 크레덴셜(이메일) 또는 소셜(OAuth) */
 export type ProvisionAccount =
@@ -51,9 +50,8 @@ export class ProvisionUserUseCase {
 	constructor(
 		private readonly userRepository: UserRepository,
 		private readonly accountRepository: AccountRepository,
-		private readonly userConsentRepository: UserConsentRepository,
-		private readonly userPreferenceRepository: UserPreferenceRepository,
-		private readonly todoCategoryRepository: TodoCategoryRepository,
+		@Inject(USER_PROVISIONING_SEEDER)
+		private readonly seeder: UserProvisioningSeederPort,
 	) {}
 
 	async execute(input: ProvisionUserInput): Promise<ProvisionedUser> {
@@ -83,21 +81,9 @@ export class ProvisionUserUseCase {
 
 		await this.userRepository.createProfile(user.id, input.profile);
 
-		await this.userConsentRepository.create(user.id, input.consent);
+		await this.seeder.seedDefaultSettings(user.id, input.consent);
 
-		await this.userPreferenceRepository.create(user.id, {
-			pushEnabled: true,
-			nightPushEnabled: true,
-		});
-
-		await this.todoCategoryRepository.createMany(
-			DEFAULT_CATEGORIES.map((category) => ({
-				userId: user.id,
-				name: category.name,
-				color: category.color,
-				sortOrder: category.sortOrder,
-			})),
-		);
+		await this.seeder.seedDefaultCategories(user.id);
 
 		return user;
 	}

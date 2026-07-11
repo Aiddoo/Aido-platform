@@ -1,8 +1,13 @@
-export { UserSettingsFacade } from "./application/facades/user-settings.facade";
+export {
+	type DefaultSettingsConsent,
+	type UserConsentRecordWithId,
+	type UserPreferenceRecordWithId,
+	UserSettingsFacade,
+} from "./application/facades/user-settings.facade";
+export type { UserConsentRecord } from "./domain/records/user-consent.record";
+export type { UserPreferenceRecord } from "./domain/records/user-preference.record";
 export {
 	computeEffectiveStreak,
 	type EffectiveStreakResult,
 } from "./domain/services/effective-streak";
-export { UserConsentRepository } from "./infrastructure/persistence/user-consent.repository";
-export { UserPreferenceRepository } from "./infrastructure/persistence/user-preference.repository";
 export { UserSettingsModule } from "./user-settings.module";

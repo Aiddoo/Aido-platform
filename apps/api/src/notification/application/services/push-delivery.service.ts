@@ -22,10 +22,6 @@ import {
 	type SupportedLocale,
 	toSupportedLocale,
 } from "@/shared/presentation/decorators";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
 import type { PushTokenRecord } from "../../domain/records/notification.record";
 import { isNightTime } from "../../domain/services/night-time";
 import {
@@ -50,6 +46,10 @@ import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "../ports/push-rate-limiter.port";
+import {
+	USER_NOTIFICATION_SETTINGS,
+	type UserNotificationSettingsPort,
+} from "../ports/user-notification-settings.port";
 
 @Injectable()
 export class PushDeliveryService implements BeforeApplicationShutdown {
@@ -60,8 +60,8 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
-		private readonly userPreferenceRepository: UserPreferenceRepository,
-		private readonly userConsentRepository: UserConsentRepository,
+		@Inject(USER_NOTIFICATION_SETTINGS)
+		private readonly userSettings: UserNotificationSettingsPort,
 		@Inject(PUSH_RATE_LIMITER)
 		private readonly rateLimiter: IPushRateLimiter,
 		private readonly cacheService: CacheService,
@@ -80,17 +80,11 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		await this.cacheService.invalidatePushTokens(data.userId);
 
 		if (data.timezone) {
-			await this.userPreferenceRepository.upsertTimezone(
-				data.userId,
-				data.timezone,
-			);
+			await this.userSettings.upsertPushTimezone(data.userId, data.timezone);
 		}
 
 		if (data.locale) {
-			await this.userPreferenceRepository.upsertLocale(
-				data.userId,
-				data.locale,
-			);
+			await this.userSettings.upsertPushLocale(data.userId, data.locale);
 		}
 
 		if (data.timezone || data.locale) {
@@ -174,8 +168,8 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		const userIds = [...new Set(dataList.map((d) => d.userId))];
 
 		const [preferences, consents] = await Promise.all([
-			this.userPreferenceRepository.findByUserIds(userIds),
-			this.userConsentRepository.findByUserIds(userIds),
+			this.userSettings.getPreferenceRecordsByUserIds(userIds),
+			this.userSettings.getConsentRecordsByUserIds(userIds),
 		]);
 
 		const prefMap = new Map(preferences.map((p) => [p.userId, p]));
@@ -219,7 +213,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 	 */
 	async #loadPreference(userId: string): Promise<CachedUserPreference> {
 		return this.cacheService.wrapUserPreference(userId, async () => {
-			const raw = await this.userPreferenceRepository.findByUserId(userId);
+			const raw = await this.userSettings.getPreferenceRecord(userId);
 			if (!raw) {
 				return {
 					pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
@@ -301,7 +295,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		}
 
 		if (isMarketingNotification(type)) {
-			const consent = await this.userConsentRepository.findByUserId(userId);
+			const consent = await this.userSettings.getConsentRecord(userId);
 			if (!consent?.marketingAgreedAt) {
 				return false;
 			}

@@ -42,11 +42,7 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { TodoCategoryRepository } from "@/todo-category";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
+import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 import { OAuthService } from "./oauth.service";
@@ -128,24 +124,17 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 		);
 
 		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — 소셜 신규가입
-		// 테스트가 유저·OAuth계정·프로필·동의·설정·카테고리 시딩을 그대로 검증하도록 배선.
-		// 동의/설정/카테고리 저장소는 OAuthService 직접 의존이 아니므로 독립 mock으로 구성한다.
+		// 테스트가 유저·OAuth계정·프로필 생성과 기본값 시딩을 그대로 검증하도록 배선.
+		// 기본값 시딩은 OAuthService 직접 의존이 아니므로 시더 포트를 독립 mock으로 구성한다.
 		const provisionUser = unitRef.get(ProvisionUserUseCase);
-		const consentRepoStub = mockOf<UserConsentRepository>({
-			create: jest.fn(),
-		});
-		const preferenceRepoStub = mockOf<UserPreferenceRepository>({
-			create: jest.fn(),
-		});
-		const categoryRepoStub = mockOf<TodoCategoryRepository>({
-			createMany: jest.fn(),
+		const seederStub = mockOf<UserProvisioningSeederPort>({
+			seedDefaultSettings: jest.fn(),
+			seedDefaultCategories: jest.fn(),
 		});
 		const realProvisionUser = new ProvisionUserUseCase(
 			asDep(userRepo),
 			asDep(accountRepo),
-			consentRepoStub,
-			preferenceRepoStub,
-			categoryRepoStub,
+			seederStub,
 		);
 		provisionUser.execute.mockImplementation((input) =>
 			realProvisionUser.execute(input),

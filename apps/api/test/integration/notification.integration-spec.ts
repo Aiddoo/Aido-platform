@@ -33,6 +33,7 @@ import {
 	PUSH_RATE_LIMITER,
 	PushDeliveryService,
 } from "@/notification";
+import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
 import { GetUnreadCountUseCase } from "@/notification/application/use-cases/get-unread-count/get-unread-count.use-case";
@@ -46,10 +47,8 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import { LOCK_PROVIDER } from "@/shared/infrastructure/lock/interfaces/lock.interface";
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/user-settings";
+import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 
 describe("NotificationService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -140,6 +139,29 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 				PaginationService,
 				UserPreferenceRepository,
 				UserConsentRepository,
+				{
+					// 푸시 발송 판단용 사용자 설정 포트 — 실제 저장소(mock DB)에 위임하여
+					// 프로덕션 UserNotificationSettingsAdapter의 읽기 시맨틱을 그대로 재현
+					provide: USER_NOTIFICATION_SETTINGS,
+					useFactory: (
+						preferenceRepository: UserPreferenceRepository,
+						consentRepository: UserConsentRepository,
+					) => ({
+						upsertPushTimezone: (userId: string, timezone: string) =>
+							preferenceRepository.upsertTimezone(userId, timezone),
+						upsertPushLocale: (userId: string, locale: string) =>
+							preferenceRepository.upsertLocale(userId, locale),
+						getPreferenceRecord: (userId: string) =>
+							preferenceRepository.findByUserId(userId),
+						getPreferenceRecordsByUserIds: (userIds: string[]) =>
+							preferenceRepository.findByUserIds(userIds),
+						getConsentRecord: (userId: string) =>
+							consentRepository.findByUserId(userId),
+						getConsentRecordsByUserIds: (userIds: string[]) =>
+							consentRepository.findByUserIds(userIds),
+					}),
+					inject: [UserPreferenceRepository, UserConsentRepository],
+				},
 				{
 					provide: DatabaseService,
 					useValue: mockDatabaseService,
