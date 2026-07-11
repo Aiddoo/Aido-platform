@@ -25,6 +25,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
 import { DailyCompletionFacade } from "@/daily-completion/application/facades/daily-completion.facade";
+import { DAILY_COMPLETION_CACHE } from "@/daily-completion/application/ports/daily-completion-cache.port";
 import { TODO_COMPLETION_REPOSITORY } from "@/daily-completion/application/ports/todo-completion.repository.port";
 import { DailyCompletionQueryUseCases } from "@/daily-completion/application/queries";
 import { PrismaTodoCompletionRepository } from "@/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
@@ -60,6 +61,15 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 					// 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
 					provide: TransactionHost,
 					useValue: { tx: databaseService },
+				},
+				{
+					// 통합 테스트는 DB 경로를 검증하므로 캐시는 항상 미스인 no-op 스텁
+					provide: DAILY_COMPLETION_CACHE,
+					useValue: {
+						getRange: async () => undefined,
+						setRange: async () => undefined,
+						invalidate: async () => undefined,
+					},
 				},
 			],
 		}).compile();
