@@ -1,5 +1,5 @@
 /**
- * SendTargetedNotificationHandler 단위 테스트
+ * SendTargetedNotificationUseCase 단위 테스트
  *
  * 실제 DB/발송 없이 포트를 스텁으로 대체해 존재 사용자 필터·발송·예외를 검증한다.
  */
@@ -14,20 +14,19 @@ import {
 	ADMIN_USER_DIRECTORY,
 	type AdminUserDirectoryPort,
 } from "../../ports/admin-user-directory.port";
-import { SendTargetedNotificationCommand } from "./send-targeted-notification.command";
-import { SendTargetedNotificationHandler } from "./send-targeted-notification.handler";
+import { SendTargetedNotificationUseCase } from "./send-targeted-notification.use-case";
 
-describe("SendTargetedNotificationHandler — 타겟 발송 핸들러", () => {
-	let handler: SendTargetedNotificationHandler;
+describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
+	let useCase: SendTargetedNotificationUseCase;
 	let userDirectory: Mocked<AdminUserDirectoryPort>;
 	let notifier: Mocked<AdminBroadcastNotifierPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
-			SendTargetedNotificationHandler,
+			SendTargetedNotificationUseCase,
 		).compile();
 
-		handler = unit;
+		useCase = unit;
 		userDirectory = unitRef.get(ADMIN_USER_DIRECTORY);
 		notifier = unitRef.get(ADMIN_BROADCAST_NOTIFIER);
 	});
@@ -38,14 +37,12 @@ describe("SendTargetedNotificationHandler — 타겟 발송 핸들러", () => {
 		notifier.sendBatch.mockResolvedValue({ count: 2 });
 
 		// When - 타겟 발송을 실행하면
-		const result = await handler.execute(
-			new SendTargetedNotificationCommand(
-				"제목",
-				"내용",
-				["u1", "u2", "u3"],
-				undefined,
-			),
-		);
+		const result = await useCase.execute({
+			title: "제목",
+			body: "내용",
+			userIds: ["u1", "u2", "u3"],
+			action: undefined,
+		});
 
 		// Then - 존재 사용자 수 기준으로 집계된다
 		const messages = notifier.sendBatch.mock.calls[0]?.[0];
@@ -64,9 +61,12 @@ describe("SendTargetedNotificationHandler — 타겟 발송 핸들러", () => {
 
 		// When/Then - 대상 없음 예외로 실패한다
 		await expect(
-			handler.execute(
-				new SendTargetedNotificationCommand("제목", "내용", ["u1"], undefined),
-			),
+			useCase.execute({
+				title: "제목",
+				body: "내용",
+				userIds: ["u1"],
+				action: undefined,
+			}),
 		).rejects.toMatchObject({ errorCode: "ADMIN_1402" });
 		expect(notifier.sendBatch).not.toHaveBeenCalled();
 	});

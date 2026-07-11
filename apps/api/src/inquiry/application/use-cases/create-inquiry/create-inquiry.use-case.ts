@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
-import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import type { InquiryCategory } from "@aido/validators";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { buildInquirySubmission } from "../../../domain/services/inquiry-submission";
@@ -8,24 +8,33 @@ import {
 	INQUIRY_MAILER,
 	type InquiryMailerPort,
 } from "../../ports/inquiry-mailer.port";
-import { CreateInquiryCommand } from "./create-inquiry.command";
 
-@CommandHandler(CreateInquiryCommand)
-export class CreateInquiryHandler
-	implements ICommandHandler<CreateInquiryCommand, void>
-{
-	readonly #logger = new Logger(CreateInquiryHandler.name);
+export interface CreateInquiryInput {
+	userId: string;
+	userEmail: string;
+	category: InquiryCategory;
+	content: string;
+}
+
+/**
+ * 문의 접수 use-case
+ *
+ * 사용자 문의를 담당자에게 전달한다. 전달 실패 시 INQUIRY_1501을 던진다.
+ */
+@Injectable()
+export class CreateInquiryUseCase {
+	readonly #logger = new Logger(CreateInquiryUseCase.name);
 
 	constructor(
 		@Inject(INQUIRY_MAILER) private readonly mailer: InquiryMailerPort,
 	) {}
 
-	async execute(command: CreateInquiryCommand): Promise<void> {
+	async execute(input: CreateInquiryInput): Promise<void> {
 		const submission = buildInquirySubmission(
 			{
-				userEmail: command.userEmail,
-				category: command.category,
-				content: command.content,
+				userEmail: input.userEmail,
+				category: input.category,
+				content: input.content,
 			},
 			now(),
 		);
@@ -34,13 +43,13 @@ export class CreateInquiryHandler
 
 		if (!result.success) {
 			throw new ApplicationException(ErrorCode.INQUIRY_1501, {
-				userId: command.userId,
+				userId: input.userId,
 				error: result.error,
 			});
 		}
 
 		this.#logger.log(
-			`Inquiry submitted: userId=${command.userId}, category=${command.category}`,
+			`Inquiry submitted: userId=${input.userId}, category=${input.category}`,
 		);
 	}
 }

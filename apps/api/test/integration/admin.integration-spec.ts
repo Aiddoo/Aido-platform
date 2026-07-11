@@ -2,8 +2,8 @@
  * Admin 클린아키텍처 수직 통합 테스트
  *
  * @description
- * AdminFacade → CommandBus → 핸들러 → 포트 어댑터(Prisma/Notification)까지의
- * 배선을 실제 CQRS 버스로 검증합니다. DatabaseService·NotificationService는
+ * AdminFacade → use-case → 포트 어댑터(Prisma/Notification)까지의
+ * 배선을 검증합니다. DatabaseService·NotificationService는
  * mock으로 대체해 실제 DB/발송 없이 대상 필터링·배치 발송·예외를 확인합니다.
  *
  * 실행 명령:
@@ -12,14 +12,13 @@
  * ```
  */
 
-import { CqrsModule } from "@nestjs/cqrs";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { AdminFacade } from "@/admin/application/facades/admin.facade";
 import { ADMIN_BROADCAST_NOTIFIER } from "@/admin/application/ports/admin-broadcast-notifier.port";
 import { ADMIN_USER_DIRECTORY } from "@/admin/application/ports/admin-user-directory.port";
-import { CommandHandlers } from "@/admin/application/use-cases";
+import { AdminUseCases } from "@/admin/application/use-cases";
 import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "@/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
 import { NotificationService } from "@/notification";
@@ -47,10 +46,9 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 		suppressLogger();
 
 		module = await Test.createTestingModule({
-			imports: [CqrsModule.forRoot()],
 			providers: [
 				AdminFacade,
-				...CommandHandlers,
+				...AdminUseCases,
 				{
 					provide: ADMIN_USER_DIRECTORY,
 					useClass: PrismaAdminUserDirectoryAdapter,

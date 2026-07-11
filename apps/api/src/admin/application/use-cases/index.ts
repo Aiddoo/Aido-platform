@@ -1,8 +1,8 @@
-import { BroadcastNotificationHandler } from "./broadcast-notification/broadcast-notification.handler";
-import { SendTargetedNotificationHandler } from "./send-targeted-notification/send-targeted-notification.handler";
+import { BroadcastNotificationUseCase } from "./broadcast-notification/broadcast-notification.use-case";
+import { SendTargetedNotificationUseCase } from "./send-targeted-notification/send-targeted-notification.use-case";
 
-/** 모듈 등록용 커맨드 핸들러 목록 */
-export const CommandHandlers = [
-	BroadcastNotificationHandler,
-	SendTargetedNotificationHandler,
+/** 모듈 등록용 use-case 목록 */
+export const AdminUseCases = [
+	BroadcastNotificationUseCase,
+	SendTargetedNotificationUseCase,
 ];

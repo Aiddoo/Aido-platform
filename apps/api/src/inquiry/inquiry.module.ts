@@ -1,9 +1,8 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 import { EmailModule } from "@/email/email.module";
 import { InquiryFacade } from "./application/facades/inquiry.facade";
 import { INQUIRY_MAILER } from "./application/ports/inquiry-mailer.port";
-import { CommandHandlers } from "./application/use-cases";
+import { InquiryUseCases } from "./application/use-cases";
 import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/email-inquiry-mailer.adapter";
 import { InquiryController } from "./presentation/inquiry.controller";
 
@@ -14,12 +13,12 @@ import { InquiryController } from "./presentation/inquiry.controller";
  * 현재 어댑터는 이메일(Resend)이다 — 슬랙/웹훅으로 바꾸려면 어댑터만 교체한다.
  */
 @Module({
-	imports: [CqrsModule, EmailModule],
+	imports: [EmailModule],
 	controllers: [InquiryController],
 	providers: [
 		InquiryFacade,
 		{ provide: INQUIRY_MAILER, useClass: EmailInquiryMailerAdapter },
-		...CommandHandlers,
+		...InquiryUseCases,
 	],
 })
 export class InquiryModule {}

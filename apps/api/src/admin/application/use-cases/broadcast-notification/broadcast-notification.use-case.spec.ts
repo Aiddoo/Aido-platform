@@ -1,5 +1,5 @@
 /**
- * BroadcastNotificationHandler 단위 테스트
+ * BroadcastNotificationUseCase 단위 테스트
  *
  * 실제 DB/발송 없이 포트를 스텁으로 대체해 배치 스트리밍·집계·예외만 검증한다.
  */
@@ -14,8 +14,7 @@ import {
 	ADMIN_USER_DIRECTORY,
 	type AdminUserDirectoryPort,
 } from "../../ports/admin-user-directory.port";
-import { BroadcastNotificationCommand } from "./broadcast-notification.command";
-import { BroadcastNotificationHandler } from "./broadcast-notification.handler";
+import { BroadcastNotificationUseCase } from "./broadcast-notification.use-case";
 
 /** 주어진 배치들을 순서대로 흘려보내는 async 이터러블 스텁 */
 async function* streamOf(batches: string[][]): AsyncIterable<string[]> {
@@ -24,17 +23,17 @@ async function* streamOf(batches: string[][]): AsyncIterable<string[]> {
 	}
 }
 
-describe("BroadcastNotificationHandler — 브로드캐스트 핸들러", () => {
-	let handler: BroadcastNotificationHandler;
+describe("BroadcastNotificationUseCase — 브로드캐스트", () => {
+	let useCase: BroadcastNotificationUseCase;
 	let userDirectory: Mocked<AdminUserDirectoryPort>;
 	let notifier: Mocked<AdminBroadcastNotifierPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
-			BroadcastNotificationHandler,
+			BroadcastNotificationUseCase,
 		).compile();
 
-		handler = unit;
+		useCase = unit;
 		userDirectory = unitRef.get(ADMIN_USER_DIRECTORY);
 		notifier = unitRef.get(ADMIN_BROADCAST_NOTIFIER);
 	});
@@ -52,9 +51,12 @@ describe("BroadcastNotificationHandler — 브로드캐스트 핸들러", () => 
 			.mockResolvedValueOnce({ count: 2 });
 
 		// When - 브로드캐스트를 실행하면
-		const result = await handler.execute(
-			new BroadcastNotificationCommand("제목", "내용", "ALL", undefined),
-		);
+		const result = await useCase.execute({
+			title: "제목",
+			body: "내용",
+			targetFilter: "ALL",
+			action: undefined,
+		});
 
 		// Then - 배치별로 발송하고 총계를 반환한다
 		expect(notifier.sendBatch).toHaveBeenCalledTimes(2);
@@ -71,12 +73,15 @@ describe("BroadcastNotificationHandler — 브로드캐스트 핸들러", () => 
 		notifier.sendBatch.mockResolvedValue({ count: 1 });
 
 		// When - 브로드캐스트를 실행하면
-		await handler.execute(
-			new BroadcastNotificationCommand("제목", "내용", "ALL", {
+		await useCase.execute({
+			title: "제목",
+			body: "내용",
+			targetFilter: "ALL",
+			action: {
 				type: "BROWSER",
 				url: "https://aido.kr/event",
-			}),
-		);
+			},
+		});
 
 		// Then - 발송 메시지에 externalUrl 메타데이터가 포함된다
 		const messages = notifier.sendBatch.mock.calls[0]?.[0];
@@ -92,9 +97,12 @@ describe("BroadcastNotificationHandler — 브로드캐스트 핸들러", () => 
 
 		// When/Then - 대상 없음 예외로 실패한다
 		await expect(
-			handler.execute(
-				new BroadcastNotificationCommand("제목", "내용", "ALL", undefined),
-			),
+			useCase.execute({
+				title: "제목",
+				body: "내용",
+				targetFilter: "ALL",
+				action: undefined,
+			}),
 		).rejects.toMatchObject({ errorCode: "ADMIN_1402" });
 		expect(notifier.sendBatch).not.toHaveBeenCalled();
 	});

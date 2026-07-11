@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/errors";
-import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import type { NotificationAction } from "@aido/validators";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import type { BroadcastTargetFilter } from "../../../domain/broadcast-message";
 import {
 	type BroadcastResult,
 	buildBroadcastResult,
@@ -15,13 +16,22 @@ import {
 	ADMIN_USER_DIRECTORY,
 	type AdminUserDirectoryPort,
 } from "../../ports/admin-user-directory.port";
-import { BroadcastNotificationCommand } from "./broadcast-notification.command";
 
-@CommandHandler(BroadcastNotificationCommand)
-export class BroadcastNotificationHandler
-	implements ICommandHandler<BroadcastNotificationCommand, BroadcastResult>
-{
-	readonly #logger = new Logger(BroadcastNotificationHandler.name);
+export interface BroadcastNotificationInput {
+	title: string;
+	body: string;
+	targetFilter: BroadcastTargetFilter;
+	action: NotificationAction | undefined;
+}
+
+/**
+ * 전체/조건부 알림 브로드캐스트 use-case.
+ *
+ * 대상 필터에 해당하는 사용자에게 알림을 발송한다. 대상이 없으면 ADMIN_1402.
+ */
+@Injectable()
+export class BroadcastNotificationUseCase {
+	readonly #logger = new Logger(BroadcastNotificationUseCase.name);
 
 	constructor(
 		@Inject(ADMIN_USER_DIRECTORY)
@@ -30,15 +40,13 @@ export class BroadcastNotificationHandler
 		private readonly notifier: AdminBroadcastNotifierPort,
 	) {}
 
-	async execute(
-		command: BroadcastNotificationCommand,
-	): Promise<BroadcastResult> {
+	async execute(input: BroadcastNotificationInput): Promise<BroadcastResult> {
 		// 도메인 불변식 검증(제목/본문 비어 있지 않음) 후 캠페인 생성
 		const campaign = BroadcastCampaign.create({
-			title: command.title,
-			body: command.body,
-			targetFilter: command.targetFilter,
-			action: command.action,
+			title: input.title,
+			body: input.body,
+			targetFilter: input.targetFilter,
+			action: input.action,
 		});
 
 		let totalTargets = 0;
@@ -58,12 +66,12 @@ export class BroadcastNotificationHandler
 
 		if (totalTargets === 0) {
 			throw new ApplicationException(ErrorCode.ADMIN_1402, {
-				targetFilter: command.targetFilter,
+				targetFilter: input.targetFilter,
 			});
 		}
 
 		this.#logger.log(
-			`Broadcast notification completed: ${successCount}/${totalTargets} sent, filter=${command.targetFilter}`,
+			`Broadcast notification completed: ${successCount}/${totalTargets} sent, filter=${input.targetFilter}`,
 		);
 
 		return buildBroadcastResult(totalTargets, successCount);

@@ -1,15 +1,14 @@
 import type { InquiryCategory } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
-import { CreateInquiryCommand } from "../use-cases/create-inquiry/create-inquiry.command";
+import { CreateInquiryUseCase } from "../use-cases/create-inquiry/create-inquiry.use-case";
 
 /**
- * 문의 애플리케이션 서비스(Facade) — 컨트롤러와 CommandBus 사이의 얇은 seam.
+ * 문의 애플리케이션 서비스(Facade) — 컨트롤러와 use-case 사이의 얇은 seam.
  * 컨트롤러는 이 Facade만 주입받는다.
  */
 @Injectable()
 export class InquiryFacade {
-	constructor(private readonly commandBus: CommandBus) {}
+	constructor(private readonly createInquiryUseCase: CreateInquiryUseCase) {}
 
 	createInquiry(
 		userId: string,
@@ -17,8 +16,11 @@ export class InquiryFacade {
 		category: InquiryCategory,
 		content: string,
 	): Promise<void> {
-		return this.commandBus.execute(
-			new CreateInquiryCommand(userId, userEmail, category, content),
-		);
+		return this.createInquiryUseCase.execute({
+			userId,
+			userEmail,
+			category,
+			content,
+		});
 	}
 }

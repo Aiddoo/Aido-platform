@@ -1,10 +1,3 @@
-/**
- * CreateInquiryHandler 단위 테스트
- *
- * 실제 이메일을 보내지 않는다 — InquiryMailerPort를 스텁으로 대체해
- * 전달 성공/실패에 따른 핸들러 동작만 검증한다 (SOLID/DIP).
- */
-import type { InquiryCategory } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -12,34 +5,31 @@ import {
 	INQUIRY_MAILER,
 	type InquiryMailerPort,
 } from "../../ports/inquiry-mailer.port";
-import { CreateInquiryCommand } from "./create-inquiry.command";
-import { CreateInquiryHandler } from "./create-inquiry.handler";
+import {
+	type CreateInquiryInput,
+	CreateInquiryUseCase,
+} from "./create-inquiry.use-case";
 
-function makeCommand(
-	overrides: Partial<{
-		userId: string;
-		userEmail: string;
-		category: InquiryCategory;
-		content: string;
-	}> = {},
-): CreateInquiryCommand {
-	return new CreateInquiryCommand(
-		overrides.userId ?? "user-123",
-		overrides.userEmail ?? "user@example.com",
-		overrides.category ?? "BUG_REPORT",
-		overrides.content ?? "앱이 갑자기 종료됩니다.",
-	);
+function makeInput(
+	overrides: Partial<CreateInquiryInput> = {},
+): CreateInquiryInput {
+	return {
+		userId: overrides.userId ?? "user-123",
+		userEmail: overrides.userEmail ?? "user@example.com",
+		category: overrides.category ?? "BUG_REPORT",
+		content: overrides.content ?? "앱이 갑자기 종료됩니다.",
+	};
 }
 
-describe("CreateInquiryHandler — 문의 접수 핸들러", () => {
-	let handler: CreateInquiryHandler;
+describe("CreateInquiryUseCase — 문의 접수", () => {
+	let useCase: CreateInquiryUseCase;
 	let mailer: Mocked<InquiryMailerPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } =
-			await TestBed.solitary(CreateInquiryHandler).compile();
+			await TestBed.solitary(CreateInquiryUseCase).compile();
 
-		handler = unit;
+		useCase = unit;
 		mailer = unitRef.get(INQUIRY_MAILER);
 	});
 
@@ -48,7 +38,7 @@ describe("CreateInquiryHandler — 문의 접수 핸들러", () => {
 		mailer.deliver.mockResolvedValue({ success: true });
 
 		// When - 문의 접수를 실행하면
-		await handler.execute(makeCommand({ category: "BUG_REPORT" }));
+		await useCase.execute(makeInput({ category: "BUG_REPORT" }));
 
 		// Then - 라벨/타임스탬프가 조립된 제출 값으로 메일러가 호출된다
 		expect(mailer.deliver).toHaveBeenCalledTimes(1);
@@ -67,7 +57,7 @@ describe("CreateInquiryHandler — 문의 접수 핸들러", () => {
 		mailer.deliver.mockResolvedValue({ success: false, error: "smtp down" });
 
 		// When/Then - 문의 접수가 비즈니스 예외로 실패해야 한다
-		await expect(handler.execute(makeCommand())).rejects.toMatchObject({
+		await expect(useCase.execute(makeInput())).rejects.toMatchObject({
 			errorCode: "INQUIRY_1501",
 		});
 	});
