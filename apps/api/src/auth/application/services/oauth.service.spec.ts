@@ -566,10 +566,10 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				userRepo.findById.mockResolvedValue(deletedUser);
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
-				// When & Then
+				// When & Then - 탈퇴 계정 복구 불변식(account-restoration-policy)이 소유
 				await expect(
 					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(ApplicationException);
+				).rejects.toThrow(DomainException);
 			});
 		});
 	});

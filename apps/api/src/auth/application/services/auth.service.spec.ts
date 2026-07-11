@@ -1427,13 +1427,13 @@ describe("AuthService — 인증 서비스", () => {
 			passwordService.verify.mockResolvedValue(true);
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 
-			// When & Then
+			// When & Then - 탈퇴 계정 복구 불변식(account-restoration-policy)이 소유
 			await expect(
 				service.login({
 					email: "deleted@example.com",
 					password: "Password123",
 				}),
-			).rejects.toThrow(ApplicationException);
+			).rejects.toThrow(DomainException);
 		});
 
 		it("유예 기간 내 탈퇴 사용자 로그인 시 자동 복구", async () => {

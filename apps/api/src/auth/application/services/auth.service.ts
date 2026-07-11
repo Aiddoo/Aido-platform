@@ -33,6 +33,7 @@ import {
 	SECURITY_EVENT,
 	TOKEN_REUSE_GRACE_PERIOD_MS,
 } from "@/auth/domain/constants/auth.constants";
+import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/account-restoration-policy";
 import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import type { UserStatus } from "@/auth/domain/types";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
@@ -45,7 +46,6 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import {
 	addMilliseconds,
-	subtractDays,
 	subtractMinutes,
 } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
@@ -961,15 +961,7 @@ export class AuthService {
 	 * - 30일 초과면 예외 발생 (cron이 아직 처리하지 못한 edge case)
 	 */
 	#isWithinGracePeriod(user: { deletedAt: Date | null; id: string }): boolean {
-		if (!user.deletedAt) return false;
-
-		const gracePeriodCutoff = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
-		if (user.deletedAt > gracePeriodCutoff) {
-			return true; // 30일 이내 — 복구 가능
-		}
-
-		// 30일 초과 — cron이 아직 hard delete 처리하지 못한 edge case
-		throw new ApplicationException(ErrorCode.USER_0606, { userId: user.id });
+		return assertRestorableWithinGracePeriod(user.deletedAt, user.id);
 	}
 
 	/**

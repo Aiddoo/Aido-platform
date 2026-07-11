@@ -12,12 +12,12 @@ import {
 } from "@/auth/application/ports/oauth-identity-provider.port";
 import type { LoginResult, RequestMetadata } from "@/auth/application/types";
 import {
-	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
 	LOGIN_FAILURE_REASON,
 	SECURITY_EVENT,
 	TRUSTED_EMAIL_PROVIDERS,
 } from "@/auth/domain/constants/auth.constants";
+import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/account-restoration-policy";
 import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import { generateRandomName } from "@/auth/domain/services/random-name.util";
 import type { AccountProvider } from "@/auth/domain/types";
@@ -30,7 +30,6 @@ import {
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import {
 	toISOString,
@@ -612,22 +611,15 @@ export class OAuthService {
 				throw new ApplicationException(ErrorCode.USER_0601, { userId });
 			}
 
-			// 탈퇴 사용자: 유예 기간 내 복구 또는 차단
-			if (user.deletedAt) {
-				const gracePeriodCutoff = subtractDays(
-					ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
-				);
-				if (user.deletedAt > gracePeriodCutoff) {
-					// 30일 이내 — 복구 + 세션 생성을 원자적으로 처리
-					const loginResult = await this.#restoreAndCreateSession(user, {
-						ip,
-						userAgent,
-						provider,
-					});
-					return { ...loginResult, accountRestored: true };
-				}
-				// 30일 초과 — 차단
-				throw new ApplicationException(ErrorCode.USER_0606, { userId });
+			// 탈퇴 사용자: 유예 기간 내 복구 또는 차단(도메인 정책이 소유)
+			if (assertRestorableWithinGracePeriod(user.deletedAt, userId)) {
+				// 30일 이내 — 복구 + 세션 생성을 원자적으로 처리
+				const loginResult = await this.#restoreAndCreateSession(user, {
+					ip,
+					userAgent,
+					provider,
+				});
+				return { ...loginResult, accountRestored: true };
 			}
 
 			this.#validateUserStatus(user.status);
@@ -894,20 +886,12 @@ export class OAuthService {
 			userAgent: string;
 		},
 	): Promise<LoginResult> {
-		// 탈퇴 사용자: 유예 기간 내 복구 또는 차단
-		const needsRestore = !!existingUser.deletedAt;
-		if (existingUser.deletedAt) {
-			const gracePeriodCutoff = subtractDays(
-				ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
-			);
-			if (existingUser.deletedAt <= gracePeriodCutoff) {
-				// 30일 초과 — 차단
-				throw new ApplicationException(ErrorCode.USER_0606, {
-					userId: existingUser.id,
-				});
-			}
-			// 30일 이내 — 아래에서 트랜잭션 내 복구 처리
-		}
+		// 탈퇴 사용자: 유예 기간 내 복구 또는 차단(도메인 정책이 소유)
+		// 유예 기간 이내면 needsRestore=true(아래에서 트랜잭션 내 복구), 초과면 USER_0606
+		const needsRestore = assertRestorableWithinGracePeriod(
+			existingUser.deletedAt,
+			existingUser.id,
+		);
 
 		const isTrusted = this.#isTrustedProvider(provider);
 		const isEmailVerified = options.emailVerified === true;
