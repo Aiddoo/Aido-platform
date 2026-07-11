@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Inject, Logger } from "@nestjs/common";
-import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
@@ -23,13 +22,18 @@ import {
 } from "../../ports/weather-location.repository.port";
 import type { WeatherConditions } from "../../ports/weather-provider.port";
 import { WeatherForecastReader } from "../../services/weather-forecast.reader";
-import { GetWeatherConditionsQuery } from "../get-weather-conditions.query";
 
-@QueryHandler(GetWeatherConditionsQuery)
-export class GetWeatherConditionsHandler
-	implements IQueryHandler<GetWeatherConditionsQuery, WeatherConditions>
-{
-	readonly #logger = new Logger(GetWeatherConditionsHandler.name);
+/**
+ * 사용자 위치 기반 날씨 부가 정보(체감온도·자외선·일출/일몰·미세먼지) 조회 입력.
+ */
+export interface GetWeatherConditionsInput {
+	userId: string;
+	date: Date;
+}
+
+@Injectable()
+export class GetWeatherConditionsUseCase {
+	readonly #logger = new Logger(GetWeatherConditionsUseCase.name);
 
 	constructor(
 		@Inject(WEATHER_LOCATION_REPOSITORY)
@@ -44,8 +48,8 @@ export class GetWeatherConditionsHandler
 		private readonly cacheService: CacheService,
 	) {}
 
-	async execute(query: GetWeatherConditionsQuery): Promise<WeatherConditions> {
-		const location = await this.repository.findByUserId(query.userId);
+	async execute(input: GetWeatherConditionsInput): Promise<WeatherConditions> {
+		const location = await this.repository.findByUserId(input.userId);
 		if (!location) {
 			throw new ApplicationException(ErrorCode.WEATHER_1902);
 		}
@@ -64,7 +68,7 @@ export class GetWeatherConditionsHandler
 		// 2. 현재 기온/풍속 (lifestyle 계산용)
 		const { currentTemp, windSpeed } = await this.#currentTempAndWind(
 			location,
-			query.date,
+			input.date,
 		);
 
 		// 3. 3개 프로바이더 병렬 호출
@@ -76,14 +80,14 @@ export class GetWeatherConditionsHandler
 			this.lifestyleIndexProvider.getIndex(
 				location.latitude,
 				location.longitude,
-				query.date,
+				input.date,
 				currentTemp,
 				windSpeed,
 			),
 			this.sunTimeProvider.getSunTime(
 				location.latitude,
 				location.longitude,
-				query.date,
+				input.date,
 			),
 		]);
 

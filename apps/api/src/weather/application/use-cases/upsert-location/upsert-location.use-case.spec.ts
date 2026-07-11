@@ -1,5 +1,5 @@
 /**
- * UpsertLocationHandler 단위 테스트
+ * UpsertLocationUseCase 단위 테스트
  *
  * 저장소 포트/캐시를 스텁으로 대체해 격자 변경 시 구 격자 캐시 무효화 동작만
  * 검증한다 (SOLID/DIP). 실제 DB·Redis는 통합/E2E에서 담당한다.
@@ -12,8 +12,7 @@ import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
 } from "../../ports/weather-location.repository.port";
-import { UpsertLocationCommand } from "./upsert-location.command";
-import { UpsertLocationHandler } from "./upsert-location.handler";
+import { UpsertLocationUseCase } from "./upsert-location.use-case";
 
 function reconstitute(
 	userId: string,
@@ -31,17 +30,17 @@ function reconstitute(
 	});
 }
 
-describe("UpsertLocationHandler — 위치 등록/수정 핸들러", () => {
-	let handler: UpsertLocationHandler;
+describe("UpsertLocationUseCase — 위치 등록/수정 use-case", () => {
+	let useCase: UpsertLocationUseCase;
 	let repository: Mocked<WeatherLocationRepositoryPort>;
 	let cache: Mocked<CacheService>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
-			UpsertLocationHandler,
+			UpsertLocationUseCase,
 		).compile();
 
-		handler = unit;
+		useCase = unit;
 		repository = unitRef.get(WEATHER_LOCATION_REPOSITORY);
 		cache = unitRef.get(CacheService);
 	});
@@ -53,9 +52,11 @@ describe("UpsertLocationHandler — 위치 등록/수정 핸들러", () => {
 		repository.upsert.mockResolvedValue(saved);
 
 		// When
-		const result = await handler.execute(
-			new UpsertLocationCommand("user-1", 37.5665, 126.978),
-		);
+		const result = await useCase.execute({
+			userId: "user-1",
+			latitude: 37.5665,
+			longitude: 126.978,
+		});
 
 		// Then
 		expect(result).toBe(saved);
@@ -70,9 +71,11 @@ describe("UpsertLocationHandler — 위치 등록/수정 핸들러", () => {
 		repository.upsert.mockResolvedValue(saved);
 
 		// When
-		await handler.execute(
-			new UpsertLocationCommand("user-1", 37.5665, 126.978),
-		);
+		await useCase.execute({
+			userId: "user-1",
+			latitude: 37.5665,
+			longitude: 126.978,
+		});
 
 		// Then
 		expect(cache.delByPattern).not.toHaveBeenCalled();
@@ -87,9 +90,11 @@ describe("UpsertLocationHandler — 위치 등록/수정 핸들러", () => {
 		repository.upsert.mockResolvedValue(saved);
 
 		// When
-		await handler.execute(
-			new UpsertLocationCommand("user-1", 37.5665, 126.978),
-		);
+		await useCase.execute({
+			userId: "user-1",
+			latitude: 37.5665,
+			longitude: 126.978,
+		});
 
 		// Then
 		expect(cache.delByPattern).not.toHaveBeenCalled();
@@ -104,9 +109,11 @@ describe("UpsertLocationHandler — 위치 등록/수정 핸들러", () => {
 		repository.upsert.mockResolvedValue(saved);
 
 		// When
-		await handler.execute(
-			new UpsertLocationCommand("user-1", 37.5665, 126.978),
-		);
+		await useCase.execute({
+			userId: "user-1",
+			latitude: 37.5665,
+			longitude: 126.978,
+		});
 
 		// Then - 구 격자(98:76) 기준으로 패턴/latest/conditions 캐시 삭제
 		expect(cache.delByPattern).toHaveBeenCalledTimes(1);

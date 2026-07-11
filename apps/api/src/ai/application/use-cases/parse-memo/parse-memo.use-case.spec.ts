@@ -1,5 +1,5 @@
 /**
- * ParseMemoHandler 단위 테스트
+ * ParseMemoUseCase 단위 테스트
  *
  * AI_PROVIDER·카테고리 리더·사용량 미터를 스텁으로 대체해 메모 파싱 오케스트레이션
  * (5개 상한·미지 카테고리 대체·에러 규약)만 검증한다.
@@ -13,8 +13,7 @@ import {
 	type UserCategoryReaderPort,
 } from "../../ports/user-category-reader.port";
 import { AiUsageMeter } from "../../services/ai-usage-meter.service";
-import { ParseMemoCommand } from "./parse-memo.command";
-import { ParseMemoHandler } from "./parse-memo.handler";
+import { type ParseMemoInput, ParseMemoUseCase } from "./parse-memo.use-case";
 
 const todo = (title: string, categoryId: number) => ({
 	title,
@@ -28,19 +27,24 @@ const todo = (title: string, categoryId: number) => ({
 	items: [],
 });
 
-describe("ParseMemoHandler — 메모 다중 투두 파싱 핸들러", () => {
-	let handler: ParseMemoHandler;
+describe("ParseMemoUseCase — 메모 다중 투두 파싱 use-case", () => {
+	let useCase: ParseMemoUseCase;
 	let aiProvider: Mocked<AiProvider>;
 	let categoryReader: Mocked<UserCategoryReaderPort>;
 	let usageMeter: Mocked<AiUsageMeter>;
 
-	const command = (): ParseMemoCommand =>
-		new ParseMemoCommand("메모 내용", "user-1", "Asia/Seoul", 1);
+	const input = (): ParseMemoInput => ({
+		content: "메모 내용",
+		userId: "user-1",
+		timezone: "Asia/Seoul",
+		categoryId: 1,
+		locale: "ko",
+	});
 
 	beforeEach(async () => {
 		const { unit, unitRef } =
-			await TestBed.solitary(ParseMemoHandler).compile();
-		handler = unit;
+			await TestBed.solitary(ParseMemoUseCase).compile();
+		useCase = unit;
 		aiProvider = unitRef.get(AI_PROVIDER);
 		categoryReader = unitRef.get(USER_CATEGORY_READER);
 		usageMeter = unitRef.get(AiUsageMeter);
@@ -52,7 +56,7 @@ describe("ParseMemoHandler — 메모 다중 투두 파싱 핸들러", () => {
 	it("가용하지 않으면 AI_1301을 던지고 사용량을 차감하지 않는다", async () => {
 		aiProvider.isAvailable.mockReturnValue(false);
 
-		await expect(handler.execute(command())).rejects.toMatchObject({
+		await expect(useCase.execute(input())).rejects.toMatchObject({
 			errorCode: "AI_1301",
 		});
 		expect(usageMeter.checkAndIncrement).not.toHaveBeenCalled();
@@ -65,7 +69,7 @@ describe("ParseMemoHandler — 메모 다중 투두 파싱 핸들러", () => {
 			usage: { input: 1, output: 1 },
 		});
 
-		const result = await handler.execute(command());
+		const result = await useCase.execute(input());
 
 		expect(usageMeter.checkAndIncrement).toHaveBeenCalledWith("user-1");
 		expect(result.data.todos).toHaveLength(5);
@@ -78,7 +82,7 @@ describe("ParseMemoHandler — 메모 다중 투두 파싱 핸들러", () => {
 			usage: { input: 1, output: 1 },
 		});
 
-		const result = await handler.execute(command());
+		const result = await useCase.execute(input());
 
 		expect(result.data.todos[0]?.categoryId).toBe(7);
 		expect(result.data.todos[1]?.categoryId).toBe(1);
@@ -93,7 +97,7 @@ describe("ParseMemoHandler — 메모 다중 투두 파싱 핸들러", () => {
 			}),
 		);
 
-		await expect(handler.execute(command())).rejects.toMatchObject({
+		await expect(useCase.execute(input())).rejects.toMatchObject({
 			errorCode: "AI_1301",
 		});
 		expect(usageMeter.decrement).toHaveBeenCalledWith("user-1");
@@ -102,7 +106,7 @@ describe("ParseMemoHandler — 메모 다중 투두 파싱 핸들러", () => {
 	it("그 외 오류 시 롤백하고 AI_1302를 던진다", async () => {
 		aiProvider.generateStructured.mockRejectedValue(new Error("parse fail"));
 
-		await expect(handler.execute(command())).rejects.toMatchObject({
+		await expect(useCase.execute(input())).rejects.toMatchObject({
 			errorCode: "AI_1302",
 		});
 		expect(usageMeter.decrement).toHaveBeenCalledWith("user-1");

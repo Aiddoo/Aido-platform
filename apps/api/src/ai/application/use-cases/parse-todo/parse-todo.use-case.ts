@@ -1,32 +1,59 @@
 import { ErrorCode } from "@aido/errors";
+import type { ParsedTodoData } from "@aido/validators";
 import { parsedTodoDataSchema } from "@aido/validators";
-import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import type { SupportedLocale } from "@/shared/presentation/decorators";
 import { buildParseTodoPrompt } from "../../../domain/services/prompts/parse-todo.prompt";
 import { buildParseTodoPromptEn } from "../../../domain/services/prompts/parse-todo.prompt.en";
-import { AI_PROVIDER, type AiProvider } from "../../ports/ai-provider.port";
+import {
+	AI_PROVIDER,
+	type AiProvider,
+	type TokenUsage,
+} from "../../ports/ai-provider.port";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
 } from "../../ports/user-category-reader.port";
 import { AiUsageMeter } from "../../services/ai-usage-meter.service";
-import { ParseTodoCommand, type ParseTodoResult } from "./parse-todo.command";
+
+/** 파싱 메타데이터 (모델·처리시간·토큰). */
+export interface ParseTodoMeta {
+	model: string;
+	processingTimeMs: number;
+	tokenUsage: TokenUsage;
+}
+
+/** 자연어 → 단건 투두 파싱 결과. */
+export interface ParseTodoResult {
+	data: ParsedTodoData;
+	meta: ParseTodoMeta;
+}
 
 /**
- * 자연어 → 단건 투두 파싱 핸들러.
+ * 자연어 텍스트를 투두 데이터로 파싱하는 입력.
+ * 사용량을 차감하는 쓰기 유스케이스다.
+ */
+export interface ParseTodoInput {
+	text: string;
+	userId: string;
+	timezone: string;
+	categoryId: number | undefined;
+	locale: SupportedLocale;
+}
+
+/**
+ * 자연어 → 단건 투두 파싱 use-case.
  *
  * 가용성 확인 → 사용량 원자적 차감 → 프롬프트 조립 → AI 생성 → 카테고리 정합.
  * AI 호출 실패 시 사용량을 보상 감소하고, 호출 실패(AI_1301)/파싱 실패(AI_1302)를
  * 구분해 던진다.
  */
-@CommandHandler(ParseTodoCommand)
-export class ParseTodoHandler
-	implements ICommandHandler<ParseTodoCommand, ParseTodoResult>
-{
-	readonly #logger = new Logger(ParseTodoHandler.name);
+@Injectable()
+export class ParseTodoUseCase {
+	readonly #logger = new Logger(ParseTodoUseCase.name);
 
 	constructor(
 		@Inject(AI_PROVIDER)
@@ -36,8 +63,8 @@ export class ParseTodoHandler
 		private readonly usageMeter: AiUsageMeter,
 	) {}
 
-	async execute(command: ParseTodoCommand): Promise<ParseTodoResult> {
-		const { text, userId, timezone, categoryId, locale } = command;
+	async execute(input: ParseTodoInput): Promise<ParseTodoResult> {
+		const { text, userId, timezone, categoryId, locale } = input;
 		const startTime = Date.now();
 
 		if (!this.aiProvider.isAvailable()) {

@@ -1,14 +1,14 @@
 import { ErrorCode } from "@aido/errors";
-import type { LlmParsedMemoResult } from "@aido/validators";
+import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/validators";
 import {
 	llmParsedMemoResultSchema,
 	parsedMemoDataSchema,
 } from "@aido/validators";
-import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import type { SupportedLocale } from "@/shared/presentation/decorators";
 import { buildParseMemoPrompt } from "../../../domain/services/prompts/parse-memo.prompt";
 import { buildParseMemoPromptEn } from "../../../domain/services/prompts/parse-memo.prompt.en";
 import { AI_PROVIDER, type AiProvider } from "../../ports/ai-provider.port";
@@ -17,19 +17,35 @@ import {
 	type UserCategoryReaderPort,
 } from "../../ports/user-category-reader.port";
 import { AiUsageMeter } from "../../services/ai-usage-meter.service";
-import { ParseMemoCommand, type ParseMemoResult } from "./parse-memo.command";
+import type { ParseTodoMeta } from "../parse-todo/parse-todo.use-case";
+
+/** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
+export interface ParseMemoResult {
+	data: ParsedMemoData;
+	meta: ParseTodoMeta;
+}
 
 /**
- * 메모 → 다중 투두 파싱 핸들러.
+ * 메모 내용을 다중 Todo + SubTodo 데이터로 파싱하는 입력.
+ * parse-todo와 월간 사용량을 공유하는 쓰기 유스케이스다.
+ */
+export interface ParseMemoInput {
+	content: string;
+	userId: string;
+	timezone: string;
+	categoryId: number;
+	locale: SupportedLocale;
+}
+
+/**
+ * 메모 → 다중 투두 파싱 use-case.
  *
  * parse-todo와 동일한 가용성/사용량/에러 규약을 따르되, 최대 5개 todo로 잘라내고
  * 미지 카테고리는 요청 기본 categoryId로 대체한다.
  */
-@CommandHandler(ParseMemoCommand)
-export class ParseMemoHandler
-	implements ICommandHandler<ParseMemoCommand, ParseMemoResult>
-{
-	readonly #logger = new Logger(ParseMemoHandler.name);
+@Injectable()
+export class ParseMemoUseCase {
+	readonly #logger = new Logger(ParseMemoUseCase.name);
 
 	constructor(
 		@Inject(AI_PROVIDER)
@@ -39,8 +55,8 @@ export class ParseMemoHandler
 		private readonly usageMeter: AiUsageMeter,
 	) {}
 
-	async execute(command: ParseMemoCommand): Promise<ParseMemoResult> {
-		const { content, userId, timezone, categoryId, locale } = command;
+	async execute(input: ParseMemoInput): Promise<ParseMemoResult> {
+		const { content, userId, timezone, categoryId, locale } = input;
 		const startTime = Date.now();
 
 		if (!this.aiProvider.isAvailable()) {

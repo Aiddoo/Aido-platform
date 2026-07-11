@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 
 import { AuthModule } from "../auth/auth.module";
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
@@ -7,9 +6,9 @@ import { AiFacade } from "./application/facades/ai.facade";
 import { AI_PROVIDER } from "./application/ports/ai-provider.port";
 import { AI_USAGE_REPOSITORY } from "./application/ports/ai-usage.repository.port";
 import { USER_CATEGORY_READER } from "./application/ports/user-category-reader.port";
-import { QueryHandlers } from "./application/queries/handlers";
+import { AiQueryUseCases } from "./application/queries";
 import { AiUsageMeter } from "./application/services/ai-usage-meter.service";
-import { CommandHandlers } from "./application/use-cases";
+import { AiUseCases } from "./application/use-cases";
 import {
 	AI_PROVIDER_GEMINI,
 	AiRouterAdapter,
@@ -21,7 +20,7 @@ import { AiUsageGuard } from "./infrastructure/guards/ai-usage.guard";
 import { AiController } from "./presentation/ai.controller";
 
 /**
- * AI 모듈 (클린아키텍처 + CQRS)
+ * AI 모듈 (클린아키텍처)
  *
  * 자연어 → 투두/메모 파싱과 월간 사용량 관리를 담당한다. AI 벤더(Gemini via
  * Vercel AI SDK)는 AI_PROVIDER 포트로 추상화되어 어댑터만 교체하면 벤더를 바꿀 수
@@ -45,7 +44,7 @@ import { AiController } from "./presentation/ai.controller";
  * | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ | Google AI API 키 |
  */
 @Module({
-	imports: [CqrsModule, AuthModule, TodoCategoryModule],
+	imports: [AuthModule, TodoCategoryModule],
 	controllers: [AiController],
 	providers: [
 		AiFacade,
@@ -55,8 +54,8 @@ import { AiController } from "./presentation/ai.controller";
 		{ provide: AI_PROVIDER, useClass: AiRouterAdapter },
 		{ provide: AI_USAGE_REPOSITORY, useClass: PrismaAiUsageRepository },
 		{ provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
-		...CommandHandlers,
-		...QueryHandlers,
+		...AiUseCases,
+		...AiQueryUseCases,
 	],
 	exports: [AiFacade, AI_PROVIDER],
 })

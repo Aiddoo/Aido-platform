@@ -1,5 +1,5 @@
-import { ParseMemoHandler } from "./parse-memo/parse-memo.handler";
-import { ParseTodoHandler } from "./parse-todo/parse-todo.handler";
+import { ParseMemoUseCase } from "./parse-memo/parse-memo.use-case";
+import { ParseTodoUseCase } from "./parse-todo/parse-todo.use-case";
 
-/** AI 커맨드 핸들러 (모듈 등록용 배럴). */
-export const CommandHandlers = [ParseTodoHandler, ParseMemoHandler];
+/** AI 커맨드 use-case (모듈 등록용 배럴). */
+export const AiUseCases = [ParseTodoUseCase, ParseMemoUseCase];

@@ -1,5 +1,4 @@
-import { Inject } from "@nestjs/common";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import { Inject, Injectable } from "@nestjs/common";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
 import { UserLocation } from "../../../domain/entities/user-location.entity";
@@ -8,26 +7,33 @@ import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
 } from "../../ports/weather-location.repository.port";
-import { UpsertLocationCommand } from "./upsert-location.command";
 
-@CommandHandler(UpsertLocationCommand)
-export class UpsertLocationHandler
-	implements ICommandHandler<UpsertLocationCommand, UserLocation>
-{
+/**
+ * 사용자 위치 등록/수정 입력. 좌표로부터 격자를 파생해 저장하고, 격자가 바뀌면
+ * 이전 격자의 캐시를 무효화한다.
+ */
+export interface UpsertLocationInput {
+	userId: string;
+	latitude: number;
+	longitude: number;
+}
+
+@Injectable()
+export class UpsertLocationUseCase {
 	constructor(
 		@Inject(WEATHER_LOCATION_REPOSITORY)
 		private readonly repository: WeatherLocationRepositoryPort,
 		private readonly cacheService: CacheService,
 	) {}
 
-	async execute(command: UpsertLocationCommand): Promise<UserLocation> {
+	async execute(input: UpsertLocationInput): Promise<UserLocation> {
 		// 좌표 불변식 검증 + 격자 파생은 도메인이 소유
 		const location = UserLocation.create(
-			command.userId,
-			Coordinate.of(command.latitude, command.longitude),
+			input.userId,
+			Coordinate.of(input.latitude, input.longitude),
 		);
 
-		const oldLocation = await this.repository.findByUserId(command.userId);
+		const oldLocation = await this.repository.findByUserId(input.userId);
 		const saved = await this.repository.upsert(location);
 
 		// 격자가 변경되면 구 격자의 캐시 무효화

@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Inject } from "@nestjs/common";
-import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import { Inject, Injectable } from "@nestjs/common";
 import {
 	EntitlementService,
 	Feature,
@@ -16,33 +15,37 @@ import {
 	AI_USAGE_REPOSITORY,
 	type AiUsageRepositoryPort,
 } from "../../ports/ai-usage.repository.port";
-import { GetAiUsageQuery } from "../get-ai-usage.query";
 
 /**
- * AI 사용량 조회 핸들러.
+ * 현재 사용자의 월간 AI 사용량 조회 입력.
+ */
+export interface GetAiUsageInput {
+	userId: string;
+}
+
+/**
+ * AI 사용량 조회 use-case.
  *
  * 새로운 달이면 used=0으로 표시하고, 다음 리셋 시각(KST 1일 00:00)을 함께 반환한다.
  */
-@QueryHandler(GetAiUsageQuery)
-export class GetAiUsageHandler
-	implements IQueryHandler<GetAiUsageQuery, AiUsage>
-{
+@Injectable()
+export class GetAiUsageUseCase {
 	constructor(
 		@Inject(AI_USAGE_REPOSITORY)
 		private readonly repository: AiUsageRepositoryPort,
 		private readonly entitlementService: EntitlementService,
 	) {}
 
-	async execute(query: GetAiUsageQuery): Promise<AiUsage> {
-		const usage = await this.repository.findUsage(query.userId);
+	async execute(input: GetAiUsageInput): Promise<AiUsage> {
+		const usage = await this.repository.findUsage(input.userId);
 		if (!usage) {
 			throw new ApplicationException(ErrorCode.USER_0601, {
-				userId: query.userId,
+				userId: input.userId,
 			});
 		}
 
 		const entitlement = await this.entitlementService.getFeatureLimit(
-			query.userId,
+			input.userId,
 			Feature.AI_PARSE,
 		);
 		const reference = now();

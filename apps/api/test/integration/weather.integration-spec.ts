@@ -2,7 +2,7 @@
  * Weather 통합 테스트 (Mock DB)
  *
  * @description
- * WeatherFacade → CommandBus/QueryBus → 핸들러 → WeatherForecastReader / Prisma
+ * WeatherFacade → use-case → WeatherForecastReader / Prisma
  * 위치 어댑터의 수직 배선을 검증합니다. 외부 날씨 프로바이더(KMA·Airkorea·KASI)와
  * 캐시는 Mock으로 처리하며, 실제 DB 연동은 E2E에서 담당합니다.
  *
@@ -12,7 +12,6 @@
  * ```
  */
 
-import { CqrsModule } from "@nestjs/cqrs";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserLocationBuilder } from "@test/builders";
@@ -38,9 +37,9 @@ import {
 	WEATHER_PROVIDER,
 	type WeatherProvider,
 } from "@/weather/application/ports/weather-provider.port";
-import { QueryHandlers } from "@/weather/application/queries/handlers";
+import { WeatherQueryUseCases } from "@/weather/application/queries";
 import { WeatherForecastReader } from "@/weather/application/services/weather-forecast.reader";
-import { CommandHandlers } from "@/weather/application/use-cases";
+import { WeatherUseCases } from "@/weather/application/use-cases";
 import { PrismaWeatherLocationRepository } from "@/weather/infrastructure/persistence/prisma-weather-location.repository";
 
 describe("Weather 통합 테스트 (Mock DB)", () => {
@@ -113,14 +112,13 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 	beforeAll(async () => {
 		suppressLogger();
 
-		// 클린아키 수직 배선: Facade → 버스 → 핸들러 → 리더/어댑터(mock 인프라)
+		// 클린아키 수직 배선: Facade → use-case → 리더/어댑터(mock 인프라)
 		module = await Test.createTestingModule({
-			imports: [CqrsModule.forRoot()],
 			providers: [
 				WeatherFacade,
 				WeatherForecastReader,
-				...QueryHandlers,
-				...CommandHandlers,
+				...WeatherQueryUseCases,
+				...WeatherUseCases,
 				{
 					provide: WEATHER_LOCATION_REPOSITORY,
 					useClass: PrismaWeatherLocationRepository,
