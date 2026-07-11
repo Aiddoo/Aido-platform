@@ -18,6 +18,7 @@ import {
 	SECURITY_EVENT,
 	TRUSTED_EMAIL_PROVIDERS,
 } from "@/auth/domain/constants/auth.constants";
+import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import { generateRandomName } from "@/auth/domain/services/random-name.util";
 import type { AccountProvider } from "@/auth/domain/types";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -845,19 +846,7 @@ export class OAuthService {
 	}
 
 	#validateUserStatus(status: string): void {
-		switch (status) {
-			case "LOCKED":
-				throw new ApplicationException(ErrorCode.USER_0607, {
-					email: "Social login user",
-					remainingMinutes: undefined,
-				});
-			case "SUSPENDED":
-				throw new ApplicationException(ErrorCode.USER_0605, {
-					userId: "Social login user",
-				});
-			default:
-				break;
-		}
+		assertStatusAllowsLogin(status, "Social login user");
 	}
 
 	#getAlreadyLinkedExceptionForProvider(

@@ -33,6 +33,7 @@ import {
 	SECURITY_EVENT,
 	TOKEN_REUSE_GRACE_PERIOD_MS,
 } from "@/auth/domain/constants/auth.constants";
+import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import type { UserStatus } from "@/auth/domain/types";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
@@ -996,17 +997,6 @@ export class AuthService {
 	}
 
 	#checkUserStatus(status: UserStatus, email: string): void {
-		switch (status) {
-			case "LOCKED":
-				throw new ApplicationException(ErrorCode.USER_0607, {
-					email,
-					remainingMinutes: undefined,
-				});
-			case "SUSPENDED":
-				throw new ApplicationException(ErrorCode.USER_0605, { userId: email });
-			default:
-				// ACTIVE, PENDING_VERIFY는 여기서 처리하지 않음
-				break;
-		}
+		assertStatusAllowsLogin(status, email);
 	}
 }

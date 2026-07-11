@@ -29,6 +29,7 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
@@ -673,10 +674,8 @@ describe("AuthService — 인증 서비스", () => {
 			});
 			passwordService.verify.mockResolvedValue(true);
 
-			// When & Then
-			await expect(service.login(loginInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
+			await expect(service.login(loginInput)).rejects.toThrow(DomainException);
 		});
 	});
 

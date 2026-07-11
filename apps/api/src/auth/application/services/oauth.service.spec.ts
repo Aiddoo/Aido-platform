@@ -40,6 +40,7 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { type AccountProvider, Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
@@ -516,10 +517,10 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				userRepo.findById.mockResolvedValue(lockedUser);
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
-				// When & Then
+				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
 				await expect(
 					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(ApplicationException);
+				).rejects.toThrow(DomainException);
 			});
 
 			it("정지된 사용자는 로그인할 수 없다", async () => {
@@ -539,10 +540,10 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				userRepo.findById.mockResolvedValue(suspendedUser);
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
-				// When & Then
+				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
 				await expect(
 					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(ApplicationException);
+				).rejects.toThrow(DomainException);
 			});
 
 			it("탈퇴한 사용자는 소셜 로그인할 수 없다", async () => {
@@ -2032,14 +2033,14 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				userRepo.findByEmail.mockResolvedValue(lockedUser);
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
-				// When & Then
+				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
 				await expect(
 					service.handleGoogleMobileLogin(
 						"valid-google-token",
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(ApplicationException);
+				).rejects.toThrow(DomainException);
 			});
 
 			it("정지된 사용자에게는 자동 연동되지 않는다", async () => {
@@ -2060,14 +2061,14 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				userRepo.findByEmail.mockResolvedValue(suspendedUser);
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
-				// When & Then
+				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
 				await expect(
 					service.handleGoogleMobileLogin(
 						"valid-google-token",
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(ApplicationException);
+				).rejects.toThrow(DomainException);
 			});
 
 			it("탈퇴한 사용자에게는 자동 연동되지 않는다", async () => {
