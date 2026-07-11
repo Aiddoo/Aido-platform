@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { now } from "@/shared/domain/date/utils/core";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { UserRepository } from "../../../auth/infrastructure/persistence/user.repository";
 import type {
 	AiUsageRepositoryPort,
 	AiUsageSnapshot,
@@ -11,9 +11,10 @@ import type {
 /**
  * AiUsageRepositoryPort의 Prisma 어댑터.
  *
- * 사용량은 User 테이블 컬럼(aiUsageCount·aiUsageResetAt)에 저장되므로, auth의
- * UserRepository에 위임한다(미이관 의존 → 위임 어댑터 패턴). 트랜잭션은 CLS로
- * 전파되어 TransactionHost.tx가 활성 트랜잭션(없으면 베이스)을 반환한다.
+ * 사용량은 User 테이블 컬럼(aiUsageCount·aiUsageResetAt)에 저장되지만, AI 사용량
+ * 추적은 ai 모듈의 바운디드 컨텍스트 관심사이므로 물리적 위치와 무관하게 ai가 직접
+ * 소유한다. 트랜잭션은 CLS로 전파되어 TransactionHost.tx가 활성 트랜잭션(없으면
+ * 베이스 클라이언트)을 반환한다.
  */
 @Injectable()
 export class PrismaAiUsageRepository implements AiUsageRepositoryPort {
@@ -21,11 +22,13 @@ export class PrismaAiUsageRepository implements AiUsageRepositoryPort {
 		private readonly txHost: TransactionHost<
 			TransactionalAdapterPrisma<DatabaseService>
 		>,
-		private readonly userRepository: UserRepository,
 	) {}
 
 	async findUsage(userId: string): Promise<AiUsageSnapshot | null> {
-		const row = await this.userRepository.findAiUsage(userId, this.txHost.tx);
+		const row = await this.txHost.tx.user.findUnique({
+			where: { id: userId },
+			select: { aiUsageCount: true, aiUsageResetAt: true },
+		});
 		if (!row) {
 			return null;
 		}
@@ -33,15 +36,25 @@ export class PrismaAiUsageRepository implements AiUsageRepositoryPort {
 	}
 
 	async increment(userId: string): Promise<void> {
-		await this.userRepository.incrementAiUsage(userId, this.txHost.tx);
+		await this.txHost.tx.user.update({
+			where: { id: userId },
+			data: { aiUsageCount: { increment: 1 } },
+		});
 	}
 
 	async resetAndIncrement(userId: string): Promise<void> {
-		await this.userRepository.resetAndIncrementAiUsage(userId, this.txHost.tx);
+		await this.txHost.tx.user.update({
+			where: { id: userId },
+			data: { aiUsageCount: 1, aiUsageResetAt: now() },
+		});
 	}
 
 	async decrement(userId: string): Promise<void> {
-		// 보상 감소는 트랜잭션 밖에서 실행되어야 하므로 tx를 전달하지 않는다.
-		await this.userRepository.decrementAiUsage(userId);
+		// 보상 감소는 활성 트랜잭션 밖에서 호출된다(CLS tx 없으면 베이스 클라이언트).
+		// aiUsageCount > 0 조건으로 음수 방지, 중복 호출 시 matched row 0 no-op.
+		await this.txHost.tx.user.updateMany({
+			where: { id: userId, aiUsageCount: { gt: 0 } },
+			data: { aiUsageCount: { decrement: 1 } },
+		});
 	}
 }

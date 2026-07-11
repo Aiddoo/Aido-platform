@@ -18,7 +18,7 @@ import { SkipThrottle } from "@nestjs/throttler";
 import * as Sentry from "@sentry/nestjs";
 import type { Request } from "express";
 import { type AdminNotifier, PAYMENT_NOTIFIER } from "@/admin-notification";
-import { Public } from "@/auth/presentation/decorators/public.decorator";
+import { Public } from "@/auth/presentation/decorators";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { SubscriptionFacade } from "../application/facades/subscription.facade";

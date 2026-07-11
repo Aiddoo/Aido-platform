@@ -8,3 +8,4 @@ export * from "./presentation/auth.mapper";
 export * from "./presentation/controllers";
 export * from "./presentation/decorators";
 export * from "./presentation/dtos";
+export * from "./presentation/interceptors";

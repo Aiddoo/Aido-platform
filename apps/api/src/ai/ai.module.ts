@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { AuthModule } from "../auth/auth.module";
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
 import { AiFacade } from "./application/facades/ai.facade";
 import { AI_PROVIDER } from "./application/ports/ai-provider.port";
@@ -24,7 +23,7 @@ import { AiController } from "./presentation/ai.controller";
  *
  * 자연어 → 투두/메모 파싱과 월간 사용량 관리를 담당한다. AI 벤더(Gemini via
  * Vercel AI SDK)는 AI_PROVIDER 포트로 추상화되어 어댑터만 교체하면 벤더를 바꿀 수
- * 있다. 사용량 저장(User 컬럼)·카테고리 조회는 미이관 모듈(auth·todo-category)에
+ * 있다. 사용량 저장(User 컬럼)은 ai가 직접 소유하며, 카테고리 조회는 todo-category
  * 위임 어댑터로 접근한다.
  *
  * ### 주요 기능
@@ -44,7 +43,7 @@ import { AiController } from "./presentation/ai.controller";
  * | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ | Google AI API 키 |
  */
 @Module({
-	imports: [AuthModule, TodoCategoryModule],
+	imports: [TodoCategoryModule],
 	controllers: [AiController],
 	providers: [
 		AiFacade,

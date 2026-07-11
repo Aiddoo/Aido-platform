@@ -15,7 +15,6 @@ import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface UserWithAccount {
 	id: string;
@@ -277,66 +276,5 @@ export class UserRepository {
 
 	async hardDelete(id: string): Promise<void> {
 		await this.client.user.delete({ where: { id } });
-	}
-
-	/**
-	 * AI 사용량 정보 조회
-	 *
-	 * `tx?`는 ai 모듈의 위임 어댑터(PrismaAiUsageRepository)가 자신의 CLS 트랜잭션
-	 * 클라이언트를 넘겨 참여시키기 위한 호환 파라미터다. 생략 시 활성 트랜잭션(CLS)에 참여한다.
-	 */
-	async findAiUsage(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<{ aiUsageCount: number; aiUsageResetAt: Date | null } | null> {
-		const client = tx ?? this.client;
-		return client.user.findUnique({
-			where: { id: userId },
-			select: { aiUsageCount: true, aiUsageResetAt: true },
-		});
-	}
-
-	/**
-	 * AI 사용량 증가
-	 */
-	async incrementAiUsage(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<void> {
-		const client = tx ?? this.client;
-		await client.user.update({
-			where: { id: userId },
-			data: { aiUsageCount: { increment: 1 } },
-		});
-	}
-
-	/**
-	 * AI 사용량 리셋 후 1로 설정 (새로운 날)
-	 */
-	async resetAndIncrementAiUsage(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<void> {
-		const client = tx ?? this.client;
-		await client.user.update({
-			where: { id: userId },
-			data: {
-				aiUsageCount: 1,
-				aiUsageResetAt: now(),
-			},
-		});
-	}
-
-	/**
-	 * AI 사용량 롤백 (1 감소).
-	 *
-	 * `aiUsageCount > 0` 조건을 걸어 음수로 내려가지 않도록 보장합니다.
-	 * count=0 상태에서 중복 호출되더라도 matched row 0 으로 no-op 처리됩니다.
-	 */
-	async decrementAiUsage(userId: string): Promise<void> {
-		await this.client.user.updateMany({
-			where: { id: userId, aiUsageCount: { gt: 0 } },
-			data: { aiUsageCount: { decrement: 1 } },
-		});
 	}
 }

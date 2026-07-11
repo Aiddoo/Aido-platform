@@ -43,6 +43,7 @@ const CLEAN_MODULES = [
 	"user-settings",
 	"notification",
 	"scheduler",
+	"auth",
 ];
 
 /**
@@ -55,6 +56,11 @@ const CLEAN_MODULES = [
 const PUBLIC_SUBENTRIES = {
 	notification: ["src/notification/queue"],
 	scheduler: ["src/scheduler/queue"],
+	// auth/presentation/decorators: @CurrentUser·CurrentUserPayload·@Public·@Admin
+	// 데코레이터는 전 모듈 컨트롤러(~20개)가 사용하는 경량 공개 표면. heavy 배럴(@/auth →
+	// 서비스·컨트롤러 전체 그래프)을 매 컨트롤러에 끌어오지 않기 위한 공식 서브엔트리.
+	// (JwtAuthGuard·LastActiveInterceptor는 합성 루트 app.module만 쓰므로 @/auth 배럴 경유)
+	auth: ["src/auth/presentation/decorators"],
 };
 
 /** 재귀적으로 .ts 파일 수집 */
