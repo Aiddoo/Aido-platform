@@ -10,10 +10,17 @@ import { TODO_COMPLETION_STATS_READER } from "./application/ports/todo-completio
 import { USER_CONSENT_REPOSITORY } from "./application/ports/user-consent.repository.port";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/user-preference.repository.port";
 import { GetConsentUseCase } from "./application/use-cases/get-consent/get-consent.use-case";
+import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record/get-consent-record.use-case";
+import { GetConsentRecordsUseCase } from "./application/use-cases/get-consent-records/get-consent-records.use-case";
 import { GetPreferenceUseCase } from "./application/use-cases/get-preference/get-preference.use-case";
+import { GetPreferenceRecordUseCase } from "./application/use-cases/get-preference-record/get-preference-record.use-case";
+import { GetPreferenceRecordsUseCase } from "./application/use-cases/get-preference-records/get-preference-records.use-case";
 import { OnTodoToggledUseCase } from "./application/use-cases/on-todo-toggled/on-todo-toggled.use-case";
+import { SeedUserSettingsUseCase } from "./application/use-cases/seed-user-settings/seed-user-settings.use-case";
 import { UpdateMarketingConsentUseCase } from "./application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
 import { UpdatePreferenceUseCase } from "./application/use-cases/update-preference/update-preference.use-case";
+import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-locale/upsert-push-locale.use-case";
+import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case";
 import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/streak-milestone-notifier.adapter";
 import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/timezone-reminder-enqueuer.adapter";
 import { PrismaTodoCompletionStatsReader } from "./infrastructure/persistence/prisma-todo-completion-stats.reader";
@@ -31,6 +38,13 @@ import { SettingsController } from "./presentation/user-settings.controller";
 		GetConsentUseCase,
 		UpdateMarketingConsentUseCase,
 		OnTodoToggledUseCase,
+		SeedUserSettingsUseCase,
+		UpsertPushTimezoneUseCase,
+		UpsertPushLocaleUseCase,
+		GetPreferenceRecordUseCase,
+		GetPreferenceRecordsUseCase,
+		GetConsentRecordUseCase,
+		GetConsentRecordsUseCase,
 		UserPreferenceRepository,
 		UserConsentRepository,
 		PrismaTodoCompletionStatsReader,
@@ -52,11 +66,6 @@ import { SettingsController } from "./presentation/user-settings.controller";
 			useClass: StreakMilestoneNotifierAdapter,
 		},
 	],
-	exports: [
-		UserSettingsFacade,
-		// 미이관 소비자용 전이적 export (auth 시딩·notification 푸시 전달):
-		UserPreferenceRepository,
-		UserConsentRepository,
-	],
+	exports: [UserSettingsFacade],
 })
 export class UserSettingsModule {}
