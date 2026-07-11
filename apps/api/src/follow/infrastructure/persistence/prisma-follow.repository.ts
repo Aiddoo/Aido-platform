@@ -388,6 +388,9 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 					COALESCE(fin.status = 'ACCEPTED', false) AS "isFollower",
 					COALESCE(fout.status = 'ACCEPTED' AND fin.status = 'ACCEPTED', false) AS "isFriend",
 					COALESCE(fout.status = 'PENDING', false) AS "requestPending",
+					-- 관련도 랭킹(작을수록 상위). 정확 일치 > 접두어 일치 > 부분 일치 순.
+					-- 0: 태그 완전 일치, 1: 태그 접두어 일치, 2: 이름 접두어 일치, 3: 그 외 부분 일치.
+					-- 동일 rank 내에서는 id ASC로 안정 정렬(keyset 페이지네이션 tie-breaker).
 					CASE
 						WHEN u."userTag" = ${upperTag} THEN 0
 						WHEN u."userTag" ILIKE ${upperTag} || '%' THEN 1
