@@ -11,8 +11,10 @@ import type { PushToken } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { UserConsentRepository } from "@/user-settings/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/repositories/user-preference.repository";
+import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/user-settings";
 
 import { NotificationRepository } from "./notification.repository";
 import {

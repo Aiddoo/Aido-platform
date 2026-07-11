@@ -15,7 +15,6 @@ import dayjs from "dayjs";
 import { NotificationService } from "@/notification/notification.service";
 import { NotificationMessageBuilder } from "@/notification/templates/notification-templates";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { StreakService } from "@/user-settings/services/streak.service";
 
 import { EveningReminderStrategy } from "./evening-reminder.strategy";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
@@ -116,11 +115,9 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		expect(database.user.findMany).toHaveBeenCalledTimes(2);
 	});
 
-	it("StreakService.computeEffectiveStreak를 호출하여 스트릭 정보를 계산한다", async () => {
-		// Given
+	it("전체 완료 유저의 effective streak를 계산해 완료 메시지를 발송한다", async () => {
+		// Given — 어제(2024-01-15) 완료 후 오늘도 전체 완료 → effective streak = 6
 		const ctx = makeCtx();
-		const computeSpy = jest.spyOn(StreakService, "computeEffectiveStreak");
-
 		const lastCompletedDate = dayjs.utc("2024-01-15").startOf("day").toDate();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -134,16 +131,11 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		// When
 		await strategy.execute(ctx);
 
-		// Then
-		expect(computeSpy).toHaveBeenCalledWith({
-			currentStreak: 5,
-			lastCompletedDate,
-			todosCompleted: 2,
-			todosTotal: 2,
-			today: expect.any(Date),
-		});
-
-		computeSpy.mockRestore();
+		// Then — 완료 유저 1명에게 발송 (streak 계산 경로 실행)
+		const notifications =
+			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		expect(notifications).toHaveLength(1);
+		expect(notifications?.[0]).toMatchObject({ userId: "user-1" });
 	});
 
 	it("전체 완료 시 완료 메시지를 발송한다", async () => {

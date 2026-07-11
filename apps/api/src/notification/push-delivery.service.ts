@@ -25,8 +25,10 @@ import {
 	type SupportedLocale,
 	toSupportedLocale,
 } from "@/shared/presentation/decorators";
-import { UserConsentRepository } from "@/user-settings/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/repositories/user-preference.repository";
+import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/user-settings";
 
 import { NotificationRepository } from "./notification.repository";
 import {

@@ -14,7 +14,7 @@ import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/decorators";
 
-import { UserSettingsService } from "./services/user-settings.service";
+import { UserSettingsFacade } from "../application/facades/user-settings.facade";
 import { SettingsController } from "./user-settings.controller";
 
 const WEATHER_DEFAULTS = {
@@ -28,7 +28,7 @@ const WEATHER_DEFAULTS = {
 
 describe("SettingsController — 사용자 설정 컨트롤러", () => {
 	let controller: SettingsController;
-	let mockUserSettingsService: Mocked<UserSettingsService>;
+	let mockUserSettingsFacade: Mocked<UserSettingsFacade>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -42,7 +42,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			await TestBed.solitary(SettingsController).compile();
 
 		controller = unit;
-		mockUserSettingsService = unitRef.get(UserSettingsService);
+		mockUserSettingsFacade = unitRef.get(UserSettingsFacade);
 	});
 
 	describe("getPreference", () => {
@@ -59,13 +59,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsService.getPreference.mockResolvedValue(expectedResult);
+			mockUserSettingsFacade.getPreference.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.getPreference(mockUser);
 
 			// Then
-			expect(mockUserSettingsService.getPreference).toHaveBeenCalledWith(
+			expect(mockUserSettingsFacade.getPreference).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 			expect(result).toEqual(expectedResult);
@@ -84,7 +84,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsService.getPreference.mockResolvedValue(defaultResult);
+			mockUserSettingsFacade.getPreference.mockResolvedValue(defaultResult);
 
 			// When
 			const result = await controller.getPreference(mockUser);
@@ -109,15 +109,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsService.updatePreference.mockResolvedValue(
-				expectedResult,
-			);
+			mockUserSettingsFacade.updatePreference.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.updatePreference(mockUser, dto);
 
 			// Then
-			expect(mockUserSettingsService.updatePreference).toHaveBeenCalledWith(
+			expect(mockUserSettingsFacade.updatePreference).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
 			);
@@ -138,15 +136,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsService.updatePreference.mockResolvedValue(
-				expectedResult,
-			);
+			mockUserSettingsFacade.updatePreference.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.updatePreference(mockUser, dto);
 
 			// Then
-			expect(mockUserSettingsService.updatePreference).toHaveBeenCalledWith(
+			expect(mockUserSettingsFacade.updatePreference).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
 			);
@@ -163,13 +159,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				agreedTermsVersion: "1.0",
 				marketingAgreedAt: null,
 			};
-			mockUserSettingsService.getConsent.mockResolvedValue(expectedResult);
+			mockUserSettingsFacade.getConsent.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.getConsent(mockUser);
 
 			// Then
-			expect(mockUserSettingsService.getConsent).toHaveBeenCalledWith(
+			expect(mockUserSettingsFacade.getConsent).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 			expect(result).toEqual(expectedResult);
@@ -183,7 +179,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				agreedTermsVersion: null,
 				marketingAgreedAt: null,
 			};
-			mockUserSettingsService.getConsent.mockResolvedValue(defaultResult);
+			mockUserSettingsFacade.getConsent.mockResolvedValue(defaultResult);
 
 			// When
 			const result = await controller.getConsent(mockUser);
@@ -200,7 +196,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			const expectedResult = {
 				marketingAgreedAt: "2024-01-15T10:00:00.000Z",
 			};
-			mockUserSettingsService.updateMarketingConsent.mockResolvedValue(
+			mockUserSettingsFacade.updateMarketingConsent.mockResolvedValue(
 				expectedResult,
 			);
 
@@ -209,7 +205,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 
 			// Then
 			expect(
-				mockUserSettingsService.updateMarketingConsent,
+				mockUserSettingsFacade.updateMarketingConsent,
 			).toHaveBeenCalledWith(mockUser.userId, true);
 			expect(result).toEqual(expectedResult);
 		});
@@ -218,7 +214,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			// Given
 			const dto = { agreed: false };
 			const expectedResult = { marketingAgreedAt: null };
-			mockUserSettingsService.updateMarketingConsent.mockResolvedValue(
+			mockUserSettingsFacade.updateMarketingConsent.mockResolvedValue(
 				expectedResult,
 			);
 
@@ -227,7 +223,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 
 			// Then
 			expect(
-				mockUserSettingsService.updateMarketingConsent,
+				mockUserSettingsFacade.updateMarketingConsent,
 			).toHaveBeenCalledWith(mockUser.userId, false);
 			expect(result).toEqual(expectedResult);
 		});

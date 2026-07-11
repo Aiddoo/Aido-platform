@@ -15,7 +15,6 @@ import dayjs from "dayjs";
 import { NotificationService } from "@/notification/notification.service";
 import { NotificationMessageBuilder } from "@/notification/templates/notification-templates";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { StreakService } from "@/user-settings/services/streak.service";
 
 import { StreakAtRiskStrategy } from "./streak-at-risk.strategy";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
@@ -99,10 +98,9 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		});
 	});
 
-	it("StreakService.computeEffectiveStreak를 호출하여 스트릭을 재검증한다", async () => {
-		// Given
+	it("effective streak를 재검증해 위기 유저에게 스트릭 값으로 알림을 보낸다", async () => {
+		// Given — 어제 완료(YESTERDAY) + 오늘 0/1 미완료 → effective streak = 7 유지
 		const ctx = makeCtx();
-		const computeSpy = jest.spyOn(StreakService, "computeEffectiveStreak");
 
 		database.user.findMany.mockResolvedValueOnce([
 			makeAtRiskUser("user-1", 7),
@@ -111,16 +109,15 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		// When
 		await strategy.execute(ctx);
 
-		// Then
-		expect(computeSpy).toHaveBeenCalledWith({
-			currentStreak: 7,
-			lastCompletedDate: YESTERDAY,
-			todosCompleted: 0,
-			todosTotal: 1,
-			today: expect.any(Date),
+		// Then — computeEffectiveStreak가 반환한 streak(7)이 메시지에 사용됨
+		const notifications =
+			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const expected = NotificationMessageBuilder.streakAtRisk(7);
+		expect(notifications?.[0]).toMatchObject({
+			userId: "user-1",
+			title: expected.title,
+			body: expected.body,
 		});
-
-		computeSpy.mockRestore();
 	});
 
 	it("computeEffectiveStreak에서 반환한 streak 값을 메시지에 사용한다", async () => {

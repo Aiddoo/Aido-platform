@@ -33,8 +33,10 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
-import { UserConsentRepository } from "@/user-settings/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/repositories/user-preference.repository";
+import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/user-settings";
 import type { FakeEmailService } from "../../mocks/fake-email.service";
 
 export async function createAuthTestModule(

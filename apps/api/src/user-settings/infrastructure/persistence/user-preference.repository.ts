@@ -4,6 +4,8 @@ import type { TimeFormat } from "@/generated/prisma/enums";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
+import type { UserPreferenceRepositoryPort } from "../../application/ports/user-preference.repository.port";
+
 export interface UpdatePreferenceData {
 	pushEnabled?: boolean;
 	nightPushEnabled?: boolean;
@@ -22,7 +24,7 @@ export interface UpdatePreferenceData {
 }
 
 @Injectable()
-export class UserPreferenceRepository {
+export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	constructor(private readonly database: DatabaseService) {}
 
 	async findByUserId(

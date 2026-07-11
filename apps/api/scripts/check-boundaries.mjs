@@ -40,6 +40,7 @@ const CLEAN_MODULES = [
 	"subscription",
 	"ai-report",
 	"admin-notification",
+	"user-settings",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

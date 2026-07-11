@@ -73,6 +73,9 @@ const TARGET_DIRS = [
 	"src/admin-notification/domain",
 	"src/admin-notification/application",
 	"src/admin-notification/infrastructure",
+	"src/user-settings/domain",
+	"src/user-settings/application",
+	"src/user-settings/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

@@ -8,7 +8,7 @@ import {
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { StreakService } from "@/user-settings/services/streak.service";
+import { computeEffectiveStreak } from "@/user-settings";
 
 import type {
 	ITimezoneStrategy,
@@ -107,14 +107,13 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 			const completed = user.todos.filter((t) => t.completed).length;
 
 			// 스트릭 정보 계산 (StreakService 순수 함수에 위임)
-			const { streak, isAtRisk: isStreakAtRisk } =
-				StreakService.computeEffectiveStreak({
-					currentStreak: user.preference?.currentStreak ?? 0,
-					lastCompletedDate: user.preference?.lastCompletedDate ?? null,
-					todosCompleted: completed,
-					todosTotal: total,
-					today,
-				});
+			const { streak, isAtRisk: isStreakAtRisk } = computeEffectiveStreak({
+				currentStreak: user.preference?.currentStreak ?? 0,
+				lastCompletedDate: user.preference?.lastCompletedDate ?? null,
+				todosCompleted: completed,
+				todosTotal: total,
+				today,
+			});
 
 			const message = NotificationMessageBuilder.eveningReminder(
 				completed,

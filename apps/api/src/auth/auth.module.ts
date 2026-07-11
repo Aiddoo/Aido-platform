@@ -6,8 +6,10 @@ import { AdminNotificationModule } from "@/admin-notification/admin-notification
 import { EmailModule } from "@/email/email.module";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { TodoCategoryRepository } from "@/todo-category";
-import { UserConsentRepository } from "@/user-settings/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/repositories/user-preference.repository";
+import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/user-settings";
 import {
 	AccountController,
 	AuthController,

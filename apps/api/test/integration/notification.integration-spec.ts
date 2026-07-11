@@ -36,8 +36,10 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import { LOCK_PROVIDER } from "@/shared/infrastructure/lock/interfaces/lock.interface";
-import { UserConsentRepository } from "@/user-settings/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/repositories/user-preference.repository";
+import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/user-settings";
 
 describe("NotificationService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

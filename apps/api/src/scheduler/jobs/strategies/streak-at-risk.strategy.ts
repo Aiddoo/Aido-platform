@@ -7,7 +7,7 @@ import {
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { StreakService } from "@/user-settings/services/streak.service";
+import { computeEffectiveStreak } from "@/user-settings";
 
 import type {
 	ITimezoneStrategy,
@@ -78,7 +78,7 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 
 				if (completed === total) return null;
 
-				const { streak, isAtRisk } = StreakService.computeEffectiveStreak({
+				const { streak, isAtRisk } = computeEffectiveStreak({
 					currentStreak: user.preference?.currentStreak ?? 0,
 					lastCompletedDate: user.preference?.lastCompletedDate ?? null,
 					todosCompleted: completed,

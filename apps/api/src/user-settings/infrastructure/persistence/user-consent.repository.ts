@@ -4,6 +4,8 @@ import { now } from "@/shared/domain/date/utils/core";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
+import type { UserConsentRepositoryPort } from "../../application/ports/user-consent.repository.port";
+
 export interface CreateConsentData {
 	termsAgreedAt?: Date;
 	privacyAgreedAt?: Date;
@@ -16,7 +18,7 @@ export interface UpdateMarketingConsentData {
 }
 
 @Injectable()
-export class UserConsentRepository {
+export class UserConsentRepository implements UserConsentRepositoryPort {
 	constructor(private readonly database: DatabaseService) {}
 
 	async findByUserId(

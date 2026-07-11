@@ -1,16 +1,16 @@
 import { Injectable } from "@nestjs/common";
-import { StreakService } from "../../../user-settings/services/streak.service";
+import { UserSettingsFacade } from "@/user-settings";
 import type { StreakPort } from "../../application/ports/streak.port";
 
 /**
- * 스트릭 포트 어댑터 — StreakService에 위임
+ * 스트릭 포트 어댑터 — UserSettingsFacade에 위임
  */
 @Injectable()
 export class StreakAdapter implements StreakPort {
-	constructor(private readonly streakService: StreakService) {}
+	constructor(private readonly userSettingsFacade: UserSettingsFacade) {}
 
 	recordTodoToggle(userId: string, completed: boolean, timezone: string): void {
-		// user-settings 모듈의 기존 메서드명(onTodoToggled)은 그대로 두고 위임만 담당
-		this.streakService.onTodoToggled(userId, completed, timezone);
+		// user-settings 파사드로 위임(fire-and-forget)
+		void this.userSettingsFacade.onTodoToggled(userId, completed, timezone);
 	}
 }
