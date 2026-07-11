@@ -1,8 +1,10 @@
 # API 코드 규칙
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.1.0 · **Last Updated**: 2026-07-11 · **Owner**: Aido Platform Team
 
 > Controller, Service, Repository, Module 계층별 코드 작성 규칙
+>
+> ⚠️ **적용 범위**: §1~§8의 Service/Repository 규칙은 **레거시 3계층(auth 한정)**. 나머지 전 모듈은 **§9 클린아키텍처 모듈 규칙**(참조 구현: todo)을 따른다. Controller/DTO/Swagger 규칙은 공통.
 
 ## 관련 문서
 
@@ -611,7 +613,7 @@ pnpm docker:down
 
 ## 9. 클린아키텍처 모듈 규칙
 
-> todo 모듈부터 적용 중인 신규 표준. 마이그레이션이 진행 중인 모듈은 레거시 Service 규칙(§3)과 공존한다.
+> **전 모듈 표준** (참조 구현: todo). 레거시 Service 규칙(§3)은 **auth에만** 적용된다 (클린아키 마이그레이션 진행 중).
 > **@nestjs/cqrs 사용 금지** — CommandBus/QueryBus/EventBus/CqrsModule 없음. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 `DOMAIN_EVENT_PUBLISHER` → EventEmitter2 → `@OnEvent`로 처리한다.
 
 ### 디렉터리 구조
@@ -643,7 +645,7 @@ modules/{name}/
 **배럴 규칙:**
 
 - `use-cases/index.ts`는 `XxxUseCases` 배열, `queries/index.ts`는 `XxxQueryUseCases` 배열을 export — 모듈 providers에 스프레드로 등록
-- 공개 배럴(`src/{name}/index.ts`)은 **Facade(+DTO)만** export — 커맨드 클래스 export는 폐지. use-case·포트·리포지토리는 내부 구현으로 비공개
+- 공개 배럴(`src/{name}/index.ts`)은 **Facade(+DTO)만** export — use-case·포트·리포지토리는 내부 구현으로 비공개. 예외: 타 모듈이 `@OnEvent`로 구독하는 도메인 이벤트 클래스·이벤트명 상수는 배럴에 export (예: todo의 `TODO_EVENTS`)
 
 ### Use-case 규칙
 
@@ -652,7 +654,7 @@ modules/{name}/
 | 클래스 | plain `@Injectable()` `XxxUseCase` — 단일 `async execute(input: XxxInput): Promise<R>` 메서드, 반환 타입 명시 필수 |
 | 입력 타입 | `XxxInput` 인터페이스를 같은 파일에서 export (또는 `application/types.ts` 타입의 별칭) — 커맨드/쿼리 클래스 없음 |
 | 예외 | `ApplicationException(ErrorCode.XXX, context)` — 유스케이스 규칙 위반. 도메인 불변식은 `DomainException` |
-| 트랜잭션 | `@Inject(TRANSACTION_MANAGER)` → `txManager.run(tx => ...)`. load→mutate→write를 TX 안에 묶는다. tx는 불투명 `TransactionContext` — Prisma 타입 사용 금지. `database.$transaction` 직접 호출 금지 |
+| 트랜잭션 | `@Inject(UNIT_OF_WORK)` → `uow.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(AsyncLocalStorage)에서 활성 TX를 직접 읽는다 (전파 Required). load→mutate→write를 TX 안에 묶는다. `database.$transaction` 직접 호출 금지 |
 | 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 + `pullDomainEvents()` 드레인 → **run resolve 후** `DOMAIN_EVENT_PUBLISHER.publishAll(events)` (커밋 후 `@OnEvent` 구독자가 처리) |
 | 캐시 무효화 | 영속화 후 use-case에서 명시적 호출 (`TodoCachePort` 등 캐시 포트) — 도메인 이벤트가 없는 쓰기 경로 포함. 또는 `@OnEvent` 구독으로 처리 |
 | 응답 | 애그리게잇에서 직접 만들지 않는다 — 항상 read 포트(`~ReadRepositoryPort`) 재조회 |
@@ -676,14 +678,14 @@ export class CreateTodoUseCase {
   constructor(
     @Inject(TODO_REPOSITORY) private readonly todoRepository: TodoRepositoryPort,
     @Inject(TODO_READ_REPOSITORY) private readonly todoReadRepository: TodoReadRepositoryPort,
-    @Inject(TRANSACTION_MANAGER) private readonly txManager: TransactionManagerPort,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
     @Inject(DOMAIN_EVENT_PUBLISHER) private readonly eventPublisher: DomainEventPublisherPort,
   ) {}
 
   async execute(input: CreateTodoInput): Promise<TodoResponse> {
     // 1. 도메인 생성 계획 (birth 불변식·기본값 — Todo.planCreation)
-    // 2. TX: 영속화 + 이벤트 드레인
-    const { todoId, events } = await this.txManager.run(async (tx) => {
+    // 2. TX: 영속화 + 이벤트 드레인 (콜백 무인자 — 리포지토리가 CLS에서 TX를 읽음)
+    const { todoId, events } = await this.uow.run(async () => {
       /* 저장 → todo.pullDomainEvents() 반환 */
     });
     // 3. 커밋 후 도메인 이벤트 발행 (fire-and-forget — @OnEvent 구독자가 부수효과 처리)
@@ -699,7 +701,7 @@ export class CreateTodoUseCase {
 - 위치: `application/facades/{name}.facade.ts` — **컨트롤러(및 타 모듈 어댑터)가 주입하는 유일한 지점**
 - use-case들을 생성자 주입하고 메서드마다 **한 줄 위임** (`return this.createTodoUseCase.execute(input);`) — 로직·분기 금지
 - Facade의 공개 시그니처가 모듈의 공개 계약 — 시그니처 변경은 계약 변경으로 취급
-- 공개 배럴(`src/{name}/index.ts`)은 Facade(+DTO)만 export
+- 공개 배럴(`src/{name}/index.ts`)은 Facade(+DTO)만 export (+구독용 도메인 이벤트 — 위 배럴 규칙 참조)
 
 ### 컨트롤러 규칙 (클린아키텍처 전환분)
 

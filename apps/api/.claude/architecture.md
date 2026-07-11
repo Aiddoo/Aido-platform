@@ -35,7 +35,9 @@
 
 ## 1. 아키텍처 개요
 
-### 1.1 계층 다이어그램
+### 1.1 계층 다이어그램 (레거시 3계층 — auth 한정)
+
+> 아래 다이어그램·§1.2 의존성 표는 **레거시 3계층(auth)** 기준. 나머지 전 모듈은 §1.4 클린아키텍처 표준을 따른다.
 
 ```
 HTTP Request
@@ -96,7 +98,7 @@ HTTP Request
 | Repository → 다른 Repository | ❌ | |
 | Repository → Service | ❌ | |
 
-> ⚠️ 위 표는 **레거시 3계층 모듈** 기준. 클린아키텍처로 전환된 모듈(todo)은 §1.4의 규칙을 따른다.
+> ⚠️ 위 표는 **레거시 3계층(auth 한정)** 기준. 나머지 전 모듈은 §1.4의 클린아키텍처 규칙을 따른다.
 
 ### 1.3 디렉토리 구조
 
@@ -159,9 +161,9 @@ apps/api/
 
 ---
 
-### 1.4 클린아키텍처 모듈 (Use-case + DDD) — todo부터 적용
+### 1.4 클린아키텍처 모듈 (Use-case + DDD) — 전 모듈 표준
 
-todo 모듈은 3계층에서 클린아키텍처+전술적 DDD로 완전 전환됐다. 신규 표준이며, 다른 모듈도 순차 이관 예정.
+**auth를 제외한 전 모듈**이 이 표준으로 전환 완료됐다 (auth는 마이그레이션 진행 중). **참조 구현은 todo 모듈** — 구조·패턴이 모호하면 todo를 따른다.
 **@nestjs/cqrs는 사용하지 않는다** — CommandBus/QueryBus/EventBus/CqrsModule 금지. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 EventEmitter2 기반 도메인 이벤트로 처리한다.
 코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처-모듈-규칙)
 
@@ -177,8 +179,8 @@ Application: use-case (엔드포인트당 1개, SRP)
      │  · plain @Injectable() 클래스 — 단일 async execute(input): Promise<R>
      │  · 포트(Symbol 토큰 인터페이스)에만 의존 — 8종 (repo 쓰기/읽기,
      │    category-ownership, cache, friend, streak, notification, reminder)
-     │  · TRANSACTION_MANAGER.run(tx => ...) — tx는 불투명 TransactionContext
-     │    (Prisma 타입은 application에 노출되지 않음, 인프라만 unwrapTransaction)
+     │  · UNIT_OF_WORK.run(async () => ...) — 콜백 무인자. 리포지토리가 CLS에서
+     │    활성 TX를 직접 읽음 (tx 핸들 계층 전달 없음, 전파는 Required)
      │  · load→mutate→write는 TX 안에서 (동시 수정 레이스 창 축소)
      │  · ApplicationException(ErrorCode)으로 유스케이스 규칙 위반 표현
      │  · 커밋 후 DOMAIN_EVENT_PUBLISHER.publishAll(pullDomainEvents())
@@ -213,7 +215,7 @@ TodoRowRepository (행 DAO) → DatabaseService (Prisma) → PostgreSQL
 
 - `DomainEvent` 인터페이스는 `eventName` 라우팅 키를 보유 (`shared/domain/aggregate-root.ts`). 이벤트명 상수는 모듈 소유 — 예: `todo/domain/events/todo-event-names.ts`의 `TODO_EVENTS` (`"todo.created"` 등)
 - 발행 포트는 `DOMAIN_EVENT_PUBLISHER` (`shared/application/ports/domain-event-publisher.port.ts`) — `@Global` `DomainEventsModule`이 제공, EventEmitter2 어댑터는 `shared/infrastructure/events/`
-- 발행은 **반드시 트랜잭션 커밋 후** (`UNIT_OF_WORK`/`TRANSACTION_MANAGER`의 `run` 콜백 밖). TX 안에서는 `pullDomainEvents()`로 드레인만 한다
+- 발행은 **반드시 트랜잭션 커밋 후** (`UNIT_OF_WORK`의 `run` 콜백 밖). TX 안에서는 `pullDomainEvents()`로 드레인만 한다
 - EventEmitter2 `emit`은 **동기** — 퍼블리셔가 이벤트 단위 try/catch로 예외를 격리한다 (발행 실패가 호출자에 전파되지 않는 fire-and-forget 계약)
 - 구독은 `application/events/`의 `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.X)` — 핸들러 내부도 try/catch fire-and-forget + 로깅
 
@@ -242,7 +244,7 @@ modules/todo/
 | infrastructure → application 포트 | ✅ | 어댑터가 포트 구현 |
 | infrastructure → 행 DAO/타 모듈 Facade | ✅ | 위임 전용 (쿼리 중복 금지) |
 | domain → application/infrastructure/@nestjs/DB | ❌ | 도메인은 프레임워크 제로 의존 |
-| application → Prisma 타입/타 모듈 내부 | ❌ | 불투명 TransactionContext·포트로 역전 |
+| application → Prisma 타입/타 모듈 내부 | ❌ | CLS 기반 UnitOfWork·포트로 역전 |
 | 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)의 Facade 호출만 — 예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter`가 `TodoFacade`에 위임 |
 | domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` |
 
