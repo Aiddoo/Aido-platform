@@ -36,6 +36,7 @@ import {
 import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/account-restoration-policy";
 import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import type { UserStatus } from "@/auth/domain/types";
+import { Email } from "@/auth/domain/value-objects/email.vo";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -90,14 +91,10 @@ export class AuthService {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		const {
-			email,
-			password,
-			name,
-			termsAgreed,
-			privacyAgreed,
-			marketingAgreed,
-		} = input;
+		const { password, name, termsAgreed, privacyAgreed, marketingAgreed } =
+			input;
+		// 이메일 형식 불변식을 도메인 경계에서 방어(정규화 없음 → 값 그대로)
+		const email = Email.of(input.email).value;
 
 		// 이메일 중복 확인
 		const existingUser = await this.userRepository.findByEmail(email);
@@ -325,7 +322,9 @@ export class AuthService {
 		input: LoginInput,
 		metadata?: RequestMetadata,
 	): Promise<LoginResult> {
-		const { email, password, deviceName } = input;
+		const { password, deviceName } = input;
+		// 이메일 형식 불변식을 도메인 경계에서 방어(정규화 없음 → 값 그대로)
+		const email = Email.of(input.email).value;
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
