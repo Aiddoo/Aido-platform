@@ -2,6 +2,7 @@ import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import {
 	ThrottlerGuard,
 	ThrottlerModule,
@@ -40,6 +41,7 @@ import {
 } from "@/shared/infrastructure/database";
 import { DedupModule } from "@/shared/infrastructure/dedup";
 import { EncryptionModule } from "@/shared/infrastructure/encryption";
+import { DomainEventsModule } from "@/shared/infrastructure/events";
 import { LockModule } from "@/shared/infrastructure/lock";
 import { LoggerModule } from "@/shared/infrastructure/logging";
 import { REDIS_CLIENT, RedisModule } from "@/shared/infrastructure/redis";
@@ -83,6 +85,10 @@ import { AppService } from "./app.service";
 			],
 		}),
 		EncryptionModule,
+		// 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), 전송은 EventEmitter2.
+		// 와일드카드 off(기본값): 구독은 명시적 이벤트명(@OnEvent)만 사용한다.
+		EventEmitterModule.forRoot(),
+		DomainEventsModule,
 		RedisModule.forRoot(),
 		CacheModule.forRoot(),
 		DedupModule.forRoot(),

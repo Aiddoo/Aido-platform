@@ -8,10 +8,14 @@
 import { AggregateRoot } from "./aggregate-root";
 
 class TestCreatedEvent {
+	readonly eventName = "test.created";
+
 	constructor(public readonly id: number) {}
 }
 
 class TestRenamedEvent {
+	readonly eventName = "test.renamed";
+
 	constructor(public readonly title: string) {}
 }
 
