@@ -1,7 +1,7 @@
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { TerminusModule } from "@nestjs/terminus";
-import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue/admin-notification-queue.constants";
+import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification";
 import { AI_REPORT_QUEUE } from "@/ai-report";
 import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { TODO_REMINDER_QUEUE } from "@/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";

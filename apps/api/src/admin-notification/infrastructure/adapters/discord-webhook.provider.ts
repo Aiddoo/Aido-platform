@@ -5,7 +5,7 @@ import type {
 	AdminNotification,
 	AdminNotifier,
 	AdminNotifyResult,
-} from "./admin-notifier.interface";
+} from "../../application/ports/admin-notifier.port";
 
 /**
  * Discord Webhook Provider

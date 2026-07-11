@@ -1,7 +1,9 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import type { UserRegisteredEventPayload } from "@/admin-notification/events/admin-notification.events";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import {
+	AdminNotificationFacade,
+	type UserRegisteredEventPayload,
+} from "@/admin-notification";
 import {
 	type AccountProvider,
 	type OAuthState,
@@ -82,7 +84,7 @@ export class OAuthService {
 		private readonly tokenVerifier: OAuthTokenVerifierService,
 		private readonly configService: TypedConfigService,
 		private readonly encryptionService: EncryptionService,
-		private readonly adminNotificationQueueService: AdminNotificationQueueService,
+		private readonly adminNotificationFacade: AdminNotificationFacade,
 		private readonly cacheService: CacheService,
 		private readonly userConsentRepository: UserConsentRepository,
 		private readonly userPreferenceRepository: UserPreferenceRepository,
@@ -717,7 +719,7 @@ export class OAuthService {
 
 			this.#logger.log(`New ${provider} user registered: ${userId}`);
 
-			this.adminNotificationQueueService.enqueueUserRegistered({
+			this.adminNotificationFacade.notifyUserRegistered({
 				userId,
 				email: effectiveEmail,
 				provider: ACCOUNT_PROVIDER_TO_EVENT[provider],

@@ -26,7 +26,7 @@ import { SubscriptionEventBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { AdminNotificationFacade } from "@/admin-notification";
 import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -68,9 +68,9 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		invalidateUserProfile: jest.fn().mockResolvedValue(undefined),
 	};
 
-	// Mock AdminNotificationQueueService
-	const mockAdminNotificationQueueService = {
-		enqueueSubscriptionEvent: jest.fn(),
+	// Mock AdminNotificationFacade
+	const mockAdminNotificationFacade = {
+		notifySubscriptionEvent: jest.fn(),
 	};
 
 	// Mock NotificationQueueService
@@ -126,8 +126,8 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 					useValue: mockCacheService,
 				},
 				{
-					provide: AdminNotificationQueueService,
-					useValue: mockAdminNotificationQueueService,
+					provide: AdminNotificationFacade,
+					useValue: mockAdminNotificationFacade,
 				},
 				{
 					provide: NotificationQueueService,
@@ -202,7 +202,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			mockUser.id,
 		);
 		expect(
-			mockAdminNotificationQueueService.enqueueSubscriptionEvent,
+			mockAdminNotificationFacade.notifySubscriptionEvent,
 		).toHaveBeenCalledWith(
 			expect.objectContaining({
 				userId: mockUser.id,
@@ -356,7 +356,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			mockUser.id,
 		);
 		expect(
-			mockAdminNotificationQueueService.enqueueSubscriptionEvent,
+			mockAdminNotificationFacade.notifySubscriptionEvent,
 		).toHaveBeenCalledWith(
 			expect.objectContaining({
 				eventType: "BILLING_ISSUE",
@@ -395,7 +395,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		expect(mockCacheService.invalidateSubscription).not.toHaveBeenCalled();
 		expect(mockCacheService.invalidateUserProfile).not.toHaveBeenCalled();
 		expect(
-			mockAdminNotificationQueueService.enqueueSubscriptionEvent,
+			mockAdminNotificationFacade.notifySubscriptionEvent,
 		).not.toHaveBeenCalled();
 	});
 

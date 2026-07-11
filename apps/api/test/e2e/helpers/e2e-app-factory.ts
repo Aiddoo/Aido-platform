@@ -16,13 +16,13 @@ import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import { ZodValidationPipe } from "nestjs-zod";
 import type { App } from "supertest/types";
-import { DailySignupSummaryJob } from "@/admin-notification/jobs/daily-signup-summary.job";
 import {
+	ADMIN_NOTIFICATION_QUEUE,
 	ADMIN_NOTIFIER,
 	PAYMENT_NOTIFIER,
-} from "@/admin-notification/providers/admin-notifier.interface";
-import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue/admin-notification-queue.constants";
-import { AdminNotificationProcessor } from "@/admin-notification/queue/admin-notification-queue.processor";
+} from "@/admin-notification";
+import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
+import { DailySignupSummaryScheduler } from "@/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
 import { AI_PROVIDER } from "@/ai";
 import { AI_REPORT_QUEUE } from "@/ai-report";
 import { ReportGenerationJob } from "@/ai-report/infrastructure/jobs/report-generation.job";
@@ -94,7 +94,7 @@ const BULL_PROCESSORS = [
 ];
 
 const BULL_JOBS = [
-	DailySignupSummaryJob,
+	DailySignupSummaryScheduler,
 	TimezoneAwareReminderJob,
 	SuggestionAnalysisJob,
 	ReportGenerationJob,

@@ -17,10 +17,7 @@ import { ApiExcludeEndpoint } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import * as Sentry from "@sentry/nestjs";
 import type { Request } from "express";
-import {
-	type AdminNotifier,
-	PAYMENT_NOTIFIER,
-} from "@/admin-notification/providers/admin-notifier.interface";
+import { type AdminNotifier, PAYMENT_NOTIFIER } from "@/admin-notification";
 import { Public } from "@/auth/decorators/public.decorator";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 

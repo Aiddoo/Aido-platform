@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder, UserBuilder } from "@test/builders";
 import { type TransactionCallback } from "@test/mocks";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { AdminNotificationFacade } from "@/admin-notification";
 import {
 	type Account,
 	type LoginAttempt,
@@ -56,7 +56,7 @@ describe("AuthService — 인증 서비스", () => {
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
 	let sessionService: Mocked<SessionService>;
-	let adminNotificationQueueService: Mocked<AdminNotificationQueueService>;
+	let adminNotificationFacade: Mocked<AdminNotificationFacade>;
 
 	// 재사용 가능한 테스트 데이터
 	const mockTokens = {
@@ -81,7 +81,7 @@ describe("AuthService — 인증 서비스", () => {
 		securityLogRepo = unitRef.get(SecurityLogRepository);
 		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
 		sessionService = unitRef.get(SessionService);
-		adminNotificationQueueService = unitRef.get(AdminNotificationQueueService);
+		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
 	});
 
 	describe("register", () => {
@@ -306,9 +306,7 @@ describe("AuthService — 인증 서비스", () => {
 			await service.register(registerInput);
 
 			// Then
-			expect(
-				adminNotificationQueueService.enqueueUserRegistered,
-			).toHaveBeenCalledWith(
+			expect(adminNotificationFacade.notifyUserRegistered).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					email: registerInput.email,

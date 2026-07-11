@@ -2,14 +2,14 @@
  * AdminNotificationProcessor 통합 테스트
  *
  * @description
- * AdminNotificationProcessor가 ADMIN_NOTIFIER, PAYMENT_NOTIFIER와 함께 올바르게 작동하는지 검증합니다.
- * 실제 Discord 웹훅 대신 모킹된 Notifier를 사용하여 프로세서 로직을 테스트합니다.
+ * AdminNotificationProcessor가 use-case(SendAdminNotification·DispatchDailySignupSummary)와
+ * 함께 올바르게 작동하는지 검증합니다. 실제 Discord 웹훅·큐 대신 모킹된 포트를 사용합니다.
  *
  * 통합 테스트의 목적:
  * - NestJS 의존성 주입이 올바르게 작동하는지 검증
  * - AdminNotificationProcessor의 process(job) 메서드가 올바르게 작동하는지 검증
  * - 채널별 올바른 Notifier 라우팅 검증
- * - DISPATCH_SUMMARY 잡 처리 검증
+ * - DISPATCH_SUMMARY 잡 처리(집계 → 큐 등록) 검증
  * - 에러 핸들링 검증
  *
  * 실행 명령:
@@ -21,11 +21,12 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
-import {
-	ADMIN_NOTIFIER,
-	PAYMENT_NOTIFIER,
-} from "@/admin-notification/providers/admin-notifier.interface";
-import { AdminNotificationProcessor } from "@/admin-notification/queue/admin-notification-queue.processor";
+import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "@/admin-notification";
+import { ADMIN_NOTIFICATION_QUEUE_PORT } from "@/admin-notification/application/ports/admin-notification-queue.port";
+import { SIGNUP_STATS_READER } from "@/admin-notification/application/ports/signup-stats.reader.port";
+import { DispatchDailySignupSummaryUseCase } from "@/admin-notification/application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
+import { SendAdminNotificationUseCase } from "@/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case";
+import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
 
 function createMockJob(name: string, data: Record<string, unknown>): Job {
 	return { name, data, id: `job-${name}` } as unknown as Job;
@@ -48,12 +49,26 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 		isConfigured: jest.fn().mockReturnValue(true),
 	};
 
+	// Mock ports (dispatch summary)
+	const mockSignupStatsReader = {
+		getSignupStats: jest.fn().mockResolvedValue({
+			signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
+			totalUsers: 100,
+		}),
+	};
+
+	const mockQueuePort = {
+		enqueueSend: jest.fn().mockResolvedValue(undefined),
+	};
+
 	beforeAll(async () => {
 		suppressLogger();
 
 		module = await Test.createTestingModule({
 			providers: [
 				AdminNotificationProcessor,
+				SendAdminNotificationUseCase,
+				DispatchDailySignupSummaryUseCase,
 				{
 					provide: ADMIN_NOTIFIER,
 					useValue: mockAdminNotifier,
@@ -61,6 +76,14 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 				{
 					provide: PAYMENT_NOTIFIER,
 					useValue: mockPaymentNotifier,
+				},
+				{
+					provide: SIGNUP_STATS_READER,
+					useValue: mockSignupStatsReader,
+				},
+				{
+					provide: ADMIN_NOTIFICATION_QUEUE_PORT,
+					useValue: mockQueuePort,
 				},
 			],
 		}).compile();
@@ -141,51 +164,37 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DISPATCH_SUMMARY 잡 처리 통합 테스트", () => {
-		it("DISPATCH_SUMMARY 잡 — dailySummaryJob이 설정되면 실행된다", async () => {
-			// Given - dailySummaryJob이 설정된 상태
-			const mockDailySummaryJob = {
-				handleDailySummary: jest.fn().mockResolvedValue(undefined),
-			};
-			processor.setDailySummaryJob(mockDailySummaryJob as never);
-
+		it("DISPATCH_SUMMARY 잡 — 집계 후 SEND 잡을 큐에 등록한다", async () => {
+			// Given
 			const job = createMockJob("dispatch-signup-summary", {});
 
 			// When - 잡 처리
 			await processor.process(job);
 
-			// Then - handleDailySummary가 호출되어야 함
-			expect(mockDailySummaryJob.handleDailySummary).toHaveBeenCalled();
+			// Then - 가입 통계 집계 후 admin 채널로 큐 등록
+			expect(mockSignupStatsReader.getSignupStats).toHaveBeenCalled();
+			expect(mockQueuePort.enqueueSend).toHaveBeenCalledWith(
+				"admin",
+				expect.objectContaining({
+					title: expect.stringContaining("일일 가입 리포트"),
+				}),
+				expect.objectContaining({
+					jobId: expect.stringContaining("signup-summary_"),
+				}),
+			);
 		});
 
-		it("DISPATCH_SUMMARY 잡 — dailySummaryJob 미설정 시 에러를 throw한다", async () => {
-			// Given - dailySummaryJob이 설정되지 않은 상태
-			// 새 프로세서 인스턴스 생성 (dailySummaryJob 미설정)
-			const freshModule = await Test.createTestingModule({
-				providers: [
-					AdminNotificationProcessor,
-					{
-						provide: ADMIN_NOTIFIER,
-						useValue: mockAdminNotifier,
-					},
-					{
-						provide: PAYMENT_NOTIFIER,
-						useValue: mockPaymentNotifier,
-					},
-				],
-			}).compile();
-
-			const freshProcessor = freshModule.get<AdminNotificationProcessor>(
-				AdminNotificationProcessor,
+		it("DISPATCH_SUMMARY 잡 — 집계 실패 시에도 예외를 전파하지 않는다", async () => {
+			// Given - 리더가 실패
+			mockSignupStatsReader.getSignupStats.mockRejectedValueOnce(
+				new Error("DB connection error"),
 			);
 
 			const job = createMockJob("dispatch-signup-summary", {});
 
-			// When & Then - dailySummaryJob 미설정 에러가 throw되어야 함
-			await expect(freshProcessor.process(job)).rejects.toThrow(
-				"DailySignupSummaryJob not initialized",
-			);
-
-			await freshModule.close();
+			// When & Then - 예외 전파 없음, 큐 등록도 없음
+			await expect(processor.process(job)).resolves.not.toThrow();
+			expect(mockQueuePort.enqueueSend).not.toHaveBeenCalled();
 		});
 	});
 });

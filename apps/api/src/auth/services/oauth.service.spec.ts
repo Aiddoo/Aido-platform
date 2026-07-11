@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
 import { type TransactionCallback } from "@test/mocks";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { AdminNotificationFacade } from "@/admin-notification";
 import { Prisma } from "@/generated/prisma/client";
 import {
 	BusinessException,
@@ -62,7 +62,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 	let sessionService: Mocked<SessionService>;
 	let tokenVerifier: Mocked<OAuthTokenVerifierService>;
 	let configService: Mocked<TypedConfigService>;
-	let adminNotificationQueueService: Mocked<AdminNotificationQueueService>;
+	let adminNotificationFacade: Mocked<AdminNotificationFacade>;
 	let cacheService: Mocked<CacheService>;
 
 	// 재사용 가능한 테스트 데이터
@@ -91,7 +91,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 		sessionService = unitRef.get(SessionService);
 		tokenVerifier = unitRef.get(OAuthTokenVerifierService);
 		configService = unitRef.get(TypedConfigService);
-		adminNotificationQueueService = unitRef.get(AdminNotificationQueueService);
+		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
 		cacheService = unitRef.get(CacheService);
 
 		// ConfigService 기본 설정
@@ -262,7 +262,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 				// Then
 				expect(
-					adminNotificationQueueService.enqueueUserRegistered,
+					adminNotificationFacade.notifyUserRegistered,
 				).not.toHaveBeenCalled();
 			});
 		});
@@ -338,7 +338,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 				// Then
 				expect(
-					adminNotificationQueueService.enqueueUserRegistered,
+					adminNotificationFacade.notifyUserRegistered,
 				).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "user-123",

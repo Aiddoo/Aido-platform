@@ -2,7 +2,7 @@
  * Admin Notification BullMQ 큐 상수 및 잡 데이터 타입 정의
  */
 
-import type { AdminNotification } from "../providers/admin-notifier.interface";
+import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
 
 // =============================================================================
 // Queue Name

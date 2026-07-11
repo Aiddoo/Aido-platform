@@ -12,7 +12,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { AdminNotificationFacade } from "@/admin-notification";
 import { AccountRepository } from "@/auth/repositories/account.repository";
 import { LoginAttemptRepository } from "@/auth/repositories/login-attempt.repository";
 import { SecurityLogRepository } from "@/auth/repositories/security-log.repository";
@@ -155,10 +155,10 @@ export async function createAuthTestModule(
 				},
 			},
 			{
-				provide: AdminNotificationQueueService,
+				provide: AdminNotificationFacade,
 				useValue: {
-					enqueueUserRegistered: () => {},
-					enqueueSubscriptionEvent: () => {},
+					notifyUserRegistered: () => {},
+					notifySubscriptionEvent: () => {},
 				},
 			},
 			{

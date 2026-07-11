@@ -2,7 +2,7 @@ import type {
 	AdminNotification,
 	AdminNotifier,
 	AdminNotifyResult,
-} from "@/admin-notification/providers/admin-notifier.interface";
+} from "@/admin-notification";
 
 /**
  * 테스트용 FakeAdminNotifier

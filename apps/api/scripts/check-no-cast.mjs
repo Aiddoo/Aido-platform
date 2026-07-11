@@ -70,6 +70,9 @@ const TARGET_DIRS = [
 	"src/ai-report/domain",
 	"src/ai-report/application",
 	"src/ai-report/infrastructure",
+	"src/admin-notification/domain",
+	"src/admin-notification/application",
+	"src/admin-notification/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

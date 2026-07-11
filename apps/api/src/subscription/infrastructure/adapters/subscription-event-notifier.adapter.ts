@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { AdminNotificationFacade } from "@/admin-notification";
 import { NotificationQueueService } from "@/notification/queue";
 import type { SubscriptionEventNotifierPort } from "../../application/ports/subscription-event-notifier.port";
 import type { SubscriptionEventPayload } from "../../domain/events/subscription-event.payload";
@@ -16,12 +16,12 @@ export class SubscriptionEventNotifierAdapter
 	implements SubscriptionEventNotifierPort
 {
 	constructor(
-		private readonly adminNotificationQueueService: AdminNotificationQueueService,
+		private readonly adminNotificationFacade: AdminNotificationFacade,
 		private readonly notificationQueueService: NotificationQueueService,
 	) {}
 
 	notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-		this.adminNotificationQueueService.enqueueSubscriptionEvent(payload);
+		this.adminNotificationFacade.notifySubscriptionEvent(payload);
 	}
 
 	notifyBillingIssue(userId: string): void {

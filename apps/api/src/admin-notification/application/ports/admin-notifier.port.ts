@@ -1,5 +1,5 @@
 /**
- * Admin Notifier Interface
+ * Admin Notifier 포트
  *
  * 관리자 알림 제공자 추상화 (Strategy Pattern)
  * 현재: Discord Webhook
@@ -8,19 +8,12 @@
  * @see apps/api/src/notification/providers/push-provider.interface.ts
  */
 
-/**
- * 관리자 알림 메시지
- */
-export interface AdminNotification {
-	/** 알림 제목 */
-	title: string;
-	/** 알림 본문 */
-	body: string;
-	/** 추가 필드 (키-값) */
-	fields?: Array<{ name: string; value: string; inline?: boolean }>;
-	/** 메시지 색상 (hex number) */
-	color?: number;
-}
+import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
+
+export type {
+	AdminNotification,
+	AdminNotificationField,
+} from "../../domain/value-objects/admin-notification-message.vo";
 
 /**
  * 알림 발송 결과

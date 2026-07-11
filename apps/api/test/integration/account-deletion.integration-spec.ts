@@ -27,7 +27,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { AdminNotificationFacade } from "@/admin-notification";
 import { AccountPurgeJob } from "@/auth/jobs/account-purge.job";
 import {
 	ACCOUNT_PURGE_QUEUE,
@@ -206,10 +206,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				{
-					provide: AdminNotificationQueueService,
+					provide: AdminNotificationFacade,
 					useValue: {
-						enqueueUserRegistered: () => {},
-						enqueueSubscriptionEvent: () => {},
+						notifyUserRegistered: () => {},
+						notifySubscriptionEvent: () => {},
 					},
 				},
 				{

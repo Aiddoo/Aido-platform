@@ -25,7 +25,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { AdminNotificationFacade } from "@/admin-notification";
 import { AccountRepository } from "@/auth/repositories/account.repository";
 import { LoginAttemptRepository } from "@/auth/repositories/login-attempt.repository";
 import { OAuthStateRepository } from "@/auth/repositories/oauth-state.repository";
@@ -166,10 +166,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				{
-					provide: AdminNotificationQueueService,
+					provide: AdminNotificationFacade,
 					useValue: {
-						enqueueUserRegistered: () => {},
-						enqueueSubscriptionEvent: () => {},
+						notifyUserRegistered: () => {},
+						notifySubscriptionEvent: () => {},
 					},
 				},
 				{

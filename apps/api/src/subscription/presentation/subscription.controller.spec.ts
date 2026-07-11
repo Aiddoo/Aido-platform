@@ -26,7 +26,7 @@ import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
 import type { Request } from "express";
 
-import { PAYMENT_NOTIFIER } from "@/admin-notification/providers/admin-notifier.interface";
+import { PAYMENT_NOTIFIER } from "@/admin-notification";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { SubscriptionFacade } from "../application/facades/subscription.facade";

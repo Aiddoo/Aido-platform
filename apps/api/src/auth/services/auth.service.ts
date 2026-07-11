@@ -7,8 +7,10 @@ import {
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import type { UserRegisteredEventPayload } from "@/admin-notification/events/admin-notification.events";
-import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import {
+	AdminNotificationFacade,
+	type UserRegisteredEventPayload,
+} from "@/admin-notification";
 import { Prisma, type UserStatus } from "@/generated/prisma/client";
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import {
@@ -78,7 +80,7 @@ export class AuthService {
 		private readonly tokenService: TokenService,
 		private readonly verificationService: VerificationService,
 		private readonly cacheService: CacheService,
-		private readonly adminNotificationQueueService: AdminNotificationQueueService,
+		private readonly adminNotificationFacade: AdminNotificationFacade,
 	) {}
 
 	async register(
@@ -221,7 +223,7 @@ export class AuthService {
 			`User registered: ${result.user.id} (${maskEmail(email)})`,
 		);
 
-		this.adminNotificationQueueService.enqueueUserRegistered({
+		this.adminNotificationFacade.notifyUserRegistered({
 			userId: result.user.id,
 			email: result.user.email,
 			provider: "credential",
