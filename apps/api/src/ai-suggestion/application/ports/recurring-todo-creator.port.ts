@@ -17,7 +17,7 @@ export interface CreateRecurringTodoInput {
  * 반복 할 일 생성 포트.
  *
  * 제안 수락 시 todo 모듈에 반복 할 일 생성을 위임한다. 어댑터가 todo의 공개 계약
- * (CreateRecurringTodosCommand)으로 벤더 경계를 흡수한다.
+ * (TodoFacade)으로 벤더 경계를 흡수한다.
  */
 export interface RecurringTodoCreatorPort {
 	createRecurring(

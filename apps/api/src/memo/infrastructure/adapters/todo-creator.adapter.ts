@@ -1,11 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
-import {
-	CreateRecurringTodosCommand,
-	type CreateRecurringTodosResult,
-	CreateTodoCommand,
-} from "@/todo";
+import { type CreateRecurringTodosResult, TodoFacade } from "@/todo";
 import type {
 	CreateRecurringTodoData,
 	CreateTodoData,
@@ -13,24 +8,20 @@ import type {
 } from "../../application/ports/todo-creator.port";
 
 /**
- * TodoCreatorPort 어댑터 — todo 모듈 커맨드 디스패치로 구현.
- *
- * 임시 구현 — todo 전환 커밋에서 TodoFacade 주입으로 교체 예정.
+ * TodoCreatorPort 어댑터 — todo의 공개 Facade에 위임해 구현.
  */
 @Injectable()
 export class TodoCreatorAdapter implements TodoCreatorPort {
-	constructor(private readonly commandBus: CommandBus) {}
+	constructor(private readonly todoFacade: TodoFacade) {}
 
 	createTodo(data: CreateTodoData): Promise<TodoResponse> {
-		return this.commandBus.execute(new CreateTodoCommand(data));
+		return this.todoFacade.create(data);
 	}
 
 	createRecurringTodos(
 		data: CreateRecurringTodoData,
 		timezone: string,
 	): Promise<CreateRecurringTodosResult> {
-		return this.commandBus.execute(
-			new CreateRecurringTodosCommand(data, timezone),
-		);
+		return this.todoFacade.createRecurring(data, timezone);
 	}
 }

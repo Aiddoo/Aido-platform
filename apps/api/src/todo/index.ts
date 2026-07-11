@@ -1,23 +1,18 @@
 /**
  * Todo 모듈 공개 API
  *
- * 커맨드 클래스가 이 모듈의 공개 계약입니다 — 외부 모듈은 CommandBus로
- * 커맨드를 디스패치해 사용합니다. 핸들러·리포지토리·포트는 내부 구현으로
- * 공개하지 않습니다.
+ * 공개 계약 = Facade + 도메인 이벤트(구독용) + DTO.
+ * 외부 모듈은 TodoFacade를 주입해 사용하고, 크로스 모듈 부수효과는
+ * 도메인 이벤트(@OnEvent) 구독으로 연결합니다. use-case·리포지토리·포트는
+ * 내부 구현으로 공개하지 않습니다.
  */
-export * from "./application/use-cases/add-todo-item/add-todo-item.command";
-export * from "./application/use-cases/change-todo-category/change-todo-category.command";
-export * from "./application/use-cases/create-recurring-todos/create-recurring-todos.command";
-export * from "./application/use-cases/create-todo/create-todo.command";
-export * from "./application/use-cases/delete-todo/delete-todo.command";
-export * from "./application/use-cases/delete-todo-item/delete-todo-item.command";
-export * from "./application/use-cases/reorder-todo/reorder-todo.command";
-export * from "./application/use-cases/reorder-todo-items/reorder-todo-items.command";
-export * from "./application/use-cases/toggle-todo-complete/toggle-todo-complete.command";
-export * from "./application/use-cases/update-todo/update-todo.command";
-export * from "./application/use-cases/update-todo-item/update-todo-item.command";
-export * from "./application/use-cases/update-todo-schedule/update-todo-schedule.command";
-export * from "./application/use-cases/update-todo-title/update-todo-title.command";
-export * from "./application/use-cases/update-todo-visibility/update-todo-visibility.command";
+export { TodoFacade } from "./application/facades/todo.facade";
+export type { CreateRecurringTodosResult } from "./application/use-cases/create-recurring-todos/create-recurring-todos.use-case";
+export * from "./domain/events/todo-created.event";
+export * from "./domain/events/todo-deleted.event";
+export * from "./domain/events/todo-event-names";
+export * from "./domain/events/todo-rescheduled.event";
+export * from "./domain/events/todo-toggled.event";
+export * from "./domain/events/todo-updated.event";
 export * from "./presentation/dtos";
 export * from "./todo.module";

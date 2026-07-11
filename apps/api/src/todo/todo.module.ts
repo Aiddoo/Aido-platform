@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 
 import { FollowModule } from "../follow/follow.module";
 import { NotificationModule } from "../notification/notification.module";
@@ -17,8 +16,8 @@ import { TODO_CACHE } from "./application/ports/todo-cache.port";
 import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port";
 import { TODO_READ_REPOSITORY } from "./application/ports/todo-read.repository.port";
 import { TODO_REMINDER } from "./application/ports/todo-reminder.port";
-import { QueryHandlers } from "./application/queries";
-import { CommandHandlers } from "./application/use-cases";
+import { TodoQueryUseCases } from "./application/queries";
+import { TodoUseCases } from "./application/use-cases";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
 import { PrismaTodoRepository } from "./infrastructure/adapters/prisma-todo.repository";
@@ -44,15 +43,14 @@ import { TodoController } from "./presentation/todo.controller";
  * - 완료 시 스트릭 갱신
  *
  * ### 아키텍처 (클린아키텍처 마이그레이션 완료)
- * - 모든 유스케이스가 CQRS 커맨드·쿼리 핸들러 + 도메인 애그리게잇으로 처리됨
+ * - 모든 유스케이스가 단일 execute(input)를 가진 use-case + 도메인 애그리게잇으로 처리됨
  * - 쓰기(애그리게잇)/읽기(응답 read model) 리포지토리를 포트로 분리
  * - 크로스모듈 의존(카테고리·친구·스트릭·알림·캐시)은 포트/어댑터로 역전
- * - 외부 모듈(memo·ai-suggestion)은 CommandBus로 커맨드를 디스패치해 사용
- *   (커맨드 클래스가 이 모듈의 공개 API — index.ts에서 export)
+ * - 외부 모듈(memo·ai-suggestion)은 TodoFacade를 주입해 사용
+ *   (Facade가 이 모듈의 공개 API — index.ts에서 export)
  */
 @Module({
 	imports: [
-		CqrsModule,
 		FollowModule,
 		NotificationModule,
 		TodoCategoryModule,
@@ -73,9 +71,10 @@ import { TodoController } from "./presentation/todo.controller";
 		{ provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
 		{ provide: TODO_REMINDER, useClass: TodoReminderAdapter },
 		TodoFacade,
-		...CommandHandlers,
-		...QueryHandlers,
+		...TodoUseCases,
+		...TodoQueryUseCases,
 		...EventHandlers,
 	],
+	exports: [TodoFacade],
 })
 export class TodoModule {}

@@ -1,5 +1,12 @@
-export * from "./get-friend-todos.query";
-export * from "./get-todo-by-id.query";
-export * from "./get-todo-resource-limit.query";
-export * from "./get-todos.query";
-export * from "./handlers";
+import { GetFriendTodosUseCase } from "./get-friend-todos/get-friend-todos.use-case";
+import { GetTodoByIdUseCase } from "./get-todo-by-id/get-todo-by-id.use-case";
+import { GetTodoResourceLimitUseCase } from "./get-todo-resource-limit/get-todo-resource-limit.use-case";
+import { GetTodosUseCase } from "./get-todos/get-todos.use-case";
+
+/** Todo 쿼리 use-case (모듈 등록용 배럴). */
+export const TodoQueryUseCases = [
+	GetTodoByIdUseCase,
+	GetTodosUseCase,
+	GetFriendTodosUseCase,
+	GetTodoResourceLimitUseCase,
+];

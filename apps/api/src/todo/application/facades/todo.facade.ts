@@ -1,16 +1,15 @@
 import type { ReorderPosition, Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
-import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import type { TodoVisibility } from "../../domain/entities/todo.entity";
 import type { TodoScheduleProps } from "../../domain/value-objects/todo-schedule.vo";
-import { GetFriendTodosQuery } from "../queries/get-friend-todos.query";
-import { GetTodoByIdQuery } from "../queries/get-todo-by-id.query";
+import { GetFriendTodosUseCase } from "../queries/get-friend-todos/get-friend-todos.use-case";
+import { GetTodoByIdUseCase } from "../queries/get-todo-by-id/get-todo-by-id.use-case";
 import {
-	GetTodoResourceLimitQuery,
+	GetTodoResourceLimitUseCase,
 	type TodoResourceLimitResult,
-} from "../queries/get-todo-resource-limit.query";
-import { GetTodosQuery } from "../queries/get-todos.query";
+} from "../queries/get-todo-resource-limit/get-todo-resource-limit.use-case";
+import { GetTodosUseCase } from "../queries/get-todos/get-todos.use-case";
 import type {
 	CreateRecurringTodoData,
 	CreateTodoData,
@@ -18,36 +17,52 @@ import type {
 	GetTodosParams,
 	UpdateTodoData,
 } from "../types";
-import { AddTodoItemCommand } from "../use-cases/add-todo-item/add-todo-item.command";
-import { ChangeTodoCategoryCommand } from "../use-cases/change-todo-category/change-todo-category.command";
+import { AddTodoItemUseCase } from "../use-cases/add-todo-item/add-todo-item.use-case";
+import { ChangeTodoCategoryUseCase } from "../use-cases/change-todo-category/change-todo-category.use-case";
 import {
-	CreateRecurringTodosCommand,
 	type CreateRecurringTodosResult,
-} from "../use-cases/create-recurring-todos/create-recurring-todos.command";
-import { CreateTodoCommand } from "../use-cases/create-todo/create-todo.command";
-import { DeleteTodoCommand } from "../use-cases/delete-todo/delete-todo.command";
-import { DeleteTodoItemCommand } from "../use-cases/delete-todo-item/delete-todo-item.command";
-import { ReorderTodoCommand } from "../use-cases/reorder-todo/reorder-todo.command";
-import { ReorderTodoItemsCommand } from "../use-cases/reorder-todo-items/reorder-todo-items.command";
-import { ToggleTodoCompleteCommand } from "../use-cases/toggle-todo-complete/toggle-todo-complete.command";
-import { UpdateTodoCommand } from "../use-cases/update-todo/update-todo.command";
-import { UpdateTodoItemCommand } from "../use-cases/update-todo-item/update-todo-item.command";
-import { UpdateTodoScheduleCommand } from "../use-cases/update-todo-schedule/update-todo-schedule.command";
-import { UpdateTodoTitleCommand } from "../use-cases/update-todo-title/update-todo-title.command";
-import { UpdateTodoVisibilityCommand } from "../use-cases/update-todo-visibility/update-todo-visibility.command";
+	CreateRecurringTodosUseCase,
+} from "../use-cases/create-recurring-todos/create-recurring-todos.use-case";
+import { CreateTodoUseCase } from "../use-cases/create-todo/create-todo.use-case";
+import { DeleteTodoUseCase } from "../use-cases/delete-todo/delete-todo.use-case";
+import { DeleteTodoItemUseCase } from "../use-cases/delete-todo-item/delete-todo-item.use-case";
+import { ReorderTodoUseCase } from "../use-cases/reorder-todo/reorder-todo.use-case";
+import { ReorderTodoItemsUseCase } from "../use-cases/reorder-todo-items/reorder-todo-items.use-case";
+import { ToggleTodoCompleteUseCase } from "../use-cases/toggle-todo-complete/toggle-todo-complete.use-case";
+import { UpdateTodoUseCase } from "../use-cases/update-todo/update-todo.use-case";
+import { UpdateTodoItemUseCase } from "../use-cases/update-todo-item/update-todo-item.use-case";
+import { UpdateTodoScheduleUseCase } from "../use-cases/update-todo-schedule/update-todo-schedule.use-case";
+import { UpdateTodoTitleUseCase } from "../use-cases/update-todo-title/update-todo-title.use-case";
+import { UpdateTodoVisibilityUseCase } from "../use-cases/update-todo-visibility/update-todo-visibility.use-case";
 
 /**
- * Todo 애플리케이션 서비스(Facade) — 컨트롤러와 CQRS 버스 사이의 얇은 seam.
+ * Todo 애플리케이션 서비스(Facade) — 컨트롤러·크로스 모듈의 유일한 주입 대상.
  *
  * 컨트롤러는 이 Facade만 주입받고, DTO→도메인 원시값 매핑(타임존/날짜 파싱)만
- * 담당한다. 커맨드/쿼리 조립과 버스 디스패치는 전부 여기서 흡수한다.
- * 도메인 규칙은 각 핸들러가, 반환 타입은 Command<T>/Query<T> 제네릭이 추론한다.
+ * 담당한다. 명령/조회는 개별 use-case로 한 줄 위임한다.
+ * 도메인 규칙은 각 use-case가 소유한다.
  */
 @Injectable()
 export class TodoFacade {
 	constructor(
-		private readonly commandBus: CommandBus,
-		private readonly queryBus: QueryBus,
+		private readonly getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase,
+		private readonly getTodosUseCase: GetTodosUseCase,
+		private readonly getTodoByIdUseCase: GetTodoByIdUseCase,
+		private readonly getFriendTodosUseCase: GetFriendTodosUseCase,
+		private readonly createTodoUseCase: CreateTodoUseCase,
+		private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
+		private readonly updateTodoUseCase: UpdateTodoUseCase,
+		private readonly toggleTodoCompleteUseCase: ToggleTodoCompleteUseCase,
+		private readonly updateTodoVisibilityUseCase: UpdateTodoVisibilityUseCase,
+		private readonly changeTodoCategoryUseCase: ChangeTodoCategoryUseCase,
+		private readonly updateTodoScheduleUseCase: UpdateTodoScheduleUseCase,
+		private readonly updateTodoTitleUseCase: UpdateTodoTitleUseCase,
+		private readonly reorderTodoUseCase: ReorderTodoUseCase,
+		private readonly deleteTodoUseCase: DeleteTodoUseCase,
+		private readonly addTodoItemUseCase: AddTodoItemUseCase,
+		private readonly reorderTodoItemsUseCase: ReorderTodoItemsUseCase,
+		private readonly updateTodoItemUseCase: UpdateTodoItemUseCase,
+		private readonly deleteTodoItemUseCase: DeleteTodoItemUseCase,
 	) {}
 
 	// ===== Queries =====
@@ -56,40 +71,36 @@ export class TodoFacade {
 		userId: string,
 		categoryId?: number,
 	): Promise<TodoResourceLimitResult> {
-		return this.queryBus.execute(
-			new GetTodoResourceLimitQuery(userId, categoryId),
-		);
+		return this.getTodoResourceLimitUseCase.execute({ userId, categoryId });
 	}
 
 	findMany(
 		params: GetTodosParams,
 	): Promise<CursorPaginatedResponse<TodoResponse, number>> {
-		return this.queryBus.execute(new GetTodosQuery(params));
+		return this.getTodosUseCase.execute(params);
 	}
 
 	findById(id: number, userId: string): Promise<TodoResponse> {
-		return this.queryBus.execute(new GetTodoByIdQuery(id, userId));
+		return this.getTodoByIdUseCase.execute({ id, userId });
 	}
 
 	findFriendTodos(
 		params: GetFriendTodosParams,
 	): Promise<CursorPaginatedResponse<TodoResponse, number>> {
-		return this.queryBus.execute(new GetFriendTodosQuery(params));
+		return this.getFriendTodosUseCase.execute(params);
 	}
 
 	// ===== Commands =====
 
 	create(data: CreateTodoData): Promise<TodoResponse> {
-		return this.commandBus.execute(new CreateTodoCommand(data));
+		return this.createTodoUseCase.execute(data);
 	}
 
 	createRecurring(
 		data: CreateRecurringTodoData,
 		timezone: string,
 	): Promise<CreateRecurringTodosResult> {
-		return this.commandBus.execute(
-			new CreateRecurringTodosCommand(data, timezone),
-		);
+		return this.createRecurringTodosUseCase.execute({ data, timezone });
 	}
 
 	update(
@@ -97,7 +108,7 @@ export class TodoFacade {
 		userId: string,
 		data: UpdateTodoData,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(new UpdateTodoCommand(id, userId, data));
+		return this.updateTodoUseCase.execute({ id, userId, data });
 	}
 
 	toggleComplete(
@@ -106,9 +117,12 @@ export class TodoFacade {
 		completed: boolean,
 		timezone: string,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new ToggleTodoCompleteCommand(id, userId, completed, timezone),
-		);
+		return this.toggleTodoCompleteUseCase.execute({
+			id,
+			userId,
+			completed,
+			timezone,
+		});
 	}
 
 	updateVisibility(
@@ -116,9 +130,7 @@ export class TodoFacade {
 		userId: string,
 		visibility: TodoVisibility,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new UpdateTodoVisibilityCommand(id, userId, visibility),
-		);
+		return this.updateTodoVisibilityUseCase.execute({ id, userId, visibility });
 	}
 
 	updateCategory(
@@ -126,9 +138,7 @@ export class TodoFacade {
 		userId: string,
 		categoryId: number,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new ChangeTodoCategoryCommand(id, userId, categoryId),
-		);
+		return this.changeTodoCategoryUseCase.execute({ id, userId, categoryId });
 	}
 
 	updateSchedule(
@@ -136,9 +146,7 @@ export class TodoFacade {
 		userId: string,
 		schedule: TodoScheduleProps,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new UpdateTodoScheduleCommand(id, userId, schedule),
-		);
+		return this.updateTodoScheduleUseCase.execute({ id, userId, schedule });
 	}
 
 	updateTitle(
@@ -146,9 +154,7 @@ export class TodoFacade {
 		userId: string,
 		title: string,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new UpdateTodoTitleCommand(id, userId, title),
-		);
+		return this.updateTodoTitleUseCase.execute({ id, userId, title });
 	}
 
 	reorder(
@@ -157,19 +163,22 @@ export class TodoFacade {
 		targetTodoId: number | undefined,
 		position: ReorderPosition,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new ReorderTodoCommand(id, userId, targetTodoId, position),
-		);
+		return this.reorderTodoUseCase.execute({
+			id,
+			userId,
+			targetTodoId,
+			position,
+		});
 	}
 
 	deleteTodo(id: number, userId: string): Promise<void> {
-		return this.commandBus.execute(new DeleteTodoCommand(id, userId));
+		return this.deleteTodoUseCase.execute({ id, userId });
 	}
 
 	// ===== Items (체크리스트) =====
 
 	addItem(id: number, userId: string, title: string): Promise<TodoResponse> {
-		return this.commandBus.execute(new AddTodoItemCommand(id, userId, title));
+		return this.addTodoItemUseCase.execute({ todoId: id, userId, title });
 	}
 
 	reorderItems(
@@ -177,9 +186,11 @@ export class TodoFacade {
 		userId: string,
 		itemIds: number[],
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new ReorderTodoItemsCommand(id, userId, itemIds),
-		);
+		return this.reorderTodoItemsUseCase.execute({
+			todoId: id,
+			userId,
+			itemIds,
+		});
 	}
 
 	updateItem(
@@ -188,9 +199,7 @@ export class TodoFacade {
 		userId: string,
 		data: { title?: string; completed?: boolean },
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new UpdateTodoItemCommand(todoId, itemId, userId, data),
-		);
+		return this.updateTodoItemUseCase.execute({ todoId, itemId, userId, data });
 	}
 
 	deleteItem(
@@ -198,8 +207,6 @@ export class TodoFacade {
 		itemId: number,
 		userId: string,
 	): Promise<TodoResponse> {
-		return this.commandBus.execute(
-			new DeleteTodoItemCommand(todoId, itemId, userId),
-		);
+		return this.deleteTodoItemUseCase.execute({ todoId, itemId, userId });
 	}
 }
