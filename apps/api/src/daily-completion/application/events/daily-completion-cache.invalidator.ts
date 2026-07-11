@@ -36,13 +36,13 @@ export class DailyCompletionCacheInvalidator {
 		private readonly cache: DailyCompletionCachePort,
 	) {}
 
-	@OnEvent([
-		TODO_EVENTS.CREATED,
-		TODO_EVENTS.DELETED,
-		TODO_EVENTS.TOGGLED,
-		TODO_EVENTS.RESCHEDULED,
-		TODO_EVENTS.UPDATED,
-	])
+	// 주의: @OnEvent에 배열을 넘기면 EventEmitter2가 "다중 구독"이 아니라
+	// 델리미터로 결합된 단일 이벤트명으로 해석한다. 이벤트별로 데코레이터를 쌓는다.
+	@OnEvent(TODO_EVENTS.CREATED)
+	@OnEvent(TODO_EVENTS.DELETED)
+	@OnEvent(TODO_EVENTS.TOGGLED)
+	@OnEvent(TODO_EVENTS.RESCHEDULED)
+	@OnEvent(TODO_EVENTS.UPDATED)
 	async handle(event: TodoWriteEvent): Promise<void> {
 		try {
 			await this.cache.invalidate(event.userId);

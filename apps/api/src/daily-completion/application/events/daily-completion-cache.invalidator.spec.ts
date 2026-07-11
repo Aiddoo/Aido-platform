@@ -7,7 +7,7 @@
 import { Logger } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { TodoCreatedEvent, TodoToggledEvent } from "@/todo";
+import { TODO_EVENTS, TodoCreatedEvent, TodoToggledEvent } from "@/todo";
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
@@ -32,6 +32,31 @@ describe("DailyCompletionCacheInvalidator — 투두 쓰기 이벤트 캐시 무
 
 		invalidator = unit;
 		cache = unitRef.get<DailyCompletionCachePort>(DAILY_COMPLETION_CACHE);
+	});
+
+	it("5개 투두 쓰기 이벤트를 각각 개별 구독한다 (배열 인자는 결합된 단일 이벤트명이 되므로 회귀 방지)", () => {
+		// Given - @OnEvent가 남긴 메타데이터 (@nestjs/event-emitter 공개 상수)
+		const eventListenerMetadata: unknown = Reflect.getMetadata(
+			// EVENT_LISTENER_METADATA — 데코레이터가 handle 메서드에 기록하는 키
+			"EVENT_LISTENER_METADATA",
+			DailyCompletionCacheInvalidator.prototype.handle,
+		);
+
+		// When - 구독된 이벤트명 목록 추출
+		const subscribed = Array.isArray(eventListenerMetadata)
+			? eventListenerMetadata.map((m: { event: string }) => m.event)
+			: [];
+
+		// Then - 5개 이벤트가 문자열로 각각 구독되어야 한다
+		expect(subscribed.sort()).toEqual(
+			[
+				TODO_EVENTS.CREATED,
+				TODO_EVENTS.DELETED,
+				TODO_EVENTS.TOGGLED,
+				TODO_EVENTS.RESCHEDULED,
+				TODO_EVENTS.UPDATED,
+			].sort(),
+		);
 	});
 
 	it("투두 생성 이벤트를 받으면 해당 사용자 캐시를 무효화한다", async () => {
