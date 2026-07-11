@@ -17,7 +17,7 @@ import {
 	analyzeHabitFormation,
 	classifyHabit,
 	type HabitTrackerInput,
-} from "../habit-tracker";
+} from "./habit-tracker";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

@@ -6,9 +6,9 @@
  * - 최신 리포트 반환
  */
 
-import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { AiReport } from "../../../domain/entities/ai-report.entity";
@@ -17,7 +17,6 @@ import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port";
-import { ReportAccessService } from "../../services/report-access.service";
 import { GetReportStatusUseCase } from "./get-report-status.use-case";
 
 const makeReport = (type: ReportType): AiReport =>
@@ -47,7 +46,7 @@ const makeReport = (type: ReportType): AiReport =>
 describe("GetReportStatusUseCase", () => {
 	let useCase: GetReportStatusUseCase;
 	let mockRepository: Mocked<AiReportRepositoryPort>;
-	let mockAccess: Mocked<ReportAccessService>;
+	let mockEntitlement: Mocked<EntitlementService>;
 
 	const tz = "Asia/Seoul";
 
@@ -57,14 +56,13 @@ describe("GetReportStatusUseCase", () => {
 		).compile();
 		useCase = unit;
 		mockRepository = unitRef.get(AI_REPORT_REPOSITORY);
-		mockAccess = unitRef.get(ReportAccessService);
+		mockEntitlement = unitRef.get(EntitlementService);
+		mockEntitlement.hasPremiumAccess.mockResolvedValue(true);
 		mockRepository.findLatest.mockResolvedValue(null);
 	});
 
 	it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
-		mockAccess.enforcePremium.mockRejectedValue(
-			new ApplicationException(ErrorCode.AI_1308),
-		);
+		mockEntitlement.hasPremiumAccess.mockResolvedValue(false);
 
 		await expect(useCase.execute("user-123", tz)).rejects.toBeInstanceOf(
 			ApplicationException,

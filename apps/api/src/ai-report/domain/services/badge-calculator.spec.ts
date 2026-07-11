@@ -9,10 +9,7 @@
  * pnpm --filter @aido/api test badge-calculator
  * ```
  */
-import {
-	type BadgeCalculatorInput,
-	calculateBadges,
-} from "../badge-calculator";
+import { type BadgeCalculatorInput, calculateBadges } from "./badge-calculator";
 
 function createInput(
 	overrides?: Partial<BadgeCalculatorInput>,

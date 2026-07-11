@@ -21,9 +21,15 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { TODO_STATS_READER } from "@/ai-report/application/ports/todo-stats.reader.port";
-import { ReportAggregatorService } from "@/ai-report/application/services/report-aggregator.service";
-import type { AggregateParams } from "@/ai-report/domain/types";
+import {
+	TODO_STATS_READER,
+	type TodoStatsReaderPort,
+} from "@/ai-report/application/ports/todo-stats.reader.port";
+import { assembleAggregatedData } from "@/ai-report/domain/services/report-aggregation";
+import type {
+	AggregatedReportData,
+	AggregateParams,
+} from "@/ai-report/domain/types";
 import { PrismaTodoStatsReader } from "@/ai-report/infrastructure/persistence/prisma-todo-stats.reader";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -31,9 +37,25 @@ import { TestDatabase } from "../setup/test-database";
 
 describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
-	let service: ReportAggregatorService;
+	let reader: TodoStatsReaderPort;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
+
+	/**
+	 * 리포트 집계: reader(실 DB 조회) + 도메인 계산.
+	 * (구 ReportAggregatorService.aggregate와 동일 시퀀스 — 서비스 계층 제거)
+	 */
+	const aggregate = async (
+		params: AggregateParams,
+	): Promise<AggregatedReportData> => {
+		const inputs = await reader.fetchAggregationInputs(params);
+		return assembleAggregatedData(
+			inputs,
+			params.startDate,
+			params.endDate,
+			params.timezone,
+		);
+	};
 
 	// 테스트 사용자 ID
 	let testUserId: string;
@@ -49,7 +71,6 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 		// NestJS 테스트 모듈 생성
 		module = await Test.createTestingModule({
 			providers: [
-				ReportAggregatorService,
 				{ provide: TODO_STATS_READER, useClass: PrismaTodoStatsReader },
 				{
 					// reader는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
@@ -59,7 +80,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			],
 		}).compile();
 
-		service = module.get<ReportAggregatorService>(ReportAggregatorService);
+		reader = module.get<TodoStatsReaderPort>(TODO_STATS_READER);
 	}, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
 	// 각 테스트 전 데이터 초기화
@@ -171,7 +192,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			const params = createParams();
 
 			// When: aggregate를 호출하면
-			const result = await service.aggregate(params);
+			const result = await aggregate(params);
 
 			// Then: 모든 통계가 0이고 hasActivity가 false
 			expect(result.hasActivity).toBe(false);
@@ -189,7 +210,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			const params = createParams();
 
 			// When: aggregate를 호출하면
-			const result = await service.aggregate(params);
+			const result = await aggregate(params);
 
 			// Then: 7개 요일이 모두 포함
 			expect(result.dayPatterns).toHaveLength(7);
@@ -220,7 +241,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			const params = createParams();
 
 			// When: aggregate를 호출하면
-			const result = await service.aggregate(params);
+			const result = await aggregate(params);
 
 			// Then: 3개 중 2개 완료, 달성률 67%
 			expect(result.totalTodos).toBe(3);
@@ -252,7 +273,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			const params = createParams();
 
 			// When: aggregate를 호출하면
-			const result = await service.aggregate(params);
+			const result = await aggregate(params);
 
 			// Then: 카테고리별 집계가 정확
 			expect(result.categoryBreakdown).toHaveLength(2);
@@ -286,7 +307,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			const params = createParams();
 
 			// When: aggregate를 호출하면
-			const result = await service.aggregate(params);
+			const result = await aggregate(params);
 
 			// Then: 10시에 2개 완료 패턴
 			expect(result.timePatterns.length).toBeGreaterThan(0);
@@ -317,7 +338,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			const params = createParams();
 
 			// When: aggregate를 호출하면
-			const result = await service.aggregate(params);
+			const result = await aggregate(params);
 
 			// Then: 이전 기간 달성률 50%
 			expect(result.prevCompletionRate).toBe(50);

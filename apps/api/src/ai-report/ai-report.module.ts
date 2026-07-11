@@ -6,9 +6,6 @@ import { AiModule } from "../ai/ai.module";
 import { AiReportFacade } from "./application/facades/ai-report.facade";
 import { AI_REPORT_REPOSITORY } from "./application/ports/ai-report.repository.port";
 import { TODO_STATS_READER } from "./application/ports/todo-stats.reader.port";
-import { ReportAccessService } from "./application/services/report-access.service";
-import { ReportAggregatorService } from "./application/services/report-aggregator.service";
-import { ReportGeneratorService } from "./application/services/report-generator.service";
 import { GenerateReportUseCase } from "./application/use-cases/generate-report/generate-report.use-case";
 import { GetReportByIdUseCase } from "./application/use-cases/get-report-by-id/get-report-by-id.use-case";
 import { GetReportStatusUseCase } from "./application/use-cases/get-report-status/get-report-status.use-case";
@@ -43,9 +40,6 @@ import { AiReportController } from "./presentation/ai-report.controller";
 		GetReportsUseCase,
 		GetReportByIdUseCase,
 		GenerateReportUseCase,
-		ReportAccessService,
-		ReportAggregatorService,
-		ReportGeneratorService,
 		ReportGenerationJob,
 		ReportGenerationProcessor,
 		{ provide: AI_REPORT_REPOSITORY, useClass: PrismaAiReportRepository },

@@ -1,16 +1,35 @@
 import type { AiReport as AiReportDto } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
+import { AI_PROVIDER, type AiProvider } from "@/ai";
 import { now } from "@/shared/domain/date/utils/core";
 import type { SupportedLocale } from "@/shared/presentation/decorators";
+import {
+	buildReportPrompt,
+	getReportAiResponseSchema,
+} from "../../../domain/services/prompts/report.prompt";
+import { buildFallbackContent } from "../../../domain/services/prompts/report-fallback";
+import { assembleAggregatedData } from "../../../domain/services/report-aggregation";
 import { computePeriodLabel } from "../../../domain/services/report-period";
-import type { ReportType } from "../../../domain/types";
+import type {
+	AggregatedReportData,
+	AggregateParams,
+	GeneratedReportContent,
+	GenerateReportParams,
+	ReportType,
+} from "../../../domain/types";
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port";
-import { ReportAggregatorService } from "../../services/report-aggregator.service";
-import { ReportGeneratorService } from "../../services/report-generator.service";
+import {
+	TODO_STATS_READER,
+	type TodoStatsReaderPort,
+} from "../../ports/todo-stats.reader.port";
+
+/** AI 리포트 생성 기본 설정 */
+const REPORT_AI_MAX_TOKENS = 800;
+const REPORT_AI_TEMPERATURE = 0.7;
 
 /** 기간 윈도우 계산 결과 */
 interface ReportWindow {
@@ -35,8 +54,10 @@ export class GenerateReportUseCase {
 	constructor(
 		@Inject(AI_REPORT_REPOSITORY)
 		private readonly aiReportRepository: AiReportRepositoryPort,
-		private readonly reportAggregatorService: ReportAggregatorService,
-		private readonly reportGeneratorService: ReportGeneratorService,
+		@Inject(TODO_STATS_READER)
+		private readonly todoStatsReader: TodoStatsReaderPort,
+		@Inject(AI_PROVIDER)
+		private readonly aiProvider: AiProvider,
 	) {}
 
 	async execute(input: {
@@ -152,7 +173,7 @@ export class GenerateReportUseCase {
 
 		// 1. 데이터 집계 + 이전 보고서 조회 (병렬)
 		const [aggregatedData, prevReport] = await Promise.all([
-			this.reportAggregatorService.aggregate({
+			this.#aggregate({
 				userId,
 				startDate,
 				endDate,
@@ -166,7 +187,7 @@ export class GenerateReportUseCase {
 		const prevTips = prevReport ? prevReport.aiTips : null;
 
 		// 2. AI 콘텐츠 생성
-		const aiContent = await this.reportGeneratorService.generate({
+		const aiContent = await this.#generateAiContent({
 			aggregatedData,
 			type,
 			periodLabel,
@@ -202,5 +223,65 @@ export class GenerateReportUseCase {
 		);
 
 		return report.toView();
+	}
+
+	/**
+	 * 데이터 집계: 할 일 통계 읽기 포트로 원시 집계를 조회하고 도메인 서비스로 계산.
+	 */
+	async #aggregate(params: AggregateParams): Promise<AggregatedReportData> {
+		const inputs = await this.todoStatsReader.fetchAggregationInputs(params);
+		return assembleAggregatedData(
+			inputs,
+			params.startDate,
+			params.endDate,
+			params.timezone,
+		);
+	}
+
+	/**
+	 * AI 콘텐츠 생성: AI Provider로 요약·팁 생성. 불가용/실패 시 폴백.
+	 * 시스템 호출이므로 사용량 제한에 포함되지 않는다(AI_PROVIDER 직접 사용).
+	 */
+	async #generateAiContent(
+		params: GenerateReportParams,
+	): Promise<GeneratedReportContent> {
+		const { aggregatedData, periodLabel, type, locale = "ko" } = params;
+
+		if (!this.aiProvider.isAvailable()) {
+			this.#logger.warn("AI Provider 불가용 — 폴백 콘텐츠 사용");
+			return buildFallbackContent(aggregatedData.hasActivity, locale);
+		}
+
+		try {
+			const prompt = buildReportPrompt(
+				aggregatedData,
+				periodLabel,
+				type,
+				{ prevTips: params.prevTips },
+				locale,
+			);
+
+			const result = await this.aiProvider.generateStructured({
+				prompt,
+				schema: getReportAiResponseSchema(locale),
+				maxOutputTokens: REPORT_AI_MAX_TOKENS,
+				temperature: REPORT_AI_TEMPERATURE,
+			});
+
+			this.#logger.debug(
+				`AI 리포트 생성 완료: model=${result.model}, tokens=${result.usage.input}+${result.usage.output}`,
+			);
+
+			return {
+				aiSummary: result.output.summary,
+				aiTips: result.output.tips,
+			};
+		} catch (error) {
+			this.#logger.error(
+				`AI 리포트 생성 실패 — 폴백 사용: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+			return buildFallbackContent(aggregatedData.hasActivity, locale);
+		}
 	}
 }

@@ -12,7 +12,7 @@
 import {
 	calculateConsistencyScore,
 	calculateProductivityScore,
-} from "../score-calculator";
+} from "./score-calculator";
 
 describe("calculateConsistencyScore", () => {
 	it("매일 동일한 할 일 수면 100을 반환해야 한다", () => {

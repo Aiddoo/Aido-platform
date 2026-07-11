@@ -1,13 +1,15 @@
+import { ErrorCode } from "@aido/errors";
 import type { ReportStatus } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { now } from "@/shared/domain/date/utils/core";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port";
-import { ReportAccessService } from "../../services/report-access.service";
 
 /** 리포트 생성 기준 타임존 (KST 고정) */
 const KST = "Asia/Seoul";
@@ -25,11 +27,14 @@ export class GetReportStatusUseCase {
 	constructor(
 		@Inject(AI_REPORT_REPOSITORY)
 		private readonly aiReportRepository: AiReportRepositoryPort,
-		private readonly reportAccess: ReportAccessService,
+		private readonly entitlementService: EntitlementService,
 	) {}
 
 	async execute(userId: string, _timezone: string): Promise<ReportStatus> {
-		await this.reportAccess.enforcePremium(userId);
+		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+		if (!hasPremium) {
+			throw new ApplicationException(ErrorCode.AI_1308);
+		}
 
 		const kstNow = dayjs(now()).tz(KST);
 

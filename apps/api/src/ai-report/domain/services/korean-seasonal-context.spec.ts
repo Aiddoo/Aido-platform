@@ -9,7 +9,7 @@
  * pnpm --filter @aido/api test korean-seasonal-context
  * ```
  */
-import { getKoreanSeasonalContext } from "../korean-seasonal-context";
+import { getKoreanSeasonalContext } from "./korean-seasonal-context";
 
 describe("getKoreanSeasonalContext", () => {
 	it("새해 연휴 기간에 해당하는 컨텍스트를 반환해야 한다", () => {

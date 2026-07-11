@@ -5,9 +5,9 @@
  * - 목록 조회 + toView 변환
  */
 
-import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { AiReport } from "../../../domain/entities/ai-report.entity";
@@ -15,7 +15,6 @@ import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port";
-import { ReportAccessService } from "../../services/report-access.service";
 import { GetReportsUseCase } from "./get-reports.use-case";
 
 const makeReport = (id: number): AiReport =>
@@ -45,20 +44,19 @@ const makeReport = (id: number): AiReport =>
 describe("GetReportsUseCase", () => {
 	let useCase: GetReportsUseCase;
 	let mockRepository: Mocked<AiReportRepositoryPort>;
-	let mockAccess: Mocked<ReportAccessService>;
+	let mockEntitlement: Mocked<EntitlementService>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } =
 			await TestBed.solitary(GetReportsUseCase).compile();
 		useCase = unit;
 		mockRepository = unitRef.get(AI_REPORT_REPOSITORY);
-		mockAccess = unitRef.get(ReportAccessService);
+		mockEntitlement = unitRef.get(EntitlementService);
+		mockEntitlement.hasPremiumAccess.mockResolvedValue(true);
 	});
 
 	it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
-		mockAccess.enforcePremium.mockRejectedValue(
-			new ApplicationException(ErrorCode.AI_1308),
-		);
+		mockEntitlement.hasPremiumAccess.mockResolvedValue(false);
 
 		await expect(
 			useCase.execute("user-123", { type: "WEEKLY", limit: 10 }),

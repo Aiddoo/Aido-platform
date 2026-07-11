@@ -9,7 +9,7 @@
  * pnpm --filter @aido/api test profile-template-selector
  * ```
  */
-import { selectProfileTemplate } from "../profile-template-selector";
+import { selectProfileTemplate } from "./profile-template-selector";
 
 describe("selectProfileTemplate", () => {
 	it("달성률 80% 이상이면 축하 + 숨은 약점 템플릿을 반환해야 한다", () => {

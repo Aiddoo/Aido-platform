@@ -2,36 +2,46 @@
  * GenerateReportUseCase 단위 테스트
  *
  * - exists 가드: 이미 존재하면 skip(null), 집계/생성/저장 미호출
- * - 오케스트레이션 순서: aggregator → generator → repository.create
+ * - 오케스트레이션: TODO_STATS_READER → AI_PROVIDER → repository.create
+ * - AI 불가용/실패 시 폴백 콘텐츠로 저장
  * - 프리미엄 게이트 없음(크론 경로)
  */
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { AI_PROVIDER, type AiProvider } from "@/ai";
 
 import { AiReport } from "../../../domain/entities/ai-report.entity";
-import type { AggregatedReportData } from "../../../domain/types";
+import type { AggregationInputs } from "../../../domain/types";
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port";
-import { ReportAggregatorService } from "../../services/report-aggregator.service";
-import { ReportGeneratorService } from "../../services/report-generator.service";
+import {
+	TODO_STATS_READER,
+	type TodoStatsReaderPort,
+} from "../../ports/todo-stats.reader.port";
 import { GenerateReportUseCase } from "./generate-report.use-case";
 
 const mockUserId = "user-123";
 const mockTimezone = "Asia/Seoul";
 
-const aggregated: AggregatedReportData = {
-	totalTodos: 10,
-	completedTodos: 8,
-	completionRate: 80,
-	prevCompletionRate: 70,
-	streakDays: 3,
-	categoryBreakdown: [],
-	dayPatterns: [],
-	timePatterns: [],
-	hasActivity: true,
+/** 활동 없는 최소 집계 입력 (도메인 계산은 report-aggregation 스펙이 별도 검증) */
+const emptyInputs: AggregationInputs = {
+	dailyTotalGroups: [],
+	dailyCompletedGroups: [],
+	prevTotalCount: 0,
+	prevCompletedCount: 0,
+	catTotalGroups: [],
+	catCompletedGroups: [],
+	categories: [],
+	completedTodos: [],
+};
+
+const aiResult = {
+	output: { summary: "AI 요약", tips: ["AI 팁"] },
+	model: "test-model",
+	usage: { input: 10, output: 20 },
 };
 
 const makeReport = (): AiReport =>
@@ -61,8 +71,8 @@ const makeReport = (): AiReport =>
 describe("GenerateReportUseCase", () => {
 	let useCase: GenerateReportUseCase;
 	let mockRepository: Mocked<AiReportRepositoryPort>;
-	let mockAggregator: Mocked<ReportAggregatorService>;
-	let mockGenerator: Mocked<ReportGeneratorService>;
+	let mockReader: Mocked<TodoStatsReaderPort>;
+	let mockAiProvider: Mocked<AiProvider>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -70,8 +80,14 @@ describe("GenerateReportUseCase", () => {
 		).compile();
 		useCase = unit;
 		mockRepository = unitRef.get(AI_REPORT_REPOSITORY);
-		mockAggregator = unitRef.get(ReportAggregatorService);
-		mockGenerator = unitRef.get(ReportGeneratorService);
+		mockReader = unitRef.get(TODO_STATS_READER);
+		mockAiProvider = unitRef.get(AI_PROVIDER);
+
+		mockReader.fetchAggregationInputs.mockResolvedValue(emptyInputs);
+		mockRepository.findLatest.mockResolvedValue(null);
+		mockRepository.create.mockResolvedValue(makeReport());
+		mockAiProvider.isAvailable.mockReturnValue(true);
+		mockAiProvider.generateStructured.mockResolvedValue(aiResult);
 	});
 
 	it("이미 존재하는 주간 리포트면 null 반환 + 후속 미호출", async () => {
@@ -84,8 +100,8 @@ describe("GenerateReportUseCase", () => {
 		});
 
 		expect(result).toBeNull();
-		expect(mockAggregator.aggregate).not.toHaveBeenCalled();
-		expect(mockGenerator.generate).not.toHaveBeenCalled();
+		expect(mockReader.fetchAggregationInputs).not.toHaveBeenCalled();
+		expect(mockAiProvider.generateStructured).not.toHaveBeenCalled();
 		expect(mockRepository.create).not.toHaveBeenCalled();
 	});
 
@@ -99,17 +115,11 @@ describe("GenerateReportUseCase", () => {
 		});
 
 		expect(result).toBeNull();
-		expect(mockAggregator.aggregate).not.toHaveBeenCalled();
+		expect(mockReader.fetchAggregationInputs).not.toHaveBeenCalled();
 	});
 
-	it("주간: aggregator → generator → repository.create 순서로 실행", async () => {
+	it("주간: reader → AI → repository.create 순서로 실행", async () => {
 		mockRepository.exists.mockResolvedValue(false);
-		mockAggregator.aggregate.mockResolvedValue(aggregated);
-		mockGenerator.generate.mockResolvedValue({
-			aiSummary: "이번 주 잘했어!",
-			aiTips: ["계속 파이팅!"],
-		});
-		mockRepository.create.mockResolvedValue(makeReport());
 
 		const result = await useCase.execute({
 			userId: mockUserId,
@@ -117,30 +127,26 @@ describe("GenerateReportUseCase", () => {
 			type: "WEEKLY",
 		});
 
-		expect(mockAggregator.aggregate).toHaveBeenCalledTimes(1);
-		expect(mockGenerator.generate).toHaveBeenCalledTimes(1);
+		expect(mockReader.fetchAggregationInputs).toHaveBeenCalledTimes(1);
+		expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(1);
 		expect(mockRepository.create).toHaveBeenCalledTimes(1);
 		expect(result?.id).toBe(1);
 
-		const aggregateCall = mockAggregator.aggregate.mock.calls[0]?.[0];
-		expect(aggregateCall?.userId).toBe(mockUserId);
-		expect(aggregateCall?.timezone).toBe(mockTimezone);
-		expect(aggregateCall?.startDate).toBeInstanceOf(Date);
-		expect(aggregateCall?.endDate).toBeInstanceOf(Date);
+		const readerCall = mockReader.fetchAggregationInputs.mock.calls[0]?.[0];
+		expect(readerCall?.userId).toBe(mockUserId);
+		expect(readerCall?.timezone).toBe(mockTimezone);
+		expect(readerCall?.startDate).toBeInstanceOf(Date);
+		expect(readerCall?.endDate).toBeInstanceOf(Date);
 
-		const generateCall = mockGenerator.generate.mock.calls[0]?.[0];
-		expect(generateCall?.aggregatedData).toEqual(aggregated);
-		expect(generateCall?.type).toBe("WEEKLY");
+		// AI 출력이 저장 페이로드로 전달되는지 확인
+		const createCall = mockRepository.create.mock.calls[0]?.[0];
+		expect(createCall?.type).toBe("WEEKLY");
+		expect(createCall?.aiSummary).toBe("AI 요약");
+		expect(createCall?.aiTips).toEqual(["AI 팁"]);
 	});
 
 	it("월간: 리포트를 정상 생성해야 한다", async () => {
 		mockRepository.exists.mockResolvedValue(false);
-		mockAggregator.aggregate.mockResolvedValue(aggregated);
-		mockGenerator.generate.mockResolvedValue({
-			aiSummary: "이번 달 잘했어!",
-			aiTips: ["다음 달도 파이팅!"],
-		});
-		mockRepository.create.mockResolvedValue(makeReport());
 
 		const result = await useCase.execute({
 			userId: mockUserId,
@@ -150,7 +156,38 @@ describe("GenerateReportUseCase", () => {
 
 		expect(result).not.toBeNull();
 		expect(mockRepository.create).toHaveBeenCalledTimes(1);
-		const generateCall = mockGenerator.generate.mock.calls[0]?.[0];
-		expect(generateCall?.type).toBe("MONTHLY");
+		expect(mockRepository.create.mock.calls[0]?.[0]?.type).toBe("MONTHLY");
+	});
+
+	it("AI Provider 불가용 시 폴백 콘텐츠로 저장한다", async () => {
+		mockRepository.exists.mockResolvedValue(false);
+		mockAiProvider.isAvailable.mockReturnValue(false);
+
+		const result = await useCase.execute({
+			userId: mockUserId,
+			timezone: mockTimezone,
+			type: "WEEKLY",
+		});
+
+		expect(result).not.toBeNull();
+		expect(mockAiProvider.generateStructured).not.toHaveBeenCalled();
+		expect(mockRepository.create).toHaveBeenCalledTimes(1);
+		// 폴백은 비어있지 않은 요약을 제공
+		expect(mockRepository.create.mock.calls[0]?.[0]?.aiSummary).toBeTruthy();
+	});
+
+	it("AI 호출 실패 시 폴백 콘텐츠로 저장한다", async () => {
+		mockRepository.exists.mockResolvedValue(false);
+		mockAiProvider.generateStructured.mockRejectedValue(new Error("AI 오류"));
+
+		const result = await useCase.execute({
+			userId: mockUserId,
+			timezone: mockTimezone,
+			type: "WEEKLY",
+		});
+
+		expect(result).not.toBeNull();
+		expect(mockRepository.create).toHaveBeenCalledTimes(1);
+		expect(mockRepository.create.mock.calls[0]?.[0]?.aiSummary).toBeTruthy();
 	});
 });
