@@ -82,6 +82,7 @@ export class ChangeTodoCategoryUseCase {
 
 		// 3. 캐시 무효화 (todoCount 변경)
 		await this.todoCache.invalidateTodoCategories(userId);
+		await this.todoCache.invalidateFriendTodos(userId);
 
 		this.#logger.log(
 			`Todo category updated: ${id} -> ${categoryId} for user: ${userId}`,

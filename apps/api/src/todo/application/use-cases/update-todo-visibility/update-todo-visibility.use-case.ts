@@ -8,6 +8,7 @@ import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -37,6 +38,8 @@ export class UpdateTodoVisibilityUseCase {
 		private readonly todoReadRepository: TodoReadRepositoryPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
+		@Inject(TODO_CACHE)
+		private readonly todoCache: TodoCachePort,
 	) {}
 
 	async execute(input: UpdateTodoVisibilityInput): Promise<TodoResponse> {
@@ -59,6 +62,9 @@ export class UpdateTodoVisibilityUseCase {
 		this.#logger.log(
 			`Todo visibility updated: ${id} -> ${visibility} for user: ${userId}`,
 		);
+
+		// 친구 공개 투두 캐시 무효화 (TX 커밋 후 — visibility 변경은 도메인 이벤트가 없어 명시적 무효화)
+		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

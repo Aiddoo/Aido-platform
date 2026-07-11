@@ -134,6 +134,7 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 		);
 		expect(todoRepository.create).toHaveBeenCalledTimes(1);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
+		expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
 		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoCreatedEvent(1, "user-123", null),
 		]);

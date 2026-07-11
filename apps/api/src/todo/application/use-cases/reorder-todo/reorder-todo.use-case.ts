@@ -12,6 +12,7 @@ import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -44,6 +45,8 @@ export class ReorderTodoUseCase {
 		private readonly todoReadRepository: TodoReadRepositoryPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
+		@Inject(TODO_CACHE)
+		private readonly todoCache: TodoCachePort,
 	) {}
 
 	async execute(input: ReorderTodoInput): Promise<TodoResponse> {
@@ -94,6 +97,9 @@ export class ReorderTodoUseCase {
 				`Todo reordered: ${id} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
 			);
 		});
+
+		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
+		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 2. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

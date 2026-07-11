@@ -12,6 +12,7 @@ import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -43,6 +44,8 @@ export class ToggleTodoCompleteUseCase {
 		private readonly todoReadRepository: TodoReadRepositoryPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
+		@Inject(TODO_CACHE)
+		private readonly todoCache: TodoCachePort,
 		@Inject(DOMAIN_EVENT_PUBLISHER)
 		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
@@ -77,6 +80,9 @@ export class ToggleTodoCompleteUseCase {
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (부수효과는 이벤트 핸들러가 처리)
 		this.eventPublisher.publishAll(events);
+
+		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
+		await this.todoCache.invalidateFriendTodos(userId);
 
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,

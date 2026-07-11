@@ -19,6 +19,9 @@ export function createCategoryOwnershipMock(): CategoryOwnershipPort {
 export function createTodoCacheMock(): TodoCachePort {
 	return {
 		invalidateTodoCategories: jest.fn(),
+		getFriendTodosFirstPage: jest.fn(),
+		setFriendTodosFirstPage: jest.fn(),
+		invalidateFriendTodos: jest.fn(),
 	};
 }
 

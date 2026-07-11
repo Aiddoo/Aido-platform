@@ -90,6 +90,7 @@ describe("DeleteTodoUseCase — 할 일 삭제 핸들러", () => {
 			new TodoDeletedEvent(1, "user-123"),
 		]);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
+		expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
 	});
 
 	it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던지고 삭제하지 않는다", async () => {
@@ -102,6 +103,7 @@ describe("DeleteTodoUseCase — 할 일 삭제 핸들러", () => {
 		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
 		expect(todoRepository.delete).not.toHaveBeenCalled();
 		expect(todoCache.invalidateTodoCategories).not.toHaveBeenCalled();
+		expect(todoCache.invalidateFriendTodos).not.toHaveBeenCalled();
 	});
 
 	it("다른 사용자의 할 일이면 조회되지 않아 TODO_0801을 던진다 (사용자 격리)", async () => {

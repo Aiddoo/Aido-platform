@@ -10,6 +10,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 import {
+	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
@@ -28,6 +29,7 @@ import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -68,6 +70,7 @@ describe("ToggleTodoCompleteUseCase — 완료 토글 핸들러", () => {
 	let useCase: ToggleTodoCompleteUseCase;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
+	let todoCache: Mocked<TodoCachePort>;
 	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
@@ -78,6 +81,8 @@ describe("ToggleTodoCompleteUseCase — 완료 토글 핸들러", () => {
 			.impl(() => createTodoReadRepositoryMock())
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
+			.mock<TodoCachePort>(TODO_CACHE)
+			.impl(() => createTodoCacheMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
 			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
@@ -86,6 +91,7 @@ describe("ToggleTodoCompleteUseCase — 완료 토글 핸들러", () => {
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
 		eventPublisher = unitRef.get<DomainEventPublisherPort>(
 			DOMAIN_EVENT_PUBLISHER,
 		);
@@ -129,6 +135,7 @@ describe("ToggleTodoCompleteUseCase — 완료 토글 핸들러", () => {
 		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),
 		]);
+		expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
 		expect(result.completed).toBe(true);
 	});
 

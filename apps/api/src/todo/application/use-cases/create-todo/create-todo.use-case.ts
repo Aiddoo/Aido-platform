@@ -112,6 +112,7 @@ export class CreateTodoUseCase {
 		);
 
 		await this.todoCache.invalidateTodoCategories(data.userId);
+		await this.todoCache.invalidateFriendTodos(data.userId);
 
 		// 생성 이벤트 발행(TX 커밋 후) → 리마인더 스케줄링은 이벤트 핸들러가 처리
 		created.markCreated();

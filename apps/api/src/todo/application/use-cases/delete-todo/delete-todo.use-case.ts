@@ -59,8 +59,9 @@ export class DeleteTodoUseCase {
 		// 삭제(TX 커밋) 완료 후 이벤트 발행 (이벤트 핸들러가 리마인더 취소)
 		this.eventPublisher.publishAll(events);
 
-		// 캐시 무효화 (todoCount 변경)
+		// 캐시 무효화 (todoCount 변경 + 친구 공개 투두 첫 페이지)
 		await this.todoCache.invalidateTodoCategories(userId);
+		await this.todoCache.invalidateFriendTodos(userId);
 
 		this.#logger.log(`Todo deleted: ${id} for user: ${userId}`);
 	}

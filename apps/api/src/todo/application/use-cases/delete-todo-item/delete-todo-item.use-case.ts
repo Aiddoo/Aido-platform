@@ -7,6 +7,7 @@ import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -36,6 +37,8 @@ export class DeleteTodoItemUseCase {
 		private readonly todoReadRepository: TodoReadRepositoryPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
+		@Inject(TODO_CACHE)
+		private readonly todoCache: TodoCachePort,
 	) {}
 
 	async execute(input: DeleteTodoItemInput): Promise<TodoResponse> {
@@ -56,6 +59,9 @@ export class DeleteTodoItemUseCase {
 		this.#logger.log(
 			`Todo item deleted: todo=${todoId}, item=${itemId} for user: ${userId}`,
 		);
+
+		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
+		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 2. 부모 할 일 전체 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

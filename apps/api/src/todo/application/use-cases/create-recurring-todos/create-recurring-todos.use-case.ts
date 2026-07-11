@@ -156,6 +156,7 @@ export class CreateRecurringTodosUseCase {
 
 		// 5. 캐시 무효화 (todoCount 변경 — 단건 create와 동일 규칙)
 		await this.todoCache.invalidateTodoCategories(data.userId);
+		await this.todoCache.invalidateFriendTodos(data.userId);
 
 		// 6. 저장 완료 후 이벤트 일괄 발행 (인스턴스 순서 보존 · 리마인더 스케줄링은 이벤트 핸들러)
 		const domainEvents = created.flatMap((todo) => {

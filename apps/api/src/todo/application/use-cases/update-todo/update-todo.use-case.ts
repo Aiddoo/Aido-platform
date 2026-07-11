@@ -114,10 +114,11 @@ export class UpdateTodoUseCase {
 
 		this.#logger.log(`Todo updated: ${id} for user: ${userId}`);
 
-		// 3. 카테고리 변경 시 캐시 무효화
+		// 3. 카테고리 변경 시 캐시 무효화 + 친구 공개 투두 캐시는 항상 무효화
 		if (data.categoryId !== undefined) {
 			await this.todoCache.invalidateTodoCategories(userId);
 		}
+		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (완료 상태면 이벤트 핸들러가 리마인더 취소)
 		this.eventPublisher.publishAll(events);
