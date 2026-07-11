@@ -54,6 +54,7 @@ import type { AccountProvider } from "@/generated/prisma/client";
 import { NotificationQueueService } from "@/notification";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -1327,10 +1328,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					name: "Apple to Locked",
 				});
 
-				// Then: 에러 발생 (잠긴 사용자는 로그인 불가)
+				// Then: 에러 발생 (잠긴 사용자는 로그인 불가 — 도메인 상태 정책)
 				await expect(
 					oauthService.handleAppleMobileLogin(appleToken),
-				).rejects.toThrow(ApplicationException);
+				).rejects.toThrow(DomainException);
 			});
 
 			it("정지된 사용자에게 자동 연동을 시도하면 에러가 발생해야 한다", async () => {
@@ -1360,10 +1361,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					name: "Google to Suspended",
 				});
 
-				// Then: 에러 발생 (정지된 사용자는 로그인 불가)
+				// Then: 에러 발생 (정지된 사용자는 로그인 불가 — 도메인 상태 정책)
 				await expect(
 					oauthService.handleGoogleMobileLogin(googleToken),
-				).rejects.toThrow(ApplicationException);
+				).rejects.toThrow(DomainException);
 			});
 		});
 	});
@@ -1388,9 +1389,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				data: { status: "LOCKED" },
 			});
 
-			// When & Then: 다시 로그인 시도 시 실패
+			// When & Then: 다시 로그인 시도 시 실패 (도메인 상태 정책)
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(
-				ApplicationException,
+				DomainException,
 			);
 		});
 
@@ -1412,9 +1413,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				data: { status: "SUSPENDED" },
 			});
 
-			// When & Then
+			// When & Then (도메인 상태 정책)
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(
-				ApplicationException,
+				DomainException,
 			);
 		});
 

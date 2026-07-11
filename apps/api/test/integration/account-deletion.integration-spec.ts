@@ -50,7 +50,7 @@ import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.j
 import { EmailFacade } from "@/email";
 import { NotificationQueueService } from "@/notification";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -413,9 +413,9 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				data: { deletedAt: pastDate, status: "SUSPENDED" },
 			});
 
-			// When & Then
+			// When & Then (탈퇴 복구 유예 초과 — 도메인 정책 USER_0606)
 			await expect(authService.login({ email, password })).rejects.toThrow(
-				ApplicationException,
+				DomainException,
 			);
 		});
 	});
