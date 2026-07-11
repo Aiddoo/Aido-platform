@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 import type { Logger } from "@nestjs/common";
 import type {
 	ExchangedToken,
@@ -9,7 +10,7 @@ import type {
 	OAuthTokenVerifierService,
 	VerifiedProfile,
 } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 interface OAuthConfig {
 	clientId: string | undefined;
@@ -47,7 +48,7 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
 		const { clientId, callbackUrl, isConfigured } = this.#getConfig();
 
 		if (!isConfigured || !clientId || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		await params.persistState("KAKAO", params.validatedRedirectUri, {
@@ -72,7 +73,7 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
 			this.#getConfig();
 
 		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
@@ -90,7 +91,7 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
 		if (!tokenResponse.ok) {
 			const errorData = await tokenResponse.text();
 			this.#logger.error(`Kakao token exchange failed: ${errorData}`);
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		const tokenData = (await tokenResponse.json()) as {

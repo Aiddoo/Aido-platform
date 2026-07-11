@@ -1,14 +1,15 @@
 import { createHash, randomInt } from "node:crypto";
+import { ErrorCode } from "@aido/errors";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
 import { EmailFacade } from "@/email";
 import type { VerificationType } from "@/generated/prisma/client";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import {
 	addMinutes,
 	subtractSeconds,
 } from "@/shared/domain/date/utils/arithmetic";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface VerificationCodeResult {
@@ -160,12 +161,12 @@ export class VerificationService {
 
 		// 유효한 인증 코드가 없음
 		if (!verification) {
-			throw BusinessExceptions.verificationCodeInvalid();
+			throw new ApplicationException(ErrorCode.VERIFY_0751);
 		}
 
 		// 브루트포스 보호: 최대 시도 횟수 초과 확인
 		if (verification.attempts >= VERIFICATION_CODE.MAX_ATTEMPTS) {
-			throw BusinessExceptions.verificationMaxAttemptsExceeded();
+			throw new ApplicationException(ErrorCode.VERIFY_0754);
 		}
 
 		const tokenHash = this.#hashCode(code);
@@ -180,7 +181,7 @@ export class VerificationService {
 				`Verification attempt failed for user ${userId}, attempts: ${verification.attempts + 1}`,
 			);
 
-			throw BusinessExceptions.verificationCodeInvalid();
+			throw new ApplicationException(ErrorCode.VERIFY_0751);
 		}
 
 		// 사용 처리
@@ -208,9 +209,9 @@ export class VerificationService {
 			);
 
 		if (recentCount > 0) {
-			throw BusinessExceptions.verificationResendTooSoon(
-				VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
-			);
+			throw new ApplicationException(ErrorCode.VERIFY_0753, {
+				remainingSeconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
+			});
 		}
 	}
 

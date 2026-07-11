@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 import type { CurrentUserPayload } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
@@ -6,9 +7,9 @@ import { SessionService } from "@/auth/application/services/session.service";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
 	type CachedSession,
 	CacheService,
@@ -59,12 +60,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 	async validate(payload: JwtPayload): Promise<CurrentUserPayload> {
 		// Access Token 타입 확인
 		if (payload.type !== "access") {
-			throw BusinessExceptions.invalidToken({ reason: "Not an access token" });
+			throw new ApplicationException(ErrorCode.AUTH_0101, {
+				reason: "Not an access token",
+			});
 		}
 
 		// sessionId 필수 확인
 		if (!payload.sessionId) {
-			throw BusinessExceptions.invalidToken({ reason: "Missing sessionId" });
+			throw new ApplicationException(ErrorCode.AUTH_0101, {
+				reason: "Missing sessionId",
+			});
 		}
 
 		// 1. 캐시에서 세션 조회 (캐시-aside 패턴, 캐시 장애 시 미스 취급 → DB 폴백)
@@ -165,10 +170,13 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 	 */
 	#assertUserStatus(status: string, deletedAt?: string | null): void {
 		if (status === "LOCKED") {
-			throw BusinessExceptions.accountLocked("User");
+			throw new ApplicationException(ErrorCode.USER_0607, {
+				email: "User",
+				remainingMinutes: undefined,
+			});
 		}
 		if (status === "SUSPENDED" || deletedAt) {
-			throw BusinessExceptions.accountSuspended("User");
+			throw new ApplicationException(ErrorCode.USER_0605, { userId: "User" });
 		}
 	}
 }

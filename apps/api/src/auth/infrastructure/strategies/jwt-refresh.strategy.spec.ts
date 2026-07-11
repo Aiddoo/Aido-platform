@@ -13,7 +13,7 @@
 
 import type { Request } from "express";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { JwtRefreshStrategy } from "./jwt-refresh.strategy";
 
 describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
@@ -66,7 +66,7 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 
 		// When & Then
 		await expect(strategy.validate(req, payload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 
@@ -77,7 +77,7 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 
 		// When & Then
 		await expect(strategy.validate(req, payload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 
@@ -87,7 +87,7 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 
 		// When & Then
 		await expect(strategy.validate(req, validPayload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 });

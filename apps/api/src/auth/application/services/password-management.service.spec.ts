@@ -24,7 +24,7 @@ import { SecurityLogRepository } from "@/auth/infrastructure/persistence/securit
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { type Account, type SecurityLog } from "@/generated/prisma/client";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 import { PasswordManagementService } from "./password-management.service";
@@ -165,7 +165,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.resetPassword(email, code, newPassword),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("소셜 전용 계정(Credential 없음)이면 USER_0613 에러를 던진다", async () => {
@@ -181,7 +181,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.resetPassword(email, code, newPassword),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("탈퇴한 사용자의 비밀번호 재설정 시 USER_0606 에러", async () => {
@@ -195,7 +195,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.resetPassword(email, code, newPassword),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 			expect(accountRepo.updatePassword).not.toHaveBeenCalled();
 		});
 
@@ -325,7 +325,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.changePassword(userId, currentPassword, newPassword),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("Credential 계정이 없으면 에러를 던진다", async () => {
@@ -337,7 +337,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.changePassword(userId, currentPassword, newPassword),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("보안 로그를 기록한다", async () => {
@@ -420,7 +420,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				// When & Then
 				await expect(
 					service.changePassword(userId, currentPassword, newPassword),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("탈퇴한 사용자의 비밀번호 변경 시 USER_0606 에러", async () => {
@@ -434,7 +434,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 				// When & Then
 				await expect(
 					service.changePassword(userId, currentPassword, newPassword),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 				expect(accountRepo.findByUserIdAndProvider).not.toHaveBeenCalled();
 			});
 		});
@@ -476,7 +476,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 
 			// When & Then
 			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -486,7 +486,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 
 			// When & Then
 			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -501,7 +501,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 
 			// When & Then
 			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});
@@ -602,7 +602,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.setPassword(userId, code, newPassword, metadata),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("비밀번호를 Argon2id로 해싱한다", async () => {
@@ -623,7 +623,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.setPassword(userId, code, newPassword, metadata),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("탈퇴한 사용자면 에러를 던진다", async () => {
@@ -638,7 +638,7 @@ describe("PasswordManagementService — 비밀번호 서비스", () => {
 			// When & Then
 			await expect(
 				service.setPassword(userId, code, newPassword, metadata),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("인증 코드를 PASSWORD_SETUP 타입으로 검증한다", async () => {

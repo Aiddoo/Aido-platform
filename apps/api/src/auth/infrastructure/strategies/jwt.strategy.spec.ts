@@ -11,16 +11,14 @@
  * ```
  */
 
+import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionService } from "@/auth/application/services/session.service";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import {
-	BusinessException,
-	BusinessExceptions,
-} from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { JwtStrategy } from "./jwt.strategy";
@@ -66,7 +64,9 @@ describe("JwtStrategy — JWT 전략", () => {
 		const payload = { ...validPayload, type: "refresh" as const };
 
 		// When & Then
-		await expect(strategy.validate(payload)).rejects.toThrow(BusinessException);
+		await expect(strategy.validate(payload)).rejects.toThrow(
+			ApplicationException,
+		);
 	});
 
 	it("sessionId가 없으면 에러를 던진다", async () => {
@@ -74,7 +74,9 @@ describe("JwtStrategy — JWT 전략", () => {
 		const payload = { ...validPayload, sessionId: undefined } as JwtPayload;
 
 		// When & Then
-		await expect(strategy.validate(payload)).rejects.toThrow(BusinessException);
+		await expect(strategy.validate(payload)).rejects.toThrow(
+			ApplicationException,
+		);
 	});
 
 	it("캐시 히트 시 DB 조회 없이 사용자 정보를 반환한다", async () => {
@@ -107,12 +109,15 @@ describe("JwtStrategy — JWT 전략", () => {
 			revokedAt: new Date(),
 		});
 		sessionService.assertSessionValid.mockImplementation(() => {
-			throw BusinessExceptions.sessionRevoked();
+			throw new ApplicationException(ErrorCode.SESSION_0703, {
+				sessionId: undefined,
+				reason: undefined,
+			});
 		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 
@@ -124,12 +129,14 @@ describe("JwtStrategy — JWT 전략", () => {
 			revokedAt: null,
 		});
 		sessionService.assertSessionValid.mockImplementation(() => {
-			throw BusinessExceptions.sessionExpired();
+			throw new ApplicationException(ErrorCode.SESSION_0702, {
+				sessionId: undefined,
+			});
 		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 
@@ -164,12 +171,14 @@ describe("JwtStrategy — JWT 전략", () => {
 		(cacheService.getSession as jest.Mock).mockResolvedValue(null);
 		(sessionRepo.findById as jest.Mock).mockResolvedValue(null);
 		sessionService.assertSessionValid.mockImplementation(() => {
-			throw BusinessExceptions.sessionNotFound();
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
 		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 
@@ -183,12 +192,15 @@ describe("JwtStrategy — JWT 전략", () => {
 			revokedAt: new Date(),
 		});
 		sessionService.assertSessionValid.mockImplementation(() => {
-			throw BusinessExceptions.sessionRevoked();
+			throw new ApplicationException(ErrorCode.SESSION_0703, {
+				sessionId: undefined,
+				reason: undefined,
+			});
 		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 
@@ -202,12 +214,14 @@ describe("JwtStrategy — JWT 전략", () => {
 			revokedAt: null,
 		});
 		sessionService.assertSessionValid.mockImplementation(() => {
-			throw BusinessExceptions.sessionExpired();
+			throw new ApplicationException(ErrorCode.SESSION_0702, {
+				sessionId: undefined,
+			});
 		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			BusinessException,
+			ApplicationException,
 		);
 	});
 
@@ -259,12 +273,15 @@ describe("JwtStrategy — JWT 전략", () => {
 				revokedAt: new Date(),
 			});
 			sessionService.assertSessionValid.mockImplementation(() => {
-				throw BusinessExceptions.sessionRevoked();
+				throw new ApplicationException(ErrorCode.SESSION_0703, {
+					sessionId: undefined,
+					reason: undefined,
+				});
 			});
 
 			// When & Then
 			await expect(strategy.validate(validPayload)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});

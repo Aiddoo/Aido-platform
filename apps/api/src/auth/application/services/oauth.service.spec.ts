@@ -9,6 +9,7 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
+import { ErrorCode } from "@aido/errors";
 import { Logger } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -36,10 +37,7 @@ import { OAuthStateRepository } from "@/auth/infrastructure/persistence/oauth-st
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { type AccountProvider, Prisma } from "@/generated/prisma/client";
-import {
-	BusinessException,
-	BusinessExceptions,
-} from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
@@ -550,7 +548,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				// When & Then
 				await expect(
 					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("정지된 사용자는 로그인할 수 없다", async () => {
@@ -573,7 +571,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				// When & Then
 				await expect(
 					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("탈퇴한 사용자는 소셜 로그인할 수 없다", async () => {
@@ -599,7 +597,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 				// When & Then
 				await expect(
 					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 		});
 	});
@@ -679,7 +677,9 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			await expect(
 				service.linkAccount("user-123", "KAKAO", "kakao-account-789"),
 			).rejects.toThrow(
-				BusinessExceptions.kakaoAccountAlreadyLinked("kakao-account-789"),
+				new ApplicationException(ErrorCode.KAKAO_0306, {
+					kakaoId: "kakao-account-789",
+				}),
 			);
 		});
 
@@ -730,7 +730,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.linkAccount("user-123", "APPLE", "apple-account-456"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -816,7 +816,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.unlinkAccount("user-123", "APPLE")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -831,7 +831,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.unlinkAccount("user-123", "APPLE")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});
@@ -1124,7 +1124,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					{ provider: "KAKAO", accessToken: "valid-kakao-access-token" },
 					mockMetadata,
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -1367,7 +1367,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
@@ -1381,7 +1381,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
 				expect(global.fetch).not.toHaveBeenCalled();
@@ -1874,7 +1874,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
 				expect(securityLogRepo.create).toHaveBeenCalledWith(
@@ -1979,7 +1979,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
 				expect(securityLogRepo.create).toHaveBeenCalledWith(
@@ -2019,7 +2019,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// untrusted_provider 이유로 기록
 				expect(securityLogRepo.create).toHaveBeenCalledWith(
@@ -2063,7 +2063,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
 				expect(securityLogRepo.create).toHaveBeenCalledWith(
@@ -2110,7 +2110,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("정지된 사용자에게는 자동 연동되지 않는다", async () => {
@@ -2138,7 +2138,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("탈퇴한 사용자에게는 자동 연동되지 않는다", async () => {
@@ -2167,7 +2167,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						undefined,
 						mockMetadata,
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 		});
 	});
@@ -2184,7 +2184,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
@@ -2198,7 +2198,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
 				expect(global.fetch).not.toHaveBeenCalled();
@@ -2302,7 +2302,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
@@ -2316,7 +2316,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
 				expect(global.fetch).not.toHaveBeenCalled();
@@ -2428,7 +2428,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
@@ -2442,7 +2442,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 						"test-code",
 						"invalid-state",
 					),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
 				expect(global.fetch).not.toHaveBeenCalled();
@@ -2893,7 +2893,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					"non-existent-code",
 					mockMetadata,
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("mode가 link가 아닌 교환 코드이면 에러를 던진다", async () => {
@@ -2928,7 +2928,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					"login-exchange-code",
 					mockMetadata,
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("providerAccountId(userId 필드)가 없으면 에러를 던진다", async () => {
@@ -2965,7 +2965,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					"link-exchange-code",
 					mockMetadata,
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("initiatingUserId와 요청 userId가 일치하면 정상 연동된다", async () => {
@@ -3045,7 +3045,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 					"stolen-exchange-code",
 					mockMetadata,
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("initiatingUserId가 null이면 제한 없이 연동된다", async () => {

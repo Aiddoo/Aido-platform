@@ -8,6 +8,7 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
+import { ErrorCode } from "@aido/errors";
 import { LOGIN_ATTEMPT } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -34,10 +35,7 @@ import {
 	type User,
 } from "@/generated/prisma/client";
 import type { AccountProvider } from "@/generated/prisma/enums";
-import {
-	BusinessException,
-	BusinessExceptions,
-} from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
@@ -202,7 +200,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.register(registerInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -297,7 +295,9 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.register(registerInput)).rejects.toThrow(
-				BusinessExceptions.emailAlreadyRegistered(registerInput.email),
+				new ApplicationException(ErrorCode.EMAIL_0501, {
+					email: registerInput.email,
+				}),
 			);
 		});
 
@@ -418,7 +418,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -432,7 +432,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -505,7 +505,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 			expect(verificationService.verifyCode).not.toHaveBeenCalled();
 		});
@@ -577,7 +577,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 			expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({ success: false }),
@@ -603,7 +603,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 			expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({ success: false }),
@@ -628,7 +628,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -688,7 +688,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 			expect(securityLogRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -719,7 +719,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});
@@ -779,7 +779,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.logout(userId, sessionId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -794,7 +794,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.logout(userId, sessionId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -808,7 +808,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.logout(userId, sessionId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});
@@ -1029,7 +1029,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, payloadWithoutSession),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("토큰 재사용이 감지되면 토큰 패밀리를 폐기한다", async () => {
@@ -1054,7 +1054,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 
 			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
 				mockSession.tokenFamily,
@@ -1137,7 +1137,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
 				reusedSession.tokenFamily,
 				REVOKE_REASON.TOKEN_REUSE_DETECTED,
@@ -1204,7 +1204,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
 
 			jest.useRealTimers();
@@ -1220,13 +1220,16 @@ describe("AuthService — 인증 서비스", () => {
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(revokedSession);
 			sessionService.assertSessionValid.mockImplementation(() => {
-				throw BusinessExceptions.sessionRevoked();
+				throw new ApplicationException(ErrorCode.SESSION_0703, {
+					sessionId: undefined,
+					reason: undefined,
+				});
 			});
 
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("만료된 세션이면 에러를 던진다", async () => {
@@ -1239,13 +1242,15 @@ describe("AuthService — 인증 서비스", () => {
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(expiredSession);
 			sessionService.assertSessionValid.mockImplementation(() => {
-				throw BusinessExceptions.sessionExpired();
+				throw new ApplicationException(ErrorCode.SESSION_0702, {
+					sessionId: undefined,
+				});
 			});
 
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("토큰 로테이션 실패 시 에러를 던진다", async () => {
@@ -1264,7 +1269,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -1336,7 +1341,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.deleteAccount(userId, sessionId, {}, metadata),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("CREDENTIAL 계정: 비밀번호 불일치 시 USER_0602 에러", async () => {
@@ -1361,7 +1366,7 @@ describe("AuthService — 인증 서비스", () => {
 					{ password: "WrongPassword123" },
 					metadata,
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("소셜 전용 계정: 세션 기반 확인으로 soft delete 처리", async () => {
@@ -1412,7 +1417,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.deleteAccount(userId, sessionId, {}, metadata),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("존재하지 않는 사용자 시 USER_0601 에러", async () => {
@@ -1422,7 +1427,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.deleteAccount(userId, sessionId, {}, metadata),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("트랜잭션 내 softDelete + revokeAllByUserId + securityLog 호출 확인", async () => {
@@ -1487,7 +1492,7 @@ describe("AuthService — 인증 서비스", () => {
 					email: "deleted@example.com",
 					password: "Password123",
 				}),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("유예 기간 내 탈퇴 사용자 로그인 시 자동 복구", async () => {
@@ -1657,7 +1662,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.revokeSession(userId, sessionId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -1671,7 +1676,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.revokeSession(userId, sessionId)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});
@@ -1732,7 +1737,7 @@ describe("AuthService — 인증 서비스", () => {
 
 			// When & Then
 			await expect(service.resendVerification(email)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -1811,7 +1816,7 @@ describe("AuthService — 인증 서비스", () => {
 			// When & Then
 			await expect(
 				service.getCurrentUser("user-123", "test@example.com", "session-123"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("다중 provider (CREDENTIAL + GOOGLE) 목록을 반환한다", async () => {

@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger } from "@nestjs/common";
 import type { RequestMetadata } from "@/auth/application/types";
 import { assertNotDeleted } from "@/auth/application/utils/auth-validation.utils";
@@ -11,7 +12,7 @@ import { AccountRepository } from "@/auth/infrastructure/persistence/account.rep
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import { VerificationService } from "./verification.service";
@@ -72,7 +73,7 @@ export class PasswordManagementService {
 		// 사용자 조회
 		const user = await this.userRepository.findByEmail(email);
 		if (!user) {
-			throw BusinessExceptions.verificationCodeInvalid();
+			throw new ApplicationException(ErrorCode.VERIFY_0751);
 		}
 		assertNotDeleted(user);
 
@@ -82,7 +83,7 @@ export class PasswordManagementService {
 			"CREDENTIAL",
 		);
 		if (!account) {
-			throw BusinessExceptions.noCredentialAccountForPasswordChange(user.id);
+			throw new ApplicationException(ErrorCode.USER_0613, { userId: user.id });
 		}
 
 		// 새 비밀번호 해싱 (트랜잭션 밖에서 수행 - CPU 작업)
@@ -139,7 +140,7 @@ export class PasswordManagementService {
 
 		// 탈퇴 사용자 체크
 		const user = await this.userRepository.findById(userId);
-		if (!user) throw BusinessExceptions.userNotFound(userId);
+		if (!user) throw new ApplicationException(ErrorCode.USER_0601, { userId });
 		assertNotDeleted(user);
 
 		// Credential Account 조회
@@ -148,7 +149,7 @@ export class PasswordManagementService {
 			"CREDENTIAL",
 		);
 		if (!account?.password) {
-			throw BusinessExceptions.noCredentialAccountForPasswordChange(userId);
+			throw new ApplicationException(ErrorCode.USER_0613, { userId });
 		}
 
 		// 현재 비밀번호 검증
@@ -157,7 +158,7 @@ export class PasswordManagementService {
 			currentPassword,
 		);
 		if (!isValid) {
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		// 새 비밀번호 해싱 (트랜잭션 밖에서 수행 - CPU 작업)
@@ -196,7 +197,7 @@ export class PasswordManagementService {
 	async requestPasswordSetupCode(userId: string): Promise<{ message: string }> {
 		// 1. 유저 조회 + 탈퇴 체크
 		const user = await this.userRepository.findById(userId);
-		if (!user) throw BusinessExceptions.userNotFound(userId);
+		if (!user) throw new ApplicationException(ErrorCode.USER_0601, { userId });
 		assertNotDeleted(user);
 
 		// 2. CREDENTIAL 계정 존재 여부 확인
@@ -205,7 +206,7 @@ export class PasswordManagementService {
 			"CREDENTIAL",
 		);
 		if (account) {
-			throw BusinessExceptions.credentialAccountAlreadyExists(userId);
+			throw new ApplicationException(ErrorCode.USER_0614, { userId });
 		}
 
 		// 3. 인증 코드 생성 및 발송
@@ -230,7 +231,7 @@ export class PasswordManagementService {
 
 		// 1. 유저 조회 + 탈퇴 체크
 		const user = await this.userRepository.findById(userId);
-		if (!user) throw BusinessExceptions.userNotFound(userId);
+		if (!user) throw new ApplicationException(ErrorCode.USER_0601, { userId });
 		assertNotDeleted(user);
 
 		// 2. CREDENTIAL 계정 존재 여부 확인
@@ -240,7 +241,7 @@ export class PasswordManagementService {
 				"CREDENTIAL",
 			);
 		if (existingAccount) {
-			throw BusinessExceptions.credentialAccountAlreadyExists(userId);
+			throw new ApplicationException(ErrorCode.USER_0614, { userId });
 		}
 
 		// 3. 비밀번호 해싱 (트랜잭션 밖 - CPU 작업)

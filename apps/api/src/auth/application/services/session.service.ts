@@ -1,11 +1,12 @@
+import { ErrorCode } from "@aido/errors";
 import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import type { TokenPair } from "@/auth/infrastructure/adapters/token.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import { addMilliseconds } from "@/shared/domain/date/utils/arithmetic";
 import { isExpired } from "@/shared/domain/date/utils/compare";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 export interface CreateSessionParams {
@@ -103,7 +104,7 @@ export class SessionService {
 	}
 
 	/**
-	 * 세션 유효성을 검증하고, 유효하지 않으면 BusinessException을 던진다
+	 * 세션 유효성을 검증하고, 유효하지 않으면 ApplicationException을 던진다
 	 *
 	 * @throws sessionNotFound - 세션이 존재하지 않음
 	 * @throws sessionRevoked - 세션이 폐기됨
@@ -114,11 +115,14 @@ export class SessionService {
 		sessionId?: string,
 	): asserts session is SessionValidatable {
 		if (!session) {
-			throw BusinessExceptions.sessionNotFound(sessionId);
+			throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId });
 		}
 
 		if (session.revokedAt) {
-			throw BusinessExceptions.sessionRevoked(sessionId);
+			throw new ApplicationException(ErrorCode.SESSION_0703, {
+				sessionId,
+				reason: undefined,
+			});
 		}
 
 		const expiresAt =
@@ -127,7 +131,7 @@ export class SessionService {
 				: new Date(session.expiresAt);
 
 		if (isExpired(expiresAt)) {
-			throw BusinessExceptions.sessionExpired(sessionId);
+			throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId });
 		}
 	}
 }

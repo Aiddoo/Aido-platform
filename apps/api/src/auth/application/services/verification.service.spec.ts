@@ -13,7 +13,7 @@ import { TestBed } from "@suites/unit";
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
 import { EmailFacade } from "@/email";
 import type { VerificationType } from "@/generated/prisma/client";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { VerificationService } from "./verification.service";
 
 describe("VerificationService — 인증 코드 서비스", () => {
@@ -118,7 +118,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			// When & Then
 			await expect(
 				service.createAndSendPasswordReset(userId, email),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -182,7 +182,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			// When & Then
 			await expect(
 				service.createAndSendPasswordSetup(userId, email),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("기존 미사용 코드를 무효화한다", async () => {
@@ -302,7 +302,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -315,7 +315,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -325,7 +325,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyCode(userId, wrongCode, type)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 
 			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(
@@ -373,7 +373,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			// When & Then
 			await expect(
 				service.verifyCode(userId, wrongCode, type, mockTx),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 
 			// incrementAttempts는 트랜잭션 없이 호출됨 (롤백 방지)
 			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(

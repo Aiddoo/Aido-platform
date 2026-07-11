@@ -24,7 +24,7 @@ import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { AuthService } from "@/auth/application/services/auth.service";
 import { PasswordManagementService } from "@/auth/application/services/password-management.service";
-import { BusinessException } from "@/shared/application/exceptions";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
@@ -213,7 +213,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			// When & Then
 			await expect(
 				authService.login({ email, password: currentPassword }),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("현재 세션은 유지되고 다른 세션은 폐기된다", async () => {
@@ -264,7 +264,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 					"WrongPassword999!",
 					"NewPassword456!",
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("소셜 전용 사용자가 비밀번호 변경을 시도하면 에러를 던진다", async () => {
@@ -279,7 +279,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 					"AnyPassword123!",
 					"NewPassword456!",
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("SecurityLog에 PASSWORD_CHANGED 이벤트와 metadata가 기록된다", async () => {

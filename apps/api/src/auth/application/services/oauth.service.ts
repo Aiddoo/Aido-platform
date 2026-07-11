@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
@@ -31,16 +32,13 @@ import {
 	type OAuthState,
 	Prisma,
 } from "@/generated/prisma/client";
-import {
-	BusinessException,
-	BusinessExceptions,
-} from "@/shared/application/exceptions/business-exception.service";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import {
 	toISOString,
 	toISOStringOrNull,
 } from "@/shared/domain/date/utils/format";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
@@ -87,7 +85,8 @@ export class OAuthService {
 	#getStrategy(provider: AccountProvider): OAuthIdentityProvider {
 		const strategy = this.registry.get(provider);
 		if (!strategy) {
-			throw BusinessExceptions.socialProviderError(provider, {
+			throw new ApplicationException(ErrorCode.SOCIAL_0204, {
+				provider,
 				reason: `Unsupported provider: ${provider}`,
 			});
 		}
@@ -147,7 +146,7 @@ export class OAuthService {
 		const existingState = await this.oauthStateRepository.findByState(state);
 		if (!existingState) {
 			this.#logger.warn(`Invalid OAuth state: ${state}`);
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 		return existingState;
 	}
@@ -225,7 +224,7 @@ export class OAuthService {
 		});
 
 		if (!url) {
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 		return url;
 	}
@@ -251,7 +250,7 @@ export class OAuthService {
 
 		const exchanged = await strategy.exchangeCode(code, state);
 		if (!exchanged) {
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		if (oauthState.mode === "link") {
@@ -497,12 +496,12 @@ export class OAuthService {
 		const strategy = this.registry.get(provider);
 
 		if (!strategy) {
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		const token = idToken ?? accessToken;
 		if (!token) {
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		const profile = await strategy.verifyToken(token, nonce);
@@ -521,12 +520,14 @@ export class OAuthService {
 		);
 
 		if (!account) {
-			throw BusinessExceptions.accountNotFound();
+			throw new ApplicationException(ErrorCode.USER_0603, {
+				provider: undefined,
+			});
 		}
 
 		const allAccounts = await this.accountRepository.findAllByUserId(userId);
 		if (allAccounts.length <= 1) {
-			throw BusinessExceptions.cannotUnlinkLastAccount();
+			throw new ApplicationException(ErrorCode.USER_0610);
 		}
 
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
@@ -623,7 +624,7 @@ export class OAuthService {
 			const user = await this.userRepository.findById(userId);
 
 			if (!user) {
-				throw BusinessExceptions.userNotFound(userId);
+				throw new ApplicationException(ErrorCode.USER_0601, { userId });
 			}
 
 			// 탈퇴 사용자: 유예 기간 내 복구 또는 차단
@@ -641,7 +642,7 @@ export class OAuthService {
 					return { ...loginResult, accountRestored: true };
 				}
 				// 30일 초과 — 차단
-				throw BusinessExceptions.accountDeleted(userId);
+				throw new ApplicationException(ErrorCode.USER_0606, { userId });
 			}
 
 			this.#validateUserStatus(user.status);
@@ -766,7 +767,7 @@ export class OAuthService {
 		const userRecord = await this.userRepository.findById(user.id);
 
 		if (!userRecord) {
-			throw BusinessExceptions.userNotFound(user.id);
+			throw new ApplicationException(ErrorCode.USER_0601, { userId: user.id });
 		}
 
 		const result = await this.database.$transaction(async (tx) => {
@@ -818,7 +819,7 @@ export class OAuthService {
 		const user = await this.userRepository.findById(userId);
 
 		if (!user) {
-			throw BusinessExceptions.userNotFound(userId);
+			throw new ApplicationException(ErrorCode.USER_0601, { userId });
 		}
 
 		return this.database.$transaction(async (tx) => {
@@ -879,9 +880,14 @@ export class OAuthService {
 	#validateUserStatus(status: string): void {
 		switch (status) {
 			case "LOCKED":
-				throw BusinessExceptions.accountLocked("Social login user");
+				throw new ApplicationException(ErrorCode.USER_0607, {
+					email: "Social login user",
+					remainingMinutes: undefined,
+				});
 			case "SUSPENDED":
-				throw BusinessExceptions.accountSuspended("Social login user");
+				throw new ApplicationException(ErrorCode.USER_0605, {
+					userId: "Social login user",
+				});
 			default:
 				break;
 		}
@@ -890,19 +896,23 @@ export class OAuthService {
 	#getAlreadyLinkedExceptionForProvider(
 		provider: AccountProvider,
 		providerAccountId: string,
-	): BusinessException {
+	): ApplicationException {
 		const exceptionMap: Partial<
-			Record<AccountProvider, (id: string) => BusinessException>
+			Record<AccountProvider, (id: string) => ApplicationException>
 		> = {
-			KAKAO: BusinessExceptions.kakaoAccountAlreadyLinked,
-			APPLE: BusinessExceptions.appleAccountAlreadyLinked,
-			GOOGLE: BusinessExceptions.googleAccountAlreadyLinked,
-			NAVER: BusinessExceptions.naverAccountAlreadyLinked,
+			KAKAO: (kakaoId) =>
+				new ApplicationException(ErrorCode.KAKAO_0306, { kakaoId }),
+			APPLE: (appleId) =>
+				new ApplicationException(ErrorCode.APPLE_0355, { appleId }),
+			GOOGLE: (googleId) =>
+				new ApplicationException(ErrorCode.GOOGLE_0405, { googleId }),
+			NAVER: (naverId) =>
+				new ApplicationException(ErrorCode.NAVER_0455, { naverId }),
 		};
 		const factory = exceptionMap[provider];
 		return factory
 			? factory(providerAccountId)
-			: BusinessExceptions.accountAlreadyExists({
+			: new ApplicationException(ErrorCode.USER_0604, {
 					provider,
 					providerAccountId,
 				});
@@ -936,7 +946,9 @@ export class OAuthService {
 			);
 			if (existingUser.deletedAt <= gracePeriodCutoff) {
 				// 30일 초과 — 차단
-				throw BusinessExceptions.accountDeleted(existingUser.id);
+				throw new ApplicationException(ErrorCode.USER_0606, {
+					userId: existingUser.id,
+				});
 			}
 			// 30일 이내 — 아래에서 트랜잭션 내 복구 처리
 		}
@@ -1043,11 +1055,11 @@ export class OAuthService {
 			},
 		});
 
-		throw BusinessExceptions.socialAccountNotLinked(
+		throw new ApplicationException(ErrorCode.SOCIAL_0206, {
 			provider,
 			providerAccountId,
-			existingUser.email,
-		);
+			email: existingUser.email,
+		});
 	}
 
 	/**
@@ -1093,7 +1105,7 @@ export class OAuthService {
 			this.#logger.warn(
 				`Invalid or non-linking exchange code attempted: ${code.substring(0, 8)}...`,
 			);
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		// initiatingUserId 검증: link 시작한 사용자만 교환 가능
@@ -1101,7 +1113,7 @@ export class OAuthService {
 			this.#logger.warn(
 				`Linking user mismatch: expected ${oauthState.initiatingUserId}, got ${userId}`,
 			);
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		// providerAccountId는 saveLinkingData에서 userId 필드에 저장됨
@@ -1112,7 +1124,7 @@ export class OAuthService {
 			this.#logger.error(
 				`Linking exchange code found but providerAccountId missing: OAuthState ID ${oauthState.id}`,
 			);
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		await this.oauthStateRepository.markAsExchanged(oauthState.id);
@@ -1173,7 +1185,7 @@ export class OAuthService {
 			this.#logger.warn(
 				`Invalid or expired exchange code attempted: ${code.substring(0, 8)}...`,
 			);
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		if (
@@ -1184,7 +1196,7 @@ export class OAuthService {
 			this.#logger.error(
 				`Exchange code found but tokens missing: OAuthState ID ${oauthState.id}`,
 			);
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		await this.oauthStateRepository.markAsExchanged(oauthState.id);

@@ -15,7 +15,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 // Google Auth Library 모킹
 jest.mock("google-auth-library", () => ({
@@ -116,7 +116,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyGoogleToken("invalid-token")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -128,7 +128,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyGoogleToken("expired-token")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -139,7 +139,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			// When & Then
 			await expect(
 				service.verifyGoogleToken("malformed-token"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -222,7 +222,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyKakaoToken("expired-token")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -235,7 +235,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyKakaoToken("invalid-token")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});
@@ -339,7 +339,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyNaverToken("expired-token")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -356,7 +356,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -373,7 +373,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 			// When & Then
 			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});
@@ -393,7 +393,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 		});
 
 		it.skip("nonce가 제공되고 불일치하면 socialTokenInvalid를 던진다", () => {
-			// expectedNonce → SHA256 해시 → payload.nonce와 불일치 → BusinessException
+			// expectedNonce → SHA256 해시 → payload.nonce와 불일치 → ApplicationException
 		});
 
 		it.skip("nonce가 없으면 nonce 검증을 건너뛴다", () => {

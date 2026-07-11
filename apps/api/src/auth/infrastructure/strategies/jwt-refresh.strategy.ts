@@ -1,10 +1,11 @@
+import { ErrorCode } from "@aido/errors";
 import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 /**
@@ -46,18 +47,18 @@ export class JwtRefreshStrategy extends PassportStrategy(
 	): Promise<RefreshTokenPayload> {
 		// Refresh Token 타입 확인
 		if (payload.type !== "refresh") {
-			throw BusinessExceptions.refreshTokenInvalid();
+			throw new ApplicationException(ErrorCode.AUTH_0104);
 		}
 
 		// sessionId 필수 확인
 		if (!payload.sessionId) {
-			throw BusinessExceptions.refreshTokenInvalid();
+			throw new ApplicationException(ErrorCode.AUTH_0104);
 		}
 
 		// Authorization 헤더에서 토큰 추출
 		const authHeader = req.headers.authorization;
 		if (!authHeader) {
-			throw BusinessExceptions.refreshTokenInvalid();
+			throw new ApplicationException(ErrorCode.AUTH_0104);
 		}
 
 		const refreshToken = authHeader.replace("Bearer ", "").trim();

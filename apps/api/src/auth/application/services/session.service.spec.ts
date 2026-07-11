@@ -15,7 +15,7 @@ import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import type { Session } from "@/generated/prisma/client";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
 	type CreateSessionParams,
 	type CreateSessionResult,
@@ -276,7 +276,7 @@ describe("SessionService — 세션 서비스", () => {
 
 			// When & Then
 			expect(() => service.assertSessionValid(session)).toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -286,7 +286,7 @@ describe("SessionService — 세션 서비스", () => {
 
 			// When & Then
 			expect(() => service.assertSessionValid(session)).toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -299,7 +299,7 @@ describe("SessionService — 세션 서비스", () => {
 
 			// When & Then
 			expect(() => service.assertSessionValid(session)).toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -312,7 +312,7 @@ describe("SessionService — 세션 서비스", () => {
 
 			// When & Then
 			expect(() => service.assertSessionValid(session)).toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -346,7 +346,7 @@ describe("SessionService — 세션 서비스", () => {
 
 			// When & Then
 			expect(() => service.assertSessionValid(session, sessionId)).toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});

@@ -49,7 +49,7 @@ import {
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import { EmailFacade } from "@/email";
 import { NotificationQueueService } from "@/notification";
-import { BusinessException } from "@/shared/application/exceptions";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -409,7 +409,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
 			// When & Then
 			await expect(authService.login({ email, password })).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 	});

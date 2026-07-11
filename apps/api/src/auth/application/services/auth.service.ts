@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 import {
 	type DeleteAccountInput,
 	LOGIN_ATTEMPT,
@@ -40,7 +41,6 @@ import { SecurityLogRepository } from "@/auth/infrastructure/persistence/securit
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { Prisma, type UserStatus } from "@/generated/prisma/client";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import {
 	addMilliseconds,
 	subtractDays,
@@ -51,6 +51,7 @@ import {
 	toISOString,
 	toISOStringOrNull,
 } from "@/shared/domain/date/utils/format";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
@@ -100,7 +101,7 @@ export class AuthService {
 		// 이메일 중복 확인
 		const existingUser = await this.userRepository.findByEmail(email);
 		if (existingUser) {
-			throw BusinessExceptions.emailAlreadyRegistered(email);
+			throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
 		}
 
 		// 비밀번호 해싱
@@ -164,7 +165,7 @@ export class AuthService {
 					? (rawTarget as string[])
 					: undefined;
 				if (target?.includes("email")) {
-					throw BusinessExceptions.emailAlreadyRegistered(email);
+					throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
 				}
 			}
 			throw error;
@@ -218,7 +219,7 @@ export class AuthService {
 		// 사용자 조회
 		const user = await this.userRepository.findByEmail(email);
 		if (!user) {
-			throw BusinessExceptions.emailNotFound(email);
+			throw new ApplicationException(ErrorCode.EMAIL_0502, { email });
 		}
 
 		// 탈퇴 사용자 체크
@@ -228,7 +229,7 @@ export class AuthService {
 		if (user.status !== "PENDING_VERIFY") {
 			if (user.emailVerifiedAt) {
 				// 이미 인증된 사용자
-				throw BusinessExceptions.accountAlreadyExists({
+				throw new ApplicationException(ErrorCode.USER_0604, {
 					email,
 					message: "이미 인증이 완료된 계정입니다.",
 				});
@@ -311,7 +312,7 @@ export class AuthService {
 		// PENDING_VERIFY 상태만 재발송 허용
 		if (user.status !== "PENDING_VERIFY") {
 			if (user.emailVerifiedAt) {
-				throw BusinessExceptions.accountAlreadyExists({
+				throw new ApplicationException(ErrorCode.USER_0604, {
 					email,
 					message: "이미 인증이 완료된 계정입니다.",
 				});
@@ -375,7 +376,10 @@ export class AuthService {
 				metadata: { email, recentFailures },
 			});
 
-			throw BusinessExceptions.accountLocked(email);
+			throw new ApplicationException(ErrorCode.USER_0607, {
+				email,
+				remainingMinutes: undefined,
+			});
 		}
 
 		// 2. 사용자 + 계정 조회
@@ -390,7 +394,7 @@ export class AuthService {
 				success: false,
 				failureReason: LOGIN_FAILURE_REASON.USER_NOT_FOUND,
 			});
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		const account = await this.accountRepository.findByUserIdAndProvider(
@@ -407,7 +411,7 @@ export class AuthService {
 				success: false,
 				failureReason: LOGIN_FAILURE_REASON.NO_CREDENTIAL_ACCOUNT,
 			});
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		// 3. 비밀번호 검증
@@ -428,10 +432,13 @@ export class AuthService {
 			// 남은 시도 횟수 계산
 			const remainingAttempts = LOGIN_ATTEMPT.MAX_FAILURES - recentFailures - 1;
 			if (remainingAttempts <= 0) {
-				throw BusinessExceptions.accountLocked(email);
+				throw new ApplicationException(ErrorCode.USER_0607, {
+					email,
+					remainingMinutes: undefined,
+				});
 			}
 
-			throw BusinessExceptions.invalidCredentials();
+			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
 		// 4. 비밀번호 해시 파라미터 업그레이드 (비동기, fire-and-forget)
@@ -454,7 +461,7 @@ export class AuthService {
 
 		if (!needsRestore) {
 			if (user.status === "PENDING_VERIFY") {
-				throw BusinessExceptions.emailNotVerified(email);
+				throw new ApplicationException(ErrorCode.EMAIL_0503, { email });
 			}
 			this.#checkUserStatus(user.status, email);
 		}
@@ -512,12 +519,16 @@ export class AuthService {
 		// 세션 조회
 		const session = await this.sessionRepository.findById(sessionId);
 		if (!session || session.userId !== userId) {
-			throw BusinessExceptions.sessionNotFound();
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
 		}
 
 		// 이미 만료된 세션
 		if (session.revokedAt) {
-			throw BusinessExceptions.sessionExpired();
+			throw new ApplicationException(ErrorCode.SESSION_0702, {
+				sessionId: undefined,
+			});
 		}
 
 		// 세션 만료 처리
@@ -592,7 +603,9 @@ export class AuthService {
 		const { userId, email, sessionId, role } = verifiedPayload;
 
 		if (!sessionId) {
-			throw BusinessExceptions.sessionNotFound();
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
 		}
 
 		// 2. 리프레시 토큰 해시로 세션 조회
@@ -623,7 +636,9 @@ export class AuthService {
 						currentSession.userId !== userId ||
 						currentSession.id !== sessionId
 					) {
-						throw BusinessExceptions.sessionNotFound();
+						throw new ApplicationException(ErrorCode.SESSION_0701, {
+							sessionId: undefined,
+						});
 					}
 
 					const newTokenVersion = currentSession.tokenVersion + 1;
@@ -657,7 +672,9 @@ export class AuthService {
 					);
 
 					if (!rotatedSession) {
-						throw BusinessExceptions.sessionExpired();
+						throw new ApplicationException(ErrorCode.SESSION_0702, {
+							sessionId: undefined,
+						});
 					}
 
 					// JwtStrategy의 세션 캐시(30초 TTL)에 남은 회전 전 스냅샷이
@@ -695,17 +712,23 @@ export class AuthService {
 				this.#logger.warn(
 					`Token reuse detected for user: ${currentSession.userId}`,
 				);
-				throw BusinessExceptions.tokenReuseDetected();
+				throw new ApplicationException(ErrorCode.SESSION_0704, {
+					tokenFamily: undefined,
+				});
 			}
 
-			throw BusinessExceptions.sessionNotFound();
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
 		}
 
 		// 3. 세션 유효성 확인
 		this.sessionService.assertSessionValid(session);
 
 		if (session.userId !== userId || session.id !== sessionId) {
-			throw BusinessExceptions.sessionNotFound();
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
 		}
 
 		// 4. 새 토큰 쌍 발급
@@ -741,7 +764,9 @@ export class AuthService {
 			this.#logger.warn(
 				`Token rotation race condition detected for session: ${sessionId}`,
 			);
-			throw BusinessExceptions.sessionExpired();
+			throw new ApplicationException(ErrorCode.SESSION_0702, {
+				sessionId: undefined,
+			});
 		}
 
 		// JwtStrategy의 세션 캐시(30초 TTL)에 남은 회전 전 스냅샷이
@@ -792,7 +817,9 @@ export class AuthService {
 		// 세션 조회
 		const session = await this.sessionRepository.findById(sessionId);
 		if (!session || session.userId !== userId) {
-			throw BusinessExceptions.sessionNotFound();
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
 		}
 
 		// 세션 폐기
@@ -846,7 +873,7 @@ export class AuthService {
 		);
 
 		if (!cachedProfile) {
-			throw BusinessExceptions.userNotFound(userId);
+			throw new ApplicationException(ErrorCode.USER_0601, { userId });
 		}
 
 		return {
@@ -895,7 +922,7 @@ export class AuthService {
 
 		// 1. 사용자 조회 + 이미 탈퇴 여부 확인
 		const user = await this.userRepository.findById(userId);
-		if (!user) throw BusinessExceptions.userNotFound(userId);
+		if (!user) throw new ApplicationException(ErrorCode.USER_0601, { userId });
 		assertNotDeleted(user);
 
 		// 2. 계정 유형에 따른 본인 확인
@@ -904,17 +931,17 @@ export class AuthService {
 
 		if (credentialAccount) {
 			if (!input.password) {
-				throw BusinessExceptions.accountDeletionPasswordRequired();
+				throw new ApplicationException(ErrorCode.USER_0612);
 			}
 			const credentialPassword = credentialAccount.password;
 			if (!credentialPassword) {
-				throw BusinessExceptions.invalidCredentials();
+				throw new ApplicationException(ErrorCode.USER_0602);
 			}
 			const isValid = await this.passwordService.verify(
 				credentialPassword,
 				input.password,
 			);
-			if (!isValid) throw BusinessExceptions.invalidCredentials();
+			if (!isValid) throw new ApplicationException(ErrorCode.USER_0602);
 		}
 		// 소셜 전용: JWT 인증 통과 = 확인 완료
 
@@ -979,7 +1006,7 @@ export class AuthService {
 		}
 
 		// 30일 초과 — cron이 아직 hard delete 처리하지 못한 edge case
-		throw BusinessExceptions.accountDeleted(user.id);
+		throw new ApplicationException(ErrorCode.USER_0606, { userId: user.id });
 	}
 
 	/**
@@ -1013,9 +1040,12 @@ export class AuthService {
 	#checkUserStatus(status: UserStatus, email: string): void {
 		switch (status) {
 			case "LOCKED":
-				throw BusinessExceptions.accountLocked(email);
+				throw new ApplicationException(ErrorCode.USER_0607, {
+					email,
+					remainingMinutes: undefined,
+				});
 			case "SUSPENDED":
-				throw BusinessExceptions.accountSuspended(email);
+				throw new ApplicationException(ErrorCode.USER_0605, { userId: email });
 			default:
 				// ACTIVE, PENDING_VERIFY는 여기서 처리하지 않음
 				break;

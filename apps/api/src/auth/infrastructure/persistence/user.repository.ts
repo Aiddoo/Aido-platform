@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger } from "@nestjs/common";
 import { generateUserTag } from "@/auth/domain/services/user-tag.util";
 import type {
@@ -8,9 +9,9 @@ import type {
 	UserRole,
 	UserStatus,
 } from "@/generated/prisma/client";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
@@ -166,7 +167,7 @@ export class UserRepository {
 		}
 
 		// 모든 재시도 실패 시 (극히 드문 경우)
-		throw BusinessExceptions.userTagGenerationFailed({
+		throw new ApplicationException(ErrorCode.USER_0611, {
 			attempts: UserRepository.MAX_USER_TAG_RETRIES,
 		});
 	}

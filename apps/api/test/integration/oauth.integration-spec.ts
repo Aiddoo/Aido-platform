@@ -52,7 +52,7 @@ import { SessionRepository } from "@/auth/infrastructure/persistence/session.rep
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import type { AccountProvider } from "@/generated/prisma/client";
 import { NotificationQueueService } from "@/notification";
-import { BusinessException } from "@/shared/application/exceptions";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -615,7 +615,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then: 마지막 계정 해제 시도
 			await expect(
 				oauthService.unlinkAccount(testUserId, "GOOGLE"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("연결된 계정 목록을 조회할 수 있어야 한다", async () => {
@@ -784,7 +784,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then: 현재 유저가 같은 providerAccountId로 연동 시도
 			await expect(
 				oauthService.linkAccount(testUserId, "APPLE", "conflict-apple-id"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -884,7 +884,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then
 			await expect(
 				oauthService.exchangeCodeForTokens("invalid-exchange-code"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("이미 사용된 교환 코드는 거부해야 한다", async () => {
@@ -918,7 +918,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When & Then: 두 번째 교환 (실패)
 			await expect(
 				oauthService.exchangeCodeForTokens(exchangeCode),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -1222,7 +1222,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 						ip: "172.16.0.1",
 						userAgent: "KakaoTestAgent",
 					}),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
 				const logs = await databaseService.securityLog.findMany({
@@ -1276,7 +1276,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 						ip: "172.16.0.2",
 						userAgent: "NaverTestAgent",
 					}),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
 				const logs = await databaseService.securityLog.findMany({
@@ -1324,7 +1324,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				// Then: 에러 발생 (잠긴 사용자는 로그인 불가)
 				await expect(
 					oauthService.handleAppleMobileLogin(appleToken),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 
 			it("정지된 사용자에게 자동 연동을 시도하면 에러가 발생해야 한다", async () => {
@@ -1357,7 +1357,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				// Then: 에러 발생 (정지된 사용자는 로그인 불가)
 				await expect(
 					oauthService.handleGoogleMobileLogin(googleToken),
-				).rejects.toThrow(BusinessException);
+				).rejects.toThrow(ApplicationException);
 			});
 		});
 	});
@@ -1384,7 +1384,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 			// When & Then: 다시 로그인 시도 시 실패
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -1408,7 +1408,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 			// When & Then
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 

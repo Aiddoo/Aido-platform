@@ -1,9 +1,9 @@
+import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
-
 import type { VerifiedProfile } from "@/auth/application/ports/oauth-identity-provider.port";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 /**
  * jose 라이브러리 래퍼 타입 (ESM 동적 import용)
@@ -165,7 +165,9 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 					.digest("hex");
 				if (payload.nonce !== hashedNonce) {
 					this.#logger.warn("Apple nonce mismatch");
-					throw BusinessExceptions.socialTokenInvalid("APPLE");
+					throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+						provider: "APPLE",
+					});
 				}
 			}
 
@@ -186,13 +188,19 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 			this.#logger.error(`Apple token verification failed: ${error}`);
 
 			if (jose.isJWTExpiredError(error)) {
-				throw BusinessExceptions.socialTokenExpired("APPLE");
+				throw new ApplicationException(ErrorCode.SOCIAL_0203, {
+					provider: "APPLE",
+				});
 			}
 			if (jose.isJWTClaimValidationError(error)) {
-				throw BusinessExceptions.socialTokenInvalid("APPLE");
+				throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+					provider: "APPLE",
+				});
 			}
 
-			throw BusinessExceptions.socialTokenInvalid("APPLE");
+			throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+				provider: "APPLE",
+			});
 		}
 	}
 
@@ -210,7 +218,9 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 			const payload = ticket.getPayload();
 
 			if (!payload) {
-				throw BusinessExceptions.socialTokenInvalid("GOOGLE");
+				throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+					provider: "GOOGLE",
+				});
 			}
 
 			this.#logger.debug(`Google token verified for user: ${payload.sub}`);
@@ -227,10 +237,14 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 			// Google Auth Library는 만료된 토큰에 대해 일반 에러를 던짐
 			if (error instanceof Error && error.message.includes("expired")) {
-				throw BusinessExceptions.socialTokenExpired("GOOGLE");
+				throw new ApplicationException(ErrorCode.SOCIAL_0203, {
+					provider: "GOOGLE",
+				});
 			}
 
-			throw BusinessExceptions.socialTokenInvalid("GOOGLE");
+			throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+				provider: "GOOGLE",
+			});
 		}
 	}
 
@@ -249,9 +263,13 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 			if (!response.ok) {
 				if (response.status === 401) {
-					throw BusinessExceptions.socialTokenExpired("KAKAO");
+					throw new ApplicationException(ErrorCode.SOCIAL_0203, {
+						provider: "KAKAO",
+					});
 				}
-				throw BusinessExceptions.socialTokenInvalid("KAKAO");
+				throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+					provider: "KAKAO",
+				});
 			}
 
 			const data = (await response.json()) as {
@@ -281,12 +299,14 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		} catch (error) {
 			this.#logger.error(`Kakao token verification failed: ${error}`);
 
-			// BusinessException은 그대로 전파
-			if (error instanceof Error && error.name === "BusinessException") {
+			// ApplicationException은 그대로 전파
+			if (error instanceof Error && error.name === "ApplicationException") {
 				throw error;
 			}
 
-			throw BusinessExceptions.socialTokenInvalid("KAKAO");
+			throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+				provider: "KAKAO",
+			});
 		}
 	}
 
@@ -304,9 +324,13 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 			if (!response.ok) {
 				if (response.status === 401) {
-					throw BusinessExceptions.socialTokenExpired("NAVER");
+					throw new ApplicationException(ErrorCode.SOCIAL_0203, {
+						provider: "NAVER",
+					});
 				}
-				throw BusinessExceptions.socialTokenInvalid("NAVER");
+				throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+					provider: "NAVER",
+				});
 			}
 
 			const data = (await response.json()) as {
@@ -322,7 +346,9 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 			};
 
 			if (data.resultcode !== "00" || !data.response) {
-				throw BusinessExceptions.socialTokenInvalid("NAVER");
+				throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+					provider: "NAVER",
+				});
 			}
 
 			const naverUser = data.response;
@@ -341,12 +367,14 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		} catch (error) {
 			this.#logger.error(`Naver token verification failed: ${error}`);
 
-			// BusinessException은 그대로 전파
-			if (error instanceof Error && error.name === "BusinessException") {
+			// ApplicationException은 그대로 전파
+			if (error instanceof Error && error.name === "ApplicationException") {
 				throw error;
 			}
 
-			throw BusinessExceptions.socialTokenInvalid("NAVER");
+			throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+				provider: "NAVER",
+			});
 		}
 	}
 }

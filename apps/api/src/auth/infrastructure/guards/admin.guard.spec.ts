@@ -12,7 +12,7 @@
  */
 import { TestBed } from "@suites/unit";
 import { createMockExecutionContext } from "@test/mocks";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { AdminGuard } from "./admin.guard";
 
@@ -56,7 +56,7 @@ describe("AdminGuard — 관리자 가드", () => {
 			});
 
 			// When & Then
-			expect(() => guard.canActivate(context)).toThrow(BusinessException);
+			expect(() => guard.canActivate(context)).toThrow(ApplicationException);
 		});
 
 		it("사용자 정보가 없으면 invalidToken 에러를 던져야 한다", () => {
@@ -64,7 +64,7 @@ describe("AdminGuard — 관리자 가드", () => {
 			const { context } = createMockExecutionContext();
 
 			// When & Then
-			expect(() => guard.canActivate(context)).toThrow(BusinessException);
+			expect(() => guard.canActivate(context)).toThrow(ApplicationException);
 		});
 
 		it("알 수 없는 역할은 접근을 거부해야 한다", () => {
@@ -79,7 +79,7 @@ describe("AdminGuard — 관리자 가드", () => {
 			});
 
 			// When & Then
-			expect(() => guard.canActivate(context)).toThrow(BusinessException);
+			expect(() => guard.canActivate(context)).toThrow(ApplicationException);
 		});
 
 		it("빈 문자열 역할은 접근을 거부해야 한다", () => {
@@ -94,7 +94,7 @@ describe("AdminGuard — 관리자 가드", () => {
 			});
 
 			// When & Then
-			expect(() => guard.canActivate(context)).toThrow(BusinessException);
+			expect(() => guard.canActivate(context)).toThrow(ApplicationException);
 		});
 	});
 
@@ -115,8 +115,8 @@ describe("AdminGuard — 관리자 가드", () => {
 				guard.canActivate(context);
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
-				expect(error).toBeInstanceOf(BusinessException);
-				expect((error as BusinessException).errorCode).toBe("ADMIN_1401");
+				expect(error).toBeInstanceOf(ApplicationException);
+				expect((error as ApplicationException).errorCode).toBe("ADMIN_1401");
 			}
 		});
 
@@ -129,9 +129,9 @@ describe("AdminGuard — 관리자 가드", () => {
 				guard.canActivate(context);
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
-				expect(error).toBeInstanceOf(BusinessException);
+				expect(error).toBeInstanceOf(ApplicationException);
 				// invalidToken 에러는 AUTH 도메인 에러 코드를 사용
-				expect((error as BusinessException).errorCode).toMatch(/^AUTH_/);
+				expect((error as ApplicationException).errorCode).toMatch(/^AUTH_/);
 			}
 		});
 	});

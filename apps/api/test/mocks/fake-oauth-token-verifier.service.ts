@@ -5,8 +5,9 @@
  * E2E 테스트에서 OAuth 로그인 플로우를 테스트할 때 사용합니다.
  */
 
+import { ErrorCode } from "@aido/errors";
 import type { VerifiedProfile } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 /**
  * 테스트용 OAuth 토큰 검증 서비스
@@ -103,7 +104,7 @@ export class FakeOAuthTokenVerifierService {
 
 	/**
 	 * 실패 시뮬레이션 활성화
-	 * @param error 던질 에러 (기본값: null - provider별 BusinessException 사용)
+	 * @param error 던질 에러 (기본값: null - provider별 ApplicationException 사용)
 	 */
 	simulateFailure(error?: Error): void {
 		this._shouldFail = true;
@@ -162,18 +163,18 @@ export class FakeOAuthTokenVerifierService {
 				throw this._failureError;
 			}
 
-			// provider별 적절한 BusinessException을 던짐 (401 반환)
+			// provider별 적절한 ApplicationException을 던짐 (401 반환)
 			switch (provider) {
 				case "APPLE":
-					throw BusinessExceptions.appleIdTokenInvalid();
+					throw new ApplicationException(ErrorCode.APPLE_0352);
 				case "GOOGLE":
-					throw BusinessExceptions.googleTokenInvalid();
+					throw new ApplicationException(ErrorCode.GOOGLE_0402);
 				case "KAKAO":
-					throw BusinessExceptions.kakaoAuthFailed({
+					throw new ApplicationException(ErrorCode.KAKAO_0301, {
 						reason: "Token verification failed",
 					});
 				case "NAVER":
-					throw BusinessExceptions.naverTokenInvalid();
+					throw new ApplicationException(ErrorCode.NAVER_0452);
 			}
 		}
 	}

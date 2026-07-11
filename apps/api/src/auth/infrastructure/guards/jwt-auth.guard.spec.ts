@@ -10,15 +10,14 @@
  * pnpm --filter @aido/api test jwt-auth.guard.spec.ts
  * ```
  */
+
+import { ErrorCode } from "@aido/errors";
 import { Reflector } from "@nestjs/core";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockExecutionContext } from "@test/mocks";
 import { IS_PUBLIC_KEY } from "@/auth/presentation/decorators/public.decorator";
-import {
-	BusinessException,
-	BusinessExceptions,
-} from "@/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
 describe("JwtAuthGuard — JWT 인증 가드", () => {
@@ -67,9 +66,12 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 			expect(result).toBe(mockUser);
 		});
 
-		it("BusinessException(의도적 401)은 invalidToken으로 재포장해야 한다", () => {
+		it("ApplicationException(의도적 401)은 invalidToken으로 재포장해야 한다", () => {
 			// Given — validate()의 assertSessionValid/계정 상태 검증 등이 던진 예외
-			const error = BusinessExceptions.accountLocked("User");
+			const error = new ApplicationException(ErrorCode.USER_0607, {
+				email: "User",
+				remainingMinutes: undefined,
+			});
 			const mockUser = {
 				userId: "user-1",
 				email: "test@test.com",
@@ -79,26 +81,30 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 
 			// When & Then — 기존(변경 전) 동작 유지: 클라 계약 불변
 			expect(() => guard.handleRequest(error, mockUser)).toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
-		it("사용자가 false이면 BusinessException을 던져야 한다", () => {
+		it("사용자가 false이면 ApplicationException을 던져야 한다", () => {
 			// Given & When & Then
-			expect(() => guard.handleRequest(null, false)).toThrow(BusinessException);
+			expect(() => guard.handleRequest(null, false)).toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("HttpException 에러 발생 시 AUTH_0101 에러 코드를 반환해야 한다", () => {
 			// Given
-			const error = BusinessExceptions.accountSuspended("User");
+			const error = new ApplicationException(ErrorCode.USER_0605, {
+				userId: "User",
+			});
 
 			// When & Then
 			try {
 				guard.handleRequest(error, false);
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
-				expect(error).toBeInstanceOf(BusinessException);
-				expect((error as BusinessException).errorCode).toBe("AUTH_0101");
+				expect(error).toBeInstanceOf(ApplicationException);
+				expect((error as ApplicationException).errorCode).toBe("AUTH_0101");
 			}
 		});
 
@@ -111,7 +117,7 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 			// When & Then
 			expect(() => guard.handleRequest(infraError, false)).toThrow(infraError);
 			expect(() => guard.handleRequest(infraError, false)).not.toThrow(
-				BusinessException,
+				ApplicationException,
 			);
 		});
 
@@ -121,8 +127,8 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 				guard.handleRequest(null, false);
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
-				expect(error).toBeInstanceOf(BusinessException);
-				expect((error as BusinessException).errorCode).toBe("AUTH_0101");
+				expect(error).toBeInstanceOf(ApplicationException);
+				expect((error as ApplicationException).errorCode).toBe("AUTH_0101");
 			}
 		});
 	});
