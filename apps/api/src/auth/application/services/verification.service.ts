@@ -1,8 +1,8 @@
-import { createHash, randomInt } from "node:crypto";
 import { ErrorCode } from "@aido/errors";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import type { VerificationType } from "@/auth/domain/types";
+import { VerificationCode } from "@/auth/domain/value-objects/verification-code.vo";
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
 import { EmailFacade } from "@/email";
 import {
@@ -145,7 +145,7 @@ export class VerificationService {
 			throw new ApplicationException(ErrorCode.VERIFY_0754);
 		}
 
-		const tokenHash = this.#hashCode(code);
+		const tokenHash = VerificationCode.hashOf(code);
 
 		// 코드 일치 확인
 		if (verification.token !== tokenHash) {
@@ -193,9 +193,8 @@ export class VerificationService {
 		userId: string,
 		type: VerificationType,
 	): Promise<VerificationCodeResult> {
-		// 6자리 랜덤 숫자 생성
-		const code = this.#generateCode();
-		const tokenHash = this.#hashCode(code);
+		// 6자리 랜덤 숫자 생성 + SHA-256 해시(도메인 값 객체가 소유)
+		const verificationCode = VerificationCode.generate();
 
 		// 만료 시간 계산
 		const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);
@@ -204,21 +203,10 @@ export class VerificationService {
 		await this.verificationRepository.create({
 			userId,
 			type,
-			token: tokenHash,
+			token: verificationCode.hash,
 			expiresAt,
 		});
 
-		return { code, expiresAt };
-	}
-
-	#generateCode(): string {
-		// randomInt는 암호학적으로 안전한 난수 생성
-		const min = 10 ** (VERIFICATION_CODE.LENGTH - 1); // 100000
-		const max = 10 ** VERIFICATION_CODE.LENGTH; // 1000000
-		return randomInt(min, max).toString();
-	}
-
-	#hashCode(code: string): string {
-		return createHash("sha256").update(code).digest("hex");
+		return { code: verificationCode.value, expiresAt };
 	}
 }
