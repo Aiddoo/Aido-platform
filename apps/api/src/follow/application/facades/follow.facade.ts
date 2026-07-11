@@ -4,6 +4,10 @@ import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 
 import type { ReorderPosition } from "../../domain/services/friend-reorder";
 import type { FollowWithUser } from "../ports/follow.repository.port";
+import {
+	type SearchUsersOutput,
+	SearchUsersUseCase,
+} from "../queries/search-users/search-users.use-case";
 import { FollowReader, type GetFollowsParams } from "../services/follow.reader";
 import { AcceptFriendRequestUseCase } from "../use-cases/accept-friend-request/accept-friend-request.use-case";
 import { RejectFriendRequestUseCase } from "../use-cases/reject-friend-request/reject-friend-request.use-case";
@@ -30,6 +34,7 @@ export class FollowFacade {
 		private readonly rejectFriendRequestUseCase: RejectFriendRequestUseCase,
 		private readonly removeFriendUseCase: RemoveFriendUseCase,
 		private readonly reorderFriendUseCase: ReorderFriendUseCase,
+		private readonly searchUsersUseCase: SearchUsersUseCase,
 	) {}
 
 	// === 쓰기 ===
@@ -94,6 +99,15 @@ export class FollowFacade {
 		params: GetFollowsParams,
 	): Promise<CursorPaginatedResponse<FollowWithUser, string>> {
 		return this.reader.getSentRequests(params);
+	}
+
+	searchUsers(
+		viewerId: string,
+		query: string,
+		cursor?: string,
+		size?: number,
+	): Promise<SearchUsersOutput> {
+		return this.searchUsersUseCase.execute({ viewerId, query, cursor, size });
 	}
 
 	countFriends(userId: string): Promise<number> {

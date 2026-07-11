@@ -3,7 +3,8 @@
   "fallbackName": "Friend",
   "errors": {
     "invalidTag": "Invalid tag format",
-    "emptyTag": "Please enter a tag"
+    "emptyTag": "Please enter a tag",
+    "searchQueryTooShort": "Please enter at least 2 characters"
   },
   "toast": {
     "requestSent": "Friend request sent",
@@ -42,5 +43,20 @@
     "description": "Share to-dos and nudge each other",
     "tagLabel": "Friend tag",
     "submit": "Add Friend"
+  },
+  "search": {
+    "title": "Find friends",
+    "placeholder": "Search by name or tag",
+    "action": {
+      "add": "Add",
+      "cancel": "Cancel",
+      "friend": "Friends"
+    },
+    "empty": {
+      "prompt": "Search for friends by name or tag",
+      "tagHint": "Know the exact tag? Add them directly",
+      "addByTag": "Add by tag",
+      "noResults": "No results for '{{query}}'"
+    }
   }
 }

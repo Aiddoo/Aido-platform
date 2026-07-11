@@ -63,7 +63,7 @@ export default function FriendsScreen() {
     navigation.setOptions({
       headerRight: () => (
         <HStack align="center" gap={4}>
-          <Pressable onPress={() => router.push('/friends/add')} hitSlop={8} className="p-2">
+          <Pressable onPress={() => router.push('/friends/search')} hitSlop={8} className="p-2">
             <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
           </Pressable>
           {view === TabView.friends && (

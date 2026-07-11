@@ -43,6 +43,8 @@ import {
 	RemoveFriendResponseDto,
 	ReorderFriendDto,
 	ReorderFriendResponseDto,
+	SearchUsersQueryDto,
+	SearchUsersResponseDto,
 	SendFriendRequestResponseDto,
 	SentRequestsResponseDto,
 	UserTagParamDto,
@@ -311,6 +313,44 @@ export class FollowController {
 			friends: result.items.map(FollowMapper.toFriendUser),
 			totalCount,
 			hasMore: result.pagination.hasNext,
+		};
+	}
+
+	@Get("search")
+	@ApiDoc({
+		summary: "사용자 검색 (이름 또는 태그)",
+		operationId: "searchUsers",
+		description: `이름 또는 사용자 태그로 전체 사용자를 검색합니다. (인스타그램 스타일 디스커버리)
+
+본인·탈퇴·비활성(ACTIVE 외) 사용자는 제외됩니다. 결과에는 관계 상태
+(isFollowing/isFollower/isFriend/requestPending)가 포함되어 동명이인을 태그로 구분할 수 있습니다.
+
+**쿼리 파라미터**
+- \`q\`: 검색어 (이름 또는 태그, 2-50자)
+- \`cursor\`: 페이지네이션 커서 (불투명 문자열, 이전 응답의 nextCursor)
+- \`limit\`: 페이지 크기 (1-50, 기본값: 20)`,
+	})
+	@ApiSuccessResponse({ type: SearchUsersResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiBadRequestError(ErrorCode.FOLLOW_0911)
+	async searchUsers(
+		@CurrentUser() user: CurrentUserPayload,
+		@Query() query: SearchUsersQueryDto,
+	): Promise<SearchUsersResponseDto> {
+		this.#logger.debug(`사용자 검색: user=${user.userId}, q=${query.q}`);
+
+		const result = await this.followFacade.searchUsers(
+			user.userId,
+			query.q,
+			query.cursor,
+			query.limit,
+		);
+
+		return {
+			items: result.items.map(FollowMapper.toSearchUser),
+			totalCount: result.totalCount,
+			hasMore: result.hasMore,
+			nextCursor: result.nextCursor,
 		};
 	}
 

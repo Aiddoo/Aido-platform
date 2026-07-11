@@ -1,6 +1,7 @@
 import {
   createFriendsListDto,
   createReceivedRequestsDto,
+  createSearchUsersDto,
   createSendFriendRequestDto,
   createSentRequestsDto,
 } from '../__tests__/friend.factories';
@@ -9,6 +10,7 @@ import {
   toFriendRequestsPage,
   toFriendsPage,
   toFriendUser,
+  toSearchedUsersPage,
   toSendRequestResult,
 } from './friend.mapper';
 
@@ -133,5 +135,49 @@ describe('toSendRequestResult', () => {
 
     // Then
     expect(result.autoAccepted).toBe(true);
+  });
+});
+
+describe('toSearchedUsersPage', () => {
+  test('관계 flag를 보존하고 nextCursor를 전달한다', () => {
+    // Given
+    const dto = createSearchUsersDto({ nextCursor: 'next-cursor-abc', hasMore: true });
+
+    // When
+    const result = toSearchedUsersPage(dto);
+
+    // Then
+    expect(result.items).toHaveLength(4);
+    expect(result.hasMore).toBe(true);
+    expect(result.nextCursor).toBe('next-cursor-abc');
+    const pending = result.items.find((u) => u.userTag === 'EFGH5678');
+    expect(pending?.requestPending).toBe(true);
+    const friend = result.items.find((u) => u.userTag === 'IJKL9012');
+    expect(friend?.isFriend).toBe(true);
+  });
+
+  test('동명이인을 서로 다른 항목으로 매핑한다', () => {
+    // Given
+    const dto = createSearchUsersDto();
+
+    // When
+    const result = toSearchedUsersPage(dto);
+
+    // Then
+    const hongs = result.items.filter((u) => u.name === '홍길동');
+    expect(hongs).toHaveLength(2);
+    expect(hongs[0]?.id).not.toBe(hongs[1]?.id);
+  });
+
+  test('빈 결과도 정상 매핑한다', () => {
+    // Given
+    const dto = createSearchUsersDto({ items: [], totalCount: 0, hasMore: false });
+
+    // When
+    const result = toSearchedUsersPage(dto);
+
+    // Then
+    expect(result.items).toHaveLength(0);
+    expect(result.totalCount).toBe(0);
   });
 });

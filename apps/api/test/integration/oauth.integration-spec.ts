@@ -1565,4 +1565,96 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(categoriesAfterSecond).toHaveLength(2);
 		});
 	});
+
+	describe("자동 연동 트랜잭션 원자성 (실제 DB)", () => {
+		const email = "auto-link-atomic@example.com";
+
+		it("신뢰 Provider 자동 연동이 계정·세션·보안로그를 하나의 트랜잭션으로 함께 커밋한다", async () => {
+			// Given: Google로 가입한 기존 사용자
+			const googleToken = "atomic-google-token";
+			fakeTokenVerifier.setCustomProfile("google", googleToken, {
+				id: "atomic-google-id",
+				email,
+				emailVerified: true,
+				name: "Atomic User",
+			});
+			const first = await oauthService.handleGoogleMobileLogin(googleToken);
+			const userId = first.userId;
+
+			// When: 같은 이메일의 검증된 Apple 계정으로 로그인 → 이메일 충돌 자동 연동
+			const appleToken = "atomic-apple-token";
+			fakeTokenVerifier.setCustomProfile("apple", appleToken, {
+				id: "atomic-apple-id",
+				email,
+				emailVerified: true,
+			});
+			const result = await oauthService.handleAppleMobileLogin(appleToken);
+
+			// Then: 동일 사용자에 연동 + 세션 발급 + OAUTH_AUTO_LINKED 보안로그가 함께 커밋됨
+			expect(result.userId).toBe(userId);
+			expect(result.sessionId).toBeDefined();
+
+			const accounts = await databaseService.account.findMany({
+				where: { userId },
+			});
+			expect(accounts.map((a) => a.provider).sort()).toEqual([
+				"APPLE",
+				"GOOGLE",
+			]);
+
+			const sessions = await databaseService.session.findMany({
+				where: { userId },
+			});
+			expect(sessions.length).toBeGreaterThanOrEqual(1);
+
+			const autoLinkedLogs = await databaseService.securityLog.findMany({
+				where: { userId, event: "OAUTH_AUTO_LINKED" },
+			});
+			expect(autoLinkedLogs).toHaveLength(1);
+			expect(autoLinkedLogs[0]?.metadata).toMatchObject({
+				provider: "APPLE",
+				autoLinked: true,
+			});
+		});
+
+		it("자동 연동 단계가 실패하면 세션·계정이 부분 커밋되지 않는다", async () => {
+			// Given: 이미 APPLE 계정이 연동된 기존 사용자
+			const seedToken = "atomic-seed-apple-token";
+			fakeTokenVerifier.setCustomProfile("apple", seedToken, {
+				id: "atomic-existing-apple-id",
+				email,
+				emailVerified: true,
+			});
+			const seeded = await oauthService.handleAppleMobileLogin(seedToken);
+			const userId = seeded.userId;
+
+			const sessionsBefore = await databaseService.session.count({
+				where: { userId },
+			});
+
+			// When: 같은 사용자에 "다른 providerAccountId"의 APPLE 로그인 시도.
+			//  자동 연동에서 createOAuthAccount가 @@unique([userId, provider]) 위반으로 실패한다.
+			const conflictToken = "atomic-conflict-apple-token";
+			fakeTokenVerifier.setCustomProfile("apple", conflictToken, {
+				id: "atomic-conflict-apple-id",
+				email,
+				emailVerified: true,
+			});
+
+			// Then: 에러가 발생하고 부분 커밋이 남지 않는다
+			await expect(
+				oauthService.handleAppleMobileLogin(conflictToken),
+			).rejects.toThrow();
+
+			const conflictAccount = await databaseService.account.findFirst({
+				where: { userId, providerAccountId: "atomic-conflict-apple-id" },
+			});
+			expect(conflictAccount).toBeNull();
+
+			const sessionsAfter = await databaseService.session.count({
+				where: { userId },
+			});
+			expect(sessionsAfter).toBe(sessionsBefore);
+		});
+	});
 });

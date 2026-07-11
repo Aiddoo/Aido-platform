@@ -13,7 +13,9 @@ import type {
 	FindFollowsParams,
 	FollowRepositoryPort,
 	FollowWithUser,
+	SearchUsersParams,
 	UpdateFollowInput,
+	UserSearchResult,
 } from "../../application/ports/follow.repository.port";
 import { Friendship } from "../../domain/entities/friendship.entity";
 
@@ -35,6 +37,19 @@ const WITH_USER_INCLUDE = {
 	follower: { select: USER_BRIEF_SELECT },
 	following: { select: USER_BRIEF_SELECT },
 } as const;
+
+/** searchUsers 원시 쿼리 행 형태 (관계 flag는 COALESCE로 boolean 보장) */
+interface UserSearchRow {
+	id: string;
+	userTag: string;
+	name: string | null;
+	profileImage: string | null;
+	isFollowing: boolean;
+	isFollower: boolean;
+	isFriend: boolean;
+	requestPending: boolean;
+	rank: number;
+}
 
 /**
  * FollowRepositoryPort의 Prisma 어댑터.
@@ -352,5 +367,83 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 				AND f2."status" = 'ACCEPTED'
 		`;
 		return result.map((r) => r.followingId);
+	}
+
+	async searchUsers(params: SearchUsersParams): Promise<UserSearchResult[]> {
+		const { viewerId, nfcQuery, upperTag, cursor, size } = params;
+
+		// 관련도 랭킹(rank)은 계산값이라 (rank, id) keyset으로 안정 페이지네이션한다.
+		// 서브쿼리 밖에서만 rank 별칭을 참조할 수 있어 바깥 WHERE에서 keyset을 적용한다.
+		const keyset =
+			cursor != null
+				? Prisma.sql`AND (s.rank > ${cursor.rank} OR (s.rank = ${cursor.rank} AND s.id > ${cursor.id}))`
+				: Prisma.empty;
+
+		const rows = await this.client.$queryRaw<UserSearchRow[]>`
+			SELECT s.id, s."userTag", s.name, s."profileImage",
+				s."isFollowing", s."isFollower", s."isFriend", s."requestPending", s.rank
+			FROM (
+				SELECT u.id, u."userTag", p.name, p."profileImage",
+					COALESCE(fout.status = 'ACCEPTED', false) AS "isFollowing",
+					COALESCE(fin.status = 'ACCEPTED', false) AS "isFollower",
+					COALESCE(fout.status = 'ACCEPTED' AND fin.status = 'ACCEPTED', false) AS "isFriend",
+					COALESCE(fout.status = 'PENDING', false) AS "requestPending",
+					-- 관련도 랭킹(작을수록 상위). 정확 일치 > 접두어 일치 > 부분 일치 순.
+					-- 0: 태그 완전 일치, 1: 태그 접두어 일치, 2: 이름 접두어 일치, 3: 그 외 부분 일치.
+					-- 동일 rank 내에서는 id ASC로 안정 정렬(keyset 페이지네이션 tie-breaker).
+					CASE
+						WHEN u."userTag" = ${upperTag} THEN 0
+						WHEN u."userTag" ILIKE ${upperTag} || '%' THEN 1
+						WHEN p.name ILIKE ${nfcQuery} || '%' THEN 2
+						ELSE 3
+					END AS rank
+				FROM "User" u
+				LEFT JOIN "UserProfile" p ON p."userId" = u.id
+				LEFT JOIN "Follow" fout
+					ON fout."followerId" = ${viewerId} AND fout."followingId" = u.id
+				LEFT JOIN "Follow" fin
+					ON fin."followerId" = u.id AND fin."followingId" = ${viewerId}
+				WHERE u.id <> ${viewerId}
+					AND u."deletedAt" IS NULL
+					AND u.status = 'ACTIVE'
+					AND (
+						u."userTag" ILIKE '%' || ${upperTag} || '%'
+						OR p.name ILIKE '%' || ${nfcQuery} || '%'
+					)
+			) s
+			WHERE TRUE ${keyset}
+			ORDER BY s.rank ASC, s.id ASC
+			LIMIT ${size + 1}
+		`;
+
+		return rows.map((r) => ({
+			id: r.id,
+			userTag: r.userTag,
+			profile: { name: r.name, profileImage: r.profileImage },
+			isFollowing: r.isFollowing,
+			isFollower: r.isFollower,
+			isFriend: r.isFriend,
+			requestPending: r.requestPending,
+			rank: Number(r.rank),
+		}));
+	}
+
+	async countSearchUsers(
+		params: Omit<SearchUsersParams, "cursor" | "size">,
+	): Promise<number> {
+		const { viewerId, nfcQuery, upperTag } = params;
+		const result = await this.client.$queryRaw<{ count: bigint }[]>`
+			SELECT COUNT(*) AS count
+			FROM "User" u
+			LEFT JOIN "UserProfile" p ON p."userId" = u.id
+			WHERE u.id <> ${viewerId}
+				AND u."deletedAt" IS NULL
+				AND u.status = 'ACTIVE'
+				AND (
+					u."userTag" ILIKE '%' || ${upperTag} || '%'
+					OR p.name ILIKE '%' || ${nfcQuery} || '%'
+				)
+		`;
+		return Number(result[0]?.count ?? 0);
 	}
 }

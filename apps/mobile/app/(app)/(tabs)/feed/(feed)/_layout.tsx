@@ -84,7 +84,7 @@ function AvatarList() {
         />
       ))}
 
-      <AvatarList.AddButton onPress={() => router.push('/friends/add')} />
+      <AvatarList.AddButton onPress={() => router.push('/friends/search')} />
     </ScrollView>
   );
 }

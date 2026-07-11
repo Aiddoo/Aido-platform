@@ -77,6 +77,27 @@ export const getFriendTodosParamSchema = userIdParamSchema;
 
 export type GetFriendTodosParam = z.infer<typeof getFriendTodosParamSchema>;
 
+export const searchUsersQuerySchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .min(2, '검색어는 2자 이상이어야 합니다')
+    .max(50, '검색어는 50자 이내여야 합니다')
+    .describe('검색어: 이름 또는 사용자 태그 (2-50자)'),
+  // 관련도 랭킹 keyset을 인코딩한 불투명 커서. 다른 팔로우 쿼리와 달리 CUID가 아니다.
+  cursor: z.string().optional().describe('페이지네이션 커서 (불투명 문자열, 선택)'),
+  limit: z
+    .string()
+    .regex(/^\d+$/, '숫자만 입력 가능합니다')
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(50))
+    .optional()
+    .default(20)
+    .describe('페이지 크기 (1-50, 기본값: 20)'),
+});
+
+export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;
+
 export const reorderFriendSchema = z.object({
   targetFollowId: z
     .cuid('유효하지 않은 Follow ID입니다')

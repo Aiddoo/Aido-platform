@@ -6,6 +6,7 @@ import { FollowFacade } from "./application/facades/follow.facade";
 import { FOLLOW_REPOSITORY } from "./application/ports/follow.repository.port";
 import { FOLLOW_CACHE } from "./application/ports/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "./application/ports/follow-notifier.port";
+import { SearchUsersUseCase } from "./application/queries/search-users/search-users.use-case";
 import { FollowReader } from "./application/services/follow.reader";
 import { FriendshipEffects } from "./application/services/friendship-effects.service";
 import { AcceptFriendRequestUseCase } from "./application/use-cases/accept-friend-request/accept-friend-request.use-case";
@@ -40,6 +41,7 @@ import { FollowController } from "./presentation/follow.controller";
 		RejectFriendRequestUseCase,
 		RemoveFriendUseCase,
 		ReorderFriendUseCase,
+		SearchUsersUseCase,
 		FollowFacade,
 	],
 	exports: [FollowFacade],
