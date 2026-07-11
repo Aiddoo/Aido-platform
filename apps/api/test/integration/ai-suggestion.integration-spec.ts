@@ -2,7 +2,7 @@
  * AiSuggestionController 통합 테스트
  *
  * @description
- * AiSuggestionController가 AiSuggestionService와 함께 올바르게 작동하는지 검증합니다.
+ * AiSuggestionController가 AiSuggestionFacade + 매퍼와 함께 올바르게 작동하는지 검증합니다.
  * HTTP 요청/응답 흐름을 포함한 통합 테스트입니다.
  *
  * 실행 명령:
@@ -12,21 +12,42 @@
  */
 
 import { ErrorCode } from "@aido/errors";
-import type { SuggestionActionResponse } from "@aido/validators";
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
+import { AiSuggestionFacade } from "@/ai-suggestion";
+import {
+	Suggestion,
+	type SuggestionProps,
+} from "@/ai-suggestion/domain/entities/suggestion.entity";
+import { AiSuggestionController } from "@/ai-suggestion/presentation/ai-suggestion.controller";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { ResponseTransformInterceptor } from "@/shared/presentation/interceptors/response-transform.interceptor";
 
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { ResponseTransformInterceptor } from "@/common/response/interceptors/response-transform.interceptor";
-import { AiSuggestionController } from "@/modules/ai-suggestion/ai-suggestion.controller";
-import { AiSuggestionService } from "@/modules/ai-suggestion/ai-suggestion.service";
+function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
+	return Suggestion.reconstitute({
+		id: 1,
+		userId: "test-user-id",
+		title: "팀 미팅",
+		daysOfWeek: ["MON", "WED", "FRI"],
+		scheduledTime: "10:00",
+		confidence: 0.85,
+		reason: "반복 패턴",
+		matchedTodos: [],
+		status: "PENDING",
+		suggestedCategoryId: 3,
+		expiresAt: new Date("2026-03-18T00:00:00.000Z"),
+		createdAt: new Date("2026-03-04T00:00:00.000Z"),
+		updatedAt: new Date("2026-03-04T00:00:00.000Z"),
+		...overrides,
+	});
+}
 
-describe("AI 제안 통합 테스트 (Mock DB)", () => {
+describe("AI 제안 통합 테스트 (Mock Facade)", () => {
 	let app: INestApplication;
-	let aiSuggestionService: jest.Mocked<AiSuggestionService>;
+	let aiSuggestionFacade: jest.Mocked<AiSuggestionFacade>;
 
 	const mockUser = {
 		userId: "test-user-id",
@@ -36,7 +57,7 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 	beforeAll(async () => {
 		suppressLogger();
 
-		const mockAiSuggestionService = {
+		const mockAiSuggestionFacade = {
 			getPendingSuggestions: jest.fn(),
 			handleAction: jest.fn(),
 		};
@@ -57,8 +78,8 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 			controllers: [AiSuggestionController],
 			providers: [
 				{
-					provide: AiSuggestionService,
-					useValue: mockAiSuggestionService,
+					provide: AiSuggestionFacade,
+					useValue: mockAiSuggestionFacade,
 				},
 			],
 		}).compile();
@@ -70,7 +91,7 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 
 		await app.init();
 
-		aiSuggestionService = moduleFixture.get(AiSuggestionService);
+		aiSuggestionFacade = moduleFixture.get(AiSuggestionFacade);
 	});
 
 	afterAll(async () => {
@@ -84,7 +105,7 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 	describe("GET /ai/suggestions", () => {
 		it("빈 제안 목록을 성공적으로 반환", async () => {
 			// Given - 빈 제안 목록 설정
-			aiSuggestionService.getPendingSuggestions.mockResolvedValue([]);
+			aiSuggestionFacade.getPendingSuggestions.mockResolvedValue([]);
 
 			// When - API 요청
 			const response = await request(app.getHttpServer())
@@ -97,32 +118,20 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 				data: { suggestions: [] },
 				timestamp: expect.any(Number),
 			});
-			expect(aiSuggestionService.getPendingSuggestions).toHaveBeenCalledWith(
+			expect(aiSuggestionFacade.getPendingSuggestions).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 		});
 	});
 
 	describe("PATCH /ai/suggestions/:id (accept)", () => {
-		it("수락 시 TodoService.createRecurring이 올바르게 호출됨을 검증", async () => {
+		it("수락 시 파사드에 올바른 입력을 전달하고 결과를 반환", async () => {
 			// Given - 수락 결과 설정
-			const mockResult: SuggestionActionResponse = {
+			aiSuggestionFacade.handleAction.mockResolvedValue({
 				message: "제안이 수락되어 반복 할 일이 생성되었습니다.",
-				suggestion: {
-					id: 1,
-					title: "팀 미팅",
-					daysOfWeek: ["MON", "WED", "FRI"] as const,
-					scheduledTime: "10:00",
-					confidence: 0.85,
-					reason: "반복 패턴",
-					status: "ACCEPTED" as const,
-					expiresAt: "2026-03-18T00:00:00.000Z",
-					createdAt: "2026-03-04T00:00:00.000Z",
-					suggestedCategoryId: 3,
-				},
+				suggestion: createSuggestion({ status: "ACCEPTED" }),
 				createdTodosCount: 12,
-			};
-			aiSuggestionService.handleAction.mockResolvedValue(mockResult);
+			});
 
 			// When - accept 액션 요청
 			const response = await request(app.getHttpServer())
@@ -134,11 +143,14 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 			// Then - 수락 결과 반환
 			expect(response.body.data.createdTodosCount).toBe(12);
 			expect(response.body.data.suggestion.status).toBe("ACCEPTED");
-			expect(aiSuggestionService.handleAction).toHaveBeenCalledWith(
-				mockUser.userId,
-				1,
-				{ action: "accept", categoryId: 5 },
-				expect.any(String),
+			expect(aiSuggestionFacade.handleAction).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: mockUser.userId,
+					suggestionId: 1,
+					action: "accept",
+					categoryId: 5,
+					timezone: expect.any(String),
+				}),
 			);
 		});
 	});
@@ -146,22 +158,19 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 	describe("PATCH /ai/suggestions/:id (dismiss)", () => {
 		it("거절 시 상태만 업데이트됨을 검증", async () => {
 			// Given - 거절 결과 설정
-			const mockResult: SuggestionActionResponse = {
+			aiSuggestionFacade.handleAction.mockResolvedValue({
 				message: "제안이 거절되었습니다.",
-				suggestion: {
+				suggestion: createSuggestion({
 					id: 2,
 					title: "운동",
-					daysOfWeek: ["TUE", "THU"] as const,
+					daysOfWeek: ["TUE", "THU"],
 					scheduledTime: null,
 					confidence: 0.7,
 					reason: "운동 패턴",
-					status: "DISMISSED" as const,
-					expiresAt: "2026-03-18T00:00:00.000Z",
-					createdAt: "2026-03-04T00:00:00.000Z",
+					status: "DISMISSED",
 					suggestedCategoryId: null,
-				},
-			};
-			aiSuggestionService.handleAction.mockResolvedValue(mockResult);
+				}),
+			});
 
 			// When - dismiss 액션 요청
 			const response = await request(app.getHttpServer())
@@ -179,7 +188,7 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 	describe("PATCH /ai/suggestions/:id (error)", () => {
 		it("존재하지 않는 제안 시 404 에러", async () => {
 			// Given - AI_1305 에러 설정
-			aiSuggestionService.handleAction.mockRejectedValue(
+			aiSuggestionFacade.handleAction.mockRejectedValue(
 				new BusinessException(ErrorCode.AI_1305, { suggestionId: 999 }),
 			);
 
@@ -196,7 +205,7 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 
 		it("이미 처리된 제안 시 409 에러", async () => {
 			// Given - AI_1306 에러 설정
-			aiSuggestionService.handleAction.mockRejectedValue(
+			aiSuggestionFacade.handleAction.mockRejectedValue(
 				new BusinessException(ErrorCode.AI_1306, {
 					suggestionId: 1,
 					currentStatus: "ACCEPTED",
@@ -215,8 +224,6 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("잘못된 action 값 시 400 에러", async () => {
-			// Given - 잘못된 action
-
 			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.patch("/ai/suggestions/1")
@@ -225,7 +232,7 @@ describe("AI 제안 통합 테스트 (Mock DB)", () => {
 
 			// Then - 400 에러 반환
 			expect(response.body.message).toBeDefined();
-			expect(aiSuggestionService.handleAction).not.toHaveBeenCalled();
+			expect(aiSuggestionFacade.handleAction).not.toHaveBeenCalled();
 		});
 	});
 });

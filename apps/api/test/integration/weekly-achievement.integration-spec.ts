@@ -1,16 +1,16 @@
 /**
- * WeeklyAchievementService 통합 테스트
+ * WeeklyAchievement 통합 테스트 (Mock DB)
  *
  * @description
- * WeeklyAchievementService가 WeeklyAchievementRepository, PaginationService와 함께 올바르게 작동하는지 검증합니다.
- * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
+ * Facade → use-case → Prisma 어댑터의 수직 배선이 PaginationService·
+ * UnitOfWork와 함께 올바르게 작동하는지 검증합니다. 실제 DB 대신 모킹된
+ * DatabaseService를 TransactionHost.tx로 주입합니다.
  *
  * 통합 테스트의 목적:
- * - NestJS 의존성 주입이 올바르게 작동하는지 검증
- * - WeeklyAchievementService와 WeeklyAchievementRepository의 통합 검증
- * - PaginationService와의 통합 검증
- * - 커서 페이지네이션 및 summary 계산 검증
- * - BusinessException 에러 처리가 올바르게 작동하는지 검증
+ * - NestJS 의존성 주입과 use-case 배선 검증
+ * - Facade → use-case → 어댑터 통합 검증
+ * - PaginationService 커서 페이지네이션 및 summary 계산 검증
+ * - ApplicationException 에러 처리 검증
  *
  * 실행 명령:
  * ```bash
@@ -19,17 +19,22 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
-import { DatabaseService } from "@/database/database.service";
-import { WeeklyAchievementRepository } from "@/modules/weekly-achievement/weekly-achievement.repository";
-import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-achievement.service";
+import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { WeeklyAchievementFacade } from "@/weekly-achievement/application/facades/weekly-achievement.facade";
+import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "@/weekly-achievement/application/ports/weekly-achievement.repository.port";
+import { WeeklyAchievementQueryUseCases } from "@/weekly-achievement/application/queries";
+import { WeeklyAchievementUseCases } from "@/weekly-achievement/application/use-cases";
+import { PrismaWeeklyAchievementRepository } from "@/weekly-achievement/infrastructure/adapters/prisma-weekly-achievement.repository";
 
-describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
+describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let service: WeeklyAchievementService;
+	let facade: WeeklyAchievementFacade;
 
 	// Mock 데이터베이스 서비스
 	const mockWeeklyAchievementDb = {
@@ -69,19 +74,31 @@ describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
 	beforeAll(async () => {
 		suppressLogger();
 
+		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(mock DB)
 		module = await Test.createTestingModule({
 			providers: [
-				WeeklyAchievementService,
-				WeeklyAchievementRepository,
+				WeeklyAchievementFacade,
+				...WeeklyAchievementQueryUseCases,
+				...WeeklyAchievementUseCases,
 				PaginationService,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
+					useClass: PrismaWeeklyAchievementRepository,
+				},
+				{
+					// 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (mock DB 전달)
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
+				},
+				{
+					provide: UNIT_OF_WORK,
+					useValue: createUnitOfWorkMock(),
 				},
 			],
 		}).compile();
 
-		service = module.get<WeeklyAchievementService>(WeeklyAchievementService);
+		await module.init();
+		facade = module.get(WeeklyAchievementFacade);
 	});
 
 	afterAll(async () => {
@@ -136,11 +153,13 @@ describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - 목록 조회
-			const result = await service.getWeeklyAchievements({
-				userId: mockUserId,
-				year: mockYear,
-				size: 20,
-			});
+			const result = await facade.getWeeklyAchievements(
+				mockUserId,
+				mockYear,
+				undefined,
+				20,
+				"ko",
+			);
 
 			// Then - 목록 및 summary가 반환되어야 함
 			expect(result.items).toHaveLength(2);
@@ -176,11 +195,13 @@ describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - 목록 조회
-			const result = await service.getWeeklyAchievements({
-				userId: mockUserId,
-				year: mockYear,
-				size: 20,
-			});
+			const result = await facade.getWeeklyAchievements(
+				mockUserId,
+				mockYear,
+				undefined,
+				20,
+				"ko",
+			);
 
 			// Then - summary 계산 검증
 			expect(result.summary.totalWeeks).toBe(3);
@@ -220,11 +241,13 @@ describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - size=2로 조회 (3개 반환 → hasNext = true)
-			const result = await service.getWeeklyAchievements({
-				userId: mockUserId,
-				year: mockYear,
-				size: 2,
-			});
+			const result = await facade.getWeeklyAchievements(
+				mockUserId,
+				mockYear,
+				undefined,
+				2,
+				"ko",
+			);
 
 			// Then - 다음 페이지 커서가 설정되어야 함
 			expect(result.pagination.hasNext).toBe(true);
@@ -245,11 +268,12 @@ describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
 			mockWeeklyAchievementDb.findUnique.mockResolvedValue(mockAchievement);
 
 			// When - 상세 조회
-			const result = await service.getWeeklyAchievement({
-				userId: mockUserId,
-				year: mockYear,
-				week: 10,
-			});
+			const result = await facade.getWeeklyAchievement(
+				mockUserId,
+				mockYear,
+				10,
+				"ko",
+			);
 
 			// Then - 해당 주차 데이터가 반환되어야 함
 			expect(result.year).toBe(mockYear);
@@ -265,12 +289,8 @@ describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
 
 			// When & Then - 에러 발생 검증
 			await expect(
-				service.getWeeklyAchievement({
-					userId: mockUserId,
-					year: mockYear,
-					week: 99,
-				}),
-			).rejects.toThrow(BusinessException);
+				facade.getWeeklyAchievement(mockUserId, mockYear, 99, "ko"),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 });

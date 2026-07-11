@@ -157,18 +157,18 @@ try {
     `외부 API 호출 실패: provider=${provider}, params=${JSON.stringify(safeParams)}`,
     error.stack,
   );
-  throw new BusinessException(ERROR_CODE.EXTERNAL_API_ERROR);
+  throw new ApplicationException(ErrorCode.EXTERNAL_API_ERROR);
 }
 ```
 
-### BusinessException 발생 시
+### ApplicationException/DomainException 발생 시
 
-BusinessException은 이미 예상된 비즈니스 오류이므로 **warn 레벨** 사용:
+예상된 비즈니스 오류이므로 **warn 레벨** 사용:
 
 ```typescript
 if (!user) {
   this.#logger.warn(`사용자 조회 실패: userId=${userId} 존재하지 않음`);
-  throw new BusinessException(ERROR_CODE.USER_NOT_FOUND);
+  throw new ApplicationException(ErrorCode.USER_NOT_FOUND);
 }
 ```
 

@@ -1,18 +1,18 @@
 /**
- * SubscriptionService 통합 테스트
+ * HandleWebhookEventUseCase 통합 테스트
  *
  * @description
- * SubscriptionService가 SubscriptionRepository, CacheService, AdminNotificationQueueService,
- * NotificationQueueService, LockProvider와 함께 올바르게 작동하는지 검증합니다.
- * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
+ * HandleWebhookEventUseCase가 PrismaSubscriptionRepository, 캐시·알림 어댑터,
+ * LockProvider와 함께 올바르게 작동하는지 검증합니다.
+ * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 계층 통합을 테스트합니다.
  *
  * 통합 테스트의 목적:
  * - NestJS 의존성 주입이 올바르게 작동하는지 검증
- * - SubscriptionService와 SubscriptionRepository의 통합 검증
+ * - use-case와 PrismaSubscriptionRepository(실제 어댑터)의 통합 검증
  * - RevenueCat 웹훅 이벤트 타입별 처리 로직 검증
  * - Lock 기반 동시성 제어 검증
  * - 이벤트 멱등성 (중복 이벤트 스킵) 검증
- * - BusinessException 에러 처리가 올바르게 작동하는지 검증
+ * - ApplicationException 에러 처리가 올바르게 작동하는지 검증
  *
  * 실행 명령:
  * ```bash
@@ -21,21 +21,28 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { SubscriptionEventBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { LOCK_PROVIDER } from "@/common/lock";
-import { DatabaseService } from "@/database/database.service";
-import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
-import { NotificationQueueService } from "@/modules/notification/queue";
-import { SubscriptionRepository } from "@/modules/subscription/subscription.repository";
-import { SubscriptionService } from "@/modules/subscription/subscription.service";
+import { AdminNotificationFacade } from "@/admin-notification";
+import { NotificationQueueService } from "@/notification";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
+import { SUBSCRIPTION_REPOSITORY } from "@/subscription/application/ports/subscription.repository.port";
+import { SUBSCRIPTION_CACHE } from "@/subscription/application/ports/subscription-cache.port";
+import { SUBSCRIPTION_EVENT_NOTIFIER } from "@/subscription/application/ports/subscription-event-notifier.port";
+import { HandleWebhookEventUseCase } from "@/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
+import { SubscriptionCacheAdapter } from "@/subscription/infrastructure/adapters/subscription-cache.adapter";
+import { SubscriptionEventNotifierAdapter } from "@/subscription/infrastructure/adapters/subscription-event-notifier.adapter";
+import { PrismaSubscriptionRepository } from "@/subscription/infrastructure/persistence/prisma-subscription.repository";
 
-describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
+describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let service: SubscriptionService;
+	let useCase: HandleWebhookEventUseCase;
 
 	// Mock 데이터베이스 모델
 	const mockSubscriptionDb = {
@@ -61,9 +68,9 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		invalidateUserProfile: jest.fn().mockResolvedValue(undefined),
 	};
 
-	// Mock AdminNotificationQueueService
-	const mockAdminNotificationQueueService = {
-		enqueueSubscriptionEvent: jest.fn(),
+	// Mock AdminNotificationFacade
+	const mockAdminNotificationFacade = {
+		notifySubscriptionEvent: jest.fn(),
 	};
 
 	// Mock NotificationQueueService
@@ -95,19 +102,32 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				SubscriptionService,
-				SubscriptionRepository,
+				HandleWebhookEventUseCase,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: SUBSCRIPTION_REPOSITORY,
+					useClass: PrismaSubscriptionRepository,
+				},
+				{ provide: SUBSCRIPTION_CACHE, useClass: SubscriptionCacheAdapter },
+				{
+					provide: SUBSCRIPTION_EVENT_NOTIFIER,
+					useClass: SubscriptionEventNotifierAdapter,
+				},
+				{
+					provide: UNIT_OF_WORK,
+					useValue: createUnitOfWorkMock(),
+				},
+				{
+					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 $transaction passthrough와 등가)
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
 				},
 				{
 					provide: CacheService,
 					useValue: mockCacheService,
 				},
 				{
-					provide: AdminNotificationQueueService,
-					useValue: mockAdminNotificationQueueService,
+					provide: AdminNotificationFacade,
+					useValue: mockAdminNotificationFacade,
 				},
 				{
 					provide: NotificationQueueService,
@@ -120,7 +140,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		service = module.get<SubscriptionService>(SubscriptionService);
+		useCase = module.get<HandleWebhookEventUseCase>(HandleWebhookEventUseCase);
 	});
 
 	afterAll(async () => {
@@ -157,7 +177,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		});
 
 		// When - INITIAL_PURCHASE 웹훅 이벤트 처리
-		await service.handleWebhookEvent(payload);
+		await useCase.execute(payload);
 
 		// Then - Subscription 생성, User ACTIVE 전환, 캐시 무효화, 큐 등록
 		expect(mockSubscriptionDb.create).toHaveBeenCalledWith(
@@ -182,7 +202,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 			mockUser.id,
 		);
 		expect(
-			mockAdminNotificationQueueService.enqueueSubscriptionEvent,
+			mockAdminNotificationFacade.notifySubscriptionEvent,
 		).toHaveBeenCalledWith(
 			expect.objectContaining({
 				userId: mockUser.id,
@@ -221,7 +241,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		});
 
 		// When - RENEWAL 웹훅 이벤트 처리
-		await service.handleWebhookEvent(payload);
+		await useCase.execute(payload);
 
 		// Then - Subscription expiresAt 업데이트, User ACTIVE 유지
 		expect(mockSubscriptionDb.update).toHaveBeenCalledWith(
@@ -263,7 +283,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		});
 
 		// When - CANCELLATION 웹훅 이벤트 처리
-		await service.handleWebhookEvent(payload);
+		await useCase.execute(payload);
 
 		// Then - Subscription CANCELLED 상태, cancelledAt 설정
 		expect(mockSubscriptionDb.update).toHaveBeenCalledWith(
@@ -296,7 +316,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		});
 
 		// When - EXPIRATION 웹훅 이벤트 처리
-		await service.handleWebhookEvent(payload);
+		await useCase.execute(payload);
 
 		// Then - Subscription EXPIRED, User FREE 전환
 		expect(mockSubscriptionDb.update).toHaveBeenCalledWith(
@@ -327,7 +347,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		mockUserDb.findFirst.mockResolvedValue(mockUser);
 
 		// When - BILLING_ISSUE 웹훅 이벤트 처리
-		await service.handleWebhookEvent(payload);
+		await useCase.execute(payload);
 
 		// Then - Subscription update 호출 없음, 캐시 무효화 + 큐 등록만 수행
 		expect(mockSubscriptionDb.update).not.toHaveBeenCalled();
@@ -336,7 +356,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 			mockUser.id,
 		);
 		expect(
-			mockAdminNotificationQueueService.enqueueSubscriptionEvent,
+			mockAdminNotificationFacade.notifySubscriptionEvent,
 		).toHaveBeenCalledWith(
 			expect.objectContaining({
 				eventType: "BILLING_ISSUE",
@@ -367,7 +387,7 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		});
 
 		// When - 동일 eventId로 웹훅 이벤트 재처리
-		await service.handleWebhookEvent(payload);
+		await useCase.execute(payload);
 
 		// Then - DB 변경 없음, 캐시 무효화 없음, 큐 등록 없음
 		expect(mockSubscriptionDb.update).not.toHaveBeenCalled();
@@ -375,11 +395,11 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 		expect(mockCacheService.invalidateSubscription).not.toHaveBeenCalled();
 		expect(mockCacheService.invalidateUserProfile).not.toHaveBeenCalled();
 		expect(
-			mockAdminNotificationQueueService.enqueueSubscriptionEvent,
+			mockAdminNotificationFacade.notifySubscriptionEvent,
 		).not.toHaveBeenCalled();
 	});
 
-	it("잠금 경합 — Lock 획득 실패 시 BusinessException", async () => {
+	it("잠금 경합 — Lock 획득 실패 시 ApplicationException", async () => {
 		// Given - Lock 획득 실패 (null 반환)
 		mockLockProvider.acquire.mockResolvedValue(null);
 
@@ -387,9 +407,9 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 			.withAppUserId("rc-user-123")
 			.build();
 
-		// When & Then - BusinessException 발생
-		await expect(service.handleWebhookEvent(payload)).rejects.toThrow(
-			BusinessException,
+		// When & Then - ApplicationException 발생
+		await expect(useCase.execute(payload)).rejects.toThrow(
+			ApplicationException,
 		);
 
 		// Lock 실패 시 DB 조회도 하지 않음
@@ -404,9 +424,9 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 			.withAppUserId("rc-unknown-user")
 			.build();
 
-		// When & Then - BusinessException 발생
-		await expect(service.handleWebhookEvent(payload)).rejects.toThrow(
-			BusinessException,
+		// When & Then - ApplicationException 발생
+		await expect(useCase.execute(payload)).rejects.toThrow(
+			ApplicationException,
 		);
 
 		// 사용자 조회는 시도했으나 이후 처리는 하지 않음

@@ -9,4 +9,4 @@
 export * from "./cross-module.mock";
 export * from "./todo-read-repository.mock";
 export * from "./todo-repository.mock";
-export * from "./transaction-manager.mock";
+export * from "./unit-of-work.mock";

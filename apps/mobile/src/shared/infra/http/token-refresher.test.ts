@@ -1,4 +1,6 @@
 import { createMockTokenStore } from '@src/shared/__tests__';
+import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { TimeoutError as KyTimeoutError } from 'ky';
 import { createTokenRefresher, type RefreshTokensRequest } from './token-refresher';
 
 const createFakeResponse = (params: { ok: boolean; status: number; body?: unknown }): Response =>
@@ -100,7 +102,7 @@ describe('createTokenRefresher', () => {
 
       // Then
       expect(outcome).toEqual({
-        kind: 'session-invalid',
+        kind: 'invalid',
         details: { reason: 'refresh-rejected', serverErrorCode: 'SESSION_0704' },
       });
     });
@@ -115,7 +117,7 @@ describe('createTokenRefresher', () => {
 
       // Then
       expect(outcome).toEqual({
-        kind: 'session-invalid',
+        kind: 'invalid',
         details: { reason: 'refresh-rejected', serverErrorCode: undefined },
       });
     });
@@ -132,14 +134,12 @@ describe('createTokenRefresher', () => {
 
       // Then
       expect(outcome).toEqual({
-        kind: 'session-invalid',
+        kind: 'invalid',
         details: { reason: 'invalid-refresh-response' },
       });
     });
-  });
 
-  describe('세션 없음', () => {
-    it('리프레시 토큰이 없으면 네트워크 호출 없이 no-session을 반환한다', async () => {
+    it('리프레시 토큰이 없으면 네트워크 호출 없이 tokens-missing으로 보고한다', async () => {
       // Given
       tokenStore.readRefreshToken.mockResolvedValue(null);
       const requestRefresh = respondWith(createFakeResponse({ ok: true, status: 200 }));
@@ -148,52 +148,62 @@ describe('createTokenRefresher', () => {
       const outcome = await createTokenRefresher({ tokenStore, requestRefresh })();
 
       // Then
-      expect(outcome).toEqual({ kind: 'no-session' });
+      expect(outcome).toEqual({ kind: 'invalid', details: { reason: 'tokens-missing' } });
       expect(requestRefresh).not.toHaveBeenCalled();
     });
   });
 
-  describe('일시적 실패 (토큰 보존)', () => {
-    it.each([429, 500])('%i 응답이면 transient-failure를 반환한다', async (status) => {
-      // Given
+  describe('일시적 실패 — 재시도 가능한 인프라 에러로 던진다 (토큰 보존)', () => {
+    it.each([429, 500, 503])('%i 응답이면 ServerError를 던진다', async (status) => {
+      // Given — 서버가 아직 살아나지 못했을 뿐, 보유 토큰은 유효하다
       tokenStore.readRefreshToken.mockResolvedValue('old-refresh');
       const requestRefresh = respondWith(createFakeResponse({ ok: false, status }));
 
-      // When
-      const outcome = await createTokenRefresher({ tokenStore, requestRefresh })();
-
-      // Then
-      expect(outcome).toEqual({ kind: 'transient-failure' });
+      // When / Then — React Query가 5xx와 동일하게 자동 재시도한다
+      await expect(createTokenRefresher({ tokenStore, requestRefresh })()).rejects.toBeInstanceOf(
+        ServerError,
+      );
     });
 
-    it('네트워크 오류면 transient-failure를 반환한다', async () => {
+    it('네트워크 오류면 NetworkError를 던진다', async () => {
       // Given
       tokenStore.readRefreshToken.mockResolvedValue('old-refresh');
       const requestRefresh = jest
         .fn<Promise<Response>, [string]>()
         .mockRejectedValue(new TypeError('Network request failed'));
 
-      // When
-      const outcome = await createTokenRefresher({ tokenStore, requestRefresh })();
-
-      // Then
-      expect(outcome).toEqual({ kind: 'transient-failure' });
+      // When / Then
+      await expect(createTokenRefresher({ tokenStore, requestRefresh })()).rejects.toBeInstanceOf(
+        NetworkError,
+      );
     });
 
-    it('키체인을 읽을 수 없으면 세션 없음이 아니라 transient-failure다', async () => {
+    it('갱신 요청 타임아웃이면 TimeoutError를 던진다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue('old-refresh');
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockRejectedValue(new KyTimeoutError(new Request('https://api.test/v1/auth/refresh')));
+
+      // When / Then
+      await expect(createTokenRefresher({ tokenStore, requestRefresh })()).rejects.toBeInstanceOf(
+        TimeoutError,
+      );
+    });
+
+    it('키체인을 읽을 수 없으면 세션 없음이 아니라 재시도 가능한 에러다', async () => {
       // Given — 기기 잠금 중 콜드 스타트: "토큰 없음"으로 오판하면 살아있는 세션이 죽는다
       tokenStore.readRefreshToken.mockRejectedValue(new Error('User interaction is not allowed.'));
       const requestRefresh = respondWith(createFakeResponse({ ok: true, status: 200 }));
 
-      // When
-      const outcome = await createTokenRefresher({ tokenStore, requestRefresh })();
-
-      // Then
-      expect(outcome).toEqual({ kind: 'transient-failure' });
+      // When / Then
+      await expect(createTokenRefresher({ tokenStore, requestRefresh })()).rejects.toBeInstanceOf(
+        NetworkError,
+      );
       expect(requestRefresh).not.toHaveBeenCalled();
     });
 
-    it('새 토큰 저장에 실패하면 transient-failure다 (grace 창 안에서 재시도 가능)', async () => {
+    it('새 토큰 저장에 실패하면 재시도 가능한 에러다 (grace 창 안에서 재시도 가능)', async () => {
       // Given
       tokenStore.readRefreshToken.mockResolvedValue('old-refresh');
       tokenStore.save.mockRejectedValue(new Error('keychain write failed'));
@@ -201,11 +211,32 @@ describe('createTokenRefresher', () => {
         createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }),
       );
 
+      // When / Then
+      await expect(createTokenRefresher({ tokenStore, requestRefresh })()).rejects.toBeInstanceOf(
+        NetworkError,
+      );
+    });
+
+    it('동시 대기자들은 같은 실패를 공유한다 (single-flight)', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue('old-refresh');
+      let rejectResponse: (error: unknown) => void = () => {};
+      const requestRefresh = jest.fn<Promise<Response>, [string]>().mockReturnValue(
+        new Promise<Response>((_resolve, reject) => {
+          rejectResponse = reject;
+        }),
+      );
+      const refresh = createTokenRefresher({ tokenStore, requestRefresh });
+
       // When
-      const outcome = await createTokenRefresher({ tokenStore, requestRefresh })();
+      const first = refresh();
+      const second = refresh();
+      rejectResponse(new TypeError('Network request failed'));
 
       // Then
-      expect(outcome).toEqual({ kind: 'transient-failure' });
+      await expect(first).rejects.toBeInstanceOf(NetworkError);
+      await expect(second).rejects.toBeInstanceOf(NetworkError);
+      expect(requestRefresh).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -219,8 +250,10 @@ describe('createTokenRefresher', () => {
       // Given — 세션 종료(토큰 삭제)는 SessionManager의 책임이다
       tokenStore.readRefreshToken.mockResolvedValue('old-refresh');
 
-      // When
-      await createTokenRefresher({ tokenStore, requestRefresh: respondWith(response) })();
+      // When — 일시 실패는 throw되므로 결과와 무관하게 정산만 기다린다
+      await createTokenRefresher({ tokenStore, requestRefresh: respondWith(response) })().catch(
+        () => {},
+      );
 
       // Then
       expect(tokenStore.clear).not.toHaveBeenCalled();

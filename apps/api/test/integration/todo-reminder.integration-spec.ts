@@ -2,8 +2,8 @@
  * TodoReminderProcessor 통합 테스트
  *
  * @description
- * TodoReminderProcessor가 DatabaseService, NotificationService와 함께 올바르게 작동하는지 검증합니다.
- * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
+ * TodoReminderProcessor가 TODO_REMINDER_READER 포트, NotificationService와 함께 올바르게 작동하는지 검증합니다.
+ * 실제 데이터베이스 대신 모킹된 리더 포트를 사용하여 서비스 계층 통합을 테스트합니다.
  *
  * 통합 테스트의 목적:
  * - NestJS 의존성 주입이 올바르게 작동하는지 검증
@@ -20,47 +20,35 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { NotificationBuilder, TodoBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { asJob } from "@test/mocks/bull-job.mock";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
-import { DatabaseService } from "@/database/database.service";
-import { NotificationService } from "@/modules/notification/notification.service";
-import { PushDeliveryService } from "@/modules/notification/push-delivery.service";
-import { TodoReminderProcessor } from "@/modules/scheduler/reminder/processors/todo-reminder.processor";
+import { NotificationFacade } from "@/notification";
+import { TodoReminderProcessor } from "@/scheduler";
+import { TODO_REMINDER_READER } from "@/scheduler/application/ports/todo-reminder-reader.port";
 
 function createMockJob(data: {
 	todoId: number;
 	userId: string;
 	stageLabel: string;
 }): Job {
-	return { data, id: "job-1", name: "todo-reminder" } as unknown as Job;
+	return asJob({ data, id: "job-1", name: "todo-reminder" });
 }
 
 describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let processor: TodoReminderProcessor;
 
-	// Mock 데이터베이스 서비스
-	const mockTodoDb = {
-		findFirst: jest.fn(),
+	// Mock 리마인더 리더 포트 (투두 유효성 조회 + dedup 판정)
+	const mockReader = {
+		findActiveTodo: jest.fn(),
+		existsRecentReminderNotification: jest.fn(),
 	};
 
-	const mockNotificationDb = {
-		findFirst: jest.fn(),
-	};
-
-	const mockDatabaseService = createMockDatabaseService({
-		todo: mockTodoDb,
-		notification: mockNotificationDb,
-	});
-
-	// Mock NotificationService
+	// Mock NotificationFacade (발송 + 로케일 조회)
+	// 발송 시점 로케일은 UserPreference 캐시 경유 (getUserLocale)
 	const mockNotificationService = {
 		createAndSend: jest.fn(),
-	};
-
-	// 발송 시점 로케일은 UserPreference 캐시 경유 (PushDeliveryService.getUserLocale)
-	const mockPushDeliveryService = {
 		getUserLocale: jest.fn().mockResolvedValue("ko"),
 	};
 
@@ -75,16 +63,12 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 			providers: [
 				TodoReminderProcessor,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: TODO_REMINDER_READER,
+					useValue: mockReader,
 				},
 				{
-					provide: NotificationService,
+					provide: NotificationFacade,
 					useValue: mockNotificationService,
-				},
-				{
-					provide: PushDeliveryService,
-					useValue: mockPushDeliveryService,
 				},
 			],
 		}).compile();
@@ -110,8 +94,8 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				.withId(mockTodoId)
 				.withTitle("운동하기")
 				.build();
-			mockTodoDb.findFirst.mockResolvedValue(mockTodo);
-			mockNotificationDb.findFirst.mockResolvedValue(null);
+			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+			mockReader.existsRecentReminderNotification.mockResolvedValue(false);
 			mockNotificationService.createAndSend.mockResolvedValue(
 				NotificationBuilder.create(mockUserId).withId(1).build(),
 			);
@@ -138,7 +122,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 		it("완료된 todo — 알림이 생성되지 않는다", async () => {
 			// Given - 완료된 투두 (completed: false 필터에 걸림 → null 반환)
-			mockTodoDb.findFirst.mockResolvedValue(null);
+			mockReader.findActiveTodo.mockResolvedValue(null);
 
 			const job = createMockJob({
 				todoId: mockTodoId,
@@ -155,7 +139,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 		it("삭제된 todo — 알림이 생성되지 않는다", async () => {
 			// Given - 삭제된 투두 (findFirst returns null)
-			mockTodoDb.findFirst.mockResolvedValue(null);
+			mockReader.findActiveTodo.mockResolvedValue(null);
 
 			const job = createMockJob({
 				todoId: 9999,
@@ -176,10 +160,8 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				.withId(mockTodoId)
 				.withTitle("공부하기")
 				.build();
-			mockTodoDb.findFirst.mockResolvedValue(mockTodo);
-			mockNotificationDb.findFirst.mockResolvedValue(
-				NotificationBuilder.create(mockUserId).withId(100).build(),
-			);
+			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+			mockReader.existsRecentReminderNotification.mockResolvedValue(true);
 
 			const job = createMockJob({
 				todoId: mockTodoId,
@@ -200,8 +182,8 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				.withId(mockTodoId)
 				.withTitle("회의 참석")
 				.build();
-			mockTodoDb.findFirst.mockResolvedValue(mockTodo);
-			mockNotificationDb.findFirst.mockResolvedValue(null);
+			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+			mockReader.existsRecentReminderNotification.mockResolvedValue(false);
 			mockNotificationService.createAndSend.mockResolvedValue(
 				NotificationBuilder.create(mockUserId).withId(1).build(),
 			);
@@ -211,8 +193,8 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 			for (const stage of stages) {
 				jest.clearAllMocks();
-				mockTodoDb.findFirst.mockResolvedValue(mockTodo);
-				mockNotificationDb.findFirst.mockResolvedValue(null);
+				mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+				mockReader.existsRecentReminderNotification.mockResolvedValue(false);
 				mockNotificationService.createAndSend.mockResolvedValue(
 					NotificationBuilder.create(mockUserId).withId(1).build(),
 				);

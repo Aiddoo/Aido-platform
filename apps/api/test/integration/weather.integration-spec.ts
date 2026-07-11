@@ -1,10 +1,10 @@
 /**
- * WeatherService 통합 테스트 (Mock DB)
+ * Weather 통합 테스트 (Mock DB)
  *
  * @description
- * WeatherService와 WeatherRepository의 DI 통합을 검증합니다.
- * 외부 날씨 프로바이더(KMA, Airkorea, KASI 등)는 Mock으로 처리하며,
- * 실제 DB 연동은 E2E에서 담당합니다.
+ * WeatherFacade → use-case → WeatherForecastReader / Prisma
+ * 위치 어댑터의 수직 배선을 검증합니다. 외부 날씨 프로바이더(KMA·Airkorea·KASI)와
+ * 캐시는 Mock으로 처리하며, 실제 DB 연동은 E2E에서 담당합니다.
  *
  * 실행 명령:
  * ```bash
@@ -13,35 +13,38 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserLocationBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { WeatherFacade } from "@/weather/application/facades/weather.facade";
 import {
 	AIR_QUALITY_PROVIDER,
 	type AirQualityProvider,
-} from "@/modules/weather/providers/air/air-quality.types";
+} from "@/weather/application/ports/air-quality-provider.port";
 import {
 	LIFESTYLE_INDEX_PROVIDER,
 	type LifestyleIndexProvider,
-} from "@/modules/weather/providers/lifestyle/lifestyle-index.types";
+} from "@/weather/application/ports/lifestyle-index-provider.port";
 import {
 	SUN_TIME_PROVIDER,
 	type SunTimeProvider,
-} from "@/modules/weather/providers/sun/sun-time.types";
+} from "@/weather/application/ports/sun-time-provider.port";
+import { WEATHER_LOCATION_REPOSITORY } from "@/weather/application/ports/weather-location.repository.port";
 import {
 	WEATHER_PROVIDER,
 	type WeatherProvider,
-} from "@/modules/weather/providers/weather-provider.interface";
-import { WeatherRepository } from "@/modules/weather/repositories/weather.repository";
-import { WeatherService } from "@/modules/weather/services/weather.service";
+} from "@/weather/application/ports/weather-provider.port";
+import { WeatherQueryUseCases } from "@/weather/application/queries";
+import { WeatherForecastReader } from "@/weather/application/services/weather-forecast.reader";
+import { WeatherUseCases } from "@/weather/application/use-cases";
+import { PrismaWeatherLocationRepository } from "@/weather/infrastructure/persistence/prisma-weather-location.repository";
 
-describe("WeatherService 통합 테스트 (Mock DB)", () => {
+describe("Weather 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let service: WeatherService;
-	let repository: WeatherRepository;
+	let facade: WeatherFacade;
 
 	// Mock 데이터베이스 서비스
 	const mockUserLocationDb = {
@@ -81,26 +84,22 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 		isConfigured: jest.fn().mockReturnValue(true),
 	};
 
-	// Mock Air Quality Provider
 	const mockAirQualityProvider: AirQualityProvider = {
 		getAirQuality: jest.fn().mockResolvedValue({ pm10: 45, pm25: 22 }),
 	};
 
-	// Mock Lifestyle Index Provider
 	const mockLifestyleIndexProvider: LifestyleIndexProvider = {
 		getIndex: jest
 			.fn()
 			.mockResolvedValue({ feelsLikeTemperature: 12, uvIndex: 5 }),
 	};
 
-	// Mock Sun Time Provider
 	const mockSunTimeProvider: SunTimeProvider = {
 		getSunTime: jest
 			.fn()
 			.mockResolvedValue({ sunrise: "06:15", sunset: "18:45" }),
 	};
 
-	// Mock CacheService
 	const mockCacheService = {
 		get: jest.fn().mockResolvedValue(null),
 		set: jest.fn().mockResolvedValue(undefined),
@@ -113,11 +112,22 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 	beforeAll(async () => {
 		suppressLogger();
 
+		// 클린아키 수직 배선: Facade → use-case → 리더/어댑터(mock 인프라)
 		module = await Test.createTestingModule({
 			providers: [
-				WeatherService,
-				WeatherRepository,
-				{ provide: DatabaseService, useValue: mockDatabaseService },
+				WeatherFacade,
+				WeatherForecastReader,
+				...WeatherQueryUseCases,
+				...WeatherUseCases,
+				{
+					provide: WEATHER_LOCATION_REPOSITORY,
+					useClass: PrismaWeatherLocationRepository,
+				},
+				{
+					// 어댑터가 CLS에서 tx를 읽음 — 활성 tx 없음 = 베이스 클라이언트 폴백
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
+				},
 				{ provide: WEATHER_PROVIDER, useValue: mockWeatherProvider },
 				{ provide: AIR_QUALITY_PROVIDER, useValue: mockAirQualityProvider },
 				{
@@ -129,8 +139,8 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		service = module.get(WeatherService);
-		repository = module.get(WeatherRepository);
+		await module.init();
+		facade = module.get(WeatherFacade);
 	});
 
 	afterAll(async () => {
@@ -143,14 +153,8 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합", () => {
-		it("WeatherService가 정상적으로 생성되어야 한다", () => {
-			// Then
-			expect(service).toBeDefined();
-		});
-
-		it("WeatherRepository가 정상적으로 생성되어야 한다", () => {
-			// Then
-			expect(repository).toBeDefined();
+		it("WeatherFacade가 정상적으로 생성되어야 한다", () => {
+			expect(facade).toBeDefined();
 		});
 	});
 
@@ -162,10 +166,10 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			mockUserLocationDb.upsert.mockResolvedValue(location);
 
 			// When
-			const result = await service.upsertLocation("user-1", 37.5665, 126.978);
+			const result = await facade.upsertLocation("user-1", 37.5665, 126.978);
 
 			// Then
-			expect(result.latitude).toBe(37.5665);
+			expect(result.latitude).toBe(location.latitude);
 			expect(mockUserLocationDb.upsert).toHaveBeenCalled();
 		});
 	});
@@ -177,22 +181,22 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			mockUserLocationDb.findUnique.mockResolvedValue(location);
 
 			// When
-			const result = await service.getForecastForUser("user-1", new Date());
+			const result = await facade.getForecastForUser("user-1", new Date());
 
 			// Then
 			expect(result.forecast).toBeDefined();
 			expect(result.forecast.skyCondition).toBe("CLEAR");
-			expect(result.location).toEqual(location);
+			expect(result.location.userId).toBe("user-1");
 		});
 
-		it("위치가 미등록이면 BusinessException을 던져야 한다", async () => {
+		it("위치가 미등록이면 ApplicationException을 던져야 한다", async () => {
 			// Given
 			mockUserLocationDb.findUnique.mockResolvedValue(null);
 
 			// When & Then
 			await expect(
-				service.getForecastForUser("user-999", new Date()),
-			).rejects.toThrow(BusinessException);
+				facade.getForecastForUser("user-999", new Date()),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -203,7 +207,7 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			mockUserLocationDb.findUnique.mockResolvedValue(location);
 
 			// When
-			const result = await service.getConditionsForUser("user-1", new Date());
+			const result = await facade.getConditionsForUser("user-1", new Date());
 
 			// Then
 			expect(result).toHaveProperty("feelsLikeTemperature");
@@ -214,14 +218,14 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			expect(result).toHaveProperty("pm25");
 		});
 
-		it("위치가 미등록이면 BusinessException을 던져야 한다", async () => {
+		it("위치가 미등록이면 ApplicationException을 던져야 한다", async () => {
 			// Given
 			mockUserLocationDb.findUnique.mockResolvedValue(null);
 
 			// When & Then
 			await expect(
-				service.getConditionsForUser("user-999", new Date()),
-			).rejects.toThrow(BusinessException);
+				facade.getConditionsForUser("user-999", new Date()),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 });

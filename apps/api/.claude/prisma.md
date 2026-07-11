@@ -44,7 +44,7 @@ generator client {
 모든 DB 연결에 드라이버 어댑터가 필요합니다.
 
 ```typescript
-// src/database/database.service.ts
+// src/shared/infrastructure/database/database.service.ts
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const adapter = new PrismaPg({ connectionString });

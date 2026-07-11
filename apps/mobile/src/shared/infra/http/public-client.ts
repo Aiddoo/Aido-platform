@@ -2,7 +2,7 @@ import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type KyInstance } from 'ky';
-import { handlePublicApiErrors } from './error-handler';
+import { recordPublicApiFailureBreadcrumb } from './error-handler';
 
 /**
  * 토큰 없이 호출하는 공개 API용 HTTP 클라이언트
@@ -12,6 +12,8 @@ export const createPublicClient = (): KyInstance => {
   return ky.create({
     prefixUrl: ENV.API_URL,
     timeout: 10_000,
+    // 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`) — auth-client와 동일.
+    retry: 0,
     headers: {
       'Content-Type': 'application/json',
       'X-Timezone': getDeviceTimezone(),
@@ -25,7 +27,7 @@ export const createPublicClient = (): KyInstance => {
           }
         },
       ],
-      afterResponse: [handlePublicApiErrors],
+      afterResponse: [recordPublicApiFailureBreadcrumb],
     },
   });
 };

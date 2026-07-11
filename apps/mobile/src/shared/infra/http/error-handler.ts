@@ -1,11 +1,16 @@
 import { ErrorCode, isErrorCode } from '@aido/errors';
-import { ApiError } from '@src/shared/errors';
 import { t, tDynamic } from '@src/shared/i18n';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import type { AfterResponseHook } from 'ky';
 import { z } from 'zod';
 
 /**
+ * 실패 응답 관측 훅.
+ *
+ * **관측만 한다 — 절대 throw하지 않는다.** 에러 분류(4xx→Result.err(ApiError),
+ * 5xx→ServerError throw)는 `KyHttpClient`가 단일 소유한다. 훅이 분류까지 하면
+ * 책임이 두 곳으로 갈라져 5xx가 비재시도 ApiError로 둔갑하는 버그가 재발한다.
+ *
  * 코드별 사용자 문구는 i18n 'errors' 네임스페이스에 있다
  * (locales/{ko,en}/errors.json — 키는 ErrorCode 그대로, 보안 마스킹 그룹은 동일 문구 유지).
  */
@@ -18,7 +23,7 @@ const errorEnvelopeSchema = z.object({
   }),
 });
 
-const pathnameOf = (url: string): string => {
+export const pathnameOf = (url: string): string => {
   try {
     return new URL(url).pathname;
   } catch {
@@ -50,7 +55,9 @@ export const resolveMessage = (code: string, serverMessage: string): string => {
  * 실패한 API 응답을 Sentry breadcrumb(category: 'http')로 남긴다.
  * 이후 발생하는 에러 이벤트의 타임라인에 "어떤 요청이 어떤 코드로 실패했는지"가 붙는다.
  */
-const breadcrumbFailure = (request: Request, response: Response, code: string): void => {
+const recordFailureBreadcrumb = async (request: Request, response: Response): Promise<void> => {
+  const parsed = errorEnvelopeSchema.safeParse(await readBody(response));
+  const code = parsed.success ? parsed.data.error.code : ErrorCode.SYS_0001;
   errorReporter.addBreadcrumb({
     category: 'http',
     level: 'warning',
@@ -64,24 +71,24 @@ const breadcrumbFailure = (request: Request, response: Response, code: string): 
   });
 };
 
-const toApiError = async (request: Request, response: Response): Promise<ApiError> => {
-  const parsed = errorEnvelopeSchema.safeParse(await readBody(response));
-  const code = parsed.success ? parsed.data.error.code : ErrorCode.SYS_0001;
-  const serverMessage = parsed.success ? parsed.data.error.message : '';
-  breadcrumbFailure(request, response, code);
-  return new ApiError(code, resolveMessage(code, serverMessage), response.status);
-};
-
-/** auth-client용: 401은 refresh 로직에서 처리하므로 건너뜀 */
-export const handleApiErrors: AfterResponseHook = async (request, _options, response) => {
+/** auth-client용: 401은 갱신 흐름(token-refresh-hook)의 정상 경로라 소음 방지를 위해 건너뜀 */
+export const recordApiFailureBreadcrumb: AfterResponseHook = async (
+  request,
+  _options,
+  response,
+) => {
   if (!response.ok && response.status !== 401) {
-    throw await toApiError(request, response);
+    await recordFailureBreadcrumb(request, response);
   }
 };
 
-/** public-client용: 401 포함 모든 에러 처리 */
-export const handlePublicApiErrors: AfterResponseHook = async (request, _options, response) => {
+/** public-client용: 갱신 흐름이 없으므로 401 포함 모든 실패를 기록 */
+export const recordPublicApiFailureBreadcrumb: AfterResponseHook = async (
+  request,
+  _options,
+  response,
+) => {
   if (!response.ok) {
-    throw await toApiError(request, response);
+    await recordFailureBreadcrumb(request, response);
   }
 };

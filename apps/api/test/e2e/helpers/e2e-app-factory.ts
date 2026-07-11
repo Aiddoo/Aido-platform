@@ -16,51 +16,51 @@ import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import { ZodValidationPipe } from "nestjs-zod";
 import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { InMemoryCacheAdapter } from "@/common/cache/adapters/in-memory-cache.adapter";
-import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
 import {
-	REDIS_CLIENT,
-	REDIS_COMMAND_CLIENT,
-} from "@/common/redis/redis.constants";
-import { DatabaseService } from "@/database";
-import { DailySignupSummaryJob } from "@/modules/admin-notification/jobs/daily-signup-summary.job";
-import {
+	ADMIN_NOTIFICATION_QUEUE,
 	ADMIN_NOTIFIER,
 	PAYMENT_NOTIFIER,
-} from "@/modules/admin-notification/providers/admin-notifier.interface";
-import { ADMIN_NOTIFICATION_QUEUE } from "@/modules/admin-notification/queue/admin-notification-queue.constants";
-import { AdminNotificationProcessor } from "@/modules/admin-notification/queue/admin-notification-queue.processor";
-import { AI_PROVIDER } from "@/modules/ai/providers/ai.provider";
-import { ReportGenerationJob } from "@/modules/ai-report/jobs/report-generation.job";
-import {
-	AI_REPORT_QUEUE,
-	ReportGenerationProcessor,
-} from "@/modules/ai-report/processors/report-generation.processor";
-import { SuggestionAnalysisJob } from "@/modules/ai-suggestion/jobs/suggestion-analysis.job";
-import {
-	AI_SUGGESTION_QUEUE,
-	SuggestionAnalysisProcessor,
-} from "@/modules/ai-suggestion/processors/suggestion-analysis.processor";
-import { AccountPurgeJob } from "@/modules/auth/jobs/account-purge.job";
+} from "@/admin-notification";
+import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
+import { DailySignupSummaryScheduler } from "@/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
+import { AI_PROVIDER } from "@/ai";
+import { AI_REPORT_QUEUE } from "@/ai-report";
+import { ReportGenerationJob } from "@/ai-report/infrastructure/jobs/report-generation.job";
+import { ReportGenerationProcessor } from "@/ai-report/infrastructure/processors/report-generation.processor";
+import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
+import { SuggestionAnalysisJob } from "@/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
+import { SuggestionAnalysisProcessor } from "@/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
+import { AppModule } from "@/app.module";
+import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import {
 	ACCOUNT_PURGE_QUEUE,
 	AccountPurgeProcessor,
-} from "@/modules/auth/processors/account-purge.processor";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
-import { NOTIFICATION_QUEUE } from "@/modules/notification/queue/notification-queue.constants";
-import { NotificationQueueProcessor } from "@/modules/notification/queue/notification-queue.processor";
-import { TimezoneAwareReminderJob } from "@/modules/scheduler/jobs/timezone-aware-reminder.job";
-import { TIMEZONE_REMINDER_QUEUE } from "@/modules/scheduler/queue/timezone-reminder-queue.constants";
-import { TimezoneReminderProcessor } from "@/modules/scheduler/queue/timezone-reminder-queue.processor";
-import { TODO_REMINDER_QUEUE } from "@/modules/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";
-import { TodoReminderProcessor } from "@/modules/scheduler/reminder/processors/todo-reminder.processor";
-import { AIR_QUALITY_PROVIDER } from "@/modules/weather/providers/air/air-quality.types";
-import { LIFESTYLE_INDEX_PROVIDER } from "@/modules/weather/providers/lifestyle/lifestyle-index.types";
-import { SUN_TIME_PROVIDER } from "@/modules/weather/providers/sun/sun-time.types";
-import { WEATHER_PROVIDER } from "@/modules/weather/providers/weather-provider.interface";
+} from "@/auth/infrastructure/queue/account-purge.processor";
+import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
+import { EmailFacade } from "@/email";
+import {
+	NOTIFICATION_QUEUE,
+	NotificationQueueProcessor,
+	PUSH_PROVIDER,
+} from "@/notification";
+import {
+	TIMEZONE_REMINDER_QUEUE,
+	TimezoneAwareReminderOrchestrator,
+	TimezoneReminderProcessor,
+	TODO_REMINDER_QUEUE,
+	TodoReminderProcessor,
+} from "@/scheduler";
+import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
+import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
+import { DatabaseService } from "@/shared/infrastructure/database";
+import {
+	REDIS_CLIENT,
+	REDIS_COMMAND_CLIENT,
+} from "@/shared/infrastructure/redis/redis.constants";
+import { AIR_QUALITY_PROVIDER } from "@/weather/application/ports/air-quality-provider.port";
+import { LIFESTYLE_INDEX_PROVIDER } from "@/weather/application/ports/lifestyle-index-provider.port";
+import { SUN_TIME_PROVIDER } from "@/weather/application/ports/sun-time-provider.port";
+import { WEATHER_PROVIDER } from "@/weather/application/ports/weather-provider.port";
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";
@@ -98,8 +98,8 @@ const BULL_PROCESSORS = [
 ];
 
 const BULL_JOBS = [
-	DailySignupSummaryJob,
-	TimezoneAwareReminderJob,
+	DailySignupSummaryScheduler,
+	TimezoneAwareReminderOrchestrator,
 	SuggestionAnalysisJob,
 	ReportGenerationJob,
 	AccountPurgeJob,
@@ -157,7 +157,7 @@ export async function createE2eApp(
 		)
 		.overrideProvider(DatabaseService)
 		.useValue(testDatabase.getPrisma())
-		.overrideProvider(EmailService)
+		.overrideProvider(EmailFacade)
 		.useValue(fakeEmailService)
 		.overrideProvider(OAuthTokenVerifierService)
 		.useValue(fakeOAuthTokenVerifierService)

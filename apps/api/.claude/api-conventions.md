@@ -1,8 +1,10 @@
 # API 코드 규칙
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.2.0 · **Last Updated**: 2026-07-12 · **Owner**: Aido Platform Team
 
-> Controller, Service, Repository, Module 계층별 코드 작성 규칙
+> Controller, DTO/Swagger, Module 계층별 코드 작성 규칙
+>
+> ✅ **적용 범위**: **전 모듈이 클린아키텍처 use-case 표준**(참조 구현: todo)을 따른다 — 규칙은 **§9 클린아키텍처 모듈 규칙**이 정본이다. Controller/DTO/Swagger/Module 규칙(§2·§5~§8)은 공통. **§3 Service·§4 Repository는 이관 이전 3계층 패턴의 역사적 참고**이며 현재 이 패턴을 쓰는 모듈은 없다(2026-07 auth 이관 완료로 3계층 소멸).
 
 ## 관련 문서
 
@@ -21,36 +23,44 @@
 
 | 계층 | 역할 | 핵심 규칙 |
 |------|------|----------|
-| Controller | HTTP 요청/응답 처리 | 비즈니스 로직 금지, Swagger 문서화 필수 |
-| Service | 비즈니스 로직 | BusinessExceptions로 예외 발생, Repository 통해 데이터 접근 |
-| Repository | 데이터 액세스 | 예외 발생 금지, 모든 메서드에 `tx?` 파라미터 |
+| Controller | HTTP 요청/응답 처리 | 비즈니스 로직 금지, Facade만 주입, Swagger 문서화 필수 |
+| Facade | 유스케이스 조합 | 컨트롤러·크로스모듈의 유일한 주입 대상, 얇은 위임 |
+| UseCase | 비즈니스 로직 | `@Injectable` 단일 `execute()`, `ApplicationException`/`DomainException` throw, 포트로 데이터 접근 |
+| Port/Adapter | 외부 의존 추상화 | 포트=인터페이스+Symbol, 어댑터가 구현(Prisma·벤더·큐) |
+| Repository | 데이터 액세스 | 포트 구현, CLS(`TransactionHost.tx`)에서 활성 TX 읽음 |
 | Module | 의존성 주입 | 모듈 경계 정의, `app.module.ts`에 등록 |
+
+> 상세 규칙은 **§9**. 아래 §1~§8은 공통(Controller/DTO/Swagger/Module) + 역사적 참고(§3·§4)다.
 
 ---
 
 ## 1. 디렉토리 구조
 
+**전 모듈 표준 = 클린아키텍처 4계층** (참조 구현: todo). 상세는 **§9**.
+
 ```
-src/modules/{name}/
-├── {name}.module.ts              # 모듈 정의
-├── {name}.controller.ts          # HTTP 엔드포인트
-├── services/
-│   ├── {name}.service.ts         # 비즈니스 로직
-│   └── index.ts
-├── repositories/
-│   ├── {name}.repository.ts      # 데이터 액세스
-│   └── index.ts
-├── types/
-│   ├── {name}.types.ts           # 결과 타입 정의
-│   └── index.ts
-├── constants/
-│   ├── {name}.constants.ts       # 모듈 상수
-│   └── index.ts
-├── mappers/                      # 응답 변환 (필요시)
-│   └── {name}.mapper.ts
-├── guards/                       # 인증/권한 가드 (필요시)
-├── decorators/                   # 커스텀 데코레이터 (필요시)
-└── strategies/                   # Passport 전략 (auth만)
+src/{name}/
+├── {name}.module.ts                 # DI 와이어링 (배럴 use-case 배열 등록)
+├── index.ts                         # 공개 배럴 (Facade + DTO — 외부는 이것만 임포트)
+├── domain/
+│   ├── entities/{name}.entity.ts    # AggregateRoot (private ctor + reconstitute + planCreation)
+│   ├── value-objects/*.vo.ts        # 값 객체 (불변식 = DomainException)
+│   ├── events/*.event.ts            # 도메인 이벤트
+│   └── services/*.ts                # 순수 도메인 정책
+├── application/
+│   ├── facades/{name}.facade.ts     # 컨트롤러의 유일 주입 대상
+│   ├── ports/*.port.ts              # 인터페이스 + Symbol 토큰
+│   ├── use-cases/<name>/<name>.use-case.ts   # 쓰기 (+ .spec)
+│   └── queries/<name>/<name>.use-case.ts     # 읽기 (+ 캐싱)
+├── infrastructure/
+│   ├── adapters/*.adapter.ts        # 포트 구현 (벤더·큐)
+│   ├── persistence/*.repository.ts  # Prisma 저장소 (포트 구현, CLS tx)
+│   ├── guards/                      # 인증/권한 가드 (필요시)
+│   ├── listeners/                   # @OnEvent 베스트에포트 리스너
+│   └── strategies/                  # Passport 전략 (auth 한정)
+└── presentation/
+    ├── dtos/*.request.dto.ts / *.response.dto.ts
+    └── {name}.controller.ts
 ```
 
 ---
@@ -64,7 +74,7 @@ src/modules/{name}/
 ```typescript
 import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { ApiDoc, ApiSuccessResponse, ApiCreatedResponse } from '@/common/swagger';
+import { ApiDoc, ApiSuccessResponse, ApiCreatedResponse } from '@/shared/presentation/swagger';
 
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators';
 import { ExampleResponseDto } from './dtos';
@@ -165,14 +175,16 @@ private extractMetadata(req: Request): SessionMetadata {
 
 ## 3. Service 규칙
 
-> **Why**: 비즈니스 로직의 유일한 거처. 트랜잭션 경계를 관리하고, 큐 enqueue는 커밋 후 실행하여 데이터 정합성 보장.
+> ⚠️ **역사적 참고 (현재 미사용)** — 이관 이전 3계층의 Service 패턴이다. **신규/전 모듈은 §9의 use-case 표준**(`@Injectable` `execute()`, `ApplicationException`/`DomainException` throw, `UNIT_OF_WORK.run` CLS 트랜잭션)을 따른다. 아래는 마이그레이션 이력 이해용으로만 남긴다.
+>
+> **Why(당시)**: 비즈니스 로직의 유일한 거처. 트랜잭션 경계를 관리하고, 큐 enqueue는 커밋 후 실행하여 데이터 정합성 보장.
 
 ### 기본 구조
 
 ```typescript
 import { Injectable, Logger } from '@nestjs/common';
-import { BusinessExceptions } from '@/common/exception';
-import { DatabaseService } from '@/common/database';
+import { BusinessExceptions } from '@/shared/application/exceptions';
+import { DatabaseService } from '@/shared/application/ports';
 import { [Feature]QueueService } from '../queue';
 import { [Feature]Repository } from '../repositories';
 
@@ -304,13 +316,15 @@ this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 
 ## 4. Repository 규칙
 
-> **Why**: DB 접근의 유일한 지점. `tx?` 파라미터로 트랜잭션 참여를 선택적으로 허용하여 Service가 트랜잭션을 제어.
+> ⚠️ **역사적 참고 (현재 미사용)** — 이관 이전의 `tx?` 파라미터 Repository 패턴이다. **전 모듈은 §9처럼** 저장소를 포트로 두고 어댑터가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다(무인자). 아래는 이력용.
+>
+> **Why(당시)**: DB 접근의 유일한 지점. `tx?` 파라미터로 트랜잭션 참여를 선택적으로 허용하여 Service가 트랜잭션을 제어.
 
 ### 기본 구조
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { DatabaseService, type TransactionClient } from '@/common/database';
+import { DatabaseService, type TransactionClient } from '@/shared/application/ports';
 
 @Injectable()
 export class [Feature]Repository {
@@ -492,15 +506,15 @@ export class {Feature}Module {}
 ## 6. Import 별칭
 
 ```typescript
-// @/common/* — 공통 모듈 (tsconfig paths: "@/*" → "src/*")
-import { DatabaseService } from '@/common/database';
-import { ApiDoc, ApiSuccessResponse } from '@/common/swagger';
-import { BusinessExceptions } from '@/common/exception';
-import { PaginationService } from '@/common/pagination';
-import { EncryptionService } from '@/common/encryption';
-import { TypedConfigService } from '@/common/config';
-import { getUserToday, toScheduledTime } from '@/common/date';
-import { Timezone } from '@/common/decorators';
+// @/shared/* — 공유 커널 (tsconfig paths: "@/*" → "src/*")
+import { DatabaseService } from '@/shared/application/ports';
+import { ApiDoc, ApiSuccessResponse } from '@/shared/presentation/swagger';
+import { BusinessExceptions } from '@/shared/application/exceptions';
+import { PaginationService } from '@/shared/application/pagination';
+import { EncryptionService } from '@/shared/infrastructure/encryption';
+import { TypedConfigService } from '@/shared/infrastructure/config';
+import { getUserToday, toScheduledTime } from '@/shared/domain/date';
+import { Timezone } from '@/shared/presentation/decorators';
 
 // Auth 데코레이터 — auth 모듈에서 import
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators';
@@ -528,13 +542,15 @@ import { {Feature}Service } from './{feature}.service';
 - [ ] NestJS DTO 추가
 - [ ] `pnpm build` 실행
 
-### 3. API 모듈
+### 3. API 모듈 (클린아키텍처 — 상세는 §9)
 
-- [ ] `repositories/{name}.repository.ts` 생성 (tx 패턴 적용)
-- [ ] `services/{name}.service.ts` 생성 (BusinessExceptions 사용)
-- [ ] `{name}.controller.ts` 생성 (Swagger 문서화)
-- [ ] `{name}.module.ts` 생성
-- [ ] `types/{name}.types.ts` 생성 (필요시)
+- [ ] `domain/` 애그리게잇·VO·도메인 서비스·이벤트 (불변식은 DomainException)
+- [ ] `application/ports/*.port.ts` (인터페이스 + Symbol 토큰)
+- [ ] `application/use-cases/<name>/<name>.use-case.ts` (쓰기) · `queries/<name>/<name>.use-case.ts` (읽기)
+- [ ] `application/facades/{name}.facade.ts` (컨트롤러의 유일 주입 대상)
+- [ ] `infrastructure/adapters`·`persistence` (포트 구현, Prisma·벤더·큐)
+- [ ] `presentation/{name}.controller.ts` (Facade 주입, Swagger) + `presentation/dtos`
+- [ ] `{name}.module.ts` (use-case 배럴 등록) + `index.ts` (Facade·DTO 공개)
 
 ### 4. 등록
 
@@ -542,14 +558,14 @@ import { {Feature}Service } from './{feature}.service';
 
 ### 5. 에러 처리
 
-- [ ] 필요한 BusinessExceptions 팩토리 메서드 추가
-- [ ] 새 Unique Constraint가 있으면 constraintMap에 매핑 추가
+- [ ] `@aido/errors`에 `ErrorCode` 추가 → use-case/도메인에서 `ApplicationException`/`DomainException`으로 throw
+- [ ] 새 Unique Constraint가 있으면 `GlobalExceptionFilter`의 constraintMap에 매핑 추가
 
 ### 6. 테스트
 
-- [ ] Repository 단위 테스트
-- [ ] Service 단위 테스트
-- [ ] E2E 테스트
+- [ ] use-case / 애그리게잇 / VO 단위 테스트
+- [ ] 통합 테스트 (실 저장소 + 어댑터)
+- [ ] E2E 테스트 (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries`
 
 ---
 
@@ -589,7 +605,7 @@ pnpm docker:down
 
 1. `.env.example`에 변수 추가 (예시 값)
 2. `.env.development`에 실제 개발 값 추가
-3. `src/common/config/schemas/`에 Zod 검증 스키마 추가
+3. `src/shared/config/schemas/`에 Zod 검증 스키마 추가
 
 ### 필수 환경변수
 
@@ -609,9 +625,10 @@ pnpm docker:down
 
 ---
 
-## 9. 클린아키텍처(CQRS) 모듈 규칙
+## 9. 클린아키텍처 모듈 규칙
 
-> todo 모듈부터 적용 중인 신규 표준. 마이그레이션이 진행 중인 모듈은 레거시 Service 규칙(§3)과 공존한다.
+> **전 모듈 표준** (참조 구현: todo). 2026-07 auth 이관 완료로 전 모듈이 이 표준을 따른다(§3·§4 3계층 패턴은 소멸).
+> **@nestjs/cqrs 사용 금지** — CommandBus/QueryBus/EventBus/CqrsModule 없음. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 `DOMAIN_EVENT_PUBLISHER` → EventEmitter2 → `@OnEvent`로 처리한다.
 
 ### 디렉터리 구조
 
@@ -621,40 +638,96 @@ modules/{name}/
     entities/{name}.entity.ts        # AggregateRoot 상속, private ctor + reconstitute + planCreation
     entities/{child}.entity.ts       # 자식 엔티티 (Entity 상속 — 예: todo-item)
     events/*.event.ts                # plain readonly-param 클래스 (과거형 사실, 전이 후 상태를 실음)
+    events/{name}-event-names.ts     # eventName 라우팅 키 상수 (예: TODO_EVENTS.CREATED = "todo.created")
     value-objects/*.vo.ts            # EntityId/ValueObject 상속, static create 검증 + reconstitute 무검증
     services/*.ts                    # 순수 도메인 정책 함수 (예: completion-policy, reorder-position)
   application/
     ports/*.port.ts                  # Symbol 토큰 + 인터페이스 (파일당 1포트, 페이로드 계약 소유)
     types.ts                         # 애플리케이션 파라미터 타입 (프레임워크·Prisma 무의존)
-    use-cases/<kebab>/               # 커맨드 1개 = 엔드포인트 1개 (SRP)
-      <kebab>.command.ts / .handler.ts / .handler.spec.ts
-    queries/<kebab>/                 # 쿼리도 동일 구조 (커맨드와 대칭)
-      <kebab>.query.ts / .handler.ts / .handler.spec.ts
-    events/*.handler.ts              # @EventsHandler 부수효과 핸들러
+    facades/{name}.facade.ts         # 컨트롤러가 주입하는 유일한 지점 — use-case 한 줄 위임
+    use-cases/<kebab>/               # 쓰기 use-case 1개 = 엔드포인트 1개 (SRP)
+      <kebab>.use-case.ts / .use-case.spec.ts
+    queries/<kebab>/                 # 읽기 use-case — 쓰기와 대칭 (read/write 저장소 분리와 미러링)
+      <kebab>.use-case.ts / .use-case.spec.ts
+    events/*.handler.ts              # @OnEvent 부수효과 구독자
   infrastructure/
-    adapters/*.ts                    # 포트 구현 — persistence DAO/타 모듈 서비스에 위임(쿼리 중복 금지)
+    adapters/*.ts                    # 포트 구현 — persistence DAO/타 모듈 Facade에 위임(쿼리 중복 금지)
     persistence/                     # 행 DAO({name}-row.repository) · 응답 매퍼 · Prisma 행 타입
+  presentation/                      # {name}.controller.ts · dtos/
 ```
 
-### 커맨드 핸들러 규칙
+**배럴 규칙:**
+
+- `use-cases/index.ts`는 `XxxUseCases` 배열, `queries/index.ts`는 `XxxQueryUseCases` 배열을 export — 모듈 providers에 스프레드로 등록
+- 공개 배럴(`src/{name}/index.ts`)은 **Facade(+DTO)만** export — use-case·포트·리포지토리는 내부 구현으로 비공개. 예외: 타 모듈이 `@OnEvent`로 구독하는 도메인 이벤트 클래스·이벤트명 상수는 배럴에 export (예: todo의 `TODO_EVENTS`)
+
+### Use-case 규칙
 
 | 규칙 | 내용 |
 |------|------|
+| 클래스 | plain `@Injectable()` `XxxUseCase` — 단일 `async execute(input: XxxInput): Promise<R>` 메서드, 반환 타입 명시 필수 |
+| 입력 타입 | `XxxInput` 인터페이스를 같은 파일에서 export (또는 `application/types.ts` 타입의 별칭) — 커맨드/쿼리 클래스 없음 |
 | 예외 | `ApplicationException(ErrorCode.XXX, context)` — 유스케이스 규칙 위반. 도메인 불변식은 `DomainException` |
-| 트랜잭션 | `@Inject(TRANSACTION_MANAGER)` → `txManager.run(tx => ...)`. load→mutate→write를 TX 안에 묶는다. tx는 불투명 `TransactionContext` — Prisma 타입 사용 금지. `database.$transaction` 직접 호출 금지 |
-| 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 → **run resolve 후** `eventBus.publishAll(events)` (커밋 후 `@EventsHandler`가 처리) |
-| 캐시 무효화 | 영속화 후 핸들러 인라인 (`TodoCachePort` 등 캐시 포트) |
+| 트랜잭션 | `@Inject(UNIT_OF_WORK)` → `uow.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(AsyncLocalStorage)에서 활성 TX를 직접 읽는다 (전파 Required). load→mutate→write를 TX 안에 묶는다. `database.$transaction` 직접 호출 금지 |
+| 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 + `pullDomainEvents()` 드레인 → **run resolve 후** `DOMAIN_EVENT_PUBLISHER.publishAll(events)` (커밋 후 `@OnEvent` 구독자가 처리) |
+| 캐시 무효화 | 영속화 후 use-case에서 명시적 호출 (`TodoCachePort` 등 캐시 포트) — 도메인 이벤트가 없는 쓰기 경로 포함. 또는 `@OnEvent` 구독으로 처리 |
 | 응답 | 애그리게잇에서 직접 만들지 않는다 — 항상 read 포트(`~ReadRepositoryPort`) 재조회 |
-| 이벤트 발행 | TX 콜백이 `todo.pullDomainEvents()`를 반환하고, 핸들러는 run resolve 후 `eventBus.publishAll(events)` (도메인은 @nestjs/cqrs 무의존) |
-| 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전 |
-| 타입 | `as`/`!` 금지(`pnpm lint:no-cast`), 임포트 경계는 `pnpm lint:boundaries` — 둘 다 수동 게이트. 커맨드/쿼리는 `Command<T>`/`Query<T>` 확장으로 버스 반환 타입 추론 |
+| 이벤트 발행 | 발행은 반드시 커밋 후(`run` 콜백 밖). EventEmitter2 `emit`은 동기 — 퍼블리셔가 이벤트 단위 try/catch로 예외 격리 (도메인·애플리케이션은 EventEmitter2 무의존, 포트만 의존) |
+| 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전, 어댑터는 타 모듈 배럴의 **Facade**에 위임 (예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter` → `TodoFacade`) |
+| 타입 | `as`/`!` 금지(`pnpm lint:no-cast`), 임포트 경계는 `pnpm lint:boundaries` — 둘 다 수동 게이트 |
 | 가독성 | JSDoc에 흐름 요약, `execute()` 본문은 번호 주석으로 위→아래 단일 경로 |
 
-### 컨트롤러 규칙 (CQRS 전환분)
+**작성 예시** (todo `create-todo` — 골격):
 
-- `CommandBus`/`QueryBus`만 주입 — 서비스 직접 호출 금지
-- DTO → Command 매핑과 날짜/타임존 파싱(`parseDateOnly`, `parseLocalDateTime`)은 컨트롤러 책임
+```typescript
+// application/use-cases/create-todo/create-todo.use-case.ts
+export interface CreateTodoInput {
+  userId: string;
+  data: CreateTodoData; // application/types.ts
+  timezone: string;
+}
+
+@Injectable()
+export class CreateTodoUseCase {
+  constructor(
+    @Inject(TODO_REPOSITORY) private readonly todoRepository: TodoRepositoryPort,
+    @Inject(TODO_READ_REPOSITORY) private readonly todoReadRepository: TodoReadRepositoryPort,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
+    @Inject(DOMAIN_EVENT_PUBLISHER) private readonly eventPublisher: DomainEventPublisherPort,
+  ) {}
+
+  async execute(input: CreateTodoInput): Promise<TodoResponse> {
+    // 1. 도메인 생성 계획 (birth 불변식·기본값 — Todo.planCreation)
+    // 2. TX: 영속화 + 이벤트 드레인 (콜백 무인자 — 리포지토리가 CLS에서 TX를 읽음)
+    const { todoId, events } = await this.uow.run(async () => {
+      /* 저장 → todo.pullDomainEvents() 반환 */
+    });
+    // 3. 커밋 후 도메인 이벤트 발행 (fire-and-forget — @OnEvent 구독자가 부수효과 처리)
+    this.eventPublisher.publishAll(events);
+    // 4. 응답은 read 포트 재조회
+    return this.todoReadRepository.findByIdOrThrow(todoId, input.userId);
+  }
+}
+```
+
+### Facade 규칙
+
+- 위치: `application/facades/{name}.facade.ts` — **컨트롤러(및 타 모듈 어댑터)가 주입하는 유일한 지점**
+- use-case들을 생성자 주입하고 메서드마다 **한 줄 위임** (`return this.createTodoUseCase.execute(input);`) — 로직·분기 금지
+- Facade의 공개 시그니처가 모듈의 공개 계약 — 시그니처 변경은 계약 변경으로 취급
+- 공개 배럴(`src/{name}/index.ts`)은 Facade(+DTO)만 export (+구독용 도메인 이벤트 — 위 배럴 규칙 참조)
+
+### 컨트롤러 규칙 (클린아키텍처 전환분)
+
+- **Facade만 주입** — use-case/리포지토리 직접 주입 금지
+- DTO → Input 매핑과 날짜/타임존 파싱(`parseDateOnly`, `parseLocalDateTime`)은 컨트롤러 책임
 - Swagger 데코레이터는 마이그레이션 중 **절대 변경 금지** (openapi-contract 스냅샷이 게이트)
+
+### 도메인 이벤트 구독 규칙
+
+- 위치: `application/events/*.handler.ts` — `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.CREATED)` 등 이벤트명 상수로 구독
+- 핸들러 내부는 try/catch fire-and-forget + 로깅 — 부수효과 실패가 다른 구독자·요청에 전파되지 않게 한다
+- 판단 규칙(마일스톤·전체완료 등)은 `domain/services/` 정책 함수 호출 — 구독자에 도메인 로직 상주 금지
 
 ### 도메인 규칙
 
@@ -668,5 +741,5 @@ modules/{name}/
 
 ---
 
-**문서 버전**: 3.1.0
-**최종 수정일**: 2026-07-04
+**문서 버전**: 3.2.0
+**최종 수정일**: 2026-07-11

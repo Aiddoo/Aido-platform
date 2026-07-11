@@ -1,7 +1,7 @@
 import type {
 	SunTime,
 	SunTimeProvider,
-} from "@/modules/weather/providers/sun/sun-time.types";
+} from "@/weather/application/ports/sun-time-provider.port";
 
 /**
  * 테스트용 FakeSunTimeProvider

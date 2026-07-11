@@ -7,12 +7,12 @@
  */
 
 import request from "supertest";
-import { CacheService } from "@/common/cache/cache.service";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
 	CACHE_SERVICE,
 	type ICacheService,
-} from "@/common/cache/interfaces/cache.interface";
-import { DatabaseService } from "@/database/database.service";
+} from "@/shared/infrastructure/cache/interfaces/cache.interface";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("인증 E2E", () => {

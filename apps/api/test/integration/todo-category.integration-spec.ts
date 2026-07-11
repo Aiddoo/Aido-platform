@@ -1,41 +1,41 @@
 /**
- * TodoCategoryService 통합 테스트
+ * TodoCategory 모듈 통합 테스트 (Mock DB)
  *
- * @description
- * TodoCategoryService가 TodoCategoryRepository, DatabaseService와 함께 올바르게 작동하는지 검증합니다.
- * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
+ * 클린아키텍처(무버스 use-case) 구조로 재작성. TodoCategoryFacade·use-case·TodoCategoryReader가
+ * PrismaTodoCategoryRepository(Mock DB)·캐시 어댑터·EntitlementService와 함께 DI로 조립되고
+ * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
- * 통합 테스트의 목적:
- * - NestJS 의존성 주입이 올바르게 작동하는지 검증
- * - TodoCategoryService와 TodoCategoryRepository의 통합 검증
- * - BusinessException 에러 처리가 올바르게 작동하는지 검증
- * - 트랜잭션 처리가 올바르게 작동하는지 검증
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test:integration -- --testPathPattern=todo-category.integration
- * ```
+ * 실행: pnpm --filter @aido/api test:integration -- --testPathPattern=todo-category.integration
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { EntitlementService } from "@/common/entitlement/entitlement.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
+
 import type { TodoCategory } from "@/generated/prisma/client";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
-import { TodoCategoryService } from "@/modules/todo-category/todo-category.service";
-import type { TodoCategoryWithCount } from "@/modules/todo-category/types/todo-category.types";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { TodoCategoryFacade } from "@/todo-category";
+import { TODO_CATEGORY_REPOSITORY } from "@/todo-category/application/ports/todo-category.repository.port";
+import { TODO_CATEGORY_CACHE } from "@/todo-category/application/ports/todo-category-cache.port";
+import { TodoCategoryReader } from "@/todo-category/application/services/todo-category.reader";
+import { CreateTodoCategoryUseCase } from "@/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
+import { DeleteTodoCategoryUseCase } from "@/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case";
+import { ReorderTodoCategoryUseCase } from "@/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
+import { UpdateTodoCategoryUseCase } from "@/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case";
+import { TodoCategoryCacheAdapter } from "@/todo-category/infrastructure/adapters/todo-category-cache.adapter";
+import { PrismaTodoCategoryRepository } from "@/todo-category/infrastructure/persistence/prisma-todo-category.repository";
+import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
 
-describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
+describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let service: TodoCategoryService;
-	let repository: TodoCategoryRepository;
+	let facade: TodoCategoryFacade;
 
-	// Mock 데이터베이스 서비스
 	const mockTodoCategoryDb = {
 		create: jest.fn(),
 		createMany: jest.fn(),
@@ -48,58 +48,52 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 		count: jest.fn(),
 		aggregate: jest.fn(),
 	};
-
-	const mockTodoDb = {
-		updateMany: jest.fn(),
-		count: jest.fn(),
-	};
-
+	const mockTodoDb = { updateMany: jest.fn(), count: jest.fn() };
 	const mockDatabaseService = createMockDatabaseService({
 		todoCategory: mockTodoCategoryDb,
 		todo: mockTodoDb,
 	});
+	const mockUnitOfWork = createUnitOfWorkMock();
 
-	// 테스트 데이터
-	const mockUserId = "user-category-123";
-	const mockCategoryId = 1;
+	const userId = "user-category-123";
+	const categoryId = 1;
 
-	const createMockCategory = (
+	const makeCategory = (
 		overrides: Partial<TodoCategory> = {},
 	): TodoCategory => {
-		const builder = TodoCategoryBuilder.create(mockUserId)
-			.withId(overrides.id ?? mockCategoryId)
+		const builder = TodoCategoryBuilder.create(userId)
+			.withId(overrides.id ?? categoryId)
 			.withName(overrides.name ?? "중요한 일")
 			.withColor(overrides.color ?? "#FFB3B3")
 			.withSortOrder(overrides.sortOrder ?? 0);
-
-		if (overrides.userId) {
-			// userId는 create 시 설정되므로 직접 처리
-			return { ...builder.build(), userId: overrides.userId };
-		}
-		return builder.build();
+		const built = builder.build();
+		return overrides.userId ? { ...built, userId: overrides.userId } : built;
 	};
 
-	const createMockCategoryWithCount = (
-		overrides: Partial<TodoCategoryWithCount> = {},
-	): TodoCategoryWithCount => {
-		const category = createMockCategory(overrides);
-		return {
-			...category,
-			_count: { todos: overrides._count?.todos ?? 0 },
-		};
-	};
+	const makeWithCount = (
+		overrides: Partial<TodoCategory> = {},
+		todoCount = 0,
+	) => ({ ...makeCategory(overrides), _count: { todos: todoCount } });
 
 	beforeAll(async () => {
 		suppressLogger();
 
 		module = await Test.createTestingModule({
 			providers: [
-				TodoCategoryService,
+				TodoCategoryFacade,
+				TodoCategoryReader,
+				CreateTodoCategoryUseCase,
+				UpdateTodoCategoryUseCase,
+				DeleteTodoCategoryUseCase,
+				ReorderTodoCategoryUseCase,
 				TodoCategoryRepository,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: TODO_CATEGORY_REPOSITORY,
+					useClass: PrismaTodoCategoryRepository,
 				},
+				{ provide: TODO_CATEGORY_CACHE, useClass: TodoCategoryCacheAdapter },
+				{ provide: UNIT_OF_WORK, useValue: mockUnitOfWork },
+				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
 				{
 					provide: EntitlementService,
 					useValue: {
@@ -108,7 +102,6 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 							isAdmin: false,
 							subscriptionStatus: "ACTIVE",
 						}),
-						enforceResourceLimit: jest.fn(),
 					},
 				},
 				{
@@ -123,8 +116,7 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		service = module.get<TodoCategoryService>(TodoCategoryService);
-		repository = module.get<TodoCategoryRepository>(TodoCategoryRepository);
+		facade = module.get(TodoCategoryFacade);
 	});
 
 	afterAll(async () => {
@@ -134,8 +126,6 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		// clearAllMocks does not clear mockResolvedValueOnce queues,
-		// so reset database model mocks to prevent leaking between tests
 		for (const method of Object.values(mockTodoCategoryDb)) {
 			(method as jest.Mock).mockReset();
 		}
@@ -146,269 +136,172 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합", () => {
-		it("TodoCategoryService가 올바르게 인스턴스화된다", () => {
-			// Given - DI 컨테이너가 구성됨
-
-			// When - 서비스 인스턴스 확인
-
-			// Then - 서비스가 정의되어 있어야 함
-			expect(service).toBeDefined();
-			expect(service).toBeInstanceOf(TodoCategoryService);
+		it("TodoCategoryFacade가 조립된다", () => {
+			expect(facade).toBeInstanceOf(TodoCategoryFacade);
 		});
-
-		it("TodoCategoryRepository가 올바르게 주입된다", () => {
-			// Given - DI 컨테이너가 구성됨
-
-			// When - 레포지토리 인스턴스 확인
-
-			// Then - 레포지토리가 정의되어 있어야 함
-			expect(repository).toBeDefined();
-			expect(repository).toBeInstanceOf(TodoCategoryRepository);
+		it("Repository 포트가 주입된다", () => {
+			expect(module.get(TODO_CATEGORY_REPOSITORY)).toBeInstanceOf(
+				PrismaTodoCategoryRepository,
+			);
 		});
 	});
 
-	describe("create 통합 테스트", () => {
-		it("카테고리를 생성한다", async () => {
-			// Given - 중복되지 않는 새 카테고리 준비
-			const mockCategory = createMockCategory({ name: "새 카테고리" });
+	describe("생성", () => {
+		it("카테고리를 생성하고 맨 뒤 순번을 부여한다", async () => {
+			mockTodoCategoryDb.count.mockResolvedValue(1);
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
 			mockTodoCategoryDb.aggregate.mockResolvedValue({
 				_max: { sortOrder: 0 },
 			});
-			mockTodoCategoryDb.create.mockResolvedValue(mockCategory);
+			mockTodoCategoryDb.create.mockResolvedValue(
+				makeCategory({ name: "새 카테고리" }),
+			);
 
-			// When - 카테고리 생성
-			const result = await service.create({
-				userId: mockUserId,
+			const result = await facade.create({
+				userId,
 				name: "새 카테고리",
 				color: "#FFB3B3",
 			});
 
-			// Then - 카테고리가 생성됨
-			expect(result).toEqual(mockCategory);
+			expect(result.name).toBe("새 카테고리");
 			expect(mockTodoCategoryDb.create).toHaveBeenCalledWith({
-				data: expect.objectContaining({
-					user: { connect: { id: mockUserId } },
+				data: {
+					user: { connect: { id: userId } },
 					name: "새 카테고리",
 					color: "#FFB3B3",
 					sortOrder: 1,
-				}),
+				},
 			});
 		});
 
-		it("중복된 이름으로 생성 시 BusinessException을 던진다", async () => {
-			// Given - 이미 존재하는 카테고리
-			const existingCategory = createMockCategory();
-			mockTodoCategoryDb.findFirst.mockResolvedValue(existingCategory);
+		it("중복 이름이면 ApplicationException", async () => {
+			mockTodoCategoryDb.count.mockResolvedValue(1);
+			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 
-			// When & Then - 예외 발생 검증
 			await expect(
-				service.create({
-					userId: mockUserId,
-					name: "중요한 일",
-					color: "#FFB3B3",
-				}),
-			).rejects.toThrow(BusinessException);
+				facade.create({ userId, name: "중요한 일", color: "#FFB3B3" }),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
-	describe("createDefaultCategories 통합 테스트", () => {
-		it("기본 카테고리들을 생성한다", async () => {
-			// Given - 기본 카테고리 목록 준비
-			const defaultCategories = [
-				{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
-				{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
-			];
-			mockTodoCategoryDb.createMany.mockResolvedValue({ count: 2 });
+	describe("단건 조회", () => {
+		it("카테고리를 todoCount와 함께 조회한다", async () => {
+			mockTodoCategoryDb.findUnique.mockResolvedValue(makeWithCount({}, 3));
 
-			// When - 기본 카테고리 생성
-			const result = await service.createDefaultCategories(
-				mockUserId,
-				defaultCategories,
-			);
+			const result = await facade.findById(categoryId, userId);
 
-			// Then - 2개의 카테고리가 생성됨
-			expect(result).toBe(2);
-			expect(mockTodoCategoryDb.createMany).toHaveBeenCalledWith({
-				data: expect.arrayContaining([
-					expect.objectContaining({ userId: mockUserId, name: "중요한 일" }),
-					expect.objectContaining({ userId: mockUserId, name: "할 일" }),
-				]),
-			});
-		});
-	});
-
-	describe("findById 통합 테스트", () => {
-		it("카테고리를 조회한다", async () => {
-			// Given - 조회할 카테고리 준비
-			const mockCategoryWithCount = createMockCategoryWithCount();
-			mockTodoCategoryDb.findUnique.mockResolvedValue(mockCategoryWithCount);
-
-			// When - 카테고리 조회
-			const result = await service.findById(mockCategoryId, mockUserId);
-
-			// Then - 카테고리 정보 반환
-			expect(result.id).toBe(mockCategoryId);
-			expect(result.name).toBe("중요한 일");
-			expect(result._count).toBeDefined();
+			expect(result.id).toBe(categoryId);
+			expect(result.todoCount).toBe(3);
 		});
 
-		it("존재하지 않는 카테고리 조회 시 BusinessException을 던진다", async () => {
-			// Given - 존재하지 않는 카테고리
+		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findUnique.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
-			await expect(service.findById(999, mockUserId)).rejects.toThrow(
-				BusinessException,
+			await expect(facade.findById(999, userId)).rejects.toThrow(
+				ApplicationException,
 			);
 		});
 
-		it("다른 사용자의 카테고리 조회 시 BusinessException을 던진다", async () => {
-			// Given - 다른 사용자의 카테고리
-			const otherUserCategory = createMockCategoryWithCount({
-				userId: "other-user",
-			});
-			mockTodoCategoryDb.findUnique.mockResolvedValue(otherUserCategory);
-
-			// When & Then - 예외 발생 검증
-			await expect(
-				service.findById(mockCategoryId, mockUserId),
-			).rejects.toThrow(BusinessException);
+		it("다른 사용자의 카테고리면 ApplicationException", async () => {
+			mockTodoCategoryDb.findUnique.mockResolvedValue(
+				makeWithCount({ userId: "other-user" }),
+			);
+			await expect(facade.findById(categoryId, userId)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
-	describe("findMany 통합 테스트", () => {
-		it("카테고리 목록을 조회한다", async () => {
-			// Given - 카테고리 목록 준비
-			const mockCategories = [
-				createMockCategoryWithCount({ id: 1, name: "중요한 일", sortOrder: 0 }),
-				createMockCategoryWithCount({ id: 2, name: "할 일", sortOrder: 1 }),
-			];
-			mockTodoCategoryDb.findMany.mockResolvedValue(mockCategories);
+	describe("목록 조회", () => {
+		it("sortOrder 오름차순으로 조회한다", async () => {
+			mockTodoCategoryDb.findMany.mockResolvedValue([
+				makeWithCount({ id: 1, name: "중요한 일", sortOrder: 0 }),
+				makeWithCount({ id: 2, name: "할 일", sortOrder: 1 }),
+			]);
 
-			// When - 카테고리 목록 조회
-			const result = await service.findMany(mockUserId);
+			const result = await facade.findMany(userId);
 
-			// Then - sortOrder 순으로 정렬된 목록 반환
 			expect(result).toHaveLength(2);
 			expect(mockTodoCategoryDb.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					where: { userId: mockUserId },
+					where: { userId },
 					orderBy: { sortOrder: "asc" },
 				}),
 			);
 		});
 	});
 
-	describe("update 통합 테스트", () => {
-		it("카테고리를 수정한다", async () => {
-			// Given - 수정할 카테고리 준비
-			const mockCategory = createMockCategory();
-			const updatedCategory = createMockCategory({
-				name: "수정된 이름",
-				color: "#FF0000",
-			});
+	describe("수정", () => {
+		it("이름/색상을 수정한다", async () => {
 			mockTodoCategoryDb.findFirst
-				.mockResolvedValueOnce(mockCategory)
+				.mockResolvedValueOnce(makeCategory())
 				.mockResolvedValueOnce(null);
-			mockTodoCategoryDb.update.mockResolvedValue(updatedCategory);
+			mockTodoCategoryDb.update.mockResolvedValue(
+				makeCategory({ name: "수정된 이름", color: "#FF0000" }),
+			);
 
-			// When - 카테고리 수정
-			const result = await service.update(mockCategoryId, mockUserId, {
+			const result = await facade.update(categoryId, userId, {
 				name: "수정된 이름",
 				color: "#FF0000",
 			});
 
-			// Then - 수정된 카테고리 반환
 			expect(result.name).toBe("수정된 이름");
 			expect(result.color).toBe("#FF0000");
 		});
 
-		it("중복된 이름으로 수정 시 BusinessException을 던진다", async () => {
-			// Given - 이미 존재하는 이름으로 수정 시도
-			const mockCategory = createMockCategory({ id: 1, name: "카테고리 1" });
-			const existingCategory = createMockCategory({
-				id: 2,
-				name: "카테고리 2",
-			});
+		it("중복 이름이면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst
-				.mockResolvedValueOnce(mockCategory)
-				.mockResolvedValueOnce(existingCategory);
+				.mockResolvedValueOnce(makeCategory({ id: 1, name: "카테고리 1" }))
+				.mockResolvedValueOnce(makeCategory({ id: 2, name: "카테고리 2" }));
 
-			// When & Then - 예외 발생 검증
 			await expect(
-				service.update(1, mockUserId, { name: "카테고리 2" }),
-			).rejects.toThrow(BusinessException);
+				facade.update(1, userId, { name: "카테고리 2" }),
+			).rejects.toThrow(ApplicationException);
 		});
 
-		it("존재하지 않는 카테고리 수정 시 BusinessException을 던진다", async () => {
-			// Given - 존재하지 않는 카테고리
+		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
 			await expect(
-				service.update(999, mockUserId, { name: "수정" }),
-			).rejects.toThrow(BusinessException);
+				facade.update(999, userId, { name: "수정" }),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
-	describe("delete 통합 테스트", () => {
-		it("Todo가 없는 카테고리를 삭제한다", async () => {
-			// Given - Todo가 없는 카테고리 준비
-			const mockCategory = createMockCategory();
-			mockTodoCategoryDb.findFirst.mockResolvedValue(mockCategory);
+	describe("삭제", () => {
+		it("할 일이 없는 카테고리를 삭제한다", async () => {
+			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 			mockTodoCategoryDb.count.mockResolvedValue(2);
 			mockTodoDb.count.mockResolvedValue(0);
-			mockTodoCategoryDb.delete.mockResolvedValue(mockCategory);
+			mockTodoCategoryDb.delete.mockResolvedValue(makeCategory());
 
-			// When - 카테고리 삭제
-			await service.delete({
-				userId: mockUserId,
-				categoryId: mockCategoryId,
-			});
+			await facade.delete({ userId, categoryId });
 
-			// Then - 카테고리가 삭제됨
 			expect(mockTodoCategoryDb.delete).toHaveBeenCalledWith({
-				where: { id: mockCategoryId },
+				where: { id: categoryId },
 			});
+			expect(mockUnitOfWork.run).toHaveBeenCalled();
 		});
 
-		it("Todo가 있는 카테고리 삭제 시 이동 대상이 없으면 BusinessException을 던진다", async () => {
-			// Given - Todo가 있지만 이동 대상이 없는 상태
-			const mockCategory = createMockCategory();
-			mockTodoCategoryDb.findFirst.mockResolvedValue(mockCategory);
+		it("할 일이 있는데 이동 대상이 없으면 ApplicationException", async () => {
+			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 			mockTodoCategoryDb.count.mockResolvedValue(2);
 			mockTodoDb.count.mockResolvedValue(5);
 
-			// When & Then - 예외 발생 검증
-			await expect(
-				service.delete({
-					userId: mockUserId,
-					categoryId: mockCategoryId,
-				}),
-			).rejects.toThrow(BusinessException);
+			await expect(facade.delete({ userId, categoryId })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
-		it("Todo가 있는 카테고리를 삭제하고 Todo를 이동한다", async () => {
-			// Given - Todo가 있고 이동 대상 카테고리가 있는 상태
-			const mockCategory = createMockCategory({ id: 1 });
-			const targetCategory = createMockCategory({ id: 2, name: "할 일" });
+		it("할 일을 이동 후 삭제한다", async () => {
 			mockTodoCategoryDb.findFirst
-				.mockResolvedValueOnce(mockCategory)
-				.mockResolvedValueOnce(targetCategory);
+				.mockResolvedValueOnce(makeCategory({ id: 1 }))
+				.mockResolvedValueOnce(makeCategory({ id: 2, name: "할 일" }));
 			mockTodoCategoryDb.count.mockResolvedValue(2);
 			mockTodoDb.count.mockResolvedValue(5);
 			mockTodoDb.updateMany.mockResolvedValue({ count: 5 });
-			mockTodoCategoryDb.delete.mockResolvedValue(mockCategory);
+			mockTodoCategoryDb.delete.mockResolvedValue(makeCategory({ id: 1 }));
 
-			// When - 카테고리 삭제 (Todo 이동 지정)
-			await service.delete({
-				userId: mockUserId,
-				categoryId: 1,
-				moveToCategoryId: 2,
-			});
+			await facade.delete({ userId, categoryId: 1, moveToCategoryId: 2 });
 
-			// Then - Todo가 이동되고 카테고리가 삭제됨
 			expect(mockTodoDb.updateMany).toHaveBeenCalledWith({
 				where: { categoryId: 1 },
 				data: { categoryId: 2 },
@@ -416,173 +309,105 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 			expect(mockTodoCategoryDb.delete).toHaveBeenCalled();
 		});
 
-		it("마지막 카테고리 삭제 시 BusinessException을 던진다", async () => {
-			// Given - 마지막 남은 카테고리
-			const mockCategory = createMockCategory();
-			mockTodoCategoryDb.findFirst.mockResolvedValue(mockCategory);
+		it("마지막 카테고리면 ApplicationException", async () => {
+			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 			mockTodoCategoryDb.count.mockResolvedValue(1);
-
-			// When & Then - 예외 발생 검증
-			await expect(
-				service.delete({
-					userId: mockUserId,
-					categoryId: mockCategoryId,
-				}),
-			).rejects.toThrow(BusinessException);
+			await expect(facade.delete({ userId, categoryId })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
-		it("존재하지 않는 카테고리 삭제 시 BusinessException을 던진다", async () => {
-			// Given - 존재하지 않는 카테고리
+		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
-			await expect(
-				service.delete({
-					userId: mockUserId,
-					categoryId: 999,
-				}),
-			).rejects.toThrow(BusinessException);
+			await expect(facade.delete({ userId, categoryId: 999 })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
-	describe("reorder 통합 테스트", () => {
-		it("카테고리를 특정 카테고리 앞으로 이동한다", async () => {
-			// Given - 카테고리 순서 변경 준비
-			const category1 = createMockCategory({ id: 1, sortOrder: 0 });
-			const _category2 = createMockCategory({ id: 2, sortOrder: 1 });
-			const category3 = createMockCategory({ id: 3, sortOrder: 2 });
-
+	describe("재배치", () => {
+		it("특정 카테고리 앞으로 이동한다", async () => {
 			mockTodoCategoryDb.findFirst
-				.mockResolvedValueOnce(category3)
-				.mockResolvedValueOnce(category1);
+				.mockResolvedValueOnce(makeCategory({ id: 3, sortOrder: 2 }))
+				.mockResolvedValueOnce(makeCategory({ id: 1, sortOrder: 0 }));
 			mockTodoCategoryDb.updateMany.mockResolvedValue({ count: 2 });
-			mockTodoCategoryDb.update.mockResolvedValue({
-				...category3,
-				sortOrder: 0,
-			});
+			mockTodoCategoryDb.update.mockResolvedValue(
+				makeCategory({ id: 3, sortOrder: 0 }),
+			);
 
-			// When - 카테고리 3을 카테고리 1 앞으로 이동
-			const result = await service.reorder({
-				userId: mockUserId,
+			const result = await facade.reorder({
+				userId,
 				categoryId: 3,
 				targetCategoryId: 1,
 				position: "before",
 			});
 
-			// Then - sortOrder가 0으로 변경됨
 			expect(result.sortOrder).toBe(0);
+			expect(mockUnitOfWork.run).toHaveBeenCalled();
 		});
 
-		it("카테고리를 맨 뒤로 이동한다", async () => {
-			// Given - 맨 뒤로 이동할 카테고리 준비
-			const category1 = createMockCategory({ id: 1, sortOrder: 0 });
-			mockTodoCategoryDb.findFirst.mockResolvedValue(category1);
+		it("맨 뒤로 이동한다", async () => {
+			mockTodoCategoryDb.findFirst.mockResolvedValue(
+				makeCategory({ id: 1, sortOrder: 0 }),
+			);
 			mockTodoCategoryDb.aggregate.mockResolvedValue({
 				_max: { sortOrder: 2 },
 			});
 			mockTodoCategoryDb.updateMany.mockResolvedValue({ count: 2 });
-			mockTodoCategoryDb.update.mockResolvedValue({
-				...category1,
-				sortOrder: 2,
-			});
+			mockTodoCategoryDb.update.mockResolvedValue(
+				makeCategory({ id: 1, sortOrder: 2 }),
+			);
 
-			// When - 카테고리 1을 맨 뒤로 이동
-			const result = await service.reorder({
-				userId: mockUserId,
+			const result = await facade.reorder({
+				userId,
 				categoryId: 1,
 				position: "after",
 			});
 
-			// Then - sortOrder가 2로 변경됨
 			expect(result.sortOrder).toBe(2);
 		});
 
-		it("카테고리를 맨 앞으로 이동한다", async () => {
-			// Given - 맨 앞으로 이동할 카테고리 준비
-			const category3 = createMockCategory({ id: 3, sortOrder: 2 });
-			mockTodoCategoryDb.findFirst.mockResolvedValue(category3);
-			mockTodoCategoryDb.updateMany.mockResolvedValue({ count: 2 });
-			mockTodoCategoryDb.update.mockResolvedValue({
-				...category3,
-				sortOrder: 0,
-			});
+		it("자기 자신 대상이면 변경 없이 반환한다", async () => {
+			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 
-			// When - 카테고리 3을 맨 앞으로 이동
-			const result = await service.reorder({
-				userId: mockUserId,
-				categoryId: 3,
+			const result = await facade.reorder({
+				userId,
+				categoryId,
+				targetCategoryId: categoryId,
 				position: "before",
 			});
 
-			// Then - sortOrder가 0으로 변경됨
-			expect(result.sortOrder).toBe(0);
-		});
-
-		it("자기 자신을 타겟으로 지정하면 변경 없이 반환한다", async () => {
-			// Given - 자기 자신을 타겟으로 지정
-			const category = createMockCategory();
-			mockTodoCategoryDb.findFirst
-				.mockResolvedValueOnce(category)
-				.mockResolvedValueOnce(category);
-
-			// When - 자기 자신 앞으로 이동 시도
-			const result = await service.reorder({
-				userId: mockUserId,
-				categoryId: mockCategoryId,
-				targetCategoryId: mockCategoryId,
-				position: "before",
-			});
-
-			// Then - 변경 없이 반환
-			expect(result).toEqual(category);
+			expect(result.id).toBe(categoryId);
 			expect(mockTodoCategoryDb.update).not.toHaveBeenCalled();
 		});
 
-		it("존재하지 않는 카테고리 이동 시 BusinessException을 던진다", async () => {
-			// Given - 존재하지 않는 카테고리
+		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
 			await expect(
-				service.reorder({
-					userId: mockUserId,
-					categoryId: 999,
-					position: "before",
-				}),
-			).rejects.toThrow(BusinessException);
+				facade.reorder({ userId, categoryId: 999, position: "before" }),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
-	describe("validateOwnership 통합 테스트", () => {
-		it("소유권을 확인하고 카테고리를 반환한다", async () => {
-			// Given - 소유권 확인할 카테고리 준비
-			const mockCategory = createMockCategory();
-			mockTodoCategoryDb.findFirst.mockResolvedValue(mockCategory);
-
-			// When - 소유권 확인
-			const result = await service.validateOwnership(
-				mockCategoryId,
-				mockUserId,
-			);
-
-			// Then - 카테고리 반환
-			expect(result).toEqual(mockCategory);
+	describe("소유권 검증 (크로스모듈)", () => {
+		it("소유하면 통과한다", async () => {
+			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
+			await expect(
+				facade.validateOwnership(categoryId, userId),
+			).resolves.toBeUndefined();
 		});
 
-		it("소유하지 않은 카테고리 확인 시 BusinessException을 던진다", async () => {
-			// Given - 다른 사용자의 카테고리
+		it("미소유면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
 			await expect(
-				service.validateOwnership(mockCategoryId, "other-user"),
-			).rejects.toThrow(BusinessException);
+				facade.validateOwnership(categoryId, "other-user"),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
-	describe("에러 핸들링 통합 테스트", () => {
-		it("Repository 에러가 적절하게 전파된다", async () => {
-			// Given - DB 연결 실패 시뮬레이션
+	describe("에러 전파", () => {
+		it("Repository 비-P2002 에러는 그대로 전파된다", async () => {
+			mockTodoCategoryDb.count.mockResolvedValue(1);
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
 			mockTodoCategoryDb.aggregate.mockResolvedValue({
 				_max: { sortOrder: 0 },
@@ -591,67 +416,22 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 				new Error("Database connection failed"),
 			);
 
-			// When & Then - 에러 전파 검증
 			await expect(
-				service.create({
-					userId: mockUserId,
-					name: "테스트",
-					color: "#FF0000",
-				}),
+				facade.create({ userId, name: "테스트", color: "#FF0000" }),
 			).rejects.toThrow("Database connection failed");
 		});
 
-		it("BusinessException이 적절하게 던져진다", async () => {
-			// Given - 존재하지 않는 카테고리
+		it("findById ApplicationException의 errorCode는 TODO_CATEGORY 계열이다", async () => {
 			mockTodoCategoryDb.findUnique.mockResolvedValue(null);
-
-			// When & Then - BusinessException 검증
 			try {
-				await service.findById(999, mockUserId);
+				await facade.findById(999, userId);
+				throw new Error("should have thrown");
 			} catch (error) {
-				expect(error).toBeInstanceOf(BusinessException);
-				expect((error as BusinessException).errorCode).toContain(
+				expect(error).toBeInstanceOf(ApplicationException);
+				expect((error as ApplicationException).errorCode).toContain(
 					"TODO_CATEGORY",
 				);
 			}
-		});
-	});
-
-	describe("트랜잭션 통합 테스트", () => {
-		it("delete에서 트랜잭션이 올바르게 사용된다", async () => {
-			// Given - 삭제할 카테고리 준비
-			const mockCategory = createMockCategory();
-			mockTodoCategoryDb.findFirst.mockResolvedValue(mockCategory);
-			mockTodoCategoryDb.count.mockResolvedValue(2);
-			mockTodoDb.count.mockResolvedValue(0);
-			mockTodoCategoryDb.delete.mockResolvedValue(mockCategory);
-
-			// When - 카테고리 삭제
-			await service.delete({
-				userId: mockUserId,
-				categoryId: mockCategoryId,
-			});
-
-			// Then - 트랜잭션이 사용됨
-			expect(mockDatabaseService.$transaction).toHaveBeenCalled();
-		});
-
-		it("reorder에서 트랜잭션이 올바르게 사용된다", async () => {
-			// Given - 재정렬할 카테고리 준비
-			const mockCategory = createMockCategory();
-			mockTodoCategoryDb.findFirst.mockResolvedValue(mockCategory);
-			mockTodoCategoryDb.updateMany.mockResolvedValue({ count: 0 });
-			mockTodoCategoryDb.update.mockResolvedValue(mockCategory);
-
-			// When - 카테고리 재정렬
-			await service.reorder({
-				userId: mockUserId,
-				categoryId: mockCategoryId,
-				position: "before",
-			});
-
-			// Then - 트랜잭션이 사용됨
-			expect(mockDatabaseService.$transaction).toHaveBeenCalled();
 		});
 	});
 });

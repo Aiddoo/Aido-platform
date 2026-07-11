@@ -1,4 +1,4 @@
-import type { TodoReadRepositoryPort } from "@/modules/todo/application/ports/todo-read.repository.port";
+import type { TodoReadRepositoryPort } from "@/todo/application/ports/todo-read.repository.port";
 
 /**
  * TODO_READ_REPOSITORY(읽기) 포트 mock 팩토리

@@ -63,10 +63,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { [Feature]Builder } from "@test/builders";
-import { DatabaseService } from "@/database/database.service";
-import { [Feature]Repository } from "@/modules/{name}/{name}.repository";
-import { [Feature]Service } from "@/modules/{name}/{name}.service";
-import { [Feature]QueueService } from "@/modules/{name}/queue/{name}-queue.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { [Feature]Repository } from "@/{name}/{name}.repository";
+import { [Feature]Service } from "@/{name}/{name}.service";
+import { [Feature]QueueService } from "@/{name}/queue/{name}-queue.service";
 
 describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
@@ -189,8 +189,8 @@ const mockDb = createMockDatabaseService({
 
 ```typescript
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { DatabaseService } from "@/database/database.service";
-import { {Feature}Service } from "@/modules/{feature}/services/{feature}.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { {Feature}Service } from "@/{feature}/services/{feature}.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";

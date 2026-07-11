@@ -15,11 +15,18 @@ interface MockExecutionContextResult {
  *
  * // user 포함 (admin.guard, ai-usage.guard)
  * const { context, request } = createMockExecutionContext({ user: mockUser });
+ *
+ * // headers 포함 (webhook-signature.guard)
+ * const { context } = createMockExecutionContext({ headers: { authorization: "Bearer x" } });
  */
 export function createMockExecutionContext(options?: {
 	user?: CurrentUserPayload;
+	headers?: Record<string, string>;
 }): MockExecutionContextResult {
 	const request: Record<string, unknown> = { user: options?.user };
+	if (options?.headers !== undefined) {
+		request.headers = options.headers;
+	}
 
 	const context = {
 		switchToHttp: () => ({

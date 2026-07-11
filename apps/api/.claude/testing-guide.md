@@ -53,40 +53,42 @@
 
 ```
 apps/api/
-├── src/modules/{name}/
-│   ├── {name}.service.spec.ts          # Unit 테스트 (레거시 Service)
+├── src/{name}/
 │   ├── domain/
-│   │   ├── entities/{name}.entity.spec.ts       # 애그리게잇 Unit (CQRS 모듈)
+│   │   ├── entities/{name}.entity.spec.ts       # 애그리게잇 Unit (클린아키 모듈)
 │   │   └── value-objects/*.vo.spec.ts           # VO 불변식 Unit
 │   └── application/
-│       ├── use-cases/<kebab>/<kebab>.handler.spec.ts  # 커맨드 핸들러 Unit
-│       ├── queries/handlers/*.handler.spec.ts          # 쿼리 핸들러 Unit
-│       └── events/*.handler.spec.ts                    # 이벤트 핸들러 Unit
+│       ├── use-cases/<kebab>/<kebab>.use-case.spec.ts  # 쓰기 use-case Unit
+│       ├── queries/<kebab>/<kebab>.use-case.spec.ts    # 읽기 use-case Unit
+│       └── events/*.handler.spec.ts                    # @OnEvent 구독자 Unit
 └── test/
     ├── e2e/{name}.e2e-spec.ts          # E2E 테스트
     ├── integration/{name}.integration-spec.ts  # Integration 테스트
     ├── builders/                        # 테스트 데이터 빌더 (17+)
     ├── mocks/                           # FakeService + Mock 팩토리
-    │   └── ports/                       # Symbol 토큰 포트 mock 팩토리 (CQRS)
+    │   └── ports/                       # Symbol 토큰 포트 mock 팩토리 (클린아키)
     └── setup/                           # TestDatabase, suppressLogger 등
 ```
 
-### 3.1 CQRS 핸들러 spec 패턴 (클린아키텍처 모듈)
+### 3.1 Use-case spec 패턴 (클린아키텍처 모듈)
 
-`@suites/unit`은 Symbol 토큰 포트를 auto-mock하지 못하므로 `test/mocks/ports/`의 수제 팩토리를 사용한다:
+`@suites/unit`은 Symbol 토큰 포트를 auto-mock하지 못하므로 `test/mocks/ports/`의 수제 팩토리를 사용한다 (실제 예: `update-todo.use-case.spec.ts`):
 
 ```ts
-const { unit, unitRef } = await TestBed.solitary(UpdateTodoHandler)
+const { unit, unitRef } = await TestBed.solitary(UpdateTodoUseCase)
 	.mock<TodoRepositoryPort>(TODO_REPOSITORY)
 	.impl(() => createTodoRepositoryMock())
-	.mock(TRANSACTION_MANAGER)
-	.impl(() => createTransactionManagerMock())   // run(fn) 즉시 실행 패스스루 (wrapTransaction 기반)
+	.mock(UNIT_OF_WORK)
+	.impl(() => createUnitOfWorkMock())   // run(work) 즉시 실행 패스스루
+	.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+	.impl(() => ({ publishAll: jest.fn() }))
 	.compile();
-eventBus = unitRef.get(EventBus);   // 클래스 의존성이라 auto-mock됨
+useCase = unit;
+eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 ```
 
-- 이벤트 발행 검증: **`expect(eventBus.publishAll).toHaveBeenCalledWith([new TodoDeletedEvent(1, "user-123")])`** — 이벤트 인스턴스 배열로 정확 단언. 애그리게잇 내부(`raise`)는 protected라 스파이하지 않는다
-- TX mock: `createTransactionManagerMock()`이 `wrapTransaction()`으로 불투명 TransactionContext를 만들어 콜백에 전달 — 캐스트 없이 타입 세이프
+- 이벤트 발행 검증: **`expect(eventPublisher.publishAll).toHaveBeenCalledWith([new TodoDeletedEvent(1, "user-123")])`** — 이벤트 인스턴스 배열로 정확 단언. 애그리게잇 내부(`raise`)는 protected라 스파이하지 않는다
+- TX mock: `createUnitOfWorkMock()`은 `run(work)`을 즉시 실행 패스스루로 구현 — 콜백이 무인자(CLS 기반)라 tx 핸들 조립이 필요 없다
 - 포트 mock 팩토리는 포트 인터페이스 반환 타입 강제 → 포트 확장 시 누락이 컴파일 에러로 드러남
 - 애그리게잇 픽스처는 `Todo.reconstitute({...})` — schedule은 `TodoSchedule.reconstitute`, 항목은 `TodoItem.reconstitute`로 조립. 응답 read model은 `TodoBuilder` + 응답 매퍼
 - 자식 엔티티·VO·도메인 정책은 프레임워크 없이 순수 단위 테스트 (예: `todo-item.entity.spec.ts`, `completion-policy.spec.ts`)
@@ -185,8 +187,8 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 
 | 유형 | 예제 파일 |
 |------|----------|
-| **Unit (모범 사례)** | `src/modules/cheer/cheer.service.spec.ts` — GWT, Builder 모두 적용 |
-| Unit (Suites) | `src/modules/notification/notification.service.spec.ts` |
+| **Unit (모범 사례)** | `src/cheer/cheer.service.spec.ts` — GWT, Builder 모두 적용 |
+| Unit (Suites) | `src/notification/notification.service.spec.ts` |
 | Integration (Mock DB) | `test/integration/cheer.integration-spec.ts` |
 | Integration (실제 DB) | `test/integration/auth-password-setup.integration-spec.ts` |
 | E2E | `test/e2e/todo.e2e-spec.ts` |

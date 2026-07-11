@@ -13,7 +13,7 @@
  */
 
 import request from "supertest";
-import { DatabaseService } from "@/database/database.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("관리자 E2E", () => {

@@ -22,10 +22,10 @@
 
 import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { BusinessException } from "@/common/exception";
-import { DatabaseService } from "@/database/database.service";
-import { AuthService } from "@/modules/auth/services/auth.service";
-import { PasswordManagementService } from "@/modules/auth/services/password-management.service";
+import { AuthService } from "@/auth/application/services/auth.service";
+import { PasswordManagementService } from "@/auth/application/services/password-management.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
@@ -224,7 +224,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			// When & Then
 			await expect(
 				authService.login({ email, password: originalPassword }),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("재설정 후 모든 세션이 무효화된다", async () => {
@@ -304,7 +304,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			// When & Then - resetPassword에서 USER_0613 에러
 			await expect(
 				passwordManagementService.resetPassword(email, code, "NewPassword456!"),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("잘못된 인증 코드로 재설정 시 에러를 던진다", async () => {
@@ -321,7 +321,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 					"000000",
 					"NewPassword456!",
 				),
-			).rejects.toThrow(BusinessException);
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 });

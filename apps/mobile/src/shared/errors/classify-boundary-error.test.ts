@@ -1,6 +1,6 @@
 import { ApiError } from './api-error';
 import { classifyBoundaryError } from './classify-boundary-error';
-import { ServerError, TransientAuthError } from './infra-error';
+import { ServerError } from './infra-error';
 
 describe('classifyBoundaryError', () => {
   it('401 ApiError는 auth-transition으로 분류한다 (인증 상태와 무관 — 순수 함수)', () => {
@@ -22,14 +22,6 @@ describe('classifyBoundaryError', () => {
   it('5xx·기타 인프라 에러는 error로 분류한다', () => {
     // Given
     const error = new ServerError(500);
-
-    // When / Then
-    expect(classifyBoundaryError(error)).toBe('error');
-  });
-
-  it('TransientAuthError는 error로 분류한다 (재시도 소진 후에만 리포트되도록)', () => {
-    // Given — 401이 아니므로 auth-transition으로 삼켜지지 않고, 소진 시 리포트 대상이 된다
-    const error = new TransientAuthError();
 
     // When / Then
     expect(classifyBoundaryError(error)).toBe('error');
