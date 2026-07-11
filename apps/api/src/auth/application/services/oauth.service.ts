@@ -731,9 +731,49 @@ export class OAuthService {
 	 * 복구와 세션 생성이 하나의 트랜잭션으로 묶여,
 	 * 세션 생성 실패 시 복구도 롤백됩니다.
 	 */
+	/**
+	 * 신뢰 Provider 자동 연동: OAuth 계정 생성 + 보안 로그 기록.
+	 *
+	 * 순수 DB write만 수행하므로 호출측이 연 트랜잭션(CLS)에 참여한다.
+	 * 세션 생성·복구와 하나의 트랜잭션으로 원자적으로 묶여 실행된다.
+	 */
+	async #linkOAuthAccount(
+		userId: string,
+		provider: AccountProvider,
+		providerAccountId: string,
+		options: { ip: string; userAgent: string; appleRefreshToken?: string },
+	): Promise<void> {
+		await this.accountRepository.createOAuthAccount({
+			userId,
+			provider,
+			providerAccountId,
+			refreshToken: options.appleRefreshToken,
+		});
+
+		await this.securityLogRepository.create({
+			userId,
+			event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
+			ipAddress: options.ip,
+			userAgent: options.userAgent,
+			metadata: {
+				provider,
+				autoLinked: true,
+				reason: "trusted_provider_verified_email",
+			},
+		});
+	}
+
+	/**
+	 * 탈퇴 계정 복구 + 로그인 세션 생성.
+	 *
+	 * @param onLinkInTransaction 커밋 전(트랜잭션 내부)에 실행할 추가 작업.
+	 *   자동 연동 경로에서 OAuth 계정 연동을 같은 트랜잭션에 참여시켜 복구·세션·연동을
+	 *   원자적으로 처리하기 위해 사용한다. 캐시 무효화는 커밋 후 수행된다.
+	 */
 	async #restoreAndCreateSession(
 		user: { id: string; email: string; deletedAt: Date | null },
 		options: { ip: string; userAgent: string; provider: AccountProvider },
+		onLinkInTransaction?: () => Promise<void>,
 	): Promise<LoginResult> {
 		const userRecord = await this.userRepository.findById(user.id);
 
@@ -757,6 +797,10 @@ export class OAuthService {
 				deviceFingerprint: options.userAgent,
 				securityMetadata: { provider: options.provider },
 			});
+
+			if (onLinkInTransaction) {
+				await onLinkInTransaction();
+			}
 
 			return {
 				userId: user.id,
@@ -908,62 +952,49 @@ export class OAuthService {
 			}
 
 			if (needsRestore) {
-				// 복구 + 연동 + 세션 생성을 원자적 트랜잭션으로 수행
-				const loginResult = await this.#restoreAndCreateSession(existingUser, {
-					ip: options.ip,
-					userAgent: options.userAgent,
-					provider,
-				});
-
-				await this.uow.run(async () => {
-					await this.accountRepository.createOAuthAccount({
-						userId: existingUser.id,
-						provider,
-						providerAccountId,
-						refreshToken: options.appleRefreshToken,
-					});
-
-					await this.securityLogRepository.create({
-						userId: existingUser.id,
-						event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
-						ipAddress: options.ip,
-						userAgent: options.userAgent,
-						metadata: {
+				// 복구 + 연동 + 세션 생성을 하나의 트랜잭션으로 원자적으로 수행한다.
+				// 연동(createOAuthAccount+보안로그)이 실패하면 복구·세션도 함께 롤백되어
+				// "복구·로그인됐지만 계정 미연동"인 불일치 상태가 남지 않는다.
+				// 프로필 캐시 무효화는 커밋 후 수행되도록 #restoreAndCreateSession이 보장한다.
+				const loginResult = await this.#restoreAndCreateSession(
+					existingUser,
+					{ ip: options.ip, userAgent: options.userAgent, provider },
+					() =>
+						this.#linkOAuthAccount(
+							existingUser.id,
 							provider,
-							autoLinked: true,
-							reason: "trusted_provider_verified_email",
-						},
-					});
-				});
+							providerAccountId,
+							{
+								ip: options.ip,
+								userAgent: options.userAgent,
+								appleRefreshToken: options.appleRefreshToken,
+							},
+						),
+				);
 
 				return { ...loginResult, accountRestored: true };
 			}
 
-			await this.uow.run(async () => {
-				await this.accountRepository.createOAuthAccount({
-					userId: existingUser.id,
+			// 연동 + 세션 생성을 하나의 트랜잭션으로 원자적으로 수행한다.
+			// IssueLoginUseCase는 호출측 트랜잭션에 참여하는 순수 DB write이므로
+			// (커밋 후 enqueue/캐시 등 부수효과 없음) 안전하게 한 트랜잭션으로 묶인다.
+			return this.uow.run(async () => {
+				await this.#linkOAuthAccount(
+					existingUser.id,
 					provider,
 					providerAccountId,
-					refreshToken: options.appleRefreshToken,
-				});
-
-				await this.securityLogRepository.create({
-					userId: existingUser.id,
-					event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
-					ipAddress: options.ip,
-					userAgent: options.userAgent,
-					metadata: {
-						provider,
-						autoLinked: true,
-						reason: "trusted_provider_verified_email",
+					{
+						ip: options.ip,
+						userAgent: options.userAgent,
+						appleRefreshToken: options.appleRefreshToken,
 					},
-				});
-			});
+				);
 
-			return this.#createSessionAndTokens(existingUser.id, existingUser.email, {
-				ip: options.ip,
-				userAgent: options.userAgent,
-				provider,
+				return this.#createSessionAndTokens(
+					existingUser.id,
+					existingUser.email,
+					{ ip: options.ip, userAgent: options.userAgent, provider },
+				);
 			});
 		}
 
