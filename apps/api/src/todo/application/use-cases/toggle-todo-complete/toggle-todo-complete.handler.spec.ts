@@ -6,7 +6,6 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -15,7 +14,11 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoToggledEvent } from "../../../domain/events/todo-toggled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -66,7 +69,7 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 	let handler: ToggleTodoCompleteHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-	let eventBus: Mocked<EventBus>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(ToggleTodoCompleteHandler)
@@ -76,13 +79,17 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			.impl(() => createTodoReadRepositoryMock())
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
 
 		handler = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-		eventBus = unitRef.get(EventBus);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
 	it("대상 할 일이 없으면 ApplicationException(TODO_0801)을 던진다", async () => {
@@ -114,7 +121,7 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			true,
 			expect.any(Date),
 		);
-		expect(eventBus.publishAll).toHaveBeenCalledWith([
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),
 		]);
 		expect(result.completed).toBe(true);
@@ -132,7 +139,7 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 
 		// Then - 영속화 생략 + 빈 이벤트 배열 발행(부수효과 없음), 응답 계약(200)은 유지
 		expect(todoRepository.updateCompletion).not.toHaveBeenCalled();
-		expect(eventBus.publishAll).toHaveBeenCalledWith([]);
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([]);
 		expect(result.completed).toBe(true);
 	});
 });

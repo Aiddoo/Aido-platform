@@ -1,6 +1,7 @@
-import { Inject, Logger } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
 import { TodoCreatedEvent } from "../../domain/events/todo-created.event";
+import { TODO_EVENTS } from "../../domain/events/todo-event-names";
 import {
 	TODO_REMINDER,
 	type TodoReminderPort,
@@ -11,8 +12,8 @@ import {
  *
  * scheduledTime이 있으면 리마인더를 스케줄링합니다(실패는 로깅만, fire-and-forget).
  */
-@EventsHandler(TodoCreatedEvent)
-export class TodoCreatedHandler implements IEventHandler<TodoCreatedEvent> {
+@Injectable()
+export class TodoCreatedHandler {
 	readonly #logger = new Logger(TodoCreatedHandler.name);
 
 	constructor(
@@ -20,6 +21,7 @@ export class TodoCreatedHandler implements IEventHandler<TodoCreatedEvent> {
 		private readonly todoReminder: TodoReminderPort,
 	) {}
 
+	@OnEvent(TODO_EVENTS.CREATED)
 	handle(event: TodoCreatedEvent): void {
 		if (!event.scheduledTime) {
 			return;

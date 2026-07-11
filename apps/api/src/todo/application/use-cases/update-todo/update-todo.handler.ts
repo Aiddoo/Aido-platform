@@ -1,8 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.entity";
 import {
@@ -47,7 +52,8 @@ export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
-		private readonly eventBus: EventBus,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(command: UpdateTodoCommand): Promise<TodoResponse> {
@@ -109,7 +115,7 @@ export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 		}
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (완료 상태면 이벤트 핸들러가 리마인더 취소)
-		this.eventBus.publishAll(events);
+		this.eventPublisher.publishAll(events);
 
 		// 4. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

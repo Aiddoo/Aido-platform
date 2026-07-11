@@ -1,5 +1,6 @@
-import { Inject, Logger } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
+import { TODO_EVENTS } from "../../domain/events/todo-event-names";
 import { TodoUpdatedEvent } from "../../domain/events/todo-updated.event";
 import {
 	TODO_REMINDER,
@@ -14,8 +15,8 @@ import {
  * (그 부수효과는 완료 토글 전용 — TodoToggledEvent가 담당, 레거시 동작 보존).
  * 실패는 로깅만 하고 삼킵니다(fire-and-forget).
  */
-@EventsHandler(TodoUpdatedEvent)
-export class TodoUpdatedHandler implements IEventHandler<TodoUpdatedEvent> {
+@Injectable()
+export class TodoUpdatedHandler {
 	readonly #logger = new Logger(TodoUpdatedHandler.name);
 
 	constructor(
@@ -23,6 +24,7 @@ export class TodoUpdatedHandler implements IEventHandler<TodoUpdatedEvent> {
 		private readonly todoReminder: TodoReminderPort,
 	) {}
 
+	@OnEvent(TODO_EVENTS.UPDATED)
 	handle(event: TodoUpdatedEvent): void {
 		if (event.completed !== true) {
 			return;

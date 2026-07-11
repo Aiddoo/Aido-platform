@@ -2,8 +2,13 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import { Todo } from "../../../domain/entities/todo.entity";
 import {
@@ -43,7 +48,8 @@ export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
-		private readonly eventBus: EventBus,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(command: CreateTodoCommand): Promise<TodoResponse> {
@@ -107,7 +113,7 @@ export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 
 		// 생성 이벤트 발행(TX 커밋 후) → 리마인더 스케줄링은 이벤트 핸들러가 처리
 		created.markCreated();
-		this.eventBus.publishAll(created.pullDomainEvents());
+		this.eventPublisher.publishAll(created.pullDomainEvents());
 
 		// 응답 read model 조회 (카테고리·itemStats 포함)
 		const response = await this.todoReadRepository.findByIdAndUserId(

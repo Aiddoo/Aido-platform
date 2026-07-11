@@ -7,7 +7,6 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -18,7 +17,11 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -77,7 +80,7 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 	let categoryOwnership: Mocked<CategoryOwnershipPort>;
 	let todoCache: Mocked<TodoCachePort>;
-	let eventBus: Mocked<EventBus>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(UpdateTodoHandler)
@@ -91,6 +94,8 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 			.impl(() => createCategoryOwnershipMock())
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
 
 		handler = unit;
@@ -99,7 +104,9 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventBus = unitRef.get(EventBus);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
 	it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {
@@ -149,7 +156,7 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 			completed: true,
 			completedAt: expect.any(Date),
 		});
-		expect(eventBus.publishAll).toHaveBeenCalledWith([
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoUpdatedEvent(1, "user-123", true),
 		]);
 	});

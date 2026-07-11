@@ -2,8 +2,13 @@ import { randomUUID } from "node:crypto";
 import { ErrorCode } from "@aido/errors";
 import { RECURRING_TODO_LIMITS, TODO_LIMITS } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
 import { parseLocalDateTime } from "@/shared/domain/date/utils/timezone";
@@ -55,7 +60,8 @@ export class CreateRecurringTodosHandler
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
-		private readonly eventBus: EventBus,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(
@@ -149,7 +155,7 @@ export class CreateRecurringTodosHandler
 			todo.markCreated();
 			return todo.pullDomainEvents();
 		});
-		this.eventBus.publishAll(domainEvents);
+		this.eventPublisher.publishAll(domainEvents);
 
 		// 7. 그룹 재조회 (sortOrder asc — 생성 순서와 동일)
 		const todos = await this.todoReadRepository.findManyByRecurrenceGroupId(

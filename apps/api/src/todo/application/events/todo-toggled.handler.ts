@@ -1,6 +1,7 @@
-import { Inject, Logger } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { TODO_EVENTS } from "../../domain/events/todo-event-names";
 import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
 import {
 	isAllCompletedToday,
@@ -30,8 +31,8 @@ import {
  * 모든 부수효과는 fire-and-forget이며 실패는 로깅만 합니다(기존 동작 보존).
  * 크로스모듈 의존은 포트를 통해서만, 판단 규칙은 도메인 정책(completion-policy)을 통해 접근합니다.
  */
-@EventsHandler(TodoToggledEvent)
-export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
+@Injectable()
+export class TodoToggledHandler {
 	readonly #logger = new Logger(TodoToggledHandler.name);
 
 	constructor(
@@ -47,6 +48,7 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 		private readonly todoReminder: TodoReminderPort,
 	) {}
 
+	@OnEvent(TODO_EVENTS.TOGGLED)
 	handle(event: TodoToggledEvent): void {
 		const { todoId, userId, completed, timezone } = event;
 

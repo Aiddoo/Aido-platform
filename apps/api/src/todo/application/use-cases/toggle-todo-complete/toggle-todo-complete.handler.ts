@@ -1,8 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import {
 	TODO_REPOSITORY,
@@ -34,7 +39,8 @@ export class ToggleTodoCompleteHandler
 		private readonly todoReadRepository: TodoReadRepositoryPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
-		private readonly eventBus: EventBus,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(command: ToggleTodoCompleteCommand): Promise<TodoResponse> {
@@ -66,7 +72,7 @@ export class ToggleTodoCompleteHandler
 		});
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (부수효과는 이벤트 핸들러가 처리)
-		this.eventBus.publishAll(events);
+		this.eventPublisher.publishAll(events);
 
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,

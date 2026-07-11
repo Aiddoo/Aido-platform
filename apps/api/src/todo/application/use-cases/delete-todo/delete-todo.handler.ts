@@ -1,7 +1,12 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import {
 	TODO_REPOSITORY,
@@ -27,7 +32,8 @@ export class DeleteTodoHandler implements ICommandHandler<DeleteTodoCommand> {
 		private readonly todoCache: TodoCachePort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
-		private readonly eventBus: EventBus,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(command: DeleteTodoCommand): Promise<void> {
@@ -47,7 +53,7 @@ export class DeleteTodoHandler implements ICommandHandler<DeleteTodoCommand> {
 		});
 
 		// 삭제(TX 커밋) 완료 후 이벤트 발행 (이벤트 핸들러가 리마인더 취소)
-		this.eventBus.publishAll(events);
+		this.eventPublisher.publishAll(events);
 
 		// 캐시 무효화 (todoCount 변경)
 		await this.todoCache.invalidateTodoCategories(userId);

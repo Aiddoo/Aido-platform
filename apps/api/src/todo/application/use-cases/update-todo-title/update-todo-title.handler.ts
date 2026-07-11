@@ -1,8 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import {
 	TODO_REPOSITORY,
@@ -33,7 +38,8 @@ export class UpdateTodoTitleHandler
 		private readonly todoReadRepository: TodoReadRepositoryPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
-		private readonly eventBus: EventBus,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(command: UpdateTodoTitleCommand): Promise<TodoResponse> {
@@ -54,7 +60,7 @@ export class UpdateTodoTitleHandler
 		this.#logger.log(`Todo title updated: ${id} for user: ${userId}`);
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (미완료 상태면 부수효과 없음)
-		this.eventBus.publishAll(events);
+		this.eventPublisher.publishAll(events);
 
 		// 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

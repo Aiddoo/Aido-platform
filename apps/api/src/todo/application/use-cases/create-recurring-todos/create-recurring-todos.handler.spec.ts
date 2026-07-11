@@ -7,7 +7,6 @@
 
 import { ErrorCode } from "@aido/errors";
 import { TODO_LIMITS } from "@aido/validators";
-import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import {
@@ -17,7 +16,11 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -78,7 +81,7 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 	let categoryOwnership: Mocked<CategoryOwnershipPort>;
 	let todoCache: Mocked<TodoCachePort>;
-	let eventBus: Mocked<EventBus>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -94,6 +97,8 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 			.impl(() => createCategoryOwnershipMock())
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
 
 		handler = unit;
@@ -102,7 +107,9 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventBus = unitRef.get(EventBus);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
 	it("요일 매칭 날짜만큼 일괄 생성하고 인스턴스별 TodoCreatedEvent를 발행한 뒤 캐시를 무효화한다", async () => {
@@ -129,8 +136,8 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 		expect(items?.[2]).toMatchObject({ sortOrder: 2 });
 		expect(typeof groupId).toBe("string");
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
-		expect(eventBus.publishAll).toHaveBeenCalledTimes(1);
-		expect(eventBus.publishAll).toHaveBeenCalledWith([
+		expect(eventPublisher.publishAll).toHaveBeenCalledTimes(1);
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoCreatedEvent(1, "user-123", null),
 			new TodoCreatedEvent(2, "user-123", null),
 			new TodoCreatedEvent(3, "user-123", null),

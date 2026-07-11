@@ -7,7 +7,6 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -16,7 +15,11 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoRescheduledEvent } from "../../../domain/events/todo-rescheduled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -83,7 +86,7 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 	let handler: UpdateTodoScheduleHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-	let eventBus: Mocked<EventBus>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(UpdateTodoScheduleHandler)
@@ -93,13 +96,17 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 			.impl(() => createTodoReadRepositoryMock())
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
 
 		handler = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-		eventBus = unitRef.get(EventBus);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
 	it("시간 일정으로 변경하면 영속화하고 scheduledTime을 담은 이벤트를 발행한다", async () => {
@@ -117,7 +124,7 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 			1,
 			timedSchedule,
 		);
-		expect(eventBus.publishAll).toHaveBeenCalledWith([
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoRescheduledEvent(1, "user-123", timedSchedule.scheduledTime),
 		]);
 		expect(result.id).toBe(1);
@@ -138,7 +145,7 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 			1,
 			allDaySchedule,
 		);
-		expect(eventBus.publishAll).toHaveBeenCalledWith([
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoRescheduledEvent(1, "user-123", null),
 		]);
 	});

@@ -5,7 +5,6 @@
  */
 
 import { ErrorCode } from "@aido/errors";
-import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import {
@@ -13,7 +12,11 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoDeletedEvent } from "../../../domain/events/todo-deleted.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -53,7 +56,7 @@ describe("DeleteTodoHandler — 할 일 삭제 핸들러", () => {
 	let handler: DeleteTodoHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoCache: Mocked<TodoCachePort>;
-	let eventBus: Mocked<EventBus>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(DeleteTodoHandler)
@@ -63,12 +66,16 @@ describe("DeleteTodoHandler — 할 일 삭제 핸들러", () => {
 			.impl(() => createTodoCacheMock())
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
 
 		handler = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventBus = unitRef.get(EventBus);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
 	it("삭제 후 TodoDeletedEvent를 발행하고 캐시를 무효화한다", async () => {
@@ -80,7 +87,7 @@ describe("DeleteTodoHandler — 할 일 삭제 핸들러", () => {
 
 		// Then - 삭제 → 이벤트(리마인더 취소는 이벤트 핸들러) → 캐시
 		expect(todoRepository.delete).toHaveBeenCalledWith(1);
-		expect(eventBus.publishAll).toHaveBeenCalledWith([
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoDeletedEvent(1, "user-123"),
 		]);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");

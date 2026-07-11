@@ -6,7 +6,6 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -15,7 +14,11 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -65,7 +68,7 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 	let handler: UpdateTodoTitleHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-	let eventBus: Mocked<EventBus>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(UpdateTodoTitleHandler)
@@ -75,13 +78,17 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 			.impl(() => createTodoReadRepositoryMock())
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
 
 		handler = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-		eventBus = unitRef.get(EventBus);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
 	it("애그리게잇 상태로 제목을 영속화하고 TodoUpdatedEvent를 발행한 뒤 응답을 재조회한다", async () => {
@@ -96,7 +103,7 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 
 		// Then - 영속화 + 이벤트(전이 후 완료 상태 사실 → completed=false)
 		expect(todoRepository.updateTitle).toHaveBeenCalledWith(1, "새 제목");
-		expect(eventBus.publishAll).toHaveBeenCalledWith([
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoUpdatedEvent(1, "user-123", false),
 		]);
 		expect(result.title).toBe("새 제목");
@@ -113,7 +120,7 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 			),
 		).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 		expect(todoRepository.updateTitle).not.toHaveBeenCalled();
-		expect(eventBus.publishAll).not.toHaveBeenCalled();
+		expect(eventPublisher.publishAll).not.toHaveBeenCalled();
 	});
 
 	it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {

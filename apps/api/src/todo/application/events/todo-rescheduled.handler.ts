@@ -1,5 +1,6 @@
-import { Inject, Logger } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
+import { TODO_EVENTS } from "../../domain/events/todo-event-names";
 import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event";
 import {
 	TODO_REMINDER,
@@ -12,10 +13,8 @@ import {
  * scheduledTime이 있으면 리마인더를 재스케줄, 없으면 취소합니다.
  * 실패는 로깅만 하고 삼킵니다(fire-and-forget — 레거시 동작 보존).
  */
-@EventsHandler(TodoRescheduledEvent)
-export class TodoRescheduledHandler
-	implements IEventHandler<TodoRescheduledEvent>
-{
+@Injectable()
+export class TodoRescheduledHandler {
 	readonly #logger = new Logger(TodoRescheduledHandler.name);
 
 	constructor(
@@ -23,6 +22,7 @@ export class TodoRescheduledHandler
 		private readonly todoReminder: TodoReminderPort,
 	) {}
 
+	@OnEvent(TODO_EVENTS.RESCHEDULED)
 	handle(event: TodoRescheduledEvent): void {
 		try {
 			if (event.scheduledTime) {
