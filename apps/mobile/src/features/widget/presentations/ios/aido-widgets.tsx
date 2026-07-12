@@ -1,10 +1,11 @@
-import { Gauge, HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { Gauge, HStack, RoundedRectangle, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   font,
   foregroundColor,
   frame,
   gaugeStyle,
   lineLimit,
+  opacity,
   padding,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
@@ -16,14 +17,17 @@ import type { IosWidgetProps } from './ios-widget-props';
  * 오늘 할 일 위젯 — 단일 레이아웃이 3개 패밀리를 담당한다.
  *
  * - systemSmall: 컴팩트 진행 요약 (카운트 히어로 + 선형 바 + 스트릭)
- * - systemMedium: 헤더 + 상위 3개 할 일 (카테고리 컬러 체크)
+ * - systemMedium: 헤더 + 상위 3개 할 일 (카테고리 컬러 체크박스)
  * - systemLarge: 헤더 + 상위 8개 할 일
  *
  * 'widget' 디렉티브 함수는 빌드 타임에 소스 문자열로 추출되어 위젯 확장의
  * 격리된 런타임에서 실행된다 — 모듈 스코프(임포트 값·상수·헬퍼) 참조 금지,
  * 팔레트는 widget-colors.constant.ts와 동일 값의 인라인 복사본이다.
- * 프리미티브는 시뮬레이터에서 렌더가 검증된 것만 사용한다
- * (Text/HStack/VStack/Spacer/선형 Gauge — 링 중앙 라벨·strikethrough는 미렌더 확인됨).
+ *
+ * ⚠️ 네이티브 렌더러(DynamicView.swift)는 children 배열에서 dict가 아닌 항목을
+ * 버리므로 `{array.map(...)}`(중첩 배열 자식)은 조용히 사라진다. 리스트 행은
+ * 반드시 고정 슬롯(`{renderRow(todos[i])}`)으로 펼쳐 단일 노드/null만 자식이 되게 한다.
+ * 같은 이유로 JSX를 props로 받는 API(Gauge currentValueLabel 등)도 렌더되지 않는다.
  */
 function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironment) {
   'widget';
@@ -87,6 +91,42 @@ function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironme
   const visibleTodos = props.topTodos.slice(0, maxRows);
   const overflowCount = props.totalTodos - visibleTodos.length;
 
+  // 카테고리 컬러 체크박스(앱 홈과 동일한 시각 언어): 완료 = 채움+✓, 미완료 = 연한 틴트
+  const renderRow = (todo?: { title: string; completed: boolean; color: string }) => {
+    if (!todo) {
+      return null;
+    }
+    return (
+      <HStack spacing={10}>
+        <ZStack modifiers={[frame({ width: 18, height: 18 })]}>
+          <RoundedRectangle
+            cornerRadius={5}
+            modifiers={[
+              foregroundColor(todo.color),
+              frame({ width: 18, height: 18 }),
+              opacity(todo.completed ? 1 : 0.25),
+            ]}
+          />
+          {todo.completed ? (
+            <Text modifiers={[font({ size: 11, weight: 'bold' }), foregroundColor('#FFFFFF')]}>
+              ✓
+            </Text>
+          ) : null}
+        </ZStack>
+        <Text
+          modifiers={[
+            font({ size: 15 }),
+            foregroundColor(todo.completed ? palette.muted : palette.foreground),
+            lineLimit(1),
+          ]}
+        >
+          {todo.title}
+        </Text>
+        <Spacer />
+      </HStack>
+    );
+  };
+
   return (
     <VStack alignment="leading" spacing={7} modifiers={[padding({ all: 16 })]}>
       <HStack>
@@ -111,23 +151,14 @@ function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironme
         modifiers={[gaugeStyle('linearCapacity'), tint(palette.brand), frame({ height: 4 })]}
       />
 
-      {visibleTodos.map((todo, index) => (
-        <HStack key={String(index)} spacing={9}>
-          <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundColor(todo.color)]}>
-            {todo.completed ? '✓' : '○'}
-          </Text>
-          <Text
-            modifiers={[
-              font({ size: 15 }),
-              foregroundColor(todo.completed ? palette.muted : palette.foreground),
-              lineLimit(1),
-            ]}
-          >
-            {todo.title}
-          </Text>
-          <Spacer />
-        </HStack>
-      ))}
+      {renderRow(visibleTodos[0])}
+      {renderRow(visibleTodos[1])}
+      {renderRow(visibleTodos[2])}
+      {renderRow(visibleTodos[3])}
+      {renderRow(visibleTodos[4])}
+      {renderRow(visibleTodos[5])}
+      {renderRow(visibleTodos[6])}
+      {renderRow(visibleTodos[7])}
 
       {overflowCount > 0 && props.moreLabel !== '' ? (
         <Text modifiers={[font({ size: 11 }), foregroundColor(palette.muted)]}>

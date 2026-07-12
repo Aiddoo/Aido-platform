@@ -366,6 +366,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-widgets',
         {
+          // 명시하지 않으면 prebuild가 fallback 경고를 낸다 — 환경별 번들 id 추종
+          bundleIdentifier: `${envConfig.bundleIdentifier}.ExpoWidgetsTarget`,
           groupIdentifier: appGroupIdentifier,
           widgets: [
             {
