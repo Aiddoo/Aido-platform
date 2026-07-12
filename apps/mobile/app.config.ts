@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -126,6 +126,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   const envConfig = getEnvironmentConfig(env);
 
+  // 홈 위젯 데이터 공유용 App Group — 번들 id를 따라 환경별로 분리된다
+  // (development는 프로덕션 번들 id를 공유 중이므로 그룹도 공유 — 라인 87 TODO 복원 시 함께 분리됨)
+  const appGroupIdentifier = `group.${envConfig.bundleIdentifier}`;
+
   return {
     ...config,
 
@@ -183,6 +187,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       entitlements: {
         'aps-environment': isProduction ? 'production' : 'development',
+        // 홈 위젯(expo-widgets)과 스냅샷 공유 — 위젯 확장 타깃의 그룹은 플러그인이 설정
+        'com.apple.security.application-groups': [appGroupIdentifier],
       },
     },
 
@@ -352,6 +358,66 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           black_cat: { image: './assets/premium-app-icons/black-cat.png' },
           white_cat: { image: './assets/premium-app-icons/white-cat.png' },
           siamese: { image: './assets/premium-app-icons/siamese.png' },
+        },
+      ],
+
+      // 홈 위젯 — iOS(WidgetKit). 위젯은 앱이 기록한 스냅샷의 순수 렌더러(네트워크·토큰 없음)
+      [
+        'expo-widgets',
+        {
+          groupIdentifier: appGroupIdentifier,
+          widgets: [
+            {
+              name: 'AidoProgress',
+              displayName: '오늘의 달성',
+              description: '오늘 할 일 진행률과 스트릭을 한눈에 확인해요',
+              supportedFamilies: ['systemSmall', 'systemMedium'],
+            },
+            {
+              name: 'AidoTodayList',
+              displayName: '오늘 할 일',
+              description: '오늘의 할 일 목록을 홈 화면에서 바로 확인해요',
+              supportedFamilies: ['systemMedium', 'systemLarge'],
+            },
+          ],
+        },
+      ],
+
+      // 홈 위젯 — Android(RemoteViews). 렌더는 headless task handler가 스냅샷을 읽어 수행
+      [
+        'react-native-android-widget',
+        {
+          fonts: [
+            './assets/fonts/WantedSans-Regular.ttf',
+            './assets/fonts/WantedSans-Medium.ttf',
+            './assets/fonts/WantedSans-SemiBold.ttf',
+            './assets/fonts/WantedSans-Bold.ttf',
+          ],
+          widgets: [
+            {
+              name: 'AidoProgress',
+              label: '오늘의 달성',
+              description: '오늘 할 일 진행률과 스트릭을 한눈에 확인해요',
+              minWidth: '110dp',
+              minHeight: '110dp',
+              targetCellWidth: 2,
+              targetCellHeight: 2,
+              resizeMode: 'horizontal',
+              // 자정 롤오버 안전망: 시스템 주기 갱신(최소 30분)으로 stale 스냅샷을 새 하루 상태로 전환
+              updatePeriodMillis: 1_800_000,
+            },
+            {
+              name: 'AidoTodayList',
+              label: '오늘 할 일',
+              description: '오늘의 할 일 목록을 홈 화면에서 바로 확인해요',
+              minWidth: '250dp',
+              minHeight: '110dp',
+              targetCellWidth: 4,
+              targetCellHeight: 2,
+              resizeMode: 'vertical',
+              updatePeriodMillis: 1_800_000,
+            },
+          ],
         },
       ],
     ],

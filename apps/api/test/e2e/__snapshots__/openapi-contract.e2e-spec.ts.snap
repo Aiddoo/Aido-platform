@@ -8270,6 +8270,101 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
       "type": "object",
     },
+    "TodoSummaryResponseDto": {
+      "example": {
+        "completedTodos": 3,
+        "completionRate": 60,
+        "currentStreak": 12,
+        "date": "2026-07-12",
+        "isComplete": false,
+        "topTodos": [
+          {
+            "completed": true,
+            "id": 1,
+            "title": "운동하기",
+          },
+          {
+            "completed": false,
+            "id": 2,
+            "title": "회의 자료 준비",
+          },
+        ],
+        "totalTodos": 5,
+      },
+      "properties": {
+        "completedTodos": {
+          "description": "오늘 완료한 할 일 개수 (0 이상)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "completionRate": {
+          "description": "완료율 (0-100%, daily-completion과 동일 규칙, 할 일 없으면 0)",
+          "maximum": 100,
+          "minimum": 0,
+          "type": "number",
+        },
+        "currentStreak": {
+          "description": "현재 연속 달성 일수 (0 이상)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "date": {
+          "description": "조회 기준 날짜 (YYYY-MM-DD, X-Timezone 헤더의 로컬 날짜)",
+          "type": "string",
+        },
+        "isComplete": {
+          "description": "100% 달성 여부 (totalTodos > 0 && 전부 완료)",
+          "type": "boolean",
+        },
+        "topTodos": {
+          "description": "오늘 할 일 상위 목록 (sortOrder 오름차순, 최대 7개 — 홈 위젯 표시용)",
+          "items": {
+            "properties": {
+              "completed": {
+                "description": "완료 상태",
+                "type": "boolean",
+              },
+              "id": {
+                "description": "할 일 고유 ID (양의 정수)",
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer",
+              },
+              "title": {
+                "description": "할 일 제목",
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "title",
+              "completed",
+            ],
+            "type": "object",
+          },
+          "maxItems": 7,
+          "type": "array",
+        },
+        "totalTodos": {
+          "description": "오늘 전체 할 일 개수 (0 이상)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "date",
+        "totalTodos",
+        "completedTodos",
+        "completionRate",
+        "isComplete",
+        "currentStreak",
+        "topTodos",
+      ],
+      "type": "object",
+    },
     "ToggleMemoPinDto": {
       "properties": {
         "isPinned": {
@@ -28732,6 +28827,139 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         },
       ],
       "summary": "카테고리당 활성 할 일 리소스 제한 정보 조회",
+      "tags": [
+        "Todos",
+      ],
+    },
+  },
+  "/todos/summary": {
+    "get": {
+      "description": "오늘 할 일 진행률과 현재 스트릭, 상위 할 일 목록을 한 번에 조회합니다.
+홈 화면 위젯 스냅샷 갱신용 경량 엔드포인트입니다.
+
+**응답 필드**
+- \`date\`: 조회 기준 날짜 (YYYY-MM-DD, \`X-Timezone\` 헤더 기준 로컬 "오늘")
+- \`totalTodos\` / \`completedTodos\`: 오늘 전체/완료 할 일 개수
+- \`completionRate\`: 완료율 (0-100, round(완료/전체 × 100), 할 일 없으면 0)
+- \`isComplete\`: 100% 달성 여부 (할 일이 1개 이상이고 전부 완료)
+- \`currentStreak\`: 현재 연속 달성 일수
+- \`topTodos\`: 오늘 할 일 상위 목록 (정렬 순서 기준, 최대 7개)",
+      "operationId": "getTodoSummary",
+      "parameters": [
+        {
+          "description": "사용자 타임존 (IANA, 기본값: UTC) — '오늘' 날짜 경계 판단",
+          "in": "header",
+          "name": "X-Timezone",
+          "required": false,
+          "schema": {
+            "example": "Asia/Seoul",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoSummaryResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "오늘의 할 일 요약 조회 (홈 위젯용)",
       "tags": [
         "Todos",
       ],

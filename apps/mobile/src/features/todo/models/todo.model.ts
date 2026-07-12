@@ -109,6 +109,24 @@ export const dailyCompletionsResultSchema = z.object({
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
 
+// Todo Summary (홈 위젯 스냅샷 데이터 — GET v1/todos/summary)
+export const todoSummaryClientSchema = z.object({
+  date: z.string(),
+  totalTodos: z.number(),
+  completedTodos: z.number(),
+  completionRate: z.number(),
+  isComplete: z.boolean(),
+  currentStreak: z.number(),
+  topTodos: z.array(
+    z.object({
+      id: z.number(),
+      title: z.string(),
+      completed: z.boolean(),
+    }),
+  ),
+});
+export type TodoSummary = z.infer<typeof todoSummaryClientSchema>;
+
 /** AI 사용량 관련 도메인 규칙 */
 export const AiUsagePolicy = {
   /** 무료 사용자의 AI 파싱 한도에 도달했는지 (limit이 null이면 프리미엄 = 무제한) */

@@ -15,7 +15,10 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
-import { parseLocalDateTime } from "@/shared/domain/date/utils/timezone";
+import {
+	parseLocalDateTime,
+	todayInTimezone,
+} from "@/shared/domain/date/utils/timezone";
 import { Timezone } from "@/shared/presentation/decorators";
 import { UserIdParamDto } from "@/shared/presentation/dtos";
 import {
@@ -52,6 +55,7 @@ import {
 	TodoResourceLimitQueryDto,
 	TodoResourceLimitResponseDto,
 	TodoResponseDto,
+	TodoSummaryResponseDto,
 	ToggleTodoCompleteDto,
 	UpdateTodoDto,
 	UpdateTodoItemDto,
@@ -87,6 +91,37 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		@Query() query: TodoResourceLimitQueryDto,
 	): Promise<TodoResourceLimitResponseDto> {
 		return this.todoFacade.getResourceLimit(user.userId, query.categoryId);
+	}
+
+	@Get("summary")
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC) — '오늘' 날짜 경계 판단",
+		example: "Asia/Seoul",
+	})
+	@ApiDoc({
+		summary: "오늘의 할 일 요약 조회 (홈 위젯용)",
+		operationId: "getTodoSummary",
+		description: `오늘 할 일 진행률과 현재 스트릭, 상위 할 일 목록을 한 번에 조회합니다.
+홈 화면 위젯 스냅샷 갱신용 경량 엔드포인트입니다.
+
+**응답 필드**
+- \`date\`: 조회 기준 날짜 (YYYY-MM-DD, \`X-Timezone\` 헤더 기준 로컬 "오늘")
+- \`totalTodos\` / \`completedTodos\`: 오늘 전체/완료 할 일 개수
+- \`completionRate\`: 완료율 (0-100, round(완료/전체 × 100), 할 일 없으면 0)
+- \`isComplete\`: 100% 달성 여부 (할 일이 1개 이상이고 전부 완료)
+- \`currentStreak\`: 현재 연속 달성 일수
+- \`topTodos\`: 오늘 할 일 상위 목록 (정렬 순서 기준, 최대 7개)`,
+	})
+	@ApiSuccessResponse({ type: TodoSummaryResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async getSummary(
+		@CurrentUser() user: CurrentUserPayload,
+		@Timezone() tz: string,
+	): Promise<TodoSummaryResponseDto> {
+		// 컨트롤러가 타임존 파싱을 소유: 로컬 "오늘"의 UTC midnight으로 변환해 전달
+		return this.todoFacade.getSummary(user.userId, todayInTimezone(tz));
 	}
 
 	@Post()

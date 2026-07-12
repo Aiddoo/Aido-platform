@@ -13,4 +13,9 @@ export class StreakAdapter implements StreakPort {
 		// user-settings 파사드로 위임(fire-and-forget)
 		void this.userSettingsFacade.onTodoToggled(userId, completed, timezone);
 	}
+
+	async getCurrentStreak(userId: string): Promise<number> {
+		const record = await this.userSettingsFacade.getPreferenceRecord(userId);
+		return record?.currentStreak ?? 0;
+	}
 }

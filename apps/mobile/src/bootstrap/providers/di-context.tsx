@@ -19,6 +19,7 @@ import type { TodoCategoryService } from '@src/features/todo/services/todo-categ
 import type { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import type { UserService } from '@src/features/user/services/user.service';
 import type { WeatherService } from '@src/features/weather/services/weather.service';
+import type { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { createContext, type PropsWithChildren, use } from 'react';
 
@@ -51,6 +52,7 @@ export interface DIContainer {
   revenueCatSdkManager: RevenueCatSdkManager;
   subscriptionService: SubscriptionService;
   weatherService: WeatherService;
+  widgetSyncService: WidgetSyncService;
 }
 
 export const DIContext = createContext<DIContainer | null>(null);
@@ -102,3 +104,4 @@ export const useUserService = () => useDI().userService;
 export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
 export const useWeatherService = () => useDI().weatherService;
+export const useWidgetSyncService = () => useDI().widgetSyncService;

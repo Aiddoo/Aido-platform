@@ -17,6 +17,10 @@ import { TodoCategoryService } from '@src/features/todo/services/todo-category.s
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import { UserService } from '@src/features/user/services/user.service';
 import { WeatherService } from '@src/features/weather/services/weather.service';
+import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
+import { WidgetSnapshotRepositoryImpl } from '@src/features/widget/repositories/widget-snapshot.repository';
+import { widgetSyncStorage } from '@src/features/widget/repositories/widget-storage';
+import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import { ENV } from '@src/shared/config/env';
 import { createConsoleAnalytics, createFirebaseAnalytics } from '@src/shared/infra/analytics';
 import {
@@ -137,6 +141,11 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // Weather
     const weatherService = new WeatherService(authHttpClient);
 
+    // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
+    const widgetSnapshotRepository = new WidgetSnapshotRepositoryImpl(widgetSyncStorage);
+    const widgetBridge = createWidgetBridge(widgetSnapshotRepository);
+    const widgetSyncService = new WidgetSyncService(widgetBridge, errorReporter);
+
     return {
       storage,
       logger,
@@ -160,6 +169,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       revenueCatSdkManager,
       subscriptionService,
       weatherService,
+      widgetSyncService,
     };
   });
 
@@ -193,4 +203,5 @@ export {
   useTokenStore,
   useUserService,
   useWeatherService,
+  useWidgetSyncService,
 } from './di-context';

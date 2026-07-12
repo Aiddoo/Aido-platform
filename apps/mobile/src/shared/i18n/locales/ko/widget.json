@@ -1,0 +1,20 @@
+{
+  "progress": {
+    "title": "오늘의 할 일",
+    "label": "{{completed}}/{{total}} 완료",
+    "percent": "{{rate}}%",
+    "streak": "{{count}}일 연속",
+    "allDone": "모두 완료!"
+  },
+  "list": {
+    "more": "+{{count}}개 더"
+  },
+  "state": {
+    "emptyTitle": "오늘 할 일이 없어요",
+    "emptyCta": "탭해서 추가하기",
+    "loggedOutTitle": "로그인이 필요해요",
+    "loggedOutCta": "탭해서 시작하기",
+    "staleTitle": "새로운 하루가 시작됐어요",
+    "staleCta": "앱을 열어 확인하기"
+  }
+}

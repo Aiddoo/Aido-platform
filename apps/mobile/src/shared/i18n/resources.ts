@@ -14,6 +14,7 @@ import enTodo from './locales/en/todo.json';
 import enUser from './locales/en/user.json';
 import enValidation from './locales/en/validation.json';
 import enWeather from './locales/en/weather.json';
+import enWidget from './locales/en/widget.json';
 import koAchievement from './locales/ko/achievement.json';
 import koAi from './locales/ko/ai.json';
 import koAppIcon from './locales/ko/appIcon.json';
@@ -30,6 +31,7 @@ import koTodo from './locales/ko/todo.json';
 import koUser from './locales/ko/user.json';
 import koValidation from './locales/ko/validation.json';
 import koWeather from './locales/ko/weather.json';
+import koWidget from './locales/ko/widget.json';
 
 // ko 카탈로그가 원문(소스 오브 트루스) — i18next.d.ts의 타입 소스로 사용된다
 export const resources = {
@@ -50,6 +52,7 @@ export const resources = {
     inquiry: koInquiry,
     weather: koWeather,
     appIcon: koAppIcon,
+    widget: koWidget,
   },
   en: {
     common: enCommon,
@@ -68,6 +71,7 @@ export const resources = {
     inquiry: enInquiry,
     weather: enWeather,
     appIcon: enAppIcon,
+    widget: enWidget,
   },
 } as const;
 

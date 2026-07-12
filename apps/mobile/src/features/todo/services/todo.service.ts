@@ -19,6 +19,7 @@ import {
   type ToggleTodoCompleteInput,
   todoListResponseSchema,
   todoSchema,
+  todoSummaryResponseSchema,
   type UpdateTodoInput,
   type UpdateTodoScheduleInput,
   updateTodoResponseSchema,
@@ -33,6 +34,7 @@ import type {
   DailyCompletionsResult,
   ParsedTodoResult,
   TodoItem,
+  TodoSummary,
   TodosResult,
 } from '../models/todo.model';
 import {
@@ -41,6 +43,7 @@ import {
   toParsedTodoResult,
   toTodoItem,
   toTodoItems,
+  toTodoSummary,
 } from './todo.mapper';
 
 export class TodoService {
@@ -259,6 +262,24 @@ export class TodoService {
     }
 
     return ok(toDailyCompletionsResult(parsed.data));
+  };
+
+  /** 오늘의 할 일 요약 (홈 위젯 스냅샷) — 진행률·스트릭·상위 할 일을 한 번에 */
+  getTodoSummary = async (): Promise<Result<TodoSummary, ApiError>> => {
+    const result = await this.#httpClient.get<unknown>('v1/todos/summary');
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = todoSummaryResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoService] Invalid getTodoSummary response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toTodoSummary(parsed.data));
   };
 
   createRecurringTodo = async (
