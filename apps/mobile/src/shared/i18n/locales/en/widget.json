@@ -1,0 +1,19 @@
+{
+  "progress": {
+    "title": "Today's todos",
+    "percent": "{{rate}}%",
+    "streak": "{{count}} day streak",
+    "allDone": "All done!"
+  },
+  "list": {
+    "more": "+{{overflow}} more"
+  },
+  "state": {
+    "emptyTitle": "Nothing to do today",
+    "emptyCta": "Tap to add a todo",
+    "loggedOutTitle": "Sign in to get started",
+    "loggedOutCta": "Tap to sign in",
+    "staleTitle": "A new day has started",
+    "staleCta": "Open the app to refresh"
+  }
+}

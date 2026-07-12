@@ -1,5 +1,9 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
+import {
+  useWidgetSnapshotSync,
+  type WidgetSyncAuthState,
+} from '@src/features/widget/presentations/hooks/use-widget-snapshot-sync';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
@@ -130,6 +134,16 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       track(analytics, 'session_expired', { reason });
     });
   }, [errorReporter, analytics, applyStatus]);
+
+  // 홈 위젯 스냅샷 동기화 — 인증 상태를 아는 이 Provider가 유일한 통합 지점
+  // (팀 규칙: 크로스커팅 리스너는 상태 주인 Provider에 통합, null-render 컴포넌트 금지)
+  const widgetSyncAuthState: WidgetSyncAuthState =
+    status === 'authenticated'
+      ? 'authenticated'
+      : status === 'unauthenticated'
+        ? 'unauthenticated'
+        : 'resolving';
+  useWidgetSnapshotSync(widgetSyncAuthState);
 
   // 캐시 비우기는 **커밋 이후**여야 한다.
   //

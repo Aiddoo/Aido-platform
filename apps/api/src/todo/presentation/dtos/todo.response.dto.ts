@@ -6,6 +6,7 @@ import {
 	todoListResponseSchema,
 	todoResourceLimitResponseSchema,
 	todoSchema,
+	todoSummaryResponseSchema,
 	updateTodoResponseSchema,
 } from "@aido/validators";
 import { createZodDto } from "nestjs-zod";
@@ -29,4 +30,7 @@ export class ReorderTodoResponseDto extends createZodDto(
 ) {}
 export class TodoResourceLimitResponseDto extends createZodDto(
 	todoResourceLimitResponseSchema,
+) {}
+export class TodoSummaryResponseDto extends createZodDto(
+	todoSummaryResponseSchema,
 ) {}

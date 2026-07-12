@@ -9,6 +9,10 @@ import {
 	GetTodoResourceLimitUseCase,
 	type TodoResourceLimitResult,
 } from "../queries/get-todo-resource-limit/get-todo-resource-limit.use-case";
+import {
+	GetTodoSummaryUseCase,
+	type TodoSummaryResult,
+} from "../queries/get-todo-summary/get-todo-summary.use-case";
 import { GetTodosUseCase } from "../queries/get-todos/get-todos.use-case";
 import type {
 	CreateRecurringTodoData,
@@ -46,6 +50,7 @@ import { UpdateTodoVisibilityUseCase } from "../use-cases/update-todo-visibility
 export class TodoFacade {
 	constructor(
 		private readonly getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase,
+		private readonly getTodoSummaryUseCase: GetTodoSummaryUseCase,
 		private readonly getTodosUseCase: GetTodosUseCase,
 		private readonly getTodoByIdUseCase: GetTodoByIdUseCase,
 		private readonly getFriendTodosUseCase: GetFriendTodosUseCase,
@@ -72,6 +77,10 @@ export class TodoFacade {
 		categoryId?: number,
 	): Promise<TodoResourceLimitResult> {
 		return this.getTodoResourceLimitUseCase.execute({ userId, categoryId });
+	}
+
+	getSummary(userId: string, today: Date): Promise<TodoSummaryResult> {
+		return this.getTodoSummaryUseCase.execute({ userId, today });
 	}
 
 	findMany(

@@ -16,7 +16,7 @@ features/{feature}/
   presentations/   # hooks, components, screens
 ```
 
-> **예외**: `DeviceIdRepository`만 Repository 패턴 유지 (SecureStore 로컬 스토리지 접근 — HTTP가 아님)
+> **예외**: `DeviceIdRepository`·`WidgetSnapshotRepository`는 Repository 패턴 유지 (로컬 스토리지 접근 — HTTP가 아님)
 
 ## 테스트
 

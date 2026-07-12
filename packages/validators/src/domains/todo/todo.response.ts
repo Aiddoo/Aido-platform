@@ -275,3 +275,48 @@ export const todoResourceLimitResponseSchema = z
   });
 
 export type TodoResourceLimitResponse = z.infer<typeof todoResourceLimitResponseSchema>;
+
+export const todoSummaryTodoSchema = z.object({
+  id: z.number().int().describe('할 일 고유 ID (양의 정수)'),
+  title: z.string().describe('할 일 제목'),
+  completed: z.boolean().describe('완료 상태'),
+  categoryColor: z.string().describe('카테고리 색상 (HEX, 예: #FFB3B3 — 위젯 체크박스 컬러)'),
+});
+
+export type TodoSummaryTodo = z.infer<typeof todoSummaryTodoSchema>;
+
+export const todoSummaryResponseSchema = z
+  .object({
+    date: z.string().describe('조회 기준 날짜 (YYYY-MM-DD, X-Timezone 헤더의 로컬 날짜)'),
+    totalTodos: z.number().int().min(0).describe('오늘 전체 할 일 개수 (0 이상)'),
+    completedTodos: z.number().int().min(0).describe('오늘 완료한 할 일 개수 (0 이상)'),
+    completionRate: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe('완료율 (0-100%, daily-completion과 동일 규칙, 할 일 없으면 0)'),
+    isComplete: z.boolean().describe('100% 달성 여부 (totalTodos > 0 && 전부 완료)'),
+    currentStreak: z.number().int().min(0).describe('현재 연속 달성 일수 (0 이상)'),
+    topTodos: z
+      .array(todoSummaryTodoSchema)
+      .max(10)
+      .describe(
+        '오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개, 홈 위젯 표시용)',
+      ),
+  })
+  .meta({
+    example: {
+      date: '2026-07-12',
+      totalTodos: 5,
+      completedTodos: 3,
+      completionRate: 60,
+      isComplete: false,
+      currentStreak: 12,
+      topTodos: [
+        { id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' },
+        { id: 2, title: '회의 자료 준비', completed: false, categoryColor: '#FFB3B3' },
+      ],
+    },
+  });
+
+export type TodoSummaryResponse = z.infer<typeof todoSummaryResponseSchema>;
