@@ -34,7 +34,6 @@ export const widgetSnapshotSchema = z.object({
   /** 쓰기 시점에 구워진 localized 문자열 — 위젯은 번역하지 않고 그대로 표시 */
   strings: z.object({
     progressTitle: z.string(),
-    progressLabel: z.string(),
     percentLabel: z.string(),
     streakLabel: z.string(),
     allDoneLabel: z.string(),
@@ -71,5 +70,20 @@ export const WidgetSnapshotPolicy = {
       return 'stale';
     }
     return snapshot.state;
+  },
+
+  /** 상태 화면(empty/loggedOut/stale) 문구 선택 — 양 플랫폼이 공유하는 단일 매핑 */
+  stateScreenStrings(
+    snapshot: WidgetSnapshot,
+    renderState: WidgetRenderState,
+  ): { title: string; cta: string } {
+    switch (renderState) {
+      case 'loggedOut':
+        return { title: snapshot.strings.loggedOutTitle, cta: snapshot.strings.loggedOutCta };
+      case 'stale':
+        return { title: snapshot.strings.staleTitle, cta: snapshot.strings.staleCta };
+      default:
+        return { title: snapshot.strings.emptyTitle, cta: snapshot.strings.emptyCta };
+    }
   },
 } as const;

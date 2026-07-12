@@ -1,26 +1,14 @@
-import type { WidgetRenderState, WidgetSnapshot } from '../models/widget-snapshot.model';
+import {
+  type WidgetRenderState,
+  type WidgetSnapshot,
+  WidgetSnapshotPolicy,
+} from '../models/widget-snapshot.model';
 import { aidoTodayListWidget } from '../presentations/ios/aido-widgets';
 import type { IosWidgetProps } from '../presentations/ios/ios-widget-props';
 import type { WidgetBridge } from './widget-bridge';
 
-function stateStrings(
-  snapshot: WidgetSnapshot,
-  state: WidgetRenderState,
-): { stateTitle: string; stateCta: string } {
-  switch (state) {
-    case 'loggedOut':
-      return {
-        stateTitle: snapshot.strings.loggedOutTitle,
-        stateCta: snapshot.strings.loggedOutCta,
-      };
-    case 'stale':
-      return { stateTitle: snapshot.strings.staleTitle, stateCta: snapshot.strings.staleCta };
-    default:
-      return { stateTitle: snapshot.strings.emptyTitle, stateCta: snapshot.strings.emptyCta };
-  }
-}
-
 function toIosProps(snapshot: WidgetSnapshot, state: WidgetRenderState): IosWidgetProps {
+  const stateScreen = WidgetSnapshotPolicy.stateScreenStrings(snapshot, state);
   return {
     state,
     totalTodos: snapshot.totalTodos,
@@ -38,7 +26,8 @@ function toIosProps(snapshot: WidgetSnapshot, state: WidgetRenderState): IosWidg
     streakLabel: snapshot.strings.streakLabel,
     allDoneLabel: snapshot.strings.allDoneLabel,
     moreLabelTemplate: snapshot.strings.moreLabelTemplate,
-    ...stateStrings(snapshot, state),
+    stateTitle: stateScreen.title,
+    stateCta: stateScreen.cta,
   };
 }
 
@@ -60,8 +49,7 @@ export function createExpoWidgetsBridge(): WidgetBridge {
   return {
     async writeSnapshot(snapshot: WidgetSnapshot): Promise<void> {
       const now = new Date();
-      const currentState: WidgetRenderState = snapshot.state === 'data' ? 'data' : snapshot.state;
-      const currentProps = toIosProps(snapshot, currentState);
+      const currentProps = toIosProps(snapshot, snapshot.state);
 
       // 로그아웃 스냅샷은 날짜와 무관하므로 자정 엔트리가 필요 없다
       const entries =

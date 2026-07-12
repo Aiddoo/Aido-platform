@@ -1,13 +1,12 @@
 {
   "progress": {
     "title": "Today's todos",
-    "label": "{{completed}}/{{total}} done",
     "percent": "{{rate}}%",
     "streak": "{{count}} day streak",
     "allDone": "All done!"
   },
   "list": {
-    "more": "+{{count}} more"
+    "more": "+{{overflow}} more"
   },
   "state": {
     "emptyTitle": "Nothing to do today",

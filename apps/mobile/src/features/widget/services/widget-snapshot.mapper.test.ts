@@ -1,46 +1,16 @@
 import {
-  toLoggedOutWidgetSnapshot,
-  toWidgetSnapshot,
-  type WidgetSnapshotContext,
-  type WidgetSummaryInput,
-  type WidgetTranslateFn,
-} from './widget-snapshot.mapper';
-
-const fakeT: WidgetTranslateFn = (key, params) =>
-  params ? `${key}(${JSON.stringify(params)})` : key;
-
-function buildContext(overrides: Partial<WidgetSnapshotContext> = {}): WidgetSnapshotContext {
-  return {
-    t: fakeT,
-    locale: 'ko',
-    now: new Date('2026-07-12T09:00:00.000Z'),
-    ...overrides,
-  };
-}
-
-function buildSummary(overrides: Partial<WidgetSummaryInput> = {}): WidgetSummaryInput {
-  return {
-    date: '2026-07-12',
-    totalTodos: 5,
-    completedTodos: 3,
-    completionRate: 60,
-    isComplete: false,
-    currentStreak: 12,
-    topTodos: [
-      { id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' },
-      { id: 2, title: '회의 자료 준비', completed: false, categoryColor: '#FFB3B3' },
-    ],
-    ...overrides,
-  };
-}
+  buildWidgetSnapshotContext,
+  buildWidgetSummary,
+} from '../__tests__/widget-snapshot.factory';
+import { toLoggedOutWidgetSnapshot, toWidgetSnapshot } from './widget-snapshot.mapper';
 
 describe('toWidgetSnapshot', () => {
   it('요약을 data 상태 스냅샷으로 변환한다', () => {
     // Given
-    const summary = buildSummary();
+    const summary = buildWidgetSummary();
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildContext());
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.version).toBe(1);
@@ -56,10 +26,10 @@ describe('toWidgetSnapshot', () => {
 
   it('할 일이 없으면 empty 상태다', () => {
     // Given
-    const summary = buildSummary({ totalTodos: 0, completedTodos: 0, topTodos: [] });
+    const summary = buildWidgetSummary({ totalTodos: 0, completedTodos: 0, topTodos: [] });
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildContext());
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.state).toBe('empty');
@@ -67,24 +37,23 @@ describe('toWidgetSnapshot', () => {
 
   it('문자열을 t로 구워 담는다 (카운트·퍼센트·스트릭 보간)', () => {
     // Given
-    const summary = buildSummary();
+    const summary = buildWidgetSummary();
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildContext());
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.strings.progressTitle).toBe('widget:progress.title');
-    expect(snapshot.strings.progressLabel).toBe('widget:progress.label({"completed":3,"total":5})');
     expect(snapshot.strings.percentLabel).toBe('widget:progress.percent({"rate":60})');
     expect(snapshot.strings.streakLabel).toBe('widget:progress.streak({"count":12})');
   });
 
   it('완료율은 반올림해 보간한다', () => {
     // Given
-    const summary = buildSummary({ completionRate: 33.333 });
+    const summary = buildWidgetSummary({ completionRate: 33.333 });
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildContext());
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.strings.percentLabel).toBe('widget:progress.percent({"rate":33})');
@@ -98,10 +67,10 @@ describe('toWidgetSnapshot', () => {
       completed: false,
       categoryColor: '#FFB3B3',
     }));
-    const summary = buildSummary({ totalTodos: 13, topTodos });
+    const summary = buildWidgetSummary({ totalTodos: 13, topTodos });
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildContext());
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.topTodos).toHaveLength(10);
@@ -109,20 +78,23 @@ describe('toWidgetSnapshot', () => {
 
   it('moreLabelTemplate은 {count} 플레이스홀더를 남긴 채 굽는다 (표시 행 수는 위젯만 안다)', () => {
     // Given
-    const summary = buildSummary();
+    const summary = buildWidgetSummary();
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildContext());
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
 
     // Then - 렌더 시점에 위젯이 {count}를 실제 초과분으로 치환한다
-    expect(snapshot.strings.moreLabelTemplate).toBe('widget:list.more({"count":"{count}"})');
+    expect(snapshot.strings.moreLabelTemplate).toBe('widget:list.more({"overflow":"{count}"})');
   });
 });
 
 describe('toLoggedOutWidgetSnapshot', () => {
   it('비로그인 스냅샷을 만든다 (카운트 0, loggedOut 상태)', () => {
     // When
-    const snapshot = toLoggedOutWidgetSnapshot('2026-07-12', buildContext({ locale: 'en' }));
+    const snapshot = toLoggedOutWidgetSnapshot(
+      '2026-07-12',
+      buildWidgetSnapshotContext({ locale: 'en' }),
+    );
 
     // Then
     expect(snapshot.state).toBe('loggedOut');

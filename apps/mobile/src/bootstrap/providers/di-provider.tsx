@@ -22,12 +22,7 @@ import { WidgetSnapshotRepositoryImpl } from '@src/features/widget/repositories/
 import { widgetSyncStorage } from '@src/features/widget/repositories/widget-storage';
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import { ENV } from '@src/shared/config/env';
-import { createConsoleAnalytics, createFirebaseAnalytics } from '@src/shared/infra/analytics';
-import {
-  createConsoleErrorReporter,
-  createSentryErrorReporter,
-  setGlobalErrorReporter,
-} from '@src/shared/infra/error-reporter';
+import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
@@ -39,6 +34,10 @@ import {
   createSentryLogger,
   setGlobalLogger,
 } from '@src/shared/infra/logger';
+import {
+  createEnvironmentAnalytics,
+  createEnvironmentErrorReporter,
+} from '@src/shared/infra/observability-env';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 
@@ -60,14 +59,10 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     setGlobalLogger(logger);
 
-    const analytics = ENV.IS_PRODUCTION
-      ? createFirebaseAnalytics(logger)
-      : createConsoleAnalytics();
+    const analytics = createEnvironmentAnalytics(logger);
 
     // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
-    const errorReporter = ENV.IS_PRODUCTION
-      ? createSentryErrorReporter()
-      : createConsoleErrorReporter();
+    const errorReporter = createEnvironmentErrorReporter();
 
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
     setGlobalErrorReporter(errorReporter);

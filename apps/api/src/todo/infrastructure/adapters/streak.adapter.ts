@@ -14,8 +14,14 @@ export class StreakAdapter implements StreakPort {
 		void this.userSettingsFacade.onTodoToggled(userId, completed, timezone);
 	}
 
-	async getCurrentStreak(userId: string): Promise<number> {
+	async getStreakContext(userId: string): Promise<{
+		currentStreak: number;
+		lastCompletedDate: Date | null;
+	}> {
 		const record = await this.userSettingsFacade.getPreferenceRecord(userId);
-		return record?.currentStreak ?? 0;
+		return {
+			currentStreak: record?.currentStreak ?? 0,
+			lastCompletedDate: record?.lastCompletedDate ?? null,
+		};
 	}
 }

@@ -1,13 +1,12 @@
 {
   "progress": {
     "title": "오늘의 할 일",
-    "label": "{{completed}}/{{total}} 완료",
     "percent": "{{rate}}%",
     "streak": "{{count}}일 연속",
     "allDone": "모두 완료!"
   },
   "list": {
-    "more": "+{{count}}개 더"
+    "more": "+{{overflow}}개 더"
   },
   "state": {
     "emptyTitle": "오늘 할 일이 없어요",

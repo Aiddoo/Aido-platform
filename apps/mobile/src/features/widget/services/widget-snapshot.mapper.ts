@@ -25,7 +25,6 @@ export interface WidgetSummaryInput {
 export type WidgetTranslateFn = (
   key:
     | 'widget:progress.title'
-    | 'widget:progress.label'
     | 'widget:progress.percent'
     | 'widget:progress.streak'
     | 'widget:progress.allDone'
@@ -57,16 +56,12 @@ function bakeStrings(
 ): WidgetSnapshotStrings {
   return {
     progressTitle: t('widget:progress.title'),
-    progressLabel: t('widget:progress.label', {
-      completed: summary.completedTodos,
-      total: summary.totalTodos,
-    }),
     percentLabel: t('widget:progress.percent', { rate: Math.round(summary.completionRate) }),
     streakLabel: t('widget:progress.streak', { count: summary.currentStreak }),
     allDoneLabel: t('widget:progress.allDone'),
     // 표시 행 수(3~8행)는 위젯 크기에 따라 렌더 시점에 정해지므로 카운트는 굽지 않는다.
     // 어순/번역은 카탈로그가 소유하고, 위젯은 {count}만 실제 초과분으로 치환한다.
-    moreLabelTemplate: t('widget:list.more', { count: '{count}' }),
+    moreLabelTemplate: t('widget:list.more', { overflow: '{count}' }),
     emptyTitle: t('widget:state.emptyTitle'),
     emptyCta: t('widget:state.emptyCta'),
     loggedOutTitle: t('widget:state.loggedOutTitle'),

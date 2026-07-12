@@ -1,9 +1,10 @@
 import { FlexWidget, ImageWidget, TextWidget } from 'react-native-android-widget';
 
-import type {
-  WidgetRenderState,
-  WidgetSnapshot,
-  WidgetTopTodo,
+import {
+  type WidgetRenderState,
+  type WidgetSnapshot,
+  WidgetSnapshotPolicy,
+  type WidgetTopTodo,
 } from '../../models/widget-snapshot.model';
 import {
   toWidgetHexColor,
@@ -37,25 +38,8 @@ export function TodayListWidget({
   const palette = WIDGET_COLORS[theme];
 
   if (renderState !== 'data') {
-    return (
-      <StateWidget
-        theme={theme}
-        title={
-          renderState === 'loggedOut'
-            ? snapshot.strings.loggedOutTitle
-            : renderState === 'stale'
-              ? snapshot.strings.staleTitle
-              : snapshot.strings.emptyTitle
-        }
-        cta={
-          renderState === 'loggedOut'
-            ? snapshot.strings.loggedOutCta
-            : renderState === 'stale'
-              ? snapshot.strings.staleCta
-              : snapshot.strings.emptyCta
-        }
-      />
-    );
+    const stateScreen = WidgetSnapshotPolicy.stateScreenStrings(snapshot, renderState);
+    return <StateWidget theme={theme} title={stateScreen.title} cta={stateScreen.cta} />;
   }
 
   if (variant === 'compact') {

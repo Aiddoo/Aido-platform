@@ -2,10 +2,10 @@ import { useWidgetSyncService } from '@src/bootstrap/providers/di-context';
 import { useGetTodoSummaryQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-summary-query-options';
 import { useToday } from '@src/shared/hooks/useToday';
 import { i18n } from '@src/shared/i18n';
-import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
+import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { formatDate } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import type {
   WidgetSnapshotContext,
@@ -23,12 +23,8 @@ export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolvi
 
 const translate: WidgetTranslateFn = (key, params) => i18n.t(key, params);
 
-function resolveLocale(): ResolvedLanguage {
-  return i18n.language === 'ko' ? 'ko' : 'en';
-}
-
 function buildContext(): WidgetSnapshotContext {
-  return { t: translate, locale: resolveLocale(), now: new Date() };
+  return { t: translate, locale: toResolvedLanguage(i18n.language), now: new Date() };
 }
 
 /**
@@ -65,14 +61,18 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     void widgetSyncService.syncLoggedOut(formatDate(new Date()), buildContext());
   }, [authState, widgetSyncService]);
 
-  // 언어 변경 → 캐시된 데이터로 문자열만 재생성해 재기록
+  // 언어 변경 → 캐시된 데이터로 문자열만 재생성해 재기록.
+  // 최신 상태는 ref로 읽어 리스너를 마운트당 1회만 구독한다 (데이터 변경마다 재구독 방지).
+  const latestRef = useRef({ data, authState });
+  latestRef.current = { data, authState };
   useEffect(() => {
     const handleLanguageChanged = () => {
-      if (data !== undefined) {
-        void widgetSyncService.syncSummary(data, buildContext());
+      const latest = latestRef.current;
+      if (latest.data !== undefined) {
+        void widgetSyncService.syncSummary(latest.data, buildContext());
         return;
       }
-      if (authState === 'unauthenticated') {
+      if (latest.authState === 'unauthenticated') {
         void widgetSyncService.syncLoggedOut(formatDate(new Date()), buildContext());
       }
     };
@@ -81,5 +81,5 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     return () => {
       i18n.off('languageChanged', handleLanguageChanged);
     };
-  }, [data, authState, widgetSyncService]);
+  }, [widgetSyncService]);
 }

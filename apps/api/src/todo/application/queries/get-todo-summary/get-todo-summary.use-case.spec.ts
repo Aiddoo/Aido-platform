@@ -58,7 +58,10 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			buildRow(2, false),
 			buildRow(1, true),
 		]);
-		streakPort.getCurrentStreak.mockResolvedValue(12);
+		streakPort.getStreakContext.mockResolvedValue({
+			currentStreak: 12,
+			lastCompletedDate: null,
+		});
 
 		// When
 		const result = await useCase.execute(baseInput);
@@ -96,7 +99,10 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			completed: 0,
 		});
 		todoReadRepository.findTodayTopTodos.mockResolvedValue([]);
-		streakPort.getCurrentStreak.mockResolvedValue(0);
+		streakPort.getStreakContext.mockResolvedValue({
+			currentStreak: 0,
+			lastCompletedDate: null,
+		});
 
 		// When
 		await useCase.execute(baseInput);
@@ -116,7 +122,10 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			completed: 0,
 		});
 		todoReadRepository.findTodayTopTodos.mockResolvedValue([]);
-		streakPort.getCurrentStreak.mockResolvedValue(3);
+		streakPort.getStreakContext.mockResolvedValue({
+			currentStreak: 3,
+			lastCompletedDate: null,
+		});
 
 		// When
 		const result = await useCase.execute(baseInput);
@@ -135,7 +144,10 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			completed: 4,
 		});
 		todoReadRepository.findTodayTopTodos.mockResolvedValue([]);
-		streakPort.getCurrentStreak.mockResolvedValue(1);
+		streakPort.getStreakContext.mockResolvedValue({
+			currentStreak: 1,
+			lastCompletedDate: today,
+		});
 
 		// When
 		const result = await useCase.execute(baseInput);
@@ -145,6 +157,26 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 		expect(result.isComplete).toBe(true);
 	});
 
+	it("전체 완료 직후 스트릭 쓰기가 미착지여도 effective streak(+1)을 반환한다 (레이스)", async () => {
+		// Given - 어제까지 5연속, 오늘 전체 완료했지만 fire-and-forget 스트릭 쓰기 전
+		const yesterday = new Date("2026-07-11T00:00:00.000Z");
+		todoReadRepository.getTodayTodoStats.mockResolvedValue({
+			total: 3,
+			completed: 3,
+		});
+		todoReadRepository.findTodayTopTodos.mockResolvedValue([]);
+		streakPort.getStreakContext.mockResolvedValue({
+			currentStreak: 5,
+			lastCompletedDate: yesterday,
+		});
+
+		// When
+		const result = await useCase.execute(baseInput);
+
+		// Then - 스케줄러와 동일한 도메인 판정(computeEffectiveStreak)으로 +1
+		expect(result.currentStreak).toBe(6);
+	});
+
 	it("완료율은 daily-completion 규칙대로 반올림한다 (1/3 → 33)", async () => {
 		// Given
 		todoReadRepository.getTodayTodoStats.mockResolvedValue({
@@ -152,7 +184,10 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			completed: 1,
 		});
 		todoReadRepository.findTodayTopTodos.mockResolvedValue([]);
-		streakPort.getCurrentStreak.mockResolvedValue(0);
+		streakPort.getStreakContext.mockResolvedValue({
+			currentStreak: 0,
+			lastCompletedDate: null,
+		});
 
 		// When
 		const result = await useCase.execute(baseInput);

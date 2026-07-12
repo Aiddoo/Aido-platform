@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { toDateString } from "@/shared/domain/date/utils/format";
+import { computeEffectiveStreak } from "@/user-settings";
 import { summarizeCompletion } from "../../../domain/services/completion-policy";
 import { STREAK_PORT, type StreakPort } from "../../ports/streak.port";
 import {
@@ -54,15 +55,24 @@ export class GetTodoSummaryUseCase {
 	async execute(input: GetTodoSummaryInput): Promise<TodoSummaryResult> {
 		const { userId, today } = input;
 
-		const [stats, topTodos, currentStreak] = await Promise.all([
+		const [stats, topTodos, streakContext] = await Promise.all([
 			this.todoReadRepository.getTodayTodoStats(userId, today),
 			// 미완료 우선 정렬 — 위젯에서 남은 일이 먼저 보이게 (정렬은 DB가 소유,
 			// 클라이언트 절단 이후 정렬하면 한도 밖 미완료가 누락된다)
 			this.todoReadRepository.findTodayTopTodos(userId, today, TOP_TODOS_LIMIT),
-			this.streakPort.getCurrentStreak(userId),
+			this.streakPort.getStreakContext(userId),
 		]);
 
 		const { completionRate, isComplete } = summarizeCompletion(stats);
+		// 스케줄러와 동일한 도메인 판정 — 전체 완료 직후 스트릭 쓰기(fire-and-forget)가
+		// 아직 착지하지 않은 레이스에서도 위젯이 갱신된 스트릭(+1)을 보여준다
+		const { streak: currentStreak } = computeEffectiveStreak({
+			currentStreak: streakContext.currentStreak,
+			lastCompletedDate: streakContext.lastCompletedDate,
+			todosCompleted: stats.completed,
+			todosTotal: stats.total,
+			today,
+		});
 
 		return {
 			date: toDateString(today),

@@ -6,13 +6,13 @@ import {
   isAndroidWidgetName,
   renderAndroidWidget,
 } from '../presentations/android/render-android-widgets';
-import {
-  type WidgetSnapshotRepository,
-  WidgetSnapshotRepositoryImpl,
-} from '../repositories/widget-snapshot.repository';
+import { WidgetSnapshotRepositoryImpl } from '../repositories/widget-snapshot.repository';
 import { widgetSyncStorage } from '../repositories/widget-storage';
 import { createFallbackSnapshot } from '../services/widget-fallback';
 import { getWidgetAnalytics, getWidgetErrorReporter } from './widget-analytics';
+
+// 핸들러는 OS가 반복 호출하는 핫패스 — 저장소 래퍼는 모듈 싱글턴으로 1회만 생성
+const repository = new WidgetSnapshotRepositoryImpl(widgetSyncStorage);
 
 /**
  * Android 위젯 headless 엔트리 — 읽기 + 렌더만 수행한다.
@@ -51,9 +51,6 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps): Promise<
   try {
     const now = new Date();
     const todayLocalDate = formatDate(now);
-    const repository: WidgetSnapshotRepository = new WidgetSnapshotRepositoryImpl(
-      widgetSyncStorage,
-    );
     const snapshot = repository.read() ?? createFallbackSnapshot(todayLocalDate, now);
 
     renderWidget(
