@@ -4,6 +4,7 @@ import type {
   DailyCompletionsRangeResponse,
   ParseTodoResponse,
   Todo,
+  TodoSummaryResponse,
 } from '@aido/validators';
 
 import type {
@@ -12,6 +13,7 @@ import type {
   DailyCompletionsResult,
   ParsedTodoResult,
   TodoItem,
+  TodoSummary,
 } from '../models/todo.model';
 import { toSubTodo } from './sub-todo.mapper';
 
@@ -70,4 +72,19 @@ export const toDailyCompletionsResult = (
   completions: dto.completions.map(toDailyCompletionSummary),
   totalCompleteDays: dto.totalCompleteDays,
   dateRange: dto.dateRange,
+});
+
+export const toTodoSummary = (dto: TodoSummaryResponse): TodoSummary => ({
+  date: dto.date,
+  totalTodos: dto.totalTodos,
+  completedTodos: dto.completedTodos,
+  completionRate: dto.completionRate,
+  isComplete: dto.isComplete,
+  currentStreak: dto.currentStreak,
+  topTodos: dto.topTodos.map((todo) => ({
+    id: todo.id,
+    title: todo.title,
+    completed: todo.completed,
+    categoryColor: todo.categoryColor,
+  })),
 });

@@ -7,6 +7,7 @@ import type { NotificationEventMap } from './notification.events';
 import type { SubscriptionEventMap } from './subscription.events';
 import type { TodoEventMap } from './todo.events';
 import type { UserEventMap } from './user.events';
+import type { WidgetEventMap } from './widget.events';
 
 export type {
   AiEventMap,
@@ -18,6 +19,7 @@ export type {
   SubscriptionEventMap,
   TodoEventMap,
   UserEventMap,
+  WidgetEventMap,
 };
 
 export type AppEventMap = AuthEventMap &
@@ -28,4 +30,5 @@ export type AppEventMap = AuthEventMap &
   UserEventMap &
   NotificationEventMap &
   BadgeEventMap &
-  MemoEventMap;
+  MemoEventMap &
+  WidgetEventMap;

@@ -38,5 +38,10 @@ export function resolveLanguage(
     return mode;
   }
 
-  return deviceLanguage === 'ko' ? 'ko' : 'en';
+  return toResolvedLanguage(deviceLanguage);
+}
+
+/** 임의 언어 코드 → 지원 언어 내로잉 (ko 외 전부 en) — 폴백 규칙의 단일 소스 */
+export function toResolvedLanguage(value: string | null | undefined): ResolvedLanguage {
+  return value === 'ko' ? 'ko' : 'en';
 }

@@ -13,4 +13,15 @@ export class StreakAdapter implements StreakPort {
 		// user-settings 파사드로 위임(fire-and-forget)
 		void this.userSettingsFacade.onTodoToggled(userId, completed, timezone);
 	}
+
+	async getStreakContext(userId: string): Promise<{
+		currentStreak: number;
+		lastCompletedDate: Date | null;
+	}> {
+		const record = await this.userSettingsFacade.getPreferenceRecord(userId);
+		return {
+			currentStreak: record?.currentStreak ?? 0,
+			lastCompletedDate: record?.lastCompletedDate ?? null,
+		};
+	}
 }

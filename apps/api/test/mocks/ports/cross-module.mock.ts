@@ -36,6 +36,7 @@ export function createFriendMock(): FriendPort {
 export function createStreakMock(): StreakPort {
 	return {
 		recordTodoToggle: jest.fn(),
+		getStreakContext: jest.fn(),
 	};
 }
 

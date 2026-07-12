@@ -1,8 +1,11 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { TodoService } from '@src/features/todo/services/todo.service';
+import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import {
   createMockAnalytics,
   createMockDIContainer,
+  createMockHttpClient,
   createMockTokenStore,
 } from '@src/shared/__tests__';
 import { KeychainLockedError } from '@src/shared/errors';
@@ -42,9 +45,24 @@ describe('AuthProvider', () => {
     }
   });
 
-  const renderProvider = () =>
-    render(
-      <StaticDIProvider container={createMockDIContainer({ tokenStore, errorReporter, analytics })}>
+  const renderProvider = () => {
+    // AuthProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
+    const todoService = new TodoService(createMockHttpClient());
+    const widgetSyncService = new WidgetSyncService(
+      { writeSnapshot: jest.fn().mockResolvedValue(undefined) },
+      errorReporter,
+    );
+
+    return render(
+      <StaticDIProvider
+        container={createMockDIContainer({
+          tokenStore,
+          errorReporter,
+          analytics,
+          todoService,
+          widgetSyncService,
+        })}
+      >
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <StatusProbe />
@@ -52,6 +70,7 @@ describe('AuthProvider', () => {
         </QueryClientProvider>
       </StaticDIProvider>,
     );
+  };
 
   const expectStatus = (status: string) =>
     waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent(status));

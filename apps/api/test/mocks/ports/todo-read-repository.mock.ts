@@ -14,5 +14,6 @@ export function createTodoReadRepositoryMock(): TodoReadRepositoryPort {
 		countActiveByCategory: jest.fn(),
 		countCompletedByUser: jest.fn(),
 		getTodayTodoStats: jest.fn(),
+		findTodayTopTodos: jest.fn(),
 	};
 }
