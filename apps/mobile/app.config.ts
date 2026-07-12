@@ -232,6 +232,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       './plugins/withJitpackFilter',
       './plugins/withGradleJvmArgs',
+      './plugins/withAndroidXWorkAlignment',
       [
         'expo-localization',
         {
@@ -368,16 +369,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           groupIdentifier: appGroupIdentifier,
           widgets: [
             {
-              name: 'AidoProgress',
-              displayName: '오늘의 달성',
-              description: '오늘 할 일 진행률과 스트릭을 한눈에 확인해요',
-              supportedFamilies: ['systemSmall', 'systemMedium'],
-            },
-            {
               name: 'AidoTodayList',
               displayName: '오늘 할 일',
-              description: '오늘의 할 일 목록을 홈 화면에서 바로 확인해요',
-              supportedFamilies: ['systemMedium', 'systemLarge'],
+              description: '오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요',
+              supportedFamilies: ['systemSmall', 'systemMedium', 'systemLarge'],
             },
           ],
         },
@@ -395,26 +390,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ],
           widgets: [
             {
-              name: 'AidoProgress',
-              label: '오늘의 달성',
-              description: '오늘 할 일 진행률과 스트릭을 한눈에 확인해요',
-              minWidth: '110dp',
-              minHeight: '110dp',
-              targetCellWidth: 2,
-              targetCellHeight: 2,
-              resizeMode: 'horizontal',
-              // 자정 롤오버 안전망: 시스템 주기 갱신(최소 30분)으로 stale 스냅샷을 새 하루 상태로 전환
-              updatePeriodMillis: 1_800_000,
-            },
-            {
               name: 'AidoTodayList',
               label: '오늘 할 일',
-              description: '오늘의 할 일 목록을 홈 화면에서 바로 확인해요',
-              minWidth: '250dp',
+              description: '오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요',
+              // 2x2(컴팩트 요약)부터 배치 가능, 넓히면 리스트로 전환 (양방향 리사이즈)
+              minWidth: '110dp',
               minHeight: '110dp',
               targetCellWidth: 4,
               targetCellHeight: 2,
-              resizeMode: 'vertical',
+              resizeMode: 'horizontal|vertical',
+              // 자정 롤오버 안전망: 시스템 주기 갱신(최소 30분)으로 stale 스냅샷을 새 하루 상태로 전환
               updatePeriodMillis: 1_800_000,
             },
           ],

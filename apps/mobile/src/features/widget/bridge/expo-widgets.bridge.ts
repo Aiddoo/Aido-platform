@@ -1,5 +1,5 @@
 import type { WidgetRenderState, WidgetSnapshot } from '../models/widget-snapshot.model';
-import { aidoProgressWidget, aidoTodayListWidget } from '../presentations/ios/aido-widgets';
+import { aidoTodayListWidget } from '../presentations/ios/aido-widgets';
 import type { IosWidgetProps } from '../presentations/ios/ios-widget-props';
 import type { WidgetBridge } from './widget-bridge';
 
@@ -31,9 +31,9 @@ function toIosProps(snapshot: WidgetSnapshot, state: WidgetRenderState): IosWidg
     topTodos: snapshot.topTodos.map((todo) => ({
       title: todo.title,
       completed: todo.completed,
+      color: todo.categoryColor,
     })),
     progressTitle: snapshot.strings.progressTitle,
-    progressLabel: snapshot.strings.progressLabel,
     percentLabel: snapshot.strings.percentLabel,
     streakLabel: snapshot.strings.streakLabel,
     allDoneLabel: snapshot.strings.allDoneLabel,
@@ -72,7 +72,6 @@ export function createExpoWidgetsBridge(): WidgetBridge {
               { date: nextLocalMidnight(now), props: toIosProps(snapshot, 'stale') },
             ];
 
-      aidoProgressWidget.updateTimeline(entries);
       aidoTodayListWidget.updateTimeline(entries);
     },
   };

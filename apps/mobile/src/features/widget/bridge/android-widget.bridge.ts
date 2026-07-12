@@ -4,7 +4,6 @@ import { requestWidgetUpdate } from 'react-native-android-widget';
 import type { WidgetSnapshot } from '../models/widget-snapshot.model';
 import {
   ANDROID_WIDGET_NAMES,
-  listRowsForHeight,
   renderAndroidWidget,
 } from '../presentations/android/render-android-widgets';
 import type { WidgetSnapshotRepository } from '../repositories/widget-snapshot.repository';
@@ -29,10 +28,10 @@ export function createAndroidWidgetBridge(repository: WidgetSnapshotRepository):
             widgetName,
             renderWidget: (widgetInfo) =>
               renderAndroidWidget({
-                widgetName,
                 snapshot,
                 todayLocalDate,
-                maxRows: listRowsForHeight(widgetInfo.height),
+                widthDp: widgetInfo.width,
+                heightDp: widgetInfo.height,
               }),
             // 홈 화면에 해당 위젯이 없으면 조용히 무시 (앱 동작에 영향 없음)
             widgetNotFound: () => {},

@@ -6,9 +6,9 @@
  */
 export interface WidgetEventMap {
   widget_added: {
-    widget_name: 'AidoProgress' | 'AidoTodayList';
+    widget_name: 'AidoTodayList';
   };
   widget_removed: {
-    widget_name: 'AidoProgress' | 'AidoTodayList';
+    widget_name: 'AidoTodayList';
   };
 }

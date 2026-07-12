@@ -8279,11 +8279,13 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         "isComplete": false,
         "topTodos": [
           {
+            "categoryColor": "#B3E5C1",
             "completed": true,
             "id": 1,
             "title": "운동하기",
           },
           {
+            "categoryColor": "#FFB3B3",
             "completed": false,
             "id": 2,
             "title": "회의 자료 준비",
@@ -8319,9 +8321,13 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "type": "boolean",
         },
         "topTodos": {
-          "description": "오늘 할 일 상위 목록 (sortOrder 오름차순, 최대 7개 — 홈 위젯 표시용)",
+          "description": "오늘 할 일 상위 목록 (sortOrder 오름차순, 최대 10개 — 홈 위젯 표시용)",
           "items": {
             "properties": {
+              "categoryColor": {
+                "description": "카테고리 색상 (HEX, 예: #FFB3B3 — 위젯 체크박스 컬러)",
+                "type": "string",
+              },
               "completed": {
                 "description": "완료 상태",
                 "type": "boolean",
@@ -8341,10 +8347,11 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
               "id",
               "title",
               "completed",
+              "categoryColor",
             ],
             "type": "object",
           },
-          "maxItems": 7,
+          "maxItems": 10,
           "type": "array",
         },
         "totalTodos": {

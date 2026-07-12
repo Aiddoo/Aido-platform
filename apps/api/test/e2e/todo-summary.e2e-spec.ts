@@ -90,9 +90,24 @@ describe("오늘의 할 일 요약 E2E", () => {
 				isComplete: false,
 				currentStreak: expect.any(Number),
 				topTodos: [
-					{ id: expect.any(Number), title: "완료한 할 일", completed: true },
-					{ id: expect.any(Number), title: "남은 할 일 1", completed: false },
-					{ id: expect.any(Number), title: "남은 할 일 2", completed: false },
+					{
+						id: expect.any(Number),
+						title: "완료한 할 일",
+						completed: true,
+						categoryColor: expect.any(String),
+					},
+					{
+						id: expect.any(Number),
+						title: "남은 할 일 1",
+						completed: false,
+						categoryColor: expect.any(String),
+					},
+					{
+						id: expect.any(Number),
+						title: "남은 할 일 2",
+						completed: false,
+						categoryColor: expect.any(String),
+					},
 				],
 			});
 		});
@@ -118,8 +133,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 			expect(response.body.data.topTodos).toEqual([]);
 		});
 
-		it("상위 할 일은 최대 7개까지만 반환한다", async () => {
-			// Given - 오늘 할 일 9개
+		it("상위 할 일은 최대 10개까지만 반환한다", async () => {
+			// Given - 오늘 할 일 12개
 			const user = await ctx.helpers.createVerifiedUser(
 				"todo-summary-limit@test.com",
 				password,
@@ -130,7 +145,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 			const today = todayInTimezone(timezone);
 			const prisma = ctx.testDatabase.getPrisma();
 			await prisma.todo.createMany({
-				data: Array.from({ length: 9 }, (_, i) => ({
+				data: Array.from({ length: 12 }, (_, i) => ({
 					userId: user.userId,
 					title: `할 일 ${i + 1}`,
 					categoryId,
@@ -146,10 +161,10 @@ describe("오늘의 할 일 요약 E2E", () => {
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", timezone);
 
-			// Then - 총계는 전체(9), 목록은 7개로 절단
+			// Then - 총계는 전체(12), 목록은 10개로 절단
 			expect(response.status).toBe(200);
-			expect(response.body.data.totalTodos).toBe(9);
-			expect(response.body.data.topTodos).toHaveLength(7);
+			expect(response.body.data.totalTodos).toBe(12);
+			expect(response.body.data.topTodos).toHaveLength(10);
 		});
 
 		it("인증 없이 호출하면 401을 반환한다", async () => {

@@ -280,6 +280,7 @@ export const todoSummaryTodoSchema = z.object({
   id: z.number().int().describe('할 일 고유 ID (양의 정수)'),
   title: z.string().describe('할 일 제목'),
   completed: z.boolean().describe('완료 상태'),
+  categoryColor: z.string().describe('카테고리 색상 (HEX, 예: #FFB3B3 — 위젯 체크박스 컬러)'),
 });
 
 export type TodoSummaryTodo = z.infer<typeof todoSummaryTodoSchema>;
@@ -298,8 +299,8 @@ export const todoSummaryResponseSchema = z
     currentStreak: z.number().int().min(0).describe('현재 연속 달성 일수 (0 이상)'),
     topTodos: z
       .array(todoSummaryTodoSchema)
-      .max(7)
-      .describe('오늘 할 일 상위 목록 (sortOrder 오름차순, 최대 7개 — 홈 위젯 표시용)'),
+      .max(10)
+      .describe('오늘 할 일 상위 목록 (sortOrder 오름차순, 최대 10개 — 홈 위젯 표시용)'),
   })
   .meta({
     example: {
@@ -310,8 +311,8 @@ export const todoSummaryResponseSchema = z
       isComplete: false,
       currentStreak: 12,
       topTodos: [
-        { id: 1, title: '운동하기', completed: true },
-        { id: 2, title: '회의 자료 준비', completed: false },
+        { id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' },
+        { id: 2, title: '회의 자료 준비', completed: false, categoryColor: '#FFB3B3' },
       ],
     },
   });

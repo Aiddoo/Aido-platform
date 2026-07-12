@@ -14,7 +14,7 @@ function buildSnapshot(): WidgetSnapshot {
     completionRate: 60,
     isComplete: false,
     currentStreak: 12,
-    topTodos: [{ id: 1, title: '운동하기', completed: true }],
+    topTodos: [{ id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' }],
     locale: 'ko',
     strings: {
       progressTitle: '오늘의 할 일',

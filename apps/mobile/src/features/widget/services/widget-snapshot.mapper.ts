@@ -13,7 +13,12 @@ export interface WidgetSummaryInput {
   completionRate: number;
   isComplete: boolean;
   currentStreak: number;
-  topTodos: readonly { id: number; title: string; completed: boolean }[];
+  topTodos: readonly {
+    id: number;
+    title: string;
+    completed: boolean;
+    categoryColor: string;
+  }[];
 }
 
 /** 매퍼가 요구하는 최소 번역 함수 — i18next `t`가 그대로 만족한다 (순수성/테스트 용이성) */
@@ -41,7 +46,7 @@ export interface WidgetSnapshotContext {
 }
 
 /** 표시할 상위 할 일 최대 개수 (Large 위젯 기준) */
-const TOP_TODOS_DISPLAY_LIMIT = 7;
+const TOP_TODOS_DISPLAY_LIMIT = 10;
 
 function bakeStrings(
   t: WidgetTranslateFn,
@@ -79,6 +84,7 @@ export function toWidgetSnapshot(
     id: todo.id,
     title: todo.title,
     completed: todo.completed,
+    categoryColor: todo.categoryColor,
   }));
   const overflowCount = Math.max(0, summary.totalTodos - topTodos.length);
 

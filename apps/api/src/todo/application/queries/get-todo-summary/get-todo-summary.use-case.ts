@@ -7,8 +7,8 @@ import {
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
 
-/** 홈 위젯 요약에 노출되는 할 일 최대 개수 */
-const TOP_TODOS_LIMIT = 7;
+/** 홈 위젯 요약에 노출되는 할 일 최대 개수 (large 위젯 리스트 기준) */
+const TOP_TODOS_LIMIT = 10;
 
 /** 오늘의 할 일 요약 조회 입력. today는 사용자 로컬 "오늘"의 UTC midnight. */
 export interface GetTodoSummaryInput {
@@ -21,6 +21,7 @@ export interface TodoSummaryTodoResult {
 	id: number;
 	title: string;
 	completed: boolean;
+	categoryColor: string;
 }
 
 /** 오늘의 할 일 요약 조회 결과 — use-case가 계약(반환 타입)을 소유합니다 */
@@ -78,6 +79,7 @@ export class GetTodoSummaryUseCase {
 				id: todo.id,
 				title: todo.title,
 				completed: todo.completed,
+				categoryColor: todo.category.color,
 			})),
 		};
 	}

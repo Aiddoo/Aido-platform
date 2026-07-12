@@ -43,3 +43,12 @@ export const WIDGET_COLORS: Record<WidgetTheme, WidgetPalette> = {
     brand: '#FF6B43',
   },
 } as const;
+
+function isWidgetHexColor(value: string): value is WidgetHexColor {
+  return value.startsWith('#');
+}
+
+/** 서버가 내려준 카테고리 색상(HEX 계약)을 안전하게 내로잉 — 계약 위반 시 브랜드로 폴백 */
+export function toWidgetHexColor(value: string, fallback: WidgetHexColor): WidgetHexColor {
+  return isWidgetHexColor(value) ? value : fallback;
+}

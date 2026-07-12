@@ -2,8 +2,10 @@
 
 **Version**: 1.0.0 · **Last Updated**: 2026-07-12 · **Owner**: Aido Mobile Team
 
-v1.5.1에서 도입. 진행률 위젯(AidoProgress: small/medium, 2x2)과
-오늘 할 일 리스트 위젯(AidoTodayList: medium/large, 4x2 세로 리사이즈)을 제공한다.
+v1.5.1에서 도입. 단일 위젯 **AidoTodayList**("오늘 할 일")가 크기에 따라 변형된다:
+- iOS systemSmall / Android 2x2(좁은 폭): 컴팩트 요약 — 카운트 히어로 + 선형 바 + 스트릭
+- iOS systemMedium/Large / Android 4x2~(양방향 리사이즈): 헤더 진행률 + 할 일 목록
+  (카테고리 컬러 체크박스 — 앱 홈과 동일한 시각 언어, 최대 8행 + "+N개 더")
 
 ---
 
@@ -51,6 +53,8 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 1. `app.config.ts` 두 플러그인의 `widgets[]`에 이름 추가 (Swift 식별자 규칙, 양 플랫폼 동일 이름 권장)
 2. iOS: `presentations/ios/`에 `'widget'` 디렉티브 레이아웃 작성 + `createWidget(name, layout)` export
    — **함수는 자기완결이어야 함**(모듈 스코프 값 참조 금지, 팔레트 인라인)
+   — **검증된 프리미티브만 사용**: Text/HStack/VStack/Spacer/선형 Gauge(linearCapacity).
+     Gauge 링 중앙 라벨(currentValueLabel)·strikethrough는 위젯 런타임에서 렌더되지 않음(시뮬레이터 확인)
 3. Android: `presentations/android/`에 FlexWidget 트리 + `ANDROID_WIDGET_NAMES`에 이름 추가
 4. 브리지: iOS `expo-widgets.bridge.ts`에 `updateTimeline` 대상 추가 (Android는 이름 배열로 자동)
 5. `pnpm native:prebuild`로 네이티브 재생성 → dev 빌드로 확인 (Expo Go 불가)
@@ -72,7 +76,7 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 
 ## 6. 테스트
 
-- 단위: 모델 정책/배지 티어, 매퍼(문자열 굽기·절단), repository(라운드트립·손상 JSON),
+- 단위: 모델 정책(renderState/stale), 매퍼(문자열 굽기·절단·카테고리 컬러), repository(라운드트립·손상 JSON),
   sync service(무throw 계약) — `src/features/widget/**/*.test.ts`
 - 렌더 트리(FlexWidget/SwiftUI)는 단위 테스트 불가 — 수동 QA 체크리스트:
   - [ ] 위젯 추가(픽커 라벨/설명) — 양 플랫폼, 전 사이즈
@@ -80,7 +84,7 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
   - [ ] 라이트/다크 전환
   - [ ] 상태 4종: data / empty / loggedOut / stale(기기 날짜 변경)
   - [ ] 언어 변경(ko↔en) 반영
-  - [ ] Android 세로 리사이즈(3→7행), iOS large(7행)
+  - [ ] Android 세로 리사이즈(3→8행) + 2x2 컴팩트 전환, iOS large(8행)
   - [ ] 로그아웃 → "로그인이 필요해요" / 재로그인 → 데이터 복원
   - [ ] 콜드 스타트에서 재시도 화면(fallback) 미재현
 
@@ -88,7 +92,10 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 
 - 인위젯 체크오프(탭 완료) 미지원 — 탭하면 앱 열림. Android는 headless 경로 검증됨,
   iOS는 expo-widgets 인터랙션 API 성숙 후 재평가.
-- iOS 마스코트는 SF Symbol(`pawprint.fill`) — 고양이 이미지 자산은 App Group 복사
+- iOS 상태 화면 마스코트는 🐾 이모지 — 고양이 이미지 자산은 App Group 복사
   파이프라인(expo-asset/file-system) 도입 후.
 - 위젯 픽커 라벨은 빌드 타임 정적 문자열(한국어 우선) — 양 플러그인의 다국어 미지원.
+- Android androidx.work 중복 클래스: `plugins/withAndroidXWorkAlignment.js`가 2.9.1로 정렬
+  (react-native-android-widget PR #148의 work-runtime 2.8.1 vs 타 의존성 ktx 2.7.1 충돌,
+  WorkManager 2.9.0부터 ktx가 빈 셔틀이라 정렬 시 충돌 카테고리 소멸).
 - 잠금화면 위젯(accessory family), 빠른 추가 위젯 — 후속 버전.

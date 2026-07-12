@@ -25,9 +25,11 @@ export const widgetSnapshotSchema = z.object({
         id: z.number().int(),
         title: z.string(),
         completed: z.boolean(),
+        /** 카테고리 색상 (HEX) — 위젯 체크박스 컬러, 앱 홈과 동일한 시각 언어 */
+        categoryColor: z.string(),
       }),
     )
-    .max(7),
+    .max(10),
   locale: z.enum(['ko', 'en']),
   /** 쓰기 시점에 구워진 localized 문자열 — 위젯은 번역하지 않고 그대로 표시 */
   strings: z.object({
@@ -70,24 +72,3 @@ export const WidgetSnapshotPolicy = {
     return snapshot.state;
   },
 } as const;
-
-/** 진행 상태별 고양이 배지 티어 (achievement 배지 자산 재사용) */
-export type WidgetBadgeTier = 'empty' | 'almost' | 'completed' | 'perfect';
-
-/** achievement의 getBadgeType과 동일 임계값 + 진행 없음(empty) 확장 */
-export function badgeTierOf(snapshot: {
-  totalTodos: number;
-  completedTodos: number;
-  completionRate: number;
-}): WidgetBadgeTier {
-  if (snapshot.totalTodos === 0 || snapshot.completedTodos === 0) {
-    return 'empty';
-  }
-  if (snapshot.completionRate === 100) {
-    return 'perfect';
-  }
-  if (snapshot.completionRate >= 90) {
-    return 'almost';
-  }
-  return 'completed';
-}

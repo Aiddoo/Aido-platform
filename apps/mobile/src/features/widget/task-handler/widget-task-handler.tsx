@@ -4,7 +4,6 @@ import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
 import {
   isAndroidWidgetName,
-  listRowsForHeight,
   renderAndroidWidget,
 } from '../presentations/android/render-android-widgets';
 import {
@@ -59,10 +58,10 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps): Promise<
 
     renderWidget(
       renderAndroidWidget({
-        widgetName: widgetInfo.widgetName,
         snapshot,
         todayLocalDate,
-        maxRows: listRowsForHeight(widgetInfo.height),
+        widthDp: widgetInfo.width,
+        heightDp: widgetInfo.height,
       }),
     );
   } catch (error) {

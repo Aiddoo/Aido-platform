@@ -2,7 +2,7 @@
 
 > 상세 아키텍처 가이드: [`apps/mobile/.claude/widgets.md`](../../../.claude/widgets.md)
 
-오늘 할 일 진행률(AidoProgress)과 오늘 할 일 목록(AidoTodayList)을 홈 화면에서 보여주는 feature.
+단일 위젯 AidoTodayList — 오늘 할 일의 체크 여부(카테고리 컬러 체크박스)를 홈 화면에서 보여주고, 좁은 크기에서는 컴팩트 진행 요약으로 전환하는 feature.
 
 ## 핵심 원칙
 

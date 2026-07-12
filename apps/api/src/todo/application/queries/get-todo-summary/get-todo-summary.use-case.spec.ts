@@ -72,13 +72,23 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			isComplete: false,
 			currentStreak: 12,
 			topTodos: [
-				{ id: 1, title: expect.any(String), completed: true },
-				{ id: 2, title: expect.any(String), completed: false },
+				{
+					id: 1,
+					title: expect.any(String),
+					completed: true,
+					categoryColor: expect.any(String),
+				},
+				{
+					id: 2,
+					title: expect.any(String),
+					completed: false,
+					categoryColor: expect.any(String),
+				},
 			],
 		});
 	});
 
-	it("상위 할 일은 오늘 날짜 범위로 최대 7개만 조회한다", async () => {
+	it("상위 할 일은 오늘 날짜 범위로 최대 10개만 조회한다", async () => {
 		// Given
 		todoReadRepository.getTodayTodoStats.mockResolvedValue({
 			total: 0,
@@ -93,7 +103,7 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 		// Then
 		expect(todoReadRepository.findManyByUserId).toHaveBeenCalledWith({
 			userId: "user-123",
-			size: 7,
+			size: 10,
 			startDate: today,
 			endDate: today,
 		});

@@ -85,5 +85,6 @@ export const toTodoSummary = (dto: TodoSummaryResponse): TodoSummary => ({
     id: todo.id,
     title: todo.title,
     completed: todo.completed,
+    categoryColor: todo.categoryColor,
   })),
 });

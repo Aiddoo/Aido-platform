@@ -1,5 +1,5 @@
 import type { WidgetSnapshot } from './widget-snapshot.model';
-import { badgeTierOf, WidgetSnapshotPolicy } from './widget-snapshot.model';
+import { WidgetSnapshotPolicy } from './widget-snapshot.model';
 
 function buildSnapshot(overrides: Partial<WidgetSnapshot> = {}): WidgetSnapshot {
   return {
@@ -75,27 +75,5 @@ describe('WidgetSnapshotPolicy.renderState', () => {
 
     // Then
     expect(result).toBe('empty');
-  });
-});
-
-describe('badgeTierOf', () => {
-  it('할 일이 없으면 empty다', () => {
-    expect(badgeTierOf({ totalTodos: 0, completedTodos: 0, completionRate: 0 })).toBe('empty');
-  });
-
-  it('완료가 하나도 없으면 empty다', () => {
-    expect(badgeTierOf({ totalTodos: 5, completedTodos: 0, completionRate: 0 })).toBe('empty');
-  });
-
-  it('100%면 perfect다', () => {
-    expect(badgeTierOf({ totalTodos: 5, completedTodos: 5, completionRate: 100 })).toBe('perfect');
-  });
-
-  it('90% 이상이면 almost다 (achievement getBadgeType과 동일 임계값)', () => {
-    expect(badgeTierOf({ totalTodos: 10, completedTodos: 9, completionRate: 90 })).toBe('almost');
-  });
-
-  it('90% 미만이면 completed다', () => {
-    expect(badgeTierOf({ totalTodos: 5, completedTodos: 3, completionRate: 60 })).toBe('completed');
   });
 });

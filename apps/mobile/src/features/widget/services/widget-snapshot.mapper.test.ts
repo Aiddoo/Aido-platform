@@ -27,8 +27,8 @@ function buildSummary(overrides: Partial<WidgetSummaryInput> = {}): WidgetSummar
     isComplete: false,
     currentStreak: 12,
     topTodos: [
-      { id: 1, title: '운동하기', completed: true },
-      { id: 2, title: '회의 자료 준비', completed: false },
+      { id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' },
+      { id: 2, title: '회의 자료 준비', completed: false, categoryColor: '#FFB3B3' },
     ],
     ...overrides,
   };
@@ -90,20 +90,21 @@ describe('toWidgetSnapshot', () => {
     expect(snapshot.strings.percentLabel).toBe('widget:progress.percent({"rate":33})');
   });
 
-  it('표시 한도(7개) 초과분은 절단하고 moreLabel에 남은 개수를 굽는다', () => {
-    // Given - 총 10개 중 topTodos 7개 도착
-    const topTodos = Array.from({ length: 7 }, (_, i) => ({
+  it('표시 한도(10개) 초과분은 절단하고 moreLabel에 남은 개수를 굽는다', () => {
+    // Given - 총 13개 중 topTodos 10개 도착
+    const topTodos = Array.from({ length: 10 }, (_, i) => ({
       id: i + 1,
       title: `할 일 ${i + 1}`,
       completed: false,
+      categoryColor: '#FFB3B3',
     }));
-    const summary = buildSummary({ totalTodos: 10, topTodos });
+    const summary = buildSummary({ totalTodos: 13, topTodos });
 
     // When
     const snapshot = toWidgetSnapshot(summary, buildContext());
 
     // Then
-    expect(snapshot.topTodos).toHaveLength(7);
+    expect(snapshot.topTodos).toHaveLength(10);
     expect(snapshot.strings.moreLabel).toBe('widget:list.more({"count":3})');
   });
 

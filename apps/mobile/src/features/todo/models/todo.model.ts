@@ -122,6 +122,7 @@ export const todoSummaryClientSchema = z.object({
       id: z.number(),
       title: z.string(),
       completed: z.boolean(),
+      categoryColor: z.string(),
     }),
   ),
 });
