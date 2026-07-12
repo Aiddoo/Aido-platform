@@ -54,14 +54,11 @@ export class GetTodoSummaryUseCase {
 	async execute(input: GetTodoSummaryInput): Promise<TodoSummaryResult> {
 		const { userId, today } = input;
 
-		const [stats, todayTodos, currentStreak] = await Promise.all([
+		const [stats, topTodos, currentStreak] = await Promise.all([
 			this.todoReadRepository.getTodayTodoStats(userId, today),
-			this.todoReadRepository.findManyByUserId({
-				userId,
-				size: TOP_TODOS_LIMIT,
-				startDate: today,
-				endDate: today,
-			}),
+			// 미완료 우선 정렬 — 위젯에서 남은 일이 먼저 보이게 (정렬은 DB가 소유,
+			// 클라이언트 절단 이후 정렬하면 한도 밖 미완료가 누락된다)
+			this.todoReadRepository.findTodayTopTodos(userId, today, TOP_TODOS_LIMIT),
 			this.streakPort.getCurrentStreak(userId),
 		]);
 
@@ -74,13 +71,7 @@ export class GetTodoSummaryUseCase {
 			completionRate,
 			isComplete,
 			currentStreak,
-			// findManyByUserId는 hasNext 판별용으로 size+1개를 반환하므로 상한으로 절단
-			topTodos: todayTodos.slice(0, TOP_TODOS_LIMIT).map((todo) => ({
-				id: todo.id,
-				title: todo.title,
-				completed: todo.completed,
-				categoryColor: todo.category.color,
-			})),
+			topTodos,
 		};
 	}
 }

@@ -89,13 +89,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 				completionRate: 33,
 				isComplete: false,
 				currentStreak: expect.any(Number),
+				// 미완료 우선 정렬 — 남은 일이 위, 완료한 일이 아래
 				topTodos: [
-					{
-						id: expect.any(Number),
-						title: "완료한 할 일",
-						completed: true,
-						categoryColor: expect.any(String),
-					},
 					{
 						id: expect.any(Number),
 						title: "남은 할 일 1",
@@ -106,6 +101,12 @@ describe("오늘의 할 일 요약 E2E", () => {
 						id: expect.any(Number),
 						title: "남은 할 일 2",
 						completed: false,
+						categoryColor: expect.any(String),
+					},
+					{
+						id: expect.any(Number),
+						title: "완료한 할 일",
+						completed: true,
 						categoryColor: expect.any(String),
 					},
 				],
@@ -133,8 +134,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 			expect(response.body.data.topTodos).toEqual([]);
 		});
 
-		it("상위 할 일은 최대 10개까지만 반환한다", async () => {
-			// Given - 오늘 할 일 12개
+		it("상위 할 일은 최대 10개, 미완료가 항상 완료보다 먼저 온다", async () => {
+			// Given - 오늘 할 일 12개, 정렬 앞쪽(sortOrder 0~5) 6개는 완료 상태
 			const user = await ctx.helpers.createVerifiedUser(
 				"todo-summary-limit@test.com",
 				password,
@@ -151,7 +152,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 					categoryId,
 					startDate: today,
 					sortOrder: i,
-					completed: false,
+					completed: i < 6,
+					...(i < 6 && { completedAt: new Date() }),
 				})),
 			});
 
@@ -165,6 +167,23 @@ describe("오늘의 할 일 요약 E2E", () => {
 			expect(response.status).toBe(200);
 			expect(response.body.data.totalTodos).toBe(12);
 			expect(response.body.data.topTodos).toHaveLength(10);
+
+			// 미완료 6개가 전부 앞에, 완료는 그 뒤에 온다 (sortOrder가 앞서도 완료면 뒤로)
+			const completedFlags = response.body.data.topTodos.map(
+				(todo: { completed: boolean }) => todo.completed,
+			);
+			expect(completedFlags).toEqual([
+				false,
+				false,
+				false,
+				false,
+				false,
+				false,
+				true,
+				true,
+				true,
+				true,
+			]);
 		});
 
 		it("인증 없이 호출하면 401을 반환한다", async () => {

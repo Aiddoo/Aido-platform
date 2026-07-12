@@ -267,6 +267,48 @@ export class TodoRowRepository {
 	}
 
 	/**
+	 * 오늘 할 일 상위 목록 (홈 위젯용) — 미완료 우선, 이후 카테고리/정렬 순.
+	 * 위젯에 필요한 컬럼만 select하고 카테고리는 색상만 join한다 (단일 쿼리, N+1 없음).
+	 */
+	async findTodayTopTodos(
+		userId: string,
+		today: Date,
+		limit: number,
+	): Promise<
+		{ id: number; title: string; completed: boolean; categoryColor: string }[]
+	> {
+		const dateFilter = buildDateRangeFilter(today, today);
+		const where: Prisma.TodoWhereInput = {
+			userId,
+			...(dateFilter && { AND: [dateFilter] }),
+		};
+
+		const rows = await this.client.todo.findMany({
+			where,
+			take: limit,
+			orderBy: [
+				{ completed: "asc" }, // 미완료(false) 우선 — 위젯에서 남은 일이 먼저 보이게
+				{ category: { sortOrder: "asc" } },
+				{ sortOrder: "asc" },
+				{ id: "asc" },
+			],
+			select: {
+				id: true,
+				title: true,
+				completed: true,
+				category: { select: { color: true } },
+			},
+		});
+
+		return rows.map((row) => ({
+			id: row.id,
+			title: row.title,
+			completed: row.completed,
+			categoryColor: row.category.color,
+		}));
+	}
+
+	/**
 	 * 사용자의 Todo 최대 sortOrder 조회
 	 */
 	async getMaxSortOrder(userId: string): Promise<number> {

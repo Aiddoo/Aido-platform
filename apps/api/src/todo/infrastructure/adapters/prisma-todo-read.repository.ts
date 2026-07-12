@@ -57,6 +57,16 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 		return this.todoRepository.countCompletedByUser(userId);
 	}
 
+	findTodayTopTodos(
+		userId: string,
+		today: Date,
+		limit: number,
+	): Promise<
+		{ id: number; title: string; completed: boolean; categoryColor: string }[]
+	> {
+		return this.todoRepository.findTodayTopTodos(userId, today, limit);
+	}
+
 	getTodayTodoStats(
 		userId: string,
 		today: Date,

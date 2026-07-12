@@ -112,7 +112,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`completionRate\`: 완료율 (0-100, round(완료/전체 × 100), 할 일 없으면 0)
 - \`isComplete\`: 100% 달성 여부 (할 일이 1개 이상이고 전부 완료)
 - \`currentStreak\`: 현재 연속 달성 일수
-- \`topTodos\`: 오늘 할 일 상위 목록 (정렬 순서 기준, 최대 7개)`,
+- \`topTodos\`: 오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개)`,
 	})
 	@ApiSuccessResponse({ type: TodoSummaryResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)

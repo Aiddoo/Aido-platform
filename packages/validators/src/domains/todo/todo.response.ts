@@ -300,7 +300,9 @@ export const todoSummaryResponseSchema = z
     topTodos: z
       .array(todoSummaryTodoSchema)
       .max(10)
-      .describe('오늘 할 일 상위 목록 (sortOrder 오름차순, 최대 10개 — 홈 위젯 표시용)'),
+      .describe(
+        '오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개, 홈 위젯 표시용)',
+      ),
   })
   .meta({
     example: {
