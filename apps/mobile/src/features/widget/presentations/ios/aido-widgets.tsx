@@ -115,24 +115,27 @@ function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironme
           max={100}
           modifiers={[gaugeStyle('linearCapacity'), tint(palette.brand), frame({ height: 6 })]}
         />
-        <Text
-          modifiers={[
-            font({ size: 11, weight: 'medium', design: 'rounded' }),
-            foregroundColor(props.isComplete ? palette.brand : palette.muted),
-          ]}
-        >
-          {props.isComplete ? props.allDoneLabel : props.percentLabel}
-        </Text>
-        {props.currentStreak > 0 ? (
+        <HStack>
           <Text
             modifiers={[
               font({ size: 11, weight: 'medium', design: 'rounded' }),
-              foregroundColor(palette.brand),
+              foregroundColor(props.isComplete ? palette.brand : palette.muted),
             ]}
           >
-            {`🔥 ${props.streakLabel}`}
+            {props.isComplete ? props.allDoneLabel : props.percentLabel}
           </Text>
-        ) : null}
+          <Spacer />
+          {props.currentStreak > 0 ? (
+            <Text
+              modifiers={[
+                font({ size: 11, weight: 'medium', design: 'rounded' }),
+                foregroundColor(palette.brand),
+              ]}
+            >
+              {`🔥 ${props.streakLabel}`}
+            </Text>
+          ) : null}
+        </HStack>
       </VStack>
     );
   }
@@ -244,15 +247,12 @@ function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironme
       {renderRow(visibleTodos[7])}
 
       {overflowCount > 0 ? (
-        <Text
-          modifiers={[
-            font({ size: 11, design: 'rounded' }),
-            foregroundColor(palette.muted),
-            padding({ leading: 28 }),
-          ]}
-        >
-          {props.moreLabelTemplate.replace('{count}', String(overflowCount))}
-        </Text>
+        <HStack>
+          <Spacer />
+          <Text modifiers={[font({ size: 11, design: 'rounded' }), foregroundColor(palette.muted)]}>
+            {props.moreLabelTemplate.replace('{count}', String(overflowCount))}
+          </Text>
+        </HStack>
       ) : null}
       <Spacer />
     </VStack>

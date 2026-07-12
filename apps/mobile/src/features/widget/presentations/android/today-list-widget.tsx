@@ -107,20 +107,31 @@ export function TodayListWidget({
         </FlexWidget>
         <FlexWidget style={{ width: 'match_parent', flexDirection: 'column', flexGap: 6 }}>
           <ProgressBar rate={snapshot.completionRate} theme={theme} height={6} />
-          <TextWidget
-            text={
-              snapshot.isComplete
-                ? snapshot.strings.allDoneLabel
-                : snapshot.currentStreak > 0
-                  ? `🔥 ${snapshot.strings.streakLabel}`
-                  : snapshot.strings.percentLabel
-            }
+          <FlexWidget
             style={{
-              fontSize: 11,
-              fontFamily: WIDGET_FONTS.medium,
-              color: snapshot.isComplete ? palette.brand : palette.muted,
+              width: 'match_parent',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
-          />
+          >
+            <TextWidget
+              text={
+                snapshot.isComplete ? snapshot.strings.allDoneLabel : snapshot.strings.percentLabel
+              }
+              style={{
+                fontSize: 11,
+                fontFamily: WIDGET_FONTS.medium,
+                color: snapshot.isComplete ? palette.brand : palette.muted,
+              }}
+            />
+            {snapshot.currentStreak > 0 ? (
+              <TextWidget
+                text={`🔥 ${snapshot.strings.streakLabel}`}
+                style={{ fontSize: 11, fontFamily: WIDGET_FONTS.medium, color: palette.brand }}
+              />
+            ) : null}
+          </FlexWidget>
         </FlexWidget>
       </FlexWidget>
     );
@@ -186,16 +197,19 @@ export function TodayListWidget({
       </FlexWidget>
 
       {overflowCount > 0 ? (
-        <TextWidget
-          text={snapshot.strings.moreLabelTemplate.replace('{count}', String(overflowCount))}
-          style={{
-            fontSize: 11,
-            fontFamily: WIDGET_FONTS.regular,
-            color: palette.muted,
-            marginTop: 4,
-            paddingLeft: 30,
-          }}
-        />
+        <FlexWidget
+          style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-end' }}
+        >
+          <TextWidget
+            text={snapshot.strings.moreLabelTemplate.replace('{count}', String(overflowCount))}
+            style={{
+              fontSize: 11,
+              fontFamily: WIDGET_FONTS.regular,
+              color: palette.muted,
+              marginTop: 4,
+            }}
+          />
+        </FlexWidget>
       ) : null}
     </FlexWidget>
   );
