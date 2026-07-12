@@ -1,4 +1,4 @@
-import { FlexWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, ImageWidget, TextWidget } from 'react-native-android-widget';
 
 import type {
   WidgetRenderState,
@@ -10,7 +10,7 @@ import {
   WIDGET_COLORS,
   type WidgetTheme,
 } from '../constants/widget-colors.constant';
-import { WIDGET_FONTS } from './widget-assets';
+import { WIDGET_FONTS, WIDGET_MASCOT_IMAGE, WIDGET_PERFECT_IMAGE } from './widget-assets';
 import { ProgressBar, StateWidget } from './widget-primitives';
 
 export interface TodayListWidgetProps {
@@ -72,14 +72,39 @@ export function TodayListWidget({
           justifyContent: 'space-between',
         }}
       >
-        <TextWidget
-          text={snapshot.strings.progressTitle}
-          style={{ fontSize: 12, fontFamily: WIDGET_FONTS.medium, color: palette.muted }}
-        />
-        <TextWidget
-          text={`${snapshot.completedTodos}/${snapshot.totalTodos}`}
-          style={{ fontSize: 30, fontFamily: WIDGET_FONTS.bold, color: palette.foreground }}
-        />
+        <FlexWidget
+          style={{
+            width: 'match_parent',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <TextWidget
+            text={snapshot.strings.progressTitle}
+            style={{ fontSize: 12, fontFamily: WIDGET_FONTS.medium, color: palette.muted }}
+          />
+          <ImageWidget
+            image={snapshot.isComplete ? WIDGET_PERFECT_IMAGE : WIDGET_MASCOT_IMAGE}
+            imageWidth={26}
+            imageHeight={26}
+          />
+        </FlexWidget>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-end', flexGap: 2 }}>
+          <TextWidget
+            text={`${snapshot.completedTodos}`}
+            style={{ fontSize: 32, fontFamily: WIDGET_FONTS.bold, color: palette.brand }}
+          />
+          <TextWidget
+            text={`/${snapshot.totalTodos}`}
+            style={{
+              fontSize: 18,
+              fontFamily: WIDGET_FONTS.semibold,
+              color: palette.muted,
+              paddingBottom: 3,
+            }}
+          />
+        </FlexWidget>
         <FlexWidget style={{ width: 'match_parent', flexDirection: 'column', flexGap: 6 }}>
           <ProgressBar rate={snapshot.completionRate} theme={theme} height={6} />
           <TextWidget
@@ -130,18 +155,26 @@ export function TodayListWidget({
           text={snapshot.strings.progressTitle}
           style={{ fontSize: 12, fontFamily: WIDGET_FONTS.medium, color: palette.muted }}
         />
-        <TextWidget
-          text={
-            snapshot.isComplete
-              ? snapshot.strings.allDoneLabel
-              : `${snapshot.completedTodos}/${snapshot.totalTodos}`
-          }
-          style={{
-            fontSize: 13,
-            fontFamily: WIDGET_FONTS.semibold,
-            color: snapshot.isComplete ? palette.brand : palette.foreground,
-          }}
-        />
+        {snapshot.isComplete ? (
+          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flexGap: 5 }}>
+            <ImageWidget image={WIDGET_PERFECT_IMAGE} imageWidth={18} imageHeight={18} />
+            <TextWidget
+              text={snapshot.strings.allDoneLabel}
+              style={{ fontSize: 13, fontFamily: WIDGET_FONTS.semibold, color: palette.brand }}
+            />
+          </FlexWidget>
+        ) : (
+          <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+            <TextWidget
+              text={`${snapshot.completedTodos}`}
+              style={{ fontSize: 14, fontFamily: WIDGET_FONTS.bold, color: palette.brand }}
+            />
+            <TextWidget
+              text={`/${snapshot.totalTodos}`}
+              style={{ fontSize: 13, fontFamily: WIDGET_FONTS.semibold, color: palette.muted }}
+            />
+          </FlexWidget>
+        )}
       </FlexWidget>
 
       <ProgressBar rate={snapshot.completionRate} theme={theme} height={3} />

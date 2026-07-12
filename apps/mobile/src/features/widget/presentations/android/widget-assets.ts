@@ -8,5 +8,8 @@ export const WIDGET_FONTS = {
   bold: 'WantedSans-Bold',
 } as const;
 
-/** 상태 화면(empty/loggedOut/stale) 마스코트 */
+/** 상태 화면(empty/loggedOut/stale) + 컴팩트 변형 마스코트 */
 export const WIDGET_MASCOT_IMAGE: ImageRequireSource = require('@assets/images/ido_cat_hi.webp');
+
+/** 100% 달성 축하 배지 (achievement 자산 재사용) */
+export const WIDGET_PERFECT_IMAGE: ImageRequireSource = require('@assets/images/badge_perfect.webp');

@@ -21,8 +21,10 @@ export interface WidgetPalette {
   divider: WidgetHexColor;
   /** 프로그레스 트랙 (light: --gray-3 / dark: --default) */
   track: WidgetHexColor;
-  /** --main 브랜드 오렌지 — 프로그레스 필·체크·스트릭 포인트에만 사용 */
+  /** --main 브랜드 오렌지 — 히어로 숫자·프로그레스·스트릭·완료 축하의 단일 포인트 컬러 */
   brand: WidgetHexColor;
+  /** 프로그레스 그라데이션 끝색 (--main 기점의 밝은 오렌지) */
+  brandSoft: WidgetHexColor;
 }
 
 export const WIDGET_COLORS: Record<WidgetTheme, WidgetPalette> = {
@@ -33,14 +35,17 @@ export const WIDGET_COLORS: Record<WidgetTheme, WidgetPalette> = {
     divider: '#DEDEDE',
     track: '#EBEBEB',
     brand: '#FF6B43',
+    brandSoft: '#FF9E77',
   },
   dark: {
-    background: '#121212',
+    // 순수 블랙 대신 --main 기운이 도는 웜 블랙 — 다크 홈 화면에서 브랜드 존재감
+    background: '#171310',
     foreground: '#F5F5F5',
     muted: '#B7B7B7',
     divider: '#636363',
     track: '#333333',
     brand: '#FF6B43',
+    brandSoft: '#FF9E77',
   },
 } as const;
 

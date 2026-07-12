@@ -32,7 +32,12 @@ export function ProgressBar({
           style={{
             flex: fill,
             height,
-            backgroundColor: palette.brand,
+            // 메인 컬러(--main) 기점 그라데이션 — 채워질수록 밝아지는 진행감
+            backgroundGradient: {
+              from: palette.brand,
+              to: palette.brandSoft,
+              orientation: 'LEFT_RIGHT',
+            },
             borderRadius: height / 2,
           }}
         />
