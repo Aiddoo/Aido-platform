@@ -95,6 +95,10 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 - iOS 상태 화면 마스코트는 🐾 이모지 — 고양이 이미지 자산은 App Group 복사
   파이프라인(expo-asset/file-system) 도입 후.
 - 위젯 픽커 라벨은 빌드 타임 정적 문자열(한국어 우선) — 양 플러그인의 다국어 미지원.
+- **Android 위젯 컴포넌트 파일은 `'use no memo';` 필수**: `react-native-android-widget`은 컴포넌트를
+  React 렌더러 밖에서 함수로 직접 호출(`jsxTree.type(props)`)하는데, `experiments.reactCompiler: true`가
+  주입한 `useMemoCache`가 훅으로 취급되어 "Invalid hook call" → 렌더 전체 실패(**완전히 빈 위젯**).
+  dev/prod 공통이며 조용히 실패하므로(Sentry에만 기록) 새 위젯 파일 추가 시 최상단 디렉티브를 빠뜨리지 말 것.
 - Android androidx.work 중복 클래스: `plugins/withAndroidXWorkAlignment.js`가 2.9.1로 정렬
   (react-native-android-widget PR #148의 work-runtime 2.8.1 vs 타 의존성 ktx 2.7.1 충돌,
   WorkManager 2.9.0부터 ktx가 빈 셔틀이라 정렬 시 충돌 카테고리 소멸).

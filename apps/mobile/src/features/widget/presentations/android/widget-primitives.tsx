@@ -1,3 +1,8 @@
+// react-native-android-widget은 컴포넌트를 React 렌더러 밖에서 함수로 직접 호출한다.
+// React Compiler가 주입하는 useMemoCache가 훅으로 취급되어 "Invalid hook call"로 렌더가
+// 통째로 실패하므로(빈 위젯), 이 파일은 컴파일러 대상에서 제외한다.
+'use no memo';
+
 import { FlexWidget, ImageWidget, TextWidget } from 'react-native-android-widget';
 
 import { WIDGET_COLORS, type WidgetTheme } from '../constants/widget-colors.constant';
