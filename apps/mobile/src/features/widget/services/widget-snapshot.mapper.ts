@@ -36,7 +36,7 @@ export type WidgetTranslateFn = (
     | 'widget:state.loggedOutCta'
     | 'widget:state.staleTitle'
     | 'widget:state.staleCta',
-  params?: Record<string, number>,
+  params?: Record<string, string | number>,
 ) => string;
 
 export interface WidgetSnapshotContext {
@@ -54,7 +54,6 @@ function bakeStrings(
     WidgetSummaryInput,
     'completedTodos' | 'totalTodos' | 'completionRate' | 'currentStreak'
   >,
-  overflowCount: number,
 ): WidgetSnapshotStrings {
   return {
     progressTitle: t('widget:progress.title'),
@@ -65,7 +64,9 @@ function bakeStrings(
     percentLabel: t('widget:progress.percent', { rate: Math.round(summary.completionRate) }),
     streakLabel: t('widget:progress.streak', { count: summary.currentStreak }),
     allDoneLabel: t('widget:progress.allDone'),
-    moreLabel: overflowCount > 0 ? t('widget:list.more', { count: overflowCount }) : '',
+    // 표시 행 수(3~8행)는 위젯 크기에 따라 렌더 시점에 정해지므로 카운트는 굽지 않는다.
+    // 어순/번역은 카탈로그가 소유하고, 위젯은 {count}만 실제 초과분으로 치환한다.
+    moreLabelTemplate: t('widget:list.more', { count: '{count}' }),
     emptyTitle: t('widget:state.emptyTitle'),
     emptyCta: t('widget:state.emptyCta'),
     loggedOutTitle: t('widget:state.loggedOutTitle'),
@@ -86,7 +87,6 @@ export function toWidgetSnapshot(
     completed: todo.completed,
     categoryColor: todo.categoryColor,
   }));
-  const overflowCount = Math.max(0, summary.totalTodos - topTodos.length);
 
   return {
     version: 1,
@@ -100,7 +100,7 @@ export function toWidgetSnapshot(
     currentStreak: summary.currentStreak,
     topTodos,
     locale: context.locale,
-    strings: bakeStrings(context.t, summary, overflowCount),
+    strings: bakeStrings(context.t, summary),
   };
 }
 
@@ -121,10 +121,11 @@ export function toLoggedOutWidgetSnapshot(
     currentStreak: 0,
     topTodos: [],
     locale: context.locale,
-    strings: bakeStrings(
-      context.t,
-      { completedTodos: 0, totalTodos: 0, completionRate: 0, currentStreak: 0 },
-      0,
-    ),
+    strings: bakeStrings(context.t, {
+      completedTodos: 0,
+      totalTodos: 0,
+      completionRate: 0,
+      currentStreak: 0,
+    }),
   };
 }

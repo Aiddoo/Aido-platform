@@ -160,9 +160,9 @@ function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironme
       {renderRow(visibleTodos[6])}
       {renderRow(visibleTodos[7])}
 
-      {overflowCount > 0 && props.moreLabel !== '' ? (
+      {overflowCount > 0 ? (
         <Text modifiers={[font({ size: 11 }), foregroundColor(palette.muted)]}>
-          {props.moreLabel}
+          {props.moreLabelTemplate.replace('{count}', String(overflowCount))}
         </Text>
       ) : null}
       <Spacer />

@@ -152,9 +152,9 @@ export function TodayListWidget({
         ))}
       </FlexWidget>
 
-      {overflowCount > 0 && snapshot.strings.moreLabel !== '' ? (
+      {overflowCount > 0 ? (
         <TextWidget
-          text={snapshot.strings.moreLabel}
+          text={snapshot.strings.moreLabelTemplate.replace('{count}', String(overflowCount))}
           style={{
             fontSize: 11,
             fontFamily: WIDGET_FONTS.regular,

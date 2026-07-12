@@ -90,7 +90,7 @@ describe('toWidgetSnapshot', () => {
     expect(snapshot.strings.percentLabel).toBe('widget:progress.percent({"rate":33})');
   });
 
-  it('표시 한도(10개) 초과분은 절단하고 moreLabel에 남은 개수를 굽는다', () => {
+  it('표시 한도(10개) 초과분은 절단한다', () => {
     // Given - 총 13개 중 topTodos 10개 도착
     const topTodos = Array.from({ length: 10 }, (_, i) => ({
       id: i + 1,
@@ -105,18 +105,17 @@ describe('toWidgetSnapshot', () => {
 
     // Then
     expect(snapshot.topTodos).toHaveLength(10);
-    expect(snapshot.strings.moreLabel).toBe('widget:list.more({"count":3})');
   });
 
-  it('모든 할 일이 목록에 담기면 moreLabel은 빈 문자열이다', () => {
-    // Given - 총 2개, topTodos에 2개 전부 포함
-    const summary = buildSummary({ totalTodos: 2, completedTodos: 1 });
+  it('moreLabelTemplate은 {count} 플레이스홀더를 남긴 채 굽는다 (표시 행 수는 위젯만 안다)', () => {
+    // Given
+    const summary = buildSummary();
 
     // When
     const snapshot = toWidgetSnapshot(summary, buildContext());
 
-    // Then
-    expect(snapshot.strings.moreLabel).toBe('');
+    // Then - 렌더 시점에 위젯이 {count}를 실제 초과분으로 치환한다
+    expect(snapshot.strings.moreLabelTemplate).toBe('widget:list.more({"count":"{count}"})');
   });
 });
 

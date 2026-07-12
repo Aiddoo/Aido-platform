@@ -20,7 +20,7 @@ function buildSnapshot(overrides: Partial<WidgetSnapshot> = {}): WidgetSnapshot 
       percentLabel: '60%',
       streakLabel: '12일 연속',
       allDoneLabel: '모두 완료!',
-      moreLabel: '',
+      moreLabelTemplate: '+{count}개 더',
       emptyTitle: '오늘 할 일이 없어요',
       emptyCta: '탭해서 추가하기',
       loggedOutTitle: '로그인이 필요해요',

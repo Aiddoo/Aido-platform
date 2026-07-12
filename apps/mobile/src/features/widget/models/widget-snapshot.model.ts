@@ -38,7 +38,8 @@ export const widgetSnapshotSchema = z.object({
     percentLabel: z.string(),
     streakLabel: z.string(),
     allDoneLabel: z.string(),
-    moreLabel: z.string(),
+    /** "+N개 더" 템플릿 — 표시 행 수는 렌더 시점에만 알 수 있으므로 {count}를 위젯이 치환 */
+    moreLabelTemplate: z.string(),
     emptyTitle: z.string(),
     emptyCta: z.string(),
     loggedOutTitle: z.string(),

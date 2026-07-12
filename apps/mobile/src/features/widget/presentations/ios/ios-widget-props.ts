@@ -21,7 +21,8 @@ export interface IosWidgetProps {
   percentLabel: string;
   streakLabel: string;
   allDoneLabel: string;
-  moreLabel: string;
+  /** "+N개 더" 템플릿 — 렌더 시 {count}를 실제 초과분으로 치환 */
+  moreLabelTemplate: string;
   /** state !== 'data'일 때 표시할 안내 문구 (상태별로 미리 선택됨) */
   stateTitle: string;
   stateCta: string;

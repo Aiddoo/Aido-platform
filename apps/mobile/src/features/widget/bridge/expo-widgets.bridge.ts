@@ -37,7 +37,7 @@ function toIosProps(snapshot: WidgetSnapshot, state: WidgetRenderState): IosWidg
     percentLabel: snapshot.strings.percentLabel,
     streakLabel: snapshot.strings.streakLabel,
     allDoneLabel: snapshot.strings.allDoneLabel,
-    moreLabel: snapshot.strings.moreLabel,
+    moreLabelTemplate: snapshot.strings.moreLabelTemplate,
     ...stateStrings(snapshot, state),
   };
 }
