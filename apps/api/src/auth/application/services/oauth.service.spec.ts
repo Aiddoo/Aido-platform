@@ -43,6 +43,7 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import type { RetentionEnrollerPort } from "../ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
@@ -132,10 +133,15 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			seedDefaultSettings: jest.fn(),
 			seedDefaultCategories: jest.fn(),
 		});
+		const retentionStub = mockOf<RetentionEnrollerPort>({
+			enrollNewUser: jest.fn(),
+			activateNewUser: jest.fn(),
+		});
 		const realProvisionUser = new ProvisionUserUseCase(
 			asDep(userRepo),
 			asDep(accountRepo),
 			seederStub,
+			retentionStub,
 		);
 		provisionUser.execute.mockImplementation((input) =>
 			realProvisionUser.execute(input),

@@ -31,6 +31,10 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import {
+	RETENTION_ENROLLER,
+	type RetentionEnrollerPort,
+} from "../ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
@@ -52,6 +56,7 @@ describe("AuthService — 인증 서비스", () => {
 	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
 	let sessionService: Mocked<SessionService>;
 	let adminNotificationFacade: Mocked<AdminNotificationFacade>;
+	let retentionEnroller: Mocked<RetentionEnrollerPort>;
 
 	// 재사용 가능한 테스트 데이터
 	const mockTokens = {
@@ -77,6 +82,7 @@ describe("AuthService — 인증 서비스", () => {
 		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
 		sessionService = unitRef.get(SessionService);
 		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
+		retentionEnroller = unitRef.get(RETENTION_ENROLLER);
 
 		// IssueLoginUseCase(발급 수렴)를 실제 인스턴스로 위임 — 기존 login 테스트가
 		// 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
@@ -99,10 +105,15 @@ describe("AuthService — 인증 서비스", () => {
 			seedDefaultSettings: jest.fn(),
 			seedDefaultCategories: jest.fn(),
 		});
+		const retentionStub = mockOf<RetentionEnrollerPort>({
+			enrollNewUser: jest.fn(),
+			activateNewUser: jest.fn(),
+		});
 		const realProvisionUser = new ProvisionUserUseCase(
 			asDep(userRepo),
 			asDep(accountRepo),
 			seederStub,
+			retentionStub,
 		);
 		provisionUser.execute.mockImplementation((input) =>
 			realProvisionUser.execute(input),
@@ -373,6 +384,9 @@ describe("AuthService — 인증 서비스", () => {
 			// Then
 			expect(result.userId).toBe(mockUser.id);
 			expect(result.tokens).toEqual(mockTokens);
+			expect(retentionEnroller.activateNewUser).toHaveBeenCalledWith(
+				mockUser.id,
+			);
 		});
 
 		it("존재하지 않는 이메일이면 에러를 던진다", async () => {

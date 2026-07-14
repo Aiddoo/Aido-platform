@@ -44,6 +44,7 @@ const CLEAN_MODULES = [
 	"notification",
 	"scheduler",
 	"auth",
+	"retention",
 ];
 
 /**

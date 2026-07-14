@@ -5,6 +5,7 @@ import { PassportModule } from "@nestjs/passport";
 import { AdminNotificationModule } from "@/admin-notification/admin-notification.module";
 import { EmailModule } from "@/email/email.module";
 import type { AccountProvider } from "@/generated/prisma/client";
+import { RetentionModule } from "@/retention";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { TodoCategoryModule } from "@/todo-category";
 import { UserSettingsModule } from "@/user-settings";
@@ -13,6 +14,7 @@ import {
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
 } from "./application/ports/oauth-identity-provider.port";
+import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port";
 import {
 	AuthService,
@@ -26,6 +28,7 @@ import {
 } from "./application/services";
 import { IssueLoginUseCase } from "./application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "./application/use-cases/provision-user/provision-user.use-case";
+import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter";
 import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards";
 import {
@@ -79,6 +82,7 @@ import {
 		// 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
 		UserSettingsModule,
 		TodoCategoryModule,
+		RetentionModule,
 	],
 	controllers: [
 		AuthController,
@@ -99,6 +103,10 @@ import {
 		{
 			provide: USER_PROVISIONING_SEEDER,
 			useClass: UserProvisioningSeederAdapter,
+		},
+		{
+			provide: RETENTION_ENROLLER,
+			useClass: RetentionEnrollerAdapter,
 		},
 		// Services
 		PasswordService,

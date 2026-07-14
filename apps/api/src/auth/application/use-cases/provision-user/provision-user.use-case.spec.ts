@@ -5,6 +5,10 @@ import { AccountRepository } from "@/auth/infrastructure/persistence/account.rep
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import type { User } from "@/generated/prisma/client";
 import {
+	RETENTION_ENROLLER,
+	type RetentionEnrollerPort,
+} from "../../ports/retention-enroller.port";
+import {
 	USER_PROVISIONING_SEEDER,
 	type UserProvisioningSeederPort,
 } from "../../ports/user-provisioning-seeder.port";
@@ -18,6 +22,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 	let userRepo: Mocked<UserRepository>;
 	let accountRepo: Mocked<AccountRepository>;
 	let seeder: Mocked<UserProvisioningSeederPort>;
+	let retentionEnroller: Mocked<RetentionEnrollerPort>;
 
 	const createdUser = mockOf<User>({
 		id: "user-1",
@@ -31,6 +36,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 		userRepo = unitRef.get(UserRepository);
 		accountRepo = unitRef.get(AccountRepository);
 		seeder = unitRef.get(USER_PROVISIONING_SEEDER);
+		retentionEnroller = unitRef.get(RETENTION_ENROLLER);
 
 		userRepo.create.mockResolvedValue(createdUser);
 	});
@@ -63,6 +69,10 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 			termsAgreedAt: new Date("2026-01-01T00:00:00Z"),
 		});
 		expect(seeder.seedDefaultCategories).toHaveBeenCalledWith("user-1");
+		expect(retentionEnroller.enrollNewUser).toHaveBeenCalledWith(
+			"user-1",
+			false,
+		);
 		expect(result).toBe(createdUser);
 	});
 

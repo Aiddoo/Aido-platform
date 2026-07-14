@@ -43,8 +43,8 @@ model User {
   aiUsageResetAt DateTime @default(now()) // 마지막 카운트 증가 시점 (KST 월 기준 새 달 여부 판단용)
 
   // 타임스탬프
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   lastLoginAt  DateTime?
   lastActiveAt DateTime? // Win-back/Nudge Suggest용 — 인증된 API 요청 시 갱신 (1시간 throttle)
 
@@ -63,24 +63,25 @@ model User {
   verifications Verification[]
 
   // 관계: Todo 앱
-  pushTokens         PushToken[]
-  todos              Todo[]
-  todoCategories     TodoCategory[]
-  following          Follow[]            @relation("user_following")
-  followers          Follow[]            @relation("user_followers")
-  sentNudges         Nudge[]             @relation("nudge_sender")
-  receivedNudges     Nudge[]             @relation("nudge_receiver")
-  sentRemindNudges     ReminderNudge[]   @relation("reminder_nudge_sender")
-  receivedRemindNudges ReminderNudge[]   @relation("reminder_nudge_receiver")
-  sentCheers         Cheer[]             @relation("cheer_sender")
-  receivedCheers     Cheer[]             @relation("cheer_receiver")
-  dailyCompletions   DailyCompletion[]
-  notifications      Notification[]
-  pushDispatches     PushDispatch[]
-  pushDailyBudgets   PushDailyBudget[]
-  activityDays       UserActivityDay[]
-  weeklyAchievements WeeklyAchievement[]
-  subscriptions      Subscription[]
+  pushTokens           PushToken[]
+  todos                Todo[]
+  todoCategories       TodoCategory[]
+  following            Follow[]                        @relation("user_following")
+  followers            Follow[]                        @relation("user_followers")
+  sentNudges           Nudge[]                         @relation("nudge_sender")
+  receivedNudges       Nudge[]                         @relation("nudge_receiver")
+  sentRemindNudges     ReminderNudge[]                 @relation("reminder_nudge_sender")
+  receivedRemindNudges ReminderNudge[]                 @relation("reminder_nudge_receiver")
+  sentCheers           Cheer[]                         @relation("cheer_sender")
+  receivedCheers       Cheer[]                         @relation("cheer_receiver")
+  dailyCompletions     DailyCompletion[]
+  notifications        Notification[]
+  pushDispatches       PushDispatch[]
+  pushDailyBudgets     PushDailyBudget[]
+  activityDays         UserActivityDay[]
+  retentionAssignments RetentionExperimentAssignment[]
+  weeklyAchievements   WeeklyAchievement[]
+  subscriptions        Subscription[]
 
   // 관계: AI
   aiReports            AiReport[]
@@ -136,34 +137,34 @@ model UserProfile {
 // =============================================================================
 
 model UserPreference {
-  id                  String  @id @default(cuid())
-  userId              String  @unique
-  pushEnabled         Boolean @default(false) // 푸시 알림 전체 on/off
-  nightPushEnabled    Boolean @default(false) // 야간 푸시 동의 (21:00-08:00)
-  timezone            String  @default("UTC") @db.VarChar(50) // IANA timezone (e.g. "Asia/Seoul")
-  locale              String  @default("ko") @db.VarChar(10) // 푸시 알림 언어 ("ko" | "en") — 기존 유저 전원 ko
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  pushEnabled           Boolean @default(false) // 푸시 알림 전체 on/off
+  nightPushEnabled      Boolean @default(false) // 야간 푸시 동의 (21:00-08:00)
+  timezone              String  @default("UTC") @db.VarChar(50) // IANA timezone (e.g. "Asia/Seoul")
+  locale                String  @default("ko") @db.VarChar(10) // 푸시 알림 언어 ("ko" | "en") — 기존 유저 전원 ko
   morningReminderHour   Int     @default(8) // 0-11, 사용자 로컬 시간 기준 아침 리마인더
   morningReminderMinute Int     @default(0) // 0-59
   eveningReminderHour   Int     @default(18) // 12-23, 사용자 로컬 시간 기준 저녁 리마인더
   eveningReminderMinute Int     @default(0) // 0-59
 
   // 시간 표시 형식
-  timeFormat        TimeFormat @default(TWELVE_HOUR)
+  timeFormat TimeFormat @default(TWELVE_HOUR)
 
   // 날씨 오전 리마인더
-  weatherMorningEnabled  Boolean @default(true)
-  weatherMorningHour     Int     @default(7)  // 0-23
-  weatherMorningMinute   Int     @default(0)  // 0-59
+  weatherMorningEnabled Boolean @default(true)
+  weatherMorningHour    Int     @default(7) // 0-23
+  weatherMorningMinute  Int     @default(0) // 0-59
 
   // 날씨 오후 리마인더
-  weatherEveningEnabled  Boolean @default(true)
-  weatherEveningHour     Int     @default(17) // 0-23
-  weatherEveningMinute   Int     @default(30) // 0-59
+  weatherEveningEnabled Boolean @default(true)
+  weatherEveningHour    Int     @default(17) // 0-23
+  weatherEveningMinute  Int     @default(30) // 0-59
 
   // 스트릭 추적
   currentStreak     Int       @default(0) // 연속 올클리어 일수
   longestStreak     Int       @default(0) // 최장 연속 기록
-  lastCompletedDate DateTime? @db.Date    // 마지막 올클리어 날짜 (로컬 타임존 기준)
+  lastCompletedDate DateTime? @db.Date // 마지막 올클리어 날짜 (로컬 타임존 기준)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -184,12 +185,12 @@ enum TimeFormat {
 // =============================================================================
 
 model UserConsent {
-  id                 String    @id @default(cuid())
-  userId             String    @unique
-  termsAgreedAt      DateTime? // 서비스 이용약관 동의 시점
-  privacyAgreedAt    DateTime? // 개인정보처리방침 동의 시점
-  agreedTermsVersion String?   @db.VarChar(20) // 동의한 약관 버전 (예: "1.0.0")
-  marketingAgreedAt  DateTime? // 마케팅 수신 동의 시점 (null = 미동의/철회)
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  termsAgreedAt         DateTime? // 서비스 이용약관 동의 시점
+  privacyAgreedAt       DateTime? // 개인정보처리방침 동의 시점
+  agreedTermsVersion    String?   @db.VarChar(20) // 동의한 약관 버전 (예: "1.0.0")
+  marketingAgreedAt     DateTime? // 마케팅 수신 동의 시점 (null = 미동의/철회)
   marketingPushAgreedAt DateTime? // 광고성 앱 푸시 수신 동의 (null = 미동의/철회)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -202,10 +203,10 @@ model UserConsent {
 model UserLocation {
   id        String   @id @default(cuid())
   userId    String   @unique
-  latitude  Float    // GPS 위도 (WGS84)
-  longitude Float    // GPS 경도 (WGS84)
-  gridX     Int      // 기상청 격자 X (Lambert 변환)
-  gridY     Int      // 기상청 격자 Y (Lambert 변환)
+  latitude  Float // GPS 위도 (WGS84)
+  longitude Float // GPS 경도 (WGS84)
+  gridX     Int // 기상청 격자 X (Lambert 변환)
+  gridY     Int // 기상청 격자 Y (Lambert 변환)
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -420,9 +421,9 @@ model OAuthState {
   refreshToken String? @db.VarChar(1000)
 
   // 사용자 정보 (콜백 성공 후 설정)
-  userId       String? @db.VarChar(255)
-  userName     String? @db.VarChar(20)
-  profileImage String? @db.VarChar(500)
+  userId          String?  @db.VarChar(255)
+  userName        String?  @db.VarChar(20)
+  profileImage    String?  @db.VarChar(500)
   accountRestored Boolean? // 계정 복구 여부 (탈퇴 유예 기간 내 재로그인)
 
   // 요청 메타데이터
@@ -468,7 +469,7 @@ model Todo {
   userId String
 
   // 내용
-  title   String  @db.VarChar(200)
+  title String @db.VarChar(200)
 
   // 카테고리 (필수)
   categoryId Int
@@ -654,21 +655,21 @@ model DailyCompletion {
 // =============================================================================
 
 model PushToken {
-  id       Int      @id @default(autoincrement())
-  userId   String
-  token    String   @unique @db.VarChar(255) // Expo Push Token
-  deviceId String   @db.VarChar(255) // 기기 식별자
-  platform Platform
-  isActive Boolean  @default(true)
-  payloadVersion Int @default(1)
-  appVersion String? @db.VarChar(30)
+  id             Int      @id @default(autoincrement())
+  userId         String
+  token          String   @unique @db.VarChar(255) // Expo Push Token
+  deviceId       String   @db.VarChar(255) // 기기 식별자
+  platform       Platform
+  isActive       Boolean  @default(true)
+  payloadVersion Int      @default(1)
+  appVersion     String?  @db.VarChar(30)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   lastUsedAt DateTime @default(now())
 
   // 관계
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   deliveryAttempts PushDeliveryAttempt[]
 
   @@unique([userId, deviceId])
@@ -685,17 +686,17 @@ enum Platform {
 // =============================================================================
 
 model Notification {
-  id     Int              @id @default(autoincrement())
-  userId String
-  type   NotificationType
-  title  String           @db.VarChar(200)
-  body   String           @db.VarChar(500)
-  isRead Boolean          @default(false)
-  actionType NotificationActionType @default(DEEP_LINK)
-  actionUrl String? @db.VarChar(1000)
-  campaignKey String? @db.VarChar(100)
-  variantId String? @db.VarChar(100)
-  purpose NotificationPurpose @default(TRANSACTIONAL)
+  id          Int                    @id @default(autoincrement())
+  userId      String
+  type        NotificationType
+  title       String                 @db.VarChar(200)
+  body        String                 @db.VarChar(500)
+  isRead      Boolean                @default(false)
+  actionType  NotificationActionType @default(DEEP_LINK)
+  actionUrl   String?                @db.VarChar(1000)
+  campaignKey String?                @db.VarChar(100)
+  variantId   String?                @db.VarChar(100)
+  purpose     NotificationPurpose    @default(TRANSACTIONAL)
 
   // === 참조 ID (타입 안전성, 쿼리 성능) ===
   todoId   Int? // Todo 관련 알림
@@ -714,7 +715,7 @@ model Notification {
   openedAt  DateTime?
 
   // 관계
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   pushDispatch PushDispatch?
 
   // 중복 방지: PostgreSQL partial unique index (migration 참고)
@@ -759,25 +760,25 @@ enum PushDeliveryStatus {
 }
 
 model PushDispatch {
-  id Int @id @default(autoincrement())
-  notificationId Int @unique
-  userId String
-  purpose NotificationPurpose
-  campaignKey String? @db.VarChar(100)
-  variantId String? @db.VarChar(100)
-  timezone String @default("UTC") @db.VarChar(50)
-  localDate DateTime? @db.Date
-  status PushDispatchStatus @default(PENDING)
-  skipReason String? @db.VarChar(100)
-  scheduledAt DateTime @default(now())
-  sentAt DateTime?
-  openedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int                 @id @default(autoincrement())
+  notificationId Int                 @unique
+  userId         String
+  purpose        NotificationPurpose
+  campaignKey    String?             @db.VarChar(100)
+  variantId      String?             @db.VarChar(100)
+  timezone       String              @default("UTC") @db.VarChar(50)
+  localDate      DateTime?           @db.Date
+  status         PushDispatchStatus  @default(PENDING)
+  skipReason     String?             @db.VarChar(100)
+  scheduledAt    DateTime            @default(now())
+  sentAt         DateTime?
+  openedAt       DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  attempts PushDeliveryAttempt[]
+  notification Notification          @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts     PushDeliveryAttempt[]
 
   @@index([status, scheduledAt])
   @@index([userId, localDate, purpose])
@@ -785,32 +786,32 @@ model PushDispatch {
 }
 
 model PushDeliveryAttempt {
-  id Int @id @default(autoincrement())
-  dispatchId Int
-  pushTokenId Int
-  status PushDeliveryStatus @default(PENDING)
-  expoTicketId String? @unique @db.VarChar(100)
-  errorCode String? @db.VarChar(100)
-  errorMessage String? @db.VarChar(500)
+  id               Int                @id @default(autoincrement())
+  dispatchId       Int
+  pushTokenId      Int
+  status           PushDeliveryStatus @default(PENDING)
+  expoTicketId     String?            @unique @db.VarChar(100)
+  errorCode        String?            @db.VarChar(100)
+  errorMessage     String?            @db.VarChar(500)
   receiptCheckedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
-  dispatch PushDispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
-  pushToken PushToken @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
+  dispatch  PushDispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  pushToken PushToken    @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
 
   @@unique([dispatchId, pushTokenId])
   @@index([status, createdAt])
 }
 
 model PushDailyBudget {
-  id Int @id @default(autoincrement())
-  userId String
-  localDate DateTime @db.Date
-  automatedCount Int @default(0)
-  lastSentAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int       @id @default(autoincrement())
+  userId         String
+  localDate      DateTime  @db.Date
+  automatedCount Int       @default(0)
+  lastSentAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -818,17 +819,113 @@ model PushDailyBudget {
 }
 
 model UserActivityDay {
-  id Int @id @default(autoincrement())
-  userId String
-  localDate DateTime @db.Date
-  timezone String @db.VarChar(50)
+  id          Int      @id @default(autoincrement())
+  userId      String
+  localDate   DateTime @db.Date
+  timezone    String   @db.VarChar(50)
   firstSeenAt DateTime @default(now())
-  lastSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, localDate])
   @@index([localDate])
+}
+
+// =============================================================================
+// 신규 가입자 전용 리텐션 실험
+// =============================================================================
+
+enum RetentionExperimentVariant {
+  CONTROL
+  TREATMENT
+}
+
+enum RetentionExperimentStageName {
+  D0
+  D1
+  D3
+  D7
+}
+
+enum RetentionExperimentStageStatus {
+  SCHEDULED
+  SKIPPED
+  OUTBOXED
+  EVALUATED
+}
+
+enum RetentionOutboxStatus {
+  PENDING
+  PROCESSING
+  PUBLISHED
+  FAILED
+}
+
+model RetentionExperimentAssignment {
+  id            String                     @id @default(cuid())
+  userId        String
+  experimentKey String                     @db.VarChar(100)
+  variant       RetentionExperimentVariant
+  assignedAt    DateTime                   @default(now())
+  startedAt     DateTime?
+
+  user   User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stages RetentionExperimentStage[]
+  result RetentionExperimentResult?
+
+  @@unique([userId, experimentKey])
+  @@index([experimentKey, variant, startedAt])
+}
+
+model RetentionExperimentStage {
+  id             String                         @id @default(cuid())
+  assignmentId   String
+  stage          RetentionExperimentStageName
+  status         RetentionExperimentStageStatus @default(SCHEDULED)
+  skipReason     String?                        @db.VarChar(100)
+  notificationId Int?                           @unique
+  processedAt    DateTime?
+  createdAt      DateTime                       @default(now())
+  updatedAt      DateTime                       @updatedAt
+
+  assignment RetentionExperimentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  outbox     RetentionPushOutbox?
+
+  @@unique([assignmentId, stage])
+  @@index([status, stage, createdAt])
+}
+
+model RetentionPushOutbox {
+  id             String                @id @default(cuid())
+  stageId        String                @unique
+  notificationId Int                   @unique
+  dispatchId     Int                   @unique
+  status         RetentionOutboxStatus @default(PENDING)
+  attempts       Int                   @default(0)
+  availableAt    DateTime              @default(now())
+  lockedAt       DateTime?
+  publishedAt    DateTime?
+  lastError      String?               @db.VarChar(500)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  stage RetentionExperimentStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt])
+  @@index([status, lockedAt])
+}
+
+model RetentionExperimentResult {
+  id                 String   @id @default(cuid())
+  assignmentId       String   @unique
+  returnedWithinD7   Boolean
+  todoActionWithinD7 Boolean
+  measuredAt         DateTime @default(now())
+
+  assignment RetentionExperimentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([measuredAt])
 }
 
 enum NotificationType {
@@ -877,7 +974,7 @@ enum NotificationType {
   NUDGE_SUGGEST // 콕 찌르기 유도 (비활성 친구 감지)
 
   // 활성 유저 재방문 유도
-  LUNCH_NUDGE    // 점심 넛지 (12:30, 오늘 완료 0개)
+  LUNCH_NUDGE // 점심 넛지 (12:30, 오늘 완료 0개)
   STREAK_AT_RISK // 스트릭 위기 (21:00, 스트릭 3일+ & 미완료)
 
   // 날씨
@@ -978,9 +1075,9 @@ model AiReport {
   timePatterns      Json
 
   // AI 분석 결과
-  aiSummary String  @db.Text
+  aiSummary String @db.Text
   aiTips    Json
-  locale    String  @default("ko") @db.VarChar(10) // 생성 언어 — 과거 리포트는 생성 당시 언어 유지
+  locale    String @default("ko") @db.VarChar(10) // 생성 언어 — 과거 리포트는 생성 당시 언어 유지
 
   // 상태
   hasActivity Boolean
