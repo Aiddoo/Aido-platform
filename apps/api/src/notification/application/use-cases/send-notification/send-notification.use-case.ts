@@ -50,6 +50,7 @@ export class SendNotificationUseCase {
 		const shouldSend = await this.pushDispatcher.shouldSendPush(
 			data.userId,
 			data.type,
+			data.purpose,
 		);
 
 		if (!shouldSend) {

@@ -12,6 +12,7 @@ export interface CreateConsentData {
 	privacyAgreedAt?: Date;
 	agreedTermsVersion?: string;
 	marketingAgreedAt?: Date | null;
+	marketingPushAgreedAt?: Date | null;
 }
 
 export interface UpdateMarketingConsentData {
@@ -48,6 +49,7 @@ export class UserConsentRepository implements UserConsentRepositoryPort {
 				privacyAgreedAt: data?.privacyAgreedAt ?? null,
 				agreedTermsVersion: data?.agreedTermsVersion ?? null,
 				marketingAgreedAt: data?.marketingAgreedAt ?? null,
+				marketingPushAgreedAt: data?.marketingPushAgreedAt ?? null,
 			},
 		});
 	}
@@ -61,6 +63,7 @@ export class UserConsentRepository implements UserConsentRepositoryPort {
 				privacyAgreedAt: data.privacyAgreedAt ?? null,
 				agreedTermsVersion: data.agreedTermsVersion ?? null,
 				marketingAgreedAt: data.marketingAgreedAt ?? null,
+				marketingPushAgreedAt: data.marketingPushAgreedAt ?? null,
 			},
 			update: {
 				...(data.termsAgreedAt !== undefined && {
@@ -74,6 +77,9 @@ export class UserConsentRepository implements UserConsentRepositoryPort {
 				}),
 				...(data.marketingAgreedAt !== undefined && {
 					marketingAgreedAt: data.marketingAgreedAt,
+				}),
+				...(data.marketingPushAgreedAt !== undefined && {
+					marketingPushAgreedAt: data.marketingPushAgreedAt,
 				}),
 			},
 		});
@@ -104,6 +110,22 @@ export class UserConsentRepository implements UserConsentRepositoryPort {
 			},
 			update: {
 				marketingAgreedAt: data.agreed ? now() : null,
+			},
+		});
+	}
+
+	async upsertMarketingPushConsent(
+		userId: string,
+		data: UpdateMarketingConsentData,
+	): Promise<UserConsent> {
+		return this.client.userConsent.upsert({
+			where: { userId },
+			create: {
+				userId,
+				marketingPushAgreedAt: data.agreed ? now() : null,
+			},
+			update: {
+				marketingPushAgreedAt: data.agreed ? now() : null,
 			},
 		});
 	}

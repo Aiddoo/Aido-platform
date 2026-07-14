@@ -3,6 +3,7 @@ export interface ProvisioningConsent {
 	termsAgreedAt?: Date;
 	privacyAgreedAt?: Date;
 	marketingAgreedAt?: Date;
+	marketingPushAgreedAt?: Date;
 }
 
 /**

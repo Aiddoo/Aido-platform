@@ -38,7 +38,9 @@
     "version": "버전: {{version}}",
     "notAgreed": "미동의",
     "marketing": "마케팅 수신 동의",
-    "marketingDescription": "이벤트 및 프로모션 정보를 받습니다"
+    "marketingDescription": "이벤트 및 프로모션 정보를 받습니다",
+    "marketingPush": "광고성 앱 푸시 수신 동의",
+    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받습니다"
   },
   "categorySettings": {
     "header": "카테고리를 편집하거나\n순서를 바꿀 수 있어요",

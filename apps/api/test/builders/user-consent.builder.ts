@@ -23,6 +23,7 @@ export class UserConsentBuilder {
 			privacyAgreedAt: now,
 			agreedTermsVersion: "1.0.0",
 			marketingAgreedAt: null,
+			marketingPushAgreedAt: null,
 		};
 	}
 

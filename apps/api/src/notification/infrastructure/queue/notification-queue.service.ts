@@ -1,5 +1,5 @@
 import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Queue } from "bullmq";
 
 import {
@@ -16,13 +16,25 @@ import {
 } from "./notification-queue.constants";
 
 @Injectable()
-export class NotificationQueueService {
+export class NotificationQueueService implements OnModuleInit {
 	readonly #logger = new Logger(NotificationQueueService.name);
 
 	constructor(
 		@InjectQueue(NOTIFICATION_QUEUE)
 		private readonly queue: Queue<NotificationJobData>,
 	) {}
+
+	async onModuleInit(): Promise<void> {
+		await this.queue.upsertJobScheduler(
+			"push-receipts-scheduler",
+			{ every: 5 * 60 * 1000 },
+			{
+				name: NotificationJobName.PUSH_RECEIPTS,
+				data: {},
+				opts: { attempts: 5, backoff: { type: "exponential", delay: 2_000 } },
+			},
+		);
+	}
 
 	/**
 	 * 새 팔로우 요청 알림 잡 등록
@@ -123,7 +135,12 @@ export class NotificationQueueService {
 	}
 
 	async #enqueueAsync(name: string, data: NotificationJobData): Promise<void> {
-		await this.queue.add(name, data);
+		await this.queue.add(name, data, {
+			attempts: 5,
+			backoff: { type: "exponential", delay: 1_000 },
+			removeOnComplete: { age: 24 * 60 * 60, count: 10_000 },
+			removeOnFail: { age: 7 * 24 * 60 * 60, count: 50_000 },
+		});
 		this.#logger.debug(`Job enqueued: name=${name}`);
 	}
 }

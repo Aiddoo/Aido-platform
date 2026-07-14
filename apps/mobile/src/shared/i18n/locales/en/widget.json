@@ -3,6 +3,7 @@
     "title": "Today's todos",
     "percent": "{{rate}}%",
     "streak": "{{count}} day streak",
+    "compactStreak": "{{count}}d",
     "allDone": "All done!"
   },
   "list": {

@@ -1,4 +1,9 @@
-import { NOTIFICATION_TYPE, type NotificationCategory } from '@aido/validators';
+import {
+  NOTIFICATION_ACTION_TYPE,
+  NOTIFICATION_TYPE,
+  type NotificationAction,
+  type NotificationCategory,
+} from '@aido/validators';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -21,6 +26,12 @@ export const notificationSchema = z.object({
       friendId: z.string().optional(),
       nudgeId: z.number().optional(),
       cheerId: z.number().optional(),
+    })
+    .optional(),
+  action: z
+    .object({
+      type: z.enum(NOTIFICATION_ACTION_TYPE),
+      url: z.string().optional(),
     })
     .optional(),
   createdAt: z.date(),
@@ -116,6 +127,37 @@ export const getInternalRoute = (
     .with('NUDGE_SUGGEST', () => (context?.friendId ? `/feed/friend/${context.friendId}` : '/feed'))
     .exhaustive();
 
+export type NotificationDestination =
+  | { kind: 'none' }
+  | { kind: 'internal'; route: string }
+  | { kind: 'browser'; url: string }
+  | { kind: 'webview'; url: string };
+
+/** 목록과 푸시 응답이 공유하는 유일한 액션 해석기. NONE은 절대 기본 라우팅하지 않는다. */
+export function resolveNotificationDestination(input: {
+  type: NotificationType;
+  context?: Notification['context'];
+  action?: NotificationAction;
+  legacyExternalUrl?: unknown;
+}): NotificationDestination {
+  const { action } = input;
+  if (action?.type === 'NONE') return { kind: 'none' };
+  if (action?.type === 'BROWSER') {
+    return action.url ? { kind: 'browser', url: action.url } : { kind: 'none' };
+  }
+  if (action?.type === 'WEBVIEW') {
+    return action.url ? { kind: 'webview', url: action.url } : { kind: 'none' };
+  }
+  if (action?.type === 'DEEP_LINK' && action.url) {
+    return { kind: 'internal', route: action.url };
+  }
+  if (!action && typeof input.legacyExternalUrl === 'string') {
+    return { kind: 'browser', url: input.legacyExternalUrl };
+  }
+  const route = getInternalRoute(input.type, input.context);
+  return route ? { kind: 'internal', route } : { kind: 'none' };
+}
+
 // ─── Policy ───
 
 const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
@@ -133,6 +175,15 @@ export const NotificationPolicy = {
   /** 타입+context → 내부 라우트 (기획 정의) */
   internalRoute(notification: Notification) {
     return getInternalRoute(notification.type, notification.context);
+  },
+
+  destination(notification: Notification) {
+    return resolveNotificationDestination({
+      type: notification.type,
+      context: notification.context,
+      action: notification.action,
+      legacyExternalUrl: notification.metadata?.externalUrl,
+    });
   },
 
   /** AI 기능 알림인지 (기능 분류 규칙) */

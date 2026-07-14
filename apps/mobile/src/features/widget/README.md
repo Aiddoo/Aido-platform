@@ -2,7 +2,8 @@
 
 > 상세 아키텍처 가이드: [`apps/mobile/.claude/widgets.md`](../../../.claude/widgets.md)
 
-단일 위젯 AidoTodayList — 오늘 할 일의 체크 여부(카테고리 컬러 체크박스)를 홈 화면에서 보여주고, 좁은 크기에서는 컴팩트 진행 요약으로 전환하는 feature.
+iOS `AidoTodayList`의 Small/Medium/Large와 Android 3종(`AidoTodaySummary`,
+`AidoTodayList`, `AidoTodayLarge`)을 같은 정보 구조로 렌더하는 feature.
 
 ## 핵심 원칙
 
@@ -19,7 +20,7 @@ GET v1/todos/summary (진행률+스트릭+상위 할 일, X-Timezone 기준 "오
   → widget-snapshot.mapper (localized 문자열을 스냅샷에 굽기)
   → WidgetBridge (플랫폼 포트)
       ├─ iOS: expo-widgets updateTimeline([지금, 다음 자정=stale]) → App Group
-      └─ Android: MMKV(widget-storage) 영속화 + requestWidgetUpdate({light, dark})
+      └─ Android: MMKV(widget-storage) 영속화 + 3종 requestWidgetUpdate({light, dark})
 
 위젯 렌더 (읽기 전용):
   iOS: presentations/ios/aido-widgets.tsx ('widget' 디렉티브 → SwiftUI 컴파일)
@@ -48,7 +49,7 @@ GET v1/todos/summary (진행률+스트릭+상위 할 일, X-Timezone 기준 "오
 
 - iOS 레이아웃 함수는 빌드 타임에 소스 문자열로 추출된다 — 임포트한 **값**을 참조하면
   위젯 런타임에서 터진다. 팔레트는 `widget-colors.constant.ts`와 동일 값을 인라인 유지할 것.
-- 위젯 이름(`AidoProgress`/`AidoTodayList`)은 `app.config.ts` 두 플러그인 설정과
-  `createWidget()`/`ANDROID_WIDGET_NAMES`가 모두 일치해야 한다.
+- iOS 위젯 이름 `AidoTodayList`는 `app.config.ts`의 `expo-widgets`와 `createWidget()`이,
+  Android 3종 이름은 `react-native-android-widget` 설정과 `ANDROID_WIDGET_NAMES`가 일치해야 한다.
 - 스냅샷 스키마 변경 시 `version` 리터럴을 올리고 read 쪽 safeParse가 폴백하게 둘 것.
 - 색상은 global.css OKLCH 토큰의 hex 고정본 — 토큰 변경 시 함께 갱신.

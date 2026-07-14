@@ -39,8 +39,13 @@ export class MarkAsReadUseCase {
 			return;
 		}
 
-		await this.notificationRepository.markAsRead(notificationId);
-		await this.cacheService.invalidateUnreadCount(userId);
+		const changed = await this.notificationRepository.markAsRead(
+			notificationId,
+			userId,
+		);
+		if (changed) {
+			await this.cacheService.invalidateUnreadCount(userId);
+		}
 
 		this.#logger.debug(`Notification read processed: id=${notificationId}`);
 	}

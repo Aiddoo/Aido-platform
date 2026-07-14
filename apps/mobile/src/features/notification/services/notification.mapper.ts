@@ -13,6 +13,7 @@ export const toNotification = (server: ServerNotification): Notification => ({
   isRead: server.isRead,
   metadata: server.metadata,
   context: server.context,
+  action: server.action,
   createdAt: new Date(server.createdAt),
   readAt: server.readAt ? new Date(server.readAt) : null,
 });

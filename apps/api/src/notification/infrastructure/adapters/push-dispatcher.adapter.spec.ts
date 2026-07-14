@@ -64,6 +64,7 @@ describe("PushDispatcherAdapter", () => {
 	it("활성 토큰이 없으면 fireAndForgetPush는 조용히 종료한다", async () => {
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
 		repository.findPushTokensByUser.mockResolvedValue([]);
+		repository.createPushDispatch.mockResolvedValue({ id: 1 });
 
 		adapter.fireAndForgetPush(
 			{ userId: "user-1", type: "NUDGE_RECEIVED", title: "t", body: "b" },

@@ -79,6 +79,8 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 			return {
 				userId: user.id,
 				type: "LUNCH_NUDGE" as const,
+				purpose: "ENGAGEMENT" as const,
+				campaignKey: "lunch_nudge_v1",
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

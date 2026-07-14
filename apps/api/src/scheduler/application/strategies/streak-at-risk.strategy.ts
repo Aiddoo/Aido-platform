@@ -103,6 +103,8 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 			return {
 				userId: user.id,
 				type: "STREAK_AT_RISK" as const,
+				purpose: "ENGAGEMENT" as const,
+				campaignKey: "streak_at_risk_v1",
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

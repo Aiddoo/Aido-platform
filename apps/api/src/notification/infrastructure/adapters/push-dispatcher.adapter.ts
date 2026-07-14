@@ -20,15 +20,21 @@ import {
 	toSupportedLocale,
 } from "@/shared/presentation/decorators";
 import {
+	MARKETING_PUSH_OPT_OUT_TOKEN,
+	type MarketingPushOptOutTokenPort,
+} from "../../application/ports/marketing-push-opt-out-token.port";
+import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../application/ports/notification.repository.port";
 import type { CreateNotificationData } from "../../application/ports/notification-data";
 import type { PushDispatcherPort } from "../../application/ports/push-dispatcher.port";
 import {
+	type BatchPushResult,
 	PUSH_PROVIDER,
 	type PushPayload,
 	type PushProvider,
+	type PushResult,
 } from "../../application/ports/push-provider.port";
 import {
 	type IPushRateLimiter,
@@ -40,6 +46,7 @@ import {
 } from "../../application/ports/user-notification-settings.port";
 import { isNightTime } from "../../domain/services/night-time";
 import {
+	isAutomatedEngagementNotification,
 	isMarketingNotification,
 	isNightExemptNotification,
 } from "../../domain/services/push-eligibility";
@@ -68,6 +75,8 @@ export class PushDispatcherAdapter
 		@Inject(PUSH_RATE_LIMITER)
 		private readonly rateLimiter: IPushRateLimiter,
 		private readonly cacheService: CacheService,
+		@Inject(MARKETING_PUSH_OPT_OUT_TOKEN)
+		private readonly marketingOptOutTokens: MarketingPushOptOutTokenPort,
 	) {}
 
 	/**
@@ -81,18 +90,49 @@ export class PushDispatcherAdapter
 		data: CreateNotificationData,
 		notificationId: number,
 	): void {
-		const pushData = this.#buildPushPayloadData(data, notificationId);
+		const pushPromise = this.#dispatchSingle(data, notificationId).catch(
+			(error) => {
+				this.#logger.error(
+					`Failed to send push notification: userId=${data.userId}, error=${error}`,
+				);
+			},
+		);
+		this.#trackPush(pushPromise);
+	}
 
-		const pushPromise = this.#sendPushToUser(data.userId, {
+	async #dispatchSingle(
+		data: CreateNotificationData,
+		notificationId: number,
+	): Promise<void> {
+		const preference = await this.#loadPreference(data.userId);
+		const localDate = new Date(
+			`${this.#localDate(preference.timezone)}T00:00:00.000Z`,
+		);
+		const dispatch = await this.notificationRepository.createPushDispatch({
+			notificationId,
+			userId: data.userId,
+			purpose: data.purpose ?? "TRANSACTIONAL",
+			campaignKey: data.campaignKey,
+			variantId: data.variantId,
+			timezone: preference.timezone,
+			localDate,
+		});
+		const result = await this.#sendPushToUser(data.userId, {
 			title: data.title,
 			body: data.body,
-			data: pushData,
-		}).catch((error) => {
-			this.#logger.error(
-				`Failed to send push notification: userId=${data.userId}, error=${error}`,
-			);
+			data: {
+				...this.#buildPushPayloadData(data, notificationId),
+				dispatchId: dispatch.id,
+			},
+			...((data.purpose === "ENGAGEMENT" ||
+				isMarketingNotification(data.type)) && {
+				categoryId: "MARKETING",
+			}),
 		});
-		this.#trackPush(pushPromise);
+		await this.notificationRepository.recordPushDeliveryResults(
+			dispatch.id,
+			result.results,
+		);
 	}
 
 	/**
@@ -100,8 +140,10 @@ export class PushDispatcherAdapter
 	 *
 	 * N+1 쿼리 최적화: 사용자별 설정을 배치로 한 번에 조회
 	 */
-	fireAndForgetBatchPush(dataList: CreateNotificationData[]): void {
-		const pushPromise = this.#sendBatchPush(dataList).catch((error) => {
+	fireAndForgetBatchPush(
+		items: Array<{ data: CreateNotificationData; notificationId: number }>,
+	): void {
+		const pushPromise = this.#sendBatchPush(items).catch((error) => {
 			this.#logger.error(
 				`Failed to send batch push notifications: error=${error}`,
 			);
@@ -109,7 +151,10 @@ export class PushDispatcherAdapter
 		this.#trackPush(pushPromise);
 	}
 
-	async #sendBatchPush(dataList: CreateNotificationData[]): Promise<void> {
+	async #sendBatchPush(
+		items: Array<{ data: CreateNotificationData; notificationId: number }>,
+	): Promise<void> {
+		const dataList = items.map((item) => item.data);
 		const userIds = [...new Set(dataList.map((d) => d.userId))];
 
 		const [preferences, consents] = await Promise.all([
@@ -120,15 +165,18 @@ export class PushDispatcherAdapter
 		const prefMap = new Map(preferences.map((p) => [p.userId, p]));
 		const consentMap = new Map(consents.map((c) => [c.userId, c]));
 
-		const eligibleDataList: CreateNotificationData[] = [];
-		for (const data of dataList) {
-			const shouldSend = this.#canSendPushWithCachedData(
+		const eligibleItems: typeof items = [];
+		for (const item of items) {
+			const { data } = item;
+			const shouldSend = await this.#canSendPushWithCachedData(
 				data.type,
+				data.purpose,
 				prefMap.get(data.userId),
 				consentMap.get(data.userId),
+				data.userId,
 			);
 			if (shouldSend) {
-				eligibleDataList.push(data);
+				eligibleItems.push(item);
 			} else {
 				this.#logger.debug(
 					`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
@@ -136,20 +184,54 @@ export class PushDispatcherAdapter
 			}
 		}
 
-		if (eligibleDataList.length === 0) {
+		if (eligibleItems.length === 0) {
 			return;
 		}
 
-		const eligibleUserIds = [...new Set(eligibleDataList.map((d) => d.userId))];
+		const eligibleUserIds = [
+			...new Set(eligibleItems.map((item) => item.data.userId)),
+		];
 
-		await this.#sendPushToUsers(
+		const dispatchItems = await Promise.all(
+			eligibleItems.map(async (item) => {
+				const preference = prefMap.get(item.data.userId);
+				const timezone = preference?.timezone ?? "UTC";
+				const dispatch = await this.notificationRepository.createPushDispatch({
+					notificationId: item.notificationId,
+					userId: item.data.userId,
+					purpose: item.data.purpose ?? "TRANSACTIONAL",
+					campaignKey: item.data.campaignKey,
+					variantId: item.data.variantId,
+					timezone,
+					localDate: new Date(`${this.#localDate(timezone)}T00:00:00.000Z`),
+				});
+				return { ...item, dispatchId: dispatch.id };
+			}),
+		);
+
+		const resultsByDispatch = await this.#sendPushToUsers(
 			eligibleUserIds,
-			eligibleDataList.map((d) => ({
+			dispatchItems.map(({ data: d, notificationId, dispatchId }) => ({
 				userId: d.userId,
+				dispatchId,
 				title: d.title,
 				body: d.body,
-				data: this.#buildPushPayloadData(d),
+				data: {
+					...this.#buildPushPayloadData(d, notificationId),
+					dispatchId,
+				},
+				...((d.purpose === "ENGAGEMENT" || isMarketingNotification(d.type)) && {
+					categoryId: "MARKETING",
+				}),
 			})),
+		);
+		await Promise.all(
+			dispatchItems.map(({ dispatchId }) =>
+				this.notificationRepository.recordPushDeliveryResults(
+					dispatchId,
+					resultsByDispatch.get(dispatchId) ?? [],
+				),
+			),
 		);
 	}
 
@@ -218,6 +300,7 @@ export class PushDispatcherAdapter
 	async shouldSendPush(
 		userId: string,
 		type: NotificationType,
+		purpose?: CreateNotificationData["purpose"],
 	): Promise<boolean> {
 		const preference = await this.#loadPreference(userId);
 
@@ -231,6 +314,15 @@ export class PushDispatcherAdapter
 			return false;
 		}
 
+		const isEngagement =
+			purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(type);
+		const isMarketing =
+			purpose === "ENGAGEMENT" || isMarketingNotification(type);
+
+		if (isNightTime(preference.timezone) && isMarketing) {
+			return false;
+		}
+
 		if (
 			isNightTime(preference.timezone) &&
 			!preference.nightPushEnabled &&
@@ -239,11 +331,21 @@ export class PushDispatcherAdapter
 			return false;
 		}
 
-		if (isMarketingNotification(type)) {
+		if (isMarketing) {
 			const consent = await this.userSettings.getConsentRecord(userId);
-			if (!consent?.marketingAgreedAt) {
+			if (!consent?.marketingPushAgreedAt) {
 				return false;
 			}
+		}
+
+		if (
+			isEngagement &&
+			(await this.rateLimiter.isEngagementRateLimited(
+				userId,
+				this.#localDate(preference.timezone),
+			))
+		) {
+			return false;
 		}
 
 		return true;
@@ -256,8 +358,9 @@ export class PushDispatcherAdapter
 	 * 스케줄러 배치 알림은 타입별로 1일 1회이므로 rate limit 불필요.
 	 * 개별 rate limit 적용 시 배치 전체 성능이 저하됨.
 	 */
-	#canSendPushWithCachedData(
+	async #canSendPushWithCachedData(
 		type: NotificationType,
+		purpose: CreateNotificationData["purpose"],
 		preference:
 			| {
 					pushEnabled: boolean;
@@ -265,8 +368,9 @@ export class PushDispatcherAdapter
 					timezone?: string;
 			  }
 			| undefined,
-		consent: { marketingAgreedAt: Date | null } | undefined,
-	): boolean {
+		consent: { marketingPushAgreedAt: Date | null } | undefined,
+		userId: string,
+	): Promise<boolean> {
 		if (!preference) {
 			return false;
 		}
@@ -275,21 +379,54 @@ export class PushDispatcherAdapter
 			return false;
 		}
 
+		const timezone = preference.timezone ?? "UTC";
+		const isMarketing =
+			purpose === "ENGAGEMENT" || isMarketingNotification(type);
+		const isEngagement =
+			purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(type);
+
+		if (isNightTime(timezone) && isMarketing) {
+			return false;
+		}
+
 		if (
-			isNightTime(preference.timezone ?? "UTC") &&
+			isNightTime(timezone) &&
 			!preference.nightPushEnabled &&
 			!isNightExemptNotification(type)
 		) {
 			return false;
 		}
 
-		if (isMarketingNotification(type)) {
-			if (!consent?.marketingAgreedAt) {
+		if (isMarketing) {
+			if (!consent?.marketingPushAgreedAt) {
 				return false;
 			}
 		}
 
+		if (await this.rateLimiter.isRateLimited(userId)) {
+			return false;
+		}
+
+		if (
+			isEngagement &&
+			(await this.rateLimiter.isEngagementRateLimited(
+				userId,
+				this.#localDate(timezone),
+			))
+		) {
+			return false;
+		}
+
 		return true;
+	}
+
+	#localDate(timezone: string): string {
+		return new Intl.DateTimeFormat("en-CA", {
+			timeZone: timezone,
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		}).format(new Date());
 	}
 
 	#buildPushPayloadData(
@@ -315,13 +452,20 @@ export class PushDispatcherAdapter
 				...(action.url && { url: action.url }),
 			},
 			...(Object.keys(context).length > 0 && { context }),
+			...(data.campaignKey && { campaignKey: data.campaignKey }),
+			...(data.variantId && { variantId: data.variantId }),
+			...(data.purpose && { purpose: data.purpose }),
+			...((data.purpose === "ENGAGEMENT" ||
+				isMarketingNotification(data.type)) && {
+				marketingOptOutToken: this.marketingOptOutTokens.issue(data.userId),
+			}),
 		};
 	}
 
 	async #sendPushToUser(
 		userId: string,
 		payload: Omit<PushPayload, "token">,
-	): Promise<void> {
+	): Promise<BatchPushResult> {
 		const tokenStrings = await this.cacheService.wrapPushTokens(
 			userId,
 			async () => {
@@ -335,7 +479,13 @@ export class PushDispatcherAdapter
 
 		if (tokenStrings.length === 0) {
 			this.#logger.debug(`No active push tokens for user: ${userId}`);
-			return;
+			return {
+				total: 0,
+				successCount: 0,
+				failureCount: 0,
+				results: [],
+				invalidTokens: [],
+			};
 		}
 
 		const payloads: PushPayload[] = tokenStrings.map((token) => ({
@@ -358,20 +508,25 @@ export class PushDispatcherAdapter
 		this.#logger.debug(
 			`Push sent to user ${userId}: success=${result.successCount}, failure=${result.failureCount}`,
 		);
+		return result;
 	}
 
 	async #sendPushToUsers(
 		userIds: string[],
-		payloads: Array<{ userId: string } & Omit<PushPayload, "token">>,
-	): Promise<void> {
+		payloads: Array<
+			{ userId: string; dispatchId: number } & Omit<PushPayload, "token">
+		>,
+	): Promise<Map<number, PushResult[]>> {
+		const empty = new Map<number, PushResult[]>();
 		const tokensByUser = await this.#resolveTokensByUsers(userIds);
 
 		if (tokensByUser.size === 0) {
 			this.#logger.debug("No active push tokens for users");
-			return;
+			return empty;
 		}
 
 		const pushPayloads: PushPayload[] = [];
+		const dispatchIds: number[] = [];
 		for (const payload of payloads) {
 			const userTokens = tokensByUser.get(payload.userId) ?? [];
 			for (const token of userTokens) {
@@ -381,11 +536,12 @@ export class PushDispatcherAdapter
 					body: payload.body,
 					data: payload.data,
 				});
+				dispatchIds.push(payload.dispatchId);
 			}
 		}
 
 		if (pushPayloads.length === 0) {
-			return;
+			return empty;
 		}
 
 		const result = await this.pushProvider.sendBatch(pushPayloads);
@@ -405,6 +561,16 @@ export class PushDispatcherAdapter
 		this.#logger.debug(
 			`Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
 		);
+
+		const resultsByDispatch = new Map<number, PushResult[]>();
+		for (const [index, pushResult] of result.results.entries()) {
+			const dispatchId = dispatchIds[index];
+			if (dispatchId === undefined) continue;
+			const current = resultsByDispatch.get(dispatchId) ?? [];
+			current.push(pushResult);
+			resultsByDispatch.set(dispatchId, current);
+		}
+		return resultsByDispatch;
 	}
 
 	/**

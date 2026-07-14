@@ -9,7 +9,8 @@ import { useSearchUsersQueryOptions } from './use-search-users-query-options';
 
 const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    // 테스트 프로세스에 기본 5분 Query GC 타이머를 남기지 않는다.
+    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
   });
   const container = createMockDIContainer({
     friendService: new FriendService(httpClient),

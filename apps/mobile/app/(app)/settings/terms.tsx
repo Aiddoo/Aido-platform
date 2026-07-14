@@ -1,5 +1,6 @@
 import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-consent-mutation-options';
+import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-push-consent-mutation-options';
 import { SettingsToggle } from '@src/features/notification/presentations/components/settings/SettingsToggle';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
@@ -40,6 +41,7 @@ function TermsSettingsForm() {
   const { t } = useTranslation('settings');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const updateMutation = useMutation(useUpdateMarketingConsentMutationOptions());
+  const updatePushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
   const openUrl = useOpenUrl();
 
   const formatDate = (date: Date | null) => {
@@ -50,6 +52,7 @@ function TermsSettingsForm() {
   };
 
   const marketingAgreed = consent.marketingAgreedAt !== null;
+  const marketingPushAgreed = consent.marketingPushAgreedAt !== null;
 
   return (
     <>
@@ -112,6 +115,18 @@ function TermsSettingsForm() {
           isSelected={marketingAgreed}
           onSelectedChange={(agreed) => updateMutation.mutate({ agreed })}
           isDisabled={updateMutation.isPending}
+        />
+      </VStack>
+
+      <Spacing size={12} />
+
+      <VStack p={16} className="bg-white rounded-2xl">
+        <SettingsToggle
+          label={t('terms.marketingPush')}
+          description={t('terms.marketingPushDescription')}
+          isSelected={marketingPushAgreed}
+          onSelectedChange={(agreed) => updatePushMutation.mutate({ agreed })}
+          isDisabled={updatePushMutation.isPending}
         />
       </VStack>
     </>

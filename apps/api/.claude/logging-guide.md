@@ -8,7 +8,7 @@
 
 | 문서 | 내용 |
 |------|------|
-| [CLAUDE.md](../CLAUDE.md) | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션) |
+| [AGENTS.md](../AGENTS.md) | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션) |
 | [architecture.md](./architecture.md) | 전체 아키텍처, 에러 처리 (GlobalExceptionFilter 로깅 전략) |
 | [api-conventions.md](./api-conventions.md) | Controller/Service/Repository 계층 규칙 |
 

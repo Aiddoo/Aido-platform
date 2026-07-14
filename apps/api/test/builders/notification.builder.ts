@@ -39,6 +39,12 @@ export class NotificationBuilder {
 			createdAt: now,
 			readAt: null,
 			notificationDate: null,
+			actionType: "DEEP_LINK",
+			actionUrl: null,
+			campaignKey: null,
+			variantId: null,
+			purpose: "TRANSACTIONAL",
+			openedAt: null,
 		};
 	}
 

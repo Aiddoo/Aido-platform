@@ -76,6 +76,9 @@ model User {
   receivedCheers     Cheer[]             @relation("cheer_receiver")
   dailyCompletions   DailyCompletion[]
   notifications      Notification[]
+  pushDispatches     PushDispatch[]
+  pushDailyBudgets   PushDailyBudget[]
+  activityDays       UserActivityDay[]
   weeklyAchievements WeeklyAchievement[]
   subscriptions      Subscription[]
 
@@ -187,6 +190,7 @@ model UserConsent {
   privacyAgreedAt    DateTime? // 개인정보처리방침 동의 시점
   agreedTermsVersion String?   @db.VarChar(20) // 동의한 약관 버전 (예: "1.0.0")
   marketingAgreedAt  DateTime? // 마케팅 수신 동의 시점 (null = 미동의/철회)
+  marketingPushAgreedAt DateTime? // 광고성 앱 푸시 수신 동의 (null = 미동의/철회)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -656,6 +660,8 @@ model PushToken {
   deviceId String   @db.VarChar(255) // 기기 식별자
   platform Platform
   isActive Boolean  @default(true)
+  payloadVersion Int @default(1)
+  appVersion String? @db.VarChar(30)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -663,6 +669,7 @@ model PushToken {
 
   // 관계
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryAttempts PushDeliveryAttempt[]
 
   @@unique([userId, deviceId])
   @@index([userId, isActive])
@@ -684,6 +691,11 @@ model Notification {
   title  String           @db.VarChar(200)
   body   String           @db.VarChar(500)
   isRead Boolean          @default(false)
+  actionType NotificationActionType @default(DEEP_LINK)
+  actionUrl String? @db.VarChar(1000)
+  campaignKey String? @db.VarChar(100)
+  variantId String? @db.VarChar(100)
+  purpose NotificationPurpose @default(TRANSACTIONAL)
 
   // === 참조 ID (타입 안전성, 쿼리 성능) ===
   todoId   Int? // Todo 관련 알림
@@ -699,9 +711,11 @@ model Notification {
 
   createdAt DateTime  @default(now())
   readAt    DateTime?
+  openedAt  DateTime?
 
   // 관계
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pushDispatch PushDispatch?
 
   // 중복 방지: PostgreSQL partial unique index (migration 참고)
   // - Notification_daily_dedup: (userId, type, notificationDate) WHERE friendId IS NULL
@@ -712,6 +726,109 @@ model Notification {
   @@index([userId, type, notificationDate]) // 리마인더/일일완료 중복 방지 쿼리
   @@index([createdAt]) // 정리 배치용 (90일 보관)
   @@index([todoId, type, createdAt]) // TODO_REMINDER 단계별 중복 체크
+}
+
+enum NotificationActionType {
+  DEEP_LINK
+  BROWSER
+  WEBVIEW
+  NONE
+}
+
+enum NotificationPurpose {
+  TRANSACTIONAL
+  SCHEDULED_SERVICE
+  ENGAGEMENT
+}
+
+enum PushDispatchStatus {
+  PENDING
+  PROCESSING
+  SENT
+  SKIPPED
+  FAILED
+  HOLDOUT
+}
+
+enum PushDeliveryStatus {
+  PENDING
+  TICKET_ACCEPTED
+  DELIVERED
+  FAILED
+  UNKNOWN
+}
+
+model PushDispatch {
+  id Int @id @default(autoincrement())
+  notificationId Int @unique
+  userId String
+  purpose NotificationPurpose
+  campaignKey String? @db.VarChar(100)
+  variantId String? @db.VarChar(100)
+  timezone String @default("UTC") @db.VarChar(50)
+  localDate DateTime? @db.Date
+  status PushDispatchStatus @default(PENDING)
+  skipReason String? @db.VarChar(100)
+  scheduledAt DateTime @default(now())
+  sentAt DateTime?
+  openedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts PushDeliveryAttempt[]
+
+  @@index([status, scheduledAt])
+  @@index([userId, localDate, purpose])
+  @@index([campaignKey, status, createdAt])
+}
+
+model PushDeliveryAttempt {
+  id Int @id @default(autoincrement())
+  dispatchId Int
+  pushTokenId Int
+  status PushDeliveryStatus @default(PENDING)
+  expoTicketId String? @unique @db.VarChar(100)
+  errorCode String? @db.VarChar(100)
+  errorMessage String? @db.VarChar(500)
+  receiptCheckedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dispatch PushDispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  pushToken PushToken @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
+
+  @@unique([dispatchId, pushTokenId])
+  @@index([status, createdAt])
+}
+
+model PushDailyBudget {
+  id Int @id @default(autoincrement())
+  userId String
+  localDate DateTime @db.Date
+  automatedCount Int @default(0)
+  lastSentAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDate])
+}
+
+model UserActivityDay {
+  id Int @id @default(autoincrement())
+  userId String
+  localDate DateTime @db.Date
+  timezone String @db.VarChar(50)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDate])
+  @@index([localDate])
 }
 
 enum NotificationType {

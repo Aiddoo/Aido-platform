@@ -17,6 +17,9 @@ export const userConsentSchema = z
     marketingAgreedAt: nullableDatetimeSchema.describe(
       '마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)',
     ),
+    marketingPushAgreedAt: nullableDatetimeSchema.describe(
+      '광고성 앱 푸시 수신 동의 시각 (미동의/철회 시 null)',
+    ),
   })
   .meta({
     example: {
@@ -24,6 +27,7 @@ export const userConsentSchema = z
       privacyAgreedAt: '2026-01-17T10:00:00.000Z',
       agreedTermsVersion: '1.0.0',
       marketingAgreedAt: null,
+      marketingPushAgreedAt: null,
     },
   });
 
@@ -35,6 +39,7 @@ export const consentResponseSchema = userConsentSchema.meta({
     privacyAgreedAt: '2026-01-17T10:00:00.000Z',
     agreedTermsVersion: '1.0.0',
     marketingAgreedAt: null,
+    marketingPushAgreedAt: null,
   },
 });
 
@@ -53,3 +58,15 @@ export const updateMarketingConsentResponseSchema = z
   });
 
 export type UpdateMarketingConsentResponse = z.infer<typeof updateMarketingConsentResponseSchema>;
+
+export const updateMarketingPushConsentResponseSchema = z
+  .object({
+    marketingPushAgreedAt: nullableDatetimeSchema.describe(
+      '광고성 앱 푸시 수신 동의 시각 (철회 시 null)',
+    ),
+  })
+  .meta({ example: { marketingPushAgreedAt: '2026-01-17T10:00:00.000Z' } });
+
+export type UpdateMarketingPushConsentResponse = z.infer<
+  typeof updateMarketingPushConsentResponseSchema
+>;

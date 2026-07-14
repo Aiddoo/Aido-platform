@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 import { NOTIFICATION_TYPE } from './notification.constants';
-import { notificationContextSchema } from './notification.payload';
+import { notificationActionSchema, notificationContextSchema } from './notification.payload';
 
 export const notificationTypeSchema = z.enum([
   NOTIFICATION_TYPE.FOLLOW_NEW,
@@ -45,6 +45,7 @@ export const notificationSchema = z
       .nullable()
       .describe('추가 메타데이터 (미설정 시 null)'),
     context: notificationContextSchema.optional(),
+    action: notificationActionSchema.optional(),
     createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)'),
     readAt: nullableDatetimeSchema.describe(
       '읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)',
@@ -140,3 +141,9 @@ export const markReadResponseSchema = z
   });
 
 export type MarkReadResponse = z.infer<typeof markReadResponseSchema>;
+
+export const notificationOpenedResponseSchema = z.object({ opened: z.boolean() });
+export type NotificationOpenedResponse = z.infer<typeof notificationOpenedResponseSchema>;
+
+export const marketingPushOptOutResponseSchema = z.object({ optedOut: z.literal(true) });
+export type MarketingPushOptOutResponse = z.infer<typeof marketingPushOptOutResponseSchema>;

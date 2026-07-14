@@ -48,6 +48,12 @@ export const NotificationFixture = {
 			readAt: overrides.readAt ?? null,
 			createdAt: overrides.createdAt ?? now,
 			notificationDate: overrides.notificationDate ?? null,
+			actionType: overrides.actionType ?? "DEEP_LINK",
+			actionUrl: overrides.actionUrl ?? null,
+			campaignKey: overrides.campaignKey ?? null,
+			variantId: overrides.variantId ?? null,
+			purpose: overrides.purpose ?? "TRANSACTIONAL",
+			openedAt: overrides.openedAt ?? null,
 		};
 	},
 
@@ -116,6 +122,8 @@ export const PushTokenFixture = {
 			lastUsedAt: overrides.lastUsedAt ?? now,
 			createdAt: overrides.createdAt ?? now,
 			updatedAt: overrides.updatedAt ?? now,
+			payloadVersion: overrides.payloadVersion ?? 1,
+			appVersion: overrides.appVersion ?? null,
 		};
 	},
 

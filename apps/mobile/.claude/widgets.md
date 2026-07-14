@@ -1,11 +1,16 @@
 # 홈 화면 위젯 가이드 (iOS WidgetKit + Android AppWidget)
 
-**Version**: 1.0.0 · **Last Updated**: 2026-07-12 · **Owner**: Aido Mobile Team
+**Version**: 1.1.0 · **Last Updated**: 2026-07-14 · **Owner**: Aido Mobile Team
 
-v1.5.1에서 도입. 단일 위젯 **AidoTodayList**("오늘 할 일")가 크기에 따라 변형된다:
-- iOS systemSmall / Android 2x2(좁은 폭): 컴팩트 요약 — 카운트 히어로 + 선형 바 + 스트릭
-- iOS systemMedium/Large / Android 4x2~(양방향 리사이즈): 헤더 진행률 + 할 일 목록
-  (카테고리 컬러 체크박스 — 앱 홈과 동일한 시각 언어, 최대 8행 + "+N개 더")
+v1.5.1에서 도입, v1.5.2에서 Android를 iOS와 같은 3개 고정 family로 정리했다.
+
+- Small: iOS `systemSmall` / Android **AidoTodaySummary**(2x2) — 카운트, 진행률, 스트릭
+- Medium: iOS `systemMedium` / Android **AidoTodayList**(4x2) — 주요 할 일 3개
+- Large: iOS `systemLarge` / Android **AidoTodayLarge**(4x4) — 주요 할 일 8개
+
+Android는 launcher별 실제 크기 보고 편차로 레이아웃이 흔들리지 않도록 신규 Small/Large의
+family를 위젯 이름으로 고정한다. v1.5.1에 이미 배치된 자유 리사이즈 `AidoTodayList`만 실제
+크기를 읽어 2x2/4x4 호환 레이아웃으로 보정한다.
 
 ---
 
@@ -26,7 +31,7 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
                                                                     │ mapper (문자열 굽기)
                                               WidgetBridge 포트 ────┤
                           iOS: expo-widgets updateTimeline ←────────┼──→ Android: MMKV + requestWidgetUpdate
-                          (App Group, 2엔트리: 지금/자정 stale)          (headless task handler가 재렌더)
+                          (App Group, 2엔트리: 지금/자정 stale)          (3종 headless task handler가 재렌더)
 ```
 
 - **스택**: iOS `expo-widgets`(공식, TS/JSX → SwiftUI 컴파일) · Android `react-native-android-widget`(RemoteViews)
@@ -35,7 +40,9 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 - **갱신 트리거**(전부 `useWidgetSnapshotSync` 하나로 수렴): 할 일 변경(쿼리 키가
   `TODO_QUERY_KEYS.completions()` 하위라 기존 invalidation 상속) · 포그라운드 복귀 ·
   자정 넘긴 복귀(useToday 키 회전) · 언어 변경 · 로그아웃.
-- **자정 롤오버**: iOS는 타임라인 2번째 엔트리(다음 로컬 자정 = stale 상태)로 자동 전환,
+- **앱 날짜 롤오버**: 전역 `LocalDateProvider`가 활성 중에는 다음 로컬 자정 timer 하나만 유지하고,
+  background에서는 해제한다. foreground 복귀 시 기기 날짜를 즉시 재검증한다.
+- **위젯 자정 롤오버**: iOS는 타임라인 2번째 엔트리(다음 로컬 자정 = stale 상태)로 자동 전환,
   Android는 `updatePeriodMillis`(30분) 주기 갱신에서 `snapshot.date !== 오늘`이면 stale 렌더
   (최대 ~30분 스테일 수용).
 
@@ -55,7 +62,8 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
    — **함수는 자기완결이어야 함**(모듈 스코프 값 참조 금지, 팔레트 인라인)
    — **검증된 프리미티브만 사용**: Text/HStack/VStack/Spacer/선형 Gauge(linearCapacity).
      Gauge 링 중앙 라벨(currentValueLabel)·strikethrough는 위젯 런타임에서 렌더되지 않음(시뮬레이터 확인)
-3. Android: `presentations/android/`에 FlexWidget 트리 + `ANDROID_WIDGET_NAMES`에 이름 추가
+3. Android: `presentations/android/`에 FlexWidget 트리 + `android-widget-layout.ts`의
+   `ANDROID_WIDGET_NAMES`/family 정책에 이름 추가
 4. 브리지: iOS `expo-widgets.bridge.ts`에 `updateTimeline` 대상 추가 (Android는 이름 배열로 자동)
 5. `pnpm native:prebuild`로 네이티브 재생성 → dev 빌드로 확인 (Expo Go 불가)
 
@@ -63,9 +71,13 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 
 - 팔레트: `presentations/constants/widget-colors.constant.ts` — global.css OKLCH 토큰의 hex 고정본.
   **토큰 변경 시 이 파일과 iOS 레이아웃의 인라인 팔레트를 함께 갱신할 것.**
+- iOS/Android는 Small/Medium/Large별 정보 위계, 행 수(0/3/8), 여백, 단색 progress fill,
+  체크박스 상태를 동일하게 유지한다.
 - Linear 스타일: 뉴트럴 배경 + 타이포 위계, 브랜드 오렌지(#FF6B43)는 프로그레스 필·체크·스트릭에만.
 - 위젯은 OS 시스템 테마 추종(앱 내 테마 오버라이드 미적용 — 플랫폼 표준).
 - 폰트: Android는 플러그인 fonts로 WantedSans, iOS 확장은 시스템 폰트(SF).
+- Android RemoteViews는 시스템 글자 크기로 인한 잘림을 막기 위해 widget text의 font scaling을
+  고정하고, 한 줄 텍스트에는 `maxLines`/auto-fit을 함께 사용한다.
 
 ## 5. 관측
 
@@ -76,15 +88,17 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 
 ## 6. 테스트
 
-- 단위: 모델 정책(renderState/stale), 매퍼(문자열 굽기·절단·카테고리 컬러), repository(라운드트립·손상 JSON),
-  sync service(무throw 계약) — `src/features/widget/**/*.test.ts`
+- 단위: 모델 정책(renderState/stale), Android 이름→family/행 수 정책, 컬러 변환,
+  매퍼(문자열 굽기·절단·카테고리 컬러), repository(라운드트립·손상 JSON), sync service(무throw 계약)
+  — `src/features/widget/**/*.test.ts`
 - 렌더 트리(FlexWidget/SwiftUI)는 단위 테스트 불가 — 수동 QA 체크리스트:
   - [ ] 위젯 추가(픽커 라벨/설명) — 양 플랫폼, 전 사이즈
   - [ ] 할 일 토글 → 위젯 즉시 반영 (앱 백그라운드 전환 후 홈 화면 확인)
   - [ ] 라이트/다크 전환
   - [ ] 상태 4종: data / empty / loggedOut / stale(기기 날짜 변경)
   - [ ] 언어 변경(ko↔en) 반영
-  - [ ] Android 세로 리사이즈(3→8행) + 2x2 컴팩트 전환, iOS large(8행)
+  - [ ] Android picker에 Summary/List/Large 3개가 각각 노출되고 2x2/4x2/4x4로 배치
+  - [ ] Samsung One UI/Pixel Launcher에서 텍스트 잘림·정렬·라운드 배경 확인
   - [ ] 로그아웃 → "로그인이 필요해요" / 재로그인 → 데이터 복원
   - [ ] 콜드 스타트에서 재시도 화면(fallback) 미재현
 
@@ -99,6 +113,8 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
   React 렌더러 밖에서 함수로 직접 호출(`jsxTree.type(props)`)하는데, `experiments.reactCompiler: true`가
   주입한 `useMemoCache`가 훅으로 취급되어 "Invalid hook call" → 렌더 전체 실패(**완전히 빈 위젯**).
   dev/prod 공통이며 조용히 실패하므로(Sentry에만 기록) 새 위젯 파일 추가 시 최상단 디렉티브를 빠뜨리지 말 것.
+- task handler의 주 렌더가 실패하면 정적 fallback을 한 번 더 렌더한다. fallback 실패도 별도
+  `widgetTaskHandler.fallback`으로 관측하되 headless 프로세스 밖으로 throw하지 않는다.
 - Android androidx.work 중복 클래스: `plugins/withAndroidXWorkAlignment.js`가 2.9.1로 정렬
   (react-native-android-widget PR #148의 work-runtime 2.8.1 vs 타 의존성 ktx 2.7.1 충돌,
   WorkManager 2.9.0부터 ktx가 빈 셔틀이라 정렬 시 충돌 카테고리 소멸).

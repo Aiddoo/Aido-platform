@@ -11,6 +11,14 @@ import type { SupportedLocale } from "@/shared/presentation/decorators";
 
 import { NotificationFacade } from "../../application/facades/notification.facade";
 import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../application/ports/notification.repository.port";
+import {
+	PUSH_PROVIDER,
+	type PushProvider,
+} from "../../application/ports/push-provider.port";
+import {
 	NotificationMessageBuilder,
 	resolveTemplateLocale,
 } from "../../domain/services/templates/notification-templates";
@@ -48,6 +56,9 @@ export class NotificationQueueProcessor extends WorkerHost {
 		private readonly txHost: TransactionHost<
 			TransactionalAdapterPrisma<DatabaseService>
 		>,
+		@Inject(NOTIFICATION_REPOSITORY)
+		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
 	) {
 		super();
 	}
@@ -99,6 +110,9 @@ export class NotificationQueueProcessor extends WorkerHost {
 			case NotificationJobName.MILESTONE_REACHED:
 				await this.#handleMilestoneReached(job.data);
 				break;
+			case NotificationJobName.PUSH_RECEIPTS:
+				await this.#handlePushReceipts();
+				break;
 			default: {
 				// 컴파일 타임 소진 검사: 새 잡 타입 추가 시 여기서 타입 에러로 강제 처리
 				const _exhaustive: never = job;
@@ -106,6 +120,23 @@ export class NotificationQueueProcessor extends WorkerHost {
 				this.#logger.warn(`Unknown job name: ${jobName}`);
 			}
 		}
+	}
+
+	async #handlePushReceipts(): Promise<void> {
+		const pending =
+			await this.notificationRepository.findPendingPushReceipts(900);
+		if (pending.length === 0) return;
+		const receipts = await this.pushProvider.getReceipts(
+			pending.map((attempt) => attempt.ticketId),
+		);
+		const invalidTokens =
+			await this.notificationRepository.recordPushReceipts(receipts);
+		if (invalidTokens.length > 0) {
+			await this.notificationRepository.deactivateInvalidTokens(invalidTokens);
+		}
+		this.#logger.log(
+			`Expo receipts processed: requested=${pending.length}, received=${receipts.length}, invalidTokens=${invalidTokens.length}`,
+		);
 	}
 
 	async #handleFollowNew(data: FollowNewJobData): Promise<void> {
@@ -132,6 +163,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				`Failed to send follow request notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+			throw error;
 		}
 	}
 
@@ -159,6 +191,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				`Failed to send mutual follow notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+			throw error;
 		}
 	}
 
@@ -197,6 +230,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				`Failed to send nudge notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+			throw error;
 		}
 	}
 
@@ -227,6 +261,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				`Failed to send cheer notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+			throw error;
 		}
 	}
 
@@ -338,6 +373,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				`Failed to send friend completion notifications: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+			throw error;
 		}
 	}
 
@@ -379,6 +415,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 				`Failed to handle milestone-reached: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+			throw error;
 		}
 	}
 }

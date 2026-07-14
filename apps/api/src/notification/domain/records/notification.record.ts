@@ -22,6 +22,12 @@ export interface NotificationRecord {
 	metadata: unknown;
 	createdAt: Date;
 	readAt: Date | null;
+	actionType: "DEEP_LINK" | "BROWSER" | "WEBVIEW" | "NONE";
+	actionUrl: string | null;
+	campaignKey: string | null;
+	variantId: string | null;
+	purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
+	openedAt: Date | null;
 }
 
 /** 푸시 토큰 플랫폼 (Prisma `Platform` enum과 구조 동일) */
@@ -42,4 +48,6 @@ export interface PushTokenRecord {
 	createdAt: Date;
 	updatedAt: Date;
 	lastUsedAt: Date;
+	payloadVersion: number;
+	appVersion: string | null;
 }

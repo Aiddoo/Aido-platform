@@ -94,7 +94,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			});
 		});
 
-		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
+		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
 			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
@@ -107,7 +107,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			const job = createMockJob(NotificationJobName.FOLLOW_NEW, data);
 
 			// When & Then — 에러 전파 없음
-			await expect(processor.process(job)).resolves.not.toThrow();
+			await expect(processor.process(job)).rejects.toThrow("DB error");
 		});
 	});
 
@@ -135,7 +135,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			});
 		});
 
-		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
+		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
 			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
@@ -148,7 +148,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			const job = createMockJob(NotificationJobName.FOLLOW_MUTUAL, data);
 
 			// When & Then
-			await expect(processor.process(job)).resolves.not.toThrow();
+			await expect(processor.process(job)).rejects.toThrow("DB error");
 		});
 	});
 
@@ -209,7 +209,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			);
 		});
 
-		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
+		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
 			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
@@ -223,7 +223,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			const job = createMockJob(NotificationJobName.NUDGE_SENT, data);
 
 			// When & Then
-			await expect(processor.process(job)).resolves.not.toThrow();
+			await expect(processor.process(job)).rejects.toThrow("DB error");
 		});
 	});
 
@@ -287,7 +287,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			});
 		});
 
-		it("실패 시 에러를 throw하지 않는다 (소셜 알림)", async () => {
+		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
 			notification.createAndSendWithDedup.mockRejectedValue(
 				new Error("DB error"),
@@ -301,7 +301,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			const job = createMockJob(NotificationJobName.CHEER_SENT, data);
 
 			// When & Then
-			await expect(processor.process(job)).resolves.not.toThrow();
+			await expect(processor.process(job)).rejects.toThrow("DB error");
 		});
 	});
 
@@ -454,7 +454,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await expect(processor.process(job)).resolves.not.toThrow();
 		});
 
-		it("일반 에러 시 throw하지 않는다 (소셜 알림)", async () => {
+		it("일반 에러 시 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
 			const job = createMockJob(
 				NotificationJobName.FRIEND_COMPLETED,
@@ -463,7 +463,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			jest.mocked(uow.run).mockRejectedValue(new Error("DB error"));
 
 			// When & Then — 에러 전파 없음
-			await expect(processor.process(job)).resolves.not.toThrow();
+			await expect(processor.process(job)).rejects.toThrow("DB error");
 		});
 	});
 
@@ -515,7 +515,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			expect(notification.createAndSend).not.toHaveBeenCalled();
 		});
 
-		it("에러 발생 시 로깅만 하고 throw하지 않는다", async () => {
+		it("에러 발생 시 로깅 후 재전파한다", async () => {
 			// Given
 			asMock(db.notification.findFirst).mockResolvedValue(null);
 			notification.createAndSend.mockRejectedValue(new Error("DB error"));
@@ -526,7 +526,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			);
 
 			// When & Then — 에러 throw 없음
-			await expect(processor.process(job)).resolves.not.toThrow();
+			await expect(processor.process(job)).rejects.toThrow("DB error");
 		});
 	});
 });

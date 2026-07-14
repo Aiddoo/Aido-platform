@@ -29,6 +29,7 @@ export function createAndroidWidgetBridge(repository: WidgetSnapshotRepository):
             renderWidget: (widgetInfo) =>
               renderAndroidWidget({
                 snapshot,
+                widgetName,
                 todayLocalDate,
                 widthDp: widgetInfo.width,
                 heightDp: widgetInfo.height,

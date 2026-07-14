@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.5.1';
+const VERSION = '1.5.2';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -392,16 +392,37 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ],
           widgets: [
             {
+              name: 'AidoTodaySummary',
+              label: '오늘 진행률',
+              description: '오늘 할 일 진행률과 연속 달성 기록을 한눈에 확인해요',
+              minWidth: '110dp',
+              minHeight: '110dp',
+              targetCellWidth: 2,
+              targetCellHeight: 2,
+              resizeMode: 'none',
+              updatePeriodMillis: 1_800_000,
+            },
+            {
               name: 'AidoTodayList',
               label: '오늘 할 일',
-              description: '오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요',
-              // 2x2(컴팩트 요약)부터 배치 가능, 넓히면 리스트로 전환 (양방향 리사이즈)
-              minWidth: '110dp',
+              description: '오늘의 주요 할 일 3개와 체크 여부를 바로 확인해요',
+              minWidth: '250dp',
               minHeight: '110dp',
               targetCellWidth: 4,
               targetCellHeight: 2,
-              resizeMode: 'horizontal|vertical',
-              // 자정 롤오버 안전망: 시스템 주기 갱신(최소 30분)으로 stale 스냅샷을 새 하루 상태로 전환
+              resizeMode: 'none',
+              updatePeriodMillis: 1_800_000,
+            },
+            {
+              name: 'AidoTodayLarge',
+              label: '오늘 할 일 크게',
+              description: '오늘의 주요 할 일 8개와 체크 여부를 넉넉하게 확인해요',
+              minWidth: '250dp',
+              minHeight: '250dp',
+              targetCellWidth: 4,
+              targetCellHeight: 4,
+              resizeMode: 'none',
+              // 자정 롤오버 안전망: 시스템 주기 갱신(최소 30분)
               updatePeriodMillis: 1_800_000,
             },
           ],

@@ -12,7 +12,7 @@ if [[ "$FILE_PATH" == *"src/shared/ui/"*".tsx" ]]; then
   if [ ! -f "$DOC_PATH" ]; then
     echo "[UI Component Doc] 새 컴포넌트 감지: ${COMPONENT_DIR}"
     echo "→ 컴포넌트 문서(${DOC_PATH})를 생성하고 apps/mobile/.claude/ui-components.md 테이블에 추가하세요."
-    echo "→ CLAUDE.md의 'UI 컴포넌트 문서 규칙' 섹션을 참고하세요."
+    echo "→ AGENTS.md의 'UI 컴포넌트 문서 규칙' 섹션을 참고하세요."
   fi
 fi
 

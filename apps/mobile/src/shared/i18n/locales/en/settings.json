@@ -38,7 +38,9 @@
     "version": "Version: {{version}}",
     "notAgreed": "Not agreed",
     "marketing": "Marketing Emails",
-    "marketingDescription": "Receive events and promotional updates"
+    "marketingDescription": "Receive events and promotional updates",
+    "marketingPush": "Promotional push notifications",
+    "marketingPushDescription": "Receive recommendations and return reminders by push"
   },
   "categorySettings": {
     "header": "Edit your categories\nor change their order",

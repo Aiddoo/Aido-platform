@@ -1,7 +1,9 @@
 import {
   type MarkReadResponse,
+  marketingPushOptOutResponseSchema,
   markReadResponseSchema,
   notificationListResponseSchema,
+  notificationOpenedResponseSchema,
   type RegisterTokenResponse,
   registerTokenResponseSchema,
   unreadCountResponseSchema,
@@ -11,6 +13,7 @@ import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
+import * as Application from 'expo-application';
 import * as Notifications from 'expo-notifications';
 
 import type { NotificationError } from '../models/notification.error';
@@ -26,17 +29,20 @@ export class NotificationService {
   readonly #deviceIdService: DeviceIdService;
   readonly #pushTokenService: PushTokenService;
   readonly #logger: Logger;
+  readonly #publicHttpClient: HttpClient;
 
   constructor(
     httpClient: HttpClient,
     deviceIdService: DeviceIdService,
     pushTokenService: PushTokenService,
     logger: Logger,
+    publicHttpClient: HttpClient = httpClient,
   ) {
     this.#httpClient = httpClient;
     this.#deviceIdService = deviceIdService;
     this.#pushTokenService = pushTokenService;
     this.#logger = logger;
+    this.#publicHttpClient = publicHttpClient;
   }
 
   setupPushNotifications = async (): Promise<
@@ -51,11 +57,13 @@ export class NotificationService {
       return tokenResult;
     }
 
-    this.#logger.debug('[PushToken] Registering', { token: tokenResult.value, deviceId });
+    this.#logger.debug('[PushToken] Registering', { payloadVersion: 2 });
 
     const result = await this.#httpClient.post<unknown>('v1/notifications/token', {
       token: tokenResult.value,
       deviceId,
+      payloadVersion: 2,
+      appVersion: Application.nativeApplicationVersion ?? undefined,
     });
 
     if (!result.ok) {
@@ -163,6 +171,35 @@ export class NotificationService {
     }
 
     return ok(parsed.data);
+  };
+
+  markOpened = async (notificationId: number): Promise<Result<boolean, ApiError>> => {
+    const result = await this.#httpClient.post<unknown>(
+      `v1/notifications/${notificationId}/opened`,
+    );
+    if (!result.ok) return result;
+    const parsed = notificationOpenedResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[NotificationService] Invalid markOpened response: ${parsed.error.message}`,
+      );
+    }
+    return ok(parsed.data.opened);
+  };
+
+  optOutMarketingPush = async (token: string): Promise<Result<boolean, ApiError>> => {
+    const result = await this.#publicHttpClient.post<unknown>(
+      'v1/notifications/marketing-push/opt-out',
+      { token },
+    );
+    if (!result.ok) return result;
+    const parsed = marketingPushOptOutResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[NotificationService] Invalid marketing opt-out response: ${parsed.error.message}`,
+      );
+    }
+    return ok(parsed.data.optedOut);
   };
 
   setBadgeCount = async (count: number): Promise<void> => {

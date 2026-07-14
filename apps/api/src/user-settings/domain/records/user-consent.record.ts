@@ -6,4 +6,5 @@ export interface UserConsentRecord {
 	privacyAgreedAt: Date | null;
 	agreedTermsVersion: string | null;
 	marketingAgreedAt: Date | null;
+	marketingPushAgreedAt: Date | null;
 }

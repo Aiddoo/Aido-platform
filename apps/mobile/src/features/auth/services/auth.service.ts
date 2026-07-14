@@ -29,8 +29,11 @@ import {
   resetPasswordResponseSchema,
   type UpdateMarketingConsentInput,
   type UpdateMarketingConsentResponse,
+  type UpdateMarketingPushConsentInput,
+  type UpdateMarketingPushConsentResponse,
   type UpdatePreferenceInput,
   updateMarketingConsentResponseSchema,
+  updateMarketingPushConsentResponseSchema,
   updatePreferenceResponseSchema,
   type VerifyEmailInput,
 } from '@aido/validators';
@@ -61,6 +64,7 @@ import type {
   ResendVerificationResult,
   ResetPasswordResult,
   UpdateMarketingConsentResult,
+  UpdateMarketingPushConsentResult,
 } from '../models/auth.model';
 import type {
   LinkedAccountsResult,
@@ -81,6 +85,7 @@ import {
   toResendVerificationResult,
   toResetPasswordResult,
   toUpdateMarketingConsentResult,
+  toUpdateMarketingPushConsentResult,
 } from './auth.mapper';
 
 const OAUTH_PATHS: Record<OAuthStartProvider, string> = {
@@ -420,6 +425,23 @@ export class AuthService {
     }
 
     return ok(toUpdateMarketingConsentResult(parsed.data));
+  };
+
+  updateMarketingPushConsent = async (
+    input: UpdateMarketingPushConsentInput,
+  ): Promise<Result<UpdateMarketingPushConsentResult, ApiError>> => {
+    const result = await this.#authHttpClient.patch<UpdateMarketingPushConsentResponse>(
+      'v1/auth/consent/marketing-push',
+      input,
+    );
+    if (!result.ok) return result;
+    const parsed = updateMarketingPushConsentResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid updateMarketingPushConsent response: ${parsed.error.message}`,
+      );
+    }
+    return ok(toUpdateMarketingPushConsentResult(parsed.data));
   };
 
   register = async (input: RegisterInput): Promise<Result<RegisterResult, ApiError>> => {

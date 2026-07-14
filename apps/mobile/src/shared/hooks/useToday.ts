@@ -1,28 +1,7 @@
-import { isSameDay } from '@src/shared/utils/date';
-import { useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
 
-export const useToday = (): Date => {
-  const [today, setToday] = useState(() => new Date());
-  const appState = useRef(AppState.currentState);
+/** 현재 로컬 날짜를 나타내는 안정적인 Date. 날짜가 바뀔 때만 참조가 변경된다. */
+export const useToday = (): Date => useLocalDate().currentLocalDate;
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      const wasInBackground = appState.current !== 'active';
-      const isActive = nextAppState === 'active';
-
-      if (wasInBackground && isActive) {
-        setToday((prev) => {
-          const now = new Date();
-          const hasDateChanged = !isSameDay(prev, now);
-          return hasDateChanged ? now : prev;
-        });
-      }
-      appState.current = nextAppState;
-    });
-
-    return () => subscription.remove();
-  }, []);
-
-  return today;
-};
+/** 쿼리·경계 reset에 사용하는 YYYY-MM-DD 로컬 날짜 key. */
+export const useTodayKey = (): string => useLocalDate().currentLocalDateKey;

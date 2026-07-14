@@ -98,6 +98,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 
 			// Then
 			expect(result).toEqual({
+				token: validToken,
 				success: true,
 				ticketId: "ticket-123",
 			});
@@ -164,6 +165,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 
 			// Then
 			expect(result).toEqual({
+				token: validToken,
 				success: false,
 				error: "DeviceNotRegistered",
 				errorCode: "DeviceNotRegistered",
@@ -242,10 +244,12 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			expect(result.invalidTokens).toEqual([]);
 			expect(result.results).toHaveLength(2);
 			expect(result.results[0]).toEqual({
+				token: validToken,
 				success: true,
 				ticketId: "ticket-1",
 			});
 			expect(result.results[1]).toEqual({
+				token: validToken,
 				success: true,
 				ticketId: "ticket-2",
 			});
@@ -330,10 +334,12 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			expect(result.successCount).toBe(1);
 			expect(result.failureCount).toBe(1);
 			expect(result.results[0]).toEqual({
+				token: validToken,
 				success: true,
 				ticketId: "ticket-1",
 			});
 			expect(result.results[1]).toEqual({
+				token: token2,
 				success: false,
 				error: "DeviceNotRegistered",
 				errorCode: "DeviceNotRegistered",

@@ -16,6 +16,9 @@ export interface IPushRateLimiter {
 	 */
 	isRateLimited(userId: string): Promise<boolean>;
 
+	/** 자동 참여 유도 푸시: 사용자 현지 날짜 기준 2회/일, 최소 4시간 간격 */
+	isEngagementRateLimited(userId: string, localDate: string): Promise<boolean>;
+
 	/** 리소스 정리 (lifecycle) */
 	destroy?(): void;
 }

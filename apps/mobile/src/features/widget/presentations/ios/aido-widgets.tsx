@@ -120,6 +120,7 @@ function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironme
             modifiers={[
               font({ size: 11, weight: 'medium', design: 'rounded' }),
               foregroundColor(props.isComplete ? palette.brand : palette.muted),
+              lineLimit(1),
             ]}
           >
             {props.isComplete ? props.allDoneLabel : props.percentLabel}
@@ -130,9 +131,10 @@ function AidoTodayListLayout(props: IosWidgetProps, environment: WidgetEnvironme
               modifiers={[
                 font({ size: 11, weight: 'medium', design: 'rounded' }),
                 foregroundColor(palette.brand),
+                lineLimit(1),
               ]}
             >
-              {`🔥 ${props.streakLabel}`}
+              {`🔥 ${props.compactStreakLabel}`}
             </Text>
           ) : null}
         </HStack>

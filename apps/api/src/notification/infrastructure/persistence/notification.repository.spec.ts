@@ -77,6 +77,12 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 					nudgeId: undefined,
 					cheerId: undefined,
 					metadata: undefined,
+					notificationDate: undefined,
+					actionType: "DEEP_LINK",
+					actionUrl: undefined,
+					campaignKey: undefined,
+					variantId: undefined,
+					purpose: "TRANSACTIONAL",
 				},
 			});
 			expect(result).toEqual(expectedNotification);
@@ -415,24 +421,20 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 	describe("markAsRead", () => {
 		it("알림을 읽음 처리해야 한다", async () => {
 			// Given
-			const readNotification = NotificationBuilder.create("user-1")
-				.withId(1)
-				.asRead()
-				.build();
-			asMock(db.notification.update).mockResolvedValue(readNotification);
+			asMock(db.notification.updateMany).mockResolvedValue({ count: 1 });
 
 			// When
-			const result = await repository.markAsRead(1);
+			const result = await repository.markAsRead(1, "user-1");
 
 			// Then
-			expect(db.notification.update).toHaveBeenCalledWith({
-				where: { id: 1 },
+			expect(db.notification.updateMany).toHaveBeenCalledWith({
+				where: { id: 1, userId: "user-1", isRead: false },
 				data: {
 					isRead: true,
 					readAt: expect.any(Date),
 				},
 			});
-			expect(result.isRead).toBe(true);
+			expect(result).toBe(true);
 		});
 	});
 
@@ -719,11 +721,15 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 					deviceId: "device-1",
 					platform: "IOS",
 					isActive: true,
+					payloadVersion: 1,
+					appVersion: undefined,
 				},
 				update: {
 					token: data.token,
 					platform: "IOS",
 					isActive: true,
+					payloadVersion: 1,
+					appVersion: undefined,
 					updatedAt: expect.any(Date),
 				},
 			});

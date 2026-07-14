@@ -108,6 +108,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				privacyAgreedAt: null,
 				agreedTermsVersion: null,
 				marketingAgreedAt: null,
+				marketingPushAgreedAt: null,
 			};
 			db.userConsent.create.mockResolvedValue(createdConsent);
 
@@ -123,6 +124,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 					privacyAgreedAt: null,
 					agreedTermsVersion: null,
 					marketingAgreedAt: null,
+					marketingPushAgreedAt: null,
 				},
 			});
 		});
@@ -152,6 +154,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 					privacyAgreedAt: privacyDate,
 					agreedTermsVersion: "1.0.0",
 					marketingAgreedAt: marketingDate,
+					marketingPushAgreedAt: null,
 				},
 			});
 		});
@@ -165,6 +168,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				privacyAgreedAt: null,
 				agreedTermsVersion: null,
 				marketingAgreedAt: null,
+				marketingPushAgreedAt: null,
 			};
 			db.userConsent.create.mockResolvedValue(createdConsent);
 
@@ -190,6 +194,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				privacyAgreedAt: privacyDate,
 				agreedTermsVersion: "1.0.0",
 				marketingAgreedAt: null,
+				marketingPushAgreedAt: null,
 			};
 			db.userConsent.upsert.mockResolvedValue(createdConsent);
 
@@ -210,6 +215,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 					privacyAgreedAt: privacyDate,
 					agreedTermsVersion: "1.0.0",
 					marketingAgreedAt: null,
+					marketingPushAgreedAt: null,
 				},
 				update: {
 					termsAgreedAt: termsDate,
@@ -243,6 +249,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 					privacyAgreedAt: null,
 					agreedTermsVersion: newVersion,
 					marketingAgreedAt: null,
+					marketingPushAgreedAt: null,
 				},
 				update: {
 					agreedTermsVersion: newVersion,
@@ -271,6 +278,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 			const updatedConsent: UserConsent = {
 				...mockConsent,
 				marketingAgreedAt: now,
+				marketingPushAgreedAt: null,
 			};
 			db.userConsent.update.mockResolvedValue(updatedConsent);
 
@@ -337,6 +345,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				privacyAgreedAt: null,
 				agreedTermsVersion: null,
 				marketingAgreedAt: now,
+				marketingPushAgreedAt: null,
 			};
 			db.userConsent.upsert.mockResolvedValue(createdConsent);
 

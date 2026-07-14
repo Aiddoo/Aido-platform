@@ -32,6 +32,8 @@ export class PushTokenBuilder {
 			createdAt: now,
 			updatedAt: now,
 			lastUsedAt: now,
+			payloadVersion: 1,
+			appVersion: null,
 		};
 	}
 

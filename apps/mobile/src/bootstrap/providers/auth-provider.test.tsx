@@ -9,6 +9,7 @@ import {
   createMockTokenStore,
 } from '@src/shared/__tests__';
 import { KeychainLockedError } from '@src/shared/errors';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
@@ -30,19 +31,27 @@ describe('AuthProvider', () => {
   let analytics: ReturnType<typeof createMockAnalytics>;
   let queryClient: QueryClient;
   let unsubscribes: Array<() => void>;
+  let mountedProviders: Array<ReturnType<typeof render>>;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     tokenStore = createMockTokenStore();
     errorReporter = createMockErrorReporter();
     analytics = createMockAnalytics();
     queryClient = new QueryClient();
     unsubscribes = [];
+    mountedProviders = [];
   });
 
   afterEach(() => {
+    for (const mountedProvider of mountedProviders) {
+      mountedProvider.unmount();
+    }
     for (const unsubscribe of unsubscribes) {
       unsubscribe();
     }
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   const renderProvider = () => {
@@ -53,7 +62,7 @@ describe('AuthProvider', () => {
       errorReporter,
     );
 
-    return render(
+    const mountedProvider = render(
       <StaticDIProvider
         container={createMockDIContainer({
           tokenStore,
@@ -64,12 +73,16 @@ describe('AuthProvider', () => {
         })}
       >
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <StatusProbe />
-          </AuthProvider>
+          <LocalDateProvider>
+            <AuthProvider>
+              <StatusProbe />
+            </AuthProvider>
+          </LocalDateProvider>
         </QueryClientProvider>
       </StaticDIProvider>,
     );
+    mountedProviders.push(mountedProvider);
+    return mountedProvider;
   };
 
   const expectStatus = (status: string) =>

@@ -15,6 +15,10 @@ import type {
 	RegisterPushTokenData,
 } from "../../application/ports/notification-data";
 import type {
+	PushReceiptResult,
+	PushResult,
+} from "../../application/ports/push-provider.port";
+import type {
 	NotificationRecord,
 	PushTokenRecord,
 } from "../../domain/records/notification.record";
@@ -55,6 +59,11 @@ export class NotificationRepository implements NotificationRepositoryPort {
 				metadata:
 					data.metadata != null ? toInputJson(data.metadata) : undefined,
 				notificationDate: data.notificationDate ?? undefined,
+				actionType: data.action?.type ?? "DEEP_LINK",
+				actionUrl: data.action?.url,
+				campaignKey: data.campaignKey,
+				variantId: data.variantId,
+				purpose: data.purpose ?? "TRANSACTIONAL",
 			},
 		});
 	}
@@ -94,6 +103,38 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	}
 
 	/**
+	 * 실제 저장된 행만 반환한다. 배치 중복이 제거된 뒤의 ID를 푸시 페이로드에
+	 * 사용하기 위한 outbox 진입점이다.
+	 */
+	async createManyNotificationsAndReturn(
+		dataList: CreateNotificationData[],
+	): Promise<NotificationRecord[]> {
+		if (dataList.length === 0) return [];
+
+		return this.client.notification.createManyAndReturn({
+			data: dataList.map((data) => ({
+				userId: data.userId,
+				type: data.type,
+				title: data.title,
+				body: data.body,
+				todoId: data.todoId,
+				friendId: data.friendId,
+				nudgeId: data.nudgeId,
+				cheerId: data.cheerId,
+				metadata:
+					data.metadata != null ? toInputJson(data.metadata) : undefined,
+				notificationDate: data.notificationDate ?? undefined,
+				actionType: data.action?.type ?? "DEEP_LINK",
+				actionUrl: data.action?.url,
+				campaignKey: data.campaignKey,
+				variantId: data.variantId,
+				purpose: data.purpose ?? "TRANSACTIONAL",
+			})),
+			skipDuplicates: true,
+		});
+	}
+
+	/**
 	 * ID로 알림 조회
 	 */
 	async findNotificationById(
@@ -130,14 +171,30 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 알림 읽음 처리
 	 */
-	async markAsRead(id: number): Promise<NotificationRecord> {
-		return this.client.notification.update({
-			where: { id },
+	async markAsRead(id: number, userId: string): Promise<boolean> {
+		const result = await this.client.notification.updateMany({
+			where: { id, userId, isRead: false },
 			data: {
 				isRead: true,
 				readAt: now(),
 			},
 		});
+		return result.count > 0;
+	}
+
+	async markAsOpened(id: number, userId: string): Promise<boolean> {
+		const openedAt = now();
+		const result = await this.client.notification.updateMany({
+			where: { id, userId, openedAt: null },
+			data: { openedAt, isRead: true, readAt: openedAt },
+		});
+		if (result.count > 0) {
+			await this.client.pushDispatch.updateMany({
+				where: { notificationId: id, userId, openedAt: null },
+				data: { openedAt },
+			});
+		}
+		return result.count > 0;
 	}
 
 	/**
@@ -310,14 +367,118 @@ export class NotificationRepository implements NotificationRepositoryPort {
 				deviceId,
 				platform,
 				isActive: true,
+				payloadVersion: data.payloadVersion ?? 1,
+				appVersion: data.appVersion,
 			},
 			update: {
 				token: data.token,
 				platform,
 				isActive: true,
+				payloadVersion: data.payloadVersion ?? 1,
+				appVersion: data.appVersion,
 				updatedAt: now(),
 			},
 		});
+	}
+
+	async createPushDispatch(input: {
+		notificationId: number;
+		userId: string;
+		purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
+		campaignKey?: string | null;
+		variantId?: string | null;
+		timezone: string;
+		localDate: Date;
+	}): Promise<{ id: number }> {
+		return this.client.pushDispatch.upsert({
+			where: { notificationId: input.notificationId },
+			create: { ...input, status: "PROCESSING" },
+			update: { status: "PROCESSING", skipReason: null },
+			select: { id: true },
+		});
+	}
+
+	async recordPushDeliveryResults(
+		dispatchId: number,
+		results: PushResult[],
+	): Promise<void> {
+		const tokens = await this.client.pushToken.findMany({
+			where: { token: { in: results.map((result) => result.token) } },
+			select: { id: true, token: true },
+		});
+		const tokenIdByValue = new Map(
+			tokens.map((token) => [token.token, token.id]),
+		);
+		const attempts = results.flatMap((result) => {
+			const pushTokenId = tokenIdByValue.get(result.token);
+			if (!pushTokenId) return [];
+			return [
+				{
+					dispatchId,
+					pushTokenId,
+					status: result.success
+						? ("TICKET_ACCEPTED" as const)
+						: ("FAILED" as const),
+					expoTicketId: result.ticketId,
+					errorCode: result.errorCode,
+					errorMessage: result.error?.slice(0, 500),
+				},
+			];
+		});
+		if (attempts.length > 0) {
+			await this.client.pushDeliveryAttempt.createMany({
+				data: attempts,
+				skipDuplicates: true,
+			});
+		}
+		const sent = results.some((result) => result.success);
+		await this.client.pushDispatch.update({
+			where: { id: dispatchId },
+			data: {
+				status: sent ? "SENT" : "FAILED",
+				...(sent && { sentAt: now() }),
+			},
+		});
+	}
+
+	async findPendingPushReceipts(
+		limit: number,
+	): Promise<Array<{ ticketId: string; token: string }>> {
+		const rows = await this.client.pushDeliveryAttempt.findMany({
+			where: { status: "TICKET_ACCEPTED", expoTicketId: { not: null } },
+			take: limit,
+			orderBy: { createdAt: "asc" },
+			select: { expoTicketId: true, pushToken: { select: { token: true } } },
+		});
+		return rows.flatMap((row) =>
+			row.expoTicketId
+				? [{ ticketId: row.expoTicketId, token: row.pushToken.token }]
+				: [],
+		);
+	}
+
+	async recordPushReceipts(results: PushReceiptResult[]): Promise<string[]> {
+		const invalidTicketIds: string[] = [];
+		for (const result of results) {
+			await this.client.pushDeliveryAttempt.updateMany({
+				where: { expoTicketId: result.ticketId },
+				data: {
+					status: result.delivered ? "DELIVERED" : "FAILED",
+					errorCode: result.errorCode,
+					errorMessage: result.error?.slice(0, 500),
+					receiptCheckedAt: now(),
+				},
+			});
+			if (result.errorCode === "DeviceNotRegistered") {
+				invalidTicketIds.push(result.ticketId);
+			}
+		}
+		if (invalidTicketIds.length === 0) return [];
+		const attempts = await this.client.pushDeliveryAttempt.findMany({
+			where: { expoTicketId: { in: invalidTicketIds } },
+			select: { pushToken: { select: { token: true } } },
+		});
+		return attempts.map((attempt) => attempt.pushToken.token);
 	}
 
 	/**
