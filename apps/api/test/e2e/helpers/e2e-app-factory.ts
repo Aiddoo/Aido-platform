@@ -43,6 +43,9 @@ import {
 	NotificationQueueProcessor,
 	PUSH_PROVIDER,
 } from "@/notification";
+import { RETENTION_QUEUE } from "@/retention/infrastructure/queue/retention-queue.constants";
+import { RetentionQueueProcessor } from "@/retention/infrastructure/queue/retention-queue.processor";
+import { RetentionQueueService } from "@/retention/infrastructure/queue/retention-queue.service";
 import {
 	TIMEZONE_REMINDER_QUEUE,
 	TimezoneAwareReminderOrchestrator,
@@ -85,6 +88,7 @@ const BULL_QUEUES = [
 	AI_REPORT_QUEUE,
 	ACCOUNT_PURGE_QUEUE,
 	NOTIFICATION_QUEUE,
+	RETENTION_QUEUE,
 ];
 
 const BULL_PROCESSORS = [
@@ -95,6 +99,7 @@ const BULL_PROCESSORS = [
 	ReportGenerationProcessor,
 	AccountPurgeProcessor,
 	NotificationQueueProcessor,
+	RetentionQueueProcessor,
 ];
 
 const BULL_JOBS = [
@@ -103,6 +108,7 @@ const BULL_JOBS = [
 	SuggestionAnalysisJob,
 	ReportGenerationJob,
 	AccountPurgeJob,
+	RetentionQueueService,
 ];
 
 export interface E2eTestContext {

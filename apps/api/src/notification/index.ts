@@ -7,6 +7,10 @@
 // --- Facade (presentation 진입점) ---
 export { NotificationFacade } from "./application/facades/notification.facade";
 export {
+	MARKETING_PUSH_OPT_OUT_TOKEN,
+	type MarketingPushOptOutTokenPort,
+} from "./application/ports/marketing-push-opt-out-token.port";
+export {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "./application/ports/notification.repository.port";
