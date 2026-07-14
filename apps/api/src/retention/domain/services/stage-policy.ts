@@ -92,12 +92,16 @@ function localDayDifference(from: Date, to: Date, timezone: string): number {
 }
 
 export function localDateString(date: Date, timezone: string): string {
-	return new Intl.DateTimeFormat("en-CA", {
+	const parts = new Intl.DateTimeFormat("en-US", {
 		timeZone: timezone,
 		year: "numeric",
 		month: "2-digit",
 		day: "2-digit",
-	}).format(date);
+	}).formatToParts(date);
+	const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+	const month = parts.find((part) => part.type === "month")?.value ?? "01";
+	const day = parts.find((part) => part.type === "day")?.value ?? "01";
+	return `${year}-${month}-${day}`;
 }
 
 function isAtOrAfterLocalTime(

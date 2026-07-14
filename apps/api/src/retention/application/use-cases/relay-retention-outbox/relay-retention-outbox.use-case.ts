@@ -13,6 +13,8 @@ import {
 	type RetentionJobEnqueuerPort,
 } from "../../ports/retention-job-enqueuer.port";
 
+const OUTBOX_RELAY_BATCH_SIZE = 25;
+
 @Injectable()
 export class RelayRetentionOutboxUseCase {
 	readonly #logger = new Logger(RelayRetentionOutboxUseCase.name);
@@ -33,23 +35,30 @@ export class RelayRetentionOutboxUseCase {
 		const cutoff = new Date(now.getTime() - 2 * 60 * 1000);
 		const claimed = await this.uow.run(async () => {
 			await this.repository.recoverStaleOutboxes(cutoff);
-			return this.repository.claimOutboxes(100, now);
+			return this.repository.claimOutboxes(OUTBOX_RELAY_BATCH_SIZE, now);
 		});
 
-		for (const outbox of claimed) {
-			try {
-				await this.enqueuer.enqueueDispatch(outbox.id);
-				await this.repository.markOutboxPublished(outbox.id);
-			} catch (error) {
-				const delay = Math.min(15 * 60_000, 1000 * 2 ** outbox.attempts);
-				await this.repository.markOutboxFailed({
-					outboxId: outbox.id,
-					attempts: outbox.attempts,
-					error: error instanceof Error ? error.message : String(error),
-					nextAttemptAt: new Date(Date.now() + delay),
-				});
-				this.#logger.error(`Retention outbox publish failed: id=${outbox.id}`);
-			}
-		}
+		await Promise.all(
+			claimed.map(async (outbox) => {
+				try {
+					await this.enqueuer.enqueueDispatch(outbox.id);
+					await this.repository.markOutboxPublished(outbox.id);
+				} catch (error) {
+					const normalizedError =
+						error instanceof Error ? error : new Error(String(error));
+					const delay = Math.min(15 * 60_000, 1000 * 2 ** outbox.attempts);
+					await this.repository.markOutboxFailed({
+						outboxId: outbox.id,
+						attempts: outbox.attempts,
+						error: normalizedError.message,
+						nextAttemptAt: new Date(Date.now() + delay),
+					});
+					this.#logger.error(
+						`Retention outbox publish failed: id=${outbox.id}`,
+						normalizedError.stack,
+					);
+				}
+			}),
+		);
 	}
 }

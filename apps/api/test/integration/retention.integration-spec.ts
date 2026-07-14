@@ -77,6 +77,29 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 		expect(assignments[0]?.stages).toHaveLength(4);
 	});
 
+	it("stage 후보를 N+1 없이 집계 projection으로 조회한다", async () => {
+		const userId = await createUser("projection@example.com");
+		await repository.enroll({
+			userId,
+			variant: "TREATMENT",
+			startedAt: new Date("2026-07-15T00:00:00Z"),
+		});
+
+		const candidates = await repository.findScheduledStages(200);
+
+		expect(candidates).toHaveLength(4);
+		expect(
+			candidates.every(
+				(candidate) =>
+					candidate.todoCount === 0 &&
+					candidate.completedCount === 0 &&
+					candidate.incompleteCount === 0 &&
+					candidate.activeTokenCount === 0 &&
+					!candidate.todoActionWithinWindow,
+			),
+		).toBe(true);
+	});
+
 	it("Notification·Dispatch·Outbox 생성 실패 시 단계 상태까지 전부 rollback한다", async () => {
 		const userId = await createUser("rollback@example.com");
 		await repository.enroll({
@@ -116,5 +139,44 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 			]);
 		expect(storedStage.status).toBe("SCHEDULED");
 		expect([notifications, dispatches, outboxes]).toEqual([0, 0, 0]);
+	});
+
+	it("동시 relay가 SKIP LOCKED로 서로 다른 outbox를 한 번씩 claim한다", async () => {
+		const userId = await createUser("claimbox@example.com");
+		await repository.enroll({
+			userId,
+			variant: "TREATMENT",
+			startedAt: new Date(),
+		});
+		const stages = await prisma.retentionExperimentStage.findMany({
+			where: { assignment: { userId }, stage: { in: ["D0", "D1"] } },
+			orderBy: { stage: "asc" },
+		});
+		for (const stage of stages) {
+			await repository.createDelivery({
+				stageId: stage.id,
+				userId,
+				timezone: "Asia/Seoul",
+				title: `title-${stage.stage}`,
+				body: "body",
+				route: "/feed",
+				variantId: `variant-${stage.stage}`,
+			});
+		}
+
+		const now = new Date();
+		const batches = await Promise.all([
+			repository.claimOutboxes(1, now),
+			repository.claimOutboxes(1, now),
+		]);
+		const claimed = batches.flat();
+		const stored = await prisma.retentionPushOutbox.findMany({
+			where: { id: { in: claimed.map((outbox) => outbox.id) } },
+		});
+
+		expect(claimed).toHaveLength(2);
+		expect(new Set(claimed.map((outbox) => outbox.id)).size).toBe(2);
+		expect(claimed.every((outbox) => outbox.attempts === 1)).toBe(true);
+		expect(stored.every((outbox) => outbox.status === "PROCESSING")).toBe(true);
 	});
 });

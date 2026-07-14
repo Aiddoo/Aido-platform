@@ -55,7 +55,7 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 		repository.claimOutboxes.mockResolvedValue([
 			{ id: "outbox-1", attempts: 1 },
 		]);
-		enqueuer.enqueueDispatch.mockRejectedValue(new Error("redis down"));
+		enqueuer.enqueueDispatch.mockRejectedValue("redis down");
 
 		await useCase.execute();
 
@@ -67,5 +67,26 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 				error: "redis down",
 			}),
 		);
+	});
+
+	it("독립적인 outbox publish를 병렬로 시작한다", async () => {
+		repository.claimOutboxes.mockResolvedValue([
+			{ id: "outbox-1", attempts: 1 },
+			{ id: "outbox-2", attempts: 1 },
+		]);
+		let firstCompleted = false;
+		enqueuer.enqueueDispatch.mockImplementation(async (outboxId) => {
+			if (outboxId === "outbox-1") {
+				await new Promise((resolve) => setTimeout(resolve, 10));
+				firstCompleted = true;
+				return;
+			}
+			expect(firstCompleted).toBe(false);
+		});
+
+		await useCase.execute();
+
+		expect(enqueuer.enqueueDispatch).toHaveBeenCalledTimes(2);
+		expect(repository.markOutboxPublished).toHaveBeenCalledTimes(2);
 	});
 });

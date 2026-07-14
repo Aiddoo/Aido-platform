@@ -15,6 +15,26 @@ import {
 	RETENTION_EXPERIMENT_KEY,
 	RETENTION_STAGE_NAMES,
 } from "../../domain/retention.constants";
+import { localDateString } from "../../domain/services/stage-policy";
+
+interface RetentionStageRow {
+	readonly assignmentId: string;
+	readonly stageId: string;
+	readonly userId: string;
+	readonly variant: "CONTROL" | "TREATMENT";
+	readonly stage: "D0" | "D1" | "D3" | "D7";
+	readonly startedAt: Date;
+	readonly timezone: string;
+	readonly locale: string;
+	readonly pushEnabled: boolean;
+	readonly nightPushEnabled: boolean;
+	readonly marketingPushAgreedAt: Date | null;
+	readonly activeTokenCount: number;
+	readonly lastActiveAt: Date | null;
+	readonly todoCount: number;
+	readonly completedCount: number;
+	readonly todoActionWithinWindow: boolean;
+}
 
 @Injectable()
 export class PrismaRetentionRepository implements RetentionRepositoryPort {
@@ -84,100 +104,88 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 	}
 
 	async findScheduledStages(limit: number): Promise<RetentionStageCandidate[]> {
-		const batches = await Promise.all(
-			RETENTION_STAGE_NAMES.map((stage) =>
-				this.client.retentionExperimentStage.findMany({
-					where: {
-						status: "SCHEDULED",
-						stage,
-						assignment: {
-							experimentKey: RETENTION_EXPERIMENT_KEY,
-							startedAt: { not: null },
-						},
-					},
-					take: limit,
-					orderBy: { createdAt: "asc" },
-					select: {
-						id: true,
-						stage: true,
-						assignment: {
-							select: {
-								id: true,
-								userId: true,
-								variant: true,
-								startedAt: true,
-								user: {
-									select: {
-										lastActiveAt: true,
-										preference: {
-											select: {
-												pushEnabled: true,
-												nightPushEnabled: true,
-												timezone: true,
-												locale: true,
-											},
-										},
-										consent: { select: { marketingPushAgreedAt: true } },
-										pushTokens: {
-											where: { isActive: true },
-											select: { id: true },
-										},
-										todos: {
-											select: {
-												completed: true,
-												createdAt: true,
-												completedAt: true,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}),
-			),
+		const perStageLimit = Math.max(
+			1,
+			Math.ceil(limit / RETENTION_STAGE_NAMES.length),
 		);
-		const rows = batches.flat();
+		const rows = await this.client.$queryRaw<RetentionStageRow[]>`
+			WITH ranked_stages AS (
+				SELECT
+					stage."id",
+					stage."assignmentId",
+					stage."stage",
+					stage."createdAt",
+					ROW_NUMBER() OVER (
+						PARTITION BY stage."stage"
+						ORDER BY stage."createdAt" ASC
+					) AS stage_rank
+				FROM "RetentionExperimentStage" AS stage
+				INNER JOIN "RetentionExperimentAssignment" AS assignment
+					ON assignment."id" = stage."assignmentId"
+				WHERE stage."status" = 'SCHEDULED'
+					AND assignment."experimentKey" = ${RETENTION_EXPERIMENT_KEY}
+					AND assignment."startedAt" IS NOT NULL
+			)
+			SELECT
+				assignment."id" AS "assignmentId",
+				ranked."id" AS "stageId",
+				assignment."userId" AS "userId",
+				assignment."variant",
+				ranked."stage",
+				assignment."startedAt" AS "startedAt",
+				COALESCE(preference."timezone", 'UTC') AS "timezone",
+				COALESCE(preference."locale", 'ko') AS "locale",
+				COALESCE(preference."pushEnabled", FALSE) AS "pushEnabled",
+				COALESCE(preference."nightPushEnabled", FALSE) AS "nightPushEnabled",
+				consent."marketingPushAgreedAt" AS "marketingPushAgreedAt",
+				COALESCE(token_metrics."activeTokenCount", 0)::INT AS "activeTokenCount",
+				app_user."lastActiveAt" AS "lastActiveAt",
+				COALESCE(todo_metrics."todoCount", 0)::INT AS "todoCount",
+				COALESCE(todo_metrics."completedCount", 0)::INT AS "completedCount",
+				COALESCE(todo_metrics."todoActionWithinWindow", FALSE) AS "todoActionWithinWindow"
+			FROM ranked_stages AS ranked
+			INNER JOIN "RetentionExperimentAssignment" AS assignment
+				ON assignment."id" = ranked."assignmentId"
+			INNER JOIN "User" AS app_user
+				ON app_user."id" = assignment."userId"
+			LEFT JOIN "UserPreference" AS preference
+				ON preference."userId" = app_user."id"
+			LEFT JOIN "UserConsent" AS consent
+				ON consent."userId" = app_user."id"
+			LEFT JOIN LATERAL (
+				SELECT COUNT(*) AS "activeTokenCount"
+				FROM "PushToken" AS token
+				WHERE token."userId" = app_user."id"
+					AND token."isActive" = TRUE
+			) AS token_metrics ON TRUE
+			LEFT JOIN LATERAL (
+				SELECT
+					COUNT(*) AS "todoCount",
+					COUNT(*) FILTER (WHERE todo."completed" = TRUE) AS "completedCount",
+					BOOL_OR(
+						(
+							(todo."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
+								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
+							AND todo."createdAt" < assignment."startedAt" + INTERVAL '8 days'
+						) OR (
+							todo."completedAt" IS NOT NULL
+							AND (todo."completedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
+								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
+							AND todo."completedAt" < assignment."startedAt" + INTERVAL '8 days'
+						)
+					) AS "todoActionWithinWindow"
+				FROM "Todo" AS todo
+				WHERE todo."userId" = app_user."id"
+			) AS todo_metrics ON TRUE
+			WHERE ranked.stage_rank <= ${perStageLimit}
+			ORDER BY ranked."createdAt" ASC
+		`;
 
-		return rows.flatMap((row) => {
-			const assignment = row.assignment;
-			const startedAt = assignment.startedAt;
-			if (!startedAt) return [];
-			const user = assignment.user;
-			const preference = user.preference;
-			const timezone = preference?.timezone ?? "UTC";
-			const startLocalDate = this.#localDate(startedAt, timezone);
-			const windowEnd = new Date(startedAt.getTime() + 8 * 86_400_000);
-			const todoActionWithinWindow = user.todos.some(
-				(todo) =>
-					(this.#localDate(todo.createdAt, timezone) > startLocalDate &&
-						todo.createdAt < windowEnd) ||
-					Boolean(
-						todo.completedAt &&
-							this.#localDate(todo.completedAt, timezone) > startLocalDate &&
-							todo.completedAt < windowEnd,
-					),
-			);
-			return {
-				assignmentId: assignment.id,
-				stageId: row.id,
-				userId: assignment.userId,
-				variant: assignment.variant,
-				stage: row.stage,
-				startedAt,
-				timezone,
-				locale: preference?.locale === "en" ? "en" : "ko",
-				pushEnabled: preference?.pushEnabled ?? false,
-				nightPushEnabled: preference?.nightPushEnabled ?? false,
-				marketingPushAgreedAt: user.consent?.marketingPushAgreedAt ?? null,
-				activeTokenCount: user.pushTokens.length,
-				lastActiveAt: user.lastActiveAt,
-				todoCount: user.todos.length,
-				completedCount: user.todos.filter((todo) => todo.completed).length,
-				incompleteCount: user.todos.filter((todo) => !todo.completed).length,
-				todoActionWithinWindow,
-			};
-		});
+		return rows.map((row) => ({
+			...row,
+			locale: row.locale === "en" ? "en" : "ko",
+			incompleteCount: row.todoCount - row.completedCount,
+		}));
 	}
 
 	async markStageSkipped(stageId: string, reason: string): Promise<boolean> {
@@ -211,7 +219,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 			select: { id: true },
 		});
 		const localDate = new Date(
-			`${this.#localDate(new Date(), input.timezone)}T00:00:00.000Z`,
+			`${localDateString(new Date(), input.timezone)}T00:00:00.000Z`,
 		);
 		const dispatch = await this.client.pushDispatch.create({
 			data: {
@@ -265,26 +273,24 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 	}
 
 	async claimOutboxes(limit: number, now: Date): Promise<ClaimedOutbox[]> {
-		const rows = await this.client.retentionPushOutbox.findMany({
-			where: { status: "PENDING", availableAt: { lte: now } },
-			take: limit,
-			orderBy: { createdAt: "asc" },
-			select: { id: true, attempts: true },
-		});
-		const claimed: ClaimedOutbox[] = [];
-		for (const row of rows) {
-			const result = await this.client.retentionPushOutbox.updateMany({
-				where: { id: row.id, status: "PENDING" },
-				data: {
-					status: "PROCESSING",
-					lockedAt: now,
-					attempts: { increment: 1 },
-				},
-			});
-			if (result.count === 1)
-				claimed.push({ id: row.id, attempts: row.attempts + 1 });
-		}
-		return claimed;
+		return this.client.$queryRaw<ClaimedOutbox[]>`
+			UPDATE "RetentionPushOutbox" AS outbox
+			SET
+				"status" = 'PROCESSING',
+				"lockedAt" = ${now},
+				"attempts" = outbox."attempts" + 1,
+				"updatedAt" = NOW()
+			WHERE outbox."id" IN (
+				SELECT candidate."id"
+				FROM "RetentionPushOutbox" AS candidate
+				WHERE candidate."status" = 'PENDING'
+					AND candidate."availableAt" <= ${now}
+				ORDER BY candidate."createdAt" ASC
+				LIMIT ${limit}
+				FOR UPDATE SKIP LOCKED
+			)
+			RETURNING outbox."id", outbox."attempts"
+		`;
 	}
 
 	async markOutboxPublished(outboxId: string): Promise<void> {
@@ -444,14 +450,5 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 				data: { isActive: false },
 			});
 		}
-	}
-
-	#localDate(date: Date, timezone: string): string {
-		return new Intl.DateTimeFormat("en-CA", {
-			timeZone: timezone,
-			year: "numeric",
-			month: "2-digit",
-			day: "2-digit",
-		}).format(date);
 	}
 }

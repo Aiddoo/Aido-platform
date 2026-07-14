@@ -18,10 +18,11 @@ export function retentionPushSkipReason(
 }
 
 function localHour(date: Date, timezone: string): number {
-	const value = new Intl.DateTimeFormat("en-US", {
+	const parts = new Intl.DateTimeFormat("en-US", {
 		timeZone: timezone,
 		hour: "2-digit",
 		hourCycle: "h23",
-	}).format(date);
-	return Number(value);
+	}).formatToParts(date);
+	const hour = parts.find((part) => part.type === "hour")?.value;
+	return Number(hour ?? 0);
 }
