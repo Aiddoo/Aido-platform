@@ -388,6 +388,7 @@ describe('AuthService', () => {
           privacyAgreedAt: new Date(privacyAgreedAt),
           agreedTermsVersion: dto.agreedTermsVersion,
           marketingAgreedAt: new Date(marketingAgreedAt),
+          marketingPushAgreedAt: null,
         },
       });
     });

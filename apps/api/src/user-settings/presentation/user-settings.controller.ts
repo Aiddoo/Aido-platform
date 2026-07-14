@@ -27,6 +27,8 @@ import {
 	PreferenceResponseDto,
 	UpdateMarketingConsentDto,
 	UpdateMarketingConsentResponseDto,
+	UpdateMarketingPushConsentDto,
+	UpdateMarketingPushConsentResponseDto,
 	UpdatePreferenceDto,
 	UpdatePreferenceResponseDto,
 } from "./dtos";
@@ -152,6 +154,26 @@ export class SettingsController {
 		@Body() dto: UpdateMarketingConsentDto,
 	) {
 		return this.userSettingsFacade.updateMarketingConsent(
+			user.userId,
+			dto.agreed,
+		);
+	}
+
+	@Patch("consent/marketing-push")
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "광고성 앱 푸시 수신 동의 변경",
+		operationId: "updateMarketingPushConsent",
+		description:
+			"광고성 앱 푸시 수신 동의를 변경합니다. 야간 광고성 푸시는 별도로 발송하지 않습니다.",
+	})
+	@ApiSuccessResponse({ type: UpdateMarketingPushConsentResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async updateMarketingPushConsent(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: UpdateMarketingPushConsentDto,
+	) {
+		return this.userSettingsFacade.updateMarketingPushConsent(
 			user.userId,
 			dto.agreed,
 		);

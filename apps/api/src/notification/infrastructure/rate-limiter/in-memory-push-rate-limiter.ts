@@ -4,6 +4,9 @@ import type { IPushRateLimiter } from "../../application/ports/push-rate-limiter
 /** 1시간 윈도우 내 최대 푸시 횟수 */
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 15;
+const ENGAGEMENT_MIN_INTERVAL_MS = 4 * 60 * 60 * 1000;
+const ENGAGEMENT_DAILY_MAX = 2;
+const ENGAGEMENT_RETENTION_MS = 48 * 60 * 60 * 1000;
 
 /**
  * 인메모리 푸시 Rate Limiter
@@ -16,6 +19,7 @@ export class InMemoryPushRateLimiter
 	implements IPushRateLimiter, OnModuleDestroy
 {
 	private readonly pushTimestamps = new Map<string, number[]>();
+	private readonly engagementTimestamps = new Map<string, number[]>();
 	readonly #cleanupInterval: NodeJS.Timeout;
 
 	constructor() {
@@ -47,6 +51,25 @@ export class InMemoryPushRateLimiter
 		return false;
 	}
 
+	async isEngagementRateLimited(
+		userId: string,
+		localDate: string,
+	): Promise<boolean> {
+		const key = `${userId}:${localDate}`;
+		const now = Date.now();
+		const timestamps = this.engagementTimestamps.get(key) ?? [];
+		const last = timestamps.at(-1);
+		if (
+			timestamps.length >= ENGAGEMENT_DAILY_MAX ||
+			(last !== undefined && now - last < ENGAGEMENT_MIN_INTERVAL_MS)
+		) {
+			return true;
+		}
+		timestamps.push(now);
+		this.engagementTimestamps.set(key, timestamps);
+		return false;
+	}
+
 	onModuleDestroy(): void {
 		this.destroy();
 	}
@@ -54,10 +77,12 @@ export class InMemoryPushRateLimiter
 	destroy(): void {
 		clearInterval(this.#cleanupInterval);
 		this.pushTimestamps.clear();
+		this.engagementTimestamps.clear();
 	}
 
 	#cleanup(): void {
-		const windowStart = Date.now() - RATE_LIMIT_WINDOW_MS;
+		const currentTime = Date.now();
+		const windowStart = currentTime - RATE_LIMIT_WINDOW_MS;
 
 		for (const [userId, timestamps] of this.pushTimestamps.entries()) {
 			const filtered = timestamps.filter((t) => t > windowStart);
@@ -66,6 +91,13 @@ export class InMemoryPushRateLimiter
 				this.pushTimestamps.delete(userId);
 			} else {
 				this.pushTimestamps.set(userId, filtered);
+			}
+		}
+
+		const engagementCutoff = currentTime - ENGAGEMENT_RETENTION_MS;
+		for (const [key, timestamps] of this.engagementTimestamps.entries()) {
+			if ((timestamps.at(-1) ?? 0) < engagementCutoff) {
+				this.engagementTimestamps.delete(key);
 			}
 		}
 	}

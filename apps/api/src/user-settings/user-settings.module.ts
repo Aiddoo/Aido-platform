@@ -18,6 +18,7 @@ import { GetPreferenceRecordsUseCase } from "./application/use-cases/get-prefere
 import { OnTodoToggledUseCase } from "./application/use-cases/on-todo-toggled/on-todo-toggled.use-case";
 import { SeedUserSettingsUseCase } from "./application/use-cases/seed-user-settings/seed-user-settings.use-case";
 import { UpdateMarketingConsentUseCase } from "./application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
+import { UpdateMarketingPushConsentUseCase } from "./application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case";
 import { UpdatePreferenceUseCase } from "./application/use-cases/update-preference/update-preference.use-case";
 import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-locale/upsert-push-locale.use-case";
 import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case";
@@ -37,6 +38,7 @@ import { SettingsController } from "./presentation/user-settings.controller";
 		UpdatePreferenceUseCase,
 		GetConsentUseCase,
 		UpdateMarketingConsentUseCase,
+		UpdateMarketingPushConsentUseCase,
 		OnTodoToggledUseCase,
 		SeedUserSettingsUseCase,
 		UpsertPushTimezoneUseCase,

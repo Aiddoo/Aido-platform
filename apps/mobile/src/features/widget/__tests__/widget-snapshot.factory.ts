@@ -51,6 +51,7 @@ export function buildWidgetSnapshot(overrides: Partial<WidgetSnapshot> = {}): Wi
       progressTitle: '오늘의 할 일',
       percentLabel: '60%',
       streakLabel: '12일 연속',
+      compactStreakLabel: '12일',
       allDoneLabel: '모두 완료!',
       moreLabelTemplate: '+{count}개 더',
       emptyTitle: '오늘 할 일이 없어요',

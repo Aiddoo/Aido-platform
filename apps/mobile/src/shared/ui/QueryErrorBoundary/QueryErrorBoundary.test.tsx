@@ -4,6 +4,7 @@ import { createMockDIContainer } from '@src/shared/__tests__';
 import { ApiError, ServerError } from '@src/shared/errors';
 import { render } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
+import { Text } from 'react-native';
 import { QueryErrorBoundary } from './QueryErrorBoundary';
 
 jest.mock('heroui-native', () => {
@@ -26,6 +27,13 @@ const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
 
 const Thrower = ({ error }: { error: Error }) => {
   throw error;
+};
+
+const MaybeThrower = ({ shouldThrow }: { shouldThrow: boolean }) => {
+  if (shouldThrow) {
+    throw new ServerError(503);
+  }
+  return <Text testID="healthy-content">정상 화면</Text>;
 };
 
 describe('QueryErrorBoundary 관측', () => {
@@ -78,5 +86,27 @@ describe('QueryErrorBoundary 관측', () => {
       expect.objectContaining({ feature: 'error_boundary' }),
     );
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', () => {
+    const container = createMockDIContainer({ errorReporter });
+    const screen = render(
+      <StaticDIProvider container={container}>
+        <QueryErrorBoundary resetKeys={['2026-07-14']}>
+          <MaybeThrower shouldThrow />
+        </QueryErrorBoundary>
+      </StaticDIProvider>,
+    );
+    expect(screen.queryByTestId('healthy-content')).toBeNull();
+
+    screen.rerender(
+      <StaticDIProvider container={container}>
+        <QueryErrorBoundary resetKeys={['2026-07-15']}>
+          <MaybeThrower shouldThrow={false} />
+        </QueryErrorBoundary>
+      </StaticDIProvider>,
+    );
+
+    expect(screen.getByTestId('healthy-content')).toBeTruthy();
   });
 });

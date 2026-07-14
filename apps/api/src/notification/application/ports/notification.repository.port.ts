@@ -9,6 +9,7 @@ import type {
 	FindPushTokensParams,
 	RegisterPushTokenData,
 } from "./notification-data";
+import type { PushReceiptResult, PushResult } from "./push-provider.port";
 
 /** 알림 저장소 포트 (DI 토큰) */
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");
@@ -24,11 +25,15 @@ export interface NotificationRepositoryPort {
 	createManyNotifications(
 		dataList: CreateNotificationData[],
 	): Promise<{ count: number }>;
+	createManyNotificationsAndReturn(
+		dataList: CreateNotificationData[],
+	): Promise<NotificationRecord[]>;
 	findNotificationById(id: number): Promise<NotificationRecord | null>;
 	findNotificationsByUser(
 		params: FindNotificationsParams,
 	): Promise<NotificationRecord[]>;
-	markAsRead(id: number): Promise<NotificationRecord>;
+	markAsRead(id: number, userId: string): Promise<boolean>;
+	markAsOpened(id: number, userId: string): Promise<boolean>;
 	markAllAsRead(userId: string): Promise<{ count: number }>;
 	countUnread(userId: string): Promise<number>;
 	deleteOldNotifications(daysOld?: number): Promise<{ count: number }>;
@@ -57,4 +62,22 @@ export interface NotificationRepositoryPort {
 	deletePushToken(userId: string, deviceId: string): Promise<PushTokenRecord>;
 	deleteAllPushTokensByUser(userId: string): Promise<{ count: number }>;
 	deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }>;
+
+	createPushDispatch(input: {
+		notificationId: number;
+		userId: string;
+		purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
+		campaignKey?: string | null;
+		variantId?: string | null;
+		timezone: string;
+		localDate: Date;
+	}): Promise<{ id: number }>;
+	recordPushDeliveryResults(
+		dispatchId: number,
+		results: PushResult[],
+	): Promise<void>;
+	findPendingPushReceipts(
+		limit: number,
+	): Promise<Array<{ ticketId: string; token: string }>>;
+	recordPushReceipts(results: PushReceiptResult[]): Promise<string[]>;
 }

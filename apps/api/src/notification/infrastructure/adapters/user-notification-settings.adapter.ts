@@ -46,4 +46,11 @@ export class UserNotificationSettingsAdapter
 	): Promise<UserConsentRecordWithId[]> {
 		return this.userSettings.getConsentRecordsByUserIds(userIds);
 	}
+
+	async updateMarketingPushConsent(
+		userId: string,
+		agreed: boolean,
+	): Promise<void> {
+		await this.userSettings.updateMarketingPushConsent(userId, agreed);
+	}
 }

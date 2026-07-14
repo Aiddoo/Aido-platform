@@ -2,6 +2,7 @@ import type {
 	BatchPushResult,
 	PushPayload,
 	PushProvider,
+	PushReceiptResult,
 	PushResult,
 } from "@/notification";
 
@@ -20,12 +21,17 @@ export class FakePushProvider implements PushProvider {
 
 	async send(payload: PushPayload): Promise<PushResult> {
 		this._sentPayloads.push(payload);
-		return { success: true, ticketId: `fake-ticket-${Date.now()}` };
+		return {
+			token: payload.token,
+			success: true,
+			ticketId: `fake-ticket-${Date.now()}`,
+		};
 	}
 
 	async sendBatch(payloads: PushPayload[]): Promise<BatchPushResult> {
 		this._sentPayloads.push(...payloads);
-		const results: PushResult[] = payloads.map(() => ({
+		const results: PushResult[] = payloads.map((payload) => ({
+			token: payload.token,
 			success: true,
 			ticketId: `fake-ticket-${Date.now()}`,
 		}));
@@ -36,6 +42,10 @@ export class FakePushProvider implements PushProvider {
 			results,
 			invalidTokens: [],
 		};
+	}
+
+	async getReceipts(ticketIds: string[]): Promise<PushReceiptResult[]> {
+		return ticketIds.map((ticketId) => ({ ticketId, delivered: true }));
 	}
 
 	getSentPayloads(): PushPayload[] {

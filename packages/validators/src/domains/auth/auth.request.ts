@@ -49,8 +49,12 @@ export const registerSchema = z
       .describe('개인정보처리방침 동의 (필수, true만 허용)'),
     marketingAgreed: z
       .boolean()
-      .default(true)
-      .describe('마케팅 정보 수신 동의 (선택, 기본값: true)'),
+      .default(false)
+      .describe('마케팅 정보 수신 동의 (선택, 기본값: false)'),
+    marketingPushAgreed: z
+      .boolean()
+      .default(false)
+      .describe('광고성 앱 푸시 수신 동의 (선택, 기본값: false)'),
   })
   .refine((data) => data.password === data.passwordConfirm, {
     message: '비밀번호가 일치하지 않습니다',
@@ -58,7 +62,8 @@ export const registerSchema = z
   })
   .describe('회원가입 요청');
 
-export type RegisterInput = z.infer<typeof registerSchema>;
+/** 기본값 적용 전의 HTTP 입력 타입 — 선택 동의 필드는 생략 가능 */
+export type RegisterInput = z.input<typeof registerSchema>;
 
 export const loginSchema = z
   .object({

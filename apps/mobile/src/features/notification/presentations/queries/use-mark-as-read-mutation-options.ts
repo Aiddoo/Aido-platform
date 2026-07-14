@@ -4,6 +4,10 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys.constant';
+import {
+  optimisticallyMarkNotificationsRead,
+  restoreNotificationCache,
+} from './notification-cache';
 
 export const useMarkAsReadMutationOptions = () => {
   const notificationService = useNotificationService();
@@ -14,20 +18,20 @@ export const useMarkAsReadMutationOptions = () => {
       const result = await notificationService.markAsRead(notificationId);
       return unwrap(result);
     },
-    onSuccess: async () => {
-      // Optimistic: 캐시된 unreadCount를 즉시 1 감소 + 배지 반영
+    onMutate: async (notificationId) => {
+      const snapshot = await optimisticallyMarkNotificationsRead(queryClient, notificationId);
       const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
-      if (count !== undefined && count > 0) {
-        const newCount = count - 1;
-        queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), newCount);
-        await notificationService.setBadgeCount(newCount);
-      }
-      // Background: 서버와 동기화
+      await notificationService.setBadgeCount(count ?? 0);
+      return { snapshot };
+    },
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: NOTIFICATION_QUERY_KEYS.all,
       });
     },
-    onError: () => {
+    onError: (_error, _variables, context) => {
+      if (context?.snapshot) restoreNotificationCache(queryClient, context.snapshot);
+      void notificationService.syncBadgeCount();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });

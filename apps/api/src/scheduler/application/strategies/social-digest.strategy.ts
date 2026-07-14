@@ -144,6 +144,8 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 			notifications.push({
 				userId: user.id,
 				type: "SOCIAL_DIGEST",
+				purpose: "ENGAGEMENT",
+				campaignKey: "social_digest_v1",
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

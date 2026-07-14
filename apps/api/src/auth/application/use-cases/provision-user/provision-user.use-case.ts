@@ -28,6 +28,7 @@ export interface ProvisionUserInput {
 		termsAgreedAt?: Date;
 		privacyAgreedAt?: Date;
 		marketingAgreedAt?: Date;
+		marketingPushAgreedAt?: Date;
 	};
 }
 

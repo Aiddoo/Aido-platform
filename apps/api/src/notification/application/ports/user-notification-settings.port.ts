@@ -22,6 +22,7 @@ export interface UserNotificationSettingsPort {
 	getConsentRecordsByUserIds(
 		userIds: string[],
 	): Promise<UserConsentRecordWithId[]>;
+	updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void>;
 }
 
 export const USER_NOTIFICATION_SETTINGS = Symbol("USER_NOTIFICATION_SETTINGS");

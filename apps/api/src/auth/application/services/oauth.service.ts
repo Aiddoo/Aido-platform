@@ -709,7 +709,7 @@ export class OAuthService {
 				consent: {
 					termsAgreedAt: currentTime,
 					privacyAgreedAt: currentTime,
-					marketingAgreedAt: currentTime,
+					// OAuth 가입 시 선택 동의 화면이 없으므로 마케팅 동의를 자동 처리하지 않는다.
 				},
 			});
 

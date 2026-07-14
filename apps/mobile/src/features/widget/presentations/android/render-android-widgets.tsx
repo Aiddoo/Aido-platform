@@ -1,52 +1,32 @@
 import type { WidgetRepresentation } from 'react-native-android-widget';
 
 import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../../models/widget-snapshot.model';
+import { type AndroidWidgetName, resolveAndroidWidgetFamily } from './android-widget-layout';
 import { TodayListWidget } from './today-list-widget';
+import { StateWidget } from './widget-primitives';
 
-/** app.config.ts의 react-native-android-widget widgets[].name과 일치해야 한다 */
-export const ANDROID_WIDGET_NAMES = ['AidoTodayList'] as const;
-export type AndroidWidgetName = (typeof ANDROID_WIDGET_NAMES)[number];
-
-export function isAndroidWidgetName(name: string): name is AndroidWidgetName {
-  return ANDROID_WIDGET_NAMES.some((widgetName) => widgetName === name);
-}
-
-const LIST_ROW_HEIGHT_DP = 32;
-const LIST_CHROME_HEIGHT_DP = 60;
-const LIST_MIN_ROWS = 3;
-const LIST_MAX_ROWS = 8;
-/** 이 폭(dp) 미만이면 리스트 대신 컴팩트 요약을 렌더한다 (2x2 배치) */
-const COMPACT_WIDTH_THRESHOLD_DP = 200;
-
-/** 위젯 높이(dp) → 리스트 표시 행 수 (4x2: 3행, 세로 리사이즈 시 최대 8행) */
-export function listRowsForHeight(heightDp: number): number {
-  const rows = Math.floor((heightDp - LIST_CHROME_HEIGHT_DP) / LIST_ROW_HEIGHT_DP);
-  return Math.min(LIST_MAX_ROWS, Math.max(LIST_MIN_ROWS, rows));
-}
-
-export function variantForWidth(widthDp: number): 'compact' | 'list' {
-  return widthDp < COMPACT_WIDTH_THRESHOLD_DP ? 'compact' : 'list';
-}
+export { ANDROID_WIDGET_NAMES, isAndroidWidgetName } from './android-widget-layout';
 
 export interface RenderAndroidWidgetInput {
   snapshot: WidgetSnapshot;
+  widgetName: AndroidWidgetName;
   /** 렌더 시점의 로컬 날짜 (YYYY-MM-DD) — 자정 롤오버 판정 */
   todayLocalDate: string;
-  /** 위젯 인스턴스 크기 (dp) — 변형/행 수 결정 */
+  /** 기존 AidoTodayList 인스턴스 호환 보정에만 사용한다. */
   widthDp: number;
   heightDp: number;
 }
 
-/** 스냅샷 → 라이트/다크 렌더 트리 (시스템 테마는 launcher가 선택) */
+/** 스냅샷 → 라이트/다크 렌더 트리 (시스템 테마는 launcher가 선택). */
 export function renderAndroidWidget({
   snapshot,
+  widgetName,
   todayLocalDate,
   widthDp,
   heightDp,
 }: RenderAndroidWidgetInput): WidgetRepresentation {
   const renderState = WidgetSnapshotPolicy.renderState(snapshot, todayLocalDate);
-  const variant = variantForWidth(widthDp);
-  const maxRows = listRowsForHeight(heightDp);
+  const family = resolveAndroidWidgetFamily(widgetName, widthDp, heightDp);
 
   return {
     light: (
@@ -54,18 +34,20 @@ export function renderAndroidWidget({
         snapshot={snapshot}
         theme="light"
         renderState={renderState}
-        variant={variant}
-        maxRows={maxRows}
+        family={family}
       />
     ),
     dark: (
-      <TodayListWidget
-        snapshot={snapshot}
-        theme="dark"
-        renderState={renderState}
-        variant={variant}
-        maxRows={maxRows}
-      />
+      <TodayListWidget snapshot={snapshot} theme="dark" renderState={renderState} family={family} />
     ),
+  };
+}
+
+/** 주 렌더러가 실패해도 첫 추가 위젯을 빈 화면으로 남기지 않는 최소 안전 화면. */
+export function renderAndroidWidgetFallback(snapshot: WidgetSnapshot): WidgetRepresentation {
+  const strings = WidgetSnapshotPolicy.stateScreenStrings(snapshot, 'stale');
+  return {
+    light: <StateWidget theme="light" title={strings.title} cta={strings.cta} />,
+    dark: <StateWidget theme="dark" title={strings.title} cta={strings.cta} />,
   };
 }

@@ -28,6 +28,7 @@ describe("UpdateMarketingConsentUseCase", () => {
 			privacyAgreedAt: null,
 			agreedTermsVersion: null,
 			marketingAgreedAt: new Date("2024-01-15T10:00:00.000Z"),
+			marketingPushAgreedAt: null,
 		});
 
 		const result = await useCase.execute("user-1", true);
@@ -44,6 +45,7 @@ describe("UpdateMarketingConsentUseCase", () => {
 			privacyAgreedAt: null,
 			agreedTermsVersion: null,
 			marketingAgreedAt: null,
+			marketingPushAgreedAt: null,
 		});
 
 		const result = await useCase.execute("user-1", false);

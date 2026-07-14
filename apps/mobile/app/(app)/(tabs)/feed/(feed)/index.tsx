@@ -3,6 +3,7 @@ import { useGetSuggestionsQueryOptions } from '@src/features/ai/presentations/qu
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
+import { useFeedDateKey } from '@src/features/todo/presentations/hooks/use-feed-date';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/presentations/constants/weather-query-keys.constant';
@@ -19,6 +20,7 @@ import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 
 export default function MyFeedScreen() {
   const { t } = useTranslation('todo');
+  const selectedDateKey = useFeedDateKey();
   const tabBarHeight = useTabBarHeight();
   const queryClient = useQueryClient();
   const [refreshing, onRefresh] = useRefresh(() =>
@@ -39,9 +41,12 @@ export default function MyFeedScreen() {
 
       <Spacing size={10} />
 
-      <QueryErrorBoundary fallback={(props) => <TodoList.Error {...props} />}>
+      <QueryErrorBoundary
+        resetKeys={[selectedDateKey]}
+        fallback={(props) => <TodoList.Error {...props} />}
+      >
         <Suspense fallback={<TodoList.Loading />}>
-          <TodoList />
+          <TodoList key={selectedDateKey} />
         </Suspense>
       </QueryErrorBoundary>
 

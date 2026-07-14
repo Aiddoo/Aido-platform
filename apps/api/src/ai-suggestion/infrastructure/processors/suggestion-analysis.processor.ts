@@ -112,6 +112,8 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 		await this.notificationService.createAndSend({
 			userId,
 			type: "AI_SUGGESTION",
+			purpose: "ENGAGEMENT",
+			campaignKey: "ai_suggestion_v1",
 			title: message.title,
 			body: message.body,
 		});

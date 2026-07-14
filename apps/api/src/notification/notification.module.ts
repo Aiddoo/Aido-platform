@@ -6,6 +6,7 @@ import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.consta
 import { UserSettingsModule } from "@/user-settings/user-settings.module";
 
 import { NotificationFacade } from "./application/facades/notification.facade";
+import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { PUSH_DISPATCHER } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
@@ -19,6 +20,8 @@ import { GetNotificationsUseCase } from "./application/use-cases/get-notificatio
 import { GetUnreadCountUseCase } from "./application/use-cases/get-unread-count/get-unread-count.use-case";
 import { MarkAllAsReadUseCase } from "./application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
 import { MarkAsReadUseCase } from "./application/use-cases/mark-as-read/mark-as-read.use-case";
+import { MarkNotificationOpenedUseCase } from "./application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
+import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
@@ -32,6 +35,7 @@ import { NotificationQueueModule } from "./infrastructure/queue/notification-que
 import { NotificationQueueProcessor } from "./infrastructure/queue/notification-queue.processor";
 import { InMemoryPushRateLimiter } from "./infrastructure/rate-limiter/in-memory-push-rate-limiter";
 import { RedisPushRateLimiter } from "./infrastructure/rate-limiter/redis-push-rate-limiter";
+import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/security/hmac-marketing-push-opt-out-token.adapter";
 import { NotificationController } from "./presentation/notification.controller";
 
 /**
@@ -55,9 +59,11 @@ import { NotificationController } from "./presentation/notification.controller";
 		GetNotificationsUseCase,
 		GetUnreadCountUseCase,
 		MarkAsReadUseCase,
+		MarkNotificationOpenedUseCase,
 		MarkAllAsReadUseCase,
 		RegisterPushTokenUseCase,
 		UnregisterPushTokenUseCase,
+		OptOutMarketingPushUseCase,
 		// 크로스모듈 발송/디스패치 use-cases
 		SendNotificationUseCase,
 		SendNotificationWithDedupUseCase,
@@ -66,6 +72,11 @@ import { NotificationController } from "./presentation/notification.controller";
 		// Repository (포트 바인딩)
 		NotificationRepository,
 		{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
+		HmacMarketingPushOptOutTokenAdapter,
+		{
+			provide: MARKETING_PUSH_OPT_OUT_TOKEN,
+			useExisting: HmacMarketingPushOptOutTokenAdapter,
+		},
 		// 사용자 설정 접근 (UserSettingsFacade 위임 어댑터)
 		{
 			provide: USER_NOTIFICATION_SETTINGS,

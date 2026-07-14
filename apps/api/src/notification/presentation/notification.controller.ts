@@ -35,14 +35,18 @@ import {
 import {
 	CurrentUser,
 	type CurrentUserPayload,
+	Public,
 } from "../../auth/presentation/decorators";
 import { NotificationFacade } from "../application/facades/notification.facade";
 
 import {
 	GetNotificationsQueryDto,
+	MarketingPushOptOutDto,
+	MarketingPushOptOutResponseDto,
 	MarkReadResponseDto,
 	NotificationIdParamDto,
 	NotificationListResponseDto,
+	NotificationOpenedResponseDto,
 	RegisterPushTokenDto,
 	RegisterTokenResponseDto,
 	UnreadCountResponseDto,
@@ -56,6 +60,24 @@ export class NotificationController {
 	readonly #logger = new Logger(NotificationController.name);
 
 	constructor(private readonly notificationFacade: NotificationFacade) {}
+
+	@Post("marketing-push/opt-out")
+	@Public()
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "광고성 앱 푸시 수신 철회",
+		operationId: "optOutMarketingPush",
+		description:
+			"푸시 액션에 포함된 서명 토큰으로 로그인 없이 수신을 철회합니다.",
+	})
+	@ApiSuccessResponse({ type: MarketingPushOptOutResponseDto })
+	async optOutMarketingPush(
+		@Body() dto: MarketingPushOptOutDto,
+	): Promise<MarketingPushOptOutResponseDto> {
+		await this.notificationFacade.optOutMarketingPush(dto.token);
+		// 토큰 유효 여부를 노출하지 않아 사용자 열거/토큰 탐색을 방지한다.
+		return { optedOut: true };
+	}
 
 	@Post("token")
 	@ApiDoc({
@@ -99,6 +121,8 @@ export class NotificationController {
 			deviceId: dto.deviceId,
 			timezone: tz,
 			locale,
+			payloadVersion: dto.payloadVersion,
+			appVersion: dto.appVersion,
 		});
 
 		this.#logger.log(`푸시 토큰 등록 완료: userId=${user.userId}`);
@@ -256,6 +280,26 @@ export class NotificationController {
 			message: "알림을 읽음 처리했습니다.",
 			readCount: 1,
 		};
+	}
+
+	@Post(":id/opened")
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "푸시 알림 열기 기록",
+		operationId: "markNotificationOpened",
+		description: "푸시 탭을 멱등 기록하고 해당 알림을 읽음 처리합니다.",
+	})
+	@ApiSuccessResponse({ type: NotificationOpenedResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async markOpened(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: NotificationIdParamDto,
+	): Promise<NotificationOpenedResponseDto> {
+		const opened = await this.notificationFacade.markOpened(
+			user.userId,
+			params.id,
+		);
+		return { opened };
 	}
 
 	@Patch("read-all")

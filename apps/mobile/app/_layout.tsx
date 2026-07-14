@@ -22,6 +22,7 @@ import '@src/shared/i18n/init';
 import * as Sentry from '@sentry/react-native';
 import { initSentry } from '@src/shared/infra/observability/sentry';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 
 initSentry();
 
@@ -93,17 +94,19 @@ const AppBootstrapLayout = () => {
               <HeroUIProvider>
                 <QueryProvider>
                   <DIProvider>
-                    <AuthProvider>
-                      <RevenueCatProvider>
-                        <NotificationProvider>
-                          <BottomSheetModalProvider>
-                            <OverlayProvider>
-                              <AuthGateLayout />
-                            </OverlayProvider>
-                          </BottomSheetModalProvider>
-                        </NotificationProvider>
-                      </RevenueCatProvider>
-                    </AuthProvider>
+                    <LocalDateProvider>
+                      <AuthProvider>
+                        <RevenueCatProvider>
+                          <NotificationProvider>
+                            <BottomSheetModalProvider>
+                              <OverlayProvider>
+                                <AuthGateLayout />
+                              </OverlayProvider>
+                            </BottomSheetModalProvider>
+                          </NotificationProvider>
+                        </RevenueCatProvider>
+                      </AuthProvider>
+                    </LocalDateProvider>
                   </DIProvider>
                 </QueryProvider>
               </HeroUIProvider>

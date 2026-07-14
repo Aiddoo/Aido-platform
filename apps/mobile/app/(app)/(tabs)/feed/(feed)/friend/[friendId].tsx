@@ -3,6 +3,7 @@ import { Calendar } from '@src/features/todo/presentations/components/Calendar/C
 import { FriendTodoList } from '@src/features/todo/presentations/components/FriendTodoList';
 import { PokeBanner } from '@src/features/todo/presentations/components/PokeBanner';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
+import { useFeedDateKey } from '@src/features/todo/presentations/hooks/use-feed-date';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { QueryErrorBoundary, Spacing } from '@src/shared/ui';
@@ -13,6 +14,7 @@ import { RefreshControl, ScrollView } from 'react-native';
 
 export default function FriendFeedScreen() {
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
+  const selectedDateKey = useFeedDateKey();
   const tabBarHeight = useTabBarHeight();
   const queryClient = useQueryClient();
   const friend = useFriendById(friendId);
@@ -39,11 +41,13 @@ export default function FriendFeedScreen() {
         <Suspense fallback={<PokeBanner.Loading />}>
           <PokeBanner />
         </Suspense>
+      </QueryErrorBoundary>
 
-        <Spacing size={16} />
+      <Spacing size={16} />
 
+      <QueryErrorBoundary resetKeys={[selectedDateKey]}>
         <Suspense fallback={<FriendTodoList.Loading />}>
-          <FriendTodoList friend={friend} />
+          <FriendTodoList key={selectedDateKey} friend={friend} />
         </Suspense>
       </QueryErrorBoundary>
     </ScrollView>

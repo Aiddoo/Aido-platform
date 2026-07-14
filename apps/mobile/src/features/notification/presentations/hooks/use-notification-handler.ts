@@ -3,16 +3,16 @@ import { pushNotificationDataSchema } from '@aido/validators';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { FRIEND_QUERY_KEYS } from '@src/features/friend/presentations/constants/friend-query-keys.constant';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
+import { optimisticallyMarkNotificationsRead } from '@src/features/notification/presentations/queries/notification-cache';
 import { useTrack } from '@src/shared/analytics';
-import { toError } from '@src/shared/errors';
+import { toError, unwrap } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import type * as Notifications from 'expo-notifications';
 import type { Href } from 'expo-router';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { match } from 'ts-pattern';
-import { getInternalRoute } from '../../models/notification.model';
+import { resolveNotificationDestination } from '../../models/notification.model';
 
 interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
@@ -51,53 +51,58 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       }
       const data = parseResult.data;
 
+      if (response.actionIdentifier === 'MARKETING_OPT_OUT' && data.marketingOptOutToken) {
+        void notificationService
+          .optOutMarketingPush(data.marketingOptOutToken)
+          .then(unwrap)
+          .then(() => trackEvent('marketing_push_opted_out', { source: 'push_action' }))
+          .catch((error) => logger.warn('[Notification] Marketing opt-out failed', { error }));
+        return;
+      }
+
       // 2. Analytics 추적
-      trackEvent('push_notification_opened', { type: data.type });
+      trackEvent('push_notification_opened', {
+        type: data.type,
+        action: data.action.type,
+        ...(data.campaignKey && { campaign_key: data.campaignKey }),
+        ...(data.variantId && { variant_id: data.variantId }),
+        ...(data.purpose && { purpose: data.purpose }),
+      });
       if (data.type === 'WEEKLY_ACHIEVEMENT') {
         trackEvent('badge_opened_from_notification');
       }
 
-      // 3. 읽음 처리 + 배지 동기화 (ref로 최신 auth 상태 참조)
-      if (isAuthenticatedRef.current && data.notificationId) {
-        try {
-          await notificationService.markAsRead(data.notificationId);
-          // Optimistic: 즉시 1 감소
-          const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
+      const destination = resolveNotificationDestination({
+        type: data.type as NotificationType,
+        context: data.context,
+        action: data.action,
+      });
 
-          if (count !== undefined && count > 0) {
-            const newCount = count - 1;
-            queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), newCount);
-            await notificationService.setBadgeCount(newCount);
-          }
-
-          await queryClient.invalidateQueries({
-            queryKey: NOTIFICATION_QUERY_KEYS.all,
-          });
-        } catch (error) {
-          logger.warn('[Notification] Failed to mark as read', { error });
-        }
+      // 3. 화면 이동은 네트워크보다 먼저 수행한다. 기록/캐시는 독립적인 best-effort 작업이다.
+      if (destination.kind === 'browser') {
+        void Linking.openURL(destination.url);
+      } else if (destination.kind === 'webview') {
+        router.push(`/webview/${encodeURIComponent(destination.url)}` as Href);
+      } else if (destination.kind === 'internal') {
+        router.navigate(destination.route as Href);
       }
 
-      // 4. Action Type 기반 분기 처리
-      match(data.action?.type)
-        .with('BROWSER', () => {
-          if (data.action?.url) {
-            Linking.openURL(data.action.url);
-          }
-        })
-        .with('WEBVIEW', () => {
-          if (data.action?.url) {
-            router.push(`/webview/${encodeURIComponent(data.action.url)}` as Href);
-          }
-        })
-        .otherwise(() => {
-          const route =
-            data.action?.url ?? getInternalRoute(data.type as NotificationType, data.context);
-
-          if (route) {
-            router.navigate(route as Href);
-          }
+      if (isAuthenticatedRef.current && data.notificationId) {
+        void optimisticallyMarkNotificationsRead(queryClient, data.notificationId).then(() => {
+          const count =
+            queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount()) ?? 0;
+          return notificationService.setBadgeCount(count);
         });
+        void notificationService
+          .markOpened(data.notificationId)
+          .then(unwrap)
+          .then(() =>
+            queryClient.invalidateQueries({
+              queryKey: NOTIFICATION_QUERY_KEYS.all,
+            }),
+          )
+          .catch((error) => logger.warn('[Notification] Failed to record open', { error }));
+      }
     },
     [trackEvent, logger, notificationService, queryClient],
   );

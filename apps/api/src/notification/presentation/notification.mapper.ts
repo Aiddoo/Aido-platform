@@ -35,6 +35,10 @@ export abstract class NotificationMapper {
 			isRead: notification.isRead,
 			metadata: notification.metadata as Record<string, unknown> | null,
 			...(hasContext && { context }),
+			action: {
+				type: notification.actionType,
+				...(notification.actionUrl && { url: notification.actionUrl }),
+			},
 			createdAt: toISOString(notification.createdAt),
 			readAt: toISOStringOrNull(notification.readAt ?? null),
 		};

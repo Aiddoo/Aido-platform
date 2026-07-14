@@ -14,7 +14,11 @@ export const PUSH_DISPATCHER = Symbol("PUSH_DISPATCHER");
  */
 export interface PushDispatcherPort {
 	/** 단일 사용자 푸시 발송 가능 여부(설정·야간·마케팅·rate limit) */
-	shouldSendPush(userId: string, type: NotificationType): Promise<boolean>;
+	shouldSendPush(
+		userId: string,
+		type: NotificationType,
+		purpose?: CreateNotificationData["purpose"],
+	): Promise<boolean>;
 
 	/** 수신자 푸시 언어(preference 캐시 경유, shouldSendPush와 캐시 공유) */
 	getUserLocale(userId: string): Promise<SupportedLocale>;
@@ -23,5 +27,7 @@ export interface PushDispatcherPort {
 	fireAndForgetPush(data: CreateNotificationData, notificationId: number): void;
 
 	/** 다수 사용자 배치 푸시 발송(fire-and-forget, 배치 자격 필터 포함) */
-	fireAndForgetBatchPush(dataList: CreateNotificationData[]): void;
+	fireAndForgetBatchPush(
+		items: Array<{ data: CreateNotificationData; notificationId: number }>,
+	): void;
 }

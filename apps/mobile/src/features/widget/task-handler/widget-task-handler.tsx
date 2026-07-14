@@ -5,6 +5,7 @@ import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import {
   isAndroidWidgetName,
   renderAndroidWidget,
+  renderAndroidWidgetFallback,
 } from '../presentations/android/render-android-widgets';
 import { WidgetSnapshotRepositoryImpl } from '../repositories/widget-snapshot.repository';
 import { widgetSyncStorage } from '../repositories/widget-storage';
@@ -56,6 +57,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps): Promise<
     renderWidget(
       renderAndroidWidget({
         snapshot,
+        widgetName: widgetInfo.widgetName,
         todayLocalDate,
         widthDp: widgetInfo.width,
         heightDp: widgetInfo.height,
@@ -66,5 +68,19 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps): Promise<
       error instanceof Error ? error : new Error(String(error)),
       { feature: 'widget', method: 'widgetTaskHandler.render' },
     );
+
+    // 첫 추가 시 주 렌더가 실패해도 빈 위젯으로 남기지 않는다. fallback 실패까지
+    // 앱 프로세스로 전파하지 않고 별도 method로 관측한다.
+    try {
+      const now = new Date();
+      const todayLocalDate = formatDate(now);
+      const fallbackSnapshot = repository.read() ?? createFallbackSnapshot(todayLocalDate, now);
+      renderWidget(renderAndroidWidgetFallback(fallbackSnapshot));
+    } catch (fallbackError) {
+      getWidgetErrorReporter().captureException(
+        fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)),
+        { feature: 'widget', method: 'widgetTaskHandler.fallback' },
+      );
+    }
   }
 }

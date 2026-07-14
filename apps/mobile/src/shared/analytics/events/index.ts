@@ -2,6 +2,7 @@ import type { AiEventMap } from './ai.events';
 import type { AuthEventMap } from './auth.events';
 import type { BadgeEventMap } from './badge.events';
 import type { FriendEventMap } from './friend.events';
+import type { LifecycleEventMap } from './lifecycle.events';
 import type { MemoEventMap } from './memo.events';
 import type { NotificationEventMap } from './notification.events';
 import type { SubscriptionEventMap } from './subscription.events';
@@ -14,6 +15,7 @@ export type {
   AuthEventMap,
   BadgeEventMap,
   FriendEventMap,
+  LifecycleEventMap,
   MemoEventMap,
   NotificationEventMap,
   SubscriptionEventMap,
@@ -25,6 +27,7 @@ export type {
 export type AppEventMap = AuthEventMap &
   TodoEventMap &
   FriendEventMap &
+  LifecycleEventMap &
   SubscriptionEventMap &
   AiEventMap &
   UserEventMap &

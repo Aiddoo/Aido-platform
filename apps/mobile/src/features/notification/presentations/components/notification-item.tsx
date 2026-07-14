@@ -76,11 +76,6 @@ function useNotificationPress(notification: Notification) {
       markAsRead(notification.id);
     }
 
-    if (typeof notification.metadata?.externalUrl === 'string') {
-      Linking.openURL(notification.metadata.externalUrl);
-      return;
-    }
-
     if (NotificationPolicy.isAiFeature(notification)) {
       const user = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
       if (user && !UserPolicy.isPremiumUser(user)) {
@@ -92,9 +87,17 @@ function useNotificationPress(notification: Notification) {
       }
     }
 
-    const route = NotificationPolicy.internalRoute(notification);
-    if (route) {
-      router.navigate(route as Href);
+    const destination = NotificationPolicy.destination(notification);
+    trackEvent('notification_center_opened', {
+      type: notification.type,
+      destination: destination.kind,
+    });
+    if (destination.kind === 'browser') {
+      void Linking.openURL(destination.url);
+    } else if (destination.kind === 'webview') {
+      router.push(`/webview/${encodeURIComponent(destination.url)}` as Href);
+    } else if (destination.kind === 'internal') {
+      router.navigate(destination.route as Href);
     }
   }, [notification, markAsRead, router, trackEvent, queryClient, premiumDialog]);
 }

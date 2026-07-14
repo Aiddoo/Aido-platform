@@ -10,7 +10,7 @@
 
 | 문서 | 설명 |
 |------|------|
-| [CLAUDE.md](../CLAUDE.md) | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션) |
+| [AGENTS.md](../AGENTS.md) | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션) |
 | [architecture.md](./architecture.md) | 전체 아키텍처, 에러 처리, 이벤트, 보안, 공통 모듈 |
 | [validators.md](./validators.md) | @aido/validators 패키지 규칙 (Zod 스키마, NestJS DTO) |
 | [prisma.md](./prisma.md) | Prisma 7 가이드 (스키마, 마이그레이션, 트랜잭션) |

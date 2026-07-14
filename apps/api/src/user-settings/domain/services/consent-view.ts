@@ -1,6 +1,7 @@
 import type {
 	ConsentResponse,
 	UpdateMarketingConsentResponse,
+	UpdateMarketingPushConsentResponse,
 } from "@aido/validators";
 
 import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
@@ -17,6 +18,7 @@ export function buildConsentView(
 			privacyAgreedAt: null,
 			agreedTermsVersion: null,
 			marketingAgreedAt: null,
+			marketingPushAgreedAt: null,
 		};
 	}
 
@@ -25,6 +27,15 @@ export function buildConsentView(
 		privacyAgreedAt: toISOStringOrNull(consent.privacyAgreedAt),
 		agreedTermsVersion: consent.agreedTermsVersion,
 		marketingAgreedAt: toISOStringOrNull(consent.marketingAgreedAt),
+		marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
+	};
+}
+
+export function buildMarketingPushConsentView(
+	consent: UserConsentRecord,
+): UpdateMarketingPushConsentResponse {
+	return {
+		marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
 	};
 }
 

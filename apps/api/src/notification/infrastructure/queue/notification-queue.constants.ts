@@ -24,6 +24,7 @@ export const NotificationJobName = {
 	BILLING_ISSUE: "billing-issue",
 	FRIEND_COMPLETED: "friend-completed",
 	MILESTONE_REACHED: "milestone-reached",
+	PUSH_RECEIPTS: "push-receipts",
 } as const;
 
 // =============================================================================
@@ -141,6 +142,7 @@ export interface NotificationJobMap {
 	[NotificationJobName.BILLING_ISSUE]: BillingIssueJobData;
 	[NotificationJobName.FRIEND_COMPLETED]: FriendCompletedJobData;
 	[NotificationJobName.MILESTONE_REACHED]: MilestoneReachedJobData;
+	[NotificationJobName.PUSH_RECEIPTS]: Record<string, never>;
 }
 
 /** 모든 잡 데이터 유니온 타입 */

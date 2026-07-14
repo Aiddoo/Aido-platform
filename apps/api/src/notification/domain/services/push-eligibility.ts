@@ -8,9 +8,19 @@ import type { NotificationType } from "../types/notification-type";
  * 애플리케이션 서비스가 이 정책을 사용해 수행한다.
  */
 
-/** 마케팅 동의가 필요한 알림 타입 (현재 없음, 향후 MARKETING_* 추가 예정) */
+/** 서비스 이용을 직접 수행한 결과가 아닌 재방문/참여 유도 알림 */
 export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
-	new Set<NotificationType>();
+	new Set<NotificationType>([
+		"AI_SUGGESTION",
+		"WINBACK",
+		"SOCIAL_DIGEST",
+		"NUDGE_SUGGEST",
+		"LUNCH_NUDGE",
+		"STREAK_AT_RISK",
+	]);
+
+export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES =
+	MARKETING_NOTIFICATION_TYPES;
 
 /**
  * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
@@ -20,15 +30,17 @@ export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
  * - STREAK_AT_RISK: 스트릭 위기는 즉시성이 중요 (서버 지연 시 21:00 넘김 대비)
  */
 export const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
-	new Set<NotificationType>([
-		"WEATHER_MORNING",
-		"WEATHER_EVENING",
-		"STREAK_AT_RISK",
-	]);
+	new Set<NotificationType>(["WEATHER_MORNING", "WEATHER_EVENING"]);
 
 /** 마케팅 동의가 필요한 알림 타입인지 */
 export function isMarketingNotification(type: NotificationType): boolean {
 	return MARKETING_NOTIFICATION_TYPES.has(type);
+}
+
+export function isAutomatedEngagementNotification(
+	type: NotificationType,
+): boolean {
+	return AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES.has(type);
 }
 
 /** 야간 발송 예외 타입인지 */

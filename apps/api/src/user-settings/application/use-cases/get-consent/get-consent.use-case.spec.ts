@@ -31,6 +31,7 @@ describe("GetConsentUseCase", () => {
 			privacyAgreedAt: null,
 			agreedTermsVersion: null,
 			marketingAgreedAt: null,
+			marketingPushAgreedAt: null,
 		});
 	});
 
@@ -40,6 +41,7 @@ describe("GetConsentUseCase", () => {
 			privacyAgreedAt: new Date("2024-01-01T00:00:00.000Z"),
 			agreedTermsVersion: "1.0",
 			marketingAgreedAt: null,
+			marketingPushAgreedAt: null,
 		});
 
 		const result = await useCase.execute("user-1");

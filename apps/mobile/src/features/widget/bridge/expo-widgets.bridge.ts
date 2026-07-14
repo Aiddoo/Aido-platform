@@ -24,6 +24,7 @@ function toIosProps(snapshot: WidgetSnapshot, state: WidgetRenderState): IosWidg
     progressTitle: snapshot.strings.progressTitle,
     percentLabel: snapshot.strings.percentLabel,
     streakLabel: snapshot.strings.streakLabel,
+    compactStreakLabel: snapshot.strings.compactStreakLabel ?? snapshot.strings.streakLabel,
     allDoneLabel: snapshot.strings.allDoneLabel,
     moreLabelTemplate: snapshot.strings.moreLabelTemplate,
     stateTitle: stateScreen.title,

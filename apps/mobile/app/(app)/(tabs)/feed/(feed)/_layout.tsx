@@ -1,4 +1,5 @@
 import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/use-get-friends-query-options';
+import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useTranslation } from '@src/shared/i18n';
@@ -19,16 +20,18 @@ import { ScrollView, View } from 'react-native';
 
 export default function FeedGroupLayout() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-      <VStack>
-        <QueryErrorBoundary>
-          <Suspense fallback={<AvatarList.Loading />}>
-            <AvatarList />
-          </Suspense>
-        </QueryErrorBoundary>
-      </VStack>
-      <Slot />
-    </StyledSafeAreaView>
+    <FeedDateProvider>
+      <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+        <VStack>
+          <QueryErrorBoundary>
+            <Suspense fallback={<AvatarList.Loading />}>
+              <AvatarList />
+            </Suspense>
+          </QueryErrorBoundary>
+        </VStack>
+        <Slot />
+      </StyledSafeAreaView>
+    </FeedDateProvider>
   );
 }
 

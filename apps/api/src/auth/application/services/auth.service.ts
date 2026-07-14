@@ -91,8 +91,14 @@ export class AuthService {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		const { password, name, termsAgreed, privacyAgreed, marketingAgreed } =
-			input;
+		const {
+			password,
+			name,
+			termsAgreed,
+			privacyAgreed,
+			marketingAgreed,
+			marketingPushAgreed,
+		} = input;
 		// 이메일 형식 불변식을 도메인 경계에서 방어(정규화 없음 → 값 그대로)
 		const email = Email.of(input.email).value;
 
@@ -124,6 +130,9 @@ export class AuthService {
 						termsAgreedAt: termsAgreed ? currentTime : undefined,
 						privacyAgreedAt: privacyAgreed ? currentTime : undefined,
 						marketingAgreedAt: marketingAgreed ? currentTime : undefined,
+						marketingPushAgreedAt: marketingPushAgreed
+							? currentTime
+							: undefined,
 					},
 				});
 

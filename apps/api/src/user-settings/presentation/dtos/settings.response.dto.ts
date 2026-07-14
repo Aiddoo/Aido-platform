@@ -2,6 +2,7 @@ import {
 	consentResponseSchema,
 	preferenceResponseSchema,
 	updateMarketingConsentResponseSchema,
+	updateMarketingPushConsentResponseSchema,
 	updatePreferenceResponseSchema,
 } from "@aido/validators";
 import { createZodDto } from "nestjs-zod";
@@ -15,4 +16,7 @@ export class UpdatePreferenceResponseDto extends createZodDto(
 export class ConsentResponseDto extends createZodDto(consentResponseSchema) {}
 export class UpdateMarketingConsentResponseDto extends createZodDto(
 	updateMarketingConsentResponseSchema,
+) {}
+export class UpdateMarketingPushConsentResponseDto extends createZodDto(
+	updateMarketingPushConsentResponseSchema,
 ) {}
