@@ -2,6 +2,7 @@ import type {
 	ConsentResponse,
 	PreferenceResponse,
 	UpdateMarketingConsentResponse,
+	UpdateMarketingPushConsentResponse,
 	UpdatePreferenceInput,
 	UpdatePreferenceResponse,
 } from "@aido/validators";
@@ -20,6 +21,7 @@ import { GetPreferenceRecordsUseCase } from "../use-cases/get-preference-records
 import { OnTodoToggledUseCase } from "../use-cases/on-todo-toggled/on-todo-toggled.use-case";
 import { SeedUserSettingsUseCase } from "../use-cases/seed-user-settings/seed-user-settings.use-case";
 import { UpdateMarketingConsentUseCase } from "../use-cases/update-marketing-consent/update-marketing-consent.use-case";
+import { UpdateMarketingPushConsentUseCase } from "../use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case";
 import { UpdatePreferenceUseCase } from "../use-cases/update-preference/update-preference.use-case";
 import { UpsertPushLocaleUseCase } from "../use-cases/upsert-push-locale/upsert-push-locale.use-case";
 import { UpsertPushTimezoneUseCase } from "../use-cases/upsert-push-timezone/upsert-push-timezone.use-case";
@@ -30,6 +32,7 @@ export interface DefaultSettingsConsent {
 	privacyAgreedAt?: Date;
 	agreedTermsVersion?: string;
 	marketingAgreedAt?: Date | null;
+	marketingPushAgreedAt?: Date | null;
 }
 
 /**
@@ -46,6 +49,7 @@ export class UserSettingsFacade {
 		private readonly updatePreferenceUseCase: UpdatePreferenceUseCase,
 		private readonly getConsentUseCase: GetConsentUseCase,
 		private readonly updateMarketingConsentUseCase: UpdateMarketingConsentUseCase,
+		private readonly updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
 		private readonly onTodoToggledUseCase: OnTodoToggledUseCase,
 		private readonly seedUserSettingsUseCase: SeedUserSettingsUseCase,
 		private readonly upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase,
@@ -58,6 +62,13 @@ export class UserSettingsFacade {
 
 	getPreference(userId: string): Promise<PreferenceResponse> {
 		return this.getPreferenceUseCase.execute(userId);
+	}
+
+	updateMarketingPushConsent(
+		userId: string,
+		agreed: boolean,
+	): Promise<UpdateMarketingPushConsentResponse> {
+		return this.updateMarketingPushConsentUseCase.execute(userId, agreed);
 	}
 
 	updatePreference(

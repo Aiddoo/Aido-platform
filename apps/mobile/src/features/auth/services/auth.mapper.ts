@@ -11,6 +11,7 @@ import type {
   ResendVerificationResponse,
   ResetPasswordResponse,
   UpdateMarketingConsentResponse,
+  UpdateMarketingPushConsentResponse,
 } from '@aido/validators';
 import type {
   AuthTokens,
@@ -23,6 +24,7 @@ import type {
   ResendVerificationResult,
   ResetPasswordResult,
   UpdateMarketingConsentResult,
+  UpdateMarketingPushConsentResult,
 } from '../models/auth.model';
 import type { LinkedAccount, LinkedAccountsResult } from '../models/oauth.model';
 
@@ -56,6 +58,7 @@ export const toConsent = (dto: ConsentResponse): Consent => ({
   privacyAgreedAt: dto.privacyAgreedAt ? new Date(dto.privacyAgreedAt) : null,
   agreedTermsVersion: dto.agreedTermsVersion,
   marketingAgreedAt: dto.marketingAgreedAt ? new Date(dto.marketingAgreedAt) : null,
+  marketingPushAgreedAt: dto.marketingPushAgreedAt ? new Date(dto.marketingPushAgreedAt) : null,
 });
 
 export const toRegisterResult = (dto: RegisterResponse): RegisterResult => ({
@@ -75,6 +78,12 @@ export const toUpdateMarketingConsentResult = (
   dto: UpdateMarketingConsentResponse,
 ): UpdateMarketingConsentResult => ({
   marketingAgreedAt: dto.marketingAgreedAt ? new Date(dto.marketingAgreedAt) : null,
+});
+
+export const toUpdateMarketingPushConsentResult = (
+  dto: UpdateMarketingPushConsentResponse,
+): UpdateMarketingPushConsentResult => ({
+  marketingPushAgreedAt: dto.marketingPushAgreedAt ? new Date(dto.marketingPushAgreedAt) : null,
 });
 
 export const toDeleteAccountResult = (dto: DeleteAccountResponse): DeleteAccountResult => ({

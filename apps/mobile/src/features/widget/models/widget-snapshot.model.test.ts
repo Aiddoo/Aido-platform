@@ -1,5 +1,5 @@
 import { buildWidgetSnapshot } from '../__tests__/widget-snapshot.factory';
-import { WidgetSnapshotPolicy } from './widget-snapshot.model';
+import { WidgetSnapshotPolicy, widgetSnapshotSchema } from './widget-snapshot.model';
 
 describe('WidgetSnapshotPolicy.renderState', () => {
   it('오늘 날짜의 data 스냅샷은 data를 반환한다', () => {
@@ -44,5 +44,14 @@ describe('WidgetSnapshotPolicy.renderState', () => {
 
     // Then
     expect(result).toBe('empty');
+  });
+});
+
+describe('widgetSnapshotSchema compatibility', () => {
+  it('compact streak가 없는 v1.5.1 스냅샷도 계속 읽는다', () => {
+    const legacySnapshot = buildWidgetSnapshot();
+    delete legacySnapshot.strings.compactStreakLabel;
+
+    expect(widgetSnapshotSchema.safeParse(legacySnapshot).success).toBe(true);
   });
 });

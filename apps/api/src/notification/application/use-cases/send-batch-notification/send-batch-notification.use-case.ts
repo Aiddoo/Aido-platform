@@ -41,11 +41,34 @@ export class SendBatchNotificationUseCase {
 		}
 
 		// 1. DB 먼저 (최종 방어선 — unique index)
-		const result =
-			await this.notificationRepository.createManyNotifications(dataList);
+		const created =
+			await this.notificationRepository.createManyNotificationsAndReturn(
+				dataList,
+			);
 
 		// 2. 푸시 발송 + unread count 무효화
-		this.pushDispatcher.fireAndForgetBatchPush(dataList);
+		this.pushDispatcher.fireAndForgetBatchPush(
+			created.map((notification) => ({
+				data: {
+					userId: notification.userId,
+					type: notification.type,
+					title: notification.title,
+					body: notification.body,
+					action: {
+						type: notification.actionType,
+						...(notification.actionUrl && { url: notification.actionUrl }),
+					},
+					todoId: notification.todoId,
+					friendId: notification.friendId,
+					nudgeId: notification.nudgeId,
+					cheerId: notification.cheerId,
+					purpose: notification.purpose,
+					campaignKey: notification.campaignKey,
+					variantId: notification.variantId,
+				},
+				notificationId: notification.id,
+			})),
+		);
 
 		const uniqueUserIds = [...new Set(dataList.map((d) => d.userId))];
 		void Promise.all(
@@ -71,6 +94,6 @@ export class SendBatchNotificationUseCase {
 			),
 		);
 
-		return result;
+		return { count: created.length };
 	}
 }

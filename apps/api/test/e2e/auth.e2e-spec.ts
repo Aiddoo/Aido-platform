@@ -1347,7 +1347,7 @@ describe("인증 E2E", () => {
 	describe("약관 동의 관리", () => {
 		const consentPassword = "Test1234!";
 
-		it("약관 동의 전체 플로우 (조회 → 활성화 → 확인 → 철회 → 확인)", async () => {
+		it("일반 마케팅과 광고성 푸시 동의를 독립적으로 관리한다", async () => {
 			// Given - 로그인된 사용자
 			const { accessToken } = await ctx.helpers.createVerifiedUser(
 				"consent-test@example.com",
@@ -1365,10 +1365,12 @@ describe("인증 E2E", () => {
 			expect(initialResponse.body.data).toHaveProperty("termsAgreedAt");
 			expect(initialResponse.body.data).toHaveProperty("privacyAgreedAt");
 			expect(initialResponse.body.data).toHaveProperty("marketingAgreedAt");
+			expect(initialResponse.body.data).toHaveProperty("marketingPushAgreedAt");
 			expect(initialResponse.body.data).toHaveProperty("agreedTermsVersion");
 			expect(initialResponse.body.data.termsAgreedAt).not.toBeNull();
 			expect(initialResponse.body.data.privacyAgreedAt).not.toBeNull();
-			expect(initialResponse.body.data.marketingAgreedAt).not.toBeNull();
+			expect(initialResponse.body.data.marketingAgreedAt).toBeNull();
+			expect(initialResponse.body.data.marketingPushAgreedAt).toBeNull();
 
 			// When - 마케팅 동의 활성화
 			const enableResponse = await request(ctx.app.getHttpServer())
@@ -1381,7 +1383,7 @@ describe("인증 E2E", () => {
 			expect(enableResponse.body.success).toBe(true);
 			expect(enableResponse.body.data.marketingAgreedAt).not.toBeNull();
 
-			// When - 마케팅 동의 상태 확인
+			// When - 일반 마케팅 동의 상태 확인
 			const checkResponse = await request(ctx.app.getHttpServer())
 				.get("/auth/consent")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -1389,8 +1391,20 @@ describe("인증 E2E", () => {
 
 			// Then
 			expect(checkResponse.body.data.marketingAgreedAt).not.toBeNull();
+			expect(checkResponse.body.data.marketingPushAgreedAt).toBeNull();
 
-			// When - 마케팅 동의 철회
+			// When - 광고성 푸시 동의 활성화
+			const enablePushResponse = await request(ctx.app.getHttpServer())
+				.patch("/auth/consent/marketing-push")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ agreed: true })
+				.expect(200);
+
+			// Then
+			expect(enablePushResponse.body.success).toBe(true);
+			expect(enablePushResponse.body.data.marketingPushAgreedAt).not.toBeNull();
+
+			// When - 일반 마케팅 동의만 철회
 			const revokeResponse = await request(ctx.app.getHttpServer())
 				.patch("/auth/consent/marketing")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -1401,14 +1415,40 @@ describe("인증 E2E", () => {
 			expect(revokeResponse.body.success).toBe(true);
 			expect(revokeResponse.body.data.marketingAgreedAt).toBeNull();
 
-			// When - 마케팅 동의 철회 확인
+			// When - 동의 상태를 다시 조회
+			const afterMarketingRevokeResponse = await request(
+				ctx.app.getHttpServer(),
+			)
+				.get("/auth/consent")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			// Then - 광고성 푸시 동의는 일반 마케팅 철회와 독립적으로 유지된다
+			expect(
+				afterMarketingRevokeResponse.body.data.marketingAgreedAt,
+			).toBeNull();
+			expect(
+				afterMarketingRevokeResponse.body.data.marketingPushAgreedAt,
+			).not.toBeNull();
+
+			// When - 광고성 푸시 동의 철회
+			const revokePushResponse = await request(ctx.app.getHttpServer())
+				.patch("/auth/consent/marketing-push")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ agreed: false })
+				.expect(200);
+
+			// Then
+			expect(revokePushResponse.body.success).toBe(true);
+			expect(revokePushResponse.body.data.marketingPushAgreedAt).toBeNull();
+
 			const finalResponse = await request(ctx.app.getHttpServer())
 				.get("/auth/consent")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
-			// Then
 			expect(finalResponse.body.data.marketingAgreedAt).toBeNull();
+			expect(finalResponse.body.data.marketingPushAgreedAt).toBeNull();
 		});
 
 		it("GET /auth/consent - 인증 없이 접근 거부", async () => {
@@ -1418,6 +1458,13 @@ describe("인증 E2E", () => {
 		it("PATCH /auth/consent/marketing - 인증 없이 접근 거부", async () => {
 			await request(ctx.app.getHttpServer())
 				.patch("/auth/consent/marketing")
+				.send({ agreed: true })
+				.expect(401);
+		});
+
+		it("PATCH /auth/consent/marketing-push - 인증 없이 접근 거부", async () => {
+			await request(ctx.app.getHttpServer())
+				.patch("/auth/consent/marketing-push")
 				.send({ agreed: true })
 				.expect(401);
 		});
@@ -1437,6 +1484,24 @@ describe("인증 E2E", () => {
 				.expect(400);
 
 			// Then - 응답 검증
+			expect(response.body.success).toBe(false);
+		});
+
+		it("PATCH /auth/consent/marketing-push - 잘못된 요청 본문", async () => {
+			// Given - 로그인된 사용자
+			const { accessToken } = await ctx.helpers.createVerifiedUser(
+				"consent-push-bad@example.com",
+				consentPassword,
+			);
+
+			// When - agreed 필드가 boolean이 아닌 요청
+			const response = await request(ctx.app.getHttpServer())
+				.patch("/auth/consent/marketing-push")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ agreed: "true" })
+				.expect(400);
+
+			// Then
 			expect(response.body.success).toBe(false);
 		});
 	});

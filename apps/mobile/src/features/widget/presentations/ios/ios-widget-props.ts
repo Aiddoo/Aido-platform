@@ -20,6 +20,7 @@ export interface IosWidgetProps {
   progressTitle: string;
   percentLabel: string;
   streakLabel: string;
+  compactStreakLabel: string;
   allDoneLabel: string;
   /** "+N개 더" 템플릿 — 렌더 시 {count}를 실제 초과분으로 치환 */
   moreLabelTemplate: string;

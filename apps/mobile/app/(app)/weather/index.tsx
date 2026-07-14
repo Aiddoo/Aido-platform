@@ -1,6 +1,5 @@
 import { ErrorCode } from '@aido/errors';
 import catImage from '@assets/images/cat_weather_anchor.png';
-import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
 import type { DailyForecast, HourlyForecast } from '@src/features/weather/models/weather.model';
 import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
@@ -26,6 +25,7 @@ import type { WeatherForecastViewModel } from '@src/features/weather/presentatio
 import { isApiError } from '@src/shared/errors/api-error';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
+import { useToday } from '@src/shared/hooks/useToday';
 import { t as globalT, useTranslation } from '@src/shared/i18n';
 import { Box, CrosshairIcon, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/Icon';
@@ -50,7 +50,8 @@ export default function WeatherDetailScreen() {
   const { t } = useTranslation('weather');
   const palette = TIME_PALETTES[getTimeOfDay()];
   const insets = useSafeAreaInsets();
-  const [selectedDate] = useFeedDate();
+  // 날씨 상세는 feed 선택 상태의 수명 밖에 있으므로 앱 전역 로컬 날짜를 사용한다.
+  const selectedDate = useToday();
   const {
     data: forecast,
     error,

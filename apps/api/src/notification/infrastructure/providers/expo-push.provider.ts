@@ -11,6 +11,7 @@ import type {
 	BatchPushResult,
 	PushPayload,
 	PushProvider,
+	PushReceiptResult,
 	PushResult,
 } from "../../application/ports/push-provider.port";
 
@@ -38,6 +39,28 @@ export class ExpoPushProvider implements PushProvider {
 	 */
 	validateToken(token: string): boolean {
 		return Expo.isExpoPushToken(token);
+	}
+
+	async getReceipts(ticketIds: string[]): Promise<PushReceiptResult[]> {
+		const results: PushReceiptResult[] = [];
+		for (const chunk of this.#expo.chunkPushNotificationReceiptIds(ticketIds)) {
+			const receipts = await this.#expo.getPushNotificationReceiptsAsync(chunk);
+			for (const ticketId of chunk) {
+				const receipt = receipts[ticketId];
+				if (!receipt) continue;
+				if (receipt.status === "ok") {
+					results.push({ ticketId, delivered: true });
+				} else {
+					results.push({
+						ticketId,
+						delivered: false,
+						errorCode: receipt.details?.error,
+						error: receipt.message,
+					});
+				}
+			}
+		}
+		return results;
 	}
 
 	/**
@@ -91,21 +114,27 @@ export class ExpoPushProvider implements PushProvider {
 	 * (부분 성공 허용)
 	 */
 	async sendBatch(payloads: PushPayload[]): Promise<BatchPushResult> {
-		const results: PushResult[] = [];
+		const orderedResults: Array<PushResult | undefined> = Array(
+			payloads.length,
+		);
 		const invalidTokens: string[] = [];
 
 		// 유효한 토큰만 필터링
-		const validPayloads: PushPayload[] = [];
-		for (const payload of payloads) {
+		const validPayloads: Array<{
+			payload: PushPayload;
+			originalIndex: number;
+		}> = [];
+		for (const [originalIndex, payload] of payloads.entries()) {
 			if (this.validateToken(payload.token)) {
-				validPayloads.push(payload);
+				validPayloads.push({ payload, originalIndex });
 			} else {
 				invalidTokens.push(payload.token);
-				results.push({
+				orderedResults[originalIndex] = {
+					token: payload.token,
 					success: false,
 					error: "Invalid Expo push token",
 					errorCode: "NOTIFICATION_1001",
-				});
+				};
 			}
 		}
 
@@ -114,13 +143,15 @@ export class ExpoPushProvider implements PushProvider {
 				total: payloads.length,
 				successCount: 0,
 				failureCount: payloads.length,
-				results,
+				results: orderedResults.filter((result) => result !== undefined),
 				invalidTokens,
 			};
 		}
 
 		// 메시지 빌드
-		const messages = validPayloads.map((p) => this.#buildMessage(p));
+		const messages = validPayloads.map(({ payload }) =>
+			this.#buildMessage(payload),
+		);
 
 		// Expo는 내부적으로 청크를 나눠서 처리
 		const chunks = this.#expo.chunkPushNotifications(messages);
@@ -132,40 +163,46 @@ export class ExpoPushProvider implements PushProvider {
 
 				for (let i = 0; i < tickets.length; i++) {
 					const ticket = tickets[i];
-					const payload = validPayloads[processedIndex];
+					const entry = validPayloads[processedIndex];
 					processedIndex++;
 
-					if (!ticket || !payload) {
-						results.push({
-							success: false,
-							error: "No ticket or payload",
-							errorCode: "NOTIFICATION_1003",
-						});
+					if (!ticket || !entry) {
+						if (entry)
+							orderedResults[entry.originalIndex] = {
+								token: entry.payload.token,
+								success: false,
+								error: "No ticket or payload",
+								errorCode: "NOTIFICATION_1003",
+							};
 						continue;
 					}
 
-					const result = this.#parseTicket(ticket, payload.token);
+					const result = this.#parseTicket(ticket, entry.payload.token);
 
 					if (!result.success && result.errorCode === "DeviceNotRegistered") {
-						invalidTokens.push(payload.token);
+						invalidTokens.push(entry.payload.token);
 					}
 
-					results.push(result);
+					orderedResults[entry.originalIndex] = result;
 				}
 			} catch (error) {
 				this.#logger.error(`Failed to send batch notifications: ${error}`);
 				// 청크 전체 실패 처리
 				for (let i = 0; i < chunk.length; i++) {
+					const entry = validPayloads[processedIndex];
 					processedIndex++;
-					results.push({
-						success: false,
-						error: error instanceof Error ? error.message : "Unknown error",
-						errorCode: "NOTIFICATION_1003",
-					});
+					if (entry)
+						orderedResults[entry.originalIndex] = {
+							token: entry.payload.token,
+							success: false,
+							error: error instanceof Error ? error.message : "Unknown error",
+							errorCode: "NOTIFICATION_1003",
+						};
 				}
 			}
 		}
 
+		const results = orderedResults.filter((result) => result !== undefined);
 		const successCount = results.filter((r) => r.success).length;
 
 		return {
@@ -189,6 +226,7 @@ export class ExpoPushProvider implements PushProvider {
 			badge: payload.badge,
 			sound: payload.sound ?? "default",
 			channelId: payload.channelId ?? "default",
+			categoryId: payload.categoryId,
 			priority: payload.priority ?? "high",
 			ttl: payload.ttl,
 		};
@@ -200,6 +238,7 @@ export class ExpoPushProvider implements PushProvider {
 	#parseTicket(ticket: ExpoPushTicket, token: string): PushResult {
 		if (ticket.status === "ok") {
 			return {
+				token,
 				success: true,
 				ticketId: ticket.id,
 			};
@@ -214,6 +253,7 @@ export class ExpoPushProvider implements PushProvider {
 		);
 
 		return {
+			token,
 			success: false,
 			error: errorMessage,
 			errorCode,

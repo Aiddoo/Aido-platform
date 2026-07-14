@@ -9,6 +9,7 @@ export type WidgetTheme = 'light' | 'dark';
 
 /** react-native-android-widget ColorProp과 호환되는 hex 리터럴 타입 */
 export type WidgetHexColor = `#${string}`;
+export type WidgetRgbaColor = `rgba(${number}, ${number}, ${number}, ${number})`;
 
 export interface WidgetPalette {
   /** --background */
@@ -56,4 +57,19 @@ function isWidgetHexColor(value: string): value is WidgetHexColor {
 /** 서버가 내려준 카테고리 색상(HEX 계약)을 안전하게 내로잉 — 계약 위반 시 브랜드로 폴백 */
 export function toWidgetHexColor(value: string, fallback: WidgetHexColor): WidgetHexColor {
   return isWidgetHexColor(value) ? value : fallback;
+}
+
+/** HEX 카테고리 색상을 Android RemoteViews가 이해하는 rgba 틴트로 변환한다. */
+export function toWidgetRgbaColor(
+  value: string,
+  fallback: WidgetHexColor,
+  alpha: number,
+): WidgetRgbaColor {
+  const color = toWidgetHexColor(value, fallback);
+  const normalized = /^#[0-9a-fA-F]{6}$/.test(color) ? color : fallback;
+  const red = Number.parseInt(normalized.slice(1, 3), 16);
+  const green = Number.parseInt(normalized.slice(3, 5), 16);
+  const blue = Number.parseInt(normalized.slice(5, 7), 16);
+  const safeAlpha = Math.min(1, Math.max(0, alpha));
+  return `rgba(${red}, ${green}, ${blue}, ${safeAlpha})`;
 }

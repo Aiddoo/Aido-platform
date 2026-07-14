@@ -19,6 +19,8 @@ import {
 import { GetUnreadCountUseCase } from "../use-cases/get-unread-count/get-unread-count.use-case";
 import { MarkAllAsReadUseCase } from "../use-cases/mark-all-as-read/mark-all-as-read.use-case";
 import { MarkAsReadUseCase } from "../use-cases/mark-as-read/mark-as-read.use-case";
+import { MarkNotificationOpenedUseCase } from "../use-cases/mark-notification-opened/mark-notification-opened.use-case";
+import { OptOutMarketingPushUseCase } from "../use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { RegisterPushTokenUseCase } from "../use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "../use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "../use-cases/send-notification/send-notification.use-case";
@@ -37,9 +39,11 @@ export class NotificationFacade {
 		private readonly getNotificationsUseCase: GetNotificationsUseCase,
 		private readonly getUnreadCountUseCase: GetUnreadCountUseCase,
 		private readonly markAsReadUseCase: MarkAsReadUseCase,
+		private readonly markNotificationOpenedUseCase: MarkNotificationOpenedUseCase,
 		private readonly markAllAsReadUseCase: MarkAllAsReadUseCase,
 		private readonly registerPushTokenUseCase: RegisterPushTokenUseCase,
 		private readonly unregisterPushTokenUseCase: UnregisterPushTokenUseCase,
+		private readonly optOutMarketingPushUseCase: OptOutMarketingPushUseCase,
 		private readonly sendNotificationUseCase: SendNotificationUseCase,
 		private readonly sendNotificationWithDedupUseCase: SendNotificationWithDedupUseCase,
 		private readonly sendBatchNotificationUseCase: SendBatchNotificationUseCase,
@@ -62,6 +66,10 @@ export class NotificationFacade {
 		return this.markAsReadUseCase.execute(userId, notificationId);
 	}
 
+	markOpened(userId: string, notificationId: number): Promise<boolean> {
+		return this.markNotificationOpenedUseCase.execute(userId, notificationId);
+	}
+
 	markAllAsRead(userId: string): Promise<{ count: number }> {
 		return this.markAllAsReadUseCase.execute(userId);
 	}
@@ -72,6 +80,10 @@ export class NotificationFacade {
 
 	unregisterPushToken(userId: string, deviceId?: string): Promise<void> {
 		return this.unregisterPushTokenUseCase.execute(userId, deviceId);
+	}
+
+	optOutMarketingPush(token: string): Promise<boolean> {
+		return this.optOutMarketingPushUseCase.execute(token);
 	}
 
 	/** 알림 생성 + 푸시 발송 */

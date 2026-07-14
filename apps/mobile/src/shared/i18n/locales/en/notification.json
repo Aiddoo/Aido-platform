@@ -1,4 +1,7 @@
 {
+  "actions": {
+    "marketingOptOut": "Stop promotional pushes"
+  },
   "titles": {
     "notifications": "Notifications",
     "settings": "Notification Settings",

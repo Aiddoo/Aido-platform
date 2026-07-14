@@ -6,9 +6,9 @@
  */
 export interface WidgetEventMap {
   widget_added: {
-    widget_name: 'AidoTodayList';
+    widget_name: 'AidoTodaySummary' | 'AidoTodayList' | 'AidoTodayLarge';
   };
   widget_removed: {
-    widget_name: 'AidoTodayList';
+    widget_name: 'AidoTodaySummary' | 'AidoTodayList' | 'AidoTodayLarge';
   };
 }

@@ -18,6 +18,8 @@ export const registerPushTokenSchema = z.object({
     .max(100, '기기 ID가 너무 깁니다')
     .optional()
     .describe('기기 식별자 (선택, 최대 100자)'),
+  payloadVersion: z.number().int().min(1).max(2).default(1).describe('푸시 payload 지원 버전'),
+  appVersion: z.string().max(30).optional().describe('모바일 앱 버전'),
 });
 
 export type RegisterPushTokenInput = z.infer<typeof registerPushTokenSchema>;
@@ -83,3 +85,16 @@ export const notificationIdParamSchema = z.object({
 });
 
 export type NotificationIdParam = z.infer<typeof notificationIdParamSchema>;
+
+export const markNotificationOpenedSchema = z.object({
+  actionIdentifier: z.string().max(100).default('DEFAULT'),
+  source: z.enum(['PUSH', 'NOTIFICATION_CENTER']).default('PUSH'),
+});
+
+export type MarkNotificationOpenedInput = z.infer<typeof markNotificationOpenedSchema>;
+
+export const marketingPushOptOutSchema = z.object({
+  token: z.string().min(1).max(2048).describe('서명된 광고성 푸시 수신 철회 토큰'),
+});
+
+export type MarketingPushOptOutInput = z.infer<typeof marketingPushOptOutSchema>;

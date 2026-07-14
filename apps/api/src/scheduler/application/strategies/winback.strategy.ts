@@ -100,6 +100,9 @@ export class WinbackStrategy implements ITimezoneStrategy {
 			notifications.push({
 				userId: check.user.id,
 				type: "WINBACK",
+				purpose: "ENGAGEMENT",
+				campaignKey: "winback_v1",
+				variantId: check.stage,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

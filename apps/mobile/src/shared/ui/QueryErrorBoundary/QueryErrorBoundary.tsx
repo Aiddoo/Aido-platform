@@ -14,9 +14,11 @@ interface FallbackProps {
 interface QueryErrorBoundaryProps {
   children: ReactNode;
   fallback?: (props: FallbackProps) => ReactNode;
+  /** 쿼리 식별자가 바뀌면 이전 식별자의 fallback 상태를 자동 해제한다. */
+  resetKeys?: unknown[];
 }
 
-export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryProps) {
+export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryErrorBoundaryProps) {
   const errorReporter = useErrorReporter();
   const { t } = useTranslation();
 
@@ -25,6 +27,7 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
       {({ reset }) => (
         <ErrorBoundary
           onReset={reset}
+          resetKeys={resetKeys}
           onError={(error) => {
             // 로컬에 담기는 일시적 401은 에러 이슈 대신 warning 이벤트로 남긴다 —
             // 에러로 리포트하면 콜드스타트마다 알림이 울리고, 완전 무음이면 추적이 불가능하다.

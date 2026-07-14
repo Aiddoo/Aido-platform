@@ -6,6 +6,9 @@ import type { IPushRateLimiter } from "../../application/ports/push-rate-limiter
 /** 1시간 윈도우 내 최대 푸시 횟수 */
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 15;
+const ENGAGEMENT_MIN_INTERVAL_MS = 4 * 60 * 60 * 1000;
+const ENGAGEMENT_DAILY_MAX = 2;
+const ENGAGEMENT_KEY_TTL_SECONDS = 48 * 60 * 60;
 
 /**
  * Lua 스크립트: Sorted Set 기반 슬라이딩 윈도우 rate limit
@@ -39,6 +42,24 @@ const SLIDING_WINDOW_SCRIPT = `
   redis.call("ZADD", key, now, now .. ":" .. math.random(1, 1000000))
   redis.call("PEXPIRE", key, windowMs)
 
+  return 0
+`;
+
+const ENGAGEMENT_LIMIT_SCRIPT = `
+  local key = KEYS[1]
+  local now = tonumber(ARGV[1])
+  local minInterval = tonumber(ARGV[2])
+  local dailyMax = tonumber(ARGV[3])
+  local ttlSeconds = tonumber(ARGV[4])
+  local count = tonumber(redis.call("HGET", key, "count") or "0")
+  local lastSentAt = tonumber(redis.call("HGET", key, "lastSentAt") or "0")
+
+  if count >= dailyMax or (lastSentAt > 0 and now - lastSentAt < minInterval) then
+    return 1
+  end
+
+  redis.call("HSET", key, "count", count + 1, "lastSentAt", now)
+  redis.call("EXPIRE", key, ttlSeconds)
   return 0
 `;
 
@@ -80,6 +101,28 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 		} catch (error) {
 			this.#errorSampler.warn("PUSH_RATE_LIMIT", error);
 			// fail-open: Redis 장애 시 발송 허용
+			return false;
+		}
+	}
+
+	async isEngagementRateLimited(
+		userId: string,
+		localDate: string,
+	): Promise<boolean> {
+		const key = `push-engagement:${userId}:${localDate}`;
+		try {
+			const result = await this.#redis.eval(
+				ENGAGEMENT_LIMIT_SCRIPT,
+				1,
+				key,
+				Date.now(),
+				ENGAGEMENT_MIN_INTERVAL_MS,
+				ENGAGEMENT_DAILY_MAX,
+				ENGAGEMENT_KEY_TTL_SECONDS,
+			);
+			return result === 1;
+		} catch (error) {
+			this.#errorSampler.warn("PUSH_ENGAGEMENT_LIMIT", error);
 			return false;
 		}
 	}

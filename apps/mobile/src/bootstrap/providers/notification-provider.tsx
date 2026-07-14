@@ -58,6 +58,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
       if (lastResponseHandled.current !== responseId) {
         lastResponseHandled.current = responseId;
         pendingColdStartResponse.current = null;
+        void Notifications.clearLastNotificationResponseAsync();
         handleNotificationResponse(responseToProcess).catch((e) =>
           logger.error('[Notification] Response handling failed', toError(e)),
         );
@@ -73,6 +74,15 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
 
   // Effect 1: 알림 리스너 등록
   useEffect(() => {
+    void Notifications.setNotificationCategoryAsync('MARKETING', [
+      {
+        identifier: 'MARKETING_OPT_OUT',
+        buttonTitle: i18n.t('notification:actions.marketingOptOut'),
+        // 종료 상태에서도 응답 listener가 확실히 실행되도록 앱을 열어 처리한다.
+        options: { opensAppToForeground: true },
+      },
+    ]);
+
     receivedListener.current = Notifications.addNotificationReceivedListener((notification) => {
       logger.info('[Notification] Received in foreground', {
         title: notification.request.content.title,
@@ -81,6 +91,10 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const responseId = response.notification.request.identifier;
+      if (lastResponseHandled.current === responseId) return;
+      lastResponseHandled.current = responseId;
+      void Notifications.clearLastNotificationResponseAsync();
       handleNotificationResponse(response).catch((e) =>
         logger.error('[Notification] Response handling failed', toError(e)),
       );

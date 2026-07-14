@@ -154,6 +154,13 @@ export interface CreateNotificationData {
 	 */
 	action?: NotificationAction;
 
+	/** 발송 정책과 분석을 위한 알림 목적. 미지정 시 트랜잭션 알림입니다. */
+	purpose?: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
+
+	/** 캠페인/카피 실험 추적 키 */
+	campaignKey?: string | null;
+	variantId?: string | null;
+
 	/**
 	 * 할일 ID (context)
 	 *
@@ -217,6 +224,8 @@ export interface RegisterPushTokenData {
 	platform?: "IOS" | "ANDROID";
 	timezone?: string;
 	locale?: string;
+	payloadVersion?: number;
+	appVersion?: string;
 }
 
 /**

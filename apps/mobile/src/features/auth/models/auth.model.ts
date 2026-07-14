@@ -58,6 +58,7 @@ export const consentSchema = z.object({
   privacyAgreedAt: z.coerce.date().nullable(),
   agreedTermsVersion: z.string().nullable(),
   marketingAgreedAt: z.coerce.date().nullable(),
+  marketingPushAgreedAt: z.coerce.date().nullable(),
 });
 export type Consent = z.infer<typeof consentSchema>;
 
@@ -78,6 +79,13 @@ export const updateMarketingConsentResultSchema = z.object({
   marketingAgreedAt: z.coerce.date().nullable(),
 });
 export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
+
+export const updateMarketingPushConsentResultSchema = z.object({
+  marketingPushAgreedAt: z.coerce.date().nullable(),
+});
+export type UpdateMarketingPushConsentResult = z.infer<
+  typeof updateMarketingPushConsentResultSchema
+>;
 
 export const deleteAccountResultSchema = z.object({
   message: z.string(),

@@ -31,6 +31,7 @@ import {
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
+import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
@@ -39,6 +40,8 @@ import { GetNotificationsUseCase } from "@/notification/application/use-cases/ge
 import { GetUnreadCountUseCase } from "@/notification/application/use-cases/get-unread-count/get-unread-count.use-case";
 import { MarkAllAsReadUseCase } from "@/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
 import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-read/mark-as-read.use-case";
+import { MarkNotificationOpenedUseCase } from "@/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
+import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
@@ -58,11 +61,13 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let facade: NotificationFacade;
 	let repository: NotificationRepository;
+	let pushDispatcher: PushDispatcherAdapter;
 
 	// Mock 데이터베이스 서비스
 	const mockNotificationDb = {
 		create: jest.fn(),
 		createMany: jest.fn(),
+		createManyAndReturn: jest.fn(),
 		findUnique: jest.fn(),
 		findFirst: jest.fn(),
 		findMany: jest.fn(),
@@ -71,6 +76,18 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		delete: jest.fn(),
 		deleteMany: jest.fn(),
 		count: jest.fn(),
+	};
+
+	const mockPushDispatchDb = {
+		upsert: jest.fn(),
+		update: jest.fn(),
+		updateMany: jest.fn(),
+	};
+
+	const mockPushDeliveryAttemptDb = {
+		createMany: jest.fn(),
+		findMany: jest.fn(),
+		updateMany: jest.fn(),
 	};
 
 	const mockPushTokenDb = {
@@ -98,11 +115,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		findMany: jest.fn(),
 		create: jest.fn(),
 		update: jest.fn(),
+		upsert: jest.fn(),
 	};
 
 	const mockDatabaseService = createMockDatabaseService({
 		notification: mockNotificationDb,
 		pushToken: mockPushTokenDb,
+		pushDispatch: mockPushDispatchDb,
+		pushDeliveryAttempt: mockPushDeliveryAttemptDb,
 		userPreference: mockUserPreferenceDb,
 		userConsent: mockUserConsentDb,
 	});
@@ -111,7 +131,13 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	const mockPushProvider = {
 		send: jest.fn(),
 		sendBatch: jest.fn(),
+		getReceipts: jest.fn(),
 		validateToken: jest.fn(),
+	};
+
+	const mockMarketingPushOptOutToken = {
+		issue: jest.fn((userId: string) => `opt-out:${userId}`),
+		verify: jest.fn((token: string) => token.replace(/^opt-out:/, "") || null),
 	};
 
 	// 테스트 데이터
@@ -134,13 +160,19 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				GetNotificationsUseCase,
 				GetUnreadCountUseCase,
 				MarkAsReadUseCase,
+				MarkNotificationOpenedUseCase,
 				MarkAllAsReadUseCase,
 				RegisterPushTokenUseCase,
 				UnregisterPushTokenUseCase,
+				OptOutMarketingPushUseCase,
 				SendNotificationUseCase,
 				SendNotificationWithDedupUseCase,
 				SendBatchNotificationUseCase,
 				FindAlreadyNotifiedUsersUseCase,
+				{
+					provide: MARKETING_PUSH_OPT_OUT_TOKEN,
+					useValue: mockMarketingPushOptOutToken,
+				},
 				PaginationService,
 				UserPreferenceRepository,
 				UserConsentRepository,
@@ -164,6 +196,10 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 							consentRepository.findByUserId(userId),
 						getConsentRecordsByUserIds: (userIds: string[]) =>
 							consentRepository.findByUserIds(userIds),
+						updateMarketingPushConsent: (userId: string, agreed: boolean) =>
+							consentRepository
+								.upsertMarketingPushConsent(userId, { agreed })
+								.then(() => undefined),
 					}),
 					inject: [UserPreferenceRepository, UserConsentRepository],
 				},
@@ -246,6 +282,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 		facade = module.get<NotificationFacade>(NotificationFacade);
 		repository = module.get<NotificationRepository>(NotificationRepository);
+		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
 	});
 
 	afterAll(async () => {
@@ -257,6 +294,22 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		jest.clearAllMocks();
 		NotificationBuilder.resetIdCounter();
 		PushTokenBuilder.resetIdCounter();
+		mockPushDispatchDb.upsert.mockResolvedValue({ id: 1 });
+		mockPushDispatchDb.update.mockResolvedValue({});
+		mockPushDispatchDb.updateMany.mockResolvedValue({ count: 1 });
+		mockPushDeliveryAttemptDb.createMany.mockResolvedValue({ count: 0 });
+		mockNotificationDb.createManyAndReturn.mockImplementation(
+			async ({ data }: { data: Array<Record<string, unknown>> }) =>
+				data.map((item, index) => ({
+					id: index + 1,
+					isRead: false,
+					readAt: null,
+					openedAt: null,
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					...item,
+				})),
+		);
 	});
 
 	describe("DI 통합 테스트", () => {
@@ -527,12 +580,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				.asUnread()
 				.build();
 			mockNotificationDb.findUnique.mockResolvedValue(mockNotification);
-			mockNotificationDb.update.mockResolvedValue(
-				NotificationBuilder.create(mockUserId)
-					.withId(mockNotificationId)
-					.asRead()
-					.build(),
-			);
+			mockNotificationDb.updateMany.mockResolvedValue({ count: 1 });
 
 			// When - 알림 읽음 처리
 			await expect(
@@ -540,12 +588,46 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			).resolves.toBeUndefined();
 
 			// Then - 읽음 처리 검증
-			expect(mockNotificationDb.update).toHaveBeenCalledWith(
+			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					where: { id: mockNotificationId },
+					where: { id: mockNotificationId, userId: mockUserId, isRead: false },
 					data: expect.objectContaining({
 						isRead: true,
 					}),
+				}),
+			);
+		});
+
+		it("푸시 탭을 멱등 기록하고 읽음 상태로 맞춰야 함", async () => {
+			mockNotificationDb.updateMany.mockResolvedValue({ count: 1 });
+
+			await expect(
+				facade.markOpened(mockUserId, mockNotificationId),
+			).resolves.toBe(true);
+
+			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: { id: mockNotificationId, userId: mockUserId, openedAt: null },
+					data: expect.objectContaining({
+						isRead: true,
+						openedAt: expect.any(Date),
+					}),
+				}),
+			);
+			expect(mockPushDispatchDb.updateMany).toHaveBeenCalled();
+		});
+
+		it("서명 토큰으로 광고성 푸시 동의를 철회해야 함", async () => {
+			mockUserConsentDb.upsert.mockResolvedValue({});
+
+			await expect(
+				facade.optOutMarketingPush(`opt-out:${mockUserId}`),
+			).resolves.toBe(true);
+
+			expect(mockUserConsentDb.upsert).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: { userId: mockUserId },
+					update: { marketingPushAgreedAt: null },
 				}),
 			);
 		});
@@ -626,6 +708,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				title: "테스트 알림",
 				body: "테스트 알림 내용입니다",
 			});
+			await pushDispatcher.beforeApplicationShutdown();
 
 			// Then - 알림 생성 및 푸시 발송 검증
 			expect(result).toEqual(mockNotification);
@@ -670,7 +753,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				},
 			];
 
-			mockNotificationDb.createMany.mockResolvedValue({ count: 1 });
 			mockUserPreferenceDb.findMany.mockResolvedValue([
 				{ userId: mockUserId, pushEnabled: true, nightPushEnabled: true },
 			]);
@@ -682,18 +764,21 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				total: 1,
 				successCount: 1,
 				failureCount: 0,
+				results: [{ token: mockPushToken, success: true }],
 				invalidTokens: [],
 			});
 
 			// When - 배치 알림 생성 및 발송
 			const result = await facade.createAndSendBatch(dataList);
+			await pushDispatcher.beforeApplicationShutdown();
 
 			// Then - title이 치환된 값이어야 하며, {count}가 포함되지 않아야 함
 			expect(result.count).toBe(1);
 			expect(message.title).toContain("3");
 			expect(message.title).not.toContain("{count}");
 
-			const createManyCall = mockNotificationDb.createMany.mock.calls[0]?.[0];
+			const createManyCall =
+				mockNotificationDb.createManyAndReturn.mock.calls[0]?.[0];
 			expect(createManyCall.data[0].title).toBe(message.title);
 			expect(createManyCall.data[0].title).not.toContain("{count}");
 			expect(createManyCall.data[0].type).toBe("MORNING_REMINDER");
@@ -772,7 +857,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				},
 			];
 
-			mockNotificationDb.createMany.mockResolvedValue({ count: 2 });
 			mockUserPreferenceDb.findMany.mockResolvedValue([
 				{ userId: userWithTodos, pushEnabled: true, nightPushEnabled: true },
 				{ userId: userWithoutTodos, pushEnabled: true, nightPushEnabled: true },
@@ -786,16 +870,22 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				total: 2,
 				successCount: 2,
 				failureCount: 0,
+				results: [
+					{ token: "token-1", success: true },
+					{ token: "token-2", success: true },
+				],
 				invalidTokens: [],
 			});
 
 			// When - 배치 알림 생성 및 발송
 			const result = await facade.createAndSendBatch(dataList);
+			await pushDispatcher.beforeApplicationShutdown();
 
 			// Then - 두 사용자 모두 알림이 생성되어야 함
 			expect(result.count).toBe(2);
 
-			const createManyCall = mockNotificationDb.createMany.mock.calls[0]?.[0];
+			const createManyCall =
+				mockNotificationDb.createManyAndReturn.mock.calls[0]?.[0];
 			// 할일 있는 사용자: 치환된 title
 			expect(createManyCall.data[0].title).toBe(messageWithTodos.title);
 			expect(createManyCall.data[0].title).not.toContain("{count}");

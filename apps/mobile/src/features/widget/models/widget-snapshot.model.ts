@@ -36,6 +36,8 @@ export const widgetSnapshotSchema = z.object({
     progressTitle: z.string(),
     percentLabel: z.string(),
     streakLabel: z.string(),
+    /** Small family 전용 짧은 스트릭. optional은 v1.5.1 스냅샷 하위 호환용이다. */
+    compactStreakLabel: z.string().optional(),
     allDoneLabel: z.string(),
     /** "+N개 더" 템플릿 — 표시 행 수는 렌더 시점에만 알 수 있으므로 {count}를 위젯이 치환 */
     moreLabelTemplate: z.string(),

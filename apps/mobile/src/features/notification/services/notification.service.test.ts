@@ -68,6 +68,8 @@ describe('NotificationService', () => {
       expect(httpClient.post).toHaveBeenCalledWith('v1/notifications/token', {
         token: 'ExponentPushToken[xxx]',
         deviceId: 'device-123',
+        payloadVersion: 2,
+        appVersion: 'mock',
       });
       expect(result).toEqual({ ok: true, value: dto });
     });

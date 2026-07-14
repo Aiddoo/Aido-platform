@@ -55,6 +55,7 @@ const generateConsentDto = (): ConsentResponse => ({
   privacyAgreedAt: '2026-01-01T00:00:00.000Z',
   agreedTermsVersion: '1.0.0',
   marketingAgreedAt: '2026-02-01T00:00:00.000Z',
+  marketingPushAgreedAt: null,
 });
 
 export const createConsentDto = (overrides?: Partial<ConsentResponse>): ConsentResponse => ({

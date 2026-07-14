@@ -1,9 +1,6 @@
-// react-native-android-widget은 컴포넌트를 React 렌더러 밖에서 함수로 직접 호출한다.
-// React Compiler가 주입하는 useMemoCache가 훅으로 취급되어 "Invalid hook call"로 렌더가
-// 통째로 실패하므로(빈 위젯), 이 파일은 컴파일러 대상에서 제외한다.
 'use no memo';
 
-import { FlexWidget, ImageWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
 import {
   type WidgetRenderState,
@@ -13,189 +10,247 @@ import {
 } from '../../models/widget-snapshot.model';
 import {
   toWidgetHexColor,
+  toWidgetRgbaColor,
   WIDGET_COLORS,
   type WidgetTheme,
 } from '../constants/widget-colors.constant';
-import { WIDGET_FONTS, WIDGET_MASCOT_IMAGE, WIDGET_PERFECT_IMAGE } from './widget-assets';
+import type { AndroidWidgetFamily } from './android-widget-layout';
+import { WIDGET_FONTS } from './widget-assets';
 import { ProgressBar, StateWidget } from './widget-primitives';
+
+const FIXED_TEXT_SCALE = false;
 
 export interface TodayListWidgetProps {
   snapshot: WidgetSnapshot;
   theme: WidgetTheme;
   renderState: WidgetRenderState;
-  /** compact = 2x2 등 좁은 폭: 카운트 히어로 요약, list = 할 일 목록 */
-  variant: 'compact' | 'list';
-  /** list 변형의 표시 행 수 (4x2: 3행, 세로 리사이즈 시 최대 8행) */
-  maxRows: number;
+  family: AndroidWidgetFamily;
 }
 
-/**
- * 오늘 할 일 위젯 — 앱 홈과 동일한 시각 언어(카테고리 컬러 체크박스)로
- * 오늘 할 일의 체크 여부를 보여준다. 좁은 폭에서는 카운트 요약으로 전환.
- */
-export function TodayListWidget({
-  snapshot,
-  theme,
-  renderState,
-  variant,
-  maxRows,
-}: TodayListWidgetProps) {
-  const palette = WIDGET_COLORS[theme];
-
+/** Android 3종 위젯 — iOS systemSmall/Medium/Large와 동일한 정보 구조를 사용한다. */
+export function TodayListWidget({ snapshot, theme, renderState, family }: TodayListWidgetProps) {
   if (renderState !== 'data') {
     const stateScreen = WidgetSnapshotPolicy.stateScreenStrings(snapshot, renderState);
     return <StateWidget theme={theme} title={stateScreen.title} cta={stateScreen.cta} />;
   }
 
-  if (variant === 'compact') {
-    return (
-      <FlexWidget
-        clickAction="OPEN_APP"
-        style={{
-          width: 'match_parent',
-          height: 'match_parent',
-          backgroundColor: palette.background,
-          borderRadius: 16,
-          padding: 14,
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-        }}
-      >
-        <FlexWidget
-          style={{
-            width: 'match_parent',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <TextWidget
-            text={snapshot.strings.progressTitle}
-            style={{ fontSize: 12, fontFamily: WIDGET_FONTS.medium, color: palette.muted }}
-          />
-          <ImageWidget
-            image={snapshot.isComplete ? WIDGET_PERFECT_IMAGE : WIDGET_MASCOT_IMAGE}
-            imageWidth={26}
-            imageHeight={26}
-          />
-        </FlexWidget>
-        <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-end', flexGap: 2 }}>
-          <TextWidget
-            text={`${snapshot.completedTodos}`}
-            style={{ fontSize: 32, fontFamily: WIDGET_FONTS.bold, color: palette.brand }}
-          />
-          <TextWidget
-            text={`/${snapshot.totalTodos}`}
-            style={{
-              fontSize: 18,
-              fontFamily: WIDGET_FONTS.semibold,
-              color: palette.muted,
-              paddingBottom: 3,
-            }}
-          />
-        </FlexWidget>
-        <FlexWidget style={{ width: 'match_parent', flexDirection: 'column', flexGap: 6 }}>
-          <ProgressBar rate={snapshot.completionRate} theme={theme} height={6} />
-          <FlexWidget
-            style={{
-              width: 'match_parent',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <TextWidget
-              text={
-                snapshot.isComplete ? snapshot.strings.allDoneLabel : snapshot.strings.percentLabel
-              }
-              style={{
-                fontSize: 11,
-                fontFamily: WIDGET_FONTS.medium,
-                color: snapshot.isComplete ? palette.brand : palette.muted,
-              }}
-            />
-            {snapshot.currentStreak > 0 ? (
-              <TextWidget
-                text={`🔥 ${snapshot.strings.streakLabel}`}
-                style={{ fontSize: 11, fontFamily: WIDGET_FONTS.medium, color: palette.brand }}
-              />
-            ) : null}
-          </FlexWidget>
-        </FlexWidget>
-      </FlexWidget>
-    );
+  if (family === 'small') {
+    return <SummaryWidget snapshot={snapshot} theme={theme} />;
   }
 
+  return <TodoCollectionWidget snapshot={snapshot} theme={theme} family={family} />;
+}
+
+function SummaryWidget({ snapshot, theme }: { snapshot: WidgetSnapshot; theme: WidgetTheme }) {
+  const palette = WIDGET_COLORS[theme];
+  const progressLabel = snapshot.isComplete
+    ? snapshot.strings.allDoneLabel
+    : snapshot.strings.percentLabel;
+
+  return (
+    <FlexWidget
+      clickAction="OPEN_APP"
+      accessibilityLabel={`${snapshot.strings.progressTitle}. ${snapshot.completedTodos}/${snapshot.totalTodos}. ${progressLabel}`}
+      style={{
+        width: 'match_parent',
+        height: 'match_parent',
+        backgroundColor: palette.background,
+        borderRadius: 16,
+        padding: 10,
+        flexDirection: 'column',
+      }}
+    >
+      <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
+        <TextWidget
+          text={snapshot.strings.progressTitle}
+          maxLines={1}
+          allowFontScaling={FIXED_TEXT_SCALE}
+          style={{
+            fontSize: 11,
+            fontFamily: WIDGET_FONTS.medium,
+            color: palette.muted,
+            adjustsFontSizeToFit: true,
+          }}
+        />
+        <FlexWidget style={{ flex: 1 }} />
+        <TextWidget
+          text={snapshot.isComplete ? '🎉' : '🐾'}
+          allowFontScaling={FIXED_TEXT_SCALE}
+          style={{ fontSize: 12 }}
+        />
+      </FlexWidget>
+
+      <FlexWidget
+        style={{
+          width: 'match_parent',
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          marginTop: 4,
+          flexGap: 2,
+        }}
+      >
+        <TextWidget
+          text={`${snapshot.completedTodos}`}
+          allowFontScaling={FIXED_TEXT_SCALE}
+          style={{ fontSize: 28, fontFamily: WIDGET_FONTS.bold, color: palette.brand }}
+        />
+        <TextWidget
+          text={`/${snapshot.totalTodos}`}
+          allowFontScaling={FIXED_TEXT_SCALE}
+          style={{
+            fontSize: 16,
+            fontFamily: WIDGET_FONTS.semibold,
+            color: palette.muted,
+            paddingBottom: 2,
+          }}
+        />
+      </FlexWidget>
+
+      <FlexWidget style={{ width: 'match_parent', marginTop: 4 }}>
+        <ProgressBar rate={snapshot.completionRate} theme={theme} height={5} />
+      </FlexWidget>
+
+      <FlexWidget
+        style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center', marginTop: 4 }}
+      >
+        <TextWidget
+          text={progressLabel}
+          maxLines={1}
+          allowFontScaling={FIXED_TEXT_SCALE}
+          style={{
+            fontSize: 10,
+            fontFamily: WIDGET_FONTS.medium,
+            color: snapshot.isComplete ? palette.brand : palette.muted,
+            adjustsFontSizeToFit: true,
+          }}
+        />
+        <FlexWidget style={{ flex: 1 }} />
+        {snapshot.currentStreak > 0 ? (
+          <TextWidget
+            text={`🔥 ${snapshot.strings.compactStreakLabel ?? snapshot.strings.streakLabel}`}
+            maxLines={1}
+            allowFontScaling={FIXED_TEXT_SCALE}
+            style={{
+              fontSize: 10,
+              fontFamily: WIDGET_FONTS.medium,
+              color: palette.brand,
+              adjustsFontSizeToFit: true,
+            }}
+          />
+        ) : null}
+      </FlexWidget>
+    </FlexWidget>
+  );
+}
+
+function TodoCollectionWidget({
+  snapshot,
+  theme,
+  family,
+}: {
+  snapshot: WidgetSnapshot;
+  theme: WidgetTheme;
+  family: Exclude<AndroidWidgetFamily, 'small'>;
+}) {
+  const palette = WIDGET_COLORS[theme];
+  const isLarge = family === 'large';
+  const maxRows = isLarge ? 8 : 3;
   const visibleTodos = snapshot.topTodos.slice(0, maxRows);
   const overflowCount = snapshot.totalTodos - visibleTodos.length;
 
   return (
     <FlexWidget
       clickAction="OPEN_APP"
+      accessibilityLabel={`${snapshot.strings.progressTitle}. ${snapshot.completedTodos}/${snapshot.totalTodos}`}
       style={{
         width: 'match_parent',
         height: 'match_parent',
         backgroundColor: palette.background,
         borderRadius: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: isLarge ? 16 : 12,
+        paddingVertical: isLarge ? 12 : 8,
         flexDirection: 'column',
       }}
     >
-      <FlexWidget
-        style={{
-          width: 'match_parent',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 8,
-        }}
-      >
+      <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
         <TextWidget
           text={snapshot.strings.progressTitle}
-          style={{ fontSize: 12, fontFamily: WIDGET_FONTS.medium, color: palette.muted }}
+          maxLines={1}
+          allowFontScaling={FIXED_TEXT_SCALE}
+          style={{
+            fontSize: isLarge ? 13 : 12,
+            fontFamily: WIDGET_FONTS.medium,
+            color: palette.muted,
+            adjustsFontSizeToFit: true,
+          }}
         />
+        <FlexWidget style={{ flex: 1 }} />
         {snapshot.isComplete ? (
-          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flexGap: 5 }}>
-            <ImageWidget image={WIDGET_PERFECT_IMAGE} imageWidth={18} imageHeight={18} />
-            <TextWidget
-              text={snapshot.strings.allDoneLabel}
-              style={{ fontSize: 13, fontFamily: WIDGET_FONTS.semibold, color: palette.brand }}
-            />
-          </FlexWidget>
+          <TextWidget
+            text={`🎉 ${snapshot.strings.allDoneLabel}`}
+            maxLines={1}
+            allowFontScaling={FIXED_TEXT_SCALE}
+            style={{
+              fontSize: isLarge ? 13 : 12,
+              fontFamily: WIDGET_FONTS.semibold,
+              color: palette.brand,
+              adjustsFontSizeToFit: true,
+            }}
+          />
         ) : (
           <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
             <TextWidget
               text={`${snapshot.completedTodos}`}
-              style={{ fontSize: 14, fontFamily: WIDGET_FONTS.bold, color: palette.brand }}
+              allowFontScaling={FIXED_TEXT_SCALE}
+              style={{
+                fontSize: isLarge ? 14 : 13,
+                fontFamily: WIDGET_FONTS.bold,
+                color: palette.brand,
+              }}
             />
             <TextWidget
               text={`/${snapshot.totalTodos}`}
-              style={{ fontSize: 13, fontFamily: WIDGET_FONTS.semibold, color: palette.muted }}
+              allowFontScaling={FIXED_TEXT_SCALE}
+              style={{
+                fontSize: isLarge ? 13 : 12,
+                fontFamily: WIDGET_FONTS.semibold,
+                color: palette.muted,
+              }}
             />
           </FlexWidget>
         )}
       </FlexWidget>
 
-      <ProgressBar rate={snapshot.completionRate} theme={theme} height={3} />
+      <FlexWidget style={{ width: 'match_parent', marginTop: isLarge ? 6 : 4 }}>
+        <ProgressBar rate={snapshot.completionRate} theme={theme} height={isLarge ? 4 : 3} />
+      </FlexWidget>
 
-      <FlexWidget style={{ width: 'match_parent', flexDirection: 'column', marginTop: 6 }}>
+      <FlexWidget
+        style={{
+          width: 'match_parent',
+          flexDirection: 'column',
+          marginTop: isLarge ? 6 : 4,
+        }}
+      >
         {visibleTodos.map((todo) => (
-          <TodoRow key={String(todo.id)} todo={todo} theme={theme} />
+          <TodoRow key={String(todo.id)} todo={todo} theme={theme} compact={!isLarge} />
         ))}
       </FlexWidget>
 
       {overflowCount > 0 ? (
         <FlexWidget
-          style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-end' }}
+          style={{ width: 'match_parent', flexDirection: 'row', marginTop: isLarge ? 2 : 1 }}
         >
+          <FlexWidget style={{ flex: 1 }} />
           <TextWidget
             text={snapshot.strings.moreLabelTemplate.replace('{count}', String(overflowCount))}
+            maxLines={1}
+            allowFontScaling={FIXED_TEXT_SCALE}
             style={{
-              fontSize: 11,
+              fontSize: isLarge ? 11 : 10,
               fontFamily: WIDGET_FONTS.regular,
               color: palette.muted,
-              marginTop: 4,
+              adjustsFontSizeToFit: true,
             }}
           />
         </FlexWidget>
@@ -204,55 +259,62 @@ export function TodayListWidget({
   );
 }
 
-/** 카테고리 컬러 체크박스(앱 홈과 동일한 라운드 사각형) + 제목 */
-function TodoRow({ todo, theme }: { todo: WidgetTopTodo; theme: WidgetTheme }) {
+/** 카테고리 컬러 체크박스 + 한 줄 제목. iOS와 동일한 완료/미완료 표현을 사용한다. */
+function TodoRow({
+  todo,
+  theme,
+  compact,
+}: {
+  todo: WidgetTopTodo;
+  theme: WidgetTheme;
+  compact: boolean;
+}) {
   const palette = WIDGET_COLORS[theme];
   const categoryColor = toWidgetHexColor(todo.categoryColor, palette.brand);
+  const checkboxSize = compact ? 15 : 18;
 
   return (
     <FlexWidget
       style={{
         width: 'match_parent',
+        height: compact ? 17 : 20,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 5,
-        flexGap: 10,
+        flexGap: compact ? 8 : 10,
       }}
     >
-      {todo.completed ? (
-        <FlexWidget
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 6,
-            backgroundColor: categoryColor,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <TextWidget text="✓" style={{ fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' }} />
-        </FlexWidget>
-      ) : (
-        <FlexWidget
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 6,
-            borderWidth: 2,
-            borderColor: categoryColor,
-          }}
-        />
-      )}
+      <FlexWidget
+        style={{
+          width: checkboxSize,
+          height: checkboxSize,
+          borderRadius: 5,
+          backgroundColor: todo.completed
+            ? categoryColor
+            : toWidgetRgbaColor(categoryColor, palette.brand, 0.25),
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {todo.completed ? (
+          <TextWidget
+            text="✓"
+            allowFontScaling={FIXED_TEXT_SCALE}
+            style={{ fontSize: 11, fontWeight: 'bold', color: '#FFFFFF' }}
+          />
+        ) : null}
+      </FlexWidget>
       <FlexWidget style={{ flex: 1, flexDirection: 'row' }}>
         <TextWidget
           text={todo.title}
           truncate="END"
           maxLines={1}
+          allowFontScaling={FIXED_TEXT_SCALE}
           style={{
             width: 'match_parent',
-            fontSize: 15,
+            fontSize: compact ? 12 : 15,
             fontFamily: WIDGET_FONTS.regular,
             color: todo.completed ? palette.muted : palette.foreground,
+            adjustsFontSizeToFit: true,
           }}
         />
       </FlexWidget>

@@ -134,7 +134,7 @@ pnpm dev
 - **타입**: TypeScript strict 모드
 - **DTO**: Zod 스키마 (`@aido/validators`)
 - **에러 코드**: `@aido/errors`의 `ErrorCode` 사용 (하드코딩 금지)
-- **AI/Claude 워크플로우**: [CLAUDE.md](./CLAUDE.md) 참조
+- **AI 에이전트 워크플로우**: [AGENTS.md](./AGENTS.md) 참조
 
 ## API 문서
 

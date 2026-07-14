@@ -111,6 +111,9 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 			notifications.push({
 				userId: user.id,
 				type: "SYSTEM_NOTICE",
+				purpose: "ENGAGEMENT",
+				campaignKey: "onboarding_v1",
+				variantId: `day_${day}`,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

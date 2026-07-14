@@ -13,6 +13,10 @@
  */
 
 import request from "supertest";
+import {
+	MARKETING_PUSH_OPT_OUT_TOKEN,
+	type MarketingPushOptOutTokenPort,
+} from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("알림 E2E", () => {
@@ -859,6 +863,41 @@ describe("알림 E2E", () => {
 	});
 
 	describe("알림 읽음 처리", () => {
+		describe("POST /notifications/:id/opened - 푸시 탭 기록", () => {
+			it("탭을 멱등 기록하고 알림을 즉시 읽음 처리한다", async () => {
+				const user = await ctx.helpers.createVerifiedUser(
+					"notif-opened@test.com",
+					password,
+				);
+				const prisma = ctx.testDatabase.getPrisma();
+				const notification = await prisma.notification.create({
+					data: {
+						userId: user.userId,
+						type: "TODO_REMINDER",
+						title: "열림 기록 테스트",
+						body: "본문",
+					},
+				});
+
+				const first = await request(ctx.app.getHttpServer())
+					.post(`/notifications/${notification.id}/opened`)
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.expect(200);
+				const second = await request(ctx.app.getHttpServer())
+					.post(`/notifications/${notification.id}/opened`)
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.expect(200);
+
+				expect(first.body.data.opened).toBe(true);
+				expect(second.body.data.opened).toBe(false);
+				const persisted = await prisma.notification.findUniqueOrThrow({
+					where: { id: notification.id },
+				});
+				expect(persisted.openedAt).toBeInstanceOf(Date);
+				expect(persisted.isRead).toBe(true);
+			});
+		});
+
 		describe("PATCH /notifications/:id/read - 단일 알림 읽음 처리", () => {
 			it("존재하지 않는 알림 읽음 처리 시 404 에러 반환", async () => {
 				// Given - 존재하지 않는 알림 ID
@@ -909,6 +948,44 @@ describe("알림 E2E", () => {
 				expect(response.body.data.message).toBeDefined();
 				expect(typeof response.body.data.readCount).toBe("number");
 			});
+		});
+	});
+
+	describe("광고성 푸시 수신 철회", () => {
+		it("서명 토큰으로 로그인 없이 동의를 철회한다", async () => {
+			const user = await ctx.helpers.createVerifiedUser(
+				"notif-opt-out@test.com",
+				password,
+			);
+			const prisma = ctx.testDatabase.getPrisma();
+			await prisma.userConsent.upsert({
+				where: { userId: user.userId },
+				create: { userId: user.userId, marketingPushAgreedAt: new Date() },
+				update: { marketingPushAgreedAt: new Date() },
+			});
+			const tokenPort = ctx.app.get<MarketingPushOptOutTokenPort>(
+				MARKETING_PUSH_OPT_OUT_TOKEN,
+			);
+
+			const response = await request(ctx.app.getHttpServer())
+				.post("/notifications/marketing-push/opt-out")
+				.send({ token: tokenPort.issue(user.userId) })
+				.expect(200);
+
+			expect(response.body.data.optedOut).toBe(true);
+			const consent = await prisma.userConsent.findUniqueOrThrow({
+				where: { userId: user.userId },
+			});
+			expect(consent.marketingPushAgreedAt).toBeNull();
+		});
+
+		it("잘못된 토큰도 동일한 응답을 반환해 토큰 유효성을 노출하지 않는다", async () => {
+			const response = await request(ctx.app.getHttpServer())
+				.post("/notifications/marketing-push/opt-out")
+				.send({ token: "invalid.token" })
+				.expect(200);
+
+			expect(response.body.data.optedOut).toBe(true);
 		});
 	});
 });

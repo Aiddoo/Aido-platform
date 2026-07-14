@@ -27,6 +27,7 @@ export {
 	PUSH_PROVIDER,
 	type PushPayload,
 	type PushProvider,
+	type PushReceiptResult,
 	type PushResult,
 } from "./application/ports/push-provider.port";
 export {

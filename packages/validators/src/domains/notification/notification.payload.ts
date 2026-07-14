@@ -77,10 +77,15 @@ const notificationTypes = Object.values(NOTIFICATION_TYPE) as [string, ...string
  * 서버에서 클라이언트로 전송되는 푸시 알림의 data 필드 구조입니다.
  */
 export const pushNotificationDataSchema = z.object({
-  notificationId: z.number(),
+  notificationId: z.number().int().nonnegative(),
   type: z.enum(notificationTypes),
   action: notificationActionSchema,
   context: notificationContextSchema.optional(),
+  dispatchId: z.number().int().positive().optional(),
+  campaignKey: z.string().max(100).optional(),
+  variantId: z.string().max(100).optional(),
+  purpose: z.enum(['TRANSACTIONAL', 'SCHEDULED_SERVICE', 'ENGAGEMENT']).optional(),
+  marketingOptOutToken: z.string().max(2048).optional(),
 });
 
 export type PushNotificationData = z.infer<typeof pushNotificationDataSchema>;

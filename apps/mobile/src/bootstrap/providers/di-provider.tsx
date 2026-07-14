@@ -121,6 +121,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       deviceIdService,
       pushTokenService,
       logger,
+      publicHttpClient,
     );
 
     // Todo Nudge

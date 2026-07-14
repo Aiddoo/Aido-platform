@@ -1,4 +1,7 @@
 {
+  "actions": {
+    "marketingOptOut": "광고성 푸시 그만 받기"
+  },
   "titles": {
     "notifications": "알림",
     "settings": "알림 설정",

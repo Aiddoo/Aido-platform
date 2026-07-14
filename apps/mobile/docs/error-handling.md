@@ -26,7 +26,7 @@
 - 예상한 에러: 사용자에게 구체적 안내 가능 → `err()`로 반환
 - 예상하지 못한 에러: 구체적 안내 불가, "재시도"만 가능 → `throw`로 ErrorBoundary 위임
 
-> Result 타입(`ok`, `err`, `unwrap`)과 레이어별 에러 처리 패턴은 [CLAUDE.md](../CLAUDE.md)를 참고하세요.
+> Result 타입(`ok`, `err`, `unwrap`)과 레이어별 에러 처리 패턴은 [AGENTS.md](../AGENTS.md)를 참고하세요.
 
 ---
 

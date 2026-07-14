@@ -46,6 +46,7 @@ describe('toWidgetSnapshot', () => {
     expect(snapshot.strings.progressTitle).toBe('widget:progress.title');
     expect(snapshot.strings.percentLabel).toBe('widget:progress.percent({"rate":60})');
     expect(snapshot.strings.streakLabel).toBe('widget:progress.streak({"count":12})');
+    expect(snapshot.strings.compactStreakLabel).toBe('widget:progress.compactStreak({"count":12})');
   });
 
   it('완료율은 반올림해 보간한다', () => {

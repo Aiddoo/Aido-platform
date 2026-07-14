@@ -37,11 +37,11 @@ describe("MarkAsReadUseCase", () => {
 			.asUnread()
 			.build();
 		notificationRepo.findNotificationById.mockResolvedValue(notification);
-		notificationRepo.markAsRead.mockResolvedValue(notification);
+		notificationRepo.markAsRead.mockResolvedValue(true);
 
 		await useCase.execute(mockUserId, 1);
 
-		expect(notificationRepo.markAsRead).toHaveBeenCalledWith(1);
+		expect(notificationRepo.markAsRead).toHaveBeenCalledWith(1, mockUserId);
 		expect(cacheService.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);
 	});
 

@@ -879,6 +879,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "example": {
         "agreedTermsVersion": "1.0.0",
         "marketingAgreedAt": null,
+        "marketingPushAgreedAt": null,
         "privacyAgreedAt": "2026-01-17T10:00:00.000Z",
         "termsAgreedAt": "2026-01-17T10:00:00.000Z",
       },
@@ -890,6 +891,13 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         },
         "marketingAgreedAt": {
           "description": "마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "marketingPushAgreedAt": {
+          "description": "광고성 앱 푸시 수신 동의 시각 (미동의/철회 시 null)",
           "format": "date-time",
           "nullable": true,
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
@@ -915,6 +923,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         "privacyAgreedAt",
         "agreedTermsVersion",
         "marketingAgreedAt",
+        "marketingPushAgreedAt",
       ],
       "type": "object",
     },
@@ -3652,6 +3661,34 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
       "type": "object",
     },
+    "MarketingPushOptOutDto": {
+      "properties": {
+        "token": {
+          "description": "서명된 광고성 푸시 수신 철회 토큰",
+          "maxLength": 2048,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "token",
+      ],
+      "type": "object",
+    },
+    "MarketingPushOptOutResponseDto": {
+      "properties": {
+        "optedOut": {
+          "enum": [
+            true,
+          ],
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "optedOut",
+      ],
+      "type": "object",
+    },
     "MemoDeleteResponseDto": {
       "example": {
         "message": "메모가 삭제되었습니다.",
@@ -4078,6 +4115,26 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
               "userId": "clz7x5p8k0001qz0z8z8z8z8z",
             },
             "properties": {
+              "action": {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "DEEP_LINK",
+                      "BROWSER",
+                      "WEBVIEW",
+                      "NONE",
+                    ],
+                    "type": "string",
+                  },
+                  "url": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "type",
+                ],
+                "type": "object",
+              },
               "body": {
                 "description": "알림 본문 (최대 500자)",
                 "maxLength": 500,
@@ -4200,6 +4257,17 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         "unreadCount",
         "hasMore",
         "nextCursor",
+      ],
+      "type": "object",
+    },
+    "NotificationOpenedResponseDto": {
+      "properties": {
+        "opened": {
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "opened",
       ],
       "type": "object",
     },
@@ -5244,8 +5312,13 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "type": "string",
         },
         "marketingAgreed": {
-          "default": true,
-          "description": "마케팅 정보 수신 동의 (선택, 기본값: true)",
+          "default": false,
+          "description": "마케팅 정보 수신 동의 (선택, 기본값: false)",
+          "type": "boolean",
+        },
+        "marketingPushAgreed": {
+          "default": false,
+          "description": "광고성 앱 푸시 수신 동의 (선택, 기본값: false)",
           "type": "boolean",
         },
         "name": {
@@ -5291,11 +5364,23 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
     },
     "RegisterPushTokenDto": {
       "properties": {
+        "appVersion": {
+          "description": "모바일 앱 버전",
+          "maxLength": 30,
+          "type": "string",
+        },
         "deviceId": {
           "description": "기기 식별자 (선택, 최대 100자)",
           "maxLength": 100,
           "minLength": 1,
           "type": "string",
+        },
+        "payloadVersion": {
+          "default": 1,
+          "description": "푸시 payload 지원 버전",
+          "maximum": 2,
+          "minimum": 1,
+          "type": "integer",
         },
         "token": {
           "description": "Expo 푸시 토큰 (ExponentPushToken[...] 형식)",
@@ -8461,6 +8546,36 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       },
       "required": [
         "marketingAgreedAt",
+      ],
+      "type": "object",
+    },
+    "UpdateMarketingPushConsentDto": {
+      "properties": {
+        "agreed": {
+          "description": "광고성 앱 푸시 수신 동의 여부",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "agreed",
+      ],
+      "type": "object",
+    },
+    "UpdateMarketingPushConsentResponseDto": {
+      "example": {
+        "marketingPushAgreedAt": "2026-01-17T10:00:00.000Z",
+      },
+      "properties": {
+        "marketingPushAgreedAt": {
+          "description": "광고성 앱 푸시 수신 동의 시각 (철회 시 null)",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "marketingPushAgreedAt",
       ],
       "type": "object",
     },
@@ -13050,6 +13165,129 @@ if (limit !== null && used >= limit) {
         },
       ],
       "summary": "마케팅 수신 동의 변경",
+      "tags": [
+        "User - 인증",
+      ],
+    },
+  },
+  "/auth/consent/marketing-push": {
+    "patch": {
+      "description": "광고성 앱 푸시 수신 동의를 변경합니다. 야간 광고성 푸시는 별도로 발송하지 않습니다.",
+      "operationId": "updateMarketingPushConsent",
+      "parameters": [],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateMarketingPushConsentDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/UpdateMarketingPushConsentResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "광고성 앱 푸시 수신 동의 변경",
       "tags": [
         "User - 인증",
       ],
@@ -23898,6 +24136,82 @@ The Health Check is not successful",
       ],
     },
   },
+  "/notifications/marketing-push/opt-out": {
+    "post": {
+      "description": "푸시 액션에 포함된 서명 토큰으로 로그인 없이 수신을 철회합니다.",
+      "operationId": "optOutMarketingPush",
+      "parameters": [],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MarketingPushOptOutDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/MarketingPushOptOutResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "광고성 앱 푸시 수신 철회",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
   "/notifications/read-all": {
     "patch": {
       "description": "모든 읽지 않은 알림을 읽음 상태로 변경합니다.",
@@ -24435,6 +24749,132 @@ The Health Check is not successful",
         },
       ],
       "summary": "읽지 않은 알림 수 조회",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
+  "/notifications/{id}/opened": {
+    "post": {
+      "description": "푸시 탭을 멱등 기록하고 해당 알림을 읽음 처리합니다.",
+      "operationId": "markNotificationOpened",
+      "parameters": [
+        {
+          "description": "알림 고유 ID (양의 정수, 예: 1)",
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/NotificationOpenedResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "푸시 알림 열기 기록",
       "tags": [
         "Notifications",
       ],

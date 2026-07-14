@@ -158,6 +158,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				privacyAgreedAt: "2024-01-01T00:00:00.000Z",
 				agreedTermsVersion: "1.0",
 				marketingAgreedAt: null,
+				marketingPushAgreedAt: null,
 			};
 			mockUserSettingsFacade.getConsent.mockResolvedValue(expectedResult);
 
@@ -178,6 +179,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				privacyAgreedAt: null,
 				agreedTermsVersion: null,
 				marketingAgreedAt: null,
+				marketingPushAgreedAt: null,
 			};
 			mockUserSettingsFacade.getConsent.mockResolvedValue(defaultResult);
 

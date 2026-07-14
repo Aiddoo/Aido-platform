@@ -3,6 +3,7 @@
     "title": "오늘의 할 일",
     "percent": "{{rate}}%",
     "streak": "{{count}}일 연속",
+    "compactStreak": "{{count}}일",
     "allDone": "모두 완료!"
   },
   "list": {

@@ -149,6 +149,8 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 			notifications.push({
 				userId: user.id,
 				type: "NUDGE_SUGGEST",
+				purpose: "ENGAGEMENT",
+				campaignKey: "nudge_suggest_v1",
 				title: message.title,
 				body: message.body,
 				friendId: target.id,

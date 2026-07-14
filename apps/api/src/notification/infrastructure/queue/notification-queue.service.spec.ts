@@ -55,6 +55,7 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				NotificationJobName.FOLLOW_NEW,
 				payload,
+				expect.objectContaining({ attempts: 5 }),
 			);
 		});
 
@@ -90,6 +91,7 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				NotificationJobName.FOLLOW_MUTUAL,
 				payload,
+				expect.objectContaining({ attempts: 5 }),
 			);
 		});
 
@@ -129,6 +131,7 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				NotificationJobName.NUDGE_SENT,
 				payload,
+				expect.objectContaining({ attempts: 5 }),
 			);
 		});
 
@@ -167,6 +170,7 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				NotificationJobName.CHEER_SENT,
 				payload,
+				expect.objectContaining({ attempts: 5 }),
 			);
 		});
 
@@ -199,6 +203,7 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				NotificationJobName.BILLING_ISSUE,
 				payload,
+				expect.objectContaining({ attempts: 5 }),
 			);
 		});
 
@@ -231,6 +236,7 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				NotificationJobName.FRIEND_COMPLETED,
 				payload,
+				expect.objectContaining({ attempts: 5 }),
 			);
 		});
 

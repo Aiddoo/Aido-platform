@@ -11,6 +11,7 @@ export interface ConsentSeedInput {
 	privacyAgreedAt?: Date;
 	agreedTermsVersion?: string;
 	marketingAgreedAt?: Date | null;
+	marketingPushAgreedAt?: Date | null;
 }
 
 /**
@@ -21,6 +22,10 @@ export interface UserConsentRepositoryPort {
 	findByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]>;
 	create(userId: string, data: ConsentSeedInput): Promise<UserConsentRecord>;
 	upsertMarketingConsent(
+		userId: string,
+		data: { agreed: boolean },
+	): Promise<UserConsentRecord>;
+	upsertMarketingPushConsent(
 		userId: string,
 		data: { agreed: boolean },
 	): Promise<UserConsentRecord>;

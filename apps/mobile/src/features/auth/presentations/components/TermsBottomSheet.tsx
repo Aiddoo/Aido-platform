@@ -30,16 +30,22 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
     terms: false,
     privacy: false,
     marketing: false,
+    marketingPush: false,
   }));
 
   const register = useMutation(useRegisterMutationOptions());
 
-  const isAllAgreed = agreements.terms && agreements.privacy && agreements.marketing;
+  const isAllAgreed = Object.values(agreements).every(Boolean);
   const isRequiredAgreed = agreements.terms && agreements.privacy;
 
   const toggleAll = () => {
     const newValue = !isAllAgreed;
-    setAgreements({ terms: newValue, privacy: newValue, marketing: newValue });
+    setAgreements({
+      terms: newValue,
+      privacy: newValue,
+      marketing: newValue,
+      marketingPush: newValue,
+    });
   };
 
   const setAgreement = (key: keyof typeof agreements) => (isSelected: boolean) => {
@@ -52,6 +58,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
       termsAgreed: true,
       privacyAgreed: true,
       marketingAgreed: agreements.marketing,
+      marketingPushAgreed: agreements.marketingPush,
     };
 
     register.mutate(validatedData, {
@@ -98,6 +105,11 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
                   isSelected={agreements.terms}
                   onSelectedChange={setAgreement('terms')}
                   onPressLink={() => openUrl(LEGAL_URLS.TERMS)}
+                />
+                <TermsAgreementItem
+                  label={t('terms.marketingPush')}
+                  isSelected={agreements.marketingPush}
+                  onSelectedChange={setAgreement('marketingPush')}
                 />
                 <TermsAgreementItem
                   label={t('terms.privacyPolicy')}

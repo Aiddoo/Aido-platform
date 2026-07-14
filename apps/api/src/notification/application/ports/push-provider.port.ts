@@ -24,6 +24,8 @@ export interface PushPayload {
 	sound?: "default" | null;
 	/** 알림 채널 ID (Android) */
 	channelId?: string;
+	/** iOS/Android interactive notification category */
+	categoryId?: string;
 	/** 알림 우선순위 */
 	priority?: "default" | "normal" | "high";
 	/** TTL (초) - 알림 만료 시간 */
@@ -34,6 +36,8 @@ export interface PushPayload {
  * 단일 푸시 발송 결과
  */
 export interface PushResult {
+	/** 결과가 대응하는 Expo 토큰 */
+	token: string;
 	/** 발송 성공 여부 */
 	success: boolean;
 	/** 에러 메시지 (실패 시) */
@@ -60,6 +64,13 @@ export interface BatchPushResult {
 	invalidTokens: string[];
 }
 
+export interface PushReceiptResult {
+	ticketId: string;
+	delivered: boolean;
+	errorCode?: string;
+	error?: string;
+}
+
 /**
  * Push Provider Interface
  *
@@ -81,6 +92,8 @@ export interface PushProvider {
 	 * @param payloads 최대 100개 권장
 	 */
 	sendBatch(payloads: PushPayload[]): Promise<BatchPushResult>;
+
+	getReceipts(ticketIds: string[]): Promise<PushReceiptResult[]>;
 
 	/**
 	 * 푸시 토큰 유효성 검증
