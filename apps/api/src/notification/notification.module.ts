@@ -113,6 +113,9 @@ import { NotificationController } from "./presentation/notification.controller";
 		NotificationFacade,
 		NotificationRepository,
 		NotificationQueueModule,
+		PUSH_PROVIDER,
+		PUSH_RATE_LIMITER,
+		MARKETING_PUSH_OPT_OUT_TOKEN,
 	],
 })
 export class NotificationModule {}

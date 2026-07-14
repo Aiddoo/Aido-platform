@@ -85,6 +85,9 @@ const TARGET_DIRS = [
 	"src/auth/domain",
 	"src/auth/application",
 	"src/auth/infrastructure",
+	"src/retention/domain",
+	"src/retention/application",
+	"src/retention/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

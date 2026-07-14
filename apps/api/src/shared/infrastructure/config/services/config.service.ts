@@ -198,6 +198,13 @@ export class TypedConfigService {
 		return this.get("EXPO_ACCESS_TOKEN");
 	}
 
+	get retentionOnboardingV2() {
+		return {
+			enabled: this.get("RETENTION_ONBOARDING_V2_ENABLED"),
+			treatmentPercent: this.get("RETENTION_ONBOARDING_V2_TREATMENT_PERCENT"),
+		};
+	}
+
 	get revenuecat() {
 		return {
 			secretApiKey: this.get("REVENUECAT_SECRET_API_KEY"),

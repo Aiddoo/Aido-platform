@@ -3,6 +3,10 @@ import type { AccountProvider, UserStatus } from "@/auth/domain/types";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import {
+	RETENTION_ENROLLER,
+	type RetentionEnrollerPort,
+} from "../../ports/retention-enroller.port";
+import {
 	USER_PROVISIONING_SEEDER,
 	type UserProvisioningSeederPort,
 } from "../../ports/user-provisioning-seeder.port";
@@ -53,6 +57,8 @@ export class ProvisionUserUseCase {
 		private readonly accountRepository: AccountRepository,
 		@Inject(USER_PROVISIONING_SEEDER)
 		private readonly seeder: UserProvisioningSeederPort,
+		@Inject(RETENTION_ENROLLER)
+		private readonly retentionEnroller: RetentionEnrollerPort,
 	) {}
 
 	async execute(input: ProvisionUserInput): Promise<ProvisionedUser> {
@@ -85,6 +91,12 @@ export class ProvisionUserUseCase {
 		await this.seeder.seedDefaultSettings(user.id, input.consent);
 
 		await this.seeder.seedDefaultCategories(user.id);
+
+		// 신규 User 생성 경로에만 존재한다. 기존 로그인/인증 경로는 호출하지 않는다.
+		await this.retentionEnroller.enrollNewUser(
+			user.id,
+			input.status === "ACTIVE",
+		);
 
 		return user;
 	}

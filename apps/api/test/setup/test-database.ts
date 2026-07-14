@@ -130,6 +130,12 @@ export class TestDatabase {
 		// 트랜잭션으로 모든 테이블 데이터 삭제 (의존성 역순)
 		await this.prisma.$transaction([
 			// 알림/로그/기록 (자식 테이블)
+			this.prisma.retentionPushOutbox.deleteMany(),
+			this.prisma.retentionExperimentResult.deleteMany(),
+			this.prisma.retentionExperimentStage.deleteMany(),
+			this.prisma.retentionExperimentAssignment.deleteMany(),
+			this.prisma.pushDeliveryAttempt.deleteMany(),
+			this.prisma.pushDispatch.deleteMany(),
 			this.prisma.notification.deleteMany(),
 			this.prisma.weeklyAchievement.deleteMany(),
 			this.prisma.dailyCompletion.deleteMany(),

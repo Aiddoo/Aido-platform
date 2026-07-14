@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import type { Prisma } from "@/generated/prisma/client";
 import { resolveTemplateLocale } from "@/notification";
+import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type {
 	InactiveWindowParams,
@@ -61,6 +64,7 @@ export class PrismaSchedulerReader
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly cacheService: CacheService,
+		private readonly config: TypedConfigService,
 	) {}
 
 	// ─────────────────────────────────────────────────────────────
@@ -181,6 +185,7 @@ export class PrismaSchedulerReader
 		const { tz, today, tomorrow } = params;
 		return this.database.user.findMany({
 			where: {
+				...this.#recentTreatmentExclusion(),
 				preference: { timezone: tz },
 				todos: {
 					some: { startDate: { gte: today, lt: tomorrow } },
@@ -230,6 +235,7 @@ export class PrismaSchedulerReader
 		const { tz, inactiveSince, inactiveUntil } = params;
 		return this.database.user.findMany({
 			where: {
+				...this.#recentTreatmentExclusion(),
 				preference: { timezone: tz },
 				lastActiveAt: { gte: inactiveSince, lte: inactiveUntil },
 			},
@@ -244,6 +250,7 @@ export class PrismaSchedulerReader
 		const { tz, createdSince } = params;
 		return this.database.user.findMany({
 			where: {
+				...this.#recentTreatmentExclusion(),
 				createdAt: { gte: createdSince },
 				preference: { timezone: tz },
 			},
@@ -264,7 +271,11 @@ export class PrismaSchedulerReader
 
 	async findActiveUsersInTimezone(tz: string): Promise<UserIdRow[]> {
 		return this.database.user.findMany({
-			where: { deletedAt: null, preference: { timezone: tz } },
+			where: {
+				deletedAt: null,
+				...this.#recentTreatmentExclusion(),
+				preference: { timezone: tz },
+			},
 			select: { id: true },
 		});
 	}
@@ -321,6 +332,7 @@ export class PrismaSchedulerReader
 		const { tz, today, tomorrow } = params;
 		return this.database.user.findMany({
 			where: {
+				...this.#recentTreatmentExclusion(),
 				preference: { timezone: tz },
 				todos: {
 					some: {
@@ -379,6 +391,7 @@ export class PrismaSchedulerReader
 		const { tz, today, tomorrow } = params;
 		return this.database.user.findMany({
 			where: {
+				...this.#recentTreatmentExclusion(),
 				preference: { timezone: tz, currentStreak: { gte: 3 } },
 				todos: {
 					some: {
@@ -606,5 +619,22 @@ export class PrismaSchedulerReader
 				resolveTemplateLocale(preference.locale),
 			]),
 		);
+	}
+
+	/** kill switch가 켜진 동안 최근 TREATMENT만 legacy engagement에서 제외한다. */
+	#recentTreatmentExclusion(): Pick<
+		Prisma.UserWhereInput,
+		"retentionAssignments"
+	> {
+		if (!this.config.retentionOnboardingV2.enabled) return {};
+		return {
+			retentionAssignments: {
+				none: {
+					experimentKey: "onboarding_v2_d7",
+					variant: "TREATMENT",
+					startedAt: { gte: subtractDays(8) },
+				},
+			},
+		};
 	}
 }

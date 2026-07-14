@@ -58,6 +58,10 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 import { maskEmail } from "@/shared/domain/utils/mask.util";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
+import {
+	RETENTION_ENROLLER,
+	type RetentionEnrollerPort,
+} from "../ports/retention-enroller.port";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 import { SessionService } from "./session.service";
@@ -82,6 +86,8 @@ export class AuthService {
 		private readonly adminNotificationFacade: AdminNotificationFacade,
 		private readonly issueLoginUseCase: IssueLoginUseCase,
 		private readonly provisionUserUseCase: ProvisionUserUseCase,
+		@Inject(RETENTION_ENROLLER)
+		private readonly retentionEnroller: RetentionEnrollerPort,
 	) {}
 
 	async register(
@@ -236,6 +242,9 @@ export class AuthService {
 
 			// 이메일 인증 완료 처리 (상태 ACTIVE로 변경)
 			await this.userRepository.markEmailVerified(user.id);
+
+			// assignment가 있는 신규 이메일 가입자만 시작한다. 기존 사용자는 no-op.
+			await this.retentionEnroller.activateNewUser(user.id);
 
 			// 세션 생성 + 토큰 발급
 			const { tokens } = await this.sessionService.createSessionWithTokens({
