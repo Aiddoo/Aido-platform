@@ -5,6 +5,7 @@ import type {
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { buildUpdatedPreferenceView } from "../../../domain/services/preference-view";
@@ -59,10 +60,20 @@ export class UpdatePreferenceUseCase {
 		// 리마인더 시간 범위 검증 (오전: 0-11, 오후: 12-23)
 		ReminderTime.assertValidRanges(input);
 
+		const timezone =
+			input.timezone === undefined
+				? undefined
+				: normalizeIanaTimezone(input.timezone);
+		if (input.timezone !== undefined && timezone === null) {
+			throw new ApplicationException(ErrorCode.SYS_0002, {
+				field: "timezone",
+			});
+		}
+
 		const updated = await this.preferenceRepository.upsert(userId, {
 			pushEnabled: input.pushEnabled,
 			nightPushEnabled: input.nightPushEnabled,
-			timezone: input.timezone,
+			timezone: timezone ?? undefined,
 			morningReminderHour: input.morningReminderHour,
 			morningReminderMinute: input.morningReminderMinute,
 			eveningReminderHour: input.eveningReminderHour,

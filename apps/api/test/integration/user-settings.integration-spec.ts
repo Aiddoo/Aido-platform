@@ -12,9 +12,11 @@
  * ```
  */
 
+import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserConsentBuilder, UserPreferenceBuilder } from "@test/builders";
+import { TEST_CUID } from "@test/fixtures";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
@@ -68,7 +70,7 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 		enqueueReminderHourChanged: jest.fn(),
 	};
 
-	const mockUserId = "user-settings-123";
+	const mockUserId = TEST_CUID.USER_1;
 
 	beforeAll(async () => {
 		suppressLogger();
@@ -142,10 +144,18 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 			expect(result.pushEnabled).toBe(false);
 			expect(result.nightPushEnabled).toBe(false);
 			expect(result.timezone).toBe("UTC");
-			expect(result.morningReminderHour).toBe(8);
-			expect(result.morningReminderMinute).toBe(0);
-			expect(result.eveningReminderHour).toBe(18);
-			expect(result.eveningReminderMinute).toBe(0);
+			expect(result.morningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+			);
+			expect(result.morningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+			);
+			expect(result.eveningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+			);
+			expect(result.eveningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+			);
 		});
 
 		it("설정 조회 — 무료 유저는 리마인더 시간이 기본값으로 오버라이드된다", async () => {
@@ -161,10 +171,18 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
 			const result = await getPreference.execute(mockUserId);
 
-			expect(result.morningReminderHour).toBe(8);
-			expect(result.morningReminderMinute).toBe(0);
-			expect(result.eveningReminderHour).toBe(18);
-			expect(result.eveningReminderMinute).toBe(0);
+			expect(result.morningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+			);
+			expect(result.morningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+			);
+			expect(result.eveningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+			);
+			expect(result.eveningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+			);
 			expect(result.pushEnabled).toBe(mockPreference.pushEnabled);
 		});
 	});
@@ -214,6 +232,18 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 			await expect(
 				updatePreference.execute(mockUserId, { morningReminderHour: 13 }),
 			).rejects.toMatchObject({ errorCode: "PREFERENCE_1702" });
+		});
+
+		it("설정 수정 — 유효하지 않은 IANA 타임존은 SYS_0002이며 DB를 호출하지 않는다", async () => {
+			await expect(
+				updatePreference.execute(mockUserId, {
+					timezone: "Invalid/Timezone",
+				}),
+			).rejects.toMatchObject({
+				errorCode: "SYS_0002",
+				details: { field: "timezone" },
+			});
+			expect(mockUserPreferenceDb.upsert).not.toHaveBeenCalled();
 		});
 	});
 

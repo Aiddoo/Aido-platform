@@ -66,6 +66,7 @@ import { UserPreferenceRepository } from "@/user-settings/infrastructure/persist
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider";
+import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider";
 
 describe("OAuth 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -149,6 +150,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				UserPreferenceRepository,
 				TodoCategoryRepository,
 				provisioningSeederTestProvider,
+				retentionEnrollerTestProvider,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,

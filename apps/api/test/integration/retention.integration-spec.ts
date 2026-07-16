@@ -100,6 +100,91 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 		).toBe(true);
 	});
 
+	it("저장된 타임존이 잘못되어도 UTC로 조회하고 유효한 별칭은 보존한다", async () => {
+		const invalidTimezoneUserId = await createUser("invalidtz@example.com");
+		const aliasTimezoneUserId = await createUser("aliastz1@example.com");
+		await Promise.all([
+			prisma.userPreference.update({
+				where: { userId: invalidTimezoneUserId },
+				data: { timezone: "Invalid/Timezone" },
+			}),
+			prisma.userPreference.update({
+				where: { userId: aliasTimezoneUserId },
+				data: { timezone: "US/Eastern" },
+			}),
+		]);
+		const [invalidCategory, aliasCategory] = await Promise.all([
+			prisma.todoCategory.create({
+				data: {
+					userId: invalidTimezoneUserId,
+					name: "업무",
+					color: "#FF6B43",
+				},
+			}),
+			prisma.todoCategory.create({
+				data: {
+					userId: aliasTimezoneUserId,
+					name: "업무",
+					color: "#FF6B43",
+				},
+			}),
+		]);
+		await Promise.all([
+			prisma.todo.create({
+				data: {
+					userId: invalidTimezoneUserId,
+					categoryId: invalidCategory.id,
+					title: "잘못된 타임존에서도 조회되는 할 일",
+					startDate: new Date("2026-07-16T00:00:00.000Z"),
+				},
+			}),
+			prisma.todo.create({
+				data: {
+					userId: aliasTimezoneUserId,
+					categoryId: aliasCategory.id,
+					title: "레거시 별칭에서도 조회되는 할 일",
+					startDate: new Date("2026-07-16T00:00:00.000Z"),
+				},
+			}),
+		]);
+		const startedAt = new Date("2026-07-15T00:00:00.000Z");
+		await Promise.all([
+			repository.enroll({
+				userId: invalidTimezoneUserId,
+				variant: "TREATMENT",
+				startedAt,
+			}),
+			repository.enroll({
+				userId: aliasTimezoneUserId,
+				variant: "TREATMENT",
+				startedAt,
+			}),
+		]);
+
+		const candidates = await repository.findScheduledStages(200);
+		const invalidTimezoneCandidates = candidates.filter(
+			(candidate) => candidate.userId === invalidTimezoneUserId,
+		);
+		const aliasTimezoneCandidates = candidates.filter(
+			(candidate) => candidate.userId === aliasTimezoneUserId,
+		);
+
+		expect(invalidTimezoneCandidates).toHaveLength(4);
+		expect(
+			invalidTimezoneCandidates.every(
+				(candidate) =>
+					candidate.timezone === "UTC" && candidate.todoCount === 1,
+			),
+		).toBe(true);
+		expect(aliasTimezoneCandidates).toHaveLength(4);
+		expect(
+			aliasTimezoneCandidates.every(
+				(candidate) =>
+					candidate.timezone === "US/Eastern" && candidate.todoCount === 1,
+			),
+		).toBe(true);
+	});
+
 	it("Notification·Dispatch·Outbox 생성 실패 시 단계 상태까지 전부 rollback한다", async () => {
 		const userId = await createUser("rollback@example.com");
 		await repository.enroll({

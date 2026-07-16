@@ -17,6 +17,21 @@ export interface NotificationTemplate {
 	variants?: ReadonlyArray<{ readonly title: string; readonly body: string }>;
 }
 
+/** 재시도에도 같은 카피를 선택하기 위한 결정적 variant seed. */
+export interface NotificationVariantContext {
+	readonly campaignKey: string;
+	readonly recipientId: string;
+	/** 사용자 로컬 날짜(YYYY-MM-DD) 또는 불변 이벤트 ID */
+	readonly occurrenceKey: string;
+}
+
+/** 분석 가능한 variant 식별자를 포함한 최종 푸시 문구. */
+export interface NotificationMessage {
+	readonly title: string;
+	readonly body: string;
+	readonly variantId: string;
+}
+
 /** 로케일별 템플릿 번들이 공통으로 제공해야 하는 형태 */
 export interface WeatherFallbackTemplates {
 	MORNING: { title: string; body: string };

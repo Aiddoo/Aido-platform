@@ -3,6 +3,23 @@ import { now } from "./core";
 
 const DEFAULT_TIMEZONE = "UTC";
 
+/** 신뢰할 수 없는 값을 런타임이 지원하는 정규 IANA 타임존으로 변환한다. */
+export function normalizeIanaTimezone(value: unknown): string | null {
+	if (typeof value !== "string" || value.trim().length === 0) return null;
+	try {
+		return new Intl.DateTimeFormat("en-US", {
+			timeZone: value,
+		}).resolvedOptions().timeZone;
+	} catch {
+		return null;
+	}
+}
+
+/** 잘못 저장된 레거시 값도 스케줄러를 중단시키지 않도록 UTC로 격리한다. */
+export function resolveTimezone(value: unknown): string {
+	return normalizeIanaTimezone(value) ?? DEFAULT_TIMEZONE;
+}
+
 /**
  * 지정 타임존 기준 "오늘" 날짜를 UTC midnight Date로 반환
  *
@@ -13,7 +30,7 @@ const DEFAULT_TIMEZONE = "UTC";
  * @example todayInTimezone("America/New_York") // EST 기준 오늘 → UTC midnight
  */
 export function todayInTimezone(tz: string = DEFAULT_TIMEZONE): Date {
-	const localDateStr = dayjs().tz(tz).format("YYYY-MM-DD");
+	const localDateStr = dayjs().tz(resolveTimezone(tz)).format("YYYY-MM-DD");
 	return dayjs.utc(localDateStr).startOf("day").toDate();
 }
 
@@ -31,7 +48,10 @@ export function parseLocalDateTime(
 	timeStr: string,
 	tz: string = DEFAULT_TIMEZONE,
 ): Date {
-	return dayjs.tz(`${dateStr}T${timeStr}:00`, tz).utc().toDate();
+	return dayjs
+		.tz(`${dateStr}T${timeStr}:00`, resolveTimezone(tz))
+		.utc()
+		.toDate();
 }
 
 /**
@@ -46,7 +66,7 @@ export function startOfDayInTimezone(
 	date: Date = now(),
 	tz: string = DEFAULT_TIMEZONE,
 ): Date {
-	const localDateStr = dayjs(date).tz(tz).format("YYYY-MM-DD");
+	const localDateStr = dayjs(date).tz(resolveTimezone(tz)).format("YYYY-MM-DD");
 	return dayjs.utc(localDateStr).startOf("day").toDate();
 }
 
@@ -63,7 +83,7 @@ export function toLocalTimeString(
 	date: Date,
 	tz: string = DEFAULT_TIMEZONE,
 ): string {
-	return dayjs(date).tz(tz).format("HH:mm");
+	return dayjs(date).tz(resolveTimezone(tz)).format("HH:mm");
 }
 
 /**
@@ -78,7 +98,7 @@ export function midnightInTimezone(
 	date: Date = now(),
 	tz: string = DEFAULT_TIMEZONE,
 ): Date {
-	return dayjs(date).tz(tz).startOf("day").utc().toDate();
+	return dayjs(date).tz(resolveTimezone(tz)).startOf("day").utc().toDate();
 }
 
 /**
@@ -95,5 +115,5 @@ export function firstOfMonthInTimezone(
 	date: Date = now(),
 	tz: string = DEFAULT_TIMEZONE,
 ): Date {
-	return dayjs(date).tz(tz).startOf("month").utc().toDate();
+	return dayjs(date).tz(resolveTimezone(tz)).startOf("month").utc().toDate();
 }

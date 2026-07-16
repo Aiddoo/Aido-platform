@@ -145,7 +145,7 @@ model UserPreference {
   locale                String  @default("ko") @db.VarChar(10) // 푸시 알림 언어 ("ko" | "en") — 기존 유저 전원 ko
   morningReminderHour   Int     @default(8) // 0-11, 사용자 로컬 시간 기준 아침 리마인더
   morningReminderMinute Int     @default(0) // 0-59
-  eveningReminderHour   Int     @default(18) // 12-23, 사용자 로컬 시간 기준 저녁 리마인더
+  eveningReminderHour   Int     @default(19) // 12-23, 사용자 로컬 시간 기준 저녁 리마인더
   eveningReminderMinute Int     @default(0) // 0-59
 
   // 시간 표시 형식
@@ -970,12 +970,12 @@ enum NotificationType {
   WINBACK // 비활성 유저 재방문 유도
 
   // 소셜 요약
-  SOCIAL_DIGEST // 친구 활동 요약 (저녁 리마인더 +30분)
+  SOCIAL_DIGEST // 친구 활동 요약 (저녁 리마인더 +90분)
   NUDGE_SUGGEST // 콕 찌르기 유도 (비활성 친구 감지)
 
   // 활성 유저 재방문 유도
   LUNCH_NUDGE // 점심 넛지 (12:30, 오늘 완료 0개)
-  STREAK_AT_RISK // 스트릭 위기 (21:00, 스트릭 3일+ & 미완료)
+  STREAK_AT_RISK // 스트릭 위기 (20:15, 스트릭 3일+ & 미완료)
 
   // 날씨
   WEATHER_MORNING // 오전 날씨 알림

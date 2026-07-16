@@ -1,3 +1,4 @@
+import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
 import type { RetentionStageName } from "../retention.constants";
 
 export interface RetentionStageState {
@@ -93,7 +94,7 @@ function localDayDifference(from: Date, to: Date, timezone: string): number {
 
 export function localDateString(date: Date, timezone: string): string {
 	const parts = new Intl.DateTimeFormat("en-US", {
-		timeZone: timezone,
+		timeZone: resolveTimezone(timezone),
 		year: "numeric",
 		month: "2-digit",
 		day: "2-digit",
@@ -111,7 +112,7 @@ function isAtOrAfterLocalTime(
 	minute: number,
 ): boolean {
 	const parts = new Intl.DateTimeFormat("en-US", {
-		timeZone: timezone,
+		timeZone: resolveTimezone(timezone),
 		hour: "2-digit",
 		minute: "2-digit",
 		hourCycle: "h23",

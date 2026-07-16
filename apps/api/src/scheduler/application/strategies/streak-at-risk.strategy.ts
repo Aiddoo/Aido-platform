@@ -5,9 +5,11 @@ import {
 	resolveTemplateLocale,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { computeEffectiveStreak } from "@/user-settings";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -18,11 +20,11 @@ import {
 } from "../ports/re-engagement-reader.port";
 
 /**
- * 스트릭 위기 Strategy (20:00)
+ * 스트릭 위기 Strategy (20:15)
  *
  * 스트릭 3일 이상인 유저 중 오늘 할일을 아직 다 완료하지 못한 유저에게
  * 스트릭 위기 알림을 발송합니다.
- * 고정 시간(20:00) 전용 — 야간(21:00) 시작 전 마지막 넛지.
+ * 고정 시간(20:15) 전용 — 야간(21:00) 시작 전 마지막 넛지.
  */
 @Injectable()
 export class StreakAtRiskStrategy implements ITimezoneStrategy {
@@ -99,12 +101,18 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 			const message = NotificationMessageBuilder.streakAtRisk(
 				user.effectiveStreak,
 				user.locale,
+				{
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			);
 			return {
 				userId: user.id,
 				type: "STREAK_AT_RISK" as const,
 				purpose: "ENGAGEMENT" as const,
-				campaignKey: "streak_at_risk_v1",
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

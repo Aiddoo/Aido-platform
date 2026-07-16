@@ -51,11 +51,11 @@ export class SettingsController {
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`pushEnabled\` | boolean | 푸시 알림 전체 on/off |
-| \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간). 단, 일일 완료(DAILY_COMPLETE)와 콕 찌르기(NUDGE_RECEIVED)는 야간에도 항상 발송 |
+| \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간). 사용자 지정 날씨 알림은 설정 시각을 우선 적용 |
 | \`timezone\` | string | IANA 타임존 (e.g. "Asia/Seoul") |
 | \`morningReminderHour\` | number | 아침 리마인더 시간 (0-11, 오전만 허용, 기본 8) |
 | \`morningReminderMinute\` | number | 아침 리마인더 분 (0-59, 기본 0) |
-| \`eveningReminderHour\` | number | 저녁 리마인더 시간 (12-23, 오후만 허용, 기본 18) |
+| \`eveningReminderHour\` | number | 저녁 리마인더 시간 (12-23, 오후만 허용, 기본 19) |
 | \`eveningReminderMinute\` | number | 저녁 리마인더 분 (0-59, 기본 0) |
 | \`timeFormat\` | string | 시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제, 기본 TWELVE_HOUR) |
 
@@ -66,7 +66,7 @@ export class SettingsController {
 - 오전: 0:00-11:59, 오후: 12:00-23:59
 - 1분 단위 설정 가능
 
-**프리미엄 전용**: 아침/저녁 리마인더 시간 커스텀은 프리미엄 구독 사용자 전용. 무료 유저는 08:00/18:00 고정.`,
+**프리미엄 전용**: 아침/저녁 리마인더 시간 커스텀은 프리미엄 구독 사용자 전용. 무료 유저는 08:00/19:00 고정.`,
 	})
 	@ApiSuccessResponse({ type: PreferenceResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -85,17 +85,19 @@ export class SettingsController {
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`pushEnabled\` | boolean? | 푸시 알림 전체 on/off |
-| \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00). 단, DAILY_COMPLETE/NUDGE_RECEIVED는 야간에도 항상 발송 |
+| \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00). 사용자 지정 날씨 알림은 설정 시각을 우선 적용 |
 | \`timezone\` | string? | IANA 타임존 (e.g. "Asia/Seoul") |
 | \`morningReminderHour\` | number? | 아침 리마인더 시간 (0-11, 기본 8) |
 | \`morningReminderMinute\` | number? | 아침 리마인더 분 (0-59, 기본 0) |
-| \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (12-23, 기본 18) |
+| \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (12-23, 기본 19) |
 | \`eveningReminderMinute\` | number? | 저녁 리마인더 분 (0-59, 기본 0) |
 | \`timeFormat\` | string? | 시간 표시 형식 (TWELVE_HOUR | TWENTY_FOUR_HOUR) |
 
 **프리미엄 전용**: 리마인더 시간 변경은 프리미엄 구독 사용자만 가능. 무료 유저 시도 시 \`403 PREFERENCE_1701\`.
 
 **시간 범위 검증**: 오전(0-11), 오후(12-23) 범위 밖 값은 \`400 PREFERENCE_1702\`.
+
+**타임존 검증**: 유효하지 않은 IANA 타임존은 \`400 SYS_0002\`. 유효한 별칭은 정규 IANA 타임존으로 저장.
 
 **주의**: 야간 푸시 허용 시 \`pushEnabled\`가 true여야 함. 사용자당 시간당 최대 15건.`,
 	})

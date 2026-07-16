@@ -176,8 +176,14 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 	 */
 	async handleSocialDigest(payload: SocialDigestJobData): Promise<void> {
 		try {
+			if (!payload.recipientUserIds?.length) {
+				this.#logger.warn(
+					`Skipping legacy social digest job without recipients: tz=${payload.timezone}`,
+				);
+				return;
+			}
 			const ctx = this.#buildContext(payload.timezone, 0, 0);
-			await this.socialDigest.execute(ctx);
+			await this.socialDigest.execute(ctx, payload.recipientUserIds);
 		} catch (error) {
 			this.#logger.error(
 				`Social digest failed: tz=${payload.timezone}, ${error}`,
@@ -196,16 +202,37 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 		const ctx = this.#buildContext(tz, localHour, localMinute);
 
 		await this.morningReminder.execute(ctx);
-		await this.onboarding.execute(ctx);
+		if (
+			matchesScheduleTime(
+				NOTIFICATION_SCHEDULE.ONBOARDING,
+				localHour,
+				localMinute,
+			)
+		) {
+			await this.onboarding.execute(ctx);
+		}
 		const eveningResult = await this.eveningReminder.execute(ctx);
 
-		// 저녁 리마인더 발송 시 30분 후 Social Digest delayed job 등록
-		if (eveningResult.sent > 0) {
-			this.enqueuer.enqueueSocialDigest({ timezone: tz });
+		// 저녁 리마인더 발송 시 90분 후 Social Digest delayed job 등록
+		if (eveningResult.recipientUserIds.length > 0) {
+			this.enqueuer.enqueueSocialDigest({
+				timezone: tz,
+				recipientUserIds: eveningResult.recipientUserIds,
+			});
 		}
 
-		// 월요일 09:00: 주간 리포트 (아침 리마인더와 겹침 방지)
-		if (
+		// 11:30 요약 슬롯: 매월 1일은 프리미엄 월간 리포트가 주간 리포트를 대체한다.
+		const dayOfMonth = local.date();
+		const isMonthlyReportTime =
+			dayOfMonth === FIRST_DAY_OF_MONTH &&
+			matchesScheduleTime(
+				NOTIFICATION_SCHEDULE.MONTHLY_REPORT,
+				localHour,
+				localMinute,
+			);
+		if (isMonthlyReportTime) {
+			await this.monthlyReport.execute(ctx);
+		} else if (
 			dayOfWeek === MONDAY &&
 			matchesScheduleTime(
 				NOTIFICATION_SCHEDULE.WEEKLY_REPORT,
@@ -216,20 +243,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 			await this.weeklyReport.execute(ctx);
 		}
 
-		// 매월 1일 10:00: 월간 리포트 (아침/주간과 겹침 방지)
-		const dayOfMonth = local.date();
-		if (
-			dayOfMonth === FIRST_DAY_OF_MONTH &&
-			matchesScheduleTime(
-				NOTIFICATION_SCHEDULE.MONTHLY_REPORT,
-				localHour,
-				localMinute,
-			)
-		) {
-			await this.monthlyReport.execute(ctx);
-		}
-
-		// 월요일 08:30: 주간 달성 배지 (아침 리마인더 08:00 직후, 주간 리포트 09:00 직전)
+		// 월요일 11:30: 무료 사용자 주간 달성 요약 (전략 내부에서 구독 대상 분리)
 		if (
 			dayOfWeek === MONDAY &&
 			matchesScheduleTime(
@@ -241,14 +255,14 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 			await this.weeklyAchievement.execute(ctx);
 		}
 
-		// 로컬 12:00: Win-back
+		// 로컬 16:00: Win-back
 		if (
 			matchesScheduleTime(NOTIFICATION_SCHEDULE.WINBACK, localHour, localMinute)
 		) {
 			await this.winback.execute(ctx);
 		}
 
-		// 로컬 14:00: 콕 찌르기 유도
+		// 로컬 15:00: 콕 찌르기 유도
 		if (
 			matchesScheduleTime(
 				NOTIFICATION_SCHEDULE.NUDGE_SUGGEST,
@@ -270,7 +284,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 			await this.lunchNudge.execute(ctx);
 		}
 
-		// 로컬 20:00: 스트릭 위기 (야간 21:00 시작 전 마지막 넛지)
+		// 로컬 20:15: 스트릭 위기 (야간 21:00 시작 전 마지막 넛지)
 		if (
 			matchesScheduleTime(
 				NOTIFICATION_SCHEDULE.STREAK_AT_RISK,

@@ -27,7 +27,6 @@ export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES =
  *
  * - WEATHER_MORNING: 사용자가 직접 선택한 아침 시간, 못 받으면 무의미
  * - WEATHER_EVENING: 사용자가 직접 선택한 저녁 시간
- * - STREAK_AT_RISK: 스트릭 위기는 즉시성이 중요 (서버 지연 시 21:00 넘김 대비)
  */
 export const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
 	new Set<NotificationType>(["WEATHER_MORNING", "WEATHER_EVENING"]);

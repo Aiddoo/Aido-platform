@@ -9,6 +9,7 @@
  * pnpm --filter @aido/api test notification-templates
  * ```
  */
+import { TEST_CUID } from "@test/fixtures";
 import type { WeatherForecast } from "@/weather";
 import {
 	fillTemplate,
@@ -130,10 +131,6 @@ describe("notification-templates", () => {
 	});
 
 	describe("pickVariant", () => {
-		afterEach(() => {
-			jest.restoreAllMocks();
-		});
-
 		it("variants가 없으면 기본 title/body를 반환한다", () => {
 			// Given
 			const template = { title: "기본 제목", body: "기본 본문" };
@@ -142,7 +139,11 @@ describe("notification-templates", () => {
 			const result = pickVariant(template);
 
 			// Then
-			expect(result).toEqual({ title: "기본 제목", body: "기본 본문" });
+			expect(result).toEqual({
+				title: "기본 제목",
+				body: "기본 본문",
+				variantId: "default",
+			});
 		});
 
 		it("variants가 빈 배열이면 기본 title/body를 반환한다", () => {
@@ -157,12 +158,15 @@ describe("notification-templates", () => {
 			const result = pickVariant(template);
 
 			// Then
-			expect(result).toEqual({ title: "기본 제목", body: "기본 본문" });
+			expect(result).toEqual({
+				title: "기본 제목",
+				body: "기본 본문",
+				variantId: "default",
+			});
 		});
 
-		it("variants가 있으면 풀 내의 값을 반환한다", () => {
+		it("같은 캠페인·사용자·발생 키면 재시도에도 같은 variant를 반환한다", () => {
 			// Given
-			jest.spyOn(Math, "random").mockReturnValue(0);
 			const template = {
 				title: "기본",
 				body: "기본",
@@ -171,17 +175,23 @@ describe("notification-templates", () => {
 					{ title: "변형2", body: "변형2본문" },
 				] as const,
 			};
+			const context = {
+				campaignKey: "morning_reminder_v2",
+				recipientId: "user-1",
+				occurrenceKey: "2026-07-16",
+			};
 
 			// When
-			const result = pickVariant(template);
+			const first = pickVariant(template, context);
+			const retry = pickVariant(template, context);
 
-			// Then — Math.random()=0 → index=0 → 첫 번째 variant
-			expect(result).toEqual({ title: "변형1", body: "변형1본문" });
+			// Then
+			expect(retry).toEqual(first);
+			expect(first.variantId).toMatch(/^morning_reminder_v2\.v[12]$/);
 		});
 
-		it("Math.random 값에 따라 다른 variant를 반환한다", () => {
-			// Given — 0.99 → 마지막 variant 선택
-			jest.spyOn(Math, "random").mockReturnValue(0.99);
+		it("사용자·발생 키가 다양하면 둘 이상의 variant에 결정적으로 분산된다", () => {
+			// Given
 			const template = {
 				title: "기본",
 				body: "기본",
@@ -193,21 +203,108 @@ describe("notification-templates", () => {
 			};
 
 			// When
-			const result = pickVariant(template);
+			const results = Array.from({ length: 30 }, (_, index) =>
+				pickVariant(template, {
+					campaignKey: "lunch_nudge_v2",
+					recipientId: `user-${index}`,
+					occurrenceKey: `2026-07-${String((index % 20) + 1).padStart(2, "0")}`,
+				}),
+			);
 
-			// Then — Math.floor(0.99 * 3) = 2 → 셋째
-			expect(result).toEqual({ title: "셋째", body: "셋째본문" });
+			// Then
+			expect(
+				new Set(results.map((result) => result.variantId)).size,
+			).toBeGreaterThan(1);
+			expect(
+				new Set(results.map((result) => result.title)).size,
+			).toBeGreaterThan(1);
+		});
+
+		it("선택 컨텍스트가 없으면 첫 variant를 사용해 기존 호출을 안정적으로 유지한다", () => {
+			const result = pickVariant({
+				title: "기본",
+				body: "기본 본문",
+				variants: [
+					{ title: "첫째", body: "첫째본문" },
+					{ title: "둘째", body: "둘째본문" },
+				],
+			});
+
+			expect(result).toEqual({
+				title: "첫째",
+				body: "첫째본문",
+				variantId: "v1",
+			});
 		});
 	});
 
 	describe("NotificationMessageBuilder — 알림 빌더", () => {
-		beforeEach(() => {
-			// 첫 번째 variant를 항상 선택하도록 고정
-			jest.spyOn(Math, "random").mockReturnValue(0);
+		const variantContext = {
+			campaignKey: "shared_campaign_v2",
+			recipientId: TEST_CUID.USER_1,
+			occurrenceKey: "2026-07-16",
+		} as const;
+
+		it("같은 캠페인의 아침 상태별 템플릿은 서로 다른 variantId를 갖는다", () => {
+			const noTodo = NotificationMessageBuilder.morningNoTodo(
+				"ko",
+				variantContext,
+			);
+			const hasTodo = NotificationMessageBuilder.morningReminder(
+				3,
+				"ko",
+				variantContext,
+			);
+
+			expect(noTodo.variantId).not.toBe(hasTodo.variantId);
 		});
 
-		afterEach(() => {
-			jest.restoreAllMocks();
+		it("같은 캠페인의 저녁 진행 상태별 템플릿은 서로 다른 variantId를 갖는다", () => {
+			const ids = [
+				NotificationMessageBuilder.eveningReminder(
+					3,
+					3,
+					0,
+					false,
+					"ko",
+					variantContext,
+				).variantId,
+				NotificationMessageBuilder.eveningReminder(
+					1,
+					3,
+					0,
+					false,
+					"ko",
+					variantContext,
+				).variantId,
+				NotificationMessageBuilder.eveningReminder(
+					0,
+					3,
+					0,
+					false,
+					"ko",
+					variantContext,
+				).variantId,
+			];
+
+			expect(new Set(ids)).toHaveProperty("size", 3);
+		});
+
+		it("소셜 다이제스트 단일·복수 친구 템플릿은 서로 다른 variantId를 갖는다", () => {
+			const single = NotificationMessageBuilder.socialDigest(
+				1,
+				"민지",
+				"ko",
+				variantContext,
+			);
+			const multiple = NotificationMessageBuilder.socialDigest(
+				2,
+				undefined,
+				"ko",
+				variantContext,
+			);
+
+			expect(single.variantId).not.toBe(multiple.variantId);
 		});
 
 		describe("morningReminder", () => {
@@ -275,7 +372,7 @@ describe("notification-templates", () => {
 				);
 
 				// Then — 첫 번째 variant body
-				expect(result.body).toBe("아직도 안 했어? 😏");
+				expect(result.body).toBe("가볍게 시작하라는 응원이야 🙌");
 			});
 
 			it("message가 있으면 body에 메시지만 표시한다", () => {

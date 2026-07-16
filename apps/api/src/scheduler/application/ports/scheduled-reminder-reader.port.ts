@@ -54,7 +54,7 @@ export interface ScheduledReminderReaderPort {
 		params: CustomTimeReminderParams,
 	): Promise<UserWithTodosAndStreak[]>;
 
-	/** 무료 저녁 리마인더 수신자 (고정 18:00, 오늘 투두 보유) */
+	/** 무료 저녁 리마인더 수신자 (고정 19:00, 오늘 투두 보유) */
 	findFreeEveningReminderUsers(
 		params: FixedTimeReminderParams,
 	): Promise<UserWithTodosAndStreak[]>;

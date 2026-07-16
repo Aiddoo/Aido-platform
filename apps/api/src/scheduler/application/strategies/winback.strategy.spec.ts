@@ -16,6 +16,7 @@ import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import type { IDedupProvider } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
@@ -61,9 +62,6 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		notificationService = unitRef.get(NotificationFacade);
 		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 
-		// pickVariant 결정론적으로 고정 (첫 번째 variant 선택)
-		jest.spyOn(Math, "random").mockReturnValue(0);
-
 		// 기본 mock 설정
 		reader.findWinbackUsers.mockResolvedValue([]);
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
@@ -94,12 +92,18 @@ describe("WinbackStrategy — 윈백 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.winback(7);
+		const expected = NotificationMessageBuilder.winback(7, "ko", {
+			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day7`,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "WINBACK",
 			title: expected.title,
 			body: expected.body,
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.WINBACK,
+			variantId: expected.variantId,
 			metadata: { stage: "day7" },
 		});
 	});
@@ -121,7 +125,11 @@ describe("WinbackStrategy — 윈백 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.winback(14);
+		const expected = NotificationMessageBuilder.winback(14, "ko", {
+			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day14`,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			metadata: { stage: "day14" },
 			title: expected.title,
@@ -146,7 +154,11 @@ describe("WinbackStrategy — 윈백 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.winback(21);
+		const expected = NotificationMessageBuilder.winback(21, "ko", {
+			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day21`,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "WINBACK",
@@ -173,7 +185,11 @@ describe("WinbackStrategy — 윈백 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.winback(30);
+		const expected = NotificationMessageBuilder.winback(30, "ko", {
+			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day30`,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "WINBACK",
@@ -200,7 +216,11 @@ describe("WinbackStrategy — 윈백 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.winback(3);
+		const expected = NotificationMessageBuilder.winback(3, "ko", {
+			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day3`,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			metadata: { stage: "day3" },
 			title: expected.title,

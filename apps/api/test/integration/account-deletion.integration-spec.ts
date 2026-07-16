@@ -62,6 +62,7 @@ import { UserPreferenceRepository } from "@/user-settings/infrastructure/persist
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider";
+import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider";
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -128,6 +129,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				UserPreferenceRepository,
 				TodoCategoryRepository,
 				provisioningSeederTestProvider,
+				retentionEnrollerTestProvider,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,

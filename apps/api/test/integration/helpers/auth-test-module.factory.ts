@@ -40,6 +40,7 @@ import { UserConsentRepository } from "@/user-settings/infrastructure/persistenc
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 import type { FakeEmailService } from "../../mocks/fake-email.service";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider";
+import { retentionEnrollerTestProvider } from "./retention-enroller.provider";
 
 export async function createAuthTestModule(
 	databaseService: DatabaseService,
@@ -78,6 +79,7 @@ export async function createAuthTestModule(
 			UserPreferenceRepository,
 			TodoCategoryRepository,
 			provisioningSeederTestProvider,
+			retentionEnrollerTestProvider,
 			{
 				provide: DatabaseService,
 				useValue: databaseService,

@@ -72,7 +72,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
 				stageId: "stage-1",
 				userId: "new-user",
 				route: "/feed",
-				variantId: "d1_no_todo",
+				variantId: expect.stringMatching(/^d1_no_todo\.v[1-3]$/),
 			}),
 		);
 	});

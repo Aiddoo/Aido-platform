@@ -12,6 +12,7 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { TEST_CUID } from "@test/fixtures";
 import { createMockJob } from "@test/mocks";
 
 import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator";
@@ -75,7 +76,10 @@ describe("TimezoneReminderProcessor — 타임존 리마인더 프로세서", ()
 	describe("social-digest", () => {
 		it("social-digest 잡을 소셜 다이제스트 핸들러에 위임한다", async () => {
 			// Given
-			const data: SocialDigestJobData = { timezone: "Asia/Seoul" };
+			const data: SocialDigestJobData = {
+				timezone: "Asia/Seoul",
+				recipientUserIds: [TEST_CUID.USER_1],
+			};
 			const job = createMockJob(TimezoneReminderJobName.SOCIAL_DIGEST, data);
 
 			// When

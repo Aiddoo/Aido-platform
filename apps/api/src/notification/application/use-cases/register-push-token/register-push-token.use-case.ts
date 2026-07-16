@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
@@ -42,18 +43,19 @@ export class RegisterPushTokenUseCase {
 			});
 		}
 
-		await this.notificationRepository.registerPushToken(data);
+		const timezone = normalizeIanaTimezone(data.timezone) ?? undefined;
+		await this.notificationRepository.registerPushToken({ ...data, timezone });
 		await this.cacheService.invalidatePushTokens(data.userId);
 
-		if (data.timezone) {
-			await this.userSettings.upsertPushTimezone(data.userId, data.timezone);
+		if (timezone) {
+			await this.userSettings.upsertPushTimezone(data.userId, timezone);
 		}
 
 		if (data.locale) {
 			await this.userSettings.upsertPushLocale(data.userId, data.locale);
 		}
 
-		if (data.timezone || data.locale) {
+		if (timezone || data.locale) {
 			await this.cacheService.invalidateUserPreference(data.userId);
 		}
 

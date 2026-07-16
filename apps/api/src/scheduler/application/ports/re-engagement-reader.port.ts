@@ -31,6 +31,11 @@ export interface TodayRangeParams {
 	readonly tomorrow: Date;
 }
 
+export interface SocialDigestCandidateParams extends TodayRangeParams {
+	/** 직전 저녁 리마인더를 실제로 받은 사용자만 조회한다. */
+	readonly recipientUserIds: readonly string[];
+}
+
 export interface ReEngagementReaderPort {
 	/** Win-back 대상: 3~30일 미접속 유저 */
 	findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]>;
@@ -56,7 +61,7 @@ export interface ReEngagementReaderPort {
 
 	/** 소셜 다이제스트 후보: 오늘 미완료 투두 보유 유저 */
 	findSocialDigestCandidates(
-		params: TodayRangeParams,
+		params: SocialDigestCandidateParams,
 	): Promise<SocialDigestCandidate[]>;
 
 	/** candidate들의 ACCEPTED 맞팔 관계 ID 쌍 */

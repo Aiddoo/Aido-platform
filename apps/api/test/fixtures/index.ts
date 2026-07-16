@@ -14,6 +14,8 @@
 
 // Friend/Social 관련
 export { CheerFixture, FollowFixture, NudgeFixture } from "./friend.fixture";
+// Prisma CUID 계약용 고정 ID
+export { TEST_CUID } from "./id.fixture";
 // Notification 관련
 export { NotificationFixture, PushTokenFixture } from "./notification.fixture";
 // 리셋 유틸리티

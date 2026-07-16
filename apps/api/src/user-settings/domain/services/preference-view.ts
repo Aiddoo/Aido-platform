@@ -76,7 +76,7 @@ export const DEFAULT_PREFERENCE_SNAPSHOT: PreferenceSnapshot = {
 /**
  * 설정 스냅샷 + 프리미엄 여부 → 응답 뷰.
  *
- * 비프리미엄은 아침/저녁 리마인더 시간이 기본값(08:00/18:00)으로 고정된다.
+ * 비프리미엄은 아침/저녁 리마인더 시간이 기본값(08:00/19:00)으로 고정된다.
  */
 export function buildPreferenceView(
 	snapshot: PreferenceSnapshot,
