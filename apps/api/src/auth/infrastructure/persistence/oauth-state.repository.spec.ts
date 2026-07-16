@@ -173,7 +173,24 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 			const result = await repository.findByExchangeCode("exchange-code-123");
 
 			// Then
-			expect(result).toEqual(stateWithExchangeCode);
+			expect(result).toEqual({
+				id: stateWithExchangeCode.id,
+				state: stateWithExchangeCode.state,
+				provider: stateWithExchangeCode.provider,
+				redirectUri: stateWithExchangeCode.redirectUri,
+				mode: stateWithExchangeCode.mode,
+				initiatingUserId: stateWithExchangeCode.initiatingUserId,
+				exchangeCode: stateWithExchangeCode.exchangeCode,
+				accessToken: stateWithExchangeCode.accessToken,
+				refreshToken: stateWithExchangeCode.refreshToken,
+				userId: stateWithExchangeCode.userId,
+				userName: stateWithExchangeCode.userName,
+				profileImage: stateWithExchangeCode.profileImage,
+				accountRestored: stateWithExchangeCode.accountRestored,
+			});
+			expect(result).not.toHaveProperty("createdAt");
+			expect(result).not.toHaveProperty("expiresAt");
+			expect(result).not.toHaveProperty("codeVerifier");
 			expect(db.oAuthState.findFirst).toHaveBeenCalledWith({
 				where: {
 					exchangeCode: "exchange-code-123",

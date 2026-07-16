@@ -83,20 +83,30 @@ describe("auth endpoint use-cases", () => {
 		);
 	});
 
-	it("OAuth provider 분기는 공통 use-case 한 곳에서 처리한다", async () => {
+	it.each([
+		["GOOGLE", "generateGoogleAuthUrlWithState"],
+		["KAKAO", "generateKakaoAuthUrlWithState"],
+		["NAVER", "generateNaverAuthUrlWithState"],
+	] as const)("%s OAuth 시작을 대응하는 workflow로 위임한다", async (provider, methodName) => {
 		const service = mock<OAuthWorkflow>();
 		const start = new StartOAuthAuthorizationUseCase(service);
-		const exchange = new ExchangeOAuthCodeUseCase(service);
 
-		await start.execute("GOOGLE", "state");
-		await exchange.execute("exchange-code");
+		await start.execute(provider, "state");
 
-		expect(service.generateGoogleAuthUrlWithState).toHaveBeenCalledWith(
+		expect(service[methodName]).toHaveBeenCalledWith(
 			"state",
 			undefined,
 			undefined,
 			undefined,
 		);
+	});
+
+	it("OAuth 교환 코드를 독립 실행 단위로 위임한다", async () => {
+		const service = mock<OAuthWorkflow>();
+		const exchange = new ExchangeOAuthCodeUseCase(service);
+
+		await exchange.execute("exchange-code");
+
 		expect(service.exchangeCodeForTokens).toHaveBeenCalledWith("exchange-code");
 	});
 });
