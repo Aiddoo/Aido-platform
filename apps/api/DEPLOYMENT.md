@@ -168,6 +168,42 @@ Build → Push to ECR → Run Migration Task → Deploy API Service
 4. Migration 태스크 실행 및 완료 대기
 5. ECS 서비스 업데이트 (롤링 배포)
 
+### 3.7 `develop` → `main` 릴리스 브랜치 정합
+
+기능 PR과 릴리스 PR의 merge 방식을 구분한다.
+
+| PR 방향 | merge 방식 | 이유 |
+|----------|------------|------|
+| feature → `develop` | Squash merge 허용 | 기능 단위로 이력을 정리한다. |
+| `develop` → `main` | **Create a merge commit 필수** | 두 브랜치의 공통 조상을 유지해 다음 릴리스 PR의 중복 diff·충돌을 막는다. |
+
+`develop` → `main` 릴리스 PR은 squash merge 또는 rebase merge하지 않는다. GitHub CLI를 사용할 때도 `--merge`를 명시한다.
+
+```bash
+gh pr merge <PR_NUMBER> --merge
+```
+
+릴리스 PR을 열기 전에는 원격 브랜치를 갱신하고 실제 순 변경을 확인한다.
+
+```bash
+git fetch origin main develop
+git diff --stat origin/main..origin/develop
+```
+
+과거 릴리스가 이미 squash merge되어 같은 변경이 다시 보이면 먼저 브랜치 이력을 정합화한다. 이때 `ours` 전략은 **main의 릴리스 tree와 해당 시점 develop tree가 완전히 동일함을 확인한 경우에만** develop 내용을 보존하는 일회성 복구에 사용한다. tree가 다르면 일반 merge로 충돌을 파일별 검토하며 해결해야 한다.
+
+```bash
+git rev-parse origin/main^{tree}
+git rev-parse <RELEASE_SOURCE_DEVELOP_COMMIT>^{tree}
+
+# 위 두 tree가 동일할 때만 사용
+git switch develop
+git merge -s ours origin/main -m "chore: main 릴리스 이력을 develop에 동기화"
+git push origin develop
+```
+
+정합화 후 GitHub의 `develop` → `main` PR 파일 목록에 이미 배포된 변경이 다시 나타나지 않고, merge 상태가 `MERGEABLE`인지 확인한다.
+
 ---
 
 ## 4. 환경변수 레퍼런스
