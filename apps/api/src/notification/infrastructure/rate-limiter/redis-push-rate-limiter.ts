@@ -79,22 +79,26 @@ const BATCH_LIMIT_SCRIPT = `
     local engagementKey = KEYS[(i - 1) * 2 + 2]
     local isEngagement = ARGV[7 + i] == "1"
     local limited = false
+    local engagementCount = 0
 
     redis.call("ZREMRANGEBYSCORE", generalKey, "-inf", windowStart)
     if redis.call("ZCARD", generalKey) >= generalMax then
       limited = true
-    else
-      redis.call("ZADD", generalKey, now, now .. ":" .. i .. ":" .. math.random(1, 1000000))
-      redis.call("PEXPIRE", generalKey, windowMs)
     end
 
     if not limited and isEngagement then
-      local count = tonumber(redis.call("HGET", engagementKey, "count") or "0")
+      engagementCount = tonumber(redis.call("HGET", engagementKey, "count") or "0")
       local lastSentAt = tonumber(redis.call("HGET", engagementKey, "lastSentAt") or "0")
-      if count >= dailyMax or (lastSentAt > 0 and now - lastSentAt < minInterval) then
+      if engagementCount >= dailyMax or (lastSentAt > 0 and now - lastSentAt < minInterval) then
         limited = true
-      else
-        redis.call("HSET", engagementKey, "count", count + 1, "lastSentAt", now)
+      end
+    end
+
+    if not limited then
+      redis.call("ZADD", generalKey, now, now .. ":" .. i .. ":" .. math.random(1, 1000000))
+      redis.call("PEXPIRE", generalKey, windowMs)
+      if isEngagement then
+        redis.call("HSET", engagementKey, "count", engagementCount + 1, "lastSentAt", now)
         redis.call("EXPIRE", engagementKey, engagementTtl)
       end
     end

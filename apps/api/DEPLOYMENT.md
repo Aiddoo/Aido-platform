@@ -183,6 +183,20 @@ Build → Push to ECR → Run Migration Task → Deploy API Service
 gh pr merge <PR_NUMBER> --merge
 ```
 
+병합 직후에는 `main`의 merge commit을 `develop`에 fast-forward하고 원격 두 브랜치가 같은 커밋을 가리키는지 확인한다. 이 단계까지가 릴리스 머지의 완료 조건이다.
+
+```bash
+git fetch origin main develop
+git switch develop
+git merge --ff-only origin/main
+git push origin develop
+git fetch origin main develop
+git rev-parse origin/main
+git rev-parse origin/develop
+```
+
+마지막 두 커밋 해시는 반드시 같아야 한다. `--ff-only`가 실패하면 그 사이 `develop`에 새 변경이 들어온 것이므로 강제 푸시하지 않고 일반 merge로 양쪽 변경을 보존한다.
+
 릴리스 PR을 열기 전에는 원격 브랜치를 갱신하고 실제 순 변경을 확인한다.
 
 ```bash

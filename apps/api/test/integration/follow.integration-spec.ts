@@ -21,6 +21,7 @@ import { FollowFacade } from "@/follow";
 import { FOLLOW_REPOSITORY } from "@/follow/application/ports/follow.repository.port";
 import { FOLLOW_CACHE } from "@/follow/application/ports/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "@/follow/application/ports/follow-notifier.port";
+import { SearchUsersUseCase } from "@/follow/application/queries/search-users/search-users.use-case";
 import { FollowReader } from "@/follow/application/services/follow.reader";
 import { FriendshipEffects } from "@/follow/application/services/friendship-effects.service";
 import { AcceptFriendRequestUseCase } from "@/follow/application/use-cases/accept-friend-request/accept-friend-request.use-case";
@@ -110,6 +111,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 				RejectFriendRequestUseCase,
 				RemoveFriendUseCase,
 				ReorderFriendUseCase,
+				SearchUsersUseCase,
 				{ provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
 				{ provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
 				{ provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },

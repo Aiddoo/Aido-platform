@@ -109,7 +109,11 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 			Math.ceil(limit / RETENTION_STAGE_NAMES.length),
 		);
 		const rows = await this.client.$queryRaw<RetentionStageRow[]>`
-			WITH ranked_stages AS (
+			WITH valid_timezones AS MATERIALIZED (
+				SELECT timezone.name
+				FROM pg_timezone_names AS timezone
+			),
+			ranked_stages AS (
 				SELECT
 					stage."id",
 					stage."assignmentId",
@@ -133,7 +137,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 				assignment."variant",
 				ranked."stage",
 				assignment."startedAt" AS "startedAt",
-				COALESCE(preference."timezone", 'UTC') AS "timezone",
+				COALESCE(valid_timezone.name, 'UTC') AS "timezone",
 				COALESCE(preference."locale", 'ko') AS "locale",
 				COALESCE(preference."pushEnabled", FALSE) AS "pushEnabled",
 				COALESCE(preference."nightPushEnabled", FALSE) AS "nightPushEnabled",
@@ -150,6 +154,8 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 				ON app_user."id" = assignment."userId"
 			LEFT JOIN "UserPreference" AS preference
 				ON preference."userId" = app_user."id"
+			LEFT JOIN valid_timezones AS valid_timezone
+				ON valid_timezone.name = preference."timezone"
 			LEFT JOIN "UserConsent" AS consent
 				ON consent."userId" = app_user."id"
 			LEFT JOIN LATERAL (
@@ -164,13 +170,13 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 					COUNT(*) FILTER (WHERE todo."completed" = TRUE) AS "completedCount",
 					BOOL_OR(
 						(
-							(todo."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
-								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
+							(todo."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
+								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
 							AND todo."createdAt" < assignment."startedAt" + INTERVAL '8 days'
 						) OR (
 							todo."completedAt" IS NOT NULL
-							AND (todo."completedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
-								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(preference."timezone", 'UTC'))::DATE
+							AND (todo."completedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
+								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE COALESCE(valid_timezone.name, 'UTC'))::DATE
 							AND todo."completedAt" < assignment."startedAt" + INTERVAL '8 days'
 						)
 					) AS "todoActionWithinWindow"
