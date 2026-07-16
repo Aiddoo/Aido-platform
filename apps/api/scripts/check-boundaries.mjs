@@ -132,6 +132,9 @@ for (const module of CLEAN_MODULES) {
 			continue;
 		}
 		for (const p of importPathsOf(readFileSync(file, "utf8"))) {
+			if (p.startsWith(`@/${module}/infrastructure/`)) {
+				check(file, p, "application → 자체 infrastructure 구현 금지 (포트로 역전)");
+			}
 			if (p.startsWith("@/generated/")) {
 				check(file, p, "application → generated Prisma 금지");
 			}
@@ -140,6 +143,16 @@ for (const module of CLEAN_MODULES) {
 				p === "@/shared/infrastructure/database/selects"
 			) {
 				check(file, p, "application → Prisma 구조 타입 금지 (불투명 TransactionContext 사용)");
+			}
+			// auth는 인증·세션·OAuth의 장기 안정 경계이므로 shared 구현과
+			// 크로스모듈 facade도 application port 뒤에서만 소비한다.
+			if (
+				module === "auth" &&
+				(p.startsWith("@/shared/infrastructure/") ||
+					p.startsWith("@/admin-notification") ||
+					p.startsWith("@/email"))
+			) {
+				check(file, p, "auth application → 구현/타 모듈 직접 의존 금지 (포트 사용)");
 			}
 			// 타 모듈 내부 접근: 상대 경로를 해석해 다른 모듈 디렉터리로 나가는지 확인
 			if (p.startsWith(".")) {

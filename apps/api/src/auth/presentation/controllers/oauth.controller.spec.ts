@@ -13,19 +13,19 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { OAuthService } from "@/auth/application/services/oauth.service";
+import { OAuthFacade } from "@/auth/application/facades";
 import type { ExchangeCodeDto } from "../dtos";
 import { OAuthController } from "./oauth.controller";
 
 describe("OAuthController — OAuth 인증 컨트롤러", () => {
 	let controller: OAuthController;
-	let mockOAuthService: Mocked<OAuthService>;
+	let mockOAuthFacade: Mocked<OAuthFacade>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(OAuthController).compile();
 
 		controller = unit;
-		mockOAuthService = unitRef.get(OAuthService);
+		mockOAuthFacade = unitRef.get(OAuthFacade);
 	});
 
 	describe("exchangeCode", () => {
@@ -39,7 +39,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
 				userName: "테스터",
 				profileImage: "https://example.com/photo.jpg",
 			};
-			mockOAuthService.exchangeCodeForTokens.mockResolvedValue(serviceResult);
+			mockOAuthFacade.exchangeCodeForTokens.mockResolvedValue(serviceResult);
 
 			// When -exchangeCode를 호출하면
 			const result = await controller.exchangeCode(
@@ -47,7 +47,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
 			);
 
 			// Then -서비스에 code를 전달하고 AuthMapper.toExchangeCodeResponse 형식의 응답을 반환해야 한다
-			expect(mockOAuthService.exchangeCodeForTokens).toHaveBeenCalledWith(
+			expect(mockOAuthFacade.exchangeCodeForTokens).toHaveBeenCalledWith(
 				dto.code,
 			);
 			expect(result).toEqual({
@@ -70,7 +70,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
 				userName: undefined,
 				profileImage: undefined,
 			};
-			mockOAuthService.exchangeCodeForTokens.mockResolvedValue(serviceResult);
+			mockOAuthFacade.exchangeCodeForTokens.mockResolvedValue(serviceResult);
 
 			// When -exchangeCode를 호출하면
 			const result = await controller.exchangeCode(

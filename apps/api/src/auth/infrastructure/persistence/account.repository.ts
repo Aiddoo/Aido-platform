@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { AuthPersistenceConflict } from "@/auth/application/ports/auth-persistence.port";
 import type { Account, AccountProvider } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 
 @Injectable()
@@ -76,21 +78,28 @@ export class AccountRepository {
 		accessTokenExpiresAt?: Date;
 		scope?: string;
 	}): Promise<Account> {
-		return this.client.account.create({
-			data: {
-				userId: data.userId,
-				provider: data.provider,
-				providerAccountId: data.providerAccountId,
-				accessToken: data.accessToken
-					? this.encryptionService.encrypt(data.accessToken)
-					: undefined,
-				refreshToken: data.refreshToken
-					? this.encryptionService.encrypt(data.refreshToken)
-					: undefined,
-				accessTokenExpiresAt: data.accessTokenExpiresAt,
-				scope: data.scope,
-			},
-		});
+		try {
+			return await this.client.account.create({
+				data: {
+					userId: data.userId,
+					provider: data.provider,
+					providerAccountId: data.providerAccountId,
+					accessToken: data.accessToken
+						? this.encryptionService.encrypt(data.accessToken)
+						: undefined,
+					refreshToken: data.refreshToken
+						? this.encryptionService.encrypt(data.refreshToken)
+						: undefined,
+					accessTokenExpiresAt: data.accessTokenExpiresAt,
+					scope: data.scope,
+				},
+			});
+		} catch (error) {
+			if (isUniqueConstraintViolation(error)) {
+				throw new AuthPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED");
+			}
+			throw error;
+		}
 	}
 
 	async updateOAuthTokens(

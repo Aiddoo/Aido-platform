@@ -1,5 +1,5 @@
 /**
- * OAuthService 테스트 (Suites 패턴)
+ * OAuthWorkflow 테스트 (Suites 패턴)
  *
  * NestJS 공식 권장 Suites 라이브러리 사용
  * - 자동 Mock 생성으로 보일러플레이트 제거
@@ -15,7 +15,6 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
 import { asDep, asMock, mockOf } from "@test/mocks";
-import { AdminNotificationFacade } from "@/admin-notification";
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
@@ -25,6 +24,7 @@ import {
 	LOGIN_FAILURE_REASON,
 	SECURITY_EVENT,
 } from "@/auth/domain/constants/auth.constants";
+import type { AccountProvider } from "@/auth/domain/types";
 import {
 	AppleOAuthProvider,
 	GoogleOAuthProvider,
@@ -32,23 +32,36 @@ import {
 	NaverOAuthProvider,
 } from "@/auth/infrastructure/oauth/adapters";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
-import { OAuthStateRepository } from "@/auth/infrastructure/persistence/oauth-state.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { type AccountProvider, Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import {
+	AUTH_CACHE,
+	AUTH_REGISTRATION_NOTIFIER,
+	AUTH_RUNTIME_CONFIG,
+	type AuthCachePort,
+	type AuthRegistrationNotifierPort,
+} from "../ports/auth-collaboration.port";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_OAUTH_STATE_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthLoginAttemptRepositoryPort,
+	type AuthOAuthStateRepositoryPort,
+	AuthPersistenceConflict,
+	type AuthSecurityLogRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../ports/auth-persistence.port";
 import type { RetentionEnrollerPort } from "../ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
+import { SessionService } from "../services/session.service";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
-import { OAuthService } from "./oauth.service";
-import { SessionService } from "./session.service";
+import { OAuthWorkflow } from "./oauth.workflow";
 
 /** Apple 토큰 검증 결과 프로필 */
 interface AppleVerifiedProfile {
@@ -66,19 +79,19 @@ interface OAuthProfile {
 	picture?: string;
 }
 
-describe("OAuthService — OAuth 인증 서비스", () => {
-	let service: OAuthService;
+describe("OAuthWorkflow — OAuth workflow", () => {
+	let service: OAuthWorkflow;
 	let uow: Mocked<UnitOfWorkPort>;
-	let userRepo: Mocked<UserRepository>;
-	let accountRepo: Mocked<AccountRepository>;
-	let securityLogRepo: Mocked<SecurityLogRepository>;
-	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
-	let oauthStateRepo: Mocked<OAuthStateRepository>;
+	let userRepo: Mocked<AuthUserRepositoryPort>;
+	let accountRepo: Mocked<AuthAccountRepositoryPort>;
+	let securityLogRepo: Mocked<AuthSecurityLogRepositoryPort>;
+	let loginAttemptRepo: Mocked<AuthLoginAttemptRepositoryPort>;
+	let oauthStateRepo: Mocked<AuthOAuthStateRepositoryPort>;
 	let sessionService: jest.Mocked<SessionService>;
 	let tokenVerifier: jest.Mocked<OAuthTokenVerifierService>;
 	let configService: Mocked<TypedConfigService>;
-	let adminNotificationFacade: Mocked<AdminNotificationFacade>;
-	let cacheService: Mocked<CacheService>;
+	let adminNotificationFacade: Mocked<AuthRegistrationNotifierPort>;
+	let cacheService: Mocked<AuthCachePort>;
 
 	// 재사용 가능한 테스트 데이터
 	const mockTokens = {
@@ -94,23 +107,23 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 	beforeEach(async () => {
 		// Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(OAuthService).compile();
+		const { unit, unitRef } = await TestBed.solitary(OAuthWorkflow).compile();
 
 		service = unit;
 		uow = unitRef.get(UNIT_OF_WORK);
-		userRepo = unitRef.get(UserRepository);
-		accountRepo = unitRef.get(AccountRepository);
-		securityLogRepo = unitRef.get(SecurityLogRepository);
-		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
-		oauthStateRepo = unitRef.get(OAuthStateRepository);
-		// SessionService는 OAuthService 직접 의존이 아니라 IssueLoginUseCase의 의존이므로
+		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
+		accountRepo = unitRef.get(AUTH_ACCOUNT_REPOSITORY);
+		securityLogRepo = unitRef.get(AUTH_SECURITY_LOG_REPOSITORY);
+		loginAttemptRepo = unitRef.get(AUTH_LOGIN_ATTEMPT_REPOSITORY);
+		oauthStateRepo = unitRef.get(AUTH_OAUTH_STATE_REPOSITORY);
+		// SessionService는 OAuthWorkflow 직접 의존이 아니라 IssueLoginUseCase의 의존이므로
 		// 발급 수렴 유스케이스에 배선할 독립 mock으로 구성한다
 		sessionService = mockOf<SessionService>({
 			createSessionWithTokens: jest.fn(),
 		});
-		configService = unitRef.get(TypedConfigService);
-		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
-		cacheService = unitRef.get(CacheService);
+		configService = unitRef.get(AUTH_RUNTIME_CONFIG);
+		adminNotificationFacade = unitRef.get(AUTH_REGISTRATION_NOTIFIER);
+		cacheService = unitRef.get(AUTH_CACHE);
 
 		// IssueLoginUseCase(발급 수렴)를 실제 인스턴스로 위임 — 소셜 로그인 테스트가
 		// 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
@@ -127,7 +140,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — 소셜 신규가입
 		// 테스트가 유저·OAuth계정·프로필 생성과 기본값 시딩을 그대로 검증하도록 배선.
-		// 기본값 시딩은 OAuthService 직접 의존이 아니므로 시더 포트를 독립 mock으로 구성한다.
+		// 기본값 시딩은 OAuthWorkflow 직접 의존이 아니므로 시더 포트를 독립 mock으로 구성한다.
 		const provisionUser = unitRef.get(ProvisionUserUseCase);
 		const seederStub = mockOf<UserProvisioningSeederPort>({
 			seedDefaultSettings: jest.fn(),
@@ -152,7 +165,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 
 		// OAuth 신원 제공자 레지스트리: 실제 어댑터를 mock 검증기·configService에 배선
 		// (프로덕션 auth.module의 useFactory와 동일 구성을 spec으로 재현 —
-		//  OAuthService는 이제 검증기를 직접 주입받지 않고 registry.get으로 전략을 얻는다)
+		//  OAuthWorkflow는 검증기를 직접 주입받지 않고 registry.get으로 전략을 얻는다)
 		tokenVerifier = mockOf<OAuthTokenVerifierService>({
 			verifyToken: jest.fn(),
 			verifyAppleToken: jest.fn(),
@@ -161,7 +174,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			verifyNaverToken: jest.fn(),
 		});
 
-		const logger = new Logger(OAuthService.name);
+		const logger = new Logger(OAuthWorkflow.name);
 		const verifier = asDep<OAuthTokenVerifierService>(tokenVerifier);
 		const realProviders = new Map<AccountProvider, OAuthIdentityProvider>([
 			["APPLE", new AppleOAuthProvider(verifier)],
@@ -632,11 +645,7 @@ describe("OAuthService — OAuth 인증 서비스", () => {
 			// Given - 계정 없음 + 트랜잭션 내에서 P2002 발생
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockRejectedValue(
-				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-					code: "P2002",
-					meta: { target: ["provider", "providerAccountId"] },
-					clientVersion: "7.0.0",
-				}),
+				new AuthPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED"),
 			);
 			uow.run.mockImplementation((work) => work());
 

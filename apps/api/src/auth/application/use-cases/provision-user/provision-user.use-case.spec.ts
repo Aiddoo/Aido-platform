@@ -1,9 +1,13 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { mockOf } from "@test/mocks";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import type { User } from "@/generated/prisma/client";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthUserRecord,
+	type AuthUserRepositoryPort,
+} from "../../ports/auth-persistence.port";
 import {
 	RETENTION_ENROLLER,
 	type RetentionEnrollerPort,
@@ -19,12 +23,12 @@ import {
 
 describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시퀀스", () => {
 	let useCase: ProvisionUserUseCase;
-	let userRepo: Mocked<UserRepository>;
-	let accountRepo: Mocked<AccountRepository>;
+	let userRepo: Mocked<AuthUserRepositoryPort>;
+	let accountRepo: Mocked<AuthAccountRepositoryPort>;
 	let seeder: Mocked<UserProvisioningSeederPort>;
 	let retentionEnroller: Mocked<RetentionEnrollerPort>;
 
-	const createdUser = mockOf<User>({
+	const createdUser = mockOf<AuthUserRecord>({
 		id: "user-1",
 		email: "user@example.com",
 	});
@@ -33,8 +37,8 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 		const { unit, unitRef } =
 			await TestBed.solitary(ProvisionUserUseCase).compile();
 		useCase = unit;
-		userRepo = unitRef.get(UserRepository);
-		accountRepo = unitRef.get(AccountRepository);
+		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
+		accountRepo = unitRef.get(AUTH_ACCOUNT_REPOSITORY);
 		seeder = unitRef.get(USER_PROVISIONING_SEEDER);
 		retentionEnroller = unitRef.get(RETENTION_ENROLLER);
 

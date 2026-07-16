@@ -15,7 +15,7 @@ import {
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
-import { OAuthService } from "@/auth/application/services/oauth.service";
+import { OAuthFacade } from "@/auth/application/facades";
 
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
 import {
@@ -51,14 +51,14 @@ import {
 export class OAuthController {
 	readonly #logger = new Logger(OAuthController.name);
 
-	constructor(private readonly oauthService: OAuthService) {}
+	constructor(private readonly oauthFacade: OAuthFacade) {}
 
 	async #resolveOAuthErrorRedirectUri(
 		state: string,
 		defaultRedirectUri: string,
 	): Promise<string> {
 		try {
-			const redirectUri = await this.oauthService.getRedirectUriByState(state);
+			const redirectUri = await this.oauthFacade.getRedirectUriByState(state);
 			return redirectUri || defaultRedirectUri;
 		} catch {
 			return defaultRedirectUri;
@@ -97,7 +97,7 @@ export class OAuthController {
 	})
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async exchangeCode(@Body() dto: ExchangeCodeDto): Promise<AuthTokensDto> {
-		const result = await this.oauthService.exchangeCodeForTokens(dto.code);
+		const result = await this.oauthFacade.exchangeCodeForTokens(dto.code);
 		return AuthMapper.toExchangeCodeResponse(result);
 	}
 
@@ -146,7 +146,8 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthService.handleAppleMobileLogin(
+		const result = await this.oauthFacade.loginWithToken(
+			"APPLE",
 			dto.idToken,
 			dto.userName,
 			{
@@ -204,7 +205,8 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthService.handleGoogleMobileLogin(
+		const result = await this.oauthFacade.loginWithToken(
+			"GOOGLE",
 			dto.idToken,
 			dto.userName,
 			{
@@ -270,7 +272,8 @@ export class OAuthController {
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
-		const authUrl = await this.oauthService.generateGoogleAuthUrlWithState(
+		const authUrl = await this.oauthFacade.startAuthorization(
+			"GOOGLE",
 			effectiveState,
 			redirectUri,
 			mode,
@@ -321,12 +324,12 @@ export class OAuthController {
 		try {
 			const metadata = extractMetadata(req);
 
-			const result =
-				await this.oauthService.handleGoogleWebCallbackWithExchangeCode(
-					code,
-					state,
-					metadata,
-				);
+			const result = await this.oauthFacade.completeAuthorization(
+				"GOOGLE",
+				code,
+				state,
+				metadata,
+			);
 
 			const redirectUri = result.redirectUri || defaultRedirectUri;
 			const params = new URLSearchParams({
@@ -397,7 +400,8 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthService.handleKakaoMobileLogin(
+		const result = await this.oauthFacade.loginWithToken(
+			"KAKAO",
 			dto.accessToken,
 			dto.userName,
 			{
@@ -463,7 +467,8 @@ export class OAuthController {
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
-		const authUrl = await this.oauthService.generateKakaoAuthUrlWithState(
+		const authUrl = await this.oauthFacade.startAuthorization(
+			"KAKAO",
 			effectiveState,
 			redirectUri,
 			mode,
@@ -512,12 +517,12 @@ export class OAuthController {
 		try {
 			const metadata = extractMetadata(req);
 
-			const result =
-				await this.oauthService.handleKakaoWebCallbackWithExchangeCode(
-					code,
-					state,
-					metadata,
-				);
+			const result = await this.oauthFacade.completeAuthorization(
+				"KAKAO",
+				code,
+				state,
+				metadata,
+			);
 
 			const redirectUri = result.redirectUri || defaultRedirectUri;
 			const params = new URLSearchParams({
@@ -584,7 +589,8 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthService.handleNaverMobileLogin(
+		const result = await this.oauthFacade.loginWithToken(
+			"NAVER",
 			dto.accessToken,
 			dto.userName,
 			{
@@ -650,7 +656,8 @@ export class OAuthController {
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
-		const authUrl = await this.oauthService.generateNaverAuthUrlWithState(
+		const authUrl = await this.oauthFacade.startAuthorization(
+			"NAVER",
 			effectiveState,
 			redirectUri,
 			mode,
@@ -701,12 +708,12 @@ export class OAuthController {
 		try {
 			const metadata = extractMetadata(req);
 
-			const result =
-				await this.oauthService.handleNaverWebCallbackWithExchangeCode(
-					code,
-					state,
-					metadata,
-				);
+			const result = await this.oauthFacade.completeAuthorization(
+				"NAVER",
+				code,
+				state,
+				metadata,
+			);
 
 			const redirectUri = result.redirectUri || defaultRedirectUri;
 			const params = new URLSearchParams({
@@ -788,11 +795,7 @@ provider에 따라 필수 토큰이 다릅니다:
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.oauthService.linkSocialAccountWithToken(
-			user.userId,
-			dto,
-			metadata,
-		);
+		return this.oauthFacade.linkAccountWithToken(user.userId, dto, metadata);
 	}
 
 	@Post("link-with-code")
@@ -850,7 +853,7 @@ provider에 따라 필수 토큰이 다릅니다:
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.oauthService.linkAccountWithExchangeCode(
+		return this.oauthFacade.linkAccountWithExchangeCode(
 			user.userId,
 			dto.code,
 			metadata,

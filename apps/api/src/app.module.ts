@@ -158,7 +158,7 @@ import { AppService } from "./app.service";
 		// Global Guards
 		{
 			provide: APP_GUARD,
-			useClass: JwtAuthGuard,
+			useExisting: JwtAuthGuard,
 		},
 		{
 			provide: APP_GUARD,
@@ -168,7 +168,7 @@ import { AppService } from "./app.service";
 		// Global Interceptors
 		{
 			provide: APP_INTERCEPTOR,
-			useClass: LastActiveInterceptor,
+			useExisting: LastActiveInterceptor,
 		},
 	],
 })

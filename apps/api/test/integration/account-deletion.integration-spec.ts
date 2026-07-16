@@ -2,11 +2,11 @@
  * 회원 탈퇴 통합 테스트 (Testcontainers)
  *
  * @description
- * AuthService.deleteAccount()와 AccountPurgeJob이
+ * CredentialAuthWorkflow.deleteAccount()와 AccountPurgeJob이
  * 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
  *
  * 통합 테스트의 목적:
- * - AuthService → Repository → Prisma → PostgreSQL 전체 스택 검증
+ * - CredentialAuthWorkflow → Repository → Prisma → PostgreSQL 전체 스택 검증
  * - 회원 탈퇴 soft delete + 세션 폐기 + 보안 로그 기록
  * - AccountPurgeJob hard delete 플로우
  * - 탈퇴 후 로그인/비밀번호 재설정 차단
@@ -28,12 +28,25 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { AdminNotificationFacade } from "@/admin-notification";
-import { AuthService } from "@/auth/application/services/auth.service";
-import { PasswordManagementService } from "@/auth/application/services/password-management.service";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_CACHE,
+	AUTH_EMAIL_SENDER,
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_PASSWORD_HASHER,
+	AUTH_REGISTRATION_NOTIFIER,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_SESSION_REPOSITORY,
+	AUTH_TOKEN_ISSUER,
+	AUTH_USER_REPOSITORY,
+	AUTH_VERIFICATION_REPOSITORY,
+} from "@/auth/application/ports";
 import { SessionService } from "@/auth/application/services/session.service";
 import { VerificationService } from "@/auth/application/services/verification.service";
 import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "@/auth/application/use-cases/provision-user/provision-user.use-case";
+import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
+import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -66,8 +79,8 @@ import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.prov
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
-	let authService: AuthService;
-	let passwordManagementService: PasswordManagementService;
+	let authService: CredentialAuthWorkflow;
+	let passwordManagementService: PasswordWorkflow;
 	let purgeJob: AccountPurgeJob;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -90,7 +103,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				}),
 			],
 			providers: [
-				AuthService,
+				CredentialAuthWorkflow,
 				IssueLoginUseCase,
 				ProvisionUserUseCase,
 				AccountPurgeJob,
@@ -108,7 +121,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				PasswordService,
-				PasswordManagementService,
+				PasswordWorkflow,
 				SessionService,
 				TokenService,
 				VerificationService,
@@ -125,6 +138,29 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				SecurityLogRepository,
 				LoginAttemptRepository,
 				VerificationRepository,
+				{ provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
+				{ provide: AUTH_ACCOUNT_REPOSITORY, useExisting: AccountRepository },
+				{ provide: AUTH_SESSION_REPOSITORY, useExisting: SessionRepository },
+				{
+					provide: AUTH_VERIFICATION_REPOSITORY,
+					useExisting: VerificationRepository,
+				},
+				{
+					provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
+					useExisting: LoginAttemptRepository,
+				},
+				{
+					provide: AUTH_SECURITY_LOG_REPOSITORY,
+					useExisting: SecurityLogRepository,
+				},
+				{ provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
+				{ provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
+				{ provide: AUTH_EMAIL_SENDER, useExisting: EmailFacade },
+				{ provide: AUTH_CACHE, useExisting: CacheService },
+				{
+					provide: AUTH_REGISTRATION_NOTIFIER,
+					useExisting: AdminNotificationFacade,
+				},
 				UserConsentRepository,
 				UserPreferenceRepository,
 				TodoCategoryRepository,
@@ -239,10 +275,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			],
 		}).compile();
 
-		authService = module.get<AuthService>(AuthService);
-		passwordManagementService = module.get<PasswordManagementService>(
-			PasswordManagementService,
-		);
+		authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
+		passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
 		purgeJob = module.get<AccountPurgeJob>(AccountPurgeJob);
 		_userRepository = module.get<UserRepository>(UserRepository);
 		_accountRepository = module.get<AccountRepository>(AccountRepository);

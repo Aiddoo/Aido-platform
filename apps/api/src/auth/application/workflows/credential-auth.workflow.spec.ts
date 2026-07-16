@@ -1,5 +1,5 @@
 /**
- * AuthService 테스트 (Suites 패턴)
+ * CredentialAuthWorkflow 테스트 (Suites 패턴)
  *
  * NestJS 공식 권장 Suites 라이브러리 사용
  * - 자동 Mock 생성으로 보일러플레이트 제거
@@ -14,48 +14,63 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder, UserBuilder } from "@test/builders";
 import { asDep, asMock, mockOf } from "@test/mocks";
-import { AdminNotificationFacade } from "@/admin-notification";
 import {
 	REVOKE_REASON,
 	SECURITY_EVENT,
 } from "@/auth/domain/constants/auth.constants";
-import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
-import { TokenService } from "@/auth/infrastructure/adapters/token.service";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import {
+	AUTH_CACHE,
+	AUTH_REGISTRATION_NOTIFIER,
+	type AuthCachePort,
+	type AuthRegistrationNotifierPort,
+} from "../ports/auth-collaboration.port";
+import {
+	AUTH_PASSWORD_HASHER,
+	AUTH_TOKEN_ISSUER,
+	type AuthPasswordHasherPort,
+	type AuthTokenIssuerPort,
+} from "../ports/auth-crypto.port";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_SESSION_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthLoginAttemptRepositoryPort,
+	AuthPersistenceConflict,
+	type AuthSecurityLogRepositoryPort,
+	type AuthSessionRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../ports/auth-persistence.port";
 import {
 	RETENTION_ENROLLER,
 	type RetentionEnrollerPort,
 } from "../ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
+import { SessionService } from "../services/session.service";
+import { VerificationService } from "../services/verification.service";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
-import { AuthService } from "./auth.service";
-import { SessionService } from "./session.service";
-import { VerificationService } from "./verification.service";
+import { CredentialAuthWorkflow } from "./credential-auth.workflow";
 
-describe("AuthService — 인증 서비스", () => {
-	let service: AuthService;
-	let userRepo: Mocked<UserRepository>;
-	let accountRepo: Mocked<AccountRepository>;
-	let sessionRepo: Mocked<SessionRepository>;
-	let passwordService: Mocked<PasswordService>;
-	let tokenService: Mocked<TokenService>;
+describe("CredentialAuthWorkflow — 인증 workflow", () => {
+	let service: CredentialAuthWorkflow;
+	let userRepo: Mocked<AuthUserRepositoryPort>;
+	let accountRepo: Mocked<AuthAccountRepositoryPort>;
+	let sessionRepo: Mocked<AuthSessionRepositoryPort>;
+	let passwordService: Mocked<AuthPasswordHasherPort>;
+	let tokenService: Mocked<AuthTokenIssuerPort>;
 	let verificationService: Mocked<VerificationService>;
-	let cacheService: Mocked<CacheService>;
+	let cacheService: Mocked<AuthCachePort>;
 	let uow: Mocked<UnitOfWorkPort>;
-	let securityLogRepo: Mocked<SecurityLogRepository>;
-	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
+	let securityLogRepo: Mocked<AuthSecurityLogRepositoryPort>;
+	let loginAttemptRepo: Mocked<AuthLoginAttemptRepositoryPort>;
 	let sessionService: Mocked<SessionService>;
-	let adminNotificationFacade: Mocked<AdminNotificationFacade>;
+	let adminNotificationFacade: Mocked<AuthRegistrationNotifierPort>;
 	let retentionEnroller: Mocked<RetentionEnrollerPort>;
 
 	// 재사용 가능한 테스트 데이터
@@ -67,21 +82,23 @@ describe("AuthService — 인증 서비스", () => {
 
 	beforeEach(async () => {
 		// Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(AuthService).compile();
+		const { unit, unitRef } = await TestBed.solitary(
+			CredentialAuthWorkflow,
+		).compile();
 
 		service = unit;
-		userRepo = unitRef.get(UserRepository);
-		accountRepo = unitRef.get(AccountRepository);
-		sessionRepo = unitRef.get(SessionRepository);
-		passwordService = unitRef.get(PasswordService);
-		tokenService = unitRef.get(TokenService);
+		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
+		accountRepo = unitRef.get(AUTH_ACCOUNT_REPOSITORY);
+		sessionRepo = unitRef.get(AUTH_SESSION_REPOSITORY);
+		passwordService = unitRef.get(AUTH_PASSWORD_HASHER);
+		tokenService = unitRef.get(AUTH_TOKEN_ISSUER);
 		verificationService = unitRef.get(VerificationService);
-		cacheService = unitRef.get(CacheService);
+		cacheService = unitRef.get(AUTH_CACHE);
 		uow = unitRef.get(UNIT_OF_WORK);
-		securityLogRepo = unitRef.get(SecurityLogRepository);
-		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
+		securityLogRepo = unitRef.get(AUTH_SECURITY_LOG_REPOSITORY);
+		loginAttemptRepo = unitRef.get(AUTH_LOGIN_ATTEMPT_REPOSITORY);
 		sessionService = unitRef.get(SessionService);
-		adminNotificationFacade = unitRef.get(AdminNotificationFacade);
+		adminNotificationFacade = unitRef.get(AUTH_REGISTRATION_NOTIFIER);
 		retentionEnroller = unitRef.get(RETENTION_ENROLLER);
 
 		// IssueLoginUseCase(발급 수렴)를 실제 인스턴스로 위임 — 기존 login 테스트가
@@ -99,7 +116,7 @@ describe("AuthService — 인증 서비스", () => {
 
 		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — register 테스트가
 		// 유저·계정·프로필 생성과 기본값 시딩 호출을 그대로 검증하도록 배선.
-		// 기본값 시딩은 AuthService 직접 의존이 아니므로 시더 포트를 독립 mock으로 구성한다.
+		// 기본값 시딩은 workflow 직접 의존이 아니므로 시더 포트를 독립 mock으로 구성한다.
 		const provisionUser = unitRef.get(ProvisionUserUseCase);
 		const seederStub = mockOf<UserProvisioningSeederPort>({
 			seedDefaultSettings: jest.fn(),
@@ -263,11 +280,7 @@ describe("AuthService — 인증 서비스", () => {
 		it("P2002 unique constraint(이메일 중복) 시 emailAlreadyRegistered를 던져야 한다", async () => {
 			// Given - 트랜잭션에서 P2002 발생 (동시 가입 race condition)
 			uow.run.mockRejectedValue(
-				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-					code: "P2002",
-					meta: { target: ["email"] },
-					clientVersion: "7.0.0",
-				}),
+				new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS"),
 			);
 
 			// When & Then
@@ -280,14 +293,7 @@ describe("AuthService — 인증 서비스", () => {
 
 		it("P2002 unique constraint(이메일 외) 시 원본 에러를 re-throw해야 한다", async () => {
 			// Given - userTag 충돌 등 email이 아닌 P2002
-			const prismaError = new Prisma.PrismaClientKnownRequestError(
-				"Unique constraint",
-				{
-					code: "P2002",
-					meta: { target: ["userTag"] },
-					clientVersion: "7.0.0",
-				},
-			);
+			const prismaError = new Error("unrelated persistence failure");
 			uow.run.mockRejectedValue(prismaError);
 
 			// When & Then - emailAlreadyRegistered가 아닌 원본 에러가 던져져야 함

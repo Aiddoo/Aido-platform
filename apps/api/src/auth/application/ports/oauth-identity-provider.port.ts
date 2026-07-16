@@ -8,7 +8,7 @@ import type { AccountProvider } from "@/auth/domain/types";
  * 각 벤더 어댑터(infrastructure/oauth/adapters)가 이 포트를 구현하고,
  * `OAUTH_IDENTITY_PROVIDER_REGISTRY`(provider→어댑터 Map)로 조회된다.
  *
- * OAuthService는 공통 흐름(로그인, URL 생성, 콜백 처리)만 관리하고,
+ * OAuthWorkflow는 공통 흐름(로그인, URL 생성, 콜백 처리)만 관리하고,
  * provider-specific 로직은 각 어댑터가 담당한다. (Payment 프로바이더 레지스트리 패턴)
  */
 export const OAUTH_IDENTITY_PROVIDER_REGISTRY = Symbol(
