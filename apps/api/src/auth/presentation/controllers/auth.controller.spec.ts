@@ -14,14 +14,14 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
-import { AuthService } from "@/auth/application/services/auth.service";
+import { AuthFacade } from "@/auth/application/facades";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import type { LoginDto, RegisterDto } from "../dtos";
 import { AuthController } from "./auth.controller";
 
 describe("AuthController — 인증 컨트롤러", () => {
 	let controller: AuthController;
-	let mockAuthService: Mocked<AuthService>;
+	let mockAuthFacade: Mocked<AuthFacade>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -39,7 +39,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 		const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
 
 		controller = unit;
-		mockAuthService = unitRef.get(AuthService);
+		mockAuthFacade = unitRef.get(AuthFacade);
 	});
 
 	describe("register", () => {
@@ -59,7 +59,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 				email: "test@example.com",
 				emailSent: true,
 			};
-			mockAuthService.register.mockResolvedValue(serviceResult);
+			mockAuthFacade.register.mockResolvedValue(serviceResult);
 
 			// When -register를 호출하면
 			const result = await controller.register(
@@ -68,7 +68,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 			);
 
 			// Then -서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
-			expect(mockAuthService.register).toHaveBeenCalledWith(
+			expect(mockAuthFacade.register).toHaveBeenCalledWith(
 				dto,
 				expect.any(Object),
 			);
@@ -99,7 +99,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 					expiresIn: 3600,
 				},
 			};
-			mockAuthService.login.mockResolvedValue(serviceResult);
+			mockAuthFacade.login.mockResolvedValue(serviceResult);
 
 			// When -login을 호출하면
 			const result = await controller.login(
@@ -108,7 +108,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 			);
 
 			// Then -서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
-			expect(mockAuthService.login).toHaveBeenCalledWith(
+			expect(mockAuthFacade.login).toHaveBeenCalledWith(
 				dto,
 				expect.any(Object),
 			);
@@ -127,7 +127,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 	describe("logoutAll", () => {
 		it("전체 로그아웃 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
 			// Given -인증된 사용자가 있을 때
-			mockAuthService.logoutAll.mockResolvedValue({
+			mockAuthFacade.logoutAll.mockResolvedValue({
 				message: "모든 기기에서 로그아웃되었습니다.",
 				revokedCount: 3,
 			});
@@ -136,7 +136,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 			const result = await controller.logoutAll(mockUser, mockReq);
 
 			// Then -서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
-			expect(mockAuthService.logoutAll).toHaveBeenCalledWith(
+			expect(mockAuthFacade.logoutAll).toHaveBeenCalledWith(
 				mockUser.userId,
 				expect.any(Object),
 			);

@@ -2,10 +2,6 @@ import { ErrorCode } from "@aido/errors";
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
-	AdminNotificationFacade,
-	type UserRegisteredEventPayload,
-} from "@/admin-notification";
-import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
@@ -21,14 +17,6 @@ import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/accoun
 import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import { generateRandomName } from "@/auth/domain/services/random-name.util";
 import type { AccountProvider } from "@/auth/domain/types";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
-import {
-	type OAuthMode,
-	OAuthStateRepository,
-} from "@/auth/infrastructure/persistence/oauth-state.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
 import {
@@ -36,10 +24,29 @@ import {
 	toISOStringOrNull,
 } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
-import { EncryptionService } from "@/shared/infrastructure/encryption";
+import {
+	AUTH_CACHE,
+	AUTH_REGISTRATION_NOTIFIER,
+	AUTH_RUNTIME_CONFIG,
+	type AuthCachePort,
+	type AuthRegistrationNotifierPort,
+	type AuthRuntimeConfigPort,
+	type AuthUserRegisteredNotification,
+} from "../ports/auth-collaboration.port";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_OAUTH_STATE_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthLoginAttemptRepositoryPort,
+	type AuthOAuthStateRepositoryPort,
+	AuthPersistenceConflict,
+	type AuthSecurityLogRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../ports/auth-persistence.port";
+import type { OAuthMode } from "../ports/oauth-identity-provider.port";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
 
@@ -48,7 +55,7 @@ import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user
  */
 const ACCOUNT_PROVIDER_TO_EVENT: Record<
 	AccountProvider,
-	UserRegisteredEventPayload["provider"]
+	AuthUserRegisteredNotification["provider"]
 > = {
 	CREDENTIAL: "credential",
 	APPLE: "apple",
@@ -58,20 +65,26 @@ const ACCOUNT_PROVIDER_TO_EVENT: Record<
 };
 
 @Injectable()
-export class OAuthService {
-	readonly #logger = new Logger(OAuthService.name);
+export class OAuthWorkflow {
+	readonly #logger = new Logger(OAuthWorkflow.name);
 
 	constructor(
 		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
-		private readonly userRepository: UserRepository,
-		private readonly accountRepository: AccountRepository,
-		private readonly securityLogRepository: SecurityLogRepository,
-		private readonly loginAttemptRepository: LoginAttemptRepository,
-		private readonly oauthStateRepository: OAuthStateRepository,
-		private readonly configService: TypedConfigService,
-		private readonly encryptionService: EncryptionService,
-		private readonly adminNotificationFacade: AdminNotificationFacade,
-		private readonly cacheService: CacheService,
+		@Inject(AUTH_USER_REPOSITORY)
+		private readonly userRepository: AuthUserRepositoryPort,
+		@Inject(AUTH_ACCOUNT_REPOSITORY)
+		private readonly accountRepository: AuthAccountRepositoryPort,
+		@Inject(AUTH_SECURITY_LOG_REPOSITORY)
+		private readonly securityLogRepository: AuthSecurityLogRepositoryPort,
+		@Inject(AUTH_LOGIN_ATTEMPT_REPOSITORY)
+		private readonly loginAttemptRepository: AuthLoginAttemptRepositoryPort,
+		@Inject(AUTH_OAUTH_STATE_REPOSITORY)
+		private readonly oauthStateRepository: AuthOAuthStateRepositoryPort,
+		@Inject(AUTH_RUNTIME_CONFIG)
+		private readonly configService: AuthRuntimeConfigPort,
+		@Inject(AUTH_REGISTRATION_NOTIFIER)
+		private readonly adminNotificationFacade: AuthRegistrationNotifierPort,
+		@Inject(AUTH_CACHE) private readonly cacheService: AuthCachePort,
 		private readonly issueLoginUseCase: IssueLoginUseCase,
 		private readonly provisionUserUseCase: ProvisionUserUseCase,
 		@Inject(OAUTH_IDENTITY_PROVIDER_REGISTRY)
@@ -453,7 +466,10 @@ export class OAuthService {
 				});
 			});
 		} catch (error) {
-			if (isUniqueConstraintViolation(error)) {
+			if (
+				error instanceof AuthPersistenceConflict &&
+				error.kind === "OAUTH_ACCOUNT_ALREADY_LINKED"
+			) {
 				throw this.#getAlreadyLinkedExceptionForProvider(
 					provider,
 					providerAccountId,
@@ -667,7 +683,7 @@ export class OAuthService {
 				email: effectiveEmail,
 				provider: ACCOUNT_PROVIDER_TO_EVENT[provider],
 				registeredAt: toISOString(now()),
-			} satisfies UserRegisteredEventPayload);
+			} satisfies AuthUserRegisteredNotification);
 		}
 
 		return this.#createSessionAndTokens(userId, userEmail, {
@@ -1165,8 +1181,8 @@ export class OAuthService {
 		);
 
 		return {
-			accessToken: this.encryptionService.decryptSafe(oauthState.accessToken),
-			refreshToken: this.encryptionService.decryptSafe(oauthState.refreshToken),
+			accessToken: oauthState.accessToken,
+			refreshToken: oauthState.refreshToken,
 			userId: oauthState.userId,
 			userName: oauthState.userName ?? undefined,
 			profileImage: oauthState.profileImage ?? undefined,

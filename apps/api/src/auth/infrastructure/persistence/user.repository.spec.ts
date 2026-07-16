@@ -16,6 +16,7 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { AuthPersistenceConflict } from "@/auth/application/ports";
 import * as userTagUtil from "@/auth/domain/services/user-tag.util";
 import type {
 	AccountProvider,
@@ -23,6 +24,7 @@ import type {
 	UserRole,
 	UserStatus,
 } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { UserRepository } from "./user.repository";
 
@@ -368,6 +370,30 @@ describe("UserRepository — 사용자 리포지토리", () => {
 					status: createData.status,
 					userTag: TEST_USER_TAG,
 				}),
+			});
+		});
+
+		it("이메일 유니크 충돌을 애플리케이션 경계 오류로 변환한다", async () => {
+			// Given - 가입 전 조회 이후 동시에 같은 이메일이 생성된 상황
+			db.user.findUnique.mockResolvedValue(null);
+			db.user.create.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+					code: "P2002",
+					clientVersion: "7.0.0",
+					meta: { target: ["email"] },
+				}),
+			);
+
+			// When / Then - Prisma 오류가 애플리케이션으로 누출되지 않음
+			await expect(
+				repository.create({
+					email: "new@example.com",
+					status: "PENDING_VERIFY",
+				}),
+			).rejects.toMatchObject<AuthPersistenceConflict>({
+				name: "AuthPersistenceConflict",
+				message: "EMAIL_ALREADY_EXISTS",
+				kind: "EMAIL_ALREADY_EXISTS",
 			});
 		});
 	});

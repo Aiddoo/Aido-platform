@@ -1,7 +1,7 @@
 /**
- * PasswordManagementService 테스트 (Suites 패턴)
+ * PasswordWorkflow 테스트 (Suites 패턴)
  *
- * AuthService에서 분리된 비밀번호 관련 메서드 5개를 테스트합니다.
+ * 비밀번호 관련 workflow 메서드 5개를 테스트합니다.
  * - forgotPassword
  * - resetPassword
  * - changePassword
@@ -18,39 +18,47 @@ import {
 	REVOKE_REASON,
 	SECURITY_EVENT,
 } from "@/auth/domain/constants/auth.constants";
-import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { PasswordManagementService } from "./password-management.service";
-import { VerificationService } from "./verification.service";
+import {
+	AUTH_PASSWORD_HASHER,
+	type AuthPasswordHasherPort,
+} from "../ports/auth-crypto.port";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_SESSION_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthSecurityLogRepositoryPort,
+	type AuthSessionRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../ports/auth-persistence.port";
+import { VerificationService } from "../services/verification.service";
+import { PasswordWorkflow } from "./password.workflow";
 
-describe("PasswordManagementService — 비밀번호 서비스", () => {
-	let service: PasswordManagementService;
-	let userRepo: Mocked<UserRepository>;
-	let accountRepo: Mocked<AccountRepository>;
-	let sessionRepo: Mocked<SessionRepository>;
-	let passwordService: Mocked<PasswordService>;
+describe("PasswordWorkflow — 비밀번호 workflow", () => {
+	let service: PasswordWorkflow;
+	let userRepo: Mocked<AuthUserRepositoryPort>;
+	let accountRepo: Mocked<AuthAccountRepositoryPort>;
+	let sessionRepo: Mocked<AuthSessionRepositoryPort>;
+	let passwordService: Mocked<AuthPasswordHasherPort>;
 	let verificationService: Mocked<VerificationService>;
 	let uow: Mocked<UnitOfWorkPort>;
-	let securityLogRepo: Mocked<SecurityLogRepository>;
+	let securityLogRepo: Mocked<AuthSecurityLogRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			PasswordManagementService,
-		).compile();
+		const { unit, unitRef } =
+			await TestBed.solitary(PasswordWorkflow).compile();
 
 		service = unit;
-		userRepo = unitRef.get(UserRepository);
-		accountRepo = unitRef.get(AccountRepository);
-		sessionRepo = unitRef.get(SessionRepository);
-		passwordService = unitRef.get(PasswordService);
+		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
+		accountRepo = unitRef.get(AUTH_ACCOUNT_REPOSITORY);
+		sessionRepo = unitRef.get(AUTH_SESSION_REPOSITORY);
+		passwordService = unitRef.get(AUTH_PASSWORD_HASHER);
 		verificationService = unitRef.get(VerificationService);
 		uow = unitRef.get(UNIT_OF_WORK);
-		securityLogRepo = unitRef.get(SecurityLogRepository);
+		securityLogRepo = unitRef.get(AUTH_SECURITY_LOG_REPOSITORY);
 	});
 
 	describe("forgotPassword", () => {

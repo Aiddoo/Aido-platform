@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { AuthPersistenceConflict } from "@/auth/application/ports/auth-persistence.port";
 import { generateUserTag } from "@/auth/domain/services/user-tag.util";
 import type {
 	AccountProvider,
@@ -15,6 +16,7 @@ import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
 
 export interface UserWithAccount {
 	id: string;
@@ -144,12 +146,19 @@ export class UserRepository {
 		// userTag가 제공되지 않으면 자동 생성
 		const userTag = data.userTag ?? (await this.#generateUniqueUserTag());
 
-		return this.client.user.create({
-			data: {
-				...data,
-				userTag,
-			},
-		});
+		try {
+			return await this.client.user.create({
+				data: {
+					...data,
+					userTag,
+				},
+			});
+		} catch (error) {
+			if (uniqueConstraintTargets(error)?.includes("email")) {
+				throw new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS");
+			}
+			throw error;
+		}
 	}
 
 	async #generateUniqueUserTag(): Promise<string> {

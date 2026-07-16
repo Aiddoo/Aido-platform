@@ -1,11 +1,16 @@
 import type { UserRole } from "@aido/validators";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import type { AccountProvider } from "@/auth/domain/types";
-import type { TokenPair } from "@/auth/infrastructure/adapters/token.service";
-import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import type { TokenPair } from "../../ports/auth-crypto.port";
+import {
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthLoginAttemptRepositoryPort,
+	type AuthSecurityLogRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../../ports/auth-persistence.port";
 import { SessionService } from "../../services/session.service";
 
 export interface IssueLoginInput {
@@ -40,9 +45,12 @@ export interface IssueLoginOutcome {
 export class IssueLoginUseCase {
 	constructor(
 		private readonly sessionService: SessionService,
-		private readonly loginAttemptRepository: LoginAttemptRepository,
-		private readonly securityLogRepository: SecurityLogRepository,
-		private readonly userRepository: UserRepository,
+		@Inject(AUTH_LOGIN_ATTEMPT_REPOSITORY)
+		private readonly loginAttemptRepository: AuthLoginAttemptRepositoryPort,
+		@Inject(AUTH_SECURITY_LOG_REPOSITORY)
+		private readonly securityLogRepository: AuthSecurityLogRepositoryPort,
+		@Inject(AUTH_USER_REPOSITORY)
+		private readonly userRepository: AuthUserRepositoryPort,
 	) {}
 
 	async execute(input: IssueLoginInput): Promise<IssueLoginOutcome> {

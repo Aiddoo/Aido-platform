@@ -10,16 +10,22 @@
 import { VERIFICATION_CODE } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
-import { EmailFacade } from "@/email";
-import type { VerificationType } from "@/generated/prisma/client";
+import type { VerificationType } from "@/auth/domain/types";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	AUTH_EMAIL_SENDER,
+	type AuthEmailSenderPort,
+} from "../ports/auth-collaboration.port";
+import {
+	AUTH_VERIFICATION_REPOSITORY,
+	type AuthVerificationRepositoryPort,
+} from "../ports/auth-persistence.port";
 import { VerificationService } from "./verification.service";
 
 describe("VerificationService — 인증 코드 서비스", () => {
 	let service: VerificationService;
-	let verificationRepo: Mocked<VerificationRepository>;
-	let emailFacade: Mocked<EmailFacade>;
+	let verificationRepo: Mocked<AuthVerificationRepositoryPort>;
+	let emailFacade: Mocked<AuthEmailSenderPort>;
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
@@ -27,8 +33,8 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await TestBed.solitary(VerificationService).compile();
 
 		service = unit;
-		verificationRepo = unitRef.get(VerificationRepository);
-		emailFacade = unitRef.get(EmailFacade);
+		verificationRepo = unitRef.get(AUTH_VERIFICATION_REPOSITORY);
+		emailFacade = unitRef.get(AUTH_EMAIL_SENDER);
 	});
 
 	describe("createAndSendPasswordReset", () => {

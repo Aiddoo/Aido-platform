@@ -13,8 +13,7 @@ import {
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
-import { AuthService } from "@/auth/application/services/auth.service";
-import { OAuthService } from "@/auth/application/services/oauth.service";
+import { AccountFacade } from "@/auth/application/facades";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
 import {
 	CurrentUser,
@@ -44,10 +43,7 @@ import { extractMetadata } from "./auth-controller.utils";
 @ApiBearerAuth()
 @Controller("auth")
 export class AccountController {
-	constructor(
-		private readonly authService: AuthService,
-		private readonly oauthService: OAuthService,
-	) {}
+	constructor(private readonly accountFacade: AccountFacade) {}
 
 	@Get("me")
 	@ApiDoc({
@@ -72,7 +68,7 @@ export class AccountController {
 	@ApiSuccessResponse({ type: CurrentUserDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getMe(@CurrentUser() user: CurrentUserPayload) {
-		const result = await this.authService.getCurrentUser(
+		const result = await this.accountFacade.getCurrentUser(
 			user.userId,
 			user.email,
 			user.sessionId,
@@ -103,7 +99,7 @@ export class AccountController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateProfileDto,
 	) {
-		const result = await this.authService.updateProfile(user.userId, dto);
+		const result = await this.accountFacade.updateProfile(user.userId, dto);
 		return AuthMapper.toUpdateProfileResponse(result);
 	}
 
@@ -146,7 +142,7 @@ export class AccountController {
 	@ApiSuccessResponse({ type: LinkedAccountsResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
-		return this.oauthService.getLinkedAccounts(user.userId);
+		return this.accountFacade.getLinkedAccounts(user.userId);
 	}
 
 	@Delete("linked-accounts/:provider")
@@ -191,7 +187,7 @@ export class AccountController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.oauthService.unlinkAccount(user.userId, provider, metadata);
+		return this.accountFacade.unlinkAccount(user.userId, provider, metadata);
 	}
 
 	@Delete("account")
@@ -236,7 +232,7 @@ export class AccountController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.authService.deleteAccount(
+		return this.accountFacade.deleteAccount(
 			user.userId,
 			user.sessionId,
 			dto,

@@ -2,9 +2,14 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock } from "@test/mocks";
 import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
-import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import {
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthLoginAttemptRepositoryPort,
+	type AuthSecurityLogRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../../ports/auth-persistence.port";
 import { SessionService } from "../../services/session.service";
 import {
 	type IssueLoginInput,
@@ -14,9 +19,9 @@ import {
 describe("IssueLoginUseCase — 로그인 발급 수렴 시퀀스", () => {
 	let useCase: IssueLoginUseCase;
 	let sessionService: Mocked<SessionService>;
-	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
-	let securityLogRepo: Mocked<SecurityLogRepository>;
-	let userRepo: Mocked<UserRepository>;
+	let loginAttemptRepo: Mocked<AuthLoginAttemptRepositoryPort>;
+	let securityLogRepo: Mocked<AuthSecurityLogRepositoryPort>;
+	let userRepo: Mocked<AuthUserRepositoryPort>;
 
 	const baseInput: IssueLoginInput = {
 		userId: "user-1",
@@ -33,9 +38,9 @@ describe("IssueLoginUseCase — 로그인 발급 수렴 시퀀스", () => {
 			await TestBed.solitary(IssueLoginUseCase).compile();
 		useCase = unit;
 		sessionService = unitRef.get(SessionService);
-		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
-		securityLogRepo = unitRef.get(SecurityLogRepository);
-		userRepo = unitRef.get(UserRepository);
+		loginAttemptRepo = unitRef.get(AUTH_LOGIN_ATTEMPT_REPOSITORY);
+		securityLogRepo = unitRef.get(AUTH_SECURITY_LOG_REPOSITORY);
+		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
 
 		sessionService.createSessionWithTokens.mockResolvedValue({
 			sessionId: "session-1",

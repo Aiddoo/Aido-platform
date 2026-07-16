@@ -7,7 +7,7 @@ import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 /**
  * 탈퇴(soft-delete) 계정의 복구 가능성 불변식.
  *
- * 이메일 로그인(AuthService)과 소셜 로그인(OAuthService)이 분산 소유하던
+ * 자격 증명 인증 흐름과 OAuth 인증 흐름이 분산 소유하던
  * "탈퇴 계정은 유예 기간(30일) 이내에만 복구 가능" 규칙을 도메인이 소유한다.
  *
  * @returns 복구가 필요한지 여부

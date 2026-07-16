@@ -2,11 +2,11 @@
  * OAuth 통합 테스트 (Testcontainers)
  *
  * @description
- * OAuthService와 관련 Repository들이 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
+ * OAuthWorkflow와 관련 Repository들이 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
  * Testcontainers를 사용하여 독립적인 PostgreSQL 컨테이너에서 테스트합니다.
  *
  * 통합 테스트의 목적:
- * - OAuthService → Repository → Prisma → PostgreSQL 전체 스택 검증
+ * - OAuthWorkflow → Repository → Prisma → PostgreSQL 전체 스택 검증
  * - 소셜 로그인 플로우의 데이터베이스 연동 검증
  * - 계정 연결/해제 기능 검증
  * - 토큰 교환 플로우 검증
@@ -28,14 +28,26 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { AdminNotificationFacade } from "@/admin-notification";
 import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_CACHE,
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_OAUTH_STATE_REPOSITORY,
+	AUTH_REGISTRATION_NOTIFIER,
+	AUTH_RUNTIME_CONFIG,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_SESSION_REPOSITORY,
+	AUTH_TOKEN_ISSUER,
+	AUTH_USER_REPOSITORY,
+} from "@/auth/application/ports";
+import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
 } from "@/auth/application/ports/oauth-identity-provider.port";
-import { OAuthService } from "@/auth/application/services/oauth.service";
 import { SessionService } from "@/auth/application/services/session.service";
 import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "@/auth/application/use-cases/provision-user/provision-user.use-case";
+import { OAuthWorkflow } from "@/auth/application/workflows/oauth.workflow";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import {
 	AppleOAuthProvider,
@@ -70,7 +82,7 @@ import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.prov
 
 describe("OAuth 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
-	let oauthService: OAuthService;
+	let oauthService: OAuthWorkflow;
 	let fakeTokenVerifier: FakeOAuthTokenVerifierService;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -98,7 +110,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				}),
 			],
 			providers: [
-				OAuthService,
+				OAuthWorkflow,
 				IssueLoginUseCase,
 				ProvisionUserUseCase,
 				{
@@ -146,6 +158,28 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				SecurityLogRepository,
 				LoginAttemptRepository,
 				OAuthStateRepository,
+				{ provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
+				{ provide: AUTH_ACCOUNT_REPOSITORY, useExisting: AccountRepository },
+				{ provide: AUTH_SESSION_REPOSITORY, useExisting: SessionRepository },
+				{
+					provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
+					useExisting: LoginAttemptRepository,
+				},
+				{
+					provide: AUTH_SECURITY_LOG_REPOSITORY,
+					useExisting: SecurityLogRepository,
+				},
+				{
+					provide: AUTH_OAUTH_STATE_REPOSITORY,
+					useExisting: OAuthStateRepository,
+				},
+				{ provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
+				{ provide: AUTH_CACHE, useExisting: CacheService },
+				{ provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
+				{
+					provide: AUTH_REGISTRATION_NOTIFIER,
+					useExisting: AdminNotificationFacade,
+				},
 				UserConsentRepository,
 				UserPreferenceRepository,
 				TodoCategoryRepository,
@@ -265,7 +299,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			],
 		}).compile();
 
-		oauthService = module.get<OAuthService>(OAuthService);
+		oauthService = module.get<OAuthWorkflow>(OAuthWorkflow);
 		accountRepository = module.get<AccountRepository>(AccountRepository);
 		userRepository = module.get<UserRepository>(UserRepository);
 		oauthStateRepository =
@@ -1457,7 +1491,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					email: "apple-category@example.com",
 					emailVerified: true,
 				},
-				login: (svc: OAuthService, token: string) =>
+				login: (svc: OAuthWorkflow, token: string) =>
 					svc.handleAppleMobileLogin(token),
 			},
 			{
@@ -1469,7 +1503,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					emailVerified: true,
 					name: "Google Category User",
 				},
-				login: (svc: OAuthService, token: string) =>
+				login: (svc: OAuthWorkflow, token: string) =>
 					svc.handleGoogleMobileLogin(token),
 			},
 			{
@@ -1481,7 +1515,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					emailVerified: false,
 					name: "Kakao Category User",
 				},
-				login: (svc: OAuthService, token: string) =>
+				login: (svc: OAuthWorkflow, token: string) =>
 					svc.handleKakaoMobileLogin(token),
 			},
 			{
@@ -1493,7 +1527,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					emailVerified: false,
 					name: "Naver Category User",
 				},
-				login: (svc: OAuthService, token: string) =>
+				login: (svc: OAuthWorkflow, token: string) =>
 					svc.handleNaverMobileLogin(token),
 			},
 		];

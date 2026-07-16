@@ -75,13 +75,25 @@ export class OAuthStateRepository {
 
 	// 아직 교환되지 않은 (exchangedAt이 null인) 레코드만 반환
 	async findByExchangeCode(exchangeCode: string): Promise<OAuthState | null> {
-		return this.database.oAuthState.findFirst({
+		const state = await this.database.oAuthState.findFirst({
 			where: {
 				exchangeCode,
 				exchangedAt: null, // 아직 교환되지 않은 것만
 				expiresAt: { gt: now() },
 			},
 		});
+		if (!state) {
+			return null;
+		}
+		return {
+			...state,
+			accessToken: state.accessToken
+				? this.encryptionService.decryptSafe(state.accessToken)
+				: null,
+			refreshToken: state.refreshToken
+				? this.encryptionService.decryptSafe(state.refreshToken)
+				: null,
+		};
 	}
 
 	async saveExchangeData(

@@ -57,6 +57,9 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 		encryptionService.encrypt.mockImplementation(
 			(value: string) => `encrypted-${value}`,
 		);
+		encryptionService.decryptSafe.mockImplementation((value: string) =>
+			value.replace("encrypted-", ""),
+		);
 	});
 
 	describe("create", () => {
@@ -178,6 +181,31 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 					expiresAt: { gt: expect.any(Date) },
 				},
 			});
+		});
+
+		it("교환 코드의 암호화된 토큰을 복호화하여 반환한다", async () => {
+			// Given - DB에는 암호화된 토큰이 저장되어 있음
+			db.oAuthState.findFirst.mockResolvedValue({
+				...mockOAuthState,
+				exchangeCode: "exchange-code-123",
+				accessToken: "encrypted-access-token",
+				refreshToken: "encrypted-refresh-token",
+			});
+
+			// When
+			const result = await repository.findByExchangeCode("exchange-code-123");
+
+			// Then - 복호화 책임은 인프라 어댑터에서 끝남
+			expect(result).toMatchObject({
+				accessToken: "access-token",
+				refreshToken: "refresh-token",
+			});
+			expect(encryptionService.decryptSafe).toHaveBeenCalledWith(
+				"encrypted-access-token",
+			);
+			expect(encryptionService.decryptSafe).toHaveBeenCalledWith(
+				"encrypted-refresh-token",
+			);
 		});
 
 		it("교환 코드가 없으면 null을 반환한다", async () => {

@@ -1,7 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { AccountProvider, UserStatus } from "@/auth/domain/types";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../../ports/auth-persistence.port";
 import {
 	RETENTION_ENROLLER,
 	type RetentionEnrollerPort,
@@ -53,8 +57,10 @@ export interface ProvisionedUser {
 @Injectable()
 export class ProvisionUserUseCase {
 	constructor(
-		private readonly userRepository: UserRepository,
-		private readonly accountRepository: AccountRepository,
+		@Inject(AUTH_USER_REPOSITORY)
+		private readonly userRepository: AuthUserRepositoryPort,
+		@Inject(AUTH_ACCOUNT_REPOSITORY)
+		private readonly accountRepository: AuthAccountRepositoryPort,
 		@Inject(USER_PROVISIONING_SEEDER)
 		private readonly seeder: UserProvisioningSeederPort,
 		@Inject(RETENTION_ENROLLER)

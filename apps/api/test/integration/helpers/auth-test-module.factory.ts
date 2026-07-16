@@ -13,12 +13,25 @@ import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { AdminNotificationFacade } from "@/admin-notification";
-import { AuthService } from "@/auth/application/services/auth.service";
-import { PasswordManagementService } from "@/auth/application/services/password-management.service";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_CACHE,
+	AUTH_EMAIL_SENDER,
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_PASSWORD_HASHER,
+	AUTH_REGISTRATION_NOTIFIER,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_SESSION_REPOSITORY,
+	AUTH_TOKEN_ISSUER,
+	AUTH_USER_REPOSITORY,
+	AUTH_VERIFICATION_REPOSITORY,
+} from "@/auth/application/ports";
 import { SessionService } from "@/auth/application/services/session.service";
 import { VerificationService } from "@/auth/application/services/verification.service";
 import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "@/auth/application/use-cases/provision-user/provision-user.use-case";
+import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
+import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -54,11 +67,11 @@ export async function createAuthTestModule(
 			}),
 		],
 		providers: [
-			AuthService,
+			CredentialAuthWorkflow,
 			IssueLoginUseCase,
 			ProvisionUserUseCase,
 			PasswordService,
-			PasswordManagementService,
+			PasswordWorkflow,
 			SessionService,
 			TokenService,
 			VerificationService,
@@ -75,6 +88,29 @@ export async function createAuthTestModule(
 			SecurityLogRepository,
 			LoginAttemptRepository,
 			VerificationRepository,
+			{ provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
+			{ provide: AUTH_ACCOUNT_REPOSITORY, useExisting: AccountRepository },
+			{ provide: AUTH_SESSION_REPOSITORY, useExisting: SessionRepository },
+			{
+				provide: AUTH_VERIFICATION_REPOSITORY,
+				useExisting: VerificationRepository,
+			},
+			{
+				provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
+				useExisting: LoginAttemptRepository,
+			},
+			{
+				provide: AUTH_SECURITY_LOG_REPOSITORY,
+				useExisting: SecurityLogRepository,
+			},
+			{ provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
+			{ provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
+			{ provide: AUTH_EMAIL_SENDER, useExisting: EmailFacade },
+			{ provide: AUTH_CACHE, useExisting: CacheService },
+			{
+				provide: AUTH_REGISTRATION_NOTIFIER,
+				useExisting: AdminNotificationFacade,
+			},
 			UserConsentRepository,
 			UserPreferenceRepository,
 			TodoCategoryRepository,

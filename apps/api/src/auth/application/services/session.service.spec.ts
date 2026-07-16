@@ -10,12 +10,17 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder } from "@test/builders";
-import type { TokenPair } from "@/auth/infrastructure/adapters/token.service";
-import { TokenService } from "@/auth/infrastructure/adapters/token.service";
-
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import type { Session } from "@/generated/prisma/client";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	AUTH_TOKEN_ISSUER,
+	type AuthTokenIssuerPort,
+	type TokenPair,
+} from "../ports/auth-crypto.port";
+import {
+	AUTH_SESSION_REPOSITORY,
+	type AuthSessionRepositoryPort,
+} from "../ports/auth-persistence.port";
 import {
 	type CreateSessionParams,
 	type CreateSessionResult,
@@ -25,8 +30,8 @@ import {
 
 describe("SessionService — 세션 서비스", () => {
 	let service: SessionService;
-	let sessionRepo: Mocked<SessionRepository>;
-	let tokenService: Mocked<TokenService>;
+	let sessionRepo: Mocked<AuthSessionRepositoryPort>;
+	let tokenService: Mocked<AuthTokenIssuerPort>;
 
 	// 재사용 가능한 테스트 데이터
 	const mockUserId = "user-123";
@@ -56,8 +61,8 @@ describe("SessionService — 세션 서비스", () => {
 		const { unit, unitRef } = await TestBed.solitary(SessionService).compile();
 
 		service = unit;
-		sessionRepo = unitRef.get(SessionRepository);
-		tokenService = unitRef.get(TokenService);
+		sessionRepo = unitRef.get(AUTH_SESSION_REPOSITORY);
+		tokenService = unitRef.get(AUTH_TOKEN_ISSUER);
 	});
 
 	describe("createSessionWithTokens", () => {

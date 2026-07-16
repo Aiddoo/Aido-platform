@@ -17,6 +17,8 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder } from "@test/builders";
 import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { AuthPersistenceConflict } from "@/auth/application/ports";
+import { Prisma } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 
@@ -316,6 +318,25 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			// Then
 			expect(result).toEqual(mockOAuthAccount);
 			expect(db.account.create).toHaveBeenCalled();
+		});
+
+		it("OAuth 계정 유니크 충돌을 애플리케이션 경계 오류로 변환한다", async () => {
+			// Given - 동일 provider 계정 연결이 동시에 완료된 상황
+			db.account.create.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+					code: "P2002",
+					clientVersion: "7.0.0",
+				}),
+			);
+
+			// When / Then - Prisma 오류가 애플리케이션으로 누출되지 않음
+			await expect(
+				repository.createOAuthAccount(oAuthData),
+			).rejects.toMatchObject<AuthPersistenceConflict>({
+				name: "AuthPersistenceConflict",
+				message: "OAUTH_ACCOUNT_ALREADY_LINKED",
+				kind: "OAUTH_ACCOUNT_ALREADY_LINKED",
+			});
 		});
 	});
 
