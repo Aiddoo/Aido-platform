@@ -7,27 +7,41 @@ import {
 	REVOKE_REASON,
 	SECURITY_EVENT,
 } from "@/auth/domain/constants/auth.constants";
-import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
-import { VerificationService } from "./verification.service";
+import {
+	AUTH_PASSWORD_HASHER,
+	type AuthPasswordHasherPort,
+} from "../ports/auth-crypto.port";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_SESSION_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthSecurityLogRepositoryPort,
+	type AuthSessionRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../ports/auth-persistence.port";
+import { VerificationService } from "../services/verification.service";
 
 @Injectable()
-export class PasswordManagementService {
-	readonly #logger = new Logger(PasswordManagementService.name);
+export class PasswordWorkflow {
+	readonly #logger = new Logger(PasswordWorkflow.name);
 
 	constructor(
 		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
-		private readonly userRepository: UserRepository,
-		private readonly accountRepository: AccountRepository,
-		private readonly sessionRepository: SessionRepository,
-		private readonly securityLogRepository: SecurityLogRepository,
-		private readonly passwordService: PasswordService,
+		@Inject(AUTH_USER_REPOSITORY)
+		private readonly userRepository: AuthUserRepositoryPort,
+		@Inject(AUTH_ACCOUNT_REPOSITORY)
+		private readonly accountRepository: AuthAccountRepositoryPort,
+		@Inject(AUTH_SESSION_REPOSITORY)
+		private readonly sessionRepository: AuthSessionRepositoryPort,
+		@Inject(AUTH_SECURITY_LOG_REPOSITORY)
+		private readonly securityLogRepository: AuthSecurityLogRepositoryPort,
+		@Inject(AUTH_PASSWORD_HASHER)
+		private readonly passwordService: AuthPasswordHasherPort,
 		private readonly verificationService: VerificationService,
 	) {}
 

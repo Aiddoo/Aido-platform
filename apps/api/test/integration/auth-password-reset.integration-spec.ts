@@ -2,11 +2,11 @@
  * 비밀번호 재설정 통합 테스트 (Testcontainers)
  *
  * @description
- * AuthService.forgotPassword() 및 AuthService.resetPassword()가
+ * PasswordWorkflow.forgotPassword() 및 PasswordWorkflow.resetPassword()가
  * 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
  *
  * 통합 테스트의 목적:
- * - AuthService -> Repository -> Prisma -> PostgreSQL 전체 스택 검증
+ * - PasswordWorkflow -> Repository -> Prisma -> PostgreSQL 전체 스택 검증
  * - forgotPassword → resetPassword → 새 비밀번호 로그인 전체 플로우
  * - 세션 무효화 및 SecurityLog 기록 확인
  * - 보안: 존재하지 않는 이메일 동일 응답
@@ -22,8 +22,8 @@
 
 import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AuthService } from "@/auth/application/services/auth.service";
-import { PasswordManagementService } from "@/auth/application/services/password-management.service";
+import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
+import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
@@ -32,8 +32,8 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory";
 
 describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
-	let authService: AuthService;
-	let passwordManagementService: PasswordManagementService;
+	let authService: CredentialAuthWorkflow;
+	let passwordManagementService: PasswordWorkflow;
 	let fakeEmailService: FakeEmailService;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -46,10 +46,8 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 		fakeEmailService = new FakeEmailService();
 
 		module = await createAuthTestModule(databaseService, fakeEmailService);
-		authService = module.get<AuthService>(AuthService);
-		passwordManagementService = module.get<PasswordManagementService>(
-			PasswordManagementService,
-		);
+		authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
+		passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
 	}, 60000);
 
 	beforeEach(async () => {

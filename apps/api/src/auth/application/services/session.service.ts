@@ -1,12 +1,18 @@
 import { ErrorCode } from "@aido/errors";
 import type { UserRole } from "@aido/validators";
-import { Injectable } from "@nestjs/common";
-import type { TokenPair } from "@/auth/infrastructure/adapters/token.service";
-import { TokenService } from "@/auth/infrastructure/adapters/token.service";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
+import { Inject, Injectable } from "@nestjs/common";
 import { addMilliseconds } from "@/shared/domain/date/utils/arithmetic";
 import { isExpired } from "@/shared/domain/date/utils/compare";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	AUTH_TOKEN_ISSUER,
+	type AuthTokenIssuerPort,
+	type TokenPair,
+} from "../ports/auth-crypto.port";
+import {
+	AUTH_SESSION_REPOSITORY,
+	type AuthSessionRepositoryPort,
+} from "../ports/auth-persistence.port";
 
 export interface CreateSessionParams {
 	userId: string;
@@ -35,14 +41,16 @@ export interface SessionValidatable {
 /**
  * 세션 생성 + 토큰 발급 + refreshTokenHash 업데이트를 통합하는 서비스
  *
- * AuthService.verifyEmail, AuthService.login, OAuthService._createSessionAndTokens에서
+ * 자격 증명·OAuth workflow의 로그인 경로에서
  * 동일하게 반복되던 5단계 시퀀스를 단일 메서드로 제공합니다.
  */
 @Injectable()
 export class SessionService {
 	constructor(
-		private readonly sessionRepository: SessionRepository,
-		private readonly tokenService: TokenService,
+		@Inject(AUTH_SESSION_REPOSITORY)
+		private readonly sessionRepository: AuthSessionRepositoryPort,
+		@Inject(AUTH_TOKEN_ISSUER)
+		private readonly tokenService: AuthTokenIssuerPort,
 	) {}
 
 	/**

@@ -5,7 +5,7 @@ import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 /**
  * 계정 상태 로그인 가능성 불변식.
  *
- * 이메일 로그인(AuthService)과 소셜 로그인(OAuthService)이 공유하던 상태 게이트를
+ * 자격 증명 인증 흐름과 OAuth 인증 흐름이 공유하던 상태 게이트를
  * 도메인이 소유한다. LOCKED/SUSPENDED는 로그인을 거부하고, 그 외(ACTIVE/PENDING_VERIFY
  * 및 알 수 없는 값)는 이 정책에서 처리하지 않는다(호출측의 인증/복구 흐름이 담당).
  *

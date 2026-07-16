@@ -8,10 +8,6 @@ import {
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import {
-	AdminNotificationFacade,
-	type UserRegisteredEventPayload,
-} from "@/admin-notification";
 import type {
 	CurrentUserResult,
 	DeleteAccountResult,
@@ -37,13 +33,6 @@ import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/accoun
 import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import type { UserStatus } from "@/auth/domain/types";
 import { Email } from "@/auth/domain/value-objects/email.vo";
-import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
-import { TokenService } from "@/auth/infrastructure/adapters/token.service";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import {
 	addMilliseconds,
@@ -56,34 +45,66 @@ import {
 } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
+import {
+	AUTH_CACHE,
+	AUTH_REGISTRATION_NOTIFIER,
+	type AuthCachePort,
+	type AuthRegistrationNotifierPort,
+	type AuthUserRegisteredNotification,
+} from "../ports/auth-collaboration.port";
+import {
+	AUTH_PASSWORD_HASHER,
+	AUTH_TOKEN_ISSUER,
+	type AuthPasswordHasherPort,
+	type AuthTokenIssuerPort,
+} from "../ports/auth-crypto.port";
+import {
+	AUTH_ACCOUNT_REPOSITORY,
+	AUTH_LOGIN_ATTEMPT_REPOSITORY,
+	AUTH_SECURITY_LOG_REPOSITORY,
+	AUTH_SESSION_REPOSITORY,
+	AUTH_USER_REPOSITORY,
+	type AuthAccountRepositoryPort,
+	type AuthLoginAttemptRepositoryPort,
+	AuthPersistenceConflict,
+	type AuthSecurityLogRepositoryPort,
+	type AuthSessionRepositoryPort,
+	type AuthUserRepositoryPort,
+} from "../ports/auth-persistence.port";
 import {
 	RETENTION_ENROLLER,
 	type RetentionEnrollerPort,
 } from "../ports/retention-enroller.port";
+import { SessionService } from "../services/session.service";
+import { VerificationService } from "../services/verification.service";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
-import { SessionService } from "./session.service";
-import { VerificationService } from "./verification.service";
 
 @Injectable()
-export class AuthService {
-	readonly #logger = new Logger(AuthService.name);
+export class CredentialAuthWorkflow {
+	readonly #logger = new Logger(CredentialAuthWorkflow.name);
 
 	constructor(
 		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
-		private readonly userRepository: UserRepository,
-		private readonly accountRepository: AccountRepository,
-		private readonly sessionRepository: SessionRepository,
-		private readonly loginAttemptRepository: LoginAttemptRepository,
-		private readonly securityLogRepository: SecurityLogRepository,
-		private readonly passwordService: PasswordService,
+		@Inject(AUTH_USER_REPOSITORY)
+		private readonly userRepository: AuthUserRepositoryPort,
+		@Inject(AUTH_ACCOUNT_REPOSITORY)
+		private readonly accountRepository: AuthAccountRepositoryPort,
+		@Inject(AUTH_SESSION_REPOSITORY)
+		private readonly sessionRepository: AuthSessionRepositoryPort,
+		@Inject(AUTH_LOGIN_ATTEMPT_REPOSITORY)
+		private readonly loginAttemptRepository: AuthLoginAttemptRepositoryPort,
+		@Inject(AUTH_SECURITY_LOG_REPOSITORY)
+		private readonly securityLogRepository: AuthSecurityLogRepositoryPort,
+		@Inject(AUTH_PASSWORD_HASHER)
+		private readonly passwordService: AuthPasswordHasherPort,
 		private readonly sessionService: SessionService,
-		private readonly tokenService: TokenService,
+		@Inject(AUTH_TOKEN_ISSUER)
+		private readonly tokenService: AuthTokenIssuerPort,
 		private readonly verificationService: VerificationService,
-		private readonly cacheService: CacheService,
-		private readonly adminNotificationFacade: AdminNotificationFacade,
+		@Inject(AUTH_CACHE) private readonly cacheService: AuthCachePort,
+		@Inject(AUTH_REGISTRATION_NOTIFIER)
+		private readonly adminNotificationFacade: AuthRegistrationNotifierPort,
 		private readonly issueLoginUseCase: IssueLoginUseCase,
 		private readonly provisionUserUseCase: ProvisionUserUseCase,
 		@Inject(RETENTION_ENROLLER)
@@ -162,7 +183,10 @@ export class AuthService {
 		} catch (error) {
 			// 사전 findByEmail 체크와 create 사이의 레이스로 이메일 유니크 위반이
 			// 발생하면 EMAIL_0501로 정규화(그 외 유니크 위반은 원본 재전파).
-			if (uniqueConstraintTargets(error)?.includes("email")) {
+			if (
+				error instanceof AuthPersistenceConflict &&
+				error.kind === "EMAIL_ALREADY_EXISTS"
+			) {
 				throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
 			}
 			throw error;
@@ -193,7 +217,7 @@ export class AuthService {
 			email: result.user.email,
 			provider: "credential",
 			registeredAt: toISOString(now()),
-		} satisfies UserRegisteredEventPayload);
+		} satisfies AuthUserRegisteredNotification);
 
 		return {
 			userId: result.user.id,

@@ -12,8 +12,7 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
-import { AuthService } from "@/auth/application/services/auth.service";
-import { PasswordManagementService } from "@/auth/application/services/password-management.service";
+import { AuthFacade } from "@/auth/application/facades";
 import { JwtRefreshGuard } from "@/auth/infrastructure/guards";
 import type { RefreshTokenPayload } from "@/auth/infrastructure/strategies/jwt-refresh.strategy";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
@@ -48,10 +47,7 @@ import { extractMetadata } from "./auth-controller.utils";
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 export class AuthController {
-	constructor(
-		private readonly authService: AuthService,
-		private readonly passwordManagementService: PasswordManagementService,
-	) {}
+	constructor(private readonly authFacade: AuthFacade) {}
 
 	@Post("register")
 	@Public()
@@ -83,7 +79,7 @@ export class AuthController {
 	@ApiCreatedResponse({ type: MessageResponseDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
 	async register(@Body() dto: RegisterDto, @Req() req: Request) {
-		const result = await this.authService.register(dto, extractMetadata(req));
+		const result = await this.authFacade.register(dto, extractMetadata(req));
 		return AuthMapper.toRegisterResponse(result);
 	}
 
@@ -123,7 +119,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
 	async verifyEmail(@Body() dto: VerifyEmailDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
-		const result = await this.authService.verifyEmail(dto, metadata);
+		const result = await this.authFacade.verifyEmail(dto, metadata);
 		return AuthMapper.toAuthTokensResponse(result);
 	}
 
@@ -154,7 +150,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async resendVerification(@Body() dto: ResendVerificationDto) {
-		const result = await this.authService.resendVerification(dto.email);
+		const result = await this.authFacade.resendVerification(dto.email);
 		return result;
 	}
 
@@ -205,7 +201,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
 	async login(@Body() dto: LoginDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
-		const result = await this.authService.login(dto, metadata);
+		const result = await this.authFacade.login(dto, metadata);
 		return AuthMapper.toAuthTokensResponse(result);
 	}
 
@@ -237,7 +233,7 @@ export class AuthController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
 		const metadata = extractMetadata(req);
-		await this.authService.logout(user.userId, user.sessionId, metadata);
+		await this.authFacade.logout(user.userId, user.sessionId, metadata);
 		return AuthMapper.toMessageResponse("로그아웃되었습니다.");
 	}
 
@@ -272,7 +268,7 @@ export class AuthController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Req() req: Request,
 	) {
-		await this.authService.logoutAll(user.userId, extractMetadata(req));
+		await this.authFacade.logoutAll(user.userId, extractMetadata(req));
 		return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
 	}
 
@@ -308,7 +304,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
 	async refresh(@Req() req: Request) {
 		const payload = req.user as RefreshTokenPayload;
-		const result = await this.authService.refreshTokens(
+		const result = await this.authFacade.refreshTokens(
 			payload.refreshToken,
 			{
 				userId: payload.userId,
@@ -348,7 +344,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
-		const result = await this.passwordManagementService.forgotPassword(
+		const result = await this.authFacade.forgotPassword(
 			dto.email,
 			extractMetadata(req),
 		);
@@ -394,7 +390,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async resetPassword(@Body() dto: ResetPasswordDto) {
-		const result = await this.passwordManagementService.resetPassword(
+		const result = await this.authFacade.resetPassword(
 			dto.email,
 			dto.code,
 			dto.newPassword,
@@ -438,7 +434,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
-		return this.passwordManagementService.requestPasswordSetupCode(user.userId);
+		return this.authFacade.requestPasswordSetupCode(user.userId);
 	}
 
 	@Post("password")
@@ -486,7 +482,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.passwordManagementService.setPassword(
+		return this.authFacade.setPassword(
 			user.userId,
 			dto.code,
 			dto.newPassword,
@@ -535,7 +531,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.passwordManagementService.changePassword(
+		const result = await this.authFacade.changePassword(
 			user.userId,
 			dto.currentPassword,
 			dto.newPassword,

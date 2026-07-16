@@ -10,7 +10,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
-import { AuthService } from "@/auth/application/services/auth.service";
+import { SessionFacade } from "@/auth/application/facades";
 
 import {
 	CurrentUser,
@@ -39,7 +39,7 @@ import { extractMetadata } from "./auth-controller.utils";
 @ApiBearerAuth()
 @Controller("auth")
 export class SessionController {
-	constructor(private readonly authService: AuthService) {}
+	constructor(private readonly sessionFacade: SessionFacade) {}
 
 	@Get("sessions")
 	@ApiDoc({
@@ -72,7 +72,7 @@ export class SessionController {
 	@ApiSuccessResponse({ type: SessionListDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSessions(@CurrentUser() user: CurrentUserPayload) {
-		const sessions = await this.authService.getActiveSessions(user.userId);
+		const sessions = await this.sessionFacade.getActiveSessions(user.userId);
 
 		const sessionsWithCurrent = sessions.map((session) => ({
 			...session,
@@ -123,7 +123,7 @@ export class SessionController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.authService.revokeSession(
+		const result = await this.sessionFacade.revokeSession(
 			user.userId,
 			sessionId,
 			metadata,

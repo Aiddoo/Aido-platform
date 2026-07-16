@@ -11,12 +11,12 @@
  * ```typescript
  * import { TestBed, Mocked } from '@suites/unit';
  *
- * describe('AuthService', () => {
- *   let service: AuthService;
+ * describe('SessionService', () => {
+ *   let service: SessionService;
  *   let userRepo: Mocked<UserRepository>;
  *
  *   beforeEach(async () => {
- *     const { unit, unitRef } = await TestBed.solitary(AuthService).compile();
+ *     const { unit, unitRef } = await TestBed.solitary(SessionService).compile();
  *     service = unit;
  *     userRepo = unitRef.get(UserRepository);
  *   });

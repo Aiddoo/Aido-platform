@@ -2,6 +2,7 @@ import type { CurrentUserPayload } from "@aido/validators";
 import {
 	type CallHandler,
 	type ExecutionContext,
+	Inject,
 	Injectable,
 	Logger,
 	type NestInterceptor,
@@ -9,7 +10,10 @@ import {
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
 
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import {
+	AUTH_USER_ACTIVITY_WRITER,
+	type AuthUserActivityWriterPort,
+} from "@/auth/application/ports/auth-collaboration.port";
 
 /**
  * 인증된 API 요청 시 User.lastActiveAt을 갱신하는 인터셉터
@@ -30,7 +34,10 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 
 	static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
 
-	constructor(private readonly userRepository: UserRepository) {
+	constructor(
+		@Inject(AUTH_USER_ACTIVITY_WRITER)
+		private readonly userActivityWriter: AuthUserActivityWriterPort,
+	) {
 		this.#cleanupInterval = setInterval(
 			() => this.#cleanup(),
 			LastActiveInterceptor.THROTTLE_MS,
@@ -63,7 +70,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		this.#throttleMap.set(userId, now);
 
 		// fire-and-forget — 응답을 블로킹하지 않음
-		this.userRepository.updateLastActiveAt(userId).catch((error) => {
+		this.userActivityWriter.updateLastActiveAt(userId).catch((error) => {
 			this.#logger.error(
 				`Failed to update lastActiveAt: userId=${userId}, error=${error}`,
 			);

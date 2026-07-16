@@ -14,8 +14,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
-import { AuthService } from "@/auth/application/services/auth.service";
-import { OAuthService } from "@/auth/application/services/oauth.service";
+import { AccountFacade } from "@/auth/application/facades";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import type { DeleteAccountDto, UpdateProfileDto } from "../dtos";
@@ -23,8 +22,7 @@ import { AccountController } from "./account.controller";
 
 describe("AccountController — 계정 컨트롤러", () => {
 	let controller: AccountController;
-	let mockAuthService: Mocked<AuthService>;
-	let mockOAuthService: Mocked<OAuthService>;
+	let mockAccountFacade: Mocked<AccountFacade>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -47,8 +45,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			await TestBed.solitary(AccountController).compile();
 
 		controller = unit;
-		mockAuthService = unitRef.get(AuthService);
-		mockOAuthService = unitRef.get(OAuthService);
+		mockAccountFacade = unitRef.get(AccountFacade);
 	});
 
 	describe("getMe", () => {
@@ -69,14 +66,14 @@ describe("AccountController — 계정 컨트롤러", () => {
 				createdAt: "2026-01-01T00:00:00.000Z",
 				providers: ["CREDENTIAL" as const],
 			};
-			mockAuthService.getCurrentUser.mockResolvedValue(serviceResult);
+			mockAccountFacade.getCurrentUser.mockResolvedValue(serviceResult);
 			const expectedResponse = AuthMapper.toCurrentUserResponse(serviceResult);
 
 			// When -getMe를 호출하면
 			const result = await controller.getMe(mockUser);
 
 			// Then -서비스에 userId, email, sessionId를 전달하고 매핑된 결과를 반환해야 한다
-			expect(mockAuthService.getCurrentUser).toHaveBeenCalledWith(
+			expect(mockAccountFacade.getCurrentUser).toHaveBeenCalledWith(
 				mockUser.userId,
 				mockUser.email,
 				mockUser.sessionId,
@@ -96,7 +93,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 				name: "새이름",
 				profileImage: null,
 			};
-			mockAuthService.updateProfile.mockResolvedValue(serviceResult);
+			mockAccountFacade.updateProfile.mockResolvedValue(serviceResult);
 			const expectedResponse =
 				AuthMapper.toUpdateProfileResponse(serviceResult);
 
@@ -104,7 +101,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			const result = await controller.updateProfile(mockUser, dto);
 
 			// Then -서비스에 userId와 DTO를 전달하고 매핑된 결과를 반환해야 한다
-			expect(mockAuthService.updateProfile).toHaveBeenCalledWith(
+			expect(mockAccountFacade.updateProfile).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
 			);
@@ -144,13 +141,13 @@ describe("AccountController — 계정 컨트롤러", () => {
 				],
 				canUnlink: true,
 			};
-			mockOAuthService.getLinkedAccounts.mockResolvedValue(serviceResult);
+			mockAccountFacade.getLinkedAccounts.mockResolvedValue(serviceResult);
 
 			// When -getLinkedAccounts를 호출하면
 			const result = await controller.getLinkedAccounts(mockUser);
 
 			// Then -서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
-			expect(mockOAuthService.getLinkedAccounts).toHaveBeenCalledWith(
+			expect(mockAccountFacade.getLinkedAccounts).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 			expect(result).toEqual(serviceResult);
@@ -162,7 +159,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			// Given -연동 해제 서비스 응답이 준비되었을 때
 			const provider = "GOOGLE" as const;
 			const serviceResult = { message: "소셜 계정이 연결 해제되었습니다." };
-			mockOAuthService.unlinkAccount.mockResolvedValue(serviceResult);
+			mockAccountFacade.unlinkAccount.mockResolvedValue(serviceResult);
 
 			// When -unlinkAccount를 호출하면
 			const result = await controller.unlinkAccount(
@@ -172,7 +169,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			);
 
 			// Then -서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
-			expect(mockOAuthService.unlinkAccount).toHaveBeenCalledWith(
+			expect(mockAccountFacade.unlinkAccount).toHaveBeenCalledWith(
 				mockUser.userId,
 				provider,
 				expect.objectContaining({
@@ -195,13 +192,13 @@ describe("AccountController — 계정 컨트롤러", () => {
 				deletedAt: "2026-03-01T00:00:00.000Z",
 				gracePeriodDays: 30,
 			};
-			mockAuthService.deleteAccount.mockResolvedValue(serviceResult);
+			mockAccountFacade.deleteAccount.mockResolvedValue(serviceResult);
 
 			// When -deleteAccount를 호출하면
 			const result = await controller.deleteAccount(mockUser, dto, mockRequest);
 
 			// Then -서비스에 userId, sessionId, dto, metadata를 전달하고 결과를 반환해야 한다
-			expect(mockAuthService.deleteAccount).toHaveBeenCalledWith(
+			expect(mockAccountFacade.deleteAccount).toHaveBeenCalledWith(
 				mockUser.userId,
 				mockUser.sessionId,
 				dto,

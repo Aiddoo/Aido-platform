@@ -1,15 +1,21 @@
 import { ErrorCode } from "@aido/errors";
 import { VERIFICATION_CODE } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { VerificationType } from "@/auth/domain/types";
 import { VerificationCode } from "@/auth/domain/value-objects/verification-code.vo";
-import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
-import { EmailFacade } from "@/email";
 import {
 	addMinutes,
 	subtractSeconds,
 } from "@/shared/domain/date/utils/arithmetic";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	AUTH_EMAIL_SENDER,
+	type AuthEmailSenderPort,
+} from "../ports/auth-collaboration.port";
+import {
+	AUTH_VERIFICATION_REPOSITORY,
+	type AuthVerificationRepositoryPort,
+} from "../ports/auth-persistence.port";
 
 export interface VerificationCodeResult {
 	code: string;
@@ -22,8 +28,10 @@ export class VerificationService {
 	readonly #logger = new Logger(VerificationService.name);
 
 	constructor(
-		private readonly verificationRepository: VerificationRepository,
-		private readonly emailFacade: EmailFacade,
+		@Inject(AUTH_VERIFICATION_REPOSITORY)
+		private readonly verificationRepository: AuthVerificationRepositoryPort,
+		@Inject(AUTH_EMAIL_SENDER)
+		private readonly emailFacade: AuthEmailSenderPort,
 	) {}
 
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
