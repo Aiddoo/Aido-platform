@@ -23,10 +23,13 @@ import {
 } from "../ports/timezone-reminder-enqueuer.port";
 import {
 	EveningReminderStrategy,
+	LunchNudgeStrategy,
 	MonthlyReportStrategy,
 	MorningReminderStrategy,
 	NudgeSuggestStrategy,
+	OnboardingStrategy,
 	SocialDigestStrategy,
+	StreakAtRiskStrategy,
 	WeeklyAchievementStrategy,
 	WeeklyReportStrategy,
 	WinbackStrategy,
@@ -45,6 +48,9 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 	let socialDigest: Mocked<SocialDigestStrategy>;
 	let weeklyReport: Mocked<WeeklyReportStrategy>;
 	let monthlyReport: Mocked<MonthlyReportStrategy>;
+	let lunchNudge: Mocked<LunchNudgeStrategy>;
+	let streakAtRisk: Mocked<StreakAtRiskStrategy>;
+	let onboarding: Mocked<OnboardingStrategy>;
 
 	beforeEach(async () => {
 		jest.useFakeTimers();
@@ -64,6 +70,9 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 		socialDigest = unitRef.get(SocialDigestStrategy);
 		weeklyReport = unitRef.get(WeeklyReportStrategy);
 		monthlyReport = unitRef.get(MonthlyReportStrategy);
+		lunchNudge = unitRef.get(LunchNudgeStrategy);
+		streakAtRisk = unitRef.get(StreakAtRiskStrategy);
+		onboarding = unitRef.get(OnboardingStrategy);
 
 		// 기본: 활성 타임존 없음 + 모든 Strategy는 { sent: 0 } 반환
 		preferenceReader.findActiveTimezones.mockResolvedValue([]);
@@ -75,6 +84,9 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 		socialDigest.execute.mockResolvedValue({ sent: 0 });
 		weeklyReport.execute.mockResolvedValue({ sent: 0 });
 		monthlyReport.execute.mockResolvedValue({ sent: 0 });
+		lunchNudge.execute.mockResolvedValue({ sent: 0 });
+		streakAtRisk.execute.mockResolvedValue({ sent: 0 });
+		onboarding.execute.mockResolvedValue({ sent: 0 });
 	});
 
 	afterEach(() => {
@@ -139,9 +151,9 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 		});
 
 		describe("조건부 Strategy 호출", () => {
-			it("월요일 08:30에 주간 달성 배지 Strategy를 호출한다", async () => {
-				// 2024-01-15 = 월요일, KST 08:30 = UTC 2024-01-14T23:30:00Z
-				jest.setSystemTime(new Date("2024-01-14T23:30:00Z"));
+			it("월요일 11:30에 주간 달성 배지 Strategy를 호출한다", async () => {
+				// 2024-01-15 = 월요일, KST 11:30 = UTC 2024-01-15T02:30:00Z
+				jest.setSystemTime(new Date("2024-01-15T02:30:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -149,9 +161,8 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
 			});
 
-			it("일요일 08:30에는 주간 달성 배지 Strategy를 호출하지 않는다", async () => {
-				// 2024-01-14 = 일요일, KST 08:30 = UTC 2024-01-13T23:30:00Z
-				jest.setSystemTime(new Date("2024-01-13T23:30:00Z"));
+			it("일요일 11:30에는 주간 달성 배지 Strategy를 호출하지 않는다", async () => {
+				jest.setSystemTime(new Date("2024-01-14T02:30:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -159,9 +170,8 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(weeklyAchievement.execute).not.toHaveBeenCalled();
 			});
 
-			it("로컬 12:00에 Win-back Strategy를 호출한다", async () => {
-				// KST 12:00 = UTC 03:00 (화요일)
-				jest.setSystemTime(new Date("2024-01-16T03:00:00Z"));
+			it("로컬 16:00에 Win-back Strategy를 호출한다", async () => {
+				jest.setSystemTime(new Date("2024-01-16T07:00:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -169,8 +179,8 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(winback.execute).toHaveBeenCalledTimes(1);
 			});
 
-			it("로컬 12:01에는 Win-back Strategy를 호출하지 않는다", async () => {
-				jest.setSystemTime(new Date("2024-01-16T03:01:00Z"));
+			it("로컬 16:01에는 Win-back Strategy를 호출하지 않는다", async () => {
+				jest.setSystemTime(new Date("2024-01-16T07:01:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -178,9 +188,8 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(winback.execute).not.toHaveBeenCalled();
 			});
 
-			it("로컬 14:00에 Nudge Suggest Strategy를 호출한다", async () => {
-				// KST 14:00 = UTC 05:00
-				jest.setSystemTime(new Date("2024-01-16T05:00:00Z"));
+			it("로컬 15:00에 Nudge Suggest Strategy를 호출한다", async () => {
+				jest.setSystemTime(new Date("2024-01-16T06:00:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -188,9 +197,8 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(nudgeSuggest.execute).toHaveBeenCalledTimes(1);
 			});
 
-			it("월요일 09:00에 주간 리포트 Strategy를 호출한다", async () => {
-				// 2024-01-15 = 월요일, KST 09:00 = UTC 2024-01-15T00:00:00Z
-				jest.setSystemTime(new Date("2024-01-15T00:00:00Z"));
+			it("월요일 11:30에 주간 리포트 Strategy를 호출한다", async () => {
+				jest.setSystemTime(new Date("2024-01-15T02:30:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -198,9 +206,9 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(weeklyReport.execute).toHaveBeenCalledTimes(1);
 			});
 
-			it("월요일 08:00에는 주간 리포트 Strategy를 호출하지 않는다", async () => {
+			it("월요일 11:29에는 주간 리포트 Strategy를 호출하지 않는다", async () => {
 				// 2024-01-15 = 월요일, KST 08:00 = UTC 2024-01-14T23:00:00Z
-				jest.setSystemTime(new Date("2024-01-14T23:00:00Z"));
+				jest.setSystemTime(new Date("2024-01-15T02:29:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -218,9 +226,8 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(weeklyReport.execute).not.toHaveBeenCalled();
 			});
 
-			it("매월 1일 10:00에 월간 리포트 Strategy를 호출한다", async () => {
-				// 2024-02-01 = 1일, KST 10:00 = UTC 2024-02-01T01:00:00Z
-				jest.setSystemTime(new Date("2024-02-01T01:00:00Z"));
+			it("매월 1일 11:30에 월간 리포트 Strategy를 호출한다", async () => {
+				jest.setSystemTime(new Date("2024-02-01T02:30:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -228,9 +235,9 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(monthlyReport.execute).toHaveBeenCalledTimes(1);
 			});
 
-			it("매월 1일 08:00에는 월간 리포트 Strategy를 호출하지 않는다", async () => {
+			it("매월 1일 11:29에는 월간 리포트 Strategy를 호출하지 않는다", async () => {
 				// 2024-02-01 = 1일, KST 08:00 = UTC 2024-01-31T23:00:00Z
-				jest.setSystemTime(new Date("2024-01-31T23:00:00Z"));
+				jest.setSystemTime(new Date("2024-02-01T02:29:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();
@@ -246,6 +253,44 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				await orchestrator.handleMinuteSweep();
 
 				expect(monthlyReport.execute).not.toHaveBeenCalled();
+			});
+
+			it("매월 1일이 월요일이면 월간 리포트가 주간 리포트를 대체한다", async () => {
+				// 2024-04-01 월요일 KST 11:30
+				jest.setSystemTime(new Date("2024-04-01T02:30:00Z"));
+				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
+
+				await orchestrator.handleMinuteSweep();
+
+				expect(monthlyReport.execute).toHaveBeenCalledTimes(1);
+				expect(weeklyReport.execute).not.toHaveBeenCalled();
+				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
+			});
+
+			it("온보딩은 로컬 10:30에만 실행한다", async () => {
+				jest.setSystemTime(new Date("2024-01-16T01:29:00Z"));
+				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
+				await orchestrator.handleMinuteSweep();
+				expect(onboarding.execute).not.toHaveBeenCalled();
+
+				jest.setSystemTime(new Date("2024-01-16T01:30:00Z"));
+
+				await orchestrator.handleMinuteSweep();
+
+				expect(onboarding.execute).toHaveBeenCalledTimes(1);
+			});
+
+			it("로컬 12:30과 20:15에 각각 점심·스트릭 알림을 실행한다", async () => {
+				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
+				jest.setSystemTime(new Date("2024-01-16T03:30:00Z"));
+				await orchestrator.handleMinuteSweep();
+				expect(lunchNudge.execute).toHaveBeenCalledTimes(1);
+
+				jest.clearAllMocks();
+				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
+				jest.setSystemTime(new Date("2024-01-16T11:15:00Z"));
+				await orchestrator.handleMinuteSweep();
+				expect(streakAtRisk.execute).toHaveBeenCalledTimes(1);
 			});
 		});
 

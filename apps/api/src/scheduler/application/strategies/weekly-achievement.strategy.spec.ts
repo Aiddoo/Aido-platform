@@ -66,10 +66,40 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		// 기본 mock 설정
 		reader.groupTotalTodosByUser.mockResolvedValue([]);
 		reader.groupCompletedTodosByUser.mockResolvedValue([]);
+		reader.findFreeRecipientIds.mockImplementation(
+			async (userIds) => new Set(userIds),
+		);
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
 		weeklyAchievementFacade.upsertMany.mockResolvedValue(undefined);
+	});
+
+	it("주간 달성 푸시는 무료 사용자에게만 보내고 프리미엄 기록은 저장만 한다", async () => {
+		const ctx = makeCtx();
+		reader.groupTotalTodosByUser.mockResolvedValue([
+			{ userId: "free-user", count: 3 },
+			{ userId: "premium-user", count: 3 },
+		]);
+		reader.groupCompletedTodosByUser.mockResolvedValue([
+			{ userId: "free-user", count: 2 },
+			{ userId: "premium-user", count: 3 },
+		]);
+		reader.findFreeRecipientIds.mockResolvedValue(new Set(["free-user"]));
+
+		await strategy.execute(ctx);
+
+		expect(weeklyAchievementFacade.upsertMany).toHaveBeenCalledWith(
+			expect.arrayContaining([
+				expect.objectContaining({ userId: "free-user" }),
+				expect.objectContaining({ userId: "premium-user" }),
+			]),
+		);
+		const notifications =
+			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		expect(notifications?.map((notification) => notification.userId)).toEqual([
+			"free-user",
+		]);
 	});
 
 	afterEach(() => {

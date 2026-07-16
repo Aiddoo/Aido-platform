@@ -1,12 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import {
-	createLocaleMessageCache,
-	NotificationFacade,
-	NotificationMessageBuilder,
-} from "@/notification";
+import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -71,16 +68,21 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 		const locales = await this.preferenceReader.findUserLocales(
 			filteredUsers.map((u) => u.id),
 		);
-		const getMessage = createLocaleMessageCache((locale) =>
-			NotificationMessageBuilder.lunchNudge(locale),
-		);
 		const notifications = filteredUsers.map((user) => {
-			const message = getMessage(locales.get(user.id) ?? "ko");
+			const message = NotificationMessageBuilder.lunchNudge(
+				locales.get(user.id) ?? "ko",
+				{
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
+			);
 			return {
 				userId: user.id,
 				type: "LUNCH_NUDGE" as const,
 				purpose: "ENGAGEMENT" as const,
-				campaignKey: "lunch_nudge_v1",
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

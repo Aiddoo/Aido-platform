@@ -3,7 +3,7 @@ import type { CreateNotificationData } from "@/notification";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
-import { toIsoWeekId } from "@/shared/domain/date/utils/format";
+import { toDateString, toIsoWeekId } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { DedupKeys } from "@/shared/infrastructure/dedup/constants/dedup-keys";
 import {
@@ -11,6 +11,7 @@ import {
 	type IDedupProvider,
 } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -144,13 +145,19 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 				target.name ?? (locale === "en" ? "Your friend" : "친구"),
 				days,
 				locale,
+				{
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			);
 
 			notifications.push({
 				userId: user.id,
 				type: "NUDGE_SUGGEST",
 				purpose: "ENGAGEMENT",
-				campaignKey: "nudge_suggest_v1",
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				friendId: target.id,

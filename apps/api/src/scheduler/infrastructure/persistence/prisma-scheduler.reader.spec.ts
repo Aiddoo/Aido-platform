@@ -6,10 +6,16 @@ import { PrismaSchedulerReader } from "./prisma-scheduler.reader";
 
 describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
 	const findMany = jest.fn();
+	const preferenceFindMany = jest.fn();
 	const database = mockOf<DatabaseService>({
 		user: mockOf<DatabaseService["user"]>({ findMany }),
+		userPreference: mockOf<DatabaseService["userPreference"]>({
+			findMany: preferenceFindMany,
+		}),
 	});
-	const cache = mockOf<CacheService>();
+	const cache = mockOf<CacheService>({
+		wrapActiveTimezones: jest.fn((loader: () => Promise<string[]>) => loader()),
+	});
 
 	function reader(enabled: boolean): PrismaSchedulerReader {
 		const config = mockOf<TypedConfigService>({
@@ -59,5 +65,18 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
 				}),
 			}),
 		);
+	});
+
+	it("잘못 저장된 타임존은 스케줄러 활성 타임존에서 제외한다", async () => {
+		preferenceFindMany.mockResolvedValue([
+			{ timezone: "Asia/Seoul" },
+			{ timezone: "Invalid/Timezone" },
+			{ timezone: "UTC" },
+		]);
+
+		await expect(reader(false).findActiveTimezones()).resolves.toEqual([
+			"Asia/Seoul",
+			"UTC",
+		]);
 	});
 });

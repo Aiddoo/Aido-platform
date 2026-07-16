@@ -304,7 +304,7 @@ export const SCHEDULER_TEMPLATES = {
 			},
 		],
 	} satisfies NotificationTemplate,
-	// 스트릭 위기 전용 알림 (21:00, 스트릭 3일+ & 미완료)
+	// 스트릭 위기 전용 알림 (20:15, 스트릭 3일+ & 미완료)
 	STREAK_AT_RISK: {
 		title: "🚨 Your {streak}-day streak comes down to today",
 		body: "Finish one and keep the run going",

@@ -24,4 +24,7 @@ export interface WeeklyAchievementStatsReaderPort {
 	groupCompletedTodosByUser(
 		params: WeeklyStatsParams,
 	): Promise<UserTodoCount[]>;
+
+	/** 주간 달성 푸시 대상인 무료(비구독·비관리자) 사용자 ID */
+	findFreeRecipientIds(userIds: string[]): Promise<Set<string>>;
 }

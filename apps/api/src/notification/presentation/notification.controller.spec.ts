@@ -96,6 +96,27 @@ describe("NotificationController — 알림 컨트롤러", () => {
 				registered: true,
 			});
 		});
+
+		it("타임존 헤더가 없으면 기존 설정을 보존하도록 timezone을 전달하지 않는다", async () => {
+			const dto = { token: "ExponentPushToken[xxxxxx]" };
+
+			await controller.registerToken(
+				mockUser,
+				dto as unknown as RegisterPushTokenDto,
+				undefined,
+				undefined,
+			);
+
+			expect(mockFacade.registerPushToken).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				token: dto.token,
+				deviceId: undefined,
+				timezone: undefined,
+				locale: undefined,
+				payloadVersion: undefined,
+				appVersion: undefined,
+			});
+		});
 	});
 
 	describe("markAsRead", () => {

@@ -7,6 +7,7 @@ import type {
 	SocialDigestJobData,
 	TimezoneReminderEnqueuerPort,
 } from "../../application/ports/timezone-reminder-enqueuer.port";
+import { SOCIAL_DIGEST_DELAY_MS } from "../../domain/services/notification-campaign";
 import {
 	type SweepRemindersJobData,
 	TIMEZONE_REMINDER_QUEUE,
@@ -64,19 +65,18 @@ export class TimezoneReminderQueueService
 	}
 
 	/**
-	 * Social Digest delayed job 등록 (저녁 리마인더 30분 후)
+	 * Social Digest delayed job 등록 (저녁 리마인더 90분 후)
 	 */
 	enqueueSocialDigest(payload: SocialDigestJobData): void {
-		const DELAY_MS = 30 * 60 * 1000; // 30분
 		this.queue
 			.add(TimezoneReminderJobName.SOCIAL_DIGEST, payload, {
-				delay: DELAY_MS,
+				delay: SOCIAL_DIGEST_DELAY_MS,
 				removeOnComplete: true,
 				removeOnFail: 100,
 			})
 			.then(() => {
 				this.#logger.debug(
-					`Social digest job enqueued: tz=${payload.timezone}, delay=30min`,
+					`Social digest job enqueued: tz=${payload.timezone}, delay=90min`,
 				);
 			})
 			.catch((error) => {

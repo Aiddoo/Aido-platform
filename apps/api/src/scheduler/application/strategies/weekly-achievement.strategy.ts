@@ -1,9 +1,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { WeeklyAchievementFacade } from "@/weekly-achievement";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -72,13 +74,19 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		await this.weeklyAchievementFacade.upsertMany(records);
 
 		// ─── C. 알림 발송 (completed > 0 + dedup) ────
-		const notifiableUserIds = records
+		const completedUserIds = records
 			.filter((r) => r.completedTodos > 0)
 			.map((r) => r.userId);
 
-		if (notifiableUserIds.length === 0) {
+		if (completedUserIds.length === 0) {
 			return { sent: 0 };
 		}
+		const freeRecipientIds =
+			await this.reader.findFreeRecipientIds(completedUserIds);
+		const notifiableUserIds = completedUserIds.filter((userId) =>
+			freeRecipientIds.has(userId),
+		);
+		if (notifiableUserIds.length === 0) return { sent: 0 };
 
 		const alreadyNotified =
 			await this.notificationService.findAlreadyNotifiedUserIds({
@@ -88,7 +96,10 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 			});
 
 		const finalRecords = records.filter(
-			(r) => r.completedTodos > 0 && !alreadyNotified.has(r.userId),
+			(r) =>
+				freeRecipientIds.has(r.userId) &&
+				r.completedTodos > 0 &&
+				!alreadyNotified.has(r.userId),
 		);
 
 		if (finalRecords.length === 0) {
@@ -103,10 +114,18 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 				r.completedTodos,
 				r.totalTodos,
 				locales.get(r.userId) ?? "ko",
+				{
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
+					recipientId: r.userId,
+					occurrenceKey: toDateString(today),
+				},
 			);
 			return {
 				userId: r.userId,
 				type: "WEEKLY_ACHIEVEMENT" as const,
+				purpose: "SCHEDULED_SERVICE" as const,
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

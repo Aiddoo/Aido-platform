@@ -12,6 +12,7 @@
  * ```
  */
 
+import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserConsentBuilder, UserPreferenceBuilder } from "@test/builders";
@@ -142,10 +143,18 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 			expect(result.pushEnabled).toBe(false);
 			expect(result.nightPushEnabled).toBe(false);
 			expect(result.timezone).toBe("UTC");
-			expect(result.morningReminderHour).toBe(8);
-			expect(result.morningReminderMinute).toBe(0);
-			expect(result.eveningReminderHour).toBe(18);
-			expect(result.eveningReminderMinute).toBe(0);
+			expect(result.morningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+			);
+			expect(result.morningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+			);
+			expect(result.eveningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+			);
+			expect(result.eveningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+			);
 		});
 
 		it("설정 조회 — 무료 유저는 리마인더 시간이 기본값으로 오버라이드된다", async () => {
@@ -161,10 +170,18 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
 			const result = await getPreference.execute(mockUserId);
 
-			expect(result.morningReminderHour).toBe(8);
-			expect(result.morningReminderMinute).toBe(0);
-			expect(result.eveningReminderHour).toBe(18);
-			expect(result.eveningReminderMinute).toBe(0);
+			expect(result.morningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+			);
+			expect(result.morningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+			);
+			expect(result.eveningReminderHour).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+			);
+			expect(result.eveningReminderMinute).toBe(
+				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+			);
 			expect(result.pushEnabled).toBe(mockPreference.pushEnabled);
 		});
 	});

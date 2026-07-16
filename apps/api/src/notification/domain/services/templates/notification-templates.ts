@@ -1,5 +1,5 @@
 import { josa } from "es-hangul";
-
+import { deterministicIndex } from "@/shared/domain/services/deterministic-variant";
 import {
 	DEFAULT_LOCALE,
 	SUPPORTED_LOCALES,
@@ -9,9 +9,17 @@ import type { WeatherForecast } from "@/weather";
 
 import * as en from "./locales/en";
 import * as ko from "./locales/ko";
-import type { NotificationTemplate } from "./template.types";
+import type {
+	NotificationMessage,
+	NotificationTemplate,
+	NotificationVariantContext,
+} from "./template.types";
 
-export type { NotificationTemplate } from "./template.types";
+export type {
+	NotificationMessage,
+	NotificationTemplate,
+	NotificationVariantContext,
+} from "./template.types";
 
 // =============================================================================
 // Locale bundles
@@ -41,22 +49,43 @@ export const SYSTEM_TEMPLATES = ko.SYSTEM_TEMPLATES;
 // =============================================================================
 
 /**
- * variants 풀에서 랜덤으로 하나를 선택합니다.
- * variants가 없으면 기본 title/body를 반환합니다.
+ * variants 풀에서 사용자·캠페인·발생 키 기반으로 하나를 결정적으로 선택합니다.
+ * 같은 입력은 프로세스/재시도와 무관하게 항상 같은 variant를 반환합니다.
+ * 선택 컨텍스트가 없는 기존 호출은 첫 variant를 사용합니다.
  */
 export function pickVariant(
 	template: Pick<NotificationTemplate, "title" | "body" | "variants">,
-): { title: string; body: string } {
+	context?: NotificationVariantContext,
+): NotificationMessage {
 	const pool = template.variants;
 	if (!pool?.length) {
-		return { title: template.title, body: template.body };
+		return {
+			title: template.title,
+			body: template.body,
+			variantId: context ? `${context.campaignKey}.default` : "default",
+		};
 	}
-	const index = Math.floor(Math.random() * pool.length);
+	const index = context
+		? deterministicIndex(
+				`${context.campaignKey}\u0000${context.recipientId}\u0000${context.occurrenceKey}`,
+				pool.length,
+			)
+		: 0;
 	const picked = pool[index];
 	if (!picked) {
-		return { title: template.title, body: template.body };
+		return {
+			title: template.title,
+			body: template.body,
+			variantId: context ? `${context.campaignKey}.default` : "default",
+		};
 	}
-	return { title: picked.title, body: picked.body };
+	return {
+		title: picked.title,
+		body: picked.body,
+		variantId: context
+			? `${context.campaignKey}.v${index + 1}`
+			: `v${index + 1}`,
+	};
 }
 
 /**
@@ -118,6 +147,18 @@ export function fillTemplate(
 		}
 		return str;
 	});
+}
+
+/** 플레이스홀더를 치환하면서 선택된 변형 식별자를 보존합니다. */
+function fillMessage(
+	message: NotificationMessage,
+	variables: Record<string, string | number | undefined>,
+): NotificationMessage {
+	return {
+		title: fillTemplate(message.title, variables),
+		body: fillTemplate(message.body, variables),
+		variantId: message.variantId,
+	};
 }
 
 // =============================================================================
@@ -279,7 +320,8 @@ export class NotificationMessageBuilder {
 		todoTitle: string,
 		stageLabel?: string,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		let template: Pick<NotificationTemplate, "title" | "body" | "variants">;
 		switch (stageLabel) {
@@ -294,22 +336,19 @@ export class NotificationMessageBuilder {
 				break;
 		}
 
-		const { title, body } = pickVariant(template);
-		return {
-			title: fillTemplate(title, { todoTitle }),
-			body: fillTemplate(body, { todoTitle }),
-		};
+		return fillMessage(pickVariant(template, context), { todoTitle });
 	}
 
 	/**
 	 * 아침 할일 없음 알림 메시지 생성
 	 */
-	static morningNoTodo(locale: SupportedLocale = DEFAULT_LOCALE): {
-		title: string;
-		body: string;
-	} {
+	static morningNoTodo(
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		return pickVariant(
 			LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES.MORNING_NO_TODO,
+			context,
 		);
 	}
 
@@ -319,15 +358,14 @@ export class NotificationMessageBuilder {
 	static morningReminder(
 		count: number,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
-		const { title, body } = pickVariant(
+		const message = pickVariant(
 			templates.SCHEDULER_TEMPLATES.MORNING_REMINDER,
+			context,
 		);
-		return {
-			title: fillTemplate(title, { count }),
-			body: fillTemplate(body, { count }),
-		};
+		return fillMessage(message, { count });
 	}
 
 	/**
@@ -344,103 +382,90 @@ export class NotificationMessageBuilder {
 		streak = 0,
 		isStreakAtRisk = false,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		// A. 전체 완료
 		if (completed === total && total > 0) {
 			if (streak >= 30) {
-				return {
-					title: fillTemplate(
-						templates.SCHEDULER_TEMPLATES.EVENING_STREAK_30.title,
-						{ streak },
-					),
-					body: templates.SCHEDULER_TEMPLATES.EVENING_STREAK_30.body,
-				};
+				return fillMessage(
+					pickVariant(templates.SCHEDULER_TEMPLATES.EVENING_STREAK_30, context),
+					{ streak },
+				);
 			}
 			if (streak === 14) {
-				return {
-					title: templates.SCHEDULER_TEMPLATES.EVENING_STREAK_14.title,
-					body: templates.SCHEDULER_TEMPLATES.EVENING_STREAK_14.body,
-				};
+				return pickVariant(
+					templates.SCHEDULER_TEMPLATES.EVENING_STREAK_14,
+					context,
+				);
 			}
 			if (streak === 7) {
-				return {
-					title: templates.SCHEDULER_TEMPLATES.EVENING_STREAK_7.title,
-					body: templates.SCHEDULER_TEMPLATES.EVENING_STREAK_7.body,
-				};
+				return pickVariant(
+					templates.SCHEDULER_TEMPLATES.EVENING_STREAK_7,
+					context,
+				);
 			}
 			if (streak >= 2) {
-				const { title, body } = pickVariant(
+				const message = pickVariant(
 					templates.SCHEDULER_TEMPLATES.EVENING_STREAK,
+					context,
 				);
-				return {
-					title: fillTemplate(title, { streak }),
-					body: fillTemplate(body, { streak, next: streak + 1 }),
-				};
+				return fillMessage(message, { streak, next: streak + 1 });
 			}
-			return pickVariant(templates.SCHEDULER_TEMPLATES.EVENING_COMPLETE);
+			return pickVariant(
+				templates.SCHEDULER_TEMPLATES.EVENING_COMPLETE,
+				context,
+			);
 		}
 
 		// B. 일부 완료
 		if (completed > 0) {
 			const remaining = total - completed;
 			if (isStreakAtRisk && streak >= 2) {
-				const { title, body } = pickVariant(
+				const message = pickVariant(
 					templates.SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_PARTIAL,
+					context,
 				);
-				return {
-					title: fillTemplate(title, { streak }),
-					body: fillTemplate(body, { remaining }),
-				};
+				return fillMessage(message, { streak, remaining });
 			}
-			const { title, body } = pickVariant(
+			const message = pickVariant(
 				templates.SCHEDULER_TEMPLATES.EVENING_PARTIAL,
+				context,
 			);
-			return {
-				title: fillTemplate(title, { remaining }),
-				body: fillTemplate(body, { remaining }),
-			};
+			return fillMessage(message, { remaining });
 		}
 
 		// C. 하나도 안 함
 		if (isStreakAtRisk && streak >= 2) {
-			const { title, body } = pickVariant(
+			const message = pickVariant(
 				templates.SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_NONE,
+				context,
 			);
-			return {
-				title: fillTemplate(title, { streak }),
-				body: fillTemplate(body, { streak }),
-			};
+			return fillMessage(message, { streak });
 		}
-		return pickVariant(templates.SCHEDULER_TEMPLATES.EVENING_NONE);
+		return pickVariant(templates.SCHEDULER_TEMPLATES.EVENING_NONE, context);
 	}
 
 	/**
 	 * 주간 리포트 알림 메시지 생성
 	 */
-	static weeklyReport(locale: SupportedLocale = DEFAULT_LOCALE): {
-		title: string;
-		body: string;
-	} {
+	static weeklyReport(
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
-		return {
-			title: templates.SYSTEM_TEMPLATES.WEEKLY_REPORT.title,
-			body: templates.SYSTEM_TEMPLATES.WEEKLY_REPORT.body,
-		};
+		return pickVariant(templates.SYSTEM_TEMPLATES.WEEKLY_REPORT, context);
 	}
 
 	/**
 	 * 월간 리포트 알림 메시지 생성
 	 */
-	static monthlyReport(locale: SupportedLocale = DEFAULT_LOCALE): {
-		title: string;
-		body: string;
-	} {
+	static monthlyReport(
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
-		return {
-			title: templates.SYSTEM_TEMPLATES.MONTHLY_REPORT.title,
-			body: templates.SYSTEM_TEMPLATES.MONTHLY_REPORT.body,
-		};
+		return pickVariant(templates.SYSTEM_TEMPLATES.MONTHLY_REPORT, context);
 	}
 
 	/**
@@ -477,21 +502,22 @@ export class NotificationMessageBuilder {
 	static winback(
 		inactiveDays: number,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		if (inactiveDays >= 30) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY30);
+			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY30, context);
 		}
 		if (inactiveDays >= 21) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY21);
+			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY21, context);
 		}
 		if (inactiveDays >= 14) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY14);
+			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY14, context);
 		}
 		if (inactiveDays >= 7) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY7);
+			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY7, context);
 		}
-		return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY3);
+		return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY3, context);
 	}
 
 	/**
@@ -501,29 +527,29 @@ export class NotificationMessageBuilder {
 		completedCount: number,
 		totalCount: number,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		const rate = Math.round((completedCount / totalCount) * 100);
 
 		if (rate === 100) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_PERFECT);
+			return pickVariant(
+				templates.SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_PERFECT,
+				context,
+			);
 		}
 		if (rate >= 90) {
-			const { title, body } = pickVariant(
+			const message = pickVariant(
 				templates.SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_ALMOST,
+				context,
 			);
-			return {
-				title: fillTemplate(title, { rate }),
-				body: fillTemplate(body, { rate }),
-			};
+			return fillMessage(message, { rate });
 		}
-		const { title, body } = pickVariant(
+		const message = pickVariant(
 			templates.SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT,
+			context,
 		);
-		return {
-			title: fillTemplate(title, { completedCount }),
-			body: fillTemplate(body, { completedCount }),
-		};
+		return fillMessage(message, { completedCount });
 	}
 
 	/**
@@ -533,35 +559,33 @@ export class NotificationMessageBuilder {
 		completedFriendCount: number,
 		friendName?: string,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		if (completedFriendCount === 1 && friendName) {
-			const { title, body } = pickVariant(
+			const message = pickVariant(
 				templates.SOCIAL_TEMPLATES.SOCIAL_DIGEST_SINGLE,
+				context,
 			);
-			return {
-				title: fillTemplate(title, { friendName }),
-				body: fillTemplate(body, { friendName }),
-			};
+			return fillMessage(message, { friendName });
 		}
-		const { title, body } = pickVariant(
+		const message = pickVariant(
 			templates.SOCIAL_TEMPLATES.SOCIAL_DIGEST_MULTI,
+			context,
 		);
-		return {
-			title: fillTemplate(title, { completedFriendCount }),
-			body: fillTemplate(body, { completedFriendCount }),
-		};
+		return fillMessage(message, { completedFriendCount });
 	}
 
 	/**
 	 * 점심 넛지 알림 메시지 생성
 	 */
-	static lunchNudge(locale: SupportedLocale = DEFAULT_LOCALE): {
-		title: string;
-		body: string;
-	} {
+	static lunchNudge(
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		return pickVariant(
 			LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES.LUNCH_NUDGE,
+			context,
 		);
 	}
 
@@ -571,15 +595,14 @@ export class NotificationMessageBuilder {
 	static streakAtRisk(
 		streak: number,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
-		const { title, body } = pickVariant(
+		const message = pickVariant(
 			templates.SCHEDULER_TEMPLATES.STREAK_AT_RISK,
+			context,
 		);
-		return {
-			title: fillTemplate(title, { streak }),
-			body: fillTemplate(body, { streak }),
-		};
+		return fillMessage(message, { streak });
 	}
 
 	/**
@@ -589,15 +612,14 @@ export class NotificationMessageBuilder {
 		friendName: string,
 		days: number,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
-		const { title, body } = pickVariant(
+		const message = pickVariant(
 			templates.SOCIAL_TEMPLATES.NUDGE_SUGGEST,
+			context,
 		);
-		return {
-			title: fillTemplate(title, { friendName, days }),
-			body: fillTemplate(body, { friendName, days }),
-		};
+		return fillMessage(message, { friendName, days });
 	}
 
 	/**
@@ -607,7 +629,8 @@ export class NotificationMessageBuilder {
 		day: number,
 		completedCount?: number,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): { title: string; body: string } | null {
+		context?: NotificationVariantContext,
+	): NotificationMessage | null {
 		const templates = LOCALE_TEMPLATES[locale];
 		const templateMap: Record<number, NotificationTemplate> = {
 			0: templates.SYSTEM_TEMPLATES.ONBOARDING_DAY0,
@@ -621,10 +644,7 @@ export class NotificationMessageBuilder {
 		const template = templateMap[day];
 		if (!template) return null;
 
-		return {
-			title: fillTemplate(template.title, { completedCount }),
-			body: fillTemplate(template.body, { completedCount }),
-		};
+		return fillMessage(pickVariant(template, context), { completedCount });
 	}
 
 	/**
@@ -661,10 +681,8 @@ export class NotificationMessageBuilder {
 	static weatherMorning(
 		forecast: WeatherForecast,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): {
-		title: string;
-		body: string;
-	} {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		const skyMap = templates.SKY_LABEL_MAP;
 		const skyLabel = skyMap[forecast.skyCondition] ?? skyMap.CLEAR ?? "";
@@ -682,20 +700,14 @@ export class NotificationMessageBuilder {
 			templates.WEATHER_TEMPLATES.MORNING_CLEAR,
 		);
 
-		const { title, body } = pickVariant(template);
-		return {
-			title: fillTemplate(title, vars),
-			body: fillTemplate(body, vars),
-		};
+		return fillMessage(pickVariant(template, context), vars);
 	}
 
 	static weatherEvening(
 		tomorrowForecast: WeatherForecast,
 		locale: SupportedLocale = DEFAULT_LOCALE,
-	): {
-		title: string;
-		body: string;
-	} {
+		context?: NotificationVariantContext,
+	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		const skyMap = templates.SKY_LABEL_MAP;
 		const skyLabel =
@@ -714,31 +726,33 @@ export class NotificationMessageBuilder {
 			templates.WEATHER_TEMPLATES.EVENING_CLEAR,
 		);
 
-		const { title, body } = pickVariant(template);
-		return {
-			title: fillTemplate(title, vars),
-			body: fillTemplate(body, vars),
-		};
+		return fillMessage(pickVariant(template, context), vars);
 	}
 
 	/**
 	 * 위치 미설정 유저용 아침 날씨 폴백 메시지
 	 */
-	static weatherMorningFallback(locale: SupportedLocale = DEFAULT_LOCALE): {
-		title: string;
-		body: string;
-	} {
-		return { ...LOCALE_TEMPLATES[locale].WEATHER_FALLBACK.MORNING };
+	static weatherMorningFallback(
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		context?: NotificationVariantContext,
+	): NotificationMessage {
+		return pickVariant(
+			LOCALE_TEMPLATES[locale].WEATHER_FALLBACK.MORNING,
+			context,
+		);
 	}
 
 	/**
 	 * 위치 미설정 유저용 저녁 날씨 폴백 메시지
 	 */
-	static weatherEveningFallback(locale: SupportedLocale = DEFAULT_LOCALE): {
-		title: string;
-		body: string;
-	} {
-		return { ...LOCALE_TEMPLATES[locale].WEATHER_FALLBACK.EVENING };
+	static weatherEveningFallback(
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		context?: NotificationVariantContext,
+	): NotificationMessage {
+		return pickVariant(
+			LOCALE_TEMPLATES[locale].WEATHER_FALLBACK.EVENING,
+			context,
+		);
 	}
 }
 

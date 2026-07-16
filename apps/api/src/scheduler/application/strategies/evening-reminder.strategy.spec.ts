@@ -14,6 +14,7 @@ import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULED_REMINDER_READER,
@@ -44,7 +45,6 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
-		jest.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } = await TestBed.solitary(
 			EveningReminderStrategy,
@@ -98,9 +98,9 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		});
 	});
 
-	it("무료 사용자에게 18:00에 저녁 리마인더를 발송한다", async () => {
+	it("무료 사용자에게 19:00에 저녁 리마인더를 발송한다", async () => {
 		// Given
-		const ctx = makeCtx({ localHour: 18, localMinute: 0 });
+		const ctx = makeCtx({ localHour: 19, localMinute: 0 });
 
 		reader.findFreeEveningReminderUsers.mockResolvedValue([
 			{
@@ -168,10 +168,23 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.eveningReminder(2, 2, 1, false);
+		const expected = NotificationMessageBuilder.eveningReminder(
+			2,
+			2,
+			1,
+			false,
+			"ko",
+			{
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+				recipientId: "user-1",
+				occurrenceKey: "2024-01-16",
+			},
+		);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+			variantId: expected.variantId,
 		});
 	});
 

@@ -1,0 +1,102 @@
+# 푸시 알림 운영 기준
+
+서버 푸시의 문구, 대상, 발송 시각, 타임존, 중복 방지 정책을 한곳에서 확인하기 위한 문서다. 시각은 별도 표기가 없으면 모두 **사용자 IANA 타임존의 로컬 시각**이다.
+
+## 공통 발송 조건
+
+모든 푸시는 활성 Expo 토큰, OS 알림 권한, `pushEnabled=true`가 필요하다. 알림 레코드 생성과 실제 푸시 전송은 분리되어 있으므로, 푸시가 차단돼도 앱 안 알림함 기록은 남을 수 있다.
+
+| 정책 | 기준 |
+|---|---|
+| 일반 빈도 제한 | 사용자당 최근 1시간 최대 15회 |
+| 참여 유도 제한 | 로컬 날짜 기준 하루 최대 2회, 발송 사이 최소 4시간 |
+| 참여 유도 대상 | `purpose=ENGAGEMENT` 또는 `WINBACK`, `SOCIAL_DIGEST`, `NUDGE_SUGGEST`, `LUNCH_NUDGE`, `STREAK_AT_RISK`, `AI_SUGGESTION` |
+| 광고성 푸시 동의 | 참여 유도 대상은 `marketingPushAgreedAt`이 있어야 함 |
+| 야간 시간 | 21:00 이상 08:00 미만 |
+| 야간 참여 유도 | 동의 여부와 관계없이 발송하지 않음 |
+| 야간 일반 푸시 | `nightPushEnabled=true`일 때 발송 |
+| 야간 예외 | 사용자가 시각을 정한 `WEATHER_MORNING`, `WEATHER_EVENING` |
+| Redis 장애 | 기존 정책대로 fail-open. 비정상 배치 결과도 타입 검증 후 전체 허용 |
+
+대량 발송의 일반 제한과 참여 유도 제한은 사용자 수만큼 Redis를 호출하지 않고, 하나의 Lua 실행에서 입력 순서대로 원자적으로 예약한다.
+
+## 자동 발송 일정과 대상
+
+| 시각/트리거 | 알림 | 무료 | 프리미엄·관리자 | 주요 조건 |
+|---|---|---:|---:|---|
+| 할 일 시각 -60분/-10분/정시 | `TODO_REMINDER` | O | O | 활성·미완료 할 일, 단계별 중복 방지 |
+| 기본 07:00, 사용자 설정 가능 | `WEATHER_MORNING` | O | O | 날씨 알림 사용. 위치가 없으면 안내 문구 사용 |
+| 08:00 | `MORNING_REMINDER` | O | - | 오늘 할 일이 없어도 하루 1회 |
+| 사용자 설정 오전 시각 | `MORNING_REMINDER` | - | O | 시간·분 커스텀, 하루 1회 |
+| 가입일 +2시간 | Retention V2 D0 | 실험 대상 | 실험 대상 | treatment 사용자, 야간이면 다음 허용 시각으로 이월 |
+| 10:30 | 온보딩 / Retention V2 | O | O | legacy D0·D1·D2·D3·D5·D7 또는 treatment D1·D3·D7 |
+| 월요일 11:30 | `WEEKLY_ACHIEVEMENT` | O | - | 지난주 완료 1개 이상. 성취 기록은 모든 사용자에게 저장 |
+| 월요일 11:30 | `WEEKLY_REPORT` | - | O | 지난주 활동이 있을 때 |
+| 매월 1일 11:30 | `MONTHLY_REPORT` | - | O | 지난달 활동이 있을 때. 같은 날 주간 리포트를 대체 |
+| 12:30 | `LUNCH_NUDGE` | O | O | 오늘 할 일은 있으나 완료가 0개 |
+| 15:00 | `NUDGE_SUGGEST` | O | O | 2~7일 비활성 맞팔 친구, 동일 조합 주 1회 |
+| 16:00 | `WINBACK` | O | O | 3·7·14·21·30일 비활성 단계별 1회 |
+| 기본 17:30, 사용자 설정 가능 | `WEATHER_EVENING` | O | O | 다음 날 예보. 위치가 없으면 안내 문구 사용 |
+| 19:00 | `EVENING_REMINDER` | O | - | 오늘 할 일이 있는 사용자, 하루 1회 |
+| 사용자 설정 오후 시각 | `EVENING_REMINDER` | - | O | 시간·분 커스텀, 하루 1회 |
+| 20:15 | `STREAK_AT_RISK` | O | O | 유효 스트릭 3일 이상이며 오늘 미완료 |
+| 저녁 리마인더 +90분 | `SOCIAL_DIGEST` | O | O | 본인 미완료 + 완료 친구 존재. 같은 날 스트릭 위기 수신자는 제외 |
+
+월간 리포트와 주간 리포트는 같은 11:30 슬롯에서 동시에 보내지 않는다. 무료 주간 달성 요약은 프리미엄 리포트와 대상이 다르므로 별도로 집계한다. 모든 일일 스케줄은 `notificationDate` 또는 전용 Redis 키로 중복 발송을 막는다.
+
+## 알림 타입별 계약
+
+`목적`이 `참여`인 항목만 광고성 푸시 동의와 참여 유도 일일 한도를 적용한다. `서비스`와 `거래`는 일반 시간당 한도와 야간 설정을 적용한다.
+
+| 타입 | 발생 조건/생성 주체 | 목적 | 기본 이동 |
+|---|---|---|---|
+| `FOLLOW_NEW` | 친구 신청 수신 | 거래 | 친구 신청 목록 |
+| `FOLLOW_ACCEPTED` | 친구 신청 수락 | 거래 | 친구 피드, ID가 없으면 친구 목록 |
+| `NUDGE_RECEIVED` | 친구의 콕 또는 할 일 생성 리마인드 콕 | 거래 | 친구 피드 |
+| `CHEER_RECEIVED` | 친구 응원 수신 | 거래 | 친구 피드 |
+| `DAILY_COMPLETE` | 오늘 할 일 전체 완료 | 거래 | 피드 |
+| `FRIEND_COMPLETED` | 친구의 오늘 할 일 전체 완료 | 거래 | 친구 피드 |
+| `TODO_REMINDER` | -60분/-10분/정시 지연 잡 | 서비스 | 피드 (`todoId` 유지) |
+| `TODO_SHARED` | 할 일 공유 | 거래 | 피드 (`todoId` 유지) |
+| `MORNING_REMINDER` | 아침 자동 스케줄 | 서비스 | 피드 |
+| `EVENING_REMINDER` | 저녁 자동 스케줄 | 서비스 | 피드 |
+| `WEEKLY_ACHIEVEMENT` | 무료 사용자 주간 성취 | 서비스 | 성취 화면 |
+| `WEEKLY_REPORT` | 프리미엄·관리자 주간 리포트 | 서비스 | 리포트 화면 |
+| `MONTHLY_REPORT` | 프리미엄·관리자 월간 리포트 | 서비스 | 리포트 화면 |
+| `AI_SUGGESTION` | 반복 패턴 제안 | 참여 | 제안 화면 |
+| `SYSTEM_NOTICE` | 온보딩, 결제, 운영 공지 | 생성 시 지정 | 명시적 action, 없으면 이동 안 함 |
+| `ADMIN_BROADCAST` | 관리자 전체·조건 발송 | 생성 시 지정 | 명시적 action, 없으면 이동 안 함 |
+| `ADMIN_TARGETED` | 관리자 특정 사용자 발송 | 생성 시 지정 | 명시적 action, 없으면 이동 안 함 |
+| `WINBACK` | 비활성 단계 도달 | 참여 | 피드 |
+| `SOCIAL_DIGEST` | 친구 완료 활동 요약 | 참여 | 피드 |
+| `NUDGE_SUGGEST` | 비활성 맞팔 친구 감지 | 참여 | 친구 피드, ID가 없으면 피드 |
+| `LUNCH_NUDGE` | 점심까지 완료 0개 | 참여 | 피드 |
+| `STREAK_AT_RISK` | 스트릭 3일 이상 + 오늘 미완료 | 참여 | 피드 |
+| `WEATHER_MORNING` | 오늘 날씨 또는 위치 설정 안내 | 서비스 | 피드 |
+| `WEATHER_EVENING` | 내일 날씨 또는 위치 설정 안내 | 서비스 | 피드 |
+
+`BROWSER`, `WEBVIEW`, `NONE` action은 표의 기본 이동보다 우선한다. `DEEP_LINK`에 URL이 있으면 해당 내부 경로를 우선한다.
+
+## 문구와 변형 선택
+
+- 한국어와 영어 카탈로그는 키, variant 수, 플레이스홀더가 항상 같아야 한다.
+- 한국어는 실제 앱 푸시에서 자연스러운 친근한 반말을 사용하고, 죄책감·조롱·과한 유행어는 쓰지 않는다.
+- 제목은 60자, 본문은 120자 이하이며 한 줄의 이모지는 최대 1개다.
+- 반복 캠페인은 `campaignKey + recipientId + occurrenceKey`로 variant를 결정한다. 같은 사용자·같은 발생 건은 재시도나 서버 재시작 뒤에도 문구가 바뀌지 않는다.
+- `campaignKey`는 카피나 대상 정책이 바뀔 때만 버전을 올린다. `variantId`는 실제 선택된 문구를 함께 기록한다.
+- 사용자 작성 메시지와 결제·운영 공지는 내용을 임의로 변형하지 않는다.
+
+## 타임존 처리
+
+- 푸시 토큰 등록의 `x-timezone`이 없으면 기존 저장값을 유지한다.
+- 잘못된 IANA 타임존은 저장하지 않는다. 일반 API에서 누락·오류 값은 `UTC`로 처리한다.
+- 과거에 잘못 저장된 값은 활성 스케줄 타임존 목록에서 제외하고, 날짜 계산이 필요한 방어 경로에서는 `UTC`로 폴백한다.
+- 모든 고정 시각, 로컬 날짜 중복 키, 참여 유도 일일 한도는 IANA 타임존과 DST를 반영한다.
+
+## 구버전 클라이언트 호환성
+
+v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`, `context`의 이름과 의미는 바꾸지 않는다. v1.5 계열의 `dispatchId`, `campaignKey`, `variantId`, `purpose`, `marketingOptOutToken`은 모두 optional 추가 필드다. 과거 Zod object는 알 수 없는 optional 필드를 제거하므로 그대로 파싱된다.
+
+호환성 테스트는 Git 릴리스 이력의 v1.0~v1.4 스키마와 현재 `pushNotificationDataSchema`로 같은 서버 payload를 각각 파싱한다. OpenAPI paths/components 스냅샷도 별도로 고정한다.
+
+신규 저녁 기본값 19:00 마이그레이션은 DB column default만 바꾸며 기존 사용자의 저장된 커스텀 값은 갱신하지 않는다.

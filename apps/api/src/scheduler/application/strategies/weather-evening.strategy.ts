@@ -1,12 +1,13 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
-	createLocaleMessageCache,
 	NotificationFacade,
 	NotificationMessageBuilder,
 	resolveTemplateLocale,
 } from "@/notification";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { WeatherFacade } from "@/weather";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -119,10 +120,18 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 				const message = NotificationMessageBuilder.weatherEvening(
 					forecast,
 					resolveTemplateLocale(user.preference?.locale),
+					{
+						campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
+						recipientId: user.id,
+						occurrenceKey: toDateString(today),
+					},
 				);
 				return {
 					userId: user.id,
 					type: "WEATHER_EVENING" as const,
+					purpose: "SCHEDULED_SERVICE" as const,
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
+					variantId: message.variantId,
 					title: message.title,
 					body: message.body,
 					notificationDate: today,
@@ -164,16 +173,21 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 			return 0;
 		}
 
-		const getMessage = createLocaleMessageCache((locale) =>
-			NotificationMessageBuilder.weatherEveningFallback(locale),
-		);
 		const notifications = filtered.map((user) => {
-			const message = getMessage(
+			const message = NotificationMessageBuilder.weatherEveningFallback(
 				resolveTemplateLocale(user.preference?.locale),
+				{
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			);
 			return {
 				userId: user.id,
 				type: "WEATHER_EVENING" as const,
+				purpose: "SCHEDULED_SERVICE" as const,
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

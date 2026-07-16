@@ -2,8 +2,10 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { CreateNotificationData } from "@/notification";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -51,15 +53,21 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
+		const [alreadyNotified, streakAtRiskNotified] = await Promise.all([
+			this.notificationService.findAlreadyNotifiedUserIds({
 				userIds: incompleteUsers.map((u) => u.id),
 				type: "SOCIAL_DIGEST",
 				notificationDate: today,
-			});
+			}),
+			this.notificationService.findAlreadyNotifiedUserIds({
+				userIds: incompleteUsers.map((u) => u.id),
+				type: "STREAK_AT_RISK",
+				notificationDate: today,
+			}),
+		]);
 
 		const candidates = incompleteUsers.filter(
-			(u) => !alreadyNotified.has(u.id),
+			(u) => !alreadyNotified.has(u.id) && !streakAtRiskNotified.has(u.id),
 		);
 
 		if (candidates.length === 0) {
@@ -139,13 +147,19 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 				completedFriends.length,
 				friendName,
 				locale,
+				{
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			);
 
 			notifications.push({
 				userId: user.id,
 				type: "SOCIAL_DIGEST",
 				purpose: "ENGAGEMENT",
-				campaignKey: "social_digest_v1",
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

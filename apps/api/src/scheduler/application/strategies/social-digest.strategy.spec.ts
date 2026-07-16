@@ -14,6 +14,7 @@ import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
@@ -49,7 +50,6 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
-		jest.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } =
 			await TestBed.solitary(SocialDigestStrategy).compile();
@@ -106,12 +106,18 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.socialDigest(1, "친구1");
+		const expected = NotificationMessageBuilder.socialDigest(1, "친구1", "ko", {
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "SOCIAL_DIGEST",
 			title: expected.title,
 			body: expected.body,
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+			variantId: expected.variantId,
 		});
 	});
 
@@ -152,7 +158,16 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.socialDigest(2);
+		const expected = NotificationMessageBuilder.socialDigest(
+			2,
+			undefined,
+			"ko",
+			{
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				recipientId: "user-1",
+				occurrenceKey: "2024-01-16",
+			},
+		);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -220,6 +235,27 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
+		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+	});
+
+	it("같은 날 스트릭 위기 알림을 받은 사용자는 소셜 다이제스트에서 제외한다", async () => {
+		const ctx = makeCtx();
+		reader.findSocialDigestCandidates.mockResolvedValue([
+			{ id: "user-1", todos: [{ completed: false }] },
+		]);
+		notificationService.findAlreadyNotifiedUserIds
+			.mockResolvedValueOnce(new Set())
+			.mockResolvedValueOnce(new Set(["user-1"]));
+
+		const result = await strategy.execute(ctx);
+
+		expect(result).toEqual({ sent: 0 });
+		expect(
+			notificationService.findAlreadyNotifiedUserIds,
+		).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({ type: "STREAK_AT_RISK" }),
+		);
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 });

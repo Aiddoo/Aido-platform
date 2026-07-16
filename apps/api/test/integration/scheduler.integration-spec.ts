@@ -37,6 +37,7 @@ import {
 } from "@/scheduler";
 import { SCHEDULER_PREFERENCE_READER } from "@/scheduler/application/ports/scheduler-preference-reader.port";
 import { TIMEZONE_REMINDER_ENQUEUER } from "@/scheduler/application/ports/timezone-reminder-enqueuer.port";
+import { NOTIFICATION_SCHEDULE } from "@/scheduler/domain/services/notification-schedule";
 
 describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () => {
 	let module: TestingModule;
@@ -187,9 +188,9 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 			});
 		});
 
-		it("월요일 KST 09:00 — 주간 리포트 전략이 실행된다", async () => {
-			// Given - UTC 2026-03-16 00:00 = KST 2026-03-16 (월) 09:00
-			jest.setSystemTime(new Date("2026-03-16T00:00:00Z"));
+		it("월요일 KST 11:30 — 주간 리포트 전략이 실행된다", async () => {
+			// Given - UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
+			jest.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -198,15 +199,15 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 			expect(mockWeeklyReport.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
 					tz: "Asia/Seoul",
-					localHour: 9,
-					localMinute: 0,
+					localHour: NOTIFICATION_SCHEDULE.WEEKLY_REPORT.hour,
+					localMinute: NOTIFICATION_SCHEDULE.WEEKLY_REPORT.minute,
 				}),
 			);
 		});
 
-		it("매월 1일 KST 10:00 — 월간 리포트 전략이 실행된다", async () => {
-			// Given - UTC 2026-04-01 01:00 = KST 2026-04-01 (수) 10:00
-			jest.setSystemTime(new Date("2026-04-01T01:00:00Z"));
+		it("매월 1일 KST 11:30 — 월간 리포트 전략이 실행된다", async () => {
+			// Given - UTC 2026-04-01 02:30 = KST 2026-04-01 (수) 11:30
+			jest.setSystemTime(new Date("2026-04-01T02:30:00Z"));
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -215,15 +216,15 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 			expect(mockMonthlyReport.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
 					tz: "Asia/Seoul",
-					localHour: 10,
-					localMinute: 0,
+					localHour: NOTIFICATION_SCHEDULE.MONTHLY_REPORT.hour,
+					localMinute: NOTIFICATION_SCHEDULE.MONTHLY_REPORT.minute,
 				}),
 			);
 		});
 
-		it("월요일 KST 08:30 — 주간 달성 전략이 실행된다", async () => {
-			// Given - UTC 2026-03-15 23:30 = KST 2026-03-16 (월) 08:30
-			jest.setSystemTime(new Date("2026-03-15T23:30:00Z"));
+		it("월요일 KST 11:30 — 주간 달성 전략이 실행된다", async () => {
+			// Given - UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
+			jest.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -232,8 +233,8 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 			expect(mockWeeklyAchievement.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
 					tz: "Asia/Seoul",
-					localHour: 8,
-					localMinute: 30,
+					localHour: NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour,
+					localMinute: NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.minute,
 				}),
 			);
 		});
@@ -265,7 +266,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 			// Then - morningReminder가 2번 호출됨 (각 타임존마다 1번)
 			expect(mockMorningReminder.execute).toHaveBeenCalledTimes(2);
 			// 두 번째 타임존(Asia/Seoul)도 정상 실행됨
-			expect(mockOnboarding.execute).toHaveBeenCalledWith(
+			expect(mockMorningReminder.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
 					tz: "Asia/Seoul",
 				}),

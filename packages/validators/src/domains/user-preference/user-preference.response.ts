@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TIME_FORMATS } from './user-preference.constants';
+import { TIME_FORMATS, USER_PREFERENCE_DEFAULTS } from './user-preference.constants';
 
 export const userPreferenceSchema = z
   .object({
@@ -27,7 +27,7 @@ export const userPreferenceSchema = z
       timezone: 'Asia/Seoul',
       morningReminderHour: 8,
       morningReminderMinute: 0,
-      eveningReminderHour: 18,
+      eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
       eveningReminderMinute: 0,
       timeFormat: 'TWELVE_HOUR',
       weatherMorningEnabled: false,
@@ -48,7 +48,7 @@ export const preferenceResponseSchema = userPreferenceSchema.meta({
     timezone: 'Asia/Seoul',
     morningReminderHour: 8,
     morningReminderMinute: 0,
-    eveningReminderHour: 18,
+    eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
     eveningReminderMinute: 0,
     timeFormat: 'TWELVE_HOUR',
     weatherMorningEnabled: false,
@@ -69,7 +69,7 @@ export const updatePreferenceResponseSchema = userPreferenceSchema.meta({
     timezone: 'Asia/Seoul',
     morningReminderHour: 8,
     morningReminderMinute: 0,
-    eveningReminderHour: 18,
+    eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
     eveningReminderMinute: 0,
     timeFormat: 'TWELVE_HOUR',
     weatherMorningEnabled: true,

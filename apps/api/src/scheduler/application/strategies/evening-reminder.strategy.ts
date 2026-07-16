@@ -6,9 +6,11 @@ import {
 	resolveTemplateLocale,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { computeEffectiveStreak } from "@/user-settings";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -44,7 +46,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 			userId,
 		});
 
-		// 무료 사용자: 고정 시간(18:00)에만 발송
+		// 무료 사용자: 고정 시간(19:00)에만 발송
 		const defaultHour = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR;
 		const defaultMinute = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE;
 		const isFreeReminderTime =
@@ -98,11 +100,19 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 				streak,
 				isStreakAtRisk,
 				resolveTemplateLocale(user.preference?.locale),
+				{
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			);
 
 			return {
 				userId: user.id,
 				type: "EVENING_REMINDER" as const,
+				purpose: "SCHEDULED_SERVICE" as const,
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

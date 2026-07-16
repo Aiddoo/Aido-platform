@@ -110,7 +110,7 @@ export class NotificationController {
 	async registerToken(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: RegisterPushTokenDto,
-		@Timezone() tz: string,
+		@Timezone({ preserveIfMissing: true }) tz: string | undefined,
 		@Locale() locale: string | undefined,
 	): Promise<RegisterTokenResponseDto> {
 		this.#logger.debug(`푸시 토큰 등록: userId=${user.userId}`);

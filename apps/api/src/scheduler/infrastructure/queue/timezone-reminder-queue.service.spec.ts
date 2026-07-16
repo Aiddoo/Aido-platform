@@ -77,4 +77,17 @@ describe("TimezoneReminderQueueService — 타임존 리마인더 서비스", ()
 			await expect(flushPromises()).resolves.not.toThrow();
 		});
 	});
+
+	describe("enqueueSocialDigest", () => {
+		it("저녁 리마인더 90분 뒤 실행되도록 등록한다", async () => {
+			service.enqueueSocialDigest({ timezone: "Asia/Seoul" });
+			await flushPromises();
+
+			expect(queue.add).toHaveBeenCalledWith(
+				TimezoneReminderJobName.SOCIAL_DIGEST,
+				{ timezone: "Asia/Seoul" },
+				expect.objectContaining({ delay: 90 * 60 * 1000 }),
+			);
+		});
+	});
 });

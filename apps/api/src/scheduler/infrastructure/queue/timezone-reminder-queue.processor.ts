@@ -15,7 +15,7 @@ import {
  * BullMQ Job Scheduler가 매분 생성하는 잡을 받아 오케스트레이터에 위임한다.
  * - sweep-reminders: 매분 스윕
  * - reminder-hour-changed: 리마인더 시간 변경 catch-up
- * - social-digest: 저녁 리마인더 30분 후 소셜 다이제스트
+ * - social-digest: 저녁 리마인더 90분 후 소셜 다이제스트
  *
  * 오케스트레이터를 생성자 주입하므로(무버스·무setter) DIP를 지키며,
  * 판별 유니온으로 job.data를 캐스트 없이 좁힌다.

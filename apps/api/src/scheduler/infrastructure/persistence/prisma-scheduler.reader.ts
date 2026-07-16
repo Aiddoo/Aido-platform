@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "@/generated/prisma/client";
 import { resolveTemplateLocale } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
+import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -562,6 +563,19 @@ export class PrismaSchedulerReader
 		return rows.map((row) => ({ userId: row.userId, count: row._count.id }));
 	}
 
+	async findFreeRecipientIds(userIds: string[]): Promise<Set<string>> {
+		if (userIds.length === 0) return new Set();
+		const rows = await this.database.user.findMany({
+			where: {
+				id: { in: userIds },
+				subscriptionStatus: { not: "ACTIVE" },
+				role: { not: "ADMIN" },
+			},
+			select: { id: true },
+		});
+		return new Set(rows.map((row) => row.id));
+	}
+
 	// ─────────────────────────────────────────────────────────────
 	// TodoReminderReaderPort — 지연 잡 처리용
 	// ─────────────────────────────────────────────────────────────
@@ -601,7 +615,10 @@ export class PrismaSchedulerReader
 				select: { timezone: true },
 				distinct: ["timezone"],
 			});
-			return rows.map((row) => row.timezone);
+			return rows.flatMap((row) => {
+				const timezone = normalizeIanaTimezone(row.timezone);
+				return timezone ? [timezone] : [];
+			});
 		});
 	}
 
