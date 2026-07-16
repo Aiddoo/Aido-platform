@@ -8,6 +8,7 @@ import {
 	TODO_REMINDER_READER,
 	type TodoReminderReaderPort,
 } from "../../application/ports/todo-reminder-reader.port";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import {
 	type ReminderJobData,
 	TODO_REMINDER_QUEUE,
@@ -89,11 +90,19 @@ export class TodoReminderProcessor extends WorkerHost {
 			todo.title,
 			stageLabel,
 			locale,
+			{
+				campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
+				recipientId: userId,
+				occurrenceKey: `${todoId}:${stageLabel}`,
+			},
 		);
 
 		await this.notification.createAndSend({
 			userId,
 			type: "TODO_REMINDER",
+			purpose: "SCHEDULED_SERVICE",
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
+			variantId: message.variantId,
 			title: message.title,
 			body: message.body,
 			todoId,

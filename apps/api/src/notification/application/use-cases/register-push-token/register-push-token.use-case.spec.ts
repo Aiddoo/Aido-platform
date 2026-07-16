@@ -84,4 +84,21 @@ describe("RegisterPushTokenUseCase", () => {
 			"user-1",
 		);
 	});
+
+	it("잘못된 IANA 타임존은 토큰과 preference 어디에도 저장하지 않는다", async () => {
+		pushProvider.validateToken.mockReturnValue(true);
+
+		await useCase.execute({
+			userId: "user-1",
+			token: "good",
+			platform: "IOS",
+			timezone: "Mars/Olympus",
+		});
+
+		expect(repository.registerPushToken).toHaveBeenCalledWith(
+			expect.objectContaining({ timezone: undefined }),
+		);
+		expect(userSettings.upsertPushTimezone).not.toHaveBeenCalled();
+		expect(cacheService.invalidateUserPreference).not.toHaveBeenCalled();
+	});
 });

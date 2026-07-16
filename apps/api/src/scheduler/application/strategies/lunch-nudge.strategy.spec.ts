@@ -14,6 +14,7 @@ import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULED_REMINDER_READER,
@@ -49,7 +50,6 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
-		jest.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } =
 			await TestBed.solitary(LunchNudgeStrategy).compile();
@@ -111,10 +111,16 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.lunchNudge();
+		const expected = NotificationMessageBuilder.lunchNudge("ko", {
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+			variantId: expected.variantId,
 		});
 	});
 

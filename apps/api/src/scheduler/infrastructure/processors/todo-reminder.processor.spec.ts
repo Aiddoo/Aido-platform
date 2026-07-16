@@ -18,6 +18,7 @@ import {
 	TODO_REMINDER_READER,
 	type TodoReminderReaderPort,
 } from "../../application/ports/todo-reminder-reader.port";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ReminderJobData } from "../scheduler/bullmq-reminder-scheduler.adapter";
 import { TodoReminderProcessor } from "./todo-reminder.processor";
 
@@ -90,6 +91,8 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 				expect.objectContaining({
 					userId: USER_ID,
 					type: "TODO_REMINDER",
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
+					variantId: expect.stringMatching(/^todo_reminder_v2\.60min\.v[1-4]$/),
 					todoId: 1,
 					metadata: { stage: "60min" },
 				}),
@@ -126,8 +129,6 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 
 		it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
 			// Given — DB에는 변경된 제목
-			const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0);
-
 			setupMocks({
 				todoExists: true,
 				notificationExists: false,
@@ -138,15 +139,10 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			// When
 			await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
 
-			// Then — DB의 최신 제목이 알림에 사용됨
-			expect(notification.createAndSend).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "⏰ 밥먹고 약먹기, 1시간 뒤 시작!",
-					body: "미리 해두면 마음이 편해져",
-				}),
-			);
-
-			randomSpy.mockRestore();
+			// Then — DB의 최신 제목이 알림에 사용되고 플레이스홀더는 남지 않음
+			const payload = notification.createAndSend.mock.calls[0]?.[0];
+			expect(payload?.title).toContain("밥먹고 약먹기");
+			expect(payload?.title).not.toContain("{todoTitle}");
 		});
 	});
 

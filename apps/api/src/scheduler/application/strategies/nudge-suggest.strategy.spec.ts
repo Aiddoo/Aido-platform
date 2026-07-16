@@ -16,6 +16,7 @@ import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import type { IDedupProvider } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
@@ -52,7 +53,6 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
-		jest.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } =
 			await TestBed.solitary(NudgeSuggestStrategy).compile();
@@ -111,12 +111,18 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.nudgeSuggest("친구1", 3);
+		const expected = NotificationMessageBuilder.nudgeSuggest("친구1", 3, "ko", {
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+			recipientId: "user-1",
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "NUDGE_SUGGEST",
 			title: expected.title,
 			body: expected.body,
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+			variantId: expected.variantId,
 			friendId: "friend-1",
 		});
 	});

@@ -9,6 +9,7 @@ import {
 	Injectable,
 	Logger,
 } from "@nestjs/common";
+import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
 import {
 	type CachedUserPreference,
 	CacheService,
@@ -39,6 +40,7 @@ import {
 import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
+	type PushRateLimitRequest,
 } from "../../application/ports/push-rate-limiter.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
@@ -105,16 +107,15 @@ export class PushDispatcherAdapter
 		notificationId: number,
 	): Promise<void> {
 		const preference = await this.#loadPreference(data.userId);
-		const localDate = new Date(
-			`${this.#localDate(preference.timezone)}T00:00:00.000Z`,
-		);
+		const timezone = resolveTimezone(preference.timezone);
+		const localDate = new Date(`${this.#localDate(timezone)}T00:00:00.000Z`);
 		const dispatch = await this.notificationRepository.createPushDispatch({
 			notificationId,
 			userId: data.userId,
 			purpose: data.purpose ?? "TRANSACTIONAL",
 			campaignKey: data.campaignKey,
 			variantId: data.variantId,
-			timezone: preference.timezone,
+			timezone,
 			localDate,
 		});
 		const result = await this.#sendPushToUser(data.userId, {
@@ -165,18 +166,17 @@ export class PushDispatcherAdapter
 		const prefMap = new Map(preferences.map((p) => [p.userId, p]));
 		const consentMap = new Map(consents.map((c) => [c.userId, c]));
 
-		const eligibleItems: typeof items = [];
+		const settingsEligibleItems: typeof items = [];
 		for (const item of items) {
 			const { data } = item;
-			const shouldSend = await this.#canSendPushWithCachedData(
+			const shouldSend = this.#passesCachedSettings(
 				data.type,
 				data.purpose,
 				prefMap.get(data.userId),
 				consentMap.get(data.userId),
-				data.userId,
 			);
 			if (shouldSend) {
-				eligibleItems.push(item);
+				settingsEligibleItems.push(item);
 			} else {
 				this.#logger.debug(
 					`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
@@ -184,9 +184,25 @@ export class PushDispatcherAdapter
 			}
 		}
 
-		if (eligibleItems.length === 0) {
+		if (settingsEligibleItems.length === 0) {
 			return;
 		}
+
+		const rateLimitRequests = settingsEligibleItems.map(({ data }) =>
+			this.#buildRateLimitRequest(data, prefMap.get(data.userId)?.timezone),
+		);
+		const limited = await this.rateLimiter.reserveBatch(rateLimitRequests);
+		const eligibleItems = settingsEligibleItems.filter((item, index) => {
+			const isLimited = limited[index] ?? false;
+			if (isLimited) {
+				this.#logger.debug(
+					`Push rate limited: userId=${item.data.userId}, type=${item.data.type}`,
+				);
+			}
+			return !isLimited;
+		});
+
+		if (eligibleItems.length === 0) return;
 
 		const eligibleUserIds = [
 			...new Set(eligibleItems.map((item) => item.data.userId)),
@@ -195,7 +211,7 @@ export class PushDispatcherAdapter
 		const dispatchItems = await Promise.all(
 			eligibleItems.map(async (item) => {
 				const preference = prefMap.get(item.data.userId);
-				const timezone = preference?.timezone ?? "UTC";
+				const timezone = resolveTimezone(preference?.timezone);
 				const dispatch = await this.notificationRepository.createPushDispatch({
 					notificationId: item.notificationId,
 					userId: item.data.userId,
@@ -352,13 +368,10 @@ export class PushDispatcherAdapter
 	}
 
 	/**
-	 * 배치 경로용 푸시 발송 판단 (설정 + 마케팅 동의만 확인)
-	 *
-	 * Rate limit은 의도적으로 생략:
-	 * 스케줄러 배치 알림은 타입별로 1일 1회이므로 rate limit 불필요.
-	 * 개별 rate limit 적용 시 배치 전체 성능이 저하됨.
+	 * 배치 경로용 푸시 발송 판단 (설정 + 마케팅 동의).
+	 * Redis 제한 예약은 이 사전 필터를 통과한 항목만 별도의 단일 배치로 수행합니다.
 	 */
-	async #canSendPushWithCachedData(
+	#passesCachedSettings(
 		type: NotificationType,
 		purpose: CreateNotificationData["purpose"],
 		preference:
@@ -369,8 +382,7 @@ export class PushDispatcherAdapter
 			  }
 			| undefined,
 		consent: { marketingPushAgreedAt: Date | null } | undefined,
-		userId: string,
-	): Promise<boolean> {
+	): boolean {
 		if (!preference) {
 			return false;
 		}
@@ -382,8 +394,6 @@ export class PushDispatcherAdapter
 		const timezone = preference.timezone ?? "UTC";
 		const isMarketing =
 			purpose === "ENGAGEMENT" || isMarketingNotification(type);
-		const isEngagement =
-			purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(type);
 
 		if (isNightTime(timezone) && isMarketing) {
 			return false;
@@ -403,26 +413,27 @@ export class PushDispatcherAdapter
 			}
 		}
 
-		if (await this.rateLimiter.isRateLimited(userId)) {
-			return false;
-		}
-
-		if (
-			isEngagement &&
-			(await this.rateLimiter.isEngagementRateLimited(
-				userId,
-				this.#localDate(timezone),
-			))
-		) {
-			return false;
-		}
-
 		return true;
+	}
+
+	#buildRateLimitRequest(
+		data: CreateNotificationData,
+		timezone: string | undefined,
+	): PushRateLimitRequest {
+		const isEngagement =
+			data.purpose === "ENGAGEMENT" ||
+			isAutomatedEngagementNotification(data.type);
+		return {
+			userId: data.userId,
+			...(isEngagement && {
+				engagementLocalDate: this.#localDate(timezone ?? "UTC"),
+			}),
+		};
 	}
 
 	#localDate(timezone: string): string {
 		return new Intl.DateTimeFormat("en-CA", {
-			timeZone: timezone,
+			timeZone: resolveTimezone(timezone),
 			year: "numeric",
 			month: "2-digit",
 			day: "2-digit",

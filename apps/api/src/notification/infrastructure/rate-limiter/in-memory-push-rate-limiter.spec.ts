@@ -45,4 +45,23 @@ describe("InMemoryPushRateLimiter engagement policy", () => {
 		);
 		limiter.destroy();
 	});
+
+	it("배치 요청의 입력 순서를 보존하고 참여 유도 정책을 함께 적용한다", async () => {
+		const limiter = new InMemoryPushRateLimiter();
+		const requests = [
+			{ userId: "user-1", engagementLocalDate: "2026-07-15" },
+			{ userId: "user-2" },
+		] as const;
+
+		await expect(limiter.reserveBatch(requests)).resolves.toEqual([
+			false,
+			false,
+		]);
+		await expect(limiter.reserveBatch(requests)).resolves.toEqual([
+			true,
+			false,
+		]);
+
+		limiter.destroy();
+	});
 });

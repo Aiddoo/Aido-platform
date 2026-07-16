@@ -120,6 +120,10 @@ export class ProcessRetentionStagesUseCase {
 				candidate.stage,
 				decision.variantId,
 				candidate.locale,
+				{
+					recipientId: candidate.userId,
+					occurrenceKey: localDateString(now, candidate.timezone),
+				},
 			);
 			await this.repository.createDelivery({
 				stageId: candidate.stageId,
@@ -128,7 +132,7 @@ export class ProcessRetentionStagesUseCase {
 				title: message.title,
 				body: message.body,
 				route: decision.route,
-				variantId: decision.variantId,
+				variantId: message.variantId,
 			});
 		});
 

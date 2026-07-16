@@ -6,8 +6,10 @@ import {
 	resolveTemplateLocale,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -81,14 +83,26 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 		const notifications = filteredUsers.map((user) => {
 			const count = user._count.todos;
 			const locale = resolveTemplateLocale(user.preference?.locale);
+			const variantContext = {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
+				recipientId: user.id,
+				occurrenceKey: toDateString(today),
+			};
 			const message =
 				count > 0
-					? NotificationMessageBuilder.morningReminder(count, locale)
-					: NotificationMessageBuilder.morningNoTodo(locale);
+					? NotificationMessageBuilder.morningReminder(
+							count,
+							locale,
+							variantContext,
+						)
+					: NotificationMessageBuilder.morningNoTodo(locale, variantContext);
 
 			return {
 				userId: user.id,
 				type: "MORNING_REMINDER" as const,
+				purpose: "SCHEDULED_SERVICE" as const,
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

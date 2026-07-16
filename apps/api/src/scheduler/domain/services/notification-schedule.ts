@@ -1,8 +1,8 @@
 /**
  * 고정 시간 알림 스케줄 정책 (유저 로컬 타임존 기준, 순수 도메인).
  *
- * 아침/저녁 리마인더(08:00/18:00)와 겹치지 않도록 분리된 시간대.
- * 주간 달성 배지는 월요일 08:30 (아침 리마인더 08:00 직후, 주간 리포트 09:00 직전).
+ * 한국 사용자 생활 리듬과 단일 DB/Redis 부하 분산을 함께 고려한 고정 시간대.
+ * 사용자 커스텀 아침/저녁·날씨 알림은 각 Strategy가 별도로 시:분을 매칭한다.
  */
 
 export interface ScheduleTime {
@@ -11,13 +11,14 @@ export interface ScheduleTime {
 }
 
 export const NOTIFICATION_SCHEDULE = {
-	WEEKLY_REPORT: { hour: 9, minute: 0 },
-	MONTHLY_REPORT: { hour: 10, minute: 0 },
-	WEEKLY_ACHIEVEMENT: { hour: 8, minute: 30 },
-	WINBACK: { hour: 12, minute: 0 },
-	NUDGE_SUGGEST: { hour: 14, minute: 0 },
+	ONBOARDING: { hour: 10, minute: 30 },
+	WEEKLY_REPORT: { hour: 11, minute: 30 },
+	MONTHLY_REPORT: { hour: 11, minute: 30 },
+	WEEKLY_ACHIEVEMENT: { hour: 11, minute: 30 },
 	LUNCH_NUDGE: { hour: 12, minute: 30 },
-	STREAK_AT_RISK: { hour: 20, minute: 0 },
+	NUDGE_SUGGEST: { hour: 15, minute: 0 },
+	WINBACK: { hour: 16, minute: 0 },
+	STREAK_AT_RISK: { hour: 20, minute: 15 },
 } as const satisfies Record<string, ScheduleTime>;
 
 /** 로컬 시:분이 지정 스케줄과 정확히 일치하는지 판정 */

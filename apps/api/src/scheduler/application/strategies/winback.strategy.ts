@@ -3,12 +3,14 @@ import type { CreateNotificationData } from "@/notification";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { DedupKeys } from "@/shared/infrastructure/dedup/constants/dedup-keys";
 import {
 	DEDUP_PROVIDER,
 	type IDedupProvider,
 } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
 	TimezoneContext,
@@ -96,13 +98,18 @@ export class WinbackStrategy implements ITimezoneStrategy {
 			const message = NotificationMessageBuilder.winback(
 				check.inactiveDays,
 				locales.get(check.user.id) ?? "ko",
+				{
+					campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${check.stage}`,
+					recipientId: check.user.id,
+					occurrenceKey: toDateString(today),
+				},
 			);
 			notifications.push({
 				userId: check.user.id,
 				type: "WINBACK",
 				purpose: "ENGAGEMENT",
-				campaignKey: "winback_v1",
-				variantId: check.stage,
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.WINBACK,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

@@ -1,5 +1,6 @@
 import { NIGHT_TIME_CONFIG } from "@aido/validators";
 import dayjs from "dayjs";
+import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
 
 /**
  * 사용자 타임존 기준 야간 시간대 확인 (로컬 21:00-08:00)
@@ -12,7 +13,7 @@ export function isNightTime(
 	tz: string = "UTC",
 	date: Date = new Date(),
 ): boolean {
-	const localHour = dayjs(date).tz(tz).hour();
+	const localHour = dayjs(date).tz(resolveTimezone(tz)).hour();
 	return (
 		localHour >= NIGHT_TIME_CONFIG.START_HOUR ||
 		localHour < NIGHT_TIME_CONFIG.END_HOUR

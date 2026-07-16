@@ -11,7 +11,9 @@
  */
 import {
 	firstOfMonthInTimezone,
+	normalizeIanaTimezone,
 	parseLocalDateTime,
+	resolveTimezone,
 	startOfDayInTimezone,
 	todayInTimezone,
 	toLocalTimeString,
@@ -28,6 +30,25 @@ afterAll(() => {
 });
 
 describe("timezone", () => {
+	describe("timezone validation", () => {
+		it("유효한 IANA 타임존만 정규화한다", () => {
+			expect(normalizeIanaTimezone("Asia/Seoul")).toBe("Asia/Seoul");
+			expect(normalizeIanaTimezone("America/New_York")).toBe(
+				"America/New_York",
+			);
+			expect(normalizeIanaTimezone("Mars/Olympus")).toBeNull();
+			expect(normalizeIanaTimezone(undefined)).toBeNull();
+		});
+
+		it("잘못 저장된 타임존은 UTC로 안전하게 폴백한다", () => {
+			expect(resolveTimezone("Mars/Olympus")).toBe("UTC");
+			expect(() => todayInTimezone("Mars/Olympus")).not.toThrow();
+			expect(todayInTimezone("Mars/Olympus")).toEqual(
+				new Date("2026-03-03T00:00:00.000Z"),
+			);
+		});
+	});
+
 	describe("todayInTimezone", () => {
 		it("지정 타임존의 오늘을 UTC midnight Date로 반환", () => {
 			// KST 기준 2026-03-03 → UTC midnight
@@ -54,6 +75,15 @@ describe("timezone", () => {
 				"America/New_York",
 			);
 			expect(result).toEqual(new Date("2026-01-15T19:00:00.000Z"));
+		});
+
+		it("DST 기간의 뉴욕 14:00을 UTC 18:00으로 변환", () => {
+			const result = parseLocalDateTime(
+				"2026-07-15",
+				"14:00",
+				"America/New_York",
+			);
+			expect(result).toEqual(new Date("2026-07-15T18:00:00.000Z"));
 		});
 
 		it("기본 타임존(UTC)이면 시간 그대로 반환", () => {

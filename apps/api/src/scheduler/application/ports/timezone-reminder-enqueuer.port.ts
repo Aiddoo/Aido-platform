@@ -32,11 +32,21 @@ export interface ReminderHourChangedJobData {
 /**
  * Social Digest 잡 데이터.
  *
- * 저녁 리마인더 발송 30분 후 실행. 본인 미완료 + 친구 완료 시 소셜 압박 알림 발송.
+ * 저녁 리마인더 발송 90분 후 실행. 본인 미완료 + 친구 완료 시 활동 요약 알림 발송.
  */
 export interface SocialDigestJobData {
 	/** 사용자 타임존 (IANA) */
 	readonly timezone: string;
+	/**
+	 * 직전 저녁 리마인더를 실제로 받은 사용자 ID.
+	 * 배포 전에 등록된 지연 잡과의 런타임 호환을 위해 optional로 읽되,
+	 * 신규 enqueue에서는 아래 TargetedSocialDigestJobData로 필수화한다.
+	 */
+	readonly recipientUserIds?: readonly string[];
+}
+
+export interface TargetedSocialDigestJobData extends SocialDigestJobData {
+	readonly recipientUserIds: readonly string[];
 }
 
 export interface TimezoneReminderEnqueuerPort {
@@ -46,6 +56,6 @@ export interface TimezoneReminderEnqueuerPort {
 	/** 리마인더 시간 변경 catch-up 잡 등록 (fire-and-forget) */
 	enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void;
 
-	/** Social Digest 지연 잡 등록 (저녁 리마인더 30분 후, fire-and-forget) */
-	enqueueSocialDigest(payload: SocialDigestJobData): void;
+	/** Social Digest 지연 잡 등록 (저녁 리마인더 90분 후, fire-and-forget) */
+	enqueueSocialDigest(payload: TargetedSocialDigestJobData): void;
 }

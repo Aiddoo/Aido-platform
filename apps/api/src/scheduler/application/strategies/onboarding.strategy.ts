@@ -3,8 +3,10 @@ import type { CreateNotificationData } from "@/notification";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
+import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import {
 	isOnboardingDay,
 	ONBOARDING_MAX_DAY,
@@ -104,6 +106,11 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 				day,
 				completedCount,
 				locales.get(user.id) ?? "ko",
+				{
+					campaignKey: `${SCHEDULER_CAMPAIGN_KEY.ONBOARDING}.day_${day}`,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			);
 
 			if (!message) continue;
@@ -112,8 +119,8 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 				userId: user.id,
 				type: "SYSTEM_NOTICE",
 				purpose: "ENGAGEMENT",
-				campaignKey: "onboarding_v1",
-				variantId: `day_${day}`,
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.ONBOARDING,
+				variantId: message.variantId,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,

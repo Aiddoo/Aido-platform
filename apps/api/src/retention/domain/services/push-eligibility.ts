@@ -1,3 +1,5 @@
+import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+
 export interface RetentionPushEligibilityInput {
 	readonly pushEnabled: boolean;
 	readonly marketingPushAgreedAt: Date | null;
@@ -19,7 +21,7 @@ export function retentionPushSkipReason(
 
 function localHour(date: Date, timezone: string): number {
 	const parts = new Intl.DateTimeFormat("en-US", {
-		timeZone: timezone,
+		timeZone: resolveTimezone(timezone),
 		hour: "2-digit",
 		hourCycle: "h23",
 	}).formatToParts(date);

@@ -97,49 +97,52 @@ export const SCHEDULER_TEMPLATES = {
 		defaultRoute: "/",
 		variants: [
 			{ title: "🎉 올클리어!", body: "오늘 너 진짜 멋있었어" },
-			{ title: "오늘 치 전부 완료 ✅", body: "이런 날이 쌓이면 인생이 바뀐다" },
-			{ title: "다 해버렸네? 😎", body: "오늘의 나에게 박수 짝짝짝" },
-			{ title: "완료 도장 꽝! 🏆", body: "이제 편하게 쉬어, 자격 충분해" },
-			{ title: "퍼펙트한 하루 ✨", body: "내일의 너도 오늘만 같아라" },
+			{ title: "오늘 할 일 전부 완료 ✅", body: "깔끔하게 마무리했네" },
+			{ title: "오늘 계획 완료 😎", body: "수고했어, 이제 편하게 쉬자" },
+			{ title: "완료 도장 꾹! 🏆", body: "오늘도 차근차근 잘 해냈어" },
+			{ title: "기분 좋은 올클리어 ✨", body: "내일도 부담 없이 이어가보자" },
 		],
 	} satisfies NotificationTemplate,
 	EVENING_PARTIAL: {
 		title: "올클리어까지 {remaining}개 🔥",
-		body: "거의 다 왔잖아, 여기서 끝내자",
+		body: "여유가 있다면 하나 더 해볼까?",
 		type: "EVENING_REMINDER",
 		defaultRoute: "/todos",
 		variants: [
 			{
 				title: "올클리어까지 {remaining}개 🔥",
-				body: "거의 다 왔잖아, 여기서 끝내자",
+				body: "여유가 있다면 하나 더 해볼까?",
 			},
-			{ title: "{remaining}개만 더! 💪", body: "자기 전에 해치우면 꿀잠 각" },
+			{ title: "{remaining}개 남았어 💪", body: "가벼운 것부터 마무리해보자" },
 			{
-				title: "오늘 잘했어, 근데 {remaining}개 남았어 👀",
-				body: "마무리 한 번 가볼까?",
+				title: "오늘 잘했어, {remaining}개 남았어 👀",
+				body: "할 수 있는 만큼만 마무리해보자",
 			},
 			{
 				title: "딱 {remaining}개 남았다 ✨",
-				body: "끝내고 자면 기분이 다를걸",
+				body: "짧은 것 하나부터 시작해볼까?",
 			},
 		],
 	} satisfies NotificationTemplate,
 	EVENING_NONE: {
-		title: "오늘 아직 0개야 🥲",
-		body: "딱 하나만 해보자, 그거면 충분해",
+		title: "오늘은 아직 시작 전이야 🌙",
+		body: "작은 것 하나만 해도 충분해",
 		type: "EVENING_REMINDER",
 		defaultRoute: "/todos",
 		variants: [
 			{
-				title: "오늘 아직 0개야 🥲",
-				body: "딱 하나만 해보자, 그거면 충분해",
+				title: "오늘은 아직 시작 전이야 🌙",
+				body: "작은 것 하나만 해도 충분해",
 			},
 			{
-				title: "할 일들이 기다리다 지쳤대 😢",
-				body: "하나만 완료해 주고 자자",
+				title: "오늘 많이 바빴지? 💦",
+				body: "5분이면 되는 것부터 해보자",
 			},
-			{ title: "오늘 바빴구나 💦", body: "작은 것 하나가 내일의 시작이야" },
-			{ title: "이대로 자면 아쉽잖아 🌙", body: "5분짜리 하나만 끝내볼까?" },
+			{
+				title: "지금부터 시작해도 괜찮아 🌱",
+				body: "가장 쉬운 것부터 골라보자",
+			},
+			{ title: "하루가 가기 전에 🌙", body: "짧은 것 하나만 해볼까?" },
 		],
 	} satisfies NotificationTemplate,
 	MORNING_NO_TODO: {
@@ -153,42 +156,48 @@ export const SCHEDULER_TEMPLATES = {
 				body: "하나만 적어도 하루가 달라져",
 			},
 			{ title: "오늘은 백지 상태 📝", body: "제일 하고 싶은 것부터 적어볼까?" },
-			{ title: "할 일 0개, 진짜야? 👀", body: "여유로운 거야, 미루는 거야?" },
+			{
+				title: "오늘 계획을 채워볼까? 👀",
+				body: "기억해둘 일 하나만 적어보자",
+			},
 		],
 	} satisfies NotificationTemplate,
 	// 스트릭 축하 (전체 완료 + 스트릭 2일+)
 	EVENING_STREAK: {
 		title: "🔥 {streak}일 연속 올클리어!",
-		body: "내일이면 {next}일째, 이 불꽃 꺼뜨리지 마",
+		body: "내일이면 {next}일째야",
 		type: "EVENING_REMINDER",
 		defaultRoute: "/",
 		variants: [
 			{
 				title: "🔥 {streak}일 연속 올클리어!",
-				body: "내일이면 {next}일째, 이 불꽃 꺼뜨리지 마",
+				body: "내일이면 {next}일째야",
 			},
 			{
 				title: "{streak}일째 달리는 중 🏃",
 				body: "이대로 {next}일 찍으러 가보자",
 			},
-			{ title: "{streak}일 연속?! 미쳤다 🔥", body: "이 흐름 그대로 쭉 가자" },
+			{
+				title: "{streak}일 연속, 정말 대단해 🔥",
+				body: "이 흐름 그대로 이어가보자",
+			},
 		],
 	} satisfies NotificationTemplate,
 	EVENING_STREAK_7: {
 		title: "🎉 7일 연속! 일주일 올클리어",
-		body: "이거 실화야? 진짜 대단해",
+		body: "일주일을 꾸준히 채웠어",
 		type: "EVENING_REMINDER",
 		defaultRoute: "/",
 	} satisfies NotificationTemplate,
 	EVENING_STREAK_14: {
 		title: "🏆 2주 연속 달성!",
-		body: "이쯤 되면 그냥 습관이야",
+		body: "꾸준히 이어온 게 정말 멋져",
 		type: "EVENING_REMINDER",
 		defaultRoute: "/",
 	} satisfies NotificationTemplate,
 	EVENING_STREAK_30: {
-		title: "👑 {streak}일째, 전설이 되는 중",
-		body: "여기서 멈추면 반칙이야",
+		title: "👑 {streak}일째 이어가는 중",
+		body: "꾸준함이 제대로 자리 잡았어",
 		type: "EVENING_REMINDER",
 		defaultRoute: "/",
 	} satisfies NotificationTemplate,
@@ -204,7 +213,7 @@ export const SCHEDULER_TEMPLATES = {
 				body: "{remaining}개만 끝내면 지킬 수 있어!",
 			},
 			{
-				title: "{streak}일째인데 여기서 끊기면 아깝잖아 😱",
+				title: "{streak}일 기록, 오늘도 이어가볼까? ⏳",
 				body: "딱 {remaining}개 남았어",
 			},
 			{ title: "아직 기회 있어 ⏳", body: "{remaining}개만 하면 기록 세이브!" },
@@ -226,7 +235,7 @@ export const SCHEDULER_TEMPLATES = {
 				body: "오늘 하나면 다시 활활 타올라",
 			},
 			{
-				title: "{streak}일이나 쌓았잖아 😢",
+				title: "{streak}일 기록을 이어볼까? 🌱",
 				body: "하나만 해도 기록은 이어져",
 			},
 		],
@@ -242,15 +251,18 @@ export const SCHEDULER_TEMPLATES = {
 				title: "🍚 밥 먹었으면 하나 해볼까?",
 				body: "오후의 시작은 할 일 하나부터",
 			},
-			{ title: "아직 0개야 👀", body: "점심값 했으니 할일값도 하자" },
+			{
+				title: "오후 첫 완료를 기다리는 중 👀",
+				body: "가장 쉬운 것부터 시작해보자",
+			},
 			{ title: "오후 출발! 🏃", body: "하나만 끝내면 탄력 붙는다" },
 			{
-				title: "식곤증엔 완료 체크가 특효약 💊",
-				body: "제일 쉬운 것부터 가보자",
+				title: "점심 먹고 가볍게 시작 💡",
+				body: "제일 쉬운 것부터 골라보자",
 			},
 		],
 	} satisfies NotificationTemplate,
-	// 스트릭 위기 전용 알림 (21:00, 스트릭 3일+ & 미완료)
+	// 스트릭 위기 전용 알림 (20:15, 스트릭 3일+ & 미완료)
 	STREAK_AT_RISK: {
 		title: "🚨 {streak}일 기록이 오늘에 달렸어",
 		body: "하나만 끝내면 계속 달릴 수 있어",
@@ -261,7 +273,10 @@ export const SCHEDULER_TEMPLATES = {
 				title: "🚨 {streak}일 기록이 오늘에 달렸어",
 				body: "하나만 끝내면 계속 달릴 수 있어",
 			},
-			{ title: "{streak}일째인데 여기서 멈출 거야? 😱", body: "딱 하나만!" },
+			{
+				title: "{streak}일 기록, 오늘도 이어볼까? ⏳",
+				body: "하나만 완료해도 기록은 이어져",
+			},
 			{
 				title: "{streak}일 불꽃 꺼지기 직전 🔥",
 				body: "지금 하나 끝내면 세이브 완료",
@@ -366,13 +381,13 @@ export const WEATHER_TEMPLATES = {
 export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
 		title: "👋 {senderName}의 친구 신청",
-		body: "수락하면 서로의 할 일이 보여. 각오해",
+		body: "수락하면 서로의 할 일을 응원할 수 있어",
 		type: "FOLLOW_NEW",
 		defaultRoute: "/friends/requests",
 		variants: [
 			{
 				title: "👋 {senderName}의 친구 신청",
-				body: "수락하면 서로의 할 일이 보여. 각오해",
+				body: "수락하면 서로의 할 일을 응원할 수 있어",
 			},
 			{
 				title: "{senderName:이/가} 같이 하재! 🤝",
@@ -386,13 +401,13 @@ export const SOCIAL_TEMPLATES = {
 	} satisfies NotificationTemplate,
 	FOLLOW_ACCEPTED: {
 		title: "🎉 {senderName}, 이제 친구!",
-		body: "서로 할 일이 다 보여. 각오해",
+		body: "이제 서로의 할 일을 응원할 수 있어",
 		type: "FOLLOW_ACCEPTED",
 		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
 			{
 				title: "🎉 {senderName}, 이제 친구!",
-				body: "서로 할 일이 다 보여. 각오해",
+				body: "이제 서로의 할 일을 응원할 수 있어",
 			},
 			{
 				title: "{senderName:와/과} 연결 완료 🤝",
@@ -406,21 +421,21 @@ export const SOCIAL_TEMPLATES = {
 	} satisfies NotificationTemplate,
 	NUDGE_RECEIVED: {
 		title: "👉 {senderName:이/가} '{todoTitle}' 콕!",
-		body: "아직도 안 했어? 😏",
+		body: "가볍게 시작하라는 응원이야 🙌",
 		type: "NUDGE_RECEIVED",
 		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
 			{
 				title: "👉 {senderName:이/가} '{todoTitle}' 콕!",
-				body: "아직도 안 했어? 😏",
+				body: "가볍게 시작하라는 응원이야 🙌",
 			},
 			{
 				title: "{senderName:이/가} '{todoTitle}' 찔렀어 👀",
-				body: "얼른 하라는 뜻이야",
+				body: "할 일이 생각나서 보냈대",
 			},
 			{
 				title: "콕콕! {senderName:이/가} '{todoTitle}' 재촉 중",
-				body: "기다리고 있대",
+				body: "가볍게 시작해보자",
 			},
 		],
 	} satisfies NotificationTemplate,
@@ -484,48 +499,63 @@ export const SOCIAL_TEMPLATES = {
 	} satisfies NotificationTemplate,
 	FRIEND_COMPLETED: {
 		title: "✅ {friendName:이/가} 오늘 다 끝냈대",
-		body: "너는? 👀",
+		body: "친구의 좋은 흐름을 확인해봐 👀",
 		type: "FRIEND_COMPLETED",
 		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{ title: "✅ {friendName:이/가} 오늘 다 끝냈대", body: "너는? 👀" },
-			{ title: "{friendName:이/가} 올클리어! 🎉", body: "이대로 질 순 없잖아" },
-			{ title: "{friendName:이/가} 벌써 다 했대 🔥", body: "우리도 가보자" },
+			{
+				title: "✅ {friendName:이/가} 오늘 다 끝냈대",
+				body: "친구의 좋은 흐름을 확인해봐 👀",
+			},
+			{
+				title: "{friendName:이/가} 올클리어! 🎉",
+				body: "응원 한마디를 보내볼까?",
+			},
+			{
+				title: "{friendName:이/가} 오늘 할 일을 마쳤어 🔥",
+				body: "친구의 기록을 확인해봐",
+			},
 		],
 	} satisfies NotificationTemplate,
 	// 친구 활동 요약 (Social Digest)
 	SOCIAL_DIGEST_MULTI: {
 		title: "🔥 친구 {completedFriendCount}명이 오늘 다 끝냈어",
-		body: "이제 너만 남았다",
+		body: "친구들의 기록을 확인하고 응원해봐",
 		type: "SOCIAL_DIGEST",
 		defaultRoute: "/feed",
 		variants: [
 			{
 				title: "🔥 친구 {completedFriendCount}명이 오늘 다 끝냈어",
-				body: "이제 너만 남았다",
+				body: "친구들의 기록을 확인하고 응원해봐",
 			},
 			{
 				title: "{completedFriendCount}명이나 올클리어! 👀",
-				body: "나만 빼고 다 한 거야?",
+				body: "좋은 흐름을 함께 이어가보자",
 			},
-			{ title: "친구들이 앞서가는 중 🏃", body: "지금 시작해도 안 늦었어" },
+			{
+				title: "친구들이 오늘 기록을 채웠어 🙌",
+				body: "응원 한마디를 보내볼까?",
+			},
 		],
 	} satisfies NotificationTemplate,
 	SOCIAL_DIGEST_SINGLE: {
 		title: "✅ {friendName:은/는} 오늘 다 끝냈대",
-		body: "너도 할 수 있잖아",
+		body: "응원 한마디를 보내볼까?",
 		type: "SOCIAL_DIGEST",
 		defaultRoute: "/feed",
 		variants: [
 			{
 				title: "✅ {friendName:은/는} 오늘 다 끝냈대",
-				body: "너도 할 수 있잖아",
+				body: "응원 한마디를 보내볼까?",
 			},
 			{
 				title: "{friendName:이/가} 올클리어 했대! 🎉",
-				body: "이대로 보고만 있을 거야?",
+				body: "친구의 기록을 확인해봐",
 			},
-			{ title: "{friendName:은/는} 벌써 끝냈어 👀", body: "이제 네 차례야" },
+			{
+				title: "{friendName:은/는} 오늘 할 일을 마쳤어 👀",
+				body: "좋은 흐름을 같이 이어가보자",
+			},
 		],
 	} satisfies NotificationTemplate,
 	// 콕 찌르기 유도 (Nudge Suggest)
@@ -544,8 +574,8 @@ export const SOCIAL_TEMPLATES = {
 				body: "안부 한 번 물어보자",
 			},
 			{
-				title: "{friendName:이/가} 요즘 잠수 중 🤿",
-				body: "콕 한 번이면 돌아올지도?",
+				title: "{friendName:이/가} 요즘 조용하네 👀",
+				body: "가볍게 안부를 보내볼까?",
 			},
 		],
 	} satisfies NotificationTemplate,
@@ -561,7 +591,10 @@ export const SYSTEM_TEMPLATES = {
 		variants: [
 			{ title: "👀 3일째 안 보여서 와봤어", body: "할 일들이 기다리고 있대" },
 			{ title: "3일 만이야!", body: "가볍게 하나만 해볼까?" },
-			{ title: "어디 갔어~ 🥺", body: "오늘 딱 하나만 같이 하자" },
+			{
+				title: "오랜만에 들러볼래? 👋",
+				body: "오늘 할 일 하나만 같이 정해보자",
+			},
 		],
 	} satisfies NotificationTemplate,
 	WINBACK_DAY7: {
@@ -572,7 +605,7 @@ export const SYSTEM_TEMPLATES = {
 		variants: [
 			{ title: "일주일 만이야 🥲", body: "딱 한 개만, 그걸로 충분해" },
 			{ title: "7일째 조용하네 👀", body: "다시 시작해도 하나도 안 늦었어" },
-			{ title: "일주일 동안 보고 싶었어 💌", body: "할 일 하나만 만들어볼까?" },
+			{ title: "일주일 만이야 💌", body: "할 일 하나만 만들어볼까?" },
 		],
 	} satisfies NotificationTemplate,
 	WINBACK_DAY14: {
@@ -582,7 +615,7 @@ export const SYSTEM_TEMPLATES = {
 		defaultRoute: "/feed",
 		variants: [
 			{ title: "2주 만이야, 반갑다! 👋", body: "오늘이 새로운 Day 1이야" },
-			{ title: "거의 잊혀질 뻔했잖아 🥲", body: "다시 시작해도 괜찮아" },
+			{ title: "다시 만나서 반가워 🌱", body: "오늘부터 천천히 시작해도 돼" },
 			{ title: "오래 쉬었네 🌱", body: "언제든 돌아올 수 있어, 지금처럼" },
 		],
 	} satisfies NotificationTemplate,
@@ -593,24 +626,27 @@ export const SYSTEM_TEMPLATES = {
 		defaultRoute: "/feed",
 		variants: [
 			{ title: "3주 만이야! 🎈", body: "작은 것부터 다시 시작해보자" },
-			{ title: "계속 기다리고 있었어 🥺", body: "할 일 하나면 다시 시작이야" },
+			{ title: "천천히 다시 시작해볼까? 🌱", body: "할 일 하나면 충분해" },
 			{
-				title: "슬슬 돌아올 때 됐잖아 😎",
-				body: "오늘이 새 출발 하기 딱 좋은 날",
+				title: "오늘부터 다시 시작 ✨",
+				body: "작은 계획 하나만 세워보자",
 			},
 		],
 	} satisfies NotificationTemplate,
 	WINBACK_DAY30: {
-		title: "한 달 만이야, 보고 싶었어 💌",
+		title: "한 달 만이야, 다시 시작해볼까? 🌱",
 		body: "언제든 다시 시작할 수 있어",
 		type: "WINBACK",
 		defaultRoute: "/feed",
 		variants: [
 			{
-				title: "한 달 만이야, 보고 싶었어 💌",
+				title: "한 달 만이야, 다시 시작해볼까? 🌱",
 				body: "언제든 다시 시작할 수 있어",
 			},
-			{ title: "돌아올 거라고 믿었어 🌱", body: "오늘이 새로운 Day 1이야" },
+			{
+				title: "다시 시작하기 좋은 날이야 🌱",
+				body: "오늘 할 일 하나만 적어볼까?",
+			},
 			{ title: "오랜만이야! 👋", body: "하나만 해보자, 처음처럼" },
 		],
 	} satisfies NotificationTemplate,
@@ -644,7 +680,7 @@ export const SYSTEM_TEMPLATES = {
 			{ title: "🏆 이번 주 100% 올클리어!", body: "완벽한 한 주였어" },
 			{
 				title: "이번 주 전부 다 해냈어 🎉",
-				body: "이런 주가 쌓이면 전설이 된다",
+				body: "꾸준히 해낸 게 정말 멋져",
 			},
 			{ title: "퍼펙트 위크 달성 ✨", body: "진짜 대단해, 박수!" },
 		],
@@ -701,13 +737,13 @@ export const SYSTEM_TEMPLATES = {
 		defaultRoute: "/create-todo",
 	} satisfies NotificationTemplate,
 	ONBOARDING_DAY1: {
-		title: "어제 만든 할 일, 해봤어? ✅",
-		body: "완료 체크 한 번이면 기분 좋아질걸",
+		title: "어제 만든 할 일 기억나? ✅",
+		body: "오늘 할 수 있는 만큼 이어가보자",
 		type: "SYSTEM_NOTICE",
 		defaultRoute: null,
 	} satisfies NotificationTemplate,
 	ONBOARDING_DAY2: {
-		title: "혼자보다 같이가 낫잖아 🤝",
+		title: "혼자보다 같이하면 더 즐거워 🤝",
 		body: "친구 추가하고 서로 응원해보자",
 		type: "SYSTEM_NOTICE",
 		defaultRoute: "/friends",
