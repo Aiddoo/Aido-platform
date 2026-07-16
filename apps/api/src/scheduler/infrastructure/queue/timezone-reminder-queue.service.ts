@@ -4,7 +4,7 @@ import type { Queue } from "bullmq";
 
 import type {
 	ReminderHourChangedJobData,
-	SocialDigestJobData,
+	TargetedSocialDigestJobData,
 	TimezoneReminderEnqueuerPort,
 } from "../../application/ports/timezone-reminder-enqueuer.port";
 import { SOCIAL_DIGEST_DELAY_MS } from "../../domain/services/notification-campaign";
@@ -67,7 +67,7 @@ export class TimezoneReminderQueueService
 	/**
 	 * Social Digest delayed job 등록 (저녁 리마인더 90분 후)
 	 */
-	enqueueSocialDigest(payload: SocialDigestJobData): void {
+	enqueueSocialDigest(payload: TargetedSocialDigestJobData): void {
 		this.queue
 			.add(TimezoneReminderJobName.SOCIAL_DIGEST, payload, {
 				delay: SOCIAL_DIGEST_DELAY_MS,

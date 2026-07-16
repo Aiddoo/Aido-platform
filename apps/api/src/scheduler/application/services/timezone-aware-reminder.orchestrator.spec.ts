@@ -12,6 +12,7 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { TEST_CUID } from "@test/fixtures";
 
 import {
 	SCHEDULER_PREFERENCE_READER,
@@ -77,7 +78,10 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 		// 기본: 활성 타임존 없음 + 모든 Strategy는 { sent: 0 } 반환
 		preferenceReader.findActiveTimezones.mockResolvedValue([]);
 		morningReminder.execute.mockResolvedValue({ sent: 0 });
-		eveningReminder.execute.mockResolvedValue({ sent: 0 });
+		eveningReminder.execute.mockResolvedValue({
+			sent: 0,
+			recipientUserIds: [],
+		});
 		weeklyAchievement.execute.mockResolvedValue({ sent: 0 });
 		winback.execute.mockResolvedValue({ sent: 0 });
 		nudgeSuggest.execute.mockResolvedValue({ sent: 0 });
@@ -299,19 +303,34 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				// KST 18:00
 				jest.setSystemTime(new Date("2024-01-16T09:00:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
-				eveningReminder.execute.mockResolvedValue({ sent: 3 });
+				eveningReminder.execute.mockResolvedValue({
+					sent: 3,
+					recipientUserIds: [
+						TEST_CUID.USER_1,
+						TEST_CUID.USER_2,
+						TEST_CUID.USER_3,
+					],
+				});
 
 				await orchestrator.handleMinuteSweep();
 
 				expect(enqueuer.enqueueSocialDigest).toHaveBeenCalledWith({
 					timezone: "Asia/Seoul",
+					recipientUserIds: [
+						TEST_CUID.USER_1,
+						TEST_CUID.USER_2,
+						TEST_CUID.USER_3,
+					],
 				});
 			});
 
 			it("저녁 리마인더 대상 없으면 Social Digest delayed job 미등록", async () => {
 				jest.setSystemTime(new Date("2024-01-16T09:00:00Z"));
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
-				eveningReminder.execute.mockResolvedValue({ sent: 0 });
+				eveningReminder.execute.mockResolvedValue({
+					sent: 0,
+					recipientUserIds: [],
+				});
 
 				await orchestrator.handleMinuteSweep();
 
@@ -436,11 +455,24 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 		it("socialDigest Strategy에 위임한다", async () => {
 			jest.setSystemTime(new Date("2024-01-16T09:00:00Z"));
 
-			await orchestrator.handleSocialDigest({ timezone: "Asia/Seoul" });
+			await orchestrator.handleSocialDigest({
+				timezone: "Asia/Seoul",
+				recipientUserIds: [TEST_CUID.USER_1],
+			});
 
 			expect(socialDigest.execute).toHaveBeenCalledTimes(1);
 			const ctx = socialDigest.execute.mock.calls[0]?.[0];
 			expect(ctx).toMatchObject({ tz: "Asia/Seoul" });
+			expect(socialDigest.execute).toHaveBeenCalledWith(
+				expect.objectContaining({ tz: "Asia/Seoul" }),
+				[TEST_CUID.USER_1],
+			);
+		});
+
+		it("구버전 큐 페이로드에 대상 목록이 없으면 오발송하지 않는다", async () => {
+			await orchestrator.handleSocialDigest({ timezone: "Asia/Seoul" });
+
+			expect(socialDigest.execute).not.toHaveBeenCalled();
 		});
 
 		it("에러 발생 시 throw하지 않고 로깅", async () => {
@@ -448,7 +480,10 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 			socialDigest.execute.mockRejectedValue(new Error("fail"));
 
 			await expect(
-				orchestrator.handleSocialDigest({ timezone: "Asia/Seoul" }),
+				orchestrator.handleSocialDigest({
+					timezone: "Asia/Seoul",
+					recipientUserIds: [TEST_CUID.USER_1],
+				}),
 			).resolves.toBeUndefined();
 		});
 	});

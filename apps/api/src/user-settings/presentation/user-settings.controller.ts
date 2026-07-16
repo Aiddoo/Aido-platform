@@ -97,6 +97,8 @@ export class SettingsController {
 
 **시간 범위 검증**: 오전(0-11), 오후(12-23) 범위 밖 값은 \`400 PREFERENCE_1702\`.
 
+**타임존 검증**: 유효하지 않은 IANA 타임존은 \`400 SYS_0002\`. 유효한 별칭은 정규 IANA 타임존으로 저장.
+
 **주의**: 야간 푸시 허용 시 \`pushEnabled\`가 true여야 함. 사용자당 시간당 최대 15건.`,
 	})
 	@ApiSuccessResponse({ type: UpdatePreferenceResponseDto })

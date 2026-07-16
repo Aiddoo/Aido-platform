@@ -27,6 +27,33 @@ export type {
 
 const LOCALE_TEMPLATES = { ko, en } as const;
 
+/** 같은 캠페인 안의 의미상 다른 카피 풀을 구분하는 안정적 분석 키. */
+const TEMPLATE_VARIANT_KEY = {
+	MORNING_NO_TODO: "morning.no_todo",
+	MORNING_HAS_TODO: "morning.has_todo",
+	EVENING_STREAK_30: "evening.streak_30",
+	EVENING_STREAK_14: "evening.streak_14",
+	EVENING_STREAK_7: "evening.streak_7",
+	EVENING_STREAK: "evening.streak",
+	EVENING_COMPLETE: "evening.complete",
+	EVENING_STREAK_RISK_PARTIAL: "evening.streak_risk_partial",
+	EVENING_PARTIAL: "evening.partial",
+	EVENING_STREAK_RISK_NONE: "evening.streak_risk_none",
+	EVENING_NONE: "evening.none",
+	WINBACK_DAY_3: "winback.day_3",
+	WINBACK_DAY_7: "winback.day_7",
+	WINBACK_DAY_14: "winback.day_14",
+	WINBACK_DAY_21: "winback.day_21",
+	WINBACK_DAY_30: "winback.day_30",
+	WEEKLY_ACHIEVEMENT: "weekly_achievement.standard",
+	WEEKLY_ACHIEVEMENT_ALMOST: "weekly_achievement.almost",
+	WEEKLY_ACHIEVEMENT_PERFECT: "weekly_achievement.perfect",
+	SOCIAL_DIGEST_SINGLE: "social_digest.single",
+	SOCIAL_DIGEST_MULTI: "social_digest.multi",
+	WEATHER_MORNING_FALLBACK: "weather.morning.fallback",
+	WEATHER_EVENING_FALLBACK: "weather.evening.fallback",
+} as const;
+
 /**
  * 저장된 locale 값(신뢰 불가 문자열)을 지원 로케일로 내로잉한다.
  * 미지원/누락 값은 ko — 기존 유저(전원 ko) 동작 보존.
@@ -49,25 +76,31 @@ export const SYSTEM_TEMPLATES = ko.SYSTEM_TEMPLATES;
 // =============================================================================
 
 /**
- * variants 풀에서 사용자·캠페인·발생 키 기반으로 하나를 결정적으로 선택합니다.
+ * variants 풀에서 사용자·캠페인·템플릿·발생 키 기반으로 하나를 결정적으로 선택합니다.
  * 같은 입력은 프로세스/재시도와 무관하게 항상 같은 variant를 반환합니다.
  * 선택 컨텍스트가 없는 기존 호출은 첫 variant를 사용합니다.
  */
 export function pickVariant(
 	template: Pick<NotificationTemplate, "title" | "body" | "variants">,
 	context?: NotificationVariantContext,
+	templateKey?: string,
 ): NotificationMessage {
+	const variantNamespace = context
+		? templateKey
+			? `${context.campaignKey}.${templateKey}`
+			: context.campaignKey
+		: undefined;
 	const pool = template.variants;
 	if (!pool?.length) {
 		return {
 			title: template.title,
 			body: template.body,
-			variantId: context ? `${context.campaignKey}.default` : "default",
+			variantId: variantNamespace ? `${variantNamespace}.default` : "default",
 		};
 	}
 	const index = context
 		? deterministicIndex(
-				`${context.campaignKey}\u0000${context.recipientId}\u0000${context.occurrenceKey}`,
+				`${variantNamespace}\u0000${context.recipientId}\u0000${context.occurrenceKey}`,
 				pool.length,
 			)
 		: 0;
@@ -76,14 +109,14 @@ export function pickVariant(
 		return {
 			title: template.title,
 			body: template.body,
-			variantId: context ? `${context.campaignKey}.default` : "default",
+			variantId: variantNamespace ? `${variantNamespace}.default` : "default",
 		};
 	}
 	return {
 		title: picked.title,
 		body: picked.body,
-		variantId: context
-			? `${context.campaignKey}.v${index + 1}`
+		variantId: variantNamespace
+			? `${variantNamespace}.v${index + 1}`
 			: `v${index + 1}`,
 	};
 }
@@ -349,6 +382,7 @@ export class NotificationMessageBuilder {
 		return pickVariant(
 			LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES.MORNING_NO_TODO,
 			context,
+			TEMPLATE_VARIANT_KEY.MORNING_NO_TODO,
 		);
 	}
 
@@ -364,6 +398,7 @@ export class NotificationMessageBuilder {
 		const message = pickVariant(
 			templates.SCHEDULER_TEMPLATES.MORNING_REMINDER,
 			context,
+			TEMPLATE_VARIANT_KEY.MORNING_HAS_TODO,
 		);
 		return fillMessage(message, { count });
 	}
@@ -389,7 +424,11 @@ export class NotificationMessageBuilder {
 		if (completed === total && total > 0) {
 			if (streak >= 30) {
 				return fillMessage(
-					pickVariant(templates.SCHEDULER_TEMPLATES.EVENING_STREAK_30, context),
+					pickVariant(
+						templates.SCHEDULER_TEMPLATES.EVENING_STREAK_30,
+						context,
+						TEMPLATE_VARIANT_KEY.EVENING_STREAK_30,
+					),
 					{ streak },
 				);
 			}
@@ -397,24 +436,28 @@ export class NotificationMessageBuilder {
 				return pickVariant(
 					templates.SCHEDULER_TEMPLATES.EVENING_STREAK_14,
 					context,
+					TEMPLATE_VARIANT_KEY.EVENING_STREAK_14,
 				);
 			}
 			if (streak === 7) {
 				return pickVariant(
 					templates.SCHEDULER_TEMPLATES.EVENING_STREAK_7,
 					context,
+					TEMPLATE_VARIANT_KEY.EVENING_STREAK_7,
 				);
 			}
 			if (streak >= 2) {
 				const message = pickVariant(
 					templates.SCHEDULER_TEMPLATES.EVENING_STREAK,
 					context,
+					TEMPLATE_VARIANT_KEY.EVENING_STREAK,
 				);
 				return fillMessage(message, { streak, next: streak + 1 });
 			}
 			return pickVariant(
 				templates.SCHEDULER_TEMPLATES.EVENING_COMPLETE,
 				context,
+				TEMPLATE_VARIANT_KEY.EVENING_COMPLETE,
 			);
 		}
 
@@ -425,12 +468,14 @@ export class NotificationMessageBuilder {
 				const message = pickVariant(
 					templates.SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_PARTIAL,
 					context,
+					TEMPLATE_VARIANT_KEY.EVENING_STREAK_RISK_PARTIAL,
 				);
 				return fillMessage(message, { streak, remaining });
 			}
 			const message = pickVariant(
 				templates.SCHEDULER_TEMPLATES.EVENING_PARTIAL,
 				context,
+				TEMPLATE_VARIANT_KEY.EVENING_PARTIAL,
 			);
 			return fillMessage(message, { remaining });
 		}
@@ -440,10 +485,15 @@ export class NotificationMessageBuilder {
 			const message = pickVariant(
 				templates.SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_NONE,
 				context,
+				TEMPLATE_VARIANT_KEY.EVENING_STREAK_RISK_NONE,
 			);
 			return fillMessage(message, { streak });
 		}
-		return pickVariant(templates.SCHEDULER_TEMPLATES.EVENING_NONE, context);
+		return pickVariant(
+			templates.SCHEDULER_TEMPLATES.EVENING_NONE,
+			context,
+			TEMPLATE_VARIANT_KEY.EVENING_NONE,
+		);
 	}
 
 	/**
@@ -506,18 +556,38 @@ export class NotificationMessageBuilder {
 	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		if (inactiveDays >= 30) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY30, context);
+			return pickVariant(
+				templates.SYSTEM_TEMPLATES.WINBACK_DAY30,
+				context,
+				TEMPLATE_VARIANT_KEY.WINBACK_DAY_30,
+			);
 		}
 		if (inactiveDays >= 21) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY21, context);
+			return pickVariant(
+				templates.SYSTEM_TEMPLATES.WINBACK_DAY21,
+				context,
+				TEMPLATE_VARIANT_KEY.WINBACK_DAY_21,
+			);
 		}
 		if (inactiveDays >= 14) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY14, context);
+			return pickVariant(
+				templates.SYSTEM_TEMPLATES.WINBACK_DAY14,
+				context,
+				TEMPLATE_VARIANT_KEY.WINBACK_DAY_14,
+			);
 		}
 		if (inactiveDays >= 7) {
-			return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY7, context);
+			return pickVariant(
+				templates.SYSTEM_TEMPLATES.WINBACK_DAY7,
+				context,
+				TEMPLATE_VARIANT_KEY.WINBACK_DAY_7,
+			);
 		}
-		return pickVariant(templates.SYSTEM_TEMPLATES.WINBACK_DAY3, context);
+		return pickVariant(
+			templates.SYSTEM_TEMPLATES.WINBACK_DAY3,
+			context,
+			TEMPLATE_VARIANT_KEY.WINBACK_DAY_3,
+		);
 	}
 
 	/**
@@ -536,18 +606,21 @@ export class NotificationMessageBuilder {
 			return pickVariant(
 				templates.SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_PERFECT,
 				context,
+				TEMPLATE_VARIANT_KEY.WEEKLY_ACHIEVEMENT_PERFECT,
 			);
 		}
 		if (rate >= 90) {
 			const message = pickVariant(
 				templates.SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_ALMOST,
 				context,
+				TEMPLATE_VARIANT_KEY.WEEKLY_ACHIEVEMENT_ALMOST,
 			);
 			return fillMessage(message, { rate });
 		}
 		const message = pickVariant(
 			templates.SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT,
 			context,
+			TEMPLATE_VARIANT_KEY.WEEKLY_ACHIEVEMENT,
 		);
 		return fillMessage(message, { completedCount });
 	}
@@ -566,12 +639,14 @@ export class NotificationMessageBuilder {
 			const message = pickVariant(
 				templates.SOCIAL_TEMPLATES.SOCIAL_DIGEST_SINGLE,
 				context,
+				TEMPLATE_VARIANT_KEY.SOCIAL_DIGEST_SINGLE,
 			);
 			return fillMessage(message, { friendName });
 		}
 		const message = pickVariant(
 			templates.SOCIAL_TEMPLATES.SOCIAL_DIGEST_MULTI,
 			context,
+			TEMPLATE_VARIANT_KEY.SOCIAL_DIGEST_MULTI,
 		);
 		return fillMessage(message, { completedFriendCount });
 	}
@@ -644,7 +719,10 @@ export class NotificationMessageBuilder {
 		const template = templateMap[day];
 		if (!template) return null;
 
-		return fillMessage(pickVariant(template, context), { completedCount });
+		return fillMessage(
+			pickVariant(template, context, `onboarding.day_${day}`),
+			{ completedCount },
+		);
 	}
 
 	/**
@@ -693,14 +771,21 @@ export class NotificationMessageBuilder {
 			precipProb: forecast.precipitationProbability,
 		};
 
-		const template = selectWeatherTemplate(
+		const selection = selectWeatherTemplate(
 			forecast,
 			templates.WEATHER_TEMPLATES.MORNING_SNOW,
 			templates.WEATHER_TEMPLATES.MORNING_RAIN,
 			templates.WEATHER_TEMPLATES.MORNING_CLEAR,
 		);
 
-		return fillMessage(pickVariant(template, context), vars);
+		return fillMessage(
+			pickVariant(
+				selection.template,
+				context,
+				`weather.morning.${selection.condition}`,
+			),
+			vars,
+		);
 	}
 
 	static weatherEvening(
@@ -719,14 +804,21 @@ export class NotificationMessageBuilder {
 			precipProb: tomorrowForecast.precipitationProbability,
 		};
 
-		const template = selectWeatherTemplate(
+		const selection = selectWeatherTemplate(
 			tomorrowForecast,
 			templates.WEATHER_TEMPLATES.EVENING_SNOW,
 			templates.WEATHER_TEMPLATES.EVENING_RAIN,
 			templates.WEATHER_TEMPLATES.EVENING_CLEAR,
 		);
 
-		return fillMessage(pickVariant(template, context), vars);
+		return fillMessage(
+			pickVariant(
+				selection.template,
+				context,
+				`weather.evening.${selection.condition}`,
+			),
+			vars,
+		);
 	}
 
 	/**
@@ -739,6 +831,7 @@ export class NotificationMessageBuilder {
 		return pickVariant(
 			LOCALE_TEMPLATES[locale].WEATHER_FALLBACK.MORNING,
 			context,
+			TEMPLATE_VARIANT_KEY.WEATHER_MORNING_FALLBACK,
 		);
 	}
 
@@ -752,6 +845,7 @@ export class NotificationMessageBuilder {
 		return pickVariant(
 			LOCALE_TEMPLATES[locale].WEATHER_FALLBACK.EVENING,
 			context,
+			TEMPLATE_VARIANT_KEY.WEATHER_EVENING_FALLBACK,
 		);
 	}
 }
@@ -771,17 +865,20 @@ function selectWeatherTemplate(
 	snow: NotificationTemplate,
 	rain: NotificationTemplate,
 	clear: NotificationTemplate,
-): NotificationTemplate {
+): {
+	readonly template: NotificationTemplate;
+	readonly condition: "snow" | "rain" | "clear";
+} {
 	const type = forecast.precipitationType;
 	if (type === "SNOW" || type === "RAIN_SNOW") {
-		return snow;
+		return { template: snow, condition: "snow" };
 	}
 	if (
 		type === "RAIN" ||
 		type === "SHOWER" ||
 		forecast.precipitationProbability >= 40
 	) {
-		return rain;
+		return { template: rain, condition: "rain" };
 	}
-	return clear;
+	return { template: clear, condition: "clear" };
 }

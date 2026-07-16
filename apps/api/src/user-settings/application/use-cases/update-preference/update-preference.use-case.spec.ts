@@ -107,4 +107,23 @@ describe("UpdatePreferenceUseCase", () => {
 		expect(cache.invalidateActiveTimezones).toHaveBeenCalledTimes(1);
 		expect(enqueuer.enqueueReminderHourChanged).not.toHaveBeenCalled();
 	});
+
+	it("유효한 IANA 타임존 별칭은 정규 타임존으로 저장한다", async () => {
+		await useCase.execute(userId, { timezone: "Etc/UTC" });
+
+		expect(repo.upsert).toHaveBeenCalledWith(
+			userId,
+			expect.objectContaining({ timezone: "UTC" }),
+		);
+	});
+
+	it("유효하지 않은 타임존은 SYS_0002로 거부하고 저장하지 않는다", async () => {
+		await expect(
+			useCase.execute(userId, { timezone: "Invalid/Timezone" }),
+		).rejects.toMatchObject({
+			errorCode: "SYS_0002",
+			details: { field: "timezone" },
+		});
+		expect(repo.upsert).not.toHaveBeenCalled();
+	});
 });

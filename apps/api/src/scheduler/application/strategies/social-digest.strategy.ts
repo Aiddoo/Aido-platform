@@ -31,7 +31,13 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		private readonly notificationService: NotificationFacade,
 	) {}
 
-	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
+	async execute(
+		ctx: TimezoneContext,
+		recipientUserIds: readonly string[] = [],
+	): Promise<{ sent: number }> {
+		if (recipientUserIds.length === 0) {
+			return { sent: 0 };
+		}
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
 		const tomorrow = addDays(1, today);
@@ -41,6 +47,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 			tz,
 			today,
 			tomorrow,
+			recipientUserIds,
 		});
 
 		// 전체 완료한 유저 제외

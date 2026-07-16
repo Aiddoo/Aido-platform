@@ -9,6 +9,7 @@ import { DatabaseService } from "@/shared/infrastructure/database/database.servi
 import type {
 	InactiveWindowParams,
 	ReEngagementReaderPort,
+	SocialDigestCandidateParams,
 	TodayRangeParams,
 } from "../../application/ports/re-engagement-reader.port";
 import type {
@@ -328,11 +329,12 @@ export class PrismaSchedulerReader
 	}
 
 	async findSocialDigestCandidates(
-		params: TodayRangeParams,
+		params: SocialDigestCandidateParams,
 	): Promise<SocialDigestCandidate[]> {
-		const { tz, today, tomorrow } = params;
+		const { tz, today, tomorrow, recipientUserIds } = params;
 		return this.database.user.findMany({
 			where: {
+				id: { in: [...recipientUserIds] },
 				...this.#recentTreatmentExclusion(),
 				preference: { timezone: tz },
 				todos: {
@@ -615,10 +617,9 @@ export class PrismaSchedulerReader
 				select: { timezone: true },
 				distinct: ["timezone"],
 			});
-			return rows.flatMap((row) => {
-				const timezone = normalizeIanaTimezone(row.timezone);
-				return timezone ? [timezone] : [];
-			});
+			return rows.flatMap((row) =>
+				normalizeIanaTimezone(row.timezone) ? [row.timezone] : [],
+			);
 		});
 	}
 

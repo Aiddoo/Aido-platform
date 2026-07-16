@@ -18,6 +18,7 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TEST_CUID } from "@test/fixtures";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import {
 	EveningReminderStrategy,
@@ -48,7 +49,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 		execute: jest.fn().mockResolvedValue({ sent: 0 }),
 	};
 	const mockEveningReminder = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: jest.fn().mockResolvedValue({ sent: 0, recipientUserIds: [] }),
 	};
 	const mockOnboarding = { execute: jest.fn().mockResolvedValue({ sent: 0 }) };
 	const mockWeeklyReport = {
@@ -170,7 +171,16 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 		it("KST 18:00 — 저녁 리마인더 전략이 실행되고 SocialDigest가 지연 enqueue된다", async () => {
 			// Given - UTC 2026-03-16 09:00 = KST 2026-03-16 (월) 18:00
 			jest.setSystemTime(new Date("2026-03-16T09:00:00Z"));
-			mockEveningReminder.execute.mockResolvedValue({ sent: 5 });
+			mockEveningReminder.execute.mockResolvedValue({
+				sent: 5,
+				recipientUserIds: [
+					TEST_CUID.USER_1,
+					TEST_CUID.USER_2,
+					TEST_CUID.USER_3,
+					TEST_CUID.USER_4,
+					TEST_CUID.USER_5,
+				],
+			});
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -185,6 +195,13 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 			);
 			expect(mockEnqueuer.enqueueSocialDigest).toHaveBeenCalledWith({
 				timezone: "Asia/Seoul",
+				recipientUserIds: [
+					TEST_CUID.USER_1,
+					TEST_CUID.USER_2,
+					TEST_CUID.USER_3,
+					TEST_CUID.USER_4,
+					TEST_CUID.USER_5,
+				],
 			});
 		});
 

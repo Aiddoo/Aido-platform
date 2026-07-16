@@ -11,6 +11,7 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
@@ -79,7 +80,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		// 미완료 투두가 있는 유저
 		reader.findSocialDigestCandidates.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: false }, { completed: true }],
 			},
 		]);
@@ -87,7 +88,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		// 친구의 투두 완료 현황
 		reader.findFriendsWithTodayTodos.mockResolvedValue([
 			{
-				id: "friend-1",
+				id: TEST_CUID.USER_2,
 				profile: { name: "친구1" },
 				todos: [{ completed: true }, { completed: true }],
 			},
@@ -95,24 +96,27 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		// 팔로우 관계
 		reader.findAcceptedFollows.mockResolvedValue([
-			{ followerId: "user-1", followingId: "friend-1" },
+			{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 },
 		]);
 
 		// When
-		const result = await strategy.execute(ctx);
+		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
+		expect(reader.findSocialDigestCandidates).toHaveBeenCalledWith(
+			expect.objectContaining({ recipientUserIds: [TEST_CUID.USER_1] }),
+		);
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.socialDigest(1, "친구1", "ko", {
 			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-			recipientId: "user-1",
+			recipientId: TEST_CUID.USER_1,
 			occurrenceKey: "2024-01-16",
 		});
 		expect(notifications?.[0]).toMatchObject({
-			userId: "user-1",
+			userId: TEST_CUID.USER_1,
 			type: "SOCIAL_DIGEST",
 			title: expected.title,
 			body: expected.body,
@@ -127,31 +131,31 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		reader.findSocialDigestCandidates.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: false }],
 			},
 		]);
 
 		reader.findFriendsWithTodayTodos.mockResolvedValue([
 			{
-				id: "friend-1",
+				id: TEST_CUID.USER_2,
 				profile: { name: "친구1" },
 				todos: [{ completed: true }],
 			},
 			{
-				id: "friend-2",
+				id: TEST_CUID.USER_3,
 				profile: { name: "친구2" },
 				todos: [{ completed: true }],
 			},
 		]);
 
 		reader.findAcceptedFollows.mockResolvedValue([
-			{ followerId: "user-1", followingId: "friend-1" },
-			{ followerId: "user-1", followingId: "friend-2" },
+			{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_2 },
+			{ followerId: TEST_CUID.USER_1, followingId: TEST_CUID.USER_3 },
 		]);
 
 		// When
-		const result = await strategy.execute(ctx);
+		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
@@ -164,7 +168,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 			"ko",
 			{
 				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-				recipientId: "user-1",
+				recipientId: TEST_CUID.USER_1,
 				occurrenceKey: "2024-01-16",
 			},
 		);
@@ -183,7 +187,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		reader.findSocialDigestCandidates.mockResolvedValue([]);
 
 		// When
-		const result = await strategy.execute(ctx);
+		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
@@ -196,7 +200,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		reader.findSocialDigestCandidates.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: false }],
 			},
 		]);
@@ -208,7 +212,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		reader.findAcceptedFollows.mockResolvedValue([]);
 
 		// When
-		const result = await strategy.execute(ctx);
+		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
@@ -221,17 +225,17 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		reader.findSocialDigestCandidates.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: false }],
 			},
 		]);
 
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
+			new Set([TEST_CUID.USER_1]),
 		);
 
 		// When
-		const result = await strategy.execute(ctx);
+		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
@@ -241,13 +245,13 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	it("같은 날 스트릭 위기 알림을 받은 사용자는 소셜 다이제스트에서 제외한다", async () => {
 		const ctx = makeCtx();
 		reader.findSocialDigestCandidates.mockResolvedValue([
-			{ id: "user-1", todos: [{ completed: false }] },
+			{ id: TEST_CUID.USER_1, todos: [{ completed: false }] },
 		]);
 		notificationService.findAlreadyNotifiedUserIds
 			.mockResolvedValueOnce(new Set())
-			.mockResolvedValueOnce(new Set(["user-1"]));
+			.mockResolvedValueOnce(new Set([TEST_CUID.USER_1]));
 
-		const result = await strategy.execute(ctx);
+		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		expect(result).toEqual({ sent: 0 });
 		expect(

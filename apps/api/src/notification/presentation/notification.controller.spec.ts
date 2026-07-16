@@ -67,21 +67,17 @@ describe("NotificationController — 알림 컨트롤러", () => {
 	describe("registerToken", () => {
 		it("푸시 토큰을 등록하고 성공 응답을 반환해야 한다", async () => {
 			// Given -푸시 토큰 등록 DTO가 준비되었을 때
-			const dto = {
+			const dto: RegisterPushTokenDto = {
 				token: "ExponentPushToken[xxxxxx]",
 				deviceId: "device-abc",
+				payloadVersion: 1,
 			};
 			const tz = "Asia/Seoul";
 			const locale = "ko";
 			mockFacade.registerPushToken.mockResolvedValue(undefined);
 
 			// When -registerToken을 호출하면
-			const result = await controller.registerToken(
-				mockUser,
-				dto as unknown as RegisterPushTokenDto,
-				tz,
-				locale,
-			);
+			const result = await controller.registerToken(mockUser, dto, tz, locale);
 
 			// Then -파사드에 올바른 파라미터를 전달하고 성공 응답을 반환해야 한다
 			expect(mockFacade.registerPushToken).toHaveBeenCalledWith({
@@ -90,6 +86,8 @@ describe("NotificationController — 알림 컨트롤러", () => {
 				deviceId: dto.deviceId,
 				timezone: tz,
 				locale,
+				payloadVersion: 1,
+				appVersion: undefined,
 			});
 			expect(result).toEqual({
 				message: "푸시 토큰이 등록되었습니다.",
@@ -98,14 +96,12 @@ describe("NotificationController — 알림 컨트롤러", () => {
 		});
 
 		it("타임존 헤더가 없으면 기존 설정을 보존하도록 timezone을 전달하지 않는다", async () => {
-			const dto = { token: "ExponentPushToken[xxxxxx]" };
+			const dto: RegisterPushTokenDto = {
+				token: "ExponentPushToken[xxxxxx]",
+				payloadVersion: 1,
+			};
 
-			await controller.registerToken(
-				mockUser,
-				dto as unknown as RegisterPushTokenDto,
-				undefined,
-				undefined,
-			);
+			await controller.registerToken(mockUser, dto, undefined, undefined);
 
 			expect(mockFacade.registerPushToken).toHaveBeenCalledWith({
 				userId: mockUser.userId,
@@ -113,7 +109,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 				deviceId: undefined,
 				timezone: undefined,
 				locale: undefined,
-				payloadVersion: undefined,
+				payloadVersion: 1,
 				appVersion: undefined,
 			});
 		});

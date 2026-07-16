@@ -176,8 +176,14 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 	 */
 	async handleSocialDigest(payload: SocialDigestJobData): Promise<void> {
 		try {
+			if (!payload.recipientUserIds?.length) {
+				this.#logger.warn(
+					`Skipping legacy social digest job without recipients: tz=${payload.timezone}`,
+				);
+				return;
+			}
 			const ctx = this.#buildContext(payload.timezone, 0, 0);
-			await this.socialDigest.execute(ctx);
+			await this.socialDigest.execute(ctx, payload.recipientUserIds);
 		} catch (error) {
 			this.#logger.error(
 				`Social digest failed: tz=${payload.timezone}, ${error}`,
@@ -208,8 +214,11 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 		const eveningResult = await this.eveningReminder.execute(ctx);
 
 		// 저녁 리마인더 발송 시 90분 후 Social Digest delayed job 등록
-		if (eveningResult.sent > 0) {
-			this.enqueuer.enqueueSocialDigest({ timezone: tz });
+		if (eveningResult.recipientUserIds.length > 0) {
+			this.enqueuer.enqueueSocialDigest({
+				timezone: tz,
+				recipientUserIds: eveningResult.recipientUserIds,
+			});
 		}
 
 		// 11:30 요약 슬롯: 매월 1일은 프리미엄 월간 리포트가 주간 리포트를 대체한다.

@@ -9,6 +9,7 @@
  * pnpm --filter @aido/api test notification-templates
  * ```
  */
+import { TEST_CUID } from "@test/fixtures";
 import type { WeatherForecast } from "@/weather";
 import {
 	fillTemplate,
@@ -238,6 +239,74 @@ describe("notification-templates", () => {
 	});
 
 	describe("NotificationMessageBuilder — 알림 빌더", () => {
+		const variantContext = {
+			campaignKey: "shared_campaign_v2",
+			recipientId: TEST_CUID.USER_1,
+			occurrenceKey: "2026-07-16",
+		} as const;
+
+		it("같은 캠페인의 아침 상태별 템플릿은 서로 다른 variantId를 갖는다", () => {
+			const noTodo = NotificationMessageBuilder.morningNoTodo(
+				"ko",
+				variantContext,
+			);
+			const hasTodo = NotificationMessageBuilder.morningReminder(
+				3,
+				"ko",
+				variantContext,
+			);
+
+			expect(noTodo.variantId).not.toBe(hasTodo.variantId);
+		});
+
+		it("같은 캠페인의 저녁 진행 상태별 템플릿은 서로 다른 variantId를 갖는다", () => {
+			const ids = [
+				NotificationMessageBuilder.eveningReminder(
+					3,
+					3,
+					0,
+					false,
+					"ko",
+					variantContext,
+				).variantId,
+				NotificationMessageBuilder.eveningReminder(
+					1,
+					3,
+					0,
+					false,
+					"ko",
+					variantContext,
+				).variantId,
+				NotificationMessageBuilder.eveningReminder(
+					0,
+					3,
+					0,
+					false,
+					"ko",
+					variantContext,
+				).variantId,
+			];
+
+			expect(new Set(ids)).toHaveProperty("size", 3);
+		});
+
+		it("소셜 다이제스트 단일·복수 친구 템플릿은 서로 다른 variantId를 갖는다", () => {
+			const single = NotificationMessageBuilder.socialDigest(
+				1,
+				"민지",
+				"ko",
+				variantContext,
+			);
+			const multiple = NotificationMessageBuilder.socialDigest(
+				2,
+				undefined,
+				"ko",
+				variantContext,
+			);
+
+			expect(single.variantId).not.toBe(multiple.variantId);
+		});
+
 		describe("morningReminder", () => {
 			it("title에 count가 치환된다", () => {
 				// Given

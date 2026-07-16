@@ -185,7 +185,7 @@ export const SCHEDULER_TEMPLATES = {
 	} satisfies NotificationTemplate,
 	EVENING_STREAK_7: {
 		title: "🎉 7일 연속! 일주일 올클리어",
-		body: "이거 실화야? 진짜 대단해",
+		body: "일주일을 꾸준히 채웠어",
 		type: "EVENING_REMINDER",
 		defaultRoute: "/",
 	} satisfies NotificationTemplate,
@@ -634,16 +634,19 @@ export const SYSTEM_TEMPLATES = {
 		],
 	} satisfies NotificationTemplate,
 	WINBACK_DAY30: {
-		title: "한 달 만이야, 보고 싶었어 💌",
+		title: "한 달 만이야, 다시 시작해볼까? 🌱",
 		body: "언제든 다시 시작할 수 있어",
 		type: "WINBACK",
 		defaultRoute: "/feed",
 		variants: [
 			{
-				title: "한 달 만이야, 보고 싶었어 💌",
+				title: "한 달 만이야, 다시 시작해볼까? 🌱",
 				body: "언제든 다시 시작할 수 있어",
 			},
-			{ title: "돌아올 거라고 믿었어 🌱", body: "오늘이 새로운 Day 1이야" },
+			{
+				title: "다시 시작하기 좋은 날이야 🌱",
+				body: "오늘 할 일 하나만 적어볼까?",
+			},
 			{ title: "오랜만이야! 👋", body: "하나만 해보자, 처음처럼" },
 		],
 	} satisfies NotificationTemplate,

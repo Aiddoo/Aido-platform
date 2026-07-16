@@ -12,6 +12,7 @@
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { TEST_CUID } from "@test/fixtures";
 import { flushPromises } from "@test/mocks";
 import type { Queue } from "bullmq";
 import {
@@ -80,12 +81,18 @@ describe("TimezoneReminderQueueService — 타임존 리마인더 서비스", ()
 
 	describe("enqueueSocialDigest", () => {
 		it("저녁 리마인더 90분 뒤 실행되도록 등록한다", async () => {
-			service.enqueueSocialDigest({ timezone: "Asia/Seoul" });
+			service.enqueueSocialDigest({
+				timezone: "Asia/Seoul",
+				recipientUserIds: [TEST_CUID.USER_1],
+			});
 			await flushPromises();
 
 			expect(queue.add).toHaveBeenCalledWith(
 				TimezoneReminderJobName.SOCIAL_DIGEST,
-				{ timezone: "Asia/Seoul" },
+				{
+					timezone: "Asia/Seoul",
+					recipientUserIds: [TEST_CUID.USER_1],
+				},
 				expect.objectContaining({ delay: 90 * 60 * 1000 }),
 			);
 		});

@@ -1,3 +1,5 @@
+import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+
 export interface RetentionPushEligibilityInput {
 	readonly pushEnabled: boolean;
 	readonly marketingPushAgreedAt: Date | null;
@@ -26,5 +28,3 @@ function localHour(date: Date, timezone: string): number {
 	const hour = parts.find((part) => part.type === "hour")?.value;
 	return Number(hour ?? 0);
 }
-
-import { resolveTimezone } from "@/shared/domain/date/utils/timezone";

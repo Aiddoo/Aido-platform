@@ -32,23 +32,64 @@ import {
 } from "../../application/ports/user-notification-settings.port";
 import { PushDispatcherAdapter } from "./push-dispatcher.adapter";
 
-/** v1.0.0~v1.4.0 모바일 릴리스가 사용한 실제 data 스키마. */
-const LEGACY_PUSH_DATA_SCHEMA = z.object({
-	notificationId: z.number(),
-	type: z.string(),
-	action: z.object({
-		type: z.enum(["DEEP_LINK", "BROWSER", "WEBVIEW", "NONE"]),
-		url: z.string().optional(),
-	}),
-	context: z
-		.object({
-			todoId: z.number().optional(),
-			friendId: z.string().optional(),
-			nudgeId: z.number().optional(),
-			cheerId: z.number().optional(),
-		})
-		.optional(),
-});
+/** v1.0.0~v1.1.x 릴리스의 실제 NOTIFICATION_TYPE enum. */
+const LEGACY_V1_0_NOTIFICATION_TYPES = [
+	"FOLLOW_NEW",
+	"FOLLOW_ACCEPTED",
+	"NUDGE_RECEIVED",
+	"CHEER_RECEIVED",
+	"DAILY_COMPLETE",
+	"FRIEND_COMPLETED",
+	"TODO_REMINDER",
+	"TODO_SHARED",
+	"MORNING_REMINDER",
+	"EVENING_REMINDER",
+	"WEEKLY_ACHIEVEMENT",
+	"WEEKLY_REPORT",
+	"MONTHLY_REPORT",
+	"AI_SUGGESTION",
+	"SYSTEM_NOTICE",
+	"ADMIN_BROADCAST",
+	"ADMIN_TARGETED",
+	"WINBACK",
+	"SOCIAL_DIGEST",
+	"NUDGE_SUGGEST",
+	"LUNCH_NUDGE",
+	"STREAK_AT_RISK",
+] as const;
+
+/** v1.2.0~v1.4.x에서 위 enum에 추가된 날씨 알림 타입. */
+const LEGACY_V1_2_NOTIFICATION_TYPES = [
+	...LEGACY_V1_0_NOTIFICATION_TYPES,
+	"WEATHER_MORNING",
+	"WEATHER_EVENING",
+] as const;
+
+function legacyPushDataSchema(
+	notificationTypes: readonly [string, ...string[]],
+) {
+	return z.object({
+		notificationId: z.number(),
+		type: z.enum(notificationTypes),
+		action: z.object({
+			type: z.enum(["DEEP_LINK", "BROWSER", "WEBVIEW", "NONE"]),
+			url: z.string().optional(),
+		}),
+		context: z
+			.object({
+				todoId: z.number().optional(),
+				friendId: z.string().optional(),
+				nudgeId: z.number().optional(),
+				cheerId: z.number().optional(),
+			})
+			.optional(),
+	});
+}
+
+const LEGACY_PUSH_DATA_SCHEMAS = {
+	V1_0_TO_V1_1: legacyPushDataSchema(LEGACY_V1_0_NOTIFICATION_TYPES),
+	V1_2_TO_V1_4: legacyPushDataSchema(LEGACY_V1_2_NOTIFICATION_TYPES),
+} as const;
 
 function makePreference(
 	userId: string,
@@ -240,7 +281,12 @@ describe("PushDispatcherAdapter", () => {
 		await adapter.beforeApplicationShutdown();
 
 		const data = pushProvider.sendBatch.mock.calls[0]?.[0]?.[0]?.data;
-		expect(LEGACY_PUSH_DATA_SCHEMA.safeParse(data).success).toBe(true);
+		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_0_TO_V1_1.safeParse(data).success).toBe(
+			true,
+		);
+		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_2_TO_V1_4.safeParse(data).success).toBe(
+			true,
+		);
 		expect(pushNotificationDataSchema.safeParse(data).success).toBe(true);
 		expect(data).toMatchObject({
 			notificationId: 101,

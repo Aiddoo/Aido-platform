@@ -11,6 +11,7 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
@@ -28,6 +29,11 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 	let notificationService: Mocked<NotificationFacade>;
 
 	const TZ = "Asia/Seoul";
+	const VARIANT_CONTEXT = {
+		campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+		recipientId: TEST_CUID.USER_1,
+		occurrenceKey: "2024-01-16",
+	} as const;
 
 	/** KST 2024-01-16 18:00 = UTC 2024-01-16T09:00:00Z */
 	const FAKE_NOW = new Date("2024-01-16T09:00:00Z");
@@ -72,7 +78,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([
 			{
-				id: "premium-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: true }, { completed: false }],
 				preference: {
 					currentStreak: 0,
@@ -86,14 +92,17 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		const result = await strategy.execute(ctx);
 
 		// Then
-		expect(result).toEqual({ sent: 1 });
+		expect(result).toEqual({
+			sent: 1,
+			recipientUserIds: [TEST_CUID.USER_1],
+		});
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({
-			userId: "premium-1",
+			userId: TEST_CUID.USER_1,
 			type: "EVENING_REMINDER",
 		});
 	});
@@ -104,7 +113,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		reader.findFreeEveningReminderUsers.mockResolvedValue([
 			{
-				id: "free-1",
+				id: TEST_CUID.USER_2,
 				todos: [{ completed: false }],
 				preference: {
 					currentStreak: 0,
@@ -118,7 +127,10 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		const result = await strategy.execute(ctx);
 
 		// Then
-		expect(result).toEqual({ sent: 1 });
+		expect(result).toEqual({
+			sent: 1,
+			recipientUserIds: [TEST_CUID.USER_2],
+		});
 		expect(reader.findPremiumEveningReminderUsers).toHaveBeenCalledTimes(1);
 		expect(reader.findFreeEveningReminderUsers).toHaveBeenCalledTimes(1);
 	});
@@ -130,7 +142,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: true }, { completed: true }],
 				preference: { currentStreak: 5, lastCompletedDate, locale: "ko" },
 			},
@@ -143,7 +155,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
-		expect(notifications?.[0]).toMatchObject({ userId: "user-1" });
+		expect(notifications?.[0]).toMatchObject({ userId: TEST_CUID.USER_1 });
 	});
 
 	it("전체 완료 시 완료 메시지를 발송한다", async () => {
@@ -152,7 +164,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: true }, { completed: true }],
 				preference: {
 					currentStreak: 0,
@@ -176,7 +188,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 			"ko",
 			{
 				campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
-				recipientId: "user-1",
+				recipientId: TEST_CUID.USER_1,
 				occurrenceKey: "2024-01-16",
 			},
 		);
@@ -194,7 +206,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [
 					{ completed: true },
 					{ completed: false },
@@ -214,7 +226,14 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.eveningReminder(1, 3, 0, false);
+		const expected = NotificationMessageBuilder.eveningReminder(
+			1,
+			3,
+			0,
+			false,
+			"ko",
+			VARIANT_CONTEXT,
+		);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -227,7 +246,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: false }, { completed: false }],
 				preference: {
 					currentStreak: 0,
@@ -243,7 +262,14 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.eveningReminder(0, 2, 0, false);
+		const expected = NotificationMessageBuilder.eveningReminder(
+			0,
+			2,
+			0,
+			false,
+			"ko",
+			VARIANT_CONTEXT,
+		);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -256,7 +282,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([
 			{
-				id: "user-1",
+				id: TEST_CUID.USER_1,
 				todos: [{ completed: false }],
 				preference: {
 					currentStreak: 0,
@@ -265,7 +291,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 				},
 			},
 			{
-				id: "user-2",
+				id: TEST_CUID.USER_2,
 				todos: [{ completed: false }],
 				preference: {
 					currentStreak: 0,
@@ -276,18 +302,21 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		]);
 
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
+			new Set([TEST_CUID.USER_1]),
 		);
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
-		expect(result).toEqual({ sent: 1 });
+		expect(result).toEqual({
+			sent: 1,
+			recipientUserIds: [TEST_CUID.USER_2],
+		});
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
-		expect(notifications?.[0]?.userId).toBe("user-2");
+		expect(notifications?.[0]?.userId).toBe(TEST_CUID.USER_2);
 	});
 
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
@@ -301,7 +330,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		const result = await strategy.execute(ctx);
 
 		// Then
-		expect(result).toEqual({ sent: 0 });
+		expect(result).toEqual({ sent: 0, recipientUserIds: [] });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 });

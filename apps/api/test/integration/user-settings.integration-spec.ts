@@ -16,6 +16,7 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserConsentBuilder, UserPreferenceBuilder } from "@test/builders";
+import { TEST_CUID } from "@test/fixtures";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
@@ -69,7 +70,7 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 		enqueueReminderHourChanged: jest.fn(),
 	};
 
-	const mockUserId = "user-settings-123";
+	const mockUserId = TEST_CUID.USER_1;
 
 	beforeAll(async () => {
 		suppressLogger();
@@ -231,6 +232,18 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 			await expect(
 				updatePreference.execute(mockUserId, { morningReminderHour: 13 }),
 			).rejects.toMatchObject({ errorCode: "PREFERENCE_1702" });
+		});
+
+		it("설정 수정 — 유효하지 않은 IANA 타임존은 SYS_0002이며 DB를 호출하지 않는다", async () => {
+			await expect(
+				updatePreference.execute(mockUserId, {
+					timezone: "Invalid/Timezone",
+				}),
+			).rejects.toMatchObject({
+				errorCode: "SYS_0002",
+				details: { field: "timezone" },
+			});
+			expect(mockUserPreferenceDb.upsert).not.toHaveBeenCalled();
 		});
 	});
 

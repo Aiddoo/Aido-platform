@@ -37,6 +37,16 @@ export interface ReminderHourChangedJobData {
 export interface SocialDigestJobData {
 	/** 사용자 타임존 (IANA) */
 	readonly timezone: string;
+	/**
+	 * 직전 저녁 리마인더를 실제로 받은 사용자 ID.
+	 * 배포 전에 등록된 지연 잡과의 런타임 호환을 위해 optional로 읽되,
+	 * 신규 enqueue에서는 아래 TargetedSocialDigestJobData로 필수화한다.
+	 */
+	readonly recipientUserIds?: readonly string[];
+}
+
+export interface TargetedSocialDigestJobData extends SocialDigestJobData {
+	readonly recipientUserIds: readonly string[];
 }
 
 export interface TimezoneReminderEnqueuerPort {
@@ -47,5 +57,5 @@ export interface TimezoneReminderEnqueuerPort {
 	enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void;
 
 	/** Social Digest 지연 잡 등록 (저녁 리마인더 90분 후, fire-and-forget) */
-	enqueueSocialDigest(payload: SocialDigestJobData): void;
+	enqueueSocialDigest(payload: TargetedSocialDigestJobData): void;
 }

@@ -11,9 +11,11 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULED_REMINDER_READER,
@@ -27,6 +29,11 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 	let notificationService: Mocked<NotificationFacade>;
 
 	const TZ = "Asia/Seoul";
+	const VARIANT_CONTEXT = {
+		campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
+		recipientId: TEST_CUID.USER_1,
+		occurrenceKey: "2024-01-16",
+	} as const;
 
 	/** KST 2024-01-16 08:00 = UTC 2024-01-15T23:00:00Z */
 	const FAKE_NOW = new Date("2024-01-15T23:00:00Z");
@@ -71,7 +78,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		const ctx = makeCtx({ localHour: 9, localMinute: 30 });
 
 		reader.findPremiumMorningReminderUsers.mockResolvedValue([
-			{ id: "premium-1", preference: null, _count: { todos: 3 } },
+			{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 3 } },
 		]);
 
 		// When
@@ -85,7 +92,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({
-			userId: "premium-1",
+			userId: TEST_CUID.USER_1,
 			type: "MORNING_REMINDER",
 		});
 	});
@@ -95,7 +102,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		const ctx = makeCtx({ localHour: 8, localMinute: 0 });
 
 		reader.findFreeMorningReminderUsers.mockResolvedValue([
-			{ id: "free-1", preference: null, _count: { todos: 2 } },
+			{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } },
 		]);
 
 		// When
@@ -126,7 +133,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		const ctx = makeCtx({
 			localHour: 8,
 			localMinute: 0,
-			userId: "user-1",
+			userId: TEST_CUID.USER_1,
 		});
 
 		// When
@@ -144,7 +151,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		const ctx = makeCtx();
 
 		reader.findPremiumMorningReminderUsers.mockResolvedValue([
-			{ id: "user-1", preference: null, _count: { todos: 5 } },
+			{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 5 } },
 		]);
 
 		// When
@@ -153,7 +160,11 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.morningReminder(5);
+		const expected = NotificationMessageBuilder.morningReminder(
+			5,
+			"ko",
+			VARIANT_CONTEXT,
+		);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -165,7 +176,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		const ctx = makeCtx();
 
 		reader.findPremiumMorningReminderUsers.mockResolvedValue([
-			{ id: "user-1", preference: null, _count: { todos: 0 } },
+			{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 0 } },
 		]);
 
 		// When
@@ -174,7 +185,10 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.morningNoTodo();
+		const expected = NotificationMessageBuilder.morningNoTodo(
+			"ko",
+			VARIANT_CONTEXT,
+		);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -186,12 +200,12 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		const ctx = makeCtx();
 
 		reader.findPremiumMorningReminderUsers.mockResolvedValue([
-			{ id: "user-1", preference: null, _count: { todos: 3 } },
-			{ id: "user-2", preference: null, _count: { todos: 2 } },
+			{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 3 } },
+			{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } },
 		]);
 
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
+			new Set([TEST_CUID.USER_1]),
 		);
 
 		// When
@@ -202,7 +216,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
-		expect(notifications?.[0]?.userId).toBe("user-2");
+		expect(notifications?.[0]?.userId).toBe(TEST_CUID.USER_2);
 	});
 
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {

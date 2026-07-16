@@ -4721,7 +4721,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
     },
     "PreferenceResponseDto": {
       "example": {
-        "eveningReminderHour": 18,
+        "eveningReminderHour": 19,
         "eveningReminderMinute": 0,
         "morningReminderHour": 8,
         "morningReminderMinute": 0,
@@ -8678,7 +8678,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
     },
     "UpdatePreferenceResponseDto": {
       "example": {
-        "eveningReminderHour": 18,
+        "eveningReminderHour": 19,
         "eveningReminderMinute": 0,
         "morningReminderHour": 8,
         "morningReminderMinute": 0,
@@ -16716,6 +16716,8 @@ provider에 따라 필수 토큰이 다릅니다:
 **프리미엄 전용**: 리마인더 시간 변경은 프리미엄 구독 사용자만 가능. 무료 유저 시도 시 \`403 PREFERENCE_1701\`.
 
 **시간 범위 검증**: 오전(0-11), 오후(12-23) 범위 밖 값은 \`400 PREFERENCE_1702\`.
+
+**타임존 검증**: 유효하지 않은 IANA 타임존은 \`400 SYS_0002\`. 유효한 별칭은 정규 IANA 타임존으로 저장.
 
 **주의**: 야간 푸시 허용 시 \`pushEnabled\`가 true여야 함. 사용자당 시간당 최대 15건.",
       "operationId": "updatePushPreference",

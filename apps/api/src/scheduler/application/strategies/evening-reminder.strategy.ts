@@ -31,7 +31,10 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		private readonly notificationService: NotificationFacade,
 	) {}
 
-	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
+	async execute(ctx: TimezoneContext): Promise<{
+		sent: number;
+		recipientUserIds: string[];
+	}> {
 		const { tz, localHour, localMinute, userId } = ctx;
 		const today = todayInTimezone(tz);
 		const tomorrow = addDays(1, today);
@@ -64,7 +67,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		const users = [...premiumUsers, ...freeUsers];
 
 		if (users.length === 0) {
-			return { sent: 0 };
+			return { sent: 0, recipientUserIds: [] };
 		}
 
 		// 중복 방지
@@ -78,7 +81,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
 		if (filteredUsers.length === 0) {
-			return { sent: 0 };
+			return { sent: 0, recipientUserIds: [] };
 		}
 
 		const notifications = filteredUsers.map((user) => {
@@ -123,6 +126,11 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		this.#logger.log(
 			`Evening reminder: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, count=${notifications.length}`,
 		);
-		return { sent: notifications.length };
+		return {
+			sent: notifications.length,
+			recipientUserIds: notifications.map(
+				(notification) => notification.userId,
+			),
+		};
 	}
 }
