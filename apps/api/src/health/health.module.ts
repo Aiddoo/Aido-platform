@@ -8,6 +8,7 @@ import { TODO_REMINDER_QUEUE } from "@/scheduler";
 import { HealthController } from "./health.controller";
 import { BullHealthIndicator } from "./indicators/bull.health";
 import { DatabaseHealthIndicator } from "./indicators/database.health";
+import { RedisEvictionPolicyProbe } from "./indicators/redis-eviction-policy.probe";
 
 @Module({
 	imports: [
@@ -20,6 +21,10 @@ import { DatabaseHealthIndicator } from "./indicators/database.health";
 		),
 	],
 	controllers: [HealthController],
-	providers: [DatabaseHealthIndicator, BullHealthIndicator],
+	providers: [
+		DatabaseHealthIndicator,
+		BullHealthIndicator,
+		RedisEvictionPolicyProbe,
+	],
 })
 export class HealthModule {}
