@@ -29,6 +29,12 @@ export interface ManagedTestDatabaseHandle {
 	stop(): Promise<void>;
 }
 
+export function resolvePnpmCommand(
+	platform: NodeJS.Platform = process.platform,
+): "pnpm.cmd" | "pnpm" {
+	return platform === "win32" ? "pnpm.cmd" : "pnpm";
+}
+
 function getDatabaseName(connectionUri: string): string {
 	let parsedUrl: URL;
 	try {
@@ -86,11 +92,15 @@ const defaultDependencies: StartManagedTestDatabaseDependencies = {
 		};
 	},
 	migrate: (connectionUri) => {
-		execFileSync("pnpm", ["exec", "prisma", "migrate", "deploy"], {
-			cwd: path.resolve(__dirname, "../.."),
-			env: { ...process.env, DATABASE_URL: connectionUri },
-			stdio: "inherit",
-		});
+		execFileSync(
+			resolvePnpmCommand(),
+			["exec", "prisma", "migrate", "deploy"],
+			{
+				cwd: path.resolve(__dirname, "../.."),
+				env: { ...process.env, DATABASE_URL: connectionUri },
+				stdio: "inherit",
+			},
+		);
 	},
 };
 

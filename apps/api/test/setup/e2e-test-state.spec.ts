@@ -56,4 +56,31 @@ describe("E2E 테스트 상태 reset", () => {
 		expect(drainBackgroundWork).toHaveBeenCalledTimes(1);
 		expect(cleanupDatabase).toHaveBeenCalledTimes(1);
 	});
+
+	it("백그라운드 drain 실패 시 DB는 보호하고 나머지 상태를 초기화해야 한다", async () => {
+		const drainError = new Error("drain failed");
+		const drainBackgroundWork = jest.fn().mockRejectedValue(drainError);
+		const cleanupDatabase = jest.fn();
+		const resetCache = jest.fn().mockRejectedValue("cache failed");
+		const flushRedis = jest.fn().mockResolvedValue("OK");
+		const clearFake = jest.fn();
+		const reset = createE2eTestStateResetter({
+			drainBackgroundWork,
+			cleanupDatabase,
+			resetCache,
+			flushRedis,
+			sharedResetters: [clearFake],
+		});
+
+		await expect(reset()).rejects.toMatchObject({
+			errors: [
+				drainError,
+				expect.objectContaining({ message: "cache failed" }),
+			],
+		});
+		expect(cleanupDatabase).not.toHaveBeenCalled();
+		expect(resetCache).toHaveBeenCalledTimes(1);
+		expect(flushRedis).toHaveBeenCalledTimes(1);
+		expect(clearFake).toHaveBeenCalledTimes(1);
+	});
 });

@@ -647,13 +647,15 @@ export class PushDispatcherAdapter
 
 	/** 진행 중인 fire-and-forget 발송을 모두 기다린다. */
 	async drainPendingPushes(): Promise<void> {
-		if (this.#pendingPushes.size > 0) {
-			this.#logger.log(
-				`Waiting for ${this.#pendingPushes.size} pending push(es)...`,
-			);
+		if (this.#pendingPushes.size === 0) return;
+
+		this.#logger.log(
+			`Waiting for ${this.#pendingPushes.size} pending push(es)...`,
+		);
+		while (this.#pendingPushes.size > 0) {
 			await Promise.allSettled([...this.#pendingPushes]);
-			this.#logger.log("All pending pushes completed");
 		}
+		this.#logger.log("All pending pushes completed");
 	}
 
 	async beforeApplicationShutdown(): Promise<void> {
