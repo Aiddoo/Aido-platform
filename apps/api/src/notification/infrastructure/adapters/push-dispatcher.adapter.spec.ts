@@ -130,6 +130,17 @@ function makeConsent(userId: string): UserConsentRecordWithId {
 	};
 }
 
+function createDeferred<T>(): {
+	promise: Promise<T>;
+	resolve: (value: T | PromiseLike<T>) => void;
+} {
+	let resolve: (value: T | PromiseLike<T>) => void = () => undefined;
+	const promise = new Promise<T>((resolver) => {
+		resolve = resolver;
+	});
+	return { promise, resolve };
+}
+
 describe("PushDispatcherAdapter", () => {
 	let adapter: PushDispatcherAdapter;
 	let userSettings: Mocked<UserNotificationSettingsPort>;
@@ -188,6 +199,59 @@ describe("PushDispatcherAdapter", () => {
 			userId: "user-1",
 			activeOnly: true,
 		});
+	});
+
+	it("drain 도중 추가된 push까지 모두 완료될 때까지 기다린다", async () => {
+		const releaseSecondPush = createDeferred<void>();
+		const secondPushStarted = createDeferred<void>();
+		userSettings.getPreferenceRecord.mockImplementation(async (userId) =>
+			makePreference(userId, "UTC"),
+		);
+		rateLimiter.isRateLimited.mockResolvedValue(false);
+		cacheService.wrapPushTokens.mockResolvedValue([]);
+		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
+		repository.createPushDispatch.mockImplementation(async ({ userId }) => {
+			if (userId === "user-1") {
+				adapter.fireAndForgetPush(
+					{
+						userId: "user-2",
+						type: "NUDGE_RECEIVED",
+						title: "second",
+						body: "second",
+					},
+					2,
+				);
+				return { id: 1 };
+			}
+
+			secondPushStarted.resolve(undefined);
+			await releaseSecondPush.promise;
+			return { id: 2 };
+		});
+
+		adapter.fireAndForgetPush(
+			{
+				userId: "user-1",
+				type: "NUDGE_RECEIVED",
+				title: "first",
+				body: "first",
+			},
+			1,
+		);
+		const draining = adapter.drainPendingPushes();
+		await secondPushStarted.promise;
+
+		const drainState = await Promise.race([
+			draining.then(() => "completed" as const),
+			new Promise<"pending">((resolve) => {
+				setImmediate(() => resolve("pending"));
+			}),
+		]);
+		expect(drainState).toBe("pending");
+
+		releaseSecondPush.resolve(undefined);
+		await draining;
+		expect(repository.recordPushDeliveryResults).toHaveBeenCalledTimes(2);
 	});
 
 	it("배치 발송은 설정 필터 후 모든 사용자 제한을 한 번에 예약한다", async () => {

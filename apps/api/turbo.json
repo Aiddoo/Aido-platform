@@ -15,6 +15,11 @@
 			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
 		},
 		"test:e2e": {
+			"cache": false,
+			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
+		},
+		"test:integration": {
+			"cache": false,
 			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
 		},
 		"typecheck": {

@@ -33,8 +33,7 @@ describe("인증 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	describe("회원가입 플로우", () => {
@@ -876,8 +875,62 @@ describe("인증 E2E", () => {
 			expect(response.headers.location).toContain("response_type=code");
 		});
 
+		it("GET /auth/kakao/web-callback - 테스트 fake로 성공하며 외부 요청을 보내지 않는다", async () => {
+			// Given - start 단계에서 state와 redirect_uri를 저장
+			const state = "kakao-success-state";
+			const authorizationCode = "kakao-success-code";
+			const exchangedToken = "kakao-success-token";
+			const redirectUri = "aido://auth/kakao-success";
+			const fetchSpy = jest.spyOn(global, "fetch");
+
+			ctx.fakeOAuthProviderRegistry.setExchangeToken(
+				"KAKAO",
+				authorizationCode,
+				exchangedToken,
+			);
+			ctx.fakeOAuthTokenVerifierService.setCustomProfile(
+				"kakao",
+				exchangedToken,
+				{
+					id: "kakao-web-success-user",
+					email: "kakao-web-success@test.com",
+					emailVerified: true,
+					name: "웹 OAuth 사용자",
+				},
+			);
+
+			try {
+				await request(ctx.app.getHttpServer())
+					.get("/auth/kakao/start")
+					.query({ state, redirect_uri: redirectUri })
+					.expect(302);
+
+				// When - provider의 실제 token endpoint 대신 fake code exchange 실행
+				const response = await request(ctx.app.getHttpServer())
+					.get("/auth/kakao/web-callback")
+					.query({ code: authorizationCode, state })
+					.expect(302);
+
+				// Then - 일회용 교환 코드가 반환되고 외부 fetch는 호출되지 않음
+				expect(response.headers.location).toBeDefined();
+				const location = new URL(response.headers.location ?? "");
+				expect(
+					`${location.protocol}//${location.host}${location.pathname}`,
+				).toBe(redirectUri);
+				expect(location.searchParams.get("code")).toBeTruthy();
+				expect(location.searchParams.get("state")).toBe(state);
+				expect(fetchSpy).not.toHaveBeenCalled();
+			} finally {
+				fetchSpy.mockRestore();
+			}
+		});
+
 		it("GET /auth/kakao/web-callback - 잘못된 code로 요청하면 딥링크로 에러 리다이렉트", async () => {
-			// Given - 잘못된 authorization code
+			// Given - 결정적으로 실패하도록 설정한 authorization code
+			ctx.fakeOAuthProviderRegistry.simulateExchangeFailure(
+				"KAKAO",
+				"invalid-auth-code",
+			);
 
 			// When - 카카오 콜백 API 호출
 			const response = await request(ctx.app.getHttpServer())

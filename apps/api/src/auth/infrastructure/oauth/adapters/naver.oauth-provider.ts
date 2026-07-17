@@ -4,12 +4,10 @@ import type {
 	ExchangedToken,
 	GenerateAuthUrlParams,
 	OAuthIdentityProvider,
+	OAuthTokenVerifier,
 	SocialLoginOptions,
-} from "@/auth/application/ports/oauth-identity-provider.port";
-import type {
-	OAuthTokenVerifierService,
 	VerifiedProfile,
-} from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+} from "@/auth/application/ports/oauth-identity-provider.port";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { readJson } from "@/shared/infrastructure/http/read-json";
 
@@ -32,12 +30,12 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
 	readonly failureEmail = "naver_unknown@social.aido.kr";
 
 	readonly #getConfig: () => OAuthConfig;
-	readonly #verifier: OAuthTokenVerifierService;
+	readonly #verifier: OAuthTokenVerifier;
 	readonly #logger: Logger;
 
 	constructor(
 		getConfig: () => OAuthConfig,
-		verifier: OAuthTokenVerifierService,
+		verifier: OAuthTokenVerifier,
 		logger: Logger,
 	) {
 		this.#getConfig = getConfig;

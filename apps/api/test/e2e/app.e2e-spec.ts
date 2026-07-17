@@ -20,6 +20,10 @@ describe("앱 컨트롤러 E2E", () => {
 		await destroyE2eApp(ctx);
 	});
 
+	beforeEach(async () => {
+		await ctx.reset();
+	});
+
 	it("/ (GET)", () => {
 		// Given - 애플리케이션이 초기화된 상태
 

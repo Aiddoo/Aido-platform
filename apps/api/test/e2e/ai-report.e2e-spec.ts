@@ -29,6 +29,7 @@ describe("AI 리포트 E2E", () => {
 		ctx = await createE2eApp({
 			customizeBuilder: (builder) =>
 				builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
+			additionalResetters: [() => fakeAiProvider.clear()],
 		});
 	}, 60000);
 
@@ -37,9 +38,7 @@ describe("AI 리포트 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
-		fakeAiProvider.clear();
+		await ctx.reset();
 	});
 
 	/** 프리미엄 사용자를 생성하고 토큰을 반환하는 헬퍼 */

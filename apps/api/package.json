@@ -25,6 +25,7 @@
 		"test:cov": "jest --coverage",
 		"test:coverage": "jest --coverage",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
+		"test:e2e:diagnose": "jest --config ./test/jest-e2e.json --runInBand --detectOpenHandles --randomize --showSeed",
 		"test:integration": "jest --config ./test/jest-integration.json",
 		"test:watch": "jest --watch",
 		"typecheck": "tsc --noEmit"

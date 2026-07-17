@@ -99,7 +99,16 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		jest.resetAllMocks();
+		mockAdminNotifier.send.mockResolvedValue({ success: true });
+		mockAdminNotifier.isConfigured.mockReturnValue(true);
+		mockPaymentNotifier.send.mockResolvedValue({ success: true });
+		mockPaymentNotifier.isConfigured.mockReturnValue(true);
+		mockSignupStatsReader.getSignupStats.mockResolvedValue({
+			signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
+			totalUsers: 100,
+		});
+		mockQueuePort.enqueueSend.mockResolvedValue(undefined);
 	});
 
 	describe("SEND 잡 처리 통합 테스트", () => {

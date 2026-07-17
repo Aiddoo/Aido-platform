@@ -87,11 +87,14 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 
 	// 테스트 스위트 종료 시 정리
 	afterAll(async () => {
-		if (testDb) {
-			await testDb.stop();
-		}
-		if (module) {
-			await module.close();
+		try {
+			if (module) {
+				await module.close();
+			}
+		} finally {
+			if (testDb) {
+				await testDb.stop();
+			}
 		}
 	});
 

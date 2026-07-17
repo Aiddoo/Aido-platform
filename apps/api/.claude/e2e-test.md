@@ -1,6 +1,6 @@
 # E2E 테스트 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.1.0 · **Last Updated**: 2026-07-17 · **Owner**: Aido Platform Team
 
 > `createE2eApp()` 팩토리 + `E2eHelpers`로 전체 API 흐름을 검증하는 테스트
 
@@ -23,7 +23,7 @@
 | **파일 위치** | `test/e2e/` |
 | **명명 규칙** | `{도메인}.e2e-spec.ts` |
 | **핵심 도구** | `createE2eApp()` + `E2eHelpers` + `supertest` |
-| **환경** | Testcontainers PostgreSQL + FakeService |
+| **환경** | Jest 실행당 Testcontainers PostgreSQL 1개 + FakeService |
 | **목적** | 사용자 관점에서 HTTP API 전체 흐름 검증 |
 
 ---
@@ -59,8 +59,10 @@ test/
 │   ├── fake-oauth-token-verifier.service.ts
 │   └── fake-logger.service.ts
 └── setup/
-    ├── test-database.ts             # TestDatabase (Testcontainers)
-    └── global-setup.ts
+    ├── managed-test-database.ts     # 컨테이너 + migration 수명주기
+    ├── test-database.ts             # Prisma 연결 + 데이터 초기화
+    ├── global-setup.ts
+    └── global-teardown.ts
 ```
 
 ---
@@ -70,11 +72,12 @@ test/
 ### `createE2eApp()` / `destroyE2eApp()`
 
 모든 E2E 테스트는 이 팩토리를 사용합니다. 내부에서 자동으로 처리하는 것:
-- `TestDatabase` (Testcontainers PostgreSQL) 시작
-- `FakeEmailService` / `FakeOAuthTokenVerifierService` 주입
+- global setup이 준비한 PostgreSQL에 `TestDatabase` 연결
+- `FakeEmailService` / OAuth provider registry / `FakeOAuthTokenVerifierService` 주입
 - `PinoLogger` → `FakeLogger` 교체
 - `ZodValidationPipe` 설정
 - `E2eHelpers` 인스턴스 생성
+- DB, cache, Redis mock, 공용 fake를 한 번에 초기화하는 `ctx.reset()` 제공
 
 ```typescript
 import {
@@ -96,8 +99,7 @@ describe("Todo E2E", () => {
   });
 
   beforeEach(async () => {
-    await ctx.testDatabase.cleanup();
-    ctx.fakeEmailService.clear();
+    await ctx.reset();
   });
 
   describe("Todo 생성", () => {
@@ -124,7 +126,8 @@ describe("Todo E2E", () => {
 
 모든 E2E 테스트는 **매 테스트마다 clean state**에서 시작합니다.
 
-- `beforeEach`에서 `ctx.testDatabase.cleanup()` + `ctx.fakeEmailService.clear()` **필수 호출**
+- `beforeEach`에서 `await ctx.reset()` **필수 호출**
+- suite 전용 fake는 `additionalResetters`로 등록하여 동일 reset 경로에 포함
 - 각 `it` 블록이 필요한 유저/데이터를 **자체적으로 생성** (shared state 없음)
 - 순차 의존성이 있는 테스트(CRUD 플로우 등)는 **하나의 `it` 블록으로 합침**
 - `describe` 스코프의 `let` 변수로 상태 공유 금지 (`ctx` 제외)
@@ -168,7 +171,9 @@ interface E2eTestContext {
   testDatabase: TestDatabase;
   fakeEmailService: FakeEmailService;
   fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
+  fakeOAuthProviderRegistry: FakeOAuthProviderRegistry;
   helpers: E2eHelpers;
+  reset(): Promise<void>;
 }
 ```
 
@@ -182,6 +187,7 @@ const ctx = await createE2eApp({
     builder
       .overrideProvider(SomeService)
       .useValue(mockSomeService),
+  additionalResetters: [() => mockSomeService.clear()],
 });
 ```
 
@@ -403,7 +409,8 @@ pnpm --filter @aido/api test:e2e -- -t "회원가입"
 
 | 변수 | 설명 | 비고 |
 |------|------|------|
-| `DATABASE_URL` | Testcontainers가 자동 설정 | 로컬에선 불필요 |
+| `DATABASE_URL` | global setup이 Testcontainers URL로 자동 설정 | 직접 설정 금지 |
+| `AIDO_TEST_DB_MANAGED` | 관리형 테스트 DB 안전 마커 (`1`) | global setup 전용 |
 | `JWT_SECRET` | JWT 서명 키 | CI에서 필요 |
 | `JWT_REFRESH_SECRET` | Refresh 토큰 키 (32자 이상) | CI에서 필요 |
 | `TOKEN_ENCRYPTION_KEY` | 암호화 키 (32자 이상) | CI에서 필요 |
@@ -416,14 +423,15 @@ pnpm --filter @aido/api test:e2e -- -t "회원가입"
 
 - ✅ `createE2eApp()` / `destroyE2eApp()` 팩토리 사용
 - ✅ `E2eHelpers`의 `createVerifiedUser()` 등 공유 헬퍼 사용
-- ✅ **`beforeEach`에서 `ctx.testDatabase.cleanup()` + `ctx.fakeEmailService.clear()` 필수 호출**
+- ✅ **`beforeEach`에서 `await ctx.reset()` 필수 호출**
+- ✅ suite 전용 fake는 `additionalResetters`에 등록
 - ✅ 각 `it` 블록에서 필요한 데이터를 자체적으로 생성 (per-test isolation)
 - ✅ 순차 의존 테스트(CRUD 등)는 하나의 `it` 블록으로 합침
 - ✅ GWT 주석으로 테스트 의도 표현
 - ✅ `supertest`로 HTTP 요청
 - ✅ 응답 구조 (`success`, `data`, `error.code`) 검증
 - ✅ 상태 코드 검증 (200, 201, 400, 401, 404, 409 등)
-- ✅ `beforeAll` 60초 타임아웃 설정 (Testcontainers 시작 대기)
+- ✅ `beforeAll` 60초 타임아웃 설정 (Nest 앱 초기화 대기)
 
 ### DON'T
 
@@ -434,6 +442,7 @@ pnpm --filter @aido/api test:e2e -- -t "회원가입"
 - ❌ Service/Repository 직접 호출 (HTTP 요청으로 테스트)
 - ❌ 테스트 간 데이터 의존성
 - ❌ 외부 API 직접 호출 (FakeService 사용)
+- ❌ `DATABASE_URL` fallback 또는 `USE_EXTERNAL_DB`로 비관리 DB 연결
 - ❌ `describe` 스코프 `let` 변수로 테스트 간 상태 공유 (`ctx` 제외)
 - ❌ nested `beforeAll`에서 공유 데이터 생성 (각 `it`에서 직접 생성)
 

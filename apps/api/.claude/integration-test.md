@@ -23,7 +23,7 @@
 | 유형 | DB | 도구 | 목적 | 예시 |
 |------|-----|------|------|------|
 | **Mock DB** | `createMockDatabaseService()` | NestJS `TestingModule` | Service → Repository DI 검증 | cheer, follow, nudge, todo 등 |
-| **실제 DB** | Testcontainers PostgreSQL | `TestDatabase` + 모듈 팩토리 | 전체 DB 트랜잭션 검증 | auth, oauth, account-deletion |
+| **실제 DB** | Jest 실행당 Testcontainers PostgreSQL 1개 | `TestDatabase` + 모듈 팩토리 | 전체 DB 트랜잭션 검증 | auth, oauth, account-deletion |
 
 ### 파일 위치 및 명명
 
@@ -41,7 +41,8 @@ test/
 │   └── mock-database.factory.ts          # createMockDatabaseService
 └── setup/
     ├── suppress-logger.ts                # suppressLogger()
-    └── test-database.ts                  # TestDatabase (Testcontainers)
+    ├── managed-test-database.ts          # global container + migration
+    └── test-database.ts                  # Prisma 연결 + 데이터 초기화
 ```
 
 ---
@@ -180,7 +181,7 @@ const mockDb = createMockDatabaseService({
 
 | 도구 | import | 역할 |
 |------|--------|------|
-| `TestDatabase` | `@test/setup/test-database` | Testcontainers PostgreSQL 관리 |
+| `TestDatabase` | `@test/setup/test-database` | global setup DB에 Prisma 연결 및 데이터 초기화 |
 | `createAuthTestModule()` | `@test/integration/helpers/auth-test-module.factory` | Auth 관련 TestingModule 팩토리 |
 | `suppressLogger()` | `@test/setup/suppress-logger` | Logger 출력 억제 |
 | `FakeEmailService` | `@test/mocks/fake-email.service` | 이메일 발송 Mock |
@@ -216,8 +217,11 @@ describe("{Feature} 통합 테스트 (실제 DB)", () => {
   });
 
   afterAll(async () => {
-    if (testDb) await testDb.stop();
-    if (module) await module.close();
+    try {
+      if (module) await module.close();
+    } finally {
+      if (testDb) await testDb.stop();
+    }
   });
 
   // 테스트 케이스들...
@@ -228,6 +232,10 @@ describe("{Feature} 통합 테스트 (실제 DB)", () => {
 
 Auth 팩토리에 포함되지 않는 서비스(OAuth, AccountPurge)는 자체 모듈을 구성합니다.
 공통 패턴은 동일합니다:
+
+컨테이너 생성과 migration은 Jest `globalSetup`이 suite 전체에서 한 번만 수행합니다.
+각 spec의 `TestDatabase.start()`는 이미 관리 중인 `aido_test_<run-id>` DB에 연결만 하며,
+`cleanup()`은 `_prisma_migrations`를 제외한 `public` 테이블을 동적으로 truncate합니다.
 
 ```typescript
 beforeAll(async () => {

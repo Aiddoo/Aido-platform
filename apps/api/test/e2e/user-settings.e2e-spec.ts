@@ -29,8 +29,7 @@ describe("사용자 설정 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	describe("알림 환경설정", () => {

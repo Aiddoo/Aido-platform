@@ -33,8 +33,7 @@ describe("팔로우 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	describe("친구 요청 플로우", () => {
@@ -368,13 +367,21 @@ describe("팔로우 E2E", () => {
 			const categoryId = await ctx.helpers.getDefaultCategoryId(
 				userJ.accessToken,
 			);
+			const rangeStart = new Date();
+			rangeStart.setUTCDate(rangeStart.getUTCDate() - 1);
+			const rangeEnd = new Date();
+			rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 1);
+			const activeDateRange = {
+				startDate: rangeStart.toISOString().split("T")[0],
+				endDate: rangeEnd.toISOString().split("T")[0],
+			};
 
 			await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.send({
 					title: "J의 공개 할 일",
-					startDate: new Date().toISOString().split("T")[0],
+					...activeDateRange,
 					visibility: "PUBLIC",
 					categoryId,
 				})
@@ -385,7 +392,7 @@ describe("팔로우 E2E", () => {
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.send({
 					title: "J의 비공개 할 일",
-					startDate: new Date().toISOString().split("T")[0],
+					...activeDateRange,
 					visibility: "PRIVATE",
 					categoryId,
 				})

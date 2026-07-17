@@ -25,8 +25,7 @@ describe("할 일 리소스 제한 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	const password = "Test1234!";

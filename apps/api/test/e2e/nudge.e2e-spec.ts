@@ -27,20 +27,28 @@ describe("찔러보기 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	const password = "Test1234!";
+	function activeDateRange(): { startDate: string; endDate: string } {
+		const start = new Date();
+		start.setUTCDate(start.getUTCDate() - 1);
+		const end = new Date();
+		end.setUTCDate(end.getUTCDate() + 1);
+		return {
+			startDate: start.toISOString().split("T")[0] ?? "",
+			endDate: end.toISOString().split("T")[0] ?? "",
+		};
+	}
 
 	/** receiver의 오늘 Todo 생성 헬퍼 */
 	async function createReceiverTodo(receiverToken: string): Promise<number> {
-		const today = new Date().toISOString().split("T")[0];
 		const categoryId = await ctx.helpers.getDefaultCategoryId(receiverToken);
 		const todoResponse = await request(ctx.app.getHttpServer())
 			.post("/todos")
 			.set("Authorization", `Bearer ${receiverToken}`)
-			.send({ title: "테스트 할일", startDate: today, categoryId });
+			.send({ title: "테스트 할일", ...activeDateRange(), categoryId });
 		return todoResponse.body.data?.todo?.id;
 	}
 
@@ -115,14 +123,13 @@ describe("찔러보기 E2E", () => {
 					"nudge-self@test.com",
 					password,
 				);
-				const today = new Date().toISOString().split("T")[0];
 				const categoryId = await ctx.helpers.getDefaultCategoryId(
 					sender.accessToken,
 				);
 				const todoResponse = await request(ctx.app.getHttpServer())
 					.post("/todos")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
-					.send({ title: "Self Todo", startDate: today, categoryId });
+					.send({ title: "Self Todo", ...activeDateRange(), categoryId });
 				const selfTodoId = todoResponse.body.data?.todo?.id;
 
 				// When - 자기 자신에게 콕 찌르기 API 호출
@@ -149,7 +156,6 @@ describe("찔러보기 E2E", () => {
 				);
 				await ctx.helpers.createFriendship(sender, receiver);
 
-				const today = new Date().toISOString().split("T")[0];
 				const categoryId = await ctx.helpers.getDefaultCategoryId(
 					receiver.accessToken,
 				);
@@ -158,7 +164,7 @@ describe("찔러보기 E2E", () => {
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.send({
 						title: "Private Todo",
-						startDate: today,
+						...activeDateRange(),
 						categoryId,
 						visibility: "PRIVATE",
 					});

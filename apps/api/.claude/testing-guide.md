@@ -112,7 +112,8 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 | `test/mocks/mock-database.factory.ts` | `createMockDatabaseService()` — DB Mock + `$transaction` 자동 설정 | Integration (Mock DB) |
 | `test/e2e/helpers/e2e-app-factory.ts` | `createE2eApp()` / `destroyE2eApp()` | E2E |
 | `test/e2e/helpers/e2e-helpers.ts` | `E2eHelpers` — `createVerifiedUser()` 등 | E2E |
-| `test/setup/test-database.ts` | `TestDatabase` (Testcontainers PostgreSQL) | Integration (실제 DB) + E2E |
+| `test/setup/managed-test-database.ts` | Jest 실행당 Testcontainers PostgreSQL + migration 수명주기 | Integration (실제 DB) + E2E |
+| `test/setup/test-database.ts` | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate | Integration (실제 DB) + E2E |
 | `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()` | Integration (실제 DB, Auth) |
 
 ### 4.2 FakeService 목록
