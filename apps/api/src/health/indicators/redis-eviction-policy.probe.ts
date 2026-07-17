@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 
@@ -15,11 +15,19 @@ export type RedisEvictionPolicyInspection =
 @Injectable()
 export class RedisEvictionPolicyProbe {
 	constructor(
+		@Optional()
 		@Inject(REDIS_COMMAND_CLIENT)
-		private readonly redis: RedisInfoSource,
+		private readonly redis: RedisInfoSource | null = null,
 	) {}
 
 	async inspect(): Promise<RedisEvictionPolicyInspection> {
+		if (!this.redis) {
+			return {
+				state: "unknown",
+				reason: "Redis command client unavailable",
+			};
+		}
+
 		try {
 			const memoryInfo = await this.redis.info("memory");
 			const policyLine = memoryInfo

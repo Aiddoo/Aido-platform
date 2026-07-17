@@ -70,4 +70,18 @@ describe("RedisEvictionPolicyProbe — BullMQ Redis 정책 검사", () => {
 			reason: "NOPERM INFO denied",
 		});
 	});
+
+	it("Redis command client가 없으면 명시적인 unknown을 반환한다", async () => {
+		// Given
+		const probe = new RedisEvictionPolicyProbe(null);
+
+		// When
+		const result = await probe.inspect();
+
+		// Then
+		expect(result).toEqual({
+			state: "unknown",
+			reason: "Redis command client unavailable",
+		});
+	});
 });
