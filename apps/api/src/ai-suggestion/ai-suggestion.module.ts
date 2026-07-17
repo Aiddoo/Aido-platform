@@ -21,6 +21,7 @@ import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestion-analysis
 import { PrismaAiSuggestionRepository } from "./infrastructure/persistence/prisma-ai-suggestion.repository";
 import { SuggestionAnalysisProcessor } from "./infrastructure/processors/suggestion-analysis.processor";
 import { AI_SUGGESTION_QUEUE } from "./infrastructure/queue/ai-suggestion-queue";
+import { AiSuggestionQueueMaintenanceService } from "./infrastructure/queue/ai-suggestion-queue-maintenance.service";
 import { AiSuggestionController } from "./presentation/ai-suggestion.controller";
 
 /**
@@ -64,6 +65,7 @@ import { AiSuggestionController } from "./presentation/ai-suggestion.controller"
 		AiSuggestionFacade,
 		SuggestionAnalysisJob,
 		SuggestionAnalysisProcessor,
+		AiSuggestionQueueMaintenanceService,
 	],
 	exports: [AiSuggestionFacade],
 })
