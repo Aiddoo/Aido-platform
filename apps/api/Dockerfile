@@ -96,6 +96,11 @@ COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/src/generated ./src/generated
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./prisma
 
+# ADD의 --chmod가 새로 생성된 상위 디렉터리에도 적용되지 않도록 먼저 권한을 고정
+RUN mkdir -p /app/certs && \
+	chown nestjs:nodejs /app/certs && \
+	chmod 0755 /app/certs
+
 # RDS CA 인증서 다운로드 (COPY 이후에 배치 — nestjs 유저가 읽을 수 있도록 chown)
 ADD --chmod=644 --chown=nestjs:nodejs https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 
@@ -106,6 +111,9 @@ ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
 EXPOSE 8080
 
 USER nestjs
+
+# non-root 런타임에서 CA를 읽을 수 없는 이미지는 빌드 단계에서 차단
+RUN test -r "$NODE_EXTRA_CA_CERTS"
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
