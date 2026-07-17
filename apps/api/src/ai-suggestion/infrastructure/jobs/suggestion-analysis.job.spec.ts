@@ -15,6 +15,7 @@ import type { Queue } from "bullmq";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { SuggestionAnalysisProcessor } from "../processors/suggestion-analysis.processor";
 import { AI_SUGGESTION_QUEUE } from "../queue/ai-suggestion-queue";
+import { AiSuggestionQueueMaintenanceService } from "../queue/ai-suggestion-queue-maintenance.service";
 import { SuggestionAnalysisJob } from "./suggestion-analysis.job";
 
 describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
@@ -22,6 +23,7 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 	let mockDatabase: Mocked<DatabaseService>;
 	let mockQueue: Mocked<Queue>;
 	let mockProcessor: Mocked<SuggestionAnalysisProcessor>;
+	let mockQueueMaintenance: Mocked<AiSuggestionQueueMaintenanceService>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(SuggestionAnalysisJob)
@@ -32,12 +34,15 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 				upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
 				removeJobScheduler: jest.fn().mockResolvedValue(undefined),
 			}))
+			.mock(AiSuggestionQueueMaintenanceService)
+			.impl(() => ({ cleanExpiredFailures: jest.fn().mockResolvedValue(0) }))
 			.compile();
 
 		job = unit;
 		mockDatabase = unitRef.get(DatabaseService);
 		mockQueue = unitRef.get(getQueueToken(AI_SUGGESTION_QUEUE));
 		mockProcessor = unitRef.get(SuggestionAnalysisProcessor);
+		mockQueueMaintenance = unitRef.get(AiSuggestionQueueMaintenanceService);
 	});
 
 	afterEach(() => {
@@ -57,7 +62,11 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"daily-suggestion-scheduler",
 				{ pattern: "30 7 * * *", tz: "Asia/Seoul" },
-				{ name: "dispatch-analysis", data: {} },
+				{
+					name: "dispatch-analysis",
+					data: {},
+					opts: { removeOnFail: { age: 604_800, count: 1_000 } },
+				},
 			);
 		});
 
@@ -117,7 +126,10 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			expect(mockQueue.add).toHaveBeenCalledWith(
 				"dispatch-analysis",
 				{},
-				{ jobId: expect.stringContaining("dispatch_suggestion_") },
+				{
+					jobId: expect.stringContaining("dispatch_suggestion_"),
+					removeOnFail: { age: 604_800, count: 1_000 },
+				},
 			);
 		});
 
@@ -135,6 +147,39 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 	});
 
 	describe("dispatchAnalysis", () => {
+		it("dispatch 전에 7일이 지난 실패 잡을 최대 1,000건 정리해야 한다", async () => {
+			// Given
+			asMock(mockDatabase.user.findMany).mockResolvedValue([]);
+
+			// When
+			await job.dispatchAnalysis();
+
+			// Then
+			expect(mockQueueMaintenance.cleanExpiredFailures).toHaveBeenCalledTimes(
+				1,
+			);
+			const cleanOrder =
+				mockQueueMaintenance.cleanExpiredFailures.mock.invocationCallOrder[0] ??
+				0;
+			const findOrder =
+				asMock(mockDatabase.user.findMany).mock.invocationCallOrder[0] ?? 0;
+			expect(cleanOrder).toBeLessThan(findOrder);
+		});
+
+		it("실패 잡 정리 결과가 0이어도 사용자 분석 dispatch를 계속해야 한다", async () => {
+			// Given
+			mockQueueMaintenance.cleanExpiredFailures.mockResolvedValue(0);
+			asMock(mockDatabase.user.findMany).mockResolvedValue([
+				{ id: "user-1", preference: { timezone: "Asia/Seoul" } },
+			]);
+
+			// When
+			await expect(job.dispatchAnalysis()).resolves.toBeUndefined();
+
+			// Then
+			expect(mockQueue.addBulk).toHaveBeenCalledTimes(1);
+		});
+
 		it("최근 할 일이 있는 모든 사용자에 대해 큐에 잡을 등록해야 한다", async () => {
 			// Given
 			const users = [
@@ -201,7 +246,7 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 					attempts: 3,
 					backoff: { type: "exponential", delay: 5_000 },
 					removeOnComplete: { age: 604_800, count: 10_000 },
-					removeOnFail: { count: 100, age: 86_400 },
+					removeOnFail: { count: 1_000, age: 604_800 },
 				}),
 			);
 		});

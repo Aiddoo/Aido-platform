@@ -14,6 +14,8 @@ import {
 	type AiSuggestionJobData,
 	AiSuggestionJobName,
 } from "../queue/ai-suggestion-queue";
+import { AiSuggestionQueueMaintenanceService } from "../queue/ai-suggestion-queue-maintenance.service";
+import { AI_SUGGESTION_FAILED_JOB_RETENTION } from "../queue/ai-suggestion-retention.policy";
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
@@ -34,6 +36,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		@InjectQueue(AI_SUGGESTION_QUEUE)
 		private readonly queue: Queue<AiSuggestionJobData>,
 		private readonly processor: SuggestionAnalysisProcessor,
+		private readonly queueMaintenance: AiSuggestionQueueMaintenanceService,
 	) {}
 
 	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
@@ -54,7 +57,11 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 				await this.queue.upsertJobScheduler(
 					"daily-suggestion-scheduler",
 					{ pattern: "30 7 * * *", tz: "Asia/Seoul" },
-					{ name: AiSuggestionJobName.DISPATCH, data: {} },
+					{
+						name: AiSuggestionJobName.DISPATCH,
+						data: {},
+						opts: { removeOnFail: AI_SUGGESTION_FAILED_JOB_RETENTION },
+					},
 				);
 
 				this.#logger.log("Suggestion analysis scheduler registered");
@@ -69,6 +76,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 	 */
 	async dispatchAnalysis(dispatchJob?: Job): Promise<void> {
 		this.#logger.log("Starting suggestion analysis dispatch...");
+		await this.queueMaintenance.cleanExpiredFailures();
 
 		const twoWeeksAgo = subtractDays(14);
 
@@ -121,6 +129,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 					} satisfies AiSuggestionAnalyzeData,
 					opts: {
 						...AI_PER_USER_JOB_OPTS,
+						removeOnFail: AI_SUGGESTION_FAILED_JOB_RETENTION,
 						jobId: `suggestion_${user.id}_${periodId}`,
 					},
 				}));
@@ -151,6 +160,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 				{},
 				{
 					jobId: `dispatch_suggestion_${kstNow.format("YYYY-MM-DD")}`,
+					removeOnFail: AI_SUGGESTION_FAILED_JOB_RETENTION,
 				},
 			);
 		}

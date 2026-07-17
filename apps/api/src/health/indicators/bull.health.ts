@@ -11,6 +11,10 @@ import { TODO_REMINDER_QUEUE } from "@/scheduler";
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 import { withTimeout } from "@/shared/application/utils/with-timeout.util";
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
+import {
+	type RedisEvictionPolicyInspection,
+	RedisEvictionPolicyProbe,
+} from "./redis-eviction-policy.probe";
 
 /** 큐 상태 수집 타임아웃 — 초과 시 up + degraded로 응답 */
 const QUEUE_STATS_TIMEOUT_MS = 2_000;
@@ -56,6 +60,7 @@ export class BullHealthIndicator {
 		private readonly adminNotificationQueue: QueueHealthSource,
 		@InjectQueue(TODO_REMINDER_QUEUE)
 		private readonly todoReminderQueue: QueueHealthSource,
+		private readonly evictionPolicyProbe: RedisEvictionPolicyProbe,
 		@Optional()
 		@Inject(REDIS_COMMAND_CLIENT)
 		private readonly redis: RedisPingSource | null = null,
@@ -76,12 +81,20 @@ export class BullHealthIndicator {
 		}
 
 		try {
-			const results = await withTimeout(
-				this.#collectQueueStats(),
+			const [results, policyInspection] = await withTimeout(
+				Promise.all([
+					this.#collectQueueStats(),
+					this.redis
+						? this.evictionPolicyProbe.inspect()
+						: Promise.resolve(null),
+				]),
 				QUEUE_STATS_TIMEOUT_MS,
 				"Queue stats collection",
 			);
-			return indicator.up(results);
+			return indicator.up({
+				...results,
+				...this.#policyDegradation(policyInspection),
+			});
 		} catch (error) {
 			return indicator.up({
 				degraded: true,
@@ -108,5 +121,23 @@ export class BullHealthIndicator {
 		}
 
 		return results;
+	}
+
+	#policyDegradation(
+		inspection: RedisEvictionPolicyInspection | null,
+	): Record<string, unknown> {
+		if (!inspection || inspection.state === "compatible") {
+			return {};
+		}
+		if (inspection.state === "incompatible") {
+			return {
+				degraded: true,
+				reason: `redis maxmemory_policy incompatible with BullMQ: ${inspection.policy}`,
+			};
+		}
+		return {
+			degraded: true,
+			reason: `redis maxmemory_policy unknown: ${inspection.reason}`,
+		};
 	}
 }

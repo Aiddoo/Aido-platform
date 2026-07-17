@@ -14,6 +14,7 @@
  */
 import { HealthIndicatorService } from "@nestjs/terminus";
 import { BullHealthIndicator, type QueueHealthSource } from "./bull.health";
+import { RedisEvictionPolicyProbe } from "./redis-eviction-policy.probe";
 
 interface FakeQueue extends QueueHealthSource {
 	isPaused: jest.Mock;
@@ -41,13 +42,19 @@ describe("BullHealthIndicator — BullMQ 큐 헬스 인디케이터", () => {
 		];
 	});
 
-	function createIndicator(redis: { ping: jest.Mock } | null) {
+	function createIndicator(
+		redis: { ping: jest.Mock } | null,
+		probe = new RedisEvictionPolicyProbe({
+			info: jest.fn().mockResolvedValue("maxmemory_policy:noeviction\n"),
+		}),
+	) {
 		return new BullHealthIndicator(
 			new HealthIndicatorService(),
 			queues[0],
 			queues[1],
 			queues[2],
 			queues[3],
+			probe,
 			redis,
 		);
 	}
@@ -83,6 +90,45 @@ describe("BullHealthIndicator — BullMQ 큐 헬스 인디케이터", () => {
 			"ai-suggestion": { isPaused: false, active: 1, waiting: 2, failed: 0 },
 		});
 		expect(result.queues).not.toMatchObject({ degraded: true });
+	});
+
+	it("Redis 정책이 volatile-lru이면 큐 통계와 함께 up + degraded를 반환한다", async () => {
+		// Given
+		const redis = { ping: jest.fn().mockResolvedValue("PONG") };
+		const probe = new RedisEvictionPolicyProbe({
+			info: jest.fn().mockResolvedValue("maxmemory_policy:volatile-lru\n"),
+		});
+		const indicator = createIndicator(redis, probe);
+
+		// When
+		const result = await indicator.isHealthy("queues");
+
+		// Then — HTTP 상태를 내리지 않고 기존 degraded 계약으로만 노출
+		expect(result.queues?.status).toBe("up");
+		expect(result.queues).toMatchObject({
+			degraded: true,
+			reason: "redis maxmemory_policy incompatible with BullMQ: volatile-lru",
+			"ai-suggestion": { isPaused: false, active: 1, waiting: 2, failed: 0 },
+		});
+	});
+
+	it("Redis 정책을 확인할 수 없으면 up + degraded와 원인을 반환한다", async () => {
+		// Given
+		const redis = { ping: jest.fn().mockResolvedValue("PONG") };
+		const probe = new RedisEvictionPolicyProbe({
+			info: jest.fn().mockRejectedValue(new Error("NOPERM INFO denied")),
+		});
+		const indicator = createIndicator(redis, probe);
+
+		// When
+		const result = await indicator.isHealthy("queues");
+
+		// Then
+		expect(result.queues?.status).toBe("up");
+		expect(result.queues).toMatchObject({
+			degraded: true,
+			reason: "redis maxmemory_policy unknown: NOPERM INFO denied",
+		});
 	});
 
 	it("Redis 클라이언트가 없으면(메모리 모드) ping 없이 큐를 검사한다", async () => {
