@@ -28,8 +28,7 @@ describe("문의 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	describe("POST /inquiries - 문의 접수", () => {

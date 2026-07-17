@@ -23,6 +23,7 @@
     },
     "test:e2e": {
       "dependsOn": ["^build"],
+      "cache": false,
       "inputs": ["src/**", "test/**", "jest.config.*"],
       "outputs": ["coverage/**"],
       "passThroughEnv": [
@@ -35,6 +36,19 @@
         "RESEND_API_KEY",
         "EMAIL_FROM",
         "EMAIL_FROM_NAME",
+        "TOKEN_ENCRYPTION_KEY",
+        "NODE_ENV"
+      ]
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "inputs": ["src/**", "test/**", "jest.config.*"],
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "JWT_REFRESH_SECRET",
         "TOKEN_ENCRYPTION_KEY",
         "NODE_ENV"
       ]

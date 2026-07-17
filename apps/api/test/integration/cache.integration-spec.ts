@@ -19,7 +19,6 @@ import {
 } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import {
 	createMockUserProfile,
-	delay,
 	MockCacheAdapter,
 } from "../mocks/cache-test-utils";
 
@@ -109,6 +108,8 @@ describe("CacheModule 통합 테스트", () => {
 
 			it("TTL이 만료되면 캐시가 삭제된다", async () => {
 				// Given
+				const baseTime = Date.now();
+				const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
 				const shortTtlModule = await Test.createTestingModule({
 					imports: [
 						ConfigModule.forRoot({
@@ -125,21 +126,25 @@ describe("CacheModule 통합 테스트", () => {
 					],
 				}).compile();
 
-				const shortTtlService = shortTtlModule.get<CacheService>(CacheService);
-				await shortTtlService.set("test-key", "test-value");
+				try {
+					const shortTtlService =
+						shortTtlModule.get<CacheService>(CacheService);
+					await shortTtlService.set("test-key", "test-value");
 
-				// When - 값이 설정됨을 확인
-				const beforeExpiry = await shortTtlService.get("test-key");
-				expect(beforeExpiry).toBe("test-value");
+					// When - 값이 설정됨을 확인
+					const beforeExpiry = await shortTtlService.get("test-key");
+					expect(beforeExpiry).toBe("test-value");
 
-				// When - TTL 만료 대기
-				await delay(100);
+					// When - 실제 대기 없이 TTL 이후로 시간 이동
+					now.mockReturnValue(baseTime + 100);
 
-				// Then
-				const afterExpiry = await shortTtlService.get("test-key");
-				expect(afterExpiry).toBeUndefined();
-
-				await shortTtlModule.close();
+					// Then
+					const afterExpiry = await shortTtlService.get("test-key");
+					expect(afterExpiry).toBeUndefined();
+				} finally {
+					now.mockRestore();
+					await shortTtlModule.close();
+				}
 			});
 		});
 
@@ -358,20 +363,26 @@ describe("CacheModule 통합 테스트", () => {
 
 			it("TTL shorthand를 지원한다", async () => {
 				// Given
+				const baseTime = Date.now();
+				const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
 				const key = "wrap-ttl-test";
 				const factory = jest.fn().mockResolvedValue("value");
 
-				// When
-				await cacheService.wrap(key, factory, "1s");
+				try {
+					// When
+					await cacheService.wrap(key, factory, "1s");
 
-				// Then - 즉시 조회
-				const beforeExpiry = await cacheService.get(key);
-				expect(beforeExpiry).toBe("value");
+					// Then - 즉시 조회
+					const beforeExpiry = await cacheService.get(key);
+					expect(beforeExpiry).toBe("value");
 
-				// TTL 만료 후
-				await delay(1100);
-				const afterExpiry = await cacheService.get(key);
-				expect(afterExpiry).toBeUndefined();
+					// TTL 만료 후로 시간 이동
+					now.mockReturnValue(baseTime + 1100);
+					const afterExpiry = await cacheService.get(key);
+					expect(afterExpiry).toBeUndefined();
+				} finally {
+					now.mockRestore();
+				}
 			});
 
 			it("wrapSession이 실제로 캐시에 저장한다", async () => {
@@ -478,28 +489,34 @@ describe("CacheModule 통합 테스트", () => {
 
 			it("mset에서 TTL shorthand를 지원한다", async () => {
 				// Given
+				const baseTime = Date.now();
+				const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
 				const entries = [
 					{ key: "mset-ttl-1", value: "value-1", ttl: "1s" as const },
 					{ key: "mset-ttl-2", value: "value-2", ttl: "1s" as const },
 				];
 
-				// When
-				await cacheService.mset(entries);
+				try {
+					// When
+					await cacheService.mset(entries);
 
-				// Then - 즉시 조회
-				const beforeExpiry = await cacheService.mget([
-					"mset-ttl-1",
-					"mset-ttl-2",
-				]);
-				expect(beforeExpiry).toEqual(["value-1", "value-2"]);
+					// Then - 즉시 조회
+					const beforeExpiry = await cacheService.mget([
+						"mset-ttl-1",
+						"mset-ttl-2",
+					]);
+					expect(beforeExpiry).toEqual(["value-1", "value-2"]);
 
-				// TTL 만료 후
-				await delay(1100);
-				const afterExpiry = await cacheService.mget([
-					"mset-ttl-1",
-					"mset-ttl-2",
-				]);
-				expect(afterExpiry).toEqual([undefined, undefined]);
+					// TTL 만료 후로 시간 이동
+					now.mockReturnValue(baseTime + 1100);
+					const afterExpiry = await cacheService.mget([
+						"mset-ttl-1",
+						"mset-ttl-2",
+					]);
+					expect(afterExpiry).toEqual([undefined, undefined]);
+				} finally {
+					now.mockRestore();
+				}
 			});
 		});
 
@@ -578,15 +595,17 @@ describe("CacheModule 통합 테스트", () => {
 			}).compile();
 			const service = module.get<CacheService>(CacheService);
 
-			// When
-			await service.set("key", "value");
-			const result = await service.get("key");
+			try {
+				// When
+				await service.set("key", "value");
+				const result = await service.get("key");
 
-			// Then
-			expect(result).toBe("value");
-			expect(mockAdapter.hasKey("key")).toBe(true);
-
-			await module.close();
+				// Then
+				expect(result).toBe("value");
+				expect(mockAdapter.hasKey("key")).toBe(true);
+			} finally {
+				await module.close();
+			}
 		});
 
 		it("Jest 모킹된 어댑터를 사용할 수 있다", async () => {
@@ -610,14 +629,16 @@ describe("CacheModule 통합 테스트", () => {
 			}).compile();
 			const service = module.get<CacheService>(CacheService);
 
-			// When
-			const result = await service.get("any");
+			try {
+				// When
+				const result = await service.get("any");
 
-			// Then
-			expect(result).toBe("mocked-value");
-			expect(mockAdapter.get).toHaveBeenCalledWith("any");
-
-			await module.close();
+				// Then
+				expect(result).toBe("mocked-value");
+				expect(mockAdapter.get).toHaveBeenCalledWith("any");
+			} finally {
+				await module.close();
+			}
 		});
 
 		it("모킹된 wrap 메서드를 사용할 수 있다", async () => {
@@ -641,15 +662,17 @@ describe("CacheModule 통합 테스트", () => {
 			}).compile();
 			const service = module.get<CacheService>(CacheService);
 
-			// When
-			const factory = jest.fn();
-			const result = await service.wrap("key", factory, "5m");
+			try {
+				// When
+				const factory = jest.fn();
+				const result = await service.wrap("key", factory, "5m");
 
-			// Then
-			expect(result).toBe("wrapped-value");
-			expect(mockAdapter.wrap).toHaveBeenCalledWith("key", factory, "5m");
-
-			await module.close();
+				// Then
+				expect(result).toBe("wrapped-value");
+				expect(mockAdapter.wrap).toHaveBeenCalledWith("key", factory, "5m");
+			} finally {
+				await module.close();
+			}
 		});
 	});
 
@@ -667,14 +690,16 @@ describe("CacheModule 통합 테스트", () => {
 			}).compile();
 			const service = module.get<CacheService>(CacheService);
 
-			// When
-			await service.set("key", "value");
-			const result = await service.get("key");
+			try {
+				// When
+				await service.set("key", "value");
+				const result = await service.get("key");
 
-			// Then
-			expect(result).toBe("value");
-
-			await module.close();
+				// Then
+				expect(result).toBe("value");
+			} finally {
+				await module.close();
+			}
 		});
 
 		it("커스텀 설정을 적용한다", async () => {
@@ -696,16 +721,18 @@ describe("CacheModule 통합 테스트", () => {
 			}).compile();
 			const service = module.get<CacheService>(CacheService);
 
-			// When - 최대 항목 수를 초과하여 저장
-			for (let i = 0; i < 10; i++) {
-				await service.set(`key_${i}`, `value_${i}`);
+			try {
+				// When - 최대 항목 수를 초과하여 저장
+				for (let i = 0; i < 10; i++) {
+					await service.set(`key_${i}`, `value_${i}`);
+				}
+
+				// Then - LRU로 인해 최대 5개만 유지
+				const stats = service.getStats();
+				expect(stats.keys).toBeLessThanOrEqual(5);
+			} finally {
+				await module.close();
 			}
-
-			// Then - LRU로 인해 최대 5개만 유지
-			const stats = service.getStats();
-			expect(stats.keys).toBeLessThanOrEqual(5);
-
-			await module.close();
 		});
 	});
 
@@ -722,15 +749,17 @@ describe("CacheModule 통합 테스트", () => {
 				],
 			}).compile();
 
-			// When
-			const service = module.get<CacheService>(CacheService);
-			const adapter = module.get<ICacheService>(CACHE_SERVICE);
+			try {
+				// When
+				const service = module.get<CacheService>(CacheService);
+				const adapter = module.get<ICacheService>(CACHE_SERVICE);
 
-			// Then
-			expect(service).toBeDefined();
-			expect(adapter).toBeDefined();
-
-			await module.close();
+				// Then
+				expect(service).toBeDefined();
+				expect(adapter).toBeDefined();
+			} finally {
+				await module.close();
+			}
 		});
 	});
 });

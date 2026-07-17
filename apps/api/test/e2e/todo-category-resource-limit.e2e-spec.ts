@@ -28,8 +28,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	const password = "Test1234!";

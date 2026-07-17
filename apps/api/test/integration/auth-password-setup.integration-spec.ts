@@ -57,8 +57,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 	});
 
 	afterAll(async () => {
-		if (testDb) await testDb.stop();
-		if (module) await module.close();
+		try {
+			if (module) await module.close();
+		} finally {
+			if (testDb) await testDb.stop();
+		}
 	});
 
 	/**

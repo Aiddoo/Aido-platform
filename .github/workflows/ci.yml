@@ -36,29 +36,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: aido_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -67,17 +44,14 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - name: Run Prisma migrations
-        run: pnpm --filter @aido/api exec prisma migrate deploy
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
-
       - name: Run unit tests
         run: pnpm turbo run test --affected
 
+      - name: Run integration tests
+        run: pnpm turbo run test:integration --filter=@aido/api
+
       - name: Run E2E tests
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
           JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
           JWT_EXPIRES_IN: 15m

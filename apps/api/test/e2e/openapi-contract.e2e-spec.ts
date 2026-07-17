@@ -48,6 +48,10 @@ describe("OpenAPI 계약 (e2e)", () => {
 		await destroyE2eApp(ctx);
 	});
 
+	beforeEach(async () => {
+		await ctx.reset();
+	});
+
 	it("OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경)", () => {
 		// Given - main.ts와 동일한 기본 문서 설정 (paths/schemas는 컨트롤러에서 파생)
 		const config = new DocumentBuilder()

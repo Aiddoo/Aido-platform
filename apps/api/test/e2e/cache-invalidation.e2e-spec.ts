@@ -12,7 +12,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { CacheModule } from "@/shared/infrastructure/cache/cache.module";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
-import { createMockUserProfile, delay } from "../mocks/cache-test-utils";
+import { createMockUserProfile } from "../mocks/cache-test-utils";
 
 describe("캐시 무효화 E2E 테스트", () => {
 	let app: INestApplication;
@@ -76,6 +76,8 @@ describe("캐시 무효화 E2E 테스트", () => {
 
 		it("세션 TTL 만료 시 자동으로 삭제된다", async () => {
 			// Given - 짧은 TTL로 새 캐시 모듈 생성
+			const baseTime = Date.now();
+			const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
 			const shortTtlModule = await Test.createTestingModule({
 				imports: [
 					ConfigModule.forRoot({
@@ -93,28 +95,31 @@ describe("캐시 무효화 E2E 테스트", () => {
 			}).compile();
 
 			const shortTtlApp = shortTtlModule.createNestApplication();
-			await shortTtlApp.init();
-			const shortTtlCache = shortTtlModule.get<CacheService>(CacheService);
+			try {
+				await shortTtlApp.init();
+				const shortTtlCache = shortTtlModule.get<CacheService>(CacheService);
 
-			const sessionId = "sess_short_ttl";
-			const session = {
-				userId: "user_ttl",
-				expiresAt: new Date(),
-				revokedAt: null,
-			};
+				const sessionId = "sess_short_ttl";
+				const session = {
+					userId: "user_ttl",
+					expiresAt: new Date(),
+					revokedAt: null,
+				};
 
-			// When - 세션 저장 (setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정)
-			await shortTtlCache.set(CacheKeys.session(sessionId), session, 50);
-			expect(await shortTtlCache.getSession(sessionId)).toEqual(session);
+				// When - 세션 저장 (setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정)
+				await shortTtlCache.set(CacheKeys.session(sessionId), session, 50);
+				expect(await shortTtlCache.getSession(sessionId)).toEqual(session);
 
-			// When - TTL 만료 대기
-			await delay(100);
+				// When - 실제 대기 없이 TTL 이후로 시간 이동
+				now.mockReturnValue(baseTime + 100);
 
-			// Then - 세션 자동 삭제
-			const afterExpiry = await shortTtlCache.getSession(sessionId);
-			expect(afterExpiry).toBeUndefined();
-
-			await shortTtlApp.close();
+				// Then - 세션 자동 삭제
+				const afterExpiry = await shortTtlCache.getSession(sessionId);
+				expect(afterExpiry).toBeUndefined();
+			} finally {
+				now.mockRestore();
+				await shortTtlApp.close();
+			}
 		});
 	});
 
@@ -356,24 +361,26 @@ describe("캐시 무효화 E2E 테스트", () => {
 			await smallCacheApp.init();
 			const smallCache = smallCacheModule.get<CacheService>(CacheService);
 
-			// When - 5개 항목 저장
-			for (let i = 1; i <= 5; i++) {
-				await smallCache.set(`key_${i}`, `value_${i}`);
+			try {
+				// When - 5개 항목 저장
+				for (let i = 1; i <= 5; i++) {
+					await smallCache.set(`key_${i}`, `value_${i}`);
+				}
+
+				// Then - 5개 모두 존재
+				expect(smallCache.getStats().keys).toBe(5);
+				expect(await smallCache.get("key_1")).toBe("value_1");
+
+				// When - 6번째 항목 추가 (LRU로 key_1 퇴출)
+				await smallCache.set("key_6", "value_6");
+
+				// Then - key_1은 퇴출, key_6은 존재
+				expect(smallCache.getStats().keys).toBe(5);
+				expect(await smallCache.get("key_1")).toBeUndefined();
+				expect(await smallCache.get("key_6")).toBe("value_6");
+			} finally {
+				await smallCacheApp.close();
 			}
-
-			// Then - 5개 모두 존재
-			expect(smallCache.getStats().keys).toBe(5);
-			expect(await smallCache.get("key_1")).toBe("value_1");
-
-			// When - 6번째 항목 추가 (LRU로 key_1 퇴출)
-			await smallCache.set("key_6", "value_6");
-
-			// Then - key_1은 퇴출, key_6은 존재
-			expect(smallCache.getStats().keys).toBe(5);
-			expect(await smallCache.get("key_1")).toBeUndefined();
-			expect(await smallCache.get("key_6")).toBe("value_6");
-
-			await smallCacheApp.close();
 		});
 	});
 });

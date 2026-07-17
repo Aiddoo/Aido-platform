@@ -31,6 +31,8 @@ import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { SuggestionAnalysisJob } from "@/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
 import { SuggestionAnalysisProcessor } from "@/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
 import { AppModule } from "@/app.module";
+import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "@/auth/application/ports/oauth-identity-provider.port";
+import { createOAuthProviderRegistry } from "@/auth/infrastructure/oauth/adapters";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import {
 	ACCOUNT_PURGE_QUEUE,
@@ -43,6 +45,8 @@ import {
 	NotificationQueueProcessor,
 	PUSH_PROVIDER,
 } from "@/notification";
+import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
+import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
 import { RETENTION_QUEUE } from "@/retention/infrastructure/queue/retention-queue.constants";
 import { RetentionQueueProcessor } from "@/retention/infrastructure/queue/retention-queue.processor";
 import { RetentionQueueService } from "@/retention/infrastructure/queue/retention-queue.service";
@@ -55,6 +59,7 @@ import {
 } from "@/scheduler";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import {
 	REDIS_CLIENT,
@@ -71,12 +76,17 @@ import { createMockBullQueue } from "../../mocks/fake-bull-queue";
 import { FakeEmailService } from "../../mocks/fake-email.service";
 import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider";
 import { FakeLogger } from "../../mocks/fake-logger.service";
+import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry";
 import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service";
 import { FakePushProvider } from "../../mocks/fake-push.provider";
 import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider";
 import { FakeWeatherProvider } from "../../mocks/fake-weather.provider";
 import { TestDatabase } from "../../setup/test-database";
 import { E2eHelpers } from "./e2e-helpers";
+import {
+	createE2eTestStateResetter,
+	type TestStateResetter,
+} from "./e2e-test-state";
 
 /* ── BullMQ 격리 대상 ─────────────────────────────────── */
 
@@ -117,7 +127,11 @@ export interface E2eTestContext {
 	testDatabase: TestDatabase;
 	fakeEmailService: FakeEmailService;
 	fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
+	fakeOAuthProviderRegistry: FakeOAuthProviderRegistry;
 	helpers: E2eHelpers;
+	reset(): Promise<void>;
+	/** @internal destroyE2eApp 전용 */
+	closeTestResources(): Promise<void>;
 }
 
 export interface E2eAppOptions {
@@ -125,6 +139,8 @@ export interface E2eAppOptions {
 	customizeBuilder?: (
 		builder: ReturnType<typeof Test.createTestingModule>,
 	) => ReturnType<typeof Test.createTestingModule>;
+	/** suite에서 추가로 override한 fake의 상태 초기화 함수 */
+	additionalResetters?: readonly TestStateResetter[];
 }
 
 export async function createE2eApp(
@@ -145,6 +161,38 @@ export async function createE2eApp(
 	const fakeSunTimeProvider = new FakeSunTimeProvider();
 
 	const redisMock = new RedisMock();
+	const cacheAdapter = new InMemoryCacheAdapter({
+		defaultTtlMs: 60000,
+		maxItems: 1000,
+		cleanupIntervalMs: 30000,
+	});
+	let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
+	let pushDispatcher: PushDispatcherAdapter | undefined;
+	let module: TestingModule | undefined;
+	let app: INestApplication<App> | undefined;
+
+	const closeTestResources = async (): Promise<void> => {
+		const errors: unknown[] = [];
+		try {
+			await app?.close();
+		} catch (error) {
+			errors.push(error);
+		}
+
+		const results = await Promise.allSettled([
+			Promise.resolve().then(() => redisMock.disconnect()),
+			Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
+			testDatabase.stop(),
+		]);
+		errors.push(
+			...results.flatMap((result) =>
+				result.status === "rejected" ? [result.reason] : [],
+			),
+		);
+		if (errors.length > 0) {
+			throw new AggregateError(errors, "Failed to close E2E test resources");
+		}
+	};
 
 	let builder = Test.createTestingModule({
 		imports: [AppModule],
@@ -154,19 +202,25 @@ export async function createE2eApp(
 		.overrideProvider(REDIS_COMMAND_CLIENT)
 		.useValue(redisMock)
 		.overrideProvider(CACHE_SERVICE)
-		.useValue(
-			new InMemoryCacheAdapter({
-				defaultTtlMs: 60000,
-				maxItems: 1000,
-				cleanupIntervalMs: 30000,
-			}),
-		)
+		.useValue(cacheAdapter)
 		.overrideProvider(DatabaseService)
 		.useValue(testDatabase.getPrisma())
 		.overrideProvider(EmailFacade)
 		.useValue(fakeEmailService)
 		.overrideProvider(OAuthTokenVerifierService)
 		.useValue(fakeOAuthTokenVerifierService)
+		.overrideProvider(OAUTH_IDENTITY_PROVIDER_REGISTRY)
+		.useFactory({
+			inject: [TypedConfigService],
+			factory: (configService: TypedConfigService) => {
+				const delegates = createOAuthProviderRegistry(
+					configService,
+					fakeOAuthTokenVerifierService,
+				);
+				fakeOAuthProviderRegistry = new FakeOAuthProviderRegistry(delegates);
+				return fakeOAuthProviderRegistry.registry;
+			},
+		})
 		.overrideProvider(ADMIN_NOTIFIER)
 		.useValue(fakeAdminNotifier)
 		.overrideProvider(PAYMENT_NOTIFIER)
@@ -207,25 +261,56 @@ export async function createE2eApp(
 		builder = options.customizeBuilder(builder);
 	}
 
-	const module = await builder.compile();
+	try {
+		module = await builder.compile();
+		app = module.createNestApplication();
+		app.useGlobalPipes(new ZodValidationPipe());
+		await app.init();
+		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
 
-	const app = module.createNestApplication();
-	app.useGlobalPipes(new ZodValidationPipe());
-	await app.init();
+		if (!fakeOAuthProviderRegistry) {
+			throw new Error("Fake OAuth provider registry was not initialized");
+		}
 
-	const helpers = new E2eHelpers(app, fakeEmailService);
+		const helpers = new E2eHelpers(app, fakeEmailService);
+		const reset = createE2eTestStateResetter({
+			drainBackgroundWork: () => pushDispatcher?.drainPendingPushes(),
+			cleanupDatabase: () => testDatabase.cleanup(),
+			resetCache: () => cacheAdapter.reset(),
+			flushRedis: () => redisMock.flushall(),
+			sharedResetters: [
+				() => fakeEmailService.clear(),
+				() => fakeOAuthTokenVerifierService.clear(),
+				() => fakeOAuthProviderRegistry?.clear(),
+				() => fakeAdminNotifier.clear(),
+				() => fakePaymentNotifier.clear(),
+				() => fakePushProvider.clear(),
+				() => fakeAiProvider.clear(),
+				() => fakeWeatherProvider.clear(),
+				() => fakeAirQualityProvider.clear(),
+				() => fakeLifestyleIndexProvider.clear(),
+				() => fakeSunTimeProvider.clear(),
+			],
+			additionalResetters: options?.additionalResetters,
+		});
 
-	return {
-		app,
-		module,
-		testDatabase,
-		fakeEmailService,
-		fakeOAuthTokenVerifierService,
-		helpers,
-	};
+		return {
+			app,
+			module,
+			testDatabase,
+			fakeEmailService,
+			fakeOAuthTokenVerifierService,
+			fakeOAuthProviderRegistry,
+			helpers,
+			reset,
+			closeTestResources,
+		};
+	} catch (error) {
+		await closeTestResources();
+		throw error;
+	}
 }
 
 export async function destroyE2eApp(ctx: E2eTestContext): Promise<void> {
-	await ctx.app.close();
-	await ctx.testDatabase.stop();
+	await ctx.closeTestResources();
 }

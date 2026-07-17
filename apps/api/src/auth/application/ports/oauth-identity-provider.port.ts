@@ -27,6 +27,13 @@ export interface VerifiedProfile {
 	picture?: string;
 }
 
+export interface OAuthTokenVerifier {
+	verifyAppleToken(token: string, nonce?: string): Promise<VerifiedProfile>;
+	verifyGoogleToken(token: string): Promise<VerifiedProfile>;
+	verifyKakaoToken(token: string): Promise<VerifiedProfile>;
+	verifyNaverToken(token: string): Promise<VerifiedProfile>;
+}
+
 export interface GenerateAuthUrlParams {
 	state: string;
 	validatedRedirectUri: string;

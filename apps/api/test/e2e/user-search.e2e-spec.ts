@@ -32,8 +32,7 @@ describe("사용자 검색 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	it("미인증 요청은 401을 반환한다", async () => {

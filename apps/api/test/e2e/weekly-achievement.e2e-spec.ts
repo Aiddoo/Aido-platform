@@ -28,8 +28,7 @@ describe("주간 성취 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	describe("주간 달성 현황 조회", () => {
