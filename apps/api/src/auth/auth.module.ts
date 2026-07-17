@@ -1,5 +1,5 @@
 import { BullModule } from "@nestjs/bullmq";
-import { Logger, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import {
@@ -7,7 +7,6 @@ import {
 	AdminNotificationModule,
 } from "@/admin-notification";
 import { EmailFacade, EmailModule } from "@/email";
-import type { AccountProvider } from "@/generated/prisma/client";
 import { RetentionModule } from "@/retention";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -35,11 +34,7 @@ import {
 	AUTH_USER_REPOSITORY,
 	AUTH_VERIFICATION_REPOSITORY,
 } from "./application/ports";
-import {
-	OAUTH_IDENTITY_PROVIDER_REGISTRY,
-	type OAuthIdentityProvider,
-	type OAuthIdentityProviderRegistry,
-} from "./application/ports/oauth-identity-provider.port";
+import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "./application/ports/oauth-identity-provider.port";
 import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port";
 import { SessionService, VerificationService } from "./application/services";
@@ -83,12 +78,7 @@ import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-en
 import { TokenService } from "./infrastructure/adapters/token.service";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter";
 import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards";
-import {
-	AppleOAuthProvider,
-	GoogleOAuthProvider,
-	KakaoOAuthProvider,
-	NaverOAuthProvider,
-} from "./infrastructure/oauth/adapters";
+import { createOAuthProviderRegistry } from "./infrastructure/oauth/adapters";
 import { OAuthTokenVerifierService } from "./infrastructure/oauth/verifier/oauth-token-verifier.service";
 import {
 	AccountRepository,
@@ -240,36 +230,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 			useFactory: (
 				configService: TypedConfigService,
 				tokenVerifier: OAuthTokenVerifierService,
-			): OAuthIdentityProviderRegistry => {
-				const logger = new Logger("OAuthIdentityProvider");
-				return new Map<AccountProvider, OAuthIdentityProvider>([
-					["APPLE", new AppleOAuthProvider(tokenVerifier)],
-					[
-						"GOOGLE",
-						new GoogleOAuthProvider(
-							() => configService.googleOAuth,
-							tokenVerifier,
-							logger,
-						),
-					],
-					[
-						"KAKAO",
-						new KakaoOAuthProvider(
-							() => configService.kakaoOAuth,
-							tokenVerifier,
-							logger,
-						),
-					],
-					[
-						"NAVER",
-						new NaverOAuthProvider(
-							() => configService.naverOAuth,
-							tokenVerifier,
-							logger,
-						),
-					],
-				]);
-			},
+			) => createOAuthProviderRegistry(configService, tokenVerifier),
 		},
 		// Strategies
 		JwtStrategy,

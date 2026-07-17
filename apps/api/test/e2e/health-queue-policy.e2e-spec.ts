@@ -12,11 +12,16 @@ describe("queue Redis policy health E2E", () => {
 				builder
 					.overrideProvider(RedisEvictionPolicyProbe)
 					.useValue({ inspect }),
+			additionalResetters: [() => inspect.mockReset()],
 		});
 	});
 
 	afterAll(async () => {
 		await destroyE2eApp(ctx);
+	});
+
+	beforeEach(async () => {
+		await ctx.reset();
 	});
 
 	it("noeviction이면 기존 health 성공 계약을 유지한다", async () => {

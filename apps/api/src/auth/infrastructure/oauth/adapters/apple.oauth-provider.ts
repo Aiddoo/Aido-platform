@@ -1,11 +1,9 @@
 import type {
 	OAuthIdentityProvider,
+	OAuthTokenVerifier,
 	SocialLoginOptions,
-} from "@/auth/application/ports/oauth-identity-provider.port";
-import type {
-	OAuthTokenVerifierService,
 	VerifiedProfile,
-} from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+} from "@/auth/application/ports/oauth-identity-provider.port";
 
 /**
  * Apple OAuth 전략
@@ -19,9 +17,9 @@ export class AppleOAuthProvider implements OAuthIdentityProvider {
 	readonly provider = "APPLE" as const;
 	readonly failureEmail = "apple_unknown@social.aido.kr";
 
-	readonly #verifier: OAuthTokenVerifierService;
+	readonly #verifier: OAuthTokenVerifier;
 
-	constructor(verifier: OAuthTokenVerifierService) {
+	constructor(verifier: OAuthTokenVerifier) {
 		this.#verifier = verifier;
 	}
 

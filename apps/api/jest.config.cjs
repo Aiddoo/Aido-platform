@@ -33,9 +33,9 @@ module.exports = {
     ],
   },
 
-  // 루트 디렉토리 - unit test는 src 내부에서만 실행
+  // 루트 디렉토리 - unit test + 테스트 인프라 안전장치 spec
   rootDir: '.',
-  roots: ['<rootDir>/src'],
+  roots: ['<rootDir>/src', '<rootDir>/test/setup'],
 
   // 테스트 패턴 - unit test만 (e2e, integration은 별도 설정)
   testMatch: undefined,

@@ -24,12 +24,19 @@ describe("오늘의 할 일 요약 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	const password = "Test1234!";
 	const timezone = "Asia/Seoul";
+	const activeDateRange = () => {
+		const today = todayInTimezone(timezone);
+		return {
+			today,
+			startDate: new Date(today.getTime() - 24 * 60 * 60 * 1000),
+			endDate: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+		};
+	};
 
 	describe("GET /todos/summary", () => {
 		it("오늘 진행률·스트릭·상위 할 일을 요약으로 반환한다", async () => {
@@ -42,7 +49,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 				user.accessToken,
 			);
 
-			const today = todayInTimezone(timezone);
+			const { startDate, endDate } = activeDateRange();
 			const prisma = ctx.testDatabase.getPrisma();
 			await prisma.todo.createMany({
 				data: [
@@ -50,7 +57,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 						userId: user.userId,
 						title: "완료한 할 일",
 						categoryId,
-						startDate: today,
+						startDate,
+						endDate,
 						sortOrder: 0,
 						completed: true,
 						completedAt: new Date(),
@@ -59,7 +67,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 						userId: user.userId,
 						title: "남은 할 일 1",
 						categoryId,
-						startDate: today,
+						startDate,
+						endDate,
 						sortOrder: 1,
 						completed: false,
 					},
@@ -67,7 +76,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 						userId: user.userId,
 						title: "남은 할 일 2",
 						categoryId,
-						startDate: today,
+						startDate,
+						endDate,
 						sortOrder: 2,
 						completed: false,
 					},
@@ -83,7 +93,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 			// Then
 			expect(response.status).toBe(200);
 			expect(response.body.data).toEqual({
-				date: toDateString(today),
+				date: toDateString(todayInTimezone(timezone)),
 				totalTodos: 3,
 				completedTodos: 1,
 				completionRate: 33,
@@ -143,14 +153,15 @@ describe("오늘의 할 일 요약 E2E", () => {
 			const categoryId = await ctx.helpers.getDefaultCategoryId(
 				user.accessToken,
 			);
-			const today = todayInTimezone(timezone);
+			const { startDate, endDate } = activeDateRange();
 			const prisma = ctx.testDatabase.getPrisma();
 			await prisma.todo.createMany({
 				data: Array.from({ length: 12 }, (_, i) => ({
 					userId: user.userId,
 					title: `할 일 ${i + 1}`,
 					categoryId,
-					startDate: today,
+					startDate,
+					endDate,
 					sortOrder: i,
 					completed: i < 6,
 					...(i < 6 && { completedAt: new Date() }),

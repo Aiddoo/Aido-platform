@@ -80,6 +80,7 @@ describe("AI E2E", () => {
 		ctx = await createE2eApp({
 			customizeBuilder: (builder) =>
 				builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
+			additionalResetters: [() => fakeAiProvider.clear()],
 		});
 	}, 60000);
 
@@ -89,9 +90,7 @@ describe("AI E2E", () => {
 
 	beforeEach(async () => {
 		// 각 테스트 전에 DB 정리 및 사용자 재생성
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
-		fakeAiProvider.clear();
+		await ctx.reset();
 
 		// 테스트 사용자 생성 및 인증
 		const user = await ctx.helpers.createVerifiedUser(
@@ -326,9 +325,11 @@ describe("AI E2E", () => {
 					startDate: "2026-05-01",
 					isAllDay: true,
 				});
-				const lastMonth = new Date();
-				lastMonth.setMonth(lastMonth.getMonth() - 1);
-				await setUsageWithResetAt(testUserId, 5, lastMonth);
+				const now = new Date();
+				const previousMonthFirstDay = new Date(
+					Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1),
+				);
+				await setUsageWithResetAt(testUserId, 5, previousMonthFirstDay);
 
 				// When - 새 달 첫 요청
 				const parseResponse = await request(ctx.app.getHttpServer())

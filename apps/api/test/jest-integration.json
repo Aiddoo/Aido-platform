@@ -5,6 +5,8 @@
 	"testRegex": ".integration-spec.ts$",
 	"roots": ["<rootDir>/integration"],
 	"setupFiles": ["<rootDir>/setup-env.ts"],
+	"globalSetup": "<rootDir>/setup/global-setup.ts",
+	"globalTeardown": "<rootDir>/setup/global-teardown.ts",
 	"transform": {
 		"^.+\\.ts$": [
 			"@swc/jest",
@@ -35,5 +37,7 @@
 		"^expo-server-sdk$": "<rootDir>/mocks/expo-server-sdk.mock.ts"
 	},
 	"testTimeout": 60000,
-	"maxWorkers": 1
+	"maxWorkers": 1,
+	"randomize": true,
+	"showSeed": true
 }

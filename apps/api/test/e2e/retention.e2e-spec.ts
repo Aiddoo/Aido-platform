@@ -20,8 +20,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
 	}, 60_000);
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	afterAll(async () => {

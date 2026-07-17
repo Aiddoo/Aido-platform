@@ -645,7 +645,8 @@ export class PushDispatcherAdapter
 		promise.finally(() => this.#pendingPushes.delete(promise));
 	}
 
-	async beforeApplicationShutdown(): Promise<void> {
+	/** 진행 중인 fire-and-forget 발송을 모두 기다린다. */
+	async drainPendingPushes(): Promise<void> {
 		if (this.#pendingPushes.size > 0) {
 			this.#logger.log(
 				`Waiting for ${this.#pendingPushes.size} pending push(es)...`,
@@ -653,7 +654,10 @@ export class PushDispatcherAdapter
 			await Promise.allSettled([...this.#pendingPushes]);
 			this.#logger.log("All pending pushes completed");
 		}
+	}
 
+	async beforeApplicationShutdown(): Promise<void> {
+		await this.drainPendingPushes();
 		this.rateLimiter.destroy?.();
 	}
 }

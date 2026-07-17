@@ -5,8 +5,12 @@
 	"testEnvironment": "node",
 	"testRegex": ".e2e-spec.ts$",
 	"setupFiles": ["<rootDir>/setup-env.ts"],
+	"globalSetup": "<rootDir>/setup/global-setup.ts",
+	"globalTeardown": "<rootDir>/setup/global-teardown.ts",
 	"testTimeout": 60000,
 	"maxWorkers": 1,
+	"randomize": true,
+	"showSeed": true,
 	"transform": {
 		"^.+\\.(t|j)s$": [
 			"@swc/jest",

@@ -28,8 +28,7 @@ describe("관리자 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	/** 관리자 사용자를 생성하고 ADMIN role 토큰을 반환하는 헬퍼 */

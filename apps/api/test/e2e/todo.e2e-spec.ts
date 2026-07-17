@@ -22,8 +22,7 @@ describe("할 일 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	describe("Todo CRUD 플로우", () => {

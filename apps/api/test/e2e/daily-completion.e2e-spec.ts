@@ -71,8 +71,7 @@ describe("일일 달성 E2E", () => {
 	});
 
 	beforeEach(async () => {
-		await ctx.testDatabase.cleanup();
-		ctx.fakeEmailService.clear();
+		await ctx.reset();
 	});
 
 	const password = "Test1234!";

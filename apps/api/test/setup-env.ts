@@ -21,8 +21,3 @@ ThrottlerGuard.prototype.canActivate = () => true;
 
 // NODE_ENV=test 보장 (.env.test 로드 전에 설정되어야 config.module.ts가 올바른 파일 선택)
 process.env.NODE_ENV = "test";
-
-// Testcontainers fallback (환경변수 미설정 시)
-process.env.DATABASE_URL =
-	process.env.DATABASE_URL ||
-	"postgresql://postgres:postgres@localhost:5432/aido_test";
