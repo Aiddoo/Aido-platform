@@ -161,8 +161,11 @@ export async function startManagedTestDatabase(
 	} catch (error) {
 		try {
 			await container?.stop();
-		} catch {
-			// Preserve the original startup or migration error.
+		} catch (stopError) {
+			console.error(
+				"Failed to stop managed test database container during cleanup:",
+				stopError,
+			);
 		} finally {
 			restoreEnvironment();
 		}
