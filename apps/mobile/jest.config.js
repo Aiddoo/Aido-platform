@@ -21,6 +21,8 @@ module.exports = {
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/shared/__tests__/mocks/expo-secure-store.ts',
     '^expo-localization$': '<rootDir>/src/shared/__tests__/mocks/expo-localization.ts',
+    // v4(Nitro)는 import 시 NitroModules를 eager 로드해 jest에서 크래시 — 인메모리 목으로 대체
+    '^react-native-mmkv$': '<rootDir>/src/shared/__tests__/mocks/react-native-mmkv.ts',
   },
   testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/*.(test|spec).[jt]s?(x)'],
   collectCoverageFrom: [

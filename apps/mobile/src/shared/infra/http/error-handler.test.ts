@@ -18,14 +18,12 @@ type Hook = typeof recordPublicApiFailureBreadcrumb;
 
 const runHook = async (hook: Hook, response: Response): Promise<void> => {
   const request = new Request('https://api.test/todos') as KyRequest;
-  await hook(
+  await hook({
     request,
-    {} as NormalizedOptions,
-    response as KyResponse,
-    {
-      retryCount: 0,
-    } as AfterResponseState,
-  );
+    options: {} as NormalizedOptions,
+    response: response as KyResponse,
+    retryCount: 0,
+  } as AfterResponseState);
 };
 
 describe('실패 응답 관측 훅 (분류·throw는 KyHttpClient의 몫)', () => {

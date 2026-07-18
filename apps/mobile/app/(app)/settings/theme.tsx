@@ -1,18 +1,10 @@
 import { useTrack } from '@src/shared/analytics';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { type ThemeMode, useTheme } from '@src/shared/providers/theme-provider';
-import {
-  DeviceIcon,
-  ListRow,
-  MoonIcon,
-  type StyledIconType,
-  StyledSafeAreaView,
-  SunIcon,
-} from '@src/shared/ui';
-import { Radio, RadioGroup } from 'heroui-native';
+import { DeviceIcon, MoonIcon, StyledSafeAreaView, SunIcon } from '@src/shared/ui';
+import { RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { IconRadioItem } from './_components/icon-radio-item';
 
 const ThemeSettingsScreen = () => {
   const { mode, setMode } = useTheme();
@@ -33,9 +25,10 @@ const ThemeSettingsScreen = () => {
           onValueChange={handleThemeChange}
           className="bg-white rounded-2xl overflow-hidden gap-0"
         >
-          <ThemeRadioItem value="light" label={t('theme.light')} Icon={SunIcon} />
-          <ThemeRadioItem value="dark" label={t('theme.dark')} Icon={MoonIcon} />
-          <ThemeRadioItem value="system" label={t('theme.system')} Icon={DeviceIcon} />
+          {/* 언어 설정과 동일하게 시스템 설정을 맨 위에 둔다 (시스템 → 라이트 → 다크) */}
+          <IconRadioItem value="system" label={t('theme.system')} Icon={DeviceIcon} />
+          <IconRadioItem value="light" label={t('theme.light')} Icon={SunIcon} />
+          <IconRadioItem value="dark" label={t('theme.dark')} Icon={MoonIcon} />
         </RadioGroup>
       </ScrollView>
     </StyledSafeAreaView>
@@ -43,61 +36,3 @@ const ThemeSettingsScreen = () => {
 };
 
 export default ThemeSettingsScreen;
-
-interface ThemeRadioItemProps {
-  value: ThemeMode;
-  label: string;
-  Icon: StyledIconType;
-}
-
-function ThemeRadioItem({ value, label, Icon }: ThemeRadioItemProps) {
-  return (
-    <RadioGroup.Item value={value}>
-      {({ isSelected }) => (
-        <ListRow
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={label}
-              topProps={{ size: 'b3', weight: 'semibold' }}
-            />
-          }
-          right={
-            <Radio>
-              <Radio.Indicator>
-                <AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />
-              </Radio.Indicator>
-            </Radio>
-          }
-          horizontalPadding="medium"
-          verticalPadding="large"
-        />
-      )}
-    </RadioGroup.Item>
-  );
-}
-
-interface AnimatedThumbIconProps {
-  Icon: StyledIconType;
-  isSelected: boolean;
-}
-
-function AnimatedThumbIcon({ Icon, isSelected }: AnimatedThumbIconProps) {
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        scale: withTiming(isSelected ? 1 : 1.8, {
-          duration: ANIMATION.duration.slow,
-          easing: Easing.out(Easing.ease),
-        }),
-      },
-    ],
-    opacity: withTiming(isSelected ? 1 : 0, { duration: ANIMATION.duration.normal }),
-  }));
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <Icon colorClassName="text-white" width={14} height={14} />
-    </Animated.View>
-  );
-}

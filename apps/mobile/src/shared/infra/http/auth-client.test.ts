@@ -61,12 +61,12 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     const refresh = createTokenRefresher({ tokenStore, requestRefresh });
 
     return ky.create({
-      prefixUrl: 'https://api.test',
+      prefix: 'https://api.test',
       // createAuthClient와 동일: 자동 재시도 차단 + 갱신 훅의 강제 재시도(ky.retry) 1회 허용
       retry: { limit: 1, shouldRetry: () => false },
       hooks: {
         beforeRequest: [
-          async (request) => {
+          async ({ request }) => {
             const accessToken = await tokenStore.readAccessToken();
             if (accessToken) {
               request.headers.set('Authorization', `Bearer ${accessToken}`);

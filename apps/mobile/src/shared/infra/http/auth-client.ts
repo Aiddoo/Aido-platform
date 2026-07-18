@@ -26,7 +26,8 @@ export const createAuthClient = ({
   endSession,
 }: AuthClientDeps): KyInstance => {
   return ky.create({
-    prefixUrl: ENV.API_URL,
+    // v2: prefixUrl → prefix (append 시맨틱 동일 — input 앞에 붙이고 경계 슬래시 정규화)
+    prefix: ENV.API_URL,
     timeout: 10_000,
     // 자동 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`) — ky의 자체 재시도는
     // `shouldRetry: false`로 전부 차단한다(5xx/네트워크를 ky도 재시도하면 이중 계산).
@@ -39,9 +40,10 @@ export const createAuthClient = ({
     },
     hooks: {
       beforeRequest: [
-        async (request) => {
+        async ({ request }) => {
           // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다.
-          // 강제 재시도 시에도 다시 실행돼 갱신된 액세스 토큰이 주입된다.
+          // ky v2에서 beforeRequest는 최초 1회만 실행된다(재시도 시 재실행 안 함) —
+          // 401 갱신 후 새 토큰 주입은 token-refresh-hook이 재시도 요청에 직접 넣는다.
           if (i18n.language) {
             request.headers.set('Accept-Language', i18n.language);
           }

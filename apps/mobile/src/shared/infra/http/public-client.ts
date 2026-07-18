@@ -10,7 +10,8 @@ import { recordPublicApiFailureBreadcrumb } from './error-handler';
  */
 export const createPublicClient = (): KyInstance => {
   return ky.create({
-    prefixUrl: ENV.API_URL,
+    // v2: prefixUrl → prefix (append 시맨틱 동일)
+    prefix: ENV.API_URL,
     timeout: 10_000,
     // 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`) — auth-client와 동일.
     retry: 0,
@@ -20,7 +21,7 @@ export const createPublicClient = (): KyInstance => {
     },
     hooks: {
       beforeRequest: [
-        (request) => {
+        ({ request }) => {
           // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다
           if (i18n.language) {
             request.headers.set('Accept-Language', i18n.language);
