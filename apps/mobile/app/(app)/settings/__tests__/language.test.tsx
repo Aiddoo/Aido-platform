@@ -89,11 +89,11 @@ afterEach(async () => {
   await i18n.changeLanguage('ko');
 });
 
-const renderScreen = ({
+const renderScreen = async ({
   storage = createMockSyncStorage(),
   analytics = createMockAnalytics(),
 } = {}) => {
-  render(
+  await render(
     <StaticDIProvider container={createMockDIContainer({ analytics })}>
       <LanguageProvider syncStorage={storage} deviceLanguage={() => 'ko'}>
         <LanguageSettingsScreen />
@@ -104,9 +104,9 @@ const renderScreen = ({
 };
 
 describe('LanguageSettingsScreen', () => {
-  it('시스템 설정·한국어·English 세 옵션을 렌더링한다', () => {
+  it('시스템 설정·한국어·English 세 옵션을 렌더링한다', async () => {
     // Given / When
-    renderScreen();
+    await renderScreen();
 
     // Then
     expect(screen.getByText('시스템 설정')).toBeTruthy();
@@ -114,14 +114,14 @@ describe('LanguageSettingsScreen', () => {
     expect(screen.getByText('English')).toBeTruthy();
   });
 
-  it('English 선택 시 스토리지 저장·i18n 언어 변경·analytics 이벤트가 발생한다', () => {
+  it('English 선택 시 스토리지 저장·i18n 언어 변경·analytics 이벤트가 발생한다', async () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue(undefined);
-    const { analytics } = renderScreen({ storage });
+    const { analytics } = await renderScreen({ storage });
 
     // When
-    fireEvent.press(screen.getByTestId('radio-en'));
+    await fireEvent.press(screen.getByTestId('radio-en'));
 
     // Then
     expect(storage.set).toHaveBeenCalledWith('aido_language', 'en');
@@ -132,14 +132,14 @@ describe('LanguageSettingsScreen', () => {
     });
   });
 
-  it('시스템 설정 선택 시 기기 언어 기준으로 i18n 언어가 해석된다', () => {
+  it('시스템 설정 선택 시 기기 언어 기준으로 i18n 언어가 해석된다', async () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue('en');
-    renderScreen({ storage });
+    await renderScreen({ storage });
 
     // When
-    fireEvent.press(screen.getByTestId('radio-system'));
+    await fireEvent.press(screen.getByTestId('radio-system'));
 
     // Then
     expect(storage.set).toHaveBeenCalledWith('aido_language', 'system');
@@ -153,7 +153,7 @@ describe('LanguageSettingsScreen', () => {
     storage.getString.mockReturnValue('en');
 
     // When
-    renderScreen({ storage });
+    await renderScreen({ storage });
 
     // Then
     expect(screen.getByText('System default')).toBeTruthy();

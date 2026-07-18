@@ -11,17 +11,12 @@ describe('isLanguageMode', () => {
     expect(isLanguageMode(value)).toBe(true);
   });
 
-  it.each([
-    undefined,
-    null,
-    '',
-    'invalid',
-    'ja',
-    123,
-    true,
-  ])('%s는 유효한 LanguageMode가 아니다', (value) => {
-    expect(isLanguageMode(value)).toBe(false);
-  });
+  it.each([undefined, null, '', 'invalid', 'ja', 123, true])(
+    '%s는 유효한 LanguageMode가 아니다',
+    (value) => {
+      expect(isLanguageMode(value)).toBe(false);
+    },
+  );
 });
 
 describe('readLanguageMode', () => {
@@ -84,14 +79,12 @@ describe('resolveLanguage', () => {
     expect(resolveLanguage('system', 'ko')).toBe('ko');
   });
 
-  it.each([
-    'en',
-    'ja',
-    'fr',
-    'zh',
-  ])('system 모드에서 기기 언어가 %s이면 en을 반환한다', (deviceLanguage) => {
-    expect(resolveLanguage('system', deviceLanguage)).toBe('en');
-  });
+  it.each(['en', 'ja', 'fr', 'zh'])(
+    'system 모드에서 기기 언어가 %s이면 en을 반환한다',
+    (deviceLanguage) => {
+      expect(resolveLanguage('system', deviceLanguage)).toBe('en');
+    },
+  );
 
   it.each([undefined, null])('system 모드에서 기기 언어가 %s이면 en을 반환한다', (value) => {
     expect(resolveLanguage('system', value)).toBe('en');

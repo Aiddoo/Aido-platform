@@ -27,14 +27,13 @@ describe('UserPolicy', () => {
       expect(UserPolicy.isPremiumUser(user)).toBe(true);
     });
 
-    test.each([
-      'FREE',
-      'EXPIRED',
-      'CANCELLED',
-    ] as const)('%s 구독이면 false를 반환한다', (status) => {
-      const user = createUser({ subscriptionStatus: status });
-      expect(UserPolicy.isPremiumUser(user)).toBe(false);
-    });
+    test.each(['FREE', 'EXPIRED', 'CANCELLED'] as const)(
+      '%s 구독이면 false를 반환한다',
+      (status) => {
+        const user = createUser({ subscriptionStatus: status });
+        expect(UserPolicy.isPremiumUser(user)).toBe(false);
+      },
+    );
   });
 
   describe('hasCredential', () => {

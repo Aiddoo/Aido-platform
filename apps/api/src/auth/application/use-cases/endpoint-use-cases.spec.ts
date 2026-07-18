@@ -87,19 +87,22 @@ describe("auth endpoint use-cases", () => {
 		["GOOGLE", "generateGoogleAuthUrlWithState"],
 		["KAKAO", "generateKakaoAuthUrlWithState"],
 		["NAVER", "generateNaverAuthUrlWithState"],
-	] as const)("%s OAuth 시작을 대응하는 workflow로 위임한다", async (provider, methodName) => {
-		const service = mock<OAuthWorkflow>();
-		const start = new StartOAuthAuthorizationUseCase(service);
+	] as const)(
+		"%s OAuth 시작을 대응하는 workflow로 위임한다",
+		async (provider, methodName) => {
+			const service = mock<OAuthWorkflow>();
+			const start = new StartOAuthAuthorizationUseCase(service);
 
-		await start.execute(provider, "state");
+			await start.execute(provider, "state");
 
-		expect(service[methodName]).toHaveBeenCalledWith(
-			"state",
-			undefined,
-			undefined,
-			undefined,
-		);
-	});
+			expect(service[methodName]).toHaveBeenCalledWith(
+				"state",
+				undefined,
+				undefined,
+				undefined,
+			);
+		},
+	);
 
 	it("OAuth 교환 코드를 독립 실행 단위로 위임한다", async () => {
 		const service = mock<OAuthWorkflow>();

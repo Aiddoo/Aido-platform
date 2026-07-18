@@ -58,12 +58,12 @@ describe('QueryErrorBoundary 관측', () => {
       </StaticDIProvider>,
     );
 
-  it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', () => {
+  it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', async () => {
     // Given — 콜드 스타트 컨테인먼트: 카드가 떠도 Sentry가 무음이면 원인 추적이 불가능하다
     const error = new ApiError('AUTH_0101', '인증 정보가 올바르지 않아요', 401);
 
     // When
-    renderWithBoundary(error);
+    await renderWithBoundary(error);
 
     // Then — 에러 이슈(PRODUCTION-3) 소음 없이, 발생 사실은 즉시 관측된다
     expect(errorReporter.captureException).not.toHaveBeenCalled();
@@ -73,12 +73,12 @@ describe('QueryErrorBoundary 관측', () => {
     );
   });
 
-  it('진짜 장애(재시도 소진 후)는 기존대로 에러 이벤트로 리포트한다', () => {
+  it('진짜 장애(재시도 소진 후)는 기존대로 에러 이벤트로 리포트한다', async () => {
     // Given
     const error = new ServerError(503);
 
     // When
-    renderWithBoundary(error);
+    await renderWithBoundary(error);
 
     // Then
     expect(errorReporter.captureException).toHaveBeenCalledWith(
@@ -88,9 +88,9 @@ describe('QueryErrorBoundary 관측', () => {
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
   });
 
-  it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', () => {
+  it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
     const container = createMockDIContainer({ errorReporter });
-    const screen = render(
+    const screen = await render(
       <StaticDIProvider container={container}>
         <QueryErrorBoundary resetKeys={['2026-07-14']}>
           <MaybeThrower shouldThrow />
@@ -99,7 +99,7 @@ describe('QueryErrorBoundary 관측', () => {
     );
     expect(screen.queryByTestId('healthy-content')).toBeNull();
 
-    screen.rerender(
+    await screen.rerender(
       <StaticDIProvider container={container}>
         <QueryErrorBoundary resetKeys={['2026-07-15']}>
           <MaybeThrower shouldThrow={false} />

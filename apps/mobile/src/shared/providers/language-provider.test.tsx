@@ -17,45 +17,45 @@ afterEach(async () => {
 });
 
 describe('useLanguage', () => {
-  it('LanguageProvider 없이 사용하면 기본값을 반환한다', () => {
-    const { result } = renderHook(() => useLanguage());
+  it('LanguageProvider 없이 사용하면 기본값을 반환한다', async () => {
+    const { result } = await renderHook(() => useLanguage());
 
     expect(result.current.languageMode).toBe('system');
     expect(result.current.resolvedLanguage).toBe('ko');
   });
 
-  it('저장된 값이 없으면 system 모드로 초기화된다', () => {
+  it('저장된 값이 없으면 system 모드로 초기화된다', async () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue(undefined);
 
     // When
-    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
+    const { result } = await renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
 
     // Then
     expect(result.current.languageMode).toBe('system');
   });
 
-  it('저장된 모드로 초기화된다', () => {
+  it('저장된 모드로 초기화된다', async () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue('en');
 
     // When
-    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
+    const { result } = await renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
 
     // Then
     expect(result.current.languageMode).toBe('en');
     expect(result.current.resolvedLanguage).toBe('en');
   });
 
-  it('system 모드에서 기기 언어로 표시 언어를 해석한다', () => {
+  it('system 모드에서 기기 언어로 표시 언어를 해석한다', async () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue('system');
 
     // When
-    const { result } = renderHook(() => useLanguage(), {
+    const { result } = await renderHook(() => useLanguage(), {
       wrapper: createWrapper(storage, () => 'en'),
     });
 
@@ -63,16 +63,16 @@ describe('useLanguage', () => {
     expect(result.current.resolvedLanguage).toBe('en');
   });
 
-  it('setLanguageMode 호출 시 상태·스토리지·i18n 언어를 업데이트한다', () => {
+  it('setLanguageMode 호출 시 상태·스토리지·i18n 언어를 업데이트한다', async () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue(undefined);
     const changeLanguageSpy = jest.spyOn(i18n, 'changeLanguage');
 
-    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
+    const { result } = await renderHook(() => useLanguage(), { wrapper: createWrapper(storage) });
 
     // When
-    act(() => {
+    await act(() => {
       result.current.setLanguageMode('en');
     });
 
@@ -83,18 +83,18 @@ describe('useLanguage', () => {
     expect(changeLanguageSpy).toHaveBeenCalledWith('en');
   });
 
-  it('system 모드로 되돌리면 기기 언어 기준으로 i18n 언어를 변경한다', () => {
+  it('system 모드로 되돌리면 기기 언어 기준으로 i18n 언어를 변경한다', async () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue('en');
     const changeLanguageSpy = jest.spyOn(i18n, 'changeLanguage');
 
-    const { result } = renderHook(() => useLanguage(), {
+    const { result } = await renderHook(() => useLanguage(), {
       wrapper: createWrapper(storage, () => 'ko'),
     });
 
     // When
-    act(() => {
+    await act(() => {
       result.current.setLanguageMode('system');
     });
 

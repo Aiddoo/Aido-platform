@@ -79,23 +79,26 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				["CHEER", Feature.CHEER],
 				["NUDGE", Feature.NUDGE],
 				["AI_PARSE", Feature.AI_PARSE],
-			] as const)("ACTIVE 구독 + %s 기능은 무제한이다", async (_name, feature) => {
-				// Given - 캐시에 ACTIVE 구독 사용자 정보 존재
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
-					status: "ACTIVE",
-					isAdmin: false,
-				});
+			] as const)(
+				"ACTIVE 구독 + %s 기능은 무제한이다",
+				async (_name, feature) => {
+					// Given - 캐시에 ACTIVE 구독 사용자 정보 존재
+					(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+						status: "ACTIVE",
+						isAdmin: false,
+					});
 
-				// When
-				const result = await service.getFeatureLimit(userId, feature);
+					// When
+					const result = await service.getFeatureLimit(userId, feature);
 
-				// Then - ACTIVE 구독은 무제한
-				expect(result).toEqual<FeatureEntitlement>({
-					dailyLimit: null,
-					isAdmin: false,
-					subscriptionStatus: "ACTIVE",
-				});
-			});
+					// Then - ACTIVE 구독은 무제한
+					expect(result).toEqual<FeatureEntitlement>({
+						dailyLimit: null,
+						isAdmin: false,
+						subscriptionStatus: "ACTIVE",
+					});
+				},
+			);
 		});
 
 		describe("USER 역할 + 비프리미엄 구독 (제한 적용)", () => {
@@ -124,23 +127,26 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 					Feature.AI_PARSE,
 					AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
 				],
-			] as const)("%s 구독 + %s 기능은 일일 %d회 제한이다", async (status, _featureName, feature, expectedLimit) => {
-				// Given
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
-					status,
-					isAdmin: false,
-				});
+			] as const)(
+				"%s 구독 + %s 기능은 일일 %d회 제한이다",
+				async (status, _featureName, feature, expectedLimit) => {
+					// Given
+					(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+						status,
+						isAdmin: false,
+					});
 
-				// When
-				const result = await service.getFeatureLimit(userId, feature);
+					// When
+					const result = await service.getFeatureLimit(userId, feature);
 
-				// Then
-				expect(result).toEqual<FeatureEntitlement>({
-					dailyLimit: expectedLimit,
-					isAdmin: false,
-					subscriptionStatus: status,
-				});
-			});
+					// Then
+					expect(result).toEqual<FeatureEntitlement>({
+						dailyLimit: expectedLimit,
+						isAdmin: false,
+						subscriptionStatus: status,
+					});
+				},
+			);
 		});
 
 		describe("캐시 동작", () => {
@@ -461,23 +467,26 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 					Resource.FRIEND,
 					FOLLOW_LIMITS.FREE_MAX_FRIENDS,
 				],
-			] as const)("%s 구독 + %s 리소스는 최대 %d개 제한이다", async (status, _name, resource, expectedLimit) => {
-				// Given
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
-					status,
-					isAdmin: false,
-				});
+			] as const)(
+				"%s 구독 + %s 리소스는 최대 %d개 제한이다",
+				async (status, _name, resource, expectedLimit) => {
+					// Given
+					(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+						status,
+						isAdmin: false,
+					});
 
-				// When
-				const result = await service.getResourceLimit(userId, resource);
+					// When
+					const result = await service.getResourceLimit(userId, resource);
 
-				// Then
-				expect(result).toEqual<ResourceEntitlement>({
-					maxCount: expectedLimit,
-					isAdmin: false,
-					subscriptionStatus: status,
-				});
-			});
+					// Then
+					expect(result).toEqual<ResourceEntitlement>({
+						maxCount: expectedLimit,
+						isAdmin: false,
+						subscriptionStatus: status,
+					});
+				},
+			);
 		});
 	});
 

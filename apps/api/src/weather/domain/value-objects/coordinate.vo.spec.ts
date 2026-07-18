@@ -16,17 +16,19 @@ describe("Coordinate — WGS84 위경도 값 객체", () => {
 			expect(coord.longitude).toBe(126.978);
 		});
 
-		it.each([
-			32.9, 39.1,
-		])("위도가 범위(33~39)를 벗어나면 DomainException을 던진다: %p", (lat) => {
-			expect(() => Coordinate.of(lat, 126.978)).toThrow(DomainException);
-		});
+		it.each([32.9, 39.1])(
+			"위도가 범위(33~39)를 벗어나면 DomainException을 던진다: %p",
+			(lat) => {
+				expect(() => Coordinate.of(lat, 126.978)).toThrow(DomainException);
+			},
+		);
 
-		it.each([
-			123.9, 132.1,
-		])("경도가 범위(124~132)를 벗어나면 DomainException을 던진다: %p", (lon) => {
-			expect(() => Coordinate.of(37.5665, lon)).toThrow(DomainException);
-		});
+		it.each([123.9, 132.1])(
+			"경도가 범위(124~132)를 벗어나면 DomainException을 던진다: %p",
+			(lon) => {
+				expect(() => Coordinate.of(37.5665, lon)).toThrow(DomainException);
+			},
+		);
 
 		it("범위를 벗어나면 SYS_0002 에러코드를 실는다", () => {
 			expect(() => Coordinate.of(10, 126.978)).toThrow(

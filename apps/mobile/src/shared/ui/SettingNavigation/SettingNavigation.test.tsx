@@ -29,10 +29,10 @@ jest.mock('../Icon', () => ({
 }));
 
 describe('SettingNavigation', () => {
-  it('children을 렌더링해야 한다', () => {
+  it('children을 렌더링해야 한다', async () => {
     // Given: Section에 자식 요소가 주어졌을 때
     // When: SettingNavigation을 렌더링하면
-    render(
+    await render(
       <SettingNavigation>
         <View testID="child-1" />
         <View testID="child-2" />
@@ -52,39 +52,39 @@ describe('SettingNavigation.Item', () => {
     mockOnPress.mockClear();
   });
 
-  it('label 텍스트를 렌더링해야 한다', () => {
+  it('label 텍스트를 렌더링해야 한다', async () => {
     // Given: label이 주어졌을 때
     // When: SettingNavigation.Item을 렌더링하면
-    render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
+    await render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
 
     // Then: label이 화면에 표시된다
     expect(screen.getByText('알림 설정')).toBeTruthy();
   });
 
-  it('클릭 시 onPress를 호출해야 한다', () => {
+  it('클릭 시 onPress를 호출해야 한다', async () => {
     // Given: onPress 핸들러가 주어졌을 때
-    render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
+    await render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
 
     // When: 아이템을 클릭하면
-    fireEvent.press(screen.getByText('알림 설정'));
+    await fireEvent.press(screen.getByText('알림 설정'));
 
     // Then: onPress가 호출된다
     expect(mockOnPress).toHaveBeenCalledTimes(1);
   });
 
-  it('right를 생략하면 기본 ArrowRightIcon을 렌더링해야 한다', () => {
+  it('right를 생략하면 기본 ArrowRightIcon을 렌더링해야 한다', async () => {
     // Given: right prop이 없을 때
     // When: SettingNavigation.Item을 렌더링하면
-    render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
+    await render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
 
     // Then: 기본 ArrowRightIcon이 표시된다
     expect(screen.getByTestId('arrow-right-icon')).toBeTruthy();
   });
 
-  it('커스텀 right를 렌더링해야 한다', () => {
+  it('커스텀 right를 렌더링해야 한다', async () => {
     // Given: 커스텀 right가 주어졌을 때
     // When: SettingNavigation.Item을 렌더링하면
-    render(
+    await render(
       <SettingNavigation.Item
         label="이름 변경"
         onPress={mockOnPress}

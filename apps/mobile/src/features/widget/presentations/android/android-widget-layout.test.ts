@@ -16,9 +16,12 @@ describe('Android widget layout policy', () => {
     ['AidoTodaySummary', 400, 400, 'small'],
     ['AidoTodayList', 250, 110, 'medium'],
     ['AidoTodayLarge', 110, 110, 'large'],
-  ] as const)('%s는 launcher 보고 크기와 무관한 기본 family를 선택한다', (name, width, height, family) => {
-    expect(resolveAndroidWidgetFamily(name, width, height)).toBe(family);
-  });
+  ] as const)(
+    '%s는 launcher 보고 크기와 무관한 기본 family를 선택한다',
+    (name, width, height, family) => {
+      expect(resolveAndroidWidgetFamily(name, width, height)).toBe(family);
+    },
+  );
 
   it('기존 AidoTodayList 2x2/4x4 인스턴스의 실제 크기를 호환한다', () => {
     expect(resolveAndroidWidgetFamily('AidoTodayList', 110, 110)).toBe('small');
