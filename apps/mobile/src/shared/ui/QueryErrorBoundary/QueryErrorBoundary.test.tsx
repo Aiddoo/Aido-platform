@@ -99,7 +99,7 @@ describe('QueryErrorBoundary 관측', () => {
     );
     expect(screen.queryByTestId('healthy-content')).toBeNull();
 
-    await await screen.rerender(
+    await screen.rerender(
       <StaticDIProvider container={container}>
         <QueryErrorBoundary resetKeys={['2026-07-15']}>
           <MaybeThrower shouldThrow={false} />

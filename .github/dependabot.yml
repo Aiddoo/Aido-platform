@@ -80,8 +80,7 @@ updates:
       time: "09:00"
       timezone: "Asia/Seoul"
     open-pull-requests-limit: 5
-    cooldown:
-      default-days: 7
+    # cooldown은 github-actions 생태계 미지원 (공식 옵션 레퍼런스 지원 표) — npm 블록에만 적용
     labels:
       - "dependencies"
       - "github-actions"
