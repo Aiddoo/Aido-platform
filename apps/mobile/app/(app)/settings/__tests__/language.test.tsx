@@ -12,12 +12,31 @@ import LanguageSettingsScreen from '../language';
 // vendor UI(heroui-native)와 그 배럴만 mock — 나머지 의존성은 DI(prop/컨테이너)로 주입한다
 jest.mock('@src/shared/ui', () => {
   const React = require('react');
-  const { View } = require('react-native');
+  const { Text, View } = require('react-native');
 
   // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
   const StyledSafeAreaView = (props: any) => React.createElement(View, null, props.children);
 
-  return { StyledSafeAreaView };
+  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  const ListRow = (props: any) => React.createElement(View, null, props.contents, props.right);
+  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  ListRow.Texts = (props: any) =>
+    React.createElement(
+      View,
+      null,
+      React.createElement(Text, null, props.top),
+      props.bottom ? React.createElement(Text, null, props.bottom) : null,
+    );
+
+  const NoopIcon = () => null;
+
+  return {
+    StyledSafeAreaView,
+    ListRow,
+    DeviceIcon: NoopIcon,
+    KoreanIcon: NoopIcon,
+    EnglishIcon: NoopIcon,
+  };
 });
 
 jest.mock('heroui-native', () => {
@@ -37,16 +56,33 @@ jest.mock('heroui-native', () => {
   // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
   RadioGroup.Item = (props: any) => {
     const onValueChange = React.useContext(RadioGroupContext);
+    const rendered =
+      typeof props.children === 'function' ? props.children({ isSelected: false }) : props.children;
     return React.createElement(
       Pressable,
       { testID: `radio-${props.value}`, onPress: () => onValueChange(props.value) },
-      typeof props.children === 'function' ? props.children() : props.children,
+      rendered,
     );
   };
 
-  const Radio = () => null;
+  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  const Radio = (props: any) => React.createElement(View, null, props.children);
+  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  Radio.Indicator = (props: any) => React.createElement(View, null, props.children);
 
   return { Radio, RadioGroup };
+});
+
+// reanimated는 네이티브(worklets) 모듈을 import 시 로드해 jest에서 실패한다 — JS 목으로 대체
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: { View },
+    useAnimatedStyle: (factory: () => Record<string, unknown>) => factory(),
+    withTiming: (value: number) => value,
+    Easing: { out: (fn: unknown) => fn, ease: () => 0 },
+  };
 });
 
 afterEach(async () => {

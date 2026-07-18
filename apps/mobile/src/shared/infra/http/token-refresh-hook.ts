@@ -20,13 +20,15 @@ export interface TokenRefreshHookDeps {
 /**
  * 401 응답 처리 훅.
  *
- * - 갱신 성공 시 `ky.retry()` 마커로 파이프라인 재실행을 지시한다. beforeRequest가
- *   저장소의 새 토큰을 다시 주입하고, ky는 보관해 둔 미소비 clone으로 재전송한다(POST 안전).
+ * - 갱신/회전 성공 시 `ky.retry({ request })`로 재시도를 지시한다. **ky v2에서
+ *   beforeRequest는 최초 1회만 실행되고 재시도 시 다시 돌지 않으므로**, 재시도 요청에
+ *   새 Authorization을 직접 주입한다(원 요청의 body·method·나머지 헤더는 보존).
  *   **주의: 재시도 응답 객체를 훅에서 직접 반환하면 안 된다** — RN(Expo winter)의
  *   `expo/fetch` 응답은 `globalThis.Response`의 인스턴스가 아니라서 ky가 조용히 버리고
- *   원본 401을 살린다(1.4.x 콜드스타트 전위젯 재시도 카드의 근본 원인).
+ *   원본 401을 살린다(1.4.x 콜드스타트 전위젯 재시도 카드의 근본 원인). `ky.retry()`
+ *   마커는 그 함정이 없다.
  * - 이미 다른 flight가 토큰을 회전한 뒤 도착한 401(stale token)은 갱신 없이
- *   바로 재시도한다 — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다.
+ *   저장된 최신 토큰으로 바로 재시도한다 — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다.
  * - 세션이 무효로 확정되면(`invalid`) 원 401 응답을 반환하고 세션을 종료한다.
  * - 갱신의 일시 실패(네트워크·5xx·타임아웃·잠긴 키체인)는 갱신기가 재시도 가능한
  *   인프라 에러로 throw하며, 훅은 개입하지 않고 그대로 전파한다 — React Query가
@@ -37,12 +39,16 @@ export interface TokenRefreshHookDeps {
 export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterResponseHook => {
   const { tokenStore, refresh, endSession } = deps;
 
-  const forceRetryWithMarker = (request: Request) => {
-    request.headers.set(RETRY_MARKER_HEADER, '1');
-    return ky.retry({ delay: 0 });
+  // 새 액세스 토큰과 마커를 실어 강제 재시도한다. `new Request(request, ...)`가 원 요청의
+  // body·method·나머지 헤더를 보존하고, Authorization만 갱신된 토큰으로 덮어쓴다.
+  const forceRetryWithToken = (request: Request, accessToken: string) => {
+    const headers = new Headers(request.headers);
+    headers.set('Authorization', `Bearer ${accessToken}`);
+    headers.set(RETRY_MARKER_HEADER, '1');
+    return ky.retry({ request: new Request(request, { headers }) });
   };
 
-  return async (request, _options, response) => {
+  return async ({ request, response }) => {
     if (response.status !== 401) {
       return response;
     }
@@ -61,13 +67,13 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     const storedAccessToken = await tokenStore.readAccessToken().catch(() => null);
     const sentAuthorization = request.headers.get('Authorization');
     if (storedAccessToken && sentAuthorization !== `Bearer ${storedAccessToken}`) {
-      return forceRetryWithMarker(request);
+      return forceRetryWithToken(request, storedAccessToken);
     }
 
     const outcome = await refresh();
     switch (outcome.kind) {
       case 'refreshed':
-        return forceRetryWithMarker(request);
+        return forceRetryWithToken(request, outcome.accessToken);
       case 'invalid':
         // 살아있다고 믿던 세션이었는지는 AuthProvider가 판단한다(로그아웃 상태의 401은 잡음).
         await endSession(outcome.details);

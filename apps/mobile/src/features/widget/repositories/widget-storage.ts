@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 /**
  * 위젯 스냅샷 전용 MMKV 인스턴스 (지연 생성).
@@ -13,7 +13,7 @@ let widgetMmkv: MMKV | null = null;
 
 function instance(): MMKV {
   if (widgetMmkv === null) {
-    widgetMmkv = new MMKV({ id: 'widget-storage' });
+    widgetMmkv = createMMKV({ id: 'widget-storage' });
   }
   return widgetMmkv;
 }
@@ -21,5 +21,5 @@ function instance(): MMKV {
 export const widgetSyncStorage: SyncStorage = {
   getString: (key) => instance().getString(key),
   set: (key, value) => instance().set(key, value),
-  delete: (key) => instance().delete(key),
+  delete: (key) => instance().remove(key),
 };
