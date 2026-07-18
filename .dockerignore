@@ -11,6 +11,12 @@ dist/
 # Mobile app (API 빌드에 불필요)
 apps/mobile/
 
+# CI/배포 오케스트레이션 (이미지 빌드에 불필요 — 변경 시 COPY . . 레이어 캐시 무효화 방지)
+.github/
+scripts/
+docker-compose*.yml
+backups/
+
 # Environment
 .env*
 !.env.docker.dev.example
