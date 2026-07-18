@@ -38,7 +38,7 @@ describe('createTokenRefresher', () => {
       const outcome = await createTokenRefresher({ tokenStore, requestRefresh })();
 
       // Then
-      expect(outcome).toEqual({ kind: 'refreshed' });
+      expect(outcome).toEqual({ kind: 'refreshed', accessToken: 'new-access' });
       expect(requestRefresh).toHaveBeenCalledWith('old-refresh');
       expect(tokenStore.save).toHaveBeenCalledWith({
         accessToken: 'new-access',
@@ -63,8 +63,8 @@ describe('createTokenRefresher', () => {
       resolveResponse(createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }));
 
       // Then
-      await expect(first).resolves.toEqual({ kind: 'refreshed' });
-      await expect(second).resolves.toEqual({ kind: 'refreshed' });
+      await expect(first).resolves.toEqual({ kind: 'refreshed', accessToken: 'new-access' });
+      await expect(second).resolves.toEqual({ kind: 'refreshed', accessToken: 'new-access' });
       expect(requestRefresh).toHaveBeenCalledTimes(1);
     });
 

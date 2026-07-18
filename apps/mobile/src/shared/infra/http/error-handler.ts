@@ -72,22 +72,17 @@ const recordFailureBreadcrumb = async (request: Request, response: Response): Pr
 };
 
 /** auth-client용: 401은 갱신 흐름(token-refresh-hook)의 정상 경로라 소음 방지를 위해 건너뜀 */
-export const recordApiFailureBreadcrumb: AfterResponseHook = async (
-  request,
-  _options,
-  response,
-) => {
+export const recordApiFailureBreadcrumb: AfterResponseHook = async ({ request, response }) => {
   if (!response.ok && response.status !== 401) {
     await recordFailureBreadcrumb(request, response);
   }
 };
 
 /** public-client용: 갱신 흐름이 없으므로 401 포함 모든 실패를 기록 */
-export const recordPublicApiFailureBreadcrumb: AfterResponseHook = async (
+export const recordPublicApiFailureBreadcrumb: AfterResponseHook = async ({
   request,
-  _options,
   response,
-) => {
+}) => {
   if (!response.ok) {
     await recordFailureBreadcrumb(request, response);
   }

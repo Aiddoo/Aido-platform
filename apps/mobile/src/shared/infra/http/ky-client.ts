@@ -3,7 +3,13 @@ import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import { ApiError } from '@src/shared/errors/api-error';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
-import { HTTPError, type KyInstance, TimeoutError as KyTimeoutError, type Options } from 'ky';
+import {
+  HTTPError,
+  isNetworkError,
+  type KyInstance,
+  TimeoutError as KyTimeoutError,
+  type Options,
+} from 'ky';
 import { resolveMessage } from './error-handler';
 
 interface ServerResponse<T> {
@@ -88,7 +94,10 @@ export class KyHttpClient implements HttpClient {
           throw new ServerError(response.status);
         }
 
-        const body = await this.#parseErrorBody(response);
+        // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다
+        // (`response.json()` 재호출 불가). 미리 파싱된 값에서 서버 에러 코드를 읽는다.
+        const parsed: unknown = error.data;
+        const body = this.#isServerErrorBody(parsed) ? parsed : null;
         const code = body?.error.code ?? ErrorCode.SYS_0001;
         return err(
           new ApiError(
@@ -100,23 +109,13 @@ export class KyHttpClient implements HttpClient {
         );
       }
 
-      if (error instanceof TypeError) {
+      // ky v2는 네트워크 실패를 자체 `NetworkError`로 감싼다(원인은 `.cause`).
+      // 방어적으로 raw TypeError도 함께 처리한다.
+      if (isNetworkError(error) || error instanceof TypeError) {
         throw new NetworkError();
       }
 
       throw error;
-    }
-  }
-
-  async #parseErrorBody(response: Response): Promise<ServerErrorBody | null> {
-    try {
-      const body: unknown = await response.json();
-      if (this.#isServerErrorBody(body)) {
-        return body;
-      }
-      return null;
-    } catch {
-      return null;
     }
   }
 

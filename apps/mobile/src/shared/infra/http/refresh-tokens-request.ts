@@ -13,7 +13,8 @@ const REFRESH_TIMEOUT_MS = 8_000;
 /** `TokenRefresher`가 요구하는 HTTP 포트의 ky 구현. 벤더 의존은 이 파일에만 있다. */
 export const requestRefreshTokens: RefreshTokensRequest = (refreshToken) =>
   ky.post('v1/auth/refresh', {
-    prefixUrl: ENV.API_URL,
+    // v2: prefixUrl → prefix (append 시맨틱 동일)
+    prefix: ENV.API_URL,
     retry: 0,
     timeout: REFRESH_TIMEOUT_MS,
     throwHttpErrors: false,

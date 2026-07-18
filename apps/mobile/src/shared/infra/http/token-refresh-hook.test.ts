@@ -2,26 +2,15 @@ import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import { createMockTokenStore } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
+import type { KyRequest, KyResponse, NormalizedOptions } from 'ky';
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 import type { RefreshOutcome } from './token-refresher';
 
-const createFakeRequest = (headers: Record<string, string> = {}): Request => {
-  const headerMap = new Map(
-    Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]),
-  );
-  return {
-    url: 'https://api.test/v1/todos',
-    headers: {
-      get: (name: string) => headerMap.get(name.toLowerCase()) ?? null,
-      has: (name: string) => headerMap.has(name.toLowerCase()),
-      set: (name: string, value: string) => {
-        headerMap.set(name.toLowerCase(), value);
-      },
-    },
-  } as unknown as Request;
-};
+// ky v2 훅은 `new Request(request, ...)`로 재시도 요청을 재구성하므로 실제 Request/Response를 쓴다.
+const createFakeRequest = (headers: Record<string, string> = {}): Request =>
+  new Request('https://api.test/v1/todos', { headers });
 
-const createFakeResponse = (status: number): Response => ({ status }) as unknown as Response;
+const createFakeResponse = (status: number): Response => new Response(null, { status });
 
 describe('createTokenRefreshHook', () => {
   let tokenStore: ReturnType<typeof createMockTokenStore>;
@@ -43,20 +32,24 @@ describe('createTokenRefreshHook', () => {
   });
 
   const invokeHook = (request: Request, response: Response) =>
-    (hook as (req: Request, opts: unknown, res: Response) => Promise<unknown>)(
-      request,
-      {},
-      response,
-    );
+    hook({
+      request: request as KyRequest,
+      options: {} as NormalizedOptions,
+      response: response as KyResponse,
+      retryCount: 0,
+    });
 
   /**
-   * 재시도 판정은 ky.retry() 마커 반환으로 표현된다.
+   * 재시도 판정은 `ky.retry({ request })` 마커 반환으로 표현된다(ky v2, RetryMarker).
    * 응답 객체를 직접 반환하면 expo/fetch의 FetchResponse가 `globalThis.Response`의
    * 인스턴스가 아니라서 ky가 조용히 버리고 원본 401을 살린다 — 마커는 그 함정이 없다.
+   * 마커의 재시도 요청은 갱신된 Authorization과 재시도 표시 헤더를 함께 싣는다.
    */
-  const expectForcedRetry = (result: unknown, request: Request) => {
-    expect(result).toMatchObject({ options: { delay: 0 } });
-    expect(request.headers.get(RETRY_MARKER_HEADER)).toBe('1');
+  const expectForcedRetry = (result: unknown, expectedToken: string) => {
+    const retriedRequest = (result as { options?: { request?: Request } }).options?.request;
+    expect(retriedRequest).toBeInstanceOf(Request);
+    expect(retriedRequest?.headers.get(RETRY_MARKER_HEADER)).toBe('1');
+    expect(retriedRequest?.headers.get('Authorization')).toBe(`Bearer ${expectedToken}`);
   };
 
   it('401이 아니면 응답을 그대로 통과시킨다', async () => {
@@ -98,22 +91,22 @@ describe('createTokenRefreshHook', () => {
     // When
     const result = await invokeHook(request, createFakeResponse(401));
 
-    // Then — 재시도 파이프라인의 beforeRequest가 저장소의 새 토큰을 주입한다
+    // Then — 저장된 최신 토큰을 재시도 요청에 실어 보낸다
     expect(refresh).not.toHaveBeenCalled();
-    expectForcedRetry(result, request);
+    expectForcedRetry(result, 'fresh-token');
   });
 
-  it('갱신 성공 시 마커를 달아 강제 재시도를 지시한다', async () => {
+  it('갱신 성공 시 새 토큰과 마커를 달아 강제 재시도를 지시한다', async () => {
     // Given
     tokenStore.readAccessToken.mockResolvedValue('current-token');
-    refresh.mockResolvedValue({ kind: 'refreshed' });
+    refresh.mockResolvedValue({ kind: 'refreshed', accessToken: 'new-token' });
     const request = createFakeRequest({ Authorization: 'Bearer current-token' });
 
     // When
     const result = await invokeHook(request, createFakeResponse(401));
 
     // Then
-    expectForcedRetry(result, request);
+    expectForcedRetry(result, 'new-token');
     expect(endSession).not.toHaveBeenCalled();
   });
 
