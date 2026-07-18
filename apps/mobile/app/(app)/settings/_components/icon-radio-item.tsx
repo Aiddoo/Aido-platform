@@ -62,7 +62,7 @@ function AnimatedThumbIcon({ Icon, isSelected }: AnimatedThumbIconProps) {
       {
         scale: withTiming(isSelected ? 1 : 1.8, {
           duration: ANIMATION.duration.slow,
-          easing: Easing.out(Easing.ease),
+          easing: Easing.out(Easing.quad),
         }),
       },
     ],
