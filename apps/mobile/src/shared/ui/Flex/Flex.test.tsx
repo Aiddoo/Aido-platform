@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
 import { Flex } from './Flex';
 import { flexVariants } from './Flex.variants';
 
@@ -57,8 +58,12 @@ describe('flexVariants 함수', () => {
 });
 
 describe('Flex 컴포넌트', () => {
-  it('기본 스타일을 적용해야 한다', () => {
-    render(<Flex testID="flex">콘텐츠</Flex>);
+  it('기본 스타일을 적용해야 한다', async () => {
+    await render(
+      <Flex testID="flex">
+        <Text>콘텐츠</Text>
+      </Flex>,
+    );
     const flex = screen.getByTestId('flex');
 
     expect(flex.props.className).toContain('flex');
@@ -68,10 +73,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.className).toContain('items-stretch');
   });
 
-  it('direction prop을 적용해야 한다', () => {
-    render(
+  it('direction prop을 적용해야 한다', async () => {
+    await render(
       <Flex testID="flex" direction="column">
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -79,10 +84,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.className).toContain('flex-col');
   });
 
-  it('wrap prop을 적용해야 한다', () => {
-    render(
+  it('wrap prop을 적용해야 한다', async () => {
+    await render(
       <Flex testID="flex" wrap="wrap">
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -90,10 +95,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.className).toContain('flex-wrap');
   });
 
-  it('justify prop을 적용해야 한다', () => {
-    render(
+  it('justify prop을 적용해야 한다', async () => {
+    await render(
       <Flex testID="flex" justify="between">
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -101,10 +106,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.className).toContain('justify-between');
   });
 
-  it('align prop을 적용해야 한다', () => {
-    render(
+  it('align prop을 적용해야 한다', async () => {
+    await render(
       <Flex testID="flex" align="center">
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -112,10 +117,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.className).toContain('items-center');
   });
 
-  it('gap prop을 style로 적용해야 한다', () => {
-    render(
+  it('gap prop을 style로 적용해야 한다', async () => {
+    await render(
       <Flex testID="flex" gap={16}>
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -123,10 +128,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.style).toEqual([{ gap: 16 }, undefined]);
   });
 
-  it('className을 병합해야 한다', () => {
-    render(
+  it('className을 병합해야 한다', async () => {
+    await render(
       <Flex testID="flex" className="mt-4">
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -135,10 +140,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.className).toContain('mt-4');
   });
 
-  it('style prop을 적용해야 한다', () => {
-    render(
+  it('style prop을 적용해야 한다', async () => {
+    await render(
       <Flex testID="flex" style={{ backgroundColor: 'red' }}>
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -146,10 +151,10 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.style).toContainEqual({ backgroundColor: 'red' });
   });
 
-  it('gap과 style을 함께 적용해야 한다', () => {
-    render(
+  it('gap과 style을 함께 적용해야 한다', async () => {
+    await render(
       <Flex testID="flex" gap={8} style={{ padding: 10 }}>
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Flex>,
     );
     const flex = screen.getByTestId('flex');
@@ -157,10 +162,12 @@ describe('Flex 컴포넌트', () => {
     expect(flex.props.style).toEqual([{ gap: 8 }, { padding: 10 }]);
   });
 
-  it('children을 렌더링해야 한다', () => {
-    render(
+  it('children을 렌더링해야 한다', async () => {
+    await render(
       <Flex testID="parent">
-        <Flex testID="child">자식 요소</Flex>
+        <Flex testID="child">
+          <Text>자식 요소</Text>
+        </Flex>
       </Flex>,
     );
 
