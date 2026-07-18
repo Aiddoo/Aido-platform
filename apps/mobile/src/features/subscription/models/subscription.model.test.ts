@@ -62,11 +62,11 @@ describe('SubscriptionPolicy', () => {
       expect(SubscriptionPolicy.shouldShowExpirationDetails('ACTIVE', null)).toBe(false);
     });
 
-    test.each([
-      'FREE',
-      'EXPIRED',
-    ] as const)('%s 상태이면 만료일이 있어도 false를 반환한다', (status) => {
-      expect(SubscriptionPolicy.shouldShowExpirationDetails(status, expiresAt)).toBe(false);
-    });
+    test.each(['FREE', 'EXPIRED'] as const)(
+      '%s 상태이면 만료일이 있어도 false를 반환한다',
+      (status) => {
+        expect(SubscriptionPolicy.shouldShowExpirationDetails(status, expiresAt)).toBe(false);
+      },
+    );
   });
 });
