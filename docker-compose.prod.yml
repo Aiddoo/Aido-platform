@@ -26,6 +26,9 @@ services:
       - "${PORT:-8080}:8080"
     environment:
       TZ: Asia/Seoul
+      # 컨테이너 내부 포트는 8080 불변 — Dockerfile HEALTHCHECK·서버 nginx proxy_pass가 8080 전제
+      # (env_file의 PORT 정의가 컨테이너에 주입되어 미스매치 나는 것을 차단)
+      PORT: "8080"
     env_file:
       - .env.docker.prod
     depends_on:

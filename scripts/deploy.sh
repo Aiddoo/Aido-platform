@@ -25,7 +25,9 @@ BUILD_CACHE_LIMIT="${BUILD_CACHE_LIMIT:-6GB}"        # BuildKit 캐시 상한 (�
 MIN_FREE_KB="${MIN_FREE_KB:-$((3 * 1024 * 1024))}"   # 빌드 전 최소 디스크 여유 3GB (드릴 시 env로 상향 가능)
 export BUILDKIT_PROGRESS=plain
 
-compose() { docker compose -f "$COMPOSE_FILE" "$@"; }
+# --env-file: compose 변수 보간(${PORT:-8080} 등)은 서비스 env_file이 아닌 이 플래그/호스트 env만 읽음
+#             — 루트 package.json의 docker:prod:* 스크립트와 동일 형태로 통일
+compose() { docker compose --env-file .env.docker.prod -f "$COMPOSE_FILE" "$@"; }
 log()  { printf '\n[deploy] %s\n' "$*"; }
 fail() { printf '\n[deploy][ERROR] %s\n' "$*" >&2; exit 1; }
 disk_avail_kb() { df -k --output=avail / | tail -1 | tr -d '[:space:]'; }
