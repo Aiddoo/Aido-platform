@@ -1,13 +1,13 @@
 # Aido API 배포 가이드
 
-> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+> **Version**: 1.1.0 · **Last Updated**: 2026-07-19 · **Owner**: Aido Platform Team
 
 ## 목차
 
 - [Prerequisites](#prerequisites)
 - [1. Local Development](#1-local-development)
 - [2. Production Docker (로컬 테스트)](#2-production-docker-로컬-테스트)
-- [3. AWS ECS + ECR 배포](#3-aws-ecs--ecr-배포)
+- [3. 프로덕션 배포 (GitHub Actions → EC2)](#3-프로덕션-배포-github-actions--ec2)
 - [4. 환경변수 레퍼런스](#4-환경변수-레퍼런스)
 - [5. 트러블슈팅](#5-트러블슈팅)
 
@@ -15,7 +15,6 @@
 
 - Docker 24+ / Docker Compose V2
 - Node.js 20+ / pnpm 10.29+
-- AWS CLI v2 (AWS 배포 시)
 
 ---
 
@@ -84,89 +83,95 @@ pnpm docker:prod:down
 
 ---
 
-## 3. AWS ECS + ECR 배포
+## 3. 프로덕션 배포 (GitHub Actions → EC2)
 
-### 3.1 ECR 리포지토리 생성
+> 실제 운영 파이프라인. ECS/ECR을 사용하지 않는다 — EC2 한 대(t4g.small)에서 `docker compose`로 빌드·기동하며, DB(RDS)/Redis(ElastiCache)는 외부 관리형 서비스다.
+
+### 3.1 파이프라인 개요
+
+```
+push(main) ─→ CI (lint / test / build)
+                 │ 성공 시 (workflow_run)
+                 ▼
+        Deploy to EC2 (.github/workflows/deploy.yml)
+                 ├─ CI가 검증한 커밋 SHA 해석·검증 (40자 hex + origin/main ancestor)
+                 ├─ SSH 부트스트랩: flock 락 → git reset --hard $SHA
+                 ├─ scripts/deploy.sh: 디스크 점검 → 롤백 태깅 → 빌드 → 기동 → 헬스 게이트
+                 └─ 러너에서 외부 검증: https://api.aido.kr/health
+```
+
+- 배포 대상은 **CI가 검증한 SHA로 고정**된다 (`workflow_run.head_sha`) — 배포 시점의 `origin/main` HEAD가 아니다.
+- `workflow_run` 트리거 특성상 `deploy.yml`은 **기본 브랜치(develop)의 파일**이 실행된다. 배포 로직 본체는 배포 대상 SHA의 `scripts/deploy.sh`.
+- 수동 배포/롤백: GitHub Actions → **Deploy to EC2 → Run workflow**. `sha` 비우면 main의 최신 CI 성공 커밋, 이전 커밋으로 되돌릴 땐 `sha` 입력 + `force` 체크.
+
+### 3.2 배포 단계 (`scripts/deploy.sh`)
+
+서버 레이아웃: 레포 `~/apps/Aido-platform` · 배포 상태 `~/apps/deploy-state/{deploy.lock, last_deployed_sha, history.log}`
+
+| 단계 | 동작 |
+|------|------|
+| 락 | `flock` — 동시 배포 차단 (GH concurrency + 서버 락 이중 방어) |
+| SHA 검증 | 작업트리 == `DEPLOY_SHA`, 마지막 배포 커밋의 후손인지 확인 (역행 배포 차단, `FORCE_DEPLOY=1`로 우회) |
+| 디스크 점검 | §3.3 참조 — 부족하면 빌드 시작 전 중단 |
+| 롤백 태깅 | 현재 `latest` → `:rollback` (자동 롤백 지점, 첫 실행 시 자동 시드) |
+| 빌드 | `compose build migrate` → `compose build api` 순차 (메모리 피크 분산, BuildKit 캐시 재사용) |
+| 기동 | `compose up -d` — migrate 완료 대기 후 api 재생성 |
+| 헬스 게이트 | 90초 내 Docker HEALTHCHECK `healthy` **AND** `/health` 연속 3회 성공, 실패 시 자동 롤백 |
+| 정리 | dangling 이미지 + 캐시 6GB 초과분만 (**`-a` prune 금지** — 롤백 이미지가 삭제됨) |
+
+### 3.3 디스크·캐시 관리
+
+모든 성장 벡터에 상한을 걸어 "디스크 꽉 참" 자체를 방지한다:
+
+| 성장 벡터 | 상한 장치 |
+|-----------|-----------|
+| BuildKit 빌드 캐시 | 매 배포 성공 후 6GB 초과분 LRU 정리 (`docker builder prune --max-used-space`) |
+| Docker 이미지 | `latest` + `rollback` 2세대만 유지, dangling 매회 정리 |
+| 컨테이너 로그 | json-file 20m × 5 로테이션 (compose 설정) |
+| DB 백업 | 로컬 7일 보존 + S3 업로드 (서버 cron) |
+
+- 용량 예산: 29GB 디스크 기준 정상 상태 ≈ 15GB (기본 ~8 + 캐시 ≤6 + 빌드 중 임시 1세대).
+- 빌드 전 사전 점검: 여유 <3GB → 캐시 전체 정리 → 재확인 → **그래도 부족하면 빌드를 시작하지 않고 중단** (서비스 무영향).
+- 점검 명령: `df -h /`, `docker system df` (매 배포의 GH Actions 로그에도 `df` 출력됨).
+
+### 3.4 장애 대응 런북
+
+| 시나리오 | 자동 동작 | 서비스 영향 | 운영자 조치 |
+|----------|-----------|-------------|-------------|
+| 디스크 <3GB (빌드 전) | 전체 정리 → 재확인 → 부족 시 빌드 미시작 중단 | 없음 | `df -h`/`docker system df`로 원인 확인 후 재배포 |
+| 빌드 실패 (ENOSPC 포함) | `latest` 태그 불변 → 서비스 유지, run 실패(red) | 없음 | 원인 수정 후 재배포 |
+| migrate 실패 | 구 api 유지된 채 compose 비정상 종료 → 롤백 경로 | 없음 | 마이그레이션 수정 후 재배포 |
+| 헬스 게이트 실패 | `:rollback` → `latest` retag + `up -d --no-deps api` | 수십 초 내 자동 복구 | 원인 수정 후 재배포 |
+| 롤백마저 실패 | FATAL 로그 + exit 2 | 장애 | 아래 수동 복구 |
+| 동시 배포 | flock으로 후발 즉시 중단 | 없음 | 선행 완료 후 재시도 |
+| 구 SHA 배포 시도 | ancestor 검사로 중단 | 없음 | 의도적 롤백이면 `force` 체크 |
 
 ```bash
-aws ecr create-repository --repository-name aido/api --image-scanning-configuration scanOnPush=true
-aws ecr create-repository --repository-name aido/migrate --image-scanning-configuration scanOnPush=true
+# 수동 재배포 (GitHub UI): Actions → Deploy to EC2 → Run workflow (sha 비움)
+# 특정 SHA 배포: sha 입력 / 이전 커밋 롤백: sha + force 체크
+
+# 서버에서 직접 (SSH):
+cd ~/apps/Aido-platform
+bash scripts/deploy.sh --rollback                        # 이전 이미지로 즉시 롤백
+DEPLOY_SHA=$(git rev-parse HEAD) bash scripts/deploy.sh  # 현재 커밋 재배포
+
+# 롤백마저 실패했을 때 수동 복구:
+docker images | grep rollback                            # 롤백 이미지 존재 확인
+docker tag aido-platform-api:rollback aido-platform-api:latest
+docker compose -f docker-compose.prod.yml up -d --no-deps api
+docker logs --tail 100 aido-prod-api                     # 원인 확인
 ```
 
-### 3.2 이미지 빌드 & Push
+### 3.5 DB 마이그레이션 규율
 
-```bash
-# ECR 로그인
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=ap-northeast-2
-ECR_URL=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+- 마이그레이션은 **forward-only** — 자동 롤백은 API 컨테이너만 되돌리고 DB는 이미 신 스키마다.
+- 따라서 모든 마이그레이션은 **직전 릴리스의 API와 호환**되어야 한다 (expand → contract: 먼저 추가만 하는 릴리스, 구 컬럼 제거는 다음 릴리스에서).
 
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+### 3.6 보안 수칙
 
-# Production 이미지 빌드
-docker build --target production -t aido/api:latest -f apps/api/Dockerfile .
-docker build --target migrate -t aido/migrate:latest -f apps/api/Dockerfile .
-
-# 태그 & Push
-docker tag aido/api:latest $ECR_URL/aido/api:latest
-docker tag aido/migrate:latest $ECR_URL/aido/migrate:latest
-
-docker push $ECR_URL/aido/api:latest
-docker push $ECR_URL/aido/migrate:latest
-```
-
-### 3.3 ECS Task Definition
-
-**API 서비스** (long-running):
-- Image: `aido/api:latest`
-- CPU: 256 / Memory: 512
-- Port mapping: 8080
-- Health check: `/health`
-
-**Migration 태스크** (one-shot):
-- Image: `aido/migrate:latest`
-- CPU: 256 / Memory: 512
-- 배포 전 `aws ecs run-task`로 실행
-
-### 3.4 RDS PostgreSQL
-
-```bash
-aws rds create-db-instance \
-  --db-instance-identifier aido-db \
-  --db-instance-class db.t4g.micro \
-  --engine postgres \
-  --engine-version 16 \
-  --master-username postgres \
-  --master-user-password <password> \
-  --allocated-storage 20
-```
-
-### 3.5 Secrets Manager
-
-```bash
-aws secretsmanager create-secret \
-  --name aido/api/env \
-  --secret-string '{
-    "JWT_SECRET": "...",
-    "JWT_REFRESH_SECRET": "...",
-    "TOKEN_ENCRYPTION_KEY": "...",
-    "DATABASE_URL": "postgresql://..."
-  }'
-```
-
-ECS Task Definition에서 `secrets` 필드로 참조합니다.
-
-### 3.6 CI/CD 파이프라인
-
-```
-Build → Push to ECR → Run Migration Task → Deploy API Service
-```
-
-1. 코드 Push 또는 PR 머지 트리거
-2. Docker 이미지 빌드 (production + migrate)
-3. ECR에 Push
-4. Migration 태스크 실행 및 완료 대기
-5. ECS 서비스 업데이트 (롤링 배포)
+- `.env.docker.prod`는 **서버 전용** (레포 미포함, `.gitignore` 제외 유지). 시크릿 로테이션 = 서버에서 파일 수정 후 재배포.
+- 배포 디렉터리(`~/apps/Aido-platform`)에서 **`git clean` 금지** — untracked인 `.env.docker.prod`가 삭제된다. (`git reset --hard`는 untracked를 건드리지 않아 안전.)
+- GH Secrets: `EC2_HOST` / `EC2_USER` / `EC2_SSH_PRIVATE_KEY` (배포 SSH), `TURBO_TOKEN` (Turbo 원격 캐시). 시크릿은 이미지 빌드에 유입되지 않는다 (`env_file`은 런타임 주입만, build args 없음).
 
 ### 3.7 `develop` → `main` 릴리스 브랜치 정합
 
@@ -280,7 +285,7 @@ docker exec aido-prod-api wget -qO- http://localhost:8080/health
 
 ```bash
 # 이미지 크기 확인
-docker images aido/api
+docker images aido-platform-api
 ```
 
 Production 이미지는 `node:22-alpine` + production deps만 포함하여 경량화됩니다.

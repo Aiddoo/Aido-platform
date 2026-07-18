@@ -52,7 +52,8 @@ COPY apps/api/prisma ./prisma
 COPY apps/api/prisma.config.ts ./
 
 # 빈 프로젝트에 prisma CLI만 설치 (workspace/catalog 의존 회피)
-RUN pnpm init && pnpm add prisma@latest
+# apps/api/package.json의 prisma 버전(^7.8.0)과 함께 올릴 것 — silent major 업그레이드 방지
+RUN pnpm init && pnpm add prisma@7.8.0
 
 # RDS CA 인증서
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem

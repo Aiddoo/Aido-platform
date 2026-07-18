@@ -11,6 +11,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
@@ -20,6 +23,7 @@ jobs:
   lint:
     name: Lint & Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -27,15 +31,18 @@ jobs:
 
       - uses: ./.github/actions/setup
 
+      # PR: --affected로 변경된 패키지만 / push(main·develop): 전체 실행 — 배포 게이트
+      # (main 푸시는 로컬 main == HEAD라 --affected diff가 빈 집합이 되어 검증이 스킵되는 버그가 있었음)
       - name: Biome Check
-        run: pnpm turbo run check --affected
+        run: pnpm turbo run check ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
       - name: Type Check
-        run: pnpm turbo run typecheck --affected
+        run: pnpm turbo run typecheck ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v7
@@ -45,10 +52,12 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Run unit tests
-        run: pnpm turbo run test --affected
+        run: pnpm turbo run test ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
+      # 통합/E2E 태스크는 @aido/api에만 존재 → PR에서 --affected만으로 자연 스코프됨
+      # (모바일/문서-only PR은 Testcontainers 스킵, api 영향 변경은 실행)
       - name: Run integration tests
-        run: pnpm turbo run test:integration --filter=@aido/api
+        run: pnpm turbo run test:integration ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
 
       - name: Run E2E tests
         env:
@@ -60,11 +69,12 @@ jobs:
           EMAIL_FROM_NAME: Aido Test
           TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
           NODE_ENV: test
-        run: pnpm turbo run test:e2e --filter=@aido/api
+        run: pnpm turbo run test:e2e ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
 
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:

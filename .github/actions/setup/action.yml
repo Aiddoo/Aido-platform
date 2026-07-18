@@ -15,10 +15,15 @@ runs:
       run: pnpm install --frozen-lockfile
       shell: bash
 
-    - name: Fetch main branch for turbo --affected
+    # PR base 브랜치를 turbo --affected 기준으로 명시 (develop 타겟 PR이 main과 diff되던 과잉 실행도 수정)
+    - name: Set turbo affected base (PR 전용)
       if: github.event_name == 'pull_request'
-      run: git fetch origin main:main
       shell: bash
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        git fetch origin "$BASE_REF"
+        echo "TURBO_SCM_BASE=origin/$BASE_REF" >> "$GITHUB_ENV"
 
     - name: Generate Prisma Client
       run: pnpm db:generate

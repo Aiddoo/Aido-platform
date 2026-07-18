@@ -5,24 +5,84 @@ on:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "배포할 커밋 SHA (비우면 main의 최신 CI 성공 커밋)"
+        required: false
+        default: ""
+      force:
+        description: "이전 커밋으로의 배포 허용 (수동 롤백용)"
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    timeout-minutes: 25
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
 
     steps:
+      - name: Resolve deploy SHA
+        id: sha
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # [보안] 입력을 run에 직접 보간하지 않고 env 경유 (셸 인젝션 방지)
+          WF_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_SHA: ${{ inputs.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            SHA="$WF_SHA"
+          elif [[ -n "$INPUT_SHA" ]]; then
+            SHA="$INPUT_SHA"
+          else
+            SHA="$(gh api 'repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=1' \
+                    --jq '.workflow_runs[0].head_sha')"
+            [[ -n "$SHA" ]] || { echo "::error::main의 성공한 CI run이 없습니다"; exit 1; }
+          fi
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::유효한 커밋 SHA(40자 hex)가 아닙니다: $SHA"; exit 1; }
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "배포 대상 SHA: $SHA"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          DEPLOY_SHA: ${{ steps.sha.outputs.sha }}
+          FORCE_DEPLOY: ${{ (github.event_name == 'workflow_dispatch' && inputs.force) && '1' || '0' }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           command_timeout: 20m
+          envs: DEPLOY_SHA,FORCE_DEPLOY
           script: |
-            bash -e ~/apps/deploy.sh
+            set -euo pipefail
+            mkdir -p "$HOME/apps/deploy-state"
+            exec 9>"$HOME/apps/deploy-state/deploy.lock"
+            flock -n 9 || { echo "다른 배포가 진행 중 — 중단"; exit 1; }
+            export DEPLOY_LOCK_HELD=1
+            cd "$HOME/apps/Aido-platform"
+            git fetch origin main
+            git rev-parse --verify "${DEPLOY_SHA}^{commit}" >/dev/null
+            git merge-base --is-ancestor "$DEPLOY_SHA" origin/main \
+              || { echo "::error::DEPLOY_SHA가 origin/main 이력에 없습니다"; exit 1; }
+            git reset --hard "$DEPLOY_SHA"
+            [[ -f scripts/deploy.sh ]] \
+              || { echo "::error::scripts/deploy.sh 없음 — 스크립트 포함 커밋 이후로만 배포 가능"; exit 1; }
+            bash scripts/deploy.sh
+
+      - name: Verify public health endpoint
+        run: |
+          sleep 5
+          curl -fsS --retry 6 --retry-delay 10 --retry-all-errors --max-time 10 \
+            https://api.aido.kr/health
