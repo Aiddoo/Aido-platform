@@ -4,9 +4,10 @@ description: pnpm + Node.js + dependencies + Prisma Client
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v4
+    # 액션 런타임 Node24 정합 + 공급망 보안 위해 SHA 핀 (버전은 주석으로 관리 — dependabot이 갱신)
+    - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: 22
         cache: pnpm
