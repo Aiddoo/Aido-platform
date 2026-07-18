@@ -9,9 +9,12 @@ describe("관리형 테스트 DB 수명주기", () => {
 		["win32", "pnpm.cmd"],
 		["darwin", "pnpm"],
 		["linux", "pnpm"],
-	] as const)("%s에서는 migration 실행 파일로 %s을 사용해야 한다", (platform, expected) => {
-		expect(resolvePnpmCommand(platform)).toBe(expected);
-	});
+	] as const)(
+		"%s에서는 migration 실행 파일로 %s을 사용해야 한다",
+		(platform, expected) => {
+			expect(resolvePnpmCommand(platform)).toBe(expected);
+		},
+	);
 
 	it("관리 마커가 없는 DATABASE_URL을 거부해야 한다", () => {
 		// Given - 이름만 테스트 DB처럼 보이는 비관리 URL

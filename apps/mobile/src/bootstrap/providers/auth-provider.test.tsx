@@ -31,7 +31,7 @@ describe('AuthProvider', () => {
   let analytics: ReturnType<typeof createMockAnalytics>;
   let queryClient: QueryClient;
   let unsubscribes: Array<() => void>;
-  let mountedProviders: Array<ReturnType<typeof render>>;
+  let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -43,9 +43,9 @@ describe('AuthProvider', () => {
     mountedProviders = [];
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     for (const mountedProvider of mountedProviders) {
-      mountedProvider.unmount();
+      await mountedProvider.unmount();
     }
     for (const unsubscribe of unsubscribes) {
       unsubscribe();
@@ -54,7 +54,7 @@ describe('AuthProvider', () => {
     jest.useRealTimers();
   });
 
-  const renderProvider = () => {
+  const renderProvider = async () => {
     // AuthProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
     const todoService = new TodoService(createMockHttpClient());
     const widgetSyncService = new WidgetSyncService(
@@ -62,7 +62,7 @@ describe('AuthProvider', () => {
       errorReporter,
     );
 
-    const mountedProvider = render(
+    const mountedProvider = await render(
       <StaticDIProvider
         container={createMockDIContainer({
           tokenStore,
@@ -94,7 +94,7 @@ describe('AuthProvider', () => {
       tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
 
       // When
-      renderProvider();
+      await renderProvider();
 
       // Then
       await expectStatus('authenticated');
@@ -107,7 +107,7 @@ describe('AuthProvider', () => {
       );
 
       // When
-      renderProvider();
+      await renderProvider();
 
       // Then
       await expectStatus('locked');
@@ -119,7 +119,7 @@ describe('AuthProvider', () => {
       tokenStore.readRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
 
       // When
-      renderProvider();
+      await renderProvider();
       await expectStatus('locked');
 
       // Then
@@ -131,7 +131,7 @@ describe('AuthProvider', () => {
       tokenStore.readRefreshToken.mockRejectedValue(new Error('Could not decrypt the value'));
 
       // When
-      renderProvider();
+      await renderProvider();
 
       // Then
       await expectStatus('unauthenticated');
@@ -147,7 +147,7 @@ describe('AuthProvider', () => {
       tokenStore.readRefreshToken.mockRejectedValue({ message: 'native bridge failure' });
 
       // When
-      renderProvider();
+      await renderProvider();
       await expectStatus('unauthenticated');
 
       // Then — String(value)였다면 message가 "[object Object]"가 된다
@@ -162,7 +162,7 @@ describe('AuthProvider', () => {
       tokenStore.readRefreshToken.mockRejectedValue(new Error('boom'));
 
       // When
-      renderProvider();
+      await renderProvider();
       await expectStatus('unauthenticated');
 
       // Then
@@ -174,11 +174,11 @@ describe('AuthProvider', () => {
     it('인증 상태에서 만료되면 미인증으로 내려가고 1회 리포팅한다', async () => {
       // Given
       tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
-      renderProvider();
+      await renderProvider();
       await expectStatus('authenticated');
 
       // When
-      act(() =>
+      await act(() =>
         emitSessionExpired({ reason: 'refresh-rejected', serverErrorCode: 'SESSION_0704' }),
       );
 
@@ -199,11 +199,11 @@ describe('AuthProvider', () => {
     it('이미 로그아웃된 상태의 만료 이벤트는 잡음이므로 리포팅하지 않는다', async () => {
       // Given — 로그인 화면에서도 인증 요청은 나가고 401을 받는다
       tokenStore.readRefreshToken.mockResolvedValue(null);
-      renderProvider();
+      await renderProvider();
       await expectStatus('unauthenticated');
 
       // When
-      act(() => emitSessionExpired({ reason: 'tokens-missing' }));
+      await act(() => emitSessionExpired({ reason: 'tokens-missing' }));
 
       // Then
       expect(errorReporter.captureMessage).not.toHaveBeenCalled();
@@ -213,11 +213,11 @@ describe('AuthProvider', () => {
     it('만료 이벤트가 연달아 와도 한 번만 리포팅한다', async () => {
       // Given — 세션 종료 후 도착한 다른 요청들이 각자 401 → 만료를 발행한다
       tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
-      renderProvider();
+      await renderProvider();
       await expectStatus('authenticated');
 
       // When
-      act(() => {
+      await act(() => {
         emitSessionExpired({ reason: 'refresh-rejected' });
         emitSessionExpired({ reason: 'tokens-missing' });
         emitSessionExpired({ reason: 'tokens-missing' });
@@ -235,7 +235,7 @@ describe('AuthProvider', () => {
       // 즉시 재요청 → 401 → 다시 만료 → ErrorBoundary("재시도/로그아웃") 루프를 돈다.
       const clearSpy = jest.spyOn(queryClient, 'clear');
       tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
-      renderProvider();
+      await renderProvider();
       await expectStatus('authenticated');
 
       let clearedDuringEmit = false;
@@ -246,7 +246,7 @@ describe('AuthProvider', () => {
       );
 
       // When
-      act(() =>
+      await act(() =>
         emitSessionExpired({ reason: 'refresh-rejected', serverErrorCode: 'SESSION_0704' }),
       );
 

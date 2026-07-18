@@ -1535,42 +1535,38 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			},
 		];
 
-		it.each(
-			categoryTestCases,
-		)("$provider 로그인 시 기본 카테고리가 DB에 생성되어야 한다", async ({
-			provider,
-			token,
-			profile,
-			login,
-		}) => {
-			// Given: 토큰 설정
-			fakeTokenVerifier.setCustomProfile(
-				provider.toLowerCase() as "apple" | "google" | "kakao" | "naver",
-				token,
-				profile,
-			);
+		it.each(categoryTestCases)(
+			"$provider 로그인 시 기본 카테고리가 DB에 생성되어야 한다",
+			async ({ provider, token, profile, login }) => {
+				// Given: 토큰 설정
+				fakeTokenVerifier.setCustomProfile(
+					provider.toLowerCase() as "apple" | "google" | "kakao" | "naver",
+					token,
+					profile,
+				);
 
-			// When: 로그인
-			const result = await login(oauthService, token);
+				// When: 로그인
+				const result = await login(oauthService, token);
 
-			// Then: DB에서 카테고리 2개 확인
-			const categories = await databaseService.todoCategory.findMany({
-				where: { userId: result.userId },
-				orderBy: { sortOrder: "asc" },
-			});
+				// Then: DB에서 카테고리 2개 확인
+				const categories = await databaseService.todoCategory.findMany({
+					where: { userId: result.userId },
+					orderBy: { sortOrder: "asc" },
+				});
 
-			expect(categories).toHaveLength(2);
-			expect(categories[0]).toMatchObject({
-				name: "중요한 일",
-				color: "#FFB3B3",
-				sortOrder: 0,
-			});
-			expect(categories[1]).toMatchObject({
-				name: "할 일",
-				color: "#FF6B43",
-				sortOrder: 1,
-			});
-		});
+				expect(categories).toHaveLength(2);
+				expect(categories[0]).toMatchObject({
+					name: "중요한 일",
+					color: "#FFB3B3",
+					sortOrder: 0,
+				});
+				expect(categories[1]).toMatchObject({
+					name: "할 일",
+					color: "#FF6B43",
+					sortOrder: 1,
+				});
+			},
+		);
 
 		it("기존 사용자 재로그인 시 카테고리가 중복 생성되지 않아야 한다", async () => {
 			// Given: 첫 번째 로그인으로 사용자 생성

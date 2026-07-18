@@ -24,13 +24,13 @@ const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
 };
 
 describe('useSearchUsersQueryOptions', () => {
-  test('검색어가 2자 미만이면 쿼리를 실행하지 않는다', () => {
+  test('검색어가 2자 미만이면 쿼리를 실행하지 않는다', async () => {
     // Given
     const httpClient = createMockHttpClient();
     const wrapper = createWrapper(httpClient);
 
     // When
-    renderHook(() => useInfiniteQuery(useSearchUsersQueryOptions('a')), { wrapper });
+    await renderHook(() => useInfiniteQuery(useSearchUsersQueryOptions('a')), { wrapper });
 
     // Then
     expect(httpClient.get).not.toHaveBeenCalled();
@@ -43,9 +43,12 @@ describe('useSearchUsersQueryOptions', () => {
     const wrapper = createWrapper(httpClient);
 
     // When
-    const { result } = renderHook(() => useInfiniteQuery(useSearchUsersQueryOptions('홍길동')), {
-      wrapper,
-    });
+    const { result } = await renderHook(
+      () => useInfiniteQuery(useSearchUsersQueryOptions('홍길동')),
+      {
+        wrapper,
+      },
+    );
 
     // Then
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

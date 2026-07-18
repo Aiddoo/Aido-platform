@@ -1,21 +1,24 @@
 import { render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
 import { Box } from './Box';
 
 describe('Box 컴포넌트', () => {
-  it('children을 렌더링해야 한다', () => {
-    render(
+  it('children을 렌더링해야 한다', async () => {
+    await render(
       <Box testID="parent">
-        <Box testID="child">콘텐츠</Box>
+        <Box testID="child">
+          <Text>콘텐츠</Text>
+        </Box>
       </Box>,
     );
 
     expect(screen.getByTestId('child')).toBeTruthy();
   });
 
-  it('className을 적용해야 한다', () => {
-    render(
+  it('className을 적용해야 한다', async () => {
+    await render(
       <Box testID="box" className="p-4 bg-white">
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Box>,
     );
     const box = screen.getByTestId('box');
@@ -23,10 +26,10 @@ describe('Box 컴포넌트', () => {
     expect(box.props.className).toBe('p-4 bg-white');
   });
 
-  it('style prop을 적용해야 한다', () => {
-    render(
+  it('style prop을 적용해야 한다', async () => {
+    await render(
       <Box testID="box" style={{ backgroundColor: 'red' }}>
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Box>,
     );
     const box = screen.getByTestId('box');
@@ -34,16 +37,20 @@ describe('Box 컴포넌트', () => {
     expect(box.props.style).toContainEqual({ backgroundColor: 'red' });
   });
 
-  it('testID를 전달해야 한다', () => {
-    render(<Box testID="custom-box">콘텐츠</Box>);
+  it('testID를 전달해야 한다', async () => {
+    await render(
+      <Box testID="custom-box">
+        <Text>콘텐츠</Text>
+      </Box>,
+    );
 
     expect(screen.getByTestId('custom-box')).toBeTruthy();
   });
 
-  it('className과 style을 함께 적용해야 한다', () => {
-    render(
+  it('className과 style을 함께 적용해야 한다', async () => {
+    await render(
       <Box testID="box" className="m-2" style={{ padding: 10 }}>
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Box>,
     );
     const box = screen.getByTestId('box');
@@ -52,10 +59,10 @@ describe('Box 컴포넌트', () => {
     expect(box.props.style).toContainEqual({ padding: 10 });
   });
 
-  it('spacing props 미지정 시 undefined 키를 style로 전달하지 않아야 한다', () => {
-    render(
+  it('spacing props 미지정 시 undefined 키를 style로 전달하지 않아야 한다', async () => {
+    await render(
       <Box testID="box" className="flex-1 py-2">
-        콘텐츠
+        <Text>콘텐츠</Text>
       </Box>,
     );
     const box = screen.getByTestId('box');
@@ -65,11 +72,15 @@ describe('Box 컴포넌트', () => {
     expect(flattened).not.toHaveProperty('paddingVertical');
   });
 
-  it('여러 자식 요소를 렌더링해야 한다', () => {
-    render(
+  it('여러 자식 요소를 렌더링해야 한다', async () => {
+    await render(
       <Box>
-        <Box testID="child1">첫 번째</Box>
-        <Box testID="child2">두 번째</Box>
+        <Box testID="child1">
+          <Text>첫 번째</Text>
+        </Box>
+        <Box testID="child2">
+          <Text>두 번째</Text>
+        </Box>
       </Box>,
     );
 

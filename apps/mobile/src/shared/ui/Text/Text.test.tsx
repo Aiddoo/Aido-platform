@@ -54,8 +54,8 @@ describe('shadeClasses 매핑', () => {
 });
 
 describe('Text 컴포넌트', () => {
-  it('기본 스타일을 적용해야 한다', () => {
-    render(<Text>텍스트</Text>);
+  it('기본 스타일을 적용해야 한다', async () => {
+    await render(<Text>텍스트</Text>);
     const text = screen.getByText('텍스트');
 
     expect(text.props.className).toContain('font-normal');
@@ -63,8 +63,8 @@ describe('Text 컴포넌트', () => {
     expect(text.props.className).toContain('text-b3');
   });
 
-  it('tone과 className을 병합해야 한다', () => {
-    render(
+  it('tone과 className을 병합해야 한다', async () => {
+    await render(
       <Text tone="brand" className="mt-4">
         테스트
       </Text>,
@@ -75,8 +75,8 @@ describe('Text 컴포넌트', () => {
     expect(text.props.className).toContain('mt-4');
   });
 
-  it('neutral tone에서 shade 클래스를 적용해야 한다', () => {
-    render(
+  it('neutral tone에서 shade 클래스를 적용해야 한다', async () => {
+    await render(
       <Text tone="neutral" shade={8}>
         테스트
       </Text>,
@@ -86,8 +86,8 @@ describe('Text 컴포넌트', () => {
     expect(text.props.className).toContain('text-gray-8');
   });
 
-  it('non-neutral tone에서는 shade를 무시해야 한다', () => {
-    render(
+  it('non-neutral tone에서는 shade를 무시해야 한다', async () => {
+    await render(
       <Text tone="brand" shade={8}>
         테스트
       </Text>,
@@ -98,43 +98,43 @@ describe('Text 컴포넌트', () => {
     expect(text.props.className).not.toContain('text-gray-8');
   });
 
-  it('weight prop을 적용해야 한다', () => {
-    render(<Text weight="bold">텍스트</Text>);
+  it('weight prop을 적용해야 한다', async () => {
+    await render(<Text weight="bold">텍스트</Text>);
     const text = screen.getByText('텍스트');
 
     expect(text.props.className).toContain('font-bold');
   });
 
-  it('size prop을 적용해야 한다', () => {
-    render(<Text size="h1">텍스트</Text>);
+  it('size prop을 적용해야 한다', async () => {
+    await render(<Text size="h1">텍스트</Text>);
     const text = screen.getByText('텍스트');
 
     expect(text.props.className).toContain('text-h1');
   });
 
-  it('align prop을 적용해야 한다', () => {
-    render(<Text align="center">텍스트</Text>);
+  it('align prop을 적용해야 한다', async () => {
+    await render(<Text align="center">텍스트</Text>);
     const text = screen.getByText('텍스트');
 
     expect(text.props.className).toContain('text-center');
   });
 
-  it('strikethrough prop을 적용해야 한다', () => {
-    render(<Text strikethrough>텍스트</Text>);
+  it('strikethrough prop을 적용해야 한다', async () => {
+    await render(<Text strikethrough>텍스트</Text>);
     const text = screen.getByText('텍스트');
 
     expect(text.props.className).toContain('line-through');
   });
 
-  it('underline prop을 적용해야 한다', () => {
-    render(<Text underline>텍스트</Text>);
+  it('underline prop을 적용해야 한다', async () => {
+    await render(<Text underline>텍스트</Text>);
     const text = screen.getByText('텍스트');
 
     expect(text.props.className).toContain('underline');
   });
 
-  it('maxLines prop을 numberOfLines로 전달해야 한다', () => {
-    render(<Text maxLines={2}>텍스트</Text>);
+  it('maxLines prop을 numberOfLines로 전달해야 한다', async () => {
+    await render(<Text maxLines={2}>텍스트</Text>);
     const text = screen.getByText('텍스트');
 
     expect(text.props.numberOfLines).toBe(2);
@@ -142,45 +142,45 @@ describe('Text 컴포넌트', () => {
 });
 
 describe('Typography 컴포넌트', () => {
-  it('H1은 headline prop으로 상단 라벨을 렌더링해야 한다', () => {
-    render(<H1 headline="STEP 1">Title</H1>);
+  it('H1은 headline prop으로 상단 라벨을 렌더링해야 한다', async () => {
+    await render(<H1 headline="STEP 1">Title</H1>);
     expect(screen.getByText('STEP 1')).toBeTruthy();
     expect(screen.getByText('Title')).toBeTruthy();
   });
 
-  it('H1은 accessibilityRole을 header로 설정해야 한다', () => {
-    render(<H1>제목</H1>);
+  it('H1은 accessibilityRole을 header로 설정해야 한다', async () => {
+    await render(<H1>제목</H1>);
     const heading = screen.getByRole('header');
     expect(heading).toBeTruthy();
   });
 
-  it('H2는 accessibilityRole을 header로 설정해야 한다', () => {
-    render(<H2>제목</H2>);
+  it('H2는 accessibilityRole을 header로 설정해야 한다', async () => {
+    await render(<H2>제목</H2>);
     const heading = screen.getByRole('header');
     expect(heading).toBeTruthy();
   });
 
-  it('H3는 accessibilityRole을 header로 설정해야 한다', () => {
-    render(<H3>제목</H3>);
+  it('H3는 accessibilityRole을 header로 설정해야 한다', async () => {
+    await render(<H3>제목</H3>);
     const heading = screen.getByRole('header');
     expect(heading).toBeTruthy();
   });
 
-  it('H4는 accessibilityRole을 header로 설정해야 한다', () => {
-    render(<H4>제목</H4>);
+  it('H4는 accessibilityRole을 header로 설정해야 한다', async () => {
+    await render(<H4>제목</H4>);
     const heading = screen.getByRole('header');
     expect(heading).toBeTruthy();
   });
 
-  it('emphasize prop 사용 시 brand tone을 적용해야 한다', () => {
-    render(<H1 emphasize>제목</H1>);
+  it('emphasize prop 사용 시 brand tone을 적용해야 한다', async () => {
+    await render(<H1 emphasize>제목</H1>);
     const heading = screen.getByText('제목');
 
     expect(heading.props.className).toContain('text-main');
   });
 
-  it('emphasize 없이 기본적으로 neutral shade 10을 적용해야 한다', () => {
-    render(<H1>제목</H1>);
+  it('emphasize 없이 기본적으로 neutral shade 10을 적용해야 한다', async () => {
+    await render(<H1>제목</H1>);
     const heading = screen.getByText('제목');
 
     expect(heading.props.className).toContain('text-gray-10');

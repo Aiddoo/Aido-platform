@@ -15,28 +15,28 @@ jest.mock('heroui-native', () => {
 });
 
 describe('Button', () => {
-  test('children을 렌더링한다', () => {
-    render(<Button>버튼</Button>);
+  test('children을 렌더링한다', async () => {
+    await render(<Button>버튼</Button>);
 
     expect(screen.getByText('버튼')).toBeTruthy();
   });
 
-  test('isLoading일 때 Spinner를 표시하고 children을 숨긴다', () => {
-    render(<Button isLoading>로딩</Button>);
+  test('isLoading일 때 Spinner를 표시하고 children을 숨긴다', async () => {
+    await render(<Button isLoading>로딩</Button>);
 
     expect(screen.getByTestId('spinner')).toBeTruthy();
     expect(screen.queryByText('로딩')).toBeNull();
   });
 
-  test('isDisabled와 isLoading 모두 버튼을 비활성화한다', () => {
-    const { rerender } = render(
+  test('isDisabled와 isLoading 모두 버튼을 비활성화한다', async () => {
+    const { rerender } = await render(
       <Button testID="button" isDisabled>
         버튼
       </Button>,
     );
     expect(screen.getByTestId('button').props.isDisabled).toBe(true);
 
-    rerender(
+    await rerender(
       <Button testID="button" isLoading>
         버튼
       </Button>,

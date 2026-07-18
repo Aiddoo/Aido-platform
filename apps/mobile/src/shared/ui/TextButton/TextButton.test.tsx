@@ -20,17 +20,17 @@ jest.mock('../Icon', () => ({
 }));
 
 describe('TextButton', () => {
-  test('children을 렌더링한다', () => {
-    render(<TextButton>텍스트</TextButton>);
+  test('children을 렌더링한다', async () => {
+    await render(<TextButton>텍스트</TextButton>);
 
     expect(screen.getByText('텍스트')).toBeTruthy();
   });
 
-  test('variant=arrow일 때만 화살표 아이콘을 표시한다', () => {
-    const { rerender } = render(<TextButton variant="arrow">더보기</TextButton>);
+  test('variant=arrow일 때만 화살표 아이콘을 표시한다', async () => {
+    const { rerender } = await render(<TextButton variant="arrow">더보기</TextButton>);
     expect(screen.getByTestId('arrow-icon')).toBeTruthy();
 
-    rerender(<TextButton variant="clear">더보기</TextButton>);
+    await rerender(<TextButton variant="clear">더보기</TextButton>);
     expect(screen.queryByTestId('arrow-icon')).toBeNull();
   });
 });

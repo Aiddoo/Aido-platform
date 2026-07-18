@@ -17,14 +17,11 @@ describe('toServerErrorCode', () => {
     expect(toServerErrorCode(body)).toBeUndefined();
   });
 
-  it.each([
-    [null],
-    [undefined],
-    [{}],
-    ['plain text'],
-    [{ error: {} }],
-  ])('envelope가 아니면 undefined를 반환한다 (%p)', (body) => {
-    // Given & When & Then
-    expect(toServerErrorCode(body)).toBeUndefined();
-  });
+  it.each([[null], [undefined], [{}], ['plain text'], [{ error: {} }]])(
+    'envelope가 아니면 undefined를 반환한다 (%p)',
+    (body) => {
+      // Given & When & Then
+      expect(toServerErrorCode(body)).toBeUndefined();
+    },
+  );
 });

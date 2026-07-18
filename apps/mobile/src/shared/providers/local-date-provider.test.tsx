@@ -38,7 +38,7 @@ describe('LocalDateProvider', () => {
     }
   });
 
-  function setup() {
+  async function setup() {
     const analytics = createMockAnalytics();
     const errorReporter = createMockErrorReporter();
     const remove = jest.fn();
@@ -54,7 +54,7 @@ describe('LocalDateProvider', () => {
         <LocalDateProvider>{children}</LocalDateProvider>
       </StaticDIProvider>
     );
-    const hook = renderHook(() => useLocalDate(), { wrapper });
+    const hook = await renderHook(() => useLocalDate(), { wrapper });
 
     return {
       ...hook,
@@ -65,12 +65,12 @@ describe('LocalDateProvider', () => {
     };
   }
 
-  it('앱이 활성 상태인 채 자정을 지나면 새 로컬 날짜를 즉시 제공한다', () => {
+  it('앱이 활성 상태인 채 자정을 지나면 새 로컬 날짜를 즉시 제공한다', async () => {
     jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-    const { result, analytics, errorReporter } = setup();
+    const { result, analytics, errorReporter } = await setup();
     expect(result.current.currentLocalDateKey).toBe('2026-07-14');
 
-    act(() => {
+    await act(() => {
       jest.advanceTimersByTime(200);
     });
 
@@ -89,11 +89,11 @@ describe('LocalDateProvider', () => {
     );
   });
 
-  it('백그라운드에서 날짜가 바뀐 뒤 foreground 복귀 시 즉시 보정한다', () => {
+  it('백그라운드에서 날짜가 바뀐 뒤 foreground 복귀 시 즉시 보정한다', async () => {
     jest.setSystemTime(new Date(2026, 6, 14, 12));
-    const { result, analytics, getAppStateListener } = setup();
+    const { result, analytics, getAppStateListener } = await setup();
 
-    act(() => {
+    await act(() => {
       getAppStateListener()?.('background');
       jest.setSystemTime(new Date(2026, 6, 15, 0, 0, 1));
       getAppStateListener()?.('active');
@@ -105,9 +105,9 @@ describe('LocalDateProvider', () => {
     });
   });
 
-  it('관측 어댑터 실패가 날짜 변경을 중단시키지 않는다', () => {
+  it('관측 어댑터 실패가 날짜 변경을 중단시키지 않는다', async () => {
     jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-    const { result, analytics, errorReporter } = setup();
+    const { result, analytics, errorReporter } = await setup();
     analytics.trackEvent.mockImplementation(() => {
       throw new Error('analytics unavailable');
     });
@@ -115,11 +115,9 @@ describe('LocalDateProvider', () => {
       throw new Error('reporter unavailable');
     });
 
-    expect(() => {
-      act(() => {
-        jest.advanceTimersByTime(200);
-      });
-    }).not.toThrow();
+    await act(() => {
+      jest.advanceTimersByTime(200);
+    });
 
     expect(result.current.currentLocalDateKey).toBe('2026-07-15');
     expect(errorReporter.captureException).toHaveBeenCalledWith(
@@ -128,15 +126,19 @@ describe('LocalDateProvider', () => {
     );
   });
 
-  it('언마운트 시 AppState 구독과 자정 타이머를 모두 정리한다', () => {
-    jest.setSystemTime(new Date(2026, 6, 14, 12));
-    const { unmount, remove } = setup();
-    expect(jest.getTimerCount()).toBe(1);
+  it('언마운트 시 AppState 구독과 자정 타이머를 모두 정리한다', async () => {
+    // RNTL 14 concurrent 렌더러가 내부 타이머를 유지하므로 jest.getTimerCount() 절대값 대신
+    // "언마운트 후 자정이 지나도 provider의 작업이 실행되지 않는다"는 행동으로 정리를 검증한다.
+    jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
+    const { unmount, remove, analytics } = await setup();
 
-    unmount();
+    await unmount();
 
     expect(remove).toHaveBeenCalledTimes(1);
-    expect(jest.getTimerCount()).toBe(0);
+    await act(() => {
+      jest.advanceTimersByTime(200);
+    });
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 });
 
