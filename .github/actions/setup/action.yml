@@ -4,9 +4,10 @@ description: pnpm + Node.js + dependencies + Prisma Client
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v4
+    # 액션 런타임 Node24 정합 + 공급망 보안 위해 SHA 핀 (버전은 주석으로 관리 — dependabot이 갱신)
+    - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: 22
         cache: pnpm
@@ -15,10 +16,15 @@ runs:
       run: pnpm install --frozen-lockfile
       shell: bash
 
-    - name: Fetch main branch for turbo --affected
+    # PR base 브랜치를 turbo --affected 기준으로 명시 (develop 타겟 PR이 main과 diff되던 과잉 실행도 수정)
+    - name: Set turbo affected base (PR 전용)
       if: github.event_name == 'pull_request'
-      run: git fetch origin main:main
       shell: bash
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        git fetch origin "$BASE_REF"
+        echo "TURBO_SCM_BASE=origin/$BASE_REF" >> "$GITHUB_ENV"
 
     - name: Generate Prisma Client
       run: pnpm db:generate

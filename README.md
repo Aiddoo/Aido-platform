@@ -143,7 +143,7 @@ pnpm dev
 
 ## 배포
 
-- **API**: AWS ECS + ECR 기반. [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
+- **API**: AWS EC2 + Docker Compose (GitHub Actions SSH 배포). [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
 - **Mobile**: Expo EAS 빌드. [apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)
 
 ## 라이선스
