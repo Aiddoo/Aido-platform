@@ -674,7 +674,7 @@ modules/{name}/
 | 응답 | 애그리게잇에서 직접 만들지 않는다 — 항상 read 포트(`~ReadRepositoryPort`) 재조회 |
 | 이벤트 발행 | 발행은 반드시 커밋 후(`run` 콜백 밖). EventEmitter2 `emit`은 동기 — 퍼블리셔가 이벤트 단위 try/catch로 예외 격리 (도메인·애플리케이션은 EventEmitter2 무의존, 포트만 의존) |
 | 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전, 어댑터는 타 모듈 배럴의 **Facade**에 위임 (예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter` → `TodoFacade`) |
-| 타입 | `as`/`!` 금지(`pnpm lint:no-cast`), 임포트 경계는 `pnpm lint:boundaries` — 둘 다 수동 게이트 |
+| 타입 | `as`/`!` 금지(`as`: `pnpm lint:no-cast` · `!`: Biome), 임포트 경계는 `pnpm lint:boundaries`(dependency-cruiser) — CI `lint:arch` 게이트 |
 | 가독성 | JSDoc에 흐름 요약, `execute()` 본문은 번호 주석으로 위→아래 단일 경로 |
 
 **작성 예시** (todo `create-todo` — 골격):

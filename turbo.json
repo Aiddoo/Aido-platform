@@ -61,6 +61,10 @@
       "inputs": ["src/**", "biome.json", "package.json"],
       "outputs": []
     },
+    "lint:arch": {
+      "inputs": ["src/**", ".dependency-cruiser.cjs", "scripts/**", "tsconfig.json"],
+      "outputs": []
+    },
     "lint:fix": {
       "cache": false
     },

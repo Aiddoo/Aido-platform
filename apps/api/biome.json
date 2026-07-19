@@ -31,10 +31,11 @@
 		},
 		{
 			"includes": [
-				"**/modules/**/domain/**",
-				"**/modules/**/application/**",
-				"**/modules/**/infrastructure/**",
-				"**/common/domain/**"
+				"src/*/domain/**",
+				"src/*/application/**",
+				"src/*/infrastructure/**",
+				"!src/shared/application/**",
+				"!src/shared/infrastructure/**"
 			],
 			"linter": {
 				"rules": {

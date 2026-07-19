@@ -58,9 +58,9 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushP
 
 - **예외**: 모듈 코드는 `ApplicationException`/`DomainException`(둘 다 `ErrorCodedException`, `ErrorCode` 보유)을 던진다. `GlobalExceptionFilter`가 이를 정규화해 HTTP 응답을 만든다. `BusinessException`/`BusinessExceptions`는 필터의 canonical 에러 타입 + 공유 에러 카탈로그(Prisma P2002 매핑 등)이며 신규 비즈니스 로직에서 직접 던지지 않는다. `new HttpException()` 금지
 - **트랜잭션**: `UNIT_OF_WORK.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다
-- **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `pnpm lint:no-cast`로 검사 (수동 게이트, CI 미연결)
-- **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`로 검사 (수동 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
-- **API 계약 고정**: `openapi-contract.e2e-spec` 스냅샷 diff 0 = 클라이언트 영향 0 (리팩터링 게이트)
+- **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `as`는 `pnpm lint:no-cast`, `!`는 Biome `noNonNullAssertion`(biome.json override)로 검사 (CI `lint:arch` 게이트)
+- **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`(dependency-cruiser, `.dependency-cruiser.cjs`)로 검사 (CI `lint:arch` 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
+- **API 계약 고정**: `openapi-contract.e2e-spec` 스냅샷 diff 0 = 클라이언트 영향 0 (상시 계약 게이트 — CI e2e에서 실행)
 - **큐**: 알림/부수효과는 `QueueService.enqueueXxx()` fire-and-forget 패턴 (트랜잭션 커밋 후 enqueue)
 - **암호화**: OAuth 토큰 등 민감 데이터는 `EncryptionService`로 암호화 저장
 - **중복 방지**: 크론 작업은 DB 기반 (in-memory Set/Map 금지)

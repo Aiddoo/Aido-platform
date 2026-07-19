@@ -215,10 +215,12 @@ modules/todo/
 | domain → application/infrastructure/@nestjs/DB | ❌ | 도메인은 프레임워크 제로 의존 |
 | application → Prisma 타입/타 모듈 내부 | ❌ | CLS 기반 UnitOfWork·포트로 역전 |
 | 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)의 Facade 호출만 — 예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter`가 `TodoFacade`에 위임 |
-| domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` |
+| domain/application/infrastructure에서 `as`/`!` | ❌ | `as`: `pnpm lint:no-cast` · `!`: Biome `noNonNullAssertion` |
 
-> `lint:no-cast`·`lint:boundaries`는 수동 게이트다(CI 미연결 — 연결은 별도 결정).
-> 새 모듈 전환 시 두 스크립트의 대상 배열(`TARGET_DIRS`/`CLEAN_MODULES`)에 모듈명을 추가한다.
+> 두 게이트는 CI `lint:arch` 태스크로 실행된다(배포 차단 게이트). 경계는 dependency-cruiser
+> (`.dependency-cruiser.cjs` — `src/<module>/` 구조에서 자동 유도, 모듈 목록 하드코딩 없음),
+> `as` 단언은 `scripts/check-no-cast.mjs`(새 모듈 전환 시 `TARGET_DIRS`에 추가), `!` 단언은
+> Biome `noNonNullAssertion`(biome.json override)이 담당한다.
 
 **의도적 트레이드오프** (재검토 시점과 함께 기록):
 

@@ -39,6 +39,11 @@ jobs:
       - name: Type Check
         run: pnpm turbo run typecheck ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
+      # 클린아키텍처 게이트 (dependency-cruiser 경계 + as 단언 금지) — 태스크가 api에만
+      # 존재해 PR --affected로 자연 스코프. 배포가 CI 성공에 게이트되므로 릴리스 차단 게이트.
+      - name: Architecture gates
+        run: pnpm turbo run lint:arch ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -125,6 +130,7 @@ jobs:
           target: production
           platforms: linux/arm64
           push: true
+          pull: true # base 이미지(node:22-alpine) 최신 digest 확인 — 보안 패치 자동 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
           cache-from: type=gha
@@ -138,6 +144,7 @@ jobs:
           target: migrate
           platforms: linux/arm64
           push: true
+          pull: true # base 이미지(node:22-alpine) 최신 digest 확인 — 보안 패치 자동 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
           cache-from: type=gha

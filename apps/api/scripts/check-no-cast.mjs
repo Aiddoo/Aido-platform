@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * 클린아키텍처 영역 타입 안전성 가드
+ * 클린아키텍처 영역 타입 안전성 가드 — `as` 타입 단언 전용
  *
- * 아래 대상에서 `as` 타입 단언과 `!` non-null 단언을 금지합니다.
- * Biome에는 전역 no-assertion 규칙이 없어(noNonNullAssertion만 존재) 이 스크립트로 `as`를 보완합니다.
+ * 역할 분담: `!` non-null 단언은 Biome `noNonNullAssertion`(AST 기반, biome.json
+ * override)이 담당하고, Biome에 대응 룰이 없는 `as` 단언만 이 스크립트가 금지합니다.
  * (import 별칭 `X as Y`, `as const`는 허용)
  *
  * 대상:
@@ -113,8 +113,6 @@ function collectTsFiles(dir) {
 
 // `as` 타입 단언: `as Type` / `as {` / `as (` / `as unknown` — `as const`와 import/export 별칭 제외
 const AS_ASSERTION = /\bas\s+(?!const\b)[A-Za-z_{(]/;
-// non-null 단언: 식별자/`)`/`]` 뒤의 `!`, 단 `!=`(비교)는 제외
-const NON_NULL = /[A-Za-z0-9_)\]]!(?![=])/;
 
 const violations = [];
 
@@ -136,7 +134,7 @@ for (const dir of TARGET_DIRS) {
 		}
 		const lines = readFileSync(file, "utf8").split("\n");
 		lines.forEach((line, idx) => {
-			// 한 줄 주석 제거 후 검사 — 주석 속 영단어 `as`/`!`(예: `// as a result`, `// Don't!`) 오탐 방지
+			// 한 줄 주석 제거 후 검사 — 주석 속 영단어 `as`(예: `// as a result`) 오탐 방지
 			const code = line.replace(/\/\/.*$/, "");
 			const trimmed = code.trim();
 			if (!trimmed) return;
@@ -148,24 +146,21 @@ for (const dir of TARGET_DIRS) {
 			if (!isImportLike && AS_ASSERTION.test(code)) {
 				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[as] ${line.trim()}`);
 			}
-			if (NON_NULL.test(code)) {
-				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[!]  ${line.trim()}`);
-			}
 		});
 	}
 }
 
 if (violations.length > 0) {
 	console.error(
-		`\n❌ 클린아키텍처 영역에서 타입 단언(as)/non-null(!) ${violations.length}건 발견:\n`,
+		`\n❌ 클린아키텍처 영역에서 as 타입 단언 ${violations.length}건 발견:\n`,
 	);
 	for (const v of violations) {
 		console.error(`  ${v}`);
 	}
 	console.error(
-		"\n타입 단언 없이 정합되도록 수정하세요 (import 별칭·as const는 허용).\n",
+		"\n타입 단언 없이 정합되도록 수정하세요 (import 별칭·as const는 허용, !는 Biome noNonNullAssertion이 검사).\n",
 	);
 	process.exit(1);
 }
 
-console.log("✅ 클린아키텍처 영역: as/non-null 단언 없음 (타입세이프 100%)");
+console.log("✅ 클린아키텍처 영역: as 단언 없음 (타입세이프 100%)");
