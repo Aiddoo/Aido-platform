@@ -154,6 +154,8 @@ main() {
   else
     log "이미지 pull: ${GHCR_API_IMAGE}:${DEPLOY_SHA}"
     printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u x-access-token --password-stdin >/dev/null 2>&1
+    # pull 실패로 ERR trap(롤백)을 타는 경로를 포함해 어떤 종료에서도 자격 증명이 남지 않도록 보장
+    trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
     docker pull -q "${GHCR_API_IMAGE}:${DEPLOY_SHA}"
     docker pull -q "${GHCR_MIGRATE_IMAGE}:${DEPLOY_SHA}"
     docker logout ghcr.io >/dev/null 2>&1 || true
