@@ -28,7 +28,10 @@ import {
  * - 스트릭 갱신은 양방향(완료/미완료)으로 수행합니다.
  * - 완료로 전환된 경우에만 리마인더 취소 + 친구 완료 알림 + 마일스톤 체크를 수행합니다.
  *
- * 모든 부수효과는 fire-and-forget이며 실패는 로깅만 합니다(기존 동작 보존).
+ * 모든 부수효과는 발행(emit) 관점에서 fire-and-forget이며 실패는 로깅만 합니다.
+ * 단, 핸들러 본문이 자기 부수효과를 끝까지 await로 소유합니다 — 떠다니는
+ * 프라미스를 남기면 완료 시점을 아무도 알 수 없어 테스트 격리(TRUNCATE)와
+ * 경합하고, 프로세스 종료 시 유실될 수 있습니다.
  * 크로스모듈 의존은 포트를 통해서만, 판단 규칙은 도메인 정책(completion-policy)을 통해 접근합니다.
  */
 @Injectable()
@@ -49,17 +52,35 @@ export class TodoToggledHandler {
 	) {}
 
 	@OnEvent(TODO_EVENTS.TOGGLED)
-	handle(event: TodoToggledEvent): void {
+	async handle(event: TodoToggledEvent): Promise<void> {
 		const { todoId, userId, completed, timezone } = event;
 
+		const sideEffects: Promise<void>[] = [];
 		if (completed) {
 			this.todoReminder.cancelReminder(todoId);
-			void this.#checkAndEnqueueFriendCompleted(userId, timezone);
-			void this.#checkAndEnqueueMilestone(userId);
+			sideEffects.push(this.#checkAndEnqueueFriendCompleted(userId, timezone));
+			sideEffects.push(this.#checkAndEnqueueMilestone(userId));
 		}
 
-		// 스트릭은 양방향 갱신 (fire-and-forget)
-		this.streakPort.recordTodoToggle(userId, completed, timezone);
+		// 스트릭은 양방향 갱신
+		sideEffects.push(this.#recordStreakSafely(userId, completed, timezone));
+
+		await Promise.allSettled(sideEffects);
+	}
+
+	async #recordStreakSafely(
+		userId: string,
+		completed: boolean,
+		timezone: string,
+	): Promise<void> {
+		try {
+			await this.streakPort.recordTodoToggle(userId, completed, timezone);
+		} catch (error) {
+			this.#logger.error(
+				`Failed to record streak toggle: userId=${userId}, ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
 	}
 
 	/**
