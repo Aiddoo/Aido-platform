@@ -20,4 +20,6 @@ export interface AdminBroadcastMessage {
 	body: string;
 	action?: NotificationAction;
 	metadata?: { externalUrl: string };
+	/** 사용자 푸시 수신 설정을 무시하는 강제 발송 여부 */
+	force: boolean;
 }

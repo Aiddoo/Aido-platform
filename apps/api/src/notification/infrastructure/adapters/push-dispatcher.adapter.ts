@@ -169,12 +169,20 @@ export class PushDispatcherAdapter
 		const settingsEligibleItems: typeof items = [];
 		for (const item of items) {
 			const { data } = item;
-			const shouldSend = this.#passesCachedSettings(
-				data.type,
-				data.purpose,
-				prefMap.get(data.userId),
-				consentMap.get(data.userId),
-			);
+			// 관리자 강제 발송(force)은 수신 설정·야간·설정 행 부재를 우회한다.
+			// 마케팅성 알림은 수신 동의가 법적 요건이므로 강제 대상에서 제외.
+			const forced =
+				data.force === true &&
+				data.purpose !== "ENGAGEMENT" &&
+				!isMarketingNotification(data.type);
+			const shouldSend =
+				forced ||
+				this.#passesCachedSettings(
+					data.type,
+					data.purpose,
+					prefMap.get(data.userId),
+					consentMap.get(data.userId),
+				);
 			if (shouldSend) {
 				settingsEligibleItems.push(item);
 			} else {

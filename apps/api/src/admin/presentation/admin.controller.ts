@@ -66,6 +66,7 @@ export class AdminController {
 			dto.body,
 			dto.targetFilter,
 			dto.action,
+			dto.force,
 		);
 	}
 
@@ -91,6 +92,7 @@ export class AdminController {
 			dto.body,
 			dto.userIds,
 			dto.action,
+			dto.force,
 		);
 	}
 }

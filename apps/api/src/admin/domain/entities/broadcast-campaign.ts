@@ -21,6 +21,7 @@ export class BroadcastCampaign {
 		private readonly title: string,
 		private readonly body: string,
 		private readonly action: NotificationAction | undefined,
+		private readonly force: boolean,
 	) {}
 
 	/**
@@ -32,6 +33,7 @@ export class BroadcastCampaign {
 		body: string;
 		targetFilter: BroadcastTargetFilter;
 		action?: NotificationAction;
+		force?: boolean;
 	}): BroadcastCampaign {
 		const title = input.title.trim();
 		const body = input.body.trim();
@@ -42,7 +44,13 @@ export class BroadcastCampaign {
 			});
 		}
 
-		return new BroadcastCampaign(input.targetFilter, title, body, input.action);
+		return new BroadcastCampaign(
+			input.targetFilter,
+			title,
+			body,
+			input.action,
+			input.force ?? false,
+		);
 	}
 
 	get targetFilter(): BroadcastTargetFilter {
@@ -67,6 +75,7 @@ export class BroadcastCampaign {
 			body: this.body,
 			action: this.action,
 			metadata,
+			force: this.force,
 		}));
 	}
 }

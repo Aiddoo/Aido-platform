@@ -20,12 +20,14 @@ export class AdminFacade {
 		body: string,
 		targetFilter: BroadcastTargetFilter,
 		action: NotificationAction | undefined,
+		force: boolean,
 	): Promise<BroadcastResult> {
 		return this.broadcastNotificationUseCase.execute({
 			title,
 			body,
 			targetFilter,
 			action,
+			force,
 		});
 	}
 
@@ -34,12 +36,14 @@ export class AdminFacade {
 		body: string,
 		userIds: string[],
 		action: NotificationAction | undefined,
+		force: boolean,
 	): Promise<BroadcastResult> {
 		return this.sendTargetedNotificationUseCase.execute({
 			title,
 			body,
 			userIds,
 			action,
+			force,
 		});
 	}
 }

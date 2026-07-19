@@ -24,6 +24,7 @@ export class NotificationAdminBroadcastNotifierAdapter
 				body: message.body,
 				action: message.action,
 				metadata: message.metadata,
+				force: message.force,
 			})),
 		);
 	}

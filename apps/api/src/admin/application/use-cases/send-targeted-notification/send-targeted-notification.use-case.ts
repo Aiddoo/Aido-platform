@@ -21,6 +21,7 @@ export interface SendTargetedNotificationInput {
 	body: string;
 	userIds: string[];
 	action: NotificationAction | undefined;
+	force: boolean;
 }
 
 /**
@@ -49,6 +50,7 @@ export class SendTargetedNotificationUseCase {
 			body: input.body,
 			targetFilter: "ALL",
 			action: input.action,
+			force: input.force,
 		});
 
 		const existingUserIds = await this.userDirectory.findExistingUserIds(

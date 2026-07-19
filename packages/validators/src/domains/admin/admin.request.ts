@@ -29,6 +29,12 @@ export const broadcastNotificationSchema = z
       .describe(
         '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅, NONE: 액션 없음)',
       ),
+    force: z
+      .boolean()
+      .default(false)
+      .describe(
+        '사용자 푸시 수신 설정(푸시 OFF·야간 미동의·설정 없음)을 무시하고 강제 발송 (중요 공지용)',
+      ),
   })
   .describe('전체/조건부 알림 브로드캐스트 요청')
   .meta({
@@ -65,6 +71,12 @@ export const targetedNotificationSchema = z
       .optional()
       .describe(
         '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅, NONE: 액션 없음)',
+      ),
+    force: z
+      .boolean()
+      .default(false)
+      .describe(
+        '사용자 푸시 수신 설정(푸시 OFF·야간 미동의·설정 없음)을 무시하고 강제 발송 (중요 공지용)',
       ),
   })
   .describe('특정 사용자 대상 알림 요청')

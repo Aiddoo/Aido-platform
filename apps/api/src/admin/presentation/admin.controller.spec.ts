@@ -20,6 +20,7 @@ function makeBroadcastDto(
 		title: "공지사항",
 		body: "서비스 점검 안내",
 		targetFilter: "ALL",
+		force: false,
 		...overrides,
 	};
 }
@@ -31,6 +32,7 @@ function makeTargetedDto(
 		title: "개별 알림",
 		body: "할 일을 완료해보세요!",
 		userIds: ["user-1", "user-2", "user-3"],
+		force: false,
 		...overrides,
 	};
 }
@@ -73,6 +75,7 @@ describe("AdminController — 관리자 컨트롤러", () => {
 				dto.body,
 				dto.targetFilter,
 				dto.action,
+				dto.force,
 			);
 			expect(result).toEqual(facadeResult);
 		});
@@ -98,6 +101,7 @@ describe("AdminController — 관리자 컨트롤러", () => {
 				dto.body,
 				dto.userIds,
 				dto.action,
+				dto.force,
 			);
 			expect(result).toEqual(facadeResult);
 		});

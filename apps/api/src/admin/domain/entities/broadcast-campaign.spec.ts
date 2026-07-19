@@ -84,5 +84,31 @@ describe("BroadcastCampaign — 브로드캐스트 캠페인", () => {
 
 			expect(messages[0]).toMatchObject({ title: "제목", body: "본문" });
 		});
+
+		it("force 캠페인은 모든 메시지에 force를 전파한다", () => {
+			const campaign = BroadcastCampaign.create({
+				title: "제목",
+				body: "본문",
+				targetFilter: "WITH_PUSH_TOKEN",
+				force: true,
+			});
+
+			const messages = campaign.toMessages(["u1", "u2"], "ADMIN_BROADCAST");
+
+			expect(messages[0]).toMatchObject({ force: true });
+			expect(messages[1]).toMatchObject({ force: true });
+		});
+
+		it("force 미지정 시 메시지는 force=false다", () => {
+			const campaign = BroadcastCampaign.create({
+				title: "제목",
+				body: "본문",
+				targetFilter: "ALL",
+			});
+
+			const messages = campaign.toMessages(["u1"], "ADMIN_BROADCAST");
+
+			expect(messages[0]).toMatchObject({ force: false });
+		});
 	});
 });
