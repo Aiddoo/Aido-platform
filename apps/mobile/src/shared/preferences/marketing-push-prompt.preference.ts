@@ -29,7 +29,14 @@ export function readMarketingPushPromptState(storage: SyncStorage): MarketingPus
       typeof parsed.count === 'number' &&
       (parsed.lastPromptedAt === null || typeof parsed.lastPromptedAt === 'string')
     ) {
-      return { lastPromptedAt: parsed.lastPromptedAt, count: parsed.count };
+      // 저장소 오염 방어: 유효하지 않은 날짜 문자열은 null로 정규화해 재노출을 허용한다
+      // (invalid Date는 throw가 아니라 NaN이므로 하위 정책이 조용히 오작동하는 것을 차단)
+      const lastPromptedAt =
+        typeof parsed.lastPromptedAt === 'string' &&
+        !Number.isNaN(new Date(parsed.lastPromptedAt).getTime())
+          ? parsed.lastPromptedAt
+          : null;
+      return { lastPromptedAt, count: parsed.count };
     }
 
     return { ...EMPTY_STATE };

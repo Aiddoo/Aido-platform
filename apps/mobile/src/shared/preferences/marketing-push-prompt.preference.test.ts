@@ -42,6 +42,18 @@ describe('readMarketingPushPromptState', () => {
     // Then
     expect(result).toEqual({ lastPromptedAt: null, count: 0 });
   });
+
+  it('lastPromptedAt이 유효하지 않은 날짜 문자열이면 null로 정규화한다 (count는 유지)', () => {
+    // Given - 날짜로 파싱 불가한 문자열이 저장돼 있을 때
+    const storage = createMockSyncStorage();
+    storage.getString.mockReturnValue(JSON.stringify({ lastPromptedAt: 'garbage', count: 2 }));
+
+    // When
+    const result = readMarketingPushPromptState(storage);
+
+    // Then - 날짜는 null로 정규화되고 count는 보존된다(영구 미노출 방지)
+    expect(result).toEqual({ lastPromptedAt: null, count: 2 });
+  });
 });
 
 describe('recordMarketingPushPrompt', () => {

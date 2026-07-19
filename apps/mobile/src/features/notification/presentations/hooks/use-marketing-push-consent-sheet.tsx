@@ -14,7 +14,9 @@ interface MarketingPushConsentDialogProps {
  * 광고성 앱 푸시 수신 동의 시트.
  *
  * 수신 내용·철회 방법·법정 표기를 명시한 뒤 명시적으로 동의받는다(정보통신망법 opt-in).
- * "동의"는 서버에 실제 동의 시점(NOW())을 기록하는 기존 mutation을 호출한다.
+ * "동의"는 서버 동의 기록 mutation을 호출하고, **성공한 뒤에만** 시트를 닫는다 —
+ * 요청 실패 시 조용히 롤백돼 유저가 오해하는 것을 막고, 처리 중 버튼을 비활성화해
+ * 중복 제출을 방지한다.
  */
 function MarketingPushConsentDialog({
   isOpen,
@@ -34,13 +36,17 @@ function MarketingPushConsentDialog({
   };
 
   const handleAgree = () => {
-    settle(() => {
-      mutation.mutate({ agreed: true });
-      onAgree();
-    });
+    if (mutation.isPending) {
+      return;
+    }
+    mutation.mutate({ agreed: true }, { onSuccess: () => settle(onAgree) });
   };
 
   const handleDismiss = () => {
+    // 동의 처리 중에는 닫기(백드롭 포함)를 막아 롤백 혼란·중복 제출을 방지
+    if (mutation.isPending) {
+      return;
+    }
     settle(onDismiss);
   };
 
@@ -57,12 +63,12 @@ function MarketingPushConsentDialog({
         <ConfirmDialog.Description>{t('marketingOptIn.description')}</ConfirmDialog.Description>
       }
       cancelButton={
-        <ConfirmDialog.CancelButton onPress={handleDismiss}>
+        <ConfirmDialog.CancelButton onPress={handleDismiss} isDisabled={mutation.isPending}>
           {t('marketingOptIn.later')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
-        <ConfirmDialog.ConfirmButton onPress={handleAgree}>
+        <ConfirmDialog.ConfirmButton onPress={handleAgree} isLoading={mutation.isPending}>
           {t('marketingOptIn.agree')}
         </ConfirmDialog.ConfirmButton>
       }
