@@ -20,8 +20,12 @@ env:
   DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
 jobs:
+  # 릴리스 PR(develop→main, head=develop) 스킵: 같은 커밋의 push 런이 전체 검증을
+  # 이미 수행하고(develop↔main은 릴리스마다 ff-sync로 동기) 그 체크가 동일 SHA로 PR에
+  # 표시된다 — 이중 실행(러너 분수·Testcontainers)과 머지 시 취소(✗) 노이즈 제거.
   lint:
     name: Lint & Type Check
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -46,6 +50,7 @@ jobs:
 
   test:
     name: Test
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -88,6 +93,7 @@ jobs:
 
   build:
     name: Build
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
