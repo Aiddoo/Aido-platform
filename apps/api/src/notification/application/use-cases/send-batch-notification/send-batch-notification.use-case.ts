@@ -47,6 +47,10 @@ export class SendBatchNotificationUseCase {
 			);
 
 		// 2. 푸시 발송 + unread count 무효화
+		// force는 DB 컬럼이 아니라 생성 결과에 남지 않으므로 입력에서 재결합한다
+		const forcedUserIds = new Set(
+			dataList.filter((d) => d.force === true).map((d) => d.userId),
+		);
 		this.pushDispatcher.fireAndForgetBatchPush(
 			created.map((notification) => ({
 				data: {
@@ -65,6 +69,7 @@ export class SendBatchNotificationUseCase {
 					purpose: notification.purpose,
 					campaignKey: notification.campaignKey,
 					variantId: notification.variantId,
+					force: forcedUserIds.has(notification.userId),
 				},
 				notificationId: notification.id,
 			})),

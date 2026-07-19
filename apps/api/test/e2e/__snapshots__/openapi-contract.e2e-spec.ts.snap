@@ -692,6 +692,11 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "minLength": 1,
           "type": "string",
         },
+        "force": {
+          "default": false,
+          "description": "사용자 푸시 수신 설정(푸시 OFF·야간 미동의·설정 없음)을 무시하고 강제 발송 (중요 공지용)",
+          "type": "boolean",
+        },
         "targetFilter": {
           "default": "ALL",
           "description": "알림 대상 필터 (ALL: 전체, WITH_PUSH_TOKEN: 푸시 토큰 보유, ACTIVE_LAST_7_DAYS: 7일 내 활동, ACTIVE_LAST_30_DAYS: 30일 내 활동, SUBSCRIBERS: 유료 구독)",
@@ -7585,6 +7590,11 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "maxLength": 500,
           "minLength": 1,
           "type": "string",
+        },
+        "force": {
+          "default": false,
+          "description": "사용자 푸시 수신 설정(푸시 OFF·야간 미동의·설정 없음)을 무시하고 강제 발송 (중요 공지용)",
+          "type": "boolean",
         },
         "title": {
           "description": "알림 제목",

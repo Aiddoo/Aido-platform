@@ -228,10 +228,11 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 						get: jest.fn().mockResolvedValue(null),
 						set: jest.fn().mockResolvedValue(undefined),
 						del: jest.fn().mockResolvedValue(undefined),
+						// CacheService.mget 계약: miss는 undefined (null 아님)
 						mget: jest
 							.fn()
 							.mockImplementation(async (keys: string[]) =>
-								keys.map(() => null),
+								keys.map(() => undefined),
 							),
 						mset: jest.fn().mockResolvedValue(undefined),
 						invalidatePushTokens: jest.fn().mockResolvedValue(undefined),
@@ -274,6 +275,11 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 					provide: PUSH_RATE_LIMITER,
 					useValue: {
 						isRateLimited: jest.fn().mockResolvedValue(false),
+						reserveBatch: jest
+							.fn()
+							.mockImplementation(async (requests: unknown[]) =>
+								requests.map(() => false),
+							),
 						destroy: jest.fn(),
 					},
 				},
@@ -892,6 +898,55 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			// 할일 없는 사용자: morningNoTodo 메시지
 			expect(createManyCall.data[1].title).toBe(messageNoTodos.title);
 			expect(createManyCall.data[1].body).toBe(messageNoTodos.body);
+		});
+
+		it("force 항목은 pushEnabled=false여도 푸시가 발송되어야 함", async () => {
+			// Given - 푸시를 꺼둔 사용자와 force 지정된 관리자 브로드캐스트
+			const dataList = [
+				{
+					userId: mockUserId,
+					type: "ADMIN_BROADCAST" as const,
+					title: "중요 공지",
+					body: "강제 발송 본문",
+					force: true,
+					action: {
+						type: "BROWSER" as const,
+						url: "https://aido.kr/ko/patch-notes",
+					},
+				},
+			];
+
+			mockUserPreferenceDb.findMany.mockResolvedValue([
+				{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false },
+			]);
+			mockUserConsentDb.findMany.mockResolvedValue([]);
+			mockPushTokenDb.findMany.mockResolvedValue([
+				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+			]);
+			mockPushProvider.sendBatch.mockResolvedValue({
+				total: 1,
+				successCount: 1,
+				failureCount: 0,
+				results: [{ token: mockPushToken, success: true }],
+				invalidTokens: [],
+			});
+
+			// When - 배치 알림 생성 및 발송 (재조립 경로 포함 end-to-end)
+			const result = await facade.createAndSendBatch(dataList);
+			await pushDispatcher.beforeApplicationShutdown();
+
+			// Then - 설정 게이트를 우회해 실제 푸시까지 발송되어야 함
+			expect(result.count).toBe(1);
+			expect(mockPushProvider.sendBatch).toHaveBeenCalledTimes(1);
+
+			const payloadData =
+				mockPushProvider.sendBatch.mock.calls[0]?.[0]?.[0]?.data;
+			expect(payloadData).toMatchObject({
+				type: "ADMIN_BROADCAST",
+				action: { type: "BROWSER", url: "https://aido.kr/ko/patch-notes" },
+			});
+			// force는 서버 발송 정책일 뿐 클라이언트 payload 계약에 포함되지 않는다
+			expect(payloadData).not.toHaveProperty("force");
 		});
 	});
 });

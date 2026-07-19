@@ -94,6 +94,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 				"전체 사용자 알림입니다",
 				"ALL",
 				undefined,
+				false,
 			);
 
 			// Then - 모든 사용자에게 발송되어야 함
@@ -118,6 +119,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 				"푸시 토큰 사용자 알림입니다",
 				"WITH_PUSH_TOKEN",
 				undefined,
+				false,
 			);
 
 			// Then - 조건이 반영되고 대상에게만 발송되어야 함
@@ -141,6 +143,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 					"대상 없음",
 					"ALL",
 					undefined,
+					false,
 				),
 			).rejects.toThrow(ApplicationException);
 		});
@@ -163,6 +166,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 				"지정 사용자 알림입니다",
 				["target-user-1", "target-user-2"],
 				undefined,
+				false,
 			);
 
 			// Then - 지정 사용자에게 ADMIN_TARGETED로 발송되어야 함
@@ -173,10 +177,12 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 					expect.objectContaining({
 						userId: "target-user-1",
 						type: "ADMIN_TARGETED",
+						force: false,
 					}),
 					expect.objectContaining({
 						userId: "target-user-2",
 						type: "ADMIN_TARGETED",
+						force: false,
 					}),
 				]),
 			);
@@ -198,6 +204,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 				"일부 사용자 알림입니다",
 				["existing-1", "non-existing", "existing-2"],
 				undefined,
+				false,
 			);
 
 			// Then - 존재하는 사용자에게만 발송되어야 함

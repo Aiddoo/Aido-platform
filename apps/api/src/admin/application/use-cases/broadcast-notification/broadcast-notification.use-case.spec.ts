@@ -56,6 +56,7 @@ describe("BroadcastNotificationUseCase — 브로드캐스트", () => {
 			body: "내용",
 			targetFilter: "ALL",
 			action: undefined,
+			force: false,
 		});
 
 		// Then - 배치별로 발송하고 총계를 반환한다
@@ -81,6 +82,7 @@ describe("BroadcastNotificationUseCase — 브로드캐스트", () => {
 				type: "BROWSER",
 				url: "https://aido.kr/event",
 			},
+			force: false,
 		});
 
 		// Then - 발송 메시지에 externalUrl 메타데이터가 포함된다
@@ -89,6 +91,25 @@ describe("BroadcastNotificationUseCase — 브로드캐스트", () => {
 			type: "ADMIN_BROADCAST",
 			metadata: { externalUrl: "https://aido.kr/event" },
 		});
+	});
+
+	it("force 입력은 발송 메시지에 그대로 전파된다", async () => {
+		// Given - force 브로드캐스트 요청
+		userDirectory.streamTargetUserIds.mockReturnValue(streamOf([["u1"]]));
+		notifier.sendBatch.mockResolvedValue({ count: 1 });
+
+		// When - force로 브로드캐스트를 실행하면
+		await useCase.execute({
+			title: "제목",
+			body: "내용",
+			targetFilter: "WITH_PUSH_TOKEN",
+			action: undefined,
+			force: true,
+		});
+
+		// Then - 모든 발송 메시지에 force가 포함된다
+		const messages = notifier.sendBatch.mock.calls[0]?.[0];
+		expect(messages?.[0]).toMatchObject({ force: true });
 	});
 
 	it("대상이 한 명도 없으면 ADMIN_1402를 던진다", async () => {
@@ -102,6 +123,7 @@ describe("BroadcastNotificationUseCase — 브로드캐스트", () => {
 				body: "내용",
 				targetFilter: "ALL",
 				action: undefined,
+				force: false,
 			}),
 		).rejects.toMatchObject({ errorCode: "ADMIN_1402" });
 		expect(notifier.sendBatch).not.toHaveBeenCalled();

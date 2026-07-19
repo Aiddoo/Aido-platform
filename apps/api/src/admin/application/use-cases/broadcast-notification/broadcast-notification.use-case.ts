@@ -22,6 +22,7 @@ export interface BroadcastNotificationInput {
 	body: string;
 	targetFilter: BroadcastTargetFilter;
 	action: NotificationAction | undefined;
+	force: boolean;
 }
 
 /**
@@ -47,6 +48,7 @@ export class BroadcastNotificationUseCase {
 			body: input.body,
 			targetFilter: input.targetFilter,
 			action: input.action,
+			force: input.force,
 		});
 
 		let totalTargets = 0;

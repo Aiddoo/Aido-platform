@@ -61,6 +61,7 @@ describe("관리자 E2E", () => {
 						title: "E2E 테스트 알림",
 						body: "전체 사용자 알림입니다",
 						targetFilter: "ALL",
+						force: true,
 					})
 					.expect(201);
 

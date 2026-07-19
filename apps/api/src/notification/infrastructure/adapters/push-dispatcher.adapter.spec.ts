@@ -298,6 +298,75 @@ describe("PushDispatcherAdapter", () => {
 		expect(repository.createPushDispatch).not.toHaveBeenCalled();
 	});
 
+	it("force 항목은 설정 행이 없어도 발송 자격을 얻고, 일반 항목은 기존대로 차단된다", async () => {
+		// Given - 두 사용자 모두 preference 행이 없을 때(기본 거부), user-1만 force
+		const token = "ExponentPushToken[force-user]";
+		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
+		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([]);
+		rateLimiter.reserveBatch.mockResolvedValue([false]);
+		repository.createPushDispatch.mockResolvedValue({ id: 9 });
+		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
+		cacheService.mget.mockResolvedValue([undefined]);
+		cacheService.mset.mockResolvedValue(undefined);
+		repository.findActivePushTokensByUsers.mockResolvedValue([
+			{
+				id: 1,
+				userId: "user-1",
+				token,
+				deviceId: "force-device",
+				platform: "IOS",
+				isActive: true,
+				createdAt: tokenDate,
+				updatedAt: tokenDate,
+				lastUsedAt: tokenDate,
+				payloadVersion: 2,
+				appVersion: "1.6.0",
+			},
+		]);
+		pushProvider.sendBatch.mockResolvedValue({
+			total: 1,
+			successCount: 1,
+			failureCount: 0,
+			results: [{ token, success: true, ticketId: "ticket-force" }],
+			invalidTokens: [],
+		});
+
+		// When - force 항목과 일반 항목을 함께 배치 발송하면
+		adapter.fireAndForgetBatchPush([
+			{
+				data: {
+					userId: "user-1",
+					type: "ADMIN_BROADCAST",
+					title: "중요 공지",
+					body: "강제 발송 본문",
+					force: true,
+				},
+				notificationId: 11,
+			},
+			{
+				data: {
+					userId: "user-2",
+					type: "ADMIN_BROADCAST",
+					title: "중요 공지",
+					body: "강제 발송 본문",
+				},
+				notificationId: 12,
+			},
+		]);
+		await adapter.beforeApplicationShutdown();
+
+		// Then - force 항목만 설정 게이트를 우회해 rate limit 예약과 실제 발송에 도달한다
+		expect(rateLimiter.reserveBatch).toHaveBeenCalledWith([
+			{ userId: "user-1" },
+		]);
+		expect(repository.createPushDispatch).toHaveBeenCalledTimes(1);
+		expect(repository.createPushDispatch).toHaveBeenCalledWith(
+			expect.objectContaining({ userId: "user-1", notificationId: 11 }),
+		);
+		expect(pushProvider.sendBatch).toHaveBeenCalledTimes(1);
+	});
+
 	it("추가 분석 필드가 있어도 v1.0~v1.4와 현재 클라이언트 payload 계약을 모두 만족한다", async () => {
 		const token = "ExponentPushToken[legacy-compatible]";
 		userSettings.getPreferenceRecord.mockResolvedValue(

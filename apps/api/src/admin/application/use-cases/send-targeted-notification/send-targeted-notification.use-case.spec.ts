@@ -42,6 +42,7 @@ describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
 			body: "내용",
 			userIds: ["u1", "u2", "u3"],
 			action: undefined,
+			force: false,
 		});
 
 		// Then - 존재 사용자 수 기준으로 집계된다
@@ -55,6 +56,25 @@ describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
 		});
 	});
 
+	it("force 입력은 발송 메시지에 그대로 전파된다", async () => {
+		// Given - force 타겟 발송 요청
+		userDirectory.findExistingUserIds.mockResolvedValue(["u1"]);
+		notifier.sendBatch.mockResolvedValue({ count: 1 });
+
+		// When - force로 타겟 발송을 실행하면
+		await useCase.execute({
+			title: "제목",
+			body: "내용",
+			userIds: ["u1"],
+			action: undefined,
+			force: true,
+		});
+
+		// Then - 발송 메시지에 force가 포함된다
+		const messages = notifier.sendBatch.mock.calls[0]?.[0];
+		expect(messages?.[0]).toMatchObject({ force: true });
+	});
+
 	it("존재하는 사용자가 없으면 ADMIN_1402를 던진다", async () => {
 		// Given - 존재하는 사용자가 하나도 없을 때
 		userDirectory.findExistingUserIds.mockResolvedValue([]);
@@ -66,6 +86,7 @@ describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
 				body: "내용",
 				userIds: ["u1"],
 				action: undefined,
+				force: false,
 			}),
 		).rejects.toMatchObject({ errorCode: "ADMIN_1402" });
 		expect(notifier.sendBatch).not.toHaveBeenCalled();
