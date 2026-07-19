@@ -11,6 +11,7 @@
 
 import { getQueueToken } from "@nestjs/bullmq";
 import type { INestApplication } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
@@ -57,6 +58,7 @@ import {
 	TODO_REMINDER_QUEUE,
 	TodoReminderProcessor,
 } from "@/scheduler";
+import { DOMAIN_EVENT_PUBLISHER } from "@/shared/application/ports";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -87,6 +89,7 @@ import {
 	createE2eTestStateResetter,
 	type TestStateResetter,
 } from "./e2e-test-state";
+import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher";
 
 /* ── BullMQ 격리 대상 ─────────────────────────────────── */
 
@@ -168,6 +171,7 @@ export async function createE2eApp(
 	});
 	let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
 	let pushDispatcher: PushDispatcherAdapter | undefined;
+	let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
 	let module: TestingModule | undefined;
 	let app: INestApplication<App> | undefined;
 
@@ -238,7 +242,16 @@ export async function createE2eApp(
 		.overrideProvider(SUN_TIME_PROVIDER)
 		.useValue(fakeSunTimeProvider)
 		.overrideProvider(PinoLogger)
-		.useClass(FakeLogger);
+		.useClass(FakeLogger)
+		// 도메인 이벤트 리스너의 잔류 작업을 reset이 drain할 수 있도록 추적 퍼블리셔로 교체
+		.overrideProvider(DOMAIN_EVENT_PUBLISHER)
+		.useFactory({
+			inject: [EventEmitter2],
+			factory: (eventEmitter: EventEmitter2) => {
+				trackingEventPublisher = new TrackingDomainEventPublisher(eventEmitter);
+				return trackingEventPublisher;
+			},
+		});
 
 	// BullMQ 격리: Queue 토큰 → mock queue
 	for (const queueName of BULL_QUEUES) {
@@ -274,7 +287,11 @@ export async function createE2eApp(
 
 		const helpers = new E2eHelpers(app, fakeEmailService);
 		const reset = createE2eTestStateResetter({
-			drainBackgroundWork: () => pushDispatcher?.drainPendingPushes(),
+			drainBackgroundWork: async () => {
+				// 이벤트 리스너(DB 쓰기 부수효과) → 푸시 순으로 drain 후에야 TRUNCATE
+				await trackingEventPublisher?.drainPendingEvents();
+				await pushDispatcher?.drainPendingPushes();
+			},
 			cleanupDatabase: () => testDatabase.cleanup(),
 			resetCache: () => cacheAdapter.reset(),
 			flushRedis: () => redisMock.flushall(),

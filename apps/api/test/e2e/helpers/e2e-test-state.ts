@@ -30,20 +30,18 @@ export function createE2eTestStateResetter({
 
 	return async () => {
 		const errors: Error[] = [];
-		let backgroundWorkDrained = true;
 		if (drainBackgroundWork) {
 			try {
 				await drainBackgroundWork();
 			} catch (error) {
-				backgroundWorkDrained = false;
 				errors.push(normalizeError(error));
 			}
 		}
 
-		const resetters = [
-			...(backgroundWorkDrained ? [cleanupDatabase] : []),
-			...nonDatabaseResetters,
-		];
+		// drain 실패 여부와 무관하게 DB는 항상 정리한다 — TRUNCATE를 건너뛰면
+		// 오염이 다음 테스트로 전파되어 실패가 연쇄된다. drain 에러는 아래
+		// AggregateError로 함께 보고되므로 은폐되지 않는다.
+		const resetters = [cleanupDatabase, ...nonDatabaseResetters];
 		const results = await Promise.allSettled(
 			resetters.map(async (resetter) => resetter()),
 		);

@@ -51,13 +51,15 @@ jobs:
 
       - uses: ./.github/actions/setup
 
+      # 각 테스트 출력을 파일로 남기고 실패 시 아티팩트 업로드 — 플레이크 재현용
+      # (jest-e2e는 showSeed로 랜덤 시드가 로그에 남으므로 --seed로 고정 재현 가능)
       - name: Run unit tests
-        run: pnpm turbo run test ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: pnpm turbo run test ${{ github.event_name == 'pull_request' && '--affected' || '' }} 2>&1 | tee /tmp/test-unit.log
 
       # 통합/E2E 태스크는 @aido/api에만 존재 → PR에서 --affected만으로 자연 스코프됨
       # (모바일/문서-only PR은 Testcontainers 스킵, api 영향 변경은 실행)
       - name: Run integration tests
-        run: pnpm turbo run test:integration ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
+        run: pnpm turbo run test:integration ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }} 2>&1 | tee /tmp/test-integration.log
 
       - name: Run E2E tests
         env:
@@ -69,7 +71,15 @@ jobs:
           EMAIL_FROM_NAME: Aido Test
           TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
           NODE_ENV: test
-        run: pnpm turbo run test:e2e ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
+        run: pnpm turbo run test:e2e ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }} 2>&1 | tee /tmp/test-e2e.log
+
+      - name: Upload test logs (failure only)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-logs-${{ github.run_id }}
+          path: /tmp/test-*.log
+          retention-days: 14
 
   build:
     name: Build

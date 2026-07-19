@@ -57,7 +57,9 @@ describe("E2E 테스트 상태 reset", () => {
 		expect(cleanupDatabase).toHaveBeenCalledTimes(1);
 	});
 
-	it("백그라운드 drain 실패 시 DB는 보호하고 나머지 상태를 초기화해야 한다", async () => {
+	it("백그라운드 drain이 실패해도 DB를 포함한 모든 상태를 초기화하고 에러를 보고해야 한다", async () => {
+		// drain 실패 시 TRUNCATE를 건너뛰면 오염이 다음 테스트로 전파되므로
+		// DB 정리는 항상 수행하고, drain 에러는 AggregateError로 함께 드러낸다
 		const drainError = new Error("drain failed");
 		const drainBackgroundWork = jest.fn().mockRejectedValue(drainError);
 		const cleanupDatabase = jest.fn();
@@ -78,7 +80,7 @@ describe("E2E 테스트 상태 reset", () => {
 				expect.objectContaining({ message: "cache failed" }),
 			],
 		});
-		expect(cleanupDatabase).not.toHaveBeenCalled();
+		expect(cleanupDatabase).toHaveBeenCalledTimes(1);
 		expect(resetCache).toHaveBeenCalledTimes(1);
 		expect(flushRedis).toHaveBeenCalledTimes(1);
 		expect(clearFake).toHaveBeenCalledTimes(1);

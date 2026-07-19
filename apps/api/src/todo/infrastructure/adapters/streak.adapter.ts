@@ -9,9 +9,12 @@ import type { StreakPort } from "../../application/ports/streak.port";
 export class StreakAdapter implements StreakPort {
 	constructor(private readonly userSettingsFacade: UserSettingsFacade) {}
 
-	recordTodoToggle(userId: string, completed: boolean, timezone: string): void {
-		// user-settings 파사드로 위임(fire-and-forget)
-		void this.userSettingsFacade.onTodoToggled(userId, completed, timezone);
+	async recordTodoToggle(
+		userId: string,
+		completed: boolean,
+		timezone: string,
+	): Promise<void> {
+		await this.userSettingsFacade.onTodoToggled(userId, completed, timezone);
 	}
 
 	async getStreakContext(userId: string): Promise<{
