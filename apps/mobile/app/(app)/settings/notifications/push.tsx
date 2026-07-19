@@ -1,6 +1,7 @@
 import { PreferencePolicy } from '@src/features/auth/models/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-push-consent-mutation-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
 import {
@@ -37,6 +38,7 @@ function PushSettingsForm() {
     queries: [useGetPreferenceQueryOptions(), useGetConsentQueryOptions()],
   });
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
   const { t } = useTranslation('notification');
 
@@ -62,8 +64,16 @@ function PushSettingsForm() {
         />
       </SettingsCard>
 
-      {/* 광고성 앱 푸시는 발송 설정이 아니라 수신 동의(consent)라 별도 카드로 분리 */}
+      {/* 마케팅 수신 동의(일반 + 광고성 푸시)는 발송 설정이 아니라 수신 동의(consent)라 별도 카드로 분리 */}
       <SettingsCard>
+        <SettingsToggle
+          label={t('settings.marketingLabel')}
+          description={t('settings.marketingDescription')}
+          isSelected={consent.marketingAgreedAt !== null}
+          onSelectedChange={(agreed) => marketingMutation.mutate({ agreed })}
+          isDisabled={marketingMutation.isPending}
+        />
+        <Separator className="bg-gray-2" />
         <SettingsToggle
           label={t('settings.marketingPushLabel')}
           description={t('settings.marketingPushDescription')}
@@ -85,6 +95,8 @@ PushSettingsForm.Loading = function Loading() {
         <ToggleSkeleton />
       </SettingsCard>
       <SettingsCard>
+        <ToggleSkeleton />
+        <Separator className="bg-gray-2" />
         <ToggleSkeleton />
       </SettingsCard>
     </VStack>

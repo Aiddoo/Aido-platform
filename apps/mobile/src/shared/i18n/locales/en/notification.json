@@ -44,6 +44,8 @@
     "pushDescription": "Receive all push notifications",
     "nightPushLabel": "Night push notifications",
     "nightPushDescription": "Also receive notifications between 9 PM and 8 AM",
+    "marketingLabel": "Marketing communications",
+    "marketingDescription": "Receive events, benefits, and promotions",
     "marketingPushLabel": "Promotional push",
     "marketingPushDescription": "Receive events, benefits, and tailored picks",
     "weatherLabel": "Weather alerts",

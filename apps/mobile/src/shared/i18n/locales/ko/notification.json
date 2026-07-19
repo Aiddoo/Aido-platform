@@ -44,6 +44,8 @@
     "pushDescription": "모든 푸시 알림을 받아요",
     "nightPushLabel": "야간 푸시 알림",
     "nightPushDescription": "21:00 - 08:00 시간대에도 알림을 받아요",
+    "marketingLabel": "마케팅 수신 동의",
+    "marketingDescription": "이벤트·혜택·프로모션 소식을 받아요",
     "marketingPushLabel": "광고성 앱 푸시",
     "marketingPushDescription": "이벤트·혜택·맞춤 추천 알림을 받아요",
     "weatherLabel": "날씨 알림",
