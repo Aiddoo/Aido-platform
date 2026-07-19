@@ -4,10 +4,12 @@
 # 호출: .github/workflows/deploy.yml → SSH 부트스트랩(락 획득 + git reset) → 이 스크립트
 # 전제: 실행 시점에 레포는 이미 DEPLOY_SHA로 reset --hard 된 상태
 #
-# 수동 배포: cd ~/apps/Aido-platform && DEPLOY_SHA=$(git rev-parse HEAD) bash scripts/deploy.sh
+# 이미지 소스: GHCR_TOKEN이 있으면 GHCR pull(기본 — CI가 빌드한 이미지), 없거나
+#              --build 지정 시 서버 로컬 빌드(비상 폴백)
+# 수동 배포: cd ~/apps/Aido-platform && DEPLOY_SHA=$(git rev-parse HEAD) bash scripts/deploy.sh --build
 # 수동 롤백: cd ~/apps/Aido-platform && bash scripts/deploy.sh --rollback
 # [보안] 이 디렉터리에서 git clean 절대 금지 — .env.docker.prod(untracked 시크릿)가 삭제됨
-# [보안] set -x 금지 — 환경변수 노출 방지
+# [보안] set -x 금지 — 환경변수 노출 방지. GHCR_TOKEN은 stdin 로그인 후 즉시 logout
 # =============================================================================
 set -Eeuo pipefail
 
@@ -15,6 +17,8 @@ STATE_DIR="${STATE_DIR:-$HOME/apps/deploy-state}"
 COMPOSE_FILE="docker-compose.prod.yml"
 API_IMAGE="aido-platform-api"
 MIGRATE_IMAGE="aido-platform-migrate"
+GHCR_API_IMAGE="ghcr.io/aiddoo/aido-platform-api"
+GHCR_MIGRATE_IMAGE="ghcr.io/aiddoo/aido-platform-migrate"
 API_CONTAINER="aido-prod-api"
 MIGRATE_CONTAINER="aido-prod-migrate"
 HEALTH_URL="${HEALTH_URL:-http://localhost:8080/health}"   # 드릴 시 env로 교체 가능
@@ -139,12 +143,25 @@ main() {
     log "기존 latest 없음(첫 배포) — 롤백 태그 생략"
   fi
 
-  # 3. 빌드 (캐시 유지, t4g.small 메모리 피크 분산 위해 순차)
+  # 3. 이미지 준비 — 기본: CI가 빌드해 GHCR에 올린 이미지 pull (실패 시 컨테이너 무접촉 중단)
+  #    폴백: --build 또는 GHCR_TOKEN 부재 시 서버 로컬 빌드 (캐시 유지, 순차로 메모리 피크 분산)
   trap rollback ERR
-  log "이미지 빌드: migrate"
-  compose build migrate
-  log "이미지 빌드: api"
-  compose build api
+  if [[ "${1:-}" == "--build" || -z "${GHCR_TOKEN:-}" ]]; then
+    log "이미지 빌드(로컬): migrate"
+    compose build migrate
+    log "이미지 빌드(로컬): api"
+    compose build api
+  else
+    log "이미지 pull: ${GHCR_API_IMAGE}:${DEPLOY_SHA}"
+    printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u x-access-token --password-stdin >/dev/null 2>&1
+    docker pull -q "${GHCR_API_IMAGE}:${DEPLOY_SHA}"
+    docker pull -q "${GHCR_MIGRATE_IMAGE}:${DEPLOY_SHA}"
+    docker logout ghcr.io >/dev/null 2>&1 || true
+    # 로컬 이름으로 retag 후 GHCR 태그 제거 — 기존 :latest/:rollback 2세대 모델 그대로 유지
+    docker tag "${GHCR_API_IMAGE}:${DEPLOY_SHA}" "$API_IMAGE:latest"
+    docker tag "${GHCR_MIGRATE_IMAGE}:${DEPLOY_SHA}" "$MIGRATE_IMAGE:latest"
+    docker rmi "${GHCR_API_IMAGE}:${DEPLOY_SHA}" "${GHCR_MIGRATE_IMAGE}:${DEPLOY_SHA}" >/dev/null 2>&1 || true
+  fi
 
   # 4. 기동 (migrate 완료 대기 후 api 재생성; migrate 실패 시 구 api 유지된 채 비정상 종료 → 롤백 경로)
   log "컨테이너 기동 (migrate → api)"

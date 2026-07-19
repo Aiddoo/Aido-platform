@@ -90,13 +90,13 @@ pnpm docker:prod:down
 ### 3.1 파이프라인 개요
 
 ```
-push(main) ─→ CI (lint / test / build)
-                 │ 성공 시 (workflow_run)
+push(main) ─→ CI (lint / test / build / docker*)   * arm64 러너에서 이미지 빌드 → GHCR push (:sha 태그)
+                 │ 전 job 성공 시 (workflow_run)
                  ▼
         Deploy to EC2 (.github/workflows/deploy.yml)
                  ├─ CI가 검증한 커밋 SHA 해석·검증 (40자 hex + origin/main ancestor)
                  ├─ SSH 부트스트랩: flock 락 → git reset --hard $SHA
-                 ├─ scripts/deploy.sh: 디스크 점검 → 롤백 태깅 → 빌드 → 기동 → 헬스 게이트
+                 ├─ scripts/deploy.sh: 디스크 점검 → 롤백 태깅 → GHCR pull → 기동 → 헬스 게이트
                  └─ 러너에서 외부 검증: https://api.aido.kr/health
 ```
 
@@ -114,7 +114,7 @@ push(main) ─→ CI (lint / test / build)
 | SHA 검증 | 작업트리 == `DEPLOY_SHA`, 마지막 배포 커밋의 후손인지 확인 (역행 배포 차단, `FORCE_DEPLOY=1`로 우회) |
 | 디스크 점검 | §3.3 참조 — 부족하면 빌드 시작 전 중단 |
 | 롤백 태깅 | 현재 `latest` → `:rollback` (자동 롤백 지점, 첫 실행 시 자동 시드) |
-| 빌드 | `compose build migrate` → `compose build api` 순차 (메모리 피크 분산, BuildKit 캐시 재사용) |
+| 이미지 준비 | 기본: CI(arm64 러너)가 빌드해 GHCR에 올린 `:{sha}` 이미지 pull → 로컬 이름 retag — **서버 빌드 부하 0**. pull 실패 시 컨테이너 무접촉 중단. 폴백: `--build` 또는 `GHCR_TOKEN` 부재 시 서버 로컬 빌드 (`compose build` 순차) |
 | 기동 | `compose up -d` — migrate 완료 대기 후 api 재생성 |
 | 헬스 게이트 | 90초 내 Docker HEALTHCHECK `healthy` **AND** `/health` 연속 3회 성공, 실패 시 자동 롤백 |
 | 정리 | dangling 이미지 + 캐시 6GB 초과분만 (**`-a` prune 금지** — 롤백 이미지가 삭제됨) |
@@ -133,6 +133,8 @@ push(main) ─→ CI (lint / test / build)
 - 용량 예산: 29GB 디스크 기준 정상 상태 ≈ 15GB (기본 ~8 + 캐시 ≤6 + 빌드 중 임시 1세대).
 - 빌드 전 사전 점검: 여유 <3GB → 캐시 전체 정리 → 재확인 → **그래도 부족하면 빌드를 시작하지 않고 중단** (서비스 무영향).
 - 점검 명령: `df -h /`, `docker system df` (매 배포의 GH Actions 로그에도 `df` 출력됨).
+- **GHCR 보존 정책**: CI docker job이 각 패키지(`aido-platform-api`/`-migrate`) 버전을 최신 10개만 유지 (`actions/delete-package-versions`). 서버의 BuildKit 캐시는 로컬 빌드 폴백 경로에서만 사용됨.
+- **자격 증명**: GHCR push/pull 모두 워크플로우별 임시 `GITHUB_TOKEN` 사용 — 서버·레포에 장수명 레지스트리 자격 증명 없음 (서버는 stdin 로그인 후 즉시 logout).
 
 ### 3.4 장애 대응 런북
 

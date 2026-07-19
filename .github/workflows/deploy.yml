@@ -23,6 +23,7 @@ concurrency:
 permissions:
   contents: read
   actions: read
+  packages: read # GHCR 이미지 pull (서버로 임시 GITHUB_TOKEN 전달 — 런 종료 시 자동 만료)
 
 jobs:
   deploy:
@@ -59,12 +60,13 @@ jobs:
         env:
           DEPLOY_SHA: ${{ steps.sha.outputs.sha }}
           FORCE_DEPLOY: ${{ (github.event_name == 'workflow_dispatch' && inputs.force) && '1' || '0' }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           command_timeout: 20m
-          envs: DEPLOY_SHA,FORCE_DEPLOY
+          envs: DEPLOY_SHA,FORCE_DEPLOY,GHCR_TOKEN
           script: |
             set -euo pipefail
             mkdir -p "$HOME/apps/deploy-state"
