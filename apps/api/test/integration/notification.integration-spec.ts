@@ -948,5 +948,51 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			// force는 서버 발송 정책일 뿐 클라이언트 payload 계약에 포함되지 않는다
 			expect(payloadData).not.toHaveProperty("force");
 		});
+
+		it("같은 배치에 섞인 같은 사용자의 비-force 알림은 force로 오염되지 않아야 함", async () => {
+			// Given - 푸시를 꺼둔 사용자에게 force 알림과 일반 알림이 한 배치로 들어올 때
+			const dataList = [
+				{
+					userId: mockUserId,
+					type: "ADMIN_TARGETED" as const,
+					title: "중요 공지",
+					body: "강제 발송 본문",
+					force: true,
+				},
+				{
+					userId: mockUserId,
+					type: "TODO_REMINDER" as const,
+					title: "할 일 리마인더",
+					body: "일반 발송 본문",
+				},
+			];
+
+			mockUserPreferenceDb.findMany.mockResolvedValue([
+				{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false },
+			]);
+			mockUserConsentDb.findMany.mockResolvedValue([]);
+			mockPushTokenDb.findMany.mockResolvedValue([
+				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+			]);
+			mockPushProvider.sendBatch.mockResolvedValue({
+				total: 1,
+				successCount: 1,
+				failureCount: 0,
+				results: [{ token: mockPushToken, success: true }],
+				invalidTokens: [],
+			});
+
+			// When - 배치 알림 생성 및 발송
+			const result = await facade.createAndSendBatch(dataList);
+			await pushDispatcher.beforeApplicationShutdown();
+
+			// Then - force 지정된 알림만 발송되고 일반 알림은 수신 설정에 막혀야 함
+			expect(result.count).toBe(2);
+			expect(mockPushProvider.sendBatch).toHaveBeenCalledTimes(1);
+
+			const payloads = mockPushProvider.sendBatch.mock.calls[0]?.[0];
+			expect(payloads).toHaveLength(1);
+			expect(payloads?.[0]?.data).toMatchObject({ type: "ADMIN_TARGETED" });
+		});
 	});
 });
