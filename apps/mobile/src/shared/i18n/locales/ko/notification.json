@@ -2,6 +2,14 @@
   "actions": {
     "marketingOptOut": "광고성 푸시 그만 받기"
   },
+  "marketingOptIn": {
+    "bannerTitle": "혜택·리마인드 알림 받기",
+    "bannerDescription": "연속 기록·놓친 할 일·이벤트 소식을 챙겨드려요",
+    "title": "이런 알림을 보내드려요",
+    "description": "· 연속 기록이 끊기기 전 미리 리마인드\n· 놓친 할 일과 AI 맞춤 추천\n· 이벤트·혜택 소식\n\n언제든 설정에서 끌 수 있어요.\n(광고성 정보 수신 동의)",
+    "agree": "네, 받을게요",
+    "later": "나중에"
+  },
   "titles": {
     "notifications": "알림",
     "settings": "알림 설정",
@@ -36,6 +44,8 @@
     "pushDescription": "모든 푸시 알림을 받아요",
     "nightPushLabel": "야간 푸시 알림",
     "nightPushDescription": "21:00 - 08:00 시간대에도 알림을 받아요",
+    "marketingPushLabel": "광고성 앱 푸시",
+    "marketingPushDescription": "이벤트·혜택·맞춤 추천 알림을 받아요",
     "weatherLabel": "날씨 알림",
     "weatherDescription": "날씨 알림을 받아요",
     "weatherMorningLabel": "오전 날씨 알림",

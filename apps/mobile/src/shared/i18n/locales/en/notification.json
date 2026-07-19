@@ -2,6 +2,14 @@
   "actions": {
     "marketingOptOut": "Stop promotional pushes"
   },
+  "marketingOptIn": {
+    "bannerTitle": "Get benefit & reminder alerts",
+    "bannerDescription": "Streak saves, missed to-dos, and event news",
+    "title": "Here's what you'll get",
+    "description": "· A reminder before your streak breaks\n· Missed to-dos & AI picks for you\n· Events & benefit news\n\nTurn it off anytime in Settings.\n(Consent to promotional messages)",
+    "agree": "Yes, notify me",
+    "later": "Later"
+  },
   "titles": {
     "notifications": "Notifications",
     "settings": "Notification Settings",
@@ -36,6 +44,8 @@
     "pushDescription": "Receive all push notifications",
     "nightPushLabel": "Night push notifications",
     "nightPushDescription": "Also receive notifications between 9 PM and 8 AM",
+    "marketingPushLabel": "Promotional push",
+    "marketingPushDescription": "Receive events, benefits, and tailored picks",
     "weatherLabel": "Weather alerts",
     "weatherDescription": "Receive weather alerts",
     "weatherMorningLabel": "Morning weather alert",

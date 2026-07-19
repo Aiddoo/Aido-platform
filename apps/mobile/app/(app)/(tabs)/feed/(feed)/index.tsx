@@ -1,5 +1,6 @@
 import MagicIcon from '@assets/icons/ic_magic.svg';
 import { useGetSuggestionsQueryOptions } from '@src/features/ai/presentations/queries/use-get-suggestions-query-options';
+import { MarketingPushOptInBanner } from '@src/features/notification/presentations/components/MarketingPushOptInBanner';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
@@ -51,6 +52,12 @@ export default function MyFeedScreen() {
       </QueryErrorBoundary>
 
       <Spacing size={20} />
+
+      <QueryErrorBoundary fallback={() => null}>
+        <Suspense fallback={null}>
+          <MarketingPushOptInBanner />
+        </Suspense>
+      </QueryErrorBoundary>
 
       <Box px={16}>
         <QueryErrorBoundary>
