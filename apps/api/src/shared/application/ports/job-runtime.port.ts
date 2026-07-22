@@ -19,6 +19,7 @@ export interface EnqueueJobOptions {
 	readonly retentionSeconds: number;
 	readonly deleteAfterSeconds: number;
 	readonly deadLetter?: string;
+	readonly timezone?: string;
 }
 
 export interface WorkJobOptions {

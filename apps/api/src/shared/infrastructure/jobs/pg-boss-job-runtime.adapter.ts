@@ -58,6 +58,98 @@ export interface PgBossClient {
 	getQueues(names?: string[]): Promise<QueueResult[]>;
 }
 
+type PgBossClientLoader = () => Promise<PgBossClient>;
+
+export class LazyPgBossClient implements PgBossClient {
+	private client?: PgBossClient;
+	private readonly errorListeners = new Set<(error: Error) => void>();
+
+	constructor(private readonly load: PgBossClientLoader) {}
+
+	async start(): Promise<unknown> {
+		if (this.client) {
+			return this.client;
+		}
+
+		const client = await this.load();
+		for (const listener of this.errorListeners) {
+			client.on("error", listener);
+		}
+		await client.start();
+		this.client = client;
+		return client;
+	}
+
+	async stop(options?: StopOptions): Promise<void> {
+		await this.client?.stop(options);
+	}
+
+	on(event: "error", listener: (error: Error) => void): unknown {
+		this.errorListeners.add(listener);
+		this.client?.on(event, listener);
+		return this;
+	}
+
+	async createQueue(name: string): Promise<void> {
+		await this.current().createQueue(name);
+	}
+
+	async send(
+		name: string,
+		data: object,
+		options: SendOptions,
+	): Promise<string | null> {
+		return this.current().send(name, data, options);
+	}
+
+	async schedule(
+		name: string,
+		cron: string,
+		data: object,
+		options: ScheduleOptions,
+	): Promise<void> {
+		await this.current().schedule(name, cron, data, options);
+	}
+
+	async unschedule(name: string, key?: string): Promise<void> {
+		await this.current().unschedule(name, key);
+	}
+
+	async findJobs<T extends JobData>(
+		name: string,
+		options?: FindJobsOptions,
+	): Promise<JobWithMetadata<T>[]> {
+		return this.current().findJobs<T>(name, options);
+	}
+
+	async cancel(
+		name: string,
+		ids: string[],
+		options?: { db?: Db },
+	): Promise<unknown> {
+		return this.current().cancel(name, ids, options);
+	}
+
+	async work<T extends JobData>(
+		name: string,
+		options: WorkOptions & { includeMetadata: true },
+		handler: (jobs: JobWithMetadata<T>[]) => Promise<unknown>,
+	): Promise<string> {
+		return this.current().work(name, options, handler);
+	}
+
+	async getQueues(names?: string[]): Promise<QueueResult[]> {
+		return this.current().getQueues(names);
+	}
+
+	private current(): PgBossClient {
+		if (!this.client) {
+			throw new Error("pg-boss client has not been started");
+		}
+		return this.client;
+	}
+}
+
 interface JobTransactionSource {
 	readonly tx: PrismaTransactionLike;
 }
@@ -71,19 +163,21 @@ interface JobRuntimeConfigSource {
 export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
 	provide: PG_BOSS_CLIENT,
 	inject: [TypedConfigService],
-	useFactory: async (config: TypedConfigService) => {
-		// pg-boss 12는 ESM 전용이므로 CJS 기반 Jest/Nest 모듈 로딩과 분리한다.
-		const { PgBoss } = await import("pg-boss");
-		return new PgBoss({
-			connectionString: config.databaseUrl,
-			schema: config.job.schema,
-			application_name: "aido-pg-boss",
-			max: 3,
-			migrate: false,
-			createSchema: false,
-			useListenNotify: false,
-		});
-	},
+	useFactory: (config: TypedConfigService) =>
+		new LazyPgBossClient(async () => {
+			// pg-boss 12는 ESM 전용이다. PostgreSQL backend가 실제 시작될 때만
+			// 로드하여 기본 Redis 배포와 CJS 기반 테스트에 영향을 주지 않는다.
+			const { PgBoss } = await import("pg-boss");
+			return new PgBoss({
+				connectionString: config.databaseUrl,
+				schema: config.job.schema,
+				application_name: "aido-pg-boss",
+				max: 3,
+				migrate: false,
+				createSchema: false,
+				useListenNotify: false,
+			});
+		}),
 };
 
 @Injectable()
@@ -151,6 +245,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		await this.boss.schedule(queue, cron, data, {
 			...this.toPgBossOptions(options, this.transactionDatabase()),
 			key: scheduleKey,
+			tz: options.timezone,
 		});
 	}
 
@@ -293,7 +388,7 @@ export function deterministicJobId(queue: string, jobKey: string): string {
 	const bytes = Buffer.from(
 		createHash("sha256").update(`${queue}:${jobKey}`).digest().subarray(0, 16),
 	);
-	// UUID v5/variant 비트로 정규화해 pg-boss의 uuid PK와 호환한다.
+	// 결정적 해시를 UUID version/variant 비트로 정규화해 pg-boss PK와 호환한다.
 	bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
 	bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
 	const hex = bytes.toString("hex");

@@ -40,6 +40,7 @@ import {
 import { DedupModule } from "@/shared/infrastructure/dedup";
 import { EncryptionModule } from "@/shared/infrastructure/encryption";
 import { DomainEventsModule } from "@/shared/infrastructure/events";
+import { JobRuntimeModule } from "@/shared/infrastructure/jobs/job-runtime.module";
 import { LockModule } from "@/shared/infrastructure/lock";
 import { LoggerModule } from "@/shared/infrastructure/logging";
 import { REDIS_CLIENT, RedisModule } from "@/shared/infrastructure/redis";
@@ -103,6 +104,7 @@ import { AppService } from "./app.service";
 				},
 			}),
 		}),
+		JobRuntimeModule,
 		// 4. Global Modules
 		EntitlementModule,
 		LoggerModule.forRootAsync(),

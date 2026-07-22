@@ -13,6 +13,7 @@ import type {
 	JobData,
 } from "@/shared/application/ports/job-runtime.port";
 import {
+	LazyPgBossClient,
 	type PgBossClient,
 	PgBossJobRuntimeAdapter,
 } from "./pg-boss-job-runtime.adapter";
@@ -30,6 +31,7 @@ function enqueueOptions(): EnqueueJobOptions {
 		retentionSeconds: 14 * 24 * 60 * 60,
 		deleteAfterSeconds: 7 * 24 * 60 * 60,
 		deadLetter: "document-generation-dead-letter",
+		timezone: "Asia/Seoul",
 	};
 }
 
@@ -203,7 +205,11 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 			name: QUEUE,
 			cron: "0 1 * * 1",
 			data: { reportType: "WEEKLY" },
-			options: { key: "weekly-document", singletonKey: "document:42" },
+			options: {
+				key: "weekly-document",
+				singletonKey: "document:42",
+				tz: "Asia/Seoul",
+			},
 		});
 	});
 
@@ -258,5 +264,19 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 		expect(boss.stopCalls).toEqual([
 			{ graceful: true, timeout: 90_000, close: true },
 		]);
+	});
+});
+
+describe("LazyPgBossClient — backend 비선택 시 무초기화", () => {
+	it("start 전에는 pg-boss 모듈과 연결을 생성하지 않는다", async () => {
+		const client = new FakePgBossClient();
+		const load = jest.fn().mockResolvedValue(client);
+		const lazyClient = new LazyPgBossClient(load);
+
+		lazyClient.on("error", jest.fn());
+		expect(load).not.toHaveBeenCalled();
+
+		await lazyClient.start();
+		expect(load).toHaveBeenCalledTimes(1);
 	});
 });

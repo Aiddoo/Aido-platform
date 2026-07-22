@@ -6,6 +6,7 @@ import type {
 } from "@/shared/application/ports/job-runtime.port";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import {
+	JobRuntimeLifecycle,
 	jobRuntimeProvider,
 	POSTGRES_JOB_RUNTIME,
 	REDIS_JOB_RUNTIME,
@@ -59,4 +60,17 @@ describe("selectJobRuntime — backend 선택", () => {
 			await module.close();
 		},
 	);
+});
+
+describe("JobRuntimeLifecycle — 선택 runtime 수명주기", () => {
+	it("애플리케이션 시작과 종료를 선택된 runtime에 위임한다", async () => {
+		const runtime = createRuntime();
+		const lifecycle = new JobRuntimeLifecycle(runtime);
+
+		await lifecycle.onApplicationBootstrap();
+		await lifecycle.onApplicationShutdown();
+
+		expect(runtime.start).toHaveBeenCalledTimes(1);
+		expect(runtime.stop).toHaveBeenCalledTimes(1);
+	});
 });
