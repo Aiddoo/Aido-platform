@@ -1,6 +1,4 @@
-import { InjectQueue } from "@nestjs/bullmq";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import type { Queue } from "bullmq";
 import dayjs from "dayjs";
 import {
 	ACCOUNT_DELETION,
@@ -9,11 +7,15 @@ import {
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import {
+	ACCOUNT_PURGE_JOB_NAME,
 	ACCOUNT_PURGE_QUEUE,
-	type AccountPurgeJobData,
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 
 /**
@@ -30,8 +32,7 @@ export class AccountPurgeJob implements OnModuleInit {
 		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
 		private readonly userRepository: UserRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
-		@InjectQueue(ACCOUNT_PURGE_QUEUE)
-		private readonly queue: Queue<AccountPurgeJobData>,
+		@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
 		private readonly processor: AccountPurgeProcessor,
 	) {}
 
@@ -47,10 +48,12 @@ export class AccountPurgeJob implements OnModuleInit {
 			this.#logger,
 			"Account purge scheduler registration",
 			async () => {
-				await this.queue.upsertJobScheduler(
+				await this.runtime.schedule(
 					"daily-account-purge-scheduler",
-					{ pattern: "0 3 * * *", tz: "Asia/Seoul" },
-					{ name: "purge-accounts", data: {} },
+					"0 3 * * *",
+					ACCOUNT_PURGE_QUEUE,
+					{ name: ACCOUNT_PURGE_JOB_NAME, data: {} },
+					this.#jobOptions(),
 				);
 
 				this.#logger.log("Account purge scheduler registered");
@@ -74,14 +77,24 @@ export class AccountPurgeJob implements OnModuleInit {
 		if (hour >= 3) {
 			const today = kstNow.format("YYYY-MM-DD");
 			this.#logger.log("Catch-up: account purge dispatch");
-			await this.queue.add(
-				"purge-accounts",
-				{},
-				{
-					jobId: `purge_${today}`,
-				},
+			await this.runtime.enqueue(
+				ACCOUNT_PURGE_QUEUE,
+				{ name: ACCOUNT_PURGE_JOB_NAME, data: {} },
+				{ ...this.#jobOptions(), jobKey: `purge_${today}` },
 			);
 		}
+	}
+
+	#jobOptions() {
+		return {
+			retryLimit: 2,
+			retryDelaySeconds: 5,
+			retryBackoff: true,
+			expireInSeconds: 30 * 60,
+			retentionSeconds: 7 * 24 * 60 * 60,
+			deleteAfterSeconds: 24 * 60 * 60,
+			timezone: "Asia/Seoul",
+		};
 	}
 
 	async purgeDeletedAccounts(): Promise<void> {

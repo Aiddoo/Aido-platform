@@ -1,6 +1,8 @@
-import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger } from "@nestjs/common";
-import type { Queue } from "bullmq";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 
 import type {
 	ReminderHourChangedJobData,
@@ -11,7 +13,6 @@ import { SOCIAL_DIGEST_DELAY_MS } from "../../domain/services/notification-campa
 import {
 	type SweepRemindersJobData,
 	TIMEZONE_REMINDER_QUEUE,
-	type TimezoneReminderJobData,
 	TimezoneReminderJobName,
 } from "./timezone-reminder-queue.constants";
 
@@ -29,22 +30,18 @@ export class TimezoneReminderQueueService
 {
 	readonly #logger = new Logger(TimezoneReminderQueueService.name);
 
-	constructor(
-		@InjectQueue(TIMEZONE_REMINDER_QUEUE)
-		private readonly queue: Queue<TimezoneReminderJobData>,
-	) {}
+	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
 	/**
 	 * 매분 sweep 스케줄러 등록 (upsert — 멱등)
 	 */
 	async registerSweepScheduler(): Promise<void> {
-		await this.queue.upsertJobScheduler(
+		await this.runtime.schedule(
 			"tz-reminder-sweep-scheduler",
-			{ pattern: "* * * * *", tz: "Asia/Seoul" },
-			{
-				name: TimezoneReminderJobName.SWEEP_REMINDERS,
-				data: SWEEP_JOB_DATA,
-			},
+			"* * * * *",
+			TIMEZONE_REMINDER_QUEUE,
+			{ name: TimezoneReminderJobName.SWEEP_REMINDERS, data: SWEEP_JOB_DATA },
+			this.#jobOptions(),
 		);
 		this.#logger.log("Timezone reminder sweep scheduler registered");
 	}
@@ -68,12 +65,15 @@ export class TimezoneReminderQueueService
 	 * Social Digest delayed job 등록 (저녁 리마인더 90분 후)
 	 */
 	enqueueSocialDigest(payload: TargetedSocialDigestJobData): void {
-		this.queue
-			.add(TimezoneReminderJobName.SOCIAL_DIGEST, payload, {
-				delay: SOCIAL_DIGEST_DELAY_MS,
-				removeOnComplete: true,
-				removeOnFail: 100,
-			})
+		this.runtime
+			.enqueue(
+				TIMEZONE_REMINDER_QUEUE,
+				{ name: TimezoneReminderJobName.SOCIAL_DIGEST, data: payload },
+				{
+					...this.#jobOptions(),
+					startAfter: new Date(Date.now() + SOCIAL_DIGEST_DELAY_MS),
+				},
+			)
 			.then(() => {
 				this.#logger.debug(
 					`Social digest job enqueued: tz=${payload.timezone}, delay=90min`,
@@ -91,7 +91,23 @@ export class TimezoneReminderQueueService
 		name: string,
 		data: ReminderHourChangedJobData,
 	): Promise<void> {
-		await this.queue.add(name, data);
+		await this.runtime.enqueue(
+			TIMEZONE_REMINDER_QUEUE,
+			{ name, data },
+			this.#jobOptions(),
+		);
 		this.#logger.debug(`Job enqueued: name=${name}`);
+	}
+
+	#jobOptions() {
+		return {
+			retryLimit: 2,
+			retryDelaySeconds: 5,
+			retryBackoff: true,
+			expireInSeconds: 10 * 60,
+			retentionSeconds: 24 * 60 * 60,
+			deleteAfterSeconds: 24 * 60 * 60,
+			timezone: "Asia/Seoul",
+		};
 	}
 }

@@ -1288,6 +1288,16 @@ async handleTodoReminder() {
 
 > **크론 작업에서 영속적 in-memory 상태(클래스 필드 Set/Map) 사용 금지** — 서버 재시작 시 상태 유실. 반드시 매 실행마다 DB 조회로 중복 판단. (DB 조회 결과를 임시 Set으로 변환하여 필터링하는 것은 허용)
 
+### Durable job / infrastructure key 규칙
+
+- 도메인은 `JOB_RUNTIME` 포트에만 의존하고 pg-boss/BullMQ 타입을 노출하지 않는다.
+- 기본 운영 backend는 PostgreSQL이며 enqueue는 업무 트랜잭션과 같은 DB 트랜잭션에 참여한다.
+- Redis rollback 시에도 같은 포트를 사용한다. 전환 중에는 PostgreSQL에만 쓰고 Redis worker를 drain한 뒤 연결을 제거한다.
+- 런타임 DDL은 금지한다. pg-boss 공식 CLI migration이 성공한 뒤에만 API를 교체한다.
+- 캐시·dedup·lock 논리 키는 `aido:v1:<bounded-context>:<resource>:<encoded-id>` 형식을 사용한다.
+- 키 문자열을 호출부에서 이어 붙이지 않고 공용 `cacheKey`/`cachePattern` 또는 등록된 키 builder를 사용한다. TTL은 key builder와 함께 상수로 관리한다.
+- 키 버전 변경은 cache miss만 유발해야 하며 DB가 항상 source of truth여야 한다.
+
 ---
 
 ## 8. 새 기능 추가 체크리스트

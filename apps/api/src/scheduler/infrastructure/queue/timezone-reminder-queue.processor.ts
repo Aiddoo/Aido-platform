@@ -1,11 +1,25 @@
-import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger } from "@nestjs/common";
-import type { Job } from "bullmq";
+import {
+	Inject,
+	Injectable,
+	Logger,
+	type OnModuleInit,
+	Optional,
+} from "@nestjs/common";
+import {
+	JOB_RUNTIME,
+	type JobData,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
+import {
+	fromLegacyJob,
+	type NamedJob,
+} from "@/shared/infrastructure/jobs/named-job";
 
 import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator";
 import {
+	TIMEZONE_REMINDER_LEGACY_QUEUE,
 	TIMEZONE_REMINDER_QUEUE,
-	type TimezoneReminderJob,
+	type TimezoneReminderJobMap,
 	TimezoneReminderJobName,
 } from "./timezone-reminder-queue.constants";
 
@@ -20,28 +34,48 @@ import {
  * 오케스트레이터를 생성자 주입하므로(무버스·무setter) DIP를 지키며,
  * 판별 유니온으로 job.data를 캐스트 없이 좁힌다.
  */
-@Processor(TIMEZONE_REMINDER_QUEUE)
-export class TimezoneReminderProcessor extends WorkerHost {
+type TimezoneReminderJob = NamedJob<TimezoneReminderJobMap>;
+
+@Injectable()
+export class TimezoneReminderProcessor implements OnModuleInit {
 	readonly #logger = new Logger(TimezoneReminderProcessor.name);
 
 	constructor(
 		private readonly orchestrator: TimezoneAwareReminderOrchestrator,
-	) {
-		super();
+		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
+	) {}
+
+	async onModuleInit(): Promise<void> {
+		if (!this.runtime) return;
+		await this.runtime.work<TimezoneReminderJob>(
+			TIMEZONE_REMINDER_QUEUE,
+			async (jobs) => {
+				for (const job of jobs) await this.process(job.data);
+			},
+			{ teamSize: 1, pollingIntervalSeconds: 2 },
+		);
+		await this.runtime.work<JobData>(
+			TIMEZONE_REMINDER_LEGACY_QUEUE,
+			async (jobs) => {
+				for (const job of jobs)
+					await this.process(fromLegacyJob<TimezoneReminderJobMap>(job));
+			},
+			{ teamSize: 1, pollingIntervalSeconds: 2 },
+		);
 	}
 
-	@OnWorkerEvent("stalled")
-	onStalled(jobId: string) {
+	onStalled(jobId: string): void {
 		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
-	@OnWorkerEvent("error")
-	onError(error: Error) {
+	onError(error: Error): void {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	@OnWorkerEvent("failed")
-	onFailed(job: Job | undefined, error: Error) {
+	onFailed(
+		job: { readonly id?: string; readonly name?: string } | undefined,
+		error: Error,
+	) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,

@@ -1,4 +1,3 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
@@ -89,10 +88,7 @@ import {
 	UserRepository,
 	VerificationRepository,
 } from "./infrastructure/persistence";
-import {
-	ACCOUNT_PURGE_QUEUE,
-	AccountPurgeProcessor,
-} from "./infrastructure/queue/account-purge.processor";
+import { AccountPurgeProcessor } from "./infrastructure/queue/account-purge.processor";
 import { AccountPurgeJob } from "./infrastructure/scheduler/account-purge.job";
 import { JwtRefreshStrategy, JwtStrategy } from "./infrastructure/strategies";
 import {
@@ -120,7 +116,6 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 				} as JwtSignOptions,
 			}),
 		}),
-		BullModule.registerQueue({ name: ACCOUNT_PURGE_QUEUE }),
 		AdminNotificationModule,
 		EmailModule,
 		// 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.

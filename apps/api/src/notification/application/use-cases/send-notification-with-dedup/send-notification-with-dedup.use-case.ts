@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { subtractMilliseconds } from "@/shared/domain/date/utils/arithmetic";
+import { cacheKey } from "@/shared/infrastructure/cache";
 import {
 	type ILockProvider,
 	LOCK_PROVIDER,
@@ -47,7 +48,10 @@ export class SendNotificationWithDedupUseCase {
 		}
 
 		const dedupKey = buildDedupKey(data, strategy);
-		const release = await this.lockProvider.acquire(dedupKey, DEDUP_LOCK_TTL);
+		const release = await this.lockProvider.acquire(
+			cacheKey("notification", "lock-dedup", dedupKey),
+			DEDUP_LOCK_TTL,
+		);
 
 		if (!release) {
 			this.#logger.debug(

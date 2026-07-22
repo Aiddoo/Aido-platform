@@ -12,6 +12,7 @@ import type {
   UpdateMarketingConsentResponse,
 } from '@aido/validators';
 import { ApiError } from '@src/shared/errors/api-error';
+import type { Consent } from '../models/auth.model';
 
 const generateAuthTokensDto = (): AuthTokensDTO => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -60,6 +61,19 @@ const generateConsentDto = (): ConsentResponse => ({
 
 export const createConsentDto = (overrides?: Partial<ConsentResponse>): ConsentResponse => ({
   ...generateConsentDto(),
+  ...overrides,
+});
+
+const generateConsent = (): Consent => ({
+  termsAgreedAt: new Date('2026-01-01T00:00:00.000Z'),
+  privacyAgreedAt: new Date('2026-01-01T00:00:00.000Z'),
+  agreedTermsVersion: '1.0.0',
+  marketingAgreedAt: new Date('2026-02-01T00:00:00.000Z'),
+  marketingPushAgreedAt: null,
+});
+
+export const createConsent = (overrides?: Partial<Consent>): Consent => ({
+  ...generateConsent(),
   ...overrides,
 });
 

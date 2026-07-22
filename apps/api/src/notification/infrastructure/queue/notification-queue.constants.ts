@@ -9,7 +9,8 @@
 // Queue Name
 // =============================================================================
 
-export const NOTIFICATION_QUEUE = "notification";
+export const NOTIFICATION_QUEUE = "notification.v1";
+export const NOTIFICATION_LEGACY_QUEUE = "notification";
 
 // =============================================================================
 // Job Names
@@ -147,3 +148,10 @@ export interface NotificationJobMap {
 
 /** 모든 잡 데이터 유니온 타입 */
 export type NotificationJobData = NotificationJobMap[keyof NotificationJobMap];
+
+export type NotificationRuntimeJob = {
+	[K in keyof NotificationJobMap]: {
+		readonly name: K;
+		readonly data: NotificationJobMap[K];
+	};
+}[keyof NotificationJobMap];

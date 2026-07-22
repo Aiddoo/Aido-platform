@@ -1,10 +1,9 @@
-# Docker 개발 환경 (DB + Redis + API)
+# Docker 개발 환경 (PostgreSQL + API)
 # 사용: pnpm docker:dev:up
 # DB는 로컬 Docker 컨테이너, API는 DATABASE_URL로 연결
 services:
   db:
     image: postgres:16-alpine
-    container_name: aido-dev-db
     ports:
       - "${DB_PORT:-5433}:5432"
     environment:
@@ -19,27 +18,15 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: aido-dev-redis
-    ports:
-      - "${REDIS_HOST_PORT:-6379}:6379"
-    volumes:
-      - dev_redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   migrate:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
       target: migrate
-    container_name: aido-dev-migrate
     env_file:
-      - .env.docker.dev
+      - ${AIDO_DEV_ENV_FILE:-.env.docker.dev}
+    environment:
+      JOB_SCHEMA: ${JOB_SCHEMA:-pgboss}
     depends_on:
       db:
         condition: service_healthy
@@ -55,13 +42,16 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
       target: development
-    container_name: aido-dev-api
     ports:
-      - "8080:8080"
+      - "${API_HOST_PORT:-8080}:8080"
     environment:
       TZ: Asia/Seoul
+      JOB_BACKEND: ${JOB_BACKEND:-postgres}
+      JOB_SCHEMA: ${JOB_SCHEMA:-pgboss}
+      JOB_REDIS_DRAIN_ENABLED: "false"
+      CACHE_TYPE: memory
     env_file:
-      - .env.docker.dev
+      - ${AIDO_DEV_ENV_FILE:-.env.docker.dev}
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./apps/api/prisma:/app/apps/api/prisma
@@ -75,11 +65,8 @@ services:
       start_period: 30s
       retries: 3
     depends_on:
-      redis:
-        condition: service_healthy
       migrate:
         condition: service_completed_successfully
 
 volumes:
   dev_postgres_data:
-  dev_redis_data:

@@ -1,6 +1,8 @@
-import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import type { Queue } from "bullmq";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 
 import {
 	type BillingIssueJobData,
@@ -10,8 +12,8 @@ import {
 	type FriendCompletedJobData,
 	type MilestoneReachedJobData,
 	NOTIFICATION_QUEUE,
-	type NotificationJobData,
 	NotificationJobName,
+	type NotificationRuntimeJob,
 	type NudgeSentJobData,
 } from "./notification-queue.constants";
 
@@ -19,20 +21,18 @@ import {
 export class NotificationQueueService implements OnModuleInit {
 	readonly #logger = new Logger(NotificationQueueService.name);
 
-	constructor(
-		@InjectQueue(NOTIFICATION_QUEUE)
-		private readonly queue: Queue<NotificationJobData>,
-	) {}
+	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
 	async onModuleInit(): Promise<void> {
-		await this.queue.upsertJobScheduler(
+		await this.runtime.schedule(
 			"push-receipts-scheduler",
-			{ every: 5 * 60 * 1000 },
+			"*/5 * * * *",
+			NOTIFICATION_QUEUE,
 			{
 				name: NotificationJobName.PUSH_RECEIPTS,
 				data: {},
-				opts: { attempts: 5, backoff: { type: "exponential", delay: 2_000 } },
 			},
+			this.#jobOptions(),
 		);
 	}
 
@@ -134,13 +134,26 @@ export class NotificationQueueService implements OnModuleInit {
 		);
 	}
 
-	async #enqueueAsync(name: string, data: NotificationJobData): Promise<void> {
-		await this.queue.add(name, data, {
-			attempts: 5,
-			backoff: { type: "exponential", delay: 1_000 },
-			removeOnComplete: { age: 24 * 60 * 60, count: 10_000 },
-			removeOnFail: { age: 7 * 24 * 60 * 60, count: 50_000 },
-		});
+	async #enqueueAsync(
+		name: NotificationRuntimeJob["name"],
+		data: NotificationRuntimeJob["data"],
+	): Promise<void> {
+		await this.runtime.enqueue(
+			NOTIFICATION_QUEUE,
+			{ name, data },
+			this.#jobOptions(),
+		);
 		this.#logger.debug(`Job enqueued: name=${name}`);
+	}
+
+	#jobOptions() {
+		return {
+			retryLimit: 2,
+			retryDelaySeconds: 1,
+			retryBackoff: true,
+			expireInSeconds: 5 * 60,
+			retentionSeconds: 7 * 24 * 60 * 60,
+			deleteAfterSeconds: 24 * 60 * 60,
+		};
 	}
 }

@@ -79,20 +79,20 @@ describe("CacheKeys — 캐시 키", () => {
 				const key = CacheKeys.session(sessionId);
 
 				// Then
-				expect(key).toBe("session:sess_123");
+				expect(key).toBe("aido:v1:auth:session:sess_123");
 			});
 
 			it("다양한 세션 ID 형식을 처리한다", () => {
 				// Given
 				const testCases = [
-					{ input: "abc123", expected: "session:abc123" },
+					{ input: "abc123", expected: "aido:v1:auth:session:abc123" },
 					{
 						input: "session-with-dashes",
-						expected: "session:session-with-dashes",
+						expected: "aido:v1:auth:session:session-with-dashes",
 					},
 					{
 						input: "session_with_underscores",
-						expected: "session:session_with_underscores",
+						expected: "aido:v1:auth:session:session_with_underscores",
 					},
 				];
 
@@ -112,7 +112,7 @@ describe("CacheKeys — 캐시 키", () => {
 				const key = CacheKeys.userProfile(userId);
 
 				// Then
-				expect(key).toBe("user:profile:user_1");
+				expect(key).toBe("aido:v1:auth:user-profile:user_1");
 			});
 
 			it("UUID 형식을 처리한다", () => {
@@ -123,7 +123,7 @@ describe("CacheKeys — 캐시 키", () => {
 				const key = CacheKeys.userProfile(uuid);
 
 				// Then
-				expect(key).toBe(`user:profile:${uuid}`);
+				expect(key).toBe(`aido:v1:auth:user-profile:${uuid}`);
 			});
 		});
 
@@ -136,7 +136,7 @@ describe("CacheKeys — 캐시 키", () => {
 				const key = CacheKeys.subscription(userId);
 
 				// Then
-				expect(key).toBe("user:subscription:user_1");
+				expect(key).toBe("aido:v1:subscription:status:user_1");
 			});
 		});
 
@@ -150,7 +150,7 @@ describe("CacheKeys — 캐시 키", () => {
 				const key = CacheKeys.mutualFriend(userId, targetUserId);
 
 				// Then
-				expect(key).toBe("friends:mutual:user_1:user_2");
+				expect(key).toBe("aido:v1:follow:mutual:user_1:user_2");
 			});
 
 			it("사용자 ID 순서를 유지한다", () => {
@@ -163,8 +163,8 @@ describe("CacheKeys — 캐시 키", () => {
 				const key2 = CacheKeys.mutualFriend(userB, userA);
 
 				// Then
-				expect(key1).toBe("friends:mutual:user_a:user_b");
-				expect(key2).toBe("friends:mutual:user_b:user_a");
+				expect(key1).toBe("aido:v1:follow:mutual:user_a:user_b");
+				expect(key2).toBe("aido:v1:follow:mutual:user_b:user_a");
 				expect(key1).not.toBe(key2);
 			});
 		});
@@ -180,7 +180,7 @@ describe("CacheKeys — 캐시 키", () => {
 				const pattern = CacheKeys.mutualFriendPattern(userId);
 
 				// Then
-				expect(pattern).toBe("friends:mutual:user_1:*");
+				expect(pattern).toBe("aido:v1:follow:mutual:user_1:*");
 			});
 
 			it("특정 사용자의 모든 친구 키와 매칭된다", () => {
@@ -189,9 +189,9 @@ describe("CacheKeys — 캐시 키", () => {
 				const regex = new RegExp(`^${pattern.replace(/\*/g, ".*")}$`);
 
 				// When & Then
-				expect(regex.test("friends:mutual:user_1:user_2")).toBe(true);
-				expect(regex.test("friends:mutual:user_1:user_3")).toBe(true);
-				expect(regex.test("friends:mutual:user_2:user_1")).toBe(false);
+				expect(regex.test("aido:v1:follow:mutual:user_1:user_2")).toBe(true);
+				expect(regex.test("aido:v1:follow:mutual:user_1:user_3")).toBe(true);
+				expect(regex.test("aido:v1:follow:mutual:user_2:user_1")).toBe(false);
 			});
 		});
 	});

@@ -1,0 +1,6 @@
+export const JOB_SHUTDOWN_TIMEOUT_MS = 90_000;
+export const JOB_COMPLETED_RETENTION_SECONDS = 7 * 24 * 60 * 60;
+export const JOB_FAILED_RETENTION_SECONDS = 14 * 24 * 60 * 60;
+export const GENERAL_JOB_RETRY_DELAY_SECONDS = 1;
+export const AI_JOB_RETRY_DELAY_SECONDS = 5;
+export const JOB_RETRY_LIMIT = 2;

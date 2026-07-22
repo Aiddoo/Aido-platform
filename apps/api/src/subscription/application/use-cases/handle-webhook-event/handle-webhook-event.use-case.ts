@@ -9,6 +9,7 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
 import { toISOString } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { cacheKey } from "@/shared/infrastructure/cache";
 import {
 	type ILockProvider,
 	LOCK_PROVIDER,
@@ -108,7 +109,7 @@ export class HandleWebhookEventUseCase {
 
 		// 1. Lock 획득
 		const release = await this.lockProvider.acquire(
-			`webhook:revenuecat:${appUserId}`,
+			cacheKey("subscription", "lock-revenuecat-webhook", appUserId),
 			HandleWebhookEventUseCase.LOCK_TTL,
 		);
 

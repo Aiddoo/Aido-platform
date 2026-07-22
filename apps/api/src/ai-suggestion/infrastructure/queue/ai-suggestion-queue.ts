@@ -1,4 +1,5 @@
-export const AI_SUGGESTION_QUEUE = "ai-suggestion-analysis";
+export const AI_SUGGESTION_QUEUE = "ai-suggestion-analysis.v1";
+export const AI_SUGGESTION_LEGACY_QUEUE = "ai-suggestion-analysis";
 
 /** 잡 이름 상수 */
 export const AiSuggestionJobName = {

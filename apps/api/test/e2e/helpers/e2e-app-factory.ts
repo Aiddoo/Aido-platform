@@ -58,7 +58,10 @@ import {
 	TODO_REMINDER_QUEUE,
 	TodoReminderProcessor,
 } from "@/scheduler";
-import { DOMAIN_EVENT_PUBLISHER } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	JOB_RUNTIME,
+} from "@/shared/application/ports";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -76,6 +79,7 @@ import { FakeAiProvider } from "../../mocks/fake-ai.provider";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";
 import { createMockBullQueue } from "../../mocks/fake-bull-queue";
 import { FakeEmailService } from "../../mocks/fake-email.service";
+import { FakeJobRuntime } from "../../mocks/fake-job-runtime";
 import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider";
 import { FakeLogger } from "../../mocks/fake-logger.service";
 import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry";
@@ -133,6 +137,8 @@ export interface E2eTestContext {
 	fakeOAuthProviderRegistry: FakeOAuthProviderRegistry;
 	helpers: E2eHelpers;
 	reset(): Promise<void>;
+	/** @internal restartE2eAppPreservingDatabase 전용 */
+	closeApplicationResources(): Promise<void>;
 	/** @internal destroyE2eApp 전용 */
 	closeTestResources(): Promise<void>;
 }
@@ -144,13 +150,17 @@ export interface E2eAppOptions {
 	) => ReturnType<typeof Test.createTestingModule>;
 	/** suite에서 추가로 override한 fake의 상태 초기화 함수 */
 	additionalResetters?: readonly TestStateResetter[];
+	/** @internal 앱 재시작 테스트에서 동일 PostgreSQL을 재사용 */
+	testDatabase?: TestDatabase;
 }
 
 export async function createE2eApp(
 	options?: E2eAppOptions,
 ): Promise<E2eTestContext> {
-	const testDatabase = new TestDatabase();
-	await testDatabase.start();
+	const testDatabase = options?.testDatabase ?? new TestDatabase();
+	if (!options?.testDatabase) {
+		await testDatabase.start();
+	}
 
 	const fakeEmailService = new FakeEmailService();
 	const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
@@ -162,6 +172,7 @@ export async function createE2eApp(
 	const fakeAirQualityProvider = new FakeAirQualityProvider();
 	const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
 	const fakeSunTimeProvider = new FakeSunTimeProvider();
+	const fakeJobRuntime = new FakeJobRuntime();
 
 	const redisMock = new RedisMock();
 	const cacheAdapter = new InMemoryCacheAdapter({
@@ -174,8 +185,13 @@ export async function createE2eApp(
 	let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
 	let module: TestingModule | undefined;
 	let app: INestApplication<App> | undefined;
+	let applicationClosed = false;
 
-	const closeTestResources = async (): Promise<void> => {
+	const closeApplicationResources = async (): Promise<void> => {
+		if (applicationClosed) {
+			return;
+		}
+		applicationClosed = true;
 		const errors: unknown[] = [];
 		try {
 			await app?.close();
@@ -186,12 +202,24 @@ export async function createE2eApp(
 		const results = await Promise.allSettled([
 			Promise.resolve().then(() => redisMock.disconnect()),
 			Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
-			testDatabase.stop(),
 		]);
 		errors.push(
 			...results.flatMap((result) =>
 				result.status === "rejected" ? [result.reason] : [],
 			),
+		);
+		if (errors.length > 0) {
+			throw new AggregateError(errors, "Failed to close E2E app resources");
+		}
+	};
+
+	const closeTestResources = async (): Promise<void> => {
+		const results = await Promise.allSettled([
+			closeApplicationResources(),
+			testDatabase.stop(),
+		]);
+		const errors = results.flatMap((result) =>
+			result.status === "rejected" ? [result.reason] : [],
 		);
 		if (errors.length > 0) {
 			throw new AggregateError(errors, "Failed to close E2E test resources");
@@ -205,6 +233,8 @@ export async function createE2eApp(
 		.useValue(redisMock)
 		.overrideProvider(REDIS_COMMAND_CLIENT)
 		.useValue(redisMock)
+		.overrideProvider(JOB_RUNTIME)
+		.useValue(fakeJobRuntime)
 		.overrideProvider(CACHE_SERVICE)
 		.useValue(cacheAdapter)
 		.overrideProvider(DatabaseService)
@@ -307,6 +337,7 @@ export async function createE2eApp(
 				() => fakeAirQualityProvider.clear(),
 				() => fakeLifestyleIndexProvider.clear(),
 				() => fakeSunTimeProvider.clear(),
+				() => fakeJobRuntime.clear(),
 			],
 			additionalResetters: options?.additionalResetters,
 		});
@@ -320,6 +351,7 @@ export async function createE2eApp(
 			fakeOAuthProviderRegistry,
 			helpers,
 			reset,
+			closeApplicationResources,
 			closeTestResources,
 		};
 	} catch (error) {
@@ -330,4 +362,11 @@ export async function createE2eApp(
 
 export async function destroyE2eApp(ctx: E2eTestContext): Promise<void> {
 	await ctx.closeTestResources();
+}
+
+export async function restartE2eAppPreservingDatabase(
+	ctx: E2eTestContext,
+): Promise<E2eTestContext> {
+	await ctx.closeApplicationResources();
+	return createE2eApp({ testDatabase: ctx.testDatabase });
 }

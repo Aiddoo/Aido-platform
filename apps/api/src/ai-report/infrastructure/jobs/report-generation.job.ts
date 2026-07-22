@@ -1,11 +1,12 @@
-import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import type { Job, Queue } from "bullmq";
 import dayjs from "dayjs";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import { toIsoMonthId, toIsoWeekId } from "@/shared/domain/date/utils/format";
-import { AI_PER_USER_JOB_OPTS } from "@/shared/infrastructure/bullmq/job-options";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { forEachBatch } from "@/shared/infrastructure/database/utils/batch-cursor.util";
@@ -13,7 +14,6 @@ import { ReportGenerationProcessor } from "../processors/report-generation.proce
 import {
 	AI_REPORT_QUEUE,
 	type AiReportGenerateData,
-	type AiReportJobData,
 	AiReportJobName,
 } from "../queue/ai-report-queue";
 
@@ -40,8 +40,7 @@ export class ReportGenerationJob implements OnModuleInit {
 		private readonly txHost: TransactionHost<
 			TransactionalAdapterPrisma<DatabaseService>
 		>,
-		@InjectQueue(AI_REPORT_QUEUE)
-		private readonly queue: Queue<AiReportJobData>,
+		@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
 		private readonly processor: ReportGenerationProcessor,
 	) {}
 
@@ -62,21 +61,19 @@ export class ReportGenerationJob implements OnModuleInit {
 			this.#logger,
 			"Report generation scheduler registration",
 			async () => {
-				await this.queue.upsertJobScheduler(
+				await this.runtime.schedule(
 					"weekly-report-scheduler",
-					{ pattern: "0 1 * * 1", tz: CRON_TZ },
-					{
-						name: AiReportJobName.DISPATCH,
-						data: { reportType: "WEEKLY" } satisfies AiReportJobData,
-					},
+					"0 1 * * 1",
+					AI_REPORT_QUEUE,
+					{ name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
+					this.#jobOptions(),
 				);
-				await this.queue.upsertJobScheduler(
+				await this.runtime.schedule(
 					"monthly-report-scheduler",
-					{ pattern: "0 2 1 * *", tz: CRON_TZ },
-					{
-						name: AiReportJobName.DISPATCH,
-						data: { reportType: "MONTHLY" } satisfies AiReportJobData,
-					},
+					"0 2 1 * *",
+					AI_REPORT_QUEUE,
+					{ name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
+					this.#jobOptions(),
 				);
 
 				this.#logger.log("Report generation schedulers registered");
@@ -91,7 +88,7 @@ export class ReportGenerationJob implements OnModuleInit {
 	 */
 	async dispatchReports(
 		type: "WEEKLY" | "MONTHLY",
-		dispatchJob?: Job,
+		dispatchJob?: { updateProgress(progress: object): Promise<unknown> },
 	): Promise<void> {
 		this.#logger.log(`Starting ${type} report dispatch...`);
 
@@ -116,22 +113,27 @@ export class ReportGenerationJob implements OnModuleInit {
 					take,
 				}),
 			onBatch: async (batch) => {
-				const jobs = batch.map((user) => ({
-					name: AiReportJobName.GENERATE,
-					data: {
-						userId: user.id,
-						timezone: user.preference?.timezone ?? "Asia/Seoul",
-						locale: user.preference?.locale ?? "ko",
-						reportType: type,
-					} satisfies AiReportGenerateData,
-					opts: {
-						...AI_PER_USER_JOB_OPTS,
-						jobId: `report_${type}_${user.id}_${periodId}`,
-					},
-				}));
-
-				await this.queue.addBulk(jobs);
-				totalEnqueued += jobs.length;
+				await Promise.all(
+					batch.map((user) =>
+						this.runtime.enqueue(
+							AI_REPORT_QUEUE,
+							{
+								name: AiReportJobName.GENERATE,
+								data: {
+									userId: user.id,
+									timezone: user.preference?.timezone ?? "Asia/Seoul",
+									locale: user.preference?.locale ?? "ko",
+									reportType: type,
+								} satisfies AiReportGenerateData,
+							},
+							{
+								...this.#jobOptions(),
+								jobKey: `report_${type}_${user.id}_${periodId}`,
+							},
+						),
+					),
+				);
+				totalEnqueued += batch.length;
 				await dispatchJob?.updateProgress({ enqueued: totalEnqueued });
 			},
 		});
@@ -156,10 +158,10 @@ export class ReportGenerationJob implements OnModuleInit {
 		if (dayOfWeek === 1 && hour >= 1) {
 			const weekId = toIsoWeekId(now, CRON_TZ);
 			this.#logger.log("Catch-up: WEEKLY report dispatch");
-			await this.queue.add(
-				AiReportJobName.DISPATCH,
-				{ reportType: "WEEKLY" } satisfies AiReportJobData,
-				{ jobId: `dispatch_WEEKLY_${weekId}` },
+			await this.runtime.enqueue(
+				AI_REPORT_QUEUE,
+				{ name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
+				{ ...this.#jobOptions(), jobKey: `dispatch_WEEKLY_${weekId}` },
 			);
 		}
 
@@ -167,10 +169,10 @@ export class ReportGenerationJob implements OnModuleInit {
 		if (dayOfMonth === 1 && hour >= 1) {
 			const monthId = toIsoMonthId(now, CRON_TZ);
 			this.#logger.log("Catch-up: MONTHLY report dispatch");
-			await this.queue.add(
-				AiReportJobName.DISPATCH,
-				{ reportType: "MONTHLY" } satisfies AiReportJobData,
-				{ jobId: `dispatch_MONTHLY_${monthId}` },
+			await this.runtime.enqueue(
+				AI_REPORT_QUEUE,
+				{ name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
+				{ ...this.#jobOptions(), jobKey: `dispatch_MONTHLY_${monthId}` },
 			);
 		}
 	}
@@ -186,5 +188,17 @@ export class ReportGenerationJob implements OnModuleInit {
 		return type === "WEEKLY"
 			? toIsoWeekId(now, CRON_TZ)
 			: toIsoMonthId(now, CRON_TZ);
+	}
+
+	#jobOptions() {
+		return {
+			retryLimit: 2,
+			retryDelaySeconds: 5,
+			retryBackoff: true,
+			expireInSeconds: 10 * 60,
+			retentionSeconds: 7 * 24 * 60 * 60,
+			deleteAfterSeconds: 7 * 24 * 60 * 60,
+			timezone: CRON_TZ,
+		};
 	}
 }

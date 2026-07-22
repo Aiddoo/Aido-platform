@@ -6,4 +6,5 @@
  * Prisma 타입 누출 방지 — lint:boundaries가 검사.
  */
 export * from "./domain-event-publisher.port";
+export * from "./job-runtime.port";
 export * from "./unit-of-work.port";

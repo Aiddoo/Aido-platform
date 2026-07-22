@@ -21,7 +21,6 @@
  */
 
 import { ACCOUNT_DELETION } from "@aido/validators";
-import { getQueueToken } from "@nestjs/bullmq";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
@@ -55,14 +54,12 @@ import { SecurityLogRepository } from "@/auth/infrastructure/persistence/securit
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
-import {
-	ACCOUNT_PURGE_QUEUE,
-	AccountPurgeProcessor,
-} from "@/auth/infrastructure/queue/account-purge.processor";
+import { AccountPurgeProcessor } from "@/auth/infrastructure/queue/account-purge.processor";
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import { EmailFacade } from "@/email";
 import { NotificationQueueService } from "@/notification";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
@@ -73,6 +70,7 @@ import { TodoCategoryRepository } from "@/todo-category/todo-category.repository
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 import { FakeEmailService } from "../mocks/fake-email.service";
+import { FakeJobRuntime } from "../mocks/fake-job-runtime";
 import { TestDatabase } from "../setup/test-database";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider";
 import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider";
@@ -107,13 +105,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				IssueLoginUseCase,
 				ProvisionUserUseCase,
 				AccountPurgeJob,
-				{
-					provide: getQueueToken(ACCOUNT_PURGE_QUEUE),
-					useValue: {
-						add: jest.fn(),
-						upsertJobScheduler: jest.fn(),
-					},
-				},
+				{ provide: JOB_RUNTIME, useValue: new FakeJobRuntime() },
 				{
 					provide: AccountPurgeProcessor,
 					useValue: {

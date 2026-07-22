@@ -1,3 +1,5 @@
+import { cacheKey, cachePattern } from "../keyspace/cache-key";
+
 /**
  * 캐시 키 상수 및 빌더
  *
@@ -54,74 +56,77 @@ export const CacheKeys = {
 	 * 세션 캐시 키
 	 * @example session:sess_abc123
 	 */
-	session: (sessionId: string) => `session:${sessionId}`,
+	session: (sessionId: string) => cacheKey("auth", "session", sessionId),
 
 	/**
 	 * 사용자 프로필 캐시 키
 	 * @example user:profile:user_123
 	 */
-	userProfile: (userId: string) => `user:profile:${userId}`,
+	userProfile: (userId: string) => cacheKey("auth", "user-profile", userId),
 
 	/**
 	 * 구독 상태 캐시 키
 	 * @example user:subscription:user_123
 	 */
-	subscription: (userId: string) => `user:subscription:${userId}`,
+	subscription: (userId: string) => cacheKey("subscription", "status", userId),
 
 	/**
 	 * 상호 친구 관계 캐시 키
 	 * @example friends:mutual:user_1:user_2
 	 */
 	mutualFriend: (userId: string, targetUserId: string) =>
-		`friends:mutual:${userId}:${targetUserId}`,
+		cacheKey("follow", "mutual", userId, targetUserId),
 
 	/**
 	 * 카테고리 목록 캐시 키
 	 * @example category:list:user_123
 	 */
-	todoCategories: (userId: string) => `category:list:${userId}`,
+	todoCategories: (userId: string) => cacheKey("todo-category", "list", userId),
 
 	/**
 	 * 친구 ID 목록 캐시 키
 	 * @example friends:ids:user_123
 	 */
-	mutualFriendIds: (userId: string) => `friends:ids:${userId}`,
+	mutualFriendIds: (userId: string) => cacheKey("follow", "ids", userId),
 
 	/**
 	 * 푸시 토큰 캐시 키
 	 * @example push:tokens:user_123
 	 */
-	pushTokens: (userId: string) => `push:tokens:${userId}`,
+	pushTokens: (userId: string) =>
+		cacheKey("notification", "push-tokens", userId),
 
 	/**
 	 * 사용자 설정 캐시 키
 	 * @example user:preference:user_123
 	 */
-	userPreference: (userId: string) => `user:preference:${userId}`,
+	userPreference: (userId: string) =>
+		cacheKey("user-settings", "preference", userId),
 
 	/**
 	 * 친구 수 캐시 키
 	 * @example friends:count:user_123
 	 */
-	friendCount: (userId: string) => `friends:count:${userId}`,
+	friendCount: (userId: string) => cacheKey("follow", "count", userId),
 
 	/**
 	 * 읽지 않은 알림 수 캐시 키
 	 * @example notification:unread:user_123
 	 */
-	unreadCount: (userId: string) => `notification:unread:${userId}`,
+	unreadCount: (userId: string) =>
+		cacheKey("notification", "unread-count", userId),
 
 	/**
 	 * 활성 타임존 목록 캐시 키 (pushEnabled=true 유저만)
 	 * @example scheduler:active-tz
 	 */
-	activeTimezones: () => "scheduler:active-tz",
+	activeTimezones: () => cacheKey("scheduler", "active-timezones"),
 
 	/**
 	 * 전체 유저 타임존 목록 캐시 키 (pushEnabled 무관)
 	 * @example scheduler:all-tz
 	 */
-	allTimezones: () => "scheduler:all-tz",
+	allTimezones: () => cacheKey("scheduler", "all-timezones"),
 
 	/**
 	 * 날씨 예보 캐시 키 (격자 + 발표시간 기준)
@@ -132,21 +137,29 @@ export const CacheKeys = {
 		gridY: number,
 		baseDate: string,
 		baseTime: string,
-	) => `weather:forecast:${gridX}:${gridY}:${baseDate}:${baseTime}`,
+	) =>
+		cacheKey(
+			"weather",
+			"forecast",
+			String(gridX),
+			String(gridY),
+			baseDate,
+			baseTime,
+		),
 
 	/**
 	 * 날씨 예보 최신 fallback 캐시 키 (격자 기준, 발표시간 무관)
 	 * @example weather:forecast:latest:60:127
 	 */
 	weatherForecastLatest: (gridX: number, gridY: number) =>
-		`weather:forecast:latest:${gridX}:${gridY}`,
+		cacheKey("weather", "forecast-latest", String(gridX), String(gridY)),
 
 	/**
 	 * 날씨 부가 정보 캐시 키 (격자 기준)
 	 * @example weather:conditions:60:127
 	 */
 	weatherConditions: (gridX: number, gridY: number) =>
-		`weather:conditions:${gridX}:${gridY}`,
+		cacheKey("weather", "conditions", String(gridX), String(gridY)),
 
 	/**
 	 * 친구 공개 투두 첫 페이지 캐시 키 (v1 = 페이로드 스키마 버전)
@@ -160,14 +173,22 @@ export const CacheKeys = {
 		startDate: string,
 		endDate: string,
 		size: number,
-	) => `todo:friend-view:v1:${ownerUserId}:${startDate}:${endDate}:${size}`,
+	) =>
+		cacheKey(
+			"todo",
+			"friend-view-v1",
+			ownerUserId,
+			startDate,
+			endDate,
+			String(size),
+		),
 
 	/**
 	 * 일별 완료 현황 캐시 키 (v1 = 페이로드 스키마 버전)
 	 * @example daily-completion:range:v1:user_1:2026-07-01:2026-07-31
 	 */
 	dailyCompletionRange: (userId: string, startDate: string, endDate: string) =>
-		`daily-completion:range:v1:${userId}:${startDate}:${endDate}`,
+		cacheKey("daily-completion", "range-v1", userId, startDate, endDate),
 
 	// === 패턴 빌더 (와일드카드) ===
 
@@ -176,25 +197,26 @@ export const CacheKeys = {
 	 * @example weather:forecast:60:127:*
 	 */
 	weatherForecastPattern: (gridX: number, gridY: number) =>
-		`weather:forecast:${gridX}:${gridY}:*`,
+		cachePattern("weather", "forecast", String(gridX), String(gridY)),
 
 	/**
 	 * 특정 사용자의 모든 친구 관계 캐시 패턴
 	 * @example friends:mutual:user_1:*
 	 */
-	mutualFriendPattern: (userId: string) => `friends:mutual:${userId}:*`,
+	mutualFriendPattern: (userId: string) =>
+		cachePattern("follow", "mutual", userId),
 
 	/**
 	 * 특정 소유자의 친구 공개 투두 캐시 전체 패턴
 	 * @example todo:friend-view:v1:user_1:*
 	 */
 	friendTodosPattern: (ownerUserId: string) =>
-		`todo:friend-view:v1:${ownerUserId}:*`,
+		cachePattern("todo", "friend-view-v1", ownerUserId),
 
 	/**
 	 * 특정 사용자의 일별 완료 현황 캐시 전체 패턴
 	 * @example daily-completion:range:v1:user_1:*
 	 */
 	dailyCompletionPattern: (userId: string) =>
-		`daily-completion:range:v1:${userId}:*`,
+		cachePattern("daily-completion", "range-v1", userId),
 } as const;

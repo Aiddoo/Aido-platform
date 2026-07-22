@@ -50,10 +50,11 @@ WORKDIR /app/apps/api
 # Prisma 관련 파일만 복사
 COPY apps/api/prisma ./prisma
 COPY apps/api/prisma.config.ts ./
+COPY apps/api/scripts/migrate.sh ./scripts/migrate.sh
 
 # 빈 프로젝트에 prisma CLI만 설치 (workspace/catalog 의존 회피)
 # apps/api/package.json의 prisma 버전(^7.8.0)과 함께 올릴 것 — silent major 업그레이드 방지
-RUN pnpm init && pnpm add prisma@7.8.0
+RUN pnpm init && pnpm add prisma@7.8.0 pg-boss@12.26.2 && chmod 0755 ./scripts/migrate.sh
 
 # RDS CA 인증서
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
@@ -61,7 +62,7 @@ ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
 
 RUN pnpm prisma generate
 
-CMD ["pnpm", "prisma", "migrate", "deploy"]
+CMD ["./scripts/migrate.sh"]
 
 
 # Stage 5: development - 개발 핫리로드

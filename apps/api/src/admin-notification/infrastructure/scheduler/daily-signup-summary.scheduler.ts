@@ -1,12 +1,13 @@
-import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import type { Queue } from "bullmq";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 
 import {
 	ADMIN_NOTIFICATION_QUEUE,
-	type AdminNotificationJobData,
 	AdminNotificationJobName,
 } from "../queue/admin-notification-queue.constants";
 
@@ -26,10 +27,7 @@ import {
 export class DailySignupSummaryScheduler implements OnModuleInit {
 	readonly #logger = new Logger(DailySignupSummaryScheduler.name);
 
-	constructor(
-		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
-		private readonly queue: Queue<AdminNotificationJobData>,
-	) {}
+	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
 	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
 	schedulerRegistration: Promise<void> = Promise.resolve();
@@ -39,10 +37,20 @@ export class DailySignupSummaryScheduler implements OnModuleInit {
 			this.#logger,
 			"Daily signup summary scheduler registration",
 			async () => {
-				await this.queue.upsertJobScheduler(
+				await this.runtime.schedule(
 					"daily-signup-summary-scheduler",
-					{ pattern: "10 0 * * *", tz: "Asia/Seoul" },
+					"10 0 * * *",
+					ADMIN_NOTIFICATION_QUEUE,
 					{ name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
+					{
+						retryLimit: 2,
+						retryDelaySeconds: 1,
+						retryBackoff: true,
+						expireInSeconds: 5 * 60,
+						retentionSeconds: 24 * 60 * 60,
+						deleteAfterSeconds: 24 * 60 * 60,
+						timezone: "Asia/Seoul",
+					},
 				);
 
 				this.#logger.log("Daily signup summary scheduler registered");

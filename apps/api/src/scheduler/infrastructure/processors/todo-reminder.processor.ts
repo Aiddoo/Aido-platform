@@ -1,8 +1,21 @@
-import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Inject, Logger } from "@nestjs/common";
-import type { Job } from "bullmq";
+import {
+	Inject,
+	Injectable,
+	Logger,
+	type OnModuleInit,
+	Optional,
+} from "@nestjs/common";
 import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import {
+	JOB_RUNTIME,
+	type JobData,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
+import {
+	fromLegacyJob,
+	type NamedJob,
+} from "@/shared/infrastructure/jobs/named-job";
 
 import {
 	TODO_REMINDER_READER,
@@ -11,7 +24,9 @@ import {
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import {
 	type ReminderJobData,
+	TODO_REMINDER_LEGACY_QUEUE,
 	TODO_REMINDER_QUEUE,
+	type TodoReminderJobMap,
 } from "../scheduler/bullmq-reminder-scheduler.adapter";
 
 /**
@@ -21,38 +36,61 @@ import {
  * - 24시간 내 동일 알림 dedup
  * - 알림 발송 (NotificationFacade)
  */
-@Processor(TODO_REMINDER_QUEUE)
-export class TodoReminderProcessor extends WorkerHost {
+type TodoReminderJob = NamedJob<TodoReminderJobMap>;
+
+@Injectable()
+export class TodoReminderProcessor implements OnModuleInit {
 	readonly #logger = new Logger(TodoReminderProcessor.name);
 
 	constructor(
 		@Inject(TODO_REMINDER_READER)
 		private readonly reader: TodoReminderReaderPort,
 		private readonly notification: NotificationFacade,
-	) {
-		super();
+		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
+	) {}
+
+	async onModuleInit(): Promise<void> {
+		if (!this.runtime) return;
+		await this.runtime.work<TodoReminderJob>(
+			TODO_REMINDER_QUEUE,
+			async (jobs) => {
+				for (const job of jobs) await this.process(job.data.data);
+			},
+			{ teamSize: 1, pollingIntervalSeconds: 2 },
+		);
+		await this.runtime.work<JobData>(
+			TODO_REMINDER_LEGACY_QUEUE,
+			async (jobs) => {
+				for (const job of jobs)
+					await this.process(fromLegacyJob<TodoReminderJobMap>(job).data);
+			},
+			{ teamSize: 1, pollingIntervalSeconds: 2 },
+		);
 	}
 
-	@OnWorkerEvent("stalled")
-	onStalled(jobId: string) {
+	onStalled(jobId: string): void {
 		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
-	@OnWorkerEvent("error")
-	onError(error: Error) {
+	onError(error: Error): void {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	@OnWorkerEvent("failed")
-	onFailed(job: Job | undefined, error: Error) {
+	onFailed(
+		job: { readonly id?: string; readonly name?: string } | undefined,
+		error: Error,
+	) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
 		);
 	}
 
-	async process(job: Job<ReminderJobData>): Promise<void> {
-		const { todoId, userId, stageLabel } = job.data;
+	async process(
+		job: ReminderJobData | { readonly data: ReminderJobData },
+	): Promise<void> {
+		const data = "data" in job ? job.data : job;
+		const { todoId, userId, stageLabel } = data;
 
 		this.#logger.debug(
 			`Processing reminder: todoId=${todoId}, stage=${stageLabel}`,

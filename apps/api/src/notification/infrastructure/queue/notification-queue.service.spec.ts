@@ -9,11 +9,13 @@
  * pnpm --filter @aido/api test notification-queue.service
  * ```
  */
-import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { flushPromises } from "@test/mocks";
-import type { Queue } from "bullmq";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import {
 	NOTIFICATION_QUEUE,
 	NotificationJobName,
@@ -22,20 +24,26 @@ import { NotificationQueueService } from "./notification-queue.service";
 
 describe("NotificationQueueService — 알림 큐 서비스", () => {
 	let service: NotificationQueueService;
-	let queue: Mocked<Queue>;
+	let runtime: Mocked<JobRuntimePort>;
 
 	beforeEach(async () => {
-		const mockQueue = {
-			add: jest.fn().mockResolvedValue(undefined),
+		const mockRuntime = {
+			start: jest.fn(),
+			stop: jest.fn(),
+			enqueue: jest.fn().mockResolvedValue("job-1"),
+			schedule: jest.fn(),
+			cancel: jest.fn(),
+			work: jest.fn(),
+			health: jest.fn(),
 		};
 
 		const { unit, unitRef } = await TestBed.solitary(NotificationQueueService)
-			.mock(getQueueToken(NOTIFICATION_QUEUE))
-			.impl(() => mockQueue)
+			.mock<JobRuntimePort>(JOB_RUNTIME)
+			.impl(() => mockRuntime)
 			.compile();
 
 		service = unit;
-		queue = unitRef.get(getQueueToken(NOTIFICATION_QUEUE));
+		runtime = unitRef.get(JOB_RUNTIME);
 	});
 
 	describe("enqueueFollowNew", () => {
@@ -52,16 +60,16 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			await flushPromises();
 
 			// Then
-			expect(queue.add).toHaveBeenCalledWith(
-				NotificationJobName.FOLLOW_NEW,
-				payload,
-				expect.objectContaining({ attempts: 5 }),
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				NOTIFICATION_QUEUE,
+				{ name: NotificationJobName.FOLLOW_NEW, data: payload },
+				expect.objectContaining({ retryLimit: 2 }),
 			);
 		});
 
 		it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
 			// Given
-			queue.add.mockRejectedValue(new Error("Redis connection error"));
+			runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
 			const payload = {
 				followerId: "user-1",
 				followingId: "user-2",
@@ -88,16 +96,16 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			await flushPromises();
 
 			// Then
-			expect(queue.add).toHaveBeenCalledWith(
-				NotificationJobName.FOLLOW_MUTUAL,
-				payload,
-				expect.objectContaining({ attempts: 5 }),
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				NOTIFICATION_QUEUE,
+				{ name: NotificationJobName.FOLLOW_MUTUAL, data: payload },
+				expect.objectContaining({ retryLimit: 2 }),
 			);
 		});
 
 		it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
 			// Given
-			queue.add.mockRejectedValue(new Error("Redis connection error"));
+			runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
 			const payload = {
 				userId: "user-1",
 				friendId: "user-2",
@@ -128,16 +136,16 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			await flushPromises();
 
 			// Then
-			expect(queue.add).toHaveBeenCalledWith(
-				NotificationJobName.NUDGE_SENT,
-				payload,
-				expect.objectContaining({ attempts: 5 }),
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				NOTIFICATION_QUEUE,
+				{ name: NotificationJobName.NUDGE_SENT, data: payload },
+				expect.objectContaining({ retryLimit: 2 }),
 			);
 		});
 
 		it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
 			// Given
-			queue.add.mockRejectedValue(new Error("Redis connection error"));
+			runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
 			const payload = {
 				nudgeId: 1,
 				senderId: "user-1",
@@ -167,16 +175,16 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			await flushPromises();
 
 			// Then
-			expect(queue.add).toHaveBeenCalledWith(
-				NotificationJobName.CHEER_SENT,
-				payload,
-				expect.objectContaining({ attempts: 5 }),
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				NOTIFICATION_QUEUE,
+				{ name: NotificationJobName.CHEER_SENT, data: payload },
+				expect.objectContaining({ retryLimit: 2 }),
 			);
 		});
 
 		it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
 			// Given
-			queue.add.mockRejectedValue(new Error("Redis connection error"));
+			runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
 			const payload = {
 				cheerId: 1,
 				senderId: "user-1",
@@ -200,16 +208,16 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			await flushPromises();
 
 			// Then
-			expect(queue.add).toHaveBeenCalledWith(
-				NotificationJobName.BILLING_ISSUE,
-				payload,
-				expect.objectContaining({ attempts: 5 }),
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				NOTIFICATION_QUEUE,
+				{ name: NotificationJobName.BILLING_ISSUE, data: payload },
+				expect.objectContaining({ retryLimit: 2 }),
 			);
 		});
 
 		it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
 			// Given
-			queue.add.mockRejectedValue(new Error("Redis connection error"));
+			runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
 			const payload = { userId: "user-1" };
 
 			// When & Then
@@ -233,16 +241,16 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			await flushPromises();
 
 			// Then
-			expect(queue.add).toHaveBeenCalledWith(
-				NotificationJobName.FRIEND_COMPLETED,
-				payload,
-				expect.objectContaining({ attempts: 5 }),
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				NOTIFICATION_QUEUE,
+				{ name: NotificationJobName.FRIEND_COMPLETED, data: payload },
+				expect.objectContaining({ retryLimit: 2 }),
 			);
 		});
 
 		it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
 			// Given
-			queue.add.mockRejectedValue(new Error("Redis connection error"));
+			runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
 			const payload = {
 				friendId: "friend-1",
 				friendName: "완료 친구",

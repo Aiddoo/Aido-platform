@@ -67,19 +67,28 @@ export class RedisModule implements OnApplicationShutdown {
 	static forRoot(): DynamicModule {
 		const bullProvider: Provider = {
 			provide: REDIS_CLIENT,
-			useFactory: (configService: TypedConfigService): Redis =>
-				RedisModule.createClient(configService, buildBullRedisOptions, "main"),
+			useFactory: (configService: TypedConfigService): Redis | null =>
+				configService.job.backend === "redis" ||
+				configService.job.redisDrainEnabled
+					? RedisModule.createClient(
+							configService,
+							buildBullRedisOptions,
+							"main",
+						)
+					: null,
 			inject: [TypedConfigService],
 		};
 
 		const commandProvider: Provider = {
 			provide: REDIS_COMMAND_CLIENT,
-			useFactory: (configService: TypedConfigService): Redis =>
-				RedisModule.createClient(
-					configService,
-					buildCommandRedisOptions,
-					"command",
-				),
+			useFactory: (configService: TypedConfigService): Redis | null =>
+				configService.cache.type === "redis"
+					? RedisModule.createClient(
+							configService,
+							buildCommandRedisOptions,
+							"command",
+						)
+					: null,
 			inject: [TypedConfigService],
 		};
 

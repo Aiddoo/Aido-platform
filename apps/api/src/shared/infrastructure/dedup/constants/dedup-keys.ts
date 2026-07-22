@@ -1,3 +1,5 @@
+import { cacheKey } from "../../cache/keyspace/cache-key";
+
 /**
  * Dedup 키 상수 및 빌더
  *
@@ -31,17 +33,24 @@ export const DedupKeys = {
 	 * @example notified:MORNING_REMINDER:2026-03-09
 	 */
 	notified: (type: string, date: Date) =>
-		`notified:${type}:${date.toISOString().slice(0, 10)}`,
+		cacheKey(
+			"notification",
+			"dedup-notified",
+			type,
+			date.toISOString().slice(0, 10),
+		),
 
 	/**
 	 * Winback 단계 추적 키 (per-user)
 	 * @example winback:stages:user_123
 	 */
-	winbackStages: (userId: string) => `winback:stages:${userId}`,
+	winbackStages: (userId: string) =>
+		cacheKey("scheduler", "dedup-winback-stages", userId),
 
 	/**
 	 * NudgeSuggest 주간 발송 이력 키 (per-week, 멤버: userId:friendId)
 	 * @example nudge-suggest:sent:2026-W10
 	 */
-	nudgeSuggestSent: (weekId: string) => `nudge-suggest:sent:${weekId}`,
+	nudgeSuggestSent: (weekId: string) =>
+		cacheKey("scheduler", "dedup-nudge-suggest", weekId),
 } as const;

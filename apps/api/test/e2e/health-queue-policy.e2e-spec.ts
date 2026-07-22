@@ -1,18 +1,18 @@
 import request from "supertest";
-import { RedisEvictionPolicyProbe } from "@/health/indicators/redis-eviction-policy.probe";
+import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
+import { FakeJobRuntime } from "../mocks/fake-job-runtime";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
-describe("queue Redis policy health E2E", () => {
+describe("durable job runtime health E2E", () => {
 	let ctx: E2eTestContext;
-	const inspect = jest.fn();
+	const runtime = new FakeJobRuntime();
+	const health = jest.spyOn(runtime, "health");
 
 	beforeAll(async () => {
 		ctx = await createE2eApp({
 			customizeBuilder: (builder) =>
-				builder
-					.overrideProvider(RedisEvictionPolicyProbe)
-					.useValue({ inspect }),
-			additionalResetters: [() => inspect.mockReset()],
+				builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
+			additionalResetters: [() => health.mockClear()],
 		});
 	});
 
@@ -24,9 +24,7 @@ describe("queue Redis policy health E2E", () => {
 		await ctx.reset();
 	});
 
-	it("noeviction이면 기존 health 성공 계약을 유지한다", async () => {
-		inspect.mockResolvedValue({ state: "compatible", policy: "noeviction" });
-
+	it("PostgreSQL backend이면 기존 200/up health 계약을 유지한다", async () => {
 		const response = await request(ctx.app.getHttpServer())
 			.get("/health")
 			.expect(200);
@@ -34,16 +32,24 @@ describe("queue Redis policy health E2E", () => {
 		expect(response.body.data.status).toBe("ok");
 		expect(response.body.data.info.queues).toMatchObject({
 			status: "up",
-			"ai-suggestion": { active: 0, waiting: 0, failed: 0 },
+			backend: "postgres",
+			degraded: false,
+			queues: {
+				"ai-suggestion-analysis.v1": {
+					active: 0,
+					waiting: 0,
+					failed: 0,
+				},
+			},
 		});
-		expect(response.body.data.info.queues).not.toHaveProperty("degraded");
-		expect(response.body.data.info.queues).not.toHaveProperty("reason");
 	});
 
-	it("비호환 정책이어도 200/up을 유지하고 기존 degraded 필드로만 알린다", async () => {
-		inspect.mockResolvedValue({
-			state: "incompatible",
-			policy: "volatile-lru",
+	it("backend 장애도 200/up을 유지하고 degraded 필드로만 알린다", async () => {
+		health.mockResolvedValueOnce({
+			backend: "postgres",
+			degraded: true,
+			reason: "job_runtime_unavailable",
+			queues: {},
 		});
 
 		const response = await request(ctx.app.getHttpServer())
@@ -53,9 +59,9 @@ describe("queue Redis policy health E2E", () => {
 		expect(response.body.data.status).toBe("ok");
 		expect(response.body.data.info.queues).toMatchObject({
 			status: "up",
+			backend: "postgres",
 			degraded: true,
-			reason: "redis maxmemory_policy incompatible with BullMQ: volatile-lru",
-			"ai-suggestion": { active: 0, waiting: 0, failed: 0 },
+			reason: "job_runtime_unavailable",
 		});
 	});
 });

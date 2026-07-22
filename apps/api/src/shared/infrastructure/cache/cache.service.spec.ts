@@ -12,6 +12,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockUserProfile } from "@test/mocks/cache-test-utils";
 import { CacheService } from "./cache.service";
+import { CacheKeys } from "./constants/cache-keys";
 import {
 	CACHE_SERVICE,
 	type ICacheService,
@@ -226,7 +227,9 @@ describe("CacheService — 캐시 서비스", () => {
 			const result = await service.getSession(sessionId);
 
 			// Then
-			expect(mockCacheAdapter.get).toHaveBeenCalledWith(`session:${sessionId}`);
+			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
+				CacheKeys.session(sessionId),
+			);
 			expect(result).toEqual(sessionData);
 		});
 
@@ -250,7 +253,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.set).toHaveBeenCalledWith(
-				`session:${sessionId}`,
+				CacheKeys.session(sessionId),
 				sessionData,
 				30_000,
 			);
@@ -264,7 +267,9 @@ describe("CacheService — 캐시 서비스", () => {
 			await service.invalidateSession(sessionId);
 
 			// Then
-			expect(mockCacheAdapter.del).toHaveBeenCalledWith(`session:${sessionId}`);
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
+				CacheKeys.session(sessionId),
+			);
 		});
 
 		it("wrapSession이 wrap을 올바른 키와 TTL로 호출한다", async () => {
@@ -277,7 +282,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
-				`session:${sessionId}`,
+				CacheKeys.session(sessionId),
 				factory,
 				30_000,
 			);
@@ -315,7 +320,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				`user:profile:${userId}`,
+				CacheKeys.userProfile(userId),
 			);
 			expect(result).toEqual(profile);
 		});
@@ -340,7 +345,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.set).toHaveBeenCalledWith(
-				`user:profile:${userId}`,
+				CacheKeys.userProfile(userId),
 				profile,
 				5 * 60_000,
 			);
@@ -355,7 +360,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				`user:profile:${userId}`,
+				CacheKeys.userProfile(userId),
 			);
 		});
 
@@ -369,7 +374,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
-				`user:profile:${userId}`,
+				CacheKeys.userProfile(userId),
 				factory,
 				5 * 60_000,
 			);
@@ -404,7 +409,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				`user:subscription:${userId}`,
+				CacheKeys.subscription(userId),
 			);
 			expect(result).toEqual(subscription);
 		});
@@ -429,7 +434,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.set).toHaveBeenCalledWith(
-				`user:subscription:${userId}`,
+				CacheKeys.subscription(userId),
 				subscription,
 				10 * 60_000,
 			);
@@ -444,7 +449,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				`user:subscription:${userId}`,
+				CacheKeys.subscription(userId),
 			);
 		});
 
@@ -458,7 +463,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
-				`user:subscription:${userId}`,
+				CacheKeys.subscription(userId),
 				factory,
 				10 * 60_000,
 			);
@@ -491,7 +496,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				`friends:mutual:${userId}:${targetUserId}`,
+				CacheKeys.mutualFriend(userId, targetUserId),
 			);
 			expect(result).toBe(true);
 		});
@@ -516,7 +521,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.set).toHaveBeenCalledWith(
-				`friends:mutual:${userId}:${targetUserId}`,
+				CacheKeys.mutualFriend(userId, targetUserId),
 				true,
 				60_000,
 			);
@@ -531,7 +536,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.set).toHaveBeenCalledWith(
-				`friends:mutual:${userId}:${targetUserId}`,
+				CacheKeys.mutualFriend(userId, targetUserId),
 				false,
 				60_000,
 			);
@@ -547,7 +552,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.delByPattern).toHaveBeenCalledWith(
-				`friends:mutual:${userId}:*`,
+				CacheKeys.mutualFriendPattern(userId),
 			);
 			expect(result).toBe(deletedCount);
 		});
@@ -562,7 +567,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then - 작은 ID가 먼저 오도록 정규화됨
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				`friends:mutual:user_a:user_b`,
+				CacheKeys.mutualFriend("user_a", "user_b"),
 			);
 		});
 
@@ -576,7 +581,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				`friends:mutual:user_1:user_2`,
+				CacheKeys.mutualFriend("user_1", "user_2"),
 			);
 		});
 
@@ -594,7 +599,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
-				`friends:mutual:${userId}:${targetUserId}`,
+				CacheKeys.mutualFriend(userId, targetUserId),
 				factory,
 				60_000,
 			);
@@ -648,7 +653,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 			// Then
 			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				`user:profile:${specialUserId}`,
+				CacheKeys.userProfile(specialUserId),
 			);
 		});
 	});

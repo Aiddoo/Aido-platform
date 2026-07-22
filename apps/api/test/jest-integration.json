@@ -8,7 +8,7 @@
 	"globalSetup": "<rootDir>/setup/global-setup.ts",
 	"globalTeardown": "<rootDir>/setup/global-teardown.ts",
 	"transform": {
-		"^.+\\.ts$": [
+		"^.+\\.[jt]s$": [
 			"@swc/jest",
 			{
 				"jsc": {
@@ -28,6 +28,9 @@
 			}
 		]
 	},
+	"transformIgnorePatterns": [
+		"node_modules/(?!((\\.pnpm/)?(pg-boss|serialize-error|non-error)(@|/)))"
+	],
 	"moduleNameMapper": {
 		"^@/(.*)$": "<rootDir>/../src/$1",
 		"^@test/(.*)$": "<rootDir>/$1",
