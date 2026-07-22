@@ -133,6 +133,8 @@ export interface E2eTestContext {
 	fakeOAuthProviderRegistry: FakeOAuthProviderRegistry;
 	helpers: E2eHelpers;
 	reset(): Promise<void>;
+	/** @internal restartE2eAppPreservingDatabase 전용 */
+	closeApplicationResources(): Promise<void>;
 	/** @internal destroyE2eApp 전용 */
 	closeTestResources(): Promise<void>;
 }
@@ -144,13 +146,17 @@ export interface E2eAppOptions {
 	) => ReturnType<typeof Test.createTestingModule>;
 	/** suite에서 추가로 override한 fake의 상태 초기화 함수 */
 	additionalResetters?: readonly TestStateResetter[];
+	/** @internal 앱 재시작 테스트에서 동일 PostgreSQL을 재사용 */
+	testDatabase?: TestDatabase;
 }
 
 export async function createE2eApp(
 	options?: E2eAppOptions,
 ): Promise<E2eTestContext> {
-	const testDatabase = new TestDatabase();
-	await testDatabase.start();
+	const testDatabase = options?.testDatabase ?? new TestDatabase();
+	if (!options?.testDatabase) {
+		await testDatabase.start();
+	}
 
 	const fakeEmailService = new FakeEmailService();
 	const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
@@ -174,8 +180,13 @@ export async function createE2eApp(
 	let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
 	let module: TestingModule | undefined;
 	let app: INestApplication<App> | undefined;
+	let applicationClosed = false;
 
-	const closeTestResources = async (): Promise<void> => {
+	const closeApplicationResources = async (): Promise<void> => {
+		if (applicationClosed) {
+			return;
+		}
+		applicationClosed = true;
 		const errors: unknown[] = [];
 		try {
 			await app?.close();
@@ -186,12 +197,24 @@ export async function createE2eApp(
 		const results = await Promise.allSettled([
 			Promise.resolve().then(() => redisMock.disconnect()),
 			Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
-			testDatabase.stop(),
 		]);
 		errors.push(
 			...results.flatMap((result) =>
 				result.status === "rejected" ? [result.reason] : [],
 			),
+		);
+		if (errors.length > 0) {
+			throw new AggregateError(errors, "Failed to close E2E app resources");
+		}
+	};
+
+	const closeTestResources = async (): Promise<void> => {
+		const results = await Promise.allSettled([
+			closeApplicationResources(),
+			testDatabase.stop(),
+		]);
+		const errors = results.flatMap((result) =>
+			result.status === "rejected" ? [result.reason] : [],
 		);
 		if (errors.length > 0) {
 			throw new AggregateError(errors, "Failed to close E2E test resources");
@@ -320,6 +343,7 @@ export async function createE2eApp(
 			fakeOAuthProviderRegistry,
 			helpers,
 			reset,
+			closeApplicationResources,
 			closeTestResources,
 		};
 	} catch (error) {
@@ -330,4 +354,11 @@ export async function createE2eApp(
 
 export async function destroyE2eApp(ctx: E2eTestContext): Promise<void> {
 	await ctx.closeTestResources();
+}
+
+export async function restartE2eAppPreservingDatabase(
+	ctx: E2eTestContext,
+): Promise<E2eTestContext> {
+	await ctx.closeApplicationResources();
+	return createE2eApp({ testDatabase: ctx.testDatabase });
 }
