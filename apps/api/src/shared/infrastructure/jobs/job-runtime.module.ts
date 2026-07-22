@@ -22,6 +22,7 @@ import type { EnvConfig } from "@/shared/infrastructure/config";
 import {
 	BullMqJobRuntimeAdapter,
 	bullMqClientFactoryProvider,
+	legacyQueueName,
 } from "./bullmq-job-runtime.adapter";
 import {
 	PgBossJobRuntimeAdapter,
@@ -65,6 +66,10 @@ export class RedisDrainJobRuntime implements JobRuntimePort {
 		// BullMQ repeat metadata creates jobs independently of workers. Remove the
 		// Redis scheduler so the legacy queue can actually reach zero while draining.
 		await this.redis.unschedule(scheduleKey, queue);
+		const legacyQueue = legacyQueueName(queue);
+		if (legacyQueue) {
+			await this.redis.unschedule(scheduleKey, legacyQueue);
+		}
 	}
 
 	async unschedule(scheduleKey: string, queue: string): Promise<void> {

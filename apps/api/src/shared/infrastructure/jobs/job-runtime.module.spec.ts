@@ -78,6 +78,10 @@ describe("selectJobRuntime — backend 선택", () => {
 			"paid-document-daily",
 			"paid-document.v1",
 		);
+		expect(redis.unschedule).toHaveBeenCalledWith(
+			"paid-document-daily",
+			"paid-document",
+		);
 	});
 
 	it.each<JobBackend>(["postgres", "redis"])(
