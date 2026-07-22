@@ -7,7 +7,7 @@ import {
 	type BullWorkerClient,
 } from "./bullmq-job-runtime.adapter";
 
-const QUEUE = "document-generation";
+const QUEUE = "document-generation.v1";
 
 function options(
 	overrides: Partial<EnqueueJobOptions> = {},
@@ -210,6 +210,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 				}),
 			},
 		]);
+		expect(
+			factory.queues.get("document-generation")?.removedScheduleKeys,
+		).toEqual(["weekly-document"]);
 	});
 
 	it("worker가 신규 wrapper와 기존 raw payload를 같은 envelope로 전달한다", async () => {

@@ -19,6 +19,10 @@ import { REDIS_CLIENT } from "@/shared/infrastructure/redis";
 
 export const BULLMQ_CLIENT_FACTORY = Symbol("BULLMQ_CLIENT_FACTORY");
 
+export function legacyQueueName(queueName: string): string | null {
+	return queueName.endsWith(".v1") ? queueName.slice(0, -3) : null;
+}
+
 export interface BullJobClient {
 	readonly id?: string;
 	readonly name: string;
@@ -261,6 +265,10 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 				opts: jobOptions,
 			},
 		);
+		const legacyQueue = legacyQueueName(queueName);
+		if (legacyQueue) {
+			await this.queue(legacyQueue).removeJobScheduler(scheduleKey);
+		}
 	}
 
 	async unschedule(scheduleKey: string, queueName: string): Promise<void> {
