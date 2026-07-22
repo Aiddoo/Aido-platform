@@ -249,8 +249,12 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 			await this.ensureQueue(options.deadLetter);
 		}
 		await this.ensureQueue(queue);
+		const { db: _transactionDb, ...persistedOptions } = this.toPgBossOptions(
+			options,
+			this.transactionDatabase(),
+		);
 		await this.boss.schedule(queue, cron, data, {
-			...this.toPgBossOptions(options, this.transactionDatabase()),
+			...persistedOptions,
 			key: scheduleKey,
 			tz: options.timezone,
 		});

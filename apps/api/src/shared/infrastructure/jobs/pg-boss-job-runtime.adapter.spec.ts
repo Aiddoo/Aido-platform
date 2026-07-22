@@ -211,6 +211,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 				tz: "Asia/Seoul",
 			},
 		});
+		expect(boss.scheduleCalls[0]?.options).not.toHaveProperty("db");
 	});
 
 	it("worker batch를 vendor-neutral envelope로 변환한다", async () => {
