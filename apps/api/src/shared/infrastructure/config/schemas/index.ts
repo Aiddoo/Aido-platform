@@ -8,6 +8,7 @@ import {
 	validateEmailForProduction,
 } from "./email.schema";
 import { type ExternalConfig, externalSchema } from "./external.schema";
+import { type JobConfig, jobSchema } from "./job.schema";
 import { type JwtConfig, jwtSchema } from "./jwt.schema";
 import {
 	type OAuthConfig,
@@ -24,6 +25,7 @@ export * from "./cache.schema";
 export * from "./database.schema";
 export * from "./email.schema";
 export * from "./external.schema";
+export * from "./job.schema";
 export * from "./jwt.schema";
 export * from "./oauth.schema";
 export * from "./push.schema";
@@ -40,6 +42,7 @@ export const envSchema = z
 	.merge(databaseSchema)
 	.merge(emailSchema)
 	.merge(jwtSchema)
+	.merge(jobSchema)
 	.merge(oauthSchema)
 	.merge(securitySchema)
 	.merge(pushSchema)
@@ -54,6 +57,7 @@ export type EnvConfig = AppConfig &
 	DatabaseConfig &
 	EmailConfig &
 	JwtConfig &
+	JobConfig &
 	OAuthConfig &
 	SecurityConfig &
 	PushConfig &

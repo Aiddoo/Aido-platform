@@ -266,6 +266,15 @@ export class TypedConfigService {
 		};
 	}
 
+	get job() {
+		return {
+			backend: this.get("JOB_BACKEND"),
+			schema: this.get("JOB_SCHEMA"),
+			shutdownTimeoutMs: this.get("JOB_SHUTDOWN_TIMEOUT_MS"),
+			pollingIntervalSeconds: this.get("JOB_POLLING_INTERVAL_SECONDS"),
+		};
+	}
+
 	// ============================================
 	// Logger Config Helpers
 	// ============================================
