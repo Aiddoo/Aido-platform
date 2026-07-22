@@ -17,6 +17,7 @@ export interface EnqueueJobOptions {
 	readonly retryBackoff: boolean;
 	readonly expireInSeconds: number;
 	readonly retentionSeconds: number;
+	readonly deleteAfterSeconds: number;
 	readonly deadLetter?: string;
 }
 
