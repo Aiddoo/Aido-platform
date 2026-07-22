@@ -4,8 +4,6 @@
  * 잡 페이로드 계약은 application 포트가 소유하고, 여기서는 BullMQ 큐/잡 이름과
  * 프로세서용 판별 유니온(discriminated union)만 정의한다.
  */
-import type { Job } from "bullmq";
-
 import type {
 	ReminderHourChangedJobData,
 	SocialDigestJobData,
@@ -20,7 +18,8 @@ export type {
 // Queue / Job Names
 // =============================================================================
 
-export const TIMEZONE_REMINDER_QUEUE = "timezone-reminder";
+export const TIMEZONE_REMINDER_QUEUE = "timezone-reminder.v1";
+export const TIMEZONE_REMINDER_LEGACY_QUEUE = "timezone-reminder";
 
 export const TimezoneReminderJobName = {
 	SWEEP_REMINDERS: "sweep-reminders",
@@ -46,17 +45,10 @@ export type TimezoneReminderJobData =
  *
  * 프로세서의 `switch(job.name)`가 job.data를 캐스트 없이 좁히도록 하는 판별 키.
  */
-interface TimezoneReminderJobDataByName {
+export interface TimezoneReminderJobMap {
 	"sweep-reminders": SweepRemindersJobData;
 	"reminder-hour-changed": ReminderHourChangedJobData;
 	"social-digest": SocialDigestJobData;
 }
 
 /** 이름으로 판별되는 잡 유니온 (프로세서 진입 타입) */
-export type TimezoneReminderJob = {
-	[K in keyof TimezoneReminderJobDataByName]: Job<
-		TimezoneReminderJobDataByName[K],
-		unknown,
-		K
-	>;
-}[keyof TimezoneReminderJobDataByName];

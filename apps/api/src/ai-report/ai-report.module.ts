@@ -1,4 +1,3 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { AiModule } from "../ai/ai.module";
@@ -14,7 +13,6 @@ import { ReportGenerationJob } from "./infrastructure/jobs/report-generation.job
 import { PrismaAiReportRepository } from "./infrastructure/persistence/prisma-ai-report.repository";
 import { PrismaTodoStatsReader } from "./infrastructure/persistence/prisma-todo-stats.reader";
 import { ReportGenerationProcessor } from "./infrastructure/processors/report-generation.processor";
-import { AI_REPORT_QUEUE } from "./infrastructure/queue/ai-report-queue";
 import { AiReportController } from "./presentation/ai-report.controller";
 
 /**
@@ -32,7 +30,7 @@ import { AiReportController } from "./presentation/ai-report.controller";
  * - 알림 발송은 SchedulerModule의 Strategy에서 담당
  */
 @Module({
-	imports: [AiModule, BullModule.registerQueue({ name: AI_REPORT_QUEUE })],
+	imports: [AiModule],
 	controllers: [AiReportController],
 	providers: [
 		AiReportFacade,

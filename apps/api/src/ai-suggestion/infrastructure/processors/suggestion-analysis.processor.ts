@@ -1,24 +1,38 @@
-import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger } from "@nestjs/common";
-import type { Job } from "bullmq";
+import {
+	Inject,
+	Injectable,
+	Logger,
+	type OnModuleInit,
+	Optional,
+} from "@nestjs/common";
 import {
 	NotificationFacade,
 	NotificationMessageBuilder,
 	resolveTemplateLocale,
 } from "@/notification";
+import {
+	JOB_RUNTIME,
+	type JobData,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import {
+	fromLegacyJob,
+	type NamedJob,
+} from "@/shared/infrastructure/jobs/named-job";
 import { AiSuggestionFacade } from "../../application/facades/ai-suggestion.facade";
 import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 import {
+	AI_SUGGESTION_LEGACY_QUEUE,
 	AI_SUGGESTION_QUEUE,
 	type AiSuggestionAnalyzeData,
-	type AiSuggestionJobData,
+	type AiSuggestionJobMap,
 	AiSuggestionJobName,
 } from "../queue/ai-suggestion-queue";
 
 /** ANALYZE 잡 데이터 내로잉 (as 캐스트 회피) */
 function isAnalyzeData(
-	data: AiSuggestionJobData,
+	data: AiSuggestionJobMap[keyof AiSuggestionJobMap],
 ): data is AiSuggestionAnalyzeData {
 	return "userId" in data;
 }
@@ -31,12 +45,14 @@ function isAnalyzeData(
  * - BullMQ 자동 재시도 (3회, exponential backoff)
  * - concurrency=5로 Gemini API rate limit 대응
  */
-@Processor(AI_SUGGESTION_QUEUE, {
-	concurrency: 5,
-	lockDuration: 60_000,
-	stalledInterval: 60_000,
-})
-export class SuggestionAnalysisProcessor extends WorkerHost {
+type AiSuggestionJob = NamedJob<AiSuggestionJobMap>;
+type AiSuggestionJobLike = {
+	readonly name: string;
+	readonly data: AiSuggestionJobMap[keyof AiSuggestionJobMap];
+};
+
+@Injectable()
+export class SuggestionAnalysisProcessor implements OnModuleInit {
 	readonly #logger = new Logger(SuggestionAnalysisProcessor.name);
 
 	/** @see SuggestionAnalysisJob — 순환 참조 방지를 위해 setter injection */
@@ -49,31 +65,49 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 		private readonly aiSuggestionFacade: AiSuggestionFacade,
 		private readonly notificationService: NotificationFacade,
 		private readonly database: DatabaseService,
-	) {
-		super();
+		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
+	) {}
+
+	async onModuleInit(): Promise<void> {
+		if (!this.runtime) return;
+		await this.runtime.work<AiSuggestionJob>(
+			AI_SUGGESTION_QUEUE,
+			async (jobs) => {
+				for (const job of jobs) await this.process(job.data);
+			},
+			{ teamSize: 5, pollingIntervalSeconds: 2 },
+		);
+		await this.runtime.work<JobData>(
+			AI_SUGGESTION_LEGACY_QUEUE,
+			async (jobs) => {
+				for (const job of jobs)
+					await this.process(fromLegacyJob<AiSuggestionJobMap>(job));
+			},
+			{ teamSize: 5, pollingIntervalSeconds: 2 },
+		);
 	}
 
-	@OnWorkerEvent("stalled")
-	onStalled(jobId: string) {
+	onStalled(jobId: string): void {
 		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
-	@OnWorkerEvent("error")
-	onError(error: Error) {
+	onError(error: Error): void {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	@OnWorkerEvent("failed")
-	onFailed(job: Job | undefined, error: Error) {
+	onFailed(
+		job: { readonly id?: string; readonly name?: string } | undefined,
+		error: Error,
+	) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
 		);
 	}
 
-	async process(job: Job<AiSuggestionJobData>): Promise<void> {
+	async process(job: AiSuggestionJobLike): Promise<void> {
 		if (job.name === AiSuggestionJobName.DISPATCH) {
-			await this.#suggestionJob?.dispatchAnalysis(job);
+			await this.#suggestionJob?.dispatchAnalysis();
 			return;
 		}
 

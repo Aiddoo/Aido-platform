@@ -58,7 +58,10 @@ import {
 	TODO_REMINDER_QUEUE,
 	TodoReminderProcessor,
 } from "@/scheduler";
-import { DOMAIN_EVENT_PUBLISHER } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	JOB_RUNTIME,
+} from "@/shared/application/ports";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -76,6 +79,7 @@ import { FakeAiProvider } from "../../mocks/fake-ai.provider";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";
 import { createMockBullQueue } from "../../mocks/fake-bull-queue";
 import { FakeEmailService } from "../../mocks/fake-email.service";
+import { FakeJobRuntime } from "../../mocks/fake-job-runtime";
 import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider";
 import { FakeLogger } from "../../mocks/fake-logger.service";
 import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry";
@@ -168,6 +172,7 @@ export async function createE2eApp(
 	const fakeAirQualityProvider = new FakeAirQualityProvider();
 	const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
 	const fakeSunTimeProvider = new FakeSunTimeProvider();
+	const fakeJobRuntime = new FakeJobRuntime();
 
 	const redisMock = new RedisMock();
 	const cacheAdapter = new InMemoryCacheAdapter({
@@ -228,6 +233,8 @@ export async function createE2eApp(
 		.useValue(redisMock)
 		.overrideProvider(REDIS_COMMAND_CLIENT)
 		.useValue(redisMock)
+		.overrideProvider(JOB_RUNTIME)
+		.useValue(fakeJobRuntime)
 		.overrideProvider(CACHE_SERVICE)
 		.useValue(cacheAdapter)
 		.overrideProvider(DatabaseService)
@@ -330,6 +337,7 @@ export async function createE2eApp(
 				() => fakeAirQualityProvider.clear(),
 				() => fakeLifestyleIndexProvider.clear(),
 				() => fakeSunTimeProvider.clear(),
+				() => fakeJobRuntime.clear(),
 			],
 			additionalResetters: options?.additionalResetters,
 		});

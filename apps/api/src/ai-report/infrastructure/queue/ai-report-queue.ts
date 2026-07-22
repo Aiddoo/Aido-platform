@@ -5,7 +5,8 @@
  * 딥임포트하지 않고 큐 상수만 참조하도록 한다.
  */
 
-export const AI_REPORT_QUEUE = "ai-report-generation";
+export const AI_REPORT_QUEUE = "ai-report-generation.v1";
+export const AI_REPORT_LEGACY_QUEUE = "ai-report-generation";
 
 /** 잡 이름 상수 */
 export const AiReportJobName = {

@@ -1,4 +1,3 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { DatabaseModule } from "@/shared/infrastructure/database/database.module";
@@ -37,10 +36,7 @@ import {
 	TimezoneReminderQueueService,
 } from "./infrastructure/queue";
 import { TimezoneReminderProcessor } from "./infrastructure/queue/timezone-reminder-queue.processor";
-import {
-	BullMQReminderSchedulerAdapter,
-	TODO_REMINDER_QUEUE,
-} from "./infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
+import { BullMQReminderSchedulerAdapter } from "./infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
 
 /**
  * SchedulerModule (클린아키텍처 4계층 + 포트/어댑터)
@@ -55,7 +51,6 @@ import {
  */
 @Module({
 	imports: [
-		BullModule.registerQueue({ name: TODO_REMINDER_QUEUE }),
 		TimezoneReminderQueueModule,
 		DatabaseModule,
 		NotificationModule,

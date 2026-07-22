@@ -1,21 +1,21 @@
-import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import type { Job, Queue } from "bullmq";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { AI_PER_USER_JOB_OPTS } from "@/shared/infrastructure/bullmq/job-options";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { forEachBatch } from "@/shared/infrastructure/database/utils/batch-cursor.util";
 import { SuggestionAnalysisProcessor } from "../processors/suggestion-analysis.processor";
 import {
+	AI_SUGGESTION_LEGACY_QUEUE,
 	AI_SUGGESTION_QUEUE,
 	type AiSuggestionAnalyzeData,
-	type AiSuggestionJobData,
 	AiSuggestionJobName,
 } from "../queue/ai-suggestion-queue";
 import { AiSuggestionQueueMaintenanceService } from "../queue/ai-suggestion-queue-maintenance.service";
-import { AI_SUGGESTION_FAILED_JOB_RETENTION } from "../queue/ai-suggestion-retention.policy";
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
@@ -33,8 +33,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 
 	constructor(
 		private readonly database: DatabaseService,
-		@InjectQueue(AI_SUGGESTION_QUEUE)
-		private readonly queue: Queue<AiSuggestionJobData>,
+		@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
 		private readonly processor: SuggestionAnalysisProcessor,
 		private readonly queueMaintenance: AiSuggestionQueueMaintenanceService,
 	) {}
@@ -52,16 +51,16 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 			"Suggestion analysis scheduler registration",
 			async () => {
 				// 구 weekly 스케줄러 제거 (마이그레이션)
-				await this.queue.removeJobScheduler("weekly-suggestion-scheduler");
-
-				await this.queue.upsertJobScheduler(
+				await this.runtime.unschedule(
+					"weekly-suggestion-scheduler",
+					AI_SUGGESTION_LEGACY_QUEUE,
+				);
+				await this.runtime.schedule(
 					"daily-suggestion-scheduler",
-					{ pattern: "30 7 * * *", tz: "Asia/Seoul" },
-					{
-						name: AiSuggestionJobName.DISPATCH,
-						data: {},
-						opts: { removeOnFail: AI_SUGGESTION_FAILED_JOB_RETENTION },
-					},
+					"30 7 * * *",
+					AI_SUGGESTION_QUEUE,
+					{ name: AiSuggestionJobName.DISPATCH, data: {} },
+					this.#jobOptions(),
 				);
 
 				this.#logger.log("Suggestion analysis scheduler registered");
@@ -74,7 +73,9 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 	/**
 	 * 대상 사용자를 조회하여 BullMQ 큐에 per-user 잡 등록
 	 */
-	async dispatchAnalysis(dispatchJob?: Job): Promise<void> {
+	async dispatchAnalysis(dispatchJob?: {
+		updateProgress(progress: object): Promise<unknown>;
+	}): Promise<void> {
 		this.#logger.log("Starting suggestion analysis dispatch...");
 		await this.queueMaintenance.cleanExpiredFailures();
 
@@ -113,29 +114,33 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 					take,
 				}),
 			onBatch: async (batch) => {
-				const jobs = batch.map((user) => ({
-					name: AiSuggestionJobName.ANALYZE,
-					data: {
-						userId: user.id,
-						timezone: user.preference?.timezone ?? "Asia/Seoul",
-						weatherGrid: user.location
-							? {
-									gridX: user.location.gridX,
-									gridY: user.location.gridY,
-									lat: user.location.latitude,
-									lon: user.location.longitude,
-								}
-							: null,
-					} satisfies AiSuggestionAnalyzeData,
-					opts: {
-						...AI_PER_USER_JOB_OPTS,
-						removeOnFail: AI_SUGGESTION_FAILED_JOB_RETENTION,
-						jobId: `suggestion_${user.id}_${periodId}`,
-					},
-				}));
-
-				await this.queue.addBulk(jobs);
-				totalEnqueued += jobs.length;
+				await Promise.all(
+					batch.map((user) =>
+						this.runtime.enqueue(
+							AI_SUGGESTION_QUEUE,
+							{
+								name: AiSuggestionJobName.ANALYZE,
+								data: {
+									userId: user.id,
+									timezone: user.preference?.timezone ?? "Asia/Seoul",
+									weatherGrid: user.location
+										? {
+												gridX: user.location.gridX,
+												gridY: user.location.gridY,
+												lat: user.location.latitude,
+												lon: user.location.longitude,
+											}
+										: null,
+								} satisfies AiSuggestionAnalyzeData,
+							},
+							{
+								...this.#jobOptions(),
+								jobKey: `suggestion_${user.id}_${periodId}`,
+							},
+						),
+					),
+				);
+				totalEnqueued += batch.length;
 				await dispatchJob?.updateProgress({ enqueued: totalEnqueued });
 			},
 		});
@@ -155,12 +160,12 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		// 매일 07:30 이후
 		if (hour > 7 || (hour === 7 && kstNow.minute() >= 30)) {
 			this.#logger.log("Catch-up: suggestion analysis dispatch");
-			await this.queue.add(
-				AiSuggestionJobName.DISPATCH,
-				{},
+			await this.runtime.enqueue(
+				AI_SUGGESTION_QUEUE,
+				{ name: AiSuggestionJobName.DISPATCH, data: {} },
 				{
-					jobId: `dispatch_suggestion_${kstNow.format("YYYY-MM-DD")}`,
-					removeOnFail: AI_SUGGESTION_FAILED_JOB_RETENTION,
+					...this.#jobOptions(),
+					jobKey: `dispatch_suggestion_${kstNow.format("YYYY-MM-DD")}`,
 				},
 			);
 		}
@@ -171,5 +176,17 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 	 */
 	#getJobDeduplicationId(): string {
 		return dayjs().tz("Asia/Seoul").format("YYYY-MM-DD");
+	}
+
+	#jobOptions() {
+		return {
+			retryLimit: 2,
+			retryDelaySeconds: 5,
+			retryBackoff: true,
+			expireInSeconds: 10 * 60,
+			retentionSeconds: 24 * 60 * 60,
+			deleteAfterSeconds: 7 * 24 * 60 * 60,
+			timezone: "Asia/Seoul",
+		};
 	}
 }

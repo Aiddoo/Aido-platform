@@ -1,286 +1,108 @@
-/**
- * ReportGenerationJob (Dispatcher) 단위 테스트
- *
- * Suites + GWT 패턴 적용
- * - BullMQ Job Scheduler 등록 검증
- * - BullMQ 큐에 per-user 잡 등록 검증
- * - Startup catch-up 검증
- */
-
-import { getQueueToken } from "@nestjs/bullmq";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
-import type { Queue } from "bullmq";
+import type { JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { ReportGenerationProcessor } from "../processors/report-generation.processor";
 import { AI_REPORT_QUEUE } from "../queue/ai-report-queue";
 import { ReportGenerationJob } from "./report-generation.job";
 
-describe("ReportGenerationJob — 리포트 생성 잡", () => {
+describe("ReportGenerationJob — durable dispatcher", () => {
 	let job: ReportGenerationJob;
-	let mockDatabase: MockPrismaClient;
-	let mockQueue: Mocked<Queue>;
-	let mockProcessor: Mocked<ReportGenerationProcessor>;
+	let database: MockPrismaClient;
+	let runtime: Mocked<JobRuntimePort>;
+	let processor: Mocked<ReportGenerationProcessor>;
 
 	beforeEach(async () => {
-		// 잡은 CLS TransactionHost.tx에서 클라이언트를 읽으므로
-		// tx가 Prisma mock을 반환하도록 스텁합니다.
-		mockDatabase = createMockPrisma();
-
+		database = createMockPrisma();
 		const { unit, unitRef } = await TestBed.solitary(ReportGenerationJob)
 			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
 				TransactionHost,
 			)
-			.impl(() => ({ tx: mockDatabase }))
-			.mock(getQueueToken(AI_REPORT_QUEUE))
+			.impl(() => ({ tx: database }))
+			.mock(JOB_RUNTIME)
 			.impl(() => ({
-				add: jest.fn().mockResolvedValue(undefined),
-				addBulk: jest.fn().mockResolvedValue(undefined),
-				upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
+				schedule: jest.fn().mockResolvedValue(undefined),
+				enqueue: jest.fn().mockResolvedValue("job-1"),
 			}))
 			.compile();
-
 		job = unit;
-		mockQueue = unitRef.get(getQueueToken(AI_REPORT_QUEUE));
-		mockProcessor = unitRef.get(ReportGenerationProcessor);
+		runtime = unitRef.get(JOB_RUNTIME);
+		processor = unitRef.get(ReportGenerationProcessor);
 	});
 
-	afterEach(() => {
-		jest.useRealTimers();
+	afterEach(() => jest.useRealTimers());
+
+	it("KST 주간·월간 스케줄을 등록하고 processor를 연결한다", async () => {
+		jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
+		job.onModuleInit();
+		await job.schedulerRegistration;
+
+		expect(runtime.schedule).toHaveBeenCalledTimes(2);
+		expect(runtime.schedule).toHaveBeenCalledWith(
+			"weekly-report-scheduler",
+			"0 1 * * 1",
+			AI_REPORT_QUEUE,
+			{ name: "dispatch-reports", data: { reportType: "WEEKLY" } },
+			expect.objectContaining({ timezone: "Asia/Seoul" }),
+		);
+		expect(processor.setReportJob).toHaveBeenCalledWith(job);
 	});
 
-	describe("onModuleInit 스케줄러 등록", () => {
-		it("서버 시작 시 주간/월간 스케줄러를 등록해야 한다", async () => {
-			// Given — 화요일 (catch-up 미발동)
-			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
+	it("월요일 01시 이후 재시작하면 주간 dispatch를 멱등 키로 보정한다", async () => {
+		jest.useFakeTimers({ now: new Date("2026-03-09T03:00:00+09:00") });
+		job.onModuleInit();
+		await job.schedulerRegistration;
 
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
-
-			// Then
-			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledTimes(2);
-			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
-				"weekly-report-scheduler",
-				{ pattern: "0 1 * * 1", tz: "Asia/Seoul" },
-				{ name: "dispatch-reports", data: { reportType: "WEEKLY" } },
-			);
-			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
-				"monthly-report-scheduler",
-				{ pattern: "0 2 1 * *", tz: "Asia/Seoul" },
-				{ name: "dispatch-reports", data: { reportType: "MONTHLY" } },
-			);
-		});
-
-		it("Processor에 자신을 등록해야 한다", async () => {
-			// Given
-			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
-
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
-
-			// Then
-			expect(mockProcessor.setReportJob).toHaveBeenCalledWith(job);
-		});
+		expect(runtime.enqueue).toHaveBeenCalledWith(
+			AI_REPORT_QUEUE,
+			{ name: "dispatch-reports", data: { reportType: "WEEKLY" } },
+			expect.objectContaining({
+				jobKey: expect.stringContaining("dispatch_WEEKLY_"),
+			}),
+		);
 	});
 
-	describe("catch-up on startup", () => {
-		it("월요일 01:00 이후 시작 시 WEEKLY dispatch 잡을 추가해야 한다", async () => {
-			// Given — 월요일 03:00 KST
-			jest.useFakeTimers({ now: new Date("2026-03-09T03:00:00+09:00") });
+	it("대상 사용자마다 생성 작업과 재시도 정책을 등록한다", async () => {
+		asMock(database.user.findMany).mockResolvedValue([
+			{ id: "user-1", preference: { timezone: "Asia/Seoul", locale: "ko" } },
+			{
+				id: "user-2",
+				preference: { timezone: "America/New_York", locale: "en" },
+			},
+		]);
 
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
+		await job.dispatchReports("WEEKLY");
 
-			// Then
-			expect(mockQueue.add).toHaveBeenCalledWith(
-				"dispatch-reports",
-				{ reportType: "WEEKLY" },
-				{ jobId: expect.stringContaining("dispatch_WEEKLY_") },
-			);
-		});
-
-		it("1일 01:00 이후 시작 시 MONTHLY dispatch 잡을 추가해야 한다", async () => {
-			// Given — 4월 1일 02:00 KST (수요일)
-			jest.useFakeTimers({ now: new Date("2026-04-01T02:00:00+09:00") });
-
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
-
-			// Then
-			expect(mockQueue.add).toHaveBeenCalledWith(
-				"dispatch-reports",
-				{ reportType: "MONTHLY" },
-				{ jobId: expect.stringContaining("dispatch_MONTHLY_") },
-			);
-		});
-
-		it("월요일이면서 1일이면 WEEKLY + MONTHLY 모두 추가해야 한다", async () => {
-			// Given — 2026-06-01은 월요일
-			jest.useFakeTimers({ now: new Date("2026-06-01T03:00:00+09:00") });
-
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
-
-			// Then
-			expect(mockQueue.add).toHaveBeenCalledTimes(2);
-			expect(mockQueue.add).toHaveBeenCalledWith(
-				"dispatch-reports",
-				{ reportType: "WEEKLY" },
-				{ jobId: expect.stringContaining("dispatch_WEEKLY_") },
-			);
-			expect(mockQueue.add).toHaveBeenCalledWith(
-				"dispatch-reports",
-				{ reportType: "MONTHLY" },
-				{ jobId: expect.stringContaining("dispatch_MONTHLY_") },
-			);
-		});
-
-		it("월요일 01:00 이전에 시작 시 catch-up하지 않아야 한다", async () => {
-			// Given — 월요일 00:30 KST
-			jest.useFakeTimers({ now: new Date("2026-03-09T00:30:00+09:00") });
-
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
-
-			// Then
-			expect(mockQueue.add).not.toHaveBeenCalled();
-		});
-
-		it("월요일이 아닌 날에는 WEEKLY catch-up하지 않아야 한다", async () => {
-			// Given — 화요일 10:00 KST
-			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
-
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
-
-			// Then
-			expect(mockQueue.add).not.toHaveBeenCalled();
-		});
-
-		it("1일이 아닌 날에는 MONTHLY catch-up하지 않아야 한다", async () => {
-			// Given — 3월 15일 수요일 10:00 KST
-			jest.useFakeTimers({ now: new Date("2026-03-15T10:00:00+09:00") });
-
-			// When
-			job.onModuleInit();
-			await job.schedulerRegistration;
-
-			// Then
-			expect(mockQueue.add).not.toHaveBeenCalled();
-		});
+		expect(runtime.enqueue).toHaveBeenCalledTimes(2);
+		expect(runtime.enqueue).toHaveBeenCalledWith(
+			AI_REPORT_QUEUE,
+			expect.objectContaining({
+				name: "generate-report",
+				data: expect.objectContaining({
+					userId: "user-1",
+					reportType: "WEEKLY",
+				}),
+			}),
+			expect.objectContaining({ retryLimit: 2, retryBackoff: true }),
+		);
 	});
 
-	describe("dispatchReports", () => {
-		it("모든 사용자에 대해 큐에 잡을 등록해야 한다", async () => {
-			// Given
-			const users = [
-				{ id: "user-1", preference: { timezone: "Asia/Seoul" } },
-				{ id: "user-2", preference: { timezone: "America/New_York" } },
-			];
-			asMock(mockDatabase.user.findMany).mockResolvedValue(users);
+	it("preference가 없으면 기존 기본값을 유지한다", async () => {
+		asMock(database.user.findMany).mockResolvedValue([
+			{ id: "user-1", preference: null },
+		]);
+		await job.dispatchReports("MONTHLY");
 
-			// When
-			await job.dispatchReports("WEEKLY");
-
-			// Then
-			expect(mockQueue.addBulk).toHaveBeenCalledTimes(1);
-			const jobs = mockQueue.addBulk.mock.calls[0]?.[0];
-			expect(jobs).toHaveLength(2);
-			expect(jobs?.[0]).toEqual(
-				expect.objectContaining({
-					name: "generate-report",
-					data: expect.objectContaining({
-						userId: "user-1",
-						timezone: "Asia/Seoul",
-						reportType: "WEEKLY",
-					}),
-				}),
-			);
-			expect(jobs?.[1]).toEqual(
-				expect.objectContaining({
-					data: expect.objectContaining({
-						userId: "user-2",
-						timezone: "America/New_York",
-					}),
-				}),
-			);
-		});
-
-		it("월간 리포트 잡은 MONTHLY reportType으로 등록해야 한다", async () => {
-			// Given
-			const users = [{ id: "user-1", preference: { timezone: "Asia/Seoul" } }];
-			asMock(mockDatabase.user.findMany).mockResolvedValue(users);
-
-			// When
-			await job.dispatchReports("MONTHLY");
-
-			// Then
-			const jobs = mockQueue.addBulk.mock.calls[0]?.[0];
-			expect(jobs?.[0]).toEqual(
-				expect.objectContaining({
-					data: expect.objectContaining({
-						reportType: "MONTHLY",
-					}),
-				}),
-			);
-		});
-
-		it("preference가 없으면 기본 타임존 'Asia/Seoul'을 사용해야 한다", async () => {
-			// Given
-			const users = [{ id: "user-1", preference: null }];
-			asMock(mockDatabase.user.findMany).mockResolvedValue(users);
-
-			// When
-			await job.dispatchReports("WEEKLY");
-
-			// Then
-			const jobs = mockQueue.addBulk.mock.calls[0]?.[0];
-			expect(jobs?.[0]?.data).toEqual(
-				expect.objectContaining({
-					timezone: "Asia/Seoul",
-				}),
-			);
-		});
-
-		it("잡에 retry 옵션이 설정되어야 한다", async () => {
-			// Given
-			const users = [{ id: "user-1", preference: { timezone: "Asia/Seoul" } }];
-			asMock(mockDatabase.user.findMany).mockResolvedValue(users);
-
-			// When
-			await job.dispatchReports("WEEKLY");
-
-			// Then
-			const jobs = mockQueue.addBulk.mock.calls[0]?.[0];
-			expect(jobs?.[0]?.opts).toEqual(
-				expect.objectContaining({
-					attempts: 3,
-					backoff: { type: "exponential", delay: 5_000 },
-					removeOnComplete: { age: 604_800, count: 10_000 },
-					removeOnFail: { count: 100, age: 86_400 },
-				}),
-			);
-		});
-
-		it("사용자가 없으면 큐에 잡을 등록하지 않아야 한다", async () => {
-			// Given
-			asMock(mockDatabase.user.findMany).mockResolvedValue([]);
-
-			// When
-			await job.dispatchReports("WEEKLY");
-
-			// Then
-			expect(mockQueue.addBulk).not.toHaveBeenCalled();
-		});
+		expect(runtime.enqueue).toHaveBeenCalledWith(
+			AI_REPORT_QUEUE,
+			expect.objectContaining({
+				data: expect.objectContaining({ timezone: "Asia/Seoul", locale: "ko" }),
+			}),
+			expect.any(Object),
+		);
 	});
 });

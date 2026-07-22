@@ -1,4 +1,3 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { AiModule } from "../ai/ai.module";
@@ -20,7 +19,6 @@ import { WeeklyReportReaderAdapter } from "./infrastructure/adapters/weekly-repo
 import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestion-analysis.job";
 import { PrismaAiSuggestionRepository } from "./infrastructure/persistence/prisma-ai-suggestion.repository";
 import { SuggestionAnalysisProcessor } from "./infrastructure/processors/suggestion-analysis.processor";
-import { AI_SUGGESTION_QUEUE } from "./infrastructure/queue/ai-suggestion-queue";
 import { AiSuggestionQueueMaintenanceService } from "./infrastructure/queue/ai-suggestion-queue-maintenance.service";
 import { AiSuggestionController } from "./presentation/ai-suggestion.controller";
 
@@ -48,7 +46,6 @@ import { AiSuggestionController } from "./presentation/ai-suggestion.controller"
 		NotificationModule,
 		TodoModule,
 		WeatherModule,
-		BullModule.registerQueue({ name: AI_SUGGESTION_QUEUE }),
 	],
 	controllers: [AiSuggestionController],
 	providers: [

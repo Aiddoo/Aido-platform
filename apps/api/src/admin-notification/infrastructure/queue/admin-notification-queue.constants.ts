@@ -8,7 +8,8 @@ import type { AdminNotification } from "../../domain/value-objects/admin-notific
 // Queue Name
 // =============================================================================
 
-export const ADMIN_NOTIFICATION_QUEUE = "admin-notification";
+export const ADMIN_NOTIFICATION_QUEUE = "admin-notification.v1";
+export const ADMIN_NOTIFICATION_LEGACY_QUEUE = "admin-notification";
 
 // =============================================================================
 // Job Names
@@ -38,6 +39,13 @@ export interface AdminNotificationJobMap {
 
 export type AdminNotificationJobData =
 	AdminNotificationJobMap[keyof AdminNotificationJobMap];
+
+export type AdminNotificationRuntimeJob = {
+	[K in keyof AdminNotificationJobMap]: {
+		readonly name: K;
+		readonly data: AdminNotificationJobMap[K];
+	};
+}[keyof AdminNotificationJobMap];
 
 // =============================================================================
 // Job Options

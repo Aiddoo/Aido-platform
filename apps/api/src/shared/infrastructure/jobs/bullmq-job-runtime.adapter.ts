@@ -43,6 +43,7 @@ export interface BullQueueClient {
 			readonly opts: object;
 		},
 	): Promise<void>;
+	removeJobScheduler(key: string): Promise<boolean>;
 	getJob(id: string): Promise<{ remove(): Promise<void> } | undefined>;
 	getCounts(): Promise<{
 		readonly wait: number;
@@ -103,6 +104,10 @@ class DefaultBullQueueClient implements BullQueueClient {
 		await this.queue.upsertJobScheduler(key, repeat, template);
 	}
 
+	removeJobScheduler(key: string): Promise<boolean> {
+		return this.queue.removeJobScheduler(key);
+	}
+
 	async getJob(id: string): Promise<{ remove(): Promise<void> } | undefined> {
 		return (await this.queue.getJob(id)) ?? undefined;
 	}
@@ -152,11 +157,18 @@ class DefaultBullWorkerClient implements BullWorkerClient {
 }
 
 class DefaultBullMqClientFactory implements BullMqClientFactory {
-	constructor(private readonly redis: Redis) {}
+	constructor(private readonly redis: Redis | null) {}
+
+	private connection(): Redis {
+		if (!this.redis) {
+			throw new Error("Redis job runtime is disabled");
+		}
+		return this.redis;
+	}
 
 	createQueue(name: string): BullQueueClient {
 		return new DefaultBullQueueClient(
-			new Queue<JobData>(name, { connection: this.redis }),
+			new Queue<JobData>(name, { connection: this.connection() }),
 		);
 	}
 
@@ -167,7 +179,7 @@ class DefaultBullMqClientFactory implements BullMqClientFactory {
 	): BullWorkerClient {
 		return new DefaultBullWorkerClient(
 			new Worker<JobData>(name, processor, {
-				connection: this.redis,
+				connection: this.connection(),
 				concurrency,
 			}),
 		);
@@ -178,7 +190,7 @@ export const bullMqClientFactoryProvider: FactoryProvider<BullMqClientFactory> =
 	{
 		provide: BULLMQ_CLIENT_FACTORY,
 		inject: [REDIS_CLIENT],
-		useFactory: (redis: Redis) => new DefaultBullMqClientFactory(redis),
+		useFactory: (redis: Redis | null) => new DefaultBullMqClientFactory(redis),
 	};
 
 @Injectable()
@@ -249,6 +261,10 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 				opts: jobOptions,
 			},
 		);
+	}
+
+	async unschedule(scheduleKey: string, queueName: string): Promise<void> {
+		await this.queue(queueName).removeJobScheduler(scheduleKey);
 	}
 
 	async cancel(queueName: string, jobKey: string): Promise<void> {

@@ -62,26 +62,18 @@ type PgBossClientLoader = () => Promise<PgBossClient>;
 
 export class LazyPgBossClient implements PgBossClient {
 	private client?: PgBossClient;
+	private starting?: Promise<PgBossClient>;
 	private readonly errorListeners = new Set<(error: Error) => void>();
 
 	constructor(private readonly load: PgBossClientLoader) {}
 
 	async start(): Promise<unknown> {
-		if (this.client) {
-			return this.client;
-		}
-
-		const client = await this.load();
-		for (const listener of this.errorListeners) {
-			client.on("error", listener);
-		}
-		await client.start();
-		this.client = client;
-		return client;
+		return this.ensureStarted();
 	}
 
 	async stop(options?: StopOptions): Promise<void> {
-		await this.client?.stop(options);
+		const client = this.starting ? await this.starting : this.client;
+		await client?.stop(options);
 	}
 
 	on(event: "error", listener: (error: Error) => void): unknown {
@@ -91,7 +83,7 @@ export class LazyPgBossClient implements PgBossClient {
 	}
 
 	async createQueue(name: string): Promise<void> {
-		await this.current().createQueue(name);
+		await (await this.ensureStarted()).createQueue(name);
 	}
 
 	async send(
@@ -99,7 +91,7 @@ export class LazyPgBossClient implements PgBossClient {
 		data: object,
 		options: SendOptions,
 	): Promise<string | null> {
-		return this.current().send(name, data, options);
+		return (await this.ensureStarted()).send(name, data, options);
 	}
 
 	async schedule(
@@ -108,18 +100,18 @@ export class LazyPgBossClient implements PgBossClient {
 		data: object,
 		options: ScheduleOptions,
 	): Promise<void> {
-		await this.current().schedule(name, cron, data, options);
+		await (await this.ensureStarted()).schedule(name, cron, data, options);
 	}
 
 	async unschedule(name: string, key?: string): Promise<void> {
-		await this.current().unschedule(name, key);
+		await (await this.ensureStarted()).unschedule(name, key);
 	}
 
 	async findJobs<T extends JobData>(
 		name: string,
 		options?: FindJobsOptions,
 	): Promise<JobWithMetadata<T>[]> {
-		return this.current().findJobs<T>(name, options);
+		return (await this.ensureStarted()).findJobs<T>(name, options);
 	}
 
 	async cancel(
@@ -127,7 +119,7 @@ export class LazyPgBossClient implements PgBossClient {
 		ids: string[],
 		options?: { db?: Db },
 	): Promise<unknown> {
-		return this.current().cancel(name, ids, options);
+		return (await this.ensureStarted()).cancel(name, ids, options);
 	}
 
 	async work<T extends JobData>(
@@ -135,18 +127,33 @@ export class LazyPgBossClient implements PgBossClient {
 		options: WorkOptions & { includeMetadata: true },
 		handler: (jobs: JobWithMetadata<T>[]) => Promise<unknown>,
 	): Promise<string> {
-		return this.current().work(name, options, handler);
+		return (await this.ensureStarted()).work(name, options, handler);
 	}
 
 	async getQueues(names?: string[]): Promise<QueueResult[]> {
-		return this.current().getQueues(names);
+		return (await this.ensureStarted()).getQueues(names);
 	}
 
-	private current(): PgBossClient {
-		if (!this.client) {
-			throw new Error("pg-boss client has not been started");
+	private async ensureStarted(): Promise<PgBossClient> {
+		if (this.client) {
+			return this.client;
 		}
-		return this.client;
+
+		this.starting ??= this.loadAndStart().catch((error: unknown) => {
+			this.starting = undefined;
+			throw error;
+		});
+		return this.starting;
+	}
+
+	private async loadAndStart(): Promise<PgBossClient> {
+		const client = await this.load();
+		for (const listener of this.errorListeners) {
+			client.on("error", listener);
+		}
+		await client.start();
+		this.client = client;
+		return client;
 	}
 }
 
@@ -247,6 +254,10 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 			key: scheduleKey,
 			tz: options.timezone,
 		});
+	}
+
+	async unschedule(scheduleKey: string, queue: string): Promise<void> {
+		await this.boss.unschedule(queue, scheduleKey);
 	}
 
 	async cancel(queue: string, jobKey: string): Promise<void> {

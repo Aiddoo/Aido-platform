@@ -1,7 +1,5 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
-import { NOTIFICATION_QUEUE } from "./notification-queue.constants";
 import { NotificationQueueService } from "./notification-queue.service";
 
 /**
@@ -14,7 +12,6 @@ import { NotificationQueueService } from "./notification-queue.service";
  * - NotificationModule은 이 모듈을 import하여 Processor와 함께 구성
  */
 @Module({
-	imports: [BullModule.registerQueue({ name: NOTIFICATION_QUEUE })],
 	providers: [NotificationQueueService],
 	exports: [NotificationQueueService],
 })

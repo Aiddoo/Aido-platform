@@ -12,3 +12,4 @@ export * from "./cache.service";
 export * from "./constants/cache-keys";
 // Interfaces
 export * from "./interfaces/cache.interface";
+export * from "./keyspace/cache-key";

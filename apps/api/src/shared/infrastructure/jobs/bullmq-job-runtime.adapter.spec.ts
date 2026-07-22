@@ -36,6 +36,7 @@ class FakeQueue implements BullQueueClient {
 	counts = { wait: 0, delayed: 0, active: 0, failed: 0 };
 	oldestTimestamp: number | null = null;
 	removedJobIds: string[] = [];
+	removedScheduleKeys: string[] = [];
 	closeOrder: string[];
 
 	constructor(
@@ -60,6 +61,11 @@ class FakeQueue implements BullQueueClient {
 		template: { name: string; data: object; opts: object },
 	): Promise<void> {
 		this.schedules.push({ key, repeat, template });
+	}
+
+	async removeJobScheduler(key: string): Promise<boolean> {
+		this.removedScheduleKeys.push(key);
+		return true;
 	}
 
 	async getJob(id: string): Promise<{ remove(): Promise<void> } | undefined> {

@@ -9,8 +9,13 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type {
+	EnqueueJobOptions,
 	JobBackend,
+	JobData,
+	JobEnvelope,
+	JobRuntimeHealth,
 	JobRuntimePort,
+	WorkJobOptions,
 } from "@/shared/application/ports/job-runtime.port";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import type { EnvConfig } from "@/shared/infrastructure/config";
@@ -26,12 +31,79 @@ import {
 export const POSTGRES_JOB_RUNTIME = Symbol("POSTGRES_JOB_RUNTIME");
 export const REDIS_JOB_RUNTIME = Symbol("REDIS_JOB_RUNTIME");
 
+/** PostgreSQL로 새 작업을 쓰면서 기존 Redis 작업을 한시적으로 drain한다. */
+export class RedisDrainJobRuntime implements JobRuntimePort {
+	constructor(
+		private readonly primary: JobRuntimePort,
+		private readonly redis: JobRuntimePort,
+	) {}
+
+	async start(): Promise<void> {
+		await Promise.all([this.primary.start(), this.redis.start()]);
+	}
+
+	async stop(): Promise<void> {
+		await Promise.all([this.primary.stop(), this.redis.stop()]);
+	}
+
+	enqueue<T extends JobData>(
+		queue: string,
+		data: T,
+		options: EnqueueJobOptions,
+	): Promise<string | null> {
+		return this.primary.enqueue(queue, data, options);
+	}
+
+	async schedule<T extends JobData>(
+		scheduleKey: string,
+		cron: string,
+		queue: string,
+		data: T,
+		options: EnqueueJobOptions,
+	): Promise<void> {
+		await this.primary.schedule(scheduleKey, cron, queue, data, options);
+		// BullMQ repeat metadata creates jobs independently of workers. Remove the
+		// Redis scheduler so the legacy queue can actually reach zero while draining.
+		await this.redis.unschedule(scheduleKey, queue);
+	}
+
+	async unschedule(scheduleKey: string, queue: string): Promise<void> {
+		await Promise.all([
+			this.primary.unschedule(scheduleKey, queue),
+			this.redis.unschedule(scheduleKey, queue),
+		]);
+	}
+
+	cancel(queue: string, jobKey: string): Promise<void> {
+		return this.primary.cancel(queue, jobKey);
+	}
+
+	async work<T extends JobData>(
+		queue: string,
+		handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>,
+		options: WorkJobOptions,
+	): Promise<void> {
+		await Promise.all([
+			this.primary.work(queue, handler, options),
+			this.redis.work(queue, handler, options),
+		]);
+	}
+
+	health(queueNames: readonly string[]): Promise<JobRuntimeHealth> {
+		return this.primary.health(queueNames);
+	}
+}
+
 export function selectJobRuntime(
 	backend: JobBackend,
 	postgres: JobRuntimePort,
 	redis: JobRuntimePort,
+	redisDrainEnabled = false,
 ): JobRuntimePort {
-	return backend === "postgres" ? postgres : redis;
+	if (backend === "redis") return redis;
+	return redisDrainEnabled
+		? new RedisDrainJobRuntime(postgres, redis)
+		: postgres;
 }
 
 export const jobRuntimeProvider: FactoryProvider<JobRuntimePort> = {
@@ -46,6 +118,7 @@ export const jobRuntimeProvider: FactoryProvider<JobRuntimePort> = {
 			config.get("JOB_BACKEND", { infer: true }),
 			postgres,
 			redis,
+			config.get("JOB_REDIS_DRAIN_ENABLED", { infer: true }),
 		),
 };
 

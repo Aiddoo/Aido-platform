@@ -17,7 +17,6 @@ import type { IDedupProvider } from "../interfaces/dedup.interface";
 export class RedisDedupAdapter implements IDedupProvider {
 	readonly #logger = new Logger(RedisDedupAdapter.name);
 	readonly #redis: Redis;
-	readonly #keyPrefix = "dedup:";
 	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 
 	constructor(@Inject(REDIS_COMMAND_CLIENT) redis: Redis) {
@@ -67,6 +66,6 @@ export class RedisDedupAdapter implements IDedupProvider {
 	}
 
 	#key(setKey: string): string {
-		return `${this.#keyPrefix}${setKey}`;
+		return setKey;
 	}
 }

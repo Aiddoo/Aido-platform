@@ -11,11 +11,9 @@
  * ```
  */
 
-import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock } from "@test/mocks";
-import type { Queue } from "bullmq";
 import {
 	ACCOUNT_DELETION,
 	SECURITY_EVENT,
@@ -27,6 +25,10 @@ import {
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import { AccountPurgeJob } from "./account-purge.job";
 
 describe("AccountPurgeJob — 계정 삭제 잡", () => {
@@ -34,15 +36,15 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 	let userRepo: Mocked<UserRepository>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 	let uow: Mocked<UnitOfWorkPort>;
-	let mockQueue: Mocked<Queue>;
+	let runtime: Mocked<JobRuntimePort>;
 	let mockProcessor: Mocked<AccountPurgeProcessor>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(AccountPurgeJob)
-			.mock(getQueueToken(ACCOUNT_PURGE_QUEUE))
+			.mock(JOB_RUNTIME)
 			.impl(() => ({
-				add: jest.fn().mockResolvedValue(undefined),
-				upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
+				enqueue: jest.fn().mockResolvedValue("job-1"),
+				schedule: jest.fn().mockResolvedValue(undefined),
 			}))
 			.compile();
 
@@ -50,7 +52,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		userRepo = unitRef.get(UserRepository);
 		securityLogRepo = unitRef.get(SecurityLogRepository);
 		uow = unitRef.get(UNIT_OF_WORK);
-		mockQueue = unitRef.get(getQueueToken(ACCOUNT_PURGE_QUEUE));
+		runtime = unitRef.get(JOB_RUNTIME);
 		mockProcessor = unitRef.get(AccountPurgeProcessor);
 	});
 
@@ -68,10 +70,12 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			await job.schedulerRegistration;
 
 			// Then
-			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
+			expect(runtime.schedule).toHaveBeenCalledWith(
 				"daily-account-purge-scheduler",
-				{ pattern: "0 3 * * *", tz: "Asia/Seoul" },
+				"0 3 * * *",
+				ACCOUNT_PURGE_QUEUE,
 				{ name: "purge-accounts", data: {} },
+				expect.objectContaining({ timezone: "Asia/Seoul" }),
 			);
 		});
 
@@ -89,9 +93,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 
 		it("Redis가 무응답이어도 부팅(onModuleInit)이 블로킹되지 않는다", () => {
 			// Given — Redis 다운: 등록 명령이 영원히 pending
-			asMock(mockQueue.upsertJobScheduler).mockReturnValue(
-				new Promise(() => {}),
-			);
+			asMock(runtime.schedule).mockReturnValue(new Promise(() => {}));
 
 			// When — 동기 반환 (await 없이 즉시 완료돼야 부팅이 안 막힌다)
 			const result = job.onModuleInit();
@@ -103,7 +105,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 
 		it("스케줄러 등록 실패 시 로그만 남기고 throw하지 않는다", async () => {
 			// Given
-			asMock(mockQueue.upsertJobScheduler).mockRejectedValue(
+			asMock(runtime.schedule).mockRejectedValue(
 				new Error("Connection is closed."),
 			);
 
@@ -123,10 +125,10 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			await job.schedulerRegistration;
 
 			// Then
-			expect(mockQueue.add).toHaveBeenCalledWith(
-				"purge-accounts",
-				{},
-				{ jobId: "purge_2026-03-09" },
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				ACCOUNT_PURGE_QUEUE,
+				{ name: "purge-accounts", data: {} },
+				expect.objectContaining({ jobKey: "purge_2026-03-09" }),
 			);
 		});
 
@@ -139,7 +141,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			await job.schedulerRegistration;
 
 			// Then
-			expect(mockQueue.add).not.toHaveBeenCalled();
+			expect(runtime.enqueue).not.toHaveBeenCalled();
 		});
 	});
 

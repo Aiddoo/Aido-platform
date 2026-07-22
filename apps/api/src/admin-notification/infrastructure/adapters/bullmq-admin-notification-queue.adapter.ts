@@ -1,6 +1,8 @@
-import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable } from "@nestjs/common";
-import type { Queue } from "bullmq";
+import { Inject, Injectable } from "@nestjs/common";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 import type {
 	AdminNotificationQueuePort,
 	EnqueueSendOptions,
@@ -8,9 +10,7 @@ import type {
 } from "../../application/ports/admin-notification-queue.port";
 import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
 import {
-	ADMIN_NOTIFICATION_JOB_OPTS,
 	ADMIN_NOTIFICATION_QUEUE,
-	type AdminNotificationJobData,
 	AdminNotificationJobName,
 	type AdminNotificationSendData,
 } from "../queue/admin-notification-queue.constants";
@@ -24,24 +24,28 @@ import {
 export class BullmqAdminNotificationQueueAdapter
 	implements AdminNotificationQueuePort
 {
-	constructor(
-		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
-		private readonly queue: Queue<AdminNotificationJobData>,
-	) {}
+	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
 	async enqueueSend(
 		channel: NotificationChannel,
 		notification: AdminNotification,
 		options?: EnqueueSendOptions,
 	): Promise<void> {
-		const opts = options?.jobId
-			? { ...ADMIN_NOTIFICATION_JOB_OPTS, jobId: options.jobId }
-			: ADMIN_NOTIFICATION_JOB_OPTS;
-
-		await this.queue.add(
-			AdminNotificationJobName.SEND,
-			{ channel, notification } satisfies AdminNotificationSendData,
-			opts,
+		await this.runtime.enqueue(
+			ADMIN_NOTIFICATION_QUEUE,
+			{
+				name: AdminNotificationJobName.SEND,
+				data: { channel, notification } satisfies AdminNotificationSendData,
+			},
+			{
+				jobKey: options?.jobId,
+				retryLimit: 2,
+				retryDelaySeconds: 5,
+				retryBackoff: true,
+				expireInSeconds: 5 * 60,
+				retentionSeconds: 24 * 60 * 60,
+				deleteAfterSeconds: 24 * 60 * 60,
+			},
 		);
 	}
 }

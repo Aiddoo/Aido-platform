@@ -279,4 +279,19 @@ describe("LazyPgBossClient — backend 비선택 시 무초기화", () => {
 		await lazyClient.start();
 		expect(load).toHaveBeenCalledTimes(1);
 	});
+
+	it("worker가 lifecycle hook보다 먼저 등록되어도 한 번만 초기화한다", async () => {
+		const client = new FakePgBossClient();
+		const load = jest.fn().mockResolvedValue(client);
+		const lazyClient = new LazyPgBossClient(load);
+
+		await Promise.all([
+			lazyClient.createQueue(QUEUE),
+			lazyClient.work(QUEUE, { includeMetadata: true }, async () => undefined),
+		]);
+
+		expect(load).toHaveBeenCalledTimes(1);
+		expect(client.createdQueues).toEqual([QUEUE]);
+		expect(client.handlers.has(QUEUE)).toBe(true);
+	});
 });

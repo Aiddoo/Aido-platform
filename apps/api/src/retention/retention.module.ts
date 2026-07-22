@@ -1,4 +1,3 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { NotificationModule } from "@/notification";
 import { RetentionFacade } from "./application/facades/retention.facade";
@@ -14,15 +13,11 @@ import { RelayRetentionOutboxUseCase } from "./application/use-cases/relay-reten
 import { ExpoRetentionPushSenderAdapter } from "./infrastructure/adapters/expo-retention-push-sender.adapter";
 import { RetentionConfigAdapter } from "./infrastructure/adapters/retention-config.adapter";
 import { PrismaRetentionRepository } from "./infrastructure/persistence/prisma-retention.repository";
-import { RETENTION_QUEUE } from "./infrastructure/queue/retention-queue.constants";
 import { RetentionQueueProcessor } from "./infrastructure/queue/retention-queue.processor";
 import { RetentionQueueService } from "./infrastructure/queue/retention-queue.service";
 
 @Module({
-	imports: [
-		NotificationModule,
-		BullModule.registerQueue({ name: RETENTION_QUEUE }),
-	],
+	imports: [NotificationModule],
 	providers: [
 		RetentionFacade,
 		ActivateRetentionExperimentUseCase,

@@ -1,6 +1,8 @@
-import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger } from "@nestjs/common";
-import type { Queue } from "bullmq";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import {
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 
 import type { IReminderScheduler } from "../../application/ports/reminder-scheduler.port";
 import {
@@ -9,12 +11,18 @@ import {
 	REMINDER_IMMEDIATE_LABEL,
 } from "../../domain/services/reminder-plan";
 
-export const TODO_REMINDER_QUEUE = "todo-reminder";
+export const TODO_REMINDER_QUEUE = "todo-reminder.v1";
+export const TODO_REMINDER_LEGACY_QUEUE = "todo-reminder";
+export const TODO_REMINDER_JOB_NAME = "send-reminder";
 
 export interface ReminderJobData {
 	todoId: number;
 	userId: string;
 	stageLabel: string;
+}
+
+export interface TodoReminderJobMap {
+	[TODO_REMINDER_JOB_NAME]: ReminderJobData;
 }
 
 /**
@@ -31,10 +39,7 @@ export interface ReminderJobData {
 export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 	readonly #logger = new Logger(BullMQReminderSchedulerAdapter.name);
 
-	constructor(
-		@InjectQueue(TODO_REMINDER_QUEUE)
-		private readonly queue: Queue<ReminderJobData>,
-	) {}
+	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
 	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): void {
 		this.#scheduleAsync(todoId, scheduledTime, userId).catch((error) => {
@@ -73,14 +78,21 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 		}
 
 		for (const job of jobs) {
-			await this.queue.add(
-				"send-reminder",
-				{ todoId, userId, stageLabel: job.label },
+			await this.runtime.enqueue(
+				TODO_REMINDER_QUEUE,
 				{
-					jobId: `reminder_${todoId}_${job.label}`,
-					delay: job.delay,
-					removeOnComplete: true,
-					removeOnFail: { count: 100, age: 86_400 },
+					name: TODO_REMINDER_JOB_NAME,
+					data: { todoId, userId, stageLabel: job.label },
+				},
+				{
+					jobKey: `reminder_${todoId}_${job.label}`,
+					startAfter: new Date(Date.now() + job.delay),
+					retryLimit: 2,
+					retryDelaySeconds: 5,
+					retryBackoff: true,
+					expireInSeconds: 10 * 60,
+					retentionSeconds: 24 * 60 * 60,
+					deleteAfterSeconds: 24 * 60 * 60,
 				},
 			);
 
@@ -98,13 +110,10 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 		for (const label of allReminderLabels()) {
 			const jobId = `reminder_${todoId}_${label}`;
 			try {
-				const job = await this.queue.getJob(jobId);
-				if (job) {
-					await job.remove();
-					this.#logger.debug(
-						`Reminder cancelled: todoId=${todoId}, stage=${label}`,
-					);
-				}
+				await this.runtime.cancel(TODO_REMINDER_QUEUE, jobId);
+				this.#logger.debug(
+					`Reminder cancelled: todoId=${todoId}, stage=${label}`,
+				);
 			} catch {
 				// 잡이 이미 처리되었거나 없는 경우 무시
 			}

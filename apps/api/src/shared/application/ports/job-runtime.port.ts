@@ -56,6 +56,7 @@ export interface JobRuntimePort {
 		data: T,
 		options: EnqueueJobOptions,
 	): Promise<void>;
+	unschedule(scheduleKey: string, queue: string): Promise<void>;
 	cancel(queue: string, jobKey: string): Promise<void>;
 	work<T extends JobData>(
 		queue: string,

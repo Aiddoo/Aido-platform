@@ -1,4 +1,3 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -18,7 +17,6 @@ import { SendAdminNotificationUseCase } from "./application/use-cases/send-admin
 import { BullmqAdminNotificationQueueAdapter } from "./infrastructure/adapters/bullmq-admin-notification-queue.adapter";
 import { DiscordWebhookProvider } from "./infrastructure/adapters/discord-webhook.provider";
 import { PrismaSignupStatsReader } from "./infrastructure/adapters/prisma-signup-stats.reader";
-import { ADMIN_NOTIFICATION_QUEUE } from "./infrastructure/queue/admin-notification-queue.constants";
 import { AdminNotificationProcessor } from "./infrastructure/queue/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "./infrastructure/scheduler/daily-signup-summary.scheduler";
 
@@ -27,10 +25,7 @@ function isTestRuntime(config: TypedConfigService): boolean {
 }
 
 @Module({
-	imports: [
-		DatabaseModule,
-		BullModule.registerQueue({ name: ADMIN_NOTIFICATION_QUEUE }),
-	],
+	imports: [DatabaseModule],
 	providers: [
 		AdminNotificationFacade,
 		EnqueueUserRegisteredUseCase,
@@ -64,11 +59,6 @@ function isTestRuntime(config: TypedConfigService): boolean {
 			inject: [TypedConfigService],
 		},
 	],
-	exports: [
-		AdminNotificationFacade,
-		ADMIN_NOTIFIER,
-		PAYMENT_NOTIFIER,
-		BullModule,
-	],
+	exports: [AdminNotificationFacade, ADMIN_NOTIFIER, PAYMENT_NOTIFIER],
 })
 export class AdminNotificationModule {}

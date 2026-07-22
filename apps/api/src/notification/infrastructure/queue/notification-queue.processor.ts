@@ -1,12 +1,26 @@
-import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Inject, Logger } from "@nestjs/common";
+import {
+	Inject,
+	Injectable,
+	Logger,
+	type OnModuleInit,
+	Optional,
+} from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import type { Job } from "bullmq";
 import { Prisma } from "@/generated/prisma/client";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	JOB_RUNTIME,
+	type JobData,
+	type JobRuntimePort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import {
+	fromLegacyJob,
+	type NamedJob,
+} from "@/shared/infrastructure/jobs/named-job";
 import type { SupportedLocale } from "@/shared/presentation/decorators";
 
 import { NotificationFacade } from "../../application/facades/notification.facade";
@@ -29,6 +43,7 @@ import {
 	type FollowNewJobData,
 	type FriendCompletedJobData,
 	type MilestoneReachedJobData,
+	NOTIFICATION_LEGACY_QUEUE,
 	NOTIFICATION_QUEUE,
 	type NotificationJobMap,
 	NotificationJobName,
@@ -41,12 +56,10 @@ import {
  * BullMQ `Job`의 name 제네릭을 잡 이름 리터럴로 고정하여, `switch (job.name)`이
  * `job.data`를 해당 잡 데이터 타입으로 자동 내로잉하도록 한다 (캐스트·가드 불필요).
  */
-type NotificationJob = {
-	[K in keyof NotificationJobMap]: Job<NotificationJobMap[K], unknown, K>;
-}[keyof NotificationJobMap];
+type NotificationJob = NamedJob<NotificationJobMap>;
 
-@Processor(NOTIFICATION_QUEUE)
-export class NotificationQueueProcessor extends WorkerHost {
+@Injectable()
+export class NotificationQueueProcessor implements OnModuleInit {
 	readonly #logger = new Logger(NotificationQueueProcessor.name);
 
 	constructor(
@@ -59,25 +72,46 @@ export class NotificationQueueProcessor extends WorkerHost {
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
-	) {
-		super();
-	}
+		@Optional()
+		@Inject(JOB_RUNTIME)
+		private readonly runtime?: JobRuntimePort,
+	) {}
 
-	@OnWorkerEvent("stalled")
 	onStalled(jobId: string) {
 		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
-	@OnWorkerEvent("error")
 	onError(error: Error) {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	@OnWorkerEvent("failed")
-	onFailed(job: Job | undefined, error: Error) {
+	onFailed(
+		job: { readonly id?: string; readonly name?: string } | undefined,
+		error: Error,
+	) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
+		);
+	}
+
+	async onModuleInit(): Promise<void> {
+		if (!this.runtime) return;
+		await this.runtime.work<NotificationJob>(
+			NOTIFICATION_QUEUE,
+			async (jobs) => {
+				for (const job of jobs) await this.process(job.data);
+			},
+			{ teamSize: 5, pollingIntervalSeconds: 2 },
+		);
+		await this.runtime.work<JobData>(
+			NOTIFICATION_LEGACY_QUEUE,
+			async (jobs) => {
+				for (const job of jobs) {
+					await this.process(fromLegacyJob<NotificationJobMap>(job));
+				}
+			},
+			{ teamSize: 5, pollingIntervalSeconds: 2 },
 		);
 	}
 

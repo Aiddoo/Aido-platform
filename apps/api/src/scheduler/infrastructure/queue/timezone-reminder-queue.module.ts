@@ -1,7 +1,5 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
-import { TIMEZONE_REMINDER_QUEUE } from "./timezone-reminder-queue.constants";
 import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service";
 
 /**
@@ -14,7 +12,6 @@ import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service"
  * - SchedulerModule은 이 모듈을 import하여 Processor와 함께 구성
  */
 @Module({
-	imports: [BullModule.registerQueue({ name: TIMEZONE_REMINDER_QUEUE })],
 	providers: [TimezoneReminderQueueService],
 	exports: [TimezoneReminderQueueService],
 })

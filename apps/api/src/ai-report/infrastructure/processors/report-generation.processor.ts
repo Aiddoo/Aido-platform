@@ -1,19 +1,35 @@
-import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger } from "@nestjs/common";
-import type { Job } from "bullmq";
+import {
+	Inject,
+	Injectable,
+	Logger,
+	type OnModuleInit,
+	Optional,
+} from "@nestjs/common";
+import {
+	JOB_RUNTIME,
+	type JobData,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
+import {
+	fromLegacyJob,
+	type NamedJob,
+} from "@/shared/infrastructure/jobs/named-job";
 import { toSupportedLocale } from "@/shared/presentation/decorators";
 
 import { AiReportFacade } from "../../application/facades/ai-report.facade";
 import type { ReportGenerationJob } from "../jobs/report-generation.job";
 import {
+	AI_REPORT_LEGACY_QUEUE,
 	AI_REPORT_QUEUE,
 	type AiReportGenerateData,
-	type AiReportJobData,
+	type AiReportJobMap,
 	AiReportJobName,
 } from "../queue/ai-report-queue";
 
 /** GENERATE 잡 데이터 판별 (as 캐스트 없이 내로잉) */
-function isGenerateData(data: AiReportJobData): data is AiReportGenerateData {
+function isGenerateData(
+	data: AiReportJobMap[keyof AiReportJobMap],
+): data is AiReportGenerateData {
 	return "userId" in data;
 }
 
@@ -27,12 +43,10 @@ function isGenerateData(data: AiReportJobData): data is AiReportGenerateData {
  *
  * 알림 발송은 Scheduler Strategy (WeeklyReportStrategy / MonthlyReportStrategy)에서 담당합니다.
  */
-@Processor(AI_REPORT_QUEUE, {
-	concurrency: 5,
-	lockDuration: 60_000,
-	stalledInterval: 60_000,
-})
-export class ReportGenerationProcessor extends WorkerHost {
+type AiReportJob = NamedJob<AiReportJobMap>;
+
+@Injectable()
+export class ReportGenerationProcessor implements OnModuleInit {
 	readonly #logger = new Logger(ReportGenerationProcessor.name);
 
 	/** @see ReportGenerationJob — 순환 참조 방지를 위해 setter injection */
@@ -41,31 +55,51 @@ export class ReportGenerationProcessor extends WorkerHost {
 		this.#reportJob = job;
 	}
 
-	constructor(private readonly aiReportFacade: AiReportFacade) {
-		super();
+	constructor(
+		private readonly aiReportFacade: AiReportFacade,
+		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
+	) {}
+
+	async onModuleInit(): Promise<void> {
+		if (!this.runtime) return;
+		await this.runtime.work<AiReportJob>(
+			AI_REPORT_QUEUE,
+			async (jobs) => {
+				for (const job of jobs) await this.process(job.data);
+			},
+			{ teamSize: 5, pollingIntervalSeconds: 2 },
+		);
+		await this.runtime.work<JobData>(
+			AI_REPORT_LEGACY_QUEUE,
+			async (jobs) => {
+				for (const job of jobs)
+					await this.process(fromLegacyJob<AiReportJobMap>(job));
+			},
+			{ teamSize: 5, pollingIntervalSeconds: 2 },
+		);
 	}
 
-	@OnWorkerEvent("stalled")
-	onStalled(jobId: string) {
+	onStalled(jobId: string): void {
 		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
-	@OnWorkerEvent("error")
-	onError(error: Error) {
+	onError(error: Error): void {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	@OnWorkerEvent("failed")
-	onFailed(job: Job | undefined, error: Error) {
+	onFailed(
+		job: { readonly id?: string; readonly name?: string } | undefined,
+		error: Error,
+	) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
 		);
 	}
 
-	async process(job: Job<AiReportJobData>): Promise<void> {
+	async process(job: AiReportJob): Promise<void> {
 		if (job.name === AiReportJobName.DISPATCH) {
-			await this.#reportJob?.dispatchReports(job.data.reportType, job);
+			await this.#reportJob?.dispatchReports(job.data.reportType);
 			return;
 		}
 

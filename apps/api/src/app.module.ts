@@ -1,4 +1,3 @@
-import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
@@ -11,7 +10,6 @@ import {
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
 import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { SentryModule } from "@sentry/nestjs/setup";
-import type Redis from "ioredis";
 import { ClsModule } from "nestjs-cls";
 import { AdminModule } from "@/admin";
 import { AdminNotificationModule } from "@/admin-notification";
@@ -43,7 +41,7 @@ import { DomainEventsModule } from "@/shared/infrastructure/events";
 import { JobRuntimeModule } from "@/shared/infrastructure/jobs/job-runtime.module";
 import { LockModule } from "@/shared/infrastructure/lock";
 import { LoggerModule } from "@/shared/infrastructure/logging";
-import { REDIS_CLIENT, RedisModule } from "@/shared/infrastructure/redis";
+import { RedisModule } from "@/shared/infrastructure/redis";
 import { SharedKernelModule } from "@/shared/infrastructure/shared-kernel.module";
 import {
 	THROTTLER_STORAGE,
@@ -92,18 +90,6 @@ import { AppService } from "./app.service";
 		CacheModule.forRoot(),
 		DedupModule.forRoot(),
 		LockModule.forRoot(),
-		BullModule.forRootAsync({
-			inject: [REDIS_CLIENT],
-			useFactory: (redis: Redis) => ({
-				connection: redis,
-				defaultJobOptions: {
-					attempts: 3,
-					backoff: { type: "exponential" as const, delay: 1_000 },
-					removeOnComplete: true,
-					removeOnFail: { count: 100, age: 86_400 },
-				},
-			}),
-		}),
 		JobRuntimeModule,
 		// 4. Global Modules
 		EntitlementModule,
