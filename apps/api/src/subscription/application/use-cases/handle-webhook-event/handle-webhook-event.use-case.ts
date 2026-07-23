@@ -15,8 +15,6 @@ import {
 	type ILockProvider,
 	LOCK_PROVIDER,
 } from "@/shared/infrastructure/lock";
-
-import type { SubscriptionEventPayload } from "../../../domain/events/subscription-event.payload";
 import {
 	isRefundCancellation,
 	resolveCancellationUserStatus,
@@ -41,6 +39,7 @@ import {
 	SUBSCRIPTION_EVENT_NOTIFIER,
 	type SubscriptionEventNotifierPort,
 } from "../../ports/subscription-event-notifier.port";
+import type { SubscriptionEventPayload } from "../../types/subscription-event.payload";
 import { baseEventPayload } from "./subscription-event-payload.mapper";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];

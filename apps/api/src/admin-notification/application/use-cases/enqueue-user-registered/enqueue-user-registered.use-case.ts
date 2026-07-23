@@ -1,7 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-
-import type { UserRegisteredEventPayload } from "../../../domain/events/user-registered.payload";
 import { buildUserRegisteredMessage } from "../../../domain/services/admin-message.factory";
+import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload";
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,

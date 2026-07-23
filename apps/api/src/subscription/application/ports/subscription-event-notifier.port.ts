@@ -1,6 +1,6 @@
 import type { RevenueCatWebhookPayload } from "@aido/validators";
 
-import type { SubscriptionEventPayload } from "../../domain/events/subscription-event.payload";
+import type { SubscriptionEventPayload } from "../types/subscription-event.payload";
 
 export const SUBSCRIPTION_EVENT_NOTIFIER = Symbol(
 	"SUBSCRIPTION_EVENT_NOTIFIER",

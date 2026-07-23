@@ -1,7 +1,6 @@
 import type { RevenueCatWebhookPayload } from "@aido/validators";
-
-import type { SubscriptionEventPayload } from "../../../domain/events/subscription-event.payload";
 import type { SubscriptionUser } from "../../ports/subscription.repository.port";
+import type { SubscriptionEventPayload } from "../../types/subscription-event.payload";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 
