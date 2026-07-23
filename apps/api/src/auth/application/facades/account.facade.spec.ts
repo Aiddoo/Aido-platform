@@ -1,8 +1,7 @@
 import { mock } from "jest-mock-extended";
+import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "../queries";
 import {
 	DeleteAccountUseCase,
-	GetCurrentUserQuery,
-	ListLinkedAccountsQuery,
 	UnlinkOAuthAccountUseCase,
 	UpdateProfileUseCase,
 } from "../use-cases";
