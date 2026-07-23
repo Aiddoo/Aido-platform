@@ -6,6 +6,7 @@ import type {
 	PushRateLimitRequest,
 } from "../../application/ports/push-rate-limiter.port";
 import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy";
+import { PushRateLimiterKeys } from "./push-rate-limiter.keys";
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 
@@ -131,7 +132,6 @@ function isRateLimitResult(
 export class RedisPushRateLimiter implements IPushRateLimiter {
 	readonly #logger = new Logger(RedisPushRateLimiter.name);
 	readonly #redis: Redis;
-	readonly #keyPrefix = "push-rate:";
 	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 
 	constructor(redis: Redis) {
@@ -139,7 +139,7 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 	}
 
 	async isRateLimited(userId: string): Promise<boolean> {
-		const key = `${this.#keyPrefix}${userId}`;
+		const key = PushRateLimiterKeys.general(userId);
 		const now = Date.now();
 		const windowStart = now - GENERAL.WINDOW_MS;
 
@@ -166,7 +166,7 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 		userId: string,
 		localDate: string,
 	): Promise<boolean> {
-		const key = `push-engagement:${userId}:${localDate}`;
+		const key = PushRateLimiterKeys.engagement(userId, localDate);
 		try {
 			const result = await this.#redis.eval(
 				ENGAGEMENT_LIMIT_SCRIPT,
@@ -191,10 +191,13 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 
 		const now = Date.now();
 		const keys = requests.flatMap((request, index) => [
-			`${this.#keyPrefix}${request.userId}`,
+			PushRateLimiterKeys.general(request.userId),
 			request.engagementLocalDate
-				? `push-engagement:${request.userId}:${request.engagementLocalDate}`
-				: `push-engagement:unused:${index}`,
+				? PushRateLimiterKeys.engagement(
+						request.userId,
+						request.engagementLocalDate,
+					)
+				: PushRateLimiterKeys.engagementPlaceholder(index),
 		]);
 		const engagementFlags = requests.map((request) =>
 			request.engagementLocalDate ? 1 : 0,

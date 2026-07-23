@@ -66,8 +66,8 @@ export class ExpoPushProvider implements PushProvider {
 	/**
 	 * 단일 푸시 알림 발송
 	 *
-	 * @throws {BusinessException} NOTIFICATION_1001 - 유효하지 않은 토큰
-	 * @throws {BusinessException} NOTIFICATION_1003 - 발송 실패
+	 * @throws {ApplicationException} NOTIFICATION_1001 - 유효하지 않은 토큰
+	 * @throws {ApplicationException} NOTIFICATION_1003 - 발송 실패
 	 */
 	async send(payload: PushPayload): Promise<PushResult> {
 		if (!this.validateToken(payload.token)) {

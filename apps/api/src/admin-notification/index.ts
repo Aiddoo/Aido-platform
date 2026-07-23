@@ -8,5 +8,5 @@ export {
 	type AdminNotifyResult,
 	PAYMENT_NOTIFIER,
 } from "./application/ports/admin-notifier.port";
-export type { UserRegisteredEventPayload } from "./domain/events/user-registered.payload";
+export type { UserRegisteredEventPayload } from "./domain/types/user-registered.payload";
 export { ADMIN_NOTIFICATION_QUEUE } from "./infrastructure/queue/admin-notification-queue.constants";

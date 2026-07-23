@@ -8,7 +8,7 @@ import {
 } from "@/admin-notification";
 import { NotificationQueueService } from "@/notification";
 import type { SubscriptionEventNotifierPort } from "../../application/ports/subscription-event-notifier.port";
-import type { SubscriptionEventPayload } from "../../domain/events/subscription-event.payload";
+import type { SubscriptionEventPayload } from "../../application/types/subscription-event.payload";
 
 /**
  * 구독 이벤트 알림 어댑터.
