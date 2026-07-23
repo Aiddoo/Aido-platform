@@ -6,11 +6,18 @@
  * 팩토리는 포트 인터페이스를 반환하며, 포트 확장 시 누락을 타입 에러로 잡습니다.
  * 개별 메서드 mock API는 spec에서 `jest.mocked(mock.method)`로 접근합니다.
  */
+export * from "./cheer.mock";
 export * from "./cross-module.mock";
+export * from "./follow.mock";
+export * from "./memo.mock";
+export * from "./notification.mock";
 export * from "./notification-cache.mock";
 export * from "./retention-repository.mock";
 export * from "./todo-read-repository.mock";
 export * from "./todo-repository.mock";
 export * from "./unit-of-work.mock";
+export * from "./user-settings.mock";
 export * from "./user-settings-cache.mock";
+export * from "./weather.mock";
 export * from "./weather-cache.mock";
+export * from "./weekly-achievement.mock";

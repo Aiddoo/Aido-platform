@@ -17,7 +17,6 @@ import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import { AuthPersistenceConflict } from "@/auth/application/ports";
-import * as userTagUtil from "@/auth/domain/services/user-tag.util";
 import type {
 	AccountProvider,
 	SubscriptionStatus,
@@ -66,12 +65,13 @@ interface UserWithProfile {
 	}[];
 }
 
-// 유틸리티 함수 모킹
-jest.mock("@/auth/domain/services/user-tag.util");
-const mockGenerateUserTag = jest.mocked(userTagUtil.generateUserTag);
-
 // 테스트용 상수
 const TEST_USER_TAG = "XY7Z9W3K";
+
+// userTag 알파벳(혼동 문자 0/O/1/I/L 제외)과 길이(8자)에 대응하는 검증 패턴.
+// generateUserTag는 vendor 경계(node:crypto)를 사용하는 실제 순수 함수이므로 mock 없이
+// 실행하고, 생성된 태그가 유효 문자 집합을 따르는지로 호출을 검증한다.
+const USER_TAG_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/;
 
 describe("UserRepository — 사용자 리포지토리", () => {
 	let repository: UserRepository;
@@ -97,9 +97,6 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			.compile();
 
 		repository = unit;
-
-		// 기본 모킹 설정
-		mockGenerateUserTag.mockReturnValue(TEST_USER_TAG);
 	});
 
 	describe("findByEmail", () => {
@@ -331,12 +328,11 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			// Then - 생성된 사용자 반환하고 userTag가 자동 생성됨
 			expect(result.email).toBe("new@example.com");
 			expect(result.userTag).toBe(TEST_USER_TAG);
-			expect(mockGenerateUserTag).toHaveBeenCalled();
 			expect(db.user.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					email: createData.email,
 					status: createData.status,
-					userTag: TEST_USER_TAG,
+					userTag: expect.stringMatching(USER_TAG_PATTERN),
 				}),
 			});
 		});
@@ -363,12 +359,11 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			// Then - 활성 트랜잭션 클라이언트를 통해 생성되고 userTag가 자동 생성됨
 			expect(result.id).toBe("tx-user-123");
 			expect(result.userTag).toBe(TEST_USER_TAG);
-			expect(mockGenerateUserTag).toHaveBeenCalled();
 			expect(db.user.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					email: createData.email,
 					status: createData.status,
-					userTag: TEST_USER_TAG,
+					userTag: expect.stringMatching(USER_TAG_PATTERN),
 				}),
 			});
 		});
