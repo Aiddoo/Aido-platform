@@ -18,10 +18,6 @@ import {
 } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	BusinessException,
-	BusinessExceptions,
-} from "@/shared/application/exceptions/business-exception.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -559,39 +555,6 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 			// Then
 			expect(result).toBe(false);
-		});
-	});
-
-	describe("enforceResourceLimit", () => {
-		const errorFactory = (current: number, limit: number) =>
-			BusinessExceptions.todoCategoryFull(current, limit);
-
-		it("maxCount가 null이면 예외를 발생시키지 않는다 (무제한)", () => {
-			// When & Then
-			expect(() => {
-				service.enforceResourceLimit(100, null, errorFactory);
-			}).not.toThrow();
-		});
-
-		it("currentCount가 maxCount 미만이면 통과한다", () => {
-			// When & Then
-			expect(() => {
-				service.enforceResourceLimit(29, 30, errorFactory);
-			}).not.toThrow();
-		});
-
-		it("currentCount가 maxCount와 같으면 예외를 발생시킨다", () => {
-			// When & Then
-			expect(() => {
-				service.enforceResourceLimit(30, 30, errorFactory);
-			}).toThrow(BusinessException);
-		});
-
-		it("currentCount가 maxCount를 초과하면 예외를 발생시킨다", () => {
-			// When & Then
-			expect(() => {
-				service.enforceResourceLimit(31, 30, errorFactory);
-			}).toThrow(BusinessException);
 		});
 	});
 });

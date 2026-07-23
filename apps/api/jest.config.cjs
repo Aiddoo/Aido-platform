@@ -58,6 +58,13 @@ module.exports = {
   // 타임아웃 (Testcontainers용)
   testTimeout: 60000,
 
+  // 워커 안정화: @swc/core 네이티브 트랜스폼이 고병렬 워커에서 간헐적 SIGSEGV를
+  // 내는 것을 억제한다(Node 24). 워커를 힙 상한에서 재시작해 네이티브 상태 누적을
+  // 끊고, 동시 트랜스폼 수를 제한해 크래시 표면을 줄인다. 유닛 스위트 특성상
+  // 벽시계 영향은 미미하다.
+  workerIdleMemoryLimit: '512MB',
+  maxWorkers: '50%',
+
   // Jest 전역 설정 파일
   setupFilesAfterEnv: ['<rootDir>/test/setup/jest.setup.ts'],
 

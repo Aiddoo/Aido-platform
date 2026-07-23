@@ -3,6 +3,7 @@ import { WeatherFacade } from "./application/facades/weather.facade";
 import { AIR_QUALITY_PROVIDER } from "./application/ports/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "./application/ports/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "./application/ports/sun-time-provider.port";
+import { WEATHER_CACHE } from "./application/ports/weather-cache.port";
 import { WEATHER_LOCATION_REPOSITORY } from "./application/ports/weather-location.repository.port";
 import { WEATHER_PROVIDER } from "./application/ports/weather-provider.port";
 import { WeatherQueryUseCases } from "./application/queries";
@@ -12,6 +13,7 @@ import { AirkoreaProvider } from "./infrastructure/adapters/airkorea.provider";
 import { KasiSunTimeProvider } from "./infrastructure/adapters/kasi-sun-time.provider";
 import { KmaLifestyleIndexProvider } from "./infrastructure/adapters/kma-lifestyle-index.provider";
 import { KmaWeatherProvider } from "./infrastructure/adapters/kma-weather.provider";
+import { WeatherCacheAdapter } from "./infrastructure/adapters/weather-cache.adapter";
 import { PrismaWeatherLocationRepository } from "./infrastructure/persistence/prisma-weather-location.repository";
 import { WeatherController } from "./presentation/weather.controller";
 
@@ -36,6 +38,8 @@ import { WeatherController } from "./presentation/weather.controller";
 		{ provide: AIR_QUALITY_PROVIDER, useClass: AirkoreaProvider },
 		{ provide: LIFESTYLE_INDEX_PROVIDER, useClass: KmaLifestyleIndexProvider },
 		{ provide: SUN_TIME_PROVIDER, useClass: KasiSunTimeProvider },
+		// 조회 캐시 포트 (application → CacheService/CacheKeys 직접 의존 역전)
+		{ provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
 		...WeatherQueryUseCases,
 		...WeatherUseCases,
 	],

@@ -1,8 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
 import type { UserLocation } from "../../../domain/entities/user-location.entity";
 import {
 	AIR_QUALITY_PROVIDER,
@@ -16,6 +14,10 @@ import {
 	SUN_TIME_PROVIDER,
 	type SunTimeProvider,
 } from "../../ports/sun-time-provider.port";
+import {
+	WEATHER_CACHE,
+	type WeatherCachePort,
+} from "../../ports/weather-cache.port";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
@@ -45,7 +47,8 @@ export class GetWeatherConditionsUseCase {
 		@Inject(SUN_TIME_PROVIDER)
 		private readonly sunTimeProvider: SunTimeProvider,
 		private readonly forecastReader: WeatherForecastReader,
-		private readonly cacheService: CacheService,
+		@Inject(WEATHER_CACHE)
+		private readonly cache: WeatherCachePort,
 	) {}
 
 	async execute(input: GetWeatherConditionsInput): Promise<WeatherConditions> {
@@ -55,12 +58,10 @@ export class GetWeatherConditionsUseCase {
 		}
 
 		// 1. 캐시 확인 (1h TTL)
-		const conditionsCacheKey = CacheKeys.weatherConditions(
+		const cached = await this.cache.getConditions(
 			location.gridX,
 			location.gridY,
 		);
-		const cached =
-			await this.cacheService.get<WeatherConditions>(conditionsCacheKey);
 		if (cached) {
 			return cached;
 		}
@@ -107,11 +108,7 @@ export class GetWeatherConditionsUseCase {
 		};
 
 		// 5. 캐시 저장
-		await this.cacheService.set(
-			conditionsCacheKey,
-			conditions,
-			CacheKeys.TTL.WEATHER_CONDITIONS,
-		);
+		await this.cache.setConditions(location.gridX, location.gridY, conditions);
 
 		return conditions;
 	}

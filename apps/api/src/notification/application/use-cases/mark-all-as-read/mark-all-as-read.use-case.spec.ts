@@ -3,26 +3,32 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { createNotificationCacheMock } from "@test/mocks/ports";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 import { MarkAllAsReadUseCase } from "./mark-all-as-read.use-case";
 
 describe("MarkAllAsReadUseCase", () => {
 	let useCase: MarkAllAsReadUseCase;
 	let notificationRepo: Mocked<NotificationRepositoryPort>;
-	let cacheService: Mocked<CacheService>;
+	let cache: Mocked<NotificationCachePort>;
 
 	const mockUserId = "user-1";
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(MarkAllAsReadUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(MarkAllAsReadUseCase)
+			.mock<NotificationCachePort>(NOTIFICATION_CACHE)
+			.impl(() => createNotificationCacheMock())
+			.compile();
 		useCase = unit;
 		notificationRepo = unitRef.get(NOTIFICATION_REPOSITORY);
-		cacheService = unitRef.get(CacheService);
+		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 	});
 
 	it("모든 알림을 읽음 처리하고 캐시를 무효화해야 한다", async () => {
@@ -31,7 +37,7 @@ describe("MarkAllAsReadUseCase", () => {
 		const result = await useCase.execute(mockUserId);
 
 		expect(notificationRepo.markAllAsRead).toHaveBeenCalledWith(mockUserId);
-		expect(cacheService.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);
+		expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);
 		expect(result.count).toBe(5);
 	});
 });

@@ -11,7 +11,6 @@ import {
 	TODO_CATEGORY_LIMITS,
 } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
-import type { BusinessException } from "@/shared/application/exceptions/business-exception.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
@@ -154,20 +153,6 @@ export class EntitlementService {
 		};
 	}
 
-	/**
-	 * 기능 사용 한도를 검증하고, 초과 시 예외를 발생시킵니다.
-	 */
-	enforceLimit(
-		entitlement: FeatureEntitlement,
-		currentUsage: number,
-		errorFactory: (used: number, limit: number) => BusinessException,
-	): void {
-		if (entitlement.dailyLimit === null) return;
-		if (currentUsage < entitlement.dailyLimit) return;
-
-		throw errorFactory(currentUsage, entitlement.dailyLimit);
-	}
-
 	// =========================================================================
 	// 리소스 제한 (총 보유량)
 	// =========================================================================
@@ -184,20 +169,6 @@ export class EntitlementService {
 		const { role, subscriptionStatus } = await this.#resolveUserInfo(userId);
 		const maxCount = resolveResourceLimit(role, subscriptionStatus, resource);
 		return { maxCount, isAdmin: role === "ADMIN", subscriptionStatus };
-	}
-
-	/**
-	 * 리소스 보유량 제한을 검증하고, 초과 시 예외를 발생시킵니다.
-	 */
-	enforceResourceLimit(
-		currentCount: number,
-		maxCount: number | null,
-		errorFactory: (current: number, limit: number) => BusinessException,
-	): void {
-		if (maxCount === null) return;
-		if (currentCount < maxCount) return;
-
-		throw errorFactory(currentCount, maxCount);
 	}
 
 	// =========================================================================

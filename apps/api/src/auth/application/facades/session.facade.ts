@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { ListActiveSessionsQuery, RevokeSessionUseCase } from "../use-cases";
+import { ListActiveSessionsQuery } from "../queries";
+import { RevokeSessionUseCase } from "../use-cases";
 
 /** 세션 조회·폐기의 단일 presentation 진입점. */
 @Injectable()

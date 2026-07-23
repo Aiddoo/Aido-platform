@@ -32,6 +32,7 @@ import {
 	PUSH_RATE_LIMITER,
 } from "@/notification";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
+import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
@@ -47,6 +48,7 @@ import { SendBatchNotificationUseCase } from "@/notification/application/use-cas
 import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
@@ -156,6 +158,8 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 					useExisting: NotificationRepository,
 				},
 				{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
+				// application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
+				{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
 				NotificationFacade,
 				GetNotificationsUseCase,
 				GetUnreadCountUseCase,

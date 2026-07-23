@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import {
 	TODO_EVENTS,
+	type TodoCategoryChangedEvent,
 	type TodoCreatedEvent,
 	type TodoDeletedEvent,
 	type TodoRescheduledEvent,
@@ -19,7 +20,8 @@ type TodoWriteEvent =
 	| TodoDeletedEvent
 	| TodoToggledEvent
 	| TodoRescheduledEvent
-	| TodoUpdatedEvent;
+	| TodoUpdatedEvent
+	| TodoCategoryChangedEvent;
 
 /**
  * 투두 쓰기 이벤트 구독 → 일별 완료 캐시 무효화 핸들러
@@ -43,6 +45,7 @@ export class DailyCompletionCacheInvalidator {
 	@OnEvent(TODO_EVENTS.TOGGLED)
 	@OnEvent(TODO_EVENTS.RESCHEDULED)
 	@OnEvent(TODO_EVENTS.UPDATED)
+	@OnEvent(TODO_EVENTS.CATEGORY_CHANGED)
 	async handle(event: TodoWriteEvent): Promise<void> {
 		try {
 			await this.cache.invalidate(event.userId);

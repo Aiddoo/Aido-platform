@@ -53,6 +53,36 @@ describe("AI 제안 E2E", () => {
 		return user;
 	}
 
+	/** PENDING 상태의 AI 제안 행을 직접 시딩하고 ID를 반환하는 헬퍼 */
+	async function seedPendingSuggestion(
+		userId: string,
+		overrides?: {
+			status?: "PENDING" | "ACCEPTED" | "DISMISSED";
+			daysOfWeek?: string[];
+			scheduledTime?: string | null;
+		},
+	): Promise<number> {
+		const prisma = ctx.testDatabase.getPrisma();
+		const suggestion = await prisma.recurringSuggestion.create({
+			data: {
+				userId,
+				title: "팀 미팅",
+				daysOfWeek: overrides?.daysOfWeek ?? ["MON", "WED", "FRI"],
+				scheduledTime:
+					overrides?.scheduledTime === undefined
+						? "10:00"
+						: overrides.scheduledTime,
+				confidence: 0.85,
+				reason: "최근 2주간 반복 패턴 감지",
+				matchedTodos: [],
+				suggestedCategoryId: null,
+				status: overrides?.status ?? "PENDING",
+				expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+			},
+		});
+		return suggestion.id;
+	}
+
 	describe("GET /ai/suggestions", () => {
 		it("200: 빈 제안 목록을 반환해야 한다 (초기 상태)", async () => {
 			// Given - 프리미엄 사용자, 제안이 없는 초기 상태
@@ -86,6 +116,97 @@ describe("AI 제안 E2E", () => {
 	});
 
 	describe("PATCH /ai/suggestions/:id", () => {
+		it("200(accept): 제안 수락 시 ACCEPTED로 전이되고 반복 할 일이 생성된다", async () => {
+			// Given - 프리미엄 사용자와 PENDING 제안
+			const user = await createPremiumUser(
+				"ai-suggestion-accept@example.com",
+				"Test1234!",
+			);
+			const categoryId = await ctx.helpers.getDefaultCategoryId(
+				user.accessToken,
+			);
+			const suggestionId = await seedPendingSuggestion(user.userId);
+
+			// When - accept 액션 수행
+			const response = await request(ctx.app.getHttpServer())
+				.patch(`/ai/suggestions/${suggestionId}`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
+				.send({ action: "accept", categoryId });
+
+			// Then - 200, ACCEPTED, 반복 할 일 생성 개수 반환
+			expect(response.status).toBe(200);
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.suggestion.status).toBe("ACCEPTED");
+			expect(response.body.data.createdTodosCount).toBeGreaterThan(0);
+		});
+
+		it("200(dismiss): 제안 거절 시 DISMISSED로 전이되고 할 일은 생성되지 않는다", async () => {
+			// Given - 프리미엄 사용자와 PENDING 제안
+			const user = await createPremiumUser(
+				"ai-suggestion-dismiss@example.com",
+				"Test1234!",
+			);
+			const suggestionId = await seedPendingSuggestion(user.userId);
+
+			// When - dismiss 액션 수행
+			const response = await request(ctx.app.getHttpServer())
+				.patch(`/ai/suggestions/${suggestionId}`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
+				.send({ action: "dismiss" });
+
+			// Then - 200, DISMISSED, createdTodosCount 없음
+			expect(response.status).toBe(200);
+			expect(response.body.data.suggestion.status).toBe("DISMISSED");
+			expect(response.body.data.createdTodosCount).toBeUndefined();
+		});
+
+		it("409: 이미 처리된 제안 재처리 시 에러를 반환해야 한다 (AI_1306)", async () => {
+			// Given - 이미 ACCEPTED 상태인 제안
+			const user = await createPremiumUser(
+				"ai-suggestion-409@example.com",
+				"Test1234!",
+			);
+			const categoryId = await ctx.helpers.getDefaultCategoryId(
+				user.accessToken,
+			);
+			const suggestionId = await seedPendingSuggestion(user.userId, {
+				status: "ACCEPTED",
+			});
+
+			// When - 이미 처리된 제안에 다시 액션 수행
+			const response = await request(ctx.app.getHttpServer())
+				.patch(`/ai/suggestions/${suggestionId}`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
+				.send({ action: "accept", categoryId });
+
+			// Then - 409 Conflict, AI_1306
+			expect(response.status).toBe(409);
+			expect(response.body.error.code).toBe("AI_1306");
+		});
+
+		it("400: 잘못된 action 값 요청 시 에러를 반환해야 한다", async () => {
+			// Given - 프리미엄 사용자와 PENDING 제안
+			const user = await createPremiumUser(
+				"ai-suggestion-400@example.com",
+				"Test1234!",
+			);
+			const suggestionId = await seedPendingSuggestion(user.userId);
+
+			// When - 유효하지 않은 action 값으로 요청
+			const response = await request(ctx.app.getHttpServer())
+				.patch(`/ai/suggestions/${suggestionId}`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
+				.send({ action: "invalid" });
+
+			// Then - 400 Bad Request
+			expect(response.status).toBe(400);
+			expect(response.body.success).toBe(false);
+		});
+
 		it("404: 존재하지 않는 제안에 대해 에러를 반환해야 한다", async () => {
 			// Given - 프리미엄 사용자, 존재하지 않는 제안 ID
 			const user = await createPremiumUser(

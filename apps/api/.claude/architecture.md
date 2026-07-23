@@ -1,6 +1,6 @@
 # API 아키텍처 가이드
 
-**Version**: 4.0.0 · **Last Updated**: 2026-07-12 · **Owner**: Aido Platform Team
+**Version**: 4.1.0 · **Last Updated**: 2026-07-23 · **Owner**: Aido Platform Team
 
 > NestJS 기반 백엔드 API의 전체 아키텍처 · 에러 처리 · BullMQ 큐 · 보안 · 공통 모듈
 
@@ -114,12 +114,15 @@ apps/api/
 │   ├── follow/                 # 팔로우 관계
 │   ├── health/                 # 헬스체크
 │   ├── inquiry/                # 문의
+│   ├── memo/                   # 메모 (→ 할 일 변환)
 │   ├── notification/           # 알림 (BullMQ + 푸시)
 │   ├── nudge/                  # 찌르기
+│   ├── retention/              # 리텐션 캠페인 (백그라운드, presentation 없음)
 │   ├── scheduler/              # 스케줄러 (리마인더)
 │   ├── subscription/           # 구독/결제
 │   ├── todo-category/          # 할 일 카테고리
 │   ├── user-settings/          # 사용자 설정/프로필
+│   ├── weather/                # 날씨 예보/부가정보 (KMA·에어코리아·KASI)
 │   └── weekly-achievement/     # 주간 달성 통계
 └── test/
     ├── e2e/                    # E2E 테스트
@@ -236,6 +239,22 @@ modules/todo/
 **계약 안전장치**: `test/e2e/openapi-contract.e2e-spec.ts` 스냅샷이 전체 API 계약을 고정 —
 마이그레이션 중 스냅샷 diff 0 = 클라이언트 영향 0.
 
+### 1.5 표준 예외 (의도된 이탈 — 강제 금지)
+
+전 모듈 클린아키 표준이 원칙이나, 아래는 **의도적으로 4계층/use-case 형태를 따르지 않는다.**
+표준을 억지로 씌우면 불변식 없는 계층에 의식(ceremony)만 늘기 때문이다.
+
+| 이탈 | 이유 |
+|------|------|
+| **scheduler** — Facade·use-case 없음, `application/strategies/` + `services/` 전략 기반 크론 오케스트레이터. 공개는 `scheduler/queue.ts` 서브엔트리(`.dependency-cruiser.cjs` PUBLIC_SUBENTRIES 화이트리스트) | 자기 불변식이 없고 타 모듈 Facade를 조합·스윕할 뿐. 4계층은 과함 |
+| **presentation 없는 백그라운드 모듈** — `admin-notification`·`email`·`retention` | HTTP 진입점이 없는 큐/이벤트 소비 모듈 |
+| **read-model / anemic 도메인** — `daily-completion`·`weekly-achievement`(플랫 모델)·`inquiry`·`ai`·`email`(VO/서비스만) | 애그리게잇 불변식이 없는 조회·변환·벤더 경계 모듈 |
+| **auth `workflows/`·`services/` 내부 계층** — use-case는 얇은 위임, 실제 오케스트레이션은 `workflows/`(credential-auth·oauth·password), 세션/검증은 `services/` | 인증은 도메인 규모가 커 엔드포인트당 단일 use-case로는 응집이 깨짐. use-case 파일 자체는 표준대로 폴더당 1개(§7.2) |
+| **infrastructure 계층의 `CacheService` 직접 사용** — 캐시 어댑터·`prisma-scheduler.reader`·`push-dispatcher.adapter` | 어댑터는 인프라 경계라 §5.3.2 포트 규칙 대상이 아님 |
+
+> 큐/알림 페이로드 DTO는 도메인 이벤트가 아니므로 `domain/events/`가 아니라
+> `application/types/`(subscription) 또는 `domain/types/`(admin-notification)에 둔다.
+
 ## 2. 에러 처리 체계
 
 ### 2.1 에러 흐름
@@ -275,7 +294,7 @@ modules/todo/
 
 **위치**: `BusinessException` = `src/shared/application/exceptions/`, `ApplicationException` = `src/shared/domain/exceptions/application.exception.ts`, `DomainException` = `src/shared/domain/exceptions/domain.exception.ts`.
 
-카탈로그 위치: `src/shared/application/exceptions/services/business-exception.service.ts`
+카탈로그 위치: `src/shared/application/exceptions/business-exception.service.ts`
 
 ```typescript
 // BusinessException 클래스 (필터 내부 표현 — 신규 코드가 직접 인스턴스화하지 않음)
@@ -325,7 +344,7 @@ throw new DomainException(ErrorCode.TODO_1210, { itemCount, limit });     // 도
 
 ### 2.3 GlobalExceptionFilter 3단계 처리
 
-**위치**: `src/shared/application/exceptions/filters/global-exception.filter.ts`
+**위치**: `src/shared/infrastructure/filters/global-exception.filter.ts`
 
 ```typescript
 @Catch()
@@ -493,7 +512,7 @@ BullModule.forRootAsync({
 ### 3.3 QueueService 패턴 (enqueue 담당)
 
 ```typescript
-// src/{name}/queue/{name}-queue.service.ts
+// src/{name}/infrastructure/queue/{name}-queue.service.ts
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
@@ -523,7 +542,7 @@ export class [Feature]QueueService {
 ### 3.4 Processor 패턴 (job 처리 담당)
 
 ```typescript
-// src/{name}/queue/{name}-queue.processor.ts
+// src/{name}/infrastructure/queue/{name}-queue.processor.ts
 import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import type { Job } from "bullmq";
 import { QUEUE_NAME } from "./{name}-queue.constants";
@@ -549,7 +568,7 @@ export class [Feature]Processor extends WorkerHost {
 ### 3.5 Job 패턴 (스케줄러 등록 담당)
 
 ```typescript
-// src/{name}/jobs/{name}.job.ts
+// src/{name}/infrastructure/jobs/{name}.job.ts
 import { Injectable, type OnModuleInit } from "@nestjs/common";
 
 @Injectable()
@@ -606,7 +625,7 @@ export class CreateXxxUseCase {
 
 ### 3.8 PushProvider Strategy Pattern
 
-**위치**: `src/notification/providers/`
+**위치**: `src/notification/infrastructure/providers/` (포트/토큰: `src/notification/application/ports/push-provider.port.ts`)
 
 ```typescript
 // push-provider.interface.ts
@@ -675,7 +694,7 @@ ThrottlerGuard (Rate Limiting, 글로벌)
 AdminGuard (관리자 권한, 엔드포인트별)
 ```
 
-**위치**: `src/auth/guards/`
+**위치**: `src/auth/infrastructure/guards/`
 
 | Guard | 파일 | 역할 |
 |-------|------|------|
@@ -742,7 +761,7 @@ export class LastActiveInterceptor implements NestInterceptor {
 
 ### 4.4 OAuth 4사 자동연동 규칙
 
-**위치**: `src/auth/application/services/oauth.service.ts`
+**위치**: `src/auth/application/workflows/oauth.workflow.ts`
 
 **Trusted vs Untrusted Provider:**
 
@@ -763,7 +782,7 @@ export class LastActiveInterceptor implements NestInterceptor {
 ```
 
 ```typescript
-// oauth.service.ts — 핵심 로직 (uow.run = CLS 트랜잭션, 리포지토리가 활성 TX를 읽음)
+// oauth.workflow.ts — 핵심 로직 (uow.run = CLS 트랜잭션, 리포지토리가 활성 TX를 읽음)
 private async handleEmailConflict(...) {
   const isTrusted = this.isTrustedProvider(provider);  // Google, Apple
   const isEmailVerified = options.emailVerified === true;
@@ -898,7 +917,7 @@ export class LoggerModule {
 
 ### 5.3 Strategy Pattern: CacheAdapter (Memory/Redis)
 
-**위치**: `src/shared/cache/`
+**위치**: `src/shared/infrastructure/cache/`
 
 ```
 CacheModule.forRoot()
@@ -941,9 +960,29 @@ export type TtlValue = number | `${number}${'s' | 'm' | 'h' | 'd'}`;
 | 무효화 | 쓰기 use-case에서 **명시적 호출** (도메인 이벤트가 없는 쓰기 경로 포함) 또는 `@OnEvent` 구독으로 처리 |
 | 장애 계약 | fail-open (`ICacheService` 계약, §5.1.1) — 캐시 실패는 미스 취급, DB 폴백 |
 
+### 5.3.2 모듈 캐시 포트 표준 (Pattern A — 필수)
+
+**application 계층은 공유 `CacheService`/`CacheKeys`를 직접 주입하지 않는다.** 각 모듈은
+자신의 캐시 포트(Symbol 토큰 인터페이스)에만 의존하고, 인프라 어댑터가 그 포트를
+`ICacheService`(→`CacheService`/`CacheKeys`) 위에 구현한다. 이로써 캐시 키·TTL·직렬화는
+어댑터가 소유하고, use-case는 도메인 캐시 시맨틱만 본다(교체 유연성·클린아키 경계).
+
+```
+application/ports/<module>-cache.port.ts     ── Symbol 토큰 + 시맨틱 메서드
+infrastructure/adapters/<module>-cache.adapter.ts ── CacheService 위임(키/TTL 소유)
+<module>.module.ts: { provide: X_CACHE, useClass: XCacheAdapter }
+```
+
+| 항목 | 규칙 |
+|------|------|
+| 적용 | 캐시를 쓰는 **모든** 모듈. 현재 포트: `TODO_CACHE`·`FOLLOW_CACHE`·`SUBSCRIPTION_CACHE`·`DAILY_COMPLETION_CACHE`·`TODO_CATEGORY_CACHE`·`AUTH_CACHE`·`NOTIFICATION_CACHE`·`USER_SETTINGS_CACHE`·`WEATHER_CACHE` |
+| 금지 | 모듈 `application/`에서 `@/shared/infrastructure/cache/cache.service` 또는 `constants/cache-keys` 직접 import — `.dependency-cruiser.cjs`의 `application-no-shared-cache-service` 규칙이 기계적으로 차단 (CI `lint:arch`) |
+| 예외 | **infrastructure 계층**(캐시 어댑터 자신, 크로스모듈 위임 어댑터, `prisma-scheduler.reader`, `push-dispatcher.adapter`)의 `CacheService` 직접 사용은 허용 — 어댑터가 인프라 경계이기 때문 |
+| 크로스모듈 무효화 | 타 모듈 소유 키 무효화가 필요하면 자기 포트에 메서드로 노출하고 JSDoc에 크로스모듈임을 명시(예: notification의 `invalidateUserPreference`), 또는 도메인 이벤트 `@OnEvent`로 처리(예: daily-completion) |
+
 ### 5.4 TypedConfigService 래퍼
 
-**위치**: `src/shared/config/services/config.service.ts`
+**위치**: `src/shared/infrastructure/config/services/config.service.ts`
 
 NestJS `ConfigService`를 타입 안전하게 래핑:
 
@@ -968,11 +1007,11 @@ export class TypedConfigService {
 }
 ```
 
-> **Zod 스키마 기반 환경변수 검증**: `src/shared/config/schemas/` 하위에 `app.schema.ts`, `security.schema.ts`, `cache.schema.ts` 등에서 `z.object()`로 정의.
+> **Zod 스키마 기반 환경변수 검증**: `src/shared/infrastructure/config/schemas/` 하위에 `app.schema.ts`, `security.schema.ts`, `cache.schema.ts` 등에서 `z.object()`로 정의.
 
 ### 5.5 PaginationService (오프셋 + 커서)
 
-**위치**: `src/shared/pagination/services/pagination.service.ts`
+**위치**: `src/shared/application/pagination/services/pagination.service.ts`
 
 **오프셋 기반:**
 
@@ -1049,7 +1088,7 @@ async create(
 
 ### 6.3 날짜 유틸리티
 
-**위치**: `src/shared/date/`
+**위치**: `src/shared/domain/date/`
 
 ```typescript
 import { todayInTimezone, parseLocalDateTime, startOfDayInTimezone, midnightInTimezone } from '@/shared/domain/date';
@@ -1149,8 +1188,11 @@ src/auth/
 │   ├── decorators/      # @Public() 등
 │   └── dtos/
 ├── application/
-│   ├── services/        # auth·oauth·session·token·password·verification 서비스
-│   ├── use-cases/       # 신규 유스케이스
+│   ├── facades/         # auth·oauth·session·account 진입점 (컨트롤러의 유일 주입)
+│   ├── workflows/       # credential-auth·oauth·password (실제 오케스트레이션)
+│   ├── services/        # session·verification 서비스
+│   ├── use-cases/       # 쓰기 유스케이스 (폴더당 1개, workflow에 위임)
+│   ├── queries/         # 읽기 유스케이스 (get-current-user·list-* 등)
 │   ├── ports/           # OAuth ID 제공자 포트 등 (Symbol 토큰)
 │   ├── types/ · utils/
 ├── domain/

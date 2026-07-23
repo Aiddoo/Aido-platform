@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
+import { GetOAuthRedirectUriQuery } from "../queries";
 import {
 	CompleteOAuthAuthorizationUseCase,
 	ExchangeOAuthCodeUseCase,
-	GetOAuthRedirectUriQuery,
 	LinkOAuthAccountUseCase,
 	LinkOAuthAccountWithCodeUseCase,
 	LoginWithOAuthTokenUseCase,

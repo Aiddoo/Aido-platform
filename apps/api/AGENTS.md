@@ -1,6 +1,6 @@
 # Aido API
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-07-14 · **Owner**: Aido Platform Team
+> **Version**: 1.2.0 · **Last Updated**: 2026-07-23 · **Owner**: Aido Platform Team
 
 NestJS 기반 백엔드 API. **전 모듈 클린아키텍처 use-case 표준**(참조 구현: **todo**) + BullMQ 큐 기반 알림. @nestjs/cqrs 미사용(버스 없는 `@Injectable` use-case).
 
@@ -62,6 +62,7 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushP
 - **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`(dependency-cruiser, `.dependency-cruiser.cjs`)로 검사 (CI `lint:arch` 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
 - **API 계약 고정**: `openapi-contract.e2e-spec` 스냅샷 diff 0 = 클라이언트 영향 0 (상시 계약 게이트 — CI e2e에서 실행)
 - **큐**: 알림/부수효과는 `QueueService.enqueueXxx()` fire-and-forget 패턴 (트랜잭션 커밋 후 enqueue)
+- **캐시**: application은 **모듈 캐시 포트**(Symbol 토큰)에만 의존 — 공유 `CacheService`/`CacheKeys` 직접 주입 금지(`.dependency-cruiser.cjs`가 강제). 상세: [architecture.md §5.3.2](.claude/architecture.md)
 - **암호화**: OAuth 토큰 등 민감 데이터는 `EncryptionService`로 암호화 저장
 - **중복 방지**: 크론 작업은 DB 기반 (in-memory Set/Map 금지)
 - **응답 래핑**: 자동 (`ResponseTransformInterceptor` / `GlobalExceptionFilter`)

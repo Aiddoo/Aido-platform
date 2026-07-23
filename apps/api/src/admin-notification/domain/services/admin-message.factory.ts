@@ -1,6 +1,6 @@
 import type { SubscriptionEventPayload } from "@/subscription";
 
-import type { UserRegisteredEventPayload } from "../events/user-registered.payload";
+import type { UserRegisteredEventPayload } from "../types/user-registered.payload";
 import {
 	type AdminNotificationField,
 	AdminNotificationMessage,

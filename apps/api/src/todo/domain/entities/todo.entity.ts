@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { TODO_ITEM_LIMITS } from "@aido/validators";
 import { AggregateRoot, DomainException } from "@/shared/domain";
 import { now } from "@/shared/domain/date/utils/core";
+import { TodoCategoryChangedEvent } from "../events/todo-category-changed.event";
 import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoDeletedEvent } from "../events/todo-deleted.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
@@ -316,11 +317,20 @@ export class Todo extends AggregateRoot<TodoProps> {
 	/**
 	 * 카테고리를 변경합니다 (PATCH /todos/:id/category).
 	 *
-	 * 소유권·활성 여부 검증은 애플리케이션 계층(포트) 책임이며,
-	 * 부수효과가 없는 단순 상태 전이라 이벤트를 적립하지 않습니다.
+	 * 소유권·활성 여부 검증은 애플리케이션 계층(포트) 책임입니다.
+	 * 일별 완료 통계가 할 일의 카테고리 색상을 집계하므로, 카테고리 변경은
+	 * TodoCategoryChangedEvent를 적립해 daily-completion 캐시 무효화를 트리거합니다
+	 * (부수효과는 커밋 후 크로스모듈 @OnEvent 구독자가 처리).
 	 */
 	changeCategory(categoryId: number): void {
 		this.props.categoryId = categoryId;
+		this.raise(
+			new TodoCategoryChangedEvent(
+				this.props.id.getValue(),
+				this.props.userId,
+				categoryId,
+			),
+		);
 	}
 
 	// ── 하위 항목 (자식 엔티티) ───────────────────────────────────────────

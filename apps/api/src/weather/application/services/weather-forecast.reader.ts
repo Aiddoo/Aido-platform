@@ -1,10 +1,12 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
 import type { UserLocation } from "../../domain/entities/user-location.entity";
 import { getKmaBaseDateTime } from "../../domain/services/kma-base-datetime";
+import {
+	WEATHER_CACHE,
+	type WeatherCachePort,
+} from "../ports/weather-cache.port";
 import {
 	WEATHER_PROVIDER,
 	type WeatherForecast,
@@ -32,7 +34,8 @@ export class WeatherForecastReader {
 	constructor(
 		@Inject(WEATHER_PROVIDER)
 		private readonly weatherProvider: WeatherProvider,
-		private readonly cacheService: CacheService,
+		@Inject(WEATHER_CACHE)
+		private readonly cache: WeatherCachePort,
 	) {}
 
 	/** 단일 위치의 예보를 조회한다 (캐시 → 프로바이더 → latest 폴백 → WEATHER_1901). */
@@ -41,14 +44,13 @@ export class WeatherForecastReader {
 		date: Date,
 	): Promise<WeatherForecast> {
 		const { baseDate, baseTime } = getKmaBaseDateTime(date);
-		const cacheKey = CacheKeys.weatherForecast(
+
+		const cached = await this.cache.getForecast(
 			location.gridX,
 			location.gridY,
 			baseDate,
 			baseTime,
 		);
-
-		const cached = await this.cacheService.get<WeatherForecast>(cacheKey);
 		if (cached) {
 			return cached;
 		}
@@ -61,18 +63,13 @@ export class WeatherForecastReader {
 			);
 
 			// 성공 시 정규 캐시 (3h) + latest 캐시 (24h) 모두 저장
-			await Promise.all([
-				this.cacheService.set(
-					cacheKey,
-					forecast,
-					CacheKeys.TTL.WEATHER_FORECAST,
-				),
-				this.cacheService.set(
-					CacheKeys.weatherForecastLatest(location.gridX, location.gridY),
-					forecast,
-					CacheKeys.TTL.WEATHER_FORECAST_LATEST,
-				),
-			]);
+			await this.cache.saveForecast(
+				location.gridX,
+				location.gridY,
+				baseDate,
+				baseTime,
+				forecast,
+			);
 
 			return forecast;
 		} catch (error) {
@@ -81,8 +78,9 @@ export class WeatherForecastReader {
 			);
 		}
 
-		const latest = await this.cacheService.get<WeatherForecast>(
-			CacheKeys.weatherForecastLatest(location.gridX, location.gridY),
+		const latest = await this.cache.getLatestForecast(
+			location.gridX,
+			location.gridY,
 		);
 		if (latest) {
 			this.#logger.warn(
@@ -110,10 +108,7 @@ export class WeatherForecastReader {
 		}
 
 		// 1. Redis mget - 1회 RTT
-		const cacheKeys = grids.map((g) =>
-			CacheKeys.weatherForecast(g.gridX, g.gridY, baseDate, baseTime),
-		);
-		const cached = await this.cacheService.mget<WeatherForecast>(cacheKeys);
+		const cached = await this.cache.getForecastBatch(grids, baseDate, baseTime);
 
 		// 2. 히트/미스 분류
 		const misses: GridInput[] = [];
@@ -138,9 +133,9 @@ export class WeatherForecastReader {
 
 		// 4. 성공/실패 분류 및 캐시 저장
 		const cacheEntries: Array<{
-			key: string;
-			value: WeatherForecast;
-			ttl: number;
+			gridX: number;
+			gridY: number;
+			forecast: WeatherForecast;
 		}> = [];
 		const latestFallbackTargets: GridInput[] = [];
 
@@ -152,22 +147,11 @@ export class WeatherForecastReader {
 
 			if (settledResult.status === "fulfilled" && settledResult.value) {
 				const forecast = settledResult.value;
-				// 정규 캐시 (3h)
+				// 정규 캐시 (3h) + latest 캐시 (24h) — 어댑터가 이중 저장
 				cacheEntries.push({
-					key: CacheKeys.weatherForecast(
-						miss.gridX,
-						miss.gridY,
-						baseDate,
-						baseTime,
-					),
-					value: forecast,
-					ttl: CacheKeys.TTL.WEATHER_FORECAST,
-				});
-				// latest 캐시 (24h)
-				cacheEntries.push({
-					key: CacheKeys.weatherForecastLatest(miss.gridX, miss.gridY),
-					value: forecast,
-					ttl: CacheKeys.TTL.WEATHER_FORECAST_LATEST,
+					gridX: miss.gridX,
+					gridY: miss.gridY,
+					forecast,
 				});
 				result.set(`${miss.gridX}:${miss.gridY}`, forecast);
 			} else {
@@ -177,16 +161,14 @@ export class WeatherForecastReader {
 
 		// 성공 항목 캐시 저장
 		if (cacheEntries.length > 0) {
-			await this.cacheService.mset(cacheEntries);
+			await this.cache.saveForecastBatch(cacheEntries, baseDate, baseTime);
 		}
 
 		// 실패 항목 latest fallback 조회
 		if (latestFallbackTargets.length > 0) {
-			const fallbackKeys = latestFallbackTargets.map((miss) =>
-				CacheKeys.weatherForecastLatest(miss.gridX, miss.gridY),
+			const fallbackCached = await this.cache.getLatestForecastBatch(
+				latestFallbackTargets,
 			);
-			const fallbackCached =
-				await this.cacheService.mget<WeatherForecast>(fallbackKeys);
 
 			for (const [j, miss] of latestFallbackTargets.entries()) {
 				const fallback = fallbackCached[j];

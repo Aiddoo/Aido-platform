@@ -7,7 +7,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { UserRegisteredEventPayload } from "../../../domain/events/user-registered.payload";
+import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload";
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,

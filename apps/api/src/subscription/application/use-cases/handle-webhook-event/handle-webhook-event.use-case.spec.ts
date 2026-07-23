@@ -12,7 +12,6 @@ import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
 
 import { Subscription } from "../../../domain/entities/subscription.entity";
@@ -91,8 +90,54 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 		mockRepository.findByRevenueCatId.mockResolvedValue(null);
 	});
 
+	/**
+	 * 비-1605 처리 실패는 execute가 삼켜 200({ received: true })을 반환하고 notifier로
+	 * 보고한다(Sentry·Discord 오케스트레이션은 어댑터 소유). Lock 경합(1605)만 rethrow한다.
+	 */
+	const expectSwallowedFailure = async (
+		payload: unknown,
+		errorCode: string,
+	): Promise<void> => {
+		const result = await useCase.execute(payload);
+		expect(result).toEqual({ received: true });
+		expect(mockNotifier.reportWebhookFailure).toHaveBeenCalledWith(
+			expect.objectContaining({ errorCode }),
+			payload,
+		);
+	};
+
+	describe("오케스트레이션 (execute)", () => {
+		it("Zod 검증 실패(잘못된 본문) → 처리·보고 없이 200 반환", async () => {
+			const result = await useCase.execute({ invalid: "data" });
+
+			expect(result).toEqual({ received: true });
+			expect(mockRepository.findUserByAppUserId).not.toHaveBeenCalled();
+			expect(mockNotifier.reportWebhookFailure).not.toHaveBeenCalled();
+		});
+
+		it("빈 객체 본문 → 처리·보고 없이 200 반환", async () => {
+			const result = await useCase.execute({});
+
+			expect(result).toEqual({ received: true });
+			expect(mockRepository.findUserByAppUserId).not.toHaveBeenCalled();
+		});
+
+		it("정상 처리 → 200 반환, 실패 보고 없음", async () => {
+			const payload = SubscriptionEventBuilder.initialPurchase()
+				.withAppUserId(APP_USER_ID)
+				.withOriginalTransactionId(TXN_ID)
+				.withExpirationAtMs(FUTURE_MS)
+				.build();
+
+			const result = await useCase.execute(payload);
+
+			expect(result).toEqual({ received: true });
+			expect(mockNotifier.reportWebhookFailure).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("Lock / 사용자 조회", () => {
-		it("Lock 획득 실패 → SUBSCRIPTION_1605, DB 조회 없음", async () => {
+		it("Lock 획득 실패 → SUBSCRIPTION_1605는 rethrow(429 유도), DB 조회 없음", async () => {
 			acquireMock.mockResolvedValue(null);
 			const payload = SubscriptionEventBuilder.initialPurchase()
 				.withAppUserId(APP_USER_ID)
@@ -104,15 +149,13 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 			expect(mockRepository.findUserByAppUserId).not.toHaveBeenCalled();
 		});
 
-		it("사용자 없음 → SUBSCRIPTION_1602, release 호출", async () => {
+		it("사용자 없음 → SUBSCRIPTION_1602 보고 + 200, release 호출", async () => {
 			mockRepository.findUserByAppUserId.mockResolvedValue(null);
 			const payload = SubscriptionEventBuilder.initialPurchase()
 				.withAppUserId("rc-unknown")
 				.build();
 
-			await expect(useCase.execute(payload)).rejects.toMatchObject({
-				errorCode: "SUBSCRIPTION_1602",
-			});
+			await expectSwallowedFailure(payload, "SUBSCRIPTION_1602");
 			expect(releaseMock).toHaveBeenCalledTimes(1);
 		});
 	});
@@ -221,9 +264,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 				.withoutPurchasedAt()
 				.build();
 
-			await expect(useCase.execute(payload)).rejects.toMatchObject({
-				errorCode: "SUBSCRIPTION_1604",
-			});
+			await expectSwallowedFailure(payload, "SUBSCRIPTION_1604");
 		});
 
 		it("expiration_at_ms 누락 → SUBSCRIPTION_1604", async () => {
@@ -233,9 +274,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 				.withoutExpiration()
 				.build();
 
-			await expect(useCase.execute(payload)).rejects.toMatchObject({
-				errorCode: "SUBSCRIPTION_1604",
-			});
+			await expectSwallowedFailure(payload, "SUBSCRIPTION_1604");
 		});
 
 		it("NON_RENEWING_PURCHASE → 최초 구매 경로로 처리", async () => {
@@ -259,9 +298,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 				.withoutTransactionIds()
 				.build();
 
-			await expect(useCase.execute(payload)).rejects.toMatchObject({
-				errorCode: "SUBSCRIPTION_1604",
-			});
+			await expectSwallowedFailure(payload, "SUBSCRIPTION_1604");
 		});
 	});
 
@@ -296,9 +333,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 				.withExpirationAtMs(FUTURE_MS)
 				.build();
 
-			await expect(useCase.execute(payload)).rejects.toMatchObject({
-				errorCode: "SUBSCRIPTION_1604",
-			});
+			await expectSwallowedFailure(payload, "SUBSCRIPTION_1604");
 		});
 
 		it("동일 expiresAt으로 이미 갱신됨 → 스킵 (이벤트 미발행)", async () => {
@@ -324,9 +359,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 				.withoutExpiration()
 				.build();
 
-			await expect(useCase.execute(payload)).rejects.toMatchObject({
-				errorCode: "SUBSCRIPTION_1604",
-			});
+			await expectSwallowedFailure(payload, "SUBSCRIPTION_1604");
 		});
 	});
 
@@ -513,7 +546,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 		expect(releaseMock).toHaveBeenCalledTimes(1);
 	});
 
-	it("핸들러 예외 시에도 release 호출 (finally)", async () => {
+	it("핸들러 예외 시에도 release 호출 (finally) + 실패 보고 후 200", async () => {
 		mockRepository.findByRevenueCatId.mockResolvedValue(null);
 		const payload = SubscriptionEventBuilder.renewal()
 			.withAppUserId(APP_USER_ID)
@@ -521,9 +554,10 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 			.withExpirationAtMs(FUTURE_MS)
 			.build();
 
-		await expect(useCase.execute(payload)).rejects.toBeInstanceOf(
-			ApplicationException,
-		);
+		// #process가 던져도 finally에서 release, execute는 삼켜 200 + 보고
+		const result = await useCase.execute(payload);
+		expect(result).toEqual({ received: true });
+		expect(mockNotifier.reportWebhookFailure).toHaveBeenCalledTimes(1);
 		expect(releaseMock).toHaveBeenCalledTimes(1);
 	});
 });

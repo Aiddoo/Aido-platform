@@ -1,5 +1,6 @@
 import { mock } from "jest-mock-extended";
-import { ListActiveSessionsQuery, RevokeSessionUseCase } from "../use-cases";
+import { ListActiveSessionsQuery } from "../queries";
+import { RevokeSessionUseCase } from "../use-cases";
 import { SessionFacade } from "./session.facade";
 
 describe("SessionFacade — 세션 진입점", () => {

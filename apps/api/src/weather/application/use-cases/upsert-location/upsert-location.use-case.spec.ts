@@ -6,8 +6,12 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { createWeatherCacheMock } from "@test/mocks/ports";
 import { UserLocation } from "../../../domain/entities/user-location.entity";
+import {
+	WEATHER_CACHE,
+	type WeatherCachePort,
+} from "../../ports/weather-cache.port";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
@@ -33,16 +37,17 @@ function reconstitute(
 describe("UpsertLocationUseCase — 위치 등록/수정 use-case", () => {
 	let useCase: UpsertLocationUseCase;
 	let repository: Mocked<WeatherLocationRepositoryPort>;
-	let cache: Mocked<CacheService>;
+	let cache: Mocked<WeatherCachePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UpsertLocationUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(UpsertLocationUseCase)
+			.mock<WeatherCachePort>(WEATHER_CACHE)
+			.impl(() => createWeatherCacheMock())
+			.compile();
 
 		useCase = unit;
 		repository = unitRef.get(WEATHER_LOCATION_REPOSITORY);
-		cache = unitRef.get(CacheService);
+		cache = unitRef.get<WeatherCachePort>(WEATHER_CACHE);
 	});
 
 	it("좌표 불변식을 검증하고 저장 결과를 반환한다", async () => {
@@ -61,7 +66,7 @@ describe("UpsertLocationUseCase — 위치 등록/수정 use-case", () => {
 		// Then
 		expect(result).toBe(saved);
 		expect(repository.upsert).toHaveBeenCalledTimes(1);
-		expect(cache.delByPattern).not.toHaveBeenCalled();
+		expect(cache.invalidateGrid).not.toHaveBeenCalled();
 	});
 
 	it("기존 위치가 없으면 캐시를 무효화하지 않는다", async () => {
@@ -78,8 +83,7 @@ describe("UpsertLocationUseCase — 위치 등록/수정 use-case", () => {
 		});
 
 		// Then
-		expect(cache.delByPattern).not.toHaveBeenCalled();
-		expect(cache.del).not.toHaveBeenCalled();
+		expect(cache.invalidateGrid).not.toHaveBeenCalled();
 	});
 
 	it("격자가 동일하면 캐시를 무효화하지 않는다", async () => {
@@ -97,8 +101,7 @@ describe("UpsertLocationUseCase — 위치 등록/수정 use-case", () => {
 		});
 
 		// Then
-		expect(cache.delByPattern).not.toHaveBeenCalled();
-		expect(cache.del).not.toHaveBeenCalled();
+		expect(cache.invalidateGrid).not.toHaveBeenCalled();
 	});
 
 	it("격자가 변경되면 구 격자 캐시를 무효화한다", async () => {
@@ -116,7 +119,6 @@ describe("UpsertLocationUseCase — 위치 등록/수정 use-case", () => {
 		});
 
 		// Then - 구 격자(98:76) 기준으로 패턴/latest/conditions 캐시 삭제
-		expect(cache.delByPattern).toHaveBeenCalledTimes(1);
-		expect(cache.del).toHaveBeenCalledTimes(2);
+		expect(cache.invalidateGrid).toHaveBeenCalledWith(98, 76);
 	});
 });

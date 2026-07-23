@@ -241,6 +241,28 @@ describe("AI E2E", () => {
 				expect(fakeAiProvider.getCallCount()).toBe(3);
 			});
 
+			it("허용되지 않은 필드는 무시되고 정상 처리", async () => {
+				// Given - AI 응답 설정
+				fakeAiProvider.setResponse({
+					title: "테스트",
+					startDate: "2025-01-25",
+					scheduledTime: null,
+					isAllDay: true,
+				});
+
+				// When - 허용되지 않은 필드(unknownField)를 포함하여 요청
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-todo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ text: "테스트", unknownField: "value" })
+					.expect(200);
+
+				// Then - unknownField는 Zod에 의해 제거되고 정상 처리됨
+				expect(response.body.data.data.title).toBe("테스트");
+				expect(fakeAiProvider.getCallCount()).toBe(1);
+			});
+
 			it("다양한 한국어 자연어 입력을 파싱", async () => {
 				// Given - 다양한 테스트 케이스 준비
 				const testCases = [

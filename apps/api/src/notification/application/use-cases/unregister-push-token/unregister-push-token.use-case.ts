@@ -1,10 +1,13 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { isRecordNotFoundError } from "@/shared/infrastructure/database/prisma-error.util";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 
 /**
  * 푸시 토큰 해제 유스케이스.
@@ -18,7 +21,8 @@ export class UnregisterPushTokenUseCase {
 	constructor(
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
-		private readonly cacheService: CacheService,
+		@Inject(NOTIFICATION_CACHE)
+		private readonly cache: NotificationCachePort,
 	) {}
 
 	async execute(userId: string, deviceId?: string): Promise<void> {
@@ -32,7 +36,7 @@ export class UnregisterPushTokenUseCase {
 	async #unregisterOne(userId: string, deviceId: string): Promise<void> {
 		try {
 			await this.notificationRepository.deletePushToken(userId, deviceId);
-			await this.cacheService.invalidatePushTokens(userId);
+			await this.cache.invalidatePushTokens(userId);
 			this.#logger.log(
 				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
 			);
@@ -50,7 +54,7 @@ export class UnregisterPushTokenUseCase {
 	async #unregisterAll(userId: string): Promise<void> {
 		const result =
 			await this.notificationRepository.deleteAllPushTokensByUser(userId);
-		await this.cacheService.invalidatePushTokens(userId);
+		await this.cache.invalidatePushTokens(userId);
 		this.#logger.log(
 			`All push tokens unregistered: userId=${userId}, count=${result.count}`,
 		);

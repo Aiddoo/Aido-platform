@@ -36,18 +36,20 @@ import {
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "./application/ports/oauth-identity-provider.port";
 import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port";
+import {
+	GetCurrentUserQuery,
+	GetOAuthRedirectUriQuery,
+	ListActiveSessionsQuery,
+	ListLinkedAccountsQuery,
+} from "./application/queries";
 import { SessionService, VerificationService } from "./application/services";
 import {
 	ChangePasswordUseCase,
 	CompleteOAuthAuthorizationUseCase,
 	DeleteAccountUseCase,
 	ExchangeOAuthCodeUseCase,
-	GetCurrentUserQuery,
-	GetOAuthRedirectUriQuery,
 	LinkOAuthAccountUseCase,
 	LinkOAuthAccountWithCodeUseCase,
-	ListActiveSessionsQuery,
-	ListLinkedAccountsQuery,
 	LoginWithOAuthTokenUseCase,
 	LoginWithPasswordUseCase,
 	LogoutAllUseCase,

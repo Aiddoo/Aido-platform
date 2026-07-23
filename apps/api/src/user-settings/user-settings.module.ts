@@ -9,6 +9,7 @@ import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/streak-milestone.
 import { TODO_COMPLETION_STATS_READER } from "./application/ports/todo-completion-stats.reader.port";
 import { USER_CONSENT_REPOSITORY } from "./application/ports/user-consent.repository.port";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/user-preference.repository.port";
+import { USER_SETTINGS_CACHE } from "./application/ports/user-settings-cache.port";
 import { GetConsentUseCase } from "./application/use-cases/get-consent/get-consent.use-case";
 import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record/get-consent-record.use-case";
 import { GetConsentRecordsUseCase } from "./application/use-cases/get-consent-records/get-consent-records.use-case";
@@ -24,6 +25,7 @@ import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-loc
 import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case";
 import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/streak-milestone-notifier.adapter";
 import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/timezone-reminder-enqueuer.adapter";
+import { UserSettingsCacheAdapter } from "./infrastructure/adapters/user-settings-cache.adapter";
 import { PrismaTodoCompletionStatsReader } from "./infrastructure/persistence/prisma-todo-completion-stats.reader";
 import { UserConsentRepository } from "./infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "./infrastructure/persistence/user-preference.repository";
@@ -67,6 +69,8 @@ import { SettingsController } from "./presentation/user-settings.controller";
 			provide: STREAK_MILESTONE_NOTIFIER,
 			useClass: StreakMilestoneNotifierAdapter,
 		},
+		// 조회 캐시 포트 (application → CacheService 직접 의존 역전)
+		{ provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
 	],
 	exports: [UserSettingsFacade],
 })
