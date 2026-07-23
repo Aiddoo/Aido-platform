@@ -72,7 +72,7 @@ apps/api/
 
 ### 3.1 Use-case spec 패턴 (클린아키텍처 모듈)
 
-`@suites/unit`은 Symbol 토큰 포트를 auto-mock하지 못하므로 `test/mocks/ports/`의 수제 팩토리를 사용한다 (실제 예: `update-todo.use-case.spec.ts`):
+`@suites/unit`은 Symbol 토큰 포트도 deep-mock하지만, `test/mocks/ports/`의 수제 팩토리를 표준으로 쓴다 — **인터페이스 완전성**(포트 확장 시 누락을 타입 에러로 잡음)과 `createUnitOfWorkMock()` 같은 표준 패스스루의 일관성을 위해서다. 모듈별로 팩토리 파일 1개(`follow.mock.ts` 등)를 `test/mocks/ports/`에 두고 배럴/직접경로로 import한다 (실제 예: `update-todo.use-case.spec.ts`):
 
 ```ts
 const { unit, unitRef } = await TestBed.solitary(UpdateTodoUseCase)
@@ -188,8 +188,8 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 
 | 유형 | 예제 파일 |
 |------|----------|
-| **Unit (모범 사례)** | `src/cheer/cheer.service.spec.ts` — GWT, Builder 모두 적용 |
-| Unit (Suites) | `src/notification/notification.service.spec.ts` |
+| **Unit (쓰기 use-case)** | `src/todo/application/use-cases/update-todo/update-todo.use-case.spec.ts` — UoW·이벤트·포트 팩토리 |
+| Unit (읽기 query) | `src/todo/application/queries/get-todo-summary/get-todo-summary.use-case.spec.ts` |
 | Integration (Mock DB) | `test/integration/cheer.integration-spec.ts` |
 | Integration (실제 DB) | `test/integration/auth-password-setup.integration-spec.ts` |
 | E2E | `test/e2e/todo.e2e-spec.ts` |
