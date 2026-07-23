@@ -605,7 +605,7 @@ pnpm docker:down
 
 1. `.env.example`에 변수 추가 (예시 값)
 2. `.env.development`에 실제 개발 값 추가
-3. `src/shared/config/schemas/`에 Zod 검증 스키마 추가
+3. `src/shared/infrastructure/config/schemas/`에 Zod 검증 스키마 추가
 
 ### 필수 환경변수
 
