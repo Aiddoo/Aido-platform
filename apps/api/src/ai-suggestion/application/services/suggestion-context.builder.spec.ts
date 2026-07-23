@@ -30,11 +30,9 @@ import { SuggestionContextBuilder } from "./suggestion-context.builder";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// now()를 고정하여 테스트 안정성 확보
+// now()를 고정하여 테스트 안정성 확보 (now()는 dayjs.utc().toDate() → Date.now()를
+// 읽으므로 fake timers로 제어 가능)
 const FIXED_NOW = new Date("2026-03-31T06:00:00.000Z");
-jest.mock("@/shared/domain/date/utils/core", () => ({
-	now: () => FIXED_NOW,
-}));
 
 describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 	let builder: SuggestionContextBuilder;
@@ -46,6 +44,8 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 	const mockTimezone = "Asia/Seoul";
 
 	beforeEach(async () => {
+		jest.useFakeTimers({ now: FIXED_NOW });
+
 		const { unit, unitRef } = await TestBed.solitary(
 			SuggestionContextBuilder,
 		).compile();
@@ -54,6 +54,10 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 		mockRepository = unitRef.get(AI_SUGGESTION_REPOSITORY);
 		mockWeatherService = unitRef.get(WeatherFacade);
 		mockReportReader = unitRef.get(WEEKLY_REPORT_READER);
+	});
+
+	afterEach(() => {
+		jest.useRealTimers();
 	});
 
 	describe("build", () => {
