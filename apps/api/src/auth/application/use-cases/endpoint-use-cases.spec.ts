@@ -1,25 +1,16 @@
 import { mock } from "jest-mock-extended";
+import { GetCurrentUserQuery, ListActiveSessionsQuery } from "../queries";
 import {
 	CredentialAuthWorkflow,
 	OAuthWorkflow,
 	PasswordWorkflow,
 } from "../workflows";
-import {
-	GetCurrentUserQuery,
-	ListActiveSessionsQuery,
-} from "./account/account.use-cases";
-import {
-	LoginWithPasswordUseCase,
-	RegisterUseCase,
-} from "./authentication/authentication.use-cases";
-import {
-	ExchangeOAuthCodeUseCase,
-	StartOAuthAuthorizationUseCase,
-} from "./oauth/oauth.use-cases";
-import {
-	RequestPasswordResetUseCase,
-	SetPasswordUseCase,
-} from "./password/password.use-cases";
+import { ExchangeOAuthCodeUseCase } from "./exchange-oauth-code/exchange-oauth-code.use-case";
+import { LoginWithPasswordUseCase } from "./login-with-password/login-with-password.use-case";
+import { RegisterUseCase } from "./register/register.use-case";
+import { RequestPasswordResetUseCase } from "./request-password-reset/request-password-reset.use-case";
+import { SetPasswordUseCase } from "./set-password/set-password.use-case";
+import { StartOAuthAuthorizationUseCase } from "./start-oauth-authorization/start-oauth-authorization.use-case";
 
 describe("auth endpoint use-cases", () => {
 	it("인증 endpoint를 독립 실행 단위로 위임한다", async () => {

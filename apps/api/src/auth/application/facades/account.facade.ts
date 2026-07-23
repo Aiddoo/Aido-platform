@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common";
+import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "../queries";
 import {
 	DeleteAccountUseCase,
-	GetCurrentUserQuery,
-	ListLinkedAccountsQuery,
 	UnlinkOAuthAccountUseCase,
 	UpdateProfileUseCase,
 } from "../use-cases";

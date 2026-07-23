@@ -1,8 +1,8 @@
 import { mock } from "jest-mock-extended";
+import { GetOAuthRedirectUriQuery } from "../queries";
 import {
 	CompleteOAuthAuthorizationUseCase,
 	ExchangeOAuthCodeUseCase,
-	GetOAuthRedirectUriQuery,
 	LinkOAuthAccountUseCase,
 	LinkOAuthAccountWithCodeUseCase,
 	LoginWithOAuthTokenUseCase,
