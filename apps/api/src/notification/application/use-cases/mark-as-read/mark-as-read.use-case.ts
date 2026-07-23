@@ -1,12 +1,15 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { Notification } from "../../../domain/entities/notification.entity";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 
 /**
  * 단일 알림 읽음 처리 유스케이스.
@@ -21,7 +24,8 @@ export class MarkAsReadUseCase {
 	constructor(
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
-		private readonly cacheService: CacheService,
+		@Inject(NOTIFICATION_CACHE)
+		private readonly cache: NotificationCachePort,
 	) {}
 
 	async execute(userId: string, notificationId: number): Promise<void> {
@@ -44,7 +48,7 @@ export class MarkAsReadUseCase {
 			userId,
 		);
 		if (changed) {
-			await this.cacheService.invalidateUnreadCount(userId);
+			await this.cache.invalidateUnreadCount(userId);
 		}
 
 		this.#logger.debug(`Notification read processed: id=${notificationId}`);

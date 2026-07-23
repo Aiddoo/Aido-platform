@@ -6,11 +6,15 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { createNotificationCacheMock } from "@test/mocks/ports";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 import {
 	PUSH_PROVIDER,
 	type PushProvider,
@@ -26,17 +30,18 @@ describe("RegisterPushTokenUseCase", () => {
 	let repository: Mocked<NotificationRepositoryPort>;
 	let pushProvider: Mocked<PushProvider>;
 	let userSettings: Mocked<UserNotificationSettingsPort>;
-	let cacheService: Mocked<CacheService>;
+	let cache: Mocked<NotificationCachePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			RegisterPushTokenUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(RegisterPushTokenUseCase)
+			.mock<NotificationCachePort>(NOTIFICATION_CACHE)
+			.impl(() => createNotificationCacheMock())
+			.compile();
 		useCase = unit;
 		repository = unitRef.get(NOTIFICATION_REPOSITORY);
 		pushProvider = unitRef.get(PUSH_PROVIDER);
 		userSettings = unitRef.get(USER_NOTIFICATION_SETTINGS);
-		cacheService = unitRef.get(CacheService);
+		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 	});
 
 	it("토큰 형식이 유효하지 않으면 NOTIFICATION_1001을 던지고 저장하지 않는다", async () => {
@@ -58,10 +63,10 @@ describe("RegisterPushTokenUseCase", () => {
 		await useCase.execute({ userId: "user-1", token: "good", platform: "IOS" });
 
 		expect(repository.registerPushToken).toHaveBeenCalledTimes(1);
-		expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
+		expect(cache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		expect(userSettings.upsertPushTimezone).not.toHaveBeenCalled();
 		expect(userSettings.upsertPushLocale).not.toHaveBeenCalled();
-		expect(cacheService.invalidateUserPreference).not.toHaveBeenCalled();
+		expect(cache.invalidateUserPreference).not.toHaveBeenCalled();
 	});
 
 	it("timezone/locale 있으면 preference upsert + 무효화한다", async () => {
@@ -80,9 +85,7 @@ describe("RegisterPushTokenUseCase", () => {
 			"Asia/Seoul",
 		);
 		expect(userSettings.upsertPushLocale).toHaveBeenCalledWith("user-1", "ko");
-		expect(cacheService.invalidateUserPreference).toHaveBeenCalledWith(
-			"user-1",
-		);
+		expect(cache.invalidateUserPreference).toHaveBeenCalledWith("user-1");
 	});
 
 	it("잘못된 IANA 타임존은 토큰과 preference 어디에도 저장하지 않는다", async () => {
@@ -99,6 +102,6 @@ describe("RegisterPushTokenUseCase", () => {
 			expect.objectContaining({ timezone: undefined }),
 		);
 		expect(userSettings.upsertPushTimezone).not.toHaveBeenCalled();
-		expect(cacheService.invalidateUserPreference).not.toHaveBeenCalled();
+		expect(cache.invalidateUserPreference).not.toHaveBeenCalled();
 	});
 });

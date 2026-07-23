@@ -2,11 +2,14 @@ import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 import type { RegisterPushTokenData } from "../../ports/notification-data";
 import {
 	PUSH_PROVIDER,
@@ -33,7 +36,8 @@ export class RegisterPushTokenUseCase {
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
 		@Inject(USER_NOTIFICATION_SETTINGS)
 		private readonly userSettings: UserNotificationSettingsPort,
-		private readonly cacheService: CacheService,
+		@Inject(NOTIFICATION_CACHE)
+		private readonly cache: NotificationCachePort,
 	) {}
 
 	async execute(data: RegisterPushTokenData): Promise<void> {
@@ -45,7 +49,7 @@ export class RegisterPushTokenUseCase {
 
 		const timezone = normalizeIanaTimezone(data.timezone) ?? undefined;
 		await this.notificationRepository.registerPushToken({ ...data, timezone });
-		await this.cacheService.invalidatePushTokens(data.userId);
+		await this.cache.invalidatePushTokens(data.userId);
 
 		if (timezone) {
 			await this.userSettings.upsertPushTimezone(data.userId, timezone);
@@ -56,7 +60,7 @@ export class RegisterPushTokenUseCase {
 		}
 
 		if (timezone || data.locale) {
-			await this.cacheService.invalidateUserPreference(data.userId);
+			await this.cache.invalidateUserPreference(data.userId);
 		}
 
 		this.#logger.log(

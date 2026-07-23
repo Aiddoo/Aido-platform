@@ -25,9 +25,11 @@ import { DatabaseService } from "@/shared/infrastructure/database/database.servi
 import { REMINDER_SCHEDULE_ENQUEUER } from "@/user-settings/application/ports/reminder-schedule.enqueuer.port";
 import { USER_CONSENT_REPOSITORY } from "@/user-settings/application/ports/user-consent.repository.port";
 import { USER_PREFERENCE_REPOSITORY } from "@/user-settings/application/ports/user-preference.repository.port";
+import { USER_SETTINGS_CACHE } from "@/user-settings/application/ports/user-settings-cache.port";
 import { GetPreferenceUseCase } from "@/user-settings/application/use-cases/get-preference/get-preference.use-case";
 import { UpdateMarketingConsentUseCase } from "@/user-settings/application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
 import { UpdatePreferenceUseCase } from "@/user-settings/application/use-cases/update-preference/update-preference.use-case";
+import { UserSettingsCacheAdapter } from "@/user-settings/infrastructure/adapters/user-settings-cache.adapter";
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 
@@ -98,6 +100,8 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 				},
 				{ provide: EntitlementService, useValue: mockEntitlementService },
 				{ provide: CacheService, useValue: mockCacheService },
+				// application은 USER_SETTINGS_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
+				{ provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
 				{ provide: REMINDER_SCHEDULE_ENQUEUER, useValue: mockReminderEnqueuer },
 			],
 		}).compile();

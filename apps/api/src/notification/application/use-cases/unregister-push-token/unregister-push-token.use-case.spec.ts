@@ -6,26 +6,31 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createNotificationCacheMock } from "@test/mocks/ports";
 import { Prisma } from "@/generated/prisma/client";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 import { UnregisterPushTokenUseCase } from "./unregister-push-token.use-case";
 
 describe("UnregisterPushTokenUseCase", () => {
 	let useCase: UnregisterPushTokenUseCase;
 	let repository: Mocked<NotificationRepositoryPort>;
-	let cacheService: Mocked<CacheService>;
+	let cache: Mocked<NotificationCachePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UnregisterPushTokenUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(UnregisterPushTokenUseCase)
+			.mock<NotificationCachePort>(NOTIFICATION_CACHE)
+			.impl(() => createNotificationCacheMock())
+			.compile();
 		useCase = unit;
 		repository = unitRef.get(NOTIFICATION_REPOSITORY);
-		cacheService = unitRef.get(CacheService);
+		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 	});
 
 	it("deviceId가 있으면 단건 해제 + 캐시 무효화", async () => {
@@ -35,7 +40,7 @@ describe("UnregisterPushTokenUseCase", () => {
 			"user-1",
 			"device-1",
 		);
-		expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
+		expect(cache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		expect(repository.deleteAllPushTokensByUser).not.toHaveBeenCalled();
 	});
 
@@ -58,7 +63,7 @@ describe("UnregisterPushTokenUseCase", () => {
 		await useCase.execute("user-1");
 
 		expect(repository.deleteAllPushTokensByUser).toHaveBeenCalledWith("user-1");
-		expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
+		expect(cache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		expect(repository.deletePushToken).not.toHaveBeenCalled();
 	});
 });
