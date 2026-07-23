@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { NotificationMessageBuilder } from "@/notification";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { RETENTION_CAMPAIGN_KEY } from "../../../domain/retention.constants";
 import { retentionPushSkipReason } from "../../../domain/services/push-eligibility";
-import { buildRetentionMessage } from "../../../domain/services/retention-message";
 import {
 	decideRetentionStage,
 	localDateString,
@@ -116,7 +116,7 @@ export class ProcessRetentionStagesUseCase {
 				return;
 			}
 
-			const message = buildRetentionMessage(
+			const message = NotificationMessageBuilder.retention(
 				candidate.stage,
 				decision.variantId,
 				candidate.locale,

@@ -897,3 +897,131 @@ export const WEATHER_FALLBACK: WeatherFallbackTemplates = {
 		body: "Set your location and planning tomorrow gets way easier",
 	},
 };
+
+/**
+ * 신규 유저 리텐션(D0/D1/D3/D7) 카피 (en).
+ *
+ * 키·variant 수·type·route는 ko와 반드시 동일해야 한다(locale-parity.spec).
+ */
+export const RETENTION_TEMPLATES: Record<string, NotificationTemplate> = {
+	"D0:d0_no_todo": {
+		title: "Ready for your first task? 🌱",
+		body: "Write down one thing on your mind",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "Ready for your first task? 🌱",
+				body: "Write down one thing on your mind",
+			},
+			{
+				title: "Add your first plan ✍️",
+				body: "One small task is enough to begin",
+			},
+			{
+				title: "Start with one small thing ☀️",
+				body: "Add what matters most today",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D1:d1_no_todo": {
+		title: "Pick one task for today 📝",
+		body: "A small plan can shape your whole day",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "Pick one task for today 📝",
+				body: "A small plan can shape your whole day",
+			},
+			{
+				title: "What will you start with? ☀️",
+				body: "Add the easiest thing on your mind",
+			},
+			{
+				title: "Add the first task to your list 🌱",
+				body: "One plan can make today feel clearer",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D1:d1_has_todo_no_completion": {
+		title: "Start with one task ✅",
+		body: "Choose the easiest one and check it off",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "Start with one task ✅",
+				body: "Choose the easiest one and check it off",
+			},
+			{
+				title: "Ready for your first check? 🌱",
+				body: "Start with something that takes five minutes",
+			},
+			{
+				title: "Your first check is waiting 👀",
+				body: "Finishing one small thing builds momentum",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D3:d3_restart": {
+		title: "You can restart today 🌱",
+		body: "Add one thing that matters right now",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "You can restart today 🌱",
+				body: "Add one thing that matters right now",
+			},
+			{
+				title: "Plans can always change ✨",
+				body: "Start with what you can do today",
+			},
+			{
+				title: "Build your rhythm again ☀️",
+				body: "One easy task is enough to begin",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D7:d7_has_progress": {
+		title: "Your first week is taking shape 🎉",
+		body: "See the progress you made this week",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "Your first week is taking shape 🎉",
+				body: "See the progress you made this week",
+			},
+			{
+				title: "Your weekly rhythm is visible 📊",
+				body: "Review everything you checked off",
+			},
+			{
+				title: "You made it through week one ✨",
+				body: "See what you accomplished at a glance",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D7:d7_restart": {
+		title: "Restart this week with one thing 🌱",
+		body: "Add the task you need most right now",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "Restart this week with one thing 🌱",
+				body: "Add the task you need most right now",
+			},
+			{
+				title: "Open the week with a small plan ☀️",
+				body: "One doable task is enough",
+			},
+			{
+				title: "Today is a good day to restart ✨",
+				body: "Begin with a plan that feels light",
+			},
+		],
+	} satisfies NotificationTemplate,
+};

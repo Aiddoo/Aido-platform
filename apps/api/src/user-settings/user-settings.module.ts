@@ -17,6 +17,7 @@ import { GetPreferenceUseCase } from "./application/use-cases/get-preference/get
 import { GetPreferenceRecordUseCase } from "./application/use-cases/get-preference-record/get-preference-record.use-case";
 import { GetPreferenceRecordsUseCase } from "./application/use-cases/get-preference-records/get-preference-records.use-case";
 import { OnTodoToggledUseCase } from "./application/use-cases/on-todo-toggled/on-todo-toggled.use-case";
+import { RefreshPushTimezoneUseCase } from "./application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
 import { SeedUserSettingsUseCase } from "./application/use-cases/seed-user-settings/seed-user-settings.use-case";
 import { UpdateMarketingConsentUseCase } from "./application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
 import { UpdateMarketingPushConsentUseCase } from "./application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case";
@@ -29,6 +30,7 @@ import { UserSettingsCacheAdapter } from "./infrastructure/adapters/user-setting
 import { PrismaTodoCompletionStatsReader } from "./infrastructure/persistence/prisma-todo-completion-stats.reader";
 import { UserConsentRepository } from "./infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "./infrastructure/persistence/user-preference.repository";
+import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/timezone-self-heal.interceptor";
 import { SettingsController } from "./presentation/user-settings.controller";
 
 @Module({
@@ -44,7 +46,9 @@ import { SettingsController } from "./presentation/user-settings.controller";
 		OnTodoToggledUseCase,
 		SeedUserSettingsUseCase,
 		UpsertPushTimezoneUseCase,
+		RefreshPushTimezoneUseCase,
 		UpsertPushLocaleUseCase,
+		TimezoneSelfHealInterceptor,
 		GetPreferenceRecordUseCase,
 		GetPreferenceRecordsUseCase,
 		GetConsentRecordUseCase,
@@ -72,6 +76,6 @@ import { SettingsController } from "./presentation/user-settings.controller";
 		// 조회 캐시 포트 (application → CacheService 직접 의존 역전)
 		{ provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
 	],
-	exports: [UserSettingsFacade],
+	exports: [UserSettingsFacade, TimezoneSelfHealInterceptor],
 })
 export class UserSettingsModule {}

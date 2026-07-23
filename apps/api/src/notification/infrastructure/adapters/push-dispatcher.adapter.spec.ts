@@ -166,6 +166,61 @@ describe("PushDispatcherAdapter", () => {
 
 	afterEach(() => jest.useRealTimers());
 
+	describe("배송 타임존 폴백 (미상 유저 KST 게이트)", () => {
+		// 2026-07-16T14:00:00Z = KST 23:00(야간) / UTC 14:00(주간) / New_York 10:00(주간)
+		const KST_NIGHT_UTC_DAY = new Date("2026-07-16T14:00:00.000Z");
+
+		it("미상(UTC 저장) 유저는 KST 야간이면 야간 게이트로 차단된다", async () => {
+			jest.useFakeTimers().setSystemTime(KST_NIGHT_UTC_DAY);
+			userSettings.getPreferenceRecord.mockResolvedValue({
+				...makePreference("user-1", "UTC"),
+				nightPushEnabled: false,
+			});
+			rateLimiter.isRateLimited.mockResolvedValue(false);
+
+			const result = await adapter.shouldSendPush("user-1", "FOLLOW_NEW");
+
+			expect(result).toBe(false);
+		});
+
+		it("실제 해외 타임존 유저는 자기 로컬 시간 기준으로 판정되어 KST로 오분류되지 않는다", async () => {
+			jest.useFakeTimers().setSystemTime(KST_NIGHT_UTC_DAY);
+			userSettings.getPreferenceRecord.mockResolvedValue({
+				...makePreference("user-1", "America/New_York"),
+				nightPushEnabled: false,
+			});
+			rateLimiter.isRateLimited.mockResolvedValue(false);
+			rateLimiter.isEngagementRateLimited.mockResolvedValue(false);
+
+			const result = await adapter.shouldSendPush("user-1", "FOLLOW_NEW");
+
+			expect(result).toBe(true);
+		});
+
+		it("직교성: locale만 다른 두 유저(한국 tz)의 발송 자격은 동일하다 — 언어는 법적 게이트에 영향 없음", async () => {
+			// 영어를 쓰는 한국 유저(locale=en, tz=Asia/Seoul)도 KST 야간 게이트가 동일 적용된다
+			jest.useFakeTimers().setSystemTime(KST_NIGHT_UTC_DAY); // KST 23:00
+			rateLimiter.isRateLimited.mockResolvedValue(false);
+
+			userSettings.getPreferenceRecord.mockResolvedValueOnce({
+				...makePreference("u-ko", "Asia/Seoul"),
+				locale: "ko",
+				nightPushEnabled: false,
+			});
+			const ko = await adapter.shouldSendPush("u-ko", "FOLLOW_NEW");
+
+			userSettings.getPreferenceRecord.mockResolvedValueOnce({
+				...makePreference("u-en", "Asia/Seoul"),
+				locale: "en",
+				nightPushEnabled: false,
+			});
+			const en = await adapter.shouldSendPush("u-en", "FOLLOW_NEW");
+
+			expect(ko).toBe(en);
+			expect(ko).toBe(false); // KST 야간이므로 언어와 무관하게 둘 다 차단
+		});
+	});
+
 	it("설정 미존재(기본값 pushEnabled=false)면 발송하지 않고 rate limit도 조회하지 않는다", async () => {
 		userSettings.getPreferenceRecord.mockResolvedValue(null);
 

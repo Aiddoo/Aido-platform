@@ -1,4 +1,4 @@
-import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+import { resolveDeliveryTimezone } from "@/shared/domain/date/utils/timezone";
 
 export interface RetentionPushEligibilityInput {
 	readonly pushEnabled: boolean;
@@ -20,8 +20,9 @@ export function retentionPushSkipReason(
 }
 
 function localHour(date: Date, timezone: string): number {
+	// 마케팅 quiet-hours는 지역 기준 — 미상(UTC) 유저는 KST로 폴백해 판정
 	const parts = new Intl.DateTimeFormat("en-US", {
-		timeZone: resolveTimezone(timezone),
+		timeZone: resolveDeliveryTimezone(timezone),
 		hour: "2-digit",
 		hourCycle: "h23",
 	}).formatToParts(date);

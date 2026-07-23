@@ -13,6 +13,7 @@ export function createUserPreferenceRepositoryMock(): UserPreferenceRepositoryPo
 		create: jest.fn(),
 		upsert: jest.fn(),
 		upsertTimezone: jest.fn(),
+		refreshTimezoneIfChanged: jest.fn(),
 		upsertLocale: jest.fn(),
 		updateStreak: jest.fn(),
 	};

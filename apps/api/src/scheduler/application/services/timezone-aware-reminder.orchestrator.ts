@@ -5,8 +5,8 @@ import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 import {
 	FIRST_DAY_OF_MONTH,
+	isWithinScheduleWindow,
 	MONDAY,
-	matchesScheduleTime,
 	NOTIFICATION_SCHEDULE,
 } from "../../domain/services/notification-schedule";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -203,7 +203,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 
 		await this.morningReminder.execute(ctx);
 		if (
-			matchesScheduleTime(
+			isWithinScheduleWindow(
 				NOTIFICATION_SCHEDULE.ONBOARDING,
 				localHour,
 				localMinute,
@@ -225,7 +225,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 		const dayOfMonth = local.date();
 		const isMonthlyReportTime =
 			dayOfMonth === FIRST_DAY_OF_MONTH &&
-			matchesScheduleTime(
+			isWithinScheduleWindow(
 				NOTIFICATION_SCHEDULE.MONTHLY_REPORT,
 				localHour,
 				localMinute,
@@ -234,7 +234,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 			await this.monthlyReport.execute(ctx);
 		} else if (
 			dayOfWeek === MONDAY &&
-			matchesScheduleTime(
+			isWithinScheduleWindow(
 				NOTIFICATION_SCHEDULE.WEEKLY_REPORT,
 				localHour,
 				localMinute,
@@ -246,7 +246,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 		// 월요일 11:30: 무료 사용자 주간 달성 요약 (전략 내부에서 구독 대상 분리)
 		if (
 			dayOfWeek === MONDAY &&
-			matchesScheduleTime(
+			isWithinScheduleWindow(
 				NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT,
 				localHour,
 				localMinute,
@@ -257,14 +257,18 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 
 		// 로컬 16:00: Win-back
 		if (
-			matchesScheduleTime(NOTIFICATION_SCHEDULE.WINBACK, localHour, localMinute)
+			isWithinScheduleWindow(
+				NOTIFICATION_SCHEDULE.WINBACK,
+				localHour,
+				localMinute,
+			)
 		) {
 			await this.winback.execute(ctx);
 		}
 
 		// 로컬 15:00: 콕 찌르기 유도
 		if (
-			matchesScheduleTime(
+			isWithinScheduleWindow(
 				NOTIFICATION_SCHEDULE.NUDGE_SUGGEST,
 				localHour,
 				localMinute,
@@ -275,7 +279,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 
 		// 로컬 12:30: 점심 넛지
 		if (
-			matchesScheduleTime(
+			isWithinScheduleWindow(
 				NOTIFICATION_SCHEDULE.LUNCH_NUDGE,
 				localHour,
 				localMinute,
@@ -286,7 +290,7 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 
 		// 로컬 20:15: 스트릭 위기 (야간 21:00 시작 전 마지막 넛지)
 		if (
-			matchesScheduleTime(
+			isWithinScheduleWindow(
 				NOTIFICATION_SCHEDULE.STREAK_AT_RISK,
 				localHour,
 				localMinute,
