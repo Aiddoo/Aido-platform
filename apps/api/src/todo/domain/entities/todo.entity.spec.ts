@@ -7,6 +7,7 @@
 import { ErrorCode } from "@aido/errors";
 import { TODO_ITEM_LIMITS } from "@aido/validators";
 import { DomainException } from "@/shared/domain";
+import { TodoCategoryChangedEvent } from "../events/todo-category-changed.event";
 import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
 import { TodoToggledEvent } from "../events/todo-toggled.event";
@@ -445,16 +446,24 @@ describe("Todo — 할 일 애그리게잇", () => {
 			expect(todo.pullDomainEvents()).toHaveLength(0);
 		});
 
-		it("카테고리를 변경하고 이벤트는 적립하지 않는다", () => {
+		it("카테고리를 변경하고 TodoCategoryChangedEvent를 적립한다 (일별 완료 색상 집계 캐시 무효화)", () => {
 			// Given
-			const todo = Todo.reconstitute(buildProps({ categoryId: 1 }));
+			const todo = Todo.reconstitute(
+				buildProps({ id: TodoId.create(3), userId: "user-1", categoryId: 1 }),
+			);
 
 			// When
 			todo.changeCategory(7);
 
 			// Then
 			expect(todo.toPersistence().categoryId).toBe(7);
-			expect(todo.pullDomainEvents()).toHaveLength(0);
+			const event = todo.pullDomainEvents()[0];
+			expect(event).toBeInstanceOf(TodoCategoryChangedEvent);
+			if (event instanceof TodoCategoryChangedEvent) {
+				expect(event.todoId).toBe(3);
+				expect(event.userId).toBe("user-1");
+				expect(event.categoryId).toBe(7);
+			}
 		});
 	});
 
