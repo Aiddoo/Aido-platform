@@ -183,8 +183,27 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				expect(winback.execute).toHaveBeenCalledTimes(1);
 			});
 
-			it("로컬 16:01에는 Win-back Strategy를 호출하지 않는다", async () => {
-				jest.setSystemTime(new Date("2024-01-16T07:01:00Z"));
+			it("로컬 16:01(grace 안)에도 Win-back Strategy를 캐치업 호출한다", async () => {
+				// sweep 한 분이 지연/누락돼도 16:00~16:02 사이면 발송(멱등)
+				jest.setSystemTime(new Date("2024-01-16T07:01:00Z")); // KST 16:01
+				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
+
+				await orchestrator.handleMinuteSweep();
+
+				expect(winback.execute).toHaveBeenCalledTimes(1);
+			});
+
+			it("로컬 15:59(슬롯 직전)에는 Win-back Strategy를 호출하지 않는다", async () => {
+				jest.setSystemTime(new Date("2024-01-16T06:59:00Z")); // KST 15:59
+				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
+
+				await orchestrator.handleMinuteSweep();
+
+				expect(winback.execute).not.toHaveBeenCalled();
+			});
+
+			it("로컬 16:03(grace 경계, 배타)에는 Win-back Strategy를 호출하지 않는다", async () => {
+				jest.setSystemTime(new Date("2024-01-16T07:03:00Z")); // KST 16:03
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 
 				await orchestrator.handleMinuteSweep();

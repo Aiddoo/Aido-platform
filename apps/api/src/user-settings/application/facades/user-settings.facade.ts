@@ -19,6 +19,7 @@ import { GetPreferenceUseCase } from "../use-cases/get-preference/get-preference
 import { GetPreferenceRecordUseCase } from "../use-cases/get-preference-record/get-preference-record.use-case";
 import { GetPreferenceRecordsUseCase } from "../use-cases/get-preference-records/get-preference-records.use-case";
 import { OnTodoToggledUseCase } from "../use-cases/on-todo-toggled/on-todo-toggled.use-case";
+import { RefreshPushTimezoneUseCase } from "../use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
 import { SeedUserSettingsUseCase } from "../use-cases/seed-user-settings/seed-user-settings.use-case";
 import { UpdateMarketingConsentUseCase } from "../use-cases/update-marketing-consent/update-marketing-consent.use-case";
 import { UpdateMarketingPushConsentUseCase } from "../use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case";
@@ -53,6 +54,7 @@ export class UserSettingsFacade {
 		private readonly onTodoToggledUseCase: OnTodoToggledUseCase,
 		private readonly seedUserSettingsUseCase: SeedUserSettingsUseCase,
 		private readonly upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase,
+		private readonly refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase,
 		private readonly upsertPushLocaleUseCase: UpsertPushLocaleUseCase,
 		private readonly getPreferenceRecordUseCase: GetPreferenceRecordUseCase,
 		private readonly getPreferenceRecordsUseCase: GetPreferenceRecordsUseCase,
@@ -111,6 +113,17 @@ export class UserSettingsFacade {
 	/** 푸시 토큰 등록 시 타임존 upsert (notification). */
 	upsertPushTimezone(userId: string, timezone: string): Promise<void> {
 		return this.upsertPushTimezoneUseCase.execute(userId, timezone);
+	}
+
+	/**
+	 * 타임존 자가치유 — 저장값과 다를 때만 갱신 (인증 요청 X-Timezone 헤더 기반, 핫패스).
+	 * 신규 행 생성/무조건 캐시 무효화가 없어 upsertPushTimezone과 구분된다.
+	 */
+	refreshPushTimezoneIfChanged(
+		userId: string,
+		timezone: string,
+	): Promise<void> {
+		return this.refreshPushTimezoneUseCase.execute(userId, timezone);
 	}
 
 	/** 푸시 토큰 등록 시 로케일 upsert (notification). */

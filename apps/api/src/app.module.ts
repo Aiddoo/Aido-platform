@@ -50,7 +50,10 @@ import {
 import { SubscriptionModule } from "@/subscription";
 import { TodoModule } from "@/todo";
 import { TodoCategoryModule } from "@/todo-category";
-import { UserSettingsModule } from "@/user-settings";
+import {
+	TimezoneSelfHealInterceptor,
+	UserSettingsModule,
+} from "@/user-settings";
 import { WeatherModule } from "@/weather/weather.module";
 import { WeeklyAchievementModule } from "@/weekly-achievement";
 import { AppController } from "./app.controller";
@@ -157,6 +160,10 @@ import { AppService } from "./app.service";
 		{
 			provide: APP_INTERCEPTOR,
 			useExisting: LastActiveInterceptor,
+		},
+		{
+			provide: APP_INTERCEPTOR,
+			useExisting: TimezoneSelfHealInterceptor,
 		},
 	],
 })

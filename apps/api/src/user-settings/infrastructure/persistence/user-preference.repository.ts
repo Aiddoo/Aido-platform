@@ -201,6 +201,23 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	}
 
 	/**
+	 * 저장된 타임존이 다를 때만 갱신 (자가치유 핫패스용).
+	 *
+	 * updateMany는 매칭 0행이면 no-op — 값이 같거나 설정 행이 없으면 쓰기가 발생하지 않는다.
+	 * 갱신된 행 수를 반환해 호출자가 캐시 무효화 여부를 결정한다.
+	 */
+	async refreshTimezoneIfChanged(
+		userId: string,
+		timezone: string,
+	): Promise<number> {
+		const result = await this.client.userPreference.updateMany({
+			where: { userId, timezone: { not: timezone } },
+			data: { timezone },
+		});
+		return result.count;
+	}
+
+	/**
 	 * 사용자 푸시 언어 upsert (없으면 생성, 있으면 갱신) — 토큰 등록 시 Accept-Language 동기화
 	 */
 	async upsertLocale(userId: string, locale: string): Promise<void> {

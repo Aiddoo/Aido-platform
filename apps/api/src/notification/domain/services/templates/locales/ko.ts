@@ -822,3 +822,133 @@ export const WEATHER_FALLBACK: WeatherFallbackTemplates = {
 		body: "위치 설정하면 내일 계획 세우기 훨씬 편해져",
 	},
 };
+
+/**
+ * 신규 유저 리텐션(D0/D1/D3/D7) 카피.
+ *
+ * 키는 `${stage}:${variantId}` 형식이며, 값은 결정적으로 선택되는 3개 variant 풀이다.
+ * `NotificationMessageBuilder.retention(stage, variantId, locale, context)`가 사용한다.
+ * (기존 retention-message.ts의 단일-원본을 이관 — 두 번째 카탈로그 제거)
+ */
+export const RETENTION_TEMPLATES: Record<string, NotificationTemplate> = {
+	"D0:d0_no_todo": {
+		title: "첫 할 일을 시작해볼까? 🌱",
+		body: "지금 떠오르는 한 가지만 적어봐",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "첫 할 일을 시작해볼까? 🌱",
+				body: "지금 떠오르는 한 가지만 적어봐",
+			},
+			{
+				title: "오늘의 첫 계획을 적어봐 ✍️",
+				body: "작은 할 일 하나면 시작하기 충분해",
+			},
+			{
+				title: "가볍게 하나부터 시작하자 ☀️",
+				body: "오늘 꼭 하고 싶은 일을 적어봐",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D1:d1_no_todo": {
+		title: "오늘 할 일 하나만 정해볼까? 📝",
+		body: "작은 계획 하나가 하루의 흐름을 만들어줘",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "오늘 할 일 하나만 정해볼까? 📝",
+				body: "작은 계획 하나가 하루의 흐름을 만들어줘",
+			},
+			{
+				title: "오늘은 무엇부터 해볼까? ☀️",
+				body: "가장 쉬운 일 하나를 먼저 적어봐",
+			},
+			{
+				title: "빈 목록에 첫 할 일을 더해봐 🌱",
+				body: "하나만 정해도 오늘이 훨씬 선명해져",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D1:d1_has_todo_no_completion": {
+		title: "적어둔 일, 하나부터 시작하자 ✅",
+		body: "가장 쉬운 할 일을 골라 완료해봐",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "적어둔 일, 하나부터 시작하자 ✅",
+				body: "가장 쉬운 할 일을 골라 완료해봐",
+			},
+			{
+				title: "첫 완료를 만들어볼까? 🌱",
+				body: "5분이면 되는 일부터 가볍게 시작해봐",
+			},
+			{
+				title: "오늘의 첫 체크를 기다리는 중 👀",
+				body: "작은 일 하나를 끝내면 흐름이 생겨",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D3:d3_restart": {
+		title: "오늘부터 다시 시작해도 돼 🌱",
+		body: "지금 필요한 일 하나만 새로 적어봐",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "오늘부터 다시 시작해도 돼 🌱",
+				body: "지금 필요한 일 하나만 새로 적어봐",
+			},
+			{
+				title: "계획은 언제든 다시 세울 수 있어 ✨",
+				body: "오늘 할 수 있는 만큼만 시작하자",
+			},
+			{
+				title: "가볍게 흐름을 다시 만들어보자 ☀️",
+				body: "가장 쉬운 할 일 하나면 충분해",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D7:d7_has_progress": {
+		title: "첫 주의 기록이 쌓였어 🎉",
+		body: "이번 주에 만든 변화를 확인해봐",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "첫 주의 기록이 쌓였어 🎉",
+				body: "이번 주에 만든 변화를 확인해봐",
+			},
+			{
+				title: "일주일 동안 만든 흐름이 보여 📊",
+				body: "지금까지의 완료 기록을 살펴봐",
+			},
+			{
+				title: "첫 주를 함께 달렸어 ✨",
+				body: "네가 해낸 일들을 한눈에 확인해봐",
+			},
+		],
+	} satisfies NotificationTemplate,
+	"D7:d7_restart": {
+		title: "이번 주, 하나부터 다시 시작하자 🌱",
+		body: "지금 필요한 할 일 하나만 적어봐",
+		type: "SYSTEM_NOTICE",
+		defaultRoute: null,
+		variants: [
+			{
+				title: "이번 주, 하나부터 다시 시작하자 🌱",
+				body: "지금 필요한 할 일 하나만 적어봐",
+			},
+			{
+				title: "새로운 한 주를 가볍게 열어봐 ☀️",
+				body: "오늘 할 수 있는 일 하나면 충분해",
+			},
+			{
+				title: "다시 시작하기 좋은 날이야 ✨",
+				body: "부담 없이 작은 계획부터 세워보자",
+			},
+		],
+	} satisfies NotificationTemplate,
+};

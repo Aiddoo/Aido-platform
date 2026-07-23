@@ -752,6 +752,42 @@ export class NotificationMessageBuilder {
 		return { title: template.title, body: template.body };
 	}
 
+	/**
+	 * 신규 유저 리텐션(D0/D1/D3/D7) 알림 메시지 생성.
+	 *
+	 * 기존 retention-message.ts를 통합한 것으로, 선택 로직을 **바이트 동일**하게 보존한다:
+	 * - 시드: `${stage}:${variantId}\u0000recipientId\u0000occurrenceKey`
+	 * - 결과 variantId 형식: `${variantId}.v${n}`
+	 * 이로써 기존 유저가 받던 카피·분석 ID가 통합 후에도 변하지 않는다.
+	 *
+	 * @param stage 리텐션 단계 (예: "D1")
+	 * @param variantId 단계 내 분기 키 (예: "d1_no_todo")
+	 */
+	static retention(
+		stage: string,
+		variantId: string,
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		context?: { readonly recipientId: string; readonly occurrenceKey: string },
+	): NotificationMessage {
+		const key = `${stage}:${variantId}`;
+		const group = LOCALE_TEMPLATES[locale].RETENTION_TEMPLATES;
+		const template = group[key] ?? group["D3:d3_restart"];
+		const pool = template?.variants ?? [];
+		const index =
+			context && pool.length > 0
+				? deterministicIndex(
+						`${key}\u0000${context.recipientId}\u0000${context.occurrenceKey}`,
+						pool.length,
+					)
+				: 0;
+		const picked = pool[index];
+		return {
+			title: picked?.title ?? template?.title ?? "",
+			body: picked?.body ?? template?.body ?? "",
+			variantId: `${variantId}.v${index + 1}`,
+		};
+	}
+
 	// =============================================
 	// Weather
 	// =============================================

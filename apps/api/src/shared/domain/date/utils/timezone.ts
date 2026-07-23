@@ -3,6 +3,15 @@ import { now } from "./core";
 
 const DEFAULT_TIMEZONE = "UTC";
 
+/**
+ * 알림 배송·자격 판정 전용 폴백 타임존.
+ *
+ * Aido는 한국 우선 서비스라 타임존 미상(헤더 미수신) 유저는 대부분 KST다.
+ * 이 상수는 날씨/야간광고 게이트 등 "발송 시각·법적 창"을 판정하는 경로에서만
+ * 쓰고, 일반 날짜경계 수학(resolveTimezone→UTC)에는 절대 쓰지 않는다.
+ */
+export const DEFAULT_DELIVERY_TIMEZONE = "Asia/Seoul";
+
 /** 신뢰할 수 없는 값을 런타임이 지원하는 정규 IANA 타임존으로 변환한다. */
 export function normalizeIanaTimezone(value: unknown): string | null {
 	if (typeof value !== "string" || value.trim().length === 0) return null;
@@ -18,6 +27,26 @@ export function normalizeIanaTimezone(value: unknown): string | null {
 /** 잘못 저장된 레거시 값도 스케줄러를 중단시키지 않도록 UTC로 격리한다. */
 export function resolveTimezone(value: unknown): string {
 	return normalizeIanaTimezone(value) ?? DEFAULT_TIMEZONE;
+}
+
+/**
+ * 알림 배송/자격 판정용 타임존 해석.
+ *
+ * `resolveTimezone`과 달리, 미상(무효/누락) 및 저장 기본값 "UTC"를
+ * 한국(KST)으로 폴백한다. 이유: 앱이 매 인증요청에 실제 `X-Timezone`를 보내므로
+ * 잔존 "UTC"는 사실상 "헤더를 못 받아 기본값에 머문 미상" 유저이고, 한국 우선
+ * 서비스에서 이들의 발송 시각·야간광고(정보통신망법 21:00–08:00 KST) 게이트를
+ * KST로 판정하는 것이 안전하다. 진짜 UTC 유저는 다음 요청의 자가치유로 교정된다.
+ *
+ * ⚠️ 이 함수는 알림 배송·자격·야간게이트 경로에서만 사용한다.
+ * 일반 날짜경계 수학은 `resolveTimezone`(→UTC)을 유지한다.
+ */
+export function resolveDeliveryTimezone(value: unknown): string {
+	const normalized = normalizeIanaTimezone(value);
+	if (normalized === null || normalized === DEFAULT_TIMEZONE) {
+		return DEFAULT_DELIVERY_TIMEZONE;
+	}
+	return normalized;
 }
 
 /**
