@@ -18,8 +18,13 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
+import { TodoCategoryChangedEvent } from "../../../domain/events/todo-category-changed.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
@@ -73,6 +78,7 @@ describe("ChangeTodoCategoryUseCase — 할 일 카테고리 변경 핸들러", 
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 	let categoryOwnership: Mocked<CategoryOwnershipPort>;
 	let todoCache: Mocked<TodoCachePort>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(ChangeTodoCategoryUseCase)
@@ -86,6 +92,8 @@ describe("ChangeTodoCategoryUseCase — 할 일 카테고리 변경 핸들러", 
 			.impl(() => createCategoryOwnershipMock())
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn() }))
 			.compile();
 
 		useCase = unit;
@@ -94,6 +102,9 @@ describe("ChangeTodoCategoryUseCase — 할 일 카테고리 변경 핸들러", 
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
 	it("활성(미완료) 할 일은 TX 안에서 한도 체크 후 이동하고 캐시를 무효화한다", async () => {
@@ -121,6 +132,21 @@ describe("ChangeTodoCategoryUseCase — 할 일 카테고리 변경 핸들러", 
 		expect(todoRepository.updateCategory).toHaveBeenCalledWith(1, 2);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 		expect(result.id).toBe(1);
+	});
+
+	it("카테고리 변경 후 TodoCategoryChangedEvent를 발행한다 (daily-completion 캐시 무효화 트리거)", async () => {
+		// Given
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
+		todoRepository.countActiveByCategory.mockResolvedValue(0);
+		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+
+		// When
+		await useCase.execute({ id: 1, userId: "user-123", categoryId: 2 });
+
+		// Then - 커밋 후 카테고리 변경 이벤트 발행 (색상 집계 캐시 스테일 방지)
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
+			new TodoCategoryChangedEvent(1, "user-123", 2),
+		]);
 	});
 
 	it("대상 카테고리가 가득 차면 ApplicationException(TODO_0811)을 던진다", async () => {

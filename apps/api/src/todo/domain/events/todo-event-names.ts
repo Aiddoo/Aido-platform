@@ -10,4 +10,5 @@ export const TODO_EVENTS = {
 	DELETED: "todo.deleted",
 	TOGGLED: "todo.toggled",
 	RESCHEDULED: "todo.rescheduled",
+	CATEGORY_CHANGED: "todo.category-changed",
 } as const;

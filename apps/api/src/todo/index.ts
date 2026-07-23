@@ -8,6 +8,7 @@
  */
 export { TodoFacade } from "./application/facades/todo.facade";
 export type { CreateRecurringTodosResult } from "./application/use-cases/create-recurring-todos/create-recurring-todos.use-case";
+export * from "./domain/events/todo-category-changed.event";
 export * from "./domain/events/todo-created.event";
 export * from "./domain/events/todo-deleted.event";
 export * from "./domain/events/todo-event-names";

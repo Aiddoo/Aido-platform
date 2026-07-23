@@ -2,7 +2,12 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import {
 	CATEGORY_OWNERSHIP,
@@ -47,6 +52,8 @@ export class ChangeTodoCategoryUseCase {
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(input: ChangeTodoCategoryInput): Promise<TodoResponse> {
@@ -56,7 +63,7 @@ export class ChangeTodoCategoryUseCase {
 		await this.categoryOwnership.validateOwnership(categoryId, userId);
 
 		// 2. TX 안에서 로드 → 애그리게잇 전이 → 활성 할 일만 한도 체크 후 영속화 (race 방지)
-		await this.uow.run(async () => {
+		const events = await this.uow.run(async () => {
 			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
@@ -78,9 +85,13 @@ export class ChangeTodoCategoryUseCase {
 				}
 			}
 			await this.todoRepository.updateCategory(id, targetCategoryId);
+			return todo.pullDomainEvents();
 		});
 
-		// 3. 캐시 무효화 (todoCount 변경)
+		// 3. 저장(TX 커밋) 완료 후 이벤트 발행 (daily-completion 캐시 무효화 트리거)
+		this.eventPublisher.publishAll(events);
+
+		// 4. 캐시 무효화 (todoCount 변경)
 		await this.todoCache.invalidateTodoCategories(userId);
 		await this.todoCache.invalidateFriendTodos(userId);
 
@@ -88,7 +99,7 @@ export class ChangeTodoCategoryUseCase {
 			`Todo category updated: ${id} -> ${categoryId} for user: ${userId}`,
 		);
 
-		// 4. 응답 재조회
+		// 5. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,
 			userId,
