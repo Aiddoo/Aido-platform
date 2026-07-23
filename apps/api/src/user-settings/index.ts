@@ -10,4 +10,5 @@ export {
 	computeEffectiveStreak,
 	type EffectiveStreakResult,
 } from "./domain/services/effective-streak";
+export { TimezoneSelfHealInterceptor } from "./presentation/interceptors/timezone-self-heal.interceptor";
 export { UserSettingsModule } from "./user-settings.module";

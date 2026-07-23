@@ -9,7 +9,10 @@ import {
 	Injectable,
 	Logger,
 } from "@nestjs/common";
-import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+import {
+	resolveDeliveryTimezone,
+	resolveTimezone,
+} from "@/shared/domain/date/utils/timezone";
 import {
 	type CachedUserPreference,
 	CacheService,
@@ -107,7 +110,8 @@ export class PushDispatcherAdapter
 		notificationId: number,
 	): Promise<void> {
 		const preference = await this.#loadPreference(data.userId);
-		const timezone = resolveTimezone(preference.timezone);
+		// 미상(UTC) 유저는 한국 우선 서비스 기준 KST로 폴백해 배송 시각·집계를 판정
+		const timezone = resolveDeliveryTimezone(preference.timezone);
 		const localDate = new Date(`${this.#localDate(timezone)}T00:00:00.000Z`);
 		const dispatch = await this.notificationRepository.createPushDispatch({
 			notificationId,
@@ -219,7 +223,7 @@ export class PushDispatcherAdapter
 		const dispatchItems = await Promise.all(
 			eligibleItems.map(async (item) => {
 				const preference = prefMap.get(item.data.userId);
-				const timezone = resolveTimezone(preference?.timezone);
+				const timezone = resolveDeliveryTimezone(preference?.timezone);
 				const dispatch = await this.notificationRepository.createPushDispatch({
 					notificationId: item.notificationId,
 					userId: item.data.userId,
@@ -343,12 +347,16 @@ export class PushDispatcherAdapter
 		const isMarketing =
 			purpose === "ENGAGEMENT" || isMarketingNotification(type);
 
-		if (isNightTime(preference.timezone) && isMarketing) {
+		// 야간(정보통신망법 21:00–08:00)·집계는 지역 기준이므로 배송 폴백(미상→KST)으로 판정.
+		// locale과 무관 — 영어를 쓰는 한국 유저(locale=en, tz=Asia/Seoul)도 KST 게이트가 적용된다.
+		const deliveryTz = resolveDeliveryTimezone(preference.timezone);
+
+		if (isNightTime(deliveryTz) && isMarketing) {
 			return false;
 		}
 
 		if (
-			isNightTime(preference.timezone) &&
+			isNightTime(deliveryTz) &&
 			!preference.nightPushEnabled &&
 			!isNightExemptNotification(type)
 		) {
@@ -366,7 +374,7 @@ export class PushDispatcherAdapter
 			isEngagement &&
 			(await this.rateLimiter.isEngagementRateLimited(
 				userId,
-				this.#localDate(preference.timezone),
+				this.#localDate(deliveryTz),
 			))
 		) {
 			return false;
@@ -399,7 +407,7 @@ export class PushDispatcherAdapter
 			return false;
 		}
 
-		const timezone = preference.timezone ?? "UTC";
+		const timezone = resolveDeliveryTimezone(preference.timezone);
 		const isMarketing =
 			purpose === "ENGAGEMENT" || isMarketingNotification(type);
 
@@ -434,7 +442,7 @@ export class PushDispatcherAdapter
 		return {
 			userId: data.userId,
 			...(isEngagement && {
-				engagementLocalDate: this.#localDate(timezone ?? "UTC"),
+				engagementLocalDate: this.#localDate(resolveDeliveryTimezone(timezone)),
 			}),
 		};
 	}

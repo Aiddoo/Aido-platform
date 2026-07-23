@@ -10,9 +10,11 @@
  * ```
  */
 import {
+	DEFAULT_DELIVERY_TIMEZONE,
 	firstOfMonthInTimezone,
 	normalizeIanaTimezone,
 	parseLocalDateTime,
+	resolveDeliveryTimezone,
 	resolveTimezone,
 	startOfDayInTimezone,
 	todayInTimezone,
@@ -46,6 +48,36 @@ describe("timezone", () => {
 			expect(todayInTimezone("Mars/Olympus")).toEqual(
 				new Date("2026-03-03T00:00:00.000Z"),
 			);
+		});
+	});
+
+	describe("resolveDeliveryTimezone", () => {
+		it("유효한 IANA 타임존은 그대로 보존한다", () => {
+			expect(resolveDeliveryTimezone("Asia/Seoul")).toBe("Asia/Seoul");
+			expect(resolveDeliveryTimezone("America/New_York")).toBe(
+				"America/New_York",
+			);
+		});
+
+		it("저장값 UTC는 '미상'으로 보아 KST 배송 폴백으로 매핑한다", () => {
+			expect(resolveDeliveryTimezone("UTC")).toBe(DEFAULT_DELIVERY_TIMEZONE);
+			expect(DEFAULT_DELIVERY_TIMEZONE).toBe("Asia/Seoul");
+		});
+
+		it("누락/무효 값은 KST 배송 폴백으로 매핑한다", () => {
+			expect(resolveDeliveryTimezone(undefined)).toBe(
+				DEFAULT_DELIVERY_TIMEZONE,
+			);
+			expect(resolveDeliveryTimezone("")).toBe(DEFAULT_DELIVERY_TIMEZONE);
+			expect(resolveDeliveryTimezone("Mars/Olympus")).toBe(
+				DEFAULT_DELIVERY_TIMEZONE,
+			);
+		});
+
+		it("일반 resolveTimezone(→UTC)의 폴백과 분리돼 있다", () => {
+			// 같은 무효 입력이라도 배송 경로는 KST, 일반 날짜 수학은 UTC로 서로 다르게 폴백
+			expect(resolveDeliveryTimezone("Mars/Olympus")).toBe("Asia/Seoul");
+			expect(resolveTimezone("Mars/Olympus")).toBe("UTC");
 		});
 	});
 
