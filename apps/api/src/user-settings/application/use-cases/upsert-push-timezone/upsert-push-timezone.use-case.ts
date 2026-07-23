@@ -1,10 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port";
+import {
+	USER_SETTINGS_CACHE,
+	type UserSettingsCachePort,
+} from "../../ports/user-settings-cache.port";
 
 /**
  * 푸시 토큰 등록 시 타임존 upsert (notification).
@@ -17,11 +19,12 @@ export class UpsertPushTimezoneUseCase {
 	constructor(
 		@Inject(USER_PREFERENCE_REPOSITORY)
 		private readonly preferenceRepository: UserPreferenceRepositoryPort,
-		private readonly cacheService: CacheService,
+		@Inject(USER_SETTINGS_CACHE)
+		private readonly cache: UserSettingsCachePort,
 	) {}
 
 	async execute(userId: string, timezone: string): Promise<void> {
 		await this.preferenceRepository.upsertTimezone(userId, timezone);
-		await this.cacheService.invalidateActiveTimezones();
+		await this.cache.invalidateActiveTimezones();
 	}
 }

@@ -1,11 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
 import type { NotificationRecord } from "../../../domain/records/notification.record";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 import type { CreateNotificationData } from "../../ports/notification-data";
 import {
 	PUSH_DISPATCHER,
@@ -28,7 +31,8 @@ export class SendNotificationUseCase {
 		private readonly notificationRepository: NotificationRepositoryPort,
 		@Inject(PUSH_DISPATCHER)
 		private readonly pushDispatcher: PushDispatcherPort,
-		private readonly cacheService: CacheService,
+		@Inject(NOTIFICATION_CACHE)
+		private readonly cache: NotificationCachePort,
 	) {}
 
 	async execute(
@@ -61,7 +65,7 @@ export class SendNotificationUseCase {
 		}
 
 		this.pushDispatcher.fireAndForgetPush(data, notification.id);
-		void this.cacheService.invalidateUnreadCount(data.userId);
+		void this.cache.invalidateUnreadCount(data.userId);
 
 		return notification;
 	}

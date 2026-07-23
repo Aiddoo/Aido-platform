@@ -6,26 +6,30 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-
+import { createUserSettingsCacheMock } from "@test/mocks/ports";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port";
+import {
+	USER_SETTINGS_CACHE,
+	type UserSettingsCachePort,
+} from "../../ports/user-settings-cache.port";
 import { UpsertPushTimezoneUseCase } from "./upsert-push-timezone.use-case";
 
 describe("UpsertPushTimezoneUseCase — 푸시 토큰 등록 시 타임존 upsert", () => {
 	let useCase: UpsertPushTimezoneUseCase;
 	let repo: Mocked<UserPreferenceRepositoryPort>;
-	let cache: Mocked<CacheService>;
+	let cache: Mocked<UserSettingsCachePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UpsertPushTimezoneUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(UpsertPushTimezoneUseCase)
+			.mock<UserSettingsCachePort>(USER_SETTINGS_CACHE)
+			.impl(() => createUserSettingsCacheMock())
+			.compile();
 		useCase = unit;
 		repo = unitRef.get(USER_PREFERENCE_REPOSITORY);
-		cache = unitRef.get(CacheService);
+		cache = unitRef.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
 	});
 
 	it("타임존을 upsert하고 activeTimezones 캐시를 무효화한다", async () => {

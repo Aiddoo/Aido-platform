@@ -80,6 +80,19 @@ module.exports = {
 			from: { path: "^src/auth/application/", pathNot: "\\.spec\\.ts$" },
 			to: { path: "^src/(shared/infrastructure/|admin-notification|email)" },
 		},
+		{
+			name: "application-no-shared-cache-service",
+			comment:
+				"application → 공유 CacheService/CacheKeys 직접 접근 금지 (모듈 캐시 포트로 역전)",
+			severity: "error",
+			from: {
+				path: "^src/(?!shared/)[^/]+/application/",
+				pathNot: "\\.spec\\.ts$",
+			},
+			to: {
+				path: "^src/shared/infrastructure/cache/(cache\\.service|constants/cache-keys)(\\.ts)?$",
+			},
+		},
 
 		// ── 3. 모듈 외부 → 내부 깊은 경로 금지 (배럴·공개 서브엔트리만) ────────
 		{

@@ -32,6 +32,7 @@ import {
 	SUN_TIME_PROVIDER,
 	type SunTimeProvider,
 } from "@/weather/application/ports/sun-time-provider.port";
+import { WEATHER_CACHE } from "@/weather/application/ports/weather-cache.port";
 import { WEATHER_LOCATION_REPOSITORY } from "@/weather/application/ports/weather-location.repository.port";
 import {
 	WEATHER_PROVIDER,
@@ -40,6 +41,7 @@ import {
 import { WeatherQueryUseCases } from "@/weather/application/queries";
 import { WeatherForecastReader } from "@/weather/application/services/weather-forecast.reader";
 import { WeatherUseCases } from "@/weather/application/use-cases";
+import { WeatherCacheAdapter } from "@/weather/infrastructure/adapters/weather-cache.adapter";
 import { PrismaWeatherLocationRepository } from "@/weather/infrastructure/persistence/prisma-weather-location.repository";
 
 describe("Weather 통합 테스트 (Mock DB)", () => {
@@ -136,6 +138,8 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 				},
 				{ provide: SUN_TIME_PROVIDER, useValue: mockSunTimeProvider },
 				{ provide: CacheService, useValue: mockCacheService },
+				// application은 WEATHER_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
+				{ provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
 			],
 		}).compile();
 

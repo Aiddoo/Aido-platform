@@ -4,7 +4,6 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { toLocalTimeString } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
 	MEMO_REPOSITORY,
 	type MemoRepositoryPort,
@@ -69,7 +68,6 @@ export class ConvertMemoToTodosUseCase {
 		private readonly repository: MemoRepositoryPort,
 		@Inject(TODO_CREATOR)
 		private readonly todoCreator: TodoCreatorPort,
-		private readonly cacheService: CacheService,
 	) {}
 
 	async execute(
@@ -124,8 +122,8 @@ export class ConvertMemoToTodosUseCase {
 		// 3. 메모 삭제 (모든 Todo 생성 성공 후)
 		await this.repository.delete(memoId);
 
-		// 4. 캐시 무효화 (createRecurring은 내부에서 무효화하지 않음)
-		await this.cacheService.invalidateTodoCategories(userId);
+		// 참고: 카테고리 캐시 무효화는 TodoCreatorPort(create-todo·create-recurring-todos)가
+		// 각자 쓰기 경로에서 소유한다 — 메모가 타 모듈 캐시를 직접 만지지 않는다.
 
 		this.#logger.log(
 			`Memo ${memoId} converted to ${todos.length} todos for user: ${userId}`,

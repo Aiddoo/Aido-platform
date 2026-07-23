@@ -7,7 +7,6 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { buildUpdatedPreferenceView } from "../../../domain/services/preference-view";
 import { ReminderTime } from "../../../domain/value-objects/reminder-time.vo";
 
@@ -19,6 +18,10 @@ import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port";
+import {
+	USER_SETTINGS_CACHE,
+	type UserSettingsCachePort,
+} from "../../ports/user-settings-cache.port";
 
 /**
  * 사용자 설정 수정 유스케이스.
@@ -34,7 +37,8 @@ export class UpdatePreferenceUseCase {
 		@Inject(USER_PREFERENCE_REPOSITORY)
 		private readonly preferenceRepository: UserPreferenceRepositoryPort,
 		private readonly entitlementService: EntitlementService,
-		private readonly cacheService: CacheService,
+		@Inject(USER_SETTINGS_CACHE)
+		private readonly cache: UserSettingsCachePort,
 		@Inject(REMINDER_SCHEDULE_ENQUEUER)
 		private readonly reminderEnqueuer: ReminderScheduleEnqueuerPort,
 	) {}
@@ -86,11 +90,11 @@ export class UpdatePreferenceUseCase {
 			weatherEveningHour: input.weatherEveningHour,
 			weatherEveningMinute: input.weatherEveningMinute,
 		});
-		await this.cacheService.invalidateUserPreference(userId);
+		await this.cache.invalidateUserPreference(userId);
 
 		// 타임존 또는 pushEnabled 변경 시 활성 타임존 목록 캐시 무효화
 		if (input.timezone !== undefined || input.pushEnabled !== undefined) {
-			await this.cacheService.invalidateActiveTimezones();
+			await this.cache.invalidateActiveTimezones();
 		}
 
 		this.#logger.log(

@@ -7,8 +7,8 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createUserSettingsCacheMock } from "@test/mocks/ports";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record";
 
 import {
@@ -19,6 +19,10 @@ import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port";
+import {
+	USER_SETTINGS_CACHE,
+	type UserSettingsCachePort,
+} from "../../ports/user-settings-cache.port";
 import { UpdatePreferenceUseCase } from "./update-preference.use-case";
 
 const userId = "user-1";
@@ -48,17 +52,18 @@ describe("UpdatePreferenceUseCase", () => {
 	let useCase: UpdatePreferenceUseCase;
 	let repo: Mocked<UserPreferenceRepositoryPort>;
 	let entitlement: Mocked<EntitlementService>;
-	let cache: Mocked<CacheService>;
+	let cache: Mocked<UserSettingsCachePort>;
 	let enqueuer: Mocked<ReminderScheduleEnqueuerPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UpdatePreferenceUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(UpdatePreferenceUseCase)
+			.mock<UserSettingsCachePort>(USER_SETTINGS_CACHE)
+			.impl(() => createUserSettingsCacheMock())
+			.compile();
 		useCase = unit;
 		repo = unitRef.get(USER_PREFERENCE_REPOSITORY);
 		entitlement = unitRef.get(EntitlementService);
-		cache = unitRef.get(CacheService);
+		cache = unitRef.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
 		enqueuer = unitRef.get(REMINDER_SCHEDULE_ENQUEUER);
 		repo.upsert.mockResolvedValue(record);
 	});

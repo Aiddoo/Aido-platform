@@ -7,7 +7,10 @@
  * 개별 메서드 mock API는 spec에서 `jest.mocked(mock.method)`로 접근합니다.
  */
 export * from "./cross-module.mock";
+export * from "./notification-cache.mock";
 export * from "./retention-repository.mock";
 export * from "./todo-read-repository.mock";
 export * from "./todo-repository.mock";
 export * from "./unit-of-work.mock";
+export * from "./user-settings-cache.mock";
+export * from "./weather-cache.mock";
