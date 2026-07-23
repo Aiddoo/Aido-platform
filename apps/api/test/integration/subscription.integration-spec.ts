@@ -26,7 +26,10 @@ import { SubscriptionEventBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AdminNotificationFacade } from "@/admin-notification";
+import {
+	AdminNotificationFacade,
+	PAYMENT_NOTIFIER,
+} from "@/admin-notification";
 import { NotificationQueueService } from "@/notification";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -76,6 +79,13 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 	// Mock NotificationQueueService
 	const mockNotificationQueueService = {
 		enqueueBillingIssue: jest.fn(),
+	};
+
+	// Mock PAYMENT_NOTIFIER (웹훅 실패 보고의 Discord 전송 — reportWebhookFailure 경로)
+	const mockPaymentNotifier = {
+		name: "fake",
+		send: jest.fn().mockResolvedValue({ success: true }),
+		isConfigured: jest.fn().mockReturnValue(true),
 	};
 
 	// Mock LockProvider
@@ -132,6 +142,10 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 				{
 					provide: NotificationQueueService,
 					useValue: mockNotificationQueueService,
+				},
+				{
+					provide: PAYMENT_NOTIFIER,
+					useValue: mockPaymentNotifier,
 				},
 				{
 					provide: LOCK_PROVIDER,
@@ -424,10 +438,10 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			.withAppUserId("rc-unknown-user")
 			.build();
 
-		// When & Then - ApplicationException 발생
-		await expect(useCase.execute(payload)).rejects.toThrow(
-			ApplicationException,
-		);
+		// When & Then - 비-1605 실패는 삼켜 200 반환 + notifier로 보고 (Discord 전송)
+		const result = await useCase.execute(payload);
+		expect(result).toEqual({ received: true });
+		expect(mockPaymentNotifier.send).toHaveBeenCalledTimes(1);
 
 		// 사용자 조회는 시도했으나 이후 처리는 하지 않음
 		expect(mockUserDb.findFirst).toHaveBeenCalled();

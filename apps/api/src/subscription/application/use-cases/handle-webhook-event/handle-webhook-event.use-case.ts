@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/errors";
-import type {
-	RevenueCatEventType,
-	RevenueCatWebhookPayload,
+import {
+	type RevenueCatEventType,
+	type RevenueCatWebhookPayload,
+	revenueCatWebhookPayloadSchema,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
@@ -47,8 +48,13 @@ type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 /**
  * RevenueCat 웹훅 이벤트 처리 use-case.
  *
- * 플로우: Lock 획득 → 사용자 조회 → event.id 중복 체크 → 이벤트 타입별 트랜잭션 처리 →
- * (DB 변경 시) 캐시 무효화 + 큐 잡 등록 → Lock 해제. 멱등성은 byte-identical하게 유지된다.
+ * `execute(body)`가 오케스트레이션(Zod 검증 → 처리 → 실패 보고)을 소유해 컨트롤러는
+ * thin하게 유지된다. 항상 `{ received: true }`를 반환하되, Lock 경합(SUBSCRIPTION_1605)만
+ * rethrow해 필터가 429로 변환한다(RevenueCat 재시도 유도). 그 외 에러는 notifier 포트로
+ * 보고(Sentry·Discord)한 뒤 200으로 삼켜 무한 재시도를 막는다.
+ *
+ * 처리 플로우(`#process`): Lock 획득 → 사용자 조회 → event.id 중복 체크 → 이벤트 타입별
+ * 트랜잭션 처리 → (DB 변경 시) 캐시 무효화 + 큐 잡 등록 → Lock 해제. 멱등성은 byte-identical.
  */
 @Injectable()
 export class HandleWebhookEventUseCase {
@@ -98,7 +104,48 @@ export class HandleWebhookEventUseCase {
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
-	async execute(payload: RevenueCatWebhookPayload): Promise<void> {
+	/**
+	 * 웹훅 요청 본문을 검증·처리하고 항상 `{ received: true }`를 반환한다.
+	 *
+	 * - Zod 검증 실패 → 경고 로그 후 200 (RevenueCat 재시도 방지)
+	 * - Lock 경합(SUBSCRIPTION_1605) → rethrow (필터가 429로 변환, 재시도 유도)
+	 * - 그 외 에러 → notifier로 실패 보고(Sentry·Discord) 후 200
+	 */
+	async execute(body: unknown): Promise<{ received: true }> {
+		const parseResult = revenueCatWebhookPayloadSchema.safeParse(body);
+		if (!parseResult.success) {
+			this.#logger.warn(
+				`Invalid webhook payload: ${JSON.stringify(parseResult.error.issues)}`,
+			);
+			return { received: true };
+		}
+
+		const payload = parseResult.data;
+		try {
+			await this.#process(payload);
+		} catch (error) {
+			// Lock 경합 → 429 반환 (RevenueCat 재시도 유도)
+			// SUBSCRIPTION_1605는 httpStatus=429이므로 GlobalExceptionFilter가 그대로 처리
+			if (
+				error instanceof ApplicationException &&
+				error.errorCode === ErrorCode.SUBSCRIPTION_1605
+			) {
+				this.#logger.warn(`Lock contention, returning 429: ${error.message}`);
+				throw error;
+			}
+
+			// 그 외 에러 → Sentry + Discord 알림 (200 반환, 무한 재시도 방지)
+			this.notifier.reportWebhookFailure(error, payload);
+			this.#logger.error(
+				`Failed to process webhook event: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
+
+		return { received: true };
+	}
+
+	async #process(payload: RevenueCatWebhookPayload): Promise<void> {
 		const { event } = payload;
 		const appUserId = event.app_user_id;
 		const eventType = event.type;
