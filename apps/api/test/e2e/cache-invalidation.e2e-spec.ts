@@ -327,13 +327,17 @@ describe("캐시 무효화 E2E 테스트", () => {
 			const targetId = "target_key_test";
 
 			// Then - 캐시 키 형식 검증
-			expect(CacheKeys.session("sess_123")).toBe("session:sess_123");
-			expect(CacheKeys.userProfile(userId)).toBe(`user:profile:${userId}`);
+			expect(CacheKeys.session("sess_123")).toBe(
+				"aido:v1:auth:session:sess_123",
+			);
+			expect(CacheKeys.userProfile(userId)).toBe(
+				`aido:v1:auth:user-profile:${userId}`,
+			);
 			expect(CacheKeys.subscription(userId)).toBe(
-				`user:subscription:${userId}`,
+				`aido:v1:subscription:status:${userId}`,
 			);
 			expect(CacheKeys.mutualFriend(userId, targetId)).toBe(
-				`friends:mutual:${userId}:${targetId}`,
+				`aido:v1:follow:mutual:${userId}:${targetId}`,
 			);
 		});
 	});
