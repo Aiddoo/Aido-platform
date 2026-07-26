@@ -486,6 +486,47 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 		});
 	});
 
+	describe("getResourceLimitInTx", () => {
+		it("CATEGORY 한도는 활성 tx만 조회하고 base DB와 cache를 우회한다", async () => {
+			// Given - tx/base/cache가 서로 다른 클라이언트
+			const txFindUnique = jest.fn().mockResolvedValue({
+				role: "USER",
+				subscriptionStatus: "FREE",
+			});
+			const tx = {
+				user: {
+					findUnique: txFindUnique,
+				},
+			};
+			(database.user.findUnique as jest.Mock).mockRejectedValue(
+				new Error("base database path must not be used"),
+			);
+			(cacheService.wrapSubscription as jest.Mock).mockRejectedValue(
+				new Error("cache path must not be used"),
+			);
+
+			// When
+			const result = await service.getResourceLimitInTx(
+				tx as never,
+				userId,
+				Resource.CATEGORY,
+			);
+
+			// Then - tx 결과로 FREE category limit을 계산
+			expect(result).toEqual<ResourceEntitlement>({
+				maxCount: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
+				isAdmin: false,
+				subscriptionStatus: "FREE",
+			});
+			expect(txFindUnique).toHaveBeenCalledWith({
+				where: { id: userId },
+				select: { role: true, subscriptionStatus: true },
+			});
+			expect(database.user.findUnique).not.toHaveBeenCalled();
+			expect(cacheService.wrapSubscription).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("hasPremiumAccess", () => {
 		it("ADMIN 역할은 true를 반환한다", async () => {
 			// Given
