@@ -15,8 +15,16 @@ export class TodoReminderAdapter implements TodoReminderPort {
 		private readonly reminderScheduler: IReminderScheduler,
 	) {}
 
-	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): void {
-		this.reminderScheduler.scheduleReminder(todoId, scheduledTime, userId);
+	scheduleReminder(
+		todoId: number,
+		scheduledTime: Date,
+		userId: string,
+	): Promise<void> {
+		return this.reminderScheduler.scheduleReminder(
+			todoId,
+			scheduledTime,
+			userId,
+		);
 	}
 
 	cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {

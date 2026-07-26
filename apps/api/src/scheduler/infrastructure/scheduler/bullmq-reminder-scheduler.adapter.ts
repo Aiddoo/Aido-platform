@@ -44,13 +44,12 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 
 	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
-	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): void {
-		this.#scheduleAsync(todoId, scheduledTime, userId).catch((error) => {
-			this.#logger.error(
-				`Failed to schedule reminder: todoId=${todoId}, ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		});
+	scheduleReminder(
+		todoId: number,
+		scheduledTime: Date,
+		userId: string,
+	): Promise<void> {
+		return this.#scheduleAsync(todoId, scheduledTime, userId);
 	}
 
 	cancelReminder(todoId: number): Promise<ReminderCancellationResult> {

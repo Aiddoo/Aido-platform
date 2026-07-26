@@ -4,7 +4,7 @@ import {
 	Injectable,
 	Logger,
 } from "@nestjs/common";
-import { type JobsOptions, Queue, Worker } from "bullmq";
+import { type JobState, type JobsOptions, Queue, Worker } from "bullmq";
 import type Redis from "ioredis";
 import type {
 	EnqueueJobOptions,
@@ -49,7 +49,13 @@ export interface BullQueueClient {
 		},
 	): Promise<void>;
 	removeJobScheduler(key: string): Promise<boolean>;
-	getJob(id: string): Promise<{ remove(): Promise<void> } | undefined>;
+	getJob(id: string): Promise<
+		| {
+				getState(): Promise<JobState | "unknown">;
+				remove(): Promise<void>;
+		  }
+		| undefined
+	>;
 	getCounts(): Promise<{
 		readonly wait: number;
 		readonly delayed: number;
@@ -113,7 +119,13 @@ class DefaultBullQueueClient implements BullQueueClient {
 		return this.queue.removeJobScheduler(key);
 	}
 
-	async getJob(id: string): Promise<{ remove(): Promise<void> } | undefined> {
+	async getJob(id: string): Promise<
+		| {
+				getState(): Promise<JobState | "unknown">;
+				remove(): Promise<void>;
+		  }
+		| undefined
+	> {
 		return (await this.queue.getJob(id)) ?? undefined;
 	}
 
@@ -282,6 +294,11 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 	): Promise<JobCancellationResult> {
 		const job = await this.queue(queueName).getJob(jobKey);
 		if (!job) {
+			return { status: "missing" };
+		}
+
+		const state = await job.getState();
+		if (!isCancellableBullJobState(state)) {
 			return { status: "missing" };
 		}
 
@@ -478,4 +495,13 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 			removeOnFail: { age: payload.retentionSeconds },
 		});
 	}
+}
+
+function isCancellableBullJobState(state: JobState | "unknown"): boolean {
+	return (
+		state === "waiting" ||
+		state === "delayed" ||
+		state === "prioritized" ||
+		state === "waiting-children"
+	);
 }

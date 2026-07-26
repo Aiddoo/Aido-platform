@@ -9,6 +9,16 @@ import {
 
 const QUEUE = "document-generation.v1";
 
+type FakeBullJobState =
+	| "active"
+	| "completed"
+	| "delayed"
+	| "failed"
+	| "prioritized"
+	| "unknown"
+	| "waiting"
+	| "waiting-children";
+
 function options(
 	overrides: Partial<EnqueueJobOptions> = {},
 ): EnqueueJobOptions {
@@ -38,6 +48,8 @@ class FakeQueue implements BullQueueClient {
 	removedJobIds: string[] = [];
 	removedScheduleKeys: string[] = [];
 	jobExists = true;
+	jobState: FakeBullJobState = "waiting";
+	getStateError?: Error;
 	removeError?: Error;
 	closeOrder: string[];
 
@@ -70,11 +82,23 @@ class FakeQueue implements BullQueueClient {
 		return true;
 	}
 
-	async getJob(id: string): Promise<{ remove(): Promise<void> } | undefined> {
+	async getJob(id: string): Promise<
+		| {
+				getState(): Promise<FakeBullJobState>;
+				remove(): Promise<void>;
+		  }
+		| undefined
+	> {
 		if (!this.jobExists) {
 			return undefined;
 		}
 		return {
+			getState: async () => {
+				if (this.getStateError) {
+					throw this.getStateError;
+				}
+				return this.jobState;
+			},
 			remove: async () => {
 				if (this.removeError) {
 					throw this.removeError;
@@ -308,13 +332,37 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		]);
 	});
 
-	it("cancel은 기존 jobKey를 제거하고 cancelled를 반환한다", async () => {
-		await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
-			status: "cancelled",
-		});
+	it.each(["waiting", "delayed", "prioritized", "waiting-children"] as const)(
+		"cancel은 %s 작업을 실제 제거하고 cancelled를 반환한다",
+		async (state) => {
+			await runtime.enqueue(QUEUE, { documentId: 42 }, options());
+			const queue = factory.queues.get(QUEUE);
+			expect(queue).toBeDefined();
+			if (!queue) return;
+			queue.jobState = state;
 
-		expect(factory.queues.get(QUEUE)?.removedJobIds).toEqual(["document:42"]);
-	});
+			await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
+				status: "cancelled",
+			});
+			expect(queue.removedJobIds).toEqual(["document:42"]);
+		},
+	);
+
+	it.each(["active", "completed", "failed", "unknown"] as const)(
+		"cancel은 존재하더라도 %s 작업이면 missing을 반환한다",
+		async (state) => {
+			await runtime.enqueue(QUEUE, { documentId: 42 }, options());
+			const queue = factory.queues.get(QUEUE);
+			expect(queue).toBeDefined();
+			if (!queue) return;
+			queue.jobState = state;
+
+			await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
+				status: "missing",
+			});
+			expect(queue.removedJobIds).toHaveLength(0);
+		},
+	);
 
 	it("cancel은 jobKey가 없으면 missing을 반환한다", async () => {
 		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
@@ -339,6 +387,19 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
 			"redis unavailable",
 		);
+	});
+
+	it("cancel은 BullMQ 상태 조회 오류를 missing으로 바꾸지 않고 전파한다", async () => {
+		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
+		const queue = factory.queues.get(QUEUE);
+		expect(queue).toBeDefined();
+		if (!queue) return;
+		queue.getStateError = new Error("redis state unavailable");
+
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
+			"redis state unavailable",
+		);
+		expect(queue.removedJobIds).toHaveLength(0);
 	});
 
 	it("health를 공통 모델로 정규화한다", async () => {

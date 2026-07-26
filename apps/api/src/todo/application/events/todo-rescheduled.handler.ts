@@ -23,7 +23,7 @@ export class TodoRescheduledHandler {
 	@OnEvent(TODO_EVENTS.RESCHEDULED, { suppressErrors: false })
 	async handle(event: TodoRescheduledEvent): Promise<void> {
 		if (event.scheduledTime) {
-			this.todoReminder.scheduleReminder(
+			await this.todoReminder.scheduleReminder(
 				event.todoId,
 				event.scheduledTime,
 				event.userId,

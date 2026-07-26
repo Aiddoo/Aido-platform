@@ -18,7 +18,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 
 	beforeEach(async () => {
 		todoReminder = {
-			scheduleReminder: jest.fn(),
+			scheduleReminder: jest.fn().mockResolvedValue(undefined),
 			cancelReminder: jest.fn().mockResolvedValue({ status: "cancelled" }),
 		};
 
@@ -79,6 +79,23 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 		// When & Then - 성공/missing으로 삼키지 않음
 		await expect(
 			handler.handle(new TodoRescheduledEvent(1, "user-123", null)),
+		).rejects.toBe(error);
+	});
+
+	it("non-null 재스케줄 중 기존 리마인더 취소 실패도 전파한다", async () => {
+		// Given - schedule 내부의 기존 작업 취소 실패
+		const error = new Error(
+			"Reminder cancellation failed: todoId=1, stage=60min, runtime=job-runtime",
+		);
+		const rejected = Promise.reject(error);
+		void rejected.catch(() => undefined);
+		jest.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
+
+		// When & Then - schedule 호출만 시작하고 성공으로 조기 반환하지 않음
+		await expect(
+			handler.handle(
+				new TodoRescheduledEvent(1, "user-123", new Date("2026-03-01")),
+			),
 		).rejects.toBe(error);
 	});
 });

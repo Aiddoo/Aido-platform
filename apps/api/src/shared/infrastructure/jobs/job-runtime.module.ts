@@ -80,8 +80,18 @@ export class RedisDrainJobRuntime implements JobRuntimePort {
 		]);
 	}
 
-	cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
-		return this.primary.cancel(queue, jobKey);
+	async cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
+		const legacyQueue = legacyQueueName(queue);
+		const cancellations = [
+			this.primary.cancel(queue, jobKey),
+			this.redis.cancel(queue, jobKey),
+			...(legacyQueue ? [this.redis.cancel(legacyQueue, jobKey)] : []),
+		];
+		const results = await Promise.all(cancellations);
+
+		return results.some(({ status }) => status === "cancelled")
+			? { status: "cancelled" }
+			: { status: "missing" };
 	}
 
 	async work<T extends JobData>(

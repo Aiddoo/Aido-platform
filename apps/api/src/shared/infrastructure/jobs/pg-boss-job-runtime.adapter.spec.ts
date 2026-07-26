@@ -62,6 +62,8 @@ class FakePgBossClient implements PgBossClient {
 	queues: QueueResult[] = [];
 	findJobsError?: Error;
 	cancelError?: Error;
+	cancelAffected = 1;
+	malformedCancelResponse = false;
 
 	async start(): Promise<unknown> {
 		return this;
@@ -101,12 +103,17 @@ class FakePgBossClient implements PgBossClient {
 
 	async findJobs<T extends JobData>(
 		_name: string,
-		_options?: FindJobsOptions,
+		options?: FindJobsOptions,
 	): Promise<JobWithMetadata<T>[]> {
 		if (this.findJobsError) {
 			throw this.findJobsError;
 		}
-		return this.jobs as JobWithMetadata<T>[];
+		const jobs = options?.queued
+			? this.jobs.filter(
+					({ state }) => state === "created" || state === "retry",
+				)
+			: this.jobs;
+		return jobs as JobWithMetadata<T>[];
 	}
 
 	async cancel(
@@ -118,7 +125,14 @@ class FakePgBossClient implements PgBossClient {
 			throw this.cancelError;
 		}
 		this.cancelCalls.push({ name, ids, options });
-		return undefined;
+		if (this.malformedCancelResponse) {
+			return undefined;
+		}
+		return {
+			jobs: ids,
+			requested: ids.length,
+			affected: this.cancelAffected,
+		};
 	}
 
 	async work<T extends JobData>(
@@ -145,6 +159,7 @@ function job(
 		id: "job-1",
 		name: QUEUE,
 		data: { documentId: 42 },
+		state: "created",
 		retryCount: 1,
 		createdOn: new Date("2026-07-22T11:59:00.000Z"),
 		...overrides,
@@ -243,19 +258,59 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 		]);
 	});
 
-	it("cancel은 찾은 작업을 취소하고 cancelled를 반환한다", async () => {
-		// Given - 동일 jobKey의 작업 존재
-		boss.jobs = [job()];
+	it.each(["created", "retry"] as const)(
+		"cancel은 queued 상태인 %s 작업을 취소하고 cancelled를 반환한다",
+		async (state) => {
+			// Given - 동일 jobKey의 취소 가능한 작업 존재
+			boss.jobs = [job({ state })];
 
-		// When & Then - 명시적 cancelled 결과
+			// When & Then - 실제 affected row가 있어 cancelled
+			await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
+				status: "cancelled",
+			});
+			expect(boss.cancelCalls).toHaveLength(1);
+			expect(boss.cancelCalls[0]).toMatchObject({
+				name: QUEUE,
+				ids: ["job-1"],
+			});
+		},
+	);
+
+	it.each(["active", "completed", "cancelled", "failed"] as const)(
+		"cancel은 레코드가 남아 있어도 %s 작업이면 missing을 반환한다",
+		async (state) => {
+			// Given - 보존 중이지만 queued가 아닌 작업
+			boss.jobs = [job({ state })];
+
+			// When & Then - 취소 API를 호출하지 않음
+			await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
+				status: "missing",
+			});
+			expect(boss.cancelCalls).toHaveLength(0);
+		},
+	);
+
+	it("cancel은 queued 작업을 찾았어도 affected가 0이면 missing을 반환한다", async () => {
+		// Given - 조회 뒤 경합으로 실제 취소된 row가 없음
+		boss.jobs = [job({ state: "created" })];
+		boss.cancelAffected = 0;
+
+		// When & Then - 존재 여부를 취소 성공으로 오인하지 않음
 		await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
-			status: "cancelled",
+			status: "missing",
 		});
 		expect(boss.cancelCalls).toHaveLength(1);
-		expect(boss.cancelCalls[0]).toMatchObject({
-			name: QUEUE,
-			ids: ["job-1"],
-		});
+	});
+
+	it("cancel은 pg-boss 응답에 affected가 없으면 성공이나 missing으로 오인하지 않는다", async () => {
+		// Given - 설치된 pg-boss 반환 계약과 다른 응답
+		boss.jobs = [job({ state: "created" })];
+		boss.malformedCancelResponse = true;
+
+		// When & Then - 벤더 계약 위반을 인프라 실패로 노출
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
+			"Invalid pg-boss cancellation response",
+		);
 	});
 
 	it("cancel은 찾은 작업이 없으면 missing을 반환한다", async () => {

@@ -84,20 +84,71 @@ describe("selectJobRuntime — backend 선택", () => {
 		);
 	});
 
-	it("postgres drain 모드는 primary의 cancel 결과를 그대로 보존한다", async () => {
-		// Given - PostgreSQL primary가 missing을 반환
+	it("postgres drain 모드는 현재·legacy queue 중 하나라도 취소되면 cancelled를 반환한다", async () => {
+		// Given - Redis legacy queue에만 작업이 남아 있음
 		const postgres = createRuntime();
 		const redis = createRuntime();
-		jest.mocked(postgres.cancel).mockResolvedValue({
-			status: "missing",
-		});
+		jest.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
+		jest
+			.mocked(redis.cancel)
+			.mockResolvedValueOnce({ status: "missing" })
+			.mockResolvedValueOnce({ status: "cancelled" });
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);
 
-		// When & Then - drain wrapper가 결과를 바꾸지 않음
+		// When & Then - 세 위치를 모두 확인하고 하나의 취소를 집계
+		await expect(
+			runtime.cancel("todo-reminder.v1", "reminder_42_60min"),
+		).resolves.toEqual({ status: "cancelled" });
+		expect(postgres.cancel).toHaveBeenCalledWith(
+			"todo-reminder.v1",
+			"reminder_42_60min",
+		);
+		expect(redis.cancel).toHaveBeenNthCalledWith(
+			1,
+			"todo-reminder.v1",
+			"reminder_42_60min",
+		);
+		expect(redis.cancel).toHaveBeenNthCalledWith(
+			2,
+			"todo-reminder",
+			"reminder_42_60min",
+		);
+	});
+
+	it("postgres drain 모드는 모든 backend와 queue에서 없을 때만 missing을 반환한다", async () => {
+		// Given - 현재/legacy queue에 작업이 모두 없음
+		const postgres = createRuntime();
+		const redis = createRuntime();
+		jest.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
+		jest.mocked(redis.cancel).mockResolvedValue({ status: "missing" });
+		const runtime = selectJobRuntime("postgres", postgres, redis, true);
+
+		// When & Then
 		await expect(
 			runtime.cancel("todo-reminder.v1", "missing"),
 		).resolves.toEqual({ status: "missing" });
-		expect(redis.cancel).not.toHaveBeenCalled();
+		expect(postgres.cancel).toHaveBeenCalledTimes(1);
+		expect(redis.cancel).toHaveBeenCalledTimes(2);
+	});
+
+	it("postgres drain 모드는 어느 backend의 취소 실패도 missing으로 바꾸지 않는다", async () => {
+		// Given - Redis current queue 조회/취소 실패
+		const postgres = createRuntime();
+		const redis = createRuntime();
+		const infrastructureError = new Error("redis unavailable");
+		jest.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
+		jest
+			.mocked(redis.cancel)
+			.mockRejectedValueOnce(infrastructureError)
+			.mockResolvedValueOnce({ status: "missing" });
+		const runtime = selectJobRuntime("postgres", postgres, redis, true);
+
+		// When & Then - 실패를 전파하면서 세 취소 시도는 모두 시작
+		await expect(
+			runtime.cancel("todo-reminder.v1", "reminder_42_60min"),
+		).rejects.toBe(infrastructureError);
+		expect(postgres.cancel).toHaveBeenCalledTimes(1);
+		expect(redis.cancel).toHaveBeenCalledTimes(2);
 	});
 
 	it.each<JobBackend>(["postgres", "redis"])(
