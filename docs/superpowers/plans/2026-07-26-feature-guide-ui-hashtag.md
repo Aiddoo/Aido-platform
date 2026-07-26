@@ -182,4 +182,3 @@ Expected: 두 명령 모두 exit 0
 git add -A
 git commit -m "test(mobile): 기능 가이드 해시태그 호환성 검증 보강"
 ```
-
