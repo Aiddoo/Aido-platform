@@ -146,6 +146,50 @@ function createDeferred(): Deferred {
 	};
 }
 
+interface AdvisoryWaitObservation {
+	probes: number;
+	waitingCount: number;
+}
+
+async function waitForBlockedAdvisoryLock(
+	prisma: PrismaClient,
+	key: string,
+	options: { timeoutMs?: number; pollIntervalMs?: number } = {},
+): Promise<AdvisoryWaitObservation> {
+	const timeoutMs = options.timeoutMs ?? 2_000;
+	const pollIntervalMs = options.pollIntervalMs ?? 10;
+	const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
+	let lastWaitingCount = 0;
+
+	for (let probe = 1; probe <= maxProbes; probe += 1) {
+		const rows = await prisma.$queryRaw<Array<{ waitingCount: number }>>`
+			WITH target AS (
+				SELECT hashtextextended(${key}, 0) AS lock_key
+			)
+			SELECT COUNT(*)::int AS "waitingCount"
+			FROM pg_locks, target
+			WHERE locktype = 'advisory'
+				AND granted = false
+				AND objsubid = 1
+				AND classid::bigint = ((lock_key >> 32) & 4294967295)
+				AND objid::bigint = (lock_key & 4294967295)
+		`;
+		lastWaitingCount = rows[0]?.waitingCount ?? 0;
+		if (lastWaitingCount > 0) {
+			return { probes: probe, waitingCount: lastWaitingCount };
+		}
+		if (probe < maxProbes) {
+			await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
+		}
+	}
+
+	throw new Error(
+		`Timed out after ${maxProbes} probes (~${timeoutMs}ms) waiting for ` +
+			`PostgreSQL advisory lock key=${JSON.stringify(key)}; ` +
+			`lastWaitingCount=${lastWaitingCount}`,
+	);
+}
+
 function summarize(results: PromiseSettledResult<unknown>[]): RaceSummary {
 	const errorCodes = results.flatMap((result) => {
 		if (result.status === "fulfilled") return [];
@@ -568,10 +612,12 @@ describe("소셜 mutation lock 동시성 (실제 PostgreSQL)", () => {
 
 		const { txHost, uow } = createTransactionHarness(prisma);
 		const attempted = createDeferred();
+		const continueLockAttempt = createDeferred();
 		const realLock = new PostgresMutationLockAdapter(txHost);
 		const mutationLock: MutationLockPort = {
 			async acquire(keys) {
 				attempted.resolve();
+				await continueLockAttempt.promise;
 				await realLock.acquire(keys);
 			},
 		};
@@ -587,10 +633,17 @@ describe("소셜 mutation lock 동시성 (실제 PostgreSQL)", () => {
 		// When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
 		const sending = useCase.execute({ senderId, receiverId }, "Asia/Seoul");
 		await attempted.promise;
-		jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
-		release.resolve();
+		try {
+			continueLockAttempt.resolve();
+			const observation = await waitForBlockedAdvisoryLock(prisma, dailyKey);
+			expect(observation.waitingCount).toBe(1);
+			jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+		} finally {
+			continueLockAttempt.resolve();
+			release.resolve();
+			await Promise.allSettled([sending, blocker]);
+		}
 		const cheer = await sending;
-		await blocker;
 
 		// Then - row timestamp가 이전 날짜 key/window와 동일한 capturedAt에 고정됨
 		expect(cheer.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
