@@ -33,6 +33,7 @@ import {
 } from "@/notification";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
+import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
@@ -162,6 +163,12 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 				// application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
 				{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
+				{
+					provide: NOTIFICATION_DEDUP,
+					useValue: {
+						recordNotifiedUsers: jest.fn().mockResolvedValue(undefined),
+					},
+				},
 				NotificationFacade,
 				GetNotificationsUseCase,
 				GetUnreadCountUseCase,
