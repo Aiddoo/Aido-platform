@@ -103,7 +103,7 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-			.impl(() => ({ publishAll: jest.fn() }))
+			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;
@@ -151,6 +151,29 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 		await expect(useCase.execute(baseData)).rejects.toThrow("not owner");
 		expect(todoRepository.create).not.toHaveBeenCalled();
 		expect(eventPublisher.publishAll).not.toHaveBeenCalled();
+	});
+
+	it("post-commit 이벤트 발행 관측이 끝난 뒤 응답을 재조회한다", async () => {
+		// Given - 이벤트 publisher 완료를 외부 gate로 지연
+		todoRepository.countActiveByCategory.mockResolvedValue(0);
+		todoRepository.getMaxSortOrder.mockResolvedValue(-1);
+		todoRepository.create.mockResolvedValue(buildEntity());
+		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+		let release: (() => void) | undefined;
+		const publication = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		eventPublisher.publishAll.mockReturnValue(publication);
+
+		// When - 생성 실행
+		const execution = useCase.execute(baseData);
+		await new Promise((resolve) => setImmediate(resolve));
+
+		// Then - publisher 완료 전에는 post-commit 재조회로 진행하지 않음
+		expect(todoReadRepository.findByIdAndUserId).not.toHaveBeenCalled();
+		release?.();
+		await execution;
+		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalled();
 	});
 
 	it("제목이 200자를 초과하면 소유권 확인 전에 DomainException(SYS_0002)을 던진다 (도메인 자기방어)", async () => {

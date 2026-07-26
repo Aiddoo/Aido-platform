@@ -29,7 +29,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
 
 	it("회원가입 응답 계약은 그대로 두고 신규 User만 TREATMENT에 등록한다", async () => {
 		const response = await request(ctx.app.getHttpServer())
-			.post("/auth/register")
+			.post("/v1/auth/register")
 			.send({
 				email: "retention-new@example.com",
 				password: "Test1234!",
@@ -61,7 +61,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
 
 		const code = ctx.fakeEmailService.getLastCode("retention-new@example.com");
 		await request(ctx.app.getHttpServer())
-			.post("/auth/verify-email")
+			.post("/v1/auth/verify-email")
 			.send({ email: "retention-new@example.com", code })
 			.expect(200);
 		const activated = await ctx.testDatabase

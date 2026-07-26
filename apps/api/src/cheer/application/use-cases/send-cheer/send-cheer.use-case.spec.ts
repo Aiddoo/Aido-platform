@@ -2,7 +2,11 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import { FollowFacade } from "@/follow";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	MUTATION_LOCK,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import {
 	CHEER_REPOSITORY,
@@ -40,16 +44,20 @@ describe("SendCheerUseCase", () => {
 	let notifier: Mocked<CheerNotifierPort>;
 	let limitReader: Mocked<CheerLimitReaderPort>;
 	let follow: Mocked<FollowFacade>;
+	let mutationLock: Mocked<MutationLockPort>;
 	let uow: Mocked<{ run: (fn: () => unknown) => unknown }>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(SendCheerUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(SendCheerUseCase)
+			.mock<MutationLockPort>(MUTATION_LOCK)
+			.impl(() => ({ acquire: jest.fn() }))
+			.compile();
 		useCase = unit;
 		repo = unitRef.get(CHEER_REPOSITORY);
 		notifier = unitRef.get(CHEER_NOTIFIER);
 		limitReader = unitRef.get(CHEER_LIMIT_READER);
 		follow = unitRef.get(FollowFacade);
+		mutationLock = unitRef.get(MUTATION_LOCK);
 		uow = unitRef.get(UNIT_OF_WORK);
 
 		uow.run.mockImplementation((fn: () => unknown) => fn());
@@ -97,5 +105,49 @@ describe("SendCheerUseCase", () => {
 		repo.countSentSince.mockResolvedValue(999);
 		const result = await useCase.execute({ senderId: "s", receiverId: "r" });
 		expect(result.id).toBe(1);
+	});
+
+	it("같은 시각 기준의 일일·쿨다운 키를 guarded read 전에 UoW 안에서 잠근다", async () => {
+		// Given - KST 자정 직전 시작하고 lock 대기 중 다음 날로 넘어가는 상황
+		jest.useFakeTimers();
+		jest.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+		const events: string[] = [];
+		mutationLock.acquire.mockImplementation(async () => {
+			events.push("lock");
+			jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+		});
+		limitReader.getDailyLimitInTx.mockImplementation(async () => {
+			events.push("limit");
+			return 3;
+		});
+		repo.countSentSince.mockImplementation(async () => {
+			events.push("daily-count");
+			return 0;
+		});
+		repo.findLastCheerToUser.mockImplementation(async () => {
+			events.push("cooldown-read");
+			return null;
+		});
+
+		// When
+		await useCase.execute({ senderId: "s", receiverId: "r" }, "Asia/Seoul");
+
+		// Then - lock key와 quota 시작점 모두 7/26 KST 기준이고 lock이 먼저임
+		expect(mutationLock.acquire).toHaveBeenCalledWith([
+			"mutation:v1:cheer:daily:s:2026-07-26",
+			"mutation:v1:cheer:cooldown:s:r",
+		]);
+		expect(repo.countSentSince).toHaveBeenCalledWith(
+			"s",
+			new Date("2026-07-25T15:00:00.000Z"),
+			new Date("2026-07-26T15:00:00.000Z"),
+		);
+		expect(repo.createWithRelations).toHaveBeenCalledWith(
+			expect.objectContaining({
+				createdAt: new Date("2026-07-26T14:59:59.900Z"),
+			}),
+		);
+		expect(events).toEqual(["lock", "limit", "daily-count", "cooldown-read"]);
+		jest.useRealTimers();
 	});
 });

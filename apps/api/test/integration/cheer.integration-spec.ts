@@ -30,7 +30,7 @@ import { FollowFacade } from "@/follow";
 import { NotificationQueueService } from "@/notification";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
@@ -94,6 +94,10 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 				{ provide: CHEER_LIMIT_READER, useClass: CheerLimitReaderAdapter },
 				PaginationService,
 				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
+				{
+					provide: MUTATION_LOCK,
+					useValue: { acquire: jest.fn().mockResolvedValue(undefined) },
+				},
 				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
 				{
 					provide: TypedConfigService,

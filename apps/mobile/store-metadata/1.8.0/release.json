@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "releaseVersion": "1.8.0",
+  "campaignId": "feature-discovery-2026-08",
+  "campaignLaunchedAt": "2026-08-01T00:00:00.000Z",
+  "positioning": {
+    "ko": "메모가 할 일이 되고, 친구와 함께 끝내는 투두.",
+    "en": "Turn notes into to-dos, then finish them with friends."
+  },
+  "patchNotes": {
+    "ko": [
+      "메모를 AI로 분석해 여러 할 일로 한 번에 만들 수 있어요.",
+      "이제 이름 또는 Aido ID로 친구를 찾을 수 있어요.",
+      "할 일과 카테고리를 드래그해 원하는 순서로 정리할 수 있어요.",
+      "직접 입력, AI, 반복 일정 등 나에게 맞는 방식으로 할 일을 만들 수 있어요.",
+      "새 기능 가이드에서 놓쳤던 기능을 언제든 다시 확인할 수 있어요."
+    ],
+    "en": [
+      "Use AI to turn one note into multiple to-dos at once.",
+      "Find friends by name or Aido ID.",
+      "Drag to reorder your to-dos and categories.",
+      "Create to-dos manually, with AI, or as recurring plans.",
+      "Revisit every useful feature from the new Aido Feature Guide."
+    ]
+  },
+  "screenshots": [
+    {
+      "id": "memo-ai",
+      "headline": {
+        "ko": "메모 한 장이, 할 일 여러 개로",
+        "en": "One note, multiple to-dos"
+      },
+      "body": {
+        "ko": "생각나는 대로 적으면 AI가 실행할 일로 정리해요.",
+        "en": "Write naturally and let AI organize the next actions."
+      }
+    },
+    {
+      "id": "name-search",
+      "headline": {
+        "ko": "이름만 알아도 친구 찾기",
+        "en": "Find friends by name"
+      },
+      "body": {
+        "ko": "이름 또는 Aido ID로 바로 찾아 함께 시작하세요.",
+        "en": "Search by name or Aido ID and start together."
+      }
+    },
+    {
+      "id": "drag-organization",
+      "headline": {
+        "ko": "끌어서, 내 순서대로",
+        "en": "Drag it into your order"
+      },
+      "body": {
+        "ko": "할 일과 카테고리를 드래그해 우선순위를 눈에 보이게 정리해요.",
+        "en": "Reorder to-dos and categories around your priorities."
+      }
+    },
+    {
+      "id": "creation-methods",
+      "headline": {
+        "ko": "할 일을 만드는 모든 방법",
+        "en": "Every way to make a to-do"
+      },
+      "body": {
+        "ko": "직접 입력부터 AI, 반복 일정까지 상황에 맞게 선택하세요.",
+        "en": "Choose manual, AI, or recurring creation for the moment."
+      }
+    },
+    {
+      "id": "friends",
+      "headline": {
+        "ko": "친구와 함께 끝내는 하루",
+        "en": "Finish the day with friends"
+      },
+      "body": {
+        "ko": "서로의 진행을 보고 응원하며 끝까지 이어가요.",
+        "en": "See progress, cheer each other on, and follow through."
+      }
+    }
+  ],
+  "organicVariants": {
+    "ai": {
+      "ko": {
+        "title": "Aido - AI 메모 투두",
+        "subtitle": "메모를 실행할 일로 한 번에",
+        "description": "떠오른 생각을 메모하세요. Aido AI가 내용을 분석해 여러 할 일로 정리하고, 직접 입력과 반복 일정까지 한곳에서 관리해요.",
+        "keywords": "AI할일,메모투두,할일관리,생산성,체크리스트"
+      },
+      "en": {
+        "title": "Aido - AI Notes to To-dos",
+        "subtitle": "Turn notes into next actions",
+        "description": "Capture a thought and let Aido AI turn it into multiple practical to-dos. Manage manual and recurring plans in the same place.",
+        "keywords": "AI todo,notes,task manager,productivity,checklist"
+      }
+    },
+    "friends": {
+      "ko": {
+        "title": "Aido - 친구와 하는 투두",
+        "subtitle": "함께 보고, 응원하고, 끝내기",
+        "description": "이름 또는 Aido ID로 친구를 찾고 서로의 진행을 확인하세요. 가벼운 응원과 콕 찌르기로 혼자 미루던 일도 함께 끝낼 수 있어요.",
+        "keywords": "친구투두,공동할일,습관,응원,할일공유"
+      },
+      "en": {
+        "title": "Aido - To-dos with Friends",
+        "subtitle": "Make progress, finish together",
+        "description": "Find friends by name or Aido ID, share progress, and encourage each other to finish what would otherwise get postponed.",
+        "keywords": "social todo,friends,shared tasks,accountability,habits"
+      }
+    },
+    "organization": {
+      "ko": {
+        "title": "Aido - 정리되는 할 일",
+        "subtitle": "끌어서 만드는 나만의 순서",
+        "description": "할 일과 카테고리를 드래그해 오늘의 우선순서를 바로 정리하세요. 직접 입력, AI, 반복 일정으로 만든 모든 할 일을 한 흐름에서 관리해요.",
+        "keywords": "할일정리,드래그정렬,카테고리,우선순위,플래너"
+      },
+      "en": {
+        "title": "Aido - Organized To-dos",
+        "subtitle": "Drag tasks into your own order",
+        "description": "Drag to reorder to-dos and categories around today's priorities. Keep manual, AI, and recurring tasks in one clear flow.",
+        "keywords": "task organizer,reorder,priorities,categories,planner"
+      }
+    }
+  }
+}

@@ -43,7 +43,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 환경설정 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/auth/preference")
+					.get("/v1/auth/preference")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -58,7 +58,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 인증 없이 환경설정 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/auth/preference")
+					.get("/v1/auth/preference")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -75,7 +75,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 푸시 알림 비활성화
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/auth/preference")
+					.patch("/v1/auth/preference")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ pushEnabled: false })
 					.expect(200);
@@ -93,7 +93,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 타임존 변경
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/auth/preference")
+					.patch("/v1/auth/preference")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ timezone: "Asia/Seoul" })
 					.expect(200);
@@ -107,7 +107,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 인증 없이 환경설정 수정 API 호출
 				await request(ctx.app.getHttpServer())
-					.patch("/auth/preference")
+					.patch("/v1/auth/preference")
 					.send({ pushEnabled: false })
 					.expect(401);
 
@@ -127,7 +127,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 동의 정보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/auth/consent")
+					.get("/v1/auth/consent")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -141,7 +141,9 @@ describe("사용자 설정 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 동의 정보 조회 API 호출
-				await request(ctx.app.getHttpServer()).get("/auth/consent").expect(401);
+				await request(ctx.app.getHttpServer())
+					.get("/v1/auth/consent")
+					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -157,7 +159,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 마케팅 동의 활성화
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/auth/consent/marketing")
+					.patch("/v1/auth/consent/marketing")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ agreed: true })
 					.expect(200);
@@ -174,14 +176,14 @@ describe("사용자 설정 E2E", () => {
 					"Test1234!",
 				);
 				await request(ctx.app.getHttpServer())
-					.patch("/auth/consent/marketing")
+					.patch("/v1/auth/consent/marketing")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ agreed: true })
 					.expect(200);
 
 				// When - 마케팅 동의 철회
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/auth/consent/marketing")
+					.patch("/v1/auth/consent/marketing")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ agreed: false })
 					.expect(200);
@@ -196,7 +198,7 @@ describe("사용자 설정 E2E", () => {
 
 				// When - 인증 없이 마케팅 동의 변경 API 호출
 				await request(ctx.app.getHttpServer())
-					.patch("/auth/consent/marketing")
+					.patch("/v1/auth/consent/marketing")
 					.send({ agreed: true })
 					.expect(401);
 

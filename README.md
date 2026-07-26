@@ -2,7 +2,8 @@
 
 > **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
 
-AI 기반 할 일 관리 애플리케이션. Turborepo + pnpm 모노레포.
+메모가 할 일이 되고, 친구와 함께 끝내는 투두. Aido의 API 서버와 모바일 앱을
+관리하는 Turborepo + pnpm 모노레포입니다.
 
 ## 목차
 
@@ -27,7 +28,7 @@ AI 기반 할 일 관리 애플리케이션. Turborepo + pnpm 모노레포.
 | Validation | Zod 4.3, nestjs-zod |
 | Testing | Jest 29, Vitest 4, Testcontainers |
 | Code Quality | Biome 2.4 |
-| Runtime | Node.js 20+ |
+| Runtime | Node.js 22.x |
 
 ## 구조
 

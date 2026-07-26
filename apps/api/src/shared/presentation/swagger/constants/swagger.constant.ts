@@ -60,6 +60,9 @@ export const SWAGGER_TAGS = {
 	/** 알림 발송 - 전체/조건부/특정 사용자 알림 발송 */
 	ADMIN_NOTIFICATIONS: "Admin - 알림 발송",
 
+	/** 성장 지표 - 활성화, 리텐션, DAU/WAU/MAU */
+	ADMIN_GROWTH: "Admin - 성장 지표",
+
 	/** 시스템 관리 - 설정, 공지, 점검 */
 	ADMIN_SYSTEM: "Admin - 시스템",
 
@@ -139,6 +142,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
 	[SWAGGER_TAGS.ADMIN_NOTIFICATIONS]:
 		"관리자용: 전체/조건부/특정 사용자 알림 발송. 대상 필터링 지원",
+
+	[SWAGGER_TAGS.ADMIN_GROWTH]:
+		"관리자용: 가입 cohort 활성화·리텐션 및 DAU/WAU/MAU 집계",
 
 	[SWAGGER_TAGS.ADMIN_SYSTEM]: "관리자용: 앱 설정, 공지사항, 점검 모드",
 

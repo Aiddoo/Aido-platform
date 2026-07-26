@@ -87,6 +87,20 @@ describe('NotificationService', () => {
       expect(httpClient.post).not.toHaveBeenCalled();
     });
 
+    test('호환성 사전 등록에서는 OS 권한 요청을 허용하지 않는다', async () => {
+      // Given
+      const error = { code: 'NOTIFICATION_PERMISSION_DENIED', message: '권한 미결정' };
+      pushTokenService.getExpoPushToken.mockResolvedValue({ ok: false, error });
+
+      // When
+      await service.setupPushNotifications({ requestPermission: false });
+
+      // Then
+      expect(pushTokenService.getExpoPushToken).toHaveBeenCalledWith({
+        requestPermission: false,
+      });
+    });
+
     test('Zod 검증 실패 -> ParseError throw', async () => {
       // Given
       httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });

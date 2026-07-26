@@ -97,7 +97,7 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-			.impl(() => ({ publishAll: jest.fn() }))
+			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;
@@ -159,6 +159,38 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 			useCase.execute({ data, timezone: "UTC" }),
 		).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 		expect(categoryOwnership.validateOwnership).not.toHaveBeenCalled();
+	});
+
+	it("post-commit 이벤트 발행 관측이 끝난 뒤 반복 그룹을 재조회한다", async () => {
+		// Given - 3개 생성 + 이벤트 publisher gate
+		todoRepository.countActiveByCategory.mockResolvedValue(0);
+		todoRepository.getMaxSortOrder.mockResolvedValue(-1);
+		todoRepository.createMany.mockResolvedValue([
+			buildEntity(1),
+			buildEntity(2),
+			buildEntity(3),
+		]);
+		todoReadRepository.findManyByRecurrenceGroupId.mockResolvedValue([]);
+		let release: (() => void) | undefined;
+		const publication = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		eventPublisher.publishAll.mockReturnValue(publication);
+
+		// When - 반복 생성 실행
+		const execution = useCase.execute({
+			data: baseData,
+			timezone: "Asia/Seoul",
+		});
+		await new Promise((resolve) => setImmediate(resolve));
+
+		// Then - publisher 완료 전에는 그룹 재조회로 진행하지 않음
+		expect(
+			todoReadRepository.findManyByRecurrenceGroupId,
+		).not.toHaveBeenCalled();
+		release?.();
+		await execution;
+		expect(todoReadRepository.findManyByRecurrenceGroupId).toHaveBeenCalled();
 	});
 
 	it("인스턴스 수가 최대치를 초과하면 ApplicationException(TODO_0812)을 던진다", async () => {

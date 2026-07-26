@@ -21,7 +21,7 @@ describe("일일 달성 E2E", () => {
 	): Promise<{ id: number }> {
 		const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 		const response = await request(ctx.app.getHttpServer())
-			.post("/todos")
+			.post("/v1/todos")
 			.set("Authorization", `Bearer ${accessToken}`)
 			.send({
 				title: data.title,
@@ -35,7 +35,7 @@ describe("일일 달성 E2E", () => {
 		// completed가 true인 경우 업데이트
 		if (data.completed) {
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}`)
+				.patch(`/v1/todos/${todoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ completed: true })
 				.expect(200);
@@ -83,7 +83,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 인증 토큰 없이 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
 				// Then - 401 Unauthorized 반환
@@ -95,7 +95,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 잘못된 토큰으로 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", "Bearer invalid-token")
 					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
@@ -114,7 +114,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - startDate 없이 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.query({ endDate: "2026-01-31" });
 
@@ -132,7 +132,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - endDate 없이 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.query({ startDate: "2026-01-01" });
 
@@ -150,7 +150,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 잘못된 날짜 형식으로 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.query({ startDate: "2026/01/01", endDate: "2026-01-31" });
 
@@ -168,7 +168,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - endDate가 startDate보다 이전인 값으로 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.query({ startDate: "2026-01-31", endDate: "2026-01-01" });
 
@@ -194,7 +194,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 1월 전체 기간 완료 현황 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
@@ -233,7 +233,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 특정 3일 기간 완료 현황 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-15", endDate: "2026-01-17" });
 
@@ -286,7 +286,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 단일 날짜 완료 현황 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-20", endDate: "2026-01-20" });
 
@@ -310,7 +310,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - Todo가 없는 2월 기간 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-02-01", endDate: "2026-02-28" });
 
@@ -338,7 +338,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 사용자 1이 완료 현황 조회
 				const response1 = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${user1.accessToken}`)
 					.query({ startDate: "2026-03-01", endDate: "2026-03-01" });
 
@@ -351,7 +351,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 사용자 2가 완료 현황 조회
 				const response2 = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${user2.accessToken}`)
 					.query({ startDate: "2026-03-01", endDate: "2026-03-01" });
 
@@ -386,7 +386,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 초기 완료 현황 조회
 				let response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-04-01", endDate: "2026-04-01" });
 
@@ -397,13 +397,13 @@ describe("일일 달성 E2E", () => {
 
 				// When - Todo 하나 완료 처리 후 다시 조회
 				await request(ctx.app.getHttpServer())
-					.patch(`/todos/${todoId2}`)
+					.patch(`/v1/todos/${todoId2}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ completed: true })
 					.expect(200);
 
 				response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-04-01", endDate: "2026-04-01" });
 
@@ -433,7 +433,7 @@ describe("일일 달성 E2E", () => {
 
 				// When - 5월 전체 기간 완료 현황 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/daily-completions")
+					.get("/v1/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-05-01", endDate: "2026-05-31" });
 

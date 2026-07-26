@@ -93,7 +93,7 @@ describe("ChangeTodoCategoryUseCase — 할 일 카테고리 변경 핸들러", 
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-			.impl(() => ({ publishAll: jest.fn() }))
+			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;
@@ -147,6 +147,32 @@ describe("ChangeTodoCategoryUseCase — 할 일 카테고리 변경 핸들러", 
 		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoCategoryChangedEvent(1, "user-123", 2),
 		]);
+	});
+
+	it("post-commit 이벤트 발행 관측이 끝난 뒤 캐시를 무효화한다", async () => {
+		// Given - 이벤트 publisher 완료를 외부 gate로 지연
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
+		todoRepository.countActiveByCategory.mockResolvedValue(0);
+		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+		let release: (() => void) | undefined;
+		const publication = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		eventPublisher.publishAll.mockReturnValue(publication);
+
+		// When - 카테고리 변경 실행
+		const execution = useCase.execute({
+			id: 1,
+			userId: "user-123",
+			categoryId: 2,
+		});
+		await new Promise((resolve) => setImmediate(resolve));
+
+		// Then - publisher 완료 전에는 후속 캐시 작업으로 진행하지 않음
+		expect(todoCache.invalidateTodoCategories).not.toHaveBeenCalled();
+		release?.();
+		await execution;
+		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 	});
 
 	it("대상 카테고리가 가득 차면 ApplicationException(TODO_0811)을 던진다", async () => {

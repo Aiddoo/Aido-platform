@@ -8,6 +8,7 @@
 export {
 	type IReminderScheduler,
 	REMINDER_SCHEDULER,
+	type ReminderCancellationResult,
 } from "./application/ports/reminder-scheduler.port";
 export {
 	type ReminderHourChangedJobData,

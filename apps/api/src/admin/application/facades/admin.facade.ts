@@ -1,7 +1,12 @@
-import type { NotificationAction } from "@aido/validators";
+import type {
+	GrowthSummaryQuery,
+	GrowthSummaryResponse,
+	NotificationAction,
+} from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import type { BroadcastTargetFilter } from "../../domain/broadcast-message";
 import type { BroadcastResult } from "../../domain/broadcast-result";
+import { GetGrowthSummaryQuery } from "../queries/get-growth-summary/get-growth-summary.query";
 import { BroadcastNotificationUseCase } from "../use-cases/broadcast-notification/broadcast-notification.use-case";
 import { SendTargetedNotificationUseCase } from "../use-cases/send-targeted-notification/send-targeted-notification.use-case";
 
@@ -13,6 +18,7 @@ export class AdminFacade {
 	constructor(
 		private readonly broadcastNotificationUseCase: BroadcastNotificationUseCase,
 		private readonly sendTargetedNotificationUseCase: SendTargetedNotificationUseCase,
+		private readonly getGrowthSummaryQuery: GetGrowthSummaryQuery,
 	) {}
 
 	broadcastNotification(
@@ -45,5 +51,9 @@ export class AdminFacade {
 			action,
 			force,
 		});
+	}
+
+	getGrowthSummary(query: GrowthSummaryQuery): Promise<GrowthSummaryResponse> {
+		return this.getGrowthSummaryQuery.execute(query);
 	}
 }

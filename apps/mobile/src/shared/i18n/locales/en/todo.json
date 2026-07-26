@@ -71,7 +71,7 @@
   "add": {
     "placeholder": "What do you want to get done?",
     "submit": "Select",
-    "aiFeature": "AI Features",
+    "aiFeature": "Create a to-do with AI",
     "voiceAddTitle": "Add to-dos by voice",
     "voiceAddHint": "Say something like \"Dinner at 7 PM this Friday\"\nand we'll fill in the date and time"
   },
@@ -151,5 +151,20 @@
     "suggestionsArrived_one": "{{name}}, {{count}} personalized suggestion just arrived!",
     "suggestionsArrived_other": "{{name}}, {{count}} personalized suggestions just arrived!",
     "preparing": "We're preparing this week's suggestions"
+  },
+  "activation": {
+    "title": "Create and complete your first to-do",
+    "description": "Finish these two steps to get started with Aido",
+    "createTodo": "Create your first to-do",
+    "completeTodo": "Complete the to-do you created",
+    "completed": "completed",
+    "incomplete": "not completed",
+    "accessibilityLabel": "Aido getting started checklist",
+    "stepAccessibilityLabel": "{{label}}, {{status}}"
+  },
+  "reorderCoachmark": {
+    "todo": "Press and hold a to-do to move it where you want",
+    "category": "Press and hold a category to move it where you want",
+    "dismiss": "Dismiss reorder tip"
   }
 }

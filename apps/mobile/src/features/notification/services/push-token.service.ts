@@ -8,11 +8,18 @@ import { type NotificationError, NotificationErrors } from '../models/notificati
 export class PushTokenService {
   isPhysicalDevice = (): boolean => Device.isDevice;
 
-  requestPermission = async (): Promise<boolean> => {
+  requestPermission = async (requestIfUndetermined = true): Promise<boolean> => {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
 
     if (existingStatus === 'granted') {
       return true;
+    }
+
+    if (existingStatus !== 'undetermined') {
+      return false;
+    }
+    if (!requestIfUndetermined) {
+      return false;
     }
 
     const { status } = await Notifications.requestPermissionsAsync();
@@ -20,12 +27,14 @@ export class PushTokenService {
     return status === 'granted';
   };
 
-  getExpoPushToken = async (): Promise<Result<string, NotificationError>> => {
+  getExpoPushToken = async (
+    options: { requestPermission?: boolean } = {},
+  ): Promise<Result<string, NotificationError>> => {
     if (!this.isPhysicalDevice()) {
       return err(NotificationErrors.notPhysicalDevice());
     }
 
-    const isGranted = await this.requestPermission();
+    const isGranted = await this.requestPermission(options.requestPermission ?? true);
     if (!isGranted) {
       return err(NotificationErrors.permissionDenied());
     }

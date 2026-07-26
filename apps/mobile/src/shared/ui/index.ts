@@ -96,7 +96,7 @@ export {
   type ListRowProps,
   type ListRowVerticalPadding,
 } from './ListRow';
-export { OverlayProvider, type OverlayRender, useOverlay } from './Overlay';
+export { OverlayProvider, type OverlayRender, useOverlay, useOverlayState } from './Overlay';
 export {
   PremiumDialog,
   type PremiumDialogProps,

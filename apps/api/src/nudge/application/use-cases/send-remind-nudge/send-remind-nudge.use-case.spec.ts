@@ -2,7 +2,11 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import { FollowFacade } from "@/follow";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	MUTATION_LOCK,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { ReminderNudge } from "../../../domain/entities/reminder-nudge.entity";
@@ -35,16 +39,19 @@ describe("SendRemindNudgeUseCase", () => {
 	let repo: Mocked<NudgeRepositoryPort>;
 	let notifier: Mocked<NudgeNotifierPort>;
 	let follow: Mocked<FollowFacade>;
+	let mutationLock: Mocked<MutationLockPort>;
 	let uow: Mocked<{ run: (fn: () => unknown) => unknown }>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SendRemindNudgeUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SendRemindNudgeUseCase)
+			.mock<MutationLockPort>(MUTATION_LOCK)
+			.impl(() => ({ acquire: jest.fn() }))
+			.compile();
 		useCase = unit;
 		repo = unitRef.get(NUDGE_REPOSITORY);
 		notifier = unitRef.get(NUDGE_NOTIFIER);
 		follow = unitRef.get(FollowFacade);
+		mutationLock = unitRef.get(MUTATION_LOCK);
 		uow = unitRef.get(UNIT_OF_WORK);
 
 		uow.run.mockImplementation((fn: () => unknown) => fn());
@@ -98,5 +105,30 @@ describe("SendRemindNudgeUseCase", () => {
 		const payload = notifier.notifyNudgeSent.mock.calls[0]?.[0];
 		expect(payload?.todoId).toBeUndefined();
 		expect(payload?.todoTitle).toBeUndefined();
+	});
+
+	it("친구 쿨다운 키를 오늘 Todo와 최근 reminder guarded read 전에 UoW 안에서 잠근다", async () => {
+		// Given - guarded read 호출 순서 기록
+		const events: string[] = [];
+		mutationLock.acquire.mockImplementation(async () => {
+			events.push("lock");
+		});
+		repo.countTodayTodos.mockImplementation(async () => {
+			events.push("today-todo-read");
+			return 0;
+		});
+		repo.findLastRemindNudge.mockImplementation(async () => {
+			events.push("cooldown-read");
+			return null;
+		});
+
+		// When
+		await useCase.execute({ senderId: "s", receiverId: "r" }, "Asia/Seoul");
+
+		// Then
+		expect(mutationLock.acquire).toHaveBeenCalledWith([
+			"mutation:v1:remind-nudge:cooldown:s:r",
+		]);
+		expect(events).toEqual(["lock", "today-todo-read", "cooldown-read"]);
 	});
 });

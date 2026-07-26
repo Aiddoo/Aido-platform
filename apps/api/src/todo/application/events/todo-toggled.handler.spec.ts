@@ -30,9 +30,6 @@ import {
 } from "../ports/todo-reminder.port";
 import { TodoToggledHandler } from "./todo-toggled.handler";
 
-/** 마이크로태스크 큐를 비워 fire-and-forget 비동기 부수효과를 완료시킨다 */
-const flush = () => new Promise((resolve) => setImmediate(resolve));
-
 describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 	let handler: TodoToggledHandler;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
@@ -44,7 +41,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 	beforeEach(async () => {
 		todoReminder = {
 			scheduleReminder: jest.fn(),
-			cancelReminder: jest.fn(),
+			cancelReminder: jest.fn().mockResolvedValue({ status: "cancelled" }),
 		};
 
 		const { unit, unitRef } = await TestBed.solitary(TodoToggledHandler)
@@ -77,8 +74,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		todoReadRepository.countCompletedByUser.mockResolvedValue(5);
 
 		// When
-		handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC"));
-		await flush();
+		await handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC"));
 
 		// Then
 		expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
@@ -100,8 +96,9 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		friendPort.getUserDisplayName.mockResolvedValue("홍길동");
 
 		// When
-		handler.handle(new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"));
-		await flush();
+		await handler.handle(
+			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),
+		);
 
 		// Then
 		expect(todoNotification.enqueueFriendCompleted).toHaveBeenCalledWith(
@@ -121,8 +118,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		todoReadRepository.countCompletedByUser.mockResolvedValue(10);
 
 		// When
-		handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC"));
-		await flush();
+		await handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC"));
 
 		// Then
 		expect(todoNotification.enqueueMilestoneReached).toHaveBeenCalledWith({
@@ -133,8 +129,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 
 	it("미완료로 토글되면 스트릭만 갱신하고 완료 부수효과는 실행하지 않는다", async () => {
 		// When - 미완료로 토글
-		handler.handle(new TodoToggledEvent(1, "user-123", false, "UTC"));
-		await flush();
+		await handler.handle(new TodoToggledEvent(1, "user-123", false, "UTC"));
 
 		// Then
 		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith(
@@ -145,5 +140,45 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 		expect(todoNotification.enqueueFriendCompleted).not.toHaveBeenCalled();
 		expect(todoNotification.enqueueMilestoneReached).not.toHaveBeenCalled();
+	});
+
+	it("취소할 작업이 이미 없으면 missing을 정상 처리한다", async () => {
+		// Given - 잡이 이미 처리됐고 나머지 부수효과는 정상
+		jest.mocked(todoReminder.cancelReminder).mockResolvedValue({
+			status: "missing",
+		});
+		todoReadRepository.getTodayTodoStats.mockResolvedValue({
+			total: 1,
+			completed: 0,
+		});
+		todoReadRepository.countCompletedByUser.mockResolvedValue(5);
+
+		// When & Then - 명시적 missing만 정상 처리
+		await expect(
+			handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC")),
+		).resolves.toBeUndefined();
+	});
+
+	it("취소 인프라 실패는 다른 안전한 부수효과를 정리한 뒤 전파한다", async () => {
+		// Given - 취소 실패 + 나머지 부수효과 정상
+		const error = new Error("scheduler down");
+		const rejected = Promise.reject(error);
+		void rejected.catch(() => undefined);
+		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
+		todoReadRepository.getTodayTodoStats.mockResolvedValue({
+			total: 1,
+			completed: 0,
+		});
+		todoReadRepository.countCompletedByUser.mockResolvedValue(5);
+
+		// When & Then - 취소 실패가 유실되지 않고, 스트릭 작업도 떠다니지 않음
+		await expect(
+			handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC")),
+		).rejects.toBe(error);
+		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith(
+			"user-123",
+			true,
+			"UTC",
+		);
 	});
 });

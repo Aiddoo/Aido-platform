@@ -83,7 +83,7 @@ export class UpdateTodoScheduleUseCase {
 		this.#logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (리마인더 재스케줄/취소는 이벤트 핸들러)
-		this.eventPublisher.publishAll(events);
+		await this.eventPublisher.publishAll(events);
 
 		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
 		await this.todoCache.invalidateFriendTodos(userId);

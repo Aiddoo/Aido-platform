@@ -106,7 +106,7 @@ describe("알림 E2E", () => {
 
 				// When - 푸시 토큰 등록 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
@@ -128,7 +128,7 @@ describe("알림 E2E", () => {
 
 				// When - 첫 번째 토큰 등록
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
@@ -138,7 +138,7 @@ describe("알림 E2E", () => {
 
 				// When - 동일한 deviceId로 새 토큰 등록 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "ExponentPushToken[yyyyyyyyyyyyyyyyyyyyyy]",
@@ -160,7 +160,7 @@ describe("알림 E2E", () => {
 
 				// When - Accept-Language 헤더와 함께 토큰 등록
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.set("Accept-Language", "en-US,en;q=0.9")
 					.send({
@@ -184,7 +184,7 @@ describe("알림 E2E", () => {
 					password,
 				);
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.set("Accept-Language", "en")
 					.send({
@@ -195,7 +195,7 @@ describe("알림 E2E", () => {
 
 				// When - 구버전 기기가 헤더 없이 토큰 재등록
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "ExponentPushToken[locale-none-old-device]",
@@ -220,7 +220,7 @@ describe("알림 E2E", () => {
 
 				// When - 미지원 언어 헤더로 토큰 등록
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.set("Accept-Language", "ja-JP")
 					.send({
@@ -244,7 +244,7 @@ describe("알림 E2E", () => {
 					password,
 				);
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.set("Accept-Language", "en")
 					.send({
@@ -255,7 +255,7 @@ describe("알림 E2E", () => {
 
 				// When - 앱 언어를 한국어로 바꾸고 재등록 (모바일의 언어 변경 → 토큰 재등록 흐름)
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.set("Accept-Language", "ko")
 					.send({
@@ -281,7 +281,7 @@ describe("알림 E2E", () => {
 
 				// When - 유효하지 않은 토큰으로 등록 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "invalid-token-format",
@@ -298,7 +298,7 @@ describe("알림 E2E", () => {
 
 				// When - 인증 없이 푸시 토큰 등록 API 호출
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.send({
 						token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
 					})
@@ -317,7 +317,7 @@ describe("알림 E2E", () => {
 				);
 
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "ExponentPushToken[deletetest1111111111]",
@@ -327,7 +327,7 @@ describe("알림 E2E", () => {
 
 				// When - 특정 deviceId의 토큰 해제 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.delete("/notifications/token")
+					.delete("/v1/notifications/token")
 					.query({ deviceId: "delete-test-device" })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -345,7 +345,7 @@ describe("알림 E2E", () => {
 				);
 
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "ExponentPushToken[multidevice111111111]",
@@ -354,7 +354,7 @@ describe("알림 E2E", () => {
 					.expect(201);
 
 				await request(ctx.app.getHttpServer())
-					.post("/notifications/token")
+					.post("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						token: "ExponentPushToken[multidevice222222222]",
@@ -364,7 +364,7 @@ describe("알림 E2E", () => {
 
 				// When - deviceId 미지정으로 모든 토큰 해제 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.delete("/notifications/token")
+					.delete("/v1/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -386,7 +386,7 @@ describe("알림 E2E", () => {
 
 				// When - 알림 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/notifications")
+					.get("/v1/notifications")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -406,7 +406,7 @@ describe("알림 E2E", () => {
 
 				// When - limit을 5로 설정하여 알림 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/notifications")
+					.get("/v1/notifications")
 					.query({ limit: 5 })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -425,7 +425,7 @@ describe("알림 E2E", () => {
 
 				// When - unreadOnly=true로 알림 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/notifications")
+					.get("/v1/notifications")
 					.query({ unreadOnly: true })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -440,7 +440,7 @@ describe("알림 E2E", () => {
 
 				// When - 인증 없이 알림 목록 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/notifications")
+					.get("/v1/notifications")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -456,7 +456,7 @@ describe("알림 E2E", () => {
 
 					// When - category=ALL로 알림 목록 조회
 					const response = await request(ctx.app.getHttpServer())
-						.get("/notifications?category=ALL")
+						.get("/v1/notifications?category=ALL")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
@@ -475,7 +475,7 @@ describe("알림 E2E", () => {
 
 					// When - category 미지정으로 알림 목록 조회
 					const response = await request(ctx.app.getHttpServer())
-						.get("/notifications")
+						.get("/v1/notifications")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
@@ -493,7 +493,7 @@ describe("알림 E2E", () => {
 
 					// When - 유효하지 않은 category로 알림 목록 조회
 					const response = await request(ctx.app.getHttpServer())
-						.get("/notifications?category=INVALID")
+						.get("/v1/notifications?category=INVALID")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(400);
 
@@ -510,7 +510,7 @@ describe("알림 E2E", () => {
 
 					// When - category=SOCIAL로 알림 목록 조회
 					const response = await request(ctx.app.getHttpServer())
-						.get("/notifications?category=SOCIAL")
+						.get("/v1/notifications?category=SOCIAL")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
@@ -538,7 +538,7 @@ describe("알림 E2E", () => {
 
 					// When - category=NOTICE로 알림 목록 조회
 					const response = await request(ctx.app.getHttpServer())
-						.get("/notifications?category=NOTICE")
+						.get("/v1/notifications?category=NOTICE")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
@@ -566,7 +566,7 @@ describe("알림 E2E", () => {
 
 					// When - category=TODO로 알림 목록 조회
 					const response = await request(ctx.app.getHttpServer())
-						.get("/notifications?category=TODO")
+						.get("/v1/notifications?category=TODO")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
@@ -594,7 +594,7 @@ describe("알림 E2E", () => {
 
 					// When - category와 unreadOnly 동시 사용
 					const response = await request(ctx.app.getHttpServer())
-						.get("/notifications?category=SOCIAL&unreadOnly=true")
+						.get("/v1/notifications?category=SOCIAL&unreadOnly=true")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
@@ -614,7 +614,7 @@ describe("알림 E2E", () => {
 
 				// When - 읽지 않은 알림 수 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/notifications/unread-count")
+					.get("/v1/notifications/unread-count")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -637,7 +637,7 @@ describe("알림 E2E", () => {
 
 			// When - category=SOCIAL로 알림 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/notifications?category=SOCIAL")
+				.get("/v1/notifications?category=SOCIAL")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -666,7 +666,7 @@ describe("알림 E2E", () => {
 
 			// When - 1페이지
 			const page1 = await request(ctx.app.getHttpServer())
-				.get("/notifications?limit=10")
+				.get("/v1/notifications?limit=10")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -677,7 +677,7 @@ describe("알림 E2E", () => {
 
 			// When - 2페이지
 			const page2 = await request(ctx.app.getHttpServer())
-				.get(`/notifications?limit=10&cursor=${page1.body.data.nextCursor}`)
+				.get(`/v1/notifications?limit=10&cursor=${page1.body.data.nextCursor}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -687,7 +687,7 @@ describe("알림 E2E", () => {
 
 			// When - 3페이지
 			const page3 = await request(ctx.app.getHttpServer())
-				.get(`/notifications?limit=10&cursor=${page2.body.data.nextCursor}`)
+				.get(`/v1/notifications?limit=10&cursor=${page2.body.data.nextCursor}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -715,7 +715,7 @@ describe("알림 E2E", () => {
 
 			// When - TODO 카테고리 1페이지 (10개)
 			const page1 = await request(ctx.app.getHttpServer())
-				.get("/notifications?category=TODO&limit=10")
+				.get("/v1/notifications?category=TODO&limit=10")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -736,7 +736,7 @@ describe("알림 E2E", () => {
 			// When - TODO 카테고리 2페이지 (나머지 9개)
 			const page2 = await request(ctx.app.getHttpServer())
 				.get(
-					`/notifications?category=TODO&limit=10&cursor=${page1.body.data.nextCursor}`,
+					`/v1/notifications?category=TODO&limit=10&cursor=${page1.body.data.nextCursor}`,
 				)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -759,7 +759,7 @@ describe("알림 E2E", () => {
 
 			// When - cursor=0으로 조회
 			const cursorZeroPage = await request(ctx.app.getHttpServer())
-				.get("/notifications?limit=10&cursor=0")
+				.get("/v1/notifications?limit=10&cursor=0")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -779,7 +779,7 @@ describe("알림 E2E", () => {
 
 			// When - 전체 알림 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/notifications?limit=50")
+				.get("/v1/notifications?limit=50")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -815,7 +815,7 @@ describe("알림 E2E", () => {
 
 			// When - TODO 카테고리 필터링
 			const response = await request(ctx.app.getHttpServer())
-				.get("/notifications?category=TODO&limit=50")
+				.get("/v1/notifications?category=TODO&limit=50")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -849,7 +849,7 @@ describe("알림 E2E", () => {
 
 			// When - SOCIAL 카테고리 필터링
 			const response = await request(ctx.app.getHttpServer())
-				.get("/notifications?category=SOCIAL&limit=50")
+				.get("/v1/notifications?category=SOCIAL&limit=50")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -879,11 +879,11 @@ describe("알림 E2E", () => {
 				});
 
 				const first = await request(ctx.app.getHttpServer())
-					.post(`/notifications/${notification.id}/opened`)
+					.post(`/v1/notifications/${notification.id}/opened`)
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 				const second = await request(ctx.app.getHttpServer())
-					.post(`/notifications/${notification.id}/opened`)
+					.post(`/v1/notifications/${notification.id}/opened`)
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -907,7 +907,7 @@ describe("알림 E2E", () => {
 
 				// When - 존재하지 않는 알림 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/notifications/99999/read")
+					.patch("/v1/notifications/99999/read")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(404);
 
@@ -921,7 +921,7 @@ describe("알림 E2E", () => {
 
 				// When - 인증 없이 단일 알림 읽음 처리 API 호출
 				await request(ctx.app.getHttpServer())
-					.patch("/notifications/1/read")
+					.patch("/v1/notifications/1/read")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -938,7 +938,7 @@ describe("알림 E2E", () => {
 
 				// When - 모든 알림 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/notifications/read-all")
+					.patch("/v1/notifications/read-all")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -967,7 +967,7 @@ describe("알림 E2E", () => {
 			);
 
 			const response = await request(ctx.app.getHttpServer())
-				.post("/notifications/marketing-push/opt-out")
+				.post("/v1/notifications/marketing-push/opt-out")
 				.send({ token: tokenPort.issue(user.userId) })
 				.expect(200);
 
@@ -980,7 +980,7 @@ describe("알림 E2E", () => {
 
 		it("잘못된 토큰도 동일한 응답을 반환해 토큰 유효성을 노출하지 않는다", async () => {
 			const response = await request(ctx.app.getHttpServer())
-				.post("/notifications/marketing-push/opt-out")
+				.post("/v1/notifications/marketing-push/opt-out")
 				.send({ token: "invalid.token" })
 				.expect(200);
 

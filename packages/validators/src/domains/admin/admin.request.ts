@@ -3,6 +3,52 @@ import { z } from 'zod';
 import { notificationActionSchema } from '../notification/notification.payload';
 import { BROADCAST_TARGET_FILTER, BROADCAST_TARGET_FILTERS } from './admin.constants';
 
+const MAX_GROWTH_QUERY_DAYS = 90;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * 관리자 성장 지표 요약 조회
+ */
+export const growthSummaryQuerySchema = z
+  .object({
+    cohortFrom: z.iso.date().optional().describe('가입 cohort 시작 현지 날짜 (YYYY-MM-DD)'),
+    cohortTo: z.iso.date().optional().describe('가입 cohort 종료 현지 날짜 (YYYY-MM-DD)'),
+  })
+  .superRefine((data, context) => {
+    if (Boolean(data.cohortFrom) !== Boolean(data.cohortTo)) {
+      context.addIssue({
+        code: 'custom',
+        path: data.cohortFrom ? ['cohortTo'] : ['cohortFrom'],
+        message: 'cohort 시작일과 종료일을 함께 입력해주세요',
+      });
+      return;
+    }
+
+    if (!data.cohortFrom || !data.cohortTo) return;
+
+    const inclusiveDays =
+      (Date.parse(data.cohortTo) - Date.parse(data.cohortFrom)) / MILLISECONDS_PER_DAY + 1;
+    if (inclusiveDays < 1) {
+      context.addIssue({
+        code: 'custom',
+        path: ['cohortTo'],
+        message: 'cohort 종료일은 시작일보다 빠를 수 없습니다',
+      });
+      return;
+    }
+
+    if (inclusiveDays > MAX_GROWTH_QUERY_DAYS) {
+      context.addIssue({
+        code: 'custom',
+        path: ['cohortTo'],
+        message: `조회 기간은 최대 ${MAX_GROWTH_QUERY_DAYS}일입니다`,
+      });
+    }
+  })
+  .describe('관리자 성장 지표 요약 조회');
+
+export type GrowthSummaryQuery = z.infer<typeof growthSummaryQuerySchema>;
+
 /**
  * 전체/조건부 알림 브로드캐스트 요청
  */

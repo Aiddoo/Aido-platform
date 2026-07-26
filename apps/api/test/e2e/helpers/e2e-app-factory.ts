@@ -15,7 +15,6 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
-import { ZodValidationPipe } from "nestjs-zod";
 import type { App } from "supertest/types";
 import {
 	ADMIN_NOTIFICATION_QUEUE,
@@ -66,6 +65,7 @@ import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
+import { configureApplication } from "@/shared/infrastructure/http/configure-application";
 import {
 	REDIS_CLIENT,
 	REDIS_COMMAND_CLIENT,
@@ -93,6 +93,10 @@ import {
 	createE2eTestStateResetter,
 	type TestStateResetter,
 } from "./e2e-test-state";
+import {
+	bypassE2eThrottler,
+	restoreRealE2eThrottler,
+} from "./e2e-throttler-control";
 import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher";
 
 /* ── BullMQ 격리 대상 ─────────────────────────────────── */
@@ -144,6 +148,8 @@ export interface E2eTestContext {
 }
 
 export interface E2eAppOptions {
+	/** 전역 E2E bypass를 해제하고 실제 ThrottlerGuard를 검증하는 전용 suite용 */
+	withRealThrottler?: boolean;
 	/** 추가 provider override 콜백 */
 	customizeBuilder?: (
 		builder: ReturnType<typeof Test.createTestingModule>,
@@ -155,6 +161,26 @@ export interface E2eAppOptions {
 }
 
 export async function createE2eApp(
+	options?: E2eAppOptions,
+): Promise<E2eTestContext> {
+	const withRealThrottler = options?.withRealThrottler === true;
+	if (withRealThrottler) {
+		restoreRealE2eThrottler();
+	}
+
+	let contextOwnsThrottlerLifecycle = false;
+	try {
+		const context = await createE2eAppContext(options);
+		contextOwnsThrottlerLifecycle = true;
+		return context;
+	} finally {
+		if (withRealThrottler && !contextOwnsThrottlerLifecycle) {
+			bypassE2eThrottler();
+		}
+	}
+}
+
+async function createE2eAppContext(
 	options?: E2eAppOptions,
 ): Promise<E2eTestContext> {
 	const testDatabase = options?.testDatabase ?? new TestDatabase();
@@ -194,22 +220,28 @@ export async function createE2eApp(
 		applicationClosed = true;
 		const errors: unknown[] = [];
 		try {
-			await app?.close();
-		} catch (error) {
-			errors.push(error);
-		}
+			try {
+				await app?.close();
+			} catch (error) {
+				errors.push(error);
+			}
 
-		const results = await Promise.allSettled([
-			Promise.resolve().then(() => redisMock.disconnect()),
-			Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
-		]);
-		errors.push(
-			...results.flatMap((result) =>
-				result.status === "rejected" ? [result.reason] : [],
-			),
-		);
-		if (errors.length > 0) {
-			throw new AggregateError(errors, "Failed to close E2E app resources");
+			const results = await Promise.allSettled([
+				Promise.resolve().then(() => redisMock.disconnect()),
+				Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
+			]);
+			errors.push(
+				...results.flatMap((result) =>
+					result.status === "rejected" ? [result.reason] : [],
+				),
+			);
+			if (errors.length > 0) {
+				throw new AggregateError(errors, "Failed to close E2E app resources");
+			}
+		} finally {
+			if (options?.withRealThrottler) {
+				bypassE2eThrottler();
+			}
 		}
 	};
 
@@ -307,7 +339,11 @@ export async function createE2eApp(
 	try {
 		module = await builder.compile();
 		app = module.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
+		configureApplication(app, {
+			nodeEnv: "development",
+			corsOrigins: ["http://localhost:3000"],
+			enableShutdownHooks: false,
+		});
 		await app.init();
 		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
 

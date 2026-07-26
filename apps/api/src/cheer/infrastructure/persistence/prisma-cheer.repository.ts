@@ -150,9 +150,16 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 		});
 	}
 
-	async countSentSince(senderId: string, since: Date): Promise<number> {
+	async countSentSince(
+		senderId: string,
+		since: Date,
+		untilExclusive: Date,
+	): Promise<number> {
 		return this.client.cheer.count({
-			where: { senderId, createdAt: { gte: since } },
+			where: {
+				senderId,
+				createdAt: { gte: since, lt: untilExclusive },
+			},
 		});
 	}
 
@@ -178,6 +185,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 				sender: { connect: { id: input.senderId } },
 				receiver: { connect: { id: input.receiverId } },
 				message: input.message,
+				createdAt: input.createdAt,
 			},
 			include: CHEER_INCLUDE,
 		});

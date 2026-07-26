@@ -67,5 +67,5 @@ export interface AuthRuntimeConfigPort {
 }
 
 export interface AuthUserActivityWriterPort {
-	updateLastActiveAt(userId: string): Promise<void>;
+	updateLastActiveAt(userId: string, timezone: string): Promise<void>;
 }

@@ -1,8 +1,9 @@
 # @aido/mobile
 
-> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+> **Version**: 1.8.0 · **Last Updated**: 2026-07-26 · **Owner**: Aido Mobile Team
 
-Expo 55 기반 React Native 모바일 앱.
+메모가 할 일이 되고, 친구와 함께 끝내는 투두. Expo SDK 57 기반 React Native
+모바일 앱입니다.
 
 ## 목차
 
@@ -18,7 +19,7 @@ Expo 55 기반 React Native 모바일 앱.
 
 | 분류 | 기술 |
 |------|------|
-| Framework | Expo 55, React Native 0.83 |
+| Framework | Expo SDK 57, React Native 0.86 |
 | Routing | Expo Router |
 | State | TanStack Query v5 |
 | HTTP | Ky |
@@ -96,3 +97,7 @@ pnpm update:production "메시지"
 ## 배포
 
 자세한 내용은 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
+
+스토어 문구·스크린샷 순서·릴리스 체크리스트의 단일 준비본은
+[`store-metadata/1.8.0/release.json`](./store-metadata/1.8.0/release.json)을
+참고합니다. 이 파일을 변경해도 외부 스토어에 자동 게시되지는 않습니다.

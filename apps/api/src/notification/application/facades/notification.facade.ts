@@ -8,9 +8,11 @@ import type {
 	RegisterPushTokenData,
 } from "../ports/notification-data";
 import {
+	type PersistedBatchNotificationDispatch,
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
 } from "../ports/push-dispatcher.port";
+import { DispatchBatchNotificationUseCase } from "../use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "../use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import {
 	type GetNotificationsInput,
@@ -21,6 +23,7 @@ import { MarkAllAsReadUseCase } from "../use-cases/mark-all-as-read/mark-all-as-
 import { MarkAsReadUseCase } from "../use-cases/mark-as-read/mark-as-read.use-case";
 import { MarkNotificationOpenedUseCase } from "../use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "../use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
+import { PersistBatchNotificationUseCase } from "../use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import { RegisterPushTokenUseCase } from "../use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "../use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "../use-cases/send-notification/send-notification.use-case";
@@ -47,6 +50,8 @@ export class NotificationFacade {
 		private readonly sendNotificationUseCase: SendNotificationUseCase,
 		private readonly sendNotificationWithDedupUseCase: SendNotificationWithDedupUseCase,
 		private readonly sendBatchNotificationUseCase: SendBatchNotificationUseCase,
+		private readonly persistBatchNotificationUseCase: PersistBatchNotificationUseCase,
+		private readonly dispatchBatchNotificationUseCase: DispatchBatchNotificationUseCase,
 		private readonly findAlreadyNotifiedUsersUseCase: FindAlreadyNotifiedUsersUseCase,
 		@Inject(PUSH_DISPATCHER)
 		private readonly pushDispatcher: PushDispatcherPort,
@@ -105,6 +110,20 @@ export class NotificationFacade {
 		dataList: CreateNotificationData[],
 	): Promise<{ count: number }> {
 		return this.sendBatchNotificationUseCase.execute(dataList);
+	}
+
+	/** 배치 알림 영속화 전용(UOW 내부 호출 가능) */
+	persistBatch(
+		dataList: CreateNotificationData[],
+	): Promise<PersistedBatchNotificationDispatch> {
+		return this.persistBatchNotificationUseCase.execute(dataList);
+	}
+
+	/** 커밋된 배치 알림의 비동기 부수효과 예약 */
+	dispatchPersistedBatch(input: PersistedBatchNotificationDispatch): {
+		count: number;
+	} {
+		return this.dispatchBatchNotificationUseCase.execute(input);
 	}
 
 	/** 이미 알림을 받은 사용자 ID 조회(배치 dedup) */

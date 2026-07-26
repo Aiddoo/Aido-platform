@@ -9,6 +9,7 @@ import { NotificationFacade } from "./application/facades/notification.facade";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
+import { NOTIFICATION_DEDUP } from "./application/ports/notification-dedup.port";
 import { PUSH_DISPATCHER } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
@@ -16,6 +17,7 @@ import {
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
+import { DispatchBatchNotificationUseCase } from "./application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "./application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
 import { GetUnreadCountUseCase } from "./application/use-cases/get-unread-count/get-unread-count.use-case";
@@ -23,12 +25,14 @@ import { MarkAllAsReadUseCase } from "./application/use-cases/mark-all-as-read/m
 import { MarkAsReadUseCase } from "./application/use-cases/mark-as-read/mark-as-read.use-case";
 import { MarkNotificationOpenedUseCase } from "./application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
+import { PersistBatchNotificationUseCase } from "./application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/notification-cache.adapter";
+import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
 import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
@@ -69,6 +73,8 @@ import { NotificationController } from "./presentation/notification.controller";
 		// 크로스모듈 발송/디스패치 use-cases
 		SendNotificationUseCase,
 		SendNotificationWithDedupUseCase,
+		PersistBatchNotificationUseCase,
+		DispatchBatchNotificationUseCase,
 		SendBatchNotificationUseCase,
 		FindAlreadyNotifiedUsersUseCase,
 		// Repository (포트 바인딩)
@@ -86,6 +92,11 @@ import { NotificationController } from "./presentation/notification.controller";
 		},
 		// 조회 캐시 포트 (application → CacheService 직접 의존 역전)
 		{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
+		NotificationDedupAdapter,
+		{
+			provide: NOTIFICATION_DEDUP,
+			useExisting: NotificationDedupAdapter,
+		},
 		// 푸시 디스패처 (전송 메커니즘 + 발송 자격 판단)
 		{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)

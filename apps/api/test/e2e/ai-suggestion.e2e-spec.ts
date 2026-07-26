@@ -93,7 +93,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - 제안 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/ai/suggestions")
+				.get("/v1/ai/suggestions")
 				.set("Authorization", `Bearer ${user.accessToken}`);
 
 			// Then - 200 응답과 빈 배열 반환
@@ -107,7 +107,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - 토큰 없이 목록 조회
 			const response = await request(ctx.app.getHttpServer()).get(
-				"/ai/suggestions",
+				"/v1/ai/suggestions",
 			);
 
 			// Then - 401 Unauthorized 반환
@@ -129,7 +129,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - accept 액션 수행
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/ai/suggestions/${suggestionId}`)
+				.patch(`/v1/ai/suggestions/${suggestionId}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ action: "accept", categoryId });
@@ -151,7 +151,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - dismiss 액션 수행
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/ai/suggestions/${suggestionId}`)
+				.patch(`/v1/ai/suggestions/${suggestionId}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ action: "dismiss" });
@@ -177,7 +177,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - 이미 처리된 제안에 다시 액션 수행
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/ai/suggestions/${suggestionId}`)
+				.patch(`/v1/ai/suggestions/${suggestionId}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ action: "accept", categoryId });
@@ -197,7 +197,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - 유효하지 않은 action 값으로 요청
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/ai/suggestions/${suggestionId}`)
+				.patch(`/v1/ai/suggestions/${suggestionId}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ action: "invalid" });
@@ -216,7 +216,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - 없는 제안에 대해 액션 수행
 			const response = await request(ctx.app.getHttpServer())
-				.patch("/ai/suggestions/99999")
+				.patch("/v1/ai/suggestions/99999")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ action: "dismiss" });
@@ -231,7 +231,7 @@ describe("AI 제안 E2E", () => {
 
 			// When - 토큰 없이 액션 수행
 			const response = await request(ctx.app.getHttpServer())
-				.patch("/ai/suggestions/1")
+				.patch("/v1/ai/suggestions/1")
 				.send({ action: "dismiss" });
 
 			// Then - 401 Unauthorized 반환

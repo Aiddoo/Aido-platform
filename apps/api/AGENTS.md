@@ -60,7 +60,7 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushP
 - **트랜잭션**: `UNIT_OF_WORK.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다
 - **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `as`는 `pnpm lint:no-cast`, `!`는 Biome `noNonNullAssertion`(biome.json override)로 검사 (CI `lint:arch` 게이트)
 - **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`(dependency-cruiser, `.dependency-cruiser.cjs`)로 검사 (CI `lint:arch` 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
-- **API 계약 고정**: `openapi-contract.e2e-spec` 스냅샷 diff 0 = 클라이언트 영향 0 (상시 계약 게이트 — CI e2e에서 실행)
+- **API 계약 고정**: `openapi-contract.e2e-spec`의 현재 스냅샷 + 스토어 배포 클라이언트 fingerprint가 기존 request/response/status/Zod shape를 고정한다. 새 route/schema 추가만 허용 (상시 계약 게이트 — CI e2e에서 실행)
 - **큐**: 알림/부수효과는 `QueueService.enqueueXxx()` fire-and-forget 패턴 (트랜잭션 커밋 후 enqueue)
 - **캐시**: application은 **모듈 캐시 포트**(Symbol 토큰)에만 의존 — 공유 `CacheService`/`CacheKeys` 직접 주입 금지(`.dependency-cruiser.cjs`가 강제). 상세: [architecture.md §5.3.2](.claude/architecture.md)
 - **암호화**: OAuth 토큰 등 민감 데이터는 `EncryptionService`로 암호화 저장

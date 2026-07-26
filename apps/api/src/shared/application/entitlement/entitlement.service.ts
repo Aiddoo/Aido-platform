@@ -171,6 +171,31 @@ export class EntitlementService {
 		return { maxCount, isAdmin: role === "ADMIN", subscriptionStatus };
 	}
 
+	/**
+	 * 트랜잭션 내 실시간 리소스 보유량 제한 조회 (캐시 미사용)
+	 *
+	 * 카테고리 생성처럼 entitlement와 현재 보유량을 같은 업무 트랜잭션에서
+	 * 판단해야 하는 쓰기 경로에서 사용합니다.
+	 */
+	async getResourceLimitInTx(
+		tx: TransactionClient,
+		userId: string,
+		resource: Resource,
+	): Promise<ResourceEntitlement> {
+		const user = await tx.user.findUnique({
+			where: { id: userId },
+			select: { role: true, subscriptionStatus: true },
+		});
+		const role = user?.role ?? "USER";
+		const subscriptionStatus = user?.subscriptionStatus ?? "FREE";
+		const maxCount = resolveResourceLimit(role, subscriptionStatus, resource);
+		return {
+			maxCount,
+			isAdmin: role === "ADMIN",
+			subscriptionStatus,
+		};
+	}
+
 	// =========================================================================
 	// 프리미엄 접근 권한
 	// =========================================================================

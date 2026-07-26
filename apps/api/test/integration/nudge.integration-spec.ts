@@ -30,7 +30,7 @@ import { NudgeNotifierAdapter } from "@/nudge/infrastructure/adapters/nudge-noti
 import { PrismaNudgeRepository } from "@/nudge/infrastructure/persistence/prisma-nudge.repository";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -107,6 +107,10 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				{ provide: NUDGE_LIMIT_READER, useClass: NudgeLimitReaderAdapter },
 				PaginationService,
 				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
+				{
+					provide: MUTATION_LOCK,
+					useValue: { acquire: jest.fn().mockResolvedValue(undefined) },
+				},
 				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
 				{
 					provide: TypedConfigService,

@@ -148,7 +148,8 @@ export class ExampleController {
 ```typescript
 private extractMetadata(req: Request): SessionMetadata {
   return {
-    ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || 'unknown',
+    // Express trust proxy가 host-local Nginx 한 홉을 검증해 확정한 canonical IP
+    ipAddress: req.ip || 'unknown',
     userAgent: req.headers['user-agent'] || 'unknown',
     deviceName: req.body?.deviceName,
     deviceType: req.body?.deviceType,
@@ -669,10 +670,10 @@ modules/{name}/
 | 입력 타입 | `XxxInput` 인터페이스를 같은 파일에서 export (또는 `application/types.ts` 타입의 별칭) — 커맨드/쿼리 클래스 없음 |
 | 예외 | `ApplicationException(ErrorCode.XXX, context)` — 유스케이스 규칙 위반. 도메인 불변식은 `DomainException` |
 | 트랜잭션 | `@Inject(UNIT_OF_WORK)` → `uow.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(AsyncLocalStorage)에서 활성 TX를 직접 읽는다 (전파 Required). load→mutate→write를 TX 안에 묶는다. `database.$transaction` 직접 호출 금지 |
-| 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 + `pullDomainEvents()` 드레인 → **run resolve 후** `DOMAIN_EVENT_PUBLISHER.publishAll(events)` (커밋 후 `@OnEvent` 구독자가 처리) |
+| 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 + `pullDomainEvents()` 드레인 → **run resolve 후** `await DOMAIN_EVENT_PUBLISHER.publishAll(events)` (커밋 후 `@OnEvent` 구독자가 처리) |
 | 캐시 무효화 | 영속화 후 use-case에서 명시적 호출 (`TodoCachePort` 등 캐시 포트) — 도메인 이벤트가 없는 쓰기 경로 포함. 또는 `@OnEvent` 구독으로 처리 |
 | 응답 | 애그리게잇에서 직접 만들지 않는다 — 항상 read 포트(`~ReadRepositoryPort`) 재조회 |
-| 이벤트 발행 | 발행은 반드시 커밋 후(`run` 콜백 밖). EventEmitter2 `emit`은 동기 — 퍼블리셔가 이벤트 단위 try/catch로 예외 격리 (도메인·애플리케이션은 EventEmitter2 무의존, 포트만 의존) |
+| 이벤트 발행 | 발행은 반드시 커밋 후(`run` 콜백 밖) `await`. 퍼블리셔가 EventEmitter2 `emitAsync`를 이벤트 단위로 await하고 비동기 실패를 기록·격리한다 (도메인·애플리케이션은 EventEmitter2 무의존, 포트만 의존) |
 | 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전, 어댑터는 타 모듈 배럴의 **Facade**에 위임 (예: memo의 `TODO_CREATOR` 포트 → `TodoCreatorAdapter` → `TodoFacade`) |
 | 타입 | `as`/`!` 금지(`as`: `pnpm lint:no-cast` · `!`: Biome), 임포트 경계는 `pnpm lint:boundaries`(dependency-cruiser) — CI `lint:arch` 게이트 |
 | 가독성 | JSDoc에 흐름 요약, `execute()` 본문은 번호 주석으로 위→아래 단일 경로 |
@@ -702,8 +703,8 @@ export class CreateTodoUseCase {
     const { todoId, events } = await this.uow.run(async () => {
       /* 저장 → todo.pullDomainEvents() 반환 */
     });
-    // 3. 커밋 후 도메인 이벤트 발행 (fire-and-forget — @OnEvent 구독자가 부수효과 처리)
-    this.eventPublisher.publishAll(events);
+    // 3. 커밋 후 도메인 이벤트 발행 (비동기 구독자 완료·실패 관측, 실패는 publisher가 격리)
+    await this.eventPublisher.publishAll(events);
     // 4. 응답은 read 포트 재조회
     return this.todoReadRepository.findByIdOrThrow(todoId, input.userId);
   }
@@ -726,7 +727,8 @@ export class CreateTodoUseCase {
 ### 도메인 이벤트 구독 규칙
 
 - 위치: `application/events/*.handler.ts` — `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.CREATED)` 등 이벤트명 상수로 구독
-- 핸들러 내부는 try/catch fire-and-forget + 로깅 — 부수효과 실패가 다른 구독자·요청에 전파되지 않게 한다
+- 실패 전파가 필요한 핸들러는 `@OnEvent(..., { suppressErrors: false })` + `async`로 rejection을 퍼블리셔까지 보존한다. 퍼블리셔가 비동기 실패를 한 번 기록·격리해 다른 이벤트·이미 커밋된 요청에 전파하지 않는다
+- 이는 durable retry 보장이 아니다. 유실 불가 부수효과는 별도 내구성 큐/아웃박스를 사용한다
 - 판단 규칙(마일스톤·전체완료 등)은 `domain/services/` 정책 함수 호출 — 구독자에 도메인 로직 상주 금지
 
 ### 도메인 규칙

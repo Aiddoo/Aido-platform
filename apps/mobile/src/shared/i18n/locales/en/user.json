@@ -34,8 +34,8 @@
   "profile": {
     "defaultName": "Motivated User",
     "avatarAlt": "{{name}}'s profile",
-    "tagCopied": "Tag copied",
-    "tagCopiedDescription": "Share it with friends to receive friend requests",
+    "tagCopied": "Aido ID copied",
+    "tagCopiedDescription": "Share your Aido ID with friends to receive friend requests",
     "updateFailed": "Failed to update your profile",
     "badges": {
       "admin": "Admin",

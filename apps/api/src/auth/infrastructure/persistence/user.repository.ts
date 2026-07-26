@@ -14,6 +14,7 @@ import type {
 } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
+import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
@@ -206,11 +207,52 @@ export class UserRepository {
 		});
 	}
 
-	async updateLastActiveAt(id: string): Promise<void> {
-		await this.client.user.update({
-			where: { id },
-			data: { lastActiveAt: now() },
-		});
+	async updateLastActiveAt(id: string, timezone: string): Promise<void> {
+		const seenAt = now();
+		const localDate = startOfDayInTimezone(seenAt, timezone);
+
+		await this.client.$executeRaw`
+			WITH updated_user AS (
+				UPDATE "User" AS app_user
+				SET
+					"lastActiveAt" = GREATEST(
+						COALESCE(app_user."lastActiveAt", ${seenAt}),
+						${seenAt}
+					),
+					"updatedAt" = GREATEST(app_user."updatedAt", ${seenAt})
+				WHERE app_user."id" = ${id}
+				RETURNING app_user."id"
+			)
+			INSERT INTO "UserActivityDay" (
+				"userId",
+				"localDate",
+				"timezone",
+				"firstSeenAt",
+				"lastSeenAt"
+			)
+			SELECT
+				updated_user."id",
+				${localDate}::DATE,
+				${timezone},
+				${seenAt},
+				${seenAt}
+			FROM updated_user
+			ON CONFLICT ("userId", "localDate")
+			DO UPDATE SET
+				"timezone" = CASE
+					WHEN EXCLUDED."lastSeenAt" >= "UserActivityDay"."lastSeenAt"
+						THEN EXCLUDED."timezone"
+					ELSE "UserActivityDay"."timezone"
+				END,
+				"firstSeenAt" = LEAST(
+					"UserActivityDay"."firstSeenAt",
+					EXCLUDED."firstSeenAt"
+				),
+				"lastSeenAt" = GREATEST(
+					"UserActivityDay"."lastSeenAt",
+					EXCLUDED."lastSeenAt"
+				)
+		`;
 	}
 
 	async createProfile(

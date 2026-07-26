@@ -33,7 +33,12 @@ export function createNotificationRepositoryMock(): NotificationRepositoryPort {
 		deleteAllPushTokensByUser: jest.fn(),
 		deactivateInvalidTokens: jest.fn(),
 		createPushDispatch: jest.fn(),
+		createPushDispatches: jest.fn(),
+		markPushDispatchSkipped: jest.fn(),
+		markPushDispatchesSkipped: jest.fn(),
+		markPushDispatchFailed: jest.fn(),
 		recordPushDeliveryResults: jest.fn(),
+		recordPushDeliveryResultsBatch: jest.fn(),
 		findPendingPushReceipts: jest.fn(),
 		recordPushReceipts: jest.fn(),
 	};

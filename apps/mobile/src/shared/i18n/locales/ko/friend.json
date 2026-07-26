@@ -2,8 +2,8 @@
   "screenTitle": "친구 관리",
   "fallbackName": "친구",
   "errors": {
-    "invalidTag": "올바른 태그 형식이 아니에요",
-    "emptyTag": "태그를 입력해주세요",
+    "invalidTag": "올바른 Aido ID 형식이 아니에요",
+    "emptyTag": "Aido ID를 입력해주세요",
     "searchQueryTooShort": "두 글자 이상 입력해주세요"
   },
   "toast": {
@@ -39,21 +39,21 @@
   "add": {
     "title": "친구를 추가해 보세요",
     "description": "친구와 할 일을 공유하고 콕 찔러줄 수 있어요",
-    "tagLabel": "친구 태그",
+    "tagLabel": "친구 Aido ID",
     "submit": "친구 추가하기"
   },
   "search": {
     "title": "친구 찾기",
-    "placeholder": "이름 또는 태그로 검색",
+    "placeholder": "이름 또는 Aido ID로 검색",
     "action": {
       "add": "추가",
       "cancel": "요청 취소",
       "friend": "친구"
     },
     "empty": {
-      "prompt": "이름이나 태그로 친구를 찾아보세요",
-      "tagHint": "정확한 태그를 안다면 바로 추가할 수 있어요",
-      "addByTag": "태그로 추가",
+      "prompt": "이름이나 Aido ID로 친구를 찾아보세요",
+      "tagHint": "정확한 Aido ID를 안다면 바로 추가할 수 있어요",
+      "addByTag": "Aido ID로 추가",
       "noResults": "'{{query}}' 검색 결과가 없어요"
     }
   }

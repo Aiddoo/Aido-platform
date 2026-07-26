@@ -6,13 +6,8 @@ import { ErrorCodedException } from "@/shared/domain/exceptions/error-coded.exce
  * 요청에서 메타데이터 추출
  */
 export function extractMetadata(req: Request): RequestMetadata {
-	const forwarded = req.headers["x-forwarded-for"];
-	const ip = Array.isArray(forwarded)
-		? forwarded[0]
-		: forwarded?.split(",")[0] || req.ip;
-
 	return {
-		ip: ip || undefined,
+		ip: req.ip || undefined,
 		userAgent: req.headers["user-agent"],
 		deviceName: req.headers["x-device-name"] as string | undefined,
 		deviceType: req.headers["x-device-type"] as string | undefined,

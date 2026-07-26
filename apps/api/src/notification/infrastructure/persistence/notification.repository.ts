@@ -1,11 +1,20 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { toInputJson } from "@/shared/infrastructure/database/json.util";
-import type { NotificationRepositoryPort } from "../../application/ports/notification.repository.port";
+import type {
+	CreatePushDispatchInput,
+	NotificationRepositoryPort,
+	PushDeliveryResultsInput,
+	PushDispatchFailureReason,
+	PushDispatchRecord,
+	PushDispatchSkipReason,
+	PushDispatchSkipUpdate,
+} from "../../application/ports/notification.repository.port";
 import type {
 	CreateNotificationData,
 	FindNotificationsParams,
@@ -381,15 +390,9 @@ export class NotificationRepository implements NotificationRepositoryPort {
 		});
 	}
 
-	async createPushDispatch(input: {
-		notificationId: number;
-		userId: string;
-		purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
-		campaignKey?: string | null;
-		variantId?: string | null;
-		timezone: string;
-		localDate: Date;
-	}): Promise<{ id: number }> {
+	async createPushDispatch(
+		input: CreatePushDispatchInput,
+	): Promise<{ id: number }> {
 		return this.client.pushDispatch.upsert({
 			where: { notificationId: input.notificationId },
 			create: { ...input, status: "PROCESSING" },
@@ -398,47 +401,166 @@ export class NotificationRepository implements NotificationRepositoryPort {
 		});
 	}
 
+	/**
+	 * 한 번의 INSERT ... ON CONFLICT로 배치 dispatch를 생성하거나 재시도 상태로 복구한다.
+	 * notificationId unique key가 멱등성을 보장하며 모든 입력 행을 반환한다.
+	 */
+	async createPushDispatches(
+		inputs: CreatePushDispatchInput[],
+	): Promise<PushDispatchRecord[]> {
+		if (inputs.length === 0) return [];
+
+		const values = inputs.map(
+			(input) =>
+				Prisma.sql`(
+					${input.notificationId},
+					${input.userId},
+					${input.purpose}::"NotificationPurpose",
+					${input.campaignKey ?? null},
+					${input.variantId ?? null},
+					${input.timezone},
+					${input.localDate}::DATE,
+					'PROCESSING'::"PushDispatchStatus",
+					CURRENT_TIMESTAMP
+				)`,
+		);
+
+		return this.client.$queryRaw<PushDispatchRecord[]>(Prisma.sql`
+			INSERT INTO "PushDispatch" (
+				"notificationId",
+				"userId",
+				"purpose",
+				"campaignKey",
+				"variantId",
+				"timezone",
+				"localDate",
+				"status",
+				"updatedAt"
+			)
+			VALUES ${Prisma.join(values)}
+			ON CONFLICT ("notificationId")
+			DO UPDATE SET
+				"status" = 'PROCESSING'::"PushDispatchStatus",
+				"skipReason" = NULL,
+				"updatedAt" = CURRENT_TIMESTAMP
+			RETURNING "id", "notificationId"
+		`);
+	}
+
+	async markPushDispatchSkipped(
+		dispatchId: number,
+		reason: PushDispatchSkipReason,
+	): Promise<void> {
+		await this.client.pushDispatch.update({
+			where: { id: dispatchId },
+			data: { status: "SKIPPED", skipReason: reason },
+		});
+	}
+
+	/**
+	 * 사용자 수가 아니라 skip reason 종류 수만큼만 UPDATE를 실행한다.
+	 * reason은 닫힌 union이라 최대 호출 수도 고정된다.
+	 */
+	async markPushDispatchesSkipped(
+		updates: PushDispatchSkipUpdate[],
+	): Promise<void> {
+		const dispatchIdsByReason = new Map<PushDispatchSkipReason, number[]>();
+		for (const update of updates) {
+			const dispatchIds = dispatchIdsByReason.get(update.reason) ?? [];
+			dispatchIds.push(update.dispatchId);
+			dispatchIdsByReason.set(update.reason, dispatchIds);
+		}
+
+		await Promise.all(
+			[...dispatchIdsByReason].map(([reason, dispatchIds]) =>
+				this.client.pushDispatch.updateMany({
+					where: { id: { in: dispatchIds } },
+					data: { status: "SKIPPED", skipReason: reason },
+				}),
+			),
+		);
+	}
+
+	async markPushDispatchFailed(
+		dispatchIds: number[],
+		reason: PushDispatchFailureReason,
+	): Promise<void> {
+		if (dispatchIds.length === 0) return;
+		await this.client.pushDispatch.updateMany({
+			where: { id: { in: dispatchIds }, status: "PROCESSING" },
+			data: { status: "FAILED", skipReason: reason },
+		});
+	}
+
 	async recordPushDeliveryResults(
 		dispatchId: number,
 		results: PushResult[],
 	): Promise<void> {
-		const tokens = await this.client.pushToken.findMany({
-			where: { token: { in: results.map((result) => result.token) } },
-			select: { id: true, token: true },
-		});
+		await this.recordPushDeliveryResultsBatch([{ dispatchId, results }]);
+	}
+
+	/**
+	 * 모든 dispatch의 토큰 조회·attempt 생성·상태 전이를 고정된 수의 쿼리로 처리한다.
+	 */
+	async recordPushDeliveryResultsBatch(
+		inputs: PushDeliveryResultsInput[],
+	): Promise<void> {
+		if (inputs.length === 0) return;
+
+		const results = inputs.flatMap((input) => input.results);
+		const tokens =
+			results.length > 0
+				? await this.client.pushToken.findMany({
+						where: { token: { in: results.map((result) => result.token) } },
+						select: { id: true, token: true },
+					})
+				: [];
 		const tokenIdByValue = new Map(
 			tokens.map((token) => [token.token, token.id]),
 		);
-		const attempts = results.flatMap((result) => {
-			const pushTokenId = tokenIdByValue.get(result.token);
-			if (!pushTokenId) return [];
-			return [
-				{
-					dispatchId,
-					pushTokenId,
-					status: result.success
-						? ("TICKET_ACCEPTED" as const)
-						: ("FAILED" as const),
-					expoTicketId: result.ticketId,
-					errorCode: result.errorCode,
-					errorMessage: result.error?.slice(0, 500),
-				},
-			];
-		});
+		const attempts = inputs.flatMap((input) =>
+			input.results.flatMap((result) => {
+				const pushTokenId = tokenIdByValue.get(result.token);
+				if (!pushTokenId) return [];
+				return [
+					{
+						dispatchId: input.dispatchId,
+						pushTokenId,
+						status: result.success
+							? ("TICKET_ACCEPTED" as const)
+							: ("FAILED" as const),
+						expoTicketId: result.ticketId,
+						errorCode: result.errorCode,
+						errorMessage: result.error?.slice(0, 500),
+					},
+				];
+			}),
+		);
 		if (attempts.length > 0) {
 			await this.client.pushDeliveryAttempt.createMany({
 				data: attempts,
 				skipDuplicates: true,
 			});
 		}
-		const sent = results.some((result) => result.success);
-		await this.client.pushDispatch.update({
-			where: { id: dispatchId },
-			data: {
-				status: sent ? "SENT" : "FAILED",
-				...(sent && { sentAt: now() }),
-			},
-		});
+
+		const sentDispatchIds = inputs.flatMap((input) =>
+			input.results.some((result) => result.success) ? [input.dispatchId] : [],
+		);
+		const failedDispatchIds = inputs.flatMap((input) =>
+			input.results.some((result) => result.success) ? [] : [input.dispatchId],
+		);
+		if (sentDispatchIds.length > 0) {
+			await this.client.pushDispatch.updateMany({
+				where: { id: { in: sentDispatchIds } },
+				data: { status: "SENT", sentAt: now() },
+			});
+		}
+		if (failedDispatchIds.length > 0) {
+			await this.client.pushDispatch.updateMany({
+				where: { id: { in: failedDispatchIds } },
+				data: { status: "FAILED" },
+			});
+		}
 	}
 
 	async findPendingPushReceipts(
@@ -458,17 +580,34 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	}
 
 	async recordPushReceipts(results: PushReceiptResult[]): Promise<string[]> {
+		if (results.length === 0) return [];
+
+		const receiptCheckedAt = now();
+		const values = results.map(
+			(result) =>
+				Prisma.sql`(
+					${result.ticketId}::VARCHAR(100),
+					${result.delivered ? "DELIVERED" : "FAILED"}::"PushDeliveryStatus",
+					${result.errorCode ?? null}::VARCHAR(100),
+					${result.error?.slice(0, 500) ?? null}::VARCHAR(500)
+				)`,
+		);
+		await this.client.$executeRaw(Prisma.sql`
+			UPDATE "PushDeliveryAttempt" AS attempt
+			SET
+				"status" = receipt."status",
+				"errorCode" = receipt."errorCode",
+				"errorMessage" = receipt."errorMessage",
+				"receiptCheckedAt" = ${receiptCheckedAt},
+				"updatedAt" = ${receiptCheckedAt}
+			FROM (
+				VALUES ${Prisma.join(values)}
+			) AS receipt("ticketId", "status", "errorCode", "errorMessage")
+			WHERE attempt."expoTicketId" = receipt."ticketId"
+		`);
+
 		const invalidTicketIds: string[] = [];
 		for (const result of results) {
-			await this.client.pushDeliveryAttempt.updateMany({
-				where: { expoTicketId: result.ticketId },
-				data: {
-					status: result.delivered ? "DELIVERED" : "FAILED",
-					errorCode: result.errorCode,
-					errorMessage: result.error?.slice(0, 500),
-					receiptCheckedAt: now(),
-				},
-			});
 			if (result.errorCode === "DeviceNotRegistered") {
 				invalidTicketIds.push(result.ticketId);
 			}

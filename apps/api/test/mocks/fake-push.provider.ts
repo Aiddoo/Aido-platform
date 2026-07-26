@@ -14,6 +14,7 @@ import type {
 export class FakePushProvider implements PushProvider {
 	readonly name = "fake";
 	private _sentPayloads: PushPayload[] = [];
+	private _ticketSequence = 0;
 
 	validateToken(token: string): boolean {
 		return token.startsWith("ExponentPushToken[") || token.startsWith("fake-");
@@ -24,7 +25,7 @@ export class FakePushProvider implements PushProvider {
 		return {
 			token: payload.token,
 			success: true,
-			ticketId: `fake-ticket-${Date.now()}`,
+			ticketId: this.nextTicketId(),
 		};
 	}
 
@@ -33,7 +34,7 @@ export class FakePushProvider implements PushProvider {
 		const results: PushResult[] = payloads.map((payload) => ({
 			token: payload.token,
 			success: true,
-			ticketId: `fake-ticket-${Date.now()}`,
+			ticketId: this.nextTicketId(),
 		}));
 		return {
 			total: payloads.length,
@@ -58,5 +59,11 @@ export class FakePushProvider implements PushProvider {
 
 	clear(): void {
 		this._sentPayloads = [];
+		this._ticketSequence = 0;
+	}
+
+	private nextTicketId(): string {
+		this._ticketSequence += 1;
+		return `fake-ticket-${Date.now()}-${this._ticketSequence}`;
 	}
 }

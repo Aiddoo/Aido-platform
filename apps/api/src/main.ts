@@ -5,11 +5,11 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
-import helmet from "helmet";
 import { Logger } from "nestjs-pino";
-import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
+import { cleanupOpenApiDoc } from "nestjs-zod";
 import { AdminModule } from "@/admin/admin.module";
 import type { EnvConfig } from "@/shared/infrastructure/config";
+import { configureApplication } from "@/shared/infrastructure/http/configure-application";
 import {
 	SWAGGER_TAG_DESCRIPTIONS,
 	SWAGGER_TAGS,
@@ -26,32 +26,9 @@ async function bootstrap() {
 
 	app.useLogger(app.get(Logger));
 
-	app.use(helmet());
-
-	// 개발 환경에서도 허용된 origin만 허용 (보안 강화)
-	const devOrigins = [
-		"http://localhost:3000",
-		"http://localhost:8080",
-		"http://localhost:8081",
-		"http://localhost:19000",
-		"http://localhost:19006",
-	];
-
-	app.enableCors({
-		origin: nodeEnv === "development" ? devOrigins : corsOrigins,
-		credentials: true,
-		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-		allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	});
-
-	app.useGlobalPipes(new ZodValidationPipe());
-
-	app.enableShutdownHooks();
-
-	// API 버전 프리픽스 설정 (/v1)
-	// health 엔드포인트는 프리픽스 제외
-	app.setGlobalPrefix("v1", {
-		exclude: ["health"],
+	configureApplication(app, {
+		nodeEnv,
+		corsOrigins,
 	});
 
 	if (nodeEnv === "development") {

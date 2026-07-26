@@ -49,7 +49,7 @@ describe("메모 E2E", () => {
 		content: string,
 	): Promise<{ id: number; sortOrder: number; isPinned: boolean }> {
 		const response = await request(ctx.app.getHttpServer())
-			.post("/memos")
+			.post("/v1/memos")
 			.set("Authorization", `Bearer ${user.accessToken}`)
 			.send({ content })
 			.expect(201);
@@ -66,7 +66,7 @@ describe("메모 E2E", () => {
 
 			// When - 리소스 제한 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/memos/resource-limit")
+				.get("/v1/memos/resource-limit")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -87,7 +87,7 @@ describe("메모 E2E", () => {
 
 			// When - 리소스 제한 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/memos/resource-limit")
+				.get("/v1/memos/resource-limit")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -100,7 +100,7 @@ describe("메모 E2E", () => {
 
 			// When / Then - 401 Unauthorized
 			await request(ctx.app.getHttpServer())
-				.get("/memos/resource-limit")
+				.get("/v1/memos/resource-limit")
 				.expect(401);
 		});
 	});
@@ -115,7 +115,7 @@ describe("메모 E2E", () => {
 
 			// When - 메모 생성
 			const response = await request(ctx.app.getHttpServer())
-				.post("/memos")
+				.post("/v1/memos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ content: "장보기: 우유, 계란" })
 				.expect(201);
@@ -138,7 +138,7 @@ describe("메모 E2E", () => {
 
 			// When - 빈 내용으로 생성
 			const response = await request(ctx.app.getHttpServer())
-				.post("/memos")
+				.post("/v1/memos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ content: "" })
 				.expect(400);
@@ -157,7 +157,7 @@ describe("메모 E2E", () => {
 
 			// When - 긴 내용으로 생성
 			const response = await request(ctx.app.getHttpServer())
-				.post("/memos")
+				.post("/v1/memos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ content: longContent })
 				.expect(400);
@@ -183,7 +183,7 @@ describe("메모 E2E", () => {
 
 			// When - 21번째 메모 생성 시도
 			const response = await request(ctx.app.getHttpServer())
-				.post("/memos")
+				.post("/v1/memos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ content: "한도 초과 메모" })
 				.expect(403);
@@ -198,7 +198,7 @@ describe("메모 E2E", () => {
 
 			// When / Then - 401 Unauthorized
 			await request(ctx.app.getHttpServer())
-				.post("/memos")
+				.post("/v1/memos")
 				.send({ content: "메모" })
 				.expect(401);
 		});
@@ -217,14 +217,14 @@ describe("메모 E2E", () => {
 
 			// m1을 고정 (목록 최상단으로 이동해야 함)
 			await request(ctx.app.getHttpServer())
-				.patch(`/memos/${m1.id}/pin`)
+				.patch(`/v1/memos/${m1.id}/pin`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ isPinned: true })
 				.expect(200);
 
 			// When - 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/memos")
+				.get("/v1/memos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -249,7 +249,7 @@ describe("메모 E2E", () => {
 
 			// When - size=2로 첫 페이지 조회
 			const page1 = await request(ctx.app.getHttpServer())
-				.get("/memos")
+				.get("/v1/memos")
 				.query({ size: 2 })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -261,7 +261,7 @@ describe("메모 E2E", () => {
 
 			// When - nextCursor로 다음 페이지 조회
 			const page2 = await request(ctx.app.getHttpServer())
-				.get("/memos")
+				.get("/v1/memos")
 				.query({ size: 2, cursor: page1.body.data.pagination.nextCursor })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -293,7 +293,7 @@ describe("메모 E2E", () => {
 
 			// When - userA가 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/memos")
+				.get("/v1/memos")
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(200);
 
@@ -306,7 +306,7 @@ describe("메모 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When / Then - 401 Unauthorized
-			await request(ctx.app.getHttpServer()).get("/memos").expect(401);
+			await request(ctx.app.getHttpServer()).get("/v1/memos").expect(401);
 		});
 	});
 
@@ -321,7 +321,7 @@ describe("메모 E2E", () => {
 
 			// When - 상세 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get(`/memos/${memo.id}`)
+				.get(`/v1/memos/${memo.id}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -340,7 +340,7 @@ describe("메모 E2E", () => {
 
 			// When - 없는 메모 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/memos/999999")
+				.get("/v1/memos/999999")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(404);
 
@@ -363,7 +363,7 @@ describe("메모 E2E", () => {
 
 			// When - userA가 userB의 메모 조회 시도
 			const response = await request(ctx.app.getHttpServer())
-				.get(`/memos/${memoB.id}`)
+				.get(`/v1/memos/${memoB.id}`)
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(404);
 
@@ -383,7 +383,7 @@ describe("메모 E2E", () => {
 
 			// When - 내용 수정
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/memos/${memo.id}`)
+				.patch(`/v1/memos/${memo.id}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ content: "수정 후" })
 				.expect(200);
@@ -402,7 +402,7 @@ describe("메모 E2E", () => {
 
 			// When - 없는 메모 수정
 			const response = await request(ctx.app.getHttpServer())
-				.patch("/memos/999999")
+				.patch("/v1/memos/999999")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ content: "수정" })
 				.expect(404);
@@ -416,7 +416,7 @@ describe("메모 E2E", () => {
 
 			// When / Then - 401 Unauthorized
 			await request(ctx.app.getHttpServer())
-				.patch("/memos/1")
+				.patch("/v1/memos/1")
 				.send({ content: "수정" })
 				.expect(401);
 		});
@@ -433,7 +433,7 @@ describe("메모 E2E", () => {
 
 			// When - 고정
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/memos/${memo.id}/pin`)
+				.patch(`/v1/memos/${memo.id}/pin`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ isPinned: true })
 				.expect(200);
@@ -450,14 +450,14 @@ describe("메모 E2E", () => {
 			);
 			const memo = await createMemo(user, "고정 해제 대상");
 			await request(ctx.app.getHttpServer())
-				.patch(`/memos/${memo.id}/pin`)
+				.patch(`/v1/memos/${memo.id}/pin`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ isPinned: true })
 				.expect(200);
 
 			// When - 해제
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/memos/${memo.id}/pin`)
+				.patch(`/v1/memos/${memo.id}/pin`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ isPinned: false })
 				.expect(200);
@@ -475,7 +475,7 @@ describe("메모 E2E", () => {
 
 			// When - 없는 메모 고정
 			const response = await request(ctx.app.getHttpServer())
-				.patch("/memos/999999/pin")
+				.patch("/v1/memos/999999/pin")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ isPinned: true })
 				.expect(404);
@@ -498,7 +498,7 @@ describe("메모 E2E", () => {
 
 			// When - m3을 m1 뒤로 이동
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/memos/${m3.id}/reorder`)
+				.patch(`/v1/memos/${m3.id}/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ targetMemoId: m1.id, position: "after" })
 				.expect(200);
@@ -518,7 +518,7 @@ describe("메모 E2E", () => {
 
 			// When - 없는 대상 메모 기준으로 이동
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/memos/${memo.id}/reorder`)
+				.patch(`/v1/memos/${memo.id}/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ targetMemoId: 999999, position: "after" })
 				.expect(404);
@@ -539,14 +539,14 @@ describe("메모 E2E", () => {
 
 			// When - 삭제
 			const response = await request(ctx.app.getHttpServer())
-				.delete(`/memos/${memo.id}`)
+				.delete(`/v1/memos/${memo.id}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
 			// Then - 삭제 성공, 이후 조회 시 404
 			expect(response.body.success).toBe(true);
 			await request(ctx.app.getHttpServer())
-				.get(`/memos/${memo.id}`)
+				.get(`/v1/memos/${memo.id}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(404);
 		});
@@ -560,7 +560,7 @@ describe("메모 E2E", () => {
 
 			// When - 없는 메모 삭제
 			const response = await request(ctx.app.getHttpServer())
-				.delete("/memos/999999")
+				.delete("/v1/memos/999999")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(404);
 
@@ -572,7 +572,7 @@ describe("메모 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When / Then - 401 Unauthorized
-			await request(ctx.app.getHttpServer()).delete("/memos/1").expect(401);
+			await request(ctx.app.getHttpServer()).delete("/v1/memos/1").expect(401);
 		});
 	});
 
@@ -590,7 +590,7 @@ describe("메모 E2E", () => {
 
 			// When - 할 일로 변환
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todo`)
+				.post(`/v1/memos/${memo.id}/convert-to-todo`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ categoryId, startDate: "2026-02-01" })
 				.expect(201);
@@ -603,7 +603,7 @@ describe("메모 E2E", () => {
 
 			// Then - 원본 메모는 삭제됨
 			await request(ctx.app.getHttpServer())
-				.get(`/memos/${memo.id}`)
+				.get(`/v1/memos/${memo.id}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(404);
 		});
@@ -621,7 +621,7 @@ describe("메모 E2E", () => {
 
 			// When - 09:00 KST 예정 시간으로 변환
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todo`)
+				.post(`/v1/memos/${memo.id}/convert-to-todo`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({
@@ -652,7 +652,7 @@ describe("메모 E2E", () => {
 
 			// When - 하위 항목과 함께 변환
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todo`)
+				.post(`/v1/memos/${memo.id}/convert-to-todo`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					categoryId,
@@ -683,7 +683,7 @@ describe("메모 E2E", () => {
 
 			// When - 남의 카테고리로 변환 시도
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todo`)
+				.post(`/v1/memos/${memo.id}/convert-to-todo`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ categoryId: foreignCategoryId, startDate: "2026-02-01" })
 				.expect(404);
@@ -706,7 +706,7 @@ describe("메모 E2E", () => {
 
 			// When - 할 일로 변환
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todo`)
+				.post(`/v1/memos/${memo.id}/convert-to-todo`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ categoryId, startDate: "2026-02-01" })
 				.expect(201);
@@ -728,7 +728,7 @@ describe("메모 E2E", () => {
 
 			// When - 없는 메모 변환
 			const response = await request(ctx.app.getHttpServer())
-				.post("/memos/999999/convert-to-todo")
+				.post("/v1/memos/999999/convert-to-todo")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ categoryId, startDate: "2026-02-01" })
 				.expect(404);
@@ -742,7 +742,7 @@ describe("메모 E2E", () => {
 
 			// When / Then - 401 Unauthorized
 			await request(ctx.app.getHttpServer())
-				.post("/memos/1/convert-to-todo")
+				.post("/v1/memos/1/convert-to-todo")
 				.send({ categoryId: 1, startDate: "2026-02-01" })
 				.expect(401);
 		});
@@ -762,7 +762,7 @@ describe("메모 E2E", () => {
 
 			// When - 단건 + 반복 일정을 일괄 변환
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todos`)
+				.post(`/v1/memos/${memo.id}/convert-to-todos`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({
@@ -797,7 +797,7 @@ describe("메모 E2E", () => {
 
 			// Then - 원본 메모는 삭제됨
 			await request(ctx.app.getHttpServer())
-				.get(`/memos/${memo.id}`)
+				.get(`/v1/memos/${memo.id}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(404);
 		});
@@ -812,7 +812,7 @@ describe("메모 E2E", () => {
 
 			// When - todos 0개
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todos`)
+				.post(`/v1/memos/${memo.id}/convert-to-todos`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ todos: [] })
 				.expect(400);
@@ -834,7 +834,7 @@ describe("메모 E2E", () => {
 
 			// When - todos 6개
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/memos/${memo.id}/convert-to-todos`)
+				.post(`/v1/memos/${memo.id}/convert-to-todos`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					todos: Array.from({ length: 6 }, (_, i) => ({
@@ -861,7 +861,7 @@ describe("메모 E2E", () => {
 
 			// When - 없는 메모 일괄 변환
 			const response = await request(ctx.app.getHttpServer())
-				.post("/memos/999999/convert-to-todos")
+				.post("/v1/memos/999999/convert-to-todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					todos: [{ title: "할 일", categoryId, startDate: "2026-02-02" }],

@@ -14,7 +14,7 @@
 ## Prerequisites
 
 - Docker 24+ / Docker Compose V2
-- Node.js 20+ / pnpm 10.29+
+- Node.js 22.x / pnpm 10.29+
 
 ---
 
@@ -71,8 +71,8 @@ cp .env.docker.prod.example .env.docker.prod
 pnpm docker:prod:build
 pnpm docker:prod:up
 
-# 헬스 체크
-curl http://localhost:8080/health
+# 헬스 체크 (API host port는 loopback-only)
+curl http://127.0.0.1:8080/health
 
 # 로그 확인
 pnpm docker:prod:logs
@@ -86,6 +86,8 @@ pnpm docker:prod:down
 ## 3. 프로덕션 배포 (GitHub Actions → EC2)
 
 > 실제 운영 파이프라인. ECS/ECR을 사용하지 않는다 — EC2 한 대(t4g.small)에서 `docker compose`로 빌드·기동하며, DB(RDS)/Redis(ElastiCache)는 외부 관리형 서비스다.
+> 공개 요청 경로는 **client → host-local Nginx → `127.0.0.1:${PORT}` Docker API**다.
+> Compose가 API host port를 loopback에만 bind하고 Express는 이 Nginx 한 홉만 신뢰한다.
 
 ### 3.1 파이프라인 개요
 
@@ -168,6 +170,8 @@ docker logs --tail 100 aido-prod-api                     # 원인 확인
 
 - 마이그레이션은 **forward-only** — 자동 롤백은 API 컨테이너만 되돌리고 DB는 이미 신 스키마다.
 - 따라서 모든 마이그레이션은 **직전 릴리스의 API와 호환**되어야 한다 (expand → contract: 먼저 추가만 하는 릴리스, 구 컬럼 제거는 다음 릴리스에서).
+- 기존 운영 테이블의 인덱스는 PostgreSQL `CREATE INDEX CONCURRENTLY`로 생성하고 해당 migration에 `BEGIN`/`COMMIT`을 넣지 않는다. 실제 DB lock 회귀 테스트로 기존 쓰기가 계속 완료되는지 검증한다.
+- concurrent build 실패 시 invalid index가 남을 수 있다. 재시도 전에 `pg_index.indisvalid`와 migrate 로그를 확인하고, 운영 절차에 따라 invalid index 정리 및 migration 상태 복구 후 다시 배포한다.
 
 ### 3.6 보안 수칙
 

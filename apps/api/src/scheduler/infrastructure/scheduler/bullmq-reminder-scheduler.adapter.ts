@@ -4,7 +4,10 @@ import {
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
 
-import type { IReminderScheduler } from "../../application/ports/reminder-scheduler.port";
+import type {
+	IReminderScheduler,
+	ReminderCancellationResult,
+} from "../../application/ports/reminder-scheduler.port";
 import {
 	allReminderLabels,
 	planReminderJobs,
@@ -41,22 +44,16 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 
 	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
-	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): void {
-		this.#scheduleAsync(todoId, scheduledTime, userId).catch((error) => {
-			this.#logger.error(
-				`Failed to schedule reminder: todoId=${todoId}, ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		});
+	scheduleReminder(
+		todoId: number,
+		scheduledTime: Date,
+		userId: string,
+	): Promise<void> {
+		return this.#scheduleAsync(todoId, scheduledTime, userId);
 	}
 
-	cancelReminder(todoId: number): void {
-		this.#cancelAsync(todoId).catch((error) => {
-			this.#logger.error(
-				`Failed to cancel reminder: todoId=${todoId}, ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		});
+	cancelReminder(todoId: number): Promise<ReminderCancellationResult> {
+		return this.#cancelAsync(todoId);
 	}
 
 	async #scheduleAsync(
@@ -106,17 +103,27 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 		}
 	}
 
-	async #cancelAsync(todoId: number): Promise<void> {
+	async #cancelAsync(todoId: number): Promise<ReminderCancellationResult> {
+		let cancellationStatus: ReminderCancellationResult["status"] = "missing";
+
 		for (const label of allReminderLabels()) {
 			const jobId = `reminder_${todoId}_${label}`;
 			try {
-				await this.runtime.cancel(TODO_REMINDER_QUEUE, jobId);
-				this.#logger.debug(
-					`Reminder cancelled: todoId=${todoId}, stage=${label}`,
+				const result = await this.runtime.cancel(TODO_REMINDER_QUEUE, jobId);
+				if (result.status === "cancelled") {
+					cancellationStatus = "cancelled";
+					this.#logger.debug(
+						`Reminder cancelled: todoId=${todoId}, stage=${label}`,
+					);
+				}
+			} catch (error) {
+				throw new Error(
+					`Reminder cancellation failed: todoId=${todoId}, stage=${label}, runtime=job-runtime`,
+					{ cause: error },
 				);
-			} catch {
-				// 잡이 이미 처리되었거나 없는 경우 무시
 			}
 		}
+
+		return { status: cancellationStatus };
 	}
 }

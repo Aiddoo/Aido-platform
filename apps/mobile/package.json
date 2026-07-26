@@ -1,6 +1,6 @@
 {
   "name": "@aido/mobile",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -17,6 +17,7 @@
     "build:production:android": "eas build --profile production --platform android",
     "build:production:ios": "eas build --profile production --platform ios",
     "check": "biome check . && pnpm lint:cycles",
+    "check:release-assets": "node scripts/check-growth-release-assets.mjs",
     "clean": "rm -rf dist .expo android ios node_modules/.cache",
     "dev": "expo start",
     "dev:android": "pnpm adb:reverse || true && expo start --android",
@@ -77,6 +78,7 @@
     "expo-sharing": "~57.0.6",
     "expo-speech-recognition": "^56.0.1",
     "expo-splash-screen": "~57.0.4",
+    "expo-store-review": "~57.0.1",
     "expo-system-ui": "^57.0.1",
     "expo-updates": "~57.0.8",
     "expo-web-browser": "~57.0.1",

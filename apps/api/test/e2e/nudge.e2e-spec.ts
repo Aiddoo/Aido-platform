@@ -46,7 +46,7 @@ describe("찔러보기 E2E", () => {
 	async function createReceiverTodo(receiverToken: string): Promise<number> {
 		const categoryId = await ctx.helpers.getDefaultCategoryId(receiverToken);
 		const todoResponse = await request(ctx.app.getHttpServer())
-			.post("/todos")
+			.post("/v1/todos")
 			.set("Authorization", `Bearer ${receiverToken}`)
 			.send({ title: "테스트 할일", ...activeDateRange(), categoryId });
 		return todoResponse.body.data?.todo?.id;
@@ -69,7 +69,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 콕 찌르기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId: receiverTodoId })
 					.expect(201);
@@ -82,7 +82,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 쿨다운 기간 내 동일 Todo에 다시 콕 찌르기 API 호출
 				const cooldownResponse = await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId: receiverTodoId })
 					.expect(429);
@@ -107,7 +107,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 친구가 아닌 사용자에게 콕 찌르기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: stranger.userId, todoId: strangerTodoId })
 					.expect(403);
@@ -127,14 +127,14 @@ describe("찔러보기 E2E", () => {
 					sender.accessToken,
 				);
 				const todoResponse = await request(ctx.app.getHttpServer())
-					.post("/todos")
+					.post("/v1/todos")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ title: "Self Todo", ...activeDateRange(), categoryId });
 				const selfTodoId = todoResponse.body.data?.todo?.id;
 
 				// When - 자기 자신에게 콕 찌르기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: sender.userId, todoId: selfTodoId })
 					.expect(400);
@@ -160,7 +160,7 @@ describe("찔러보기 E2E", () => {
 					receiver.accessToken,
 				);
 				const todoResponse = await request(ctx.app.getHttpServer())
-					.post("/todos")
+					.post("/v1/todos")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.send({
 						title: "Private Todo",
@@ -172,7 +172,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - PRIVATE Todo에 콕 찌르기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId: privateTodoId })
 					.expect(404);
@@ -201,7 +201,7 @@ describe("찔러보기 E2E", () => {
 					receiver.accessToken,
 				);
 				const todoResponse = await request(ctx.app.getHttpServer())
-					.post("/todos")
+					.post("/v1/todos")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.send({
 						title: "Yesterday Todo",
@@ -212,7 +212,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 오늘이 아닌 Todo에 콕 찌르기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId: yesterdayTodoId })
 					.expect(400);
@@ -227,7 +227,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 인증 없이 콕 찌르기 API 호출
 				await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.send({ receiverId: "some-user-id", todoId: 1 })
 					.expect(401);
 
@@ -252,13 +252,13 @@ describe("찔러보기 E2E", () => {
 				const todoId = await createReceiverTodo(receiver.accessToken);
 
 				await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId });
 
 				// When - 받은 콕 찌름 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/nudges/received")
+					.get("/v1/nudges/received")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
 
@@ -283,13 +283,13 @@ describe("찔러보기 E2E", () => {
 				const todoId = await createReceiverTodo(receiver.accessToken);
 
 				await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId });
 
 				// When - limit을 1로 설정하여 받은 콕 찌름 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/nudges/received")
+					.get("/v1/nudges/received")
 					.query({ limit: 1 })
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
@@ -304,7 +304,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 인증 없이 받은 콕 찌름 목록 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/nudges/received")
+					.get("/v1/nudges/received")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -326,13 +326,13 @@ describe("찔러보기 E2E", () => {
 				const todoId = await createReceiverTodo(receiver.accessToken);
 
 				await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId });
 
 				// When - 보낸 콕 찌름 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/nudges/sent")
+					.get("/v1/nudges/sent")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.expect(200);
 
@@ -355,7 +355,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 일일 제한 정보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/nudges/limit")
+					.get("/v1/nudges/limit")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -369,7 +369,9 @@ describe("찔러보기 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 일일 제한 정보 조회 API 호출
-				await request(ctx.app.getHttpServer()).get("/nudges/limit").expect(401);
+				await request(ctx.app.getHttpServer())
+					.get("/v1/nudges/limit")
+					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -390,7 +392,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 쿨다운 상태 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get(`/nudges/cooldown/${friend.userId}`)
+					.get(`/v1/nudges/cooldown/${friend.userId}`)
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -408,7 +410,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 인증 없이 쿨다운 상태 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/nudges/cooldown/some-user-id")
+					.get("/v1/nudges/cooldown/some-user-id")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -432,14 +434,14 @@ describe("찔러보기 E2E", () => {
 				const todoId = await createReceiverTodo(receiver.accessToken);
 
 				const nudgeResponse = await request(ctx.app.getHttpServer())
-					.post("/nudges")
+					.post("/v1/nudges")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, todoId });
 				const nudgeId = nudgeResponse.body.data.nudge.id;
 
 				// When - 콕 찌르기 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.patch(`/nudges/${nudgeId}/read`)
+					.patch(`/v1/nudges/${nudgeId}/read`)
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
 
@@ -457,7 +459,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 존재하지 않는 콕 찌르기 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/nudges/99999/read")
+					.patch("/v1/nudges/99999/read")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(404);
 
@@ -471,7 +473,7 @@ describe("찔러보기 E2E", () => {
 
 				// When - 인증 없이 콕 찌르기 읽음 처리 API 호출
 				await request(ctx.app.getHttpServer())
-					.patch("/nudges/1/read")
+					.patch("/v1/nudges/1/read")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)

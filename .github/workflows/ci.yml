@@ -48,8 +48,8 @@ jobs:
       - name: Architecture gates
         run: pnpm turbo run lint:arch ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
 
-  test:
-    name: Test
+  test-unit:
+    name: Test - Unit & Coverage
     if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -61,15 +61,62 @@ jobs:
 
       - uses: ./.github/actions/setup
 
+      - name: Verify test log failure propagation
+        run: bash scripts/ci/run-with-tee.spec.sh
+
       # 각 테스트 출력을 파일로 남기고 실패 시 아티팩트 업로드 — 플레이크 재현용
-      # (jest-e2e는 showSeed로 랜덤 시드가 로그에 남으므로 --seed로 고정 재현 가능)
       - name: Run unit tests
-        run: pnpm turbo run test ${{ github.event_name == 'pull_request' && '--affected' || '' }} 2>&1 | tee /tmp/test-unit.log
+        run: scripts/ci/run-with-tee.sh /tmp/test-unit.log pnpm turbo run test ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+
+      - name: Run API coverage
+        run: scripts/ci/run-with-tee.sh /tmp/test-coverage.log pnpm --filter @aido/api test:cov
+
+      - name: Upload unit test logs (failure only)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-unit-logs-${{ github.run_id }}
+          path: /tmp/test-*.log
+          retention-days: 14
+
+  test-integration:
+    name: Test - Integration
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
 
       # 통합/E2E 태스크는 @aido/api에만 존재 → PR에서 --affected만으로 자연 스코프됨
       # (모바일/문서-only PR은 Testcontainers 스킵, api 영향 변경은 실행)
       - name: Run integration tests
-        run: pnpm turbo run test:integration ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }} 2>&1 | tee /tmp/test-integration.log
+        run: scripts/ci/run-with-tee.sh /tmp/test-integration.log pnpm turbo run test:integration ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
+
+      - name: Upload integration test logs (failure only)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-integration-logs-${{ github.run_id }}
+          path: /tmp/test-integration.log
+          retention-days: 14
+
+  test-e2e:
+    name: Test - E2E
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
 
       - name: Run E2E tests
         env:
@@ -81,14 +128,14 @@ jobs:
           EMAIL_FROM_NAME: Aido Test
           TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
           NODE_ENV: test
-        run: pnpm turbo run test:e2e ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }} 2>&1 | tee /tmp/test-e2e.log
+        run: scripts/ci/run-with-tee.sh /tmp/test-e2e.log pnpm turbo run test:e2e ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
 
-      - name: Upload test logs (failure only)
+      - name: Upload E2E test logs (failure only)
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-logs-${{ github.run_id }}
-          path: /tmp/test-*.log
+          name: test-e2e-logs-${{ github.run_id }}
+          path: /tmp/test-e2e.log
           retention-days: 14
 
   build:

@@ -1,7 +1,12 @@
 import { createSessionManager } from '@src/core/session/session-manager';
 import { AchievementService } from '@src/features/achievement/services/achievement.service';
+import { createActivationProgressRepository } from '@src/features/activation/repositories/activation-progress.repository';
+import { ActivationService } from '@src/features/activation/services/activation.service';
 import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
+import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/repositories/feature-discovery-state.repository';
+import { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
+import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
 import { FriendService } from '@src/features/friend/services/friend.service';
 import { InquiryService } from '@src/features/inquiry/services/inquiry.service';
 import { MemoService } from '@src/features/memo/services/memo.service';
@@ -11,6 +16,10 @@ import { NotificationService } from '@src/features/notification/services/notific
 import { PushTokenService } from '@src/features/notification/services/push-token.service';
 import { RevenueCatSdkManager } from '@src/features/subscription/services/revenuecat-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/services/subscription.service';
+import { createReorderCoachmarkRepository } from '@src/features/todo/repositories/reorder-coachmark.repository';
+import { createStoreReviewPromptRepository } from '@src/features/todo/repositories/store-review-prompt.repository';
+import { ReorderCoachmarkService } from '@src/features/todo/services/reorder-coachmark.service';
+import { StoreReviewPromptService } from '@src/features/todo/services/store-review-prompt.service';
 import { SubTodoService } from '@src/features/todo/services/sub-todo.service';
 import { TodoService } from '@src/features/todo/services/todo.service';
 import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
@@ -21,10 +30,12 @@ import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-br
 import { WidgetSnapshotRepositoryImpl } from '@src/features/widget/repositories/widget-snapshot.repository';
 import { widgetSyncStorage } from '@src/features/widget/repositories/widget-storage';
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
+import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { ENV } from '@src/shared/config/env';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
+import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { requestRefreshTokens } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
@@ -38,8 +49,10 @@ import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
+import { expoStoreReviewGateway } from '@src/shared/infra/store-review/expo-store-review.gateway';
 
 import { type PropsWithChildren, useState } from 'react';
 import { type DIContainer, DIContext } from './di-context';
@@ -60,6 +73,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     setGlobalLogger(logger);
 
     const analytics = createEnvironmentAnalytics(logger);
+    const featureAttribution = createFeatureAttributionStore(mmkvSyncStorage);
 
     // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
     const errorReporter = createEnvironmentErrorReporter();
@@ -69,6 +83,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);
+    const publicJsonFetcher = new KyJsonFetcher(publicKyInstance);
 
     // 세션 종료(토큰 삭제 + 이벤트)의 유일한 소유자. 갱신기는 세션을 끝낼 수 없다.
     const sessionManager = createSessionManager(tokenStore);
@@ -95,9 +110,19 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // Auth
     const authService = new AuthService(publicHttpClient, authHttpClient, tokenStore);
+    const activationService = new ActivationService(
+      createActivationProgressRepository(mmkvSyncStorage),
+    );
 
     // Friend
     const friendService = new FriendService(authHttpClient);
+
+    // Feature discovery — app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
+    const featureDiscoveryService = new FeatureDiscoveryService(publicJsonFetcher);
+    const featureDiscoveryStateRepository = createFeatureDiscoveryStateRepository(mmkvSyncStorage);
+    const featureDiscoveryStateService = new FeatureDiscoveryStateService(
+      featureDiscoveryStateRepository,
+    );
 
     // Inquiry
     const inquiryService = new InquiryService(authHttpClient);
@@ -126,6 +151,13 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // Todo Nudge
     const todoNudgeService = new TodoNudgeService(authHttpClient);
+    const reorderCoachmarkService = new ReorderCoachmarkService(
+      createReorderCoachmarkRepository(mmkvSyncStorage),
+    );
+    const storeReviewPromptService = new StoreReviewPromptService(
+      createStoreReviewPromptRepository(mmkvSyncStorage),
+      expoStoreReviewGateway,
+    );
 
     // User
     const userService = new UserService(authHttpClient);
@@ -150,10 +182,14 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       tokenStore,
       sessionManager,
       tokenRefresher,
+      featureAttribution,
       achievementService,
       aiService,
       authService,
+      activationService,
       friendService,
+      featureDiscoveryService,
+      featureDiscoveryStateService,
       inquiryService,
       memoService,
       subTodoService,
@@ -161,6 +197,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       todoCategoryService,
       notificationService,
       todoNudgeService,
+      reorderCoachmarkService,
+      storeReviewPromptService,
       userService,
       revenueCatSdkManager,
       subscriptionService,
@@ -177,19 +215,25 @@ export {
   type DIContainer,
   StaticDIProvider,
   useAchievementService,
+  useActivationService,
   useAiService,
   useAnalytics,
   useAuthService,
   useDI,
   useErrorReporter,
+  useFeatureAttribution,
+  useFeatureDiscoveryService,
+  useFeatureDiscoveryStateService,
   useFriendService,
   useInquiryService,
   useLogger,
   useMemoService,
   useNotificationService,
+  useReorderCoachmarkService,
   useRevenueCatSdkManager,
   useSessionManager,
   useStorage,
+  useStoreReviewPromptService,
   useSubscriptionService,
   useSubTodoService,
   useTodoCategoryService,

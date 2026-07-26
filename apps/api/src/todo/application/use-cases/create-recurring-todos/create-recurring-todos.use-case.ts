@@ -163,7 +163,7 @@ export class CreateRecurringTodosUseCase {
 			todo.markCreated();
 			return todo.pullDomainEvents();
 		});
-		this.eventPublisher.publishAll(domainEvents);
+		await this.eventPublisher.publishAll(domainEvents);
 
 		// 7. 그룹 재조회 (sortOrder asc — 생성 순서와 동일)
 		const todos = await this.todoReadRepository.findManyByRecurrenceGroupId(
