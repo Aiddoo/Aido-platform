@@ -5,6 +5,7 @@ import type {
 } from '@src/features/feature-discovery/models/feature-discovery.registry';
 import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useTranslation } from '@src/shared/i18n';
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   Box,
   Button,
@@ -23,6 +24,16 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const MIN_CARD_LIST_HEIGHT = 96;
+const NON_LIST_HEIGHT_BY_FONT_SCALE = {
+  xsmall: 196,
+  small: 208,
+  medium: 220,
+  large: 248,
+  xlarge: 272,
+} as const;
 
 const CARD_COPY = {
   memo_ai: {
@@ -78,7 +89,12 @@ export function FeatureDiscoverySheet({
 }: FeatureDiscoverySheetProps) {
   const { t } = useTranslation(['featureDiscovery', 'common']);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const listMaxHeight = Math.max(220, viewportHeight - 240);
+  const { fontScale } = useFontScale();
+  const insets = useSafeAreaInsets();
+  const listMaxHeight = Math.max(
+    MIN_CARD_LIST_HEIGHT,
+    viewportHeight - insets.top - insets.bottom - NON_LIST_HEIGHT_BY_FONT_SCALE[fontScale],
+  );
 
   return (
     <ModalBottomSheet

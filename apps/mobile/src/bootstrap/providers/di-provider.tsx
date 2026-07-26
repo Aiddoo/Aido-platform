@@ -2,7 +2,9 @@ import { createSessionManager } from '@src/core/session/session-manager';
 import { AchievementService } from '@src/features/achievement/services/achievement.service';
 import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
+import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/repositories/feature-discovery-state.repository';
 import { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
+import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
 import { FriendService } from '@src/features/friend/services/friend.service';
 import { InquiryService } from '@src/features/inquiry/services/inquiry.service';
 import { MemoService } from '@src/features/memo/services/memo.service';
@@ -40,6 +42,7 @@ import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 
@@ -104,6 +107,10 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // Feature discovery — app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
     const featureDiscoveryService = new FeatureDiscoveryService(publicJsonFetcher);
+    const featureDiscoveryStateRepository = createFeatureDiscoveryStateRepository(mmkvSyncStorage);
+    const featureDiscoveryStateService = new FeatureDiscoveryStateService(
+      featureDiscoveryStateRepository,
+    );
 
     // Inquiry
     const inquiryService = new InquiryService(authHttpClient);
@@ -161,6 +168,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       authService,
       friendService,
       featureDiscoveryService,
+      featureDiscoveryStateService,
       inquiryService,
       memoService,
       subTodoService,
@@ -190,6 +198,7 @@ export {
   useDI,
   useErrorReporter,
   useFeatureDiscoveryService,
+  useFeatureDiscoveryStateService,
   useFriendService,
   useInquiryService,
   useLogger,

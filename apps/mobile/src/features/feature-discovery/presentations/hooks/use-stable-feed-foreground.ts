@@ -3,25 +3,31 @@ import { useOverlayState } from '@src/shared/ui';
 import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Keyboard } from 'react-native';
+import { AppState, InteractionManager, Keyboard } from 'react-native';
 import { isStableFeedForeground } from '../state/feature-discovery-auto-open';
 
-export function useStableFeedForeground(hasActiveForm = false): boolean {
+export function useStableFeedForeground(): boolean {
   const { status } = useAuth();
   const { hasActiveOverlay } = useOverlayState();
   const [isFocused, setIsFocused] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(Keyboard.isVisible());
   const [hasPendingDeepLink, setHasPendingDeepLink] = useState(true);
-  const hasFocusedOnceRef = useRef(false);
+  const deepLinkReleaseTaskRef = useRef<ReturnType<
+    typeof InteractionManager.runAfterInteractions
+  > | null>(null);
+
+  const releasePendingDeepLinkAfterInteractions = useCallback(() => {
+    deepLinkReleaseTaskRef.current?.cancel();
+    deepLinkReleaseTaskRef.current = InteractionManager.runAfterInteractions(() => {
+      deepLinkReleaseTaskRef.current = null;
+      setHasPendingDeepLink(false);
+    });
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       setIsFocused(true);
-      if (hasFocusedOnceRef.current) {
-        setHasPendingDeepLink(false);
-      }
-      hasFocusedOnceRef.current = true;
 
       return () => setIsFocused(false);
     }, []),
@@ -54,23 +60,29 @@ export function useStableFeedForeground(hasActiveForm = false): boolean {
       .then((url) => {
         if (mounted) {
           setHasPendingDeepLink(url !== null);
+          if (url !== null) {
+            releasePendingDeepLinkAfterInteractions();
+          }
         }
       })
       .catch(() => {
         if (mounted) {
           setHasPendingDeepLink(true);
+          releasePendingDeepLinkAfterInteractions();
         }
       });
 
     const subscription = Linking.addEventListener('url', () => {
       setHasPendingDeepLink(true);
+      releasePendingDeepLinkAfterInteractions();
     });
 
     return () => {
       mounted = false;
+      deepLinkReleaseTaskRef.current?.cancel();
       subscription.remove();
     };
-  }, []);
+  }, [releasePendingDeepLinkAfterInteractions]);
 
   return isStableFeedForeground({
     isAuthenticated: status === 'authenticated',
@@ -79,6 +91,5 @@ export function useStableFeedForeground(hasActiveForm = false): boolean {
     isKeyboardVisible,
     hasActiveOverlay,
     hasPendingDeepLink,
-    hasActiveForm,
   });
 }

@@ -47,6 +47,8 @@ describe('isSemanticVersionAtLeast', () => {
   it.each([
     ['1.7.9', '1.8.0'],
     ['1.8.0-rc.1', '1.8.0'],
+    ['1.8.0-alpha-a', '1.8.0-alpha-b'],
+    ['1.8.0-A', '1.8.0-a'],
     [undefined, '1.8.0'],
     ['invalid', '1.8.0'],
   ])('%s는 최소 버전 %s를 충족하지 않는다', (appVersion, minVersion) => {

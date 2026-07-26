@@ -1,10 +1,11 @@
 import { createMockSyncStorage } from '@src/shared/__tests__/create-mock-sync-storage';
 import {
   claimFeatureDiscoverySeen,
+  createFeatureDiscoveryStateRepository,
   featureDiscoverySeenKey,
   isFeatureDiscoveryReentryVisible,
   isFeatureDiscoverySeen,
-} from './feature-discovery-state';
+} from './feature-discovery-state.repository';
 
 const input = {
   userId: 'user-1',
@@ -19,10 +20,11 @@ describe('feature discovery 본 상태', () => {
     storage.getString.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     const at = new Date('2026-08-02T00:00:00.000Z');
+    const repository = createFeatureDiscoveryStateRepository(storage);
 
     // When
-    const first = claimFeatureDiscoverySeen(storage, { ...input, at });
-    const second = claimFeatureDiscoverySeen(storage, { ...input, at });
+    const first = repository.claimSeen({ ...input, at });
+    const second = repository.claimSeen({ ...input, at });
 
     // Then
     expect(first).toBe(true);

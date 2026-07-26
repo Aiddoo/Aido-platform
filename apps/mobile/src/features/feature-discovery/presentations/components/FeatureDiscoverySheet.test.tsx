@@ -1,11 +1,21 @@
 import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discovery/models/feature-discovery.registry';
+import { createMockSyncStorage } from '@src/shared/__tests__/create-mock-sync-storage';
 import '@src/shared/i18n/init';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { i18n } from '@src/shared/i18n';
+import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { FEATURE_DISCOVERY_CAMPAIGN_ID } from '../../models/feature-discovery.registry';
 import { FeatureDiscoverySheet } from './FeatureDiscoverySheet';
 
+let mockSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+
 jest.mock('@src/shared/hooks/use-prefers-reduced-motion', () => ({
   usePrefersReducedMotion: () => true,
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => mockSafeAreaInsets,
 }));
 
 jest.mock('@src/shared/ui', () => {
@@ -73,6 +83,13 @@ jest.mock('@src/shared/ui', () => {
 const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
 
 describe('FeatureDiscoverySheet', () => {
+  afterEach(async () => {
+    mockSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+    await act(async () => {
+      await i18n.changeLanguage('ko');
+    });
+  });
+
   it('작은 화면에서도 네 카드와 CTA를 스크롤 콘텐츠로 렌더링한다', async () => {
     // Given
     if (!campaign) {
@@ -125,5 +142,45 @@ describe('FeatureDiscoverySheet', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
     expect(onCardCta).toHaveBeenCalledWith('friend_search');
     expect(screen.getByTestId('modal-sheet').props.accessibilityValue.text).toBe('true');
+  });
+
+  it('작은 화면의 en × xlarge × safe-area에서도 장문 CTA 목록을 안전한 높이로 스크롤한다', async () => {
+    // Given
+    if (!campaign) {
+      throw new Error('bundled campaign missing');
+    }
+    const storage = createMockSyncStorage();
+    storage.getString.mockReturnValue('xlarge');
+    mockSafeAreaInsets = { top: 59, right: 0, bottom: 34, left: 0 };
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+
+    // When
+    await render(
+      <FontScaleProvider syncStorage={storage}>
+        <FeatureDiscoverySheet
+          isOpen
+          campaign={campaign}
+          onDismiss={jest.fn()}
+          onExit={jest.fn()}
+          onCardCta={jest.fn()}
+          viewportHeight={480}
+        />
+      </FontScaleProvider>,
+    );
+
+    // Then
+    expect(screen.getByText('Drag things into the order you want')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Choose manual entry, AI suggestions, or recurring schedules for each moment.',
+      ),
+    ).toBeTruthy();
+    const listStyle = StyleSheet.flatten(
+      screen.getByTestId('feature-discovery-card-list').props.style,
+    );
+    // 480 - top 59 - bottom 34 - xlarge 비목록 영역 272 = 115
+    expect(listStyle.maxHeight).toBeLessThanOrEqual(115);
   });
 });

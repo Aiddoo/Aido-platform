@@ -37,7 +37,13 @@ function parseSemanticVersion(value: string | undefined): ParsedSemanticVersion 
     return null;
   }
 
-  const [corePart, prereleasePart] = withoutBuild.split('-', 2);
+  const prereleaseSeparatorIndex = withoutBuild.indexOf('-');
+  const corePart =
+    prereleaseSeparatorIndex === -1
+      ? withoutBuild
+      : withoutBuild.slice(0, prereleaseSeparatorIndex);
+  const prereleasePart =
+    prereleaseSeparatorIndex === -1 ? undefined : withoutBuild.slice(prereleaseSeparatorIndex + 1);
   if (!corePart) {
     return null;
   }
@@ -92,7 +98,7 @@ function comparePrerelease(
     if (minimumIsNumeric) {
       return 1;
     }
-    return currentIdentifier.localeCompare(minimumIdentifier);
+    return currentIdentifier < minimumIdentifier ? -1 : 1;
   }
 
   return 0;

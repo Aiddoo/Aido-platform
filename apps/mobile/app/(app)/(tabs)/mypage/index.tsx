@@ -1,3 +1,4 @@
+import { useFeatureDiscoveryStateService } from '@src/bootstrap/providers/di-context';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/presentations/queries/use-logout-mutation-options';
 import {
@@ -5,13 +6,11 @@ import {
   getBundledFeatureDiscoveryCampaign,
 } from '@src/features/feature-discovery/models/feature-discovery.registry';
 import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/presentations/hooks/use-feature-discovery-hub';
-import { claimFeatureDiscoverySeen } from '@src/features/feature-discovery/state/feature-discovery-state';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { useTranslation } from '@src/shared/i18n';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
   ConfirmDialog,
   H3,
@@ -35,21 +34,19 @@ const MyPageScreen = () => {
   const { t } = useTranslation(['user', 'settings', 'featureDiscovery']);
   const { data: user } = useQuery(useGetMeQueryOptions());
   const { openHub } = useFeatureDiscoveryHub();
+  const featureDiscoveryState = useFeatureDiscoveryStateService();
   const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
 
   const openFeatureGuide = () => {
-    if (!campaign) {
+    if (!campaign || !user) {
       return;
     }
-    if (user) {
-      claimFeatureDiscoverySeen(mmkvSyncStorage, {
-        userId: user.id,
-        campaignId: campaign.id,
-        at: new Date(),
-      });
-    }
+    featureDiscoveryState.claimSeen({
+      userId: user.id,
+      campaignId: campaign.id,
+    });
     openHub({
-      accountId: user?.id,
+      accountId: user.id,
       campaign,
       source: 'mypage',
     });

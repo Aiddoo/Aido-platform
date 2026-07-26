@@ -4,17 +4,23 @@ const SEEN_KEY_PREFIX = 'aido_feature_discovery_seen_v1';
 const REENTRY_KEY_PREFIX = 'aido_feature_discovery_reentry_v1';
 const REENTRY_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
-interface FeatureDiscoveryStateIdentity {
+export interface FeatureDiscoveryStateIdentity {
   userId: string;
   campaignId: string;
 }
 
-interface ClaimFeatureDiscoverySeenInput extends FeatureDiscoveryStateIdentity {
+export interface ClaimFeatureDiscoverySeenInput extends FeatureDiscoveryStateIdentity {
   at: Date;
 }
 
-interface FeatureDiscoveryReentryInput extends FeatureDiscoveryStateIdentity {
+export interface FeatureDiscoveryReentryInput extends FeatureDiscoveryStateIdentity {
   now: Date;
+}
+
+export interface FeatureDiscoveryStateRepository {
+  isSeen(identity: FeatureDiscoveryStateIdentity): boolean;
+  claimSeen(input: ClaimFeatureDiscoverySeenInput): boolean;
+  isReentryVisible(input: FeatureDiscoveryReentryInput): boolean;
 }
 
 export const featureDiscoverySeenKey = ({
@@ -77,4 +83,14 @@ export function isFeatureDiscoveryReentryVisible(
   const openedAt = new Date(raw).getTime();
   const elapsed = now.getTime() - openedAt;
   return !Number.isNaN(openedAt) && elapsed >= 0 && elapsed < REENTRY_WINDOW_MS;
+}
+
+export function createFeatureDiscoveryStateRepository(
+  storage: SyncStorage,
+): FeatureDiscoveryStateRepository {
+  return {
+    isSeen: (identity) => isFeatureDiscoverySeen(storage, identity),
+    claimSeen: (input) => claimFeatureDiscoverySeen(storage, input),
+    isReentryVisible: (input) => isFeatureDiscoveryReentryVisible(storage, input),
+  };
 }

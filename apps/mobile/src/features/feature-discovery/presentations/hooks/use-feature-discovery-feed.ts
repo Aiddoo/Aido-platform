@@ -1,14 +1,9 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useFeatureDiscoveryStateService } from '@src/bootstrap/providers/di-context';
 import { FeatureDiscoveryPolicy } from '@src/features/feature-discovery/models/feature-discovery.model';
 import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discovery/models/feature-discovery.registry';
 import { getNativeAppVersion } from '@src/features/feature-discovery/services/native-app-version';
-import {
-  claimFeatureDiscoverySeen,
-  isFeatureDiscoveryReentryVisible,
-  isFeatureDiscoverySeen,
-} from '@src/features/feature-discovery/state/feature-discovery-state';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { InteractionManager } from 'react-native';
@@ -27,6 +22,7 @@ export function useFeatureDiscoveryFeed() {
   const appVersion = useMemo(getNativeAppVersion, []);
   const isStable = useStableFeedForeground();
   const { openHub } = useFeatureDiscoveryHub();
+  const stateService = useFeatureDiscoveryStateService();
   const [, refreshState] = useReducer((value: number) => value + 1, 0);
 
   const campaign =
@@ -42,7 +38,7 @@ export function useFeatureDiscoveryFeed() {
         : null,
     [accountId, campaign],
   );
-  const hasSeen = identity ? isFeatureDiscoverySeen(mmkvSyncStorage, identity) : true;
+  const hasSeen = identity ? stateService.isSeen(identity) : true;
   const canAutoOpen = FeatureDiscoveryPolicy.canAutoOpen({
     authStatus: status,
     config,
@@ -61,11 +57,7 @@ export function useFeatureDiscoveryFeed() {
       const opened = claimAndOpenFeatureDiscovery({
         canAutoOpen,
         isStable,
-        claim: () =>
-          claimFeatureDiscoverySeen(mmkvSyncStorage, {
-            ...identity,
-            at: new Date(),
-          }),
+        claim: () => stateService.claimSeen(identity),
         open: () =>
           openHub({
             accountId,
@@ -79,16 +71,13 @@ export function useFeatureDiscoveryFeed() {
     });
 
     return () => task.cancel();
-  }, [accountId, campaign, canAutoOpen, identity, isStable, openHub]);
+  }, [accountId, campaign, canAutoOpen, identity, isStable, openHub, stateService]);
 
   const isReentryVisible =
     config?.enabled === true &&
     identity !== null &&
     campaign !== null &&
-    isFeatureDiscoveryReentryVisible(mmkvSyncStorage, {
-      ...identity,
-      now: new Date(),
-    });
+    stateService.isReentryVisible(identity);
 
   const openFromReentry = useCallback(() => {
     if (!accountId || !campaign) {

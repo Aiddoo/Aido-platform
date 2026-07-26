@@ -7,7 +7,6 @@ interface StableFeedForegroundInput {
   isKeyboardVisible: boolean;
   hasActiveOverlay: boolean;
   hasPendingDeepLink: boolean;
-  hasActiveForm: boolean;
 }
 
 export function isStableFeedForeground({
@@ -17,7 +16,6 @@ export function isStableFeedForeground({
   isKeyboardVisible,
   hasActiveOverlay,
   hasPendingDeepLink,
-  hasActiveForm,
 }: StableFeedForegroundInput): boolean {
   return (
     isAuthenticated &&
@@ -25,8 +23,7 @@ export function isStableFeedForeground({
     appState === 'active' &&
     !isKeyboardVisible &&
     !hasActiveOverlay &&
-    !hasPendingDeepLink &&
-    !hasActiveForm
+    !hasPendingDeepLink
   );
 }
 

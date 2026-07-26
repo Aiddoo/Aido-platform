@@ -10,7 +10,6 @@ const stableInput = {
   isKeyboardVisible: false,
   hasActiveOverlay: false,
   hasPendingDeepLink: false,
-  hasActiveForm: false,
 };
 
 describe('isStableFeedForeground', () => {
@@ -27,9 +26,8 @@ describe('isStableFeedForeground', () => {
     [{ isFocused: false }, '다른 화면'],
     [{ appState: 'background' as const }, '백그라운드'],
     [{ isKeyboardVisible: true }, '키보드'],
-    [{ hasActiveOverlay: true }, '다른 오버레이'],
+    [{ hasActiveOverlay: true }, '피드 폼 또는 다른 오버레이'],
     [{ hasPendingDeepLink: true }, '딥 링크'],
-    [{ hasActiveForm: true }, '활성 폼'],
   ])('%s 상태에서는 false를 반환한다', (overrides, _label) => {
     // When
     const result = isStableFeedForeground({ ...stableInput, ...overrides });

@@ -8,6 +8,7 @@ import type { AchievementService } from '@src/features/achievement/services/achi
 import type { AiService } from '@src/features/ai/services/ai.service';
 import type { AuthService } from '@src/features/auth/services/auth.service';
 import type { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
+import type { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
 import type { FriendService } from '@src/features/friend/services/friend.service';
 import type { InquiryService } from '@src/features/inquiry/services/inquiry.service';
 import type { MemoService } from '@src/features/memo/services/memo.service';
@@ -43,6 +44,7 @@ export interface DIContainer {
   authService: AuthService;
   friendService: FriendService;
   featureDiscoveryService: FeatureDiscoveryService;
+  featureDiscoveryStateService: FeatureDiscoveryStateService;
   inquiryService: InquiryService;
   memoService: MemoService;
   subTodoService: SubTodoService;
@@ -96,6 +98,7 @@ export const useAiService = () => useDI().aiService;
 export const useAuthService = () => useDI().authService;
 export const useFriendService = () => useDI().friendService;
 export const useFeatureDiscoveryService = () => useDI().featureDiscoveryService;
+export const useFeatureDiscoveryStateService = () => useDI().featureDiscoveryStateService;
 export const useInquiryService = () => useDI().inquiryService;
 export const useMemoService = () => useDI().memoService;
 export const useSubTodoService = () => useDI().subTodoService;

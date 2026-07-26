@@ -17,7 +17,7 @@ import { FeatureDiscoverySheet } from '../components/FeatureDiscoverySheet';
 import { navigateToFeatureDiscoveryCard } from '../navigation/feature-discovery.navigation';
 
 interface OpenFeatureDiscoveryHubInput {
-  accountId: string | undefined;
+  accountId: string;
   campaign: FeatureDiscoveryCampaign;
   source: FeatureHubSource;
 }
@@ -30,6 +30,10 @@ export function useFeatureDiscoveryHub() {
 
   const openHub = useCallback(
     ({ accountId, campaign, source }: OpenFeatureDiscoveryHubInput): void => {
+      if (!accountId) {
+        return;
+      }
+
       recordFeatureDiscoveryImpression(analytics, {
         campaignId: campaign.id,
         source,
