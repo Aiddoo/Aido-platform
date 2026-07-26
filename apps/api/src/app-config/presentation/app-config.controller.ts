@@ -19,7 +19,7 @@ export class AppConfigController {
 	@Get("feature-discovery")
 	@Public()
 	@RawResponse()
-	@Header("Cache-Control", "public, max-age=300")
+	@Header("Cache-Control", "private, no-store")
 	@ApiDoc({
 		summary: "Feature discovery rollout configuration",
 		operationId: "getFeatureDiscoveryConfig",
@@ -35,10 +35,11 @@ export class AppConfigController {
 		description: "Feature discovery configuration",
 		headers: {
 			"Cache-Control": {
-				description: "Publicly cacheable for five minutes",
+				description:
+					"Not cached so the operational kill switch is reflected on the next request",
 				schema: {
 					type: "string",
-					example: "public, max-age=300",
+					example: "private, no-store",
 				},
 			},
 		},

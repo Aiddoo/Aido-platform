@@ -26,14 +26,14 @@ describe("Feature discovery configuration route (integration)", () => {
 		await app.close();
 	});
 
-	it("serves a public, five-minute-cacheable fail-closed response", async () => {
+	it("serves a non-cacheable fail-closed response", async () => {
 		// When
 		const response = await request(app.getHttpServer())
 			.get("/v1/app-config/feature-discovery")
 			.expect(200);
 
 		// Then - no authorization, user data, or campaign copy is involved
-		expect(response.headers["cache-control"]).toBe("public, max-age=300");
+		expect(response.headers["cache-control"]).toBe("private, no-store");
 		expect(response.body).toEqual({ enabled: false });
 	});
 

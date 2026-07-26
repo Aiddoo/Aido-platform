@@ -207,12 +207,12 @@ export class PushDispatcherAdapter
 
 		let createdDispatchIds: number[] = [];
 		try {
-			const dispatchResults = await Promise.allSettled(
-				items.map(async (item) => {
-					const preference = prefMap.get(item.data.userId);
-					const timezone = resolveDeliveryTimezone(preference?.timezone);
-					const dispatch = await this.notificationRepository.createPushDispatch(
-						{
+			const dispatchRecords =
+				await this.notificationRepository.createPushDispatches(
+					items.map((item) => {
+						const preference = prefMap.get(item.data.userId);
+						const timezone = resolveDeliveryTimezone(preference?.timezone);
+						return {
 							notificationId: item.notificationId,
 							userId: item.data.userId,
 							purpose: item.data.purpose ?? "TRANSACTIONAL",
@@ -220,23 +220,34 @@ export class PushDispatcherAdapter
 							variantId: item.data.variantId,
 							timezone,
 							localDate: new Date(`${this.#localDate(timezone)}T00:00:00.000Z`),
-						},
+						};
+					}),
+				);
+			createdDispatchIds = dispatchRecords.map((dispatch) => dispatch.id);
+			const dispatchIdByNotificationId = new Map(
+				dispatchRecords.map((dispatch) => [
+					dispatch.notificationId,
+					dispatch.id,
+				]),
+			);
+			const dispatchItems: Array<
+				(typeof items)[number] & { dispatchId: number }
+			> = [];
+			for (const item of items) {
+				const dispatchId = dispatchIdByNotificationId.get(item.notificationId);
+				if (dispatchId === undefined) {
+					throw new Error(
+						`Push dispatch batch result missing: notificationId=${item.notificationId}`,
 					);
-					return { ...item, dispatchId: dispatch.id };
-				}),
-			);
-			const dispatchItems = dispatchResults.flatMap((result) =>
-				result.status === "fulfilled" ? [result.value] : [],
-			);
-			createdDispatchIds = dispatchItems.map((item) => item.dispatchId);
-			const createFailure = dispatchResults.find(
-				(result) => result.status === "rejected",
-			);
-			if (createFailure?.status === "rejected") {
-				throw createFailure.reason;
+				}
+				dispatchItems.push({ ...item, dispatchId });
 			}
 
 			const settingsEligibleItems: typeof dispatchItems = [];
+			const skippedDispatches: Array<{
+				dispatchId: number;
+				reason: PushDispatchSkipReason;
+			}> = [];
 			for (const item of dispatchItems) {
 				const { data } = item;
 				// 관리자 강제 발송(force)은 수신 설정·야간·설정 행 부재를 우회한다.
@@ -256,17 +267,22 @@ export class PushDispatcherAdapter
 				if (!skipReason) {
 					settingsEligibleItems.push(item);
 				} else {
-					await this.notificationRepository.markPushDispatchSkipped(
-						item.dispatchId,
-						skipReason,
-					);
+					skippedDispatches.push({
+						dispatchId: item.dispatchId,
+						reason: skipReason,
+					});
 					this.#logger.debug(
 						`Push dispatch skipped: userId=${data.userId}, type=${data.type}, reason=${skipReason}`,
 					);
 				}
 			}
 
-			if (settingsEligibleItems.length === 0) return;
+			if (settingsEligibleItems.length === 0) {
+				await this.notificationRepository.markPushDispatchesSkipped(
+					skippedDispatches,
+				);
+				return;
+			}
 
 			const rateLimitRequests = settingsEligibleItems.map(({ data }) =>
 				this.#buildRateLimitRequest(data, prefMap.get(data.userId)?.timezone),
@@ -276,10 +292,10 @@ export class PushDispatcherAdapter
 			for (const [index, item] of settingsEligibleItems.entries()) {
 				const isLimited = limited[index] ?? false;
 				if (isLimited) {
-					await this.notificationRepository.markPushDispatchSkipped(
-						item.dispatchId,
-						"RATE_LIMITED",
-					);
+					skippedDispatches.push({
+						dispatchId: item.dispatchId,
+						reason: "RATE_LIMITED",
+					});
 					this.#logger.debug(
 						`Push rate limited: userId=${item.data.userId}, type=${item.data.type}`,
 					);
@@ -287,6 +303,9 @@ export class PushDispatcherAdapter
 					eligibleItems.push(item);
 				}
 			}
+			await this.notificationRepository.markPushDispatchesSkipped(
+				skippedDispatches,
+			);
 
 			if (eligibleItems.length === 0) return;
 
@@ -309,13 +328,11 @@ export class PushDispatcherAdapter
 						}),
 					})),
 				);
-			await Promise.all(
-				[...attemptedDispatchIds].map((dispatchId) =>
-					this.notificationRepository.recordPushDeliveryResults(
-						dispatchId,
-						resultsByDispatch.get(dispatchId) ?? [],
-					),
-				),
+			await this.notificationRepository.recordPushDeliveryResultsBatch(
+				[...attemptedDispatchIds].map((dispatchId) => ({
+					dispatchId,
+					results: resultsByDispatch.get(dispatchId) ?? [],
+				})),
 			);
 		} catch (error) {
 			await this.#markUnexpectedDispatchFailure(createdDispatchIds, error);

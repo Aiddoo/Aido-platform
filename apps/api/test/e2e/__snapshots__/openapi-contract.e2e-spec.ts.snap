@@ -13272,9 +13272,9 @@ if (limit !== null && used >= limit) {
           "description": "Feature discovery configuration",
           "headers": {
             "Cache-Control": {
-              "description": "Publicly cacheable for five minutes",
+              "description": "Not cached so the operational kill switch is reflected on the next request",
               "schema": {
-                "example": "public, max-age=300",
+                "example": "private, no-store",
                 "type": "string",
               },
             },

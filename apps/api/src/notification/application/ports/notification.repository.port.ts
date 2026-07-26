@@ -27,6 +27,31 @@ export type PushDispatchSkipReason =
 
 export type PushDispatchFailureReason = "UNEXPECTED_DISPATCH_ERROR";
 
+export interface CreatePushDispatchInput {
+	notificationId: number;
+	userId: string;
+	purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
+	campaignKey?: string | null;
+	variantId?: string | null;
+	timezone: string;
+	localDate: Date;
+}
+
+export interface PushDispatchRecord {
+	id: number;
+	notificationId: number;
+}
+
+export interface PushDispatchSkipUpdate {
+	dispatchId: number;
+	reason: PushDispatchSkipReason;
+}
+
+export interface PushDeliveryResultsInput {
+	dispatchId: number;
+	results: PushResult[];
+}
+
 /**
  * 알림·푸시 토큰 저장소 포트.
  *
@@ -76,19 +101,15 @@ export interface NotificationRepositoryPort {
 	deleteAllPushTokensByUser(userId: string): Promise<{ count: number }>;
 	deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }>;
 
-	createPushDispatch(input: {
-		notificationId: number;
-		userId: string;
-		purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
-		campaignKey?: string | null;
-		variantId?: string | null;
-		timezone: string;
-		localDate: Date;
-	}): Promise<{ id: number }>;
+	createPushDispatch(input: CreatePushDispatchInput): Promise<{ id: number }>;
+	createPushDispatches(
+		inputs: CreatePushDispatchInput[],
+	): Promise<PushDispatchRecord[]>;
 	markPushDispatchSkipped(
 		dispatchId: number,
 		reason: PushDispatchSkipReason,
 	): Promise<void>;
+	markPushDispatchesSkipped(updates: PushDispatchSkipUpdate[]): Promise<void>;
 	markPushDispatchFailed(
 		dispatchIds: number[],
 		reason: PushDispatchFailureReason,
@@ -96,6 +117,9 @@ export interface NotificationRepositoryPort {
 	recordPushDeliveryResults(
 		dispatchId: number,
 		results: PushResult[],
+	): Promise<void>;
+	recordPushDeliveryResultsBatch(
+		inputs: PushDeliveryResultsInput[],
 	): Promise<void>;
 	findPendingPushReceipts(
 		limit: number,

@@ -42,8 +42,7 @@ function ActivationStep({ label, completed }: { label: string; completed: boolea
     <HStack
       gap={10}
       align="center"
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: completed }}
+      accessibilityRole="text"
       accessibilityLabel={t('activation.stepAccessibilityLabel', { label, status })}
     >
       <Box

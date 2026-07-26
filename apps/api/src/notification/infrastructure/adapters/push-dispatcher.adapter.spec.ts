@@ -162,6 +162,33 @@ describe("PushDispatcherAdapter", () => {
 
 		// cache-aside: 캐시 미스 시 콜백을 실행하도록 passthrough
 		cacheService.wrapUserPreference.mockImplementation((_userId, fn) => fn());
+		repository.createPushDispatches.mockImplementation((inputs) =>
+			Promise.all(
+				inputs.map(async (input) => {
+					const dispatch = await repository.createPushDispatch(input);
+					return { id: dispatch.id, notificationId: input.notificationId };
+				}),
+			),
+		);
+		repository.markPushDispatchesSkipped.mockImplementation(async (updates) => {
+			await Promise.all(
+				updates.map((update) =>
+					repository.markPushDispatchSkipped(update.dispatchId, update.reason),
+				),
+			);
+		});
+		repository.recordPushDeliveryResultsBatch.mockImplementation(
+			async (inputs) => {
+				await Promise.all(
+					inputs.map((input) =>
+						repository.recordPushDeliveryResults(
+							input.dispatchId,
+							input.results,
+						),
+					),
+				);
+			},
+		);
 	});
 
 	afterEach(() => jest.useRealTimers());
@@ -435,6 +462,190 @@ describe("PushDispatcherAdapter", () => {
 			2,
 			"RATE_LIMITED",
 		);
+	});
+
+	it("배치 발송은 dispatch 생성과 스킵 상태를 각각 한 번의 저장소 호출로 기록한다", async () => {
+		// Given
+		const createPushDispatches = jest.fn().mockResolvedValue([
+			{ id: 101, notificationId: 1 },
+			{ id: 102, notificationId: 2 },
+		]);
+		const markPushDispatchesSkipped = jest.fn().mockResolvedValue(undefined);
+		Object.defineProperty(repository, "createPushDispatches", {
+			value: createPushDispatches,
+		});
+		Object.defineProperty(repository, "markPushDispatchesSkipped", {
+			value: markPushDispatchesSkipped,
+		});
+		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
+			{ ...makePreference("user-1", "Asia/Seoul"), pushEnabled: false },
+			{ ...makePreference("user-2", "Asia/Seoul"), pushEnabled: false },
+		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
+			makeConsent("user-1"),
+			makeConsent("user-2"),
+		]);
+		repository.createPushDispatch
+			.mockResolvedValueOnce({ id: 101 })
+			.mockResolvedValueOnce({ id: 102 });
+
+		// When
+		adapter.fireAndForgetBatchPush([
+			{
+				data: {
+					userId: "user-1",
+					type: "FOLLOW_NEW",
+					title: "제목 1",
+					body: "본문 1",
+				},
+				notificationId: 1,
+			},
+			{
+				data: {
+					userId: "user-2",
+					type: "FOLLOW_NEW",
+					title: "제목 2",
+					body: "본문 2",
+				},
+				notificationId: 2,
+			},
+		]);
+		await adapter.beforeApplicationShutdown();
+
+		// Then
+		expect(createPushDispatches).toHaveBeenCalledTimes(1);
+		expect(repository.createPushDispatch).not.toHaveBeenCalled();
+		expect(markPushDispatchesSkipped).toHaveBeenCalledWith([
+			{ dispatchId: 101, reason: "PUSH_DISABLED" },
+			{ dispatchId: 102, reason: "PUSH_DISABLED" },
+		]);
+		expect(repository.markPushDispatchSkipped).not.toHaveBeenCalled();
+	});
+
+	it("배치 발송 결과는 모든 dispatch를 한 번의 저장소 호출로 기록한다", async () => {
+		// Given
+		const createdAt = new Date("2026-07-01T00:00:00.000Z");
+		const createPushDispatches = jest.fn().mockResolvedValue([
+			{ id: 201, notificationId: 11 },
+			{ id: 202, notificationId: 12 },
+		]);
+		const recordPushDeliveryResultsBatch = jest
+			.fn()
+			.mockResolvedValue(undefined);
+		Object.defineProperty(repository, "createPushDispatches", {
+			value: createPushDispatches,
+		});
+		Object.defineProperty(repository, "recordPushDeliveryResultsBatch", {
+			value: recordPushDeliveryResultsBatch,
+		});
+		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
+			makePreference("user-1", "Asia/Seoul"),
+			makePreference("user-2", "Asia/Seoul"),
+		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
+			makeConsent("user-1"),
+			makeConsent("user-2"),
+		]);
+		rateLimiter.reserveBatch.mockResolvedValue([false, false]);
+		repository.createPushDispatch
+			.mockResolvedValueOnce({ id: 201 })
+			.mockResolvedValueOnce({ id: 202 });
+		cacheService.mget.mockResolvedValue([undefined, undefined]);
+		cacheService.mset.mockResolvedValue(undefined);
+		repository.findActivePushTokensByUsers.mockResolvedValue([
+			{
+				id: 1,
+				userId: "user-1",
+				token: "ExponentPushToken[user-1]",
+				deviceId: "device-1",
+				platform: "IOS",
+				isActive: true,
+				createdAt,
+				updatedAt: createdAt,
+				lastUsedAt: createdAt,
+				payloadVersion: 2,
+				appVersion: "1.8.0",
+			},
+			{
+				id: 2,
+				userId: "user-2",
+				token: "ExponentPushToken[user-2]",
+				deviceId: "device-2",
+				platform: "ANDROID",
+				isActive: true,
+				createdAt,
+				updatedAt: createdAt,
+				lastUsedAt: createdAt,
+				payloadVersion: 2,
+				appVersion: "1.8.0",
+			},
+		]);
+		pushProvider.sendBatch.mockResolvedValue({
+			total: 2,
+			successCount: 2,
+			failureCount: 0,
+			results: [
+				{
+					token: "ExponentPushToken[user-1]",
+					success: true,
+					ticketId: "ticket-1",
+				},
+				{
+					token: "ExponentPushToken[user-2]",
+					success: true,
+					ticketId: "ticket-2",
+				},
+			],
+			invalidTokens: [],
+		});
+		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
+
+		// When
+		adapter.fireAndForgetBatchPush([
+			{
+				data: {
+					userId: "user-1",
+					type: "FOLLOW_NEW",
+					title: "제목 1",
+					body: "본문 1",
+				},
+				notificationId: 11,
+			},
+			{
+				data: {
+					userId: "user-2",
+					type: "FOLLOW_NEW",
+					title: "제목 2",
+					body: "본문 2",
+				},
+				notificationId: 12,
+			},
+		]);
+		await adapter.beforeApplicationShutdown();
+
+		// Then
+		expect(recordPushDeliveryResultsBatch).toHaveBeenCalledTimes(1);
+		expect(recordPushDeliveryResultsBatch).toHaveBeenCalledWith([
+			{
+				dispatchId: 201,
+				results: [
+					expect.objectContaining({
+						token: "ExponentPushToken[user-1]",
+						success: true,
+					}),
+				],
+			},
+			{
+				dispatchId: 202,
+				results: [
+					expect.objectContaining({
+						token: "ExponentPushToken[user-2]",
+						success: true,
+					}),
+				],
+			},
+		]);
+		expect(repository.recordPushDeliveryResults).not.toHaveBeenCalled();
 	});
 
 	it("배치 dispatch 생성 후 예상하지 못한 rate limiter 오류는 모든 PROCESSING dispatch를 FAILED로 전이한다", async () => {

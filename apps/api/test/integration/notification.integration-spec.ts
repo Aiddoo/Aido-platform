@@ -123,14 +123,17 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		upsert: jest.fn(),
 	};
 
-	const mockDatabaseService = createMockDatabaseService({
-		notification: mockNotificationDb,
-		pushToken: mockPushTokenDb,
-		pushDispatch: mockPushDispatchDb,
-		pushDeliveryAttempt: mockPushDeliveryAttemptDb,
-		userPreference: mockUserPreferenceDb,
-		userConsent: mockUserConsentDb,
-	});
+	const mockDatabaseService = {
+		...createMockDatabaseService({
+			notification: mockNotificationDb,
+			pushToken: mockPushTokenDb,
+			pushDispatch: mockPushDispatchDb,
+			pushDeliveryAttempt: mockPushDeliveryAttemptDb,
+			userPreference: mockUserPreferenceDb,
+			userConsent: mockUserConsentDb,
+		}),
+		$queryRaw: jest.fn(),
+	};
 
 	// Mock Push Provider
 	const mockPushProvider = {
@@ -320,6 +323,12 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		mockPushDispatchDb.update.mockResolvedValue({});
 		mockPushDispatchDb.updateMany.mockResolvedValue({ count: 1 });
 		mockPushDeliveryAttemptDb.createMany.mockResolvedValue({ count: 0 });
+		mockDatabaseService.$queryRaw.mockResolvedValue(
+			Array.from({ length: 20 }, (_, index) => ({
+				id: index + 1,
+				notificationId: index + 1,
+			})),
+		);
 		mockNotificationDb.createManyAndReturn.mockImplementation(
 			async ({ data }: { data: Array<Record<string, unknown>> }) =>
 				data.map((item, index) => ({

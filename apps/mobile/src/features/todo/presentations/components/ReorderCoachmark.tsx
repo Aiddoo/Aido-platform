@@ -32,7 +32,7 @@ export function ReorderCoachmark({ accountId, kind }: ReorderCoachmarkProps) {
         {t(`reorderCoachmark.${kind}`)}
       </Text>
       <PressableFeedback
-        hitSlop={8}
+        hitSlop={14}
         onPress={() => setIsVisible(false)}
         accessibilityRole="button"
         accessibilityLabel={t('reorderCoachmark.dismiss')}

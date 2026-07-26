@@ -129,9 +129,20 @@ export const ModalBottomSheet = ({
   }));
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View
+      testID="modal-bottom-sheet"
+      style={StyleSheet.absoluteFill}
+      accessibilityViewIsModal
+      importantForAccessibility="yes"
+    >
       {/* Backdrop */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={callOnClose}>
+      <Pressable
+        testID="modal-bottom-sheet-backdrop"
+        style={StyleSheet.absoluteFill}
+        onPress={callOnClose}
+        accessible={false}
+        importantForAccessibility="no"
+      >
         <Animated.View className="absolute inset-0 bg-black" style={backdropAnimatedStyle} />
       </Pressable>
 

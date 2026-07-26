@@ -9,5 +9,6 @@ export const useFeatureDiscoveryQueryOptions = () => {
     queryKey: FEATURE_DISCOVERY_QUERY_KEYS.config(),
     queryFn: service.getConfig,
     retry: false,
+    staleTime: 0,
   });
 };

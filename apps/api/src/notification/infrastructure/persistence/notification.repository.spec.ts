@@ -777,6 +777,65 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 		});
 	});
 
+	describe("createPushDispatches", () => {
+		it("여러 dispatch를 하나의 멱등 쿼리로 생성하고 notificationId 매핑을 반환한다", async () => {
+			// Given
+			const expected = [
+				{ id: 41, notificationId: 101 },
+				{ id: 42, notificationId: 102 },
+			];
+			asMock(db.$queryRaw).mockResolvedValue(expected);
+
+			// When
+			const result = await repository.createPushDispatches([
+				{
+					notificationId: 101,
+					userId: "user-1",
+					purpose: "TRANSACTIONAL",
+					timezone: "Asia/Seoul",
+					localDate: new Date("2026-07-26T00:00:00.000Z"),
+				},
+				{
+					notificationId: 102,
+					userId: "user-2",
+					purpose: "ENGAGEMENT",
+					campaignKey: "feature-discovery-2026-08",
+					timezone: "UTC",
+					localDate: new Date("2026-07-26T00:00:00.000Z"),
+				},
+			]);
+
+			// Then
+			expect(db.$queryRaw).toHaveBeenCalledTimes(1);
+			expect(result).toEqual(expected);
+		});
+	});
+
+	describe("markPushDispatchesSkipped", () => {
+		it("사용자 수가 아니라 skip reason별로 상태를 일괄 갱신한다", async () => {
+			// Given
+			asMock(db.pushDispatch.updateMany).mockResolvedValue({ count: 1 });
+
+			// When
+			await repository.markPushDispatchesSkipped([
+				{ dispatchId: 41, reason: "PUSH_DISABLED" },
+				{ dispatchId: 42, reason: "PUSH_DISABLED" },
+				{ dispatchId: 43, reason: "RATE_LIMITED" },
+			]);
+
+			// Then
+			expect(db.pushDispatch.updateMany).toHaveBeenCalledTimes(2);
+			expect(db.pushDispatch.updateMany).toHaveBeenCalledWith({
+				where: { id: { in: [41, 42] } },
+				data: { status: "SKIPPED", skipReason: "PUSH_DISABLED" },
+			});
+			expect(db.pushDispatch.updateMany).toHaveBeenCalledWith({
+				where: { id: { in: [43] } },
+				data: { status: "SKIPPED", skipReason: "RATE_LIMITED" },
+			});
+		});
+	});
+
 	describe("markPushDispatchFailed", () => {
 		it("PROCESSING dispatch만 stable failure reason과 함께 FAILED로 전이한다", async () => {
 			asMock(db.pushDispatch.updateMany).mockResolvedValue({ count: 2 });
@@ -793,6 +852,80 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 					skipReason: "UNEXPECTED_DISPATCH_ERROR",
 				},
 			});
+		});
+	});
+
+	describe("recordPushDeliveryResultsBatch", () => {
+		it("모든 dispatch의 토큰·attempt·상태를 배치 쿼리로 기록한다", async () => {
+			// Given
+			asMock(db.pushToken.findMany).mockResolvedValue([
+				{ id: 1, token: "ExponentPushToken[success]" },
+				{ id: 2, token: "ExponentPushToken[failed]" },
+			]);
+			asMock(db.pushDeliveryAttempt.createMany).mockResolvedValue({ count: 2 });
+			asMock(db.pushDispatch.updateMany).mockResolvedValue({ count: 1 });
+
+			// When
+			await repository.recordPushDeliveryResultsBatch([
+				{
+					dispatchId: 41,
+					results: [
+						{
+							token: "ExponentPushToken[success]",
+							success: true,
+							ticketId: "ticket-success",
+						},
+					],
+				},
+				{
+					dispatchId: 42,
+					results: [
+						{
+							token: "ExponentPushToken[failed]",
+							success: false,
+							errorCode: "MessageTooBig",
+						},
+					],
+				},
+			]);
+
+			// Then
+			expect(db.pushToken.findMany).toHaveBeenCalledTimes(1);
+			expect(db.pushDeliveryAttempt.createMany).toHaveBeenCalledTimes(1);
+			expect(db.pushDispatch.updateMany).toHaveBeenCalledTimes(2);
+			expect(db.pushDispatch.updateMany).toHaveBeenCalledWith({
+				where: { id: { in: [41] } },
+				data: { status: "SENT", sentAt: expect.any(Date) },
+			});
+			expect(db.pushDispatch.updateMany).toHaveBeenCalledWith({
+				where: { id: { in: [42] } },
+				data: { status: "FAILED" },
+			});
+		});
+	});
+
+	describe("recordPushReceipts", () => {
+		it("여러 Expo receipt 결과를 하나의 상태 갱신 쿼리로 기록한다", async () => {
+			// Given
+			asMock(db.$executeRaw).mockResolvedValue(2);
+			asMock(db.pushDeliveryAttempt.findMany).mockResolvedValue([
+				{ pushToken: { token: "ExponentPushToken[invalid]" } },
+			]);
+
+			// When
+			const invalidTokens = await repository.recordPushReceipts([
+				{ ticketId: "ticket-success", delivered: true },
+				{
+					ticketId: "ticket-invalid",
+					delivered: false,
+					errorCode: "DeviceNotRegistered",
+				},
+			]);
+
+			// Then
+			expect(db.$executeRaw).toHaveBeenCalledTimes(1);
+			expect(db.pushDeliveryAttempt.updateMany).not.toHaveBeenCalled();
+			expect(invalidTokens).toEqual(["ExponentPushToken[invalid]"]);
 		});
 	});
 

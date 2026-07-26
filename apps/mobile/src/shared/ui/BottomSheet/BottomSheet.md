@@ -8,7 +8,7 @@
 |----------|------|------------|
 | `KeyboardBottomSheet` | 키보드가 필요한 폼 (텍스트 입력) | O |
 | `BottomSheet` | 키보드 불필요 (피커, 액션시트) | X |
-| `ModalBottomSheet` | 시트 위에 시트 (RN Modal 기반) | X |
+| `ModalBottomSheet` | 시트 위에 시트 (Overlay 절대 위치 기반) | X |
 
 ## 사용법
 
@@ -34,7 +34,7 @@ import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 
 ### ModalBottomSheet
 
-기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. RN `Modal` 기반이므로 gorhom BottomSheet의 키보드/포커스 충돌 없이 독립적으로 동작합니다.
+기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다.
 
 ```tsx
 import { ModalBottomSheet } from '@src/shared/ui/BottomSheet';
@@ -77,7 +77,7 @@ import { ModalBottomSheet } from '@src/shared/ui/BottomSheet';
 BottomSheet/
 ├── BottomSheet.tsx          # gorhom 기반 기본 바텀시트
 ├── KeyboardBottomSheet.tsx  # gorhom 기반 키보드 연동 바텀시트
-├── ModalBottomSheet.tsx     # RN Modal 기반 바텀시트 (시트 위 시트)
+├── ModalBottomSheet.tsx     # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
 ├── motion.ts                # 모션 감소용 애니메이션 시간 해석
 ├── constants.ts             # 공유 스타일, 상수
 ├── index.ts                 # barrel export

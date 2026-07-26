@@ -25,10 +25,8 @@ describe("Feature discovery configuration (e2e)", () => {
 			.expect(200);
 		const root = await request(ctx.app.getHttpServer()).get("/v1").expect(200);
 
-		// Then - rollout config is a raw discriminated union and remains cacheable
-		expect(featureDiscovery.headers["cache-control"]).toBe(
-			"public, max-age=300",
-		);
+		// Then - kill switch는 중간 캐시 없이 다음 조회부터 즉시 반영된다
+		expect(featureDiscovery.headers["cache-control"]).toBe("private, no-store");
 		expect(featureDiscovery.body).toEqual({ enabled: false });
 
 		// Then - the global response contract remains unchanged elsewhere
