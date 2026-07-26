@@ -516,6 +516,47 @@ describe("UserRepository — 사용자 리포지토리", () => {
 		});
 	});
 
+	describe("updateLastActiveAt", () => {
+		it("사용자 현지 날짜의 활동 행과 lastActiveAt을 한 트랜잭션에서 기록한다", async () => {
+			// Given - UTC 기준 다음 현지 날짜가 되는 서울 요청 시각
+			jest.useFakeTimers();
+			jest.setSystemTime(new Date("2026-07-26T15:30:00.000Z"));
+
+			try {
+				// When - 인증 사용자 활동을 기록하면
+				await repository.updateLastActiveAt("user-123", "Asia/Seoul");
+
+				// Then - 동일 시각으로 사용자와 현지 날짜 활동 행을 원자적으로 갱신한다
+				expect(db.user.update).toHaveBeenCalledWith({
+					where: { id: "user-123" },
+					data: { lastActiveAt: new Date("2026-07-26T15:30:00.000Z") },
+				});
+				expect(db.userActivityDay.upsert).toHaveBeenCalledWith({
+					where: {
+						userId_localDate: {
+							userId: "user-123",
+							localDate: new Date("2026-07-27T00:00:00.000Z"),
+						},
+					},
+					create: {
+						userId: "user-123",
+						localDate: new Date("2026-07-27T00:00:00.000Z"),
+						timezone: "Asia/Seoul",
+						firstSeenAt: new Date("2026-07-26T15:30:00.000Z"),
+						lastSeenAt: new Date("2026-07-26T15:30:00.000Z"),
+					},
+					update: {
+						timezone: "Asia/Seoul",
+						lastSeenAt: new Date("2026-07-26T15:30:00.000Z"),
+					},
+				});
+				expect(db.$transaction).toHaveBeenCalledTimes(1);
+			} finally {
+				jest.useRealTimers();
+			}
+		});
+	});
+
 	describe("restore", () => {
 		it("사용자의 deletedAt을 null로, status를 ACTIVE로 업데이트한다", async () => {
 			// Given - 탈퇴된 사용자

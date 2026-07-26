@@ -14,6 +14,7 @@ import type {
 } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
+import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
@@ -206,11 +207,30 @@ export class UserRepository {
 		});
 	}
 
-	async updateLastActiveAt(id: string): Promise<void> {
-		await this.client.user.update({
-			where: { id },
-			data: { lastActiveAt: now() },
-		});
+	async updateLastActiveAt(id: string, timezone: string): Promise<void> {
+		const seenAt = now();
+		const localDate = startOfDayInTimezone(seenAt, timezone);
+
+		await this.client.$transaction([
+			this.client.user.update({
+				where: { id },
+				data: { lastActiveAt: seenAt },
+			}),
+			this.client.userActivityDay.upsert({
+				where: { userId_localDate: { userId: id, localDate } },
+				create: {
+					userId: id,
+					localDate,
+					timezone,
+					firstSeenAt: seenAt,
+					lastSeenAt: seenAt,
+				},
+				update: {
+					timezone,
+					lastSeenAt: seenAt,
+				},
+			}),
+		]);
 	}
 
 	async createProfile(

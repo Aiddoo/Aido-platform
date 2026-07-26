@@ -14,6 +14,7 @@ import {
 	AUTH_USER_ACTIVITY_WRITER,
 	type AuthUserActivityWriterPort,
 } from "@/auth/application/ports/auth-collaboration.port";
+import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
 
 /**
  * 인증된 API 요청 시 User.lastActiveAt을 갱신하는 인터셉터
@@ -53,13 +54,16 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		const user = request.user as CurrentUserPayload | undefined;
 
 		if (user?.userId) {
-			this.#touchLastActive(user.userId);
+			this.#touchLastActive(
+				user.userId,
+				resolveTimezone(request.headers?.["x-timezone"]),
+			);
 		}
 
 		return next.handle();
 	}
 
-	#touchLastActive(userId: string): void {
+	#touchLastActive(userId: string, timezone: string): void {
 		const now = Date.now();
 		const lastUpdated = this.#throttleMap.get(userId);
 
@@ -70,11 +74,13 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		this.#throttleMap.set(userId, now);
 
 		// fire-and-forget — 응답을 블로킹하지 않음
-		this.userActivityWriter.updateLastActiveAt(userId).catch((error) => {
-			this.#logger.error(
-				`Failed to update lastActiveAt: userId=${userId}, error=${error}`,
-			);
-		});
+		this.userActivityWriter
+			.updateLastActiveAt(userId, timezone)
+			.catch((error) => {
+				this.#logger.error(
+					`Failed to update lastActiveAt: userId=${userId}, error=${error}`,
+				);
+			});
 	}
 
 	#cleanup(): void {

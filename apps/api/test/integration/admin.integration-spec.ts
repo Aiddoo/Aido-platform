@@ -17,7 +17,9 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { AdminFacade } from "@/admin/application/facades/admin.facade";
 import { ADMIN_BROADCAST_NOTIFIER } from "@/admin/application/ports/admin-broadcast-notifier.port";
+import { ADMIN_GROWTH_METRICS } from "@/admin/application/ports/admin-growth-metrics.port";
 import { ADMIN_USER_DIRECTORY } from "@/admin/application/ports/admin-user-directory.port";
+import { AdminQueries } from "@/admin/application/queries";
 import { AdminUseCases } from "@/admin/application/use-cases";
 import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "@/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
@@ -49,6 +51,11 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 			providers: [
 				AdminFacade,
 				...AdminUseCases,
+				...AdminQueries,
+				{
+					provide: ADMIN_GROWTH_METRICS,
+					useValue: { getSummary: jest.fn() },
+				},
 				{
 					provide: ADMIN_USER_DIRECTORY,
 					useClass: PrismaAdminUserDirectoryAdapter,

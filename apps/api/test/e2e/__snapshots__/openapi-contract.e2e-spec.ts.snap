@@ -3351,6 +3351,229 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
       "type": "object",
     },
+    "GrowthSummaryResponseDto": {
+      "description": "관리자 성장 지표 요약",
+      "example": {
+        "activation24h": {
+          "achieved": 22,
+          "eligible": 40,
+          "rate": 55,
+        },
+        "cohortFrom": "2026-06-26",
+        "cohortTo": "2026-07-25",
+        "d1": {
+          "achieved": 18,
+          "eligible": 40,
+          "rate": 45,
+        },
+        "d30": null,
+        "d7": {
+          "achieved": 9,
+          "eligible": 30,
+          "rate": 30,
+        },
+        "d7RetainedActivatedUsers": 7,
+        "dau": 35,
+        "mau": 120,
+        "measurementStartedAt": "2026-06-15T00:12:34.000Z",
+        "signups": 40,
+        "totalActiveUsers": 120,
+        "wau": 90,
+      },
+      "properties": {
+        "activation24h": {
+          "description": "가입 후 24시간 내 Todo 생성 및 완료 지표",
+          "properties": {
+            "achieved": {
+              "description": "목표 행동을 달성한 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "eligible": {
+              "description": "측정 가능한 cohort 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "rate": {
+              "description": "달성률 (0-100%)",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number",
+            },
+          },
+          "required": [
+            "eligible",
+            "achieved",
+            "rate",
+          ],
+          "type": "object",
+        },
+        "cohortFrom": {
+          "description": "적용된 가입 cohort 시작 현지 날짜",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "cohortTo": {
+          "description": "적용된 가입 cohort 종료 현지 날짜",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "d1": {
+          "description": "가입 다음 현지 날짜 활동 리텐션",
+          "nullable": true,
+          "properties": {
+            "achieved": {
+              "description": "목표 행동을 달성한 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "eligible": {
+              "description": "측정 가능한 cohort 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "rate": {
+              "description": "달성률 (0-100%)",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number",
+            },
+          },
+          "required": [
+            "eligible",
+            "achieved",
+            "rate",
+          ],
+          "type": "object",
+        },
+        "d30": {
+          "description": "가입 후 30번째 현지 날짜 활동 리텐션",
+          "nullable": true,
+          "properties": {
+            "achieved": {
+              "description": "목표 행동을 달성한 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "eligible": {
+              "description": "측정 가능한 cohort 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "rate": {
+              "description": "달성률 (0-100%)",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number",
+            },
+          },
+          "required": [
+            "eligible",
+            "achieved",
+            "rate",
+          ],
+          "type": "object",
+        },
+        "d7": {
+          "description": "가입 후 7번째 현지 날짜 활동 리텐션",
+          "nullable": true,
+          "properties": {
+            "achieved": {
+              "description": "목표 행동을 달성한 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "eligible": {
+              "description": "측정 가능한 cohort 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "rate": {
+              "description": "달성률 (0-100%)",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number",
+            },
+          },
+          "required": [
+            "eligible",
+            "achieved",
+            "rate",
+          ],
+          "type": "object",
+        },
+        "d7RetainedActivatedUsers": {
+          "description": "24시간 내 활성화하고 D7에도 활동한 사용자 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "nullable": true,
+          "type": "integer",
+        },
+        "dau": {
+          "description": "종료 현지 날짜의 순 활동 사용자 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "mau": {
+          "description": "종료 현지 날짜 포함 최근 30일 순 활동 사용자 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "measurementStartedAt": {
+          "description": "첫 활동 일 측정 시각",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "signups": {
+          "description": "cohort 기간 내 가입자 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "totalActiveUsers": {
+          "description": "cohort 기간 내 순 활동 사용자 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "wau": {
+          "description": "종료 현지 날짜 포함 최근 7일 순 활동 사용자 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "cohortFrom",
+        "cohortTo",
+        "measurementStartedAt",
+        "totalActiveUsers",
+        "signups",
+        "dau",
+        "wau",
+        "mau",
+        "activation24h",
+        "d1",
+        "d7",
+        "d30",
+        "d7RetainedActivatedUsers",
+      ],
+      "type": "object",
+    },
     "KakaoMobileCallbackDto": {
       "description": "Kakao 모바일 로그인 콜백 요청",
       "properties": {
@@ -9981,6 +10204,190 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
 
 exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경): openapi-paths 1`] = `
 {
+  "/admin/growth/summary": {
+    "get": {
+      "description": "가입 cohort 범위의 활성화·D1/D7/D30 리텐션과 종료 현지 날짜 기준 DAU/WAU/MAU를 집계합니다.",
+      "operationId": "getAdminGrowthSummary",
+      "parameters": [
+        {
+          "description": "가입 cohort 시작 현지 날짜 (YYYY-MM-DD)",
+          "in": "query",
+          "name": "cohortFrom",
+          "required": false,
+          "schema": {
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "type": "string",
+          },
+          "x-nestjs_zod-parent-metadata": {
+            "description": "관리자 성장 지표 요약 조회",
+          },
+        },
+        {
+          "description": "가입 cohort 종료 현지 날짜 (YYYY-MM-DD)",
+          "in": "query",
+          "name": "cohortTo",
+          "required": false,
+          "schema": {
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "type": "string",
+          },
+          "x-nestjs_zod-parent-metadata": {
+            "description": "관리자 성장 지표 요약 조회",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/GrowthSummaryResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.
+
+잘못된 요청입니다",
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "example": "SYS_0002",
+                    "type": "string",
+                  },
+                  "details": {
+                    "example": null,
+                    "nullable": true,
+                    "type": "object",
+                  },
+                  "message": {
+                    "example": "잘못된 파라미터입니다.",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "code",
+                  "message",
+                ],
+                "type": "object",
+              },
+              "success": {
+                "example": false,
+                "type": "boolean",
+              },
+              "timestamp": {
+                "example": 1700000000000,
+                "type": "number",
+              },
+            },
+            "required": [
+              "success",
+              "error",
+              "timestamp",
+            ],
+            "type": "object",
+          },
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "ADMIN_1401",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "관리자 권한이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "관리자 권한이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "성장 및 리텐션 지표 요약",
+      "tags": [
+        "Admin - 성장 지표",
+      ],
+    },
+  },
   "/admin/notifications/broadcast": {
     "post": {
       "description": "지정된 대상 필터에 따라 여러 사용자에게 알림을 발송합니다.

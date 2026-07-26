@@ -1,5 +1,6 @@
 import {
 	broadcastNotificationSchema,
+	growthSummaryQuerySchema,
 	targetedNotificationSchema,
 } from "@aido/validators";
 import { createZodDto } from "nestjs-zod";
@@ -16,4 +17,9 @@ export class BroadcastNotificationDto extends createZodDto(
  */
 export class TargetedNotificationDto extends createZodDto(
 	targetedNotificationSchema,
+) {}
+
+/** 관리자 성장 지표 요약 쿼리 DTO */
+export class GrowthSummaryQueryDto extends createZodDto(
+	growthSummaryQuerySchema,
 ) {}
