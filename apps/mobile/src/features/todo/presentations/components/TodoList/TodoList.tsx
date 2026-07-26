@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
@@ -14,12 +15,14 @@ import { useGetTodosByCategoryQueryOptions } from '../../queries/use-get-todos-b
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
+import { ReorderCoachmark } from '../ReorderCoachmark';
 import { TodoItem } from './TodoItem';
 
 export function TodoList() {
   const [selectedDate] = useFeedDate();
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { data: categoryGroups } = useSuspenseQuery(
     useGetTodosByCategoryQueryOptions(
       formatDate(selectedDate),
@@ -27,9 +30,11 @@ export function TodoList() {
       categoriesData.categories,
     ),
   );
+  const canReorderTodos = categoryGroups.some((group) => group.todos.length >= 2);
 
   return (
     <Box gap={16} px={16}>
+      {canReorderTodos && <ReorderCoachmark accountId={user.id} kind="todo" />}
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
           <CategoryHeader

@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import type { CreateTodoInput } from '@aido/validators';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
 import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
@@ -92,6 +93,7 @@ export const useCreateTodoMutationOptions = () => {
       return { previousData, startDate };
     },
     onSuccess: (_data, { input, source }) => {
+      recordTodoCreatedForActivation({ queryClient });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(input.startDate) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });

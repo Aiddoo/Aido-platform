@@ -1,3 +1,4 @@
+import { unlockPushRegistrationForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { PreferencePolicy } from '@src/features/auth/models/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
@@ -9,9 +10,10 @@ import {
   SettingsToggle,
   ToggleSkeleton,
 } from '@src/features/notification/presentations/components/settings';
+import { useRegisterPushTokenMutationOptions } from '@src/features/notification/presentations/queries/use-register-push-token-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
-import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
@@ -38,6 +40,8 @@ function PushSettingsForm() {
     queries: [useGetPreferenceQueryOptions(), useGetConsentQueryOptions()],
   });
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const registerPushMutation = useMutation(useRegisterPushTokenMutationOptions());
+  const queryClient = useQueryClient();
   const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
   const { t } = useTranslation('notification');
@@ -49,8 +53,25 @@ function PushSettingsForm() {
           label={t('settings.pushLabel')}
           description={t('settings.pushDescription')}
           isSelected={preference.pushEnabled}
-          onSelectedChange={(enabled) => updateMutation.mutate({ pushEnabled: enabled })}
-          isDisabled={updateMutation.isPending}
+          onSelectedChange={(enabled) =>
+            updateMutation.mutate(
+              { pushEnabled: enabled },
+              {
+                onSuccess: () => {
+                  if (!enabled) {
+                    return;
+                  }
+                  const handledByAutomaticGate = unlockPushRegistrationForActivation({
+                    queryClient,
+                  });
+                  if (!handledByAutomaticGate) {
+                    registerPushMutation.mutate();
+                  }
+                },
+              },
+            )
+          }
+          isDisabled={updateMutation.isPending || registerPushMutation.isPending}
         />
         <Separator className="bg-gray-2" />
         <SettingsToggle

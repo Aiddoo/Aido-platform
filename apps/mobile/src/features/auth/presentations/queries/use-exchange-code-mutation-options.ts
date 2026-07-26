@@ -1,9 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import {
-  useAuthService,
-  useLogger,
-  useNotificationService,
-} from '@src/bootstrap/providers/di-context';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -15,8 +11,6 @@ import type { OAuthProviderSlug } from '../../models/oauth.model';
 export const useExchangeCodeMutationOptions = () => {
   const authService = useAuthService();
   const { trackEvent } = useTrack();
-  const notificationService = useNotificationService();
-  const logger = useLogger();
   const { setStatus } = useAuth();
   const toast = useAppToast();
 
@@ -27,20 +21,10 @@ export const useExchangeCodeMutationOptions = () => {
       const result = await authService.exchangeCode(request);
       return unwrap(result);
     },
-    onSuccess: async (data, variables) => {
+    onSuccess: (data, variables) => {
       setStatus('authenticated');
       if (data.accountRestored) {
         toast.success(t('auth:toasts.accountRestored'));
-      }
-
-      try {
-        const tokenResult = await notificationService.setupPushNotifications();
-        if (!tokenResult.ok) {
-          logger.warn('[PushNotification] Setup skipped', { error: tokenResult.error });
-        }
-      } catch (error) {
-        // Silently fail - push notification is optional
-        logger.warn('[PushNotification] Setup error', { error });
       }
 
       trackEvent('auth_login', { method: variables.provider });

@@ -1,6 +1,7 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-reorder-todo-category-mutation-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -17,6 +18,7 @@ import { useResolveClassNames } from 'uniwind';
 import { useDraggableReorderList } from '../hooks/use-draggable-reorder-list';
 import { CategoryDeleteDialog } from './CategoryDeleteDialog';
 import { CategoryEditBottomSheet } from './CategoryEditBottomSheet';
+import { ReorderCoachmark } from './ReorderCoachmark';
 
 export type CategoryListMode = 'edit' | 'reorder';
 
@@ -30,6 +32,7 @@ export function CategoryList({ mode }: CategoryListProps) {
   const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
   const { items: draggableCategories, onDragEnd } = useDraggableReorderList({
     items: data.categories,
@@ -88,6 +91,13 @@ export function CategoryList({ mode }: CategoryListProps) {
   return (
     <DraggableFlatList
       data={draggableCategories}
+      ListHeaderComponent={
+        mode === 'reorder' && draggableCategories.length >= 2 ? (
+          <Box className="pb-2">
+            <ReorderCoachmark accountId={user.id} kind="category" />
+          </Box>
+        ) : null
+      }
       keyExtractor={(item) => String(item.id)}
       onPlaceholderIndexChange={handlePlaceholderIndexChange}
       renderItem={({

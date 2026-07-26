@@ -1,5 +1,6 @@
 import type { ConvertMemoToTodosInput } from '@aido/validators';
 import { useMemoService } from '@src/bootstrap/providers/di-context';
+import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
@@ -30,6 +31,7 @@ export const useConvertMemoToTodosMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_data, { memoId, input }) => {
+      recordTodoCreatedForActivation({ queryClient });
       toast.success(t('memo:toasts.convertedMany', { count: input.todos.length }));
       trackEvent('memo_converted_to_todos', {
         memo_id: memoId,

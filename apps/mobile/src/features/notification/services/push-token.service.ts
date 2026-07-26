@@ -15,6 +15,10 @@ export class PushTokenService {
       return true;
     }
 
+    if (existingStatus !== 'undetermined') {
+      return false;
+    }
+
     const { status } = await Notifications.requestPermissionsAsync();
 
     return status === 'granted';

@@ -1,5 +1,6 @@
 import type { ToggleTodoCompleteInput } from '@aido/validators';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { recordTodoCompletionForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +51,13 @@ export const useToggleTodoMutationOptions = () => {
         todo_id: variables.todoId,
         is_completed: variables.body.completed,
       });
+      const activationEvent = recordTodoCompletionForActivation({
+        queryClient,
+        completed: variables.body.completed,
+      });
+      if (activationEvent) {
+        trackEvent('activation_completed', activationEvent);
+      }
     },
     onError: (_error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

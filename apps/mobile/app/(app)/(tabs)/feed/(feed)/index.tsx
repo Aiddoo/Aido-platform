@@ -1,4 +1,6 @@
 import MagicIcon from '@assets/icons/ic_magic.svg';
+import { ActivationChecklist } from '@src/features/activation/presentations/components/ActivationChecklist';
+import { useActivationChecklist } from '@src/features/activation/presentations/hooks/use-activation-progress';
 import { useGetSuggestionsQueryOptions } from '@src/features/ai/presentations/queries/use-get-suggestions-query-options';
 import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/presentations/components/FeatureDiscoveryReentryCard';
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/presentations/hooks/use-feature-discovery-feed';
@@ -27,6 +29,7 @@ export default function MyFeedScreen() {
   const tabBarHeight = useTabBarHeight();
   const queryClient = useQueryClient();
   const featureDiscovery = useFeatureDiscoveryFeed();
+  const activation = useActivationChecklist();
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
@@ -44,6 +47,15 @@ export default function MyFeedScreen() {
       <Calendar />
 
       <Spacing size={10} />
+
+      {activation.isVisible && (
+        <>
+          <Box px={16}>
+            <ActivationChecklist progress={activation.progress} />
+          </Box>
+          <Spacing size={20} />
+        </>
+      )}
 
       <QueryErrorBoundary
         resetKeys={[selectedDateKey]}
