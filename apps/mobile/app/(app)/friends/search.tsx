@@ -1,5 +1,6 @@
 import { FriendPolicy } from '@src/features/friend/models/friend.model';
 import { FriendSearchList } from '@src/features/friend/presentations/components/FriendSearchList';
+import { useFriendSearchTracking } from '@src/features/friend/presentations/hooks/use-friend-search-tracking';
 import { useDebouncedValue } from '@src/shared/hooks/useDebouncedValue';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Flex, Input, QueryErrorBoundary, Result, SearchIcon } from '@src/shared/ui';
@@ -9,7 +10,7 @@ import { View } from 'react-native';
 
 /**
  * 친구 찾기 화면.
- * 이름 또는 태그로 사용자를 검색해 바로 친구 추가/요청 취소한다.
+ * 이름 또는 Aido ID로 사용자를 검색해 바로 친구 추가/요청 취소한다.
  * 상단 검색창 + (유효 검색어면 결과 리스트, 아니면 입력 안내).
  */
 const SearchFriendScreen = () => {
@@ -19,6 +20,7 @@ const SearchFriendScreen = () => {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query);
   const isValidQuery = FriendPolicy.isValidSearchQuery(debouncedQuery);
+  useFriendSearchTracking(debouncedQuery);
 
   return (
     <View className="flex-1 bg-white">

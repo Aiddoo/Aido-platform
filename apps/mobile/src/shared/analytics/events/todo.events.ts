@@ -1,6 +1,15 @@
+export type TodoCreationEntry =
+  | 'manual'
+  | 'ai_parse'
+  | 'recurring'
+  | 'memo_single'
+  | 'memo_ai_multi'
+  | 'ai_suggestion';
+
 export interface TodoEventMap {
   todo_created: {
     source: 'manual' | 'ai';
+    creation_entry: TodoCreationEntry;
     is_recurring: boolean;
     has_scheduled_time: boolean;
     is_all_day: boolean;
