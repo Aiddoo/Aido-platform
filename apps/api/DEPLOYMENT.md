@@ -170,6 +170,8 @@ docker logs --tail 100 aido-prod-api                     # 원인 확인
 
 - 마이그레이션은 **forward-only** — 자동 롤백은 API 컨테이너만 되돌리고 DB는 이미 신 스키마다.
 - 따라서 모든 마이그레이션은 **직전 릴리스의 API와 호환**되어야 한다 (expand → contract: 먼저 추가만 하는 릴리스, 구 컬럼 제거는 다음 릴리스에서).
+- 기존 운영 테이블의 인덱스는 PostgreSQL `CREATE INDEX CONCURRENTLY`로 생성하고 해당 migration에 `BEGIN`/`COMMIT`을 넣지 않는다. 실제 DB lock 회귀 테스트로 기존 쓰기가 계속 완료되는지 검증한다.
+- concurrent build 실패 시 invalid index가 남을 수 있다. 재시도 전에 `pg_index.indisvalid`와 migrate 로그를 확인하고, 운영 절차에 따라 invalid index 정리 및 migration 상태 복구 후 다시 배포한다.
 
 ### 3.6 보안 수칙
 
