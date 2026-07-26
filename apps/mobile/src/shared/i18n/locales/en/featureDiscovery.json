@@ -23,7 +23,7 @@
     },
     "friendSearch": {
       "title": "Find friends by name or Aido ID",
-      "description": "Search by a friend's name or Aido ID even when you don't know their tag.",
+      "description": "Search by a friend's name or Aido ID.",
       "cta": "Find friends",
       "ctaLabel": "Go to friend search",
       "previewQuery": "Alex or AIDO1234",

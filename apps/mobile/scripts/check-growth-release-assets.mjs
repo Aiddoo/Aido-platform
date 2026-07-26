@@ -16,6 +16,11 @@ const SCREENSHOT_ORDER = [
   'friends',
 ];
 const ORGANIC_VARIANTS = ['ai', 'friends', 'organization'];
+const STORE_COPY_LIMITS = {
+  title: 30,
+  subtitle: 30,
+  keywords: 100,
+};
 
 function read(path) {
   return readFileSync(resolve(REPOSITORY_ROOT, path), 'utf8');
@@ -35,6 +40,34 @@ function assertLocalizedCopy(value, path) {
       `${path}.${locale} is required`,
     );
   }
+}
+
+function characterCount(value) {
+  return [...value].length;
+}
+
+function visitStrings(value, visitor) {
+  if (typeof value === 'string') {
+    visitor(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      visitStrings(item, visitor);
+    }
+    return;
+  }
+  if (value && typeof value === 'object') {
+    for (const item of Object.values(value)) {
+      visitStrings(item, visitor);
+    }
+  }
+}
+
+function assertNoStaleTagCopy(value, path, pattern) {
+  visitStrings(value, (copy) => {
+    assert(!pattern.test(copy), `${path} has stale tag terminology: ${copy}`);
+  });
 }
 
 const releasePath = `apps/mobile/store-metadata/${RELEASE_VERSION}/release.json`;
@@ -82,8 +115,20 @@ for (const variant of ORGANIC_VARIANTS) {
         `organicVariants.${variant}.${locale}.${field} is required`,
       );
     }
+    for (const [field, limit] of Object.entries(STORE_COPY_LIMITS)) {
+      assert(
+        characterCount(copy[field]) <= limit,
+        `organicVariants.${variant}.${locale}.${field} must be ${limit} characters or fewer`,
+      );
+    }
   }
 }
+
+const mobilePackage = JSON.parse(read('apps/mobile/package.json'));
+assert(
+  mobilePackage.version === RELEASE_VERSION,
+  `package.json version must be ${RELEASE_VERSION}`,
+);
 
 const appConfig = read('apps/mobile/app.config.ts');
 assert(
@@ -105,6 +150,16 @@ assert(
 
 const friendKo = JSON.parse(read('apps/mobile/src/shared/i18n/locales/ko/friend.json'));
 const friendEn = JSON.parse(read('apps/mobile/src/shared/i18n/locales/en/friend.json'));
+const userKo = JSON.parse(read('apps/mobile/src/shared/i18n/locales/ko/user.json'));
+const userEn = JSON.parse(read('apps/mobile/src/shared/i18n/locales/en/user.json'));
+const validationKo = JSON.parse(read('apps/mobile/src/shared/i18n/locales/ko/validation.json'));
+const validationEn = JSON.parse(read('apps/mobile/src/shared/i18n/locales/en/validation.json'));
+const discoveryKo = JSON.parse(
+  read('apps/mobile/src/shared/i18n/locales/ko/featureDiscovery.json'),
+);
+const discoveryEn = JSON.parse(
+  read('apps/mobile/src/shared/i18n/locales/en/featureDiscovery.json'),
+);
 assert(
   friendKo.search?.placeholder === '이름 또는 Aido ID로 검색',
   'Korean friend-search copy is stale',
@@ -112,6 +167,61 @@ assert(
 assert(
   friendEn.search?.placeholder === 'Search by name or Aido ID',
   'English friend-search copy is stale',
+);
+for (const [path, catalog] of [
+  ['friend.ko.search', friendKo.search],
+  ['user.ko.profile', userKo.profile],
+  ['validation.ko.userTag', validationKo.userTag],
+  ['featureDiscovery.ko.cards.friendSearch', discoveryKo.cards?.friendSearch],
+]) {
+  assertNoStaleTagCopy(catalog, path, /태그/u);
+}
+for (const [path, catalog] of [
+  ['friend.en.search', friendEn.search],
+  ['user.en.profile', userEn.profile],
+  ['validation.en.userTag', validationEn.userTag],
+  ['featureDiscovery.en.cards.friendSearch', discoveryEn.cards?.friendSearch],
+]) {
+  assertNoStaleTagCopy(catalog, path, /\btags?\b/iu);
+}
+for (const [path, copy] of [
+  ['user.ko.profile.tagCopied', userKo.profile?.tagCopied],
+  ['user.ko.profile.tagCopiedDescription', userKo.profile?.tagCopiedDescription],
+  ['user.en.profile.tagCopied', userEn.profile?.tagCopied],
+  ['user.en.profile.tagCopiedDescription', userEn.profile?.tagCopiedDescription],
+  ['validation.ko.userTag.length', validationKo.userTag?.length],
+  ['validation.ko.userTag.pattern', validationKo.userTag?.pattern],
+  ['validation.en.userTag.length', validationEn.userTag?.length],
+  ['validation.en.userTag.pattern', validationEn.userTag?.pattern],
+]) {
+  assert(
+    typeof copy === 'string' && copy.includes('Aido ID'),
+    `${path} must use the Aido ID product term`,
+  );
+}
+
+const followController = read('apps/api/src/follow/presentation/follow.controller.ts');
+assert(
+  !/(사용자 태그|이름 또는 태그|태그로 검색|태그로 구분)/u.test(followController),
+  'follow.controller.ts has stale tag terminology',
+);
+assert(
+  followController.includes('사용자 검색 (이름 또는 Aido ID)'),
+  'follow.controller.ts must describe name or Aido ID search',
+);
+assert(
+  followController.includes('친구 요청을 보낼 대상 Aido ID'),
+  'follow.controller.ts must describe direct add with Aido ID',
+);
+
+const followValidator = read('packages/validators/src/domains/follow/follow.request.ts');
+assert(
+  !followValidator.includes('검색어: 이름 또는 사용자 태그'),
+  'follow.request.ts has stale tag terminology',
+);
+assert(
+  followValidator.includes('검색어: 이름 또는 Aido ID'),
+  'follow.request.ts must describe name or Aido ID search',
 );
 
 const patchNotes = read(`apps/mobile/docs/releases/${RELEASE_VERSION}.md`);

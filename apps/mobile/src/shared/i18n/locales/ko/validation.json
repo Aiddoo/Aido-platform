@@ -10,8 +10,8 @@
     "mismatch": "비밀번호가 일치하지 않습니다"
   },
   "userTag": {
-    "length": "사용자 태그는 8자리입니다",
-    "pattern": "사용자 태그는 영문 대문자와 숫자만 허용됩니다"
+    "length": "Aido ID는 8자리입니다",
+    "pattern": "Aido ID는 영문 대문자와 숫자만 사용할 수 있어요"
   },
   "categoryName": {
     "required": "카테고리명을 입력해주세요",

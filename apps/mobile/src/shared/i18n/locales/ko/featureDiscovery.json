@@ -23,7 +23,7 @@
     },
     "friendSearch": {
       "title": "이름이나 Aido ID로 친구를 찾아요",
-      "description": "해시태그를 몰라도 친구 이름이나 Aido ID로 바로 찾을 수 있어요.",
+      "description": "친구 이름이나 Aido ID로 바로 찾을 수 있어요.",
       "cta": "친구 찾아보기",
       "ctaLabel": "친구 찾기 기능으로 이동",
       "previewQuery": "민지 또는 AIDO1234",
