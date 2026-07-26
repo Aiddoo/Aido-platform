@@ -167,10 +167,26 @@ export interface E2eAppOptions {
 export async function createE2eApp(
 	options?: E2eAppOptions,
 ): Promise<E2eTestContext> {
-	if (options?.withRealThrottler) {
+	const withRealThrottler = options?.withRealThrottler === true;
+	if (withRealThrottler) {
 		restoreRealE2eThrottler();
 	}
 
+	let contextOwnsThrottlerLifecycle = false;
+	try {
+		const context = await createE2eAppContext(options);
+		contextOwnsThrottlerLifecycle = true;
+		return context;
+	} finally {
+		if (withRealThrottler && !contextOwnsThrottlerLifecycle) {
+			bypassE2eThrottler();
+		}
+	}
+}
+
+async function createE2eAppContext(
+	options?: E2eAppOptions,
+): Promise<E2eTestContext> {
 	const testDatabase = options?.testDatabase ?? new TestDatabase();
 	if (!options?.testDatabase) {
 		await testDatabase.start();
@@ -208,25 +224,28 @@ export async function createE2eApp(
 		applicationClosed = true;
 		const errors: unknown[] = [];
 		try {
-			await app?.close();
-		} catch (error) {
-			errors.push(error);
-		}
+			try {
+				await app?.close();
+			} catch (error) {
+				errors.push(error);
+			}
 
-		const results = await Promise.allSettled([
-			Promise.resolve().then(() => redisMock.disconnect()),
-			Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
-		]);
-		errors.push(
-			...results.flatMap((result) =>
-				result.status === "rejected" ? [result.reason] : [],
-			),
-		);
-		if (errors.length > 0) {
-			throw new AggregateError(errors, "Failed to close E2E app resources");
-		}
-		if (options?.withRealThrottler) {
-			bypassE2eThrottler();
+			const results = await Promise.allSettled([
+				Promise.resolve().then(() => redisMock.disconnect()),
+				Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
+			]);
+			errors.push(
+				...results.flatMap((result) =>
+					result.status === "rejected" ? [result.reason] : [],
+				),
+			);
+			if (errors.length > 0) {
+				throw new AggregateError(errors, "Failed to close E2E app resources");
+			}
+		} finally {
+			if (options?.withRealThrottler) {
+				bypassE2eThrottler();
+			}
 		}
 	};
 
