@@ -16,6 +16,7 @@ import { AdminNotificationModule } from "@/admin-notification";
 import { AiModule } from "@/ai";
 import { AiReportModule } from "@/ai-report";
 import { AiSuggestionModule } from "@/ai-suggestion";
+import { AppConfigModule as FeatureDiscoveryAppConfigModule } from "@/app-config";
 import { AuthModule, JwtAuthGuard, LastActiveInterceptor } from "@/auth";
 import { CheerModule } from "@/cheer";
 import { DailyCompletionModule } from "@/daily-completion";
@@ -119,6 +120,7 @@ import { AppService } from "./app.service";
 		// 5. Features
 		AdminModule,
 		AdminNotificationModule,
+		FeatureDiscoveryAppConfigModule,
 		AiModule,
 		AiReportModule,
 		AiSuggestionModule,

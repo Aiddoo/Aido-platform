@@ -205,6 +205,16 @@ export class TypedConfigService {
 		};
 	}
 
+	get featureDiscovery() {
+		return {
+			enabled: this.get("FEATURE_DISCOVERY_ENABLED"),
+			campaignId: this.get("FEATURE_DISCOVERY_CAMPAIGN_ID"),
+			minAppVersion: this.get("FEATURE_DISCOVERY_MIN_APP_VERSION"),
+			launchedAt: this.get("FEATURE_DISCOVERY_LAUNCHED_AT"),
+			autoOpen: this.get("FEATURE_DISCOVERY_AUTO_OPEN"),
+		};
+	}
+
 	get revenuecat() {
 		return {
 			secretApiKey: this.get("REVENUECAT_SECRET_API_KEY"),

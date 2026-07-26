@@ -3192,6 +3192,37 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
       "type": "object",
     },
+    "FeatureDiscoveryResponseDto": {
+      "properties": {
+        "autoOpen": {
+          "example": true,
+          "type": "boolean",
+        },
+        "campaignId": {
+          "example": "feature-discovery-2026-08",
+          "type": "string",
+        },
+        "enabled": {
+          "enum": [
+            false,
+            true,
+          ],
+          "type": "boolean",
+        },
+        "launchedAt": {
+          "example": "2026-08-01T00:00:00.000Z",
+          "type": "string",
+        },
+        "minAppVersion": {
+          "example": "1.8.0",
+          "type": "string",
+        },
+      },
+      "required": [
+        "enabled",
+      ],
+      "type": "object",
+    },
     "FollowResourceLimitResponseDto": {
       "properties": {
         "friendCount": {
@@ -12947,6 +12978,67 @@ if (limit !== null && used >= limit) {
       "summary": "AI 사용량 조회",
       "tags": [
         "AI",
+      ],
+    },
+  },
+  "/app-config/feature-discovery": {
+    "get": {
+      "description": "Public kill-switch configuration only. Campaign copy and user data are never returned.",
+      "operationId": "getFeatureDiscoveryConfig",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/FeatureDiscoveryResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "summary": "Feature discovery rollout configuration",
+      "tags": [
+        "App Config",
       ],
     },
   },

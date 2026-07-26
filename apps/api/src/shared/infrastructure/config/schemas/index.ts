@@ -8,6 +8,11 @@ import {
 	validateEmailForProduction,
 } from "./email.schema";
 import { type ExternalConfig, externalSchema } from "./external.schema";
+import {
+	type FeatureDiscoveryConfig,
+	featureDiscoverySchema,
+	validateFeatureDiscoveryConfig,
+} from "./feature-discovery.schema";
 import { type JobConfig, jobSchema } from "./job.schema";
 import { type JwtConfig, jwtSchema } from "./jwt.schema";
 import {
@@ -25,6 +30,7 @@ export * from "./cache.schema";
 export * from "./database.schema";
 export * from "./email.schema";
 export * from "./external.schema";
+export * from "./feature-discovery.schema";
 export * from "./job.schema";
 export * from "./jwt.schema";
 export * from "./oauth.schema";
@@ -47,7 +53,9 @@ export const envSchema = z
 	.merge(securitySchema)
 	.merge(pushSchema)
 	.merge(externalSchema)
-	.merge(webhookSchema);
+	.merge(webhookSchema)
+	.merge(featureDiscoverySchema)
+	.superRefine(validateFeatureDiscoveryConfig);
 
 /**
  * 환경변수 전체 타입
@@ -62,7 +70,8 @@ export type EnvConfig = AppConfig &
 	SecurityConfig &
 	PushConfig &
 	ExternalConfig &
-	WebhookConfig;
+	WebhookConfig &
+	FeatureDiscoveryConfig;
 
 /**
  * 환경변수 검증 함수
