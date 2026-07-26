@@ -27,7 +27,7 @@ const MODULE_BARRELS = [
  * Task 5 범위 밖의 locale 소유권 이동 전까지만 허용한다. 폴더/모듈 단위 정규식은
  * 새 위반을 숨기므로 현재 production importer 9개를 완전 고정 경로로만 격리한다.
  */
-const LEGACY_LOCALE_DOMAIN_TO_PRESENTATION = [
+const LEGACY_LOCALE_DOMAIN_IMPORTERS = [
 	"^src/ai-report/domain/entities/ai-report\\.entity\\.ts$",
 	"^src/ai-report/domain/services/prompts/report-fallback\\.ts$",
 	"^src/ai-report/domain/services/prompts/report-insights\\.ts$",
@@ -38,6 +38,9 @@ const LEGACY_LOCALE_DOMAIN_TO_PRESENTATION = [
 	"^src/notification/domain/services/templates/notification-templates\\.ts$",
 	"^src/user-settings/domain/services/preference-view\\.ts$",
 ];
+
+const SHARED_LOCALE_PRESENTATION_ENTRY =
+	"^src/shared/presentation/decorators/index\\.ts$";
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -67,16 +70,30 @@ module.exports = {
 		{
 			name: "domain-no-presentation",
 			comment:
-				"bounded-context domain → presentation 금지 (locale legacy 9개 exact-file 격리)",
+				"bounded-context domain → presentation 금지 (locale target은 별도 exact-edge 규칙)",
+			severity: "error",
+			from: {
+				path: "^src/(?!shared/|generated/)[^/]+/domain/",
+				pathNot: "\\.(spec|test)\\.ts$",
+			},
+			to: {
+				path: "^src/[^/]+/presentation/",
+				pathNot: SHARED_LOCALE_PRESENTATION_ENTRY,
+			},
+		},
+		{
+			name: "domain-no-unapproved-locale-presentation",
+			comment:
+				"shared locale presentation target은 현재 importer 9개만 exact-edge 허용",
 			severity: "error",
 			from: {
 				path: "^src/(?!shared/|generated/)[^/]+/domain/",
 				pathNot: [
 					"\\.(spec|test)\\.ts$",
-					...LEGACY_LOCALE_DOMAIN_TO_PRESENTATION,
+					...LEGACY_LOCALE_DOMAIN_IMPORTERS,
 				],
 			},
-			to: { path: "^src/[^/]+/presentation/" },
+			to: { path: SHARED_LOCALE_PRESENTATION_ENTRY },
 		},
 
 		// ── 2. application: 구현 접근 금지 (포트로 역전) ───────────────────

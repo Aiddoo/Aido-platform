@@ -10,6 +10,7 @@ const fixtureRoot = path.join(apiRoot, "test/architecture/fixtures");
 const dependencyConfig = require(path.join(apiRoot, ".dependency-cruiser.cjs"));
 
 const DOMAIN_PRESENTATION_RULE = "domain-no-presentation";
+const LEGACY_LOCALE_RULE = "domain-no-unapproved-locale-presentation";
 const CROSS_CONTEXT_RULE = "module-barrel-only";
 const SHARED_LOCALE_TARGET =
 	"src/shared/presentation/decorators/index.ts";
@@ -95,14 +96,19 @@ const expectedFixtureViolations = sortIdentities([
 		to: "src/todo/presentation/todo.controller.ts",
 	},
 	{
-		rule: DOMAIN_PRESENTATION_RULE,
+		rule: LEGACY_LOCALE_RULE,
 		from: "src/todo/domain/domain-imports.ts",
 		to: SHARED_LOCALE_TARGET,
 	},
 	{
-		rule: DOMAIN_PRESENTATION_RULE,
+		rule: LEGACY_LOCALE_RULE,
 		from: "src/ai-report/domain/entities/not-legacy.ts",
 		to: SHARED_LOCALE_TARGET,
+	},
+	{
+		rule: DOMAIN_PRESENTATION_RULE,
+		from: "src/ai-report/domain/entities/ai-report.entity.ts",
+		to: "src/ai-report/presentation/report.controller.ts",
 	},
 	{
 		rule: CROSS_CONTEXT_RULE,
@@ -114,6 +120,43 @@ assert.deepEqual(
 	sortIdentities(fixtureOutput.summary.violations.map(violationIdentity)),
 	expectedFixtureViolations,
 	"architecture fixture must reject only the forbidden dependency edges",
+);
+
+for (const violation of expectedFixtureViolations) {
+	const dependency = assertResolvedDependency(
+		fixtureOutput,
+		violation.from,
+		violation.to,
+	);
+	assert(
+		dependency.rules?.some((rule) => rule.name === violation.rule),
+		`${violation.rule} did not reject resolved fixture edge ` +
+			`${violation.from} -> ${violation.to}`,
+	);
+}
+
+const legacyLocaleRule = dependencyConfig.forbidden.find(
+	(rule) => rule.name === LEGACY_LOCALE_RULE,
+);
+assert(
+	legacyLocaleRule,
+	`missing required dependency rule: ${LEGACY_LOCALE_RULE}`,
+);
+
+const allowedLegacyLocale = assertResolvedDependency(
+	fixtureOutput,
+	"src/ai-report/domain/entities/ai-report.entity.ts",
+	SHARED_LOCALE_TARGET,
+);
+assertRuleDidNotReject(
+	allowedLegacyLocale,
+	DOMAIN_PRESENTATION_RULE,
+	"exact legacy importer -> shared locale decorator target",
+);
+assertRuleDidNotReject(
+	allowedLegacyLocale,
+	LEGACY_LOCALE_RULE,
+	"exact legacy importer -> shared locale decorator target",
 );
 
 const allowedBarrel = assertResolvedDependency(
@@ -148,7 +191,7 @@ const legacyCruiseOptions = {
 };
 const currentLegacyResult = await cruise(LEGACY_LOCALE_DOMAIN_IMPORTERS, {
 	...legacyCruiseOptions,
-	ruleSet: { forbidden: [domainPresentationRule] },
+	ruleSet: { forbidden: [legacyLocaleRule] },
 });
 assert.deepEqual(
 	resultOutput(currentLegacyResult).summary.violations,
@@ -156,20 +199,20 @@ assert.deepEqual(
 	"the production rule must quarantine the nine documented legacy locale edges",
 );
 
-const strictDomainPresentationRule = {
-	...domainPresentationRule,
+const strictLegacyLocaleRule = {
+	...legacyLocaleRule,
 	from: {
-		...domainPresentationRule.from,
+		...legacyLocaleRule.from,
 		pathNot: "\\.(spec|test)\\.ts$",
 	},
 };
 const strictLegacyResult = await cruise(LEGACY_LOCALE_DOMAIN_IMPORTERS, {
 	...legacyCruiseOptions,
-	ruleSet: { forbidden: [strictDomainPresentationRule] },
+	ruleSet: { forbidden: [strictLegacyLocaleRule] },
 });
 const expectedLegacyViolations = sortIdentities(
 	LEGACY_LOCALE_DOMAIN_IMPORTERS.map((from) => ({
-		rule: DOMAIN_PRESENTATION_RULE,
+		rule: LEGACY_LOCALE_RULE,
 		from,
 		to: SHARED_LOCALE_TARGET,
 	})),
