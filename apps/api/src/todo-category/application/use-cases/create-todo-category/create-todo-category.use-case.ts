@@ -2,9 +2,12 @@ import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	EntitlementService,
-	Resource,
-} from "@/shared/application/entitlement/entitlement.service";
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import type { TodoCategory } from "../../../domain/entities/todo-category.entity";
@@ -18,6 +21,10 @@ import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
+import {
+	TODO_CATEGORY_LIMIT_READER,
+	type TodoCategoryLimitReaderPort,
+} from "../../ports/todo-category-limit-reader.port";
 
 export interface CreateTodoCategoryInput {
 	userId: string;
@@ -38,7 +45,12 @@ export class CreateTodoCategoryUseCase {
 		private readonly repository: TodoCategoryRepositoryPort,
 		@Inject(TODO_CATEGORY_CACHE)
 		private readonly cache: TodoCategoryCachePort,
-		private readonly entitlementService: EntitlementService,
+		@Inject(TODO_CATEGORY_LIMIT_READER)
+		private readonly limitReader: TodoCategoryLimitReaderPort,
+		@Inject(MUTATION_LOCK)
+		private readonly mutationLock: MutationLockPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 	) {}
 
 	async execute(input: CreateTodoCategoryInput): Promise<TodoCategory> {
@@ -46,30 +58,31 @@ export class CreateTodoCategoryUseCase {
 		const name = CategoryName.of(input.name).value;
 		const color = CategoryColor.of(input.color).value;
 
-		const [entitlement, categoryCount] = await Promise.all([
-			this.entitlementService.getResourceLimit(userId, Resource.CATEGORY),
-			this.repository.countByUserId(userId),
-		]);
-		if (
-			entitlement.maxCount !== null &&
-			categoryCount >= entitlement.maxCount
-		) {
-			throw new ApplicationException(ErrorCode.TODO_CATEGORY_0857, {
-				current: categoryCount,
-				limit: entitlement.maxCount,
+		const created = await this.uow.run(async () => {
+			await this.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+
+			const maxCount = await this.limitReader.getMaxCountInTx(userId);
+			const categoryCount = await this.repository.countByUserId(userId);
+			if (maxCount !== null && categoryCount >= maxCount) {
+				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0857, {
+					current: categoryCount,
+					limit: maxCount,
+				});
+			}
+
+			if (await this.repository.existsByUserIdAndName(userId, name)) {
+				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
+					name,
+				});
+			}
+
+			const maxSortOrder = await this.repository.getMaxSortOrder(userId);
+			return this.repository.create({
+				userId,
+				name,
+				color,
+				sortOrder: maxSortOrder + 1,
 			});
-		}
-
-		if (await this.repository.existsByUserIdAndName(userId, name)) {
-			throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, { name });
-		}
-
-		const maxSortOrder = await this.repository.getMaxSortOrder(userId);
-		const created = await this.repository.create({
-			userId,
-			name,
-			color,
-			sortOrder: maxSortOrder + 1,
 		});
 
 		await this.cache.invalidate(userId);

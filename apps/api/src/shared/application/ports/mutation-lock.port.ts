@@ -29,4 +29,7 @@ export const MutationLockKeys = {
 	remindNudgeCooldown(senderId: string, receiverId: string): string {
 		return `${MUTATION_KEY_PREFIX}:remind-nudge:cooldown:${senderId}:${receiverId}`;
 	},
+	todoCategory(userId: string): string {
+		return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
+	},
 };

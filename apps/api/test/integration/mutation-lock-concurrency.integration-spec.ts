@@ -15,16 +15,23 @@ import { NudgeReader } from "@/nudge/application/services/nudge.reader";
 import { SendNudgeUseCase } from "@/nudge/application/use-cases/send-nudge/send-nudge.use-case";
 import { SendRemindNudgeUseCase } from "@/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
 import { PrismaNudgeRepository } from "@/nudge/infrastructure/persistence/prisma-nudge.repository";
-import type { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import type { PaginationService } from "@/shared/application/pagination";
 import {
 	MutationLockKeys,
 	type MutationLockPort,
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { ClsUnitOfWork } from "@/shared/infrastructure/database/cls-unit-of-work";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { PostgresMutationLockAdapter } from "@/shared/infrastructure/database/postgres-mutation-lock.adapter";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import type { TodoCategoryCachePort } from "@/todo-category/application/ports/todo-category-cache.port";
+import { CreateTodoCategoryUseCase } from "@/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
+import { ReorderTodoCategoryUseCase } from "@/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
+import { TodoCategoryLimitReaderAdapter } from "@/todo-category/infrastructure/adapters/todo-category-limit-reader.adapter";
+import { PrismaTodoCategoryRepository } from "@/todo-category/infrastructure/persistence/prisma-todo-category.repository";
 import { TestDatabase } from "../setup/test-database";
 
 const CONCURRENCY = 20;
@@ -55,17 +62,6 @@ class Rendezvous {
 	}
 }
 
-class TestUnitOfWork implements UnitOfWorkPort {
-	constructor(
-		private readonly prisma: PrismaClient,
-		private readonly storage: AsyncLocalStorage<TransactionClient>,
-	) {}
-
-	run<T>(work: () => Promise<T>): Promise<T> {
-		return this.prisma.$transaction((tx) => this.storage.run(tx, work));
-	}
-}
-
 class RacingCheerRepository extends PrismaCheerRepository {
 	constructor(
 		txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
@@ -89,6 +85,28 @@ class RacingCheerRepository extends PrismaCheerRepository {
 		const cheer = await super.findLastCheerToUser(senderId, receiverId);
 		await this.cooldownBarrier?.wait();
 		return cheer;
+	}
+}
+
+class RacingTodoCategoryRepository extends PrismaTodoCategoryRepository {
+	constructor(
+		txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
+		private readonly countBarrier?: Rendezvous,
+		private readonly structuralReadBarrier?: Rendezvous,
+	) {
+		super(txHost);
+	}
+
+	override async countByUserId(userId: string): Promise<number> {
+		const count = await super.countByUserId(userId);
+		await this.countBarrier?.wait();
+		return count;
+	}
+
+	override async findByIdAndUserId(id: number, userId: string) {
+		const category = await super.findByIdAndUserId(id, userId);
+		await this.structuralReadBarrier?.wait();
+		return category;
 	}
 }
 
@@ -247,12 +265,16 @@ function createTransactionHarness(prisma: PrismaClient): {
 		isTransactionActive(): boolean {
 			return storage.getStore() !== undefined;
 		},
+		withTransaction<T>(work: () => Promise<T>): Promise<T> {
+			return prisma.$transaction((tx) => storage.run(tx, work));
+		},
 	};
+	const typedTxHost = txHost as unknown as TransactionHost<
+		TransactionalAdapterPrisma<DatabaseService>
+	>;
 	return {
-		txHost: txHost as unknown as TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
-		uow: new TestUnitOfWork(prisma, storage),
+		txHost: typedTxHost,
+		uow: new ClsUnitOfWork(typedTxHost),
 	};
 }
 
@@ -288,6 +310,26 @@ function createReaderEntitlement(dailyLimit: number): EntitlementService {
 		calculateRemaining: (limit: number | null, used: number) =>
 			limit === null ? null : Math.max(0, limit - used),
 	} as unknown as EntitlementService;
+}
+
+function createTodoCategoryCache(): TodoCategoryCachePort {
+	return {
+		wrapList: async (_userId, factory) => factory(),
+		invalidate: async () => undefined,
+	};
+}
+
+function createRealEntitlement(prisma: PrismaClient): EntitlementService {
+	const cache = {
+		wrapSubscription: async (
+			_userId: string,
+			factory: () => Promise<unknown>,
+		) => factory(),
+	};
+	return new EntitlementService(
+		cache as unknown as CacheService,
+		prisma as unknown as DatabaseService,
+	);
 }
 
 async function createUser(
@@ -336,7 +378,7 @@ async function createTodo(
 	return todo.id;
 }
 
-describe("소셜 mutation lock 동시성 (실제 PostgreSQL)", () => {
+describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 	let testDatabase: TestDatabase;
 	let prisma: PrismaClient;
 
@@ -550,6 +592,101 @@ describe("소셜 mutation lock 동시성 (실제 PostgreSQL)", () => {
 		expect(
 			await prisma.reminderNudge.count({ where: { senderId, receiverId } }),
 		).toBe(1);
+	});
+
+	it("20개 고유 이름 카테고리 생성 경쟁에서 FREE 한도와 연속 sortOrder를 보존한다", async () => {
+		// Given - FREE 사용자와 실제 repository/UoW/advisory-lock adapter
+		const userId = await createUser(prisma, 0);
+		const { txHost, uow } = createTransactionHarness(prisma);
+		const repository = new RacingTodoCategoryRepository(
+			txHost,
+			new Rendezvous(CONCURRENCY),
+		);
+		const useCase = new CreateTodoCategoryUseCase(
+			repository,
+			createTodoCategoryCache(),
+			new TodoCategoryLimitReaderAdapter(txHost, createRealEntitlement(prisma)),
+			new PostgresMutationLockAdapter(txHost),
+			uow,
+		);
+
+		// When - 서로 다른 이름 20개가 같은 count/max-order 한도를 동시에 소비
+		const summary = summarize(
+			await Promise.allSettled(
+				Array.from({ length: CONCURRENCY }, (_, index) =>
+					useCase.execute({
+						userId,
+						name: `Category ${index.toString().padStart(2, "0")}`,
+						color: "#112233",
+					}),
+				),
+			),
+		);
+
+		// Then - 성공은 FREE=3을 넘지 않고 저장 순번은 중복/공백 없는 0..2
+		expect(summary.successes).toBe(DAILY_LIMIT);
+		expect(summary.errorCodes).toEqual(
+			Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.TODO_CATEGORY_0857),
+		);
+		const persisted = await prisma.todoCategory.findMany({
+			where: { userId },
+			orderBy: { sortOrder: "asc" },
+		});
+		expect(persisted).toHaveLength(DAILY_LIMIT);
+		expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([0, 1, 2]);
+		expect(new Set(persisted.map(({ name }) => name)).size).toBe(DAILY_LIMIT);
+	});
+
+	it("20개 유효한 카테고리 재배치 경쟁 후 sortOrder가 완전한 permutation이다", async () => {
+		// Given - ACTIVE 사용자에게 0..19 순번의 카테고리와 실제 transaction stack
+		const userId = await createUser(prisma, 0, "ACTIVE");
+		await prisma.todoCategory.createMany({
+			data: Array.from({ length: CONCURRENCY }, (_, index) => ({
+				userId,
+				name: `Reorder ${index.toString().padStart(2, "0")}`,
+				color: "#112233",
+				sortOrder: index,
+			})),
+		});
+		const categories = await prisma.todoCategory.findMany({
+			where: { userId },
+			orderBy: { sortOrder: "asc" },
+		});
+		const { txHost, uow } = createTransactionHarness(prisma);
+		const repository = new RacingTodoCategoryRepository(
+			txHost,
+			undefined,
+			new Rendezvous(CONCURRENCY),
+		);
+		const useCase = new ReorderTodoCategoryUseCase(
+			repository,
+			createTodoCategoryCache(),
+			new PostgresMutationLockAdapter(txHost),
+			uow,
+		);
+
+		// When - 모든 카테고리를 동시에 맨 앞으로 이동
+		const results = await Promise.allSettled(
+			categories.map(({ id }) =>
+				useCase.execute({
+					userId,
+					categoryId: id,
+					position: "before",
+				}),
+			),
+		);
+
+		// Then - 20개 모두 성공하고 persisted 순번이 정확히 0..19 permutation
+		expect(results.every(({ status }) => status === "fulfilled")).toBe(true);
+		const persisted = await prisma.todoCategory.findMany({
+			where: { userId },
+			orderBy: { sortOrder: "asc" },
+		});
+		expect(persisted).toHaveLength(CONCURRENCY);
+		expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+		]);
+		expect(new Set(persisted.map(({ id }) => id)).size).toBe(CONCURRENCY);
 	});
 
 	it("Cheer limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
