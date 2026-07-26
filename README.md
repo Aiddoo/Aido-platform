@@ -28,7 +28,7 @@
 | Validation | Zod 4.3, nestjs-zod |
 | Testing | Jest 29, Vitest 4, Testcontainers |
 | Code Quality | Biome 2.4 |
-| Runtime | Node.js 20+ |
+| Runtime | Node.js 22.x |
 
 ## 구조
 

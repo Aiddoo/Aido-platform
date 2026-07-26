@@ -42,7 +42,7 @@ describe("주간 성취 E2E", () => {
 
 				// When - 주간 달성 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weekly-achievements")
+					.get("/v1/weekly-achievements")
 					.query({ year: 2026 })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -62,7 +62,7 @@ describe("주간 성취 E2E", () => {
 
 				// When - size를 5로 설정하여 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weekly-achievements")
+					.get("/v1/weekly-achievements")
 					.query({ year: 2026, size: 5 })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -81,7 +81,7 @@ describe("주간 성취 E2E", () => {
 
 				// When - year 없이 요청
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weekly-achievements")
+					.get("/v1/weekly-achievements")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(400);
 
@@ -94,7 +94,7 @@ describe("주간 성취 E2E", () => {
 
 				// When - 인증 없이 요청
 				await request(ctx.app.getHttpServer())
-					.get("/weekly-achievements")
+					.get("/v1/weekly-achievements")
 					.query({ year: 2026 })
 					.expect(401);
 
@@ -112,7 +112,7 @@ describe("주간 성취 E2E", () => {
 
 				// When - 존재하지 않는 주 달성 상세 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weekly-achievements/2026/1")
+					.get("/v1/weekly-achievements/2026/1")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(404);
 
@@ -125,7 +125,7 @@ describe("주간 성취 E2E", () => {
 
 				// When - 인증 없이 요청
 				await request(ctx.app.getHttpServer())
-					.get("/weekly-achievements/2026/1")
+					.get("/v1/weekly-achievements/2026/1")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)

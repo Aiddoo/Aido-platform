@@ -5,22 +5,19 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
-import helmet from "helmet";
 import { Logger } from "nestjs-pino";
-import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
+import { cleanupOpenApiDoc } from "nestjs-zod";
 import { AdminModule } from "@/admin/admin.module";
 import type { EnvConfig } from "@/shared/infrastructure/config";
-import { createCorsOptions } from "@/shared/infrastructure/config/utils/cors-options";
+import { configureApplication } from "@/shared/infrastructure/http/configure-application";
 import {
 	SWAGGER_TAG_DESCRIPTIONS,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 import { AppModule } from "./app.module";
-import { configureRequestIdentity } from "./shared/infrastructure/http/configure-request-identity";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { bufferLogs: true });
-	configureRequestIdentity(app);
 
 	const configService = app.get(ConfigService<EnvConfig, true>);
 	const port = configService.get("PORT", { infer: true });
@@ -29,18 +26,9 @@ async function bootstrap() {
 
 	app.useLogger(app.get(Logger));
 
-	app.use(helmet());
-
-	app.enableCors(createCorsOptions(nodeEnv, corsOrigins));
-
-	app.useGlobalPipes(new ZodValidationPipe());
-
-	app.enableShutdownHooks();
-
-	// API 버전 프리픽스 설정 (/v1)
-	// health 엔드포인트는 프리픽스 제외
-	app.setGlobalPrefix("v1", {
-		exclude: ["health"],
+	configureApplication(app, {
+		nodeEnv,
+		corsOrigins,
 	});
 
 	if (nodeEnv === "development") {

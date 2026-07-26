@@ -10252,7 +10252,208 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
 
 exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경): openapi-paths 1`] = `
 {
-  "/admin/growth/summary": {
+  "/health": {
+    "get": {
+      "description": "
+## 🏥 헬스 체크
+
+서버 및 외부 서비스 연결 상태를 확인합니다.
+
+### 체크 항목
+| 항목 | 설명 |
+|------|------|
+| \`database\` | PostgreSQL 데이터베이스 연결 상태 |
+| \`queues\` | BullMQ 큐 상태 (일시정지 여부, 잡 카운트) |
+
+### 응답 상태
+- \`up\`: 정상 동작 중
+- \`down\`: 서비스 이상
+
+> \`queues\`는 Redis 장애 시에도 \`up\`을 유지하고 \`degraded: true\` +
+> \`reason\`을 덧붙입니다 (Redis 다운은 태스크 재시작으로 해결되지 않으므로
+> 503을 만들지 않음). 모니터링 알람은 \`degraded\` 필드를 기준으로 합니다.
+
+### 사용 예시
+\`\`\`bash
+curl https://api.aido.com/health
+\`\`\`
+
+### 모니터링
+- 주기적인 헬스 체크로 서비스 가용성 모니터링
+- 503 응답 시 즉시 알림 트리거
+		",
+      "operationId": "healthCheck",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "details": {
+                    "additionalProperties": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "status",
+                      ],
+                      "type": "object",
+                    },
+                    "example": {
+                      "database": {
+                        "status": "up",
+                      },
+                    },
+                    "type": "object",
+                  },
+                  "error": {
+                    "additionalProperties": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "status",
+                      ],
+                      "type": "object",
+                    },
+                    "example": {},
+                    "nullable": true,
+                    "type": "object",
+                  },
+                  "info": {
+                    "additionalProperties": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "status",
+                      ],
+                      "type": "object",
+                    },
+                    "example": {
+                      "database": {
+                        "status": "up",
+                      },
+                    },
+                    "nullable": true,
+                    "type": "object",
+                  },
+                  "status": {
+                    "example": "ok",
+                    "type": "string",
+                  },
+                },
+                "type": "object",
+              },
+            },
+          },
+          "description": "서버가 정상 동작 중입니다.
+
+The Health Check is successful",
+        },
+        "503": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "details": {
+                    "additionalProperties": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "status",
+                      ],
+                      "type": "object",
+                    },
+                    "example": {
+                      "database": {
+                        "status": "up",
+                      },
+                      "redis": {
+                        "message": "Could not connect",
+                        "status": "down",
+                      },
+                    },
+                    "type": "object",
+                  },
+                  "error": {
+                    "additionalProperties": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "status",
+                      ],
+                      "type": "object",
+                    },
+                    "example": {
+                      "redis": {
+                        "message": "Could not connect",
+                        "status": "down",
+                      },
+                    },
+                    "nullable": true,
+                    "type": "object",
+                  },
+                  "info": {
+                    "additionalProperties": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "status",
+                      ],
+                      "type": "object",
+                    },
+                    "example": {
+                      "database": {
+                        "status": "up",
+                      },
+                    },
+                    "nullable": true,
+                    "type": "object",
+                  },
+                  "status": {
+                    "example": "error",
+                    "type": "string",
+                  },
+                },
+                "type": "object",
+              },
+            },
+          },
+          "description": "서버에 문제가 발생했습니다.
+
+The Health Check is not successful",
+        },
+      },
+      "summary": "서버 상태 확인",
+      "tags": [
+        "Common - Health",
+      ],
+    },
+  },
+  "/v1/admin/growth/summary": {
     "get": {
       "description": "가입 cohort 범위의 활성화·D1/D7/D30 리텐션과 종료 현지 날짜 기준 DAU/WAU/MAU를 집계합니다.",
       "operationId": "getAdminGrowthSummary",
@@ -10436,7 +10637,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
     },
   },
-  "/admin/notifications/broadcast": {
+  "/v1/admin/notifications/broadcast": {
     "post": {
       "description": "지정된 대상 필터에 따라 여러 사용자에게 알림을 발송합니다.
 
@@ -10657,7 +10858,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
     },
   },
-  "/admin/notifications/targeted": {
+  "/v1/admin/notifications/targeted": {
     "post": {
       "description": "지정된 사용자 ID 목록에 해당하는 사용자들에게 알림을 발송합니다.
 
@@ -10871,7 +11072,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
     },
   },
-  "/ai/parse-memo": {
+  "/v1/ai/parse-memo": {
     "post": {
       "description": "메모 내용을 AI가 분석하여 여러 개의 구조화된 할 일(각각 서브투두 포함)을 생성합니다.
 
@@ -11243,7 +11444,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
     },
   },
-  "/ai/parse-todo": {
+  "/v1/ai/parse-todo": {
     "post": {
       "description": "한국어 자연어 입력을 분석하여 구조화된 투두 데이터를 생성합니다.
 
@@ -11659,7 +11860,7 @@ if (confirmed) {
       ],
     },
   },
-  "/ai/reports": {
+  "/v1/ai/reports": {
     "get": {
       "description": "주간/월간 AI 분석 리포트 목록을 조회합니다. 최신순으로 정렬됩니다.
 
@@ -11860,7 +12061,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
       ],
     },
   },
-  "/ai/reports/status": {
+  "/v1/ai/reports/status": {
     "get": {
       "description": "다음 주간/월간 리포트 예정일과 최신 리포트를 반환합니다.
 
@@ -12086,7 +12287,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
       ],
     },
   },
-  "/ai/reports/{id}": {
+  "/v1/ai/reports/{id}": {
     "get": {
       "description": "특정 AI 분석 리포트의 상세 정보를 조회합니다.
 
@@ -12324,7 +12525,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
       ],
     },
   },
-  "/ai/suggestions": {
+  "/v1/ai/suggestions": {
     "get": {
       "description": "대기 중인(PENDING) AI 제안 목록을 조회합니다.
 만료되지 않은 PENDING 상태의 제안만 반환됩니다.
@@ -12618,7 +12819,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
       ],
     },
   },
-  "/ai/suggestions/{id}": {
+  "/v1/ai/suggestions/{id}": {
     "patch": {
       "description": "AI 제안을 수락하거나 거절합니다.
 
@@ -12863,7 +13064,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
       ],
     },
   },
-  "/ai/usage": {
+  "/v1/ai/usage": {
     "get": {
       "description": "현재 사용자의 월간 AI 사용량을 조회합니다.
 
@@ -12998,7 +13199,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/app-config/feature-discovery": {
+  "/v1/app-config/feature-discovery": {
     "get": {
       "description": "Public kill-switch configuration only. Campaign copy and user data are never returned.",
       "operationId": "getFeatureDiscoveryConfig",
@@ -13106,7 +13307,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/account": {
+  "/v1/auth/account": {
     "delete": {
       "description": "
 ## 👋 회원 탈퇴
@@ -13342,7 +13543,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/apple/callback": {
+  "/v1/auth/apple/callback": {
     "post": {
       "description": "## 🍎 Apple 로그인 (모바일 네이티브)
 
@@ -13489,7 +13690,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/consent": {
+  "/v1/auth/consent": {
     "get": {
       "description": "현재 사용자의 약관 동의 상태를 조회합니다.
 
@@ -13610,7 +13811,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/consent/marketing": {
+  "/v1/auth/consent/marketing": {
     "patch": {
       "description": "마케팅 수신 동의를 변경합니다.
 
@@ -13743,7 +13944,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/consent/marketing-push": {
+  "/v1/auth/consent/marketing-push": {
     "patch": {
       "description": "광고성 앱 푸시 수신 동의를 변경합니다. 야간 광고성 푸시는 별도로 발송하지 않습니다.",
       "operationId": "updateMarketingPushConsent",
@@ -13866,7 +14067,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/exchange": {
+  "/v1/auth/exchange": {
     "post": {
       "description": "OAuth Web 콜백에서 발급된 **일회용 교환 코드**를 JWT 토큰으로 교환합니다.
 
@@ -14001,7 +14202,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/forgot-password": {
+  "/v1/auth/forgot-password": {
     "post": {
       "description": "
 ## 🔑 비밀번호 재설정 — 1단계: 인증 코드 발송
@@ -14088,7 +14289,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/google/callback": {
+  "/v1/auth/google/callback": {
     "post": {
       "description": "## 🔵 Google 로그인 (모바일 네이티브)
 
@@ -14234,7 +14435,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/google/start": {
+  "/v1/auth/google/start": {
     "get": {
       "description": "\`expo-web-browser\`로 브라우저를 열어 구글 로그인 페이지로 리다이렉트합니다.
 
@@ -14320,7 +14521,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/google/web-callback": {
+  "/v1/auth/google/web-callback": {
     "get": {
       "description": "구글 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
@@ -14386,7 +14587,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/kakao/callback": {
+  "/v1/auth/kakao/callback": {
     "post": {
       "description": "
 ## 🟡 Kakao 로그인 (모바일 네이티브)
@@ -14535,7 +14736,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/kakao/start": {
+  "/v1/auth/kakao/start": {
     "get": {
       "description": "\`expo-web-browser\`로 브라우저를 열어 카카오 로그인 페이지로 리다이렉트합니다.
 
@@ -14621,7 +14822,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/kakao/web-callback": {
+  "/v1/auth/kakao/web-callback": {
     "get": {
       "description": "카카오 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
@@ -14685,7 +14886,7 @@ if (limit !== null && used >= limit) {
       ],
     },
   },
-  "/auth/link": {
+  "/v1/auth/link": {
     "post": {
       "description": "
 ## 🔗 소셜 계정 연동
@@ -14904,7 +15105,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/link-with-code": {
+  "/v1/auth/link-with-code": {
     "post": {
       "description": "
 ## 🔗 교환 코드 기반 소셜 계정 연동
@@ -15116,7 +15317,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/linked-accounts": {
+  "/v1/auth/linked-accounts": {
     "get": {
       "description": "
 ## 🔗 소셜 계정 연결 상태 조회
@@ -15259,7 +15460,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/linked-accounts/{provider}": {
+  "/v1/auth/linked-accounts/{provider}": {
     "delete": {
       "description": "
 ## 🔓 소셜 계정 연결 해제
@@ -15496,7 +15697,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/login": {
+  "/v1/auth/login": {
     "post": {
       "description": "
 ## 🔑 로그인
@@ -15787,7 +15988,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/logout": {
+  "/v1/auth/logout": {
     "post": {
       "description": "
 ## 🚪 로그아웃
@@ -15916,7 +16117,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/logout-all": {
+  "/v1/auth/logout-all": {
     "post": {
       "description": "
 ## 🚪 전체 로그아웃
@@ -16046,7 +16247,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/me": {
+  "/v1/auth/me": {
     "get": {
       "description": "
 ## 👤 내 정보 조회
@@ -16173,7 +16374,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/naver/callback": {
+  "/v1/auth/naver/callback": {
     "post": {
       "description": "
 ## 🟢 Naver 로그인 (모바일 네이티브)
@@ -16322,7 +16523,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/naver/start": {
+  "/v1/auth/naver/start": {
     "get": {
       "description": "\`expo-web-browser\`로 브라우저를 열어 네이버 로그인 페이지로 리다이렉트합니다.
 
@@ -16408,7 +16609,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/naver/web-callback": {
+  "/v1/auth/naver/web-callback": {
     "get": {
       "description": "네이버 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
@@ -16474,7 +16675,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/password": {
+  "/v1/auth/password": {
     "patch": {
       "description": "
 ## 🔐 비밀번호 변경
@@ -16907,7 +17108,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/password/setup-code": {
+  "/v1/auth/password/setup-code": {
     "post": {
       "description": "
 ## 🔑 비밀번호 설정 — 1단계: 인증 코드 발송
@@ -17136,7 +17337,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/preference": {
+  "/v1/auth/preference": {
     "get": {
       "description": "사용자 설정(알림, 표시)을 조회합니다.
 
@@ -17502,7 +17703,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/profile": {
+  "/v1/auth/profile": {
     "patch": {
       "description": "
 ## 👤 프로필 수정
@@ -17635,7 +17836,7 @@ provider에 따라 필수 토큰이 다릅니다:
       ],
     },
   },
-  "/auth/refresh": {
+  "/v1/auth/refresh": {
     "post": {
       "description": "
 ## 🔄 토큰 갱신
@@ -17766,7 +17967,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/auth/register": {
+  "/v1/auth/register": {
     "post": {
       "description": "
 ## 📋 회원가입
@@ -17903,7 +18104,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/auth/resend-verification": {
+  "/v1/auth/resend-verification": {
     "post": {
       "description": "
 ## 🔄 인증 코드 재발송
@@ -18083,7 +18284,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/auth/reset-password": {
+  "/v1/auth/reset-password": {
     "post": {
       "description": "
 ## 🔑 비밀번호 재설정 — 2단계: 새 비밀번호 설정
@@ -18363,7 +18564,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/auth/sessions": {
+  "/v1/auth/sessions": {
     "get": {
       "description": "
 ## 📱 활성 세션 목록
@@ -18498,7 +18699,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/auth/sessions/{sessionId}": {
+  "/v1/auth/sessions/{sessionId}": {
     "delete": {
       "description": "
 ## 🔌 세션 종료
@@ -18689,7 +18890,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/auth/verify-email": {
+  "/v1/auth/verify-email": {
     "post": {
       "description": "
 ## ✉️ 이메일 인증
@@ -18924,7 +19125,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/cheers": {
+  "/v1/cheers": {
     "post": {
       "description": "친구에게 응원 메시지를 보냅니다.
 
@@ -19249,7 +19450,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/cheers/cooldown/{userId}": {
+  "/v1/cheers/cooldown/{userId}": {
     "get": {
       "description": "특정 친구에게 응원 가능 여부와 남은 쿨다운 시간을 확인합니다.
 
@@ -19375,7 +19576,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/cheers/limit": {
+  "/v1/cheers/limit": {
     "get": {
       "description": "오늘 사용한 응원 횟수와 남은 횟수를 확인합니다.
 
@@ -19501,7 +19702,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/cheers/read": {
+  "/v1/cheers/read": {
     "patch": {
       "description": "여러 응원을 한 번에 읽음 상태로 변경합니다.
 
@@ -19627,7 +19828,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/cheers/received": {
+  "/v1/cheers/received": {
     "get": {
       "description": "받은 응원 목록을 커서 기반 페이지네이션으로 조회합니다.
 
@@ -19768,7 +19969,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/cheers/sent": {
+  "/v1/cheers/sent": {
     "get": {
       "description": "보낸 응원 목록을 커서 기반 페이지네이션으로 조회합니다.
 
@@ -19909,7 +20110,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/cheers/{id}/read": {
+  "/v1/cheers/{id}/read": {
     "patch": {
       "description": "받은 응원을 읽음 상태로 변경합니다.",
       "operationId": "markCheerAsRead",
@@ -20082,7 +20283,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
       ],
     },
   },
-  "/daily-completions": {
+  "/v1/daily-completions": {
     "get": {
       "description": "
 ## 일일 완료 현황 조회
@@ -20287,7 +20488,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/friends": {
+  "/v1/follows/friends": {
     "get": {
       "description": "나와 맞팔 관계인 친구 목록을 조회합니다.
 
@@ -20437,7 +20638,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/friends/{followId}/reorder": {
+  "/v1/follows/friends/{followId}/reorder": {
     "patch": {
       "description": "친구 목록에서 특정 친구의 순서를 변경합니다.
 
@@ -20622,7 +20823,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/requests/received": {
+  "/v1/follows/requests/received": {
     "get": {
       "description": "나에게 친구 요청을 보낸 사용자 목록을 조회합니다.
 
@@ -20761,7 +20962,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/requests/sent": {
+  "/v1/follows/requests/sent": {
     "get": {
       "description": "내가 친구 요청을 보낸 사용자 목록을 조회합니다.
 
@@ -20900,7 +21101,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/resource-limit": {
+  "/v1/follows/resource-limit": {
     "get": {
       "description": "현재 친구 수와 최대 한도를 조회합니다.
 
@@ -21017,7 +21218,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/search": {
+  "/v1/follows/search": {
     "get": {
       "description": "이름 또는 사용자 태그로 전체 사용자를 검색합니다. (인스타그램 스타일 디스커버리)
 
@@ -21211,7 +21412,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/{userId}": {
+  "/v1/follows/{userId}": {
     "delete": {
       "description": "친구 관계를 삭제하거나 보낸 친구 요청을 철회합니다.
 
@@ -21386,7 +21587,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/{userId}/accept": {
+  "/v1/follows/{userId}/accept": {
     "patch": {
       "description": "받은 친구 요청을 수락합니다.
 
@@ -21561,7 +21762,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/{userId}/reject": {
+  "/v1/follows/{userId}/reject": {
     "patch": {
       "description": "받은 친구 요청을 거절합니다.
 
@@ -21736,7 +21937,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/follows/{userTag}": {
+  "/v1/follows/{userTag}": {
     "post": {
       "description": "특정 사용자에게 친구 요청을 보냅니다.
 
@@ -22047,208 +22248,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
-  "/health": {
-    "get": {
-      "description": "
-## 🏥 헬스 체크
-
-서버 및 외부 서비스 연결 상태를 확인합니다.
-
-### 체크 항목
-| 항목 | 설명 |
-|------|------|
-| \`database\` | PostgreSQL 데이터베이스 연결 상태 |
-| \`queues\` | BullMQ 큐 상태 (일시정지 여부, 잡 카운트) |
-
-### 응답 상태
-- \`up\`: 정상 동작 중
-- \`down\`: 서비스 이상
-
-> \`queues\`는 Redis 장애 시에도 \`up\`을 유지하고 \`degraded: true\` +
-> \`reason\`을 덧붙입니다 (Redis 다운은 태스크 재시작으로 해결되지 않으므로
-> 503을 만들지 않음). 모니터링 알람은 \`degraded\` 필드를 기준으로 합니다.
-
-### 사용 예시
-\`\`\`bash
-curl https://api.aido.com/health
-\`\`\`
-
-### 모니터링
-- 주기적인 헬스 체크로 서비스 가용성 모니터링
-- 503 응답 시 즉시 알림 트리거
-		",
-      "operationId": "healthCheck",
-      "parameters": [],
-      "responses": {
-        "200": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "details": {
-                    "additionalProperties": {
-                      "additionalProperties": true,
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "status",
-                      ],
-                      "type": "object",
-                    },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
-                    },
-                    "type": "object",
-                  },
-                  "error": {
-                    "additionalProperties": {
-                      "additionalProperties": true,
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "status",
-                      ],
-                      "type": "object",
-                    },
-                    "example": {},
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "info": {
-                    "additionalProperties": {
-                      "additionalProperties": true,
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "status",
-                      ],
-                      "type": "object",
-                    },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
-                    },
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "status": {
-                    "example": "ok",
-                    "type": "string",
-                  },
-                },
-                "type": "object",
-              },
-            },
-          },
-          "description": "서버가 정상 동작 중입니다.
-
-The Health Check is successful",
-        },
-        "503": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "details": {
-                    "additionalProperties": {
-                      "additionalProperties": true,
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "status",
-                      ],
-                      "type": "object",
-                    },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
-                      "redis": {
-                        "message": "Could not connect",
-                        "status": "down",
-                      },
-                    },
-                    "type": "object",
-                  },
-                  "error": {
-                    "additionalProperties": {
-                      "additionalProperties": true,
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "status",
-                      ],
-                      "type": "object",
-                    },
-                    "example": {
-                      "redis": {
-                        "message": "Could not connect",
-                        "status": "down",
-                      },
-                    },
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "info": {
-                    "additionalProperties": {
-                      "additionalProperties": true,
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "status",
-                      ],
-                      "type": "object",
-                    },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
-                    },
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "status": {
-                    "example": "error",
-                    "type": "string",
-                  },
-                },
-                "type": "object",
-              },
-            },
-          },
-          "description": "서버에 문제가 발생했습니다.
-
-The Health Check is not successful",
-        },
-      },
-      "summary": "서버 상태 확인",
-      "tags": [
-        "Common - Health",
-      ],
-    },
-  },
-  "/inquiries": {
+  "/v1/inquiries": {
     "post": {
       "description": "사용자 문의를 관리자 이메일로 발송합니다.
 
@@ -22469,7 +22469,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/memos": {
+  "/v1/memos": {
     "get": {
       "description": "메모 목록을 조회합니다. 고정된 메모가 먼저 표시됩니다.
 
@@ -22830,7 +22830,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/memos/resource-limit": {
+  "/v1/memos/resource-limit": {
     "get": {
       "description": "사용자의 현재 메모 개수와 최대 한도를 조회합니다.
 
@@ -22947,7 +22947,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/memos/{id}": {
+  "/v1/memos/{id}": {
     "delete": {
       "description": "메모를 영구 삭제합니다.",
       "operationId": "deleteMemo",
@@ -23514,7 +23514,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/memos/{id}/convert-to-todo": {
+  "/v1/memos/{id}/convert-to-todo": {
     "post": {
       "description": "메모를 할 일로 변환합니다. 변환 후 원본 메모는 삭제됩니다.
 
@@ -23811,7 +23811,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/memos/{id}/convert-to-todos": {
+  "/v1/memos/{id}/convert-to-todos": {
     "post": {
       "description": "메모를 AI 파싱 결과 기반으로 여러 할 일로 일괄 변환합니다.
 변환 후 원본 메모는 삭제됩니다.
@@ -24112,7 +24112,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/memos/{id}/pin": {
+  "/v1/memos/{id}/pin": {
     "patch": {
       "description": "메모를 고정하거나 해제합니다. 고정된 메모는 목록 상단에 표시됩니다.",
       "operationId": "toggleMemoPin",
@@ -24295,7 +24295,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/memos/{id}/reorder": {
+  "/v1/memos/{id}/reorder": {
     "patch": {
       "description": "메모의 순서를 변경합니다.
 
@@ -24525,7 +24525,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/notifications": {
+  "/v1/notifications": {
     "get": {
       "description": "알림 목록을 커서 기반 페이지네이션으로 조회합니다.
 
@@ -24711,7 +24711,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/notifications/marketing-push/opt-out": {
+  "/v1/notifications/marketing-push/opt-out": {
     "post": {
       "description": "푸시 액션에 포함된 서명 토큰으로 로그인 없이 수신을 철회합니다.",
       "operationId": "optOutMarketingPush",
@@ -24787,7 +24787,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/notifications/read-all": {
+  "/v1/notifications/read-all": {
     "patch": {
       "description": "모든 읽지 않은 알림을 읽음 상태로 변경합니다.",
       "operationId": "markAllNotificationsAsRead",
@@ -24900,7 +24900,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/notifications/token": {
+  "/v1/notifications/token": {
     "delete": {
       "description": "등록된 푸시 토큰을 해제합니다.
 
@@ -25216,7 +25216,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/notifications/unread-count": {
+  "/v1/notifications/unread-count": {
     "get": {
       "description": "읽지 않은 알림 개수를 반환합니다. 앱 배지 카운트 갱신에 사용됩니다.",
       "operationId": "getUnreadCount",
@@ -25329,7 +25329,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/notifications/{id}/opened": {
+  "/v1/notifications/{id}/opened": {
     "post": {
       "description": "푸시 탭을 멱등 기록하고 해당 알림을 읽음 처리합니다.",
       "operationId": "markNotificationOpened",
@@ -25455,7 +25455,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/notifications/{id}/read": {
+  "/v1/notifications/{id}/read": {
     "patch": {
       "description": "특정 알림을 읽음 상태로 변경합니다. 이미 읽은 알림은 무시됩니다.",
       "operationId": "markNotificationAsRead",
@@ -25672,7 +25672,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges": {
+  "/v1/nudges": {
     "post": {
       "description": "친구의 할 일을 콕 찌릅니다.
 
@@ -26048,7 +26048,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges/cooldown/{userId}": {
+  "/v1/nudges/cooldown/{userId}": {
     "get": {
       "description": "특정 친구에게 가장 최근 보낸 콕 찌르기 기준 쿨다운 상태를 확인합니다.
 실제 콕 찌르기는 동일 Todo 단위로 24시간 쿨다운이 적용됩니다.
@@ -26175,7 +26175,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges/limit": {
+  "/v1/nudges/limit": {
     "get": {
       "description": "오늘 사용한 콕 찌르기 횟수와 남은 횟수를 확인합니다.
 
@@ -26301,7 +26301,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges/received": {
+  "/v1/nudges/received": {
     "get": {
       "description": "받은 콕 찌름 목록을 커서 기반 페이지네이션으로 조회합니다.
 
@@ -26442,7 +26442,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges/remind": {
+  "/v1/nudges/remind": {
     "post": {
       "description": "친구가 오늘 할일을 만들지 않았을 때 독촉 콕 찌르기를 보냅니다.
 
@@ -26723,7 +26723,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges/remind/cooldown/{userId}": {
+  "/v1/nudges/remind/cooldown/{userId}": {
     "get": {
       "description": "특정 친구에게 리마인드 콕 찌르기 가능 여부와 남은 쿨다운 시간을 확인합니다.
 
@@ -26849,7 +26849,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges/sent": {
+  "/v1/nudges/sent": {
     "get": {
       "description": "보낸 콕 찌름 목록을 커서 기반 페이지네이션으로 조회합니다.
 
@@ -26990,7 +26990,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/nudges/{id}/read": {
+  "/v1/nudges/{id}/read": {
     "patch": {
       "description": "받은 콕 찌름을 읽음 상태로 변경합니다.",
       "operationId": "markNudgeAsRead",
@@ -27163,7 +27163,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/todo-categories": {
+  "/v1/todo-categories": {
     "get": {
       "description": "사용자의 모든 카테고리 목록을 조회합니다.
 
@@ -27552,7 +27552,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/todo-categories/resource-limit": {
+  "/v1/todo-categories/resource-limit": {
     "get": {
       "description": "현재 카테고리 개수와 최대 한도를 조회합니다.
 
@@ -27669,7 +27669,7 @@ The Health Check is not successful",
       ],
     },
   },
-  "/todo-categories/{id}": {
+  "/v1/todo-categories/{id}": {
     "delete": {
       "description": "카테고리를 삭제합니다.
 
@@ -28382,7 +28382,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
       ],
     },
   },
-  "/todo-categories/{id}/reorder": {
+  "/v1/todo-categories/{id}/reorder": {
     "patch": {
       "description": "특정 카테고리를 다른 카테고리의 앞 또는 뒤로 이동합니다.
 드래그 앤 드롭으로 카테고리 순서를 변경할 때 사용합니다.
@@ -28592,7 +28592,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
       ],
     },
   },
-  "/todos": {
+  "/v1/todos": {
     "get": {
       "description": "사용자의 할 일 목록을 커서 기반 페이지네이션으로 조회합니다.
 
@@ -29190,7 +29190,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
       ],
     },
   },
-  "/todos/friends/{userId}": {
+  "/v1/todos/friends/{userId}": {
     "get": {
       "description": "친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
 
@@ -29438,7 +29438,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
       ],
     },
   },
-  "/todos/recurring": {
+  "/v1/todos/recurring": {
     "post": {
       "description": "날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
 
@@ -29723,7 +29723,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
       ],
     },
   },
-  "/todos/resource-limit": {
+  "/v1/todos/resource-limit": {
     "get": {
       "description": "카테고리당 활성(미완료) 할 일 최대 한도를 조회합니다.
 categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수도 함께 반환합니다.
@@ -29854,7 +29854,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       ],
     },
   },
-  "/todos/summary": {
+  "/v1/todos/summary": {
     "get": {
       "description": "오늘 할 일 진행률과 현재 스트릭, 상위 할 일 목록을 한 번에 조회합니다.
 홈 화면 위젯 스냅샷 갱신용 경량 엔드포인트입니다.
@@ -29987,7 +29987,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       ],
     },
   },
-  "/todos/{id}": {
+  "/v1/todos/{id}": {
     "delete": {
       "description": "특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.
 
@@ -30572,7 +30572,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/category": {
+  "/v1/todos/{id}/category": {
     "patch": {
       "description": "할 일의 카테고리를 변경합니다.
 
@@ -30801,7 +30801,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/complete": {
+  "/v1/todos/{id}/complete": {
     "patch": {
       "description": "할 일의 완료 상태를 변경합니다.
 
@@ -31044,7 +31044,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/items": {
+  "/v1/todos/{id}/items": {
     "post": {
       "description": "할 일에 하위 항목(체크리스트)을 추가합니다.
 
@@ -31340,7 +31340,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/items/reorder": {
+  "/v1/todos/{id}/items/reorder": {
     "patch": {
       "description": "하위 항목의 순서를 일괄 변경합니다. 드래그 앤 드롭 UI에 적합합니다.
 
@@ -31585,7 +31585,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/items/{itemId}": {
+  "/v1/todos/{id}/items/{itemId}": {
     "delete": {
       "description": "하위 항목을 삭제합니다. 삭제 후 복구할 수 없습니다.
 
@@ -32050,7 +32050,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/reorder": {
+  "/v1/todos/{id}/reorder": {
     "patch": {
       "description": "할 일을 다른 할 일의 앞 또는 뒤로 이동합니다. 드래그 앤 드롭 UI에 적합합니다.
 
@@ -32279,7 +32279,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/schedule": {
+  "/v1/todos/{id}/schedule": {
     "patch": {
       "description": "할 일의 날짜와 시간을 변경합니다.
 
@@ -32520,7 +32520,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/title": {
+  "/v1/todos/{id}/title": {
     "patch": {
       "description": "할 일의 제목을 수정합니다.
 
@@ -32748,7 +32748,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/todos/{id}/visibility": {
+  "/v1/todos/{id}/visibility": {
     "patch": {
       "description": "할 일의 공개 범위를 변경합니다.
 
@@ -32975,7 +32975,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/weather/conditions": {
+  "/v1/weather/conditions": {
     "get": {
       "description": "
 체감온도, 자외선지수, 일출/일몰, 미세먼지 등 부가 정보를 조회합니다.
@@ -33095,7 +33095,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/weather/forecast": {
+  "/v1/weather/forecast": {
     "get": {
       "description": "
 기상청 단기예보 기반 날씨 예보를 조회합니다.
@@ -33231,7 +33231,7 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/weather/location": {
+  "/v1/weather/location": {
     "put": {
       "description": "
 GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)로 자동 변환됩니다.
@@ -33321,7 +33321,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
       ],
     },
   },
-  "/weekly-achievements": {
+  "/v1/weekly-achievements": {
     "get": {
       "description": "
 ## 주간 달성 현황 목록
@@ -33500,7 +33500,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
       ],
     },
   },
-  "/weekly-achievements/{year}/{week}": {
+  "/v1/weekly-achievements/{year}/{week}": {
     "get": {
       "description": "
 ## 주간 달성 현황 상세

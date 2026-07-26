@@ -5,7 +5,7 @@ describe("Feature discovery configuration (e2e)", () => {
 	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		ctx = await createE2eApp({ withGlobalPrefix: true });
+		ctx = await createE2eApp();
 	}, 60000);
 
 	afterAll(async () => {

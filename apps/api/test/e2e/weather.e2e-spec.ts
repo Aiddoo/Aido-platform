@@ -43,7 +43,7 @@ describe("날씨 E2E", () => {
 
 				// When - 위치 등록 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 37.5665, longitude: 126.978 })
 					.expect(200);
@@ -63,14 +63,14 @@ describe("날씨 E2E", () => {
 					"Test1234!",
 				);
 				await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 37.5665, longitude: 126.978 })
 					.expect(200);
 
 				// When - 새 좌표로 위치 수정
 				const response = await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 35.1796, longitude: 129.0756 })
 					.expect(200);
@@ -90,7 +90,7 @@ describe("날씨 E2E", () => {
 
 				// When - 범위 밖 좌표로 요청
 				const response = await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 50.0, longitude: 126.978 })
 					.expect(400);
@@ -108,7 +108,7 @@ describe("날씨 E2E", () => {
 
 				// When - 범위 밖 좌표로 요청
 				const response = await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 37.5665, longitude: 100.0 })
 					.expect(400);
@@ -122,7 +122,7 @@ describe("날씨 E2E", () => {
 
 				// When - 인증 없이 위치 등록 API 호출
 				await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.send({ latitude: 37.5665, longitude: 126.978 })
 					.expect(401);
 
@@ -142,7 +142,7 @@ describe("날씨 E2E", () => {
 
 				// When - 예보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weather/forecast")
+					.get("/v1/weather/forecast")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(404);
 
@@ -158,14 +158,14 @@ describe("날씨 E2E", () => {
 					"Test1234!",
 				);
 				await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 37.5665, longitude: 126.978 })
 					.expect(200);
 
 				// When - 예보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weather/forecast")
+					.get("/v1/weather/forecast")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -187,14 +187,14 @@ describe("날씨 E2E", () => {
 					"Test1234!",
 				);
 				await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 37.5665, longitude: 126.978 })
 					.expect(200);
 
 				// When - 특정 날짜 예보 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weather/forecast")
+					.get("/v1/weather/forecast")
 					.query({ date: "2026-04-04" })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -213,7 +213,7 @@ describe("날씨 E2E", () => {
 
 				// When - 잘못된 date 파라미터로 요청
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weather/forecast")
+					.get("/v1/weather/forecast")
 					.query({ date: "invalid-date" })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(400);
@@ -227,7 +227,7 @@ describe("날씨 E2E", () => {
 
 				// When - 인증 없이 예보 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/weather/forecast")
+					.get("/v1/weather/forecast")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -246,7 +246,7 @@ describe("날씨 E2E", () => {
 
 				// When - 부가 정보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weather/conditions")
+					.get("/v1/weather/conditions")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(404);
 
@@ -262,14 +262,14 @@ describe("날씨 E2E", () => {
 					"Test1234!",
 				);
 				await request(ctx.app.getHttpServer())
-					.put("/weather/location")
+					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({ latitude: 37.5665, longitude: 126.978 })
 					.expect(200);
 
 				// When - 부가 정보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/weather/conditions")
+					.get("/v1/weather/conditions")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -289,7 +289,7 @@ describe("날씨 E2E", () => {
 
 				// When - 인증 없이 부가 정보 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/weather/conditions")
+					.get("/v1/weather/conditions")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)

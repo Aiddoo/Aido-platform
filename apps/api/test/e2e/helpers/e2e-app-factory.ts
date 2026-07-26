@@ -15,7 +15,6 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
-import { ZodValidationPipe } from "nestjs-zod";
 import type { App } from "supertest/types";
 import {
 	ADMIN_NOTIFICATION_QUEUE,
@@ -65,9 +64,8 @@ import {
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { createCorsOptions } from "@/shared/infrastructure/config/utils/cors-options";
 import { DatabaseService } from "@/shared/infrastructure/database";
-import { configureRequestIdentity } from "@/shared/infrastructure/http/configure-request-identity";
+import { configureApplication } from "@/shared/infrastructure/http/configure-application";
 import {
 	REDIS_CLIENT,
 	REDIS_COMMAND_CLIENT,
@@ -150,8 +148,6 @@ export interface E2eTestContext {
 }
 
 export interface E2eAppOptions {
-	/** main.ts와 동일한 /v1 프리픽스 적용이 필요한 production-style 경로 검증용 */
-	withGlobalPrefix?: boolean;
 	/** 전역 E2E bypass를 해제하고 실제 ThrottlerGuard를 검증하는 전용 suite용 */
 	withRealThrottler?: boolean;
 	/** 추가 provider override 콜백 */
@@ -343,14 +339,11 @@ async function createE2eAppContext(
 	try {
 		module = await builder.compile();
 		app = module.createNestApplication();
-		if (options?.withRealThrottler) {
-			configureRequestIdentity(app);
-		}
-		app.enableCors(createCorsOptions("development", ["http://localhost:3000"]));
-		app.useGlobalPipes(new ZodValidationPipe());
-		if (options?.withGlobalPrefix) {
-			app.setGlobalPrefix("v1", { exclude: ["health"] });
-		}
+		configureApplication(app, {
+			nodeEnv: "development",
+			corsOrigins: ["http://localhost:3000"],
+			enableShutdownHooks: false,
+		});
 		await app.init();
 		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
 

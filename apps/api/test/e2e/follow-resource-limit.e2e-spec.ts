@@ -57,7 +57,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 			expect(extraFriend).toBeDefined();
 
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/follows/${extraFriend?.userTag}`)
+				.post(`/v1/follows/${extraFriend?.userTag}`)
 				.set("Authorization", `Bearer ${freeUser.accessToken}`)
 				.expect(403);
 
@@ -67,7 +67,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 
 			// When - 리소스 제한 조회
 			const limitResponse = await request(ctx.app.getHttpServer())
-				.get("/follows/resource-limit")
+				.get("/v1/follows/resource-limit")
 				.set("Authorization", `Bearer ${freeUser.accessToken}`)
 				.expect(200);
 
@@ -111,7 +111,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 			expect(extraFriend).toBeDefined();
 
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/follows/${extraFriend?.userTag}`)
+				.post(`/v1/follows/${extraFriend?.userTag}`)
 				.set("Authorization", `Bearer ${premiumUser.accessToken}`)
 				.expect(201);
 
@@ -120,7 +120,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 
 			// When - 리소스 제한 조회
 			const limitResponse = await request(ctx.app.getHttpServer())
-				.get("/follows/resource-limit")
+				.get("/v1/follows/resource-limit")
 				.set("Authorization", `Bearer ${premiumUser.accessToken}`)
 				.expect(200);
 

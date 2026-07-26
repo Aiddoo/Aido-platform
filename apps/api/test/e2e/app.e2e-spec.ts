@@ -24,12 +24,12 @@ describe("앱 컨트롤러 E2E", () => {
 		await ctx.reset();
 	});
 
-	it("/ (GET)", () => {
+	it("운영과 동일하게 API는 /v1 아래에서만 노출한다", async () => {
 		// Given - 애플리케이션이 초기화된 상태
 
-		// When - 루트 경로 GET 요청
-		return request(ctx.app.getHttpServer())
-			.get("/")
+		// When - 운영 API prefix로 루트 경로 GET 요청
+		await request(ctx.app.getHttpServer())
+			.get("/v1")
 			.expect(200)
 			.expect((res) => {
 				// Then - 응답 검증
@@ -40,12 +40,15 @@ describe("앱 컨트롤러 E2E", () => {
 				});
 				expect(res.body.timestamp).toBeDefined();
 			});
+
+		// Then - E2E에서만 열렸던 무-prefix 경로는 노출되지 않는다
+		await request(ctx.app.getHttpServer()).get("/").expect(404);
 	});
 
 	it("CORS preflight가 X-Timezone 요청 헤더를 허용한다", async () => {
 		// When - 웹 클라이언트가 timezone 헤더를 포함한 preflight를 보내면
 		const response = await request(ctx.app.getHttpServer())
-			.options("/")
+			.options("/v1")
 			.set("Origin", "http://localhost:3000")
 			.set("Access-Control-Request-Method", "GET")
 			.set("Access-Control-Request-Headers", "x-timezone")

@@ -44,7 +44,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
 			// When - 3번째 카테고리 생성
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todo-categories")
+				.post("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "추가 카테고리", color: "#00FF00" })
 				.expect(201);
@@ -54,7 +54,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
 			// When - 4번째 카테고리 생성 시도
 			const overResponse = await request(ctx.app.getHttpServer())
-				.post("/todo-categories")
+				.post("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "초과 카테고리", color: "#0000FF" })
 				.expect(403);
@@ -65,7 +65,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
 			// When - 리소스 제한 조회
 			const limitResponse = await request(ctx.app.getHttpServer())
-				.get("/todo-categories/resource-limit")
+				.get("/v1/todo-categories/resource-limit")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -94,7 +94,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 			// When - 3개 추가 생성 (기본 2 + 추가 3 = 5개, Free 한도 초과)
 			for (let i = 1; i <= 3; i++) {
 				const response = await request(ctx.app.getHttpServer())
-					.post("/todo-categories")
+					.post("/v1/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: `프리미엄 카테고리 ${i}`, color: "#FF0000" })
 					.expect(201);
@@ -105,7 +105,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
 			// When - 리소스 제한 조회
 			const limitResponse = await request(ctx.app.getHttpServer())
-				.get("/todo-categories/resource-limit")
+				.get("/v1/todo-categories/resource-limit")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 

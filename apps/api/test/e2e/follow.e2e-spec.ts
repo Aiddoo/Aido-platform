@@ -52,7 +52,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 친구 요청 API 호출
 			const requestResponse = await request(ctx.app.getHttpServer())
-				.post(`/follows/${userB.userTag}`)
+				.post(`/v1/follows/${userB.userTag}`)
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(201);
 
@@ -64,7 +64,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 보낸 요청 목록 조회
 			const sentResponse = await request(ctx.app.getHttpServer())
-				.get("/follows/requests/sent")
+				.get("/v1/follows/requests/sent")
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(200);
 
@@ -76,7 +76,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 받은 요청 목록 조회
 			const receivedResponse = await request(ctx.app.getHttpServer())
-				.get("/follows/requests/received")
+				.get("/v1/follows/requests/received")
 				.set("Authorization", `Bearer ${userB.accessToken}`)
 				.expect(200);
 
@@ -88,7 +88,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 친구 요청 수락
 			const acceptResponse = await request(ctx.app.getHttpServer())
-				.patch(`/follows/${userA.userId}/accept`)
+				.patch(`/v1/follows/${userA.userId}/accept`)
 				.set("Authorization", `Bearer ${userB.accessToken}`)
 				.expect(200);
 
@@ -97,7 +97,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 수락 후 친구 목록 조회
 			const friendsResponse = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(200);
 
@@ -118,13 +118,13 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${userB.userTag}`)
+				.post(`/v1/follows/${userB.userTag}`)
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(201);
 
 			// When - 동일한 친구 요청 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/follows/${userB.userTag}`)
+				.post(`/v1/follows/${userB.userTag}`)
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(409);
 
@@ -142,7 +142,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 자기 자신에게 친구 요청 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/follows/${userA.userTag}`)
+				.post(`/v1/follows/${userA.userTag}`)
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(400);
 
@@ -161,7 +161,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 존재하지 않는 사용자에게 친구 요청 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/follows/${nonExistentUserTag}`)
+				.post(`/v1/follows/${nonExistentUserTag}`)
 				.set("Authorization", `Bearer ${userA.accessToken}`)
 				.expect(404);
 
@@ -179,7 +179,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 인증 없이 친구 요청 API 호출
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${userB.userTag}`)
+				.post(`/v1/follows/${userB.userTag}`)
 				.expect(401);
 
 			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -201,13 +201,13 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${userD.userTag}`)
+				.post(`/v1/follows/${userD.userTag}`)
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(201);
 
 			// When - 친구 요청 철회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.delete(`/follows/${userD.userId}`)
+				.delete(`/v1/follows/${userD.userId}`)
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(200);
 
@@ -215,7 +215,7 @@ describe("팔로우 E2E", () => {
 			expect(response.body.success).toBe(true);
 
 			const sentRequests = await request(ctx.app.getHttpServer())
-				.get("/follows/requests/sent")
+				.get("/v1/follows/requests/sent")
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(200);
 
@@ -241,13 +241,13 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${userF.userTag}`)
+				.post(`/v1/follows/${userF.userTag}`)
 				.set("Authorization", `Bearer ${userE.accessToken}`)
 				.expect(201);
 
 			// When - F가 친구 요청 거절 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/follows/${userE.userId}/reject`)
+				.patch(`/v1/follows/${userE.userId}/reject`)
 				.set("Authorization", `Bearer ${userF.accessToken}`)
 				.expect(200);
 
@@ -255,7 +255,7 @@ describe("팔로우 E2E", () => {
 			expect(response.body.success).toBe(true);
 
 			const receivedRequests = await request(ctx.app.getHttpServer())
-				.get("/follows/requests/received")
+				.get("/v1/follows/requests/received")
 				.set("Authorization", `Bearer ${userF.accessToken}`)
 				.expect(200);
 
@@ -281,13 +281,13 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${userH.userTag}`)
+				.post(`/v1/follows/${userH.userTag}`)
 				.set("Authorization", `Bearer ${userG.accessToken}`)
 				.expect(201);
 
 			// When - H가 G에게 친구 요청 API 호출 (자동 수락 예상)
 			const response = await request(ctx.app.getHttpServer())
-				.post(`/follows/${userG.userTag}`)
+				.post(`/v1/follows/${userG.userTag}`)
 				.set("Authorization", `Bearer ${userH.accessToken}`)
 				.expect(201);
 
@@ -297,12 +297,12 @@ describe("팔로우 E2E", () => {
 			expect(response.body.data.follow.status).toBe("ACCEPTED");
 
 			const gFriends = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.set("Authorization", `Bearer ${userG.accessToken}`)
 				.expect(200);
 
 			const hFriends = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.set("Authorization", `Bearer ${userH.accessToken}`)
 				.expect(200);
 
@@ -334,7 +334,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 친구 투두 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get(`/todos/friends/${userJ.userId}`)
+				.get(`/v1/todos/friends/${userJ.userId}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(403);
 
@@ -355,12 +355,12 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${userJ.userTag}`)
+				.post(`/v1/follows/${userJ.userTag}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${userI.userTag}`)
+				.post(`/v1/follows/${userI.userTag}`)
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.expect(201);
 
@@ -377,7 +377,7 @@ describe("팔로우 E2E", () => {
 			};
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.send({
 					title: "J의 공개 할 일",
@@ -388,7 +388,7 @@ describe("팔로우 E2E", () => {
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.send({
 					title: "J의 비공개 할 일",
@@ -400,7 +400,7 @@ describe("팔로우 E2E", () => {
 
 			// When - I가 J의 친구 투두 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get(`/todos/friends/${userJ.userId}`)
+				.get(`/v1/todos/friends/${userJ.userId}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(200);
 
@@ -433,19 +433,19 @@ describe("팔로우 E2E", () => {
 
 				// 상호 친구 요청 (자동 수락)
 				await request(ctx.app.getHttpServer())
-					.post(`/follows/${friend.userTag}`)
+					.post(`/v1/follows/${friend.userTag}`)
 					.set("Authorization", `Bearer ${mainUser.accessToken}`)
 					.expect(201);
 
 				await request(ctx.app.getHttpServer())
-					.post(`/follows/${mainUser.userTag}`)
+					.post(`/v1/follows/${mainUser.userTag}`)
 					.set("Authorization", `Bearer ${friend.accessToken}`)
 					.expect(201);
 			}
 
 			// When - limit을 3으로 설정하여 친구 목록 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.query({ limit: 3 })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
 				.expect(200);
@@ -462,7 +462,7 @@ describe("팔로우 E2E", () => {
 			expect(cursor).toBeDefined();
 
 			const secondPage = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.query({ limit: 3, cursor })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
 				.expect(200);
@@ -489,18 +489,18 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchFriend.userTag}`)
+				.post(`/v1/follows/${searchFriend.userTag}`)
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchUser.userTag}`)
+				.post(`/v1/follows/${searchUser.userTag}`)
 				.set("Authorization", `Bearer ${searchFriend.accessToken}`)
 				.expect(201);
 
 			// When - 친구 목록을 조회하여 userTag 획득
 			const allFriends = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
 
@@ -511,7 +511,7 @@ describe("팔로우 E2E", () => {
 
 			// When - userTag 일부로 검색 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.query({ search: searchTerm })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
@@ -537,18 +537,18 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchFriend.userTag}`)
+				.post(`/v1/follows/${searchFriend.userTag}`)
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchUser.userTag}`)
+				.post(`/v1/follows/${searchUser.userTag}`)
 				.set("Authorization", `Bearer ${searchFriend.accessToken}`)
 				.expect(201);
 
 			// 친구 목록 조회하여 userTag 획득
 			const allFriends = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
 
@@ -559,7 +559,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 소문자로 검색 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.query({ search: searchTerm })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
@@ -580,18 +580,18 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchFriend.userTag}`)
+				.post(`/v1/follows/${searchFriend.userTag}`)
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchUser.userTag}`)
+				.post(`/v1/follows/${searchUser.userTag}`)
 				.set("Authorization", `Bearer ${searchFriend.accessToken}`)
 				.expect(201);
 
 			// When - 존재하지 않는 태그로 검색 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.query({ search: "ZZZZZ999" })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
@@ -613,18 +613,18 @@ describe("팔로우 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchFriend.userTag}`)
+				.post(`/v1/follows/${searchFriend.userTag}`)
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post(`/follows/${searchUser.userTag}`)
+				.post(`/v1/follows/${searchUser.userTag}`)
 				.set("Authorization", `Bearer ${searchFriend.accessToken}`)
 				.expect(201);
 
 			// 친구 목록을 조회하여 검색어 획득
 			const allFriends = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
 
@@ -633,7 +633,7 @@ describe("팔로우 E2E", () => {
 
 			// When - 검색어와 limit을 함께 사용하여 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/follows/friends")
+				.get("/v1/follows/friends")
 				.query({ search: searchTerm, limit: 5 })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);

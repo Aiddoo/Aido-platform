@@ -6,7 +6,6 @@ describe("Trusted request identity E2E (real throttler, serialized)", () => {
 
 	beforeAll(async () => {
 		ctx = await createE2eApp({
-			withGlobalPrefix: true,
 			withRealThrottler: true,
 		});
 	}, 60000);

@@ -14,7 +14,7 @@
 ## Prerequisites
 
 - Docker 24+ / Docker Compose V2
-- Node.js 20+ / pnpm 10.29+
+- Node.js 22.x / pnpm 10.29+
 
 ---
 

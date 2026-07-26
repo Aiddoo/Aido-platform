@@ -29,12 +29,12 @@ describe("인증 세션 재시작 내구성 E2E", () => {
 
 		// Then
 		await request(ctx.app.getHttpServer())
-			.get("/auth/me")
+			.get("/v1/auth/me")
 			.set("Authorization", `Bearer ${tokens.accessToken}`)
 			.expect(200);
 
 		const refreshResponse = await request(ctx.app.getHttpServer())
-			.post("/auth/refresh")
+			.post("/v1/auth/refresh")
 			.set("Authorization", `Bearer ${tokens.refreshToken}`)
 			.expect(200);
 		expect(refreshResponse.body.data.accessToken).toBeDefined();

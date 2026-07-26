@@ -55,7 +55,7 @@ describe("관리자 E2E", () => {
 
 				// When - 브로드캐스트 알림 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/admin/notifications/broadcast")
+					.post("/v1/admin/notifications/broadcast")
 					.set("Authorization", `Bearer ${adminUser.accessToken}`)
 					.send({
 						title: "E2E 테스트 알림",
@@ -80,7 +80,7 @@ describe("관리자 E2E", () => {
 
 				// When - 일반 사용자가 브로드캐스트 알림 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/admin/notifications/broadcast")
+					.post("/v1/admin/notifications/broadcast")
 					.set("Authorization", `Bearer ${regularUser.accessToken}`)
 					.send({
 						title: "권한 없는 알림",
@@ -98,7 +98,7 @@ describe("관리자 E2E", () => {
 
 				// When - 인증 없이 브로드캐스트 알림 API 호출
 				await request(ctx.app.getHttpServer())
-					.post("/admin/notifications/broadcast")
+					.post("/v1/admin/notifications/broadcast")
 					.send({
 						title: "인증 없는 알림",
 						body: "이 요청은 실패해야 합니다",
@@ -124,7 +124,7 @@ describe("관리자 E2E", () => {
 
 				// When - 타겟 알림 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/admin/notifications/targeted")
+					.post("/v1/admin/notifications/targeted")
 					.set("Authorization", `Bearer ${adminUser.accessToken}`)
 					.send({
 						title: "타겟 알림 테스트",

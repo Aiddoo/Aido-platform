@@ -37,7 +37,7 @@ describe("사용자 검색 E2E", () => {
 
 	it("미인증 요청은 401을 반환한다", async () => {
 		await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: "김철수" })
 			.expect(401);
 	});
@@ -53,7 +53,7 @@ describe("사용자 검색 E2E", () => {
 		});
 
 		const response = await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: "김철수" })
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(200);
@@ -80,7 +80,7 @@ describe("사용자 검색 E2E", () => {
 		);
 
 		const response = await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: target.userTag })
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(200);
@@ -112,7 +112,7 @@ describe("사용자 검색 E2E", () => {
 		);
 
 		const response = await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: "홍길동" })
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(200);
@@ -139,12 +139,12 @@ describe("사용자 검색 E2E", () => {
 		);
 
 		await request(ctx.app.getHttpServer())
-			.post(`/follows/${target.userTag}`)
+			.post(`/v1/follows/${target.userTag}`)
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(201);
 
 		const response = await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: "요청대상자" })
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(200);
@@ -171,7 +171,7 @@ describe("사용자 검색 E2E", () => {
 		await ctx.helpers.createFriendship(me, friend);
 
 		const response = await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: "내친구야" })
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(200);
@@ -192,7 +192,7 @@ describe("사용자 검색 E2E", () => {
 		);
 
 		await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: "a" })
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(400);
@@ -215,7 +215,7 @@ describe("사용자 검색 E2E", () => {
 		});
 
 		const first = await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({ q: "페이지유저", limit: "2" })
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(200);
@@ -225,7 +225,7 @@ describe("사용자 검색 E2E", () => {
 		expect(first.body.data.nextCursor).not.toBeNull();
 
 		const second = await request(ctx.app.getHttpServer())
-			.get("/follows/search")
+			.get("/v1/follows/search")
 			.query({
 				q: "페이지유저",
 				limit: "2",

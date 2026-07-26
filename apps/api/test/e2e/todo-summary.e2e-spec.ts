@@ -86,7 +86,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 
 			// When
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos/summary")
+				.get("/v1/todos/summary")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", timezone);
 
@@ -132,7 +132,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 
 			// When
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos/summary")
+				.get("/v1/todos/summary")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", timezone);
 
@@ -170,7 +170,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 
 			// When
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos/summary")
+				.get("/v1/todos/summary")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", timezone);
 
@@ -200,7 +200,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 		it("인증 없이 호출하면 401을 반환한다", async () => {
 			// When
 			const response = await request(ctx.app.getHttpServer()).get(
-				"/todos/summary",
+				"/v1/todos/summary",
 			);
 
 			// Then
@@ -216,7 +216,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 
 			// When - :id 라우트였다면 "summary"가 숫자 파싱에 실패해 400이 됐을 것
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos/summary")
+				.get("/v1/todos/summary")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", timezone);
 

@@ -40,7 +40,7 @@ describe("할 일 E2E", () => {
 
 			// When - 필수 필드만으로 할 일 생성
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "테스트 할 일",
@@ -66,7 +66,7 @@ describe("할 일 E2E", () => {
 
 			// When - 모든 필드를 포함하여 할 일 생성
 			const createAllResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "운동하기",
@@ -92,7 +92,7 @@ describe("할 일 E2E", () => {
 
 			// When - 할 일 목록 조회
 			const listResponse = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -111,7 +111,7 @@ describe("할 일 E2E", () => {
 
 			// When - 할 일 상세 조회
 			const detailResponse = await request(ctx.app.getHttpServer())
-				.get(`/todos/${createdTodoId}`)
+				.get(`/v1/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -122,7 +122,7 @@ describe("할 일 E2E", () => {
 
 			// When - 제목 수정
 			const updateTitleResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${createdTodoId}`)
+				.patch(`/v1/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ title: "수정된 할 일" })
 				.expect(200);
@@ -135,7 +135,7 @@ describe("할 일 E2E", () => {
 
 			// When - 완료 처리
 			const completeResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${createdTodoId}`)
+				.patch(`/v1/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ completed: true })
 				.expect(200);
@@ -146,7 +146,7 @@ describe("할 일 E2E", () => {
 
 			// When - 완료 취소
 			const uncompleteResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${createdTodoId}`)
+				.patch(`/v1/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ completed: false })
 				.expect(200);
@@ -157,7 +157,7 @@ describe("할 일 E2E", () => {
 
 			// When - 여러 필드 동시 수정
 			const updateMultiResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${createdTodoId}`)
+				.patch(`/v1/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ title: "최종 수정된 제목" })
 				.expect(200);
@@ -167,7 +167,7 @@ describe("할 일 E2E", () => {
 
 			// When - 할 일 삭제
 			const deleteResponse = await request(ctx.app.getHttpServer())
-				.delete(`/todos/${createdTodoId}`)
+				.delete(`/v1/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -176,7 +176,7 @@ describe("할 일 E2E", () => {
 
 			// 삭제 확인
 			await request(ctx.app.getHttpServer())
-				.get(`/todos/${createdTodoId}`)
+				.get(`/v1/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(404);
 		});
@@ -193,7 +193,7 @@ describe("할 일 E2E", () => {
 
 			// When - 인증 없이 할 일 생성 API 호출
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.send({
 					title: "테스트",
 					categoryId,
@@ -213,7 +213,7 @@ describe("할 일 E2E", () => {
 
 			// When - categoryId 없이 할 일 생성 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "테스트 할 일",
@@ -237,7 +237,7 @@ describe("할 일 E2E", () => {
 
 			// When - title 없이 할 일 생성 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					categoryId,
@@ -260,7 +260,7 @@ describe("할 일 E2E", () => {
 
 			// When - 잘못된 날짜로 할 일 생성 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "테스트",
@@ -282,7 +282,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 카테고리로 할 일 생성 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "테스트",
@@ -306,20 +306,20 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트 1", categoryId, startDate: "2024-01-15" })
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트 2", categoryId, startDate: "2024-01-15" })
 				.expect(201);
 
 			// When - size 파라미터로 할 일 목록 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ size: 1 })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -340,14 +340,14 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "미완료 할 일", categoryId, startDate: "2024-01-15" })
 				.expect(201);
 
 			// When - completed=false로 할 일 목록 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ completed: false })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -369,14 +369,14 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "1월 할 일", categoryId, startDate: "2024-01-15" })
 				.expect(201);
 
 			// When - 날짜 범위로 할 일 목록 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-01-01", endDate: "2024-01-31" })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -396,7 +396,7 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "다중일 할 일",
@@ -408,7 +408,7 @@ describe("할 일 E2E", () => {
 
 			// When - 1/18로 필터
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-01-18", endDate: "2024-01-18" })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -429,20 +429,20 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "2월1일 단건", categoryId, startDate: "2024-02-01" })
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "2월2일 단건", categoryId, startDate: "2024-02-02" })
 				.expect(201);
 
 			// When - 2월 1일만 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-02-01", endDate: "2024-02-01" })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -464,26 +464,26 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "2월2일 포함", categoryId, startDate: "2024-02-02" })
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "2월3일 포함", categoryId, startDate: "2024-02-03" })
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "2월4일 제외", categoryId, startDate: "2024-02-04" })
 				.expect(201);
 
 			// When - 2월 2일~3일 기간 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-02-02", endDate: "2024-02-03" })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -506,7 +506,7 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "카테고리 필터 테스트",
@@ -517,7 +517,7 @@ describe("할 일 E2E", () => {
 
 			// When - categoryId로 할 일 목록 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ categoryId })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -532,7 +532,7 @@ describe("할 일 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 인증 없이 할 일 목록 조회 API 호출
-			await request(ctx.app.getHttpServer()).get("/todos").expect(401);
+			await request(ctx.app.getHttpServer()).get("/v1/todos").expect(401);
 
 			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 		});
@@ -546,7 +546,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 ID로 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos/999999")
+				.get("/v1/todos/999999")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(404);
 
@@ -564,7 +564,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 ID로 수정 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch("/todos/999999")
+				.patch("/v1/todos/999999")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "수정" })
 				.expect(404);
@@ -582,7 +582,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 ID로 삭제 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.delete("/todos/999999")
+				.delete("/v1/todos/999999")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(404);
 
@@ -605,7 +605,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "완료 테스트용 할 일",
@@ -617,7 +617,7 @@ describe("할 일 E2E", () => {
 
 			// When - 완료 처리
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/complete`)
+				.patch(`/v1/todos/${todoId}/complete`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: true })
 				.expect(200);
@@ -638,7 +638,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "완료 취소 테스트용",
@@ -650,14 +650,14 @@ describe("할 일 E2E", () => {
 
 			// 먼저 완료 처리
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/complete`)
+				.patch(`/v1/todos/${todoId}/complete`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: true })
 				.expect(200);
 
 			// When - 미완료 처리
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/complete`)
+				.patch(`/v1/todos/${todoId}/complete`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: false })
 				.expect(200);
@@ -676,7 +676,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 ID로 완료 처리 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch("/todos/999999/complete")
+				.patch("/v1/todos/999999/complete")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: true })
 				.expect(404);
@@ -696,7 +696,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -704,7 +704,7 @@ describe("할 일 E2E", () => {
 
 			// When - completed 필드 없이 완료 처리 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/complete`)
+				.patch(`/v1/todos/${todoId}/complete`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({})
 				.expect(400);
@@ -727,7 +727,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "공개 범위 테스트",
@@ -740,7 +740,7 @@ describe("할 일 E2E", () => {
 
 			// When - PRIVATE으로 변경
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/visibility`)
+				.patch(`/v1/todos/${todoId}/visibility`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ visibility: "PRIVATE" })
 				.expect(200);
@@ -760,7 +760,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "비공개 할 일",
@@ -773,7 +773,7 @@ describe("할 일 E2E", () => {
 
 			// When - PUBLIC으로 변경
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/visibility`)
+				.patch(`/v1/todos/${todoId}/visibility`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ visibility: "PUBLIC" })
 				.expect(200);
@@ -793,7 +793,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -801,7 +801,7 @@ describe("할 일 E2E", () => {
 
 			// When - 잘못된 visibility 값으로 변경 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/visibility`)
+				.patch(`/v1/todos/${todoId}/visibility`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ visibility: "INVALID" })
 				.expect(400);
@@ -824,14 +824,14 @@ describe("할 일 E2E", () => {
 			);
 
 			const catResponse = await request(ctx.app.getHttpServer())
-				.post("/todo-categories")
+				.post("/v1/todo-categories")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ name: "새 카테고리", color: "#00FF00" })
 				.expect(201);
 			const secondCategoryId = catResponse.body.data.category.id;
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "카테고리 변경 테스트",
@@ -843,7 +843,7 @@ describe("할 일 E2E", () => {
 
 			// When - 카테고리 변경 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/category`)
+				.patch(`/v1/todos/${todoId}/category`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ categoryId: secondCategoryId })
 				.expect(200);
@@ -863,7 +863,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -871,7 +871,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 카테고리로 변경 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/category`)
+				.patch(`/v1/todos/${todoId}/category`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ categoryId: 999999 })
 				.expect(404);
@@ -895,7 +895,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "일정 테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -903,7 +903,7 @@ describe("할 일 E2E", () => {
 
 			// When - 종일 일정으로 변경 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/schedule`)
+				.patch(`/v1/todos/${todoId}/schedule`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					startDate: "2024-02-01",
@@ -929,7 +929,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "시간 테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -937,7 +937,7 @@ describe("할 일 E2E", () => {
 
 			// When - 시간 지정 일정으로 변경 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/schedule`)
+				.patch(`/v1/todos/${todoId}/schedule`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					startDate: "2024-02-15",
@@ -963,7 +963,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -971,7 +971,7 @@ describe("할 일 E2E", () => {
 
 			// When - startDate 없이 일정 변경 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/schedule`)
+				.patch(`/v1/todos/${todoId}/schedule`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ endDate: "2024-02-01" })
 				.expect(400);
@@ -990,7 +990,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -998,7 +998,7 @@ describe("할 일 E2E", () => {
 
 			// When - endDate < startDate로 일정 변경 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/schedule`)
+				.patch(`/v1/todos/${todoId}/schedule`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ startDate: "2024-02-15", endDate: "2024-02-10" })
 				.expect(400);
@@ -1021,7 +1021,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "원래 제목", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -1029,7 +1029,7 @@ describe("할 일 E2E", () => {
 
 			// When - 제목 수정 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/title`)
+				.patch(`/v1/todos/${todoId}/title`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "SRP로 수정된 제목" })
 				.expect(200);
@@ -1049,7 +1049,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -1057,7 +1057,7 @@ describe("할 일 E2E", () => {
 
 			// When - 빈 요청으로 수정 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/title`)
+				.patch(`/v1/todos/${todoId}/title`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({})
 				.expect(400);
@@ -1076,7 +1076,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
 				.expect(201);
@@ -1084,7 +1084,7 @@ describe("할 일 E2E", () => {
 
 			// When - 긴 제목으로 수정 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/title`)
+				.patch(`/v1/todos/${todoId}/title`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "a".repeat(201) })
 				.expect(400);
@@ -1107,21 +1107,21 @@ describe("할 일 E2E", () => {
 			);
 
 			const res1 = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "순서 테스트 1", categoryId, startDate: "2024-03-01" })
 				.expect(201);
 			const todo1Id = res1.body.data.todo.id;
 
 			const res2 = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "순서 테스트 2", categoryId, startDate: "2024-03-01" })
 				.expect(201);
 			const todo2Id = res2.body.data.todo.id;
 
 			const res3 = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "순서 테스트 3", categoryId, startDate: "2024-03-01" })
 				.expect(201);
@@ -1129,7 +1129,7 @@ describe("할 일 E2E", () => {
 
 			// When - todo3를 todo1 앞으로 이동 (before)
 			const beforeResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todo3Id}/reorder`)
+				.patch(`/v1/todos/${todo3Id}/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ targetTodoId: todo1Id, position: "before" })
 				.expect(200);
@@ -1142,7 +1142,7 @@ describe("할 일 E2E", () => {
 
 			// When - todo1을 todo2 뒤로 이동 (after)
 			const afterResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todo1Id}/reorder`)
+				.patch(`/v1/todos/${todo1Id}/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ targetTodoId: todo2Id, position: "after" })
 				.expect(200);
@@ -1152,7 +1152,7 @@ describe("할 일 E2E", () => {
 
 			// When - todo2를 맨 앞으로 이동 (targetTodoId 없이 before)
 			const firstResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todo2Id}/reorder`)
+				.patch(`/v1/todos/${todo2Id}/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ position: "before" })
 				.expect(200);
@@ -1172,7 +1172,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const res = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "순서 테스트", categoryId, startDate: "2024-03-01" })
 				.expect(201);
@@ -1180,7 +1180,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 Todo로 이동 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/reorder`)
+				.patch(`/v1/todos/${todoId}/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ targetTodoId: 999999, position: "before" })
 				.expect(404);
@@ -1208,7 +1208,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user1.accessToken}`)
 				.send({
 					title: "User1의 할 일",
@@ -1220,14 +1220,14 @@ describe("할 일 E2E", () => {
 
 			// When/Then - 다른 사용자의 할 일 조회 시 404 에러
 			const getResponse = await request(ctx.app.getHttpServer())
-				.get(`/todos/${user1TodoId}`)
+				.get(`/v1/todos/${user1TodoId}`)
 				.set("Authorization", `Bearer ${user2.accessToken}`)
 				.expect(404);
 			expect(getResponse.body.error.code).toBe("TODO_0801");
 
 			// When/Then - 다른 사용자의 할 일 수정 시 404 에러
 			const patchResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${user1TodoId}`)
+				.patch(`/v1/todos/${user1TodoId}`)
 				.set("Authorization", `Bearer ${user2.accessToken}`)
 				.send({ title: "해킹 시도" })
 				.expect(404);
@@ -1235,7 +1235,7 @@ describe("할 일 E2E", () => {
 
 			// When/Then - 다른 사용자의 할 일 삭제 시 404 에러
 			const deleteResponse = await request(ctx.app.getHttpServer())
-				.delete(`/todos/${user1TodoId}`)
+				.delete(`/v1/todos/${user1TodoId}`)
 				.set("Authorization", `Bearer ${user2.accessToken}`)
 				.expect(404);
 			expect(deleteResponse.body.error.code).toBe("TODO_0801");
@@ -1259,7 +1259,7 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user1.accessToken}`)
 				.send({
 					title: "User1의 할 일",
@@ -1269,7 +1269,7 @@ describe("할 일 E2E", () => {
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user2.accessToken}`)
 				.send({
 					title: "User2의 할 일",
@@ -1280,13 +1280,13 @@ describe("할 일 E2E", () => {
 
 			// When - user1의 목록 조회
 			const user1List = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.set("Authorization", `Bearer ${user1.accessToken}`)
 				.expect(200);
 
 			// When - user2의 목록 조회
 			const user2List = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.set("Authorization", `Bearer ${user2.accessToken}`)
 				.expect(200);
 
@@ -1316,7 +1316,7 @@ describe("할 일 E2E", () => {
 
 			for (let i = 0; i < 10; i++) {
 				await request(ctx.app.getHttpServer())
-					.post("/todos")
+					.post("/v1/todos")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						title: `페이지네이션 테스트 ${i + 1}`,
@@ -1328,7 +1328,7 @@ describe("할 일 E2E", () => {
 
 			// When - 첫 페이지 조회 (5개)
 			const page1 = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ size: 5 })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -1340,7 +1340,7 @@ describe("할 일 E2E", () => {
 
 			// When - 두 번째 페이지 조회
 			const page2 = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ size: 5, cursor: page1.body.data.pagination.nextCursor })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -1372,7 +1372,7 @@ describe("할 일 E2E", () => {
 
 			// When - 긴 제목으로 할 일 생성 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "a".repeat(201), categoryId, startDate: "2024-01-15" })
 				.expect(400);
@@ -1393,7 +1393,7 @@ describe("할 일 E2E", () => {
 
 			// When - 잘못된 visibility로 할 일 생성 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "테스트",
@@ -1419,7 +1419,7 @@ describe("할 일 E2E", () => {
 
 			// When - 잘못된 시간으로 할 일 생성 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "테스트",
@@ -1449,7 +1449,7 @@ describe("할 일 E2E", () => {
 
 			// When - 반복 할 일 생성 API 호출 (2026-03-02~2026-03-08, 월수금)
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos/recurring")
+				.post("/v1/todos/recurring")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "반복 할 일 테스트",
@@ -1479,7 +1479,7 @@ describe("할 일 E2E", () => {
 
 			// When - 생성된 반복 할 일이 GET /todos로 조회
 			const listResponse = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2026-03-02", endDate: "2026-03-08" })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -1495,20 +1495,20 @@ describe("할 일 E2E", () => {
 			const secondTodoId = recurringTodos[1].id;
 
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${firstTodoId}/complete`)
+				.patch(`/v1/todos/${firstTodoId}/complete`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: true })
 				.expect(200);
 
 			// Then - 첫 번째만 완료, 나머지는 미완료
 			const firstTodo = await request(ctx.app.getHttpServer())
-				.get(`/todos/${firstTodoId}`)
+				.get(`/v1/todos/${firstTodoId}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 			expect(firstTodo.body.data.completed).toBe(true);
 
 			const secondTodo = await request(ctx.app.getHttpServer())
-				.get(`/todos/${secondTodoId}`)
+				.get(`/v1/todos/${secondTodoId}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 			expect(secondTodo.body.data.completed).toBe(false);
@@ -1526,7 +1526,7 @@ describe("할 일 E2E", () => {
 
 			// When - 잘못된 요일로 반복 할 일 생성
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos/recurring")
+				.post("/v1/todos/recurring")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "잘못된 요일",
@@ -1553,7 +1553,7 @@ describe("할 일 E2E", () => {
 
 			// When - 잘못된 날짜 범위로 반복 할 일 생성
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos/recurring")
+				.post("/v1/todos/recurring")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "잘못된 범위",
@@ -1573,7 +1573,7 @@ describe("할 일 E2E", () => {
 
 			// When - 인증 없이 반복 할 일 생성
 			await request(ctx.app.getHttpServer())
-				.post("/todos/recurring")
+				.post("/v1/todos/recurring")
 				.send({
 					title: "인증 없음",
 					categoryId: 1,
@@ -1599,7 +1599,7 @@ describe("할 일 E2E", () => {
 			const accessToken = user.accessToken;
 
 			const catResponse = await request(ctx.app.getHttpServer())
-				.get("/todo-categories")
+				.get("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -1608,7 +1608,7 @@ describe("할 일 E2E", () => {
 			const category2Id = defaultCategories[1].id;
 
 			const cat3Response = await request(ctx.app.getHttpServer())
-				.post("/todo-categories")
+				.post("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "공부", color: "#0000FF" })
 				.expect(201);
@@ -1616,7 +1616,7 @@ describe("할 일 E2E", () => {
 
 			// 카테고리별 할 일 생성
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "공부-할일1",
@@ -1626,7 +1626,7 @@ describe("할 일 E2E", () => {
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "공부-할일2",
@@ -1636,7 +1636,7 @@ describe("할 일 E2E", () => {
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "중요-할일1",
@@ -1646,7 +1646,7 @@ describe("할 일 E2E", () => {
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "중요-할일2",
@@ -1656,7 +1656,7 @@ describe("할 일 E2E", () => {
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "할일-할일1",
@@ -1667,7 +1667,7 @@ describe("할 일 E2E", () => {
 
 			// When - 할 일 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-06-01", endDate: "2024-06-01" })
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
@@ -1697,14 +1697,14 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트", categoryId, startDate: "2024-06-01" })
 				.expect(201);
 
 			// When - 할 일 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-06-01", endDate: "2024-06-01" })
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -1724,7 +1724,7 @@ describe("할 일 E2E", () => {
 			const accessToken = user.accessToken;
 
 			const catResponse = await request(ctx.app.getHttpServer())
-				.get("/todo-categories")
+				.get("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -1732,7 +1732,7 @@ describe("할 일 E2E", () => {
 			const category2Id = catResponse.body.data.items[1].id;
 
 			await request(ctx.app.getHttpServer())
-				.post("/todo-categories")
+				.post("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "공부", color: "#0000FF" })
 				.expect(201);
@@ -1740,7 +1740,7 @@ describe("할 일 E2E", () => {
 			// 5개의 할 일 생성
 			for (let i = 0; i < 3; i++) {
 				await request(ctx.app.getHttpServer())
-					.post("/todos")
+					.post("/v1/todos")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: `할일 ${i}`,
@@ -1751,7 +1751,7 @@ describe("할 일 E2E", () => {
 			}
 			for (let i = 0; i < 2; i++) {
 				await request(ctx.app.getHttpServer())
-					.post("/todos")
+					.post("/v1/todos")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: `할일 ${i + 3}`,
@@ -1763,7 +1763,7 @@ describe("할 일 E2E", () => {
 
 			// When - 첫 페이지 (3개)
 			const page1 = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-06-01", endDate: "2024-06-01", size: 3 })
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
@@ -1774,7 +1774,7 @@ describe("할 일 E2E", () => {
 
 			// When - 두 번째 페이지
 			const page2 = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({
 					startDate: "2024-06-01",
 					endDate: "2024-06-01",
@@ -1801,21 +1801,21 @@ describe("할 일 E2E", () => {
 			const accessToken = user.accessToken;
 
 			const catResponse = await request(ctx.app.getHttpServer())
-				.get("/todo-categories")
+				.get("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
 			const category1Id = catResponse.body.data.items[0].id;
 
 			const cat3Response = await request(ctx.app.getHttpServer())
-				.post("/todo-categories")
+				.post("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "공부", color: "#0000FF" })
 				.expect(201);
 			const category3Id = cat3Response.body.data.category.id;
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "공부-할일",
@@ -1825,7 +1825,7 @@ describe("할 일 E2E", () => {
 				.expect(201);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "중요-할일",
@@ -1836,14 +1836,14 @@ describe("할 일 E2E", () => {
 
 			// When - 카테고리3(공부)를 카테고리1(중요한 일) 앞으로 이동
 			await request(ctx.app.getHttpServer())
-				.patch(`/todo-categories/${category3Id}/reorder`)
+				.patch(`/v1/todo-categories/${category3Id}/reorder`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ targetCategoryId: category1Id, position: "before" })
 				.expect(200);
 
 			// When - 할 일 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.query({ startDate: "2024-06-01", endDate: "2024-06-01" })
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
@@ -1878,7 +1878,7 @@ describe("할 일 E2E", () => {
 
 			// When - items 배열과 함께 할 일 생성
 			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "배포 준비",
@@ -1901,7 +1901,7 @@ describe("할 일 E2E", () => {
 
 			// When - items 없이 생성 시
 			const noItemsResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "items 없는 할 일",
@@ -1919,7 +1919,7 @@ describe("할 일 E2E", () => {
 
 			// Given - 부모 Todo 생성
 			const parentRes = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ title: "부모 할 일", categoryId, startDate: "2024-06-01" })
 				.expect(201);
@@ -1927,7 +1927,7 @@ describe("할 일 E2E", () => {
 
 			// When - 하위 항목 추가
 			const addResponse = await request(ctx.app.getHttpServer())
-				.post(`/todos/${parentTodoId}/items`)
+				.post(`/v1/todos/${parentTodoId}/items`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ title: "새 하위 항목" })
 				.expect(201);
@@ -1942,7 +1942,7 @@ describe("할 일 E2E", () => {
 
 			// When - 하위 항목 추가 (토글 테스트용)
 			const toggleAddRes = await request(ctx.app.getHttpServer())
-				.post(`/todos/${parentTodoId}/items`)
+				.post(`/v1/todos/${parentTodoId}/items`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ title: "토글 테스트" })
 				.expect(201);
@@ -1952,7 +1952,7 @@ describe("할 일 E2E", () => {
 
 			// When - 하위 항목 완료 토글
 			const toggleResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${parentTodoId}/items/${toggleItemId}`)
+				.patch(`/v1/todos/${parentTodoId}/items/${toggleItemId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ completed: true })
 				.expect(200);
@@ -1968,7 +1968,7 @@ describe("할 일 E2E", () => {
 
 			// When - 하위 항목 추가 (삭제 테스트용)
 			const deleteAddRes = await request(ctx.app.getHttpServer())
-				.post(`/todos/${parentTodoId}/items`)
+				.post(`/v1/todos/${parentTodoId}/items`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ title: "삭제할 항목" })
 				.expect(201);
@@ -1980,7 +1980,7 @@ describe("할 일 E2E", () => {
 
 			// When - 하위 항목 삭제
 			const deleteResponse = await request(ctx.app.getHttpServer())
-				.delete(`/todos/${parentTodoId}/items/${deleteItemId}`)
+				.delete(`/v1/todos/${parentTodoId}/items/${deleteItemId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -2004,7 +2004,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 Todo에 하위 항목 추가 시도
 			await request(ctx.app.getHttpServer())
-				.post("/todos/999999/items")
+				.post("/v1/todos/999999/items")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "테스트 항목" })
 				.expect(404);
@@ -2023,7 +2023,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const parentRes = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "부모", categoryId, startDate: "2024-06-01" })
 				.expect(201);
@@ -2031,7 +2031,7 @@ describe("할 일 E2E", () => {
 
 			// When - 빈 제목으로 하위 항목 추가 시도
 			await request(ctx.app.getHttpServer())
-				.post(`/todos/${parentTodoId}/items`)
+				.post(`/v1/todos/${parentTodoId}/items`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "" })
 				.expect(400);
@@ -2044,7 +2044,7 @@ describe("할 일 E2E", () => {
 
 			// When - 인증 없이 하위 항목 추가 시도
 			await request(ctx.app.getHttpServer())
-				.post("/todos/1/items")
+				.post("/v1/todos/1/items")
 				.send({ title: "테스트 항목" })
 				.expect(401);
 
@@ -2062,7 +2062,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const parentRes = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "부모", categoryId, startDate: "2024-06-01" })
 				.expect(201);
@@ -2070,7 +2070,7 @@ describe("할 일 E2E", () => {
 
 			// When - 존재하지 않는 하위 항목 수정 시도
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${parentTodoId}/items/999999`)
+				.patch(`/v1/todos/${parentTodoId}/items/999999`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: true })
 				.expect(404);
@@ -2089,7 +2089,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createRes = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "순서 테스트",
@@ -2110,7 +2110,7 @@ describe("할 일 E2E", () => {
 			// When - 역순으로 재정렬
 			const reversedIds = [...itemIds].reverse();
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/items/reorder`)
+				.patch(`/v1/todos/${todoId}/items/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ itemIds: reversedIds })
 				.expect(200);
@@ -2133,7 +2133,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createRes = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "부분 순서 테스트",
@@ -2149,7 +2149,7 @@ describe("할 일 E2E", () => {
 
 			// When - 일부 ID만 전달
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/items/reorder`)
+				.patch(`/v1/todos/${todoId}/items/reorder`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ itemIds: [itemIds[0]] })
 				.expect(400);
@@ -2168,7 +2168,7 @@ describe("할 일 E2E", () => {
 			);
 
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "항목 있는 할 일",
@@ -2180,7 +2180,7 @@ describe("할 일 E2E", () => {
 
 			// When - 할 일 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/todos")
+				.get("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
@@ -2205,7 +2205,7 @@ describe("할 일 E2E", () => {
 			);
 
 			const createRes = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					title: "완료 독립성 테스트",
@@ -2219,14 +2219,14 @@ describe("할 일 E2E", () => {
 
 			// 첫 번째 항목만 완료 처리
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/items/${firstItemId}`)
+				.patch(`/v1/todos/${todoId}/items/${firstItemId}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: true })
 				.expect(200);
 
 			// When - 부모 Todo 완료 처리
 			const completeRes = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/complete`)
+				.patch(`/v1/todos/${todoId}/complete`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ completed: true })
 				.expect(200);
