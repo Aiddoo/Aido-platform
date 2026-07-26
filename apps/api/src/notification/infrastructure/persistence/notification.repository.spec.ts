@@ -764,6 +764,19 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 		});
 	});
 
+	describe("markPushDispatchSkipped", () => {
+		it("dispatch를 stable skip reason과 함께 SKIPPED로 기록한다", async () => {
+			asMock(db.pushDispatch.update).mockResolvedValue({ id: 41 });
+
+			await repository.markPushDispatchSkipped(41, "NO_ACTIVE_TOKEN");
+
+			expect(db.pushDispatch.update).toHaveBeenCalledWith({
+				where: { id: 41 },
+				data: { status: "SKIPPED", skipReason: "NO_ACTIVE_TOKEN" },
+			});
+		});
+	});
+
 	describe("findPushTokenByToken", () => {
 		it("토큰 값으로 푸시 토큰을 조회해야 한다", async () => {
 			// Given

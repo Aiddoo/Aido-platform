@@ -5,7 +5,10 @@ import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { toInputJson } from "@/shared/infrastructure/database/json.util";
-import type { NotificationRepositoryPort } from "../../application/ports/notification.repository.port";
+import type {
+	NotificationRepositoryPort,
+	PushDispatchSkipReason,
+} from "../../application/ports/notification.repository.port";
 import type {
 	CreateNotificationData,
 	FindNotificationsParams,
@@ -395,6 +398,16 @@ export class NotificationRepository implements NotificationRepositoryPort {
 			create: { ...input, status: "PROCESSING" },
 			update: { status: "PROCESSING", skipReason: null },
 			select: { id: true },
+		});
+	}
+
+	async markPushDispatchSkipped(
+		dispatchId: number,
+		reason: PushDispatchSkipReason,
+	): Promise<void> {
+		await this.client.pushDispatch.update({
+			where: { id: dispatchId },
+			data: { status: "SKIPPED", skipReason: reason },
 		});
 	}
 

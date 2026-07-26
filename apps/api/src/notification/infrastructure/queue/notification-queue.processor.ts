@@ -333,7 +333,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 		try {
 			const today = todayInTimezone(data.timezone);
 
-			await this.uow.run(async () => {
+			const persisted = await this.uow.run(async () => {
 				const alreadyNotified =
 					await this.notification.findAlreadyNotifiedUserIds({
 						userIds: data.notifyUserIds,
@@ -350,7 +350,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 					this.#logger.debug(
 						`Friend completion already sent today: friendId=${data.friendId}`,
 					);
-					return;
+					return null;
 				}
 
 				// 수신자별 푸시 언어로 메시지 생성 (로케일별 1회 조립)
@@ -386,12 +386,17 @@ export class NotificationQueueProcessor implements OnModuleInit {
 					};
 				});
 
-				await this.notification.createAndSendBatch(notifications);
-
-				this.#logger.log(
-					`Friend completion notifications sent: friendId=${data.friendId}, count=${newUserIds.length}`,
-				);
+				return this.notification.persistBatch(notifications);
 			});
+			if (!persisted) return;
+
+			this.#logger.log(
+				`Friend completion notifications persisted: friendId=${data.friendId}, count=${persisted.count}`,
+			);
+			this.notification.dispatchPersistedBatch(persisted);
+			this.#logger.debug(
+				`Friend completion push delivery scheduled: friendId=${data.friendId}, count=${persisted.count}`,
+			);
 		} catch (error) {
 			if (
 				error instanceof Prisma.PrismaClientKnownRequestError &&

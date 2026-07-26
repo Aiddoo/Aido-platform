@@ -30,9 +30,13 @@ import {
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
+	type PushDispatchSkipReason,
 } from "../../application/ports/notification.repository.port";
 import type { CreateNotificationData } from "../../application/ports/notification-data";
-import type { PushDispatcherPort } from "../../application/ports/push-dispatcher.port";
+import type {
+	BatchPushDispatchItem,
+	PushDispatcherPort,
+} from "../../application/ports/push-dispatcher.port";
 import {
 	type BatchPushResult,
 	PUSH_PROVIDER,
@@ -49,6 +53,11 @@ import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "../../application/ports/user-notification-settings.port";
+import type { PushTokenRecord } from "../../domain/records/notification.record";
+import {
+	FEATURE_DISCOVERY_CAMPAIGN_KEY,
+	supportsFeatureDiscoveryMarketing,
+} from "../../domain/services/feature-marketing-capability";
 import { isNightTime } from "../../domain/services/night-time";
 import {
 	isAutomatedEngagementNotification,
@@ -122,18 +131,43 @@ export class PushDispatcherAdapter
 			timezone,
 			localDate,
 		});
-		const result = await this.#sendPushToUser(data.userId, {
-			title: data.title,
-			body: data.body,
-			data: {
-				...this.#buildPushPayloadData(data, notificationId),
-				dispatchId: dispatch.id,
+		const skipReason = await this.#singleEligibilitySkipReason(
+			data,
+			preference,
+		);
+		if (skipReason) {
+			await this.notificationRepository.markPushDispatchSkipped(
+				dispatch.id,
+				skipReason,
+			);
+			return;
+		}
+
+		const tokenResolution = await this.#resolveTokensForData(data);
+		if (tokenResolution.skipReason) {
+			await this.notificationRepository.markPushDispatchSkipped(
+				dispatch.id,
+				tokenResolution.skipReason,
+			);
+			return;
+		}
+
+		const result = await this.#sendPushToUser(
+			data.userId,
+			tokenResolution.tokens,
+			{
+				title: data.title,
+				body: data.body,
+				data: {
+					...this.#buildPushPayloadData(data, notificationId),
+					dispatchId: dispatch.id,
+				},
+				...((data.purpose === "ENGAGEMENT" ||
+					isMarketingNotification(data.type)) && {
+					categoryId: "MARKETING",
+				}),
 			},
-			...((data.purpose === "ENGAGEMENT" ||
-				isMarketingNotification(data.type)) && {
-				categoryId: "MARKETING",
-			}),
-		});
+		);
 		await this.notificationRepository.recordPushDeliveryResults(
 			dispatch.id,
 			result.results,
@@ -145,9 +179,7 @@ export class PushDispatcherAdapter
 	 *
 	 * N+1 쿼리 최적화: 사용자별 설정을 배치로 한 번에 조회
 	 */
-	fireAndForgetBatchPush(
-		items: Array<{ data: CreateNotificationData; notificationId: number }>,
-	): void {
+	fireAndForgetBatchPush(items: BatchPushDispatchItem[]): void {
 		const pushPromise = this.#sendBatchPush(items).catch((error) => {
 			this.#logger.error(
 				`Failed to send batch push notifications: error=${error}`,
@@ -156,9 +188,7 @@ export class PushDispatcherAdapter
 		this.#trackPush(pushPromise);
 	}
 
-	async #sendBatchPush(
-		items: Array<{ data: CreateNotificationData; notificationId: number }>,
-	): Promise<void> {
+	async #sendBatchPush(items: BatchPushDispatchItem[]): Promise<void> {
 		const dataList = items.map((item) => item.data);
 		const userIds = [...new Set(dataList.map((d) => d.userId))];
 
@@ -170,58 +200,8 @@ export class PushDispatcherAdapter
 		const prefMap = new Map(preferences.map((p) => [p.userId, p]));
 		const consentMap = new Map(consents.map((c) => [c.userId, c]));
 
-		const settingsEligibleItems: typeof items = [];
-		for (const item of items) {
-			const { data } = item;
-			// 관리자 강제 발송(force)은 수신 설정·야간·설정 행 부재를 우회한다.
-			// 마케팅성 알림은 수신 동의가 법적 요건이므로 강제 대상에서 제외.
-			const forced =
-				data.force === true &&
-				data.purpose !== "ENGAGEMENT" &&
-				!isMarketingNotification(data.type);
-			const shouldSend =
-				forced ||
-				this.#passesCachedSettings(
-					data.type,
-					data.purpose,
-					prefMap.get(data.userId),
-					consentMap.get(data.userId),
-				);
-			if (shouldSend) {
-				settingsEligibleItems.push(item);
-			} else {
-				this.#logger.debug(
-					`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
-				);
-			}
-		}
-
-		if (settingsEligibleItems.length === 0) {
-			return;
-		}
-
-		const rateLimitRequests = settingsEligibleItems.map(({ data }) =>
-			this.#buildRateLimitRequest(data, prefMap.get(data.userId)?.timezone),
-		);
-		const limited = await this.rateLimiter.reserveBatch(rateLimitRequests);
-		const eligibleItems = settingsEligibleItems.filter((item, index) => {
-			const isLimited = limited[index] ?? false;
-			if (isLimited) {
-				this.#logger.debug(
-					`Push rate limited: userId=${item.data.userId}, type=${item.data.type}`,
-				);
-			}
-			return !isLimited;
-		});
-
-		if (eligibleItems.length === 0) return;
-
-		const eligibleUserIds = [
-			...new Set(eligibleItems.map((item) => item.data.userId)),
-		];
-
 		const dispatchItems = await Promise.all(
-			eligibleItems.map(async (item) => {
+			items.map(async (item) => {
 				const preference = prefMap.get(item.data.userId);
 				const timezone = resolveDeliveryTimezone(preference?.timezone);
 				const dispatch = await this.notificationRepository.createPushDispatch({
@@ -237,24 +217,81 @@ export class PushDispatcherAdapter
 			}),
 		);
 
-		const resultsByDispatch = await this.#sendPushToUsers(
-			eligibleUserIds,
-			dispatchItems.map(({ data: d, notificationId, dispatchId }) => ({
-				userId: d.userId,
-				dispatchId,
-				title: d.title,
-				body: d.body,
-				data: {
-					...this.#buildPushPayloadData(d, notificationId),
-					dispatchId,
-				},
-				...((d.purpose === "ENGAGEMENT" || isMarketingNotification(d.type)) && {
-					categoryId: "MARKETING",
-				}),
-			})),
+		const settingsEligibleItems: typeof dispatchItems = [];
+		for (const item of dispatchItems) {
+			const { data } = item;
+			// 관리자 강제 발송(force)은 수신 설정·야간·설정 행 부재를 우회한다.
+			// 마케팅성 알림은 수신 동의가 법적 요건이므로 강제 대상에서 제외.
+			const forced =
+				data.force === true &&
+				data.purpose !== "ENGAGEMENT" &&
+				!isMarketingNotification(data.type);
+			const skipReason = forced
+				? null
+				: this.#cachedSettingsSkipReason(
+						data.type,
+						data.purpose,
+						prefMap.get(data.userId),
+						consentMap.get(data.userId),
+					);
+			if (!skipReason) {
+				settingsEligibleItems.push(item);
+			} else {
+				await this.notificationRepository.markPushDispatchSkipped(
+					item.dispatchId,
+					skipReason,
+				);
+				this.#logger.debug(
+					`Push dispatch skipped: userId=${data.userId}, type=${data.type}, reason=${skipReason}`,
+				);
+			}
+		}
+
+		if (settingsEligibleItems.length === 0) return;
+
+		const rateLimitRequests = settingsEligibleItems.map(({ data }) =>
+			this.#buildRateLimitRequest(data, prefMap.get(data.userId)?.timezone),
 		);
+		const limited = await this.rateLimiter.reserveBatch(rateLimitRequests);
+		const eligibleItems: typeof settingsEligibleItems = [];
+		for (const [index, item] of settingsEligibleItems.entries()) {
+			const isLimited = limited[index] ?? false;
+			if (isLimited) {
+				await this.notificationRepository.markPushDispatchSkipped(
+					item.dispatchId,
+					"RATE_LIMITED",
+				);
+				this.#logger.debug(
+					`Push rate limited: userId=${item.data.userId}, type=${item.data.type}`,
+				);
+			} else {
+				eligibleItems.push(item);
+			}
+		}
+
+		if (eligibleItems.length === 0) return;
+
+		const { attemptedDispatchIds, resultsByDispatch } =
+			await this.#sendPushToUsers(
+				eligibleItems.map(({ data: d, notificationId, dispatchId }) => ({
+					userId: d.userId,
+					dispatchId,
+					requiresFeatureCapability:
+						d.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
+					title: d.title,
+					body: d.body,
+					data: {
+						...this.#buildPushPayloadData(d, notificationId),
+						dispatchId,
+					},
+					...((d.purpose === "ENGAGEMENT" ||
+						isMarketingNotification(d.type)) && {
+						categoryId: "MARKETING",
+					}),
+				})),
+			);
 		await Promise.all(
-			dispatchItems.map(({ dispatchId }) =>
+			[...attemptedDispatchIds].map((dispatchId) =>
 				this.notificationRepository.recordPushDeliveryResults(
 					dispatchId,
 					resultsByDispatch.get(dispatchId) ?? [],
@@ -331,63 +368,77 @@ export class PushDispatcherAdapter
 		purpose?: CreateNotificationData["purpose"],
 	): Promise<boolean> {
 		const preference = await this.#loadPreference(userId);
+		return (
+			(await this.#singleEligibilitySkipReason(
+				{ userId, type, purpose, title: "", body: "" },
+				preference,
+			)) === null
+		);
+	}
 
+	async #singleEligibilitySkipReason(
+		data: CreateNotificationData,
+		preference: CachedUserPreference,
+	): Promise<PushDispatchSkipReason | null> {
 		if (!preference.pushEnabled) {
-			return false;
+			return "PUSH_DISABLED";
 		}
 
 		// Rate limit은 Redis O(1) — 캐시/DB 조회보다 먼저 체크하여 불필요한 연산 방지
-		if (await this.rateLimiter.isRateLimited(userId)) {
-			this.#logger.debug(`Push rate limited: userId=${userId}, type=${type}`);
-			return false;
+		if (await this.rateLimiter.isRateLimited(data.userId)) {
+			this.#logger.debug(
+				`Push rate limited: userId=${data.userId}, type=${data.type}`,
+			);
+			return "RATE_LIMITED";
 		}
 
 		const isEngagement =
-			purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(type);
+			data.purpose === "ENGAGEMENT" ||
+			isAutomatedEngagementNotification(data.type);
 		const isMarketing =
-			purpose === "ENGAGEMENT" || isMarketingNotification(type);
+			data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
 
 		// 야간(정보통신망법 21:00–08:00)·집계는 지역 기준이므로 배송 폴백(미상→KST)으로 판정.
 		// locale과 무관 — 영어를 쓰는 한국 유저(locale=en, tz=Asia/Seoul)도 KST 게이트가 적용된다.
 		const deliveryTz = resolveDeliveryTimezone(preference.timezone);
 
 		if (isNightTime(deliveryTz) && isMarketing) {
-			return false;
+			return "MARKETING_QUIET_HOURS";
 		}
 
 		if (
 			isNightTime(deliveryTz) &&
 			!preference.nightPushEnabled &&
-			!isNightExemptNotification(type)
+			!isNightExemptNotification(data.type)
 		) {
-			return false;
+			return "NIGHT_PUSH_DISABLED";
 		}
 
 		if (isMarketing) {
-			const consent = await this.userSettings.getConsentRecord(userId);
+			const consent = await this.userSettings.getConsentRecord(data.userId);
 			if (!consent?.marketingPushAgreedAt) {
-				return false;
+				return "MARKETING_CONSENT_REQUIRED";
 			}
 		}
 
 		if (
 			isEngagement &&
 			(await this.rateLimiter.isEngagementRateLimited(
-				userId,
+				data.userId,
 				this.#localDate(deliveryTz),
 			))
 		) {
-			return false;
+			return "ENGAGEMENT_RATE_LIMITED";
 		}
 
-		return true;
+		return null;
 	}
 
 	/**
 	 * 배치 경로용 푸시 발송 판단 (설정 + 마케팅 동의).
 	 * Redis 제한 예약은 이 사전 필터를 통과한 항목만 별도의 단일 배치로 수행합니다.
 	 */
-	#passesCachedSettings(
+	#cachedSettingsSkipReason(
 		type: NotificationType,
 		purpose: CreateNotificationData["purpose"],
 		preference:
@@ -398,13 +449,13 @@ export class PushDispatcherAdapter
 			  }
 			| undefined,
 		consent: { marketingPushAgreedAt: Date | null } | undefined,
-	): boolean {
+	): PushDispatchSkipReason | null {
 		if (!preference) {
-			return false;
+			return "PUSH_SETTINGS_MISSING";
 		}
 
 		if (!preference.pushEnabled) {
-			return false;
+			return "PUSH_DISABLED";
 		}
 
 		const timezone = resolveDeliveryTimezone(preference.timezone);
@@ -412,7 +463,7 @@ export class PushDispatcherAdapter
 			purpose === "ENGAGEMENT" || isMarketingNotification(type);
 
 		if (isNightTime(timezone) && isMarketing) {
-			return false;
+			return "MARKETING_QUIET_HOURS";
 		}
 
 		if (
@@ -420,16 +471,16 @@ export class PushDispatcherAdapter
 			!preference.nightPushEnabled &&
 			!isNightExemptNotification(type)
 		) {
-			return false;
+			return "NIGHT_PUSH_DISABLED";
 		}
 
 		if (isMarketing) {
 			if (!consent?.marketingPushAgreedAt) {
-				return false;
+				return "MARKETING_CONSENT_REQUIRED";
 			}
 		}
 
-		return true;
+		return null;
 	}
 
 	#buildRateLimitRequest(
@@ -491,30 +542,9 @@ export class PushDispatcherAdapter
 
 	async #sendPushToUser(
 		userId: string,
+		tokenStrings: string[],
 		payload: Omit<PushPayload, "token">,
 	): Promise<BatchPushResult> {
-		const tokenStrings = await this.cacheService.wrapPushTokens(
-			userId,
-			async () => {
-				const tokens = await this.notificationRepository.findPushTokensByUser({
-					userId,
-					activeOnly: true,
-				});
-				return tokens.map((t) => t.token);
-			},
-		);
-
-		if (tokenStrings.length === 0) {
-			this.#logger.debug(`No active push tokens for user: ${userId}`);
-			return {
-				total: 0,
-				successCount: 0,
-				failureCount: 0,
-				results: [],
-				invalidTokens: [],
-			};
-		}
-
 		const payloads: PushPayload[] = tokenStrings.map((token) => ({
 			...payload,
 			token,
@@ -538,25 +568,100 @@ export class PushDispatcherAdapter
 		return result;
 	}
 
-	async #sendPushToUsers(
-		userIds: string[],
-		payloads: Array<
-			{ userId: string; dispatchId: number } & Omit<PushPayload, "token">
-		>,
-	): Promise<Map<number, PushResult[]>> {
-		const empty = new Map<number, PushResult[]>();
-		const tokensByUser = await this.#resolveTokensByUsers(userIds);
-
-		if (tokensByUser.size === 0) {
-			this.#logger.debug("No active push tokens for users");
-			return empty;
+	async #resolveTokensForData(data: CreateNotificationData): Promise<{
+		tokens: string[];
+		skipReason: PushDispatchSkipReason | null;
+	}> {
+		if (data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY) {
+			const records = await this.notificationRepository.findPushTokensByUser({
+				userId: data.userId,
+				activeOnly: true,
+			});
+			if (records.length === 0) {
+				return { tokens: [], skipReason: "NO_ACTIVE_TOKEN" };
+			}
+			const capable = records
+				.filter(supportsFeatureDiscoveryMarketing)
+				.map((record) => record.token);
+			return capable.length > 0
+				? { tokens: capable, skipReason: null }
+				: { tokens: [], skipReason: "UNSUPPORTED_APP_CAPABILITY" };
 		}
+
+		const tokens = await this.cacheService.wrapPushTokens(
+			data.userId,
+			async () => {
+				const records = await this.notificationRepository.findPushTokensByUser({
+					userId: data.userId,
+					activeOnly: true,
+				});
+				return records.map((record) => record.token);
+			},
+		);
+		return tokens.length > 0
+			? { tokens, skipReason: null }
+			: { tokens: [], skipReason: "NO_ACTIVE_TOKEN" };
+	}
+
+	async #sendPushToUsers(
+		payloads: Array<
+			{
+				userId: string;
+				dispatchId: number;
+				requiresFeatureCapability: boolean;
+			} & Omit<PushPayload, "token">
+		>,
+	): Promise<{
+		attemptedDispatchIds: Set<number>;
+		resultsByDispatch: Map<number, PushResult[]>;
+	}> {
+		const userIds = [...new Set(payloads.map((payload) => payload.userId))];
+		const tokensByUser = await this.#resolveTokensByUsers(userIds);
+		const featureUserIds = [
+			...new Set(
+				payloads
+					.filter((payload) => payload.requiresFeatureCapability)
+					.map((payload) => payload.userId),
+			),
+		];
+		const featureTokenRecords =
+			featureUserIds.length === 0
+				? []
+				: await this.notificationRepository.findActivePushTokensByUsers(
+						featureUserIds,
+					);
+		const featureTokensByUser = this.#groupTokenRecords(featureTokenRecords);
 
 		const pushPayloads: PushPayload[] = [];
 		const dispatchIds: number[] = [];
+		const attemptedDispatchIds = new Set<number>();
 		for (const payload of payloads) {
-			const userTokens = tokensByUser.get(payload.userId) ?? [];
-			for (const token of userTokens) {
+			const activeTokenStrings = tokensByUser.get(payload.userId) ?? [];
+			const featureRecords = featureTokensByUser.get(payload.userId) ?? [];
+			const activeTokenCount = payload.requiresFeatureCapability
+				? featureRecords.length
+				: activeTokenStrings.length;
+			if (activeTokenCount === 0) {
+				await this.notificationRepository.markPushDispatchSkipped(
+					payload.dispatchId,
+					"NO_ACTIVE_TOKEN",
+				);
+				continue;
+			}
+			const userTokenStrings = payload.requiresFeatureCapability
+				? featureRecords
+						.filter(supportsFeatureDiscoveryMarketing)
+						.map((record) => record.token)
+				: activeTokenStrings;
+			if (userTokenStrings.length === 0) {
+				await this.notificationRepository.markPushDispatchSkipped(
+					payload.dispatchId,
+					"UNSUPPORTED_APP_CAPABILITY",
+				);
+				continue;
+			}
+			attemptedDispatchIds.add(payload.dispatchId);
+			for (const token of userTokenStrings) {
 				pushPayloads.push({
 					token,
 					title: payload.title,
@@ -568,7 +673,10 @@ export class PushDispatcherAdapter
 		}
 
 		if (pushPayloads.length === 0) {
-			return empty;
+			return {
+				attemptedDispatchIds,
+				resultsByDispatch: new Map<number, PushResult[]>(),
+			};
 		}
 
 		const result = await this.pushProvider.sendBatch(pushPayloads);
@@ -597,7 +705,7 @@ export class PushDispatcherAdapter
 			current.push(pushResult);
 			resultsByDispatch.set(dispatchId, current);
 		}
-		return resultsByDispatch;
+		return { attemptedDispatchIds, resultsByDispatch };
 	}
 
 	/**
@@ -654,6 +762,18 @@ export class PushDispatcherAdapter
 		}
 
 		return tokensByUser;
+	}
+
+	#groupTokenRecords(
+		records: PushTokenRecord[],
+	): Map<string, PushTokenRecord[]> {
+		const byUserId = new Map<string, PushTokenRecord[]>();
+		for (const record of records) {
+			const userRecords = byUserId.get(record.userId) ?? [];
+			userRecords.push(record);
+			byUserId.set(record.userId, userRecords);
+		}
+		return byUserId;
 	}
 
 	#trackPush(promise: Promise<void>): void {

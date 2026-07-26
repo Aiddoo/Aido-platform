@@ -5,6 +5,17 @@ import type { CreateNotificationData } from "./notification-data";
 
 export const PUSH_DISPATCHER = Symbol("PUSH_DISPATCHER");
 
+export interface BatchPushDispatchItem {
+	data: CreateNotificationData;
+	notificationId: number;
+}
+
+export interface PersistedBatchNotificationDispatch {
+	count: number;
+	items: BatchPushDispatchItem[];
+	sourceData: CreateNotificationData[];
+}
+
 /**
  * 푸시 발송 디스패처 포트.
  *
@@ -27,7 +38,5 @@ export interface PushDispatcherPort {
 	fireAndForgetPush(data: CreateNotificationData, notificationId: number): void;
 
 	/** 다수 사용자 배치 푸시 발송(fire-and-forget, 배치 자격 필터 포함) */
-	fireAndForgetBatchPush(
-		items: Array<{ data: CreateNotificationData; notificationId: number }>,
-	): void;
+	fireAndForgetBatchPush(items: BatchPushDispatchItem[]): void;
 }

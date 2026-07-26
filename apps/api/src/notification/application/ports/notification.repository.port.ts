@@ -14,6 +14,17 @@ import type { PushReceiptResult, PushResult } from "./push-provider.port";
 /** 알림 저장소 포트 (DI 토큰) */
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");
 
+export type PushDispatchSkipReason =
+	| "PUSH_SETTINGS_MISSING"
+	| "PUSH_DISABLED"
+	| "MARKETING_CONSENT_REQUIRED"
+	| "MARKETING_QUIET_HOURS"
+	| "NIGHT_PUSH_DISABLED"
+	| "RATE_LIMITED"
+	| "ENGAGEMENT_RATE_LIMITED"
+	| "NO_ACTIVE_TOKEN"
+	| "UNSUPPORTED_APP_CAPABILITY";
+
 /**
  * 알림·푸시 토큰 저장소 포트.
  *
@@ -72,6 +83,10 @@ export interface NotificationRepositoryPort {
 		timezone: string;
 		localDate: Date;
 	}): Promise<{ id: number }>;
+	markPushDispatchSkipped(
+		dispatchId: number,
+		reason: PushDispatchSkipReason,
+	): Promise<void>;
 	recordPushDeliveryResults(
 		dispatchId: number,
 		results: PushResult[],

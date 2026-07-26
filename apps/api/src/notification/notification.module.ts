@@ -16,6 +16,7 @@ import {
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
+import { DispatchBatchNotificationUseCase } from "./application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "./application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
 import { GetUnreadCountUseCase } from "./application/use-cases/get-unread-count/get-unread-count.use-case";
@@ -23,6 +24,7 @@ import { MarkAllAsReadUseCase } from "./application/use-cases/mark-all-as-read/m
 import { MarkAsReadUseCase } from "./application/use-cases/mark-as-read/mark-as-read.use-case";
 import { MarkNotificationOpenedUseCase } from "./application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
+import { PersistBatchNotificationUseCase } from "./application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
@@ -69,6 +71,8 @@ import { NotificationController } from "./presentation/notification.controller";
 		// 크로스모듈 발송/디스패치 use-cases
 		SendNotificationUseCase,
 		SendNotificationWithDedupUseCase,
+		PersistBatchNotificationUseCase,
+		DispatchBatchNotificationUseCase,
 		SendBatchNotificationUseCase,
 		FindAlreadyNotifiedUsersUseCase,
 		// Repository (포트 바인딩)
