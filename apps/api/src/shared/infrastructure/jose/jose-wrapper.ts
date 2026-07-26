@@ -13,9 +13,14 @@ export type JWKSFunction = (
 	token: unknown,
 ) => Promise<unknown>;
 
+/** 애플리케이션에서 조정 가능한 최소 Remote JWKS 옵션 */
+export interface RemoteJWKSetOptions {
+	cooldownDuration?: number;
+}
+
 /** jose에서 필요한 함수만 노출하는 타입 안전 래퍼 */
 export interface JoseWrapper {
-	createRemoteJWKSet: (url: URL) => JWKSFunction;
+	createRemoteJWKSet: (url: URL, options?: RemoteJWKSetOptions) => JWKSFunction;
 	jwtVerify: <T>(
 		jwt: string,
 		jwks: JWKSFunction,
@@ -29,8 +34,8 @@ export interface JoseWrapper {
 export async function loadJose(): Promise<JoseWrapper> {
 	const jose = await import("jose");
 	return {
-		createRemoteJWKSet: (url: URL) =>
-			jose.createRemoteJWKSet(url) as JWKSFunction,
+		createRemoteJWKSet: (url: URL, options?: RemoteJWKSetOptions) =>
+			jose.createRemoteJWKSet(url, options) as JWKSFunction,
 		jwtVerify: <T>(
 			jwt: string,
 			jwks: JWKSFunction,
