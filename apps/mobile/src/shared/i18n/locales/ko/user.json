@@ -34,8 +34,8 @@
   "profile": {
     "defaultName": "열정적인 사용자",
     "avatarAlt": "{{name}} 프로필",
-    "tagCopied": "Aido ID 복사 완료",
-    "tagCopiedDescription": "Aido ID를 친구에게 공유해 친구 요청을 받아보세요",
+    "tagCopied": "해시태그 복사 완료",
+    "tagCopiedDescription": "8자리 해시태그를 친구에게 공유해 친구 요청을 받아보세요",
     "updateFailed": "프로필 변경에 실패했어요",
     "badges": {
       "admin": "어드민",

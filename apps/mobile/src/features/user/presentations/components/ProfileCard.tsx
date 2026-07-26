@@ -8,6 +8,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Avatar, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
+import { formatUserHashtag } from '../../utils/user-hashtag';
 import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
 
 export function ProfileCard() {
@@ -45,7 +46,7 @@ export function ProfileCard() {
 
           <HStack align="center" gap={2}>
             <Text size="b4" shade={6}>
-              {user.userTag}
+              {formatUserHashtag(user.userTag)}
             </Text>
             <Pressable
               hitSlop={8}
