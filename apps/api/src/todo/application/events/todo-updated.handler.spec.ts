@@ -19,7 +19,7 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 	beforeEach(async () => {
 		todoReminder = {
 			scheduleReminder: jest.fn(),
-			cancelReminder: jest.fn(),
+			cancelReminder: jest.fn().mockResolvedValue({ status: "cancelled" }),
 		};
 
 		const { unit } = await TestBed.solitary(TodoUpdatedHandler)
@@ -30,31 +30,44 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 		handler = unit;
 	});
 
-	it("완료 요청(completed=true)이면 리마인더를 취소한다", () => {
+	it("완료 요청(completed=true)이면 리마인더를 취소한다", async () => {
 		// Given & When
-		handler.handle(new TodoUpdatedEvent(1, "user-123", true));
+		await handler.handle(new TodoUpdatedEvent(1, "user-123", true));
 
 		// Then
 		expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
 	});
 
-	it("미완료 요청(completed=false)이면 리마인더를 취소하지 않는다", () => {
+	it("미완료 요청(completed=false)이면 리마인더를 취소하지 않는다", async () => {
 		// Given & When
-		handler.handle(new TodoUpdatedEvent(1, "user-123", false));
+		await handler.handle(new TodoUpdatedEvent(1, "user-123", false));
 
 		// Then
 		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 	});
 
-	it("리마인더 포트가 던져도 예외를 전파하지 않는다 (fire-and-forget)", () => {
-		// Given - 리마인더 취소 실패
-		jest.mocked(todoReminder.cancelReminder).mockImplementation(() => {
-			throw new Error("scheduler down");
+	it("취소할 작업이 이미 없으면 missing을 정상 처리한다", async () => {
+		// Given - 잡이 이미 처리됨
+		jest.mocked(todoReminder.cancelReminder).mockResolvedValue({
+			status: "missing",
 		});
 
-		// When & Then - 삼켜진다
-		expect(() =>
+		// When & Then - 명시적 missing만 정상 처리
+		await expect(
 			handler.handle(new TodoUpdatedEvent(1, "user-123", true)),
-		).not.toThrow();
+		).resolves.toBeUndefined();
+	});
+
+	it("리마인더 인프라 실패를 전파한다", async () => {
+		// Given - 리마인더 취소 실패 (기존 sync 핸들러의 유실을 RED로 포착)
+		const error = new Error("scheduler down");
+		const rejected = Promise.reject(error);
+		void rejected.catch(() => undefined);
+		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
+
+		// When & Then - 성공/missing으로 삼키지 않음
+		await expect(
+			handler.handle(new TodoUpdatedEvent(1, "user-123", true)),
+		).rejects.toBe(error);
 	});
 });

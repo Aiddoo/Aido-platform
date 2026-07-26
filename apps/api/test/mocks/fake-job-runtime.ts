@@ -1,5 +1,6 @@
 import type {
 	EnqueueJobOptions,
+	JobCancellationResult,
 	JobData,
 	JobEnvelope,
 	JobRuntimeHealth,
@@ -57,8 +58,9 @@ export class FakeJobRuntime implements JobRuntimePort {
 		this.unscheduleCalls.push({ scheduleKey, queue });
 	}
 
-	async cancel(queue: string, jobKey: string): Promise<void> {
+	async cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
 		this.cancelCalls.push({ queue, jobKey });
+		return { status: "cancelled" };
 	}
 
 	async work<T extends JobData>(

@@ -60,6 +60,8 @@ class FakePgBossClient implements PgBossClient {
 	>();
 	jobs: JobWithMetadata<JobData>[] = [];
 	queues: QueueResult[] = [];
+	findJobsError?: Error;
+	cancelError?: Error;
 
 	async start(): Promise<unknown> {
 		return this;
@@ -101,6 +103,9 @@ class FakePgBossClient implements PgBossClient {
 		_name: string,
 		_options?: FindJobsOptions,
 	): Promise<JobWithMetadata<T>[]> {
+		if (this.findJobsError) {
+			throw this.findJobsError;
+		}
 		return this.jobs as JobWithMetadata<T>[];
 	}
 
@@ -109,6 +114,9 @@ class FakePgBossClient implements PgBossClient {
 		ids: string[],
 		options?: { db?: Db },
 	): Promise<unknown> {
+		if (this.cancelError) {
+			throw this.cancelError;
+		}
 		this.cancelCalls.push({ name, ids, options });
 		return undefined;
 	}
@@ -233,6 +241,53 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 				attempt: 2,
 			},
 		]);
+	});
+
+	it("cancel은 찾은 작업을 취소하고 cancelled를 반환한다", async () => {
+		// Given - 동일 jobKey의 작업 존재
+		boss.jobs = [job()];
+
+		// When & Then - 명시적 cancelled 결과
+		await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
+			status: "cancelled",
+		});
+		expect(boss.cancelCalls).toHaveLength(1);
+		expect(boss.cancelCalls[0]).toMatchObject({
+			name: QUEUE,
+			ids: ["job-1"],
+		});
+	});
+
+	it("cancel은 찾은 작업이 없으면 missing을 반환한다", async () => {
+		// Given - 동일 jobKey의 작업 없음
+		boss.jobs = [];
+
+		// When & Then - 명시적 missing 결과
+		await expect(runtime.cancel(QUEUE, "missing")).resolves.toEqual({
+			status: "missing",
+		});
+		expect(boss.cancelCalls).toHaveLength(0);
+	});
+
+	it("cancel은 pg-boss 조회 오류를 missing으로 바꾸지 않고 전파한다", async () => {
+		// Given - PostgreSQL 조회 실패
+		boss.findJobsError = new Error("postgres unavailable");
+
+		// When & Then - 원래 인프라 오류 전파
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
+			"postgres unavailable",
+		);
+	});
+
+	it("cancel은 pg-boss 취소 오류를 missing으로 바꾸지 않고 전파한다", async () => {
+		// Given - 작업은 있지만 취소 실패
+		boss.jobs = [job()];
+		boss.cancelError = new Error("cancel failed");
+
+		// When & Then - 원래 인프라 오류 전파
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
+			"cancel failed",
+		);
 	});
 
 	it("queue 상태를 공통 health 모델로 정규화한다", async () => {

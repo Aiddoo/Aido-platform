@@ -1,6 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { type IReminderScheduler, REMINDER_SCHEDULER } from "@/scheduler";
-import type { TodoReminderPort } from "../../application/ports/todo-reminder.port";
+import type {
+	TodoReminderCancellationResult,
+	TodoReminderPort,
+} from "../../application/ports/todo-reminder.port";
 
 /**
  * Todo 리마인더 포트 어댑터 — scheduler의 IReminderScheduler에 위임
@@ -16,7 +19,7 @@ export class TodoReminderAdapter implements TodoReminderPort {
 		this.reminderScheduler.scheduleReminder(todoId, scheduledTime, userId);
 	}
 
-	cancelReminder(todoId: number): void {
-		this.reminderScheduler.cancelReminder(todoId);
+	cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {
+		return this.reminderScheduler.cancelReminder(todoId);
 	}
 }

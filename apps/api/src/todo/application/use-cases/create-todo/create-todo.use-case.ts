@@ -116,7 +116,7 @@ export class CreateTodoUseCase {
 
 		// 생성 이벤트 발행(TX 커밋 후) → 리마인더 스케줄링은 이벤트 핸들러가 처리
 		created.markCreated();
-		this.eventPublisher.publishAll(created.pullDomainEvents());
+		await this.eventPublisher.publishAll(created.pullDomainEvents());
 
 		// 응답 read model 조회 (카테고리·itemStats 포함)
 		const response = await this.todoReadRepository.findByIdAndUserId(

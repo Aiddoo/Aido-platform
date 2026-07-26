@@ -19,6 +19,7 @@ import {
 } from "../ports/todo-read.repository.port";
 import {
 	TODO_REMINDER,
+	type TodoReminderCancellationResult,
 	type TodoReminderPort,
 } from "../ports/todo-reminder.port";
 
@@ -28,10 +29,11 @@ import {
  * - 스트릭 갱신은 양방향(완료/미완료)으로 수행합니다.
  * - 완료로 전환된 경우에만 리마인더 취소 + 친구 완료 알림 + 마일스톤 체크를 수행합니다.
  *
- * 모든 부수효과는 발행(emit) 관점에서 fire-and-forget이며 실패는 로깅만 합니다.
- * 단, 핸들러 본문이 자기 부수효과를 끝까지 await로 소유합니다 — 떠다니는
+ * 핸들러 본문이 자기 부수효과를 끝까지 await로 소유합니다 — 떠다니는
  * 프라미스를 남기면 완료 시점을 아무도 알 수 없어 테스트 격리(TRUNCATE)와
  * 경합하고, 프로세스 종료 시 유실될 수 있습니다.
+ * 리마인더 취소 실패는 퍼블리셔 경계까지 전파되고, 퍼블리셔가 문맥을 기록한
+ * 뒤 post-commit 요청 성공을 유지합니다.
  * 크로스모듈 의존은 포트를 통해서만, 판단 규칙은 도메인 정책(completion-policy)을 통해 접근합니다.
  */
 @Injectable()
@@ -51,13 +53,14 @@ export class TodoToggledHandler {
 		private readonly todoReminder: TodoReminderPort,
 	) {}
 
-	@OnEvent(TODO_EVENTS.TOGGLED)
+	@OnEvent(TODO_EVENTS.TOGGLED, { suppressErrors: false })
 	async handle(event: TodoToggledEvent): Promise<void> {
 		const { todoId, userId, completed, timezone } = event;
 
 		const sideEffects: Promise<void>[] = [];
+		let cancellation: Promise<TodoReminderCancellationResult> | undefined;
 		if (completed) {
-			this.todoReminder.cancelReminder(todoId);
+			cancellation = this.todoReminder.cancelReminder(todoId);
 			sideEffects.push(this.#checkAndEnqueueFriendCompleted(userId, timezone));
 			sideEffects.push(this.#checkAndEnqueueMilestone(userId));
 		}
@@ -65,7 +68,13 @@ export class TodoToggledHandler {
 		// 스트릭은 양방향 갱신
 		sideEffects.push(this.#recordStreakSafely(userId, completed, timezone));
 
-		await Promise.allSettled(sideEffects);
+		const outcomes = await Promise.allSettled(
+			cancellation ? [cancellation, ...sideEffects] : sideEffects,
+		);
+		const cancellationOutcome = cancellation ? outcomes[0] : undefined;
+		if (cancellationOutcome?.status === "rejected") {
+			throw cancellationOutcome.reason;
+		}
 	}
 
 	async #recordStreakSafely(

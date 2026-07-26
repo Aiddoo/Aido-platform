@@ -59,8 +59,9 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 	});
 
 	it("취소는 모든 단계의 결정적 키를 제거한다", async () => {
-		adapter.cancelReminder(42);
-		await flushPromises();
+		await expect(adapter.cancelReminder(42)).resolves.toEqual({
+			status: "cancelled",
+		});
 
 		expect(runtime.cancelCalls).toEqual(
 			[
@@ -71,5 +72,44 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 				jobKey: `reminder_42_${label}`,
 			})),
 		);
+	});
+
+	it("모든 단계 작업이 없으면 missing을 반환한다", async () => {
+		// Given - 모든 stage job이 이미 없음
+		jest.spyOn(runtime, "cancel").mockResolvedValue({ status: "missing" });
+
+		// When & Then - missing을 정상 결과로 보존
+		await expect(adapter.cancelReminder(42)).resolves.toEqual({
+			status: "missing",
+		});
+	});
+
+	it("일부 단계만 취소돼도 cancelled를 반환한다", async () => {
+		// Given - 첫 stage만 존재하고 나머지는 없음
+		jest
+			.spyOn(runtime, "cancel")
+			.mockResolvedValue({ status: "missing" })
+			.mockResolvedValueOnce({ status: "cancelled" });
+
+		// When & Then - 하나라도 제거되면 cancelled
+		await expect(adapter.cancelReminder(42)).resolves.toEqual({
+			status: "cancelled",
+		});
+	});
+
+	it("인프라 오류는 todoId·stage·runtime 문맥과 cause를 보존해 reject한다", async () => {
+		// Given - 첫 stage 취소 중 Redis/PostgreSQL runtime 실패
+		const infrastructureError = new Error("runtime unavailable");
+		jest.spyOn(runtime, "cancel").mockRejectedValueOnce(infrastructureError);
+
+		// When
+		const cancellation = adapter.cancelReminder(42);
+
+		// Then - missing으로 변환하지 않고 안정적인 문맥과 원인을 보존
+		await expect(cancellation).rejects.toMatchObject({
+			message:
+				"Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime",
+			cause: infrastructureError,
+		});
 	});
 });

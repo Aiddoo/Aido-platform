@@ -66,7 +66,7 @@ export class UpdateTodoTitleUseCase {
 		this.#logger.log(`Todo title updated: ${id} for user: ${userId}`);
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (미완료 상태면 부수효과 없음)
-		this.eventPublisher.publishAll(events);
+		await this.eventPublisher.publishAll(events);
 
 		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
 		await this.todoCache.invalidateFriendTodos(userId);

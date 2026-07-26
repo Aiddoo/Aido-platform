@@ -6,10 +6,12 @@ import type { DomainEvent } from "@/shared/domain/aggregate-root";
 /**
  * EventEmitter2 기반 도메인 이벤트 퍼블리셔
  *
- * `emit`은 동기라 리스너 예외가 그대로 전파됩니다. 발행은 항상 트랜잭션
- * 커밋 이후이므로, 예외가 새면 이미 커밋된 요청이 500으로 뒤집힙니다.
- * 이를 이벤트 단위 try/catch로 차단합니다 — 한 이벤트의 실패가 나머지
- * 이벤트 발행도 막지 않습니다.
+ * `emitAsync`를 await해 비동기 리스너 실패까지 관측합니다. 발행은 항상
+ * 트랜잭션 커밋 이후이므로, 이벤트 단위로 실패를 기록하고 격리해 이미
+ * 커밋된 요청을 500으로 뒤집지 않습니다.
+ *
+ * 이 경계는 관측성을 제공할 뿐 durable retry/outbox를 보장하지 않습니다.
+ * 재시도가 필수인 부수효과는 별도의 내구성 큐/아웃박스가 필요합니다.
  */
 @Injectable()
 export class EventEmitterDomainEventPublisher
@@ -19,10 +21,10 @@ export class EventEmitterDomainEventPublisher
 
 	constructor(private readonly eventEmitter: EventEmitter2) {}
 
-	publishAll(events: readonly DomainEvent[]): void {
+	async publishAll(events: readonly DomainEvent[]): Promise<void> {
 		for (const event of events) {
 			try {
-				this.eventEmitter.emit(event.eventName, event);
+				await this.eventEmitter.emitAsync(event.eventName, event);
 			} catch (error) {
 				this.#logger.error(
 					`Failed to publish domain event ${event.eventName}: ${error}`,

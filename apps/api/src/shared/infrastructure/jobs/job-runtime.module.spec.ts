@@ -84,6 +84,22 @@ describe("selectJobRuntime — backend 선택", () => {
 		);
 	});
 
+	it("postgres drain 모드는 primary의 cancel 결과를 그대로 보존한다", async () => {
+		// Given - PostgreSQL primary가 missing을 반환
+		const postgres = createRuntime();
+		const redis = createRuntime();
+		jest.mocked(postgres.cancel).mockResolvedValue({
+			status: "missing",
+		});
+		const runtime = selectJobRuntime("postgres", postgres, redis, true);
+
+		// When & Then - drain wrapper가 결과를 바꾸지 않음
+		await expect(
+			runtime.cancel("todo-reminder.v1", "missing"),
+		).resolves.toEqual({ status: "missing" });
+		expect(redis.cancel).not.toHaveBeenCalled();
+	});
+
 	it.each<JobBackend>(["postgres", "redis"])(
 		"Nest provider가 %s runtime을 JOB_RUNTIME으로 노출한다",
 		async (backend) => {

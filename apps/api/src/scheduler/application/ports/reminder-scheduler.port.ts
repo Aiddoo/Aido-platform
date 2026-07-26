@@ -6,6 +6,10 @@
 
 export const REMINDER_SCHEDULER = Symbol("REMINDER_SCHEDULER");
 
+export type ReminderCancellationResult =
+	| { readonly status: "cancelled" }
+	| { readonly status: "missing" };
+
 export interface IReminderScheduler {
 	/**
 	 * 리마인더 타이머 등록
@@ -24,5 +28,5 @@ export interface IReminderScheduler {
 	 *
 	 * @param todoId 대상 투두 ID
 	 */
-	cancelReminder(todoId: number): void;
+	cancelReminder(todoId: number): Promise<ReminderCancellationResult>;
 }

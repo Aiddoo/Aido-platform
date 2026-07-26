@@ -11,6 +11,7 @@ import { ConfigService } from "@nestjs/config";
 import type {
 	EnqueueJobOptions,
 	JobBackend,
+	JobCancellationResult,
 	JobData,
 	JobEnvelope,
 	JobRuntimeHealth,
@@ -79,7 +80,7 @@ export class RedisDrainJobRuntime implements JobRuntimePort {
 		]);
 	}
 
-	cancel(queue: string, jobKey: string): Promise<void> {
+	cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
 		return this.primary.cancel(queue, jobKey);
 	}
 

@@ -94,7 +94,7 @@ describe("UpdateTodoUseCase — 할 일 부분 수정 핸들러", () => {
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-			.impl(() => ({ publishAll: jest.fn() }))
+			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;
@@ -162,6 +162,31 @@ describe("UpdateTodoUseCase — 할 일 부분 수정 핸들러", () => {
 		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoUpdatedEvent(1, "user-123", true),
 		]);
+	});
+
+	it("post-commit 이벤트 발행 관측이 끝난 뒤 응답을 재조회한다", async () => {
+		// Given - 이벤트 publisher 완료를 외부 gate로 지연
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
+		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+		let release: (() => void) | undefined;
+		const publication = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		eventPublisher.publishAll.mockReturnValue(publication);
+
+		// When - 수정 실행
+		const execution = useCase.execute({
+			id: 1,
+			userId: "user-123",
+			data: { completed: true },
+		});
+		await new Promise((resolve) => setImmediate(resolve));
+
+		// Then - publisher 완료 전에는 post-commit 재조회로 진행하지 않음
+		expect(todoReadRepository.findByIdAndUserId).not.toHaveBeenCalled();
+		release?.();
+		await execution;
+		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalled();
 	});
 
 	it("완료→미완료 전이 시 completedAt=null을 패치에 포함한다", async () => {

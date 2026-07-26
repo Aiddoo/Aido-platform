@@ -121,7 +121,7 @@ export class UpdateTodoUseCase {
 		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (완료 상태면 이벤트 핸들러가 리마인더 취소)
-		this.eventPublisher.publishAll(events);
+		await this.eventPublisher.publishAll(events);
 
 		// 4. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

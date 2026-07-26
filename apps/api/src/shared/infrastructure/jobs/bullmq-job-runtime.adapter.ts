@@ -8,6 +8,7 @@ import { type JobsOptions, Queue, Worker } from "bullmq";
 import type Redis from "ioredis";
 import type {
 	EnqueueJobOptions,
+	JobCancellationResult,
 	JobData,
 	JobRuntimeHealth,
 	JobRuntimePort,
@@ -275,9 +276,17 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 		await this.queue(queueName).removeJobScheduler(scheduleKey);
 	}
 
-	async cancel(queueName: string, jobKey: string): Promise<void> {
+	async cancel(
+		queueName: string,
+		jobKey: string,
+	): Promise<JobCancellationResult> {
 		const job = await this.queue(queueName).getJob(jobKey);
-		await job?.remove();
+		if (!job) {
+			return { status: "missing" };
+		}
+
+		await job.remove();
+		return { status: "cancelled" };
 	}
 
 	async work<T extends JobData>(

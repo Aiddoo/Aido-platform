@@ -37,6 +37,8 @@ class FakeQueue implements BullQueueClient {
 	oldestTimestamp: number | null = null;
 	removedJobIds: string[] = [];
 	removedScheduleKeys: string[] = [];
+	jobExists = true;
+	removeError?: Error;
 	closeOrder: string[];
 
 	constructor(
@@ -69,8 +71,14 @@ class FakeQueue implements BullQueueClient {
 	}
 
 	async getJob(id: string): Promise<{ remove(): Promise<void> } | undefined> {
+		if (!this.jobExists) {
+			return undefined;
+		}
 		return {
 			remove: async () => {
+				if (this.removeError) {
+					throw this.removeError;
+				}
 				this.removedJobIds.push(id);
 			},
 		};
@@ -300,10 +308,37 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		]);
 	});
 
-	it("cancel은 기존 jobKey를 그대로 사용한다", async () => {
-		await runtime.cancel(QUEUE, "document:42");
+	it("cancel은 기존 jobKey를 제거하고 cancelled를 반환한다", async () => {
+		await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
+			status: "cancelled",
+		});
 
 		expect(factory.queues.get(QUEUE)?.removedJobIds).toEqual(["document:42"]);
+	});
+
+	it("cancel은 jobKey가 없으면 missing을 반환한다", async () => {
+		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
+		const queue = factory.queues.get(QUEUE);
+		expect(queue).toBeDefined();
+		if (!queue) return;
+		queue.jobExists = false;
+
+		await expect(runtime.cancel(QUEUE, "missing")).resolves.toEqual({
+			status: "missing",
+		});
+		expect(queue.removedJobIds).toHaveLength(0);
+	});
+
+	it("cancel은 BullMQ 제거 오류를 missing으로 바꾸지 않고 전파한다", async () => {
+		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
+		const queue = factory.queues.get(QUEUE);
+		expect(queue).toBeDefined();
+		if (!queue) return;
+		queue.removeError = new Error("redis unavailable");
+
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
+			"redis unavailable",
+		);
 	});
 
 	it("health를 공통 모델로 정규화한다", async () => {

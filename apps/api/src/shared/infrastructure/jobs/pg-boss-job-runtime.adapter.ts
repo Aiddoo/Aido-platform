@@ -19,6 +19,7 @@ import type {
 } from "pg-boss";
 import type {
 	EnqueueJobOptions,
+	JobCancellationResult,
 	JobData,
 	JobRuntimeHealth,
 	JobRuntimePort,
@@ -264,11 +265,11 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		await this.boss.unschedule(queue, scheduleKey);
 	}
 
-	async cancel(queue: string, jobKey: string): Promise<void> {
+	async cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
 		const db = this.transactionDatabase();
 		const jobs = await this.boss.findJobs(queue, { key: jobKey, db });
 		if (jobs.length === 0) {
-			return;
+			return { status: "missing" };
 		}
 
 		await this.boss.cancel(
@@ -276,6 +277,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 			jobs.map(({ id }) => id),
 			{ db },
 		);
+		return { status: "cancelled" };
 	}
 
 	async work<T extends JobData>(
