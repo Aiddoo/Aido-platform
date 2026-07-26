@@ -2,8 +2,15 @@ import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { FollowFacade } from "@/follow";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import {
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
+import { now } from "@/shared/domain/date/utils/core";
+import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { evaluateRemindNudgeCooldown } from "../../../domain/services/nudge-cooldown";
@@ -40,6 +47,8 @@ export class SendRemindNudgeUseCase {
 		private readonly nudgeRepository: NudgeRepositoryPort,
 		@Inject(NUDGE_NOTIFIER)
 		private readonly notifier: NudgeNotifierPort,
+		@Inject(MUTATION_LOCK)
+		private readonly mutationLock: MutationLockPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 		private readonly followFacade: FollowFacade,
@@ -66,9 +75,14 @@ export class SendRemindNudgeUseCase {
 		}
 
 		const nudgeMessage = NudgeMessage.of(message);
+		const capturedAt = now();
+		const today = startOfDayInTimezone(capturedAt, tz);
 
 		const remindNudge = await this.uow.run(async () => {
-			const today = todayInTimezone(tz);
+			await this.mutationLock.acquire([
+				MutationLockKeys.remindNudgeCooldown(senderId, receiverId),
+			]);
+
 			const todayTodoCount = await this.nudgeRepository.countTodayTodos(
 				receiverId,
 				today,

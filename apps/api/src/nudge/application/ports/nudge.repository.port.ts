@@ -93,6 +93,7 @@ export interface NudgeRepositoryPort {
 	findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
 
 	countTodayNudges(senderId: string, date: Date): Promise<number>;
+	countSentSince(senderId: string, since: Date): Promise<number>;
 	countTodayTodos(userId: string, today: Date): Promise<number>;
 	countReceived(userId: string): Promise<number>;
 	countSent(userId: string): Promise<number>;
