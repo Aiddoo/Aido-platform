@@ -1,10 +1,10 @@
+import { useReorderCoachmarkService } from '@src/bootstrap/providers/di-context';
 import { useTranslation } from '@src/shared/i18n';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
-import { claimReorderCoachmark, type ReorderCoachmarkKind } from '../state/reorder-coachmark-state';
+import type { ReorderCoachmarkKind } from '../../repositories/reorder-coachmark.repository';
 
 interface ReorderCoachmarkProps {
   accountId: string;
@@ -13,9 +13,8 @@ interface ReorderCoachmarkProps {
 
 export function ReorderCoachmark({ accountId, kind }: ReorderCoachmarkProps) {
   const { t } = useTranslation('todo');
-  const [isVisible, setIsVisible] = useState(() =>
-    claimReorderCoachmark(mmkvSyncStorage, { accountId, kind }),
-  );
+  const service = useReorderCoachmarkService();
+  const [isVisible, setIsVisible] = useState(() => service.claim({ accountId, kind }));
 
   if (!isVisible) {
     return null;

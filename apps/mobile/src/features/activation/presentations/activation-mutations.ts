@@ -4,14 +4,13 @@ import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import type { GrowthEventMap } from '@src/shared/analytics';
 import type { QueryClient } from '@tanstack/react-query';
-import { activationService } from '../activation-runtime';
 import { ActivationPolicy } from '../models/activation.model';
 import type { ActivationService } from '../services/activation.service';
 import { ACTIVATION_QUERY_KEYS } from './constants/activation-query-keys.constant';
 
 interface ActivationMutationBridgeInput {
   queryClient: QueryClient;
-  service?: ActivationService;
+  service: ActivationService;
   now?: Date;
 }
 
@@ -44,7 +43,7 @@ function updateProgressCache(
 
 export function recordTodoCreatedForActivation({
   queryClient,
-  service = activationService,
+  service,
   now = new Date(),
 }: ActivationMutationBridgeInput): void {
   const { config, user } = getContext(queryClient);
@@ -56,7 +55,7 @@ export function recordTodoCreatedForActivation({
 
 export function recordTodoCompletionForActivation({
   queryClient,
-  service = activationService,
+  service,
   completed,
   now = new Date(),
 }: TodoCompletionBridgeInput): GrowthEventMap['activation_completed'] | null {
@@ -70,7 +69,7 @@ export function recordTodoCompletionForActivation({
 
 export function unlockPushRegistrationForActivation({
   queryClient,
-  service = activationService,
+  service,
   now = new Date(),
 }: ActivationMutationBridgeInput): boolean {
   const { config, user } = getContext(queryClient);

@@ -45,11 +45,13 @@ export class NotificationService {
     this.#publicHttpClient = publicHttpClient;
   }
 
-  setupPushNotifications = async (): Promise<
-    Result<RegisterTokenResponse, NotificationServiceError>
-  > => {
+  setupPushNotifications = async (
+    options: { requestPermission?: boolean } = {},
+  ): Promise<Result<RegisterTokenResponse, NotificationServiceError>> => {
     const [tokenResult, deviceId] = await Promise.all([
-      this.#pushTokenService.getExpoPushToken(),
+      this.#pushTokenService.getExpoPushToken({
+        requestPermission: options.requestPermission ?? true,
+      }),
       this.#deviceIdService.get(),
     ]);
 

@@ -12,7 +12,6 @@ export {
 export {
   createFeatureAttributionStore,
   FEATURE_ATTRIBUTION_TTL_MS,
-  featureAttribution,
   trackAttributedFeatureSuccess,
 } from './feature-attribution';
 export { track } from './track';

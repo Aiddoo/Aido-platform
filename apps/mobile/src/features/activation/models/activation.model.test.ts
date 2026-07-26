@@ -157,5 +157,47 @@ describe('ActivationPolicy', () => {
       // Then
       expect(result).toBe(true);
     });
+
+    it('캠페인 설정 조회가 실패해도 출시 전 기존 사용자는 자동 등록을 유지한다', () => {
+      // Given
+      const user = {
+        id: 'existing',
+        createdAt: new Date('2026-07-31T23:59:59.999Z'),
+      };
+
+      // When
+      const result = ActivationPolicy.shouldRegisterPushAutomatically({
+        config: undefined,
+        user,
+        progress: createProgress(),
+      });
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it('캠페인 설정 조회 실패 중에도 출시 이후 신규 사용자는 권한 요청을 연기한다', () => {
+      // Given
+      const user = { id: 'new', createdAt: LAUNCHED_AT };
+
+      // When
+      const result = ActivationPolicy.shouldRegisterPushAutomatically({
+        config: undefined,
+        user,
+        progress: createProgress(),
+      });
+
+      // Then
+      expect(result).toBe(false);
+      expect(ActivationPolicy.activationIdentity(undefined, user)).toBeNull();
+      expect(
+        ActivationPolicy.isChecklistVisible({
+          config: undefined,
+          user,
+          progress: createProgress(),
+          now: new Date('2026-08-02T00:00:00.000Z'),
+        }),
+      ).toBe(false);
+    });
   });
 });

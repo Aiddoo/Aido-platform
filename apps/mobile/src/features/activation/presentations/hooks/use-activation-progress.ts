@@ -1,8 +1,8 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { useFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/presentations/queries/use-feature-discovery-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useQuery } from '@tanstack/react-query';
-import { activationService } from '../../activation-runtime';
 import { ActivationPolicy, type ActivationProgress } from '../../models/activation.model';
 import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys.constant';
 
@@ -14,6 +14,7 @@ const EMPTY_PROGRESS: ActivationProgress = {
 
 export function useActivationProgress() {
   const { status } = useAuth();
+  const activationService = useActivationService();
   const isAuthenticated = status === 'authenticated';
   const configOptions = useFeatureDiscoveryQueryOptions();
   const userOptions = useGetMeQueryOptions();
@@ -30,7 +31,10 @@ export function useActivationProgress() {
     staleTime: Number.POSITIVE_INFINITY,
   });
 
-  const isContextReady = configQuery.isSuccess && userQuery.isSuccess;
+  // A public rollout-config failure must not disable the legacy push flow for
+  // pre-campaign accounts. The bundled campaign date lets policy distinguish
+  // those users while still deferring prompts for the new-user cohort.
+  const isContextReady = configQuery.isFetched && userQuery.isSuccess;
   const isReady =
     isAuthenticated && isContextReady && (identity === null || progressQuery.isSuccess);
 
@@ -39,6 +43,8 @@ export function useActivationProgress() {
     user: isAuthenticated ? userQuery.data : undefined,
     progress: isAuthenticated && identity ? (progressQuery.data ?? EMPTY_PROGRESS) : EMPTY_PROGRESS,
     isReady,
+    isAuthenticated,
+    hasUserError: isAuthenticated && userQuery.isError,
   };
 }
 

@@ -1,6 +1,5 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { z } from 'zod';
 import { FEATURE_KEYS, type FeatureKey } from './events/growth.events';
 
@@ -85,21 +84,25 @@ export function createFeatureAttributionStore(
   };
 }
 
-export const featureAttribution = createFeatureAttributionStore(mmkvSyncStorage);
-
 export function trackAttributedFeatureSuccess(
   analytics: Analytics,
   attribution: FeatureAttributionStore,
   input: ConsumeAttributionInput,
 ): boolean {
-  const consumed = attribution.consume(input);
-  if (!consumed) {
+  try {
+    const consumed = attribution.consume(input);
+    if (!consumed) {
+      return false;
+    }
+
+    analytics.trackEvent('feature_action_success', {
+      campaign_id: consumed.campaignId,
+      feature: consumed.feature,
+    });
+    return true;
+  } catch {
+    // 분석과 로컬 귀속은 best-effort다. 실제 기능 성공 후 캐시 갱신,
+    // 토스트, 화면 전환 같은 사용자 흐름을 절대 중단시키지 않는다.
     return false;
   }
-
-  analytics.trackEvent('feature_action_success', {
-    campaign_id: consumed.campaignId,
-    feature: consumed.feature,
-  });
-  return true;
 }

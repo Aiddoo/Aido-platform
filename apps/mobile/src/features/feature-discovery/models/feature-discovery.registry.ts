@@ -1,4 +1,5 @@
 export const FEATURE_DISCOVERY_CAMPAIGN_ID = 'feature-discovery-2026-08';
+export const FEATURE_DISCOVERY_CAMPAIGN_LAUNCHED_AT = '2026-08-01T00:00:00.000Z';
 
 export const FEATURE_DISCOVERY_CARD_IDS = [
   'memo_ai',

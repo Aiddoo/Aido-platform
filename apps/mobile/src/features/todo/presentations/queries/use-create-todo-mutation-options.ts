@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/errors';
 import type { CreateTodoInput } from '@aido/validators';
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
 import type { User } from '@src/features/user/models/user.model';
@@ -33,6 +33,7 @@ function parseScheduledTime(time: string, dateStr: string): Date {
 
 export const useCreateTodoMutationOptions = () => {
   const todoService = useTodoService();
+  const activationService = useActivationService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -93,7 +94,7 @@ export const useCreateTodoMutationOptions = () => {
       return { previousData, startDate };
     },
     onSuccess: (_data, { input, source }) => {
-      recordTodoCreatedForActivation({ queryClient });
+      recordTodoCreatedForActivation({ queryClient, service: activationService });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(input.startDate) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });

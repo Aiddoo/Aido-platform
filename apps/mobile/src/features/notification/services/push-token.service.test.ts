@@ -53,4 +53,17 @@ describe('PushTokenService.requestPermission', () => {
     expect(result).toBe(true);
     expect(requestPermissionsAsync).toHaveBeenCalledTimes(1);
   });
+
+  it('호환성 사전 등록은 미결정 권한을 OS에 요청하지 않는다', async () => {
+    // Given
+    getPermissionsAsync.mockResolvedValue({ status: 'undetermined' } as never);
+    const service = new PushTokenService();
+
+    // When
+    const result = await service.requestPermission(false);
+
+    // Then
+    expect(result).toBe(false);
+    expect(requestPermissionsAsync).not.toHaveBeenCalled();
+  });
 });

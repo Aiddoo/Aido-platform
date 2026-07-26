@@ -8,23 +8,44 @@ export function useAutomaticPushRegistration(): boolean {
   const logger = useLogger();
   const activation = useActivationProgress();
   const attemptedKeyRef = useRef<string | null>(null);
+  const preflightAttemptedRef = useRef(false);
 
   const canRegister =
-    activation.isReady &&
-    ActivationPolicy.shouldRegisterPushAutomatically({
-      config: activation.config,
-      user: activation.user,
-      progress: activation.progress,
-    });
+    activation.hasUserError ||
+    (activation.isReady &&
+      ActivationPolicy.shouldRegisterPushAutomatically({
+        config: activation.config,
+        user: activation.user,
+        progress: activation.progress,
+      }));
 
   const registrationKey = useMemo(() => {
-    if (!canRegister || !activation.user) {
+    if (!canRegister) {
       return null;
     }
     const unlockedAt =
       activation.progress.activatedAt ?? activation.progress.pushRegistrationUnlockedAt;
-    return `${activation.user.id}:${unlockedAt?.toISOString() ?? 'existing'}`;
+    return `${activation.user?.id ?? 'compatibility-fallback'}:${
+      unlockedAt?.toISOString() ?? 'existing'
+    }`;
   }, [activation.progress, activation.user, canRegister]);
+
+  useEffect(() => {
+    if (!activation.isAuthenticated) {
+      preflightAttemptedRef.current = false;
+      return;
+    }
+    if (preflightAttemptedRef.current) {
+      return;
+    }
+
+    preflightAttemptedRef.current = true;
+    notificationService
+      .setupPushNotifications({ requestPermission: false })
+      .catch((error) =>
+        logger.warn('[Notification] Existing push token preflight skipped', { error }),
+      );
+  }, [activation.isAuthenticated, logger, notificationService]);
 
   useEffect(() => {
     if (!registrationKey) {

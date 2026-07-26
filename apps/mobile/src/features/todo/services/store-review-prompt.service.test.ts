@@ -1,6 +1,10 @@
 import { createMockSyncStorage } from '@src/shared/__tests__';
 import { createStoreReviewPromptRepository } from '../repositories/store-review-prompt.repository';
-import { type StoreReviewGateway, StoreReviewPromptService } from './store-review-prompt.service';
+import {
+  type StoreReviewDecision,
+  type StoreReviewGateway,
+  StoreReviewPromptService,
+} from './store-review-prompt.service';
 
 describe('StoreReviewPromptService', () => {
   const createFixture = () => {
@@ -57,6 +61,42 @@ describe('StoreReviewPromptService', () => {
 
     expect(decide).not.toHaveBeenCalled();
     expect(gateway.requestReview).not.toHaveBeenCalled();
+  });
+
+  it('같은 계정의 동시 완료에서는 리뷰 결정을 하나만 연다', async () => {
+    // Given
+    const { repository, service } = createFixture();
+    repository.recordSuccessfulCompletion('account-1', {
+      todoId: 1,
+      localDate: '2026-07-25',
+    });
+    repository.recordSuccessfulCompletion('account-1', {
+      todoId: 2,
+      localDate: '2026-07-26',
+    });
+    let resolveDecision: ((decision: StoreReviewDecision) => void) | undefined;
+    const decide = jest.fn(
+      () =>
+        new Promise<StoreReviewDecision>((resolve) => {
+          resolveDecision = resolve;
+        }),
+    );
+
+    // When
+    const first = service.recordSuccessfulCompletion(
+      { accountId: 'account-1', todoId: 3, localDate: '2026-07-26' },
+      decide,
+    );
+    const second = service.recordSuccessfulCompletion(
+      { accountId: 'account-1', todoId: 4, localDate: '2026-07-26' },
+      decide,
+    );
+    await Promise.resolve();
+
+    // Then
+    expect(decide).toHaveBeenCalledTimes(1);
+    resolveDecision?.('dismiss');
+    await expect(Promise.all([first, second])).resolves.toEqual([true, false]);
   });
 
   it('제안을 거절하면 90일 쿨다운을 기록하고 네이티브 리뷰를 요청하지 않는다', async () => {

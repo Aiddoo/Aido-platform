@@ -9,11 +9,13 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_PATH = fileURLToPath(new URL('./check-growth-release-assets.mjs', import.meta.url));
 const RELEASE_VERSION = '1.8.0';
 const CAMPAIGN_ID = 'feature-discovery-2026-08';
+const CAMPAIGN_LAUNCHED_AT = '2026-08-01T00:00:00.000Z';
 
 const validRelease = () => ({
   schemaVersion: 1,
   releaseVersion: RELEASE_VERSION,
   campaignId: CAMPAIGN_ID,
+  campaignLaunchedAt: CAMPAIGN_LAUNCHED_AT,
   positioning: {
     ko: '메모가 할 일이 되고, 친구와 함께 끝내는 투두.',
     en: 'Turn notes into to-dos, then finish them with friends.',
@@ -123,6 +125,11 @@ function createFixture({ mutateRelease, mutateCopy, packageVersion = RELEASE_VER
     root,
     'apps/api/src/notification/domain/services/feature-marketing-capability.ts',
     `${CAMPAIGN_ID}\n${RELEASE_VERSION}\n`,
+  );
+  write(
+    root,
+    'apps/mobile/src/features/feature-discovery/models/feature-discovery.registry.ts',
+    `${CAMPAIGN_ID}\n${CAMPAIGN_LAUNCHED_AT}\n`,
   );
   writeJson(root, 'apps/mobile/src/shared/i18n/locales/ko/friend.json', publicCopy.friendKo);
   writeJson(root, 'apps/mobile/src/shared/i18n/locales/en/friend.json', publicCopy.friendEn);
@@ -255,4 +262,18 @@ test('모바일 package 버전이 릴리스 버전과 다르면 거부한다', (
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /package\.json version must be 1\.8\.0/);
   });
+});
+
+test('번들 캠페인 출시 시각과 릴리스 메타데이터가 다르면 거부한다', () => {
+  withFixture(
+    {
+      mutateRelease: (release) => {
+        release.campaignLaunchedAt = '2026-08-02T00:00:00.000Z';
+      },
+    },
+    (result) => {
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /campaignLaunchedAt must be 2026-08-01/);
+    },
+  );
 });

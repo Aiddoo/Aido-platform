@@ -1,5 +1,5 @@
 import type { ToggleTodoCompleteInput } from '@aido/validators';
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCompletionForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 
 import type { TodosResult } from '../../models/todo.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
+import { useStoreReviewPrompt } from '../hooks/use-store-review-prompt';
 
 interface ToggleTodoMutationParams {
   todoId: number;
@@ -17,8 +18,10 @@ interface ToggleTodoMutationParams {
 
 export const useToggleTodoMutationOptions = () => {
   const todoService = useTodoService();
+  const activationService = useActivationService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const { promptAfterSuccessfulCompletion } = useStoreReviewPrompt();
 
   return mutationOptions({
     mutationFn: async ({ todoId, body }: ToggleTodoMutationParams) => {
@@ -53,10 +56,14 @@ export const useToggleTodoMutationOptions = () => {
       });
       const activationEvent = recordTodoCompletionForActivation({
         queryClient,
+        service: activationService,
         completed: variables.body.completed,
       });
       if (activationEvent) {
         trackEvent('activation_completed', activationEvent);
+      }
+      if (variables.body.completed) {
+        void promptAfterSuccessfulCompletion(variables.todoId);
       }
     },
     onError: (_error, _variables, context) => {

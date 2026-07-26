@@ -43,6 +43,55 @@ describe('FeatureAttributionStore', () => {
     );
   });
 
+  it('귀속 저장소 읽기 실패가 실제 기능 성공 후 UX를 중단시키지 않는다', () => {
+    // Given
+    const analytics = createMockAnalytics();
+    const attribution = {
+      record: jest.fn(),
+      consume: jest.fn(() => {
+        throw new Error('storage unavailable');
+      }),
+    };
+
+    // When
+    const emit = () =>
+      trackAttributedFeatureSuccess(analytics, attribution, {
+        accountId: 'account-1',
+        feature: 'todo_creation',
+      });
+
+    // Then
+    expect(emit).not.toThrow();
+    expect(emit()).toBe(false);
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it('분석 전송 실패도 실제 기능 성공 콜백 밖으로 전파하지 않는다', () => {
+    // Given
+    const analytics = createMockAnalytics();
+    analytics.trackEvent.mockImplementation(() => {
+      throw new Error('analytics unavailable');
+    });
+    const attribution = {
+      record: jest.fn(),
+      consume: jest.fn(() => ({
+        campaignId: 'feature-discovery-2026-08',
+        feature: 'todo_reorder' as const,
+      })),
+    };
+
+    // When
+    const emit = () =>
+      trackAttributedFeatureSuccess(analytics, attribution, {
+        accountId: 'account-1',
+        feature: 'todo_reorder',
+      });
+
+    // Then
+    expect(emit).not.toThrow();
+    expect(emit()).toBe(false);
+  });
+
   it('다른 계정이나 다른 기능의 실제 행동은 attribution을 소비하지 않는다', () => {
     // Given
     const storage = createMockSyncStorage();

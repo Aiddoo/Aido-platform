@@ -7,10 +7,12 @@ const mockSetupPushNotifications = jest.fn();
 const mockWarn = jest.fn();
 
 let mockActivationState: {
-  config: FeatureDiscoveryConfig;
-  user: ActivationUser;
+  config: FeatureDiscoveryConfig | undefined;
+  user: ActivationUser | undefined;
   progress: ActivationProgress;
   isReady: boolean;
+  isAuthenticated: boolean;
+  hasUserError: boolean;
 } = {
   config: {
     enabled: true as const,
@@ -29,6 +31,8 @@ let mockActivationState: {
     pushRegistrationUnlockedAt: null,
   },
   isReady: true,
+  isAuthenticated: true,
+  hasUserError: false,
 };
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
@@ -55,17 +59,20 @@ describe('useAutomaticPushRegistration', () => {
         pushRegistrationUnlockedAt: null,
       },
       isReady: true,
+      isAuthenticated: true,
+      hasUserError: false,
     };
     mockSetupPushNotifications.mockResolvedValue({ ok: true, value: { registered: true } });
   });
 
-  it('기존 사용자는 컨텍스트가 준비되면 기존처럼 자동 등록한다', async () => {
+  it('기존 사용자는 컨텍스트와 무관하게 허용된 토큰을 즉시 재등록하고 기존 권한 흐름도 유지한다', async () => {
     // When
     await renderHook(() => useAutomaticPushRegistration());
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledTimes(1);
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith({ requestPermission: false });
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
     });
   });
 
@@ -83,7 +90,10 @@ describe('useAutomaticPushRegistration', () => {
     await renderHook(() => useAutomaticPushRegistration());
 
     // Then
-    expect(mockSetupPushNotifications).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockSetupPushNotifications).toHaveBeenCalledTimes(1);
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith({ requestPermission: false });
+    });
   });
 
   it('신규 사용자가 활성화되면 자동 등록을 한 번 시작한다', async () => {
@@ -109,7 +119,7 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledTimes(1);
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
     });
   });
 
@@ -117,7 +127,7 @@ describe('useAutomaticPushRegistration', () => {
     // Given
     const { rerender } = await renderHook(() => useAutomaticPushRegistration());
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledTimes(1);
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
     });
 
     // When
@@ -128,7 +138,48 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledTimes(2);
+      expect(
+        mockSetupPushNotifications.mock.calls.filter((args) => args.length === 0),
+      ).toHaveLength(2);
+    });
+  });
+
+  it('설정 API 오류 중에도 출시 전 기존 사용자는 자동 등록을 유지한다', async () => {
+    // Given
+    mockActivationState = {
+      ...mockActivationState,
+      config: undefined,
+      user: {
+        id: 'existing-user',
+        createdAt: new Date('2026-07-31T23:59:59.999Z'),
+      },
+    };
+
+    // When
+    await renderHook(() => useAutomaticPushRegistration());
+
+    // Then
+    await waitFor(() => {
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
+    });
+  });
+
+  it('/me 네트워크 또는 Zod 오류가 나도 기존 권한 등록 흐름을 영구 차단하지 않는다', async () => {
+    // Given
+    mockActivationState = {
+      ...mockActivationState,
+      user: undefined,
+      isReady: false,
+      hasUserError: true,
+    };
+
+    // When
+    await renderHook(() => useAutomaticPushRegistration());
+
+    // Then
+    await waitFor(() => {
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith({ requestPermission: false });
+      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
     });
   });
 });

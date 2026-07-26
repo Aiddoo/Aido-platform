@@ -18,6 +18,7 @@ export class StoreReviewPromptService {
   readonly #repository: StoreReviewPromptRepository;
   readonly #gateway: StoreReviewGateway;
   readonly #now: () => Date;
+  readonly #inFlightAccounts = new Set<string>();
 
   constructor(
     repository: StoreReviewPromptRepository,
@@ -39,23 +40,31 @@ export class StoreReviewPromptService {
     });
     const now = this.#now();
 
-    if (!StoreReviewPromptPolicy.shouldPrompt(state, now)) {
+    if (
+      this.#inFlightAccounts.has(accountId) ||
+      !StoreReviewPromptPolicy.shouldPrompt(state, now)
+    ) {
       return false;
     }
-    if (!(await this.#gateway.isAvailable())) {
-      return false;
-    }
+    this.#inFlightAccounts.add(accountId);
+    try {
+      if (!(await this.#gateway.isAvailable())) {
+        return false;
+      }
 
-    const decision = await decide();
-    if (decision === 'dismiss') {
-      this.#repository.recordDismissal(accountId, now);
+      const decision = await decide();
+      if (decision === 'dismiss') {
+        this.#repository.recordDismissal(accountId, now);
+        return true;
+      }
+
+      // OS가 실제 프롬프트를 표시하는지는 플랫폼 정책에 달려 있다. 중복 요청 방지를 위해
+      // 네이티브 API 호출 전에 사용자의 명시적 선택을 기록한다.
+      this.#repository.recordReviewRequested(accountId, now);
+      await this.#gateway.requestReview();
       return true;
+    } finally {
+      this.#inFlightAccounts.delete(accountId);
     }
-
-    // OS가 실제 프롬프트를 표시하는지는 플랫폼 정책에 달려 있다. 중복 요청 방지를 위해
-    // 네이티브 API 호출 전에 사용자의 명시적 선택을 기록한다.
-    this.#repository.recordReviewRequested(accountId, now);
-    await this.#gateway.requestReview();
-    return true;
   }
 }

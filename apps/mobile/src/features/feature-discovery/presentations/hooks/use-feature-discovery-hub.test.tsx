@@ -1,5 +1,4 @@
 import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discovery/models/feature-discovery.registry';
-import { featureAttribution } from '@src/shared/analytics';
 import { act, fireEvent, render, renderHook } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -10,6 +9,10 @@ const mockTrackEvent = jest.fn();
 const mockClose = jest.fn();
 const mockExit = jest.fn();
 const mockPush = jest.fn();
+const mockFeatureAttribution = {
+  record: jest.fn(),
+  consume: jest.fn(),
+};
 let renderedOverlay: ReactNode = null;
 
 const mockOverlayOpen = jest.fn(
@@ -36,6 +39,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => ({
     setUserProperties: jest.fn(),
     logScreenView: jest.fn(),
   }),
+  useFeatureAttribution: () => mockFeatureAttribution,
 }));
 
 jest.mock('@src/shared/ui', () => ({
@@ -71,6 +75,8 @@ describe('useFeatureDiscoveryHub', () => {
     mockExit.mockReset();
     mockPush.mockReset();
     mockOverlayOpen.mockClear();
+    mockFeatureAttribution.record.mockReset();
+    mockFeatureAttribution.consume.mockReset();
   });
 
   it('귀속 저장 실패에도 허브를 닫고 카드 화면으로 이동한다', async () => {
@@ -78,7 +84,7 @@ describe('useFeatureDiscoveryHub', () => {
     if (!campaign) {
       throw new Error('bundled campaign missing');
     }
-    jest.spyOn(featureAttribution, 'record').mockImplementation(() => {
+    mockFeatureAttribution.record.mockImplementation(() => {
       throw new Error('MMKV unavailable');
     });
     const { result } = await renderHook(() => useFeatureDiscoveryHub());

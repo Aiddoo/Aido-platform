@@ -1,3 +1,4 @@
+import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { unlockPushRegistrationForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { PreferencePolicy } from '@src/features/auth/models/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
@@ -42,6 +43,7 @@ function PushSettingsForm() {
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const registerPushMutation = useMutation(useRegisterPushTokenMutationOptions());
   const queryClient = useQueryClient();
+  const activationService = useActivationService();
   const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
   const { t } = useTranslation('notification');
@@ -63,6 +65,7 @@ function PushSettingsForm() {
                   }
                   const handledByAutomaticGate = unlockPushRegistrationForActivation({
                     queryClient,
+                    service: activationService,
                   });
                   if (!handledByAutomaticGate) {
                     registerPushMutation.mutate();

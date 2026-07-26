@@ -8,6 +8,7 @@ const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPOSITORY_ROOT = resolve(MOBILE_ROOT, '../..');
 const RELEASE_VERSION = '1.8.0';
 const CAMPAIGN_ID = 'feature-discovery-2026-08';
+const CAMPAIGN_LAUNCHED_AT = '2026-08-01T00:00:00.000Z';
 const SCREENSHOT_ORDER = [
   'memo-ai',
   'name-search',
@@ -76,6 +77,10 @@ const release = JSON.parse(read(releasePath));
 assert(release.schemaVersion === 1, 'release schemaVersion must be 1');
 assert(release.releaseVersion === RELEASE_VERSION, `releaseVersion must be ${RELEASE_VERSION}`);
 assert(release.campaignId === CAMPAIGN_ID, `campaignId must be ${CAMPAIGN_ID}`);
+assert(
+  release.campaignLaunchedAt === CAMPAIGN_LAUNCHED_AT,
+  `campaignLaunchedAt must be ${CAMPAIGN_LAUNCHED_AT}`,
+);
 assertLocalizedCopy(release.positioning, 'positioning');
 
 for (const locale of ['ko', 'en']) {
@@ -146,6 +151,17 @@ assert(
 assert(
   discoveryConfig.includes(RELEASE_VERSION),
   'server discovery minimum app version must match release metadata',
+);
+const discoveryRegistry = read(
+  'apps/mobile/src/features/feature-discovery/models/feature-discovery.registry.ts',
+);
+assert(
+  discoveryRegistry.includes(CAMPAIGN_ID),
+  'bundled discovery campaign must match release metadata',
+);
+assert(
+  discoveryRegistry.includes(CAMPAIGN_LAUNCHED_AT),
+  'bundled discovery launch time must match release metadata',
 );
 
 const friendKo = JSON.parse(read('apps/mobile/src/shared/i18n/locales/ko/friend.json'));

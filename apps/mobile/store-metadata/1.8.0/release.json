@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "releaseVersion": "1.8.0",
   "campaignId": "feature-discovery-2026-08",
+  "campaignLaunchedAt": "2026-08-01T00:00:00.000Z",
   "positioning": {
     "ko": "메모가 할 일이 되고, 친구와 함께 끝내는 투두.",
     "en": "Turn notes into to-dos, then finish them with friends."

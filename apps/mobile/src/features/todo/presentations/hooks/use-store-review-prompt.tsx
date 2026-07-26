@@ -1,29 +1,13 @@
-import { useLogger } from '@src/bootstrap/providers/di-context';
+import { useLogger, useStoreReviewPromptService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { toError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { ConfirmDialog, useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import * as StoreReview from 'expo-store-review';
 import { useCallback, useRef } from 'react';
-import { createStoreReviewPromptRepository } from '../../repositories/store-review-prompt.repository';
-import {
-  type StoreReviewDecision,
-  type StoreReviewGateway,
-  StoreReviewPromptService,
-} from '../../services/store-review-prompt.service';
-
-const expoStoreReviewGateway: StoreReviewGateway = {
-  isAvailable: StoreReview.isAvailableAsync,
-  requestReview: StoreReview.requestReview,
-};
-const storeReviewPromptService = new StoreReviewPromptService(
-  createStoreReviewPromptRepository(mmkvSyncStorage),
-  expoStoreReviewGateway,
-);
+import type { StoreReviewDecision } from '../../services/store-review-prompt.service';
 
 interface StoreReviewPromptDialogProps {
   isOpen: boolean;
@@ -70,6 +54,7 @@ export function useStoreReviewPrompt() {
   const { currentLocalDateKey } = useLocalDate();
   const overlay = useOverlay();
   const logger = useLogger();
+  const storeReviewPromptService = useStoreReviewPromptService();
 
   const promptAfterSuccessfulCompletion = useCallback(
     async (todoId: number): Promise<boolean> => {
@@ -97,7 +82,7 @@ export function useStoreReviewPrompt() {
         return false;
       }
     },
-    [currentLocalDateKey, logger, overlay, queryClient],
+    [currentLocalDateKey, logger, overlay, queryClient, storeReviewPromptService],
   );
 
   return { promptAfterSuccessfulCompletion };

@@ -1,9 +1,9 @@
-import { useAnalytics } from '@src/bootstrap/providers/di-context';
+import { useAnalytics, useFeatureAttribution } from '@src/bootstrap/providers/di-context';
 import type {
   FeatureDiscoveryCampaign,
   FeatureDiscoveryCardId,
 } from '@src/features/feature-discovery/models/feature-discovery.registry';
-import { type FeatureHubSource, featureAttribution } from '@src/shared/analytics';
+import type { FeatureHubSource } from '@src/shared/analytics';
 import { useOverlay } from '@src/shared/ui';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
@@ -24,6 +24,7 @@ interface OpenFeatureDiscoveryHubInput {
 
 export function useFeatureDiscoveryHub() {
   const analytics = useAnalytics();
+  const featureAttribution = useFeatureAttribution();
   const overlay = useOverlay();
   const router = useRouter();
   const { height: viewportHeight } = useWindowDimensions();
@@ -85,7 +86,7 @@ export function useFeatureDiscoveryHub() {
         );
       });
     },
-    [analytics, overlay, router, viewportHeight],
+    [analytics, featureAttribution, overlay, router, viewportHeight],
   );
 
   return { openHub };
