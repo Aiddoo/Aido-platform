@@ -67,6 +67,7 @@ import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.in
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { createCorsOptions } from "@/shared/infrastructure/config/utils/cors-options";
 import { DatabaseService } from "@/shared/infrastructure/database";
+import { configureRequestIdentity } from "@/shared/infrastructure/http/configure-request-identity";
 import {
 	REDIS_CLIENT,
 	REDIS_COMMAND_CLIENT,
@@ -94,6 +95,10 @@ import {
 	createE2eTestStateResetter,
 	type TestStateResetter,
 } from "./e2e-test-state";
+import {
+	bypassE2eThrottler,
+	restoreRealE2eThrottler,
+} from "./e2e-throttler-control";
 import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher";
 
 /* ── BullMQ 격리 대상 ─────────────────────────────────── */
@@ -147,6 +152,8 @@ export interface E2eTestContext {
 export interface E2eAppOptions {
 	/** main.ts와 동일한 /v1 프리픽스 적용이 필요한 production-style 경로 검증용 */
 	withGlobalPrefix?: boolean;
+	/** 전역 E2E bypass를 해제하고 실제 ThrottlerGuard를 검증하는 전용 suite용 */
+	withRealThrottler?: boolean;
 	/** 추가 provider override 콜백 */
 	customizeBuilder?: (
 		builder: ReturnType<typeof Test.createTestingModule>,
@@ -160,6 +167,10 @@ export interface E2eAppOptions {
 export async function createE2eApp(
 	options?: E2eAppOptions,
 ): Promise<E2eTestContext> {
+	if (options?.withRealThrottler) {
+		restoreRealE2eThrottler();
+	}
+
 	const testDatabase = options?.testDatabase ?? new TestDatabase();
 	if (!options?.testDatabase) {
 		await testDatabase.start();
@@ -213,6 +224,9 @@ export async function createE2eApp(
 		);
 		if (errors.length > 0) {
 			throw new AggregateError(errors, "Failed to close E2E app resources");
+		}
+		if (options?.withRealThrottler) {
+			bypassE2eThrottler();
 		}
 	};
 
@@ -310,6 +324,9 @@ export async function createE2eApp(
 	try {
 		module = await builder.compile();
 		app = module.createNestApplication();
+		if (options?.withRealThrottler) {
+			configureRequestIdentity(app);
+		}
 		app.enableCors(createCorsOptions("development", ["http://localhost:3000"]));
 		app.useGlobalPipes(new ZodValidationPipe());
 		if (options?.withGlobalPrefix) {

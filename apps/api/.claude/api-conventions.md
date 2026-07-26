@@ -148,7 +148,8 @@ export class ExampleController {
 ```typescript
 private extractMetadata(req: Request): SessionMetadata {
   return {
-    ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || 'unknown',
+    // Express trust proxy가 host-local Nginx 한 홉을 검증해 확정한 canonical IP
+    ipAddress: req.ip || 'unknown',
     userAgent: req.headers['user-agent'] || 'unknown',
     deviceName: req.body?.deviceName,
     deviceType: req.body?.deviceType,

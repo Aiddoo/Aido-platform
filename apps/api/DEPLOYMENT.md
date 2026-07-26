@@ -71,8 +71,8 @@ cp .env.docker.prod.example .env.docker.prod
 pnpm docker:prod:build
 pnpm docker:prod:up
 
-# 헬스 체크
-curl http://localhost:8080/health
+# 헬스 체크 (API host port는 loopback-only)
+curl http://127.0.0.1:8080/health
 
 # 로그 확인
 pnpm docker:prod:logs
@@ -86,6 +86,8 @@ pnpm docker:prod:down
 ## 3. 프로덕션 배포 (GitHub Actions → EC2)
 
 > 실제 운영 파이프라인. ECS/ECR을 사용하지 않는다 — EC2 한 대(t4g.small)에서 `docker compose`로 빌드·기동하며, DB(RDS)/Redis(ElastiCache)는 외부 관리형 서비스다.
+> 공개 요청 경로는 **client → host-local Nginx → `127.0.0.1:${PORT}` Docker API**다.
+> Compose가 API host port를 loopback에만 bind하고 Express는 이 Nginx 한 홉만 신뢰한다.
 
 ### 3.1 파이프라인 개요
 

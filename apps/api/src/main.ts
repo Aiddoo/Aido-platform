@@ -16,9 +16,11 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 import { AppModule } from "./app.module";
+import { configureRequestIdentity } from "./shared/infrastructure/http/configure-request-identity";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { bufferLogs: true });
+	configureRequestIdentity(app);
 
 	const configService = app.get(ConfigService<EnvConfig, true>);
 	const port = configService.get("PORT", { infer: true });
