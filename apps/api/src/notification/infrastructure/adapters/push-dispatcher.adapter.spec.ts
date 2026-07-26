@@ -260,6 +260,29 @@ describe("PushDispatcherAdapter", () => {
 		});
 	});
 
+	it("단일 dispatch 생성 후 예상하지 못한 토큰 조회 오류는 FAILED로 전이한다", async () => {
+		userSettings.getPreferenceRecord.mockResolvedValue(
+			makePreference("user-1", "Asia/Seoul"),
+		);
+		rateLimiter.isRateLimited.mockResolvedValue(false);
+		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
+		repository.createPushDispatch.mockResolvedValue({ id: 101 });
+		repository.findPushTokensByUser.mockRejectedValue(
+			new Error("token storage unavailable"),
+		);
+
+		adapter.fireAndForgetPush(
+			{ userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" },
+			1,
+		);
+		await adapter.beforeApplicationShutdown();
+
+		expect(repository.markPushDispatchFailed).toHaveBeenCalledWith(
+			[101],
+			"UNEXPECTED_DISPATCH_ERROR",
+		);
+	});
+
 	it("단일 feature-discovery 발송도 지원 토큰이 없으면 capability skip으로 기록한다", async () => {
 		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T03:00:00.000Z"));
 		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
@@ -411,6 +434,50 @@ describe("PushDispatcherAdapter", () => {
 		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(
 			2,
 			"RATE_LIMITED",
+		);
+	});
+
+	it("배치 dispatch 생성 후 예상하지 못한 rate limiter 오류는 모든 PROCESSING dispatch를 FAILED로 전이한다", async () => {
+		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
+			makePreference("user-1", "Asia/Seoul"),
+			makePreference("user-2", "Asia/Seoul"),
+		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
+			makeConsent("user-1"),
+			makeConsent("user-2"),
+		]);
+		repository.createPushDispatch
+			.mockResolvedValueOnce({ id: 201 })
+			.mockResolvedValueOnce({ id: 202 });
+		rateLimiter.reserveBatch.mockRejectedValue(
+			new Error("rate limiter unavailable"),
+		);
+
+		adapter.fireAndForgetBatchPush([
+			{
+				data: {
+					userId: "user-1",
+					type: "FOLLOW_NEW",
+					title: "t1",
+					body: "b1",
+				},
+				notificationId: 1,
+			},
+			{
+				data: {
+					userId: "user-2",
+					type: "FOLLOW_NEW",
+					title: "t2",
+					body: "b2",
+				},
+				notificationId: 2,
+			},
+		]);
+		await adapter.beforeApplicationShutdown();
+
+		expect(repository.markPushDispatchFailed).toHaveBeenCalledWith(
+			[201, 202],
+			"UNEXPECTED_DISPATCH_ERROR",
 		);
 	});
 

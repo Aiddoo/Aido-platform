@@ -11,7 +11,7 @@ export function supportsFeatureDiscoveryMarketing(
 	capability: PushCapability,
 ): boolean {
 	return (
-		capability.payloadVersion >= 2 &&
+		capability.payloadVersion === 2 &&
 		isVersionAtLeast(capability.appVersion, FEATURE_DISCOVERY_MIN_APP_VERSION)
 	);
 }

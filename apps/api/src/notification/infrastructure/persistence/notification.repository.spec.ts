@@ -777,6 +777,25 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 		});
 	});
 
+	describe("markPushDispatchFailed", () => {
+		it("PROCESSING dispatch만 stable failure reason과 함께 FAILED로 전이한다", async () => {
+			asMock(db.pushDispatch.updateMany).mockResolvedValue({ count: 2 });
+
+			await repository.markPushDispatchFailed(
+				[41, 42],
+				"UNEXPECTED_DISPATCH_ERROR",
+			);
+
+			expect(db.pushDispatch.updateMany).toHaveBeenCalledWith({
+				where: { id: { in: [41, 42] }, status: "PROCESSING" },
+				data: {
+					status: "FAILED",
+					skipReason: "UNEXPECTED_DISPATCH_ERROR",
+				},
+			});
+		});
+	});
+
 	describe("findPushTokenByToken", () => {
 		it("토큰 값으로 푸시 토큰을 조회해야 한다", async () => {
 			// Given

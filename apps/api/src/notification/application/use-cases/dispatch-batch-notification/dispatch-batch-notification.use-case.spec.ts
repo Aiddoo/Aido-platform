@@ -2,15 +2,14 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createPushDispatcherMock } from "@test/mocks/ports/notification.mock";
 import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import { DedupKeys } from "@/shared/infrastructure/dedup/constants/dedup-keys";
-import {
-	DEDUP_PROVIDER,
-	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_DEDUP,
+	type NotificationDedupPort,
+} from "../../ports/notification-dedup.port";
 import {
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
@@ -21,7 +20,7 @@ describe("DispatchBatchNotificationUseCase", () => {
 	let useCase: DispatchBatchNotificationUseCase;
 	let pushDispatcher: Mocked<PushDispatcherPort>;
 	let cache: Mocked<NotificationCachePort>;
-	let dedup: Mocked<IDedupProvider>;
+	let dedup: Mocked<NotificationDedupPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -31,17 +30,15 @@ describe("DispatchBatchNotificationUseCase", () => {
 			.impl(() => createPushDispatcherMock())
 			.mock<NotificationCachePort>(NOTIFICATION_CACHE)
 			.impl(() => createNotificationCacheMock())
-			.mock<IDedupProvider>(DEDUP_PROVIDER)
+			.mock<NotificationDedupPort>(NOTIFICATION_DEDUP)
 			.impl(() => ({
-				filterMembers: jest.fn(),
-				isMember: jest.fn(),
-				addMembers: jest.fn(),
+				recordNotifiedUsers: jest.fn(),
 			}))
 			.compile();
 		useCase = unit;
 		pushDispatcher = unitRef.get(PUSH_DISPATCHER);
 		cache = unitRef.get(NOTIFICATION_CACHE);
-		dedup = unitRef.get(DEDUP_PROVIDER);
+		dedup = unitRef.get(NOTIFICATION_DEDUP);
 	});
 
 	it("푸시·미읽음 캐시·날짜 dedup 부수효과를 예약한다", () => {
@@ -76,10 +73,17 @@ describe("DispatchBatchNotificationUseCase", () => {
 		expect(result).toEqual({ count: 2 });
 		expect(pushDispatcher.fireAndForgetBatchPush).toHaveBeenCalledWith(items);
 		expect(cache.invalidateUnreadCount).toHaveBeenCalledTimes(2);
-		expect(dedup.addMembers).toHaveBeenCalledWith(
-			DedupKeys.notified("FRIEND_COMPLETED", date),
-			[DedupKeys.SENTINEL, "u1", "u2"],
-			DedupKeys.TTL.NOTIFIED,
-		);
+		expect(dedup.recordNotifiedUsers).toHaveBeenCalledWith([
+			{
+				userId: "u1",
+				type: "FRIEND_COMPLETED",
+				notificationDate: date,
+			},
+			{
+				userId: "u2",
+				type: "FRIEND_COMPLETED",
+				notificationDate: date,
+			},
+		]);
 	});
 });

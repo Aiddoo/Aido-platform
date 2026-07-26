@@ -7,6 +7,7 @@ import type { DatabaseService } from "@/shared/infrastructure/database/database.
 import { toInputJson } from "@/shared/infrastructure/database/json.util";
 import type {
 	NotificationRepositoryPort,
+	PushDispatchFailureReason,
 	PushDispatchSkipReason,
 } from "../../application/ports/notification.repository.port";
 import type {
@@ -408,6 +409,17 @@ export class NotificationRepository implements NotificationRepositoryPort {
 		await this.client.pushDispatch.update({
 			where: { id: dispatchId },
 			data: { status: "SKIPPED", skipReason: reason },
+		});
+	}
+
+	async markPushDispatchFailed(
+		dispatchIds: number[],
+		reason: PushDispatchFailureReason,
+	): Promise<void> {
+		if (dispatchIds.length === 0) return;
+		await this.client.pushDispatch.updateMany({
+			where: { id: { in: dispatchIds }, status: "PROCESSING" },
+			data: { status: "FAILED", skipReason: reason },
 		});
 	}
 

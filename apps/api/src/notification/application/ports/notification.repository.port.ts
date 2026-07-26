@@ -25,6 +25,8 @@ export type PushDispatchSkipReason =
 	| "NO_ACTIVE_TOKEN"
 	| "UNSUPPORTED_APP_CAPABILITY";
 
+export type PushDispatchFailureReason = "UNEXPECTED_DISPATCH_ERROR";
+
 /**
  * 알림·푸시 토큰 저장소 포트.
  *
@@ -86,6 +88,10 @@ export interface NotificationRepositoryPort {
 	markPushDispatchSkipped(
 		dispatchId: number,
 		reason: PushDispatchSkipReason,
+	): Promise<void>;
+	markPushDispatchFailed(
+		dispatchIds: number[],
+		reason: PushDispatchFailureReason,
 	): Promise<void>;
 	recordPushDeliveryResults(
 		dispatchId: number,

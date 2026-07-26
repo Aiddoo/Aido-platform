@@ -9,6 +9,7 @@ import { NotificationFacade } from "./application/facades/notification.facade";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
+import { NOTIFICATION_DEDUP } from "./application/ports/notification-dedup.port";
 import { PUSH_DISPATCHER } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
@@ -31,6 +32,7 @@ import { SendNotificationUseCase } from "./application/use-cases/send-notificati
 import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/notification-cache.adapter";
+import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
 import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
@@ -90,6 +92,11 @@ import { NotificationController } from "./presentation/notification.controller";
 		},
 		// 조회 캐시 포트 (application → CacheService 직접 의존 역전)
 		{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
+		NotificationDedupAdapter,
+		{
+			provide: NOTIFICATION_DEDUP,
+			useExisting: NotificationDedupAdapter,
+		},
 		// 푸시 디스패처 (전송 메커니즘 + 발송 자격 판단)
 		{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)

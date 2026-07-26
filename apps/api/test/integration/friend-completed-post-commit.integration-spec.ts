@@ -12,6 +12,7 @@ import {
 } from "@/notification";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import type { CreateNotificationData } from "@/notification/application/ports/notification-data";
+import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import {
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
@@ -63,6 +64,7 @@ class ContextAwareUnitOfWork implements UnitOfWorkPort {
 
 class ClosedTransactionDetectingDispatcher implements PushDispatcherPort {
 	readonly #pending = new Set<Promise<void>>();
+	scheduledBatchCount = 0;
 
 	constructor(
 		private readonly storage: AsyncLocalStorage<TransactionContext>,
@@ -88,6 +90,7 @@ class ClosedTransactionDetectingDispatcher implements PushDispatcherPort {
 	}
 
 	fireAndForgetBatchPush(): void {
+		this.scheduledBatchCount += 1;
 		const delivery = new Promise<void>((resolve, reject) => {
 			setImmediate(() => {
 				if (this.storage.getStore()?.closed) {
@@ -192,6 +195,10 @@ describe("friend-completed post-commit dispatch (component)", () => {
 						invalidateUserPreference: jest.fn(),
 					},
 				},
+				{
+					provide: NOTIFICATION_DEDUP,
+					useValue: { recordNotifiedUsers: jest.fn() },
+				},
 				{ provide: DEDUP_PROVIDER, useValue: dedupProvider },
 				{
 					provide: TransactionHost,
@@ -236,6 +243,7 @@ describe("friend-completed post-commit dispatch (component)", () => {
 
 		await processor.process(job);
 
+		expect(dispatcher.scheduledBatchCount).toBe(1);
 		await expect(dispatcher.drain()).resolves.toBeUndefined();
 	});
 });

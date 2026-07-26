@@ -1,13 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DedupKeys } from "@/shared/infrastructure/dedup/constants/dedup-keys";
-import {
-	DEDUP_PROVIDER,
-	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_DEDUP,
+	type NotificationDedupPort,
+} from "../../ports/notification-dedup.port";
 import {
 	type PersistedBatchNotificationDispatch,
 	PUSH_DISPATCHER,
@@ -22,8 +21,8 @@ export class DispatchBatchNotificationUseCase {
 		private readonly pushDispatcher: PushDispatcherPort,
 		@Inject(NOTIFICATION_CACHE)
 		private readonly cache: NotificationCachePort,
-		@Inject(DEDUP_PROVIDER)
-		private readonly dedupProvider: IDedupProvider,
+		@Inject(NOTIFICATION_DEDUP)
+		private readonly notificationDedup: NotificationDedupPort,
 	) {}
 
 	execute(input: PersistedBatchNotificationDispatch): { count: number } {
@@ -40,21 +39,17 @@ export class DispatchBatchNotificationUseCase {
 			uniqueUserIds.map((userId) => this.cache.invalidateUnreadCount(userId)),
 		);
 
-		const groups = new Map<string, string[]>();
-		for (const data of input.sourceData) {
-			if (!data.notificationDate) continue;
-			const key = DedupKeys.notified(data.type, data.notificationDate);
-			const userIds = groups.get(key) ?? [];
-			userIds.push(data.userId);
-			groups.set(key, userIds);
-		}
-		void Promise.all(
-			[...groups.entries()].map(([key, userIds]) =>
-				this.dedupProvider.addMembers(
-					key,
-					[DedupKeys.SENTINEL, ...userIds],
-					DedupKeys.TTL.NOTIFIED,
-				),
+		void this.notificationDedup.recordNotifiedUsers(
+			input.sourceData.flatMap((data) =>
+				data.notificationDate
+					? [
+							{
+								userId: data.userId,
+								type: data.type,
+								notificationDate: data.notificationDate,
+							},
+						]
+					: [],
 			),
 		);
 

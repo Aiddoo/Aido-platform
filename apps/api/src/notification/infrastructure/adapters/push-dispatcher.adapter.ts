@@ -131,47 +131,52 @@ export class PushDispatcherAdapter
 			timezone,
 			localDate,
 		});
-		const skipReason = await this.#singleEligibilitySkipReason(
-			data,
-			preference,
-		);
-		if (skipReason) {
-			await this.notificationRepository.markPushDispatchSkipped(
-				dispatch.id,
-				skipReason,
+		try {
+			const skipReason = await this.#singleEligibilitySkipReason(
+				data,
+				preference,
 			);
-			return;
-		}
+			if (skipReason) {
+				await this.notificationRepository.markPushDispatchSkipped(
+					dispatch.id,
+					skipReason,
+				);
+				return;
+			}
 
-		const tokenResolution = await this.#resolveTokensForData(data);
-		if (tokenResolution.skipReason) {
-			await this.notificationRepository.markPushDispatchSkipped(
-				dispatch.id,
-				tokenResolution.skipReason,
-			);
-			return;
-		}
+			const tokenResolution = await this.#resolveTokensForData(data);
+			if (tokenResolution.skipReason) {
+				await this.notificationRepository.markPushDispatchSkipped(
+					dispatch.id,
+					tokenResolution.skipReason,
+				);
+				return;
+			}
 
-		const result = await this.#sendPushToUser(
-			data.userId,
-			tokenResolution.tokens,
-			{
-				title: data.title,
-				body: data.body,
-				data: {
-					...this.#buildPushPayloadData(data, notificationId),
-					dispatchId: dispatch.id,
+			const result = await this.#sendPushToUser(
+				data.userId,
+				tokenResolution.tokens,
+				{
+					title: data.title,
+					body: data.body,
+					data: {
+						...this.#buildPushPayloadData(data, notificationId),
+						dispatchId: dispatch.id,
+					},
+					...((data.purpose === "ENGAGEMENT" ||
+						isMarketingNotification(data.type)) && {
+						categoryId: "MARKETING",
+					}),
 				},
-				...((data.purpose === "ENGAGEMENT" ||
-					isMarketingNotification(data.type)) && {
-					categoryId: "MARKETING",
-				}),
-			},
-		);
-		await this.notificationRepository.recordPushDeliveryResults(
-			dispatch.id,
-			result.results,
-		);
+			);
+			await this.notificationRepository.recordPushDeliveryResults(
+				dispatch.id,
+				result.results,
+			);
+		} catch (error) {
+			await this.#markUnexpectedDispatchFailure([dispatch.id], error);
+			throw error;
+		}
 	}
 
 	/**
@@ -200,104 +205,122 @@ export class PushDispatcherAdapter
 		const prefMap = new Map(preferences.map((p) => [p.userId, p]));
 		const consentMap = new Map(consents.map((c) => [c.userId, c]));
 
-		const dispatchItems = await Promise.all(
-			items.map(async (item) => {
-				const preference = prefMap.get(item.data.userId);
-				const timezone = resolveDeliveryTimezone(preference?.timezone);
-				const dispatch = await this.notificationRepository.createPushDispatch({
-					notificationId: item.notificationId,
-					userId: item.data.userId,
-					purpose: item.data.purpose ?? "TRANSACTIONAL",
-					campaignKey: item.data.campaignKey,
-					variantId: item.data.variantId,
-					timezone,
-					localDate: new Date(`${this.#localDate(timezone)}T00:00:00.000Z`),
-				});
-				return { ...item, dispatchId: dispatch.id };
-			}),
-		);
-
-		const settingsEligibleItems: typeof dispatchItems = [];
-		for (const item of dispatchItems) {
-			const { data } = item;
-			// 관리자 강제 발송(force)은 수신 설정·야간·설정 행 부재를 우회한다.
-			// 마케팅성 알림은 수신 동의가 법적 요건이므로 강제 대상에서 제외.
-			const forced =
-				data.force === true &&
-				data.purpose !== "ENGAGEMENT" &&
-				!isMarketingNotification(data.type);
-			const skipReason = forced
-				? null
-				: this.#cachedSettingsSkipReason(
-						data.type,
-						data.purpose,
-						prefMap.get(data.userId),
-						consentMap.get(data.userId),
+		let createdDispatchIds: number[] = [];
+		try {
+			const dispatchResults = await Promise.allSettled(
+				items.map(async (item) => {
+					const preference = prefMap.get(item.data.userId);
+					const timezone = resolveDeliveryTimezone(preference?.timezone);
+					const dispatch = await this.notificationRepository.createPushDispatch(
+						{
+							notificationId: item.notificationId,
+							userId: item.data.userId,
+							purpose: item.data.purpose ?? "TRANSACTIONAL",
+							campaignKey: item.data.campaignKey,
+							variantId: item.data.variantId,
+							timezone,
+							localDate: new Date(`${this.#localDate(timezone)}T00:00:00.000Z`),
+						},
 					);
-			if (!skipReason) {
-				settingsEligibleItems.push(item);
-			} else {
-				await this.notificationRepository.markPushDispatchSkipped(
-					item.dispatchId,
-					skipReason,
-				);
-				this.#logger.debug(
-					`Push dispatch skipped: userId=${data.userId}, type=${data.type}, reason=${skipReason}`,
-				);
-			}
-		}
-
-		if (settingsEligibleItems.length === 0) return;
-
-		const rateLimitRequests = settingsEligibleItems.map(({ data }) =>
-			this.#buildRateLimitRequest(data, prefMap.get(data.userId)?.timezone),
-		);
-		const limited = await this.rateLimiter.reserveBatch(rateLimitRequests);
-		const eligibleItems: typeof settingsEligibleItems = [];
-		for (const [index, item] of settingsEligibleItems.entries()) {
-			const isLimited = limited[index] ?? false;
-			if (isLimited) {
-				await this.notificationRepository.markPushDispatchSkipped(
-					item.dispatchId,
-					"RATE_LIMITED",
-				);
-				this.#logger.debug(
-					`Push rate limited: userId=${item.data.userId}, type=${item.data.type}`,
-				);
-			} else {
-				eligibleItems.push(item);
-			}
-		}
-
-		if (eligibleItems.length === 0) return;
-
-		const { attemptedDispatchIds, resultsByDispatch } =
-			await this.#sendPushToUsers(
-				eligibleItems.map(({ data: d, notificationId, dispatchId }) => ({
-					userId: d.userId,
-					dispatchId,
-					requiresFeatureCapability:
-						d.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
-					title: d.title,
-					body: d.body,
-					data: {
-						...this.#buildPushPayloadData(d, notificationId),
-						dispatchId,
-					},
-					...((d.purpose === "ENGAGEMENT" ||
-						isMarketingNotification(d.type)) && {
-						categoryId: "MARKETING",
-					}),
-				})),
+					return { ...item, dispatchId: dispatch.id };
+				}),
 			);
-		await Promise.all(
-			[...attemptedDispatchIds].map((dispatchId) =>
-				this.notificationRepository.recordPushDeliveryResults(
-					dispatchId,
-					resultsByDispatch.get(dispatchId) ?? [],
+			const dispatchItems = dispatchResults.flatMap((result) =>
+				result.status === "fulfilled" ? [result.value] : [],
+			);
+			createdDispatchIds = dispatchItems.map((item) => item.dispatchId);
+			const createFailure = dispatchResults.find(
+				(result) => result.status === "rejected",
+			);
+			if (createFailure?.status === "rejected") {
+				throw createFailure.reason;
+			}
+
+			const settingsEligibleItems: typeof dispatchItems = [];
+			for (const item of dispatchItems) {
+				const { data } = item;
+				// 관리자 강제 발송(force)은 수신 설정·야간·설정 행 부재를 우회한다.
+				// 마케팅성 알림은 수신 동의가 법적 요건이므로 강제 대상에서 제외.
+				const forced =
+					data.force === true &&
+					data.purpose !== "ENGAGEMENT" &&
+					!isMarketingNotification(data.type);
+				const skipReason = forced
+					? null
+					: this.#cachedSettingsSkipReason(
+							data.type,
+							data.purpose,
+							prefMap.get(data.userId),
+							consentMap.get(data.userId),
+						);
+				if (!skipReason) {
+					settingsEligibleItems.push(item);
+				} else {
+					await this.notificationRepository.markPushDispatchSkipped(
+						item.dispatchId,
+						skipReason,
+					);
+					this.#logger.debug(
+						`Push dispatch skipped: userId=${data.userId}, type=${data.type}, reason=${skipReason}`,
+					);
+				}
+			}
+
+			if (settingsEligibleItems.length === 0) return;
+
+			const rateLimitRequests = settingsEligibleItems.map(({ data }) =>
+				this.#buildRateLimitRequest(data, prefMap.get(data.userId)?.timezone),
+			);
+			const limited = await this.rateLimiter.reserveBatch(rateLimitRequests);
+			const eligibleItems: typeof settingsEligibleItems = [];
+			for (const [index, item] of settingsEligibleItems.entries()) {
+				const isLimited = limited[index] ?? false;
+				if (isLimited) {
+					await this.notificationRepository.markPushDispatchSkipped(
+						item.dispatchId,
+						"RATE_LIMITED",
+					);
+					this.#logger.debug(
+						`Push rate limited: userId=${item.data.userId}, type=${item.data.type}`,
+					);
+				} else {
+					eligibleItems.push(item);
+				}
+			}
+
+			if (eligibleItems.length === 0) return;
+
+			const { attemptedDispatchIds, resultsByDispatch } =
+				await this.#sendPushToUsers(
+					eligibleItems.map(({ data: d, notificationId, dispatchId }) => ({
+						userId: d.userId,
+						dispatchId,
+						requiresFeatureCapability:
+							d.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
+						title: d.title,
+						body: d.body,
+						data: {
+							...this.#buildPushPayloadData(d, notificationId),
+							dispatchId,
+						},
+						...((d.purpose === "ENGAGEMENT" ||
+							isMarketingNotification(d.type)) && {
+							categoryId: "MARKETING",
+						}),
+					})),
+				);
+			await Promise.all(
+				[...attemptedDispatchIds].map((dispatchId) =>
+					this.notificationRepository.recordPushDeliveryResults(
+						dispatchId,
+						resultsByDispatch.get(dispatchId) ?? [],
+					),
 				),
-			),
-		);
+			);
+		} catch (error) {
+			await this.#markUnexpectedDispatchFailure(createdDispatchIds, error);
+			throw error;
+		}
 	}
 
 	/**
@@ -774,6 +797,23 @@ export class PushDispatcherAdapter
 			byUserId.set(record.userId, userRecords);
 		}
 		return byUserId;
+	}
+
+	async #markUnexpectedDispatchFailure(
+		dispatchIds: number[],
+		originalError: unknown,
+	): Promise<void> {
+		if (dispatchIds.length === 0) return;
+		try {
+			await this.notificationRepository.markPushDispatchFailed(
+				dispatchIds,
+				"UNEXPECTED_DISPATCH_ERROR",
+			);
+		} catch (transitionError) {
+			this.#logger.error(
+				`Failed to mark push dispatches FAILED: dispatchIds=${dispatchIds.join(",")}, originalError=${originalError}, transitionError=${transitionError}`,
+			);
+		}
 	}
 
 	#trackPush(promise: Promise<void>): void {
