@@ -1,6 +1,6 @@
 {
   "name": "@aido/mobile",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -17,6 +17,7 @@
     "build:production:android": "eas build --profile production --platform android",
     "build:production:ios": "eas build --profile production --platform ios",
     "check": "biome check . && pnpm lint:cycles",
+    "check:release-assets": "node scripts/check-growth-release-assets.mjs",
     "clean": "rm -rf dist .expo android ios node_modules/.cache",
     "dev": "expo start",
     "dev:android": "pnpm adb:reverse || true && expo start --android",

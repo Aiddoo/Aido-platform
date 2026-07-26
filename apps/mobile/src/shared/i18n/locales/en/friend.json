@@ -2,8 +2,8 @@
   "screenTitle": "Friends",
   "fallbackName": "Friend",
   "errors": {
-    "invalidTag": "Invalid tag format",
-    "emptyTag": "Please enter a tag",
+    "invalidTag": "Invalid Aido ID format",
+    "emptyTag": "Please enter an Aido ID",
     "searchQueryTooShort": "Please enter at least 2 characters"
   },
   "toast": {
@@ -41,21 +41,21 @@
   "add": {
     "title": "Add your friends",
     "description": "Share to-dos and nudge each other",
-    "tagLabel": "Friend tag",
+    "tagLabel": "Friend's Aido ID",
     "submit": "Add Friend"
   },
   "search": {
     "title": "Find friends",
-    "placeholder": "Search by name or tag",
+    "placeholder": "Search by name or Aido ID",
     "action": {
       "add": "Add",
       "cancel": "Cancel",
       "friend": "Friends"
     },
     "empty": {
-      "prompt": "Search for friends by name or tag",
-      "tagHint": "Know the exact tag? Add them directly",
-      "addByTag": "Add by tag",
+      "prompt": "Search for friends by name or Aido ID",
+      "tagHint": "Know the exact Aido ID? Add them directly",
+      "addByTag": "Add by Aido ID",
       "noResults": "No results for '{{query}}'"
     }
   }
