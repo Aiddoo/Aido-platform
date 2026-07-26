@@ -53,7 +53,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - 추가 Todo 생성 시도
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "초과 할 일",
@@ -68,7 +68,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - categoryId로 리소스 제한 조회
 			const limitResponse = await request(ctx.app.getHttpServer())
-				.get(`/todos/resource-limit?categoryId=${categoryId}`)
+				.get(`/v1/todos/resource-limit?categoryId=${categoryId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -78,7 +78,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - categoryId 없이 리소스 제한 조회
 			const noIdResponse = await request(ctx.app.getHttpServer())
-				.get("/todos/resource-limit")
+				.get("/v1/todos/resource-limit")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -119,13 +119,13 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - 1개 완료 후 새 Todo 생성
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${firstTodoId}/complete`)
+				.patch(`/v1/todos/${firstTodoId}/complete`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ completed: true })
 				.expect(200);
 
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "완료 후 새 할 일",
@@ -153,7 +153,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// 새 카테고리 생성
 			const catResponse = await request(ctx.app.getHttpServer())
-				.post("/todo-categories")
+				.post("/v1/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "빈 카테고리", color: "#00FF00" })
 				.expect(201);
@@ -172,7 +172,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - 꽉 찬 카테고리에 생성 시도
 			await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "초과 할 일",
@@ -183,7 +183,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - 빈 카테고리에 생성 시도
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "다른 카테고리 할 일",
@@ -228,7 +228,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - 추가 Todo 생성 시도
 			const response = await request(ctx.app.getHttpServer())
-				.post("/todos")
+				.post("/v1/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "프리미엄 초과 할 일",
@@ -243,7 +243,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
 			// When - categoryId로 리소스 제한 조회
 			const limitResponse = await request(ctx.app.getHttpServer())
-				.get(`/todos/resource-limit?categoryId=${categoryId}`)
+				.get(`/v1/todos/resource-limit?categoryId=${categoryId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 

@@ -41,7 +41,7 @@ describe("문의 E2E", () => {
 
 			// When - 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/inquiries")
+				.post("/v1/inquiries")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					category: "BUG_REPORT",
@@ -63,7 +63,7 @@ describe("문의 E2E", () => {
 
 			// When - 문의 접수 API 호출
 			await request(ctx.app.getHttpServer())
-				.post("/inquiries")
+				.post("/v1/inquiries")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					category: "BUG_REPORT",
@@ -82,7 +82,7 @@ describe("문의 E2E", () => {
 
 			// When - 인증 없이 문의 접수 API 호출
 			await request(ctx.app.getHttpServer())
-				.post("/inquiries")
+				.post("/v1/inquiries")
 				.send({
 					category: "BUG_REPORT",
 					content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
@@ -101,7 +101,7 @@ describe("문의 E2E", () => {
 
 			// When - 잘못된 카테고리로 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/inquiries")
+				.post("/v1/inquiries")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					category: "INVALID_CATEGORY",
@@ -122,7 +122,7 @@ describe("문의 E2E", () => {
 
 			// When - 짧은 내용으로 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.post("/inquiries")
+				.post("/v1/inquiries")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					category: "BUG_REPORT",
@@ -144,7 +144,7 @@ describe("문의 E2E", () => {
 
 				// When - FEATURE_REQUEST 카테고리로 문의 접수 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/inquiries")
+					.post("/v1/inquiries")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						category: "FEATURE_REQUEST",
@@ -166,7 +166,7 @@ describe("문의 E2E", () => {
 
 				// When - OTHER 카테고리로 문의 접수 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/inquiries")
+					.post("/v1/inquiries")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
 						category: "OTHER",

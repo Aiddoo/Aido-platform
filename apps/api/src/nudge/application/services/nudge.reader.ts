@@ -7,7 +7,7 @@ import {
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
 import { now } from "@/shared/domain/date/utils/core";
-import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
 
 import {
 	evaluateNudgeCooldown,
@@ -104,13 +104,18 @@ export class NudgeReader {
 		userId: string,
 		tz: string = "UTC",
 	): Promise<NudgeLimitInfo> {
+		const capturedAt = now();
+		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
 		const { dailyLimit } = await this.entitlementService.getFeatureLimit(
 			userId,
 			Feature.NUDGE,
 		);
 
-		const today = startOfDayInTimezone(now(), tz);
-		const used = await this.nudgeRepository.countTodayNudges(userId, today);
+		const used = await this.nudgeRepository.countSentSince(
+			userId,
+			quotaWindow.startsAt,
+			quotaWindow.endsAt,
+		);
 
 		return {
 			dailyLimit,

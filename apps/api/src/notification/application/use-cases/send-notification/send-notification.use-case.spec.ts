@@ -85,23 +85,17 @@ describe("SendNotificationUseCase", () => {
 		expect(pushDispatcher.shouldSendPush).not.toHaveBeenCalled();
 	});
 
-	it("shouldSendPush가 false면 발송·무효화 없이 생성된 알림을 반환한다", async () => {
+	it("자격 판단은 디스패처에 위임하고 생성 직후 디스패치를 예약한다", async () => {
 		const notification = NotificationBuilder.create(data.userId)
 			.withId(1)
 			.build();
 		repository.createNotification.mockResolvedValue(notification);
-		pushDispatcher.shouldSendPush.mockResolvedValue(false);
-
 		const result = await useCase.execute(data);
 
 		expect(result).toBe(notification);
-		expect(pushDispatcher.shouldSendPush).toHaveBeenCalledWith(
-			data.userId,
-			data.type,
-			data.purpose,
-		);
-		expect(pushDispatcher.fireAndForgetPush).not.toHaveBeenCalled();
-		expect(cache.invalidateUnreadCount).not.toHaveBeenCalled();
+		expect(pushDispatcher.shouldSendPush).not.toHaveBeenCalled();
+		expect(pushDispatcher.fireAndForgetPush).toHaveBeenCalledWith(data, 1);
+		expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(data.userId);
 	});
 
 	it("shouldSendPush가 true면 푸시를 발송하고 미읽음 카운트를 무효화한다", async () => {

@@ -11,10 +11,14 @@
  * ```
  */
 
+import { createHash } from "node:crypto";
+import { createServer, type Server } from "node:http";
+import { ErrorCode } from "@aido/errors";
 import { ConfigService } from "@nestjs/config";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock } from "@test/mocks";
+import { exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -29,6 +33,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 	let service: OAuthTokenVerifierService;
 	let mockGoogleVerifyIdToken: jest.Mock;
 	let configService: Mocked<ConfigService>;
+	let appleJwksUrl: string | undefined;
 
 	beforeEach(async () => {
 		// Google Auth Library mock 설정
@@ -47,9 +52,15 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		// ConfigService mock 설정
 		configService.get.mockImplementation((key: string) => {
-			const config: Record<string, string> = {
+			const config: Record<string, string | number> = {
 				GOOGLE_CLIENT_ID: "google-client-id",
 				APPLE_CLIENT_ID: "apple-client-id",
+				...(appleJwksUrl
+					? {
+							APPLE_JWKS_URL: appleJwksUrl,
+							APPLE_JWKS_COOLDOWN_DURATION_MS: 0,
+						}
+					: {}),
 			};
 			return config[key];
 		});
@@ -379,26 +390,178 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 		});
 	});
 
-	// Apple 토큰 검증은 jose ESM 모듈을 사용하므로
-	// 단위 테스트가 어렵습니다. E2E 또는 통합 테스트에서 검증합니다.
 	describe("verifyAppleToken", () => {
-		it.skip("Apple 토큰 검증은 통합 테스트에서 수행합니다", () => {
-			// jose는 ESM-only 모듈이므로 Jest에서 동적 import 모킹이 어렵습니다.
-			// 실제 Apple 토큰 검증은 E2E 테스트 또는 실제 환경에서 검증합니다.
+		const nativeFetch = global.fetch;
+		const keyIds = {
+			first: "apple-key-1",
+			second: "apple-key-2",
+		} as const;
+		let keyPairs: {
+			first: Awaited<ReturnType<typeof generateKeyPair>>;
+			second: Awaited<ReturnType<typeof generateKeyPair>>;
+		};
+		let publicJwks: { first: JWK; second: JWK };
+		let activeJwks: JWK[];
+		let jwksServer: Server;
+		let requestCount: number;
+
+		beforeAll(async () => {
+			const [firstKeyPair, secondKeyPair] = await Promise.all([
+				generateKeyPair("RS256", { extractable: true }),
+				generateKeyPair("RS256", { extractable: true }),
+			]);
+			keyPairs = { first: firstKeyPair, second: secondKeyPair };
+			const [firstPublicJwk, secondPublicJwk] = await Promise.all([
+				exportJWK(firstKeyPair.publicKey),
+				exportJWK(secondKeyPair.publicKey),
+			]);
+			publicJwks = {
+				first: {
+					...firstPublicJwk,
+					alg: "RS256",
+					kid: keyIds.first,
+					use: "sig",
+				},
+				second: {
+					...secondPublicJwk,
+					alg: "RS256",
+					kid: keyIds.second,
+					use: "sig",
+				},
+			};
+
+			jwksServer = createServer((request, response) => {
+				if (request.method !== "GET" || request.url !== "/auth/keys") {
+					response.writeHead(404).end();
+					return;
+				}
+
+				requestCount += 1;
+				response
+					.writeHead(200, { "content-type": "application/json" })
+					.end(JSON.stringify({ keys: activeJwks }));
+			});
+
+			await new Promise<void>((resolve, reject) => {
+				jwksServer.once("error", reject);
+				jwksServer.listen(0, "127.0.0.1", resolve);
+			});
+
+			const address = jwksServer.address();
+			if (!address || typeof address === "string") {
+				throw new Error("Apple JWKS test server address is unavailable");
+			}
+			appleJwksUrl = `http://127.0.0.1:${address.port}/auth/keys`;
 		});
 
-		// nonce 검증 테스트 — jose ESM 모킹 제약으로 스킵
-		// verifyAppleToken 내부에서 jose.jwtVerify 호출 후 nonce를 SHA256 비교
-		it.skip("nonce가 제공되고 일치하면 검증에 성공한다", () => {
-			// expectedNonce → SHA256 해시 → payload.nonce와 비교 → 일치 시 통과
+		beforeEach(() => {
+			global.fetch = nativeFetch;
+			activeJwks = [publicJwks.first];
+			requestCount = 0;
 		});
 
-		it.skip("nonce가 제공되고 불일치하면 socialTokenInvalid를 던진다", () => {
-			// expectedNonce → SHA256 해시 → payload.nonce와 불일치 → ApplicationException
+		afterAll(async () => {
+			global.fetch = nativeFetch;
+			appleJwksUrl = undefined;
+			await new Promise<void>((resolve, reject) => {
+				jwksServer.close((error) => {
+					if (error) {
+						reject(error);
+						return;
+					}
+					resolve();
+				});
+			});
 		});
 
-		it.skip("nonce가 없으면 nonce 검증을 건너뛴다", () => {
-			// expectedNonce 미제공 → nonce 검증 로직 스킵 → 정상 반환
+		async function signAppleToken(
+			key: "first" | "second",
+			keyId: string,
+			claims: Record<string, unknown> = {},
+		): Promise<string> {
+			const now = Math.floor(Date.now() / 1000);
+			const userNumber = key === "first" ? 1 : 2;
+
+			return new SignJWT({
+				auth_time: now,
+				email: `apple-user-${userNumber}@example.com`,
+				email_verified: "true",
+				nonce_supported: true,
+				...claims,
+			})
+				.setProtectedHeader({ alg: "RS256", kid: keyId })
+				.setIssuer("https://appleid.apple.com")
+				.setAudience("apple-client-id")
+				.setSubject(`apple-user-${userNumber}`)
+				.setIssuedAt(now)
+				.setExpirationTime(now + 3_600)
+				.sign(keyPairs[key].privateKey);
+		}
+
+		it("실제 Apple 서명과 nonce를 검증하고 프로필을 반환한다", async () => {
+			// Given
+			const nonce = "apple-raw-nonce";
+			const idToken = await signAppleToken("first", keyIds.first, {
+				nonce: createHash("sha256").update(nonce).digest("hex"),
+			});
+
+			// When
+			const result = await service.verifyAppleToken(idToken, nonce);
+
+			// Then
+			expect(result).toEqual({
+				id: "apple-user-1",
+				email: "apple-user-1@example.com",
+				emailVerified: true,
+			});
+			expect(requestCount).toBe(1);
+		});
+
+		it("서명은 유효하지만 nonce가 다르면 socialTokenInvalid를 던진다", async () => {
+			// Given
+			const idToken = await signAppleToken("first", keyIds.first, {
+				nonce: createHash("sha256").update("token-raw-nonce").digest("hex"),
+			});
+
+			// When & Then
+			await expect(
+				service.verifyAppleToken(idToken, "request-raw-nonce"),
+			).rejects.toMatchObject({
+				errorCode: ErrorCode.SOCIAL_0202,
+				details: { provider: "APPLE" },
+			});
+			expect(requestCount).toBe(1);
+		});
+
+		it("캐시된 kid가 교체되면 JWKS를 다시 조회하고 새 키를 검증한다", async () => {
+			// Given
+			const firstToken = await signAppleToken("first", keyIds.first);
+			await expect(service.verifyAppleToken(firstToken)).resolves.toMatchObject(
+				{
+					id: "apple-user-1",
+				},
+			);
+			activeJwks = [publicJwks.second];
+			const rotatedToken = await signAppleToken("second", keyIds.second);
+
+			// When
+			const result = await service.verifyAppleToken(rotatedToken);
+
+			// Then
+			expect(result).toMatchObject({ id: "apple-user-2" });
+			expect(requestCount).toBe(2);
+		});
+
+		it("JWKS에 없는 kid의 토큰은 socialTokenInvalid를 던진다", async () => {
+			// Given
+			const idToken = await signAppleToken("second", "unknown-apple-kid");
+
+			// When & Then
+			await expect(service.verifyAppleToken(idToken)).rejects.toMatchObject({
+				errorCode: ErrorCode.SOCIAL_0202,
+				details: { provider: "APPLE" },
+			});
+			expect(requestCount).toBe(2);
 		});
 	});
 });

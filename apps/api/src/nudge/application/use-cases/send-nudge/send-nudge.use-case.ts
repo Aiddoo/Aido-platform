@@ -2,12 +2,15 @@ import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { FollowFacade } from "@/follow";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { now } from "@/shared/domain/date/utils/core";
 import {
-	startOfDayInTimezone,
-	todayInTimezone,
-} from "@/shared/domain/date/utils/timezone";
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
+import { now } from "@/shared/domain/date/utils/core";
+import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { evaluateNudgeCooldown } from "../../../domain/services/nudge-cooldown";
@@ -51,6 +54,8 @@ export class SendNudgeUseCase {
 		private readonly notifier: NudgeNotifierPort,
 		@Inject(NUDGE_LIMIT_READER)
 		private readonly limitReader: NudgeLimitReaderPort,
+		@Inject(MUTATION_LOCK)
+		private readonly mutationLock: MutationLockPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 		private readonly followFacade: FollowFacade,
@@ -77,8 +82,15 @@ export class SendNudgeUseCase {
 		}
 
 		const nudgeMessage = NudgeMessage.of(message);
+		const capturedAt = now();
+		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
 
 		const nudge = await this.uow.run(async () => {
+			await this.mutationLock.acquire([
+				MutationLockKeys.nudgeDaily(senderId, quotaWindow.localDate),
+				MutationLockKeys.nudgeCooldown(senderId, todoId),
+			]);
+
 			const todoRow = await this.nudgeRepository.findTargetTodo(todoId);
 			if (!todoRow) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
@@ -92,16 +104,15 @@ export class SendNudgeUseCase {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
 
-			const today = todayInTimezone(tz);
-			if (!target.isActiveOn(today)) {
+			if (!target.isActiveOn(quotaWindow.date)) {
 				throw new ApplicationException(ErrorCode.NUDGE_1106, { todoId });
 			}
 
-			const todayStart = startOfDayInTimezone(now(), tz);
 			const dailyLimit = await this.limitReader.getDailyLimitInTx(senderId);
-			const used = await this.nudgeRepository.countTodayNudges(
+			const used = await this.nudgeRepository.countSentSince(
 				senderId,
-				todayStart,
+				quotaWindow.startsAt,
+				quotaWindow.endsAt,
 			);
 			if (dailyLimit !== null && used >= dailyLimit) {
 				throw new ApplicationException(ErrorCode.NUDGE_1101, {
@@ -128,6 +139,7 @@ export class SendNudgeUseCase {
 				receiverId,
 				todoId,
 				message: nudgeMessage.raw,
+				createdAt: capturedAt,
 			});
 		});
 

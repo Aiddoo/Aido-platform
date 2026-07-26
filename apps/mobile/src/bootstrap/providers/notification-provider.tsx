@@ -1,3 +1,4 @@
+import { useAutomaticPushRegistration } from '@src/features/activation/presentations/hooks/use-automatic-push-registration';
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
 import { toError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
@@ -31,6 +32,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
   const notificationService = useNotificationService();
   const logger = useLogger();
   const isAuthenticated = status === 'authenticated';
+  const canRegisterPushAutomatically = useAutomaticPushRegistration();
 
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
   const receivedListener = useRef<Notifications.EventSubscription | null>(null);
@@ -106,26 +108,10 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     };
   }, [handleForegroundNotification, handleNotificationResponse, logger]);
 
-  // Effect 2: 푸시 토큰 등록 (인증된 동안에만)
-  //
-  // 해제(unregister)는 여기서 하지 않는다. 해제 API는 인증을 요구하므로 미인증 상태에서
-  // 호출하면 401 → 갱신 시도 → 세션 만료 이벤트라는 잡음을 낳고, 부팅 중(`loading`)에는
-  // 로그인한 유저의 푸시 토큰을 스스로 지운다. 해제는 아직 인증된 시점인
-  // 로그아웃/회원탈퇴 플로우가 담당한다.
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
-
-    notificationService.setupPushNotifications().catch((error) => {
-      logger.warn('[Notification] Push token registration skipped', { error });
-    });
-  }, [isAuthenticated, notificationService, logger]);
-
-  // Effect 2-1: 언어 변경 시 토큰 재등록 — 재등록 요청의 Accept-Language 헤더를
+  // 언어 변경 시 토큰 재등록 — 재등록 요청의 Accept-Language 헤더를
   // 서버가 UserPreference.locale로 upsert해 푸시 알림 언어가 즉시 동기화된다
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !canRegisterPushAutomatically) {
       return;
     }
 
@@ -139,7 +125,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     return () => {
       i18n.off('languageChanged', handleLanguageChanged);
     };
-  }, [isAuthenticated, notificationService, logger]);
+  }, [canRegisterPushAutomatically, isAuthenticated, notificationService, logger]);
 
   // Effect 3: 배지 동기화
   useEffect(() => {

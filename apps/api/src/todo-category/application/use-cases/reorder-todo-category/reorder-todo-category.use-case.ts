@@ -1,7 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import type { TodoCategory } from "../../../domain/entities/todo-category.entity";
@@ -41,6 +47,8 @@ export class ReorderTodoCategoryUseCase {
 		private readonly repository: TodoCategoryRepositoryPort,
 		@Inject(TODO_CATEGORY_CACHE)
 		private readonly cache: TodoCategoryCachePort,
+		@Inject(MUTATION_LOCK)
+		private readonly mutationLock: MutationLockPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 	) {}
@@ -49,6 +57,8 @@ export class ReorderTodoCategoryUseCase {
 		const { userId, categoryId, targetCategoryId, position } = input;
 
 		const result = await this.uow.run(async () => {
+			await this.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+
 			const category = await this.repository.findByIdAndUserId(
 				categoryId,
 				userId,

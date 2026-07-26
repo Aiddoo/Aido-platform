@@ -63,6 +63,11 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 		processor = unit;
 		notification = unitRef.get(NotificationFacade);
 		notification.getUserLocale.mockResolvedValue("ko");
+		notification.persistBatch.mockImplementation(async (sourceData) => ({
+			count: sourceData.length,
+			items: [],
+			sourceData,
+		}));
 		db.userPreference.findMany.mockResolvedValue([]);
 	});
 
@@ -350,8 +355,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				friendCompletedData,
 			);
 			notification.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-			notification.createAndSendBatch.mockResolvedValue({ count: 2 });
-
 			const message = NotificationMessageBuilder.friendCompleted("완료 친구");
 
 			// When
@@ -365,7 +368,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 					friendId: "friend-1",
 				}),
 			);
-			expect(notification.createAndSendBatch).toHaveBeenCalledWith(
+			expect(notification.persistBatch).toHaveBeenCalledWith(
 				expect.arrayContaining([
 					expect.objectContaining({
 						userId: "user-1",
@@ -380,6 +383,9 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 					}),
 				]),
 			);
+			expect(notification.dispatchPersistedBatch).toHaveBeenCalledWith(
+				expect.objectContaining({ count: 2 }),
+			);
 		});
 
 		it("이미 알림 받은 유저는 필터링한다", async () => {
@@ -391,18 +397,19 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			notification.findAlreadyNotifiedUserIds.mockResolvedValue(
 				new Set(["user-1"]),
 			);
-			notification.createAndSendBatch.mockResolvedValue({ count: 1 });
-
 			// When
 			await processor.process(job);
 
 			// Then
-			expect(notification.createAndSendBatch).toHaveBeenCalledWith([
+			expect(notification.persistBatch).toHaveBeenCalledWith([
 				expect.objectContaining({
 					userId: "user-2",
 					type: "FRIEND_COMPLETED",
 				}),
 			]);
+			expect(notification.dispatchPersistedBatch).toHaveBeenCalledWith(
+				expect.objectContaining({ count: 1 }),
+			);
 		});
 
 		it("전원 이미 받은 경우 생성하지 않는다", async () => {
@@ -419,7 +426,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notification.createAndSendBatch).not.toHaveBeenCalled();
+			expect(notification.persistBatch).not.toHaveBeenCalled();
+			expect(notification.dispatchPersistedBatch).not.toHaveBeenCalled();
 		});
 
 		it("빈 notifyUserIds는 즉시 리턴한다", async () => {
@@ -435,7 +443,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 			// Then
 			expect(uow.run).not.toHaveBeenCalled();
-			expect(notification.createAndSendBatch).not.toHaveBeenCalled();
+			expect(notification.persistBatch).not.toHaveBeenCalled();
+			expect(notification.dispatchPersistedBatch).not.toHaveBeenCalled();
 		});
 
 		it("P2002 unique constraint 시 graceful skip한다", async () => {

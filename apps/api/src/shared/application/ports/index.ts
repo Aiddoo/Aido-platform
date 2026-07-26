@@ -7,4 +7,5 @@
  */
 export * from "./domain-event-publisher.port";
 export * from "./job-runtime.port";
+export * from "./mutation-lock.port";
 export * from "./unit-of-work.port";

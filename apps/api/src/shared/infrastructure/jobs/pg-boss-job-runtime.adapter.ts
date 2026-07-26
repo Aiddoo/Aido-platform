@@ -19,6 +19,7 @@ import type {
 } from "pg-boss";
 import type {
 	EnqueueJobOptions,
+	JobCancellationResult,
 	JobData,
 	JobRuntimeHealth,
 	JobRuntimePort,
@@ -264,18 +265,28 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		await this.boss.unschedule(queue, scheduleKey);
 	}
 
-	async cancel(queue: string, jobKey: string): Promise<void> {
+	async cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
 		const db = this.transactionDatabase();
-		const jobs = await this.boss.findJobs(queue, { key: jobKey, db });
+		const jobs = await this.boss.findJobs(queue, {
+			key: jobKey,
+			queued: true,
+			db,
+		});
 		if (jobs.length === 0) {
-			return;
+			return { status: "missing" };
 		}
 
-		await this.boss.cancel(
+		const result = await this.boss.cancel(
 			queue,
 			jobs.map(({ id }) => id),
 			{ db },
 		);
+		if (!hasAffectedCount(result)) {
+			throw new Error("Invalid pg-boss cancellation response");
+		}
+		return result.affected > 0
+			? { status: "cancelled" }
+			: { status: "missing" };
 	}
 
 	async work<T extends JobData>(
@@ -397,6 +408,17 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 			throw error;
 		}
 	}
+}
+
+function hasAffectedCount(
+	result: unknown,
+): result is { readonly affected: number } {
+	return (
+		typeof result === "object" &&
+		result !== null &&
+		"affected" in result &&
+		typeof result.affected === "number"
+	);
 }
 
 export function deterministicJobId(queue: string, jobKey: string): string {

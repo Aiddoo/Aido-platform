@@ -78,7 +78,7 @@ describe("UpdateTodoTitleUseCase — 할 일 제목 수정 핸들러", () => {
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-			.impl(() => ({ publishAll: jest.fn() }))
+			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;
@@ -120,6 +120,31 @@ describe("UpdateTodoTitleUseCase — 할 일 제목 수정 핸들러", () => {
 		).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 		expect(todoRepository.updateTitle).not.toHaveBeenCalled();
 		expect(eventPublisher.publishAll).not.toHaveBeenCalled();
+	});
+
+	it("post-commit 이벤트 발행 관측이 끝난 뒤 응답을 재조회한다", async () => {
+		// Given - 이벤트 publisher 완료를 외부 gate로 지연
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
+		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+		let release: (() => void) | undefined;
+		const publication = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		eventPublisher.publishAll.mockReturnValue(publication);
+
+		// When - 제목 변경 실행
+		const execution = useCase.execute({
+			id: 1,
+			userId: "user-123",
+			title: "새 제목",
+		});
+		await new Promise((resolve) => setImmediate(resolve));
+
+		// Then - publisher 완료 전에는 post-commit 재조회로 진행하지 않음
+		expect(todoReadRepository.findByIdAndUserId).not.toHaveBeenCalled();
+		release?.();
+		await execution;
+		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalled();
 	});
 
 	it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {

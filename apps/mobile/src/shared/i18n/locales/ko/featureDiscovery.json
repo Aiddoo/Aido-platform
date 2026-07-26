@@ -1,0 +1,58 @@
+{
+  "hub": {
+    "title": "Aido의 기능을 더 잘 써보세요",
+    "description": "이미 있던 기능부터 새로 좋아진 기능까지 한눈에 살펴보세요.",
+    "sheetLabel": "Aido 기능 가이드",
+    "closeLabel": "기능 가이드 닫기"
+  },
+  "entry": {
+    "mypage": "Aido 기능 가이드",
+    "feedTitle": "새 기능을 다시 살펴보세요",
+    "feedDescription": "14일 동안 언제든 기능 가이드를 다시 열 수 있어요",
+    "openLabel": "Aido 기능 가이드 열기"
+  },
+  "cards": {
+    "memoAi": {
+      "title": "메모가 여러 할 일이 돼요",
+      "description": "떠오르는 내용을 메모하면 AI가 실행할 할 일 여러 개로 정리해줘요.",
+      "cta": "메모로 시작하기",
+      "ctaLabel": "메모 AI 기능으로 이동",
+      "previewMemo": "여행 준비 메모",
+      "previewTodo1": "항공권 확인",
+      "previewTodo2": "숙소 예약"
+    },
+    "friendSearch": {
+      "title": "이름이나 해시태그로 친구를 찾아요",
+      "description": "친구 이름 또는 고유한 8자리 해시태그로 바로 찾을 수 있어요.",
+      "cta": "친구 찾아보기",
+      "ctaLabel": "친구 찾기 기능으로 이동",
+      "previewQuery": "이름 또는 해시태그로 검색",
+      "previewResult": "김민지",
+      "previewInitial": "민",
+      "previewAdd": "추가"
+    },
+    "dragReorder": {
+      "title": "드래그해서 원하는 순서로 정리해요",
+      "description": "할 일과 카테고리를 길게 눌러 내 흐름에 맞게 옮길 수 있어요.",
+      "cta": "카테고리 정리하기",
+      "ctaLabel": "카테고리 정리 기능으로 이동",
+      "previewTab": "순서 변경",
+      "previewHint": "길게 눌러 이동",
+      "previewCategory1": "업무",
+      "previewCategory2": "운동",
+      "previewCategory3": "일상"
+    },
+    "todoCreation": {
+      "title": "나에게 맞는 방식으로 할 일을 만들어요",
+      "description": "할 일을 적고 날짜, 시간, 반복, 공개 범위와 카테고리를 한 번에 설정해요.",
+      "cta": "할 일 만들러 가기",
+      "ctaLabel": "할 일 생성 기능으로 이동",
+      "previewTitle": "할 일을 입력해주세요",
+      "previewDate": "오늘",
+      "previewTime": "하루 종일",
+      "previewRepeat": "반복",
+      "previewVisibility": "공개",
+      "previewCategory": "일상"
+    }
+  }
+}

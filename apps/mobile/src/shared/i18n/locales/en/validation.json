@@ -10,8 +10,8 @@
     "mismatch": "Passwords don't match"
   },
   "userTag": {
-    "length": "User tags are 8 characters long",
-    "pattern": "User tags can only contain uppercase letters and numbers"
+    "length": "Hashtags are 8 characters long",
+    "pattern": "Hashtags can only contain uppercase letters and numbers"
   },
   "categoryName": {
     "required": "Please enter a category name",

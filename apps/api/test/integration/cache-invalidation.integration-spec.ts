@@ -1,5 +1,5 @@
 /**
- * 캐시 무효화 E2E 테스트
+ * 캐시 무효화 통합 테스트
  *
  * @description
  * 캐시 무효화 시나리오를 실제 환경과 유사하게 테스트합니다.
@@ -14,7 +14,7 @@ import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
 import { createMockUserProfile } from "../mocks/cache-test-utils";
 
-describe("캐시 무효화 E2E 테스트", () => {
+describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 	let app: INestApplication;
 	let cacheService: CacheService;
 
@@ -52,9 +52,9 @@ describe("캐시 무효화 E2E 테스트", () => {
 	describe("세션 캐시 무효화 시나리오", () => {
 		it("로그인 후 세션이 캐시되고 로그아웃 시 무효화된다", async () => {
 			// Given - 사용자 로그인 시뮬레이션
-			const sessionId = "sess_e2e_test_123";
+			const sessionId = "sess_integration_test_123";
 			const session = {
-				userId: "user_e2e_1",
+				userId: "user_integration_1",
 				expiresAt: new Date(Date.now() + 3600000),
 				revokedAt: null,
 			};
@@ -126,7 +126,7 @@ describe("캐시 무효화 E2E 테스트", () => {
 	describe("사용자 프로필 캐시 무효화 시나리오", () => {
 		it("프로필 수정 시 캐시가 무효화된다", async () => {
 			// Given - 사용자 프로필 캐시
-			const userId = "user_profile_e2e";
+			const userId = "user_profile_integration";
 			const originalProfile = createMockUserProfile({
 				id: userId,
 				email: "original@test.com",
@@ -198,7 +198,7 @@ describe("캐시 무효화 E2E 테스트", () => {
 	describe("친구 관계 캐시 무효화 시나리오", () => {
 		it("친구 추가/삭제 시 관련 캐시가 패턴으로 무효화된다", async () => {
 			// Given - 친구 관계 캐시
-			const userId = "user_friend_e2e";
+			const userId = "user_friend_integration";
 			await cacheService.setMutualFriend(userId, "friend_1", true);
 			await cacheService.setMutualFriend(userId, "friend_2", true);
 			await cacheService.setMutualFriend(userId, "friend_3", false);
@@ -327,13 +327,17 @@ describe("캐시 무효화 E2E 테스트", () => {
 			const targetId = "target_key_test";
 
 			// Then - 캐시 키 형식 검증
-			expect(CacheKeys.session("sess_123")).toBe("session:sess_123");
-			expect(CacheKeys.userProfile(userId)).toBe(`user:profile:${userId}`);
+			expect(CacheKeys.session("sess_123")).toBe(
+				"aido:v1:auth:session:sess_123",
+			);
+			expect(CacheKeys.userProfile(userId)).toBe(
+				`aido:v1:auth:user-profile:${userId}`,
+			);
 			expect(CacheKeys.subscription(userId)).toBe(
-				`user:subscription:${userId}`,
+				`aido:v1:subscription:status:${userId}`,
 			);
 			expect(CacheKeys.mutualFriend(userId, targetId)).toBe(
-				`friends:mutual:${userId}:${targetId}`,
+				`aido:v1:follow:mutual:${userId}:${targetId}`,
 			);
 		});
 	});

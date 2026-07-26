@@ -69,7 +69,7 @@
   "add": {
     "placeholder": "무엇을 하고 싶으신가요?",
     "submit": "선택하기",
-    "aiFeature": "AI 기능",
+    "aiFeature": "AI로 할 일 만들기",
     "voiceAddTitle": "말로 할일을 추가해요",
     "voiceAddHint": "\"이번 주 금요일 저녁 7시 약속\"처럼\n말하면 날짜·시간을 채워줘요"
   },
@@ -146,5 +146,20 @@
     "routineSuggestion": "딱 맞는 루틴을 제안해드려요 !",
     "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요 !",
     "preparing": "이번 주 제안을 준비 중이에요"
+  },
+  "activation": {
+    "title": "첫 할 일을 만들고 완료해 보세요",
+    "description": "두 단계만 끝내면 Aido를 바로 익힐 수 있어요",
+    "createTodo": "첫 할 일 만들기",
+    "completeTodo": "만든 할 일 완료하기",
+    "completed": "완료",
+    "incomplete": "미완료",
+    "accessibilityLabel": "Aido 시작 체크리스트",
+    "stepAccessibilityLabel": "{{label}}, {{status}}"
+  },
+  "reorderCoachmark": {
+    "todo": "할 일을 길게 눌러 원하는 순서로 옮길 수 있어요",
+    "category": "카테고리를 길게 눌러 원하는 순서로 옮길 수 있어요",
+    "dismiss": "순서 변경 안내 닫기"
   }
 }

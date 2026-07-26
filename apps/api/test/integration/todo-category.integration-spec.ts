@@ -17,12 +17,13 @@ import { suppressLogger } from "@test/setup/suppress-logger";
 
 import type { TodoCategory } from "@/generated/prisma/client";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TodoCategoryFacade } from "@/todo-category";
 import { TODO_CATEGORY_REPOSITORY } from "@/todo-category/application/ports/todo-category.repository.port";
 import { TODO_CATEGORY_CACHE } from "@/todo-category/application/ports/todo-category-cache.port";
+import { TODO_CATEGORY_LIMIT_READER } from "@/todo-category/application/ports/todo-category-limit-reader.port";
 import { TodoCategoryReader } from "@/todo-category/application/services/todo-category.reader";
 import { CreateTodoCategoryUseCase } from "@/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
 import { DeleteTodoCategoryUseCase } from "@/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case";
@@ -92,6 +93,14 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 					useClass: PrismaTodoCategoryRepository,
 				},
 				{ provide: TODO_CATEGORY_CACHE, useClass: TodoCategoryCacheAdapter },
+				{
+					provide: TODO_CATEGORY_LIMIT_READER,
+					useValue: { getMaxCountInTx: async () => null },
+				},
+				{
+					provide: MUTATION_LOCK,
+					useValue: { acquire: async () => undefined },
+				},
 				{ provide: UNIT_OF_WORK, useValue: mockUnitOfWork },
 				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
 				{

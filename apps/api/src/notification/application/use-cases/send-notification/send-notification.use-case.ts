@@ -19,8 +19,7 @@ import {
  * 알림 생성 및 푸시 발송 유스케이스.
  *
  * 1. DB에 알림 레코드 생성 (P2002 unique violation 시 graceful skip → null 반환)
- * 2. 사용자 푸시 설정 확인
- * 3. 설정에 따라 푸시 발송 (fire-and-forget)
+ * 2. 푸시 디스패치 예약 (자격 판단·SKIPPED 기록은 디스패처가 담당)
  */
 @Injectable()
 export class SendNotificationUseCase {
@@ -49,19 +48,6 @@ export class SendNotificationUseCase {
 				return null;
 			}
 			throw error;
-		}
-
-		const shouldSend = await this.pushDispatcher.shouldSendPush(
-			data.userId,
-			data.type,
-			data.purpose,
-		);
-
-		if (!shouldSend) {
-			this.#logger.debug(
-				`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
-			);
-			return notification;
 		}
 
 		this.pushDispatcher.fireAndForgetPush(data, notification.id);

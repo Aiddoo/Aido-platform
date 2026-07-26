@@ -1,5 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import { useFriendService } from '@src/bootstrap/providers/di-context';
+import type { User } from '@src/features/user/models/user.model';
+import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -13,7 +15,7 @@ import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const useSendRequestByTagMutationOptions = () => {
   const friendService = useFriendService();
-  const { trackEvent } = useTrack();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const premiumDialog = usePremiumDialog();
@@ -25,6 +27,10 @@ export const useSendRequestByTagMutationOptions = () => {
     },
     onSuccess: () => {
       trackEvent('friend_request_sent');
+      const accountId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
+      if (accountId) {
+        trackAttributedFeatureSuccess({ accountId, feature: 'friend_search' });
+      }
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
       toast.success(t('friend:toast.requestSent'));
     },

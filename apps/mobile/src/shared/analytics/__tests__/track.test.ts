@@ -33,6 +33,7 @@ describe('track', () => {
     // Given
     const params = {
       source: 'manual' as const,
+      creation_entry: 'manual' as const,
       is_recurring: false,
       has_scheduled_time: false,
       is_all_day: true,
@@ -81,5 +82,31 @@ describe('track', () => {
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('session_expired', params);
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test('기능 가이드 이벤트에는 캠페인·기능·진입점만 전달하고 사용자 입력은 받지 않는다', () => {
+    // Given
+    const params = {
+      campaign_id: 'feature-discovery-2026-08',
+      feature: 'friend_search' as const,
+      source: 'auto' as const,
+    };
+
+    // When
+    track(analytics, 'feature_card_cta', params);
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', params);
+  });
+
+  test('검색 이벤트는 원문 대신 길이 버킷만 전달한다', () => {
+    // Given
+    const params = { query_length_bucket: '4_7' as const };
+
+    // When
+    track(analytics, 'friend_search_submitted', params);
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('friend_search_submitted', params);
   });
 });

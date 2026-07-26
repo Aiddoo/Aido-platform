@@ -48,7 +48,7 @@ describe("응원 E2E", () => {
 
 				// When - 응원 보내기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({
 						receiverId: receiver.userId,
@@ -65,7 +65,7 @@ describe("응원 E2E", () => {
 
 				// When - 쿨다운 기간 내 동일 대상에게 다시 응원 API 호출
 				const cooldownResponse = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId })
 					.expect(429);
@@ -89,7 +89,7 @@ describe("응원 E2E", () => {
 
 				// When - 메시지 없이 응원 보내기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId })
 					.expect(201);
@@ -112,7 +112,7 @@ describe("응원 E2E", () => {
 
 				// When - 친구가 아닌 사용자에게 응원 보내기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: stranger.userId })
 					.expect(403);
@@ -131,7 +131,7 @@ describe("응원 E2E", () => {
 
 				// When - 자기 자신에게 응원 보내기 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: sender.userId })
 					.expect(400);
@@ -146,7 +146,7 @@ describe("응원 E2E", () => {
 
 				// When - 인증 없이 응원 보내기 API 호출
 				await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.send({ receiverId: "some-user-id" })
 					.expect(401);
 
@@ -170,13 +170,13 @@ describe("응원 E2E", () => {
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, message: "테스트 응원" });
 
 				// When - 받은 응원 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/cheers/received")
+					.get("/v1/cheers/received")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
 
@@ -200,13 +200,13 @@ describe("응원 E2E", () => {
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId });
 
 				// When - limit을 1로 설정하여 받은 응원 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/cheers/received")
+					.get("/v1/cheers/received")
 					.query({ limit: 1 })
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
@@ -221,7 +221,7 @@ describe("응원 E2E", () => {
 
 				// When - 인증 없이 받은 응원 목록 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/cheers/received")
+					.get("/v1/cheers/received")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -242,13 +242,13 @@ describe("응원 E2E", () => {
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId });
 
 				// When - 보낸 응원 목록 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/cheers/sent")
+					.get("/v1/cheers/sent")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.expect(200);
 
@@ -271,7 +271,7 @@ describe("응원 E2E", () => {
 
 				// When - 일일 제한 정보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get("/cheers/limit")
+					.get("/v1/cheers/limit")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -285,7 +285,9 @@ describe("응원 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 일일 제한 정보 조회 API 호출
-				await request(ctx.app.getHttpServer()).get("/cheers/limit").expect(401);
+				await request(ctx.app.getHttpServer())
+					.get("/v1/cheers/limit")
+					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -306,7 +308,7 @@ describe("응원 E2E", () => {
 
 				// When - 쿨다운 상태 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.get(`/cheers/cooldown/${friend.userId}`)
+					.get(`/v1/cheers/cooldown/${friend.userId}`)
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
@@ -320,7 +322,7 @@ describe("응원 E2E", () => {
 
 				// When - 인증 없이 쿨다운 상태 조회 API 호출
 				await request(ctx.app.getHttpServer())
-					.get("/cheers/cooldown/some-user-id")
+					.get("/v1/cheers/cooldown/some-user-id")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -343,14 +345,14 @@ describe("응원 E2E", () => {
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				const cheerResponse = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId, message: "읽음 처리 테스트" });
 				const cheerId = cheerResponse.body.data.cheer.id;
 
 				// When - 단일 응원 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.patch(`/cheers/${cheerId}/read`)
+					.patch(`/v1/cheers/${cheerId}/read`)
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
 
@@ -368,7 +370,7 @@ describe("응원 E2E", () => {
 
 				// When - 존재하지 않는 응원 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/cheers/99999/read")
+					.patch("/v1/cheers/99999/read")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(404);
 
@@ -382,7 +384,7 @@ describe("응원 E2E", () => {
 
 				// When - 인증 없이 단일 응원 읽음 처리 API 호출
 				await request(ctx.app.getHttpServer())
-					.patch("/cheers/1/read")
+					.patch("/v1/cheers/1/read")
 					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
@@ -408,11 +410,11 @@ describe("응원 E2E", () => {
 				await ctx.helpers.createFriendship(sender2, receiver);
 
 				const resp1 = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender1.accessToken}`)
 					.send({ receiverId: receiver.userId });
 				const resp2 = await request(ctx.app.getHttpServer())
-					.post("/cheers")
+					.post("/v1/cheers")
 					.set("Authorization", `Bearer ${sender2.accessToken}`)
 					.send({ receiverId: receiver.userId });
 
@@ -420,7 +422,7 @@ describe("응원 E2E", () => {
 
 				// When - 여러 응원 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
-					.patch("/cheers/read")
+					.patch("/v1/cheers/read")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.send({ cheerIds })
 					.expect(200);
@@ -435,7 +437,7 @@ describe("응원 E2E", () => {
 
 				// When - 인증 없이 여러 응원 읽음 처리 API 호출
 				await request(ctx.app.getHttpServer())
-					.patch("/cheers/read")
+					.patch("/v1/cheers/read")
 					.send({ cheerIds: [1] })
 					.expect(401);
 

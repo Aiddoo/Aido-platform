@@ -7,7 +7,7 @@ import {
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
 import { now } from "@/shared/domain/date/utils/core";
-import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
 
 import {
 	type CheerCooldown,
@@ -103,13 +103,18 @@ export class CheerReader {
 		userId: string,
 		tz: string = "UTC",
 	): Promise<CheerLimitInfo> {
+		const capturedAt = now();
+		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
 		const { dailyLimit } = await this.entitlementService.getFeatureLimit(
 			userId,
 			Feature.CHEER,
 		);
 
-		const today = startOfDayInTimezone(now(), tz);
-		const used = await this.cheerRepository.countTodayCheers(userId, today);
+		const used = await this.cheerRepository.countSentSince(
+			userId,
+			quotaWindow.startsAt,
+			quotaWindow.endsAt,
+		);
 
 		return {
 			dailyLimit,

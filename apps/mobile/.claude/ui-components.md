@@ -68,7 +68,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `SettingNavigation`, `SettingNavigation.Item` | 설정 화면 섹션 그룹 + 네비게이션 아이템 (Compound Component) | `src/shared/ui/SettingNavigation/SettingNavigation.md` |
 | `KeyboardBottomSheet` | 키보드 연동 바텀시트 (폼용) | `src/shared/ui/BottomSheet/BottomSheet.md` |
 | `BottomSheet` | 키보드 불필요 바텀시트 (피커, 액션시트) | `src/shared/ui/BottomSheet/BottomSheet.md` |
-| `ModalBottomSheet` | RN Modal 기반 바텀시트 (시트 위에 시트, 키보드 안전) | `src/shared/ui/BottomSheet/BottomSheet.md` |
+| `ModalBottomSheet` | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트) | `src/shared/ui/BottomSheet/BottomSheet.md` |
 
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.

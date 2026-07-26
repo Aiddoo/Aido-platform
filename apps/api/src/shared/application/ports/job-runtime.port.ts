@@ -41,6 +41,10 @@ export interface JobRuntimeHealth {
 	readonly queues: Readonly<Record<string, JobQueueHealth>>;
 }
 
+export type JobCancellationResult =
+	| { readonly status: "cancelled" }
+	| { readonly status: "missing" };
+
 export interface JobRuntimePort {
 	start(): Promise<void>;
 	stop(): Promise<void>;
@@ -57,7 +61,7 @@ export interface JobRuntimePort {
 		options: EnqueueJobOptions,
 	): Promise<void>;
 	unschedule(scheduleKey: string, queue: string): Promise<void>;
-	cancel(queue: string, jobKey: string): Promise<void>;
+	cancel(queue: string, jobKey: string): Promise<JobCancellationResult>;
 	work<T extends JobData>(
 		queue: string,
 		handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>,

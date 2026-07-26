@@ -11,6 +11,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 import { MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
+import { resolveSheetAnimationDuration } from './motion';
 
 const DISMISS_DISPLACEMENT = 100;
 const DISMISS_VELOCITY = 500;
@@ -21,6 +22,7 @@ interface ModalBottomSheetProps {
   onClose: () => void;
   /** 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 */
   onExit: () => void;
+  reduceMotion?: boolean;
   children: ReactNode;
 }
 
@@ -30,7 +32,13 @@ interface ModalBottomSheetProps {
  * OverlayProvider가 BottomSheetModalProvider 안에 있으므로
  * gorhom 시트 위에 자연스럽게 렌더됨.
  */
-export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBottomSheetProps) => {
+export const ModalBottomSheet = ({
+  isOpen,
+  onClose,
+  onExit,
+  reduceMotion = false,
+  children,
+}: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -38,6 +46,8 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
 
   const bottomInset = insets.bottom || 16;
   const maxHeight = Math.max(MIN_CONTENT_HEIGHT, windowHeight - insets.top - TOP_MARGIN);
+  const enterDuration = resolveSheetAnimationDuration(reduceMotion, ANIMATION.duration.slow);
+  const snapDuration = resolveSheetAnimationDuration(reduceMotion, ANIMATION.duration.normal);
 
   // Refs for callbacks — inline 함수가 매 렌더마다 바뀌어도 애니메이션이 리셋되지 않도록
   const onCloseRef = useRef(onClose);
@@ -66,27 +76,32 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
       // Animate in
       isAnimatingOut.value = false;
       dragY.value = 0;
-      translateY.value = withTiming(0, { duration: ANIMATION.duration.slow });
-      backdropOpacity.value = withTiming(0.5, { duration: ANIMATION.duration.slow });
+      translateY.value = withTiming(0, { duration: enterDuration });
+      backdropOpacity.value = withTiming(0.5, { duration: enterDuration });
     } else {
       // Animate out (한 번만 실행)
       if (!isAnimatingOut.value) {
         isAnimatingOut.value = true;
-        translateY.value = withTiming(
-          windowHeight,
-          { duration: ANIMATION.duration.slow },
-          (finished) => {
-            // withTiming 콜백은 UI thread에서 실행 — JS 호출에 runOnJS 필요
-            if (finished) {
-              runOnJS(callOnExit)();
-            }
-          },
-        );
-        backdropOpacity.value = withTiming(0, { duration: ANIMATION.duration.slow });
+        translateY.value = withTiming(windowHeight, { duration: enterDuration }, (finished) => {
+          // withTiming 콜백은 UI thread에서 실행 — JS 호출에 runOnJS 필요
+          if (finished) {
+            runOnJS(callOnExit)();
+          }
+        });
+        backdropOpacity.value = withTiming(0, { duration: enterDuration });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs로 콜백 안정화, windowHeight는 초기값만 필요
-  }, [isOpen, backdropOpacity, callOnExit, dragY, isAnimatingOut, translateY, windowHeight]);
+  }, [
+    isOpen,
+    backdropOpacity,
+    callOnExit,
+    dragY,
+    enterDuration,
+    isAnimatingOut,
+    translateY,
+    windowHeight,
+  ]);
 
   // Pan gesture for swipe-to-dismiss (UI thread)
   const panGesture = Gesture.Pan()
@@ -101,7 +116,7 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
         runOnJS(callOnClose)();
       } else {
         // snap back
-        dragY.value = withTiming(0, { duration: ANIMATION.duration.normal });
+        dragY.value = withTiming(0, { duration: snapDuration });
       }
     });
 
@@ -114,9 +129,20 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
   }));
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View
+      testID="modal-bottom-sheet"
+      style={StyleSheet.absoluteFill}
+      accessibilityViewIsModal
+      importantForAccessibility="yes"
+    >
       {/* Backdrop */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={callOnClose}>
+      <Pressable
+        testID="modal-bottom-sheet-backdrop"
+        style={StyleSheet.absoluteFill}
+        onPress={callOnClose}
+        accessible={false}
+        importantForAccessibility="no"
+      >
         <Animated.View className="absolute inset-0 bg-black" style={backdropAnimatedStyle} />
       </Pressable>
 

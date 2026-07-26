@@ -1,5 +1,6 @@
 import type { ConvertMemoToTodoInput } from '@aido/validators';
-import { useMemoService } from '@src/bootstrap/providers/di-context';
+import { useActivationService, useMemoService } from '@src/bootstrap/providers/di-context';
+import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -18,6 +19,7 @@ interface ConvertMemoToTodoMutationParams {
 
 export const useConvertMemoToTodoMutationOptions = () => {
   const service = useMemoService();
+  const activationService = useActivationService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -28,6 +30,7 @@ export const useConvertMemoToTodoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_, { memoId }) => {
+      recordTodoCreatedForActivation({ queryClient, service: activationService });
       toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },

@@ -6,11 +6,11 @@ import type { DomainEvent } from "@/shared/domain/aggregate-root";
 /**
  * E2E 전용 도메인 이벤트 퍼블리셔 (추적 데코레이터)
  *
- * 프로덕션 퍼블리셔와 동일하게 커밋 후 fire-and-forget으로 발행하되,
+ * 프로덕션 퍼블리셔와 동일하게 커밋 후 비동기 리스너 완료까지 관측하며,
  * `emitAsync`가 반환하는 리스너 프라미스를 pending set에 등록해 테스트
  * reset이 TRUNCATE 전에 잔류 이벤트 작업을 drain할 수 있게 한다.
  * (미대기 이벤트 부수효과가 다음 테스트의 TRUNCATE와 경합하는 플레이크 방지.
- *  inline await는 하지 않으므로 발행 시점의 타이밍 의미는 프로덕션과 동일.)
+ *  이벤트 단위 실패는 기록 후 격리해 post-commit 요청 성공을 유지한다.)
  */
 export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
 	readonly #logger = new Logger(TrackingDomainEventPublisher.name);
@@ -18,7 +18,7 @@ export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
 
 	constructor(private readonly eventEmitter: EventEmitter2) {}
 
-	publishAll(events: readonly DomainEvent[]): void {
+	async publishAll(events: readonly DomainEvent[]): Promise<void> {
 		for (const event of events) {
 			const settled: Promise<unknown> = this.eventEmitter
 				.emitAsync(event.eventName, event)
@@ -32,6 +32,7 @@ export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
 					this.#pending.delete(settled);
 				});
 			this.#pending.add(settled);
+			await settled;
 		}
 	}
 

@@ -99,8 +99,15 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		try {
 			// JWKS 캐시 초기화 (필요시)
 			if (!this.#appleJWKS) {
+				const jwksUrl =
+					this.configService.get<string>("APPLE_JWKS_URL") ??
+					OAuthTokenVerifierService.APPLE_JWKS_URL;
+				const cooldownDuration = this.configService.get<number>(
+					"APPLE_JWKS_COOLDOWN_DURATION_MS",
+				);
 				this.#appleJWKS = jose.createRemoteJWKSet(
-					new URL(OAuthTokenVerifierService.APPLE_JWKS_URL),
+					new URL(jwksUrl),
+					cooldownDuration === undefined ? undefined : { cooldownDuration },
 				);
 			}
 

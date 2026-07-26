@@ -31,7 +31,7 @@ export class E2eHelpers {
 		options?: { name?: string },
 	): Promise<void> {
 		await request(this.app.getHttpServer())
-			.post("/auth/register")
+			.post("/v1/auth/register")
 			.send({
 				email,
 				password,
@@ -49,7 +49,7 @@ export class E2eHelpers {
 	async verifyUser(email: string): Promise<string> {
 		const code = this.fakeEmailService.getLastCode(email);
 		const response = await request(this.app.getHttpServer())
-			.post("/auth/verify-email")
+			.post("/v1/auth/verify-email")
 			.send({ email, code })
 			.expect(200);
 
@@ -70,7 +70,7 @@ export class E2eHelpers {
 		// 이메일 인증
 		const code = this.fakeEmailService.getLastCode(email);
 		const response = await request(this.app.getHttpServer())
-			.post("/auth/verify-email")
+			.post("/v1/auth/verify-email")
 			.send({ email, code })
 			.expect(200);
 
@@ -89,7 +89,7 @@ export class E2eHelpers {
 		password: string,
 	): Promise<{ accessToken: string; refreshToken: string }> {
 		const response = await request(this.app.getHttpServer())
-			.post("/auth/login")
+			.post("/v1/auth/login")
 			.send({ email, password })
 			.expect(200);
 
@@ -108,13 +108,13 @@ export class E2eHelpers {
 	): Promise<void> {
 		// user1 -> user2 팔로우 요청
 		await request(this.app.getHttpServer())
-			.post(`/follows/${user2.userTag}`)
+			.post(`/v1/follows/${user2.userTag}`)
 			.set("Authorization", `Bearer ${user1.accessToken}`)
 			.expect(201);
 
 		// user2 -> user1 맞팔로우 (친구 성립)
 		await request(this.app.getHttpServer())
-			.post(`/follows/${user1.userTag}`)
+			.post(`/v1/follows/${user1.userTag}`)
 			.set("Authorization", `Bearer ${user2.accessToken}`)
 			.expect(201);
 	}
@@ -124,7 +124,7 @@ export class E2eHelpers {
 	 */
 	async getDefaultCategoryId(accessToken: string): Promise<number> {
 		const response = await request(this.app.getHttpServer())
-			.get("/todo-categories")
+			.get("/v1/todo-categories")
 			.set("Authorization", `Bearer ${accessToken}`)
 			.expect(200);
 

@@ -5,6 +5,7 @@
  * 환경변수는 .env.test 파일에서 관리 — 여기서는 런타임 패치만 수행.
  */
 import "../src/shared/domain/date/dayjs.setup";
+import { bypassE2eThrottler } from "./e2e/helpers/e2e-throttler-control";
 
 /**
  * E2E 테스트에서 rate limiting 비활성화
@@ -15,9 +16,7 @@ import "../src/shared/domain/date/dayjs.setup";
  *
  * @see https://github.com/nestjs/throttler/issues
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ThrottlerGuard } = require("@nestjs/throttler");
-ThrottlerGuard.prototype.canActivate = () => true;
+bypassE2eThrottler();
 
 // NODE_ENV=test 보장 (.env.test 로드 전에 설정되어야 config.module.ts가 올바른 파일 선택)
 process.env.NODE_ENV = "test";

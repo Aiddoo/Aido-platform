@@ -75,6 +75,7 @@ test/
 - global setup이 준비한 PostgreSQL에 `TestDatabase` 연결
 - `FakeEmailService` / OAuth provider registry / `FakeOAuthTokenVerifierService` 주입
 - `PinoLogger` → `FakeLogger` 교체
+- 운영과 동일한 전역 `/v1` 프리픽스 (`/health` 제외)
 - `ZodValidationPipe` 설정
 - `E2eHelpers` 인스턴스 생성
 - DB, cache, Redis mock, 공용 fake를 한 번에 초기화하는 `ctx.reset()` 제공
@@ -110,7 +111,7 @@ describe("Todo E2E", () => {
 
       // When - Todo 생성 요청
       const response = await request(ctx.app.getHttpServer())
-        .post("/todos")
+        .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "E2E Test", categoryId })
         .expect(201);
@@ -141,18 +142,18 @@ it("Todo CRUD 전체 플로우", async () => {
 
   // When - 생성
   const createRes = await request(ctx.app.getHttpServer())
-    .post("/todos").set("Authorization", `Bearer ${user.accessToken}`)
+    .post("/v1/todos").set("Authorization", `Bearer ${user.accessToken}`)
     .send({ title: "테스트", categoryId }).expect(201);
   const todoId = createRes.body.data.todo.id;
 
   // When - 수정
   await request(ctx.app.getHttpServer())
-    .patch(`/todos/${todoId}`).set("Authorization", `Bearer ${user.accessToken}`)
+    .patch(`/v1/todos/${todoId}`).set("Authorization", `Bearer ${user.accessToken}`)
     .send({ title: "수정됨" }).expect(200);
 
   // When - 삭제
   await request(ctx.app.getHttpServer())
-    .delete(`/todos/${todoId}`).set("Authorization", `Bearer ${user.accessToken}`)
+    .delete(`/v1/todos/${todoId}`).set("Authorization", `Bearer ${user.accessToken}`)
     .expect(200);
 });
 
@@ -260,12 +261,12 @@ const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 ### 기본 형식
 
 ```typescript
-it("POST /auth/register - 새 사용자 등록", async () => {
+it("POST /v1/auth/register - 새 사용자 등록", async () => {
   // Given - 새 이메일 주소
 
   // When - 회원가입 API 호출
   const response = await request(ctx.app.getHttpServer())
-    .post("/auth/register")
+    .post("/v1/auth/register")
     .send({
       email: "test@example.com",
       password: "Test1234!",
@@ -292,7 +293,7 @@ it("Todo를 생성해야 한다", async () => {
 
   // When - Todo 생성 요청
   const response = await request(ctx.app.getHttpServer())
-    .post("/todos")
+    .post("/v1/todos")
     .set("Authorization", `Bearer ${user.accessToken}`)
     .send({ title: "E2E Test Todo", categoryId })
     .expect(201);
@@ -314,7 +315,7 @@ it("친구에게 응원을 보내야 한다", async () => {
 
   // When - 응원 전송
   const response = await request(ctx.app.getHttpServer())
-    .post(`/cheers/${receiver.userId}`)
+    .post(`/v1/cheers/${receiver.userId}`)
     .set("Authorization", `Bearer ${sender.accessToken}`)
     .send({ message: "화이팅!" })
     .expect(201);

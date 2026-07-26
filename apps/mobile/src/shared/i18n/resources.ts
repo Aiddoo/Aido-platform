@@ -4,11 +4,13 @@ import enAppIcon from './locales/en/appIcon.json';
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enErrors from './locales/en/errors.json';
+import enFeatureDiscovery from './locales/en/featureDiscovery.json';
 import enFriend from './locales/en/friend.json';
 import enInquiry from './locales/en/inquiry.json';
 import enMemo from './locales/en/memo.json';
 import enNotification from './locales/en/notification.json';
 import enSettings from './locales/en/settings.json';
+import enStoreReview from './locales/en/storeReview.json';
 import enSubscription from './locales/en/subscription.json';
 import enTodo from './locales/en/todo.json';
 import enUser from './locales/en/user.json';
@@ -21,11 +23,13 @@ import koAppIcon from './locales/ko/appIcon.json';
 import koAuth from './locales/ko/auth.json';
 import koCommon from './locales/ko/common.json';
 import koErrors from './locales/ko/errors.json';
+import koFeatureDiscovery from './locales/ko/featureDiscovery.json';
 import koFriend from './locales/ko/friend.json';
 import koInquiry from './locales/ko/inquiry.json';
 import koMemo from './locales/ko/memo.json';
 import koNotification from './locales/ko/notification.json';
 import koSettings from './locales/ko/settings.json';
+import koStoreReview from './locales/ko/storeReview.json';
 import koSubscription from './locales/ko/subscription.json';
 import koTodo from './locales/ko/todo.json';
 import koUser from './locales/ko/user.json';
@@ -53,6 +57,8 @@ export const resources = {
     weather: koWeather,
     appIcon: koAppIcon,
     widget: koWidget,
+    featureDiscovery: koFeatureDiscovery,
+    storeReview: koStoreReview,
   },
   en: {
     common: enCommon,
@@ -72,6 +78,8 @@ export const resources = {
     weather: enWeather,
     appIcon: enAppIcon,
     widget: enWidget,
+    featureDiscovery: enFeatureDiscovery,
+    storeReview: enStoreReview,
   },
 } as const;
 

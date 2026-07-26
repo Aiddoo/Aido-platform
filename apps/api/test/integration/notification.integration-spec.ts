@@ -33,8 +33,10 @@ import {
 } from "@/notification";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
+import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
+import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
@@ -43,6 +45,7 @@ import { MarkAllAsReadUseCase } from "@/notification/application/use-cases/mark-
 import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-read/mark-as-read.use-case";
 import { MarkNotificationOpenedUseCase } from "@/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
+import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
@@ -120,14 +123,17 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		upsert: jest.fn(),
 	};
 
-	const mockDatabaseService = createMockDatabaseService({
-		notification: mockNotificationDb,
-		pushToken: mockPushTokenDb,
-		pushDispatch: mockPushDispatchDb,
-		pushDeliveryAttempt: mockPushDeliveryAttemptDb,
-		userPreference: mockUserPreferenceDb,
-		userConsent: mockUserConsentDb,
-	});
+	const mockDatabaseService = {
+		...createMockDatabaseService({
+			notification: mockNotificationDb,
+			pushToken: mockPushTokenDb,
+			pushDispatch: mockPushDispatchDb,
+			pushDeliveryAttempt: mockPushDeliveryAttemptDb,
+			userPreference: mockUserPreferenceDb,
+			userConsent: mockUserConsentDb,
+		}),
+		$queryRaw: jest.fn(),
+	};
 
 	// Mock Push Provider
 	const mockPushProvider = {
@@ -160,6 +166,12 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 				// application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
 				{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
+				{
+					provide: NOTIFICATION_DEDUP,
+					useValue: {
+						recordNotifiedUsers: jest.fn().mockResolvedValue(undefined),
+					},
+				},
 				NotificationFacade,
 				GetNotificationsUseCase,
 				GetUnreadCountUseCase,
@@ -171,6 +183,8 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				OptOutMarketingPushUseCase,
 				SendNotificationUseCase,
 				SendNotificationWithDedupUseCase,
+				PersistBatchNotificationUseCase,
+				DispatchBatchNotificationUseCase,
 				SendBatchNotificationUseCase,
 				FindAlreadyNotifiedUsersUseCase,
 				{
@@ -271,8 +285,9 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{
 					provide: DEDUP_PROVIDER,
 					useValue: {
-						isDuplicate: jest.fn().mockResolvedValue(false),
-						markAsProcessed: jest.fn().mockResolvedValue(undefined),
+						filterMembers: jest.fn().mockResolvedValue(new Set()),
+						isMember: jest.fn().mockResolvedValue(false),
+						addMembers: jest.fn().mockResolvedValue(undefined),
 					},
 				},
 				{
@@ -308,6 +323,12 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		mockPushDispatchDb.update.mockResolvedValue({});
 		mockPushDispatchDb.updateMany.mockResolvedValue({ count: 1 });
 		mockPushDeliveryAttemptDb.createMany.mockResolvedValue({ count: 0 });
+		mockDatabaseService.$queryRaw.mockResolvedValue(
+			Array.from({ length: 20 }, (_, index) => ({
+				id: index + 1,
+				notificationId: index + 1,
+			})),
+		);
 		mockNotificationDb.createManyAndReturn.mockImplementation(
 			async ({ data }: { data: Array<Record<string, unknown>> }) =>
 				data.map((item, index) => ({

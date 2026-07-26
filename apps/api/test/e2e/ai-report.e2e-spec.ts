@@ -64,7 +64,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - 리포트 상태 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/ai/reports/status")
+				.get("/v1/ai/reports/status")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.set("X-Timezone", "Asia/Seoul");
 
@@ -85,7 +85,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - 토큰 없이 상태 조회
 			const response = await request(ctx.app.getHttpServer()).get(
-				"/ai/reports/status",
+				"/v1/ai/reports/status",
 			);
 
 			// Then - 401 Unauthorized 반환
@@ -103,7 +103,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - 리포트 목록 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/ai/reports")
+				.get("/v1/ai/reports")
 				.set("Authorization", `Bearer ${user.accessToken}`);
 
 			// Then - 200 응답과 빈 배열 반환
@@ -121,7 +121,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - WEEKLY 타입으로 필터링
 			const response = await request(ctx.app.getHttpServer())
-				.get("/ai/reports?type=WEEKLY&limit=5")
+				.get("/v1/ai/reports?type=WEEKLY&limit=5")
 				.set("Authorization", `Bearer ${user.accessToken}`);
 
 			// Then - 200 응답 (빈 배열)
@@ -134,7 +134,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - 토큰 없이 목록 조회
 			const response = await request(ctx.app.getHttpServer()).get(
-				"/ai/reports",
+				"/v1/ai/reports",
 			);
 
 			// Then - 401 Unauthorized 반환
@@ -152,7 +152,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - 없는 리포트 상세 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/ai/reports/99999")
+				.get("/v1/ai/reports/99999")
 				.set("Authorization", `Bearer ${user.accessToken}`);
 
 			// Then - 404 Not Found 반환
@@ -165,7 +165,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - 토큰 없이 상세 조회
 			const response = await request(ctx.app.getHttpServer()).get(
-				"/ai/reports/1",
+				"/v1/ai/reports/1",
 			);
 
 			// Then - 401 Unauthorized 반환
@@ -181,7 +181,7 @@ describe("AI 리포트 E2E", () => {
 
 			// When - 문자열 ID로 조회
 			const response = await request(ctx.app.getHttpServer())
-				.get("/ai/reports/invalid")
+				.get("/v1/ai/reports/invalid")
 				.set("Authorization", `Bearer ${user.accessToken}`);
 
 			// Then - 400 Bad Request 반환

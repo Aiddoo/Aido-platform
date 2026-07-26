@@ -96,6 +96,7 @@ model User {
   @@index([status])
   @@index([subscriptionStatus])
   @@index([deletedAt])
+  @@index([deletedAt, createdAt]) // 성장 지표 soft-delete 제외 가입 cohort 범위
   @@index([status, deletedAt, lastLoginAt]) // Admin 7/30일 필터
   @@index([deletedAt, lastActiveAt]) // Win-back/Nudge Suggest 비활성 유저 스캔
 }
@@ -830,6 +831,7 @@ model UserActivityDay {
 
   @@unique([userId, localDate])
   @@index([localDate])
+  @@index([firstSeenAt])
 }
 
 // =============================================================================

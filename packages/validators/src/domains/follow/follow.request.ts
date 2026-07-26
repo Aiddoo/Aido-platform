@@ -83,7 +83,7 @@ export const searchUsersQuerySchema = z.object({
     .trim()
     .min(2, '검색어는 2자 이상이어야 합니다')
     .max(50, '검색어는 50자 이내여야 합니다')
-    .describe('검색어: 이름 또는 사용자 태그 (2-50자)'),
+    .describe('검색어: 이름 또는 Aido ID (2-50자)'),
   // 관련도 랭킹 keyset을 인코딩한 불투명 커서. 다른 팔로우 쿼리와 달리 CUID가 아니다.
   cursor: z.string().optional().describe('페이지네이션 커서 (불투명 문자열, 선택)'),
   limit: z

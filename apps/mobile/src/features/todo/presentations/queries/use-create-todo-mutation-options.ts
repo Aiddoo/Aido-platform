@@ -1,7 +1,10 @@
 import { ErrorCode } from '@aido/errors';
 import type { CreateTodoInput } from '@aido/validators';
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
+import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
+import type { User } from '@src/features/user/models/user.model';
+import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -30,7 +33,8 @@ function parseScheduledTime(time: string, dateStr: string): Date {
 
 export const useCreateTodoMutationOptions = () => {
   const todoService = useTodoService();
-  const { trackEvent } = useTrack();
+  const activationService = useActivationService();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -90,6 +94,7 @@ export const useCreateTodoMutationOptions = () => {
       return { previousData, startDate };
     },
     onSuccess: (_data, { input, source }) => {
+      recordTodoCreatedForActivation({ queryClient, service: activationService });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(input.startDate) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
@@ -97,11 +102,16 @@ export const useCreateTodoMutationOptions = () => {
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source,
+        creation_entry: source === 'ai' ? 'ai_parse' : 'manual',
         is_recurring: false,
         has_scheduled_time: !!input.scheduledTime,
         is_all_day: input.isAllDay,
         visibility: input.visibility ?? 'PUBLIC',
       });
+      const accountId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
+      if (accountId) {
+        trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
+      }
     },
     onError: (error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

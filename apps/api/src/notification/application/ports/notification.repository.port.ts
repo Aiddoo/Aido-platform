@@ -14,6 +14,44 @@ import type { PushReceiptResult, PushResult } from "./push-provider.port";
 /** 알림 저장소 포트 (DI 토큰) */
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");
 
+export type PushDispatchSkipReason =
+	| "PUSH_SETTINGS_MISSING"
+	| "PUSH_DISABLED"
+	| "MARKETING_CONSENT_REQUIRED"
+	| "MARKETING_QUIET_HOURS"
+	| "NIGHT_PUSH_DISABLED"
+	| "RATE_LIMITED"
+	| "ENGAGEMENT_RATE_LIMITED"
+	| "NO_ACTIVE_TOKEN"
+	| "UNSUPPORTED_APP_CAPABILITY";
+
+export type PushDispatchFailureReason = "UNEXPECTED_DISPATCH_ERROR";
+
+export interface CreatePushDispatchInput {
+	notificationId: number;
+	userId: string;
+	purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
+	campaignKey?: string | null;
+	variantId?: string | null;
+	timezone: string;
+	localDate: Date;
+}
+
+export interface PushDispatchRecord {
+	id: number;
+	notificationId: number;
+}
+
+export interface PushDispatchSkipUpdate {
+	dispatchId: number;
+	reason: PushDispatchSkipReason;
+}
+
+export interface PushDeliveryResultsInput {
+	dispatchId: number;
+	results: PushResult[];
+}
+
 /**
  * 알림·푸시 토큰 저장소 포트.
  *
@@ -63,18 +101,25 @@ export interface NotificationRepositoryPort {
 	deleteAllPushTokensByUser(userId: string): Promise<{ count: number }>;
 	deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }>;
 
-	createPushDispatch(input: {
-		notificationId: number;
-		userId: string;
-		purpose: "TRANSACTIONAL" | "SCHEDULED_SERVICE" | "ENGAGEMENT";
-		campaignKey?: string | null;
-		variantId?: string | null;
-		timezone: string;
-		localDate: Date;
-	}): Promise<{ id: number }>;
+	createPushDispatch(input: CreatePushDispatchInput): Promise<{ id: number }>;
+	createPushDispatches(
+		inputs: CreatePushDispatchInput[],
+	): Promise<PushDispatchRecord[]>;
+	markPushDispatchSkipped(
+		dispatchId: number,
+		reason: PushDispatchSkipReason,
+	): Promise<void>;
+	markPushDispatchesSkipped(updates: PushDispatchSkipUpdate[]): Promise<void>;
+	markPushDispatchFailed(
+		dispatchIds: number[],
+		reason: PushDispatchFailureReason,
+	): Promise<void>;
 	recordPushDeliveryResults(
 		dispatchId: number,
 		results: PushResult[],
+	): Promise<void>;
+	recordPushDeliveryResultsBatch(
+		inputs: PushDeliveryResultsInput[],
 	): Promise<void>;
 	findPendingPushReceipts(
 		limit: number,

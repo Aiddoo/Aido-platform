@@ -12,7 +12,7 @@ module.exports = {
 
   // SWC로 변환 (ts-jest 대신, 더 빠름)
   transform: {
-    '^.+\\.ts$': [
+    '^.+\\.[jt]s$': [
       '@swc/jest',
       {
         jsc: {
@@ -32,6 +32,12 @@ module.exports = {
       },
     ],
   },
+  // Apple JWKS 검증 테스트는 ESM-only jose를 실제로 실행한다.
+  // pnpm의 실제 경로와 패키지 내부 node_modules 경로 모두 SWC 변환에서 제외하지 않는다.
+  transformIgnorePatterns: [
+    'node_modules/.pnpm/(?!(jose)@)',
+    'node_modules/(?!.pnpm|jose)',
+  ],
 
   // 루트 디렉토리 - unit test + 테스트 인프라 안전장치 spec
   rootDir: '.',

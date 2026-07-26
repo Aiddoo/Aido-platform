@@ -516,6 +516,35 @@ describe("UserRepository — 사용자 리포지토리", () => {
 		});
 	});
 
+	describe("updateLastActiveAt", () => {
+		it("사용자 현지 날짜의 활동 행과 lastActiveAt을 한 트랜잭션에서 기록한다", async () => {
+			// Given - UTC 기준 다음 현지 날짜가 되는 서울 요청 시각
+			jest.useFakeTimers();
+			jest.setSystemTime(new Date("2026-07-26T15:30:00.000Z"));
+
+			try {
+				// When - 인증 사용자 활동을 기록하면
+				await repository.updateLastActiveAt("user-123", "Asia/Seoul");
+
+				// Then - 한 SQL 경계에 사용자·현지 날짜·관측 시각을 바인딩한다
+				expect(db.$executeRaw).toHaveBeenCalledTimes(1);
+				const rawParameters = db.$executeRaw.mock.calls[0]?.slice(1);
+				expect(rawParameters).toEqual([
+					new Date("2026-07-26T15:30:00.000Z"),
+					new Date("2026-07-26T15:30:00.000Z"),
+					new Date("2026-07-26T15:30:00.000Z"),
+					"user-123",
+					new Date("2026-07-27T00:00:00.000Z"),
+					"Asia/Seoul",
+					new Date("2026-07-26T15:30:00.000Z"),
+					new Date("2026-07-26T15:30:00.000Z"),
+				]);
+			} finally {
+				jest.useRealTimers();
+			}
+		});
+	});
+
 	describe("restore", () => {
 		it("사용자의 deletedAt을 null로, status를 ACTIVE로 업데이트한다", async () => {
 			// Given - 탈퇴된 사용자

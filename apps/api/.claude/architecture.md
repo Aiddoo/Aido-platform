@@ -188,8 +188,9 @@ TodoRowRepository (행 DAO) → DatabaseService (Prisma) → PostgreSQL
 - `DomainEvent` 인터페이스는 `eventName` 라우팅 키를 보유 (`shared/domain/aggregate-root.ts`). 이벤트명 상수는 모듈 소유 — 예: `todo/domain/events/todo-event-names.ts`의 `TODO_EVENTS` (`"todo.created"` 등)
 - 발행 포트는 `DOMAIN_EVENT_PUBLISHER` (`shared/application/ports/domain-event-publisher.port.ts`) — `@Global` `DomainEventsModule`이 제공, EventEmitter2 어댑터는 `shared/infrastructure/events/`
 - 발행은 **반드시 트랜잭션 커밋 후** (`UNIT_OF_WORK`의 `run` 콜백 밖). TX 안에서는 `pullDomainEvents()`로 드레인만 한다
-- EventEmitter2 `emit`은 **동기** — 퍼블리셔가 이벤트 단위 try/catch로 예외를 격리한다 (발행 실패가 호출자에 전파되지 않는 fire-and-forget 계약)
-- 구독은 `application/events/`의 `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.X)` — 핸들러 내부도 try/catch fire-and-forget + 로깅
+- EventEmitter2 `emitAsync`를 퍼블리셔가 이벤트 단위로 await한다. 비동기 구독자 실패까지 한 번 기록한 뒤 격리하므로 이미 커밋된 요청을 500으로 뒤집지 않는다
+- 구독은 `application/events/`의 `@Injectable()` 클래스 + `@OnEvent(TODO_EVENTS.X)` — 실패 전파가 필요한 핸들러는 `suppressErrors: false`로 rejection을 퍼블리셔 경계까지 보존한다
+- 이 경계는 **관측성**만 제공한다. durable retry/outbox가 아니므로 유실 불가 부수효과는 별도 내구성 큐/아웃박스로 설계한다
 
 **폴더 규칙** (쓰기·읽기 대칭 — read/write 저장소 분리와 미러링):
 
@@ -233,7 +234,7 @@ modules/todo/
 | `create()` 팩토리 대신 `planCreation()` 계획 패턴 | id가 DB autoincrement | id 전략을 UUID로 바꿀 때 |
 | 행 단위 저장(필드별 update) — 컬렉션형 save(todo) 아님 | 동시 필드 쓰기 클로버 방지, Prisma partial update 적합 | 낙관적 잠금(version) 도입 시 |
 | version 컬럼(낙관적 잠금) 미도입 | 스키마·충돌 에러 시맨틱 변경 = 클라 영향 | 충돌 빈도가 문제 될 때 (현재는 TX 감싸기로 창 축소) |
-| 이벤트 아웃박스 없음 | 기존 fire-and-forget 큐 규칙과 일관 | 부수효과가 유실 불가 요건이 될 때 |
+| 이벤트 아웃박스 없음 | post-commit 구독자 완료·실패를 관측하고 요청 성공은 유지 | 부수효과가 유실 불가 요건이 될 때 |
 | TodoTitle을 props에 string으로 저장 | 매핑 노이즈 대비 이득 없음 (모든 쓰기 경로가 VO 게이트 통과) | 제목 규칙이 늘어날 때 |
 
 **계약 안전장치**: `test/e2e/openapi-contract.e2e-spec.ts` 스냅샷이 전체 API 계약을 고정 —

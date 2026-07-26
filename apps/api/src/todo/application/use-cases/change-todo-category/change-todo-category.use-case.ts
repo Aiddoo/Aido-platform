@@ -89,7 +89,7 @@ export class ChangeTodoCategoryUseCase {
 		});
 
 		// 3. 저장(TX 커밋) 완료 후 이벤트 발행 (daily-completion 캐시 무효화 트리거)
-		this.eventPublisher.publishAll(events);
+		await this.eventPublisher.publishAll(events);
 
 		// 4. 캐시 무효화 (todoCount 변경)
 		await this.todoCache.invalidateTodoCategories(userId);

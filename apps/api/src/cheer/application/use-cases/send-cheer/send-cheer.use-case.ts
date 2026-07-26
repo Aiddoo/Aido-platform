@@ -2,9 +2,15 @@ import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { FollowFacade } from "@/follow";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
-import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { evaluateCheerCooldown } from "../../../domain/services/cheer-cooldown";
@@ -46,6 +52,8 @@ export class SendCheerUseCase {
 		private readonly notifier: CheerNotifierPort,
 		@Inject(CHEER_LIMIT_READER)
 		private readonly limitReader: CheerLimitReaderPort,
+		@Inject(MUTATION_LOCK)
+		private readonly mutationLock: MutationLockPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 		private readonly followFacade: FollowFacade,
@@ -72,13 +80,20 @@ export class SendCheerUseCase {
 		}
 
 		const cheerMessage = CheerMessage.of(message);
+		const capturedAt = now();
+		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
 
 		const cheer = await this.uow.run(async () => {
-			const todayStart = startOfDayInTimezone(now(), tz);
+			await this.mutationLock.acquire([
+				MutationLockKeys.cheerDaily(senderId, quotaWindow.localDate),
+				MutationLockKeys.cheerCooldown(senderId, receiverId),
+			]);
+
 			const dailyLimit = await this.limitReader.getDailyLimitInTx(senderId);
 			const used = await this.cheerRepository.countSentSince(
 				senderId,
-				todayStart,
+				quotaWindow.startsAt,
+				quotaWindow.endsAt,
 			);
 			if (dailyLimit !== null && used >= dailyLimit) {
 				throw new ApplicationException(ErrorCode.CHEER_1201, {
@@ -104,6 +119,7 @@ export class SendCheerUseCase {
 				senderId,
 				receiverId,
 				message: cheerMessage.raw,
+				createdAt: capturedAt,
 			});
 		});
 

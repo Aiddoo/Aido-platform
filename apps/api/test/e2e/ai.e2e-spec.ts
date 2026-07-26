@@ -114,7 +114,7 @@ describe("AI E2E", () => {
 
 				// When - 자연어 파싱 API 호출 (X-Timezone 포함)
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "내일 오후 3시에 팀 미팅" });
@@ -157,7 +157,7 @@ describe("AI E2E", () => {
 
 				// When - categoryId를 포함하여 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "내일 오후 3시에 팀 미팅", categoryId: 5 });
@@ -178,7 +178,7 @@ describe("AI E2E", () => {
 
 				// When - categoryId 없이 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "내일 오후 3시에 팀 미팅" });
@@ -200,7 +200,7 @@ describe("AI E2E", () => {
 
 				// When - 종일 일정 자연어 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "다음주 월요일부터 금요일까지 출장" });
@@ -223,7 +223,7 @@ describe("AI E2E", () => {
 				// When - 3회 연속 파싱 요청
 				for (let i = 0; i < 3; i++) {
 					await request(ctx.app.getHttpServer())
-						.post("/ai/parse-todo")
+						.post("/v1/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
 						.set("X-Timezone", "Asia/Seoul")
 						.send({ text: `테스트 ${i + 1}` })
@@ -232,7 +232,7 @@ describe("AI E2E", () => {
 
 				// Then - 사용량이 3으로 증가
 				const usageResponse = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
@@ -252,7 +252,7 @@ describe("AI E2E", () => {
 
 				// When - 허용되지 않은 필드(unknownField)를 포함하여 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트", unknownField: "value" })
@@ -300,7 +300,7 @@ describe("AI E2E", () => {
 
 					// When - 각 자연어 입력 파싱 요청
 					const response = await request(ctx.app.getHttpServer())
-						.post("/ai/parse-todo")
+						.post("/v1/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
 						.set("X-Timezone", "Asia/Seoul")
 						.send({ text: testCase.input });
@@ -324,7 +324,7 @@ describe("AI E2E", () => {
 
 				// When - 6번째 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트" });
@@ -355,7 +355,7 @@ describe("AI E2E", () => {
 
 				// When - 새 달 첫 요청
 				const parseResponse = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트" });
@@ -365,7 +365,7 @@ describe("AI E2E", () => {
 
 				// 사용량 조회하면 1로 리셋되어 있어야 함
 				const usageResponse = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
@@ -379,7 +379,7 @@ describe("AI E2E", () => {
 
 				// When
 				const response = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
@@ -404,7 +404,7 @@ describe("AI E2E", () => {
 				// When - 5회 연속 요청
 				for (let i = 0; i < 5; i++) {
 					await request(ctx.app.getHttpServer())
-						.post("/ai/parse-todo")
+						.post("/v1/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
 						.set("X-Timezone", "Asia/Seoul")
 						.send({ text: `테스트 ${i + 1}` })
@@ -413,7 +413,7 @@ describe("AI E2E", () => {
 
 				// Then - 6회째 요청 시 429 에러
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트 6" });
@@ -430,7 +430,7 @@ describe("AI E2E", () => {
 
 				// When - 토큰 없이 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.send({ text: "내일 회의" });
 
 				// Then - 401 Unauthorized 반환
@@ -443,7 +443,7 @@ describe("AI E2E", () => {
 
 				// When - 잘못된 토큰으로 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", "Bearer invalid-token")
 					.send({ text: "내일 회의" });
 
@@ -459,7 +459,7 @@ describe("AI E2E", () => {
 
 				// When - 빈 텍스트로 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "" });
 
@@ -474,7 +474,7 @@ describe("AI E2E", () => {
 
 				// When - text 필드 없이 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({});
 
@@ -490,7 +490,7 @@ describe("AI E2E", () => {
 
 				// When - 긴 텍스트로 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: longText });
 
@@ -508,7 +508,7 @@ describe("AI E2E", () => {
 
 				// When - 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "내일 회의" });
@@ -524,7 +524,7 @@ describe("AI E2E", () => {
 
 				// When - 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "알 수 없는 입력" });
@@ -547,7 +547,7 @@ describe("AI E2E", () => {
 
 				// When - 파싱 요청
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-todo")
+					.post("/v1/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트" });
@@ -569,7 +569,7 @@ describe("AI E2E", () => {
 
 				// When - 사용량 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
 				// Then - 0/5 사용량 반환
@@ -589,7 +589,7 @@ describe("AI E2E", () => {
 
 				// When - 사용량 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
 				// Then - 3/5 사용량 반환
@@ -606,7 +606,7 @@ describe("AI E2E", () => {
 
 				// When - 사용량 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
 				// Then - 5/5 사용량 반환
@@ -622,7 +622,7 @@ describe("AI E2E", () => {
 
 				// When - 사용량 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
 				// Then - ISO 8601 형식의 리셋 시간 반환
@@ -644,7 +644,7 @@ describe("AI E2E", () => {
 
 				// When - 토큰 없이 사용량 조회
 				const response = await request(ctx.app.getHttpServer()).get(
-					"/ai/usage",
+					"/v1/ai/usage",
 				);
 
 				// Then - 401 Unauthorized 반환
@@ -656,7 +656,7 @@ describe("AI E2E", () => {
 
 				// When - 잘못된 토큰으로 사용량 조회
 				const response = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", "Bearer invalid-token");
 
 				// Then - 401 Unauthorized 반환
@@ -676,7 +676,7 @@ describe("AI E2E", () => {
 
 			// When - Asia/Seoul 타임존으로 요청
 			await request(ctx.app.getHttpServer())
-				.post("/ai/parse-todo")
+				.post("/v1/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트" })
@@ -699,7 +699,7 @@ describe("AI E2E", () => {
 
 			// When - X-Timezone 없이 요청
 			const response = await request(ctx.app.getHttpServer())
-				.post("/ai/parse-todo")
+				.post("/v1/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ text: "테스트" });
 
@@ -720,7 +720,7 @@ describe("AI E2E", () => {
 
 			// When - 초기 사용량 확인
 			const initialUsage = await request(ctx.app.getHttpServer())
-				.get("/ai/usage")
+				.get("/v1/ai/usage")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -729,14 +729,14 @@ describe("AI E2E", () => {
 
 			// When - 파싱 요청 2회
 			await request(ctx.app.getHttpServer())
-				.post("/ai/parse-todo")
+				.post("/v1/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트 1" })
 				.expect(200);
 
 			await request(ctx.app.getHttpServer())
-				.post("/ai/parse-todo")
+				.post("/v1/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트 2" })
@@ -744,7 +744,7 @@ describe("AI E2E", () => {
 
 			// Then - 사용량 2로 증가
 			const finalUsage = await request(ctx.app.getHttpServer())
-				.get("/ai/usage")
+				.get("/v1/ai/usage")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
@@ -762,7 +762,7 @@ describe("AI E2E", () => {
 
 			// When - 6번째 요청 시도
 			const failedResponse = await request(ctx.app.getHttpServer())
-				.post("/ai/parse-todo")
+				.post("/v1/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트" });
@@ -773,7 +773,7 @@ describe("AI E2E", () => {
 			// When - 사용량 리셋 후 다시 요청
 			await resetUsage(testUserId);
 			const response = await request(ctx.app.getHttpServer())
-				.post("/ai/parse-todo")
+				.post("/v1/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트" });
@@ -815,7 +815,7 @@ describe("AI E2E", () => {
 
 				// When
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-memo")
+					.post("/v1/ai/parse-memo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ content: "내일 2시 버그 수정, 자료 올리기", categoryId: 1 });
@@ -855,7 +855,7 @@ describe("AI E2E", () => {
 
 				// When
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-memo")
+					.post("/v1/ai/parse-memo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ content: "할 일", categoryId: 42 });
@@ -885,13 +885,13 @@ describe("AI E2E", () => {
 
 				// When
 				await request(ctx.app.getHttpServer())
-					.post("/ai/parse-memo")
+					.post("/v1/ai/parse-memo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ content: "테스트", categoryId: 1 });
 
 				const usageResponse = await request(ctx.app.getHttpServer())
-					.get("/ai/usage")
+					.get("/v1/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
 				// Then
@@ -902,7 +902,7 @@ describe("AI E2E", () => {
 		describe("에러 케이스", () => {
 			it("인증 없이 요청 시 401", async () => {
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-memo")
+					.post("/v1/ai/parse-memo")
 					.send({ content: "테스트", categoryId: 1 });
 
 				expect(response.status).toBe(401);
@@ -910,7 +910,7 @@ describe("AI E2E", () => {
 
 			it("빈 content 시 400", async () => {
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-memo")
+					.post("/v1/ai/parse-memo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ content: "", categoryId: 1 });
 
@@ -919,7 +919,7 @@ describe("AI E2E", () => {
 
 			it("categoryId 누락 시 400", async () => {
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-memo")
+					.post("/v1/ai/parse-memo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ content: "테스트" });
 
@@ -932,7 +932,7 @@ describe("AI E2E", () => {
 
 				// When
 				const response = await request(ctx.app.getHttpServer())
-					.post("/ai/parse-memo")
+					.post("/v1/ai/parse-memo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.set("X-Timezone", "Asia/Seoul")
 					.send({ content: "테스트", categoryId: 1 });

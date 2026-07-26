@@ -64,6 +64,7 @@ export interface CreateNudgeInput {
 	receiverId: string;
 	todoId: number;
 	message?: string;
+	createdAt: Date;
 }
 
 /** 리마인드 콕 찌르기 생성 입력 */
@@ -93,6 +94,11 @@ export interface NudgeRepositoryPort {
 	findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
 
 	countTodayNudges(senderId: string, date: Date): Promise<number>;
+	countSentSince(
+		senderId: string,
+		since: Date,
+		untilExclusive: Date,
+	): Promise<number>;
 	countTodayTodos(userId: string, today: Date): Promise<number>;
 	countReceived(userId: string): Promise<number>;
 	countSent(userId: string): Promise<number>;
