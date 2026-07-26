@@ -65,15 +65,16 @@ function visitStrings(value, visitor) {
   }
 }
 
-function assertNoStaleTagCopy(value, path, pattern) {
+function assertNoStaleTerminology(value, path, pattern, terminology) {
   visitStrings(value, (copy) => {
-    assert(!pattern.test(copy), `${path} has stale tag terminology: ${copy}`);
+    assert(!pattern.test(copy), `${path} has stale ${terminology} terminology: ${copy}`);
   });
 }
 
 const releasePath = `apps/mobile/store-metadata/${RELEASE_VERSION}/release.json`;
 const release = JSON.parse(read(releasePath));
 
+assertNoStaleTerminology(release, 'release', /\bAido IDs?\b/iu, 'Aido ID');
 assert(release.schemaVersion === 1, 'release schemaVersion must be 1');
 assert(release.releaseVersion === RELEASE_VERSION, `releaseVersion must be ${RELEASE_VERSION}`);
 assert(release.campaignId === CAMPAIGN_ID, `campaignId must be ${CAMPAIGN_ID}`);
@@ -177,11 +178,11 @@ const discoveryEn = JSON.parse(
   read('apps/mobile/src/shared/i18n/locales/en/featureDiscovery.json'),
 );
 assert(
-  friendKo.search?.placeholder === '이름 또는 Aido ID로 검색',
+  friendKo.search?.placeholder === '이름 또는 해시태그로 검색',
   'Korean friend-search copy is stale',
 );
 assert(
-  friendEn.search?.placeholder === 'Search by name or Aido ID',
+  friendEn.search?.placeholder === 'Search by name or hashtag',
   'English friend-search copy is stale',
 );
 for (const [path, catalog] of [
@@ -190,7 +191,7 @@ for (const [path, catalog] of [
   ['validation.ko.userTag', validationKo.userTag],
   ['featureDiscovery.ko.cards.friendSearch', discoveryKo.cards?.friendSearch],
 ]) {
-  assertNoStaleTagCopy(catalog, path, /태그/u);
+  assertNoStaleTerminology(catalog, path, /\bAido IDs?\b/iu, 'Aido ID');
 }
 for (const [path, catalog] of [
   ['friend.en.search', friendEn.search],
@@ -198,21 +199,28 @@ for (const [path, catalog] of [
   ['validation.en.userTag', validationEn.userTag],
   ['featureDiscovery.en.cards.friendSearch', discoveryEn.cards?.friendSearch],
 ]) {
-  assertNoStaleTagCopy(catalog, path, /\btags?\b/iu);
+  assertNoStaleTerminology(catalog, path, /\bAido IDs?\b/iu, 'Aido ID');
 }
 for (const [path, copy] of [
   ['user.ko.profile.tagCopied', userKo.profile?.tagCopied],
   ['user.ko.profile.tagCopiedDescription', userKo.profile?.tagCopiedDescription],
-  ['user.en.profile.tagCopied', userEn.profile?.tagCopied],
-  ['user.en.profile.tagCopiedDescription', userEn.profile?.tagCopiedDescription],
   ['validation.ko.userTag.length', validationKo.userTag?.length],
   ['validation.ko.userTag.pattern', validationKo.userTag?.pattern],
+]) {
+  assert(
+    typeof copy === 'string' && copy.includes('해시태그'),
+    `${path} must use the 해시태그 product term`,
+  );
+}
+for (const [path, copy] of [
+  ['user.en.profile.tagCopied', userEn.profile?.tagCopied],
+  ['user.en.profile.tagCopiedDescription', userEn.profile?.tagCopiedDescription],
   ['validation.en.userTag.length', validationEn.userTag?.length],
   ['validation.en.userTag.pattern', validationEn.userTag?.pattern],
 ]) {
   assert(
-    typeof copy === 'string' && copy.includes('Aido ID'),
-    `${path} must use the Aido ID product term`,
+    typeof copy === 'string' && /hashtag/iu.test(copy),
+    `${path} must use the hashtag product term`,
   );
 }
 
@@ -245,7 +253,8 @@ assert(
   patchNotes.includes('메모가 할 일이 되고, 친구와 함께 끝내는 투두.'),
   'patch notes positioning missing',
 );
-assert(patchNotes.includes('Aido ID'), 'patch notes must describe name or Aido ID search');
+assertNoStaleTerminology(patchNotes, 'patch notes', /\bAido IDs?\b/iu, 'Aido ID');
+assert(patchNotes.includes('해시태그'), 'patch notes must describe name or hashtag search');
 
 const checklist = read('apps/mobile/docs/growth-release-checklist.md');
 for (const required of [RELEASE_VERSION, CAMPAIGN_ID, 'App Store', 'Google Play', 'rollback']) {

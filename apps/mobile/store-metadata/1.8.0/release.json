@@ -10,14 +10,14 @@
   "patchNotes": {
     "ko": [
       "메모를 AI로 분석해 여러 할 일로 한 번에 만들 수 있어요.",
-      "이제 이름 또는 Aido ID로 친구를 찾을 수 있어요.",
+      "이제 이름 또는 고유한 8자리 해시태그로 친구를 찾을 수 있어요.",
       "할 일과 카테고리를 드래그해 원하는 순서로 정리할 수 있어요.",
       "직접 입력, AI, 반복 일정 등 나에게 맞는 방식으로 할 일을 만들 수 있어요.",
       "새 기능 가이드에서 놓쳤던 기능을 언제든 다시 확인할 수 있어요."
     ],
     "en": [
       "Use AI to turn one note into multiple to-dos at once.",
-      "Find friends by name or Aido ID.",
+      "Find friends by name or a unique 8-character hashtag.",
       "Drag to reorder your to-dos and categories.",
       "Create to-dos manually, with AI, or as recurring plans.",
       "Revisit every useful feature from the new Aido Feature Guide."
@@ -42,8 +42,8 @@
         "en": "Find friends by name"
       },
       "body": {
-        "ko": "이름 또는 Aido ID로 바로 찾아 함께 시작하세요.",
-        "en": "Search by name or Aido ID and start together."
+        "ko": "이름 또는 해시태그로 바로 찾아 함께 시작하세요.",
+        "en": "Search by name or hashtag and start together."
       }
     },
     {
@@ -99,13 +99,13 @@
       "ko": {
         "title": "Aido - 친구와 하는 투두",
         "subtitle": "함께 보고, 응원하고, 끝내기",
-        "description": "이름 또는 Aido ID로 친구를 찾고 서로의 진행을 확인하세요. 가벼운 응원과 콕 찌르기로 혼자 미루던 일도 함께 끝낼 수 있어요.",
+        "description": "이름 또는 해시태그로 친구를 찾고 서로의 진행을 확인하세요. 가벼운 응원과 콕 찌르기로 혼자 미루던 일도 함께 끝낼 수 있어요.",
         "keywords": "친구투두,공동할일,습관,응원,할일공유"
       },
       "en": {
         "title": "Aido - To-dos with Friends",
         "subtitle": "Make progress, finish together",
-        "description": "Find friends by name or Aido ID, share progress, and encourage each other to finish what would otherwise get postponed.",
+        "description": "Find friends by name or hashtag, share progress, and encourage each other to finish what would otherwise get postponed.",
         "keywords": "social todo,friends,shared tasks,accountability,habits"
       }
     },
