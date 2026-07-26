@@ -130,6 +130,39 @@ export function midnightInTimezone(
 	return dayjs(date).tz(resolveTimezone(tz)).startOf("day").utc().toDate();
 }
 
+export interface DayWindowInTimezone {
+	/** 로컬 달력 날짜를 UTC 자정 Date로 표현한 DATE 컬럼 비교용 값 */
+	date: Date;
+	/** versioned lock key에 넣는 YYYY-MM-DD 로컬 날짜 */
+	localDate: string;
+	/** 로컬 자정의 실제 UTC instant */
+	startsAt: Date;
+	/** 다음 로컬 자정의 실제 UTC instant (exclusive) */
+	endsAt: Date;
+}
+
+/**
+ * 한 captured instant가 속한 로컬 날짜와 실제 UTC timestamp 범위를 함께 반환한다.
+ *
+ * 다음 날짜의 달력 label을 먼저 만든 뒤 다시 timezone에 적용하므로 DST의 23/25시간
+ * 날짜에서도 정확한 다음 로컬 자정을 구한다.
+ */
+export function dayWindowInTimezone(
+	date: Date = now(),
+	tz: string = DEFAULT_TIMEZONE,
+): DayWindowInTimezone {
+	const resolvedTimezone = resolveTimezone(tz);
+	const localDate = dayjs(date).tz(resolvedTimezone).format("YYYY-MM-DD");
+	const nextLocalDate = dayjs.utc(localDate).add(1, "day").format("YYYY-MM-DD");
+
+	return {
+		date: dayjs.utc(localDate).startOf("day").toDate(),
+		localDate,
+		startsAt: dayjs.tz(localDate, resolvedTimezone).utc().toDate(),
+		endsAt: dayjs.tz(nextLocalDate, resolvedTimezone).utc().toDate(),
+	};
+}
+
 /**
  * 지정 타임존의 월초(1일 00:00)를 실제 UTC timestamp로 반환
  *

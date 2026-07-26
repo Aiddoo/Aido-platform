@@ -10,10 +10,7 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
-import {
-	midnightInTimezone,
-	startOfDayInTimezone,
-} from "@/shared/domain/date/utils/timezone";
+import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { evaluateNudgeCooldown } from "../../../domain/services/nudge-cooldown";
@@ -86,13 +83,11 @@ export class SendNudgeUseCase {
 
 		const nudgeMessage = NudgeMessage.of(message);
 		const capturedAt = now();
-		const today = startOfDayInTimezone(capturedAt, tz);
-		const localDate = today.toISOString().slice(0, 10);
-		const quotaWindowStart = midnightInTimezone(capturedAt, tz);
+		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
 
 		const nudge = await this.uow.run(async () => {
 			await this.mutationLock.acquire([
-				MutationLockKeys.nudgeDaily(senderId, localDate),
+				MutationLockKeys.nudgeDaily(senderId, quotaWindow.localDate),
 				MutationLockKeys.nudgeCooldown(senderId, todoId),
 			]);
 
@@ -109,14 +104,15 @@ export class SendNudgeUseCase {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
 
-			if (!target.isActiveOn(today)) {
+			if (!target.isActiveOn(quotaWindow.date)) {
 				throw new ApplicationException(ErrorCode.NUDGE_1106, { todoId });
 			}
 
 			const dailyLimit = await this.limitReader.getDailyLimitInTx(senderId);
 			const used = await this.nudgeRepository.countSentSince(
 				senderId,
-				quotaWindowStart,
+				quotaWindow.startsAt,
+				quotaWindow.endsAt,
 			);
 			if (dailyLimit !== null && used >= dailyLimit) {
 				throw new ApplicationException(ErrorCode.NUDGE_1101, {
@@ -143,6 +139,7 @@ export class SendNudgeUseCase {
 				receiverId,
 				todoId,
 				message: nudgeMessage.raw,
+				createdAt: capturedAt,
 			});
 		});
 

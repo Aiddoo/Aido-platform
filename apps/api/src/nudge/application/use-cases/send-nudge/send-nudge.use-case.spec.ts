@@ -216,6 +216,12 @@ describe("SendNudgeUseCase", () => {
 		expect(repo.countSentSince).toHaveBeenCalledWith(
 			"s",
 			new Date("2026-07-25T15:00:00.000Z"),
+			new Date("2026-07-26T15:00:00.000Z"),
+		);
+		expect(repo.createNudge).toHaveBeenCalledWith(
+			expect.objectContaining({
+				createdAt: new Date("2026-07-26T14:59:59.900Z"),
+			}),
 		);
 		expect(events).toEqual([
 			"lock",

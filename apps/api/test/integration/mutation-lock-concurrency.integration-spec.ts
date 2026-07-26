@@ -4,16 +4,24 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { type CheerLimitReaderPort } from "@/cheer/application/ports/cheer-limit-reader.port";
 import type { CheerNotifierPort } from "@/cheer/application/ports/cheer-notifier.port";
+import { CheerReader } from "@/cheer/application/services/cheer.reader";
 import { SendCheerUseCase } from "@/cheer/application/use-cases/send-cheer/send-cheer.use-case";
 import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
 import { FollowFacade } from "@/follow";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { NudgeLimitReaderPort } from "@/nudge/application/ports/nudge-limit-reader.port";
 import type { NudgeNotifierPort } from "@/nudge/application/ports/nudge-notifier.port";
+import { NudgeReader } from "@/nudge/application/services/nudge.reader";
 import { SendNudgeUseCase } from "@/nudge/application/use-cases/send-nudge/send-nudge.use-case";
 import { SendRemindNudgeUseCase } from "@/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
 import { PrismaNudgeRepository } from "@/nudge/infrastructure/persistence/prisma-nudge.repository";
-import type { UnitOfWorkPort } from "@/shared/application/ports";
+import type { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import type { PaginationService } from "@/shared/application/pagination";
+import {
+	MutationLockKeys,
+	type MutationLockPort,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { PostgresMutationLockAdapter } from "@/shared/infrastructure/database/postgres-mutation-lock.adapter";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
@@ -70,8 +78,9 @@ class RacingCheerRepository extends PrismaCheerRepository {
 	override async countSentSince(
 		senderId: string,
 		since: Date,
+		untilExclusive: Date,
 	): Promise<number> {
-		const count = await super.countSentSince(senderId, since);
+		const count = await super.countSentSince(senderId, since, untilExclusive);
 		await this.dailyBarrier?.wait();
 		return count;
 	}
@@ -93,8 +102,12 @@ class RacingNudgeRepository extends PrismaNudgeRepository {
 		super(txHost);
 	}
 
-	override async countSentSince(senderId: string, date: Date): Promise<number> {
-		const count = await super.countSentSince(senderId, date);
+	override async countSentSince(
+		senderId: string,
+		since: Date,
+		untilExclusive: Date,
+	): Promise<number> {
+		const count = await super.countSentSince(senderId, since, untilExclusive);
 		await this.dailyBarrier?.wait();
 		return count;
 	}
@@ -115,6 +128,22 @@ class RacingNudgeRepository extends PrismaNudgeRepository {
 interface RaceSummary {
 	successes: number;
 	errorCodes: string[];
+}
+
+interface Deferred {
+	promise: Promise<void>;
+	resolve: () => void;
+}
+
+function createDeferred(): Deferred {
+	let resolve: (() => void) | undefined;
+	const promise = new Promise<void>((settle) => {
+		resolve = settle;
+	});
+	return {
+		promise,
+		resolve: () => resolve?.(),
+	};
 }
 
 function summarize(results: PromiseSettledResult<unknown>[]): RaceSummary {
@@ -146,6 +175,9 @@ function createTransactionHarness(prisma: PrismaClient): {
 		get tx(): TransactionClient {
 			return storage.getStore() ?? prisma;
 		},
+		isTransactionActive(): boolean {
+			return storage.getStore() !== undefined;
+		},
 	};
 	return {
 		txHost: txHost as unknown as TransactionHost<
@@ -175,6 +207,18 @@ function createCheerLimitReader(limit: number | null): CheerLimitReaderPort {
 
 function createNudgeLimitReader(limit: number | null): NudgeLimitReaderPort {
 	return { getDailyLimitInTx: async () => limit };
+}
+
+function createReaderEntitlement(dailyLimit: number): EntitlementService {
+	return {
+		getFeatureLimit: async () => ({
+			dailyLimit,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		}),
+		calculateRemaining: (limit: number | null, used: number) =>
+			limit === null ? null : Math.max(0, limit - used),
+	} as unknown as EntitlementService;
 }
 
 async function createUser(
@@ -437,5 +481,122 @@ describe("소셜 mutation lock 동시성 (실제 PostgreSQL)", () => {
 		expect(
 			await prisma.reminderNudge.count({ where: { senderId, receiverId } }),
 		).toBe(1);
+	});
+
+	it("Cheer limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
+		// Given - KST 7/26 경계 바로 전/후의 두 row
+		const senderId = await createUser(prisma, 0);
+		const priorReceiverId = await createUser(prisma, 1);
+		const currentReceiverId = await createUser(prisma, 2);
+		await prisma.cheer.createMany({
+			data: [
+				{
+					senderId,
+					receiverId: priorReceiverId,
+					createdAt: new Date("2026-07-25T14:59:59.999Z"),
+				},
+				{
+					senderId,
+					receiverId: currentReceiverId,
+					createdAt: new Date("2026-07-25T15:00:00.001Z"),
+				},
+			],
+		});
+		const { txHost } = createTransactionHarness(prisma);
+		const reader = new CheerReader(
+			new PrismaCheerRepository(txHost),
+			{} as PaginationService,
+			createReaderEntitlement(3),
+		);
+
+		// When
+		const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
+
+		// Then - prior local day는 제외하고 early local day는 포함
+		expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
+	});
+
+	it("Nudge limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
+		// Given - KST 7/26 경계 바로 전/후의 두 row
+		const senderId = await createUser(prisma, 0);
+		const receiverId = await createUser(prisma, 1);
+		const todoId = await createTodo(prisma, receiverId, "Reader boundary");
+		await prisma.nudge.createMany({
+			data: [
+				{
+					senderId,
+					receiverId,
+					todoId,
+					createdAt: new Date("2026-07-25T14:59:59.999Z"),
+				},
+				{
+					senderId,
+					receiverId,
+					todoId,
+					createdAt: new Date("2026-07-25T15:00:00.001Z"),
+				},
+			],
+		});
+		const { txHost } = createTransactionHarness(prisma);
+		const reader = new NudgeReader(
+			new PrismaNudgeRepository(txHost),
+			{} as PaginationService,
+			createReaderEntitlement(3),
+		);
+
+		// When
+		const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
+
+		// Then - prior local day는 제외하고 early local day는 포함
+		expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
+	});
+
+	it("Cheer lock 대기가 KST 자정을 넘어도 row는 캡처한 이전 날짜 시각으로 저장한다", async () => {
+		// Given - 이전 날짜 key를 별도 트랜잭션이 보유해 send를 실제 DB에서 대기시킴
+		jest.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+		const senderId = await createUser(prisma, 0);
+		const receiverId = await createUser(prisma, 1);
+		const held = createDeferred();
+		const release = createDeferred();
+		const dailyKey = MutationLockKeys.cheerDaily(senderId, "2026-07-26");
+		const blocker = prisma.$transaction(async (tx) => {
+			await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`;
+			held.resolve();
+			await release.promise;
+		});
+		await held.promise;
+
+		const { txHost, uow } = createTransactionHarness(prisma);
+		const attempted = createDeferred();
+		const realLock = new PostgresMutationLockAdapter(txHost);
+		const mutationLock: MutationLockPort = {
+			async acquire(keys) {
+				attempted.resolve();
+				await realLock.acquire(keys);
+			},
+		};
+		const useCase = new SendCheerUseCase(
+			new PrismaCheerRepository(txHost),
+			createCheerNotifier(),
+			createCheerLimitReader(1),
+			mutationLock,
+			uow,
+			createFollowFacade(),
+		);
+
+		// When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
+		const sending = useCase.execute({ senderId, receiverId }, "Asia/Seoul");
+		await attempted.promise;
+		jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+		release.resolve();
+		const cheer = await sending;
+		await blocker;
+
+		// Then - row timestamp가 이전 날짜 key/window와 동일한 capturedAt에 고정됨
+		expect(cheer.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
+		const persisted = await prisma.cheer.findUniqueOrThrow({
+			where: { id: cheer.id },
+		});
+		expect(persisted.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
 	});
 });

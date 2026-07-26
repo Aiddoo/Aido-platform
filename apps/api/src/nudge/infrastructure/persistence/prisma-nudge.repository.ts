@@ -237,9 +237,16 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		});
 	}
 
-	async countSentSince(senderId: string, since: Date): Promise<number> {
+	async countSentSince(
+		senderId: string,
+		since: Date,
+		untilExclusive: Date,
+	): Promise<number> {
 		return this.client.nudge.count({
-			where: { senderId, createdAt: { gte: since } },
+			where: {
+				senderId,
+				createdAt: { gte: since, lt: untilExclusive },
+			},
 		});
 	}
 
@@ -276,6 +283,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 				receiver: { connect: { id: input.receiverId } },
 				todo: { connect: { id: input.todoId } },
 				message: input.message,
+				createdAt: input.createdAt,
 			},
 			include: NUDGE_INCLUDE,
 		});

@@ -21,6 +21,10 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
 	) {}
 
 	async acquire(keys: readonly string[]): Promise<void> {
+		if (!this.txHost.isTransactionActive()) {
+			throw new Error("Mutation lock requires an active transaction");
+		}
+
 		const orderedKeys = [...new Set(keys)].sort();
 		for (const key of orderedKeys) {
 			await this.txHost.tx

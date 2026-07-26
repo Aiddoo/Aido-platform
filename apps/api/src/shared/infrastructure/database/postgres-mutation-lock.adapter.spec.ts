@@ -9,16 +9,18 @@ import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter";
 describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
 	let adapter: PostgresMutationLockAdapter;
 	let tx: MockPrismaClient;
+	let isTransactionActive: jest.MockedFunction<() => boolean>;
 
 	beforeEach(async () => {
 		tx = createMockPrisma();
 		tx.$queryRaw.mockResolvedValue([]);
+		isTransactionActive = jest.fn(() => true);
 
 		const { unit } = await TestBed.solitary(PostgresMutationLockAdapter)
 			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
 				TransactionHost,
 			)
-			.impl(() => ({ tx }))
+			.impl(() => ({ tx, isTransactionActive }))
 			.compile();
 		adapter = unit;
 	});
@@ -44,6 +46,17 @@ describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
 		]);
 		expect(firstCall?.[1]).toBe("mutation:v1:nudge:cooldown:user-1:42");
 		expect(secondCall?.[1]).toBe("mutation:v1:nudge:daily:user-1:2026-07-26");
+	});
+
+	it("활성 트랜잭션이 아니면 SQL 전에 내부 invariant 오류로 실패한다", async () => {
+		// Given - TransactionHost.tx가 기본 클라이언트로 fallback하는 UoW 외부
+		isTransactionActive.mockReturnValue(false);
+
+		// When / Then - autocommit xact lock을 획득한 척하지 않음
+		await expect(
+			adapter.acquire(["mutation:v1:cheer:daily:user-1:2026-07-26"]),
+		).rejects.toThrow("Mutation lock requires an active transaction");
+		expect(tx.$queryRaw).not.toHaveBeenCalled();
 	});
 
 	it("빈 키 목록이면 PostgreSQL을 호출하지 않는다", async () => {

@@ -10,10 +10,7 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
-import {
-	midnightInTimezone,
-	startOfDayInTimezone,
-} from "@/shared/domain/date/utils/timezone";
+import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { evaluateCheerCooldown } from "../../../domain/services/cheer-cooldown";
@@ -84,20 +81,19 @@ export class SendCheerUseCase {
 
 		const cheerMessage = CheerMessage.of(message);
 		const capturedAt = now();
-		const localDay = startOfDayInTimezone(capturedAt, tz);
-		const localDate = localDay.toISOString().slice(0, 10);
-		const quotaWindowStart = midnightInTimezone(capturedAt, tz);
+		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
 
 		const cheer = await this.uow.run(async () => {
 			await this.mutationLock.acquire([
-				MutationLockKeys.cheerDaily(senderId, localDate),
+				MutationLockKeys.cheerDaily(senderId, quotaWindow.localDate),
 				MutationLockKeys.cheerCooldown(senderId, receiverId),
 			]);
 
 			const dailyLimit = await this.limitReader.getDailyLimitInTx(senderId);
 			const used = await this.cheerRepository.countSentSince(
 				senderId,
-				quotaWindowStart,
+				quotaWindow.startsAt,
+				quotaWindow.endsAt,
 			);
 			if (dailyLimit !== null && used >= dailyLimit) {
 				throw new ApplicationException(ErrorCode.CHEER_1201, {
@@ -123,6 +119,7 @@ export class SendCheerUseCase {
 				senderId,
 				receiverId,
 				message: cheerMessage.raw,
+				createdAt: capturedAt,
 			});
 		});
 
