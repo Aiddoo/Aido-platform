@@ -1,22 +1,61 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 
-/**
- * Swagger projection of the shared Zod discriminated union.
- * Runtime contract validation remains in featureDiscoveryResponseSchema.
- */
-export class FeatureDiscoveryResponseDto {
-	@ApiProperty({ enum: [false, true] })
-	declare enabled: boolean;
-
-	@ApiPropertyOptional({ example: "feature-discovery-2026-08" })
-	declare campaignId?: string;
-
-	@ApiPropertyOptional({ example: "1.8.0" })
-	declare minAppVersion?: string;
-
-	@ApiPropertyOptional({ example: "2026-08-01T00:00:00.000Z" })
-	declare launchedAt?: string;
-
-	@ApiPropertyOptional({ example: true })
-	declare autoOpen?: boolean;
+export class FeatureDiscoveryDisabledResponseDto {
+	@ApiProperty({ enum: [false] })
+	declare enabled: false;
 }
+
+export class FeatureDiscoveryEnabledResponseDto {
+	@ApiProperty({ enum: [true] })
+	declare enabled: true;
+
+	@ApiProperty({ example: "feature-discovery-2026-08" })
+	declare campaignId: string;
+
+	@ApiProperty({ example: "1.8.0" })
+	declare minAppVersion: string;
+
+	@ApiProperty({ example: "2026-08-01T00:00:00.000Z" })
+	declare launchedAt: string;
+
+	@ApiProperty({ example: true })
+	declare autoOpen: boolean;
+}
+
+const featureDiscoveryDisabledSchema = {
+	title: "FeatureDiscoveryDisabledResponse",
+	type: "object",
+	additionalProperties: false,
+	required: ["enabled"],
+	properties: {
+		enabled: { type: "boolean", enum: [false] },
+	},
+};
+
+const featureDiscoveryEnabledSchema = {
+	title: "FeatureDiscoveryEnabledResponse",
+	type: "object",
+	additionalProperties: false,
+	required: [
+		"enabled",
+		"campaignId",
+		"minAppVersion",
+		"launchedAt",
+		"autoOpen",
+	],
+	properties: {
+		enabled: { type: "boolean", enum: [true] },
+		campaignId: { type: "string", minLength: 1 },
+		minAppVersion: { type: "string" },
+		launchedAt: { type: "string", format: "date-time" },
+		autoOpen: { type: "boolean" },
+	},
+};
+
+/** Direct wire schema matching @aido/validators' strict discriminated union. */
+export const featureDiscoveryResponseOpenApiSchema = {
+	oneOf: [featureDiscoveryDisabledSchema, featureDiscoveryEnabledSchema],
+	discriminator: {
+		propertyName: "enabled",
+	},
+};

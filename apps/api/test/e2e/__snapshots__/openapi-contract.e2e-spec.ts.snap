@@ -3192,7 +3192,21 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
       "type": "object",
     },
-    "FeatureDiscoveryResponseDto": {
+    "FeatureDiscoveryDisabledResponseDto": {
+      "properties": {
+        "enabled": {
+          "enum": [
+            false,
+          ],
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "enabled",
+      ],
+      "type": "object",
+    },
+    "FeatureDiscoveryEnabledResponseDto": {
       "properties": {
         "autoOpen": {
           "example": true,
@@ -3204,7 +3218,6 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         },
         "enabled": {
           "enum": [
-            false,
             true,
           ],
           "type": "boolean",
@@ -3220,6 +3233,10 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       },
       "required": [
         "enabled",
+        "campaignId",
+        "minAppVersion",
+        "launchedAt",
+        "autoOpen",
       ],
       "type": "object",
     },
@@ -12991,29 +13008,74 @@ if (limit !== null && used >= limit) {
           "content": {
             "application/json": {
               "schema": {
-                "properties": {
-                  "data": {
-                    "$ref": "#/components/schemas/FeatureDiscoveryResponseDto",
-                  },
-                  "success": {
-                    "example": true,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
+                "discriminator": {
+                  "propertyName": "enabled",
                 },
-                "required": [
-                  "success",
-                  "data",
-                  "timestamp",
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "enabled": {
+                        "enum": [
+                          false,
+                        ],
+                        "type": "boolean",
+                      },
+                    },
+                    "required": [
+                      "enabled",
+                    ],
+                    "title": "FeatureDiscoveryDisabledResponse",
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "autoOpen": {
+                        "type": "boolean",
+                      },
+                      "campaignId": {
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "enabled": {
+                        "enum": [
+                          true,
+                        ],
+                        "type": "boolean",
+                      },
+                      "launchedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                      },
+                      "minAppVersion": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "enabled",
+                      "campaignId",
+                      "minAppVersion",
+                      "launchedAt",
+                      "autoOpen",
+                    ],
+                    "title": "FeatureDiscoveryEnabledResponse",
+                    "type": "object",
+                  },
                 ],
-                "type": "object",
               },
             },
           },
-          "description": "요청이 성공적으로 처리되었습니다",
+          "description": "Feature discovery configuration",
+          "headers": {
+            "Cache-Control": {
+              "description": "Publicly cacheable for five minutes",
+              "schema": {
+                "example": "public, max-age=300",
+                "type": "string",
+              },
+            },
+          },
         },
         "400": {
           "content": {

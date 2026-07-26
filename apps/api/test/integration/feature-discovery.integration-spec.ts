@@ -1,4 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
 import type { App } from "supertest/types";
@@ -34,5 +35,53 @@ describe("Feature discovery configuration route (integration)", () => {
 		// Then - no authorization, user data, or campaign copy is involved
 		expect(response.headers["cache-control"]).toBe("public, max-age=300");
 		expect(response.body).toEqual({ enabled: false });
+	});
+
+	it("documents the raw discriminated union and cache response header", () => {
+		// When
+		const document = SwaggerModule.createDocument(
+			app,
+			new DocumentBuilder().setTitle("Aido API").build(),
+		);
+		const response =
+			document.paths["/v1/app-config/feature-discovery"]?.get?.responses?.[
+				"200"
+			];
+
+		// Then - the endpoint contract is raw (not the ordinary success wrapper)
+		expect(response).toMatchObject({
+			headers: {
+				"Cache-Control": {
+					schema: { type: "string" },
+				},
+			},
+			content: {
+				"application/json": {
+					schema: {
+						oneOf: [
+							{
+								type: "object",
+								additionalProperties: false,
+								required: ["enabled"],
+								properties: { enabled: { enum: [false] } },
+							},
+							{
+								type: "object",
+								additionalProperties: false,
+								required: [
+									"enabled",
+									"campaignId",
+									"minAppVersion",
+									"launchedAt",
+									"autoOpen",
+								],
+								properties: { enabled: { enum: [true] } },
+							},
+						],
+						discriminator: { propertyName: "enabled" },
+					},
+				},
+			},
+		});
 	});
 });

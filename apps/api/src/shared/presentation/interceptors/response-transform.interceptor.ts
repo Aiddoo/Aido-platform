@@ -4,8 +4,10 @@ import {
 	Injectable,
 	type NestInterceptor,
 } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import type { Observable } from "rxjs";
 import { map } from "rxjs/operators";
+import { RAW_RESPONSE_KEY } from "../decorators";
 import type { SuccessResponse } from "./response.interface";
 
 /**
@@ -14,12 +16,22 @@ import type { SuccessResponse } from "./response.interface";
  */
 @Injectable()
 export class ResponseTransformInterceptor<T>
-	implements NestInterceptor<T, SuccessResponse<T>>
+	implements NestInterceptor<T, T | SuccessResponse<T>>
 {
+	constructor(private readonly reflector: Reflector) {}
+
 	intercept(
-		_context: ExecutionContext,
+		context: ExecutionContext,
 		next: CallHandler,
-	): Observable<SuccessResponse<T>> {
+	): Observable<T | SuccessResponse<T>> {
+		const shouldReturnRaw = this.reflector.getAllAndOverride<boolean>(
+			RAW_RESPONSE_KEY,
+			[context.getHandler(), context.getClass()],
+		);
+		if (shouldReturnRaw) {
+			return next.handle();
+		}
+
 		return next.handle().pipe(
 			map((data) => ({
 				success: true as const,
