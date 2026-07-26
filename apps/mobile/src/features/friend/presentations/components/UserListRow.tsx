@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 export interface UserListRowProps {
   /** 상단 표시 이름 (이미 fallback 처리된 값) */
   displayName: string;
-  /** 하단 보조 텍스트 (예: @태그). 생략 시 1줄 행 */
+  /** 하단 보조 텍스트 (예: #MATT2025). 생략 시 1줄 행 */
   subtitle?: string;
   profileImage: string | null;
   /** 우측 액션 슬롯 (버튼 등) */

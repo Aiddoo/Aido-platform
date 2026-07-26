@@ -22,30 +22,37 @@
       "previewTodo2": "숙소 예약"
     },
     "friendSearch": {
-      "title": "이름이나 Aido ID로 친구를 찾아요",
-      "description": "친구 이름이나 Aido ID로 바로 찾을 수 있어요.",
+      "title": "이름이나 해시태그로 친구를 찾아요",
+      "description": "친구 이름 또는 고유한 8자리 해시태그로 바로 찾을 수 있어요.",
       "cta": "친구 찾아보기",
       "ctaLabel": "친구 찾기 기능으로 이동",
-      "previewQuery": "민지 또는 AIDO1234",
-      "previewResult": "친구를 찾았어요"
+      "previewQuery": "이름 또는 해시태그로 검색",
+      "previewResult": "김민지",
+      "previewInitial": "민",
+      "previewAdd": "추가"
     },
     "dragReorder": {
       "title": "드래그해서 원하는 순서로 정리해요",
       "description": "할 일과 카테고리를 길게 눌러 내 흐름에 맞게 옮길 수 있어요.",
       "cta": "카테고리 정리하기",
       "ctaLabel": "카테고리 정리 기능으로 이동",
-      "previewTodo1": "가장 중요한 일",
-      "previewTodo2": "그다음 할 일",
-      "previewTodo3": "나중에 할 일"
+      "previewTab": "순서 변경",
+      "previewHint": "길게 눌러 이동",
+      "previewCategory1": "업무",
+      "previewCategory2": "운동",
+      "previewCategory3": "일상"
     },
     "todoCreation": {
       "title": "나에게 맞는 방식으로 할 일을 만들어요",
-      "description": "직접 입력, AI 추천, 반복 설정 중 그때 가장 편한 방식을 골라보세요.",
+      "description": "할 일을 적고 날짜, 시간, 반복, 공개 범위와 카테고리를 한 번에 설정해요.",
       "cta": "할 일 만들러 가기",
       "ctaLabel": "할 일 생성 기능으로 이동",
-      "previewManual": "직접 입력",
-      "previewAi": "AI 추천",
-      "previewRecurring": "반복 설정"
+      "previewTitle": "할 일을 입력해주세요",
+      "previewDate": "오늘",
+      "previewTime": "하루 종일",
+      "previewRepeat": "반복",
+      "previewVisibility": "공개",
+      "previewCategory": "일상"
     }
   }
 }
