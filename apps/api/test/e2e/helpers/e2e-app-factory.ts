@@ -145,6 +145,8 @@ export interface E2eTestContext {
 }
 
 export interface E2eAppOptions {
+	/** main.ts와 동일한 /v1 프리픽스 적용이 필요한 production-style 경로 검증용 */
+	withGlobalPrefix?: boolean;
 	/** 추가 provider override 콜백 */
 	customizeBuilder?: (
 		builder: ReturnType<typeof Test.createTestingModule>,
@@ -310,6 +312,9 @@ export async function createE2eApp(
 		app = module.createNestApplication();
 		app.enableCors(createCorsOptions("development", ["http://localhost:3000"]));
 		app.useGlobalPipes(new ZodValidationPipe());
+		if (options?.withGlobalPrefix) {
+			app.setGlobalPrefix("v1", { exclude: ["health"] });
+		}
 		await app.init();
 		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
 

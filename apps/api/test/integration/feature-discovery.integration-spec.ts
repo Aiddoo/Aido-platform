@@ -75,7 +75,14 @@ describe("Feature discovery configuration route (integration)", () => {
 									"launchedAt",
 									"autoOpen",
 								],
-								properties: { enabled: { enum: [true] } },
+								properties: {
+									enabled: { enum: [true] },
+									minAppVersion: { pattern: expect.any(String) },
+									launchedAt: {
+										format: "date-time",
+										pattern: expect.any(String),
+									},
+								},
 							},
 						],
 						discriminator: { propertyName: "enabled" },

@@ -1,3 +1,7 @@
+import {
+	featureDiscoveryMinAppVersionPattern,
+	featureDiscoveryUtcDateTimePattern,
+} from "@aido/validators";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class FeatureDiscoveryDisabledResponseDto {
@@ -46,8 +50,15 @@ const featureDiscoveryEnabledSchema = {
 	properties: {
 		enabled: { type: "boolean", enum: [true] },
 		campaignId: { type: "string", minLength: 1 },
-		minAppVersion: { type: "string" },
-		launchedAt: { type: "string", format: "date-time" },
+		minAppVersion: {
+			type: "string",
+			pattern: featureDiscoveryMinAppVersionPattern,
+		},
+		launchedAt: {
+			type: "string",
+			format: "date-time",
+			pattern: featureDiscoveryUtcDateTimePattern,
+		},
 		autoOpen: { type: "boolean" },
 	},
 };
