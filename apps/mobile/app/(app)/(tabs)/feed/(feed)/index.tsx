@@ -1,5 +1,7 @@
 import MagicIcon from '@assets/icons/ic_magic.svg';
 import { useGetSuggestionsQueryOptions } from '@src/features/ai/presentations/queries/use-get-suggestions-query-options';
+import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/presentations/components/FeatureDiscoveryReentryCard';
+import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/presentations/hooks/use-feature-discovery-feed';
 import { MarketingPushOptInBanner } from '@src/features/notification/presentations/components/MarketingPushOptInBanner';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
@@ -24,6 +26,7 @@ export default function MyFeedScreen() {
   const selectedDateKey = useFeedDateKey();
   const tabBarHeight = useTabBarHeight();
   const queryClient = useQueryClient();
+  const featureDiscovery = useFeatureDiscoveryFeed();
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
@@ -52,6 +55,15 @@ export default function MyFeedScreen() {
       </QueryErrorBoundary>
 
       <Spacing size={20} />
+
+      {featureDiscovery.isReentryVisible && (
+        <>
+          <Box px={16}>
+            <FeatureDiscoveryReentryCard onPress={featureDiscovery.openFromReentry} />
+          </Box>
+          <Spacing size={20} />
+        </>
+      )}
 
       <QueryErrorBoundary fallback={() => null}>
         <Suspense fallback={null}>

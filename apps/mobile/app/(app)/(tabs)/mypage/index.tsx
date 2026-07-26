@@ -1,10 +1,17 @@
 import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/presentations/queries/use-logout-mutation-options';
+import {
+  FEATURE_DISCOVERY_CAMPAIGN_ID,
+  getBundledFeatureDiscoveryCampaign,
+} from '@src/features/feature-discovery/models/feature-discovery.registry';
+import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/presentations/hooks/use-feature-discovery-hub';
+import { claimFeatureDiscoverySeen } from '@src/features/feature-discovery/state/feature-discovery-state';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { useTranslation } from '@src/shared/i18n';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
   ConfirmDialog,
   H3,
@@ -16,7 +23,7 @@ import {
   TextButton,
   useOverlay,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
@@ -25,7 +32,28 @@ import { ScrollView } from 'react-native';
 const MyPageScreen = () => {
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
-  const { t } = useTranslation(['user', 'settings']);
+  const { t } = useTranslation(['user', 'settings', 'featureDiscovery']);
+  const { data: user } = useQuery(useGetMeQueryOptions());
+  const { openHub } = useFeatureDiscoveryHub();
+  const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
+
+  const openFeatureGuide = () => {
+    if (!campaign) {
+      return;
+    }
+    if (user) {
+      claimFeatureDiscoverySeen(mmkvSyncStorage, {
+        userId: user.id,
+        campaignId: campaign.id,
+        at: new Date(),
+      });
+    }
+    openHub({
+      accountId: user?.id,
+      campaign,
+      source: 'mypage',
+    });
+  };
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -50,6 +78,10 @@ const MyPageScreen = () => {
           <SettingNavigation.Item
             label={t('mypage.items.categories')}
             onPress={() => router.push('/settings/category-settings')}
+          />
+          <SettingNavigation.Item
+            label={t('featureDiscovery:entry.mypage')}
+            onPress={openFeatureGuide}
           />
           <SettingNavigation.Item
             label={t('mypage.items.achievements')}

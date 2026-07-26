@@ -4,6 +4,7 @@ import enAppIcon from './locales/en/appIcon.json';
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enErrors from './locales/en/errors.json';
+import enFeatureDiscovery from './locales/en/featureDiscovery.json';
 import enFriend from './locales/en/friend.json';
 import enInquiry from './locales/en/inquiry.json';
 import enMemo from './locales/en/memo.json';
@@ -21,6 +22,7 @@ import koAppIcon from './locales/ko/appIcon.json';
 import koAuth from './locales/ko/auth.json';
 import koCommon from './locales/ko/common.json';
 import koErrors from './locales/ko/errors.json';
+import koFeatureDiscovery from './locales/ko/featureDiscovery.json';
 import koFriend from './locales/ko/friend.json';
 import koInquiry from './locales/ko/inquiry.json';
 import koMemo from './locales/ko/memo.json';
@@ -53,6 +55,7 @@ export const resources = {
     weather: koWeather,
     appIcon: koAppIcon,
     widget: koWidget,
+    featureDiscovery: koFeatureDiscovery,
   },
   en: {
     common: enCommon,
@@ -72,6 +75,7 @@ export const resources = {
     weather: enWeather,
     appIcon: enAppIcon,
     widget: enWidget,
+    featureDiscovery: enFeatureDiscovery,
   },
 } as const;
 

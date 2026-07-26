@@ -2,6 +2,7 @@ import { createSessionManager } from '@src/core/session/session-manager';
 import { AchievementService } from '@src/features/achievement/services/achievement.service';
 import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
+import { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
 import { FriendService } from '@src/features/friend/services/friend.service';
 import { InquiryService } from '@src/features/inquiry/services/inquiry.service';
 import { MemoService } from '@src/features/memo/services/memo.service';
@@ -25,6 +26,7 @@ import { ENV } from '@src/shared/config/env';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
+import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { requestRefreshTokens } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
@@ -69,6 +71,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);
+    const publicJsonFetcher = new KyJsonFetcher(publicKyInstance);
 
     // 세션 종료(토큰 삭제 + 이벤트)의 유일한 소유자. 갱신기는 세션을 끝낼 수 없다.
     const sessionManager = createSessionManager(tokenStore);
@@ -98,6 +101,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // Friend
     const friendService = new FriendService(authHttpClient);
+
+    // Feature discovery — app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
+    const featureDiscoveryService = new FeatureDiscoveryService(publicJsonFetcher);
 
     // Inquiry
     const inquiryService = new InquiryService(authHttpClient);
@@ -154,6 +160,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       aiService,
       authService,
       friendService,
+      featureDiscoveryService,
       inquiryService,
       memoService,
       subTodoService,
@@ -182,6 +189,7 @@ export {
   useAuthService,
   useDI,
   useErrorReporter,
+  useFeatureDiscoveryService,
   useFriendService,
   useInquiryService,
   useLogger,

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { OverlayStateContext } from './OverlayStateContext';
 
 export interface OverlayController {
   mount: (id: string, element: ReactNode) => void;
@@ -39,13 +40,16 @@ export const OverlayProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const controller = useMemo(() => ({ mount, unmount }), [mount, unmount]);
+  const state = useMemo(() => ({ hasActiveOverlay: overlays.size > 0 }), [overlays.size]);
 
   return (
     <OverlayContext.Provider value={controller}>
-      {children}
-      {[...overlays.entries()].map(([id, { element, version }]) => (
-        <Fragment key={`${id}-${version}`}>{element}</Fragment>
-      ))}
+      <OverlayStateContext.Provider value={state}>
+        {children}
+        {[...overlays.entries()].map(([id, { element, version }]) => (
+          <Fragment key={`${id}-${version}`}>{element}</Fragment>
+        ))}
+      </OverlayStateContext.Provider>
     </OverlayContext.Provider>
   );
 };

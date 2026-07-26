@@ -1,0 +1,51 @@
+{
+  "hub": {
+    "title": "Get more out of Aido",
+    "description": "Explore helpful features you may have missed and the latest improvements.",
+    "sheetLabel": "Aido feature guide",
+    "closeLabel": "Close feature guide"
+  },
+  "entry": {
+    "mypage": "Aido Feature Guide",
+    "feedTitle": "Take another look at what's new",
+    "feedDescription": "You can reopen this guide anytime for 14 days",
+    "openLabel": "Open Aido feature guide"
+  },
+  "cards": {
+    "memoAi": {
+      "title": "Turn one memo into multiple to-dos",
+      "description": "Jot down your thoughts and AI will organize them into actionable to-dos.",
+      "cta": "Start with a memo",
+      "ctaLabel": "Go to memo AI",
+      "previewMemo": "Trip planning memo",
+      "previewTodo1": "Check flights",
+      "previewTodo2": "Book a hotel"
+    },
+    "friendSearch": {
+      "title": "Find friends by name or Aido ID",
+      "description": "Search by a friend's name or Aido ID even when you don't know their tag.",
+      "cta": "Find friends",
+      "ctaLabel": "Go to friend search",
+      "previewQuery": "Alex or AIDO1234",
+      "previewResult": "Friend found"
+    },
+    "dragReorder": {
+      "title": "Drag things into the order you want",
+      "description": "Press and hold to move to-dos and categories into the flow that works for you.",
+      "cta": "Organize categories",
+      "ctaLabel": "Go to category organization",
+      "previewTodo1": "Most important",
+      "previewTodo2": "Up next",
+      "previewTodo3": "Do later"
+    },
+    "todoCreation": {
+      "title": "Create to-dos your way",
+      "description": "Choose manual entry, AI suggestions, or recurring schedules for each moment.",
+      "cta": "Create a to-do",
+      "ctaLabel": "Go to to-do creation",
+      "previewManual": "Manual",
+      "previewAi": "AI",
+      "previewRecurring": "Recurring"
+    }
+  }
+}
