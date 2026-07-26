@@ -146,14 +146,36 @@ function createDeferred(): Deferred {
 	};
 }
 
+interface ValueDeferred<T> {
+	promise: Promise<T>;
+	resolve: (value: T) => void;
+}
+
+function createValueDeferred<T>(): ValueDeferred<T> {
+	let resolve: ((value: T) => void) | undefined;
+	const promise = new Promise<T>((settle) => {
+		resolve = settle;
+	});
+	return {
+		promise,
+		resolve: (value) => resolve?.(value),
+	};
+}
+
 interface AdvisoryWaitObservation {
 	probes: number;
 	waitingCount: number;
 }
 
+interface AdvisoryLockIdentity {
+	pid: number;
+	databaseOid: number;
+}
+
 async function waitForBlockedAdvisoryLock(
 	prisma: PrismaClient,
 	key: string,
+	identity: AdvisoryLockIdentity,
 	options: { timeoutMs?: number; pollIntervalMs?: number } = {},
 ): Promise<AdvisoryWaitObservation> {
 	const timeoutMs = options.timeoutMs ?? 2_000;
@@ -171,6 +193,8 @@ async function waitForBlockedAdvisoryLock(
 			WHERE locktype = 'advisory'
 				AND granted = false
 				AND objsubid = 1
+				AND pid = ${identity.pid}
+				AND database = ${identity.databaseOid}::oid
 				AND classid::bigint = ((lock_key >> 32) & 4294967295)
 				AND objid::bigint = (lock_key & 4294967295)
 		`;
@@ -186,6 +210,7 @@ async function waitForBlockedAdvisoryLock(
 	throw new Error(
 		`Timed out after ${maxProbes} probes (~${timeoutMs}ms) waiting for ` +
 			`PostgreSQL advisory lock key=${JSON.stringify(key)}; ` +
+			`pid=${identity.pid}, databaseOid=${identity.databaseOid}; ` +
 			`lastWaitingCount=${lastWaitingCount}`,
 	);
 }
@@ -611,12 +636,25 @@ describe("소셜 mutation lock 동시성 (실제 PostgreSQL)", () => {
 		await held.promise;
 
 		const { txHost, uow } = createTransactionHarness(prisma);
-		const attempted = createDeferred();
+		const sendingIdentity = createValueDeferred<AdvisoryLockIdentity>();
 		const continueLockAttempt = createDeferred();
 		const realLock = new PostgresMutationLockAdapter(txHost);
 		const mutationLock: MutationLockPort = {
 			async acquire(keys) {
-				attempted.resolve();
+				const identities = await txHost.tx.$queryRaw<AdvisoryLockIdentity[]>`
+					SELECT
+						pg_backend_pid() AS pid,
+						(
+							SELECT oid::int
+							FROM pg_database
+							WHERE datname = current_database()
+						) AS "databaseOid"
+				`;
+				const identity = identities[0];
+				if (!identity) {
+					throw new Error("Could not identify the sending transaction backend");
+				}
+				sendingIdentity.resolve(identity);
 				await continueLockAttempt.promise;
 				await realLock.acquire(keys);
 			},
@@ -632,10 +670,21 @@ describe("소셜 mutation lock 동시성 (실제 PostgreSQL)", () => {
 
 		// When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
 		const sending = useCase.execute({ senderId, receiverId }, "Asia/Seoul");
-		await attempted.promise;
+		const identity = await sendingIdentity.promise;
 		try {
 			continueLockAttempt.resolve();
-			const observation = await waitForBlockedAdvisoryLock(prisma, dailyKey);
+			const mismatchedIdentity = { pid: -1, databaseOid: -1 };
+			await expect(
+				waitForBlockedAdvisoryLock(prisma, dailyKey, mismatchedIdentity, {
+					timeoutMs: 40,
+					pollIntervalMs: 10,
+				}),
+			).rejects.toThrow("pid=-1, databaseOid=-1");
+			const observation = await waitForBlockedAdvisoryLock(
+				prisma,
+				dailyKey,
+				identity,
+			);
 			expect(observation.waitingCount).toBe(1);
 			jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
 		} finally {
