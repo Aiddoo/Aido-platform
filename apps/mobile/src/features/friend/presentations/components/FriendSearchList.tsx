@@ -1,3 +1,4 @@
+import { formatUserHashtag } from '@src/features/user/utils/user-hashtag';
 import { useTranslation } from '@src/shared/i18n';
 import type { Page } from '@src/shared/types/page.type';
 import { Button, CheckIcon, Result, SearchIcon } from '@src/shared/ui';
@@ -119,7 +120,7 @@ export function FriendSearchList({ query }: FriendSearchListProps) {
       renderItem={(item: SearchedUserViewModel) => (
         <UserList.Item
           displayName={item.displayName}
-          subtitle={`@${item.userTag}`}
+          subtitle={formatUserHashtag(item.userTag)}
           profileImage={item.profileImage}
           action={renderAction(item)}
         />

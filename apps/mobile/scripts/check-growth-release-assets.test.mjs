@@ -53,37 +53,41 @@ const validRelease = () => ({
 });
 
 const validPublicCopy = () => ({
-  friendKo: { search: { placeholder: '이름 또는 Aido ID로 검색' } },
-  friendEn: { search: { placeholder: 'Search by name or Aido ID' } },
+  friendKo: { search: { placeholder: '이름 또는 해시태그로 검색' } },
+  friendEn: { search: { placeholder: 'Search by name or hashtag' } },
   userKo: {
     profile: {
-      tagCopied: 'Aido ID 복사 완료',
-      tagCopiedDescription: 'Aido ID를 친구에게 공유해 보세요',
+      tagCopied: '해시태그 복사 완료',
+      tagCopiedDescription: '8자리 해시태그를 친구에게 공유해 보세요',
     },
   },
   userEn: {
     profile: {
-      tagCopied: 'Aido ID copied',
-      tagCopiedDescription: 'Share your Aido ID with friends',
+      tagCopied: 'Hashtag copied',
+      tagCopiedDescription: 'Share your 8-character hashtag with friends',
     },
   },
   validationKo: {
     userTag: {
-      length: 'Aido ID는 8자리입니다',
-      pattern: 'Aido ID는 영문 대문자와 숫자만 사용할 수 있어요',
+      length: '해시태그는 8자리입니다',
+      pattern: '해시태그는 영문 대문자와 숫자만 사용할 수 있어요',
     },
   },
   validationEn: {
     userTag: {
-      length: 'Aido IDs are 8 characters long',
-      pattern: 'Aido IDs can only contain uppercase letters and numbers',
+      length: 'Hashtags are 8 characters long',
+      pattern: 'Hashtags can only contain uppercase letters and numbers',
     },
   },
   discoveryKo: {
-    cards: { friendSearch: { description: '친구 이름이나 Aido ID로 바로 찾을 수 있어요.' } },
+    cards: {
+      friendSearch: { description: '친구 이름 또는 8자리 해시태그로 바로 찾을 수 있어요.' },
+    },
   },
   discoveryEn: {
-    cards: { friendSearch: { description: "Search by a friend's name or Aido ID." } },
+    cards: {
+      friendSearch: { description: "Search by a friend's name or 8-character hashtag." },
+    },
   },
   followController: `
     description: "친구 요청을 보낼 대상 Aido ID"
@@ -164,7 +168,7 @@ function createFixture({ mutateRelease, mutateCopy, packageVersion = RELEASE_VER
   write(
     root,
     `apps/mobile/docs/releases/${RELEASE_VERSION}.md`,
-    '메모가 할 일이 되고, 친구와 함께 끝내는 투두.\nAido ID\n',
+    '메모가 할 일이 되고, 친구와 함께 끝내는 투두.\n해시태그\n',
   );
   write(
     root,
@@ -221,21 +225,31 @@ for (const [label, mutateCopy] of [
   [
     '프로필 복사 문구',
     (copy) => {
-      copy.userKo.profile.tagCopied = '태그 복사 완료';
+      copy.userKo.profile.tagCopied = 'Aido ID 복사 완료';
     },
   ],
   [
     '친구 추가 검증 문구',
     (copy) => {
-      copy.validationEn.userTag.length = 'User tags are 8 characters long';
+      copy.validationEn.userTag.length = 'Aido IDs are 8 characters long';
     },
   ],
   [
     '기능 가이드 문구',
     (copy) => {
-      copy.discoveryKo.cards.friendSearch.description = '해시태그를 몰라도 찾을 수 있어요.';
+      copy.discoveryKo.cards.friendSearch.description = 'Aido ID를 몰라도 찾을 수 있어요.';
     },
   ],
+]) {
+  test(`${label}에 구식 Aido ID 표현이 돌아오면 거부한다`, () => {
+    withFixture({ mutateCopy }, (result) => {
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /stale Aido ID terminology/);
+    });
+  });
+}
+
+for (const [label, mutateCopy] of [
   [
     'Swagger 컨트롤러 문구',
     (copy) => {
@@ -249,7 +263,7 @@ for (const [label, mutateCopy] of [
     },
   ],
 ]) {
-  test(`${label}에 구식 tag 표현이 돌아오면 거부한다`, () => {
+  test(`${label}에 모호한 tag 표현이 돌아오면 거부한다`, () => {
     withFixture({ mutateCopy }, (result) => {
       assert.notEqual(result.status, 0);
       assert.match(result.stderr, /stale tag terminology/);

@@ -91,6 +91,9 @@ const LEGACY_PUSH_DATA_SCHEMAS = {
 	V1_2_TO_V1_4: legacyPushDataSchema(LEGACY_V1_2_NOTIFICATION_TYPES),
 } as const;
 
+/** 2026-07-16 12:00 KST — 마케팅 야간 게이트 밖의 결정적인 테스트 시각. */
+const KST_MARKETING_DAYTIME = new Date("2026-07-16T03:00:00.000Z");
+
 function makePreference(
 	userId: string,
 	timezone: string,
@@ -724,6 +727,7 @@ describe("PushDispatcherAdapter", () => {
 	});
 
 	it("마케팅 동의 부재는 dispatch를 MARKETING_CONSENT_REQUIRED로 스킵 기록한다", async () => {
+		jest.useFakeTimers().setSystemTime(KST_MARKETING_DAYTIME);
 		const markPushDispatchSkipped = jest.fn().mockResolvedValue(undefined);
 		Object.defineProperty(repository, "markPushDispatchSkipped", {
 			value: markPushDispatchSkipped,
@@ -790,6 +794,7 @@ describe("PushDispatcherAdapter", () => {
 	});
 
 	it("feature-discovery 마케팅은 payload v2와 app 1.8.0 이상 토큰만 발송한다", async () => {
+		jest.useFakeTimers().setSystemTime(KST_MARKETING_DAYTIME);
 		const markPushDispatchSkipped = jest.fn().mockResolvedValue(undefined);
 		Object.defineProperty(repository, "markPushDispatchSkipped", {
 			value: markPushDispatchSkipped,
@@ -883,6 +888,7 @@ describe("PushDispatcherAdapter", () => {
 	});
 
 	it("feature-discovery 마케팅에 지원 토큰이 없으면 UNSUPPORTED_APP_CAPABILITY로 스킵한다", async () => {
+		jest.useFakeTimers().setSystemTime(KST_MARKETING_DAYTIME);
 		const markPushDispatchSkipped = jest.fn().mockResolvedValue(undefined);
 		Object.defineProperty(repository, "markPushDispatchSkipped", {
 			value: markPushDispatchSkipped,

@@ -48,6 +48,10 @@ jest.mock('@src/shared/ui', () => {
 
   return {
     Box: Container,
+    Avatar: Object.assign(Container, {
+      Image: () => null,
+      Fallback: Container,
+    }),
     H3: Text,
     HStack: Container,
     VStack: Container,
@@ -71,8 +75,13 @@ jest.mock('@src/shared/ui', () => {
           )
         : null,
     CheckIcon: () => null,
+    ArrowUpIcon: () => null,
+    CalendarIcon: () => null,
+    ClockIcon: () => null,
     DragIcon: () => null,
+    EyeIcon: () => null,
     MemoIcon: () => null,
+    MenuIcon: () => null,
     PersonIcon: () => null,
     RepeatIcon: () => null,
     RobotIcon: () => null,
@@ -110,9 +119,11 @@ describe('FeatureDiscoverySheet', () => {
 
     // Then
     expect(screen.getByText('메모가 여러 할 일이 돼요')).toBeTruthy();
-    expect(screen.getByText('이름이나 Aido ID로 친구를 찾아요')).toBeTruthy();
+    expect(screen.getByText('이름이나 해시태그로 친구를 찾아요')).toBeTruthy();
+    expect(screen.getByText('#MATT2025')).toBeTruthy();
     expect(screen.getByText('드래그해서 원하는 순서로 정리해요')).toBeTruthy();
     expect(screen.getByText('나에게 맞는 방식으로 할 일을 만들어요')).toBeTruthy();
+    expect(screen.queryByText('AI 추천')).toBeNull();
     expect(screen.getByTestId('feature-discovery-card-list')).toBeTruthy();
   });
 
@@ -174,7 +185,7 @@ describe('FeatureDiscoverySheet', () => {
     expect(screen.getByText('Drag things into the order you want')).toBeTruthy();
     expect(
       screen.getByText(
-        'Choose manual entry, AI suggestions, or recurring schedules for each moment.',
+        'Set the date, time, repeat schedule, visibility, and category as you create a to-do.',
       ),
     ).toBeTruthy();
     const listStyle = StyleSheet.flatten(

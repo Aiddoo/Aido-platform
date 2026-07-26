@@ -10,7 +10,7 @@ const createUser = (overrides: Partial<User> = {}): User => ({
   email: 'user@example.com',
   name: '사용자',
   profileImage: null,
-  userTag: 'AIDO1234',
+  userTag: 'MATT2025',
   role: 'USER',
   subscriptionStatus: 'FREE',
   subscriptionExpiresAt: null,

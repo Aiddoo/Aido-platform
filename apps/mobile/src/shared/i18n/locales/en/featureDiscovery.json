@@ -22,30 +22,37 @@
       "previewTodo2": "Book a hotel"
     },
     "friendSearch": {
-      "title": "Find friends by name or Aido ID",
-      "description": "Search by a friend's name or Aido ID.",
+      "title": "Find friends by name or hashtag",
+      "description": "Search by a friend's name or unique 8-character hashtag.",
       "cta": "Find friends",
       "ctaLabel": "Go to friend search",
-      "previewQuery": "Alex or AIDO1234",
-      "previewResult": "Friend found"
+      "previewQuery": "Search by name or hashtag",
+      "previewResult": "Mina Kim",
+      "previewInitial": "M",
+      "previewAdd": "Add"
     },
     "dragReorder": {
       "title": "Drag things into the order you want",
       "description": "Press and hold to move to-dos and categories into the flow that works for you.",
       "cta": "Organize categories",
       "ctaLabel": "Go to category organization",
-      "previewTodo1": "Most important",
-      "previewTodo2": "Up next",
-      "previewTodo3": "Do later"
+      "previewTab": "Reorder",
+      "previewHint": "Hold and drag",
+      "previewCategory1": "Work",
+      "previewCategory2": "Fitness",
+      "previewCategory3": "Daily life"
     },
     "todoCreation": {
       "title": "Create to-dos your way",
-      "description": "Choose manual entry, AI suggestions, or recurring schedules for each moment.",
+      "description": "Set the date, time, repeat schedule, visibility, and category as you create a to-do.",
       "cta": "Create a to-do",
       "ctaLabel": "Go to to-do creation",
-      "previewManual": "Manual",
-      "previewAi": "AI",
-      "previewRecurring": "Recurring"
+      "previewTitle": "Enter a to-do",
+      "previewDate": "Today",
+      "previewTime": "All day",
+      "previewRepeat": "Repeat",
+      "previewVisibility": "Public",
+      "previewCategory": "Daily life"
     }
   }
 }
