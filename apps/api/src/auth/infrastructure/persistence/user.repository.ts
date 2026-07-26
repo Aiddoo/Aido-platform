@@ -211,26 +211,48 @@ export class UserRepository {
 		const seenAt = now();
 		const localDate = startOfDayInTimezone(seenAt, timezone);
 
-		await this.client.$transaction([
-			this.client.user.update({
-				where: { id },
-				data: { lastActiveAt: seenAt },
-			}),
-			this.client.userActivityDay.upsert({
-				where: { userId_localDate: { userId: id, localDate } },
-				create: {
-					userId: id,
-					localDate,
-					timezone,
-					firstSeenAt: seenAt,
-					lastSeenAt: seenAt,
-				},
-				update: {
-					timezone,
-					lastSeenAt: seenAt,
-				},
-			}),
-		]);
+		await this.client.$executeRaw`
+			WITH updated_user AS (
+				UPDATE "User" AS app_user
+				SET
+					"lastActiveAt" = GREATEST(
+						COALESCE(app_user."lastActiveAt", ${seenAt}),
+						${seenAt}
+					),
+					"updatedAt" = GREATEST(app_user."updatedAt", ${seenAt})
+				WHERE app_user."id" = ${id}
+				RETURNING app_user."id"
+			)
+			INSERT INTO "UserActivityDay" (
+				"userId",
+				"localDate",
+				"timezone",
+				"firstSeenAt",
+				"lastSeenAt"
+			)
+			SELECT
+				updated_user."id",
+				${localDate}::DATE,
+				${timezone},
+				${seenAt},
+				${seenAt}
+			FROM updated_user
+			ON CONFLICT ("userId", "localDate")
+			DO UPDATE SET
+				"timezone" = CASE
+					WHEN EXCLUDED."lastSeenAt" >= "UserActivityDay"."lastSeenAt"
+						THEN EXCLUDED."timezone"
+					ELSE "UserActivityDay"."timezone"
+				END,
+				"firstSeenAt" = LEAST(
+					"UserActivityDay"."firstSeenAt",
+					EXCLUDED."firstSeenAt"
+				),
+				"lastSeenAt" = GREATEST(
+					"UserActivityDay"."lastSeenAt",
+					EXCLUDED."lastSeenAt"
+				)
+		`;
 	}
 
 	async createProfile(

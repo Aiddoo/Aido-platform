@@ -40,22 +40,30 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 	}): Promise<AdminGrowthSummaryCounts> {
 		const rows = await this.database.$queryRaw<GrowthSummaryRow[]>`
 			WITH measurement AS (
-				SELECT MIN(activity."firstSeenAt") AS "measurementStartedAt"
-				FROM "UserActivityDay" AS activity
+				SELECT (
+					SELECT activity."firstSeenAt"
+					FROM "UserActivityDay" AS activity
+					ORDER BY activity."firstSeenAt" ASC, activity."id" ASC
+					LIMIT 1
+				) AS "measurementStartedAt"
 			),
-			first_activity AS (
-				SELECT DISTINCT ON (activity."userId")
-					activity."userId",
-					activity."timezone"
-				FROM "UserActivityDay" AS activity
-				ORDER BY activity."userId", activity."firstSeenAt" ASC, activity."id" ASC
+			candidate_users AS (
+				SELECT
+					app_user."id",
+					app_user."createdAt"
+				FROM "User" AS app_user
+				WHERE app_user."deletedAt" IS NULL
+					AND app_user."createdAt" >=
+						${input.cohortFrom}::DATE - INTERVAL '14 hours'
+					AND app_user."createdAt" <
+						${input.cohortTo}::DATE + INTERVAL '36 hours'
 			),
 			localized_users AS (
 				SELECT
-					app_user."id",
-					app_user."createdAt",
+					candidate."id",
+					candidate."createdAt",
 					(
-						app_user."createdAt" AT TIME ZONE 'UTC'
+						candidate."createdAt" AT TIME ZONE 'UTC'
 							AT TIME ZONE COALESCE(
 								valid_activity_timezone.name,
 								valid_preference_timezone.name,
@@ -69,11 +77,16 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 							'UTC'
 						)
 					)::DATE AS "asOfLocalDate"
-				FROM "User" AS app_user
-				LEFT JOIN first_activity
-					ON first_activity."userId" = app_user."id"
+				FROM candidate_users AS candidate
+				LEFT JOIN LATERAL (
+					SELECT activity."timezone"
+					FROM "UserActivityDay" AS activity
+					WHERE activity."userId" = candidate."id"
+					ORDER BY activity."firstSeenAt" ASC, activity."id" ASC
+					LIMIT 1
+				) AS first_activity ON TRUE
 				LEFT JOIN "UserPreference" AS preference
-					ON preference."userId" = app_user."id"
+					ON preference."userId" = candidate."id"
 				LEFT JOIN pg_timezone_names AS valid_activity_timezone
 					ON valid_activity_timezone.name = first_activity."timezone"
 				LEFT JOIN pg_timezone_names AS valid_preference_timezone
@@ -123,6 +136,21 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 				WHERE localized."signupLocalDate"
 					BETWEEN ${input.cohortFrom}::DATE AND ${input.cohortTo}::DATE
 			),
+			activity_candidates AS (
+				SELECT
+					activity."userId",
+					activity."localDate"
+				FROM "UserActivityDay" AS activity
+				INNER JOIN "User" AS active_user
+					ON active_user."id" = activity."userId"
+					AND active_user."deletedAt" IS NULL
+				WHERE activity."localDate" BETWEEN
+					LEAST(
+						${input.cohortFrom}::DATE,
+						${input.cohortTo}::DATE - 29
+					)
+					AND ${input.cohortTo}::DATE
+			),
 			active_counts AS (
 				SELECT
 					COUNT(DISTINCT activity."userId") FILTER (
@@ -140,7 +168,7 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 						WHERE activity."localDate"
 							BETWEEN ${input.cohortTo}::DATE - 29 AND ${input.cohortTo}::DATE
 					)::BIGINT AS "mau"
-				FROM "UserActivityDay" AS activity
+				FROM activity_candidates AS activity
 			),
 			cohort_counts AS (
 				SELECT

@@ -41,4 +41,23 @@ describe("앱 컨트롤러 E2E", () => {
 				expect(res.body.timestamp).toBeDefined();
 			});
 	});
+
+	it("CORS preflight가 X-Timezone 요청 헤더를 허용한다", async () => {
+		// When - 웹 클라이언트가 timezone 헤더를 포함한 preflight를 보내면
+		const response = await request(ctx.app.getHttpServer())
+			.options("/")
+			.set("Origin", "http://localhost:3000")
+			.set("Access-Control-Request-Method", "GET")
+			.set("Access-Control-Request-Headers", "x-timezone")
+			.expect(204);
+
+		// Then - 브라우저가 실제 인증 요청을 보낼 수 있도록 명시적으로 허용한다
+		const allowedHeaders = String(
+			response.headers["access-control-allow-headers"],
+		)
+			.toLowerCase()
+			.split(",")
+			.map((header) => header.trim());
+		expect(allowedHeaders).toContain("x-timezone");
+	});
 });

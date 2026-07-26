@@ -14,7 +14,10 @@ import {
 	AUTH_USER_ACTIVITY_WRITER,
 	type AuthUserActivityWriterPort,
 } from "@/auth/application/ports/auth-collaboration.port";
-import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+import {
+	resolveTimezone,
+	startOfDayInTimezone,
+} from "@/shared/domain/date/utils/timezone";
 
 /**
  * 인증된 API 요청 시 User.lastActiveAt을 갱신하는 인터셉터
@@ -28,7 +31,7 @@ import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
 export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 	readonly #logger = new Logger(LastActiveInterceptor.name);
 
-	/** userId → lastUpdatedAt (epoch ms) */
+	/** `${userId}:${localDate}` → lastUpdatedAt (epoch ms) */
 	readonly #throttleMap = new Map<string, number>();
 
 	readonly #cleanupInterval: NodeJS.Timeout;
@@ -64,19 +67,29 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 	}
 
 	#touchLastActive(userId: string, timezone: string): void {
-		const now = Date.now();
-		const lastUpdated = this.#throttleMap.get(userId);
+		const touchedAt = Date.now();
+		const localDate = startOfDayInTimezone(new Date(touchedAt), timezone)
+			.toISOString()
+			.slice(0, 10);
+		const throttleKey = `${userId}:${localDate}`;
+		const lastUpdated = this.#throttleMap.get(throttleKey);
 
-		if (lastUpdated && now - lastUpdated < LastActiveInterceptor.THROTTLE_MS) {
+		if (
+			lastUpdated &&
+			touchedAt - lastUpdated < LastActiveInterceptor.THROTTLE_MS
+		) {
 			return;
 		}
 
-		this.#throttleMap.set(userId, now);
+		this.#throttleMap.set(throttleKey, touchedAt);
 
 		// fire-and-forget — 응답을 블로킹하지 않음
 		this.userActivityWriter
 			.updateLastActiveAt(userId, timezone)
 			.catch((error) => {
+				if (this.#throttleMap.get(throttleKey) === touchedAt) {
+					this.#throttleMap.delete(throttleKey);
+				}
 				this.#logger.error(
 					`Failed to update lastActiveAt: userId=${userId}, error=${error}`,
 				);
@@ -87,9 +100,9 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		const cutoff = Date.now() - LastActiveInterceptor.THROTTLE_MS;
 		let cleaned = 0;
 
-		for (const [userId, timestamp] of this.#throttleMap.entries()) {
+		for (const [throttleKey, timestamp] of this.#throttleMap.entries()) {
 			if (timestamp < cutoff) {
-				this.#throttleMap.delete(userId);
+				this.#throttleMap.delete(throttleKey);
 				cleaned++;
 			}
 		}

@@ -526,31 +526,19 @@ describe("UserRepository — 사용자 리포지토리", () => {
 				// When - 인증 사용자 활동을 기록하면
 				await repository.updateLastActiveAt("user-123", "Asia/Seoul");
 
-				// Then - 동일 시각으로 사용자와 현지 날짜 활동 행을 원자적으로 갱신한다
-				expect(db.user.update).toHaveBeenCalledWith({
-					where: { id: "user-123" },
-					data: { lastActiveAt: new Date("2026-07-26T15:30:00.000Z") },
-				});
-				expect(db.userActivityDay.upsert).toHaveBeenCalledWith({
-					where: {
-						userId_localDate: {
-							userId: "user-123",
-							localDate: new Date("2026-07-27T00:00:00.000Z"),
-						},
-					},
-					create: {
-						userId: "user-123",
-						localDate: new Date("2026-07-27T00:00:00.000Z"),
-						timezone: "Asia/Seoul",
-						firstSeenAt: new Date("2026-07-26T15:30:00.000Z"),
-						lastSeenAt: new Date("2026-07-26T15:30:00.000Z"),
-					},
-					update: {
-						timezone: "Asia/Seoul",
-						lastSeenAt: new Date("2026-07-26T15:30:00.000Z"),
-					},
-				});
-				expect(db.$transaction).toHaveBeenCalledTimes(1);
+				// Then - 한 SQL 경계에 사용자·현지 날짜·관측 시각을 바인딩한다
+				expect(db.$executeRaw).toHaveBeenCalledTimes(1);
+				const rawParameters = db.$executeRaw.mock.calls[0]?.slice(1);
+				expect(rawParameters).toEqual([
+					new Date("2026-07-26T15:30:00.000Z"),
+					new Date("2026-07-26T15:30:00.000Z"),
+					new Date("2026-07-26T15:30:00.000Z"),
+					"user-123",
+					new Date("2026-07-27T00:00:00.000Z"),
+					"Asia/Seoul",
+					new Date("2026-07-26T15:30:00.000Z"),
+					new Date("2026-07-26T15:30:00.000Z"),
+				]);
 			} finally {
 				jest.useRealTimers();
 			}

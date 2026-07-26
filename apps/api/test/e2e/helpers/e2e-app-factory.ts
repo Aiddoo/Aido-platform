@@ -65,6 +65,7 @@ import {
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { createCorsOptions } from "@/shared/infrastructure/config/utils/cors-options";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import {
 	REDIS_CLIENT,
@@ -307,6 +308,7 @@ export async function createE2eApp(
 	try {
 		module = await builder.compile();
 		app = module.createNestApplication();
+		app.enableCors(createCorsOptions("development", ["http://localhost:3000"]));
 		app.useGlobalPipes(new ZodValidationPipe());
 		await app.init();
 		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);

@@ -10,6 +10,7 @@ import { Logger } from "nestjs-pino";
 import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
 import { AdminModule } from "@/admin/admin.module";
 import type { EnvConfig } from "@/shared/infrastructure/config";
+import { createCorsOptions } from "@/shared/infrastructure/config/utils/cors-options";
 import {
 	SWAGGER_TAG_DESCRIPTIONS,
 	SWAGGER_TAGS,
@@ -28,21 +29,7 @@ async function bootstrap() {
 
 	app.use(helmet());
 
-	// 개발 환경에서도 허용된 origin만 허용 (보안 강화)
-	const devOrigins = [
-		"http://localhost:3000",
-		"http://localhost:8080",
-		"http://localhost:8081",
-		"http://localhost:19000",
-		"http://localhost:19006",
-	];
-
-	app.enableCors({
-		origin: nodeEnv === "development" ? devOrigins : corsOrigins,
-		credentials: true,
-		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-		allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	});
+	app.enableCors(createCorsOptions(nodeEnv, corsOrigins));
 
 	app.useGlobalPipes(new ZodValidationPipe());
 
