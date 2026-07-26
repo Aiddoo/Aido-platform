@@ -47,20 +47,24 @@ function normalizeVolatileExamples<T>(doc: T): T {
 	);
 }
 
-function stableContract(value: unknown): unknown {
+function stableContract(value: unknown, parentKey?: string): unknown {
 	if (Array.isArray(value)) {
-		return value.map(stableContract);
+		return value.map((item) => stableContract(item));
 	}
 	if (value === null || typeof value !== "object") {
 		return value;
 	}
 
 	const record = value as Record<string, unknown>;
+	const isJsonSchemaPropertiesMap = parentKey === "properties";
 	return Object.fromEntries(
 		Object.keys(record)
-			.filter((key) => !DOCUMENTATION_ONLY_FIELDS.has(key))
+			.filter(
+				(key) =>
+					isJsonSchemaPropertiesMap || !DOCUMENTATION_ONLY_FIELDS.has(key),
+			)
 			.sort()
-			.map((key) => [key, stableContract(record[key])]),
+			.map((key) => [key, stableContract(record[key], key)]),
 	);
 }
 
@@ -94,6 +98,33 @@ describe("OpenAPI 계약 (e2e)", () => {
 
 	beforeEach(async () => {
 		await ctx.reset();
+	});
+
+	it("JSON Schema의 title·description 사용자 필드 변경을 fingerprint에 반영한다", () => {
+		// Given - OpenAPI 문서 메타데이터와 이름이 같은 실제 JSON Schema 필드
+		const releasedSchema = {
+			type: "object",
+			properties: {
+				title: { type: "string", maxLength: 200 },
+				description: { type: "string", nullable: true },
+			},
+			required: ["title", "description"],
+		};
+		const breakingSchema = {
+			type: "object",
+			properties: {
+				title: { type: "number" },
+				description: { type: "boolean" },
+			},
+			required: ["title", "description"],
+		};
+
+		// When
+		const releasedFingerprint = contractFingerprint(releasedSchema);
+		const breakingFingerprint = contractFingerprint(breakingSchema);
+
+		// Then - 필드 shape 변경을 문서 문구 변경으로 오인해 누락하면 안 된다
+		expect(breakingFingerprint).not.toBe(releasedFingerprint);
 	});
 
 	it("OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경)", () => {
@@ -152,12 +183,14 @@ describe("OpenAPI 계약 (e2e)", () => {
 		// Then - 문구 변경은 무시하되 Zod shape/request/response/status 구조는 동일
 		expect({
 			releasedClientVersion: RELEASED_V1_OPENAPI_CONTRACT.releasedClientVersion,
+			sourceCommit: RELEASED_V1_OPENAPI_CONTRACT.sourceCommit,
 			missingSchemas,
 			missingPaths,
 			schemasFingerprint: contractFingerprint(releasedSchemas),
 			pathsFingerprint: contractFingerprint(releasedPaths),
 		}).toEqual({
 			releasedClientVersion: "1.7.x",
+			sourceCommit: "75cc0e9285958f4963b3adbd8d6a17c631136c91",
 			missingSchemas: [],
 			missingPaths: [],
 			schemasFingerprint: RELEASED_V1_OPENAPI_CONTRACT.schemasFingerprint,

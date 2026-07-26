@@ -2,10 +2,12 @@
  * Store-released 1.7.x clients bundle Zod parsers for this API surface.
  *
  * The names select only the released contract, so additive endpoints/schemas are
- * allowed. Fingerprints intentionally omit documentation-only OpenAPI fields.
+ * allowed. Fingerprints come from sourceCommit's runtime OpenAPI document and
+ * omit documentation metadata without omitting identically named schema properties.
  */
 export const RELEASED_V1_OPENAPI_CONTRACT = {
 	releasedClientVersion: "1.7.x",
+	sourceCommit: "75cc0e9285958f4963b3adbd8d6a17c631136c91",
 	schemaNames: [
 		"AcceptFriendRequestResponseDto",
 		"AiReportListResponseDto",
@@ -259,7 +261,7 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 		"/weekly-achievements/{year}/{week}",
 	],
 	schemasFingerprint:
-		"38899ca95c78bb5d402e5423b22ad90b5f9f96a0869713e9eea30f1c33163dfe",
+		"5708d02896371679e9c4dc97d82e1376e18c464ae7f6cfc0cecbbb4defeaac3d",
 	pathsFingerprint:
 		"ea3b45b70f071294634c39a8523e2683112a02a87f17c1366f279ca7b46e6d8e",
 } as const;
