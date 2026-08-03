@@ -187,7 +187,9 @@ describe("SendNudgeUseCase", () => {
 		});
 		repo.findTargetTodo.mockImplementation(async () => {
 			events.push("target-read");
-			return targetTodo;
+			// 고정 시각(2026-07-26 KST)과 같은 날의 할 일이어야 isActiveOn을 통과한다.
+			// 모듈 상단 targetTodo는 실행 시점의 실제 오늘이라 고정 시각과 어긋난다.
+			return { ...targetTodo, startDate: new Date("2026-07-26T00:00:00.000Z") };
 		});
 		limitReader.getDailyLimitInTx.mockImplementation(async () => {
 			events.push("limit");
