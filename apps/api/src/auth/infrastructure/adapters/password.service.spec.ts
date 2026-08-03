@@ -89,6 +89,39 @@ describe("PasswordService — 비밀번호 서비스", () => {
 		});
 	});
 
+	describe("기존 배포 해시 호환 — 회귀 방지", () => {
+		// argon2 0.44.0(v1.8.0 배포분)이 현재 ARGON2_CONFIG로 생성한 실제 해시.
+		// argon2를 올릴 때 이 검증이 깨지면 기존 유저 전원이 로그인 불가가 되므로
+		// 라이브러리 업그레이드의 하드 게이트로 둔다.
+		const LEGACY_PASSWORD = "Test1234!aido";
+		const LEGACY_HASH =
+			"$argon2id$v=19$m=65536,t=3,p=4$qJNCpGrN4QL1DvhstoOKug$1HwvaTmVjDQf/5kSpxii/rdbpQxrg+dhl4/S9imXAFI";
+
+		it("구버전에서 생성된 해시로도 로그인 검증에 성공한다", async () => {
+			// When
+			const result = await service.verify(LEGACY_HASH, LEGACY_PASSWORD);
+
+			// Then
+			expect(result).toBe(true);
+		});
+
+		it("구버전 해시에 잘못된 비밀번호는 여전히 거부한다", async () => {
+			// When
+			const result = await service.verify(LEGACY_HASH, "WrongPassword@");
+
+			// Then
+			expect(result).toBe(false);
+		});
+
+		it("구버전 해시는 현재 설정과 동일하므로 리해싱이 필요없다", () => {
+			// When
+			const result = service.needsRehash(LEGACY_HASH);
+
+			// Then
+			expect(result).toBe(false);
+		});
+	});
+
 	describe("needsRehash", () => {
 		it("유효한 해시는 리해싱이 필요없다고 반환한다", async () => {
 			// Given
