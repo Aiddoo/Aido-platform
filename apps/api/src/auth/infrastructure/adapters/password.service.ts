@@ -16,7 +16,7 @@ import { ARGON2_CONFIG } from "@/auth/domain/constants/auth.constants";
  */
 @Injectable()
 export class PasswordService {
-	readonly #hashOptions: argon2.Options = {
+	readonly #hashOptions: argon2.HashOptions = {
 		type: argon2.argon2id,
 		memoryCost: ARGON2_CONFIG.MEMORY_COST,
 		timeCost: ARGON2_CONFIG.TIME_COST,
