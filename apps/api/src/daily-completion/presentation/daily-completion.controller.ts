@@ -1,9 +1,11 @@
 import { ErrorCode } from "@aido/errors";
-import { Controller, Get, Logger, Query } from "@nestjs/common";
+import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
+import { UserIdParamDto } from "@/shared/presentation/dtos";
 import {
 	ApiDoc,
+	ApiForbiddenError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
@@ -133,6 +135,73 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 
 		this.#logger.debug(
 			`일일 완료 현황 조회 완료: user=${user.userId}, days=${result.completions.length}, completeDays=${result.totalCompleteDays}`,
+		);
+
+		return this.#mapToResponse(result);
+	}
+
+	@Get("friends/:userId")
+	@ApiQuery({
+		name: "startDate",
+		required: true,
+		description: "조회 시작 날짜 (YYYY-MM-DD)",
+		example: "2026-01-01",
+	})
+	@ApiQuery({
+		name: "endDate",
+		required: true,
+		description: "조회 종료 날짜 (YYYY-MM-DD)",
+		example: "2026-01-31",
+	})
+	@ApiDoc({
+		summary: "친구의 날짜 범위 내 일일 완료 현황 조회",
+		operationId: "getFriendDailyCompletions",
+		description: `
+## 친구 일일 완료 현황 조회
+
+친구의 지정된 날짜 범위 내 일일 완료 현황을 조회합니다.
+친구 캘린더에서 물고기 아이콘·카테고리 점을 표시하는 데 사용됩니다.
+
+맞팔 관계여야만 조회 가능하며, 공개(PUBLIC) 할 일만 집계합니다 —
+\`GET /todos/friends/{userId}\` 목록과 같은 공개 기준이라 캘린더 마커와
+날짜별 목록이 항상 일치합니다.
+
+### 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 요청 예시
+\`\`\`
+GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
+\`\`\`
+
+응답 구조는 \`GET /daily-completions\`와 동일합니다 (PUBLIC 할 일 기준 집계).
+
+#### 에러 케이스
+
+| 케이스 | 응답 |
+|--------|------|
+| 맞팔 관계가 아닌 경우 | \`403 Forbidden\` (FOLLOW_0906) |
+| startDate가 endDate보다 이후 | \`400 Bad Request\` (SYS_0002) |
+| 잘못된 날짜 형식 | \`400 Bad Request\` (SYS_0002) |
+		`,
+	})
+	@ApiSuccessResponse({ type: DailyCompletionsRangeResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiForbiddenError(ErrorCode.FOLLOW_0906)
+	async getFriendDailyCompletions(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: UserIdParamDto,
+		@Query() query: GetDailyCompletionsRangeDto,
+	): Promise<DailyCompletionsRangeResponseDto> {
+		this.#logger.debug(
+			`친구 일일 완료 현황 조회: friendUserId=${params.userId}, user=${user.userId}, range=${query.startDate}~${query.endDate}`,
+		);
+
+		const result = await this.dailyCompletionFacade.getFriendDailyCompletions(
+			user.userId,
+			params.userId,
+			query.startDate,
+			query.endDate,
 		);
 
 		return this.#mapToResponse(result);
