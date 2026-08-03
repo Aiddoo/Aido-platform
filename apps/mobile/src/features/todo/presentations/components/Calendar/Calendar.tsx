@@ -7,23 +7,20 @@ import {
   diffMonths,
   diffWeeks,
   formatDate,
-  getCalendarRange,
   getMonthHeaderText,
   getMonthStart,
   getMonthWeeks,
   getNextDay,
   getWeekDates,
   getWeekHeaderText,
-  getWeekRange,
   getWeekStart,
   isSameMonth,
   withDayOfMonth,
   withDayOfWeek,
 } from '@src/shared/utils/date';
-import { useQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   FlatList,
   type NativeScrollEvent,
@@ -34,16 +31,11 @@ import {
 import { match } from 'ts-pattern';
 import type { DailyCompletionSummary } from '../../../models/todo.model';
 import type { CompletionsByDate } from '../../queries/use-get-daily-completions-query-options';
-import { useGetDailyCompletionsQueryOptions } from '../../queries/use-get-daily-completions-query-options';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarNavigation } from './CalendarNavigation';
 import { CalendarViewModeToggle } from './CalendarViewModeToggle';
 import { CalendarWeekdayHeader } from './CalendarWeekdayHeader';
-import { CalendarProvider, useCalendarContext } from './calendar-view-mode-context';
-
-interface CalendarProps {
-  showCompletions?: boolean;
-}
+import { useCalendarContext } from './calendar-view-mode-context';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const WEEKDAY_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
@@ -53,34 +45,14 @@ const TOTAL_PAGES = 521;
 const CENTER_PAGE = 260;
 const PAGES = range(TOTAL_PAGES);
 
-export function Calendar({ showCompletions = true }: CalendarProps) {
-  return (
-    <CalendarProvider>
-      <CalendarInner showCompletions={showCompletions} />
-    </CalendarProvider>
-  );
+interface CalendarProps {
+  completions?: CompletionsByDate;
 }
 
-function CalendarInner({ showCompletions = true }: CalendarProps) {
+export function Calendar({ completions = EMPTY_COMPLETIONS }: CalendarProps) {
   const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { viewMode } = useCalendarContext();
-
-  const { rangeStart, rangeEnd } = useMemo(
-    () =>
-      match(viewMode)
-        .with('week', () => getWeekRange(selectedDate))
-        .with('month', () => getCalendarRange(selectedDate))
-        .exhaustive(),
-    [viewMode, selectedDate],
-  );
-
-  const { data } = useQuery({
-    ...useGetDailyCompletionsQueryOptions(rangeStart, rangeEnd),
-    enabled: showCompletions,
-  });
-
-  const completions = (showCompletions && data) || EMPTY_COMPLETIONS;
 
   const pagerHeight = match(viewMode)
     .with('week', () => DATE_CELL_HEIGHT)
