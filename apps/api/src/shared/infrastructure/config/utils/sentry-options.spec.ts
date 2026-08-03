@@ -103,6 +103,42 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
 		expect(options.enabled).toBe(true);
 	});
 
+	describe("tracePropagationTargets — 외부 API 추적 헤더 차단", () => {
+		const matches = (url: string) =>
+			resolveSentryOptions({
+				APP_ENV: "production",
+			}).tracePropagationTargets.some((target) => target.test(url));
+
+		it("우리 API로 나가는 요청에는 추적 헤더를 전파한다", () => {
+			expect(matches("https://api.aido.kr/v1/todos")).toBe(true);
+		});
+
+		// 회귀 방지: Sentry가 붙이는 baggage 헤더를 data.go.kr 게이트웨이가
+		// "잘못된 요청 파라미터 에러(코드 10)"로 거부해 날씨 API가 전부 503이 됐다.
+		it.each([
+			[
+				"기상청 단기예보",
+				"https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst",
+			],
+			[
+				"한국천문연구원 일출",
+				"https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getAreaRiseSetInfo",
+			],
+			[
+				"에어코리아 대기질",
+				"https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty",
+			],
+			[
+				"Google Generative AI",
+				"https://generativelanguage.googleapis.com/v1beta/models",
+			],
+			["Resend 메일", "https://api.resend.com/emails"],
+			["Expo 푸시", "https://exp.host/--/api/v2/push/send"],
+		])("%s 요청에는 추적 헤더를 전파하지 않는다", (_label, url) => {
+			expect(matches(url)).toBe(false);
+		});
+	});
+
 	describe("tracesSampleRate", () => {
 		it("명시된 SENTRY_TRACES_SAMPLE_RATE가 최우선이다", () => {
 			const options = resolveSentryOptions({

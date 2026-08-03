@@ -11,6 +11,8 @@ Sentry.init({
 	environment: options.environment,
 	// TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (e.g., release: process.env.SENTRY_RELEASE)
 	tracesSampleRate: options.tracesSampleRate,
+	// 추적 헤더는 우리 서비스에만 전파한다 (외부 API가 baggage를 거부하는 사례 방지)
+	tracePropagationTargets: [...options.tracePropagationTargets],
 
 	beforeSend(event) {
 		// 요청 헤더에서 민감 정보 제거
