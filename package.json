@@ -50,17 +50,17 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.4",
+    "@biomejs/biome": "^2.5.6",
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
     "@commitlint/types": "^21.2.0",
     "commitizen": "^4.3.2",
     "cz-conventional-changelog": "^3.3.0",
-    "lint-staged": "^17.0.8",
+    "lint-staged": "^17.2.0",
     "simple-git-hooks": "^2.13.1",
     "sort-package-json": "^4.0.0",
     "tsx": "^4.23.1",
-    "turbo": "^2.10.5"
+    "turbo": "^2.10.7"
   },
   "packageManager": "pnpm@10.29.3+sha512.498e1fb4cca5aa06c1dcf2611e6fafc50972ffe7189998c409e90de74566444298ffe43e6cd2acdc775ba1aa7cc5e092a8b7054c811ba8c5770f84693d33d2dc",
   "engines": {
