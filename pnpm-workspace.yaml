@@ -9,7 +9,7 @@ catalog:
   '@vitest/coverage-v8': ^4.1.10
   dayjs: ^1.11.21
   jest: ^29.7.0
-  ts-jest: ^29.2.5
+  ts-jest: ^29.4.12
   typescript: ^5.9.3
   vitest: ^4.1.10
   zod: 4.3.6
