@@ -14,10 +14,24 @@ const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
 
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 
+/**
+ * 분산 추적 헤더(sentry-trace·baggage)를 붙일 대상 — 우리 서비스로 한정한다.
+ *
+ * Sentry는 기본적으로 **모든** 아웃바운드 HTTP에 추적 헤더를 주입하는데,
+ * data.go.kr(기상청·천문연·에어코리아) 게이트웨이가 `baggage` 헤더를 요청 파라미터로
+ * 잘못 파싱해 `INVALID_REQUEST_PARAMETER_ERROR`(코드 10, HTTP 400)로 거부한다.
+ * 그 결과 날씨 조회가 전량 실패했다(WEATHER_1901 → 503).
+ *
+ * 외부 API는 우리 트레이스에 참여할 수 없어 헤더를 보낼 이유도 없다.
+ * (아웃바운드 span 자체는 계속 기록되므로 관측성 손실은 없다)
+ */
+const TRACE_PROPAGATION_TARGETS = [/^https:\/\/api\.aido\.kr/] as const;
+
 export interface SentryInstrumentOptions {
 	enabled: boolean;
 	environment: AppEnvironment;
 	tracesSampleRate: number;
+	tracePropagationTargets: readonly RegExp[];
 }
 
 /** process.env 호환 — 필요한 키(APP_ENV/NODE_ENV/SENTRY_*)만 읽는다 */
@@ -38,6 +52,7 @@ export function resolveSentryOptions(
 				: isProduction
 					? 0.2
 					: 1.0,
+		tracePropagationTargets: TRACE_PROPAGATION_TARGETS,
 	};
 }
 
