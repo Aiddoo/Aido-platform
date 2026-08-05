@@ -23,6 +23,20 @@ export interface DailyCompletionCachePort {
 		value: DailyCompletionsRange,
 	): Promise<void>;
 
-	/** 해당 사용자의 모든 범위 캐시를 무효화한다. */
+	/** 친구에게 보이는 공개(PUBLIC) 범위 캐시 — 키는 소유자 기준이라 뷰어 무관 공유. */
+	getPublicRange(
+		ownerUserId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<DailyCompletionsRange | undefined>;
+
+	setPublicRange(
+		ownerUserId: string,
+		startDate: string,
+		endDate: string,
+		value: DailyCompletionsRange,
+	): Promise<void>;
+
+	/** 해당 사용자의 모든 범위 캐시(공개 범위 포함)를 무효화한다. */
 	invalidate(userId: string): Promise<void>;
 }

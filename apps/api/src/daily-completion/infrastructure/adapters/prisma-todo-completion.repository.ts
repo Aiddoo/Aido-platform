@@ -33,11 +33,30 @@ export class PrismaTodoCompletionRepository
 		params: AggregateByDateRangeParams,
 	): Promise<TodoAggregateByDate[]> {
 		const { userId, startDate, endDate } = params;
-		const whereClause = {
+
+		return this.#aggregate({
 			userId,
 			startDate: { gte: startDate, lt: endDate },
-		};
+		});
+	}
 
+	async aggregatePublicByDateRange(
+		params: AggregateByDateRangeParams,
+	): Promise<TodoAggregateByDate[]> {
+		const { userId, startDate, endDate } = params;
+
+		return this.#aggregate({
+			userId,
+			visibility: "PUBLIC",
+			startDate: { gte: startDate, lt: endDate },
+		});
+	}
+
+	async #aggregate(whereClause: {
+		userId: string;
+		visibility?: "PUBLIC";
+		startDate: { gte: Date; lt: Date };
+	}): Promise<TodoAggregateByDate[]> {
 		// 전체·완료·카테고리 색상 집계를 병렬 실행 (waterfall 제거)
 		const [aggregations, completedAggregations, categoryColorResults] =
 			await Promise.all([

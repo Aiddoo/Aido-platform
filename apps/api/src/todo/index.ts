@@ -15,5 +15,6 @@ export * from "./domain/events/todo-event-names";
 export * from "./domain/events/todo-rescheduled.event";
 export * from "./domain/events/todo-toggled.event";
 export * from "./domain/events/todo-updated.event";
+export * from "./domain/events/todo-visibility-changed.event";
 export * from "./presentation/dtos";
 export * from "./todo.module";

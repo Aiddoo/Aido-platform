@@ -12,6 +12,7 @@ import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
 import { TodoToggledEvent } from "../events/todo-toggled.event";
 import { TodoUpdatedEvent } from "../events/todo-updated.event";
+import { TodoVisibilityChangedEvent } from "../events/todo-visibility-changed.event";
 import { TodoId } from "../value-objects/todo-id.vo";
 import {
 	TodoSchedule,
@@ -434,16 +435,27 @@ describe("Todo — 할 일 애그리게잇", () => {
 	});
 
 	describe("changeVisibility / changeCategory", () => {
-		it("공개 범위를 변경하고 이벤트는 적립하지 않는다", () => {
+		it("공개 범위를 변경하고 TodoVisibilityChangedEvent를 적립한다", () => {
 			// Given
-			const todo = Todo.reconstitute(buildProps({ visibility: "PUBLIC" }));
+			const todo = Todo.reconstitute(
+				buildProps({
+					id: TodoId.create(3),
+					userId: "user-1",
+					visibility: "PUBLIC",
+				}),
+			);
 
 			// When
 			todo.changeVisibility("PRIVATE");
 
 			// Then
 			expect(todo.toPersistence().visibility).toBe("PRIVATE");
-			expect(todo.pullDomainEvents()).toHaveLength(0);
+			const event = todo.pullDomainEvents()[0];
+			expect(event).toBeInstanceOf(TodoVisibilityChangedEvent);
+			if (event instanceof TodoVisibilityChangedEvent) {
+				expect(event.todoId).toBe(3);
+				expect(event.userId).toBe("user-1");
+			}
 		});
 
 		it("카테고리를 변경하고 TodoCategoryChangedEvent를 적립한다 (일별 완료 색상 집계 캐시 무효화)", () => {
