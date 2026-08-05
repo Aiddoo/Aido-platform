@@ -1,7 +1,12 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 import type { TodoVisibility } from "../../../domain/entities/todo.entity";
 import {
@@ -25,7 +30,7 @@ export interface UpdateTodoVisibilityInput {
  * Todo 공개 범위 변경 use-case
  *
  * 소유권 확인 → 애그리게잇 전이 → 애그리게잇 상태로 영속화 → 읽기 포트로 응답 재조회.
- * 부수효과 없음(레거시 동작 보존).
+ * 커밋 후 이벤트를 발행해 공개 범위에 의존하는 크로스모듈 캐시를 무효화합니다.
  */
 @Injectable()
 export class UpdateTodoVisibilityUseCase {
@@ -40,13 +45,15 @@ export class UpdateTodoVisibilityUseCase {
 		private readonly uow: UnitOfWorkPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
+		@Inject(DOMAIN_EVENT_PUBLISHER)
+		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
 	async execute(input: UpdateTodoVisibilityInput): Promise<TodoResponse> {
 		const { id, userId, visibility } = input;
 
 		// TX 안에서 로드 → 애그리게잇 전이 → 애그리게잇 상태로 영속화
-		await this.uow.run(async () => {
+		const events = await this.uow.run(async () => {
 			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
@@ -57,13 +64,17 @@ export class UpdateTodoVisibilityUseCase {
 				id,
 				todo.toPersistence().visibility,
 			);
+			return todo.pullDomainEvents();
 		});
 
 		this.#logger.log(
 			`Todo visibility updated: ${id} -> ${visibility} for user: ${userId}`,
 		);
 
-		// 친구 공개 투두 캐시 무효화 (TX 커밋 후 — visibility 변경은 도메인 이벤트가 없어 명시적 무효화)
+		// 저장(TX 커밋) 완료 후 이벤트 발행 (daily-completion 공개 캐시 무효화 트리거)
+		await this.eventPublisher.publishAll(events);
+
+		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
 		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 응답 재조회

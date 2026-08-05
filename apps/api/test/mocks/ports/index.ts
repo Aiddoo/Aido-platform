@@ -8,6 +8,7 @@
  */
 export * from "./cheer.mock";
 export * from "./cross-module.mock";
+export * from "./daily-completion.mock";
 export * from "./follow.mock";
 export * from "./memo.mock";
 export * from "./notification.mock";

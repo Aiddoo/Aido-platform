@@ -20,4 +20,9 @@ export interface TodoCompletionRepositoryPort {
 	aggregateByDateRange(
 		params: AggregateByDateRangeParams,
 	): Promise<TodoAggregateByDate[]>;
+
+	/** 친구에게 보이는 PUBLIC 투두만 집계한다 (파라미터·반환 형태는 동일). */
+	aggregatePublicByDateRange(
+		params: AggregateByDateRangeParams,
+	): Promise<TodoAggregateByDate[]>;
 }

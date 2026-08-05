@@ -1,5 +1,5 @@
 import { useFriendById } from '@src/features/friend/presentations/hooks/use-friend-by-id';
-import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
+import { FriendCalendar } from '@src/features/todo/presentations/components/Calendar/FriendCalendar';
 import { FriendTodoList } from '@src/features/todo/presentations/components/FriendTodoList';
 import { PokeBanner } from '@src/features/todo/presentations/components/PokeBanner';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
@@ -33,7 +33,7 @@ export default function FriendFeedScreen() {
       contentContainerStyle={{ flexGrow: 1, paddingBottom: tabBarHeight }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Calendar showCompletions={false} />
+      <FriendCalendar friendUserId={friend.id} />
 
       <Spacing size={8} />
 

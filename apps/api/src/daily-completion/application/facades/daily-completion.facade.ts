@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { DailyCompletionsRange } from "../../domain/daily-completion";
 import { GetDailyCompletionsUseCase } from "../queries/get-daily-completions/get-daily-completions.use-case";
+import { GetFriendDailyCompletionsUseCase } from "../queries/get-friend-daily-completions/get-friend-daily-completions.use-case";
 
 /**
  * 일일 완료 애플리케이션 서비스(Facade) — 컨트롤러와 use-case 사이의 얇은 seam.
@@ -9,6 +10,7 @@ import { GetDailyCompletionsUseCase } from "../queries/get-daily-completions/get
 export class DailyCompletionFacade {
 	constructor(
 		private readonly getDailyCompletionsUseCase: GetDailyCompletionsUseCase,
+		private readonly getFriendDailyCompletionsUseCase: GetFriendDailyCompletionsUseCase,
 	) {}
 
 	getDailyCompletions(
@@ -18,6 +20,20 @@ export class DailyCompletionFacade {
 	): Promise<DailyCompletionsRange> {
 		return this.getDailyCompletionsUseCase.execute({
 			userId,
+			startDate,
+			endDate,
+		});
+	}
+
+	getFriendDailyCompletions(
+		userId: string,
+		friendUserId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<DailyCompletionsRange> {
+		return this.getFriendDailyCompletionsUseCase.execute({
+			userId,
+			friendUserId,
 			startDate,
 			endDate,
 		});
