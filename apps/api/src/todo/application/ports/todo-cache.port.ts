@@ -8,7 +8,7 @@ export const TODO_CACHE = Symbol("TODO_CACHE");
  *
  * 친구 공개 투두 캐시: 값은 소유자의 PUBLIC 첫 페이지이며 뷰어와 무관하게 공유됩니다
  * (권한 확인은 매 요청 수행). 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정)입니다.
- * reorder/visibility/title/item 쓰기는 도메인 이벤트를 발생시키지 않으므로
+ * reorder/title/item 쓰기는 도메인 이벤트를 발생시키지 않으므로
  * 이벤트 기반이 아닌 명시적 무효화(invalidateFriendTodos)가 필요합니다 —
  * 모든 쓰기 use-case가 TX 커밋 후 직접 호출합니다.
  */

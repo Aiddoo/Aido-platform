@@ -575,6 +575,98 @@ describe("일일 달성 E2E", () => {
 				expect(ownerView.body.data.completions[0].totalTodos).toBe(2);
 				expect(ownerView.body.data.completions[0].isComplete).toBe(false);
 			});
+
+			it("친구용 캐시 생성 후 PUBLIC을 PRIVATE으로 바꾸면 같은 범위에서 즉시 사라진다", async () => {
+				// Given - 맞팔 친구의 완료된 PUBLIC 할 일과 캐시된 친구 완료 현황
+				const viewer = await ctx.helpers.createVerifiedUser(
+					"dc-visibility-private-viewer@test.com",
+					password,
+				);
+				const friend = await ctx.helpers.createVerifiedUser(
+					"dc-visibility-private-owner@test.com",
+					password,
+				);
+				await ctx.helpers.createFriendship(viewer, friend);
+				const todo = await createTodo(friend.accessToken, {
+					title: "공개 완료",
+					startDate: "2026-08-01",
+					completed: true,
+					visibility: "PUBLIC",
+				});
+				const query = { startDate: "2026-08-01", endDate: "2026-08-01" };
+
+				const cached = await request(ctx.app.getHttpServer())
+					.get(`/v1/daily-completions/friends/${friend.userId}`)
+					.set("Authorization", `Bearer ${viewer.accessToken}`)
+					.query(query)
+					.expect(200);
+				expect(cached.body.data.completions).toHaveLength(1);
+
+				// When - 소유자가 공개 할 일을 비공개로 변경한 뒤 같은 조건으로 재조회
+				await request(ctx.app.getHttpServer())
+					.patch(`/v1/todos/${todo.id}/visibility`)
+					.set("Authorization", `Bearer ${friend.accessToken}`)
+					.send({ visibility: "PRIVATE" })
+					.expect(200);
+				const refreshed = await request(ctx.app.getHttpServer())
+					.get(`/v1/daily-completions/friends/${friend.userId}`)
+					.set("Authorization", `Bearer ${viewer.accessToken}`)
+					.query(query)
+					.expect(200);
+
+				// Then - 기존 공개 집계가 캐시 TTL 동안 노출되지 않음
+				expect(refreshed.body.data.completions).toEqual([]);
+				expect(refreshed.body.data.totalCompleteDays).toBe(0);
+			});
+
+			it("친구용 빈 캐시 생성 후 PRIVATE을 PUBLIC으로 바꾸면 같은 범위에 즉시 나타난다", async () => {
+				// Given - 맞팔 친구의 완료된 PRIVATE 할 일과 캐시된 빈 친구 완료 현황
+				const viewer = await ctx.helpers.createVerifiedUser(
+					"dc-visibility-public-viewer@test.com",
+					password,
+				);
+				const friend = await ctx.helpers.createVerifiedUser(
+					"dc-visibility-public-owner@test.com",
+					password,
+				);
+				await ctx.helpers.createFriendship(viewer, friend);
+				const todo = await createTodo(friend.accessToken, {
+					title: "비공개 완료",
+					startDate: "2026-08-02",
+					completed: true,
+					visibility: "PRIVATE",
+				});
+				const query = { startDate: "2026-08-02", endDate: "2026-08-02" };
+
+				const cached = await request(ctx.app.getHttpServer())
+					.get(`/v1/daily-completions/friends/${friend.userId}`)
+					.set("Authorization", `Bearer ${viewer.accessToken}`)
+					.query(query)
+					.expect(200);
+				expect(cached.body.data.completions).toEqual([]);
+
+				// When - 소유자가 비공개 할 일을 공개로 변경한 뒤 같은 조건으로 재조회
+				await request(ctx.app.getHttpServer())
+					.patch(`/v1/todos/${todo.id}/visibility`)
+					.set("Authorization", `Bearer ${friend.accessToken}`)
+					.send({ visibility: "PUBLIC" })
+					.expect(200);
+				const refreshed = await request(ctx.app.getHttpServer())
+					.get(`/v1/daily-completions/friends/${friend.userId}`)
+					.set("Authorization", `Bearer ${viewer.accessToken}`)
+					.query(query)
+					.expect(200);
+
+				// Then - 빈 캐시가 제거되어 현재 공개 집계를 반환함
+				expect(refreshed.body.data.completions).toHaveLength(1);
+				expect(refreshed.body.data.completions[0]).toMatchObject({
+					date: "2026-08-02",
+					totalTodos: 1,
+					completedTodos: 1,
+					isComplete: true,
+				});
+				expect(refreshed.body.data.totalCompleteDays).toBe(1);
+			});
 		});
 
 		describe("월간 캘린더 시나리오", () => {

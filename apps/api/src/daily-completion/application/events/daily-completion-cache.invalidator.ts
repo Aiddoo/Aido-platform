@@ -8,6 +8,7 @@ import {
 	type TodoRescheduledEvent,
 	type TodoToggledEvent,
 	type TodoUpdatedEvent,
+	type TodoVisibilityChangedEvent,
 } from "@/todo";
 import {
 	DAILY_COMPLETION_CACHE,
@@ -21,7 +22,8 @@ type TodoWriteEvent =
 	| TodoToggledEvent
 	| TodoRescheduledEvent
 	| TodoUpdatedEvent
-	| TodoCategoryChangedEvent;
+	| TodoCategoryChangedEvent
+	| TodoVisibilityChangedEvent;
 
 /**
  * 투두 쓰기 이벤트 구독 → 일별 완료 캐시 무효화 핸들러
@@ -46,6 +48,7 @@ export class DailyCompletionCacheInvalidator {
 	@OnEvent(TODO_EVENTS.RESCHEDULED)
 	@OnEvent(TODO_EVENTS.UPDATED)
 	@OnEvent(TODO_EVENTS.CATEGORY_CHANGED)
+	@OnEvent(TODO_EVENTS.VISIBILITY_CHANGED)
 	async handle(event: TodoWriteEvent): Promise<void> {
 		try {
 			await this.cache.invalidate(event.userId);
