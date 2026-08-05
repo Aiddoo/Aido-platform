@@ -26,6 +26,10 @@ export const TODO_QUERY_KEYS = {
   friendListByDate: (userId: string, date: string) =>
     [...TODO_QUERY_KEYS.friendLists(), userId, date] as const,
 
+  // 친구 일일 완료 현황 (친구 캘린더 달성 표시 — PUBLIC 기준)
+  friendCompletionsByRange: (userId: string, start: string, end: string) =>
+    [...TODO_QUERY_KEYS.friendLists(), userId, 'completion', start, end] as const,
+
   // 콕 찌르기 (Nudge)
   nudges: () => [...TODO_QUERY_KEYS.all, 'nudge'] as const,
   nudgeLimit: () => [...TODO_QUERY_KEYS.nudges(), 'limit'] as const,

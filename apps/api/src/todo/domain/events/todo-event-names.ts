@@ -11,4 +11,5 @@ export const TODO_EVENTS = {
 	TOGGLED: "todo.toggled",
 	RESCHEDULED: "todo.rescheduled",
 	CATEGORY_CHANGED: "todo.category-changed",
+	VISIBILITY_CHANGED: "todo.visibility-changed",
 } as const;

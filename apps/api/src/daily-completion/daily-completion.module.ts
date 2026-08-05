@@ -1,10 +1,13 @@
 import { Module } from "@nestjs/common";
+import { FollowModule } from "@/follow";
 import { DailyCompletionCacheInvalidator } from "./application/events/daily-completion-cache.invalidator";
 import { DailyCompletionFacade } from "./application/facades/daily-completion.facade";
 import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completion-cache.port";
+import { FRIEND_PORT } from "./application/ports/friend.port";
 import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port";
 import { DailyCompletionQueryUseCases } from "./application/queries";
 import { DailyCompletionCacheAdapter } from "./infrastructure/adapters/daily-completion-cache.adapter";
+import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
 import { PrismaTodoCompletionRepository } from "./infrastructure/adapters/prisma-todo-completion.repository";
 import { DailyCompletionController } from "./presentation/daily-completion.controller";
 
@@ -16,6 +19,7 @@ import { DailyCompletionController } from "./presentation/daily-completion.contr
  * 캐싱되고, 투두 쓰기 도메인 이벤트(@OnEvent) 구독으로 무효화된다.
  */
 @Module({
+	imports: [FollowModule],
 	controllers: [DailyCompletionController],
 	providers: [
 		DailyCompletionFacade,
@@ -27,6 +31,7 @@ import { DailyCompletionController } from "./presentation/daily-completion.contr
 			provide: DAILY_COMPLETION_CACHE,
 			useClass: DailyCompletionCacheAdapter,
 		},
+		{ provide: FRIEND_PORT, useClass: FriendAdapter },
 		DailyCompletionCacheInvalidator,
 		...DailyCompletionQueryUseCases,
 	],

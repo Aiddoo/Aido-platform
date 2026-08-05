@@ -8,6 +8,7 @@ import { TodoDeletedEvent } from "../events/todo-deleted.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
 import { TodoToggledEvent } from "../events/todo-toggled.event";
 import { TodoUpdatedEvent } from "../events/todo-updated.event";
+import { TodoVisibilityChangedEvent } from "../events/todo-visibility-changed.event";
 import { TodoId } from "../value-objects/todo-id.vo";
 import {
 	TodoSchedule,
@@ -308,10 +309,17 @@ export class Todo extends AggregateRoot<TodoProps> {
 	/**
 	 * 공개 범위를 변경합니다 (PATCH /todos/:id/visibility).
 	 *
-	 * 부수효과가 없는 단순 상태 전이라 이벤트를 적립하지 않습니다.
+	 * 친구 공개 투두와 일별 완료 현황의 공개 범위가 달라지므로,
+	 * TodoVisibilityChangedEvent를 적립해 공개 캐시 무효화를 트리거합니다.
 	 */
 	changeVisibility(visibility: TodoVisibility): void {
 		this.props.visibility = visibility;
+		this.raise(
+			new TodoVisibilityChangedEvent(
+				this.props.id.getValue(),
+				this.props.userId,
+			),
+		);
 	}
 
 	/**

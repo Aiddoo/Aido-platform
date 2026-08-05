@@ -35,6 +35,29 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
 		);
 	}
 
+	getPublicRange(
+		ownerUserId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<DailyCompletionsRange | undefined> {
+		return this.cacheService.get<DailyCompletionsRange>(
+			CacheKeys.dailyCompletionPublicRange(ownerUserId, startDate, endDate),
+		);
+	}
+
+	setPublicRange(
+		ownerUserId: string,
+		startDate: string,
+		endDate: string,
+		value: DailyCompletionsRange,
+	): Promise<void> {
+		return this.cacheService.set(
+			CacheKeys.dailyCompletionPublicRange(ownerUserId, startDate, endDate),
+			value,
+			CacheKeys.TTL.DAILY_COMPLETIONS,
+		);
+	}
+
 	async invalidate(userId: string): Promise<void> {
 		await this.cacheService.delByPattern(
 			CacheKeys.dailyCompletionPattern(userId),

@@ -264,6 +264,33 @@ export class TodoService {
     return ok(toDailyCompletionsResult(parsed.data));
   };
 
+  /** 친구의 일일 완료 현황 — 공개(PUBLIC) 할 일 기준 집계 (친구 캘린더 마커용) */
+  getFriendDailyCompletions = async (
+    friendUserId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<Result<DailyCompletionsResult, ApiError>> => {
+    const result = await this.#httpClient.get<unknown>(
+      `v1/daily-completions/friends/${friendUserId}`,
+      {
+        params: { startDate, endDate },
+      },
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = dailyCompletionsRangeResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoService] Invalid getFriendDailyCompletions response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toDailyCompletionsResult(parsed.data));
+  };
+
   /** 오늘의 할 일 요약 (홈 위젯 스냅샷) — 진행률·스트릭·상위 할 일을 한 번에 */
   getTodoSummary = async (): Promise<Result<TodoSummary, ApiError>> => {
     const result = await this.#httpClient.get<unknown>('v1/todos/summary');

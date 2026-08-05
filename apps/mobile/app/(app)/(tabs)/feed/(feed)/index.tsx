@@ -5,7 +5,7 @@ import { useGetSuggestionsQueryOptions } from '@src/features/ai/presentations/qu
 import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/presentations/components/FeatureDiscoveryReentryCard';
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/presentations/hooks/use-feature-discovery-feed';
 import { MarketingPushOptInBanner } from '@src/features/notification/presentations/components/MarketingPushOptInBanner';
-import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
+import { MyCalendar } from '@src/features/todo/presentations/components/Calendar/MyCalendar';
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedDateKey } from '@src/features/todo/presentations/hooks/use-feed-date';
@@ -44,7 +44,7 @@ export default function MyFeedScreen() {
       contentContainerStyle={{ flexGrow: 1, paddingBottom: tabBarHeight }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Calendar />
+      <MyCalendar />
 
       <Spacing size={10} />
 

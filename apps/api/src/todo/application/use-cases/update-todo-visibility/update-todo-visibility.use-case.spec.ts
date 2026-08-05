@@ -10,12 +10,18 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 import {
+	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
+import { TodoVisibilityChangedEvent } from "../../../domain/events/todo-visibility-changed.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
@@ -23,6 +29,7 @@ import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -62,6 +69,8 @@ describe("UpdateTodoVisibilityUseCase — 할 일 공개 범위 변경 핸들러
 	let useCase: UpdateTodoVisibilityUseCase;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
+	let todoCache: Mocked<TodoCachePort>;
+	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -73,15 +82,23 @@ describe("UpdateTodoVisibilityUseCase — 할 일 공개 범위 변경 핸들러
 			.impl(() => createTodoReadRepositoryMock())
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
+			.mock<TodoCachePort>(TODO_CACHE)
+			.impl(() => createTodoCacheMock())
+			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(
+			DOMAIN_EVENT_PUBLISHER,
+		);
 	});
 
-	it("공개 범위를 영속화하고 응답을 재조회한다", async () => {
+	it("공개 범위를 영속화하고 이벤트를 발행한 뒤 공개 캐시를 무효화한다", async () => {
 		// Given
 		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
 		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
@@ -95,6 +112,10 @@ describe("UpdateTodoVisibilityUseCase — 할 일 공개 범위 변경 핸들러
 
 		// Then
 		expect(todoRepository.updateVisibility).toHaveBeenCalledWith(1, "PRIVATE");
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
+			new TodoVisibilityChangedEvent(1, "user-123"),
+		]);
+		expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
 		expect(result.id).toBe(1);
 	});
 
@@ -107,6 +128,7 @@ describe("UpdateTodoVisibilityUseCase — 할 일 공개 범위 변경 핸들러
 			useCase.execute({ id: 999, userId: "user-123", visibility: "PUBLIC" }),
 		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
 		expect(todoRepository.updateVisibility).not.toHaveBeenCalled();
+		expect(eventPublisher.publishAll).not.toHaveBeenCalled();
 	});
 
 	it("재조회 응답이 없으면 ApplicationException(TODO_0801)을 던진다", async () => {

@@ -190,6 +190,25 @@ export const CacheKeys = {
 	dailyCompletionRange: (userId: string, startDate: string, endDate: string) =>
 		cacheKey("daily-completion", "range-v1", userId, startDate, endDate),
 
+	/**
+	 * 친구에게 보이는 공개(PUBLIC) 일별 완료 현황 캐시 키 — 소유자 기준.
+	 * userId 뒤 세그먼트라 dailyCompletionPattern(소유자) 무효화에 함께 걸린다.
+	 * @example daily-completion:range:v1:user_1:public:2026-07-01:2026-07-31
+	 */
+	dailyCompletionPublicRange: (
+		ownerUserId: string,
+		startDate: string,
+		endDate: string,
+	) =>
+		cacheKey(
+			"daily-completion",
+			"range-v1",
+			ownerUserId,
+			"public",
+			startDate,
+			endDate,
+		),
+
 	// === 패턴 빌더 (와일드카드) ===
 
 	/**
