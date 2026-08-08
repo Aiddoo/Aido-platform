@@ -67,7 +67,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 		mockContextBuilder = unitRef.get(SuggestionContextBuilder);
 	});
 
-	it("할 일이 최소 횟수 미만이면 AI 호출 없이 0을 반환해야 한다", async () => {
+	it("할 일이 1~2개면 한 번만 AI를 호출해 시작 제안을 만든다", async () => {
 		mockContextBuilder.build.mockResolvedValue(
 			createMockContext({
 				todos: [
@@ -91,10 +91,43 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 			}),
 		);
 
+		mockAiProvider.generateStructured.mockResolvedValue({
+			output: {
+				patterns: [
+					{
+						title: "아침 스트레칭 5분",
+						daysOfWeek: ["MON"],
+						scheduledTime: "08:00",
+						confidence: 0.55,
+						reason: "근거 없는 문장",
+						matchedTitles: [],
+					},
+				],
+			},
+			model: "gemini-3.1-flash-lite",
+			usage: { input: 100, output: 50 },
+		});
+		mockRepository.deletePending.mockResolvedValue({ count: 0 });
+		mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+		mockRepository.createMany.mockResolvedValue({ count: 1 });
+
+		const result = await useCase.execute(mockUserId, "Asia/Seoul");
+
+		expect(result).toBe(1);
+		expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(1);
+		expect(mockRepository.createMany.mock.calls[0]?.[0][0]?.reason).toContain(
+			"최근 기록이 2개",
+		);
+	});
+
+	it("할 일이 없으면 기존 빈 상태를 유지하고 AI를 호출하지 않는다", async () => {
+		mockContextBuilder.build.mockResolvedValue(createMockContext());
+
 		const result = await useCase.execute(mockUserId, "Asia/Seoul");
 
 		expect(result).toBe(0);
 		expect(mockAiProvider.generateStructured).not.toHaveBeenCalled();
+		expect(mockRepository.createMany).not.toHaveBeenCalled();
 	});
 
 	it("패턴 감지 시 기존 PENDING 제안을 삭제하고 새 제안을 생성해야 한다", async () => {
@@ -614,11 +647,11 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 
 		const result = await useCase.execute(mockUserId, "Asia/Seoul");
 
-		expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(2);
+		expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(1);
 		expect(result).toBeGreaterThanOrEqual(1);
 	});
 
-	it("1차 결과가 3개 미만이면 재시도 호출이 발생해야 한다", async () => {
+	it("결과가 3개 미만이어도 비용 절감을 위해 재시도하지 않아야 한다", async () => {
 		const todos = Array.from({ length: 6 }, (_, i) => ({
 			title: `할일${i}`,
 			startDate: `2026-04-${String(10 + i).padStart(2, "0")}`,
@@ -677,8 +710,8 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 
 		const result = await useCase.execute(mockUserId, "Asia/Seoul");
 
-		expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(2);
-		expect(result).toBe(3);
+		expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(1);
+		expect(result).toBe(1);
 	});
 
 	it("1차 결과가 3개 이상이면 재시도하지 않아야 한다", async () => {

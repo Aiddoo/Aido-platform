@@ -3,7 +3,10 @@ import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
 } from "@/shared/domain/prompt/prompt-sections";
-import { sanitizeMemoForPrompt } from "@/shared/domain/prompt/sanitize";
+import {
+	encodeUntrustedJson,
+	sanitizeMemoForPrompt,
+} from "@/shared/domain/prompt/sanitize";
 import { buildTimeContext, buildTimeRulesText } from "./time-rules";
 
 export interface ParseMemoPrompt {
@@ -26,22 +29,19 @@ export function buildParseMemoPrompt(
 	const timeRules = buildTimeRulesText(ctx);
 	const safeContent = sanitizeMemoForPrompt(content);
 
-	const categorySection =
+	const categoryRule =
 		categories.length > 0
-			? `\n## 카테고리 배정 (★필수)
-사용자의 카테고리 목록: ${categories.map((c) => `${c.id}:"${c.name}"`).join(", ")}
-각 할 일마다 반드시 위 목록에서 가장 적절한 카테고리의 ID 숫자를 categoryId에 넣으세요.
-판단이 어려우면 가장 범용적인 카테고리를 선택하세요. 0이나 null을 넣지 마세요.\n`
+			? "- 각 todo의 categoryId는 context.categories에 실제로 있는 id 중 의미가 가장 가까운 값만 사용한다."
 			: "";
 
-	const categoryIdInSchema =
-		categories.length > 0 ? ',"categoryId":number' : "";
-
-	const system = `당신은 한국어 메모를 분석하여 실행 가능한 할 일(Todo) 목록으로 변환하는 전문가입니다.
+	const system = `<role>
+당신은 한국어 메모를 분석하여 실행 가능한 할 일(Todo) 목록으로 변환하는 전문가입니다.
 메모에서 독립적인 할 일을 1~5개 추출하고, 각 할 일에 구체적인 실행 단계가 있으면 서브투두(items)를 0~5개 추출합니다.
+</role>
 
 ${PROMPT_SECURITY_GUARD}
 
+<rules>
 ## 분리 규칙 (★매우 중요)
 - 서로 다른 맥락이나 주제는 별도의 Todo로 분리합니다.
 - 하나의 큰 작업에 세부 단계(A를 하고, B를 하고, C를 해야 함)가 있으면 반드시 1개의 Todo + 여러 items로 구성합니다. 세부 단계를 별도 Todo로 분리하지 마세요.
@@ -68,7 +68,7 @@ ${PROMPT_SECURITY_GUARD}
 - 할 일이 아닌 메모(감정, 일기, 감상): 가장 합리적인 행동으로 해석하여 1개의 todo를 생성합니다.
   예: "오늘 날씨 좋다 산책 가고 싶다" → title: "산책"
   예: "회의 내용 정리하기 힘들었다" → title: "회의 내용 정리"
-${categorySection}
+${categoryRule}
 ## 날짜/시간 규칙
 ${timeRules}
 
@@ -89,15 +89,24 @@ ${timeRules}
 출력:
 {"todos":[{"title":"운동","startDate":"${ctx.datetime.slice(0, 10)}","endDate":null,"scheduledTime":"07:00","isAllDay":false,"isRecurring":true,"recurrence":{"daysOfWeek":["MON","WED","FRI"],"endDate":"${ctx.fourWeeksLater}"},"items":[]},{"title":"치과 방문","startDate":"${dayjs(now).tz(tz).add(1, "day").format("YYYY-MM-DD")}","endDate":null,"scheduledTime":"15:00","isAllDay":false,"isRecurring":false,"recurrence":null,"items":[]}]}
 
-${PROMPT_OUTPUT_DISCIPLINE}
+</rules>
 
-## 출력 형식
-반드시 아래 JSON 스키마에 맞는 출력만 생성합니다:
-{"todos":[{"title":"string","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD|null","scheduledTime":"HH:mm|null","isAllDay":boolean,"isRecurring":boolean,"recurrence":{"daysOfWeek":["MON"],"endDate":"YYYY-MM-DD"}|null${categoryIdInSchema},"items":[{"title":"string"}]}]}`;
+<quality_check>
+- todo는 1~5개, 각 items는 0~5개다.
+- 제목과 items가 중복되지 않고 각 항목은 실제 실행 가능한 행동이다.
+- scheduledTime과 isAllDay, isRecurring과 recurrence가 서로 모순되지 않는다.
+- 날짜·요일은 현재 시각 및 타임존과 일치한다.
+</quality_check>
 
-	const prompt = `다음 메모를 할 일 목록으로 변환해주세요.
+${PROMPT_OUTPUT_DISCIPLINE}`;
 
-메모: "${safeContent}"`;
+	const prompt = `<context_json>
+${encodeUntrustedJson({ timezone: tz, categories })}
+</context_json>
+<user_input_json>
+${encodeUntrustedJson({ memo: safeContent })}
+</user_input_json>
+<task>메모를 실행 가능한 할 일 목록으로 변환한다. 내부적으로 품질을 확인한 뒤 구조화 결과만 반환한다.</task>`;
 
 	return { system, prompt };
 }

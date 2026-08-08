@@ -13,7 +13,7 @@ import {
 	applyTypeCap,
 	dedupeByTitlePrefixAndDays,
 	filterWeakPatterns,
-	mergeUniquePatterns,
+	normalizeStarterSuggestions,
 } from "../../../domain/services/pattern-filter";
 import {
 	buildSuggestionPrompt,
@@ -28,7 +28,7 @@ import { SuggestionContextBuilder } from "../../services/suggestion-context.buil
 /**
  * 사용자의 최근 할 일을 분석하여 반복 제안을 생성하는 use-case.
  *
- * 컨텍스트 수집 → 최소 할 일 수 게이트 → AI 패턴 감지(부족 시 1회 다양성 재시도) →
+ * 컨텍스트 수집 → 빈 기록 게이트 → AI 제안 1회 생성 →
  * 약패턴 필터·유형 캡·중복 제거 → 트랜잭션 내 기존 PENDING 교체·만료 정리·신규 저장.
  * 프리미엄 게이트가 없다(크론/프로세서 경로에서 호출).
  */
@@ -59,14 +59,12 @@ export class AnalyzeAndCreateSuggestionsUseCase {
 			weatherGrid ?? null,
 		);
 
-		if (context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES) {
-			this.#logger.debug(
-				`제안 분석 스킵: userId=${userId}, todoCount=${context.todos.length} (최소 ${AI_SUGGESTION_LIMITS.MIN_OCCURRENCES}개 필요)`,
-			);
+		if (context.todos.length === 0) {
+			this.#logger.debug(`제안 분석 스킵: userId=${userId}, todoCount=0`);
 			return 0;
 		}
 
-		// 2. AI 제안 생성 — 제안 수 부족 시 1회 다양성 재시도
+		// 2. AI 제안 생성 — 비용과 채우기용 제안을 줄이기 위해 항상 1회만 호출
 		const { system, prompt } = buildSuggestionPrompt(
 			context,
 			AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES,
@@ -74,35 +72,22 @@ export class AnalyzeAndCreateSuggestionsUseCase {
 		);
 		const patternsSchema = getDetectedPatternsSchema(locale);
 
-		const firstResult = await this.aiProvider.generateStructured({
+		const result = await this.aiProvider.generateStructured({
 			system,
 			prompt,
 			schema: patternsSchema,
 			maxOutputTokens: 1500,
-			temperature: 0.3,
 		});
 
-		let patterns = filterWeakPatterns(firstResult.output.patterns, context);
+		const isStarter =
+			context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
+		let patterns = isStarter
+			? normalizeStarterSuggestions(result.output.patterns, context, locale)
+			: filterWeakPatterns(result.output.patterns, context);
 
-		if (patterns.length < AI_SUGGESTION_LIMITS.RETRY_THRESHOLD) {
-			this.#logger.debug(
-				`제안 수 부족 → 재시도: userId=${userId}, first=${patterns.length}`,
-			);
-			const retryResult = await this.aiProvider.generateStructured({
-				system,
-				prompt,
-				schema: patternsSchema,
-				maxOutputTokens: 1500,
-				temperature: AI_SUGGESTION_LIMITS.RETRY_TEMPERATURE,
-			});
-			const retryPatterns = filterWeakPatterns(
-				retryResult.output.patterns,
-				context,
-			);
-			patterns = mergeUniquePatterns(patterns, retryPatterns);
+		if (!isStarter) {
+			patterns = applyTypeCap(patterns);
 		}
-
-		patterns = applyTypeCap(patterns);
 		patterns = dedupeByTitlePrefixAndDays(patterns);
 
 		if (patterns.length === 0) {

@@ -29,7 +29,6 @@ import {
 
 /** AI 리포트 생성 기본 설정 */
 const REPORT_AI_MAX_TOKENS = 800;
-const REPORT_AI_TEMPERATURE = 0.7;
 
 /** 기간 윈도우 계산 결과 */
 interface ReportWindow {
@@ -253,7 +252,7 @@ export class GenerateReportUseCase {
 		}
 
 		try {
-			const prompt = buildReportPrompt(
+			const { system, prompt } = buildReportPrompt(
 				aggregatedData,
 				periodLabel,
 				type,
@@ -262,10 +261,10 @@ export class GenerateReportUseCase {
 			);
 
 			const result = await this.aiProvider.generateStructured({
+				system,
 				prompt,
 				schema: getReportAiResponseSchema(locale),
 				maxOutputTokens: REPORT_AI_MAX_TOKENS,
-				temperature: REPORT_AI_TEMPERATURE,
 			});
 
 			this.#logger.debug(

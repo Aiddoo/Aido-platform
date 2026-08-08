@@ -85,7 +85,6 @@ export class ParseMemoUseCase {
 					prompt,
 					schema: llmParsedMemoResultSchema,
 					maxOutputTokens: 800,
-					temperature: 0.1,
 				});
 
 			const processingTimeMs = Date.now() - startTime;

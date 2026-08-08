@@ -132,7 +132,6 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 				prompt: "내일 회의",
 				schema: testSchema,
 				maxOutputTokens: 200,
-				temperature: 0.5,
 			});
 
 			// Then - 올바른 인자로 generateObject가 호출됨
@@ -140,8 +139,10 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 				expect.objectContaining({
 					prompt: "내일 회의",
 					maxOutputTokens: 200,
-					temperature: 0.5,
 				}),
+			);
+			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty(
+				"temperature",
 			);
 			expect(result.output).toEqual({
 				title: "테스트 할 일",
@@ -155,7 +156,7 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 			});
 		});
 
-		it("기본값으로 maxOutputTokens=150, temperature=0.1을 사용한다", async () => {
+		it("기본 maxOutputTokens만 적용하고 Gemini 3 권장 sampling 기본값을 유지한다", async () => {
 			// Given - API 키가 설정됨
 			const { generateObject } = require("ai");
 			generateObject.mockResolvedValue({
@@ -176,8 +177,10 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 			expect(generateObject).toHaveBeenCalledWith(
 				expect.objectContaining({
 					maxOutputTokens: 150,
-					temperature: 0.1,
 				}),
+			);
+			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty(
+				"temperature",
 			);
 		});
 
