@@ -36,8 +36,6 @@ export interface GenerateStructuredOptions<T> {
 	schema: z.ZodSchema<T>;
 	/** 최대 출력 토큰 수 */
 	maxOutputTokens?: number;
-	/** 온도 (0.0 ~ 1.0, 낮을수록 결정적) */
-	temperature?: number;
 	/** 모델 선택 힌트 (라우터가 있는 환경에서만 의미 있음) */
 	modelHint?: AiModelHint;
 }
@@ -64,7 +62,6 @@ export interface GenerateStructuredResult<T> {
  *   prompt: '내일 3시에 회의',
  *   schema: parsedTodoSchema,
  *   maxOutputTokens: 150,
- *   temperature: 0.1,
  * });
  * ```
  */

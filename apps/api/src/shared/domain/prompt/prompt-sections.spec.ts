@@ -68,9 +68,9 @@ describe("PROMPT_SECTIONS 계약", () => {
 			timePatterns: [],
 		} as unknown as AggregatedReportData;
 
-		const prompt = buildReportPrompt(data, "4월 2주차", "WEEKLY", {
+		const { system } = buildReportPrompt(data, "4월 2주차", "WEEKLY", {
 			prevTips: null,
 		});
-		expect(prompt).toContain(PROMPT_OUTPUT_DISCIPLINE);
+		expect(system).toContain(PROMPT_OUTPUT_DISCIPLINE);
 	});
 });

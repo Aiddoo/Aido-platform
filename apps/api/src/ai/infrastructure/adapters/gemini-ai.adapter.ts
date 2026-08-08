@@ -25,7 +25,6 @@ import type {
 /** Gemini 모델 설정 */
 const GEMINI_MODEL = "gemini-3.1-flash-lite" as const;
 const DEFAULT_MAX_OUTPUT_TOKENS = 150;
-const DEFAULT_TEMPERATURE = 0.1;
 const API_TIMEOUT_MS = 30_000;
 
 @Injectable()
@@ -70,7 +69,6 @@ export class GeminiAiAdapter implements AiProvider {
 				// v6까지 maxTokens로 잘못 전달되어 조용히 무시되던 latent bug 수정 —
 				// 이 상한은 이번에 처음으로 실제 적용된다
 				maxOutputTokens: options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
-				temperature: options.temperature ?? DEFAULT_TEMPERATURE,
 				abortSignal: AbortSignal.timeout(API_TIMEOUT_MS),
 			});
 
