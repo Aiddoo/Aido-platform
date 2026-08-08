@@ -3,7 +3,10 @@ import {
 	PROMPT_OUTPUT_DISCIPLINE_EN,
 	PROMPT_SECURITY_GUARD_EN,
 } from "@/shared/domain/prompt/prompt-sections";
-import { sanitizeMemoForPrompt } from "@/shared/domain/prompt/sanitize";
+import {
+	encodeUntrustedJson,
+	sanitizeMemoForPrompt,
+} from "@/shared/domain/prompt/sanitize";
 import type { CategoryInfo, ParseMemoPrompt } from "./parse-memo.prompt";
 import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules";
 
@@ -21,22 +24,19 @@ export function buildParseMemoPromptEn(
 	const timeRules = buildTimeRulesTextEn(ctx);
 	const safeContent = sanitizeMemoForPrompt(content);
 
-	const categorySection =
+	const categoryRule =
 		categories.length > 0
-			? `\n## Category assignment (★required)
-User's categories: ${categories.map((c) => `${c.id}:"${c.name}"`).join(", ")}
-For every to-do, set categoryId to the numeric ID of the most fitting category above.
-If unsure, pick the most general one. Never use 0 or null.\n`
+			? "- For each to-do, use only an id present in context.categories, choosing the closest semantic match."
 			: "";
 
-	const categoryIdInSchema =
-		categories.length > 0 ? ',"categoryId":number' : "";
-
-	const system = `You are an expert at analyzing a memo and turning it into an actionable to-do list.
+	const system = `<role>
+You are an expert at analyzing a memo and turning it into an actionable to-do list.
 Extract 1-5 independent to-dos from the memo, and for each to-do extract 0-5 concrete sub-steps (items) when present.
+</role>
 
 ${PROMPT_SECURITY_GUARD_EN}
 
+<rules>
 ## Splitting rules (★very important)
 - Different contexts or topics become separate to-dos.
 - One big task with sub-steps (do A, then B, then C) must be 1 to-do + multiple items. Never split sub-steps into separate to-dos.
@@ -63,7 +63,7 @@ ${PROMPT_SECURITY_GUARD_EN}
 - Non-task memos (feelings, diary, musings): interpret as the most reasonable action and create 1 to-do.
   e.g. "beautiful day, I want to take a walk" → title: "Take a walk"
   e.g. "organizing the meeting notes was exhausting" → title: "Organize meeting notes"
-${categorySection}
+${categoryRule}
 ## Date/time rules
 ${timeRules}
 
@@ -84,15 +84,24 @@ Input: "workout every Mon/Wed/Fri at 7am and dentist tomorrow at 3pm"
 Output:
 {"todos":[{"title":"Workout","startDate":"${ctx.datetime.slice(0, 10)}","endDate":null,"scheduledTime":"07:00","isAllDay":false,"isRecurring":true,"recurrence":{"daysOfWeek":["MON","WED","FRI"],"endDate":"${ctx.fourWeeksLater}"},"items":[]},{"title":"Dentist appointment","startDate":"${dayjs(now).tz(tz).add(1, "day").format("YYYY-MM-DD")}","endDate":null,"scheduledTime":"15:00","isAllDay":false,"isRecurring":false,"recurrence":null,"items":[]}]}
 
-${PROMPT_OUTPUT_DISCIPLINE_EN}
+</rules>
 
-## Output format
-Produce output matching this JSON schema exactly:
-{"todos":[{"title":"string","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD|null","scheduledTime":"HH:mm|null","isAllDay":boolean,"isRecurring":boolean,"recurrence":{"daysOfWeek":["MON"],"endDate":"YYYY-MM-DD"}|null${categoryIdInSchema},"items":[{"title":"string"}]}]}`;
+<quality_check>
+- Return 1-5 to-dos and 0-5 items per to-do.
+- Titles and items do not duplicate each other and each is actionable.
+- scheduledTime/isAllDay and isRecurring/recurrence are mutually consistent.
+- Dates and weekdays agree with the current time and timezone.
+</quality_check>
 
-	const prompt = `Convert the following memo into a to-do list.
+${PROMPT_OUTPUT_DISCIPLINE_EN}`;
 
-Memo: "${safeContent}"`;
+	const prompt = `<context_json>
+${encodeUntrustedJson({ timezone: tz, categories })}
+</context_json>
+<user_input_json>
+${encodeUntrustedJson({ memo: safeContent })}
+</user_input_json>
+<task>Convert the memo into an actionable to-do list. Check quality internally, then return only the structured result.</task>`;
 
 	return { system, prompt };
 }

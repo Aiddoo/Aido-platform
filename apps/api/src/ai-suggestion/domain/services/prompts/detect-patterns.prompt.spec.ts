@@ -35,9 +35,11 @@ describe("buildSuggestionPrompt — locale 분기", () => {
 
 		// Then
 		expect(system).toContain("실행 가능한 루틴을 제안하는 코치야");
-		expect(system).toContain("3회 이상이어야 인정");
+		expect(system).toContain("1~2개");
+		expect(system).toContain("패턴으로 단정하지 마");
 		expect(prompt).toContain("맞춤 루틴을 제안해줘");
-		expect(prompt).toContain("2026-07-01|운동|07:00|O|운동");
+		expect(prompt).toContain("<context_json>");
+		expect(prompt).toContain('"title": "운동"');
 	});
 
 	it("locale 생략과 'ko' 명시는 동일한 프롬프트를 생성한다", () => {
@@ -56,10 +58,23 @@ describe("buildSuggestionPrompt — locale 분기", () => {
 
 		// Then
 		expect(system).toContain("suggests actionable routines");
-		expect(system).toContain("same title 3+ times");
+		expect(system).toContain("1-2");
+		expect(system).toContain("Do not call it a detected pattern");
 		expect(prompt).toContain("Write title and reason in English.");
-		expect(prompt).toContain("2026-07-01|운동|07:00|O|운동");
+		expect(prompt).toContain('"title": "운동"');
 		expect(system).not.toContain("루틴을 제안하는 코치야");
+	});
+
+	it("충분한 기록에서는 억지로 5개를 채우지 않고 강한 제안만 최대 5개 요청한다", () => {
+		const context = {
+			...baseContext,
+			todos: Array(3).fill(baseContext.todos[0]),
+		};
+		const { system } = buildSuggestionPrompt(context, 3);
+
+		expect(system).toContain("0~5개");
+		expect(system).toContain("근거가 약하면 만들지 마");
+		expect(system).not.toContain("반드시 정확히 5개");
 	});
 });
 

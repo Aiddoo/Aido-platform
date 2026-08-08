@@ -18,6 +18,10 @@ const WEATHER_KEYWORDS = [
 	"우천",
 	"실내",
 	"악천후",
+	"weather",
+	"rain",
+	"snow",
+	"indoor",
 ] as const;
 
 /**
@@ -65,6 +69,33 @@ export function filterWeakPatterns(
 
 		return p.matchedTitles.length >= 2;
 	});
+}
+
+/**
+ * 기록 1~2개의 시작 제안을 과장 없는 형태로 정규화합니다.
+ * 모델이 반복 근거나 높은 confidence를 만들더라도 서버가 실제 기록 수를 기준으로 고정합니다.
+ */
+export function normalizeStarterSuggestions(
+	patterns: Pattern[],
+	context: SuggestionContext,
+	locale: "ko" | "en",
+): Pattern[] {
+	return patterns
+		.filter((pattern) => pattern.daysOfWeek.length > 0)
+		.filter(
+			(pattern) =>
+				context.weather || !isWeatherRelated(pattern.reason.toLowerCase()),
+		)
+		.slice(0, 2)
+		.map((pattern) => ({
+			...pattern,
+			confidence: Math.min(pattern.confidence, 0.6),
+			matchedTitles: [],
+			reason:
+				locale === "en"
+					? `You have ${context.todos.length} recent ${context.todos.length === 1 ? "record" : "records"}, so it is too early to call this a pattern. Try this small step to build useful history.`
+					: `최근 기록이 ${context.todos.length}개라 아직 패턴을 단정하긴 일러요. 이 작은 행동부터 시작해 유용한 기록을 쌓아봐요!`,
+		}));
 }
 
 /**

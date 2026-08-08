@@ -92,7 +92,6 @@ export class ParseTodoUseCase {
 				prompt,
 				schema: parsedTodoDataSchema,
 				maxOutputTokens: 200,
-				temperature: 0.1,
 			});
 
 			const processingTimeMs = Date.now() - startTime;
