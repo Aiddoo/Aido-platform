@@ -14,6 +14,27 @@ export const AiReportJobName = {
 	GENERATE: "generate-report",
 } as const;
 
+export const AI_REPORT_WORKER_POLICY = {
+	teamSize: 5,
+	pollingIntervalSeconds: 2,
+} as const;
+
+export const AiReportRuntimeJobSchema = z.discriminatedUnion("name", [
+	z.object({
+		name: z.literal(AiReportJobName.DISPATCH),
+		data: z.object({ reportType: z.enum(["WEEKLY", "MONTHLY"]) }),
+	}),
+	z.object({
+		name: z.literal(AiReportJobName.GENERATE),
+		data: z.object({
+			userId: z.string().min(1),
+			timezone: z.string().min(1),
+			locale: z.string().optional(),
+			reportType: z.enum(["WEEKLY", "MONTHLY"]),
+		}),
+	}),
+]);
+
 /** 스케줄러가 생성하는 dispatch 트리거 잡 데이터 */
 export interface AiReportDispatchData {
 	reportType: "WEEKLY" | "MONTHLY";
@@ -35,3 +56,6 @@ export interface AiReportJobMap {
 }
 
 export type AiReportJobData = AiReportJobMap[keyof AiReportJobMap];
+export type AiReportRuntimeJob = z.infer<typeof AiReportRuntimeJobSchema>;
+
+import { z } from "zod";

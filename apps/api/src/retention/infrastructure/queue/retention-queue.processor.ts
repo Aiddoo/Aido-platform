@@ -20,11 +20,14 @@ import { RelayRetentionOutboxUseCase } from "../../application/use-cases/relay-r
 import {
 	RETENTION_LEGACY_QUEUE,
 	RETENTION_QUEUE,
+	RETENTION_WORKER_POLICY,
 	type RetentionJobMap,
 	RetentionJobName,
+	RetentionRuntimeJobSchema,
 } from "./retention-queue.constants";
 
 type RetentionJob = NamedJob<RetentionJobMap>;
+type RetentionJobLike = { readonly name: string; readonly data: JobData };
 
 @Injectable()
 export class RetentionQueueProcessor implements OnModuleInit {
@@ -46,7 +49,7 @@ export class RetentionQueueProcessor implements OnModuleInit {
 			async (jobs) => {
 				for (const job of jobs) await this.process(job.data);
 			},
-			{ teamSize: 1, pollingIntervalSeconds: 2 },
+			RETENTION_WORKER_POLICY,
 		);
 		await this.runtime.work<JobData>(
 			RETENTION_LEGACY_QUEUE,
@@ -55,11 +58,17 @@ export class RetentionQueueProcessor implements OnModuleInit {
 					await this.process(fromLegacyJob<RetentionJobMap>(job));
 				}
 			},
-			{ teamSize: 1, pollingIntervalSeconds: 2 },
+			RETENTION_WORKER_POLICY,
 		);
 	}
 
-	async process(job: RetentionJob): Promise<void> {
+	async process(untrustedJob: RetentionJobLike): Promise<void> {
+		const parsedJob = RetentionRuntimeJobSchema.safeParse(untrustedJob);
+		if (!parsedJob.success) {
+			this.#logger.warn(`Invalid retention job: name=${untrustedJob.name}`);
+			return;
+		}
+		const job = parsedJob.data;
 		switch (job.name) {
 			case RetentionJobName.STAGE_SWEEP:
 				await this.processStages.execute();

@@ -25,17 +25,11 @@ import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 import {
 	AI_SUGGESTION_LEGACY_QUEUE,
 	AI_SUGGESTION_QUEUE,
-	type AiSuggestionAnalyzeData,
+	AI_SUGGESTION_WORKER_POLICY,
 	type AiSuggestionJobMap,
 	AiSuggestionJobName,
+	AiSuggestionRuntimeJobSchema,
 } from "../queue/ai-suggestion-queue";
-
-/** ANALYZE 잡 데이터 내로잉 (as 캐스트 회피) */
-function isAnalyzeData(
-	data: AiSuggestionJobMap[keyof AiSuggestionJobMap],
-): data is AiSuggestionAnalyzeData {
-	return "userId" in data;
-}
 
 /**
  * AI 반복 제안 분석 BullMQ 프로세서
@@ -48,7 +42,7 @@ function isAnalyzeData(
 type AiSuggestionJob = NamedJob<AiSuggestionJobMap>;
 type AiSuggestionJobLike = {
 	readonly name: string;
-	readonly data: AiSuggestionJobMap[keyof AiSuggestionJobMap];
+	readonly data: JobData;
 };
 
 @Injectable()
@@ -75,7 +69,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 			async (jobs) => {
 				for (const job of jobs) await this.process(job.data);
 			},
-			{ teamSize: 5, pollingIntervalSeconds: 2 },
+			AI_SUGGESTION_WORKER_POLICY,
 		);
 		await this.runtime.work<JobData>(
 			AI_SUGGESTION_LEGACY_QUEUE,
@@ -83,7 +77,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 				for (const job of jobs)
 					await this.process(fromLegacyJob<AiSuggestionJobMap>(job));
 			},
-			{ teamSize: 5, pollingIntervalSeconds: 2 },
+			AI_SUGGESTION_WORKER_POLICY,
 		);
 	}
 
@@ -105,14 +99,15 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 		);
 	}
 
-	async process(job: AiSuggestionJobLike): Promise<void> {
-		if (job.name === AiSuggestionJobName.DISPATCH) {
-			await this.#suggestionJob?.dispatchAnalysis();
+	async process(untrustedJob: AiSuggestionJobLike): Promise<void> {
+		const parsedJob = AiSuggestionRuntimeJobSchema.safeParse(untrustedJob);
+		if (!parsedJob.success) {
+			this.#logger.warn(`Invalid AI suggestion job: name=${untrustedJob.name}`);
 			return;
 		}
-
-		if (job.name !== AiSuggestionJobName.ANALYZE || !isAnalyzeData(job.data)) {
-			this.#logger.warn(`Unknown job name: ${job.name}`);
+		const job = parsedJob.data;
+		if (job.name === AiSuggestionJobName.DISPATCH) {
+			await this.#suggestionJob?.dispatchAnalysis();
 			return;
 		}
 
