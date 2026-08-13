@@ -16,7 +16,7 @@ import {
 } from "@/shared/infrastructure/jobs/named-job";
 import { toSupportedLocale } from "@/shared/presentation/decorators";
 
-import { AiReportFacade } from "../../application/facades/ai-report.facade";
+import { GenerateReportUseCase } from "../../application/use-cases/generate-report/generate-report.use-case";
 import type { ReportGenerationJob } from "../jobs/report-generation.job";
 import {
 	AI_REPORT_LEGACY_QUEUE,
@@ -56,7 +56,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 	}
 
 	constructor(
-		private readonly aiReportFacade: AiReportFacade,
+		private readonly generateReportUseCase: GenerateReportUseCase,
 		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
 	) {}
 
@@ -113,18 +113,12 @@ export class ReportGenerationProcessor implements OnModuleInit {
 
 		this.#logger.debug(`Processing ${reportType} report: userId=${userId}`);
 
-		const report =
-			reportType === "WEEKLY"
-				? await this.aiReportFacade.generateWeeklyReport(
-						userId,
-						timezone,
-						reportLocale,
-					)
-				: await this.aiReportFacade.generateMonthlyReport(
-						userId,
-						timezone,
-						reportLocale,
-					);
+		const report = await this.generateReportUseCase.execute({
+			userId,
+			timezone,
+			type: reportType,
+			locale: reportLocale,
+		});
 
 		if (!report) {
 			this.#logger.debug(

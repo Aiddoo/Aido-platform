@@ -1,6 +1,9 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
-import { AiReportFacade } from "@/ai-report";
+import {
+	LATEST_REPORT_STATS_READER,
+	type LatestReportStatsReaderPort,
+} from "@/ai-report";
 
 import type {
 	WeeklyReportReaderPort,
@@ -14,13 +17,13 @@ import type {
  */
 @Injectable()
 export class WeeklyReportReaderAdapter implements WeeklyReportReaderPort {
-	constructor(private readonly aiReportFacade: AiReportFacade) {}
+	constructor(
+		@Inject(LATEST_REPORT_STATS_READER)
+		private readonly latestReportStatsReader: LatestReportStatsReaderPort,
+	) {}
 
 	async findLatestWeekly(userId: string): Promise<WeeklyReportView | null> {
-		const stats = await this.aiReportFacade.findLatestReportStats(
-			userId,
-			"WEEKLY",
-		);
+		const stats = await this.latestReportStatsReader.findLatestWeekly(userId);
 		if (stats === null) {
 			return null;
 		}

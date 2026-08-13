@@ -16,7 +16,9 @@ import {
 	CurrentUser,
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
-import { AiReportFacade } from "../application/facades/ai-report.facade";
+import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case";
+import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case";
+import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case";
 import {
 	AiReportIdParamDto,
 	AiReportListResponseDto,
@@ -58,7 +60,11 @@ import {
 @ApiBearerAuth()
 @Controller("ai/reports")
 export class AiReportController {
-	constructor(private readonly aiReportFacade: AiReportFacade) {}
+	constructor(
+		private readonly getReportStatusUseCase: GetReportStatusUseCase,
+		private readonly getReportsUseCase: GetReportsUseCase,
+		private readonly getReportByIdUseCase: GetReportByIdUseCase,
+	) {}
 
 	/**
 	 * GET /ai/reports/status - 리포트 상태 조회
@@ -142,7 +148,7 @@ export class AiReportController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Timezone() tz: string,
 	): Promise<ReportStatusResponseDto> {
-		const status = await this.aiReportFacade.getReportStatus(user.userId, tz);
+		const status = await this.getReportStatusUseCase.execute(user.userId, tz);
 
 		return { status };
 	}
@@ -179,7 +185,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetAiReportsQueryDto,
 	): Promise<AiReportListResponseDto> {
-		const reports = await this.aiReportFacade.getReports(user.userId, {
+		const reports = await this.getReportsUseCase.execute(user.userId, {
 			type: query.type as "WEEKLY" | "MONTHLY" | undefined,
 			limit: query.limit,
 		});
@@ -222,7 +228,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: AiReportIdParamDto,
 	): Promise<AiReportResponseDto> {
-		const report = await this.aiReportFacade.getReportById(
+		const report = await this.getReportByIdUseCase.execute(
 			user.userId,
 			params.id,
 		);

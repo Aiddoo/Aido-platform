@@ -9,13 +9,15 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "../../auth/presentation/decorators";
-import { WeeklyAchievementFacade } from "../application/facades/weekly-achievement.facade";
+import { GetWeeklyAchievementUseCase } from "../application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
 import type { WeeklyAchievementListView } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
+import { GetWeeklyAchievementsUseCase } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
 import { WeeklyAchievementController } from "./weekly-achievement.controller";
 
 describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 	let controller: WeeklyAchievementController;
-	let facade: Mocked<WeeklyAchievementFacade>;
+	let getWeeklyAchievementsUseCase: Mocked<GetWeeklyAchievementsUseCase>;
+	let getWeeklyAchievementUseCase: Mocked<GetWeeklyAchievementUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -30,7 +32,8 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 		).compile();
 
 		controller = unit;
-		facade = unitRef.get(WeeklyAchievementFacade);
+		getWeeklyAchievementsUseCase = unitRef.get(GetWeeklyAchievementsUseCase);
+		getWeeklyAchievementUseCase = unitRef.get(GetWeeklyAchievementUseCase);
 	});
 
 	describe("getWeeklyAchievements", () => {
@@ -47,7 +50,7 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 					averageRate: 0,
 				},
 			};
-			facade.getWeeklyAchievements.mockResolvedValue(mockResult);
+			getWeeklyAchievementsUseCase.execute.mockResolvedValue(mockResult);
 
 			// When
 			await controller.getWeeklyAchievements(
@@ -57,13 +60,13 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 			);
 
 			// Then
-			expect(facade.getWeeklyAchievements).toHaveBeenCalledWith(
-				"user-123",
-				2026,
-				10,
-				5,
-				"ko",
-			);
+			expect(getWeeklyAchievementsUseCase.execute).toHaveBeenCalledWith({
+				userId: "user-123",
+				year: 2026,
+				cursor: 10,
+				size: 5,
+				locale: "ko",
+			});
 		});
 
 		it("Facade 응답을 그대로 반환한다", async () => {
@@ -91,7 +94,7 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 					averageRate: 93,
 				},
 			};
-			facade.getWeeklyAchievements.mockResolvedValue(mockResult);
+			getWeeklyAchievementsUseCase.execute.mockResolvedValue(mockResult);
 
 			// When
 			const result = await controller.getWeeklyAchievements(
@@ -108,7 +111,7 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 	describe("getWeeklyAchievement", () => {
 		it("Facade에 올바른 파라미터를 전달한다", async () => {
 			// Given
-			facade.getWeeklyAchievement.mockResolvedValue({
+			getWeeklyAchievementUseCase.execute.mockResolvedValue({
 				id: 42,
 				year: 2026,
 				week: 10,
@@ -128,12 +131,12 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 			);
 
 			// Then
-			expect(facade.getWeeklyAchievement).toHaveBeenCalledWith(
-				"user-123",
-				2026,
-				10,
-				"ko",
-			);
+			expect(getWeeklyAchievementUseCase.execute).toHaveBeenCalledWith({
+				userId: "user-123",
+				year: 2026,
+				week: 10,
+				locale: "ko",
+			});
 		});
 	});
 });

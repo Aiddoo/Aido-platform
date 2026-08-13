@@ -11,12 +11,16 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
-import { AiReportFacade } from "../application/facades/ai-report.facade";
+import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case";
+import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case";
+import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case";
 import { AiReportController } from "./ai-report.controller";
 
 describe("AiReportController — AI 리포트 컨트롤러", () => {
 	let controller: AiReportController;
-	let mockService: Mocked<AiReportFacade>;
+	let getReportStatusUseCase: Mocked<GetReportStatusUseCase>;
+	let getReportsUseCase: Mocked<GetReportsUseCase>;
+	let getReportByIdUseCase: Mocked<GetReportByIdUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -30,7 +34,9 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 			await TestBed.solitary(AiReportController).compile();
 
 		controller = unit;
-		mockService = unitRef.get(AiReportFacade);
+		getReportStatusUseCase = unitRef.get(GetReportStatusUseCase);
+		getReportsUseCase = unitRef.get(GetReportsUseCase);
+		getReportByIdUseCase = unitRef.get(GetReportByIdUseCase);
 	});
 
 	describe("getStatus", () => {
@@ -45,13 +51,13 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 				latestWeekly: null,
 				latestMonthly: null,
 			};
-			mockService.getReportStatus.mockResolvedValue(mockStatus);
+			getReportStatusUseCase.execute.mockResolvedValue(mockStatus);
 
 			// When -getStatus를 호출하면
 			const result = await controller.getStatus(mockUser, tz);
 
 			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
-			expect(mockService.getReportStatus).toHaveBeenCalledWith(
+			expect(getReportStatusUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				tz,
 			);
@@ -64,13 +70,13 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 			// Given -서비스에서 빈 리포트 목록을 반환하도록 설정
 			const query = { type: "WEEKLY" as const, limit: 10 };
 			const mockReports: AiReportDto[] = [];
-			mockService.getReports.mockResolvedValue(mockReports);
+			getReportsUseCase.execute.mockResolvedValue(mockReports);
 
 			// When -getReports를 호출하면
 			const result = await controller.getReports(mockUser, query as never);
 
 			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
-			expect(mockService.getReports).toHaveBeenCalledWith(mockUser.userId, {
+			expect(getReportsUseCase.execute).toHaveBeenCalledWith(mockUser.userId, {
 				type: "WEEKLY",
 				limit: 10,
 			});
@@ -81,13 +87,13 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 			// Given -타입 필터 없는 쿼리
 			const query = { limit: 10 };
 			const mockReports: AiReportDto[] = [];
-			mockService.getReports.mockResolvedValue(mockReports);
+			getReportsUseCase.execute.mockResolvedValue(mockReports);
 
 			// When -getReports를 호출하면
 			const result = await controller.getReports(mockUser, query as never);
 
 			// Then -type이 undefined로 전달되어야 한다
-			expect(mockService.getReports).toHaveBeenCalledWith(mockUser.userId, {
+			expect(getReportsUseCase.execute).toHaveBeenCalledWith(mockUser.userId, {
 				type: undefined,
 				limit: 10,
 			});
@@ -124,13 +130,13 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 				hasActivity: true,
 				generatedAt: "2026-03-09T07:00:00.000Z",
 			};
-			mockService.getReportById.mockResolvedValue(mockReport);
+			getReportByIdUseCase.execute.mockResolvedValue(mockReport);
 
 			// When -getReport를 호출하면
 			const result = await controller.getReport(mockUser, { id: reportId });
 
 			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
-			expect(mockService.getReportById).toHaveBeenCalledWith(
+			expect(getReportByIdUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				reportId,
 			);
