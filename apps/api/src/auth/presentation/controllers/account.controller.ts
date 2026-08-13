@@ -13,7 +13,15 @@ import {
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
-import { AccountFacade } from "@/auth/application/facades";
+import {
+	GetCurrentUserQuery,
+	ListLinkedAccountsQuery,
+} from "@/auth/application/queries";
+import {
+	DeleteAccountUseCase,
+	UnlinkOAuthAccountUseCase,
+	UpdateProfileUseCase,
+} from "@/auth/application/use-cases";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
 import {
 	CurrentUser,
@@ -43,7 +51,13 @@ import { extractMetadata } from "./auth-controller.utils";
 @ApiBearerAuth()
 @Controller("auth")
 export class AccountController {
-	constructor(private readonly accountFacade: AccountFacade) {}
+	constructor(
+		private readonly getCurrentUserQuery: GetCurrentUserQuery,
+		private readonly updateProfileUseCase: UpdateProfileUseCase,
+		private readonly listLinkedAccountsQuery: ListLinkedAccountsQuery,
+		private readonly unlinkOAuthAccountUseCase: UnlinkOAuthAccountUseCase,
+		private readonly deleteAccountUseCase: DeleteAccountUseCase,
+	) {}
 
 	@Get("me")
 	@ApiDoc({
@@ -68,7 +82,7 @@ export class AccountController {
 	@ApiSuccessResponse({ type: CurrentUserDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getMe(@CurrentUser() user: CurrentUserPayload) {
-		const result = await this.accountFacade.getCurrentUser(
+		const result = await this.getCurrentUserQuery.execute(
 			user.userId,
 			user.email,
 			user.sessionId,
@@ -99,7 +113,7 @@ export class AccountController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateProfileDto,
 	) {
-		const result = await this.accountFacade.updateProfile(user.userId, dto);
+		const result = await this.updateProfileUseCase.execute(user.userId, dto);
 		return AuthMapper.toUpdateProfileResponse(result);
 	}
 
@@ -142,7 +156,7 @@ export class AccountController {
 	@ApiSuccessResponse({ type: LinkedAccountsResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
-		return this.accountFacade.getLinkedAccounts(user.userId);
+		return this.listLinkedAccountsQuery.execute(user.userId);
 	}
 
 	@Delete("linked-accounts/:provider")
@@ -187,7 +201,11 @@ export class AccountController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.accountFacade.unlinkAccount(user.userId, provider, metadata);
+		return this.unlinkOAuthAccountUseCase.execute(
+			user.userId,
+			provider,
+			metadata,
+		);
 	}
 
 	@Delete("account")
@@ -232,7 +250,7 @@ export class AccountController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.accountFacade.deleteAccount(
+		return this.deleteAccountUseCase.execute(
 			user.userId,
 			user.sessionId,
 			dto,

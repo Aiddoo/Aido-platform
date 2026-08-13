@@ -12,12 +12,6 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { TodoCategoryModule } from "@/todo-category";
 import { UserSettingsModule } from "@/user-settings";
 import {
-	AccountFacade,
-	AuthFacade,
-	OAuthFacade,
-	SessionFacade,
-} from "./application/facades";
-import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_CACHE,
 	AUTH_EMAIL_SENDER,
@@ -187,10 +181,6 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 		CredentialAuthWorkflow,
 		PasswordWorkflow,
 		OAuthWorkflow,
-		AuthFacade,
-		AccountFacade,
-		SessionFacade,
-		OAuthFacade,
 		// Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
 		IssueLoginUseCase,
 		ProvisionUserUseCase,

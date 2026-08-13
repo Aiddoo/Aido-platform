@@ -12,7 +12,20 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
-import { AuthFacade } from "@/auth/application/facades";
+import {
+	ChangePasswordUseCase,
+	LoginWithPasswordUseCase,
+	LogoutAllUseCase,
+	LogoutUseCase,
+	RefreshTokensUseCase,
+	RegisterUseCase,
+	RequestPasswordResetUseCase,
+	RequestPasswordSetupCodeUseCase,
+	ResendVerificationUseCase,
+	ResetPasswordUseCase,
+	SetPasswordUseCase,
+	VerifyEmailUseCase,
+} from "@/auth/application/use-cases";
 import { JwtRefreshGuard } from "@/auth/infrastructure/guards";
 import type { RefreshTokenPayload } from "@/auth/infrastructure/strategies/jwt-refresh.strategy";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
@@ -47,7 +60,20 @@ import { extractMetadata } from "./auth-controller.utils";
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 export class AuthController {
-	constructor(private readonly authFacade: AuthFacade) {}
+	constructor(
+		private readonly registerUseCase: RegisterUseCase,
+		private readonly verifyEmailUseCase: VerifyEmailUseCase,
+		private readonly resendVerificationUseCase: ResendVerificationUseCase,
+		private readonly loginWithPasswordUseCase: LoginWithPasswordUseCase,
+		private readonly logoutUseCase: LogoutUseCase,
+		private readonly logoutAllUseCase: LogoutAllUseCase,
+		private readonly refreshTokensUseCase: RefreshTokensUseCase,
+		private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
+		private readonly resetPasswordUseCase: ResetPasswordUseCase,
+		private readonly requestPasswordSetupCodeUseCase: RequestPasswordSetupCodeUseCase,
+		private readonly setPasswordUseCase: SetPasswordUseCase,
+		private readonly changePasswordUseCase: ChangePasswordUseCase,
+	) {}
 
 	@Post("register")
 	@Public()
@@ -79,7 +105,10 @@ export class AuthController {
 	@ApiCreatedResponse({ type: MessageResponseDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
 	async register(@Body() dto: RegisterDto, @Req() req: Request) {
-		const result = await this.authFacade.register(dto, extractMetadata(req));
+		const result = await this.registerUseCase.execute(
+			dto,
+			extractMetadata(req),
+		);
 		return AuthMapper.toRegisterResponse(result);
 	}
 
@@ -119,7 +148,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
 	async verifyEmail(@Body() dto: VerifyEmailDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
-		const result = await this.authFacade.verifyEmail(dto, metadata);
+		const result = await this.verifyEmailUseCase.execute(dto, metadata);
 		return AuthMapper.toAuthTokensResponse(result);
 	}
 
@@ -150,7 +179,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async resendVerification(@Body() dto: ResendVerificationDto) {
-		const result = await this.authFacade.resendVerification(dto.email);
+		const result = await this.resendVerificationUseCase.execute(dto.email);
 		return result;
 	}
 
@@ -201,7 +230,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
 	async login(@Body() dto: LoginDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
-		const result = await this.authFacade.login(dto, metadata);
+		const result = await this.loginWithPasswordUseCase.execute(dto, metadata);
 		return AuthMapper.toAuthTokensResponse(result);
 	}
 
@@ -233,7 +262,7 @@ export class AuthController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
 		const metadata = extractMetadata(req);
-		await this.authFacade.logout(user.userId, user.sessionId, metadata);
+		await this.logoutUseCase.execute(user.userId, user.sessionId, metadata);
 		return AuthMapper.toMessageResponse("로그아웃되었습니다.");
 	}
 
@@ -268,7 +297,7 @@ export class AuthController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Req() req: Request,
 	) {
-		await this.authFacade.logoutAll(user.userId, extractMetadata(req));
+		await this.logoutAllUseCase.execute(user.userId, extractMetadata(req));
 		return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
 	}
 
@@ -304,7 +333,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
 	async refresh(@Req() req: Request) {
 		const payload = req.user as RefreshTokenPayload;
-		const result = await this.authFacade.refreshTokens(
+		const result = await this.refreshTokensUseCase.execute(
 			payload.refreshToken,
 			{
 				userId: payload.userId,
@@ -344,7 +373,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
-		const result = await this.authFacade.forgotPassword(
+		const result = await this.requestPasswordResetUseCase.execute(
 			dto.email,
 			extractMetadata(req),
 		);
@@ -390,7 +419,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async resetPassword(@Body() dto: ResetPasswordDto) {
-		const result = await this.authFacade.resetPassword(
+		const result = await this.resetPasswordUseCase.execute(
 			dto.email,
 			dto.code,
 			dto.newPassword,
@@ -434,7 +463,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
-		return this.authFacade.requestPasswordSetupCode(user.userId);
+		return this.requestPasswordSetupCodeUseCase.execute(user.userId);
 	}
 
 	@Post("password")
@@ -482,7 +511,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.authFacade.setPassword(
+		return this.setPasswordUseCase.execute(
 			user.userId,
 			dto.code,
 			dto.newPassword,
@@ -531,7 +560,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.authFacade.changePassword(
+		const result = await this.changePasswordUseCase.execute(
 			user.userId,
 			dto.currentPassword,
 			dto.newPassword,

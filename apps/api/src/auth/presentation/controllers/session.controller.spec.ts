@@ -14,13 +14,15 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
-import { SessionFacade } from "@/auth/application/facades";
+import { ListActiveSessionsQuery } from "@/auth/application/queries";
+import { RevokeSessionUseCase } from "@/auth/application/use-cases";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import { SessionController } from "./session.controller";
 
 describe("SessionController — 세션 컨트롤러", () => {
 	let controller: SessionController;
-	let mockSessionFacade: Mocked<SessionFacade>;
+	let listActiveSessionsQuery: Mocked<ListActiveSessionsQuery>;
+	let revokeSessionUseCase: Mocked<RevokeSessionUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -43,7 +45,8 @@ describe("SessionController — 세션 컨트롤러", () => {
 			await TestBed.solitary(SessionController).compile();
 
 		controller = unit;
-		mockSessionFacade = unitRef.get(SessionFacade);
+		listActiveSessionsQuery = unitRef.get(ListActiveSessionsQuery);
+		revokeSessionUseCase = unitRef.get(RevokeSessionUseCase);
 	});
 
 	describe("getSessions", () => {
@@ -71,13 +74,13 @@ describe("SessionController — 세션 컨트롤러", () => {
 					isCurrent: false,
 				},
 			];
-			mockSessionFacade.getActiveSessions.mockResolvedValue(sessions);
+			listActiveSessionsQuery.execute.mockResolvedValue(sessions);
 
 			// When -getSessions를 호출하면
 			const result = await controller.getSessions(mockUser);
 
 			// Then -서비스에 userId를 전달하고 isCurrent 필드가 추가된 세션 목록을 반환해야 한다
-			expect(mockSessionFacade.getActiveSessions).toHaveBeenCalledWith(
+			expect(listActiveSessionsQuery.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 			expect(result).toEqual({
@@ -96,7 +99,7 @@ describe("SessionController — 세션 컨트롤러", () => {
 
 		it("세션이 없을 때 빈 배열을 반환해야 한다", async () => {
 			// Given -활성 세션이 없을 때
-			mockSessionFacade.getActiveSessions.mockResolvedValue([]);
+			listActiveSessionsQuery.execute.mockResolvedValue([]);
 
 			// When -getSessions를 호출하면
 			const result = await controller.getSessions(mockUser);
@@ -111,7 +114,7 @@ describe("SessionController — 세션 컨트롤러", () => {
 			// Given -종료할 세션 ID와 서비스 응답이 준비되었을 때
 			const sessionId = "session-456";
 			const serviceResult = { message: "세션이 종료되었습니다." };
-			mockSessionFacade.revokeSession.mockResolvedValue(serviceResult);
+			revokeSessionUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -revokeSession을 호출하면
 			const result = await controller.revokeSession(
@@ -121,7 +124,7 @@ describe("SessionController — 세션 컨트롤러", () => {
 			);
 
 			// Then -서비스에 userId, sessionId, metadata를 전달하고 결과를 반환해야 한다
-			expect(mockSessionFacade.revokeSession).toHaveBeenCalledWith(
+			expect(revokeSessionUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				sessionId,
 				expect.objectContaining({

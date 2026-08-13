@@ -14,7 +14,15 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
-import { AccountFacade } from "@/auth/application/facades";
+import {
+	GetCurrentUserQuery,
+	ListLinkedAccountsQuery,
+} from "@/auth/application/queries";
+import {
+	DeleteAccountUseCase,
+	UnlinkOAuthAccountUseCase,
+	UpdateProfileUseCase,
+} from "@/auth/application/use-cases";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import type { DeleteAccountDto, UpdateProfileDto } from "../dtos";
@@ -22,7 +30,11 @@ import { AccountController } from "./account.controller";
 
 describe("AccountController — 계정 컨트롤러", () => {
 	let controller: AccountController;
-	let mockAccountFacade: Mocked<AccountFacade>;
+	let getCurrentUserQuery: Mocked<GetCurrentUserQuery>;
+	let updateProfileUseCase: Mocked<UpdateProfileUseCase>;
+	let listLinkedAccountsQuery: Mocked<ListLinkedAccountsQuery>;
+	let unlinkOAuthAccountUseCase: Mocked<UnlinkOAuthAccountUseCase>;
+	let deleteAccountUseCase: Mocked<DeleteAccountUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -45,7 +57,11 @@ describe("AccountController — 계정 컨트롤러", () => {
 			await TestBed.solitary(AccountController).compile();
 
 		controller = unit;
-		mockAccountFacade = unitRef.get(AccountFacade);
+		getCurrentUserQuery = unitRef.get(GetCurrentUserQuery);
+		updateProfileUseCase = unitRef.get(UpdateProfileUseCase);
+		listLinkedAccountsQuery = unitRef.get(ListLinkedAccountsQuery);
+		unlinkOAuthAccountUseCase = unitRef.get(UnlinkOAuthAccountUseCase);
+		deleteAccountUseCase = unitRef.get(DeleteAccountUseCase);
 	});
 
 	describe("getMe", () => {
@@ -66,14 +82,14 @@ describe("AccountController — 계정 컨트롤러", () => {
 				createdAt: "2026-01-01T00:00:00.000Z",
 				providers: ["CREDENTIAL" as const],
 			};
-			mockAccountFacade.getCurrentUser.mockResolvedValue(serviceResult);
+			getCurrentUserQuery.execute.mockResolvedValue(serviceResult);
 			const expectedResponse = AuthMapper.toCurrentUserResponse(serviceResult);
 
 			// When -getMe를 호출하면
 			const result = await controller.getMe(mockUser);
 
 			// Then -서비스에 userId, email, sessionId를 전달하고 매핑된 결과를 반환해야 한다
-			expect(mockAccountFacade.getCurrentUser).toHaveBeenCalledWith(
+			expect(getCurrentUserQuery.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				mockUser.email,
 				mockUser.sessionId,
@@ -93,7 +109,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 				name: "새이름",
 				profileImage: null,
 			};
-			mockAccountFacade.updateProfile.mockResolvedValue(serviceResult);
+			updateProfileUseCase.execute.mockResolvedValue(serviceResult);
 			const expectedResponse =
 				AuthMapper.toUpdateProfileResponse(serviceResult);
 
@@ -101,7 +117,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			const result = await controller.updateProfile(mockUser, dto);
 
 			// Then -서비스에 userId와 DTO를 전달하고 매핑된 결과를 반환해야 한다
-			expect(mockAccountFacade.updateProfile).toHaveBeenCalledWith(
+			expect(updateProfileUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
 			);
@@ -141,13 +157,13 @@ describe("AccountController — 계정 컨트롤러", () => {
 				],
 				canUnlink: true,
 			};
-			mockAccountFacade.getLinkedAccounts.mockResolvedValue(serviceResult);
+			listLinkedAccountsQuery.execute.mockResolvedValue(serviceResult);
 
 			// When -getLinkedAccounts를 호출하면
 			const result = await controller.getLinkedAccounts(mockUser);
 
 			// Then -서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
-			expect(mockAccountFacade.getLinkedAccounts).toHaveBeenCalledWith(
+			expect(listLinkedAccountsQuery.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 			expect(result).toEqual(serviceResult);
@@ -159,7 +175,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			// Given -연동 해제 서비스 응답이 준비되었을 때
 			const provider = "GOOGLE" as const;
 			const serviceResult = { message: "소셜 계정이 연결 해제되었습니다." };
-			mockAccountFacade.unlinkAccount.mockResolvedValue(serviceResult);
+			unlinkOAuthAccountUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -unlinkAccount를 호출하면
 			const result = await controller.unlinkAccount(
@@ -169,7 +185,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			);
 
 			// Then -서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
-			expect(mockAccountFacade.unlinkAccount).toHaveBeenCalledWith(
+			expect(unlinkOAuthAccountUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				provider,
 				expect.objectContaining({
@@ -192,13 +208,13 @@ describe("AccountController — 계정 컨트롤러", () => {
 				deletedAt: "2026-03-01T00:00:00.000Z",
 				gracePeriodDays: 30,
 			};
-			mockAccountFacade.deleteAccount.mockResolvedValue(serviceResult);
+			deleteAccountUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -deleteAccount를 호출하면
 			const result = await controller.deleteAccount(mockUser, dto, mockRequest);
 
 			// Then -서비스에 userId, sessionId, dto, metadata를 전달하고 결과를 반환해야 한다
-			expect(mockAccountFacade.deleteAccount).toHaveBeenCalledWith(
+			expect(deleteAccountUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				mockUser.sessionId,
 				dto,
