@@ -32,7 +32,10 @@ import {
 } from "@/notification";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
-import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
+import {
+	NOTIFICATION_DEDUP,
+	NOTIFICATION_DEDUP_LOCK,
+} from "@/notification/application/ports/notification-dedup.port";
 import {
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
@@ -54,6 +57,7 @@ import { SendNotificationUseCase } from "@/notification/application/use-cases/se
 import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
+import { NotificationDedupLockAdapter } from "@/notification/infrastructure/adapters/notification-dedup-lock.adapter";
 import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
 import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
@@ -215,6 +219,11 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 					useValue: {
 						recordNotifiedUsers: jest.fn().mockResolvedValue(undefined),
 					},
+				},
+				NotificationDedupLockAdapter,
+				{
+					provide: NOTIFICATION_DEDUP_LOCK,
+					useExisting: NotificationDedupLockAdapter,
 				},
 				GetNotificationsUseCase,
 				GetUnreadCountUseCase,

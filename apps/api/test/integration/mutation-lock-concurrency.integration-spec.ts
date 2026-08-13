@@ -23,6 +23,10 @@ import { SendNudgeUseCase } from "@/nudge/application/use-cases/send-nudge/send-
 import { SendRemindNudgeUseCase } from "@/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
 import { PrismaNudgeRepository } from "@/nudge/infrastructure/persistence/prisma-nudge.repository";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import {
+	ENTITLEMENT_CACHE,
+	ENTITLEMENT_DATABASE,
+} from "@/shared/application/entitlement/entitlement-state.port";
 import type { PaginationService } from "@/shared/application/pagination";
 import {
 	MutationLockKeys,
@@ -638,6 +642,8 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 				PrismaTodoCategoryRepository,
 				PostgresMutationLockAdapter,
 				EntitlementService,
+				{ provide: ENTITLEMENT_CACHE, useExisting: CacheService },
+				{ provide: ENTITLEMENT_DATABASE, useExisting: DatabaseService },
 				TodoCategoryLimitReaderAdapter,
 				{
 					provide: CacheService,
