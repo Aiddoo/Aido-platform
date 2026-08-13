@@ -9,7 +9,6 @@
 export * from "./adapters/in-memory-dedup.adapter";
 export * from "./adapters/redis-dedup.adapter";
 // Constants
-export * from "./constants/dedup-keys";
 // Module
 export * from "./dedup.module";
 // Interfaces

@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
-
 import type {
 	WeatherCachePort,
 	WeatherForecastEntry,
@@ -12,6 +10,10 @@ import type {
 	WeatherConditions,
 	WeatherForecast,
 } from "../../application/ports/weather-provider.port";
+import {
+	WEATHER_CACHE_TTL_MS,
+	WeatherCacheKey,
+} from "../cache/weather-cache.keyspace";
 
 /**
  * WeatherCachePort의 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임한다.
@@ -29,7 +31,7 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 		baseTime: string,
 	): Promise<WeatherForecast | undefined> {
 		return this.cacheService.get<WeatherForecast>(
-			CacheKeys.weatherForecast(gridX, gridY, baseDate, baseTime),
+			WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime),
 		);
 	}
 
@@ -42,14 +44,14 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 	): Promise<void> {
 		await Promise.all([
 			this.cacheService.set(
-				CacheKeys.weatherForecast(gridX, gridY, baseDate, baseTime),
+				WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime),
 				forecast,
-				CacheKeys.TTL.WEATHER_FORECAST,
+				WEATHER_CACHE_TTL_MS.FORECAST,
 			),
 			this.cacheService.set(
-				CacheKeys.weatherForecastLatest(gridX, gridY),
+				WeatherCacheKey.latestForecast(gridX, gridY),
 				forecast,
-				CacheKeys.TTL.WEATHER_FORECAST_LATEST,
+				WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
 			),
 		]);
 	}
@@ -59,7 +61,7 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 		gridY: number,
 	): Promise<WeatherForecast | undefined> {
 		return this.cacheService.get<WeatherForecast>(
-			CacheKeys.weatherForecastLatest(gridX, gridY),
+			WeatherCacheKey.latestForecast(gridX, gridY),
 		);
 	}
 
@@ -70,7 +72,7 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 	): Promise<(WeatherForecast | undefined)[]> {
 		return this.cacheService.mget<WeatherForecast>(
 			grids.map((g) =>
-				CacheKeys.weatherForecast(g.gridX, g.gridY, baseDate, baseTime),
+				WeatherCacheKey.forecast(g.gridX, g.gridY, baseDate, baseTime),
 			),
 		);
 	}
@@ -82,19 +84,19 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 	): Promise<void> {
 		const cacheEntries = entries.flatMap((entry) => [
 			{
-				key: CacheKeys.weatherForecast(
+				key: WeatherCacheKey.forecast(
 					entry.gridX,
 					entry.gridY,
 					baseDate,
 					baseTime,
 				),
 				value: entry.forecast,
-				ttl: CacheKeys.TTL.WEATHER_FORECAST,
+				ttl: WEATHER_CACHE_TTL_MS.FORECAST,
 			},
 			{
-				key: CacheKeys.weatherForecastLatest(entry.gridX, entry.gridY),
+				key: WeatherCacheKey.latestForecast(entry.gridX, entry.gridY),
 				value: entry.forecast,
-				ttl: CacheKeys.TTL.WEATHER_FORECAST_LATEST,
+				ttl: WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
 			},
 		]);
 		await this.cacheService.mset(cacheEntries);
@@ -104,7 +106,7 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 		grids: WeatherGridRef[],
 	): Promise<(WeatherForecast | undefined)[]> {
 		return this.cacheService.mget<WeatherForecast>(
-			grids.map((g) => CacheKeys.weatherForecastLatest(g.gridX, g.gridY)),
+			grids.map((g) => WeatherCacheKey.latestForecast(g.gridX, g.gridY)),
 		);
 	}
 
@@ -113,7 +115,7 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 		gridY: number,
 	): Promise<WeatherConditions | undefined> {
 		return this.cacheService.get<WeatherConditions>(
-			CacheKeys.weatherConditions(gridX, gridY),
+			WeatherCacheKey.conditions(gridX, gridY),
 		);
 	}
 
@@ -123,19 +125,19 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 		conditions: WeatherConditions,
 	): Promise<void> {
 		await this.cacheService.set(
-			CacheKeys.weatherConditions(gridX, gridY),
+			WeatherCacheKey.conditions(gridX, gridY),
 			conditions,
-			CacheKeys.TTL.WEATHER_CONDITIONS,
+			WEATHER_CACHE_TTL_MS.CONDITIONS,
 		);
 	}
 
 	async invalidateGrid(gridX: number, gridY: number): Promise<void> {
 		await Promise.all([
 			this.cacheService.delByPattern(
-				CacheKeys.weatherForecastPattern(gridX, gridY),
+				WeatherCacheKey.forecastPattern(gridX, gridY),
 			),
-			this.cacheService.del(CacheKeys.weatherForecastLatest(gridX, gridY)),
-			this.cacheService.del(CacheKeys.weatherConditions(gridX, gridY)),
+			this.cacheService.del(WeatherCacheKey.latestForecast(gridX, gridY)),
+			this.cacheService.del(WeatherCacheKey.conditions(gridX, gridY)),
 		]);
 	}
 }
