@@ -3,7 +3,6 @@ import { Module } from "@nestjs/common";
 import { AdminNotificationModule } from "@/admin-notification/admin-notification.module";
 import { NotificationModule } from "@/notification/notification.module";
 
-import { SubscriptionFacade } from "./application/facades/subscription.facade";
 import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscription.repository.port";
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscription-event-notifier.port";
@@ -18,7 +17,6 @@ import { SubscriptionController } from "./presentation/subscription.controller";
 	imports: [AdminNotificationModule, NotificationModule],
 	controllers: [SubscriptionController],
 	providers: [
-		SubscriptionFacade,
 		HandleWebhookEventUseCase,
 		WebhookSignatureGuard,
 		{
@@ -31,6 +29,5 @@ import { SubscriptionController } from "./presentation/subscription.controller";
 			useClass: SubscriptionEventNotifierAdapter,
 		},
 	],
-	exports: [SubscriptionFacade],
 })
 export class SubscriptionModule {}

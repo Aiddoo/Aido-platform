@@ -11,7 +11,7 @@ import { SkipThrottle } from "@nestjs/throttler";
 import type { Request } from "express";
 import { Public } from "@/auth/presentation/decorators";
 
-import { SubscriptionFacade } from "../application/facades/subscription.facade";
+import { HandleWebhookEventUseCase } from "../application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
 import { WebhookSignatureGuard } from "../infrastructure/guards/webhook-signature.guard";
 
 /**
@@ -24,12 +24,14 @@ import { WebhookSignatureGuard } from "../infrastructure/guards/webhook-signatur
  * - Authorization 헤더로 서명 검증 (WebhookSignatureGuard)
  * - 항상 200 OK 반환 (RevenueCat는 non-2xx 시 재시도하므로) — Lock 경합(429)만 예외
  *
- * 검증·처리·실패 보고 오케스트레이션은 Facade → use-case가 소유한다.
+ * 검증·처리·실패 보고 오케스트레이션은 endpoint use-case가 소유한다.
  */
 @Controller("webhooks")
 @SkipThrottle()
 export class SubscriptionController {
-	constructor(private readonly subscriptionFacade: SubscriptionFacade) {}
+	constructor(
+		private readonly handleWebhookEventUseCase: HandleWebhookEventUseCase,
+	) {}
 
 	@Post("revenuecat")
 	@Public()
@@ -39,6 +41,6 @@ export class SubscriptionController {
 	handleRevenueCatWebhook(
 		@Req() request: Request,
 	): Promise<{ received: true }> {
-		return this.subscriptionFacade.handleWebhookEvent(request.body);
+		return this.handleWebhookEventUseCase.execute(request.body);
 	}
 }
