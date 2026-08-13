@@ -4,7 +4,7 @@ import {
 	USER_PREFERENCE_DEFAULTS,
 } from "@aido/validators";
 
-import { DEFAULT_LOCALE } from "@/shared/presentation/decorators";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 export type TimeFormatValue = "TWELVE_HOUR" | "TWENTY_FOUR_HOUR";
 

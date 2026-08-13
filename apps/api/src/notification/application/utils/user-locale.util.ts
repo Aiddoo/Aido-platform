@@ -1,5 +1,5 @@
+import type { SupportedLocale } from "@/shared/domain/locale";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
 
 import { resolveTemplateLocale } from "../../domain/services/templates/notification-templates";
 

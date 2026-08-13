@@ -1,5 +1,5 @@
 import type * as Validators from "@aido/validators";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 
 import {
 	computeDateRange,

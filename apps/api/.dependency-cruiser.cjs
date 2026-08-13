@@ -22,27 +22,6 @@ const MODULE_BARRELS = [
 	"^src/([^/]+)/\\1\\.module\\.ts$",
 ];
 
-/**
- * locale 타입/상수가 shared presentation에 남아 있어 발생한 기존 역방향 의존.
- *
- * Task 5 범위 밖의 locale 소유권 이동 전까지만 허용한다. 폴더/모듈 단위 정규식은
- * 새 위반을 숨기므로 현재 production importer 9개를 완전 고정 경로로만 격리한다.
- */
-const LEGACY_LOCALE_DOMAIN_IMPORTERS = [
-	"^src/ai-report/domain/entities/ai-report\\.entity\\.ts$",
-	"^src/ai-report/domain/services/prompts/report-fallback\\.ts$",
-	"^src/ai-report/domain/services/prompts/report-insights\\.ts$",
-	"^src/ai-report/domain/services/prompts/report\\.prompt\\.ts$",
-	"^src/ai-report/domain/services/report-period\\.ts$",
-	"^src/ai-report/domain/types\\.ts$",
-	"^src/ai-suggestion/domain/services/prompts/detect-patterns\\.prompt\\.ts$",
-	"^src/notification/domain/services/templates/notification-templates\\.ts$",
-	"^src/user-settings/domain/services/preference-view\\.ts$",
-];
-
-const SHARED_LOCALE_PRESENTATION_ENTRY =
-	"^src/shared/presentation/decorators/index\\.ts$";
-
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
 	forbidden: [
@@ -70,31 +49,13 @@ module.exports = {
 		},
 		{
 			name: "domain-no-presentation",
-			comment:
-				"bounded-context domain → presentation 금지 (locale target은 별도 exact-edge 규칙)",
+			comment: "bounded-context domain → presentation 금지",
 			severity: "error",
 			from: {
 				path: "^src/(?!shared/|generated/)[^/]+/domain/",
 				pathNot: "\\.(spec|test)\\.ts$",
 			},
-			to: {
-				path: "^src/[^/]+/presentation/",
-				pathNot: SHARED_LOCALE_PRESENTATION_ENTRY,
-			},
-		},
-		{
-			name: "domain-no-unapproved-locale-presentation",
-			comment:
-				"shared locale presentation target은 현재 importer 9개만 exact-edge 허용",
-			severity: "error",
-			from: {
-				path: "^src/(?!shared/|generated/)[^/]+/domain/",
-				pathNot: [
-					"\\.(spec|test)\\.ts$",
-					...LEGACY_LOCALE_DOMAIN_IMPORTERS,
-				],
-			},
-			to: { path: SHARED_LOCALE_PRESENTATION_ENTRY },
+			to: { path: "^src/[^/]+/presentation/" },
 		},
 
 		// ── 2. application: 구현 접근 금지 (포트로 역전) ───────────────────
