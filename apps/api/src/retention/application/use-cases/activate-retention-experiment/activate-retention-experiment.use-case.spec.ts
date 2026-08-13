@@ -1,6 +1,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createRetentionRepositoryMock } from "@test/mocks/ports";
+import {
+	createRetentionRepositoryMock,
+	createUnitOfWorkMock,
+} from "@test/mocks/ports";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
@@ -20,6 +24,8 @@ describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", (
 			.impl(() => createRetentionRepositoryMock())
 			.mock<RetentionConfigPort>(RETENTION_CONFIG)
 			.impl(() => ({ enabled, treatmentPercent: 50 }))
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 		repository = compiled.unitRef.get(RETENTION_REPOSITORY);
 		return compiled.unit;
