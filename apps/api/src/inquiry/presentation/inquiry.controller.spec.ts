@@ -1,7 +1,7 @@
 /**
  * InquiryController 단위 테스트
  *
- * 컨트롤러는 InquiryFacade에만 위임한다. DTO→인자 매핑과 응답 래핑을 검증한다.
+ * 컨트롤러의 endpoint UseCase 위임과 응답 래핑을 검증한다.
  */
 
 import type { Mocked } from "@suites/doubles.jest";
@@ -9,7 +9,7 @@ import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
-import { InquiryFacade } from "../application/facades/inquiry.facade";
+import { CreateInquiryUseCase } from "../application/use-cases/create-inquiry/create-inquiry.use-case";
 import type { CreateInquiryDto } from "./dtos";
 import { InquiryController } from "./inquiry.controller";
 
@@ -24,7 +24,7 @@ function makeDto(overrides: Partial<CreateInquiryDto> = {}): CreateInquiryDto {
 
 describe("InquiryController — 문의 컨트롤러", () => {
 	let controller: InquiryController;
-	let mockFacade: Mocked<InquiryFacade>;
+	let createInquiryUseCase: Mocked<CreateInquiryUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -38,25 +38,25 @@ describe("InquiryController — 문의 컨트롤러", () => {
 			await TestBed.solitary(InquiryController).compile();
 
 		controller = unit;
-		mockFacade = unitRef.get(InquiryFacade);
+		createInquiryUseCase = unitRef.get(CreateInquiryUseCase);
 	});
 
 	describe("createInquiry", () => {
 		it("문의 접수 요청을 Facade에 위임하고 메시지를 반환해야 한다", async () => {
 			// Given - 문의 생성 DTO와 Facade가 준비되었을 때
 			const dto = makeDto();
-			mockFacade.createInquiry.mockResolvedValue(undefined);
+			createInquiryUseCase.execute.mockResolvedValue(undefined);
 
 			// When - createInquiry를 호출하면
 			const result = await controller.createInquiry(mockUser, dto);
 
 			// Then - userId/email/category/content를 전달하고 메시지를 반환해야 한다
-			expect(mockFacade.createInquiry).toHaveBeenCalledWith(
-				mockUser.userId,
-				mockUser.email,
-				dto.category,
-				dto.content,
-			);
+			expect(createInquiryUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				userEmail: mockUser.email,
+				category: dto.category,
+				content: dto.content,
+			});
 			expect(result).toEqual({
 				message: "문의가 접수되었습니다.",
 			});
@@ -68,18 +68,18 @@ describe("InquiryController — 문의 컨트롤러", () => {
 				category: "FEATURE_REQUEST",
 				content: "다크 모드를 추가해 주세요.",
 			});
-			mockFacade.createInquiry.mockResolvedValue(undefined);
+			createInquiryUseCase.execute.mockResolvedValue(undefined);
 
 			// When - createInquiry를 호출하면
 			const result = await controller.createInquiry(mockUser, dto);
 
 			// Then - Facade에 올바른 카테고리를 전달해야 한다
-			expect(mockFacade.createInquiry).toHaveBeenCalledWith(
-				mockUser.userId,
-				mockUser.email,
-				"FEATURE_REQUEST",
-				dto.content,
-			);
+			expect(createInquiryUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				userEmail: mockUser.email,
+				category: "FEATURE_REQUEST",
+				content: dto.content,
+			});
 			expect(result).toEqual({
 				message: "문의가 접수되었습니다.",
 			});
