@@ -2,10 +2,10 @@ import { Module } from "@nestjs/common";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import {
-	AdminNotificationFacade,
+	AdminEventNotifier,
 	AdminNotificationModule,
 } from "@/admin-notification";
-import { EmailFacade, EmailModule } from "@/email";
+import { EmailModule, TransactionalEmailSender } from "@/email";
 import { RetentionModule } from "@/retention";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -170,10 +170,10 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 		{ provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
 		{ provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
 		{ provide: AUTH_CACHE, useExisting: CacheService },
-		{ provide: AUTH_EMAIL_SENDER, useExisting: EmailFacade },
+		{ provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
 		{
 			provide: AUTH_REGISTRATION_NOTIFIER,
-			useExisting: AdminNotificationFacade,
+			useExisting: AdminEventNotifier,
 		},
 		{ provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
 		VerificationService,

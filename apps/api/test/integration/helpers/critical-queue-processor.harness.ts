@@ -17,7 +17,6 @@ import {
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
-import { NotificationFacade } from "@/notification/application/facades/notification.facade";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
@@ -25,6 +24,7 @@ import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "@/notification/application/ports/user-notification-settings.port";
+import { NotificationSender } from "@/notification/application/senders/notification.sender";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
@@ -200,7 +200,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
 function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 	return [
 		NotificationQueueProcessor,
-		NotificationFacade,
+		NotificationSender,
 		PersistBatchNotificationUseCase,
 		DispatchBatchNotificationUseCase,
 		FindAlreadyNotifiedUsersUseCase,

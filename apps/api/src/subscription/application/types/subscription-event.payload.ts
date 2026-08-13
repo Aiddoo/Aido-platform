@@ -2,7 +2,7 @@
  * 구독 이벤트 페이로드 정의
  *
  * RevenueCat 웹훅으로부터 수신되는 구독 관련 이벤트 페이로드.
- * SubscriptionService 및 AdminNotificationFacade에서 사용됩니다.
+ * SubscriptionService 및 AdminEventNotifier에서 사용됩니다.
  */
 
 import type { RevenueCatEventType, RevenueCatStore } from "@aido/validators";

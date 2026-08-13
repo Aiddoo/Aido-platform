@@ -1,28 +1,24 @@
 /**
- * EmailFacade 단위 테스트
+ * TransactionalEmailSender 단위 테스트
  *
  * 각 메서드가 올바른 EmailMessage를 조립해 EMAIL_SENDER 포트에 위임하는지
  * 스텁 sender로 검증한다 (실제 발송 없음).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { EmailSenderPort } from "../ports/email-sender.port";
+import { TransactionalEmailSender } from "../senders/transactional-email.sender";
 
-import { EMAIL_SENDER, type EmailSenderPort } from "../ports/email-sender.port";
-import { EmailFacade } from "./email.facade";
+describe("TransactionalEmailSender — 트랜잭션 이메일 발송", () => {
+	let emailSender: TransactionalEmailSender;
+	let sender: jest.Mocked<EmailSenderPort>;
 
-describe("EmailFacade — 이메일 파사드", () => {
-	let facade: EmailFacade;
-	let sender: Mocked<EmailSenderPort>;
-
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(EmailFacade).compile();
-		facade = unit;
-		sender = unitRef.get(EMAIL_SENDER);
+	beforeEach(() => {
+		sender = { send: jest.fn() };
+		emailSender = new TransactionalEmailSender(sender);
 		sender.send.mockResolvedValue({ success: true, messageId: "id-1" });
 	});
 
 	it("sendVerificationCode는 인증 메시지를 조립해 전송한다", async () => {
-		const result = await facade.sendVerificationCode(
+		const result = await emailSender.sendVerificationCode(
 			"user@test.com",
 			{ code: "123456", expiryMinutes: 10 },
 			"idem-1",
@@ -37,7 +33,7 @@ describe("EmailFacade — 이메일 파사드", () => {
 	});
 
 	it("sendInquiry는 문의 메시지를 조립해 전송한다", async () => {
-		await facade.sendInquiry("support@test.com", {
+		await emailSender.sendInquiry("support@test.com", {
 			userEmail: "user@test.com",
 			category: "OTHER",
 			categoryLabel: "기타",

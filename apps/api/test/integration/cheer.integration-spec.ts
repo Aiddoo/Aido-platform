@@ -26,7 +26,7 @@ import { CheerLimitReaderAdapter } from "@/cheer/infrastructure/adapters/cheer-l
 import { CheerNotifierAdapter } from "@/cheer/infrastructure/adapters/cheer-notifier.adapter";
 import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
 import { FollowReader } from "@/follow";
-import { NotificationQueueService } from "@/notification";
+import { NotificationQueueService } from "@/notification/queue";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";

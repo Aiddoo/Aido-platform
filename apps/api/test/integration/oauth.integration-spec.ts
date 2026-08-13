@@ -26,7 +26,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AdminNotificationFacade } from "@/admin-notification";
+import { AdminEventNotifier } from "@/admin-notification";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_CACHE,
@@ -63,7 +63,7 @@ import { SecurityLogRepository } from "@/auth/infrastructure/persistence/securit
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import type { AccountProvider } from "@/generated/prisma/client";
-import { NotificationQueueService } from "@/notification";
+import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
@@ -178,7 +178,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				{ provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
 				{
 					provide: AUTH_REGISTRATION_NOTIFIER,
-					useExisting: AdminNotificationFacade,
+					useExisting: AdminEventNotifier,
 				},
 				UserConsentRepository,
 				UserPreferenceRepository,
@@ -265,7 +265,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				{
-					provide: AdminNotificationFacade,
+					provide: AdminEventNotifier,
 					useValue: {
 						notifyUserRegistered: () => {},
 						notifySubscriptionEvent: () => {},

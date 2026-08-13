@@ -31,7 +31,7 @@ export class VerificationService {
 		@Inject(AUTH_VERIFICATION_REPOSITORY)
 		private readonly verificationRepository: AuthVerificationRepositoryPort,
 		@Inject(AUTH_EMAIL_SENDER)
-		private readonly emailFacade: AuthEmailSenderPort,
+		private readonly emailSender: AuthEmailSenderPort,
 	) {}
 
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
@@ -56,7 +56,7 @@ export class VerificationService {
 
 	// 이메일 발송 실패는 로그만 남기고 예외를 던지지 않음 (재발송 가능)
 	async sendVerificationEmail(email: string, code: string): Promise<void> {
-		const emailResult = await this.emailFacade.sendVerificationCode(email, {
+		const emailResult = await this.emailSender.sendVerificationCode(email, {
 			code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});
@@ -86,7 +86,7 @@ export class VerificationService {
 		const result = await this.#createVerificationCode(userId, "PASSWORD_RESET");
 
 		// 이메일 발송
-		const emailResult = await this.emailFacade.sendPasswordResetCode(email, {
+		const emailResult = await this.emailSender.sendPasswordResetCode(email, {
 			code: result.code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});
@@ -118,7 +118,7 @@ export class VerificationService {
 		const result = await this.#createVerificationCode(userId, "PASSWORD_SETUP");
 
 		// 이메일 발송
-		const emailResult = await this.emailFacade.sendPasswordSetupCode(email, {
+		const emailResult = await this.emailSender.sendPasswordSetupCode(email, {
 			code: result.code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});

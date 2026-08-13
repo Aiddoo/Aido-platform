@@ -23,7 +23,8 @@ import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { NotificationFacade } from "../../application/facades/notification.facade";
+import { NotificationBatchDispatcher } from "../../application/dispatchers/notification-batch.dispatcher";
+import { NotificationSender } from "../../application/senders/notification.sender";
 import { NotificationMessageBuilder } from "../../domain/services/templates/notification-templates";
 import {
 	type BillingIssueJobData,
@@ -39,7 +40,8 @@ import { NotificationQueueProcessor } from "./notification-queue.processor";
 
 describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 	let processor: NotificationQueueProcessor;
-	let notification: Mocked<NotificationFacade>;
+	let notification: Mocked<NotificationSender>;
+	let batchDispatcher: Mocked<NotificationBatchDispatcher>;
 	let uow: UnitOfWorkPort;
 	let db: MockPrismaClient;
 
@@ -61,9 +63,10 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			.compile();
 
 		processor = unit;
-		notification = unitRef.get(NotificationFacade);
+		notification = unitRef.get(NotificationSender);
+		batchDispatcher = unitRef.get(NotificationBatchDispatcher);
 		notification.getUserLocale.mockResolvedValue("ko");
-		notification.persistBatch.mockImplementation(async (sourceData) => ({
+		batchDispatcher.persistBatch.mockImplementation(async (sourceData) => ({
 			count: sourceData.length,
 			items: [],
 			sourceData,
@@ -368,7 +371,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 					friendId: "friend-1",
 				}),
 			);
-			expect(notification.persistBatch).toHaveBeenCalledWith(
+			expect(batchDispatcher.persistBatch).toHaveBeenCalledWith(
 				expect.arrayContaining([
 					expect.objectContaining({
 						userId: "user-1",
@@ -383,7 +386,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 					}),
 				]),
 			);
-			expect(notification.dispatchPersistedBatch).toHaveBeenCalledWith(
+			expect(batchDispatcher.dispatchPersistedBatch).toHaveBeenCalledWith(
 				expect.objectContaining({ count: 2 }),
 			);
 		});
@@ -401,13 +404,13 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notification.persistBatch).toHaveBeenCalledWith([
+			expect(batchDispatcher.persistBatch).toHaveBeenCalledWith([
 				expect.objectContaining({
 					userId: "user-2",
 					type: "FRIEND_COMPLETED",
 				}),
 			]);
-			expect(notification.dispatchPersistedBatch).toHaveBeenCalledWith(
+			expect(batchDispatcher.dispatchPersistedBatch).toHaveBeenCalledWith(
 				expect.objectContaining({ count: 1 }),
 			);
 		});
@@ -426,8 +429,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			await processor.process(job);
 
 			// Then
-			expect(notification.persistBatch).not.toHaveBeenCalled();
-			expect(notification.dispatchPersistedBatch).not.toHaveBeenCalled();
+			expect(batchDispatcher.persistBatch).not.toHaveBeenCalled();
+			expect(batchDispatcher.dispatchPersistedBatch).not.toHaveBeenCalled();
 		});
 
 		it("빈 notifyUserIds는 즉시 리턴한다", async () => {
@@ -443,8 +446,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 			// Then
 			expect(uow.run).not.toHaveBeenCalled();
-			expect(notification.persistBatch).not.toHaveBeenCalled();
-			expect(notification.dispatchPersistedBatch).not.toHaveBeenCalled();
+			expect(batchDispatcher.persistBatch).not.toHaveBeenCalled();
+			expect(batchDispatcher.dispatchPersistedBatch).not.toHaveBeenCalled();
 		});
 
 		it("P2002 unique constraint 시 graceful skip한다", async () => {

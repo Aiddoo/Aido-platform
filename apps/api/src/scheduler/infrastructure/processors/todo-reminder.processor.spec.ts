@@ -12,7 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
-import { NotificationFacade } from "@/notification";
+import { NotificationSender } from "@/notification";
 
 import {
 	TODO_REMINDER_READER,
@@ -35,7 +35,7 @@ const makeJob = (data: Partial<ReminderJobData> = {}) =>
 describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 	let processor: TodoReminderProcessor;
 	let reader: Mocked<TodoReminderReaderPort>;
-	let notification: Mocked<NotificationFacade>;
+	let notification: Mocked<NotificationSender>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -44,7 +44,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 
 		processor = unit;
 		reader = unitRef.get(TODO_REMINDER_READER);
-		notification = unitRef.get(NotificationFacade);
+		notification = unitRef.get(NotificationSender);
 		notification.getUserLocale.mockResolvedValue("ko");
 	});
 

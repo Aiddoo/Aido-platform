@@ -70,7 +70,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 	let securityLogRepo: Mocked<AuthSecurityLogRepositoryPort>;
 	let loginAttemptRepo: Mocked<AuthLoginAttemptRepositoryPort>;
 	let sessionService: Mocked<SessionService>;
-	let adminNotificationFacade: Mocked<AuthRegistrationNotifierPort>;
+	let adminEventNotifier: Mocked<AuthRegistrationNotifierPort>;
 	let retentionEnroller: Mocked<RetentionEnrollerPort>;
 
 	// 재사용 가능한 테스트 데이터
@@ -98,7 +98,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 		securityLogRepo = unitRef.get(AUTH_SECURITY_LOG_REPOSITORY);
 		loginAttemptRepo = unitRef.get(AUTH_LOGIN_ATTEMPT_REPOSITORY);
 		sessionService = unitRef.get(SessionService);
-		adminNotificationFacade = unitRef.get(AUTH_REGISTRATION_NOTIFIER);
+		adminEventNotifier = unitRef.get(AUTH_REGISTRATION_NOTIFIER);
 		retentionEnroller = unitRef.get(RETENTION_ENROLLER);
 
 		// IssueLoginUseCase(발급 수렴)를 실제 인스턴스로 위임 — 기존 login 테스트가
@@ -335,7 +335,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			await service.register(registerInput);
 
 			// Then
-			expect(adminNotificationFacade.notifyUserRegistered).toHaveBeenCalledWith(
+			expect(adminEventNotifier.notifyUserRegistered).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					email: registerInput.email,

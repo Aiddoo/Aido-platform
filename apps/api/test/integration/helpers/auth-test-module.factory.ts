@@ -12,7 +12,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { AdminNotificationFacade } from "@/admin-notification";
+import { AdminEventNotifier } from "@/admin-notification";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_CACHE,
@@ -40,8 +40,8 @@ import { SecurityLogRepository } from "@/auth/infrastructure/persistence/securit
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
-import { EmailFacade } from "@/email";
-import { NotificationQueueService } from "@/notification";
+import { TransactionalEmailSender } from "@/email";
+import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
@@ -105,11 +105,11 @@ export async function createAuthTestModule(
 			},
 			{ provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
 			{ provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
-			{ provide: AUTH_EMAIL_SENDER, useExisting: EmailFacade },
+			{ provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
 			{ provide: AUTH_CACHE, useExisting: CacheService },
 			{
 				provide: AUTH_REGISTRATION_NOTIFIER,
-				useExisting: AdminNotificationFacade,
+				useExisting: AdminEventNotifier,
 			},
 			UserConsentRepository,
 			UserPreferenceRepository,
@@ -133,7 +133,7 @@ export async function createAuthTestModule(
 				},
 			},
 			{
-				provide: EmailFacade,
+				provide: TransactionalEmailSender,
 				useValue: fakeEmailService,
 			},
 			{
@@ -207,7 +207,7 @@ export async function createAuthTestModule(
 				},
 			},
 			{
-				provide: AdminNotificationFacade,
+				provide: AdminEventNotifier,
 				useValue: {
 					notifyUserRegistered: () => {},
 					notifySubscriptionEvent: () => {},

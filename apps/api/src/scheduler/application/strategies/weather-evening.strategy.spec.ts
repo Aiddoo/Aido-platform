@@ -13,7 +13,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationFacade } from "@/notification";
+import { NotificationSender } from "@/notification";
 import type { WeatherForecast } from "@/weather";
 import { WeatherForecastAccess } from "@/weather";
 
@@ -55,7 +55,7 @@ const makeForecast = (
 describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 	let strategy: WeatherEveningStrategy;
 	let reader: Mocked<WeatherReminderReaderPort>;
-	let notificationService: Mocked<NotificationFacade>;
+	let notificationService: Mocked<NotificationSender>;
 	let weatherForecastAccess: Mocked<WeatherForecastAccess>;
 
 	beforeEach(async () => {
@@ -67,7 +67,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 
 		strategy = unit;
 		reader = unitRef.get(WEATHER_REMINDER_READER);
-		notificationService = unitRef.get(NotificationFacade);
+		notificationService = unitRef.get(NotificationSender);
 		weatherForecastAccess = unitRef.get(WeatherForecastAccess);
 
 		reader.findWeatherEveningUsersWithLocation.mockResolvedValue([]);

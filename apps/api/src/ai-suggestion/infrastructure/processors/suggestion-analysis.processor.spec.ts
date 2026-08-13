@@ -10,7 +10,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
 
-import { NotificationFacade } from "@/notification";
+import { NotificationSender } from "@/notification";
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
 import {
 	type AiSuggestionJobData,
@@ -21,7 +21,7 @@ import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor";
 describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
 	let processor: SuggestionAnalysisProcessor;
 	let analyzeAndCreateSuggestionsUseCase: Mocked<AnalyzeAndCreateSuggestionsUseCase>;
-	let mockNotificationService: Mocked<NotificationFacade>;
+	let mockNotificationService: Mocked<NotificationSender>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -32,7 +32,7 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 		analyzeAndCreateSuggestionsUseCase = unitRef.get(
 			AnalyzeAndCreateSuggestionsUseCase,
 		);
-		mockNotificationService = unitRef.get(NotificationFacade);
+		mockNotificationService = unitRef.get(NotificationSender);
 	});
 
 	describe("onStalled", () => {

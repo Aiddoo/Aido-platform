@@ -11,10 +11,12 @@ import {
 	type FollowNewJobData,
 	type FriendCompletedJobData,
 	type MilestoneReachedJobData,
+	NOTIFICATION_JOB_POLICY,
 	NOTIFICATION_QUEUE,
+	type NotificationJobMap,
 	NotificationJobName,
-	type NotificationRuntimeJob,
 	type NudgeSentJobData,
+	PUSH_RECEIPT_SCHEDULE,
 } from "./notification-queue.constants";
 
 @Injectable()
@@ -25,8 +27,8 @@ export class NotificationQueueService implements OnModuleInit {
 
 	async onModuleInit(): Promise<void> {
 		await this.runtime.schedule(
-			"push-receipts-scheduler",
-			"*/5 * * * *",
+			PUSH_RECEIPT_SCHEDULE.key,
+			PUSH_RECEIPT_SCHEDULE.cron,
 			NOTIFICATION_QUEUE,
 			{
 				name: NotificationJobName.PUSH_RECEIPTS,
@@ -134,9 +136,9 @@ export class NotificationQueueService implements OnModuleInit {
 		);
 	}
 
-	async #enqueueAsync(
-		name: NotificationRuntimeJob["name"],
-		data: NotificationRuntimeJob["data"],
+	async #enqueueAsync<JobName extends keyof NotificationJobMap & string>(
+		name: JobName,
+		data: NotificationJobMap[JobName],
 	): Promise<void> {
 		await this.runtime.enqueue(
 			NOTIFICATION_QUEUE,
@@ -147,13 +149,6 @@ export class NotificationQueueService implements OnModuleInit {
 	}
 
 	#jobOptions() {
-		return {
-			retryLimit: 2,
-			retryDelaySeconds: 1,
-			retryBackoff: true,
-			expireInSeconds: 5 * 60,
-			retentionSeconds: 7 * 24 * 60 * 60,
-			deleteAfterSeconds: 24 * 60 * 60,
-		};
+		return NOTIFICATION_JOB_POLICY;
 	}
 }

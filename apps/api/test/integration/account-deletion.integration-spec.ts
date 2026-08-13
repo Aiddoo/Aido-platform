@@ -26,7 +26,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { AdminNotificationFacade } from "@/admin-notification";
+import { AdminEventNotifier } from "@/admin-notification";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_CACHE,
@@ -56,8 +56,8 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
 import { AccountPurgeProcessor } from "@/auth/infrastructure/queue/account-purge.processor";
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
-import { EmailFacade } from "@/email";
-import { NotificationQueueService } from "@/notification";
+import { TransactionalEmailSender } from "@/email";
+import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
@@ -147,11 +147,11 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				},
 				{ provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
 				{ provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
-				{ provide: AUTH_EMAIL_SENDER, useExisting: EmailFacade },
+				{ provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
 				{ provide: AUTH_CACHE, useExisting: CacheService },
 				{
 					provide: AUTH_REGISTRATION_NOTIFIER,
-					useExisting: AdminNotificationFacade,
+					useExisting: AdminEventNotifier,
 				},
 				UserConsentRepository,
 				UserPreferenceRepository,
@@ -173,7 +173,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					useValue: { run: (fn: () => Promise<unknown>) => fn() },
 				},
 				{
-					provide: EmailFacade,
+					provide: TransactionalEmailSender,
 					useClass: FakeEmailService,
 				},
 				{
@@ -248,7 +248,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				{
-					provide: AdminNotificationFacade,
+					provide: AdminEventNotifier,
 					useValue: {
 						notifyUserRegistered: () => {},
 						notifySubscriptionEvent: () => {},

@@ -105,7 +105,7 @@ export class CredentialAuthWorkflow {
 		private readonly verificationService: VerificationService,
 		@Inject(AUTH_CACHE) private readonly cacheService: AuthCachePort,
 		@Inject(AUTH_REGISTRATION_NOTIFIER)
-		private readonly adminNotificationFacade: AuthRegistrationNotifierPort,
+		private readonly adminEventNotifier: AuthRegistrationNotifierPort,
 		private readonly issueLoginUseCase: IssueLoginUseCase,
 		private readonly provisionUserUseCase: ProvisionUserUseCase,
 		@Inject(RETENTION_ENROLLER)
@@ -213,7 +213,7 @@ export class CredentialAuthWorkflow {
 			`User registered: ${result.user.id} (${maskEmail(email)})`,
 		);
 
-		this.adminNotificationFacade.notifyUserRegistered({
+		this.adminEventNotifier.notifyUserRegistered({
 			userId: result.user.id,
 			email: result.user.email,
 			provider: "credential",

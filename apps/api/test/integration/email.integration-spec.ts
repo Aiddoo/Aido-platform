@@ -1,8 +1,8 @@
 /**
- * EmailFacade 통합 테스트
+ * TransactionalEmailSender 통합 테스트
  *
  * @description
- * EmailFacade가 NestJS DI 컨테이너와 함께 올바르게 작동하는지 검증합니다.
+ * TransactionalEmailSender가 NestJS DI 컨테이너와 함께 올바르게 작동하는지 검증합니다.
  * Resend SDK를 모킹하여 실제 API 호출 없이 전체 서비스 동작을 테스트합니다.
  *
  * 통합 테스트의 목적:
@@ -19,8 +19,11 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { EmailFacade } from "@/email";
-import { EMAIL_SENDER } from "@/email/application/ports/email-sender.port";
+import { TransactionalEmailSender } from "@/email";
+import {
+	EMAIL_SENDER,
+	type EmailSenderPort,
+} from "@/email/application/ports/email-sender.port";
 import { ResendEmailSenderAdapter } from "@/email/infrastructure/adapters/resend-email-sender.adapter";
 import { EMAIL_CONSTANTS } from "@/email/infrastructure/constants/email.constants";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -43,9 +46,9 @@ jest.mock("resend", () => ({
 	Resend: jest.fn().mockImplementation(() => resendMock),
 }));
 
-describe("EmailFacade 통합 테스트 (Mock DB)", () => {
+describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: EmailFacade;
+	let facade: TransactionalEmailSender;
 
 	// 테스트 데이터
 	const testEmail = "integration-test@example.com";
@@ -60,7 +63,12 @@ describe("EmailFacade 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				EmailFacade,
+				{
+					provide: TransactionalEmailSender,
+					inject: [EMAIL_SENDER],
+					useFactory: (emailSender: EmailSenderPort) =>
+						new TransactionalEmailSender(emailSender),
+				},
 				{ provide: EMAIL_SENDER, useClass: ResendEmailSenderAdapter },
 				{
 					provide: TypedConfigService,
@@ -77,7 +85,7 @@ describe("EmailFacade 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		facade = module.get<EmailFacade>(EmailFacade);
+		facade = module.get<TransactionalEmailSender>(TransactionalEmailSender);
 	});
 
 	afterAll(async () => {
@@ -121,14 +129,14 @@ describe("EmailFacade 통합 테스트 (Mock DB)", () => {
 	}
 
 	describe("DI 통합", () => {
-		it("EmailFacade가 올바르게 인스턴스화된다", () => {
+		it("TransactionalEmailSender가 올바르게 인스턴스화된다", () => {
 			// Given - DI 컨테이너가 구성됨
 
 			// When - 서비스 인스턴스 확인
 
 			// Then - 서비스가 정의되어 있어야 함
 			expect(facade).toBeDefined();
-			expect(facade).toBeInstanceOf(EmailFacade);
+			expect(facade).toBeInstanceOf(TransactionalEmailSender);
 		});
 
 		it("ConfigService에서 설정을 올바르게 읽어온다", async () => {

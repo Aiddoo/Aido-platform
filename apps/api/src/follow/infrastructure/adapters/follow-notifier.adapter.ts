@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "@/notification";
+import { NotificationQueueService } from "@/notification/queue";
 
 import type {
 	FirstFriendMilestoneNotification,

@@ -4,8 +4,6 @@
  * 외부 모듈은 이 배럴만 임포트한다 (내부 레이어 딥 임포트 금지 — check-boundaries).
  */
 
-// --- Facade (presentation 진입점) ---
-export { NotificationFacade } from "./application/facades/notification.facade";
 export {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
@@ -38,6 +36,8 @@ export {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
+// --- Cross-module notification capability ---
+export { NotificationSender } from "./application/senders/notification.sender";
 // --- Locale helpers (스케줄러 전략의 로케일별 메시지 조립) ---
 export {
 	createLocaleMessageCache,
@@ -48,10 +48,5 @@ export * from "./domain/services/templates/notification-templates";
 export type { NotificationType } from "./domain/types/notification-type";
 // Prisma repository is internal to NotificationModule.
 // Cross-module consumers use the public capability boundary above.
-// --- Queue constants + job data ---
-export * from "./infrastructure/queue/notification-queue.constants";
-export { NotificationQueueModule } from "./infrastructure/queue/notification-queue.module";
-export { NotificationQueueProcessor } from "./infrastructure/queue/notification-queue.processor";
-export { NotificationQueueService } from "./infrastructure/queue/notification-queue.service";
 // --- Module wiring ---
 export * from "./notification.module";

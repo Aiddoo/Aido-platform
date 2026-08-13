@@ -2,11 +2,11 @@ import type { RevenueCatWebhookPayload } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import {
-	AdminNotificationFacade,
+	AdminEventNotifier,
 	type AdminNotifier,
 	PAYMENT_NOTIFIER,
 } from "@/admin-notification";
-import { NotificationQueueService } from "@/notification";
+import { NotificationQueueService } from "@/notification/queue";
 import type { SubscriptionEventNotifierPort } from "../../application/ports/subscription-event-notifier.port";
 import type { SubscriptionEventPayload } from "../../application/types/subscription-event.payload";
 
@@ -25,14 +25,14 @@ export class SubscriptionEventNotifierAdapter
 	readonly #logger = new Logger(SubscriptionEventNotifierAdapter.name);
 
 	constructor(
-		private readonly adminNotificationFacade: AdminNotificationFacade,
+		private readonly adminEventNotifier: AdminEventNotifier,
 		private readonly notificationQueueService: NotificationQueueService,
 		@Inject(PAYMENT_NOTIFIER)
 		private readonly paymentNotifier: AdminNotifier,
 	) {}
 
 	notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-		this.adminNotificationFacade.notifySubscriptionEvent(payload);
+		this.adminEventNotifier.notifySubscriptionEvent(payload);
 	}
 
 	notifyBillingIssue(userId: string): void {

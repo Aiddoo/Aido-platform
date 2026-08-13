@@ -12,7 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import type { IDedupProvider } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 
@@ -32,7 +32,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 	let strategy: NudgeSuggestStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationFacade>;
+	let notificationService: Mocked<NotificationSender>;
 	let dedupProvider: Mocked<IDedupProvider>;
 
 	const TZ = "Asia/Seoul";
@@ -60,7 +60,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationFacade);
+		notificationService = unitRef.get(NotificationSender);
 		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 
 		// 기본 mock 설정

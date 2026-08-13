@@ -16,7 +16,7 @@ import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
 import { FollowReader } from "@/follow";
-import { NotificationQueueService } from "@/notification";
+import { NotificationQueueService } from "@/notification/queue";
 import { NUDGE_REPOSITORY } from "@/nudge/application/ports/nudge.repository.port";
 import { NUDGE_LIMIT_READER } from "@/nudge/application/ports/nudge-limit-reader.port";
 import { NUDGE_NOTIFIER } from "@/nudge/application/ports/nudge-notifier.port";

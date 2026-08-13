@@ -32,7 +32,7 @@ import { SendFriendRequestByTagUseCase } from "@/follow/application/use-cases/se
 import { FollowCacheAdapter } from "@/follow/infrastructure/adapters/follow-cache.adapter";
 import { FollowNotifierAdapter } from "@/follow/infrastructure/adapters/follow-notifier.adapter";
 import { PrismaFollowRepository } from "@/follow/infrastructure/persistence/prisma-follow.repository";
-import { NotificationQueueService } from "@/notification";
+import { NotificationQueueService } from "@/notification/queue";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { UNIT_OF_WORK } from "@/shared/application/ports";

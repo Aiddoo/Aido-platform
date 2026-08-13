@@ -15,7 +15,7 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { EmailFacade } from "@/email";
+import { TransactionalEmailSender } from "@/email";
 import { EmailInquiryMailerAdapter } from "@/inquiry/infrastructure/adapters/email-inquiry-mailer.adapter";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
@@ -43,7 +43,7 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
 		module = await Test.createTestingModule({
 			providers: [
 				EmailInquiryMailerAdapter,
-				{ provide: EmailFacade, useValue: mockEmailService },
+				{ provide: TransactionalEmailSender, useValue: mockEmailService },
 				{ provide: TypedConfigService, useValue: mockConfigService },
 			],
 		}).compile();

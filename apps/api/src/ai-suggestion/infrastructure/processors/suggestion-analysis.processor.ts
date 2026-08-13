@@ -6,8 +6,8 @@ import {
 	Optional,
 } from "@nestjs/common";
 import {
-	NotificationFacade,
 	NotificationMessageBuilder,
+	NotificationSender,
 	resolveTemplateLocale,
 } from "@/notification";
 import {
@@ -63,7 +63,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 
 	constructor(
 		private readonly analyzeAndCreateSuggestionsUseCase: AnalyzeAndCreateSuggestionsUseCase,
-		private readonly notificationService: NotificationFacade,
+		private readonly notificationService: NotificationSender,
 		private readonly database: DatabaseService,
 		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
 	) {}

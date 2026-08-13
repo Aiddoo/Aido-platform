@@ -90,7 +90,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 	let sessionService: jest.Mocked<SessionService>;
 	let tokenVerifier: jest.Mocked<OAuthTokenVerifierService>;
 	let configService: Mocked<TypedConfigService>;
-	let adminNotificationFacade: Mocked<AuthRegistrationNotifierPort>;
+	let adminEventNotifier: Mocked<AuthRegistrationNotifierPort>;
 	let cacheService: Mocked<AuthCachePort>;
 
 	// 재사용 가능한 테스트 데이터
@@ -122,7 +122,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			createSessionWithTokens: jest.fn(),
 		});
 		configService = unitRef.get(AUTH_RUNTIME_CONFIG);
-		adminNotificationFacade = unitRef.get(AUTH_REGISTRATION_NOTIFIER);
+		adminEventNotifier = unitRef.get(AUTH_REGISTRATION_NOTIFIER);
 		cacheService = unitRef.get(AUTH_CACHE);
 
 		// IssueLoginUseCase(발급 수렴)를 실제 인스턴스로 위임 — 소셜 로그인 테스트가
@@ -361,9 +361,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				await service.handleAppleMobileLogin("valid-id-token");
 
 				// Then
-				expect(
-					adminNotificationFacade.notifyUserRegistered,
-				).not.toHaveBeenCalled();
+				expect(adminEventNotifier.notifyUserRegistered).not.toHaveBeenCalled();
 			});
 		});
 
@@ -434,9 +432,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				await service.handleAppleMobileLogin("valid-id-token", "홍길동");
 
 				// Then
-				expect(
-					adminNotificationFacade.notifyUserRegistered,
-				).toHaveBeenCalledWith(
+				expect(adminEventNotifier.notifyUserRegistered).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "user-123",
 						email: "test@privaterelay.appleid.com",
