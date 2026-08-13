@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { Notification } from "../../../domain/entities/notification.entity";
+import { Notification } from "../../../domain/entities/notification.aggregate";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,

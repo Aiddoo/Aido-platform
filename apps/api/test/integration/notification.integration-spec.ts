@@ -27,7 +27,6 @@ import {
 	NOTIFICATION_REPOSITORY,
 	NotificationFacade,
 	NotificationMessageBuilder,
-	NotificationRepository,
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
@@ -53,6 +52,7 @@ import { SendNotificationWithDedupUseCase } from "@/notification/application/use
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
+import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
