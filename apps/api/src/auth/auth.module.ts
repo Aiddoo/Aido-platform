@@ -30,6 +30,7 @@ import {
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "./application/ports/oauth-identity-provider.port";
 import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port";
+import { VERIFICATION_CODE_SECURITY } from "./application/ports/verification-code-security.port";
 import {
 	GetCurrentUserQuery,
 	GetOAuthRedirectUriQuery,
@@ -68,6 +69,7 @@ import {
 	OAuthWorkflow,
 	PasswordWorkflow,
 } from "./application/workflows";
+import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/node-verification-code-security.adapter";
 import { PasswordService } from "./infrastructure/adapters/password.service";
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter";
 import { TokenService } from "./infrastructure/adapters/token.service";
@@ -177,6 +179,10 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 		},
 		{ provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
 		VerificationService,
+		{
+			provide: VERIFICATION_CODE_SECURITY,
+			useClass: NodeVerificationCodeSecurityAdapter,
+		},
 		OAuthTokenVerifierService,
 		CredentialAuthWorkflow,
 		PasswordWorkflow,

@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
 import type { NotificationRecord } from "../../../domain/records/notification.record";
 import {
+	DuplicateNotificationError,
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
@@ -41,7 +41,7 @@ export class SendNotificationUseCase {
 		try {
 			notification = await this.notificationRepository.createNotification(data);
 		} catch (error) {
-			if (isUniqueConstraintViolation(error)) {
+			if (error instanceof DuplicateNotificationError) {
 				this.#logger.debug(
 					`Notification dedup: unique constraint prevented duplicate ${data.type} for userId=${data.userId}`,
 				);

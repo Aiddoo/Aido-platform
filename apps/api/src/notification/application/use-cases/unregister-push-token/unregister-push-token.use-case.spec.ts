@@ -7,10 +7,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createNotificationCacheMock } from "@test/mocks/ports";
-import { Prisma } from "@/generated/prisma/client";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
+	PushTokenNotFoundError,
 } from "../../ports/notification.repository.port";
 import {
 	NOTIFICATION_CACHE,
@@ -45,12 +45,7 @@ describe("UnregisterPushTokenUseCase", () => {
 	});
 
 	it("단건 해제 시 RecordNotFound(P2025)는 우아하게 스킵한다", async () => {
-		repository.deletePushToken.mockRejectedValue(
-			new Prisma.PrismaClientKnownRequestError("Not found", {
-				code: "P2025",
-				clientVersion: "7.0.0",
-			}),
-		);
+		repository.deletePushToken.mockRejectedValue(new PushTokenNotFoundError());
 
 		await expect(
 			useCase.execute("user-1", "device-1"),

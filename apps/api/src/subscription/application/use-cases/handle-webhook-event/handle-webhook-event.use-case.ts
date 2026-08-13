@@ -10,11 +10,6 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
 import { toISOString } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { cacheKey } from "@/shared/infrastructure/cache";
-import {
-	type ILockProvider,
-	LOCK_PROVIDER,
-} from "@/shared/infrastructure/lock";
 import {
 	isRefundCancellation,
 	resolveCancellationUserStatus,
@@ -39,6 +34,10 @@ import {
 	SUBSCRIPTION_EVENT_NOTIFIER,
 	type SubscriptionEventNotifierPort,
 } from "../../ports/subscription-event-notifier.port";
+import {
+	SUBSCRIPTION_WEBHOOK_LOCK,
+	type SubscriptionWebhookLockPort,
+} from "../../ports/subscription-webhook-lock.port";
 import type { SubscriptionEventPayload } from "../../types/subscription-event.payload";
 import { baseEventPayload } from "./subscription-event-payload.mapper";
 
@@ -58,9 +57,6 @@ type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 @Injectable()
 export class HandleWebhookEventUseCase {
 	readonly #logger = new Logger(HandleWebhookEventUseCase.name);
-
-	/** Lock TTL: 10초 */
-	static readonly LOCK_TTL = 10_000;
 
 	/** 무시할 이벤트 타입 (로그만 남김) */
 	readonly #IGNORED_EVENTS = new Set(["TEST", "SUBSCRIBER_ALIAS"]);
@@ -100,7 +96,8 @@ export class HandleWebhookEventUseCase {
 		private readonly cache: SubscriptionCachePort,
 		@Inject(SUBSCRIPTION_EVENT_NOTIFIER)
 		private readonly notifier: SubscriptionEventNotifierPort,
-		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+		@Inject(SUBSCRIPTION_WEBHOOK_LOCK)
+		private readonly webhookLock: SubscriptionWebhookLockPort,
 	) {}
 
 	/**
@@ -154,10 +151,7 @@ export class HandleWebhookEventUseCase {
 		);
 
 		// 1. Lock 획득
-		const release = await this.lockProvider.acquire(
-			cacheKey("subscription", "lock-revenuecat-webhook", appUserId),
-			HandleWebhookEventUseCase.LOCK_TTL,
-		);
+		const release = await this.webhookLock.acquire(appUserId);
 
 		if (!release) {
 			this.#logger.warn(

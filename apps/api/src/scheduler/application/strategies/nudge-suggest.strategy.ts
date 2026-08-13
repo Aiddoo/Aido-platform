@@ -5,11 +5,6 @@ import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString, toIsoWeekId } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { DedupKeys } from "@/shared/infrastructure/dedup/constants/dedup-keys";
-import {
-	DEDUP_PROVIDER,
-	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
@@ -20,6 +15,10 @@ import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
+import {
+	SCHEDULER_DEDUP,
+	type SchedulerDedupPort,
+} from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -35,8 +34,8 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
 		private readonly notificationService: NotificationSender,
-		@Inject(DEDUP_PROVIDER)
-		private readonly dedupProvider: IDedupProvider,
+		@Inject(SCHEDULER_DEDUP)
+		private readonly schedulerDedup: SchedulerDedupPort,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -98,8 +97,6 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 
 		// 배치 2: 이번 주 발송 이력을 compound key로 단일 Redis 조회
 		const weekId = toIsoWeekId(today);
-		const setKey = DedupKeys.nudgeSuggestSent(weekId);
-
 		// 전체 candidate × friend 조합을 한 번에 빌드
 		const allPairs: string[] = [];
 		for (const user of candidates) {
@@ -109,7 +106,10 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		}
 
 		// 단일 SMISMEMBER — O(allPairs.length)
-		const sentPairs = await this.dedupProvider.filterMembers(setKey, allPairs);
+		const sentPairs = await this.schedulerDedup.findSentNudgePairs(
+			weekId,
+			allPairs,
+		);
 
 		const locales = await this.preferenceReader.findUserLocales(
 			candidates.map((u) => u.id),
@@ -170,11 +170,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 			await this.notificationService.createAndSendBatch(notifications);
 
 			const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
-			void this.dedupProvider.addMembers(
-				setKey,
-				members,
-				DedupKeys.TTL.NUDGE_SUGGEST,
-			);
+			void this.schedulerDedup.recordNudgePairs(weekId, members);
 
 			this.#logger.log(
 				`Nudge suggest: tz=${tz}, count=${notifications.length}`,

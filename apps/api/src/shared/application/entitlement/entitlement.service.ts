@@ -10,10 +10,14 @@ import {
 	SUBSCRIPTION_TODO_CATEGORY_LIMITS,
 	TODO_CATEGORY_LIMITS,
 } from "@aido/validators";
-import { Injectable } from "@nestjs/common";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import { Inject, Injectable } from "@nestjs/common";
+import {
+	ENTITLEMENT_CACHE,
+	ENTITLEMENT_DATABASE,
+	type EntitlementCachePort,
+	type EntitlementDatabasePort,
+	type EntitlementTransaction,
+} from "./entitlement-state.port";
 
 export const Feature = {
 	CHEER: "CHEER",
@@ -111,8 +115,10 @@ export interface ResourceEntitlement {
 @Injectable()
 export class EntitlementService {
 	constructor(
-		private readonly cacheService: CacheService,
-		private readonly database: DatabaseService,
+		@Inject(ENTITLEMENT_CACHE)
+		private readonly cacheService: EntitlementCachePort,
+		@Inject(ENTITLEMENT_DATABASE)
+		private readonly database: EntitlementDatabasePort,
 	) {}
 
 	/**
@@ -135,7 +141,7 @@ export class EntitlementService {
 	 * sendCheer/sendNudge 등 TOCTOU 방지가 필요한 곳에서 사용
 	 */
 	async getFeatureLimitInTx(
-		tx: TransactionClient,
+		tx: EntitlementTransaction,
 		userId: string,
 		feature: Feature,
 	): Promise<FeatureEntitlement> {
@@ -178,7 +184,7 @@ export class EntitlementService {
 	 * 판단해야 하는 쓰기 경로에서 사용합니다.
 	 */
 	async getResourceLimitInTx(
-		tx: TransactionClient,
+		tx: EntitlementTransaction,
 		userId: string,
 		resource: Resource,
 	): Promise<ResourceEntitlement> {

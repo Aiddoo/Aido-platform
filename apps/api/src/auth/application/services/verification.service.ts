@@ -16,6 +16,10 @@ import {
 	AUTH_VERIFICATION_REPOSITORY,
 	type AuthVerificationRepositoryPort,
 } from "../ports/auth-persistence.port";
+import {
+	VERIFICATION_CODE_SECURITY,
+	type VerificationCodeSecurityPort,
+} from "../ports/verification-code-security.port";
 
 export interface VerificationCodeResult {
 	code: string;
@@ -32,6 +36,8 @@ export class VerificationService {
 		private readonly verificationRepository: AuthVerificationRepositoryPort,
 		@Inject(AUTH_EMAIL_SENDER)
 		private readonly emailSender: AuthEmailSenderPort,
+		@Inject(VERIFICATION_CODE_SECURITY)
+		private readonly verificationCodeSecurity: VerificationCodeSecurityPort,
 	) {}
 
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
@@ -153,7 +159,7 @@ export class VerificationService {
 			throw new ApplicationException(ErrorCode.VERIFY_0754);
 		}
 
-		const tokenHash = VerificationCode.hashOf(code);
+		const tokenHash = this.verificationCodeSecurity.hash(code);
 
 		// 코드 일치 확인
 		if (verification.token !== tokenHash) {
@@ -202,7 +208,11 @@ export class VerificationService {
 		type: VerificationType,
 	): Promise<VerificationCodeResult> {
 		// 6자리 랜덤 숫자 생성 + SHA-256 해시(도메인 값 객체가 소유)
-		const verificationCode = VerificationCode.generate();
+		const generatedCode = this.verificationCodeSecurity.generate();
+		const verificationCode = VerificationCode.create(
+			generatedCode.plaintext,
+			generatedCode.digest,
+		);
 
 		// 만료 시간 계산
 		const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);

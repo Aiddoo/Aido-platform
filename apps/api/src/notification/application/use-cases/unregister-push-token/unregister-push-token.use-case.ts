@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { isRecordNotFoundError } from "@/shared/infrastructure/database/prisma-error.util";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
+	PushTokenNotFoundError,
 } from "../../ports/notification.repository.port";
 import {
 	NOTIFICATION_CACHE,
@@ -41,7 +41,7 @@ export class UnregisterPushTokenUseCase {
 				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
 			);
 		} catch (error) {
-			if (isRecordNotFoundError(error)) {
+			if (error instanceof PushTokenNotFoundError) {
 				this.#logger.warn(
 					`Push token not found: userId=${userId}, deviceId=${deviceId}`,
 				);

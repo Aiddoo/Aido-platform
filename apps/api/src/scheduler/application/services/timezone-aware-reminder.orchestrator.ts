@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
+import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 import {
 	FIRST_DAY_OF_MONTH,
 	isWithinScheduleWindow,
@@ -72,11 +72,17 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 
 	onModuleInit(): void {
 		// Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
-		this.schedulerRegistration = runInBackground(
-			this.#logger,
-			"Timezone reminder sweep scheduler registration",
-			() => this.enqueuer.registerSweepScheduler(),
-		);
+		this.schedulerRegistration = this.#registerSweepScheduler();
+	}
+
+	async #registerSweepScheduler(): Promise<void> {
+		try {
+			await this.enqueuer.registerSweepScheduler();
+		} catch (error: unknown) {
+			this.#logger.error(
+				`Timezone reminder sweep scheduler registration failed: ${toErrorMessage(error)}`,
+			);
+		}
 	}
 
 	/**

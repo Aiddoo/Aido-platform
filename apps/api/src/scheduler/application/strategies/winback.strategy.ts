@@ -5,11 +5,6 @@ import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { DedupKeys } from "@/shared/infrastructure/dedup/constants/dedup-keys";
-import {
-	DEDUP_PROVIDER,
-	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
 	ITimezoneStrategy,
@@ -20,6 +15,10 @@ import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
+import {
+	SCHEDULER_DEDUP,
+	type SchedulerDedupPort,
+} from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -35,8 +34,8 @@ export class WinbackStrategy implements ITimezoneStrategy {
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
 		private readonly notificationService: NotificationSender,
-		@Inject(DEDUP_PROVIDER)
-		private readonly dedupProvider: IDedupProvider,
+		@Inject(SCHEDULER_DEDUP)
+		private readonly schedulerDedup: SchedulerDedupPort,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -77,8 +76,8 @@ export class WinbackStrategy implements ITimezoneStrategy {
 
 				const inactiveDays = diffInDays(today, user.lastActiveAt);
 				const stage = resolveWinbackStage(inactiveDays);
-				const alreadySent = await this.dedupProvider.isMember(
-					DedupKeys.winbackStages(user.id),
+				const alreadySent = await this.schedulerDedup.hasWinbackStage(
+					user.id,
 					stage,
 				);
 				return { user, stage, inactiveDays, alreadySent };
@@ -121,14 +120,11 @@ export class WinbackStrategy implements ITimezoneStrategy {
 		if (notifications.length > 0) {
 			await this.notificationService.createAndSendBatch(notifications);
 
-			void Promise.all(
-				activeChecks.map((check) =>
-					this.dedupProvider.addMembers(
-						DedupKeys.winbackStages(check.user.id),
-						[check.stage],
-						DedupKeys.TTL.WINBACK_STAGES,
-					),
-				),
+			void this.schedulerDedup.recordWinbackStages(
+				activeChecks.map((check) => ({
+					userId: check.user.id,
+					stage: check.stage,
+				})),
 			);
 
 			this.#logger.log(`Winback: tz=${tz}, count=${notifications.length}`);

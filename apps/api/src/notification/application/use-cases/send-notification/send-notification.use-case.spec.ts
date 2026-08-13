@@ -14,8 +14,8 @@ import {
 	createPushDispatcherMock,
 } from "@test/mocks/ports/notification.mock";
 import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import { Prisma } from "@/generated/prisma/client";
 import {
+	DuplicateNotificationError,
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
@@ -65,10 +65,7 @@ describe("SendNotificationUseCase", () => {
 
 	it("unique 제약 위반(P2002)이면 graceful skip으로 null을 반환하고 발송 단계를 건너뛴다", async () => {
 		repository.createNotification.mockRejectedValue(
-			new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-				code: "P2002",
-				clientVersion: "7.0.0",
-			}),
+			new DuplicateNotificationError(),
 		);
 
 		const result = await useCase.execute(data);
