@@ -10,7 +10,7 @@ import {
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import { Nudge } from "../../../domain/entities/nudge.entity";
+import { Nudge } from "../../../domain/entities/nudge.aggregate";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,

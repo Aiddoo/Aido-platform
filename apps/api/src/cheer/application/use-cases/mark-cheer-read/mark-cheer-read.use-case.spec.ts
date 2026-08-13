@@ -5,7 +5,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createCheerRepositoryMock } from "@test/mocks/ports/cheer.mock";
 
-import { Cheer } from "../../../domain/entities/cheer.entity";
+import { Cheer } from "../../../domain/entities/cheer.aggregate";
 import {
 	CHEER_REPOSITORY,
 	type CheerRepositoryPort,

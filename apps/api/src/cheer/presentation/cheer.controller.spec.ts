@@ -2,8 +2,11 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
-import { CheerFacade } from "../application/facades/cheer.facade";
 import type { CheerWithRelations } from "../application/ports/cheer.repository.port";
+import { CheerReader } from "../application/services/cheer.reader";
+import { MarkCheerReadUseCase } from "../application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
+import { MarkManyCheersReadUseCase } from "../application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
+import { SendCheerUseCase } from "../application/use-cases/send-cheer/send-cheer.use-case";
 import { CheerController } from "./cheer.controller";
 import type {
 	GetCheersQueryDto,
@@ -31,21 +34,27 @@ const cheer: CheerWithRelations = {
 
 describe("CheerController", () => {
 	let controller: CheerController;
-	let facade: Mocked<CheerFacade>;
+	let cheerReader: Mocked<CheerReader>;
+	let sendCheerUseCase: Mocked<SendCheerUseCase>;
+	let markCheerReadUseCase: Mocked<MarkCheerReadUseCase>;
+	let markManyCheersReadUseCase: Mocked<MarkManyCheersReadUseCase>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(CheerController).compile();
 		controller = unit;
-		facade = unitRef.get(CheerFacade);
+		cheerReader = unitRef.get(CheerReader);
+		sendCheerUseCase = unitRef.get(SendCheerUseCase);
+		markCheerReadUseCase = unitRef.get(MarkCheerReadUseCase);
+		markManyCheersReadUseCase = unitRef.get(MarkManyCheersReadUseCase);
 	});
 
 	it("sendCheer는 파사드에 위임하고 응답을 구성한다", async () => {
-		facade.sendCheer.mockResolvedValue(cheer);
+		sendCheerUseCase.execute.mockResolvedValue(cheer);
 		const dto = { receiverId: "receiver", message: "hi" } as SendCheerDto;
 
 		const result = await controller.sendCheer(user, dto, "Asia/Seoul");
 
-		expect(facade.sendCheer).toHaveBeenCalledWith(
+		expect(sendCheerUseCase.execute).toHaveBeenCalledWith(
 			{ senderId: "sender", receiverId: "receiver", message: "hi" },
 			"Asia/Seoul",
 		);
@@ -54,12 +63,12 @@ describe("CheerController", () => {
 	});
 
 	it("getReceivedCheers는 목록/총계/미읽음을 병렬 조회한다", async () => {
-		facade.getReceivedCheers.mockResolvedValue({
+		cheerReader.getReceivedCheers.mockResolvedValue({
 			items: [cheer],
 			pagination: { hasNext: true, nextCursor: 1, size: 20 },
 		});
-		facade.countReceivedCheers.mockResolvedValue(5);
-		facade.countUnreadReceivedCheers.mockResolvedValue(2);
+		cheerReader.countReceivedCheers.mockResolvedValue(5);
+		cheerReader.countUnreadReceivedCheers.mockResolvedValue(2);
 		const query = {
 			cursor: undefined,
 			limit: 20,
@@ -74,7 +83,7 @@ describe("CheerController", () => {
 	});
 
 	it("getLimitInfo는 한도 정보를 매핑한다", async () => {
-		facade.getLimitInfo.mockResolvedValue({
+		cheerReader.getLimitInfo.mockResolvedValue({
 			dailyLimit: 3,
 			used: 1,
 			remaining: 2,
@@ -91,7 +100,7 @@ describe("CheerController", () => {
 	});
 
 	it("getCooldownInfo는 canCheer를 반전한다", async () => {
-		facade.getCooldownInfoForUser.mockResolvedValue({
+		cheerReader.getCooldownInfoForUser.mockResolvedValue({
 			isActive: true,
 			remainingSeconds: 100,
 			canCheerAt: new Date("2026-01-01T01:00:00.000Z"),
@@ -105,21 +114,27 @@ describe("CheerController", () => {
 	});
 
 	it("markAsRead는 파사드에 위임한다", async () => {
-		facade.markAsRead.mockResolvedValue(undefined);
+		markCheerReadUseCase.execute.mockResolvedValue(undefined);
 
 		const result = await controller.markAsRead(user, { id: 9 });
 
-		expect(facade.markAsRead).toHaveBeenCalledWith("sender", 9);
+		expect(markCheerReadUseCase.execute).toHaveBeenCalledWith({
+			userId: "sender",
+			cheerId: 9,
+		});
 		expect(result.readCount).toBe(1);
 	});
 
 	it("markManyAsRead는 처리 개수를 반환한다", async () => {
-		facade.markManyAsRead.mockResolvedValue(3);
+		markManyCheersReadUseCase.execute.mockResolvedValue(3);
 		const dto = { cheerIds: [1, 2, 3] } as MarkCheersReadDto;
 
 		const result = await controller.markManyAsRead(user, dto);
 
-		expect(facade.markManyAsRead).toHaveBeenCalledWith("sender", [1, 2, 3]);
+		expect(markManyCheersReadUseCase.execute).toHaveBeenCalledWith({
+			userId: "sender",
+			cheerIds: [1, 2, 3],
+		});
 		expect(result.readCount).toBe(3);
 	});
 });

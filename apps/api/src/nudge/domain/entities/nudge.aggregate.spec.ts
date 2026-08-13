@@ -1,4 +1,4 @@
-import { Nudge } from "./nudge.entity";
+import { Nudge } from "./nudge.aggregate";
 
 const base = {
 	id: 1,

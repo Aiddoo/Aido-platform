@@ -1,14 +1,5 @@
 import { Injectable } from "@nestjs/common";
-
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-
-import type { CheerCooldown } from "../../domain/services/cheer-cooldown";
-import type { CheerWithRelations } from "../ports/cheer.repository.port";
-import {
-	type CheerLimitInfo,
-	CheerReader,
-	type GetCheersParams,
-} from "../services/cheer.reader";
+import { CheerReader } from "../services/cheer.reader";
 import { MarkCheerReadUseCase } from "../use-cases/mark-cheer-read/mark-cheer-read.use-case";
 import { MarkManyCheersReadUseCase } from "../use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
 import {
@@ -16,10 +7,7 @@ import {
 	SendCheerUseCase,
 } from "../use-cases/send-cheer/send-cheer.use-case";
 
-/**
- * CheerFacade — cheer 모듈의 유일한 공개 표면.
- * 컨트롤러는 이 파사드만 주입하며, 파사드는 use-case·reader에 직접 위임한다(버스 없음).
- */
+/** @deprecated HTTP 진입점은 endpoint UseCase를 직접 사용한다. */
 @Injectable()
 export class CheerFacade {
 	constructor(
@@ -28,51 +16,34 @@ export class CheerFacade {
 		private readonly markCheerReadUseCase: MarkCheerReadUseCase,
 		private readonly markManyCheersReadUseCase: MarkManyCheersReadUseCase,
 	) {}
-
-	sendCheer(input: SendCheerInput, tz: string): Promise<CheerWithRelations> {
-		return this.sendCheerUseCase.execute(input, tz);
+	sendCheer(input: SendCheerInput, timezone: string) {
+		return this.sendCheerUseCase.execute(input, timezone);
 	}
-
-	getReceivedCheers(
-		params: GetCheersParams,
-	): Promise<CursorPaginatedResponse<CheerWithRelations, number>> {
-		return this.reader.getReceivedCheers(params);
+	getReceivedCheers(input: Parameters<CheerReader["getReceivedCheers"]>[0]) {
+		return this.reader.getReceivedCheers(input);
 	}
-
-	getSentCheers(
-		params: GetCheersParams,
-	): Promise<CursorPaginatedResponse<CheerWithRelations, number>> {
-		return this.reader.getSentCheers(params);
+	getSentCheers(input: Parameters<CheerReader["getSentCheers"]>[0]) {
+		return this.reader.getSentCheers(input);
 	}
-
-	getLimitInfo(userId: string, tz: string): Promise<CheerLimitInfo> {
-		return this.reader.getLimitInfo(userId, tz);
+	getLimitInfo(userId: string, timezone: string) {
+		return this.reader.getLimitInfo(userId, timezone);
 	}
-
-	getCooldownInfoForUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<CheerCooldown> {
+	getCooldownInfoForUser(senderId: string, receiverId: string) {
 		return this.reader.getCooldownInfoForUser(senderId, receiverId);
 	}
-
-	markAsRead(userId: string, cheerId: number): Promise<void> {
+	markAsRead(userId: string, cheerId: number) {
 		return this.markCheerReadUseCase.execute({ userId, cheerId });
 	}
-
-	markManyAsRead(userId: string, cheerIds: number[]): Promise<number> {
+	markManyAsRead(userId: string, cheerIds: number[]) {
 		return this.markManyCheersReadUseCase.execute({ userId, cheerIds });
 	}
-
-	countReceivedCheers(userId: string): Promise<number> {
+	countReceivedCheers(userId: string) {
 		return this.reader.countReceivedCheers(userId);
 	}
-
-	countSentCheers(userId: string): Promise<number> {
+	countSentCheers(userId: string) {
 		return this.reader.countSentCheers(userId);
 	}
-
-	countUnreadReceivedCheers(userId: string): Promise<number> {
+	countUnreadReceivedCheers(userId: string) {
 		return this.reader.countUnreadReceivedCheers(userId);
 	}
 }
