@@ -6,7 +6,6 @@ import { NotificationModule } from "../notification/notification.module";
 import { TodoModule } from "../todo/todo.module";
 import { WeatherModule } from "../weather/weather.module";
 
-import { AiSuggestionFacade } from "./application/facades/ai-suggestion.facade";
 import { AI_SUGGESTION_REPOSITORY } from "./application/ports/ai-suggestion.repository.port";
 import { RECURRING_TODO_CREATOR } from "./application/ports/recurring-todo-creator.port";
 import { WEEKLY_REPORT_READER } from "./application/ports/weekly-report-reader.port";
@@ -59,11 +58,9 @@ import { AiSuggestionController } from "./presentation/ai-suggestion.controller"
 		GetPendingSuggestionsUseCase,
 		HandleSuggestionActionUseCase,
 		AnalyzeAndCreateSuggestionsUseCase,
-		AiSuggestionFacade,
 		SuggestionAnalysisJob,
 		SuggestionAnalysisProcessor,
 		AiSuggestionQueueMaintenanceService,
 	],
-	exports: [AiSuggestionFacade],
 })
 export class AiSuggestionModule {}

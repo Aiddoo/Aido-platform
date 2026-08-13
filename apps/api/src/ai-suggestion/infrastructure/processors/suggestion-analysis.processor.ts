@@ -20,7 +20,7 @@ import {
 	fromLegacyJob,
 	type NamedJob,
 } from "@/shared/infrastructure/jobs/named-job";
-import { AiSuggestionFacade } from "../../application/facades/ai-suggestion.facade";
+import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
 import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 import {
 	AI_SUGGESTION_LEGACY_QUEUE,
@@ -62,7 +62,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 	}
 
 	constructor(
-		private readonly aiSuggestionFacade: AiSuggestionFacade,
+		private readonly analyzeAndCreateSuggestionsUseCase: AnalyzeAndCreateSuggestionsUseCase,
 		private readonly notificationService: NotificationFacade,
 		private readonly database: DatabaseService,
 		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
@@ -127,13 +127,12 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 		});
 		const locale = resolveTemplateLocale(preference?.locale);
 
-		const createdCount =
-			await this.aiSuggestionFacade.analyzeAndCreateSuggestions(
-				userId,
-				timezone,
-				weatherGrid,
-				locale,
-			);
+		const createdCount = await this.analyzeAndCreateSuggestionsUseCase.execute(
+			userId,
+			timezone,
+			weatherGrid,
+			locale,
+		);
 
 		if (createdCount === 0) {
 			this.#logger.debug(
