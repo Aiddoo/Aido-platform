@@ -2,7 +2,7 @@
 
 > **Version**: 1.2.0 · **Last Updated**: 2026-07-23 · **Owner**: Aido Platform Team
 
-NestJS 기반 백엔드 API. **전 모듈 클린아키텍처 use-case 표준**(참조 구현: **todo**) + BullMQ 큐 기반 알림. @nestjs/cqrs 미사용(버스 없는 `@Injectable` use-case).
+NestJS 기반 백엔드 API. **DDD strict-core use-case 표준**(참조 구현: **todo**) + BullMQ 큐 기반 알림. domain/application은 순수 TypeScript이며 Nest 조립은 module이 담당한다.
 
 ---
 
@@ -43,8 +43,8 @@ NestJS 기반 백엔드 API. **전 모듈 클린아키텍처 use-case 표준**(�
 
 ```
 [클린아키텍처 use-case 표준 — 전 모듈. 참조 구현: todo. @nestjs/cqrs 미사용]
-Request → Guard → Controller → Facade → UseCase(execute)
-                                   ↓ 포트(인터페이스)          ↓ 도메인 이벤트(커밋 후)
+Request → Guard → Controller → endpoint UseCase(execute)
+                                      ↓ 포트(인터페이스)       ↓ 도메인 이벤트(커밋 후)
                               Adapter → Repository → DB    DOMAIN_EVENT_PUBLISHER
                                                             → EventEmitter2 → @OnEvent 핸들러(부수효과)
 
@@ -58,6 +58,9 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushP
 
 - **예외**: 모듈 코드는 `ApplicationException`/`DomainException`(둘 다 `ErrorCodedException`, `ErrorCode` 보유)을 던진다. `GlobalExceptionFilter`가 이를 정규화해 HTTP 응답을 만든다. `BusinessException`/`BusinessExceptions`는 필터의 canonical 에러 타입 + 공유 에러 카탈로그(Prisma P2002 매핑 등)이며 신규 비즈니스 로직에서 직접 던지지 않는다. `new HttpException()` 금지
 - **트랜잭션**: `UNIT_OF_WORK.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다
+- **Strict Core**: domain/application에서 `@nestjs/*`, Prisma, infrastructure, presentation import 금지. UseCase에는 Nest 데코레이터를 두지 않고 module의 `useFactory`에서 조립한다
+- **진입점**: Controller는 endpoint UseCase를 직접 주입한다. Facade는 신규 작성하지 않으며 전환 모듈에서는 제거한다
+- **집합 연산 예외**: batch update, 원자적 claim/counter처럼 다중 행 원자성이 핵심인 작업은 명명된 port 뒤의 SQL로 유지한다
 - **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `as`는 `pnpm lint:no-cast`, `!`는 Biome `noNonNullAssertion`(biome.json override)로 검사 (CI `lint:arch` 게이트)
 - **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`(dependency-cruiser, `.dependency-cruiser.cjs`)로 검사 (CI `lint:arch` 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
 - **API 계약 고정**: `openapi-contract.e2e-spec`의 현재 스냅샷 + 스토어 배포 클라이언트 fingerprint가 기존 request/response/status/Zod shape를 고정한다. 새 route/schema 추가만 허용 (상시 계약 게이트 — CI e2e에서 실행)
@@ -93,10 +96,10 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushP
 1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm db:migrate`
 2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
 3. **Domain** → 애그리게잇 행동 메서드/자식 엔티티/VO/정책 함수/이벤트 (불변식은 DomainException, 생성은 planCreation, 판단 규칙은 domain/services/ 정책)
-4. **Application** → 포트 확장 + 쓰기는 `use-cases/<kebab>/<kebab>.use-case.ts`, 읽기는 `queries/<kebab>/<kebab>.use-case.ts` (+spec) — `@Injectable()` 클래스, 단일 `execute(input)`
+4. **Application** → consumer-owned 포트 + `use-cases/<kebab>/<kebab>.use-case.ts` (+spec) — 순수 클래스, 단일 `execute(input)`
 5. **Infrastructure** → 어댑터에 포트 구현 (Prisma 저장소·벤더 SDK·BullMQ 등)
-6. **Facade/Controller** → Facade에 한 줄 위임 메서드 추가, 컨트롤러는 Facade 호출 + Swagger 문서화
-7. **Module** → 배럴(`XxxUseCases`/`XxxQueryUseCases` 배열) 자동 등록 확인
+6. **Controller** → DTO를 application input으로 변환하고 endpoint UseCase 직접 호출 + Swagger 문서화
+7. **Module** → `useFactory` + `ConstructorParameters`로 순수 UseCase 조립
 8. **테스트** → use-case spec → e2e (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries` 통과
 
 > 상세 체크리스트: [architecture.md - 새 기능 추가 체크리스트](.claude/architecture.md#8-새-기능-추가-체크리스트)

@@ -1,0 +1,885 @@
+{
+	"version": 1,
+	"strictCoreImports": [
+		"src/admin-notification/application/facades/admin-notification.facade.ts:1:36:external-runtime:@nestjs/common",
+		"src/admin-notification/application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/admin-notification/application/use-cases/enqueue-subscription-event/enqueue-subscription-event.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/admin-notification/application/use-cases/enqueue-user-registered/enqueue-user-registered.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/admin-notification/domain/services/subscription-event-meta.ts:1:59:external-runtime:@aido/validators",
+		"src/admin/application/facades/admin.facade.ts:5:8:external-runtime:@aido/validators",
+		"src/admin/application/facades/admin.facade.ts:6:28:external-runtime:@nestjs/common",
+		"src/admin/application/queries/get-growth-summary/get-growth-summary.query.ts:4:8:external-runtime:@aido/validators",
+		"src/admin/application/queries/get-growth-summary/get-growth-summary.query.ts:5:36:external-runtime:@nestjs/common",
+		"src/admin/application/use-cases/broadcast-notification/broadcast-notification.use-case.ts:2:41:external-runtime:@aido/validators",
+		"src/admin/application/use-cases/broadcast-notification/broadcast-notification.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case.ts:2:41:external-runtime:@aido/validators",
+		"src/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/admin/domain/broadcast-message.ts:4:8:external-runtime:@aido/validators",
+		"src/admin/domain/entities/broadcast-campaign.ts:2:41:external-runtime:@aido/validators",
+		"src/ai-report/application/facades/ai-report.facade.ts:1:34:external-runtime:@aido/validators",
+		"src/ai-report/application/facades/ai-report.facade.ts:2:36:external-runtime:@nestjs/common",
+		"src/ai-report/application/facades/ai-report.facade.ts:3:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/application/ports/ai-report.repository.port.ts:6:8:external-runtime:@aido/validators",
+		"src/ai-report/application/ports/ai-report.repository.port.ts:7:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/application/use-cases/generate-report/generate-report.use-case.ts:1:46:external-runtime:@aido/validators",
+		"src/ai-report/application/use-cases/generate-report/generate-report.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/ai-report/application/use-cases/generate-report/generate-report.use-case.ts:6:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/application/use-cases/get-report-by-id/get-report-by-id.use-case.ts:2:46:external-runtime:@aido/validators",
+		"src/ai-report/application/use-cases/get-report-by-id/get-report-by-id.use-case.ts:3:36:external-runtime:@nestjs/common",
+		"src/ai-report/application/use-cases/get-report-status/get-report-status.use-case.ts:2:35:external-runtime:@aido/validators",
+		"src/ai-report/application/use-cases/get-report-status/get-report-status.use-case.ts:3:36:external-runtime:@nestjs/common",
+		"src/ai-report/application/use-cases/get-reports/get-reports.use-case.ts:2:46:external-runtime:@aido/validators",
+		"src/ai-report/application/use-cases/get-reports/get-reports.use-case.ts:3:36:external-runtime:@nestjs/common",
+		"src/ai-report/domain/entities/ai-report.entity.ts:1:34:external-runtime:@aido/validators",
+		"src/ai-report/domain/entities/ai-report.entity.ts:2:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/domain/services/prompts/report-fallback.ts:1:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/domain/services/prompts/report-insights.ts:1:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/domain/services/prompts/report.prompt.ts:1:19:external-runtime:zod",
+		"src/ai-report/domain/services/prompts/report.prompt.ts:8:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/domain/services/report-aggregation.ts:6:8:external-runtime:@aido/validators",
+		"src/ai-report/domain/services/report-period.ts:3:38:presentation:@/shared/presentation/decorators",
+		"src/ai-report/domain/types.ts:5:8:external-runtime:@aido/validators",
+		"src/ai-report/domain/types.ts:6:38:presentation:@/shared/presentation/decorators",
+		"src/ai-suggestion/application/facades/ai-suggestion.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/ai-suggestion/application/facades/ai-suggestion.facade.ts:3:38:presentation:@/shared/presentation/decorators",
+		"src/ai-suggestion/application/ports/ai-suggestion.repository.port.ts:1:32:external-runtime:@aido/validators",
+		"src/ai-suggestion/application/ports/recurring-todo-creator.port.ts:1:32:external-runtime:@aido/validators",
+		"src/ai-suggestion/application/services/suggestion-context.builder.ts:7:8:external-runtime:@aido/validators",
+		"src/ai-suggestion/application/services/suggestion-context.builder.ts:8:44:external-runtime:@nestjs/common",
+		"src/ai-suggestion/application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.ts:1:38:external-runtime:@aido/validators",
+		"src/ai-suggestion/application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/ai-suggestion/application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.ts:8:38:presentation:@/shared/presentation/decorators",
+		"src/ai-suggestion/application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/ai-suggestion/application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.ts:2:55:external-runtime:@aido/validators",
+		"src/ai-suggestion/application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/ai-suggestion/application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.ts:5:19:external-runtime:zod",
+		"src/ai-suggestion/domain/services/pattern-filter.ts:7:38:external-runtime:@aido/validators",
+		"src/ai-suggestion/domain/services/prompts/detect-patterns.prompt.ts:1:33:external-runtime:@aido/validators",
+		"src/ai-suggestion/domain/services/prompts/detect-patterns.prompt.ts:2:19:external-runtime:zod",
+		"src/ai-suggestion/domain/services/prompts/detect-patterns.prompt.ts:8:38:presentation:@/shared/presentation/decorators",
+		"src/ai-suggestion/domain/types.ts:1:32:external-runtime:@aido/validators",
+		"src/ai/application/facades/ai.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/ai/application/facades/ai.facade.ts:2:38:presentation:@/shared/presentation/decorators",
+		"src/ai/application/ports/ai-provider.port.ts:7:24:external-runtime:zod",
+		"src/ai/application/queries/get-ai-usage/get-ai-usage.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/ai/application/services/ai-usage-meter.service.ts:9:44:external-runtime:@nestjs/common",
+		"src/ai/application/use-cases/parse-memo/parse-memo.use-case.ts:11:38:presentation:@/shared/presentation/decorators",
+		"src/ai/application/use-cases/parse-memo/parse-memo.use-case.ts:2:58:external-runtime:@aido/validators",
+		"src/ai/application/use-cases/parse-memo/parse-memo.use-case.ts:6:8:external-runtime:@aido/validators",
+		"src/ai/application/use-cases/parse-memo/parse-memo.use-case.ts:7:44:external-runtime:@nestjs/common",
+		"src/ai/application/use-cases/parse-memo/parse-memo.use-case.ts:8:30:external-runtime:ai",
+		"src/ai/application/use-cases/parse-todo/parse-todo.use-case.ts:2:37:external-runtime:@aido/validators",
+		"src/ai/application/use-cases/parse-todo/parse-todo.use-case.ts:3:38:external-runtime:@aido/validators",
+		"src/ai/application/use-cases/parse-todo/parse-todo.use-case.ts:4:44:external-runtime:@nestjs/common",
+		"src/ai/application/use-cases/parse-todo/parse-todo.use-case.ts:5:30:external-runtime:ai",
+		"src/ai/application/use-cases/parse-todo/parse-todo.use-case.ts:8:38:presentation:@/shared/presentation/decorators",
+		"src/app-config/application/facades/app-config.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/app-config/application/queries/get-feature-discovery/get-feature-discovery.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/auth/application/facades/account.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/facades/auth.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/facades/oauth.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/facades/session.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/ports/auth-collaboration.port.ts:1:51:external-runtime:@aido/validators",
+		"src/auth/application/ports/auth-crypto.port.ts:1:31:external-runtime:@aido/validators",
+		"src/auth/application/ports/auth-persistence.port.ts:1:51:external-runtime:@aido/validators",
+		"src/auth/application/queries/get-current-user/get-current-user.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/queries/get-oauth-redirect-uri/get-oauth-redirect-uri.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/queries/list-active-sessions/list-active-sessions.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/queries/list-linked-accounts/list-linked-accounts.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/services/session.service.ts:2:31:external-runtime:@aido/validators",
+		"src/auth/application/services/session.service.ts:3:36:external-runtime:@nestjs/common",
+		"src/auth/application/services/verification.service.ts:2:35:external-runtime:@aido/validators",
+		"src/auth/application/services/verification.service.ts:3:44:external-runtime:@nestjs/common",
+		"src/auth/application/types/auth.types.ts:1:51:external-runtime:@aido/validators",
+		"src/auth/application/types/session.types.ts:1:34:external-runtime:@aido/validators",
+		"src/auth/application/use-cases/change-password/change-password.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/complete-oauth-authorization/complete-oauth-authorization.use-case.ts:1:33:external-runtime:@aido/validators",
+		"src/auth/application/use-cases/complete-oauth-authorization/complete-oauth-authorization.use-case.ts:2:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/delete-account/delete-account.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/exchange-oauth-code/exchange-oauth-code.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/issue-login/issue-login.use-case.ts:1:31:external-runtime:@aido/validators",
+		"src/auth/application/use-cases/issue-login/issue-login.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/link-oauth-account-with-code/link-oauth-account-with-code.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/link-oauth-account/link-oauth-account.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/login-with-oauth-token/login-with-oauth-token.use-case.ts:1:33:external-runtime:@aido/validators",
+		"src/auth/application/use-cases/login-with-oauth-token/login-with-oauth-token.use-case.ts:2:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/login-with-password/login-with-password.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/logout-all/logout-all.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/logout/logout.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/provision-user/provision-user.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/refresh-tokens/refresh-tokens.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/register/register.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/request-password-reset/request-password-reset.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/request-password-setup-code/request-password-setup-code.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/resend-verification/resend-verification.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/reset-password/reset-password.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/revoke-session/revoke-session.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/set-password/set-password.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/start-oauth-authorization/start-oauth-authorization.use-case.ts:1:33:external-runtime:@aido/validators",
+		"src/auth/application/use-cases/start-oauth-authorization/start-oauth-authorization.use-case.ts:2:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/unlink-oauth-account/unlink-oauth-account.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/update-profile/update-profile.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/use-cases/verify-email/verify-email.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/auth/application/workflows/credential-auth.workflow.ts:10:44:external-runtime:@nestjs/common",
+		"src/auth/application/workflows/credential-auth.workflow.ts:9:8:external-runtime:@aido/validators",
+		"src/auth/application/workflows/oauth.workflow.ts:2:33:external-runtime:@aido/validators",
+		"src/auth/application/workflows/oauth.workflow.ts:3:44:external-runtime:@nestjs/common",
+		"src/auth/application/workflows/password.workflow.ts:2:44:external-runtime:@nestjs/common",
+		"src/auth/domain/services/user-tag.util.ts:1:29:external-runtime:node:crypto",
+		"src/auth/domain/value-objects/email.vo.ts:2:19:external-runtime:@aido/validators",
+		"src/auth/domain/value-objects/verification-code.vo.ts:1:39:external-runtime:node:crypto",
+		"src/auth/domain/value-objects/verification-code.vo.ts:3:35:external-runtime:@aido/validators",
+		"src/cheer/application/facades/cheer.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/cheer/application/services/cheer.reader.ts:1:44:external-runtime:@nestjs/common",
+		"src/cheer/application/use-cases/mark-cheer-read/mark-cheer-read.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/cheer/application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/cheer/application/use-cases/send-cheer/send-cheer.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/cheer/domain/services/cheer-cooldown.ts:1:30:external-runtime:@aido/validators",
+		"src/cheer/domain/value-objects/cheer-message.vo.ts:2:30:external-runtime:@aido/validators",
+		"src/daily-completion/application/events/daily-completion-cache.invalidator.ts:1:44:external-runtime:@nestjs/common",
+		"src/daily-completion/application/events/daily-completion-cache.invalidator.ts:2:25:external-runtime:@nestjs/event-emitter",
+		"src/daily-completion/application/facades/daily-completion.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/daily-completion/application/queries/get-friend-daily-completions/get-friend-daily-completions.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/email/application/facades/email.facade.ts:1:36:external-runtime:@nestjs/common",
+		"src/email/domain/templates/inquiry.template.ts:1:38:external-runtime:@aido/validators",
+		"src/follow/application/facades/follow.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/follow/application/queries/search-users/search-users.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/follow/application/services/follow.reader.ts:1:44:external-runtime:@nestjs/common",
+		"src/follow/application/services/friendship-effects.service.ts:1:44:external-runtime:@nestjs/common",
+		"src/follow/application/use-cases/accept-friend-request/accept-friend-request.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/follow/application/use-cases/reject-friend-request/reject-friend-request.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/follow/application/use-cases/remove-friend/remove-friend.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/follow/application/use-cases/reorder-friend/reorder-friend.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/follow/application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/follow/application/use-cases/send-friend-request/send-friend-request.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/inquiry/application/facades/inquiry.facade.ts:1:38:external-runtime:@aido/validators",
+		"src/inquiry/application/facades/inquiry.facade.ts:2:28:external-runtime:@nestjs/common",
+		"src/inquiry/application/use-cases/create-inquiry/create-inquiry.use-case.ts:2:38:external-runtime:@aido/validators",
+		"src/inquiry/application/use-cases/create-inquiry/create-inquiry.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/inquiry/domain/services/inquiry-submission.ts:1:38:external-runtime:@aido/validators",
+		"src/memo/application/facades/memo.facade.ts:1:43:external-runtime:@aido/validators",
+		"src/memo/application/facades/memo.facade.ts:2:28:external-runtime:@nestjs/common",
+		"src/memo/application/ports/todo-creator.port.ts:1:54:external-runtime:@aido/validators",
+		"src/memo/application/queries/get-memo-resource-limit/get-memo-resource-limit.use-case.ts:1:29:external-runtime:@aido/validators",
+		"src/memo/application/queries/get-memo-resource-limit/get-memo-resource-limit.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/memo/application/queries/get-memo/get-memo.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/memo/application/queries/get-memo/get-memo.use-case.ts:3:36:external-runtime:@nestjs/common",
+		"src/memo/application/queries/get-memos/get-memos.use-case.ts:1:43:external-runtime:@aido/validators",
+		"src/memo/application/queries/get-memos/get-memos.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/memo/application/use-cases/convert-memo-to-todo/convert-memo-to-todo.use-case.ts:2:27:external-runtime:@aido/validators",
+		"src/memo/application/use-cases/convert-memo-to-todo/convert-memo-to-todo.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/memo/application/use-cases/convert-memo-to-todos/convert-memo-to-todos.use-case.ts:2:38:external-runtime:@aido/validators",
+		"src/memo/application/use-cases/convert-memo-to-todos/convert-memo-to-todos.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/memo/application/use-cases/create-memo/create-memo.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/memo/application/use-cases/create-memo/create-memo.use-case.ts:3:29:external-runtime:@aido/validators",
+		"src/memo/application/use-cases/create-memo/create-memo.use-case.ts:4:44:external-runtime:@nestjs/common",
+		"src/memo/application/use-cases/delete-memo/delete-memo.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/memo/application/use-cases/reorder-memo/reorder-memo.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/memo/application/use-cases/toggle-memo-pin/toggle-memo-pin.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/memo/application/use-cases/update-memo/update-memo.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/memo/domain/entities/memo.entity.ts:1:43:external-runtime:@aido/validators",
+		"src/memo/domain/value-objects/memo-content.vo.ts:2:29:external-runtime:@aido/validators",
+		"src/notification/application/facades/notification.facade.ts:1:36:external-runtime:@nestjs/common",
+		"src/notification/application/facades/notification.facade.ts:3:38:presentation:@/shared/presentation/decorators",
+		"src/notification/application/ports/notification-data.ts:1:45:external-runtime:@aido/validators",
+		"src/notification/application/ports/push-dispatcher.port.ts:1:38:presentation:@/shared/presentation/decorators",
+		"src/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case.ts:2:27:infrastructure:@/shared/infrastructure/dedup/constants/dedup-keys",
+		"src/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case.ts:6:8:infrastructure:@/shared/infrastructure/dedup/interfaces/dedup.interface",
+		"src/notification/application/use-cases/get-notifications/get-notifications.use-case.ts:1:62:external-runtime:@aido/validators",
+		"src/notification/application/use-cases/get-notifications/get-notifications.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/get-unread-count/get-unread-count.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/mark-as-read/mark-as-read.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/register-push-token/register-push-token.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.ts:3:26:infrastructure:@/shared/infrastructure/cache",
+		"src/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.ts:7:8:infrastructure:@/shared/infrastructure/lock",
+		"src/notification/application/use-cases/send-notification/send-notification.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/send-notification/send-notification.use-case.ts:2:45:infrastructure:@/shared/infrastructure/database/prisma-error.util",
+		"src/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case.ts:2:39:infrastructure:@/shared/infrastructure/database/prisma-error.util",
+		"src/notification/application/utils/user-locale.util.ts:1:38:infrastructure:@/shared/infrastructure/database/database.service",
+		"src/notification/application/utils/user-locale.util.ts:2:38:presentation:@/shared/presentation/decorators",
+		"src/notification/domain/services/night-time.ts:1:35:external-runtime:@aido/validators",
+		"src/notification/domain/services/templates/notification-templates.ts:7:8:presentation:@/shared/presentation/decorators",
+		"src/nudge/application/facades/nudge.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/nudge/application/services/nudge.reader.ts:1:44:external-runtime:@nestjs/common",
+		"src/nudge/application/use-cases/mark-nudge-read/mark-nudge-read.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/nudge/application/use-cases/send-nudge/send-nudge.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/nudge/domain/services/nudge-cooldown.ts:1:51:external-runtime:@aido/validators",
+		"src/nudge/domain/value-objects/nudge-message.vo.ts:2:30:external-runtime:@aido/validators",
+		"src/retention/application/facades/retention.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/retention/application/use-cases/activate-retention-experiment/activate-retention-experiment.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/retention/application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/retention/application/use-cases/enroll-retention-experiment/enroll-retention-experiment.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/retention/application/use-cases/process-retention-stages/process-retention-stages.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/retention/application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/ports/scheduler-read-models.ts:7:38:presentation:@/shared/presentation/decorators",
+		"src/scheduler/application/services/timezone-aware-reminder.orchestrator.ts:1:63:external-runtime:@nestjs/common",
+		"src/scheduler/application/services/timezone-aware-reminder.orchestrator.ts:5:33:infrastructure:@/shared/infrastructure/bullmq/non-blocking-init",
+		"src/scheduler/application/strategies/evening-reminder.strategy.ts:1:42:external-runtime:@aido/validators",
+		"src/scheduler/application/strategies/evening-reminder.strategy.ts:2:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/lunch-nudge.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/monthly-report.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/morning-reminder.strategy.ts:1:42:external-runtime:@aido/validators",
+		"src/scheduler/application/strategies/morning-reminder.strategy.ts:2:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/nudge-suggest.strategy.ts:12:8:infrastructure:@/shared/infrastructure/dedup/interfaces/dedup.interface",
+		"src/scheduler/application/strategies/nudge-suggest.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/nudge-suggest.strategy.ts:8:27:infrastructure:@/shared/infrastructure/dedup/constants/dedup-keys",
+		"src/scheduler/application/strategies/onboarding.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/social-digest.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/streak-at-risk.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/weather-evening.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/weather-morning.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/weekly-achievement.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/weekly-report.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/winback.strategy.ts:12:8:infrastructure:@/shared/infrastructure/dedup/interfaces/dedup.interface",
+		"src/scheduler/application/strategies/winback.strategy.ts:1:44:external-runtime:@nestjs/common",
+		"src/scheduler/application/strategies/winback.strategy.ts:8:27:infrastructure:@/shared/infrastructure/dedup/constants/dedup-keys",
+		"src/shared/application/entitlement/entitlement.module.ts:1:32:external-runtime:@nestjs/common",
+		"src/shared/application/entitlement/entitlement.service.ts:12:8:external-runtime:@aido/validators",
+		"src/shared/application/entitlement/entitlement.service.ts:13:28:external-runtime:@nestjs/common",
+		"src/shared/application/entitlement/entitlement.service.ts:14:30:infrastructure:@/shared/infrastructure/cache/cache.service",
+		"src/shared/application/entitlement/entitlement.service.ts:15:33:infrastructure:@/shared/infrastructure/database/database.service",
+		"src/shared/application/entitlement/entitlement.service.ts:16:40:infrastructure:@/shared/infrastructure/database/prisma.types",
+		"src/shared/application/exceptions/business-exception.service.ts:2:31:external-runtime:@nestjs/common",
+		"src/shared/application/pagination/pagination.module.ts:1:32:external-runtime:@nestjs/common",
+		"src/shared/application/pagination/services/pagination.service.ts:1:28:external-runtime:@nestjs/common",
+		"src/subscription/application/facades/subscription.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/subscription/application/ports/subscription-event-notifier.port.ts:1:47:external-runtime:@aido/validators",
+		"src/subscription/application/types/subscription-event.payload.ts:8:59:external-runtime:@aido/validators",
+		"src/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case.ts:13:26:infrastructure:@/shared/infrastructure/cache",
+		"src/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case.ts:17:8:infrastructure:@/shared/infrastructure/lock",
+		"src/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case.ts:6:8:external-runtime:@aido/validators",
+		"src/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case.ts:7:44:external-runtime:@nestjs/common",
+		"src/subscription/application/use-cases/handle-webhook-event/subscription-event-payload.mapper.ts:1:47:external-runtime:@aido/validators",
+		"src/subscription/domain/services/webhook-timestamps.ts:2:47:external-runtime:@aido/validators",
+		"src/todo-category/application/facades/todo-category.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/todo-category/application/services/todo-category.reader.ts:2:36:external-runtime:@nestjs/common",
+		"src/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/todo/application/events/todo-created.handler.ts:1:36:external-runtime:@nestjs/common",
+		"src/todo/application/events/todo-created.handler.ts:2:25:external-runtime:@nestjs/event-emitter",
+		"src/todo/application/events/todo-deleted.handler.ts:1:36:external-runtime:@nestjs/common",
+		"src/todo/application/events/todo-deleted.handler.ts:2:25:external-runtime:@nestjs/event-emitter",
+		"src/todo/application/events/todo-rescheduled.handler.ts:1:36:external-runtime:@nestjs/common",
+		"src/todo/application/events/todo-rescheduled.handler.ts:2:25:external-runtime:@nestjs/event-emitter",
+		"src/todo/application/events/todo-toggled.handler.ts:1:44:external-runtime:@nestjs/common",
+		"src/todo/application/events/todo-toggled.handler.ts:2:25:external-runtime:@nestjs/event-emitter",
+		"src/todo/application/events/todo-updated.handler.ts:1:36:external-runtime:@nestjs/common",
+		"src/todo/application/events/todo-updated.handler.ts:2:25:external-runtime:@nestjs/event-emitter",
+		"src/todo/application/facades/todo.facade.ts:1:60:external-runtime:@aido/validators",
+		"src/todo/application/facades/todo.facade.ts:2:28:external-runtime:@nestjs/common",
+		"src/todo/application/ports/todo-cache.port.ts:1:43:external-runtime:@aido/validators",
+		"src/todo/application/ports/todo-read.repository.port.ts:1:43:external-runtime:@aido/validators",
+		"src/todo/application/queries/get-friend-todos/get-friend-todos.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/queries/get-friend-todos/get-friend-todos.use-case.ts:3:36:external-runtime:@nestjs/common",
+		"src/todo/application/queries/get-todo-by-id/get-todo-by-id.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/queries/get-todo-by-id/get-todo-by-id.use-case.ts:3:36:external-runtime:@nestjs/common",
+		"src/todo/application/queries/get-todo-resource-limit/get-todo-resource-limit.use-case.ts:1:29:external-runtime:@aido/validators",
+		"src/todo/application/queries/get-todo-resource-limit/get-todo-resource-limit.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/todo/application/queries/get-todo-summary/get-todo-summary.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/todo/application/queries/get-todos/get-todos.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/queries/get-todos/get-todos.use-case.ts:3:36:external-runtime:@nestjs/common",
+		"src/todo/application/types.ts:8:32:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/add-todo-item/add-todo-item.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/add-todo-item/add-todo-item.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/change-todo-category/change-todo-category.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/change-todo-category/change-todo-category.use-case.ts:3:29:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/change-todo-category/change-todo-category.use-case.ts:4:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/create-recurring-todos/create-recurring-todos.use-case.ts:1:28:external-runtime:node:crypto",
+		"src/todo/application/use-cases/create-recurring-todos/create-recurring-todos.use-case.ts:3:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/create-recurring-todos/create-recurring-todos.use-case.ts:4:52:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/create-recurring-todos/create-recurring-todos.use-case.ts:5:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/create-todo/create-todo.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/create-todo/create-todo.use-case.ts:3:29:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/create-todo/create-todo.use-case.ts:4:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/delete-todo-item/delete-todo-item.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/delete-todo-item/delete-todo-item.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/delete-todo/delete-todo.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/reorder-todo-items/reorder-todo-items.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/reorder-todo-items/reorder-todo-items.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/reorder-todo/reorder-todo.use-case.ts:2:60:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/reorder-todo/reorder-todo.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/toggle-todo-complete/toggle-todo-complete.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/toggle-todo-complete/toggle-todo-complete.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/update-todo-item/update-todo-item.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/update-todo-item/update-todo-item.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/update-todo-schedule/update-todo-schedule.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/update-todo-schedule/update-todo-schedule.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/update-todo-title/update-todo-title.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/update-todo-title/update-todo-title.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/update-todo-visibility/update-todo-visibility.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/update-todo-visibility/update-todo-visibility.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/application/use-cases/update-todo/update-todo.use-case.ts:2:43:external-runtime:@aido/validators",
+		"src/todo/application/use-cases/update-todo/update-todo.use-case.ts:3:44:external-runtime:@nestjs/common",
+		"src/todo/domain/entities/todo.entity.ts:2:34:external-runtime:@aido/validators",
+		"src/todo/domain/services/expand-recurring-dates.ts:1:49:external-runtime:@aido/validators",
+		"src/todo/domain/services/reorder-position.ts:1:38:external-runtime:@aido/validators",
+		"src/user-settings/application/facades/user-settings.facade.ts:8:8:external-runtime:@aido/validators",
+		"src/user-settings/application/facades/user-settings.facade.ts:9:28:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/get-consent-record/get-consent-record.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/get-consent-records/get-consent-records.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/get-consent/get-consent.use-case.ts:1:38:external-runtime:@aido/validators",
+		"src/user-settings/application/use-cases/get-consent/get-consent.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/get-preference-record/get-preference-record.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/get-preference-records/get-preference-records.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/get-preference/get-preference.use-case.ts:1:41:external-runtime:@aido/validators",
+		"src/user-settings/application/use-cases/get-preference/get-preference.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/on-todo-toggled/on-todo-toggled.use-case.ts:1:44:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/seed-user-settings/seed-user-settings.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/update-marketing-consent/update-marketing-consent.use-case.ts:1:53:external-runtime:@aido/validators",
+		"src/user-settings/application/use-cases/update-marketing-consent/update-marketing-consent.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case.ts:1:57:external-runtime:@aido/validators",
+		"src/user-settings/application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/update-preference/update-preference.use-case.ts:5:8:external-runtime:@aido/validators",
+		"src/user-settings/application/use-cases/update-preference/update-preference.use-case.ts:6:44:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/upsert-push-locale/upsert-push-locale.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/user-settings/domain/services/consent-view.ts:5:8:external-runtime:@aido/validators",
+		"src/user-settings/domain/services/preference-view.ts:5:8:external-runtime:@aido/validators",
+		"src/user-settings/domain/services/preference-view.ts:7:32:presentation:@/shared/presentation/decorators",
+		"src/weather/application/facades/weather.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/weather/application/queries/get-forecasts-by-grid-batch/get-forecasts-by-grid-batch.use-case.ts:1:28:external-runtime:@nestjs/common",
+		"src/weather/application/queries/get-weather-conditions/get-weather-conditions.use-case.ts:2:44:external-runtime:@nestjs/common",
+		"src/weather/application/queries/get-weather-forecast/get-weather-forecast.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/weather/application/services/weather-forecast.reader.ts:2:44:external-runtime:@nestjs/common",
+		"src/weather/application/use-cases/upsert-location/upsert-location.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/weekly-achievement/application/facades/weekly-achievement.facade.ts:1:28:external-runtime:@nestjs/common",
+		"src/weekly-achievement/application/queries/get-weekly-achievement/get-weekly-achievement.use-case.ts:2:36:external-runtime:@nestjs/common",
+		"src/weekly-achievement/application/queries/get-weekly-achievements/get-weekly-achievements.use-case.ts:1:36:external-runtime:@nestjs/common",
+		"src/weekly-achievement/application/use-cases/upsert-weekly-achievements/upsert-weekly-achievements.use-case.ts:1:36:external-runtime:@nestjs/common"
+	],
+	"aggregateNaming": [
+		"src/todo/domain/entities/todo.entity.ts:aggregate-root-in-entity-file",
+		"src/todo/domain/entities/todo.entity.ts:aggregate-root-in-non-aggregate-file"
+	],
+	"useCaseSignatures": [
+		"src/admin-notification/application/use-cases/enqueue-subscription-event/enqueue-subscription-event.use-case.ts:input-name:payload",
+		"src/admin-notification/application/use-cases/enqueue-subscription-event/enqueue-subscription-event.use-case.ts:input-type:SubscriptionEventPayload",
+		"src/admin-notification/application/use-cases/enqueue-user-registered/enqueue-user-registered.use-case.ts:input-name:payload",
+		"src/admin-notification/application/use-cases/enqueue-user-registered/enqueue-user-registered.use-case.ts:input-type:UserRegisteredEventPayload",
+		"src/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case.ts:execute-parameter-count:2",
+		"src/ai-report/application/use-cases/generate-report/generate-report.use-case.ts:input-type:{\n\t\tuserId: string;\n\t\ttimezone: string;\n\t\ttype: ReportType;\n\t\tlocale?: SupportedLocale;\n\t}",
+		"src/ai-report/application/use-cases/get-report-by-id/get-report-by-id.use-case.ts:execute-parameter-count:2",
+		"src/ai-report/application/use-cases/get-report-status/get-report-status.use-case.ts:execute-parameter-count:2",
+		"src/ai-report/application/use-cases/get-reports/get-reports.use-case.ts:execute-parameter-count:2",
+		"src/ai-suggestion/application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.ts:execute-parameter-count:4",
+		"src/ai-suggestion/application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case.ts:input-name:userId",
+		"src/ai-suggestion/application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case.ts:input-type:string",
+		"src/app-config/application/queries/get-feature-discovery/get-feature-discovery.use-case.ts:explicit-promise-return",
+		"src/auth/application/queries/get-current-user/get-current-user.use-case.ts:class-name:GetCurrentUserQuery",
+		"src/auth/application/queries/get-current-user/get-current-user.use-case.ts:execute-parameter-count:3",
+		"src/auth/application/queries/get-current-user/get-current-user.use-case.ts:explicit-promise-return",
+		"src/auth/application/queries/get-oauth-redirect-uri/get-oauth-redirect-uri.use-case.ts:class-name:GetOAuthRedirectUriQuery",
+		"src/auth/application/queries/get-oauth-redirect-uri/get-oauth-redirect-uri.use-case.ts:explicit-promise-return",
+		"src/auth/application/queries/get-oauth-redirect-uri/get-oauth-redirect-uri.use-case.ts:input-name:state",
+		"src/auth/application/queries/get-oauth-redirect-uri/get-oauth-redirect-uri.use-case.ts:input-type:string",
+		"src/auth/application/queries/list-active-sessions/list-active-sessions.use-case.ts:class-name:ListActiveSessionsQuery",
+		"src/auth/application/queries/list-active-sessions/list-active-sessions.use-case.ts:explicit-promise-return",
+		"src/auth/application/queries/list-active-sessions/list-active-sessions.use-case.ts:input-name:userId",
+		"src/auth/application/queries/list-active-sessions/list-active-sessions.use-case.ts:input-type:Parameters<CredentialAuthWorkflow[\"getActiveSessions\"]>[0]",
+		"src/auth/application/queries/list-linked-accounts/list-linked-accounts.use-case.ts:class-name:ListLinkedAccountsQuery",
+		"src/auth/application/queries/list-linked-accounts/list-linked-accounts.use-case.ts:explicit-promise-return",
+		"src/auth/application/queries/list-linked-accounts/list-linked-accounts.use-case.ts:input-name:userId",
+		"src/auth/application/queries/list-linked-accounts/list-linked-accounts.use-case.ts:input-type:Parameters<OAuthWorkflow[\"getLinkedAccounts\"]>[0]",
+		"src/auth/application/use-cases/change-password/change-password.use-case.ts:execute-parameter-count:5",
+		"src/auth/application/use-cases/change-password/change-password.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/complete-oauth-authorization/complete-oauth-authorization.use-case.ts:execute-parameter-count:4",
+		"src/auth/application/use-cases/complete-oauth-authorization/complete-oauth-authorization.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/delete-account/delete-account.use-case.ts:execute-parameter-count:4",
+		"src/auth/application/use-cases/delete-account/delete-account.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/exchange-oauth-code/exchange-oauth-code.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/exchange-oauth-code/exchange-oauth-code.use-case.ts:input-name:code",
+		"src/auth/application/use-cases/exchange-oauth-code/exchange-oauth-code.use-case.ts:input-type:Parameters<OAuthWorkflow[\"exchangeCodeForTokens\"]>[0]",
+		"src/auth/application/use-cases/link-oauth-account-with-code/link-oauth-account-with-code.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/link-oauth-account-with-code/link-oauth-account-with-code.use-case.ts:input-name:args",
+		"src/auth/application/use-cases/link-oauth-account-with-code/link-oauth-account-with-code.use-case.ts:input-type:Parameters<OAuthWorkflow[\"linkAccountWithExchangeCode\"]>",
+		"src/auth/application/use-cases/link-oauth-account/link-oauth-account.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/link-oauth-account/link-oauth-account.use-case.ts:input-name:args",
+		"src/auth/application/use-cases/link-oauth-account/link-oauth-account.use-case.ts:input-type:Parameters<OAuthWorkflow[\"linkSocialAccountWithToken\"]>",
+		"src/auth/application/use-cases/login-with-oauth-token/login-with-oauth-token.use-case.ts:execute-parameter-count:5",
+		"src/auth/application/use-cases/login-with-oauth-token/login-with-oauth-token.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/login-with-password/login-with-password.use-case.ts:execute-parameter-count:2",
+		"src/auth/application/use-cases/login-with-password/login-with-password.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/logout-all/logout-all.use-case.ts:execute-parameter-count:2",
+		"src/auth/application/use-cases/logout-all/logout-all.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/logout/logout.use-case.ts:execute-parameter-count:3",
+		"src/auth/application/use-cases/logout/logout.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/refresh-tokens/refresh-tokens.use-case.ts:execute-parameter-count:3",
+		"src/auth/application/use-cases/refresh-tokens/refresh-tokens.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/register/register.use-case.ts:execute-parameter-count:2",
+		"src/auth/application/use-cases/register/register.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/request-password-reset/request-password-reset.use-case.ts:execute-parameter-count:2",
+		"src/auth/application/use-cases/request-password-reset/request-password-reset.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/request-password-setup-code/request-password-setup-code.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/request-password-setup-code/request-password-setup-code.use-case.ts:input-name:userId",
+		"src/auth/application/use-cases/request-password-setup-code/request-password-setup-code.use-case.ts:input-type:Parameters<PasswordWorkflow[\"requestPasswordSetupCode\"]>[0]",
+		"src/auth/application/use-cases/resend-verification/resend-verification.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/resend-verification/resend-verification.use-case.ts:input-name:email",
+		"src/auth/application/use-cases/resend-verification/resend-verification.use-case.ts:input-type:Parameters<CredentialAuthWorkflow[\"resendVerification\"]>[0]",
+		"src/auth/application/use-cases/reset-password/reset-password.use-case.ts:execute-parameter-count:3",
+		"src/auth/application/use-cases/reset-password/reset-password.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/revoke-session/revoke-session.use-case.ts:execute-parameter-count:3",
+		"src/auth/application/use-cases/revoke-session/revoke-session.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/set-password/set-password.use-case.ts:execute-parameter-count:4",
+		"src/auth/application/use-cases/set-password/set-password.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/start-oauth-authorization/start-oauth-authorization.use-case.ts:execute-parameter-count:5",
+		"src/auth/application/use-cases/unlink-oauth-account/unlink-oauth-account.use-case.ts:execute-parameter-count:3",
+		"src/auth/application/use-cases/unlink-oauth-account/unlink-oauth-account.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/update-profile/update-profile.use-case.ts:execute-parameter-count:2",
+		"src/auth/application/use-cases/update-profile/update-profile.use-case.ts:explicit-promise-return",
+		"src/auth/application/use-cases/verify-email/verify-email.use-case.ts:execute-parameter-count:2",
+		"src/auth/application/use-cases/verify-email/verify-email.use-case.ts:explicit-promise-return",
+		"src/cheer/application/use-cases/send-cheer/send-cheer.use-case.ts:execute-parameter-count:2",
+		"src/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case.ts:explicit-promise-return",
+		"src/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case.ts:input-type:PersistedBatchNotificationDispatch",
+		"src/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case.ts:input-name:params",
+		"src/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case.ts:input-type:{\n\t\tuserIds: string[];\n\t\ttype: NotificationType;\n\t\tnotificationDate: Date;\n\t\tfriendId?: string;\n\t}",
+		"src/notification/application/use-cases/get-unread-count/get-unread-count.use-case.ts:input-name:userId",
+		"src/notification/application/use-cases/get-unread-count/get-unread-count.use-case.ts:input-type:string",
+		"src/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case.ts:input-name:userId",
+		"src/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case.ts:input-type:string",
+		"src/notification/application/use-cases/mark-as-read/mark-as-read.use-case.ts:execute-parameter-count:2",
+		"src/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case.ts:execute-parameter-count:2",
+		"src/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case.ts:input-name:token",
+		"src/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case.ts:input-type:string",
+		"src/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case.ts:input-name:dataList",
+		"src/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case.ts:input-type:CreateNotificationData[]",
+		"src/notification/application/use-cases/register-push-token/register-push-token.use-case.ts:input-name:data",
+		"src/notification/application/use-cases/register-push-token/register-push-token.use-case.ts:input-type:RegisterPushTokenData",
+		"src/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case.ts:input-name:dataList",
+		"src/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case.ts:input-type:CreateNotificationData[]",
+		"src/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.ts:input-name:data",
+		"src/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.ts:input-type:CreateNotificationData",
+		"src/notification/application/use-cases/send-notification/send-notification.use-case.ts:input-name:data",
+		"src/notification/application/use-cases/send-notification/send-notification.use-case.ts:input-type:CreateNotificationData",
+		"src/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case.ts:execute-parameter-count:2",
+		"src/nudge/application/use-cases/send-nudge/send-nudge.use-case.ts:execute-parameter-count:2",
+		"src/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case.ts:execute-parameter-count:2",
+		"src/retention/application/use-cases/activate-retention-experiment/activate-retention-experiment.use-case.ts:input-name:userId",
+		"src/retention/application/use-cases/activate-retention-experiment/activate-retention-experiment.use-case.ts:input-type:string",
+		"src/retention/application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case.ts:input-name:outboxId",
+		"src/retention/application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case.ts:input-type:string",
+		"src/retention/application/use-cases/enroll-retention-experiment/enroll-retention-experiment.use-case.ts:execute-parameter-count:2",
+		"src/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case.ts:input-name:body",
+		"src/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case.ts:input-type:unknown",
+		"src/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case.ts:execute-parameter-count:3",
+		"src/user-settings/application/use-cases/get-consent-record/get-consent-record.use-case.ts:input-name:userId",
+		"src/user-settings/application/use-cases/get-consent-record/get-consent-record.use-case.ts:input-type:string",
+		"src/user-settings/application/use-cases/get-consent-records/get-consent-records.use-case.ts:input-name:userIds",
+		"src/user-settings/application/use-cases/get-consent-records/get-consent-records.use-case.ts:input-type:string[]",
+		"src/user-settings/application/use-cases/get-consent/get-consent.use-case.ts:input-name:userId",
+		"src/user-settings/application/use-cases/get-consent/get-consent.use-case.ts:input-type:string",
+		"src/user-settings/application/use-cases/get-preference-record/get-preference-record.use-case.ts:input-name:userId",
+		"src/user-settings/application/use-cases/get-preference-record/get-preference-record.use-case.ts:input-type:string",
+		"src/user-settings/application/use-cases/get-preference-records/get-preference-records.use-case.ts:input-name:userIds",
+		"src/user-settings/application/use-cases/get-preference-records/get-preference-records.use-case.ts:input-type:string[]",
+		"src/user-settings/application/use-cases/get-preference/get-preference.use-case.ts:input-name:userId",
+		"src/user-settings/application/use-cases/get-preference/get-preference.use-case.ts:input-type:string",
+		"src/user-settings/application/use-cases/on-todo-toggled/on-todo-toggled.use-case.ts:execute-parameter-count:3",
+		"src/user-settings/application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case.ts:execute-parameter-count:2",
+		"src/user-settings/application/use-cases/seed-user-settings/seed-user-settings.use-case.ts:execute-parameter-count:2",
+		"src/user-settings/application/use-cases/update-marketing-consent/update-marketing-consent.use-case.ts:execute-parameter-count:2",
+		"src/user-settings/application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case.ts:execute-parameter-count:2",
+		"src/user-settings/application/use-cases/update-preference/update-preference.use-case.ts:execute-parameter-count:2",
+		"src/user-settings/application/use-cases/upsert-push-locale/upsert-push-locale.use-case.ts:execute-parameter-count:2",
+		"src/user-settings/application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case.ts:execute-parameter-count:2"
+	],
+	"ambiguousIdentifiers": {
+		"src/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case.ts": {
+			"result": 3
+		},
+		"src/ai-report/application/use-cases/generate-report/generate-report.use-case.ts": {
+			"result": 6
+		},
+		"src/ai-report/domain/services/prompts/report-insights.ts": {
+			"data": 8
+		},
+		"src/ai-report/domain/services/prompts/report.prompt.en.ts": {
+			"data": 10
+		},
+		"src/ai-report/domain/services/prompts/report.prompt.ts": {
+			"data": 9
+		},
+		"src/ai-suggestion/application/ports/ai-suggestion.repository.port.ts": {
+			"data": 1
+		},
+		"src/ai-suggestion/application/services/suggestion-context.builder.ts": {
+			"repository": 7,
+			"data": 2
+		},
+		"src/ai-suggestion/application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.ts": {
+			"repository": 4,
+			"result": 3
+		},
+		"src/ai-suggestion/application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case.ts": {
+			"repository": 2
+		},
+		"src/ai-suggestion/application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.ts": {
+			"repository": 5,
+			"data": 1,
+			"result": 3
+		},
+		"src/ai/application/queries/get-ai-usage/get-ai-usage.use-case.ts": {
+			"repository": 2
+		},
+		"src/ai/application/services/ai-usage-meter.service.ts": {
+			"repository": 5
+		},
+		"src/ai/application/use-cases/parse-memo/parse-memo.use-case.ts": {
+			"data": 3,
+			"result": 8
+		},
+		"src/ai/application/use-cases/parse-todo/parse-todo.use-case.ts": {
+			"data": 2,
+			"result": 9
+		},
+		"src/ai/domain/services/prompts/parse-memo.prompt.en.ts": {
+			"ctx": 10
+		},
+		"src/ai/domain/services/prompts/parse-memo.prompt.ts": {
+			"ctx": 10
+		},
+		"src/ai/domain/services/prompts/parse-todo.prompt.en.ts": {
+			"ctx": 12
+		},
+		"src/ai/domain/services/prompts/parse-todo.prompt.ts": {
+			"ctx": 12
+		},
+		"src/ai/domain/services/prompts/time-rules.ts": {
+			"ctx": 18
+		},
+		"src/auth/application/ports/auth-collaboration.port.ts": {
+			"data": 3
+		},
+		"src/auth/application/ports/auth-persistence.port.ts": {
+			"data": 11
+		},
+		"src/auth/application/services/verification.service.ts": {
+			"result": 8
+		},
+		"src/auth/application/workflows/credential-auth.workflow.ts": {
+			"result": 17,
+			"data": 2
+		},
+		"src/auth/application/workflows/oauth.workflow.ts": {
+			"data": 9,
+			"result": 2
+		},
+		"src/auth/domain/value-objects/email.vo.ts": {
+			"result": 3,
+			"data": 1
+		},
+		"src/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case.ts": {
+			"repository": 2,
+			"result": 3
+		},
+		"src/daily-completion/application/queries/get-friend-daily-completions/get-friend-daily-completions.use-case.ts": {
+			"repository": 2,
+			"result": 3
+		},
+		"src/email/application/facades/email.facade.ts": {
+			"data": 8
+		},
+		"src/email/domain/templates/inquiry.template.ts": {
+			"data": 12
+		},
+		"src/email/domain/templates/password-reset.template.ts": {
+			"data": 6
+		},
+		"src/email/domain/templates/password-setup.template.ts": {
+			"data": 6
+		},
+		"src/email/domain/templates/verification-code.template.ts": {
+			"data": 6
+		},
+		"src/email/domain/value-objects/email-message.vo.ts": {
+			"data": 14
+		},
+		"src/follow/application/facades/follow.facade.ts": {
+			"data": 3
+		},
+		"src/follow/application/use-cases/accept-friend-request/accept-friend-request.use-case.ts": {
+			"effects": 6
+		},
+		"src/follow/application/use-cases/remove-friend/remove-friend.use-case.ts": {
+			"effects": 2
+		},
+		"src/follow/application/use-cases/send-friend-request/send-friend-request.use-case.ts": {
+			"effects": 6
+		},
+		"src/inquiry/application/use-cases/create-inquiry/create-inquiry.use-case.ts": {
+			"result": 3
+		},
+		"src/memo/application/facades/memo.facade.ts": {
+			"data": 7
+		},
+		"src/memo/application/ports/todo-creator.port.ts": {
+			"data": 2
+		},
+		"src/memo/application/queries/get-memo-resource-limit/get-memo-resource-limit.use-case.ts": {
+			"repository": 2
+		},
+		"src/memo/application/queries/get-memo/get-memo.use-case.ts": {
+			"repository": 2
+		},
+		"src/memo/application/queries/get-memos/get-memos.use-case.ts": {
+			"repository": 2
+		},
+		"src/memo/application/use-cases/convert-memo-to-todo/convert-memo-to-todo.use-case.ts": {
+			"data": 9,
+			"repository": 3
+		},
+		"src/memo/application/use-cases/convert-memo-to-todos/convert-memo-to-todos.use-case.ts": {
+			"data": 3,
+			"repository": 3,
+			"result": 2
+		},
+		"src/memo/application/use-cases/create-memo/create-memo.use-case.ts": {
+			"repository": 4
+		},
+		"src/memo/application/use-cases/delete-memo/delete-memo.use-case.ts": {
+			"repository": 3
+		},
+		"src/memo/application/use-cases/reorder-memo/reorder-memo.use-case.ts": {
+			"repository": 6
+		},
+		"src/memo/application/use-cases/toggle-memo-pin/toggle-memo-pin.use-case.ts": {
+			"repository": 3
+		},
+		"src/memo/application/use-cases/update-memo/update-memo.use-case.ts": {
+			"repository": 3
+		},
+		"src/notification/application/facades/notification.facade.ts": {
+			"data": 6
+		},
+		"src/notification/application/ports/notification.repository.port.ts": {
+			"data": 2
+		},
+		"src/notification/application/ports/push-dispatcher.port.ts": {
+			"data": 2
+		},
+		"src/notification/application/ports/push-provider.port.ts": {
+			"data": 1
+		},
+		"src/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case.ts": {
+			"data": 7
+		},
+		"src/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case.ts": {
+			"result": 4
+		},
+		"src/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case.ts": {
+			"result": 3
+		},
+		"src/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case.ts": {
+			"data": 6
+		},
+		"src/notification/application/use-cases/register-push-token/register-push-token.use-case.ts": {
+			"data": 14
+		},
+		"src/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.ts": {
+			"data": 12
+		},
+		"src/notification/application/use-cases/send-notification/send-notification.use-case.ts": {
+			"data": 6
+		},
+		"src/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case.ts": {
+			"result": 2
+		},
+		"src/notification/domain/services/notification-dedup.ts": {
+			"data": 13
+		},
+		"src/retention/application/use-cases/activate-retention-experiment/activate-retention-experiment.use-case.ts": {
+			"repository": 2
+		},
+		"src/retention/application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case.ts": {
+			"repository": 6
+		},
+		"src/retention/application/use-cases/enroll-retention-experiment/enroll-retention-experiment.use-case.ts": {
+			"repository": 2
+		},
+		"src/retention/application/use-cases/process-retention-stages/process-retention-stages.use-case.ts": {
+			"repository": 8
+		},
+		"src/retention/application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case.ts": {
+			"repository": 5
+		},
+		"src/scheduler/application/services/timezone-aware-reminder.orchestrator.ts": {
+			"result": 5,
+			"ctx": 18
+		},
+		"src/scheduler/application/strategies/evening-reminder.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/lunch-nudge.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/monthly-report.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/morning-reminder.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/nudge-suggest.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/onboarding.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/social-digest.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/streak-at-risk.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/weather-evening.strategy.ts": {
+			"ctx": 15
+		},
+		"src/scheduler/application/strategies/weather-morning.strategy.ts": {
+			"ctx": 14
+		},
+		"src/scheduler/application/strategies/weekly-achievement.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/weekly-report.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/application/strategies/winback.strategy.ts": {
+			"ctx": 2
+		},
+		"src/scheduler/domain/services/timezone-context.ts": {
+			"ctx": 1
+		},
+		"src/shared/application/entitlement/entitlement.service.ts": {
+			"tx": 4
+		},
+		"src/shared/application/ports/job-runtime.port.ts": {
+			"data": 3
+		},
+		"src/subscription/application/ports/subscription.repository.port.ts": {
+			"data": 3
+		},
+		"src/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case.ts": {
+			"data": 1
+		},
+		"src/todo-category/application/facades/todo-category.facade.ts": {
+			"data": 2
+		},
+		"src/todo-category/application/services/todo-category.reader.ts": {
+			"repository": 6
+		},
+		"src/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case.ts": {
+			"repository": 5
+		},
+		"src/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case.ts": {
+			"repository": 7
+		},
+		"src/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case.ts": {
+			"repository": 6,
+			"result": 2
+		},
+		"src/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case.ts": {
+			"repository": 4,
+			"data": 11
+		},
+		"src/todo/application/facades/todo.facade.ts": {
+			"data": 8
+		},
+		"src/todo/application/ports/todo.repository.port.ts": {
+			"data": 3
+		},
+		"src/todo/application/use-cases/create-recurring-todos/create-recurring-todos.use-case.ts": {
+			"data": 25
+		},
+		"src/todo/application/use-cases/create-todo/create-todo.use-case.ts": {
+			"data": 20
+		},
+		"src/todo/application/use-cases/update-todo-item/update-todo-item.use-case.ts": {
+			"data": 5
+		},
+		"src/todo/application/use-cases/update-todo/update-todo.use-case.ts": {
+			"data": 8
+		},
+		"src/user-settings/application/ports/user-consent.repository.port.ts": {
+			"data": 3
+		},
+		"src/user-settings/application/ports/user-preference.repository.port.ts": {
+			"data": 2
+		},
+		"src/weather/application/queries/get-weather-conditions/get-weather-conditions.use-case.ts": {
+			"repository": 2
+		},
+		"src/weather/application/queries/get-weather-forecast/get-weather-forecast.use-case.ts": {
+			"repository": 2
+		},
+		"src/weather/application/services/weather-forecast.reader.ts": {
+			"result": 7
+		},
+		"src/weather/application/use-cases/upsert-location/upsert-location.use-case.ts": {
+			"repository": 3
+		},
+		"src/weekly-achievement/application/queries/get-weekly-achievement/get-weekly-achievement.use-case.ts": {
+			"repository": 2
+		},
+		"src/weekly-achievement/application/queries/get-weekly-achievements/get-weekly-achievements.use-case.ts": {
+			"repository": 3
+		},
+		"src/weekly-achievement/application/use-cases/upsert-weekly-achievements/upsert-weekly-achievements.use-case.ts": {
+			"repository": 2
+		}
+	},
+	"publicBarrelExports": [
+		"src/admin-notification/index.ts:12:42:./infrastructure/queue/admin-notification-queue.constants",
+		"src/admin-notification/index.ts:2:41:./application/facades/admin-notification.facade",
+		"src/admin/index.ts:8:15:./application/facades/admin.facade",
+		"src/ai-report/index.ts:2:32:./application/facades/ai-report.facade",
+		"src/ai-report/index.ts:3:33:./infrastructure/queue/ai-report-queue",
+		"src/ai-suggestion/index.ts:2:36:./application/facades/ai-suggestion.facade",
+		"src/ai-suggestion/index.ts:3:37:./infrastructure/queue/ai-suggestion-queue",
+		"src/ai/index.ts:9:15:./application/facades/ai.facade",
+		"src/auth/index.ts:2:30:./infrastructure/guards/jwt-auth.guard",
+		"src/auth/index.ts:3:33:./infrastructure/guards/jwt-refresh.guard",
+		"src/cheer/index.ts:1:29:./application/facades/cheer.facade",
+		"src/email/index.ts:11:15:./domain/value-objects/email-message.vo",
+		"src/email/index.ts:8:15:./application/facades/email.facade",
+		"src/follow/index.ts:1:30:./application/facades/follow.facade",
+		"src/inquiry/index.ts:6:15:./application/facades/inquiry.facade",
+		"src/memo/index.ts:8:28:./application/facades/memo.facade",
+		"src/notification/index.ts:45:8:./application/utils/user-locale.util",
+		"src/notification/index.ts:47:15:./domain/services/templates/notification-templates",
+		"src/notification/index.ts:50:40:./infrastructure/persistence/notification.repository",
+		"src/notification/index.ts:52:15:./infrastructure/queue/notification-queue.constants",
+		"src/notification/index.ts:53:41:./infrastructure/queue/notification-queue.module",
+		"src/notification/index.ts:54:44:./infrastructure/queue/notification-queue.processor",
+		"src/notification/index.ts:55:42:./infrastructure/queue/notification-queue.service",
+		"src/notification/index.ts:8:36:./application/facades/notification.facade",
+		"src/nudge/index.ts:1:29:./application/facades/nudge.facade",
+		"src/retention/index.ts:1:33:./application/facades/retention.facade",
+		"src/scheduler/index.ts:20:51:./application/services/timezone-aware-reminder.orchestrator",
+		"src/scheduler/index.ts:24:39:./infrastructure/processors/todo-reminder.processor",
+		"src/scheduler/index.ts:32:8:./infrastructure/queue",
+		"src/scheduler/index.ts:37:8:./infrastructure/scheduler/bullmq-reminder-scheduler.adapter",
+		"src/subscription/index.ts:1:36:./application/facades/subscription.facade",
+		"src/todo-category/index.ts:1:36:./application/facades/todo-category.facade",
+		"src/todo/index.ts:10:49:./application/use-cases/create-recurring-todos/create-recurring-todos.use-case",
+		"src/todo/index.ts:9:28:./application/facades/todo.facade",
+		"src/user-settings/index.ts:12:8:./domain/services/effective-streak",
+		"src/user-settings/index.ts:4:8:./application/facades/user-settings.facade",
+		"src/weather/index.ts:7:15:./application/facades/weather.facade",
+		"src/weather/index.ts:9:32:./application/services/weather-forecast.reader",
+		"src/weekly-achievement/index.ts:7:15:./application/facades/weekly-achievement.facade"
+	]
+}
