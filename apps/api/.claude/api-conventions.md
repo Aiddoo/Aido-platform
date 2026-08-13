@@ -4,7 +4,7 @@
 
 > Controller, DTO/Swagger, Module 계층별 코드 작성 규칙
 >
-> ✅ **적용 범위**: 신규·전환 코드는 §9의 DDD strict-core 표준을 따른다. Controller/DTO/Swagger 공통 계약은 유지한다. Facade, Nest 데코레이터가 있는 UseCase, §3 Service·§4 Repository 패턴은 전환 중인 기존 코드 설명일 뿐 신규 표준이 아니다.
+> ✅ **적용 범위**: 신규·전환 코드는 §9의 실용형 DDD·Clean Architecture 표준을 따른다. Controller/DTO/Swagger 공통 계약은 유지한다. 단순 위임 Facade와 §3 Service·§4 Repository 패턴은 전환 중인 기존 코드 설명이다.
 
 ## 관련 문서
 
@@ -625,16 +625,17 @@ pnpm docker:down
 
 ---
 
-## 9. DDD strict-core 모듈 규칙
+## 9. 실용형 DDD·Clean Architecture 모듈 규칙
 
 > **최종 표준** (참조 구현: todo). 모듈별 stacked PR로 전환하며 기존 위반은 exact baseline으로만 격리한다.
-> **@nestjs/cqrs 사용 금지** — UseCase는 데코레이터 없는 순수 TypeScript 클래스이고 Nest module의 `useFactory`가 조립한다.
+> **@nestjs/cqrs 사용 금지** — UseCase는 `@Injectable` 클래스이고 포트는 `@Inject(Symbol)`로 주입한다. domain만 순수 TypeScript로 유지한다.
 
 전환 완료 코드의 필수 조건:
 
 - Controller → endpoint UseCase 직접 주입. Facade 금지.
-- application/domain → `@nestjs/*`, Prisma, infrastructure, presentation import 금지.
-- 파일은 쓰기/읽기 구분 없이 `application/use-cases/<verb-object>/<verb-object>.use-case.ts`.
+- domain → `@nestjs/*`, Prisma, infrastructure, presentation import 금지.
+- application → Prisma, vendor SDK, infrastructure, presentation import 금지. Nest DI와 Logger는 허용.
+- 쓰기는 `application/use-cases/`, 읽기는 `application/queries/`에 둔다.
 - 입력은 하나의 `readonly XxxInput`, 무입력은 무인자. 반환 객체는 `XxxResult`로 명명.
 - `repo`, `svc`, `ctx`, `tx`, `res`, `req`, `impl`, `idem`과 단독 `data`, `result`, `repository`, `effects`, `service` 금지.
 - Aggregate는 `.aggregate.ts`, 일반 Entity는 `.entity.ts`; 판단 규칙은 `domain/policies/*.policy.ts`.

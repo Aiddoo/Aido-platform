@@ -2,7 +2,7 @@
 
 > **Version**: 1.2.0 · **Last Updated**: 2026-07-23 · **Owner**: Aido Platform Team
 
-NestJS 기반 백엔드 API. **DDD strict-core use-case 표준**(참조 구현: **todo**) + BullMQ 큐 기반 알림. domain/application은 순수 TypeScript이며 Nest 조립은 module이 담당한다.
+NestJS 기반 백엔드 API. **실용형 DDD·Clean Architecture 표준**(참조 구현: **todo**) + BullMQ 큐 기반 알림. domain은 순수 TypeScript이며 application은 Nest DI를 사용할 수 있다.
 
 ---
 
@@ -58,7 +58,7 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushP
 
 - **예외**: 모듈 코드는 `ApplicationException`/`DomainException`(둘 다 `ErrorCodedException`, `ErrorCode` 보유)을 던진다. `GlobalExceptionFilter`가 이를 정규화해 HTTP 응답을 만든다. `BusinessException`/`BusinessExceptions`는 필터의 canonical 에러 타입 + 공유 에러 카탈로그(Prisma P2002 매핑 등)이며 신규 비즈니스 로직에서 직접 던지지 않는다. `new HttpException()` 금지
 - **트랜잭션**: `UNIT_OF_WORK.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다
-- **Strict Core**: domain/application에서 `@nestjs/*`, Prisma, infrastructure, presentation import 금지. UseCase에는 Nest 데코레이터를 두지 않고 module의 `useFactory`에서 조립한다
+- **Domain Core**: domain에서 `@nestjs/*`, Prisma, infrastructure, presentation import 금지. application은 `@Injectable`·`@Inject`·Nest `Logger`를 사용할 수 있지만 Prisma·vendor SDK·바깥 계층 타입에는 의존하지 않는다
 - **진입점**: Controller는 endpoint UseCase를 직접 주입한다. Facade는 신규 작성하지 않으며 전환 모듈에서는 제거한다
 - **집합 연산 예외**: batch update, 원자적 claim/counter처럼 다중 행 원자성이 핵심인 작업은 명명된 port 뒤의 SQL로 유지한다
 - **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `as`는 `pnpm lint:no-cast`, `!`는 Biome `noNonNullAssertion`(biome.json override)로 검사 (CI `lint:arch` 게이트)
@@ -99,7 +99,7 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushP
 4. **Application** → consumer-owned 포트 + `use-cases/<kebab>/<kebab>.use-case.ts` (+spec) — 순수 클래스, 단일 `execute(input)`
 5. **Infrastructure** → 어댑터에 포트 구현 (Prisma 저장소·벤더 SDK·BullMQ 등)
 6. **Controller** → DTO를 application input으로 변환하고 endpoint UseCase 직접 호출 + Swagger 문서화
-7. **Module** → `useFactory` + `ConstructorParameters`로 순수 UseCase 조립
+7. **Module** → UseCase와 Port→Adapter 바인딩을 명시적으로 등록
 8. **테스트** → use-case spec → e2e (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries` 통과
 
 > 상세 체크리스트: [architecture.md - 새 기능 추가 체크리스트](.claude/architecture.md#8-새-기능-추가-체크리스트)

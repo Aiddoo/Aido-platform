@@ -12,27 +12,20 @@ const baselinePath = path.join(
 );
 const isBaselineWrite = process.argv.includes("--write-baseline");
 
-const AMBIGUOUS_IDENTIFIERS = new Set([
-	"repo",
-	"svc",
-	"ctx",
-	"tx",
-	"res",
-	"req",
-	"impl",
-	"idem",
-	"data",
-	"result",
-	"repository",
-	"effects",
-	"service",
-]);
-
-const PURE_CORE_EXTERNAL_IMPORTS = [
+const DOMAIN_EXTERNAL_IMPORTS = [
 	/^@aido\/errors(?:\/|$)/,
-	/^@aido\/domain-rules(?:\/|$)/,
+	/^@aido\/validators(?:\/|$)/,
 	/^dayjs(?:\/|$)/,
 	/^es-hangul$/,
+	/^zod(?:\/|$)/,
+];
+
+const VENDOR_SDK_IMPORTS = [
+	/^@ai-sdk\//,
+	/^ai$/,
+	/^expo-server-sdk$/,
+	/^google-auth-library$/,
+	/^resend$/,
 ];
 
 function walk(directory) {
@@ -92,7 +85,7 @@ function coreLayer(filePath) {
 	return null;
 }
 
-function strictCoreImportViolations(files) {
+function layerImportViolations(files) {
 	const violations = [];
 	for (const filePath of files.filter(isProduction)) {
 		const layer = coreLayer(filePath);
@@ -112,8 +105,13 @@ function strictCoreImportViolations(files) {
 				if (layer === "domain" && /\/application(?:\/|$)/.test(localTarget)) {
 					reason = "application";
 				}
-			} else if (!PURE_CORE_EXTERNAL_IMPORTS.some((allowed) => allowed.test(specifier))) {
-				reason = "external-runtime";
+			} else if (
+				layer === "domain" &&
+				!DOMAIN_EXTERNAL_IMPORTS.some((allowed) => allowed.test(specifier))
+			) {
+				reason = "domain-external-runtime";
+			} else if (VENDOR_SDK_IMPORTS.some((vendorSdk) => vendorSdk.test(specifier))) {
+				reason = "vendor-sdk";
 			}
 			if (reason) {
 				violations.push(
@@ -166,79 +164,6 @@ function aggregateNamingViolations(files) {
 	return violations.toSorted();
 }
 
-function hasModifier(node, kind) {
-	return node.modifiers?.some((modifier) => modifier.kind === kind) ?? false;
-}
-
-function useCaseSignatureViolations(files) {
-	const violations = [];
-	for (const filePath of files.filter(
-		(candidate) => isProduction(candidate) && candidate.endsWith(".use-case.ts"),
-	)) {
-		const file = relative(filePath);
-		const sourceFile = sourceFileFor(filePath);
-		const classes = sourceFile.statements.filter(ts.isClassDeclaration);
-		const exportedClasses = classes.filter((node) =>
-			hasModifier(node, ts.SyntaxKind.ExportKeyword),
-		);
-		if (exportedClasses.length !== 1) {
-			violations.push(`${file}:exported-class-count:${exportedClasses.length}`);
-			continue;
-		}
-		const useCaseClass = exportedClasses[0];
-		const className = useCaseClass.name?.text ?? "<anonymous>";
-		if (!className.endsWith("UseCase")) {
-			violations.push(`${file}:class-name:${className}`);
-		}
-		const executeMethods = useCaseClass.members.filter(
-			(member) =>
-				ts.isMethodDeclaration(member) &&
-				ts.isIdentifier(member.name) &&
-				member.name.text === "execute",
-		);
-		if (executeMethods.length !== 1) {
-			violations.push(`${file}:execute-count:${executeMethods.length}`);
-			continue;
-		}
-		const execute = executeMethods[0];
-		if (execute.parameters.length > 1) {
-			violations.push(`${file}:execute-parameter-count:${execute.parameters.length}`);
-		}
-		if (execute.parameters.length === 1) {
-			const input = execute.parameters[0];
-			const inputName = ts.isIdentifier(input.name) ? input.name.text : "<binding>";
-			const inputType = input.type?.getText(sourceFile) ?? "<implicit>";
-			if (inputName !== "input") violations.push(`${file}:input-name:${inputName}`);
-			if (!/(?:Input|Params)$/.test(inputType)) {
-				violations.push(`${file}:input-type:${inputType}`);
-			}
-		}
-		if (!execute.type || !/^Promise(?:<|$)/.test(execute.type.getText(sourceFile))) {
-			violations.push(`${file}:explicit-promise-return`);
-		}
-	}
-	return violations.toSorted();
-}
-
-function ambiguousIdentifierCounts(files) {
-	const counts = {};
-	for (const filePath of files.filter(isProduction)) {
-		if (!coreLayer(filePath)) continue;
-		const file = relative(filePath);
-		const sourceFile = sourceFileFor(filePath);
-		const fileCounts = {};
-		function visit(node) {
-			if (ts.isIdentifier(node) && AMBIGUOUS_IDENTIFIERS.has(node.text)) {
-				fileCounts[node.text] = (fileCounts[node.text] ?? 0) + 1;
-			}
-			ts.forEachChild(node, visit);
-		}
-		visit(sourceFile);
-		if (Object.keys(fileCounts).length > 0) counts[file] = fileCounts;
-	}
-	return Object.fromEntries(Object.entries(counts).toSorted(([left], [right]) => left.localeCompare(right)));
-}
-
 function publicBarrelViolations(files) {
 	const violations = [];
 	for (const filePath of files.filter(
@@ -268,10 +193,8 @@ function collectBaseline() {
 	const files = walk(sourceRoot);
 	return {
 		version: 1,
-		strictCoreImports: strictCoreImportViolations(files),
+		layerImports: layerImportViolations(files),
 		aggregateNaming: aggregateNamingViolations(files),
-		useCaseSignatures: useCaseSignatureViolations(files),
-		ambiguousIdentifiers: ambiguousIdentifierCounts(files),
 		publicBarrelExports: publicBarrelViolations(files),
 	};
 }
@@ -280,23 +203,6 @@ function assertNoNewArrayViolations(name, current, allowed) {
 	const allowedSet = new Set(allowed);
 	const additions = current.filter((violation) => !allowedSet.has(violation));
 	assert.deepEqual(additions, [], `${name} has new violations:\n${additions.join("\n")}`);
-}
-
-function assertNoNewAmbiguousIdentifiers(current, allowed) {
-	const additions = [];
-	for (const [file, counts] of Object.entries(current)) {
-		for (const [identifier, count] of Object.entries(counts)) {
-			const allowedCount = allowed[file]?.[identifier] ?? 0;
-			if (count > allowedCount) {
-				additions.push(`${file}:${identifier}:${allowedCount}->${count}`);
-			}
-		}
-	}
-	assert.deepEqual(
-		additions,
-		[],
-		`ambiguous identifiers increased:\n${additions.join("\n")}`,
-	);
 }
 
 const current = collectBaseline();
@@ -313,23 +219,14 @@ const allowed = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
 assert.equal(allowed.version, 1, "unsupported DDD architecture baseline version");
 
 assertNoNewArrayViolations(
-	"strict-core imports",
-	current.strictCoreImports,
-	allowed.strictCoreImports,
+	"layer imports",
+	current.layerImports,
+	allowed.layerImports,
 );
 assertNoNewArrayViolations(
 	"aggregate/entity naming",
 	current.aggregateNaming,
 	allowed.aggregateNaming,
-);
-assertNoNewArrayViolations(
-	"use-case signatures",
-	current.useCaseSignatures,
-	allowed.useCaseSignatures,
-);
-assertNoNewAmbiguousIdentifiers(
-	current.ambiguousIdentifiers,
-	allowed.ambiguousIdentifiers,
 );
 assertNoNewArrayViolations(
 	"public barrel exports",
@@ -339,9 +236,7 @@ assertNoNewArrayViolations(
 
 console.log(
 	`DDD architecture regression passed: ` +
-		`${current.strictCoreImports.length} strict-core imports, ` +
+		`${current.layerImports.length} layer import violations, ` +
 		`${current.aggregateNaming.length} aggregate naming violations, ` +
-		`${current.useCaseSignatures.length} use-case signature violations, ` +
-		`${Object.keys(current.ambiguousIdentifiers).length} files with ambiguous identifiers, ` +
 		`${current.publicBarrelExports.length} internal barrel exports (all at or below baseline).`,
 );

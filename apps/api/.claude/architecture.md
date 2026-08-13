@@ -37,7 +37,7 @@
 
 ### 1.1 계층 다이어그램 (클린아키텍처 use-case 표준 — 전 모듈)
 
-> 전환 완료 모듈은 `presentation → endpoint UseCase → domain + consumer-owned port` 흐름을 따른다. domain/application은 순수 TypeScript이고 infrastructure와 Nest module이 바깥에서 구현·조립한다. 전환 중인 기존 위반은 `test/architecture/ddd-architecture-baseline.json`에 정확한 위치와 개수로만 격리한다.
+> 전환 완료 모듈은 `presentation → endpoint UseCase → domain + 필요한 port` 흐름을 따른다. domain은 순수 TypeScript이고 application은 Nest DI를 사용할 수 있다. 외부 SDK·DB·캐시 구현은 infrastructure adapter 뒤에 둔다.
 
 ```
 HTTP Request
@@ -48,7 +48,7 @@ Guard (JwtAuthGuard → ThrottlerGuard → AdminGuard)   ── @Public()로 인
      ↓
 Controller (presentation/)  ── HTTP 요청/응답, DTO 검증, Swagger, Input 변환
      ↓
-Endpoint UseCase (application/use-cases/)  ── 순수 클래스, 단일 execute(input)
+Endpoint UseCase (application/use-cases/)  ── @Injectable 클래스, 단일 execute(input)
      │  · 포트(Symbol 토큰 인터페이스)에만 의존
      │  · UNIT_OF_WORK.run(async () => ...) — 리포지토리가 CLS에서 활성 TX를 읽음
      │  · 규칙 위반은 ApplicationException(ErrorCode)
@@ -131,15 +131,15 @@ apps/api/
 
 ---
 
-### 1.4 DDD strict-core 모듈 — 최종 표준
+### 1.4 실용형 DDD·Clean Architecture — 최종 표준
 
-**참조 구현은 todo 모듈**이며 모듈별 stacked PR로 순차 전환한다. **@nestjs/cqrs는 사용하지 않는다.** UseCase는 프레임워크 데코레이터가 없는 순수 TypeScript 클래스다. Nest module이 `useFactory`와 `ConstructorParameters`로 포트를 주입해 조립한다.
+**참조 구현은 todo 모듈**이며 모듈별 stacked PR로 순차 전환한다. **@nestjs/cqrs는 사용하지 않는다.** UseCase는 `@Injectable`·`@Inject`로 Nest DI에 참여하며 Controller가 직접 주입한다. domain만 프레임워크 비의존을 강제한다.
 
 핵심 규칙:
 
 - Controller가 endpoint UseCase를 직접 주입하며 Facade는 제거한다.
-- 읽기와 쓰기 모두 `<Verb><Object>UseCase`이며 `application/use-cases/`에 둔다. 읽기/쓰기는 사용하는 port 역할로 구분한다.
-- domain/application은 `@nestjs/*`, Prisma, infrastructure, presentation에 의존하지 않는다.
+- 쓰기는 `application/use-cases/`, 읽기는 `application/queries/`에 두고 모두 `<Verb><Object>UseCase`로 명명한다.
+- domain은 `@nestjs/*`, Prisma, infrastructure, presentation에 의존하지 않는다. application은 Nest DI와 Logger만 허용하며 Prisma·vendor SDK·바깥 계층 타입에는 의존하지 않는다.
 - Zod DTO와 원시 HTTP 값은 presentation mapper에서 application input으로 변환한다.
 - 같은 컨텍스트의 식별자는 branded `EntityId` VO를 쓰고 원시값 변환은 controller/infrastructure mapper에서만 한다.
 - 단건 상태 전이는 Aggregate가, 다중 행 batch/claim/counter는 명명된 port 뒤의 원자적 SQL이 담당한다.
@@ -157,12 +157,12 @@ infrastructure → port implementation + Nest/Prisma/BullMQ/vendor SDK
 
 전환 기준선과 계약 고정:
 
-- `scripts/check-ddd-architecture.mjs`는 strict-core import, UseCase 시그니처, Aggregate 파일명, 모호한 식별자, public barrel을 검사한다.
+- `scripts/check-ddd-architecture.mjs`는 계층 import, vendor SDK 누출, Aggregate 파일명, public barrel을 검사한다.
 - 기존 위반은 exact baseline 이하만 허용한다. 새 파일·새 위치·증가한 개수는 즉시 실패하며 baseline은 위반 제거 시에만 줄인다.
 - `scripts/check-immutable-contracts.mjs`는 OpenAPI snapshot, 배포 fingerprint, Prisma schema/migrations의 내용 해시를 고정한다. 리팩터링을 승인하기 위한 snapshot 갱신은 금지한다.
 - 각 stacked PR은 독립적으로 typecheck/lint/arch/unit/integration/E2E를 통과하고 바로 아래 브랜치만 base로 삼는다.
 
-아래 Facade/@Injectable 기반 설명은 아직 전환되지 않은 코드의 **현행 기준선 설명**이며 신규 코드의 표준이 아니다.
+아래 Facade 기반 설명은 아직 전환되지 않은 코드의 **현행 기준선 설명**이며 신규 코드의 표준이 아니다. `@Injectable` UseCase와 Nest TestBed 사용은 최종 표준이다.
 코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처-모듈-규칙)
 
 ```
