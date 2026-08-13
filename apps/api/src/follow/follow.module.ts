@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 
 import { NotificationModule } from "@/notification/notification.module";
 
-import { FollowFacade } from "./application/facades/follow.facade";
 import { FOLLOW_REPOSITORY } from "./application/ports/follow.repository.port";
 import { FOLLOW_CACHE } from "./application/ports/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "./application/ports/follow-notifier.port";
@@ -24,7 +23,7 @@ import { FollowController } from "./presentation/follow.controller";
  * Follow 모듈 (DDD 클린아키텍처 · use-case 기반).
  *
  * 친구 요청/수락/거절/삭제/순서변경 + 친구·요청 목록 조회를 담당한다.
- * 컨트롤러와 크로스모듈 소비자는 FollowFacade만 주입한다.
+ * 컨트롤러는 endpoint UseCase를 직접 사용하고 크로스모듈에는 읽기 capability만 공개한다.
  */
 @Module({
 	imports: [NotificationModule],
@@ -42,8 +41,7 @@ import { FollowController } from "./presentation/follow.controller";
 		RemoveFriendUseCase,
 		ReorderFriendUseCase,
 		SearchUsersUseCase,
-		FollowFacade,
 	],
-	exports: [FollowFacade],
+	exports: [FollowReader],
 })
 export class FollowModule {}

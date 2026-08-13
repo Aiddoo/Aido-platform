@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { FollowFacade } from "@/follow";
+import { FollowReader } from "@/follow";
 import {
 	MUTATION_LOCK,
 	MutationLockKeys,
@@ -51,7 +51,7 @@ export class SendRemindNudgeUseCase {
 		private readonly mutationLock: MutationLockPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
-		private readonly followFacade: FollowFacade,
+		private readonly followReader: FollowReader,
 	) {}
 
 	async execute(
@@ -64,7 +64,7 @@ export class SendRemindNudgeUseCase {
 			throw new ApplicationException(ErrorCode.NUDGE_1104);
 		}
 
-		const isFriend = await this.followFacade.isMutualFriend(
+		const isFriend = await this.followReader.isMutualFriend(
 			senderId,
 			receiverId,
 		);

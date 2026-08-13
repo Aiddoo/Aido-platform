@@ -5,7 +5,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
 
-import { Friendship } from "../../../domain/entities/friendship.entity";
+import { Friendship } from "../../../domain/entities/friendship.aggregate";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,

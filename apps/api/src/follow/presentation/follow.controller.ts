@@ -31,7 +31,13 @@ import {
 	CurrentUser,
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
-import { FollowFacade } from "../application/facades/follow.facade";
+import { SearchUsersUseCase } from "../application/queries/search-users/search-users.use-case";
+import { FollowReader } from "../application/services/follow.reader";
+import { AcceptFriendRequestUseCase } from "../application/use-cases/accept-friend-request/accept-friend-request.use-case";
+import { RejectFriendRequestUseCase } from "../application/use-cases/reject-friend-request/reject-friend-request.use-case";
+import { RemoveFriendUseCase } from "../application/use-cases/remove-friend/remove-friend.use-case";
+import { ReorderFriendUseCase } from "../application/use-cases/reorder-friend/reorder-friend.use-case";
+import { SendFriendRequestByTagUseCase } from "../application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
 import {
 	AcceptFriendRequestResponseDto,
 	FollowResourceLimitResponseDto,
@@ -68,7 +74,15 @@ import { FollowMapper } from "./follow.mapper";
 export class FollowController {
 	readonly #logger = new Logger(FollowController.name);
 
-	constructor(private readonly followFacade: FollowFacade) {}
+	constructor(
+		private readonly followReader: FollowReader,
+		private readonly sendFriendRequestByTagUseCase: SendFriendRequestByTagUseCase,
+		private readonly acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
+		private readonly rejectFriendRequestUseCase: RejectFriendRequestUseCase,
+		private readonly removeFriendUseCase: RemoveFriendUseCase,
+		private readonly reorderFriendUseCase: ReorderFriendUseCase,
+		private readonly searchUsersUseCase: SearchUsersUseCase,
+	) {}
 
 	@Post(":userTag")
 	@ApiParam({
@@ -98,10 +112,10 @@ export class FollowController {
 	): Promise<SendFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
 
-		const result = await this.followFacade.sendRequestByTag(
-			user.userId,
-			params.userTag,
-		);
+		const result = await this.sendFriendRequestByTagUseCase.execute({
+			userId: user.userId,
+			targetUserTag: params.userTag,
+		});
 
 		const message = result.autoAccepted
 			? "친구가 되었습니다."
@@ -142,10 +156,10 @@ export class FollowController {
 	): Promise<AcceptFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
 
-		const result = await this.followFacade.acceptRequest(
-			user.userId,
-			params.userId,
-		);
+		const result = await this.acceptFriendRequestUseCase.execute({
+			userId: user.userId,
+			requesterUserId: params.userId,
+		});
 
 		this.#logger.log(
 			`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`,
@@ -181,7 +195,10 @@ export class FollowController {
 	): Promise<RejectFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 거절: ${params.userId} -> ${user.userId}`);
 
-		await this.followFacade.rejectRequest(user.userId, params.userId);
+		await this.rejectFriendRequestUseCase.execute({
+			userId: user.userId,
+			requesterUserId: params.userId,
+		});
 
 		this.#logger.log(`친구 요청 거절 완료: ${params.userId} X ${user.userId}`);
 
@@ -214,7 +231,10 @@ export class FollowController {
 			`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`,
 		);
 
-		await this.followFacade.remove(user.userId, params.userId);
+		await this.removeFriendUseCase.execute({
+			userId: user.userId,
+			targetUserId: params.userId,
+		});
 
 		this.#logger.log(
 			`친구 삭제/요청 철회 완료: ${user.userId} X ${params.userId}`,
@@ -252,7 +272,12 @@ export class FollowController {
 			`친구 순서 변경: user=${user.userId}, followId=${followId}`,
 		);
 
-		const result = await this.followFacade.reorder(followId, user.userId, dto);
+		const result = await this.reorderFriendUseCase.execute({
+			followId,
+			userId: user.userId,
+			targetFollowId: dto.targetFollowId,
+			position: dto.position,
+		});
 
 		this.#logger.log(`친구 순서 변경 완료: followId=${followId}`);
 
@@ -277,7 +302,7 @@ export class FollowController {
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<FollowResourceLimitResponseDto> {
-		return this.followFacade.getResourceLimitInfo(user.userId);
+		return this.followReader.getResourceLimitInfo(user.userId);
 	}
 
 	@Get("friends")
@@ -300,13 +325,13 @@ export class FollowController {
 		this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
 
 		const [result, totalCount] = await Promise.all([
-			this.followFacade.getFriends({
+			this.followReader.getFriends({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 				search: query.search,
 			}),
-			this.followFacade.countFriends(user.userId),
+			this.followReader.countFriends(user.userId),
 		]);
 
 		return {
@@ -339,12 +364,12 @@ export class FollowController {
 	): Promise<SearchUsersResponseDto> {
 		this.#logger.debug(`사용자 검색: user=${user.userId}, q=${query.q}`);
 
-		const result = await this.followFacade.searchUsers(
-			user.userId,
-			query.q,
-			query.cursor,
-			query.limit,
-		);
+		const result = await this.searchUsersUseCase.execute({
+			viewerId: user.userId,
+			query: query.q,
+			cursor: query.cursor,
+			size: query.limit,
+		});
 
 		return {
 			items: result.items.map(FollowMapper.toSearchUser),
@@ -373,12 +398,12 @@ export class FollowController {
 		this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
 
 		const [result, totalCount] = await Promise.all([
-			this.followFacade.getReceivedRequests({
+			this.followReader.getReceivedRequests({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			}),
-			this.followFacade.countReceivedRequests(user.userId),
+			this.followReader.countReceivedRequests(user.userId),
 		]);
 
 		return {
@@ -407,12 +432,12 @@ export class FollowController {
 		this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
 
 		const [result, totalCount] = await Promise.all([
-			this.followFacade.getSentRequests({
+			this.followReader.getSentRequests({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			}),
-			this.followFacade.countSentRequests(user.userId),
+			this.followReader.countSentRequests(user.userId),
 		]);
 
 		return {

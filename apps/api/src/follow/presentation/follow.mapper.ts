@@ -17,7 +17,7 @@ import type {
 	FollowWithUser,
 	UserSearchResult,
 } from "../application/ports/follow.repository.port";
-import type { Friendship } from "../domain/entities/friendship.entity";
+import type { Friendship } from "../domain/entities/friendship.aggregate";
 
 export abstract class FollowMapper {
 	/** Friendship 애그리게잇을 기본 응답 형식으로 변환 */

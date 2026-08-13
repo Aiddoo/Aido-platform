@@ -2,7 +2,7 @@
  * Cheer 모듈 통합 테스트 (Mock DB)
  *
  * 클린아키텍처(무버스 use-case) 구조로 재작성. CheerFacade·use-case·CheerReader가
- * PrismaCheerRepository(Mock DB)·알림/한도 어댑터·FollowFacade와 함께 DI로 조립되고
+ * PrismaCheerRepository(Mock DB)·알림/한도 어댑터·FollowReader와 함께 DI로 조립되고
  * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
  * 실행: pnpm --filter @aido/api test cheer.integration-spec
@@ -26,7 +26,7 @@ import { SendCheerUseCase } from "@/cheer/application/use-cases/send-cheer/send-
 import { CheerLimitReaderAdapter } from "@/cheer/infrastructure/adapters/cheer-limit-reader.adapter";
 import { CheerNotifierAdapter } from "@/cheer/infrastructure/adapters/cheer-notifier.adapter";
 import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
-import { FollowFacade } from "@/follow";
+import { FollowReader } from "@/follow";
 import { NotificationQueueService } from "@/notification";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
@@ -53,7 +53,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 		user: mockUserDb,
 	});
 
-	const mockFollowFacade = { isMutualFriend: jest.fn() };
+	const mockFollowReader = { isMutualFriend: jest.fn() };
 	const mockNotificationQueueService = { enqueueCheerSent: jest.fn() };
 	const mockEntitlementService = {
 		getFeatureLimit: jest.fn(),
@@ -105,7 +105,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 						pagination: { defaultPageSize: 20, maxPageSize: 100 },
 					},
 				},
-				{ provide: FollowFacade, useValue: mockFollowFacade },
+				{ provide: FollowReader, useValue: mockFollowReader },
 				{
 					provide: NotificationQueueService,
 					useValue: mockNotificationQueueService,
@@ -154,7 +154,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("응원 전송", () => {
 		it("친구에게 응원을 전송하고 알림을 enqueue한다", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockCheerDb.count.mockResolvedValue(0);
 			mockCheerDb.findFirst.mockResolvedValue(null);
 			mockCheerDb.create.mockResolvedValue(
@@ -171,7 +171,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			);
 
 			expect(result.id).toBe(cheerId);
-			expect(mockFollowFacade.isMutualFriend).toHaveBeenCalledWith(
+			expect(mockFollowReader.isMutualFriend).toHaveBeenCalledWith(
 				senderId,
 				receiverId,
 			);
@@ -181,7 +181,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("메시지 없이도 전송된다", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockCheerDb.count.mockResolvedValue(0);
 			mockCheerDb.findFirst.mockResolvedValue(null);
 			mockCheerDb.create.mockResolvedValue(
@@ -195,7 +195,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("친구가 아니면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(false);
+			mockFollowReader.isMutualFriend.mockResolvedValue(false);
 			await expect(
 				facade.sendCheer({ senderId, receiverId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
@@ -208,7 +208,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("일일 제한 초과면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockCheerDb.count.mockResolvedValue(3);
 			await expect(
 				facade.sendCheer({ senderId, receiverId }, "UTC"),
@@ -216,7 +216,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("쿨다운 중이면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockCheerDb.count.mockResolvedValue(0);
 			mockCheerDb.findFirst.mockResolvedValue(
 				CheerBuilder.create(senderId, receiverId)

@@ -1,4 +1,4 @@
-import type { Friendship } from "../../domain/entities/friendship.entity";
+import type { Friendship } from "../../domain/entities/friendship.aggregate";
 import type { FriendshipStatusValue } from "../../domain/value-objects/friendship-status.vo";
 
 /**

@@ -14,7 +14,7 @@ import type { CheerNotifierPort } from "@/cheer/application/ports/cheer-notifier
 import { CheerReader } from "@/cheer/application/services/cheer.reader";
 import { SendCheerUseCase } from "@/cheer/application/use-cases/send-cheer/send-cheer.use-case";
 import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
-import { FollowFacade } from "@/follow";
+import { FollowReader } from "@/follow";
 import { PrismaClient } from "@/generated/prisma/client";
 import type { NudgeLimitReaderPort } from "@/nudge/application/ports/nudge-limit-reader.port";
 import type { NudgeNotifierPort } from "@/nudge/application/ports/nudge-notifier.port";
@@ -506,10 +506,10 @@ function createTransactionHarness(prisma: PrismaClient): {
 	};
 }
 
-function createFollowFacade(): FollowFacade {
+function createFollowReader(): FollowReader {
 	return {
 		isMutualFriend: async () => true,
-	} as unknown as FollowFacade;
+	} as unknown as FollowReader;
 }
 
 function createCheerNotifier(): CheerNotifierPort {
@@ -726,7 +726,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 			createCheerLimitReader(DAILY_LIMIT),
 			new PostgresMutationLockAdapter(txHost),
 			uow,
-			createFollowFacade(),
+			createFollowReader(),
 		);
 
 		// When - 같은 일일 한도를 동시에 소비
@@ -762,7 +762,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 			createCheerLimitReader(null),
 			new PostgresMutationLockAdapter(txHost),
 			uow,
-			createFollowFacade(),
+			createFollowReader(),
 		);
 
 		// When - 동일 대상을 동시에 응원
@@ -803,7 +803,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 			createNudgeLimitReader(DAILY_LIMIT),
 			new PostgresMutationLockAdapter(txHost),
 			uow,
-			createFollowFacade(),
+			createFollowReader(),
 		);
 
 		// When - 같은 일일 한도를 동시에 소비
@@ -840,7 +840,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 			createNudgeLimitReader(null),
 			new PostgresMutationLockAdapter(txHost),
 			uow,
-			createFollowFacade(),
+			createFollowReader(),
 		);
 
 		// When - 동일 Todo를 동시에 찌름
@@ -876,7 +876,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 			createNudgeNotifier(),
 			new PostgresMutationLockAdapter(txHost),
 			uow,
-			createFollowFacade(),
+			createFollowReader(),
 		);
 
 		// When - 동일 친구에게 동시에 reminder-Nudge 전송
@@ -1132,7 +1132,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 			createCheerLimitReader(1),
 			mutationLock,
 			uow,
-			createFollowFacade(),
+			createFollowReader(),
 		);
 
 		// When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동

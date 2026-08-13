@@ -1,4 +1,4 @@
-import { Friendship } from "./friendship.entity";
+import { Friendship } from "./friendship.aggregate";
 
 const make = (status: "PENDING" | "ACCEPTED", sortOrder = 0): Friendship =>
 	Friendship.reconstitute({
@@ -25,6 +25,18 @@ describe("Friendship 엔티티", () => {
 		expect(make("PENDING").isPending()).toBe(true);
 		expect(make("PENDING").isAccepted()).toBe(false);
 		expect(make("ACCEPTED").isAccepted()).toBe(true);
+	});
+
+	it("수락하면 상태와 친구 정렬 순서를 함께 전이한다", () => {
+		const friendship = make("PENDING");
+
+		friendship.accept(4);
+
+		expect(friendship.isAccepted()).toBe(true);
+		expect(friendship.toUpdate()).toEqual({
+			status: "ACCEPTED",
+			sortOrder: 4,
+		});
 	});
 
 	it("planReorderRelativeTo는 도메인 서비스와 동일 계획", () => {
