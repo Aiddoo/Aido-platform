@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { WeatherFacade } from "./application/facades/weather.facade";
+import { WeatherForecastAccess } from "./application/access/weather-forecast.access";
 import { AIR_QUALITY_PROVIDER } from "./application/ports/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "./application/ports/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "./application/ports/sun-time-provider.port";
@@ -7,6 +7,7 @@ import { WEATHER_CACHE } from "./application/ports/weather-cache.port";
 import { WEATHER_LOCATION_REPOSITORY } from "./application/ports/weather-location.repository.port";
 import { WEATHER_PROVIDER } from "./application/ports/weather-provider.port";
 import { WeatherQueryUseCases } from "./application/queries";
+import { GetForecastsByGridBatchUseCase } from "./application/queries/get-forecasts-by-grid-batch/get-forecasts-by-grid-batch.use-case";
 import { WeatherForecastReader } from "./application/services/weather-forecast.reader";
 import { WeatherUseCases } from "./application/use-cases";
 import { AirkoreaProvider } from "./infrastructure/adapters/airkorea.provider";
@@ -28,7 +29,13 @@ import { WeatherController } from "./presentation/weather.controller";
 @Module({
 	controllers: [WeatherController],
 	providers: [
-		WeatherFacade,
+		{
+			provide: WeatherForecastAccess,
+			inject: [GetForecastsByGridBatchUseCase],
+			useFactory: (
+				getForecastsByGridBatchUseCase: GetForecastsByGridBatchUseCase,
+			) => new WeatherForecastAccess(getForecastsByGridBatchUseCase),
+		},
 		WeatherForecastReader,
 		{
 			provide: WEATHER_LOCATION_REPOSITORY,
@@ -43,6 +50,6 @@ import { WeatherController } from "./presentation/weather.controller";
 		...WeatherQueryUseCases,
 		...WeatherUseCases,
 	],
-	exports: [WeatherFacade],
+	exports: [WeatherForecastAccess],
 })
 export class WeatherModule {}

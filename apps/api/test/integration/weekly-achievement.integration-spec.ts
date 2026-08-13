@@ -26,15 +26,17 @@ import { suppressLogger } from "@test/setup/suppress-logger";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { WeeklyAchievementFacade } from "@/weekly-achievement/application/facades/weekly-achievement.facade";
 import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "@/weekly-achievement/application/ports/weekly-achievement.repository.port";
 import { WeeklyAchievementQueryUseCases } from "@/weekly-achievement/application/queries";
+import { GetWeeklyAchievementUseCase } from "@/weekly-achievement/application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
+import { GetWeeklyAchievementsUseCase } from "@/weekly-achievement/application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
 import { WeeklyAchievementUseCases } from "@/weekly-achievement/application/use-cases";
 import { PrismaWeeklyAchievementRepository } from "@/weekly-achievement/infrastructure/adapters/prisma-weekly-achievement.repository";
 
 describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: WeeklyAchievementFacade;
+	let getWeeklyAchievementUseCase: GetWeeklyAchievementUseCase;
+	let getWeeklyAchievementsUseCase: GetWeeklyAchievementsUseCase;
 
 	// Mock 데이터베이스 서비스
 	const mockWeeklyAchievementDb = {
@@ -77,7 +79,6 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(mock DB)
 		module = await Test.createTestingModule({
 			providers: [
-				WeeklyAchievementFacade,
 				...WeeklyAchievementQueryUseCases,
 				...WeeklyAchievementUseCases,
 				PaginationService,
@@ -98,7 +99,8 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 		}).compile();
 
 		await module.init();
-		facade = module.get(WeeklyAchievementFacade);
+		getWeeklyAchievementUseCase = module.get(GetWeeklyAchievementUseCase);
+		getWeeklyAchievementsUseCase = module.get(GetWeeklyAchievementsUseCase);
 	});
 
 	afterAll(async () => {
@@ -153,13 +155,13 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - 목록 조회
-			const result = await facade.getWeeklyAchievements(
-				mockUserId,
-				mockYear,
-				undefined,
-				20,
-				"ko",
-			);
+			const result = await getWeeklyAchievementsUseCase.execute({
+				userId: mockUserId,
+				year: mockYear,
+				cursor: undefined,
+				size: 20,
+				locale: "ko",
+			});
 
 			// Then - 목록 및 summary가 반환되어야 함
 			expect(result.items).toHaveLength(2);
@@ -195,13 +197,13 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - 목록 조회
-			const result = await facade.getWeeklyAchievements(
-				mockUserId,
-				mockYear,
-				undefined,
-				20,
-				"ko",
-			);
+			const result = await getWeeklyAchievementsUseCase.execute({
+				userId: mockUserId,
+				year: mockYear,
+				cursor: undefined,
+				size: 20,
+				locale: "ko",
+			});
 
 			// Then - summary 계산 검증
 			expect(result.summary.totalWeeks).toBe(3);
@@ -241,13 +243,13 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - size=2로 조회 (3개 반환 → hasNext = true)
-			const result = await facade.getWeeklyAchievements(
-				mockUserId,
-				mockYear,
-				undefined,
-				2,
-				"ko",
-			);
+			const result = await getWeeklyAchievementsUseCase.execute({
+				userId: mockUserId,
+				year: mockYear,
+				cursor: undefined,
+				size: 2,
+				locale: "ko",
+			});
 
 			// Then - 다음 페이지 커서가 설정되어야 함
 			expect(result.pagination.hasNext).toBe(true);
@@ -268,12 +270,12 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 			mockWeeklyAchievementDb.findUnique.mockResolvedValue(mockAchievement);
 
 			// When - 상세 조회
-			const result = await facade.getWeeklyAchievement(
-				mockUserId,
-				mockYear,
-				10,
-				"ko",
-			);
+			const result = await getWeeklyAchievementUseCase.execute({
+				userId: mockUserId,
+				year: mockYear,
+				week: 10,
+				locale: "ko",
+			});
 
 			// Then - 해당 주차 데이터가 반환되어야 함
 			expect(result.year).toBe(mockYear);
@@ -289,7 +291,12 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 
 			// When & Then - 에러 발생 검증
 			await expect(
-				facade.getWeeklyAchievement(mockUserId, mockYear, 99, "ko"),
+				getWeeklyAchievementUseCase.execute({
+					userId: mockUserId,
+					year: mockYear,
+					week: 99,
+					locale: "ko",
+				}),
 			).rejects.toThrow(ApplicationException);
 		});
 	});

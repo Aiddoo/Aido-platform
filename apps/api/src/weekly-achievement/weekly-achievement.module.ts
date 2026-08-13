@@ -1,8 +1,9 @@
 import { Module } from "@nestjs/common";
-import { WeeklyAchievementFacade } from "./application/facades/weekly-achievement.facade";
+import { WeeklyAchievementWriterAccess } from "./application/access/weekly-achievement-writer.access";
 import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "./application/ports/weekly-achievement.repository.port";
 import { WeeklyAchievementQueryUseCases } from "./application/queries";
 import { WeeklyAchievementUseCases } from "./application/use-cases";
+import { UpsertWeeklyAchievementsUseCase } from "./application/use-cases/upsert-weekly-achievements/upsert-weekly-achievements.use-case";
 import { PrismaWeeklyAchievementRepository } from "./infrastructure/adapters/prisma-weekly-achievement.repository";
 import { WeeklyAchievementController } from "./presentation/weekly-achievement.controller";
 
@@ -18,7 +19,13 @@ import { WeeklyAchievementController } from "./presentation/weekly-achievement.c
 @Module({
 	controllers: [WeeklyAchievementController],
 	providers: [
-		WeeklyAchievementFacade,
+		{
+			provide: WeeklyAchievementWriterAccess,
+			inject: [UpsertWeeklyAchievementsUseCase],
+			useFactory: (
+				upsertWeeklyAchievementsUseCase: UpsertWeeklyAchievementsUseCase,
+			) => new WeeklyAchievementWriterAccess(upsertWeeklyAchievementsUseCase),
+		},
 		{
 			provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
 			useClass: PrismaWeeklyAchievementRepository,
@@ -26,6 +33,6 @@ import { WeeklyAchievementController } from "./presentation/weekly-achievement.c
 		...WeeklyAchievementQueryUseCases,
 		...WeeklyAchievementUseCases,
 	],
-	exports: [WeeklyAchievementFacade],
+	exports: [WeeklyAchievementWriterAccess],
 })
 export class WeeklyAchievementModule {}
