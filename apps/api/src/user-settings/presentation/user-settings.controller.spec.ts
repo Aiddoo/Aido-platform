@@ -14,7 +14,10 @@ import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
-import { UserSettingsFacade } from "../application/facades/user-settings.facade";
+import { GetConsentUseCase } from "../application/use-cases/get-consent/get-consent.use-case";
+import { GetPreferenceUseCase } from "../application/use-cases/get-preference/get-preference.use-case";
+import { UpdateMarketingConsentUseCase } from "../application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
+import { UpdatePreferenceUseCase } from "../application/use-cases/update-preference/update-preference.use-case";
 import { SettingsController } from "./user-settings.controller";
 
 const WEATHER_DEFAULTS = {
@@ -28,7 +31,10 @@ const WEATHER_DEFAULTS = {
 
 describe("SettingsController — 사용자 설정 컨트롤러", () => {
 	let controller: SettingsController;
-	let mockUserSettingsFacade: Mocked<UserSettingsFacade>;
+	let getPreferenceUseCase: Mocked<GetPreferenceUseCase>;
+	let updatePreferenceUseCase: Mocked<UpdatePreferenceUseCase>;
+	let getConsentUseCase: Mocked<GetConsentUseCase>;
+	let updateMarketingConsentUseCase: Mocked<UpdateMarketingConsentUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -42,7 +48,10 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			await TestBed.solitary(SettingsController).compile();
 
 		controller = unit;
-		mockUserSettingsFacade = unitRef.get(UserSettingsFacade);
+		getPreferenceUseCase = unitRef.get(GetPreferenceUseCase);
+		updatePreferenceUseCase = unitRef.get(UpdatePreferenceUseCase);
+		getConsentUseCase = unitRef.get(GetConsentUseCase);
+		updateMarketingConsentUseCase = unitRef.get(UpdateMarketingConsentUseCase);
 	});
 
 	describe("getPreference", () => {
@@ -59,13 +68,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsFacade.getPreference.mockResolvedValue(expectedResult);
+			getPreferenceUseCase.execute.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.getPreference(mockUser);
 
 			// Then
-			expect(mockUserSettingsFacade.getPreference).toHaveBeenCalledWith(
+			expect(getPreferenceUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 			expect(result).toEqual(expectedResult);
@@ -84,7 +93,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsFacade.getPreference.mockResolvedValue(defaultResult);
+			getPreferenceUseCase.execute.mockResolvedValue(defaultResult);
 
 			// When
 			const result = await controller.getPreference(mockUser);
@@ -109,13 +118,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsFacade.updatePreference.mockResolvedValue(expectedResult);
+			updatePreferenceUseCase.execute.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.updatePreference(mockUser, dto);
 
 			// Then
-			expect(mockUserSettingsFacade.updatePreference).toHaveBeenCalledWith(
+			expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
 			);
@@ -136,13 +145,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				timeFormat: "TWELVE_HOUR" as const,
 				...WEATHER_DEFAULTS,
 			};
-			mockUserSettingsFacade.updatePreference.mockResolvedValue(expectedResult);
+			updatePreferenceUseCase.execute.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.updatePreference(mockUser, dto);
 
 			// Then
-			expect(mockUserSettingsFacade.updatePreference).toHaveBeenCalledWith(
+			expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
 			);
@@ -160,15 +169,13 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				marketingAgreedAt: null,
 				marketingPushAgreedAt: null,
 			};
-			mockUserSettingsFacade.getConsent.mockResolvedValue(expectedResult);
+			getConsentUseCase.execute.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.getConsent(mockUser);
 
 			// Then
-			expect(mockUserSettingsFacade.getConsent).toHaveBeenCalledWith(
-				mockUser.userId,
-			);
+			expect(getConsentUseCase.execute).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual(expectedResult);
 		});
 
@@ -181,7 +188,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 				marketingAgreedAt: null,
 				marketingPushAgreedAt: null,
 			};
-			mockUserSettingsFacade.getConsent.mockResolvedValue(defaultResult);
+			getConsentUseCase.execute.mockResolvedValue(defaultResult);
 
 			// When
 			const result = await controller.getConsent(mockUser);
@@ -198,17 +205,16 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			const expectedResult = {
 				marketingAgreedAt: "2024-01-15T10:00:00.000Z",
 			};
-			mockUserSettingsFacade.updateMarketingConsent.mockResolvedValue(
-				expectedResult,
-			);
+			updateMarketingConsentUseCase.execute.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.updateMarketingConsent(mockUser, dto);
 
 			// Then
-			expect(
-				mockUserSettingsFacade.updateMarketingConsent,
-			).toHaveBeenCalledWith(mockUser.userId, true);
+			expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(
+				mockUser.userId,
+				true,
+			);
 			expect(result).toEqual(expectedResult);
 		});
 
@@ -216,17 +222,16 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			// Given
 			const dto = { agreed: false };
 			const expectedResult = { marketingAgreedAt: null };
-			mockUserSettingsFacade.updateMarketingConsent.mockResolvedValue(
-				expectedResult,
-			);
+			updateMarketingConsentUseCase.execute.mockResolvedValue(expectedResult);
 
 			// When
 			const result = await controller.updateMarketingConsent(mockUser, dto);
 
 			// Then
-			expect(
-				mockUserSettingsFacade.updateMarketingConsent,
-			).toHaveBeenCalledWith(mockUser.userId, false);
+			expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(
+				mockUser.userId,
+				false,
+			);
 			expect(result).toEqual(expectedResult);
 		});
 	});

@@ -1,7 +1,7 @@
 /**
- * Streak 애그리게잇 단위 테스트 (전이 규칙)
+ * Streak 값 객체 단위 테스트 (전이 규칙)
  */
-import { Streak } from "./streak.entity";
+import { Streak } from "./streak.vo";
 
 const TODAY = new Date("2024-01-16T00:00:00.000Z");
 const YESTERDAY = new Date("2024-01-15T00:00:00.000Z");

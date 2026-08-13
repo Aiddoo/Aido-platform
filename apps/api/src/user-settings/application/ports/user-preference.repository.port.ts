@@ -1,6 +1,6 @@
-import type { StreakState } from "../../domain/entities/streak.entity";
 import type { UserPreferenceRecord } from "../../domain/records/user-preference.record";
 import type { TimeFormatValue } from "../../domain/services/preference-view";
+import type { StreakState } from "../../domain/value-objects/streak.vo";
 
 export type { UserPreferenceRecord };
 

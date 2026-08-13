@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { addDays, subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { startOfDay } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { Streak } from "../../../domain/entities/streak.entity";
+import { UserPreference } from "../../../domain/entities/user-preference.aggregate";
 
 import {
 	STREAK_MILESTONE_NOTIFIER,
@@ -76,8 +76,8 @@ export class OnTodoToggledUseCase {
 			return;
 		}
 
-		const streak = Streak.of(pref);
-		const plan = streak.planCompletion(today);
+		const preference = UserPreference.reconstitute(pref);
+		const plan = preference.planTodoCompletion(today);
 		if (!plan) {
 			return;
 		}
@@ -99,8 +99,8 @@ export class OnTodoToggledUseCase {
 			return;
 		}
 
-		const streak = Streak.of(pref);
-		if (!streak.isCompletedOn(today)) {
+		const preference = UserPreference.reconstitute(pref);
+		if (!preference.hasTodoCompletionOn(today)) {
 			return;
 		}
 
@@ -110,7 +110,10 @@ export class OnTodoToggledUseCase {
 			yesterdayStats.total > 0 &&
 			yesterdayStats.total === yesterdayStats.completed;
 
-		const nextState = streak.planUncompletion(today, hadYesterdayCompletion);
+		const nextState = preference.planTodoUncompletion(
+			today,
+			hadYesterdayCompletion,
+		);
 		if (!nextState) {
 			return;
 		}

@@ -21,7 +21,11 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { UserSettingsFacade } from "../application/facades/user-settings.facade";
+import { GetConsentUseCase } from "../application/use-cases/get-consent/get-consent.use-case";
+import { GetPreferenceUseCase } from "../application/use-cases/get-preference/get-preference.use-case";
+import { UpdateMarketingConsentUseCase } from "../application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
+import { UpdateMarketingPushConsentUseCase } from "../application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case";
+import { UpdatePreferenceUseCase } from "../application/use-cases/update-preference/update-preference.use-case";
 import {
 	ConsentResponseDto,
 	PreferenceResponseDto,
@@ -37,7 +41,13 @@ import {
 @ApiBearerAuth()
 @Controller("auth")
 export class SettingsController {
-	constructor(private readonly userSettingsFacade: UserSettingsFacade) {}
+	constructor(
+		private readonly getPreferenceUseCase: GetPreferenceUseCase,
+		private readonly updatePreferenceUseCase: UpdatePreferenceUseCase,
+		private readonly getConsentUseCase: GetConsentUseCase,
+		private readonly updateMarketingConsentUseCase: UpdateMarketingConsentUseCase,
+		private readonly updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
+	) {}
 
 	@Get("preference")
 	@ApiDoc({
@@ -71,7 +81,7 @@ export class SettingsController {
 	@ApiSuccessResponse({ type: PreferenceResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getPreference(@CurrentUser() user: CurrentUserPayload) {
-		return this.userSettingsFacade.getPreference(user.userId);
+		return this.getPreferenceUseCase.execute(user.userId);
 	}
 
 	@Patch("preference")
@@ -109,7 +119,7 @@ export class SettingsController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdatePreferenceDto,
 	) {
-		return this.userSettingsFacade.updatePreference(user.userId, dto);
+		return this.updatePreferenceUseCase.execute(user.userId, dto);
 	}
 
 	@Get("consent")
@@ -129,7 +139,7 @@ export class SettingsController {
 	@ApiSuccessResponse({ type: ConsentResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getConsent(@CurrentUser() user: CurrentUserPayload) {
-		return this.userSettingsFacade.getConsent(user.userId);
+		return this.getConsentUseCase.execute(user.userId);
 	}
 
 	@Patch("consent/marketing")
@@ -155,10 +165,7 @@ export class SettingsController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateMarketingConsentDto,
 	) {
-		return this.userSettingsFacade.updateMarketingConsent(
-			user.userId,
-			dto.agreed,
-		);
+		return this.updateMarketingConsentUseCase.execute(user.userId, dto.agreed);
 	}
 
 	@Patch("consent/marketing-push")
@@ -175,7 +182,7 @@ export class SettingsController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateMarketingPushConsentDto,
 	) {
-		return this.userSettingsFacade.updateMarketingPushConsent(
+		return this.updateMarketingPushConsentUseCase.execute(
 			user.userId,
 			dto.agreed,
 		);
