@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { AiFacade } from "../../application/facades/ai.facade";
+import { GetAiUsageUseCase } from "../../application/queries/get-ai-usage/get-ai-usage.use-case";
 
 /** 인증 페이로드가 첨부된 Request 타입 (캐스트 없이 user 접근). */
 interface AuthenticatedRequest extends Request {
@@ -26,7 +26,7 @@ interface AuthenticatedRequest extends Request {
  */
 @Injectable()
 export class AiUsageGuard implements CanActivate {
-	constructor(private readonly aiFacade: AiFacade) {}
+	constructor(private readonly getAiUsageUseCase: GetAiUsageUseCase) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
 		const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -37,7 +37,7 @@ export class AiUsageGuard implements CanActivate {
 			throw new ApplicationException(ErrorCode.AUTH_0107);
 		}
 
-		const usage = await this.aiFacade.getUsage(user.userId);
+		const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
 
 		if (usage.isExceeded()) {
 			throw new ApplicationException(ErrorCode.AI_1303, {
