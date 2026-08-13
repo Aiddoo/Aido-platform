@@ -5,5 +5,4 @@
  */
 
 export * from "./admin.module";
-export * from "./application/facades/admin.facade";
 export * from "./presentation/dtos";
