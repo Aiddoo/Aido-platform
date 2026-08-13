@@ -11,7 +11,6 @@
  */
 import { Module } from "@nestjs/common";
 import { TodoModule } from "../todo/todo.module";
-import { MemoFacade } from "./application/facades/memo.facade";
 import { MEMO_REPOSITORY } from "./application/ports/memo.repository.port";
 import { TODO_CREATOR } from "./application/ports/todo-creator.port";
 import { MemoQueryUseCases } from "./application/queries";
@@ -24,12 +23,10 @@ import { MemoController } from "./presentation/memo.controller";
 	imports: [TodoModule],
 	controllers: [MemoController],
 	providers: [
-		MemoFacade,
 		{ provide: MEMO_REPOSITORY, useClass: PrismaMemoRepository },
 		{ provide: TODO_CREATOR, useClass: TodoCreatorAdapter },
 		...MemoUseCases,
 		...MemoQueryUseCases,
 	],
-	exports: [MemoFacade],
 })
 export class MemoModule {}

@@ -6,6 +6,16 @@ import { ReorderMemoUseCase } from "./reorder-memo/reorder-memo.use-case";
 import { ToggleMemoPinUseCase } from "./toggle-memo-pin/toggle-memo-pin.use-case";
 import { UpdateMemoUseCase } from "./update-memo/update-memo.use-case";
 
+export {
+	ConvertMemoToTodosUseCase,
+	ConvertMemoToTodoUseCase,
+	CreateMemoUseCase,
+	DeleteMemoUseCase,
+	ReorderMemoUseCase,
+	ToggleMemoPinUseCase,
+	UpdateMemoUseCase,
+};
+
 /** 메모 커맨드 use-case (모듈 등록용 배럴). */
 export const MemoUseCases = [
 	CreateMemoUseCase,

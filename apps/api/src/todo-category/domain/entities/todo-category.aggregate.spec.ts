@@ -1,4 +1,4 @@
-import { TodoCategory } from "./todo-category.entity";
+import { TodoCategory } from "./todo-category.aggregate";
 
 const props = {
 	id: 1,

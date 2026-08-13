@@ -9,7 +9,7 @@ import {
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import { TodoCategory } from "../../../domain/entities/todo-category.entity";
+import { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,

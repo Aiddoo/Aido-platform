@@ -30,7 +30,11 @@ import {
 	CurrentUser,
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
-import { TodoCategoryFacade } from "../application/facades/todo-category.facade";
+import { TodoCategoryReader } from "../application/services/todo-category.reader";
+import { CreateTodoCategoryUseCase } from "../application/use-cases/create-todo-category/create-todo-category.use-case";
+import { DeleteTodoCategoryUseCase } from "../application/use-cases/delete-todo-category/delete-todo-category.use-case";
+import { ReorderTodoCategoryUseCase } from "../application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
+import { UpdateTodoCategoryUseCase } from "../application/use-cases/update-todo-category/update-todo-category.use-case";
 import {
 	CreateTodoCategoryDto,
 	CreateTodoCategoryResponseDto,
@@ -53,7 +57,13 @@ import { TodoCategoryMapper } from "./todo-category.mapper";
 export class TodoCategoryController {
 	readonly #logger = new Logger(TodoCategoryController.name);
 
-	constructor(private readonly todoCategoryFacade: TodoCategoryFacade) {}
+	constructor(
+		private readonly todoCategoryReader: TodoCategoryReader,
+		private readonly createTodoCategoryUseCase: CreateTodoCategoryUseCase,
+		private readonly updateTodoCategoryUseCase: UpdateTodoCategoryUseCase,
+		private readonly reorderTodoCategoryUseCase: ReorderTodoCategoryUseCase,
+		private readonly deleteTodoCategoryUseCase: DeleteTodoCategoryUseCase,
+	) {}
 
 	@Get("resource-limit")
 	@ApiDoc({
@@ -70,7 +80,7 @@ export class TodoCategoryController {
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<TodoCategoryResourceLimitResponseDto> {
-		return this.todoCategoryFacade.getResourceLimitInfo(user.userId);
+		return this.todoCategoryReader.getResourceLimitInfo(user.userId);
 	}
 
 	@Post()
@@ -100,7 +110,7 @@ export class TodoCategoryController {
 	): Promise<CreateTodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 생성: user=${user.userId}, name=${dto.name}`);
 
-		const category = await this.todoCategoryFacade.create({
+		const category = await this.createTodoCategoryUseCase.execute({
 			userId: user.userId,
 			name: dto.name,
 			color: dto.color,
@@ -138,7 +148,7 @@ export class TodoCategoryController {
 	): Promise<TodoCategoryListResponseDto> {
 		this.#logger.debug(`카테고리 목록 조회: user=${user.userId}`);
 
-		const categories = await this.todoCategoryFacade.findMany(user.userId);
+		const categories = await this.todoCategoryReader.findMany(user.userId);
 
 		return {
 			items: TodoCategoryMapper.toManyResponseWithCount(categories),
@@ -164,7 +174,7 @@ export class TodoCategoryController {
 	): Promise<TodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
 
-		const category = await this.todoCategoryFacade.findById(
+		const category = await this.todoCategoryReader.findById(
 			params.id,
 			user.userId,
 		);
@@ -201,7 +211,7 @@ export class TodoCategoryController {
 	): Promise<UpdateTodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
 
-		const category = await this.todoCategoryFacade.update(
+		const category = await this.updateTodoCategoryUseCase.execute(
 			params.id,
 			user.userId,
 			dto,
@@ -261,7 +271,7 @@ export class TodoCategoryController {
 			`카테고리 순서 변경: id=${params.id}, target=${dto.targetCategoryId}, position=${dto.position}`,
 		);
 
-		const category = await this.todoCategoryFacade.reorder({
+		const category = await this.reorderTodoCategoryUseCase.execute({
 			userId: user.userId,
 			categoryId: params.id,
 			targetCategoryId: dto.targetCategoryId,
@@ -322,7 +332,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 			`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`,
 		);
 
-		await this.todoCategoryFacade.delete({
+		await this.deleteTodoCategoryUseCase.execute({
 			userId: user.userId,
 			categoryId: params.id,
 			moveToCategoryId: query.moveToCategoryId,

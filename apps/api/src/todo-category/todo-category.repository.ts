@@ -17,7 +17,7 @@ export interface SeedCategoryInput {
  *
  * auth·oauth 회원가입은 아직 레거시 `database.$transaction(tx)`를 사용하며, 기본 카테고리 생성을
  * 그 트랜잭션에 명시적으로 참여시키기 위해 `tx`를 받는 이 경로를 유지한다. auth 이관(Wave 7) 시
- * 삭제하고 `TodoCategoryFacade` CLS 경로로 통합한다. 컨트롤러 경로는 클린아키텍처 어댑터가 담당한다.
+ * 회원가입 기본 카테고리 시딩에서만 사용하며 CLS 트랜잭션에 참여한다.
  *
  * 트랜잭션은 CLS로 전파된다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를, 없으면 베이스
  * DatabaseService를 반환한다.

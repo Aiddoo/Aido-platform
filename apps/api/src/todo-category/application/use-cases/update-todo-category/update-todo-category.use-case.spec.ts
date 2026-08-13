@@ -3,7 +3,7 @@ import { TestBed } from "@suites/unit";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import { TodoCategory } from "../../../domain/entities/todo-category.entity";
+import { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
@@ -14,15 +14,16 @@ import {
 } from "../../ports/todo-category-cache.port";
 import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case";
 
-const existing = TodoCategory.reconstitute({
-	id: 1,
-	userId: "u1",
-	name: "기존",
-	color: "#FFB3B3",
-	sortOrder: 0,
-	createdAt: new Date(),
-	updatedAt: new Date(),
-});
+const createExistingCategory = () =>
+	TodoCategory.reconstitute({
+		id: 1,
+		userId: "u1",
+		name: "기존",
+		color: "#FFB3B3",
+		sortOrder: 0,
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	});
 
 describe("UpdateTodoCategoryUseCase", () => {
 	let useCase: UpdateTodoCategoryUseCase;
@@ -37,6 +38,7 @@ describe("UpdateTodoCategoryUseCase", () => {
 		repo = unitRef.get(TODO_CATEGORY_REPOSITORY);
 		cache = unitRef.get(TODO_CATEGORY_CACHE);
 
+		const existing = createExistingCategory();
 		repo.findByIdAndUserId.mockResolvedValue(existing);
 		repo.existsByUserIdAndName.mockResolvedValue(false);
 		repo.update.mockResolvedValue(

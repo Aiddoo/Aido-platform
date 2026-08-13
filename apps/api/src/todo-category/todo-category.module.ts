@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { TodoCategoryFacade } from "./application/facades/todo-category.facade";
 import { TODO_CATEGORY_REPOSITORY } from "./application/ports/todo-category.repository.port";
 import { TODO_CATEGORY_CACHE } from "./application/ports/todo-category-cache.port";
 import { TODO_CATEGORY_LIMIT_READER } from "./application/ports/todo-category-limit-reader.port";
@@ -19,11 +18,10 @@ import { TodoCategoryRepository } from "./todo-category.repository";
  * TodoCategory 모듈 (DDD 클린아키텍처 · use-case 기반).
  *
  * 사용자 할 일 카테고리의 생성/조회/수정/삭제/재배치를 담당한다. 컨트롤러와 크로스모듈(todo·ai)은
- * TodoCategoryFacade만 주입한다. 목록은 read-hot 데이터라 CacheService로 캐시하고 변경 시 무효화한다.
+ * Controller는 endpoint UseCase와 Reader를 직접 주입한다.
  *
- * 회원가입 기본 카테고리 시딩은 TodoCategoryFacade.seedDefaultCategories가 담당하며,
- * 내부적으로 CLS 트랜잭션에 참여하는 TodoCategoryRepository(createMany)를 사용한다.
- * (auth 프로비저닝은 USER_PROVISIONING_SEEDER 포트를 통해 이 파사드에 위임한다.)
+ * 회원가입 기본 카테고리 시딩은 CLS 트랜잭션에 참여하는
+ * TodoCategoryRepository(createMany)를 사용한다.
  */
 @Module({
 	controllers: [TodoCategoryController],
@@ -43,8 +41,7 @@ import { TodoCategoryRepository } from "./todo-category.repository";
 		DeleteTodoCategoryUseCase,
 		ReorderTodoCategoryUseCase,
 		TodoCategoryRepository,
-		TodoCategoryFacade,
 	],
-	exports: [TodoCategoryFacade],
+	exports: [TodoCategoryReader, TodoCategoryRepository],
 })
 export class TodoCategoryModule {}
