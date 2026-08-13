@@ -1,6 +1,10 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
-import { type CreateRecurringTodosResult, TodoFacade } from "@/todo";
+import {
+	type CreateRecurringTodosResult,
+	CreateRecurringTodosUseCase,
+	CreateTodoUseCase,
+} from "@/todo";
 import type {
 	CreateRecurringTodoData,
 	CreateTodoData,
@@ -8,20 +12,23 @@ import type {
 } from "../../application/ports/todo-creator.port";
 
 /**
- * TodoCreatorPort 어댑터 — todo의 공개 Facade에 위임해 구현.
+ * Memo가 요구하는 생성 계약을 Todo의 생성 UseCase에 연결한다.
  */
 @Injectable()
 export class TodoCreatorAdapter implements TodoCreatorPort {
-	constructor(private readonly todoFacade: TodoFacade) {}
+	constructor(
+		private readonly createTodoUseCase: CreateTodoUseCase,
+		private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
+	) {}
 
 	createTodo(data: CreateTodoData): Promise<TodoResponse> {
-		return this.todoFacade.create(data);
+		return this.createTodoUseCase.execute(data);
 	}
 
 	createRecurringTodos(
 		data: CreateRecurringTodoData,
 		timezone: string,
 	): Promise<CreateRecurringTodosResult> {
-		return this.todoFacade.createRecurring(data, timezone);
+		return this.createRecurringTodosUseCase.execute({ data, timezone });
 	}
 }

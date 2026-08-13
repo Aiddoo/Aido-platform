@@ -8,7 +8,7 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
-import type { TodoVisibility } from "../../../domain/entities/todo.entity";
+import type { TodoVisibility } from "../../../domain/entities/todo.aggregate";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,

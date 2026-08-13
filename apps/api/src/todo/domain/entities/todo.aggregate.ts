@@ -259,13 +259,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 		if (patch.visibility !== undefined) {
 			this.props.visibility = patch.visibility;
 		}
-		if (
-			patch.completed !== undefined &&
-			patch.completed !== this.props.completed
-		) {
-			this.props.completed = patch.completed;
-			this.props.completedAt = patch.completed ? now() : null;
-		}
+		this.applyCompletionPatch(patch.completed);
 
 		this.raise(
 			new TodoUpdatedEvent(
@@ -274,6 +268,18 @@ export class Todo extends AggregateRoot<TodoProps> {
 				this.props.completed,
 			),
 		);
+	}
+
+	private applyCompletionPatch(requestedCompletion: boolean | undefined): void {
+		if (
+			requestedCompletion === undefined ||
+			requestedCompletion === this.props.completed
+		) {
+			return;
+		}
+
+		this.props.completed = requestedCompletion;
+		this.props.completedAt = requestedCompletion ? now() : null;
 	}
 
 	/**

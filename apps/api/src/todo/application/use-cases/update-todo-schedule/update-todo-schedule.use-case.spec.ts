@@ -20,7 +20,7 @@ import {
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
-import { Todo } from "../../../domain/entities/todo.entity";
+import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoRescheduledEvent } from "../../../domain/events/todo-rescheduled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import {

@@ -8,7 +8,7 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
-import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.entity";
+import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.aggregate";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,

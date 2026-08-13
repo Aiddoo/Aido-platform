@@ -174,6 +174,9 @@ function publicBarrelViolations(files) {
 		for (const statement of sourceFile.statements) {
 			if (!ts.isExportDeclaration(statement) || !statement.moduleSpecifier) continue;
 			if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
+			// 명시적인 named export는 모듈이 의도적으로 선택한 공개 API다.
+			// 내부 디렉터리 전체를 노출하는 wildcard export만 회귀로 차단한다.
+			if (statement.exportClause) continue;
 			const specifier = statement.moduleSpecifier.text;
 			const isInternalSurface =
 				/infrastructure\//.test(specifier) ||

@@ -18,7 +18,7 @@ import {
 	TodoSchedule,
 	type TodoScheduleProps,
 } from "../value-objects/todo-schedule.vo";
-import { Todo, type TodoProps } from "./todo.entity";
+import { Todo, type TodoProps } from "./todo.aggregate";
 import { TodoItem } from "./todo-item.entity";
 
 function buildSchedule(
