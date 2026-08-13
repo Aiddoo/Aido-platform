@@ -14,8 +14,7 @@ import {
 	USER_PROVISIONING_SEEDER,
 	type UserProvisioningSeederPort,
 } from "@/auth/application/ports/user-provisioning-seeder.port";
-import { DEFAULT_CATEGORIES } from "@/todo-category";
-import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
+import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 
@@ -24,7 +23,7 @@ export const provisioningSeederTestProvider: Provider = {
 	useFactory: (
 		consentRepository: UserConsentRepository,
 		preferenceRepository: UserPreferenceRepository,
-		categoryRepository: TodoCategoryRepository,
+		defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
 	): UserProvisioningSeederPort => ({
 		async seedDefaultSettings(
 			userId: string,
@@ -37,19 +36,12 @@ export const provisioningSeederTestProvider: Provider = {
 			});
 		},
 		async seedDefaultCategories(userId: string): Promise<void> {
-			await categoryRepository.createMany(
-				DEFAULT_CATEGORIES.map((category) => ({
-					userId,
-					name: category.name,
-					color: category.color,
-					sortOrder: category.sortOrder,
-				})),
-			);
+			await defaultTodoCategorySeeder.seed(userId);
 		},
 	}),
 	inject: [
 		UserConsentRepository,
 		UserPreferenceRepository,
-		TodoCategoryRepository,
+		DefaultTodoCategorySeeder,
 	],
 };

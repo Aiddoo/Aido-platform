@@ -48,7 +48,7 @@ import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.in
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
-import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
+import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 import type { FakeEmailService } from "../../mocks/fake-email.service";
@@ -113,7 +113,7 @@ export async function createAuthTestModule(
 			},
 			UserConsentRepository,
 			UserPreferenceRepository,
-			TodoCategoryRepository,
+			DefaultTodoCategorySeeder,
 			provisioningSeederTestProvider,
 			retentionEnrollerTestProvider,
 			{
