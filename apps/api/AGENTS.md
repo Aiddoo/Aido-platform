@@ -1,105 +1,66 @@
 # Aido API
 
-> **Version**: 1.2.0 · **Last Updated**: 2026-07-23 · **Owner**: Aido Platform Team
+> Version 2.0.0 · Updated 2026-08-14 · Owner: Aido Platform Team
 
-NestJS 기반 백엔드 API. **실용형 DDD·Clean Architecture 표준**(참조 구현: **todo**) + BullMQ 큐 기반 알림. domain은 순수 TypeScript이며 application은 Nest DI를 사용할 수 있다.
+NestJS API 작업의 세션 진입점이다. 이 파일은 우선순위가 높은 규칙만 담는다. 세부 설계는 링크된 문서를 읽고, 구조가 불명확하면 `src/todo`의 현재 코드를 기준으로 판단한다.
 
----
+## 작업 전 읽기
 
-## 문서 가이드
+| 작업 | 필수 문서 |
+|---|---|
+| API 구조·의존성 | [.claude/architecture.md](.claude/architecture.md) |
+| Controller·UseCase·도메인 코드 | [.claude/api-conventions.md](.claude/api-conventions.md) |
+| Zod DTO·공개 스키마 | [.claude/validators.md](.claude/validators.md) |
+| Prisma·트랜잭션·마이그레이션 | [.claude/prisma.md](.claude/prisma.md) |
+| 테스트 | [.claude/testing-guide.md](.claude/testing-guide.md) |
+| 로깅 | [.claude/logging-guide.md](.claude/logging-guide.md) |
+| 배포 | [DEPLOYMENT.md](DEPLOYMENT.md) |
 
-| 상황 | 읽을 문서 |
-|------|----------|
-| 전체 아키텍처 이해 (에러, BullMQ 큐, 보안, 공통 모듈) | [.claude/architecture.md](.claude/architecture.md) |
-| Controller/Service/Repository 코드 작성 | [.claude/api-conventions.md](.claude/api-conventions.md) |
-| 클린아키텍처 모듈 작성 (use-case 표준 — todo 참조) | [.claude/api-conventions.md §9](.claude/api-conventions.md#9-클린아키텍처-모듈-규칙) → [architecture.md §1.4](.claude/architecture.md) |
-| Zod 스키마/DTO 추가 | [.claude/validators.md](.claude/validators.md) |
-| Prisma 스키마/마이그레이션 | [.claude/prisma.md](.claude/prisma.md) |
-| 테스트 작성 (종합) | [.claude/testing-guide.md](.claude/testing-guide.md) |
-| 단위 테스트 | [.claude/unit-test.md](.claude/unit-test.md) |
-| 통합 테스트 | [.claude/integration-test.md](.claude/integration-test.md) |
-| E2E 테스트 | [.claude/e2e-test.md](.claude/e2e-test.md) |
-| 로깅 패턴 | [.claude/logging-guide.md](.claude/logging-guide.md) |
+## 정본 구조
 
----
-
-## 기술 스택
-
-| 분류 | 기술 |
-|------|------|
-| 프레임워크 | NestJS 11 |
-| ORM | Prisma 7 |
-| 데이터베이스 | PostgreSQL |
-| 검증 | Zod 4.3 + nestjs-zod |
-| 큐 | BullMQ (Redis) |
-| 캐시 | Memory / Redis (Strategy) |
-| 암호화 | AES-256-GCM |
-| 문서화 | Swagger (OpenAPI) |
-| 테스트 | Jest + @suites/unit + Testcontainers |
-
----
-
-## 아키텍처 레이어
-
-```
-[클린아키텍처 use-case 표준 — 전 모듈. 참조 구현: todo. @nestjs/cqrs 미사용]
-Request → Guard → Controller → endpoint UseCase(execute)
-                                      ↓ 포트(인터페이스)       ↓ 도메인 이벤트(커밋 후)
-                              Adapter → Repository → DB    DOMAIN_EVENT_PUBLISHER
-                                                            → EventEmitter2 → @OnEvent 핸들러(부수효과)
-
-[내구성 부수효과 — 커밋 후 enqueue]
-UseCase/Adapter → QueueService.enqueueXxx() → BullMQ → Processor → PushProvider/외부 I/O
+```text
+HTTP → presentation → endpoint UseCase → domain + application port
+                                      infrastructure adapter → DB/Redis/queue/vendor
 ```
 
----
+- `domain`: 순수 TypeScript. Aggregate, Entity, VO, Policy, domain event를 소유한다.
+- `application`: endpoint 흐름과 consumer-owned port를 소유한다. Nest DI와 Nest Logger는 허용한다.
+- `infrastructure`: Prisma, Redis, BullMQ, 외부 SDK, port 구현을 소유한다.
+- `presentation`: HTTP DTO 검증, 원시값 변환, Swagger, 응답 매핑을 소유한다.
+- Controller는 UseCase를 직접 주입한다. 전달 전용 Facade는 만들지 않는다.
+- Port는 DB 내부 호출마다 만들지 않는다. 외부 공급자, 캐시, 큐, 크로스 컨텍스트 capability처럼 교체·격리 가치가 있을 때 만든다.
 
-## 핵심 규칙
+## 절대 규칙
 
-- **예외**: 모듈 코드는 `ApplicationException`/`DomainException`(둘 다 `ErrorCodedException`, `ErrorCode` 보유)을 던진다. `GlobalExceptionFilter`가 이를 정규화해 HTTP 응답을 만든다. `BusinessException`/`BusinessExceptions`는 필터의 canonical 에러 타입 + 공유 에러 카탈로그(Prisma P2002 매핑 등)이며 신규 비즈니스 로직에서 직접 던지지 않는다. `new HttpException()` 금지
-- **트랜잭션**: `UNIT_OF_WORK.run(async () => ...)` — 콜백 무인자, 리포지토리가 CLS(`TransactionHost.tx`)에서 활성 TX를 읽는다
-- **Domain Core**: domain에서 `@nestjs/*`, Prisma, infrastructure, presentation import 금지. application은 `@Injectable`·`@Inject`·Nest `Logger`를 사용할 수 있지만 Prisma·vendor SDK·바깥 계층 타입에는 의존하지 않는다
-- **진입점**: Controller는 endpoint UseCase를 직접 주입한다. Facade는 신규 작성하지 않으며 전환 모듈에서는 제거한다
-- **집합 연산 예외**: batch update, 원자적 claim/counter처럼 다중 행 원자성이 핵심인 작업은 명명된 port 뒤의 SQL로 유지한다
-- **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `as`는 `pnpm lint:no-cast`, `!`는 Biome `noNonNullAssertion`(biome.json override)로 검사 (CI `lint:arch` 게이트)
-- **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`(dependency-cruiser, `.dependency-cruiser.cjs`)로 검사 (CI `lint:arch` 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
-- **API 계약 고정**: `openapi-contract.e2e-spec`의 현재 스냅샷 + 스토어 배포 클라이언트 fingerprint가 기존 request/response/status/Zod shape를 고정한다. 새 route/schema 추가만 허용 (상시 계약 게이트 — CI e2e에서 실행)
-- **큐**: 알림/부수효과는 `QueueService.enqueueXxx()` fire-and-forget 패턴 (트랜잭션 커밋 후 enqueue)
-- **캐시**: application은 **모듈 캐시 포트**(Symbol 토큰)에만 의존 — 공유 `CacheService`/`CacheKeys` 직접 주입 금지(`.dependency-cruiser.cjs`가 강제). 상세: [architecture.md §5.3.2](.claude/architecture.md)
-- **암호화**: OAuth 토큰 등 민감 데이터는 `EncryptionService`로 암호화 저장
-- **중복 방지**: 크론 작업은 DB 기반 (in-memory Set/Map 금지)
-- **응답 래핑**: 자동 (`ResponseTransformInterceptor` / `GlobalExceptionFilter`)
-- **타임존**: 서버는 UTC 저장, 클라이언트 `X-Timezone` 헤더로 날짜 경계 판단
+- 공개 HTTP route/method/header/query/body/response/status를 의도 없이 바꾸지 않는다.
+- DTO는 `@aido/validators`, 오류는 `@aido/errors`의 `ErrorCode`를 사용한다.
+- domain에서 `@nestjs/*`, Prisma, application, infrastructure, presentation을 import하지 않는다.
+- application에서 Prisma 타입, vendor SDK, infrastructure, presentation, 타 모듈 내부 경로를 import하지 않는다.
+- 타 모듈 UseCase나 구현체를 직접 호출하지 않는다. 필요한 최소 capability를 공개 경계로 연결한다.
+- 트랜잭션은 `UNIT_OF_WORK.run(async () => ...)`를 사용한다. repository가 CLS의 활성 transaction을 읽는다.
+- 단건 상태 전이는 Aggregate가 판단한다. batch update, atomic claim/counter 등 집합 원자성은 명명된 port 뒤 SQL에 둔다.
+- 커밋 후 필요한 부수효과만 domain event/queue로 보낸다. enqueue 실패 격리 의미를 임의로 바꾸지 않는다.
+- application은 모듈 cache port에 의존한다. 공유 `CacheService`나 전역 `CacheKeys`를 직접 사용하지 않는다.
+- Redis key, TTL, queue name, job payload와 retry 의미는 해당 컨텍스트의 infrastructure에 응집한다.
+- `as`, non-null assertion, deep import, concrete repository 공개를 추가하지 않는다.
 
----
+## 명명
 
-## 빠른 명령어
+- Aggregate: `domain/entities/<name>.aggregate.ts`
+- Entity: `domain/entities/<name>.entity.ts`
+- VO: `domain/value-objects/<name>.vo.ts`
+- UseCase: `application/use-cases/<verb-object>/<verb-object>.use-case.ts`
+- 읽기 UseCase: 기존 규칙에 따라 `application/queries/<verb-object>/<verb-object>.use-case.ts`
+- Port: `application/ports/<capability>.<role>.port.ts`
+- Adapter: `infrastructure/adapters/<purpose>.adapter.ts`
+- 역할명은 `Repository`, `Reader`, `Store`, `Client`, `Sender`, `Recorder`, `Publisher`, `Adapter`, `Policy`, `Resolver`, `Registry`, `JobHandler` 중 실제 책임을 표현한다.
 
-| 명령어 | 설명 |
-|--------|------|
-| `pnpm dev` | 개발 서버 (전체) |
-| `pnpm dev:api` | API만 실행 |
-| `pnpm docker:up` | PostgreSQL 컨테이너 시작 |
-| `pnpm test` | 단위 테스트 |
-| `pnpm test:e2e` | E2E 테스트 |
-| `pnpm typecheck` | 타입 체크 |
-| `pnpm lint` | Biome 린트 |
-| `pnpm db:migrate` | DB 마이그레이션 |
-| `pnpm build` | 전체 빌드 |
+## 완료 조건
 
----
+```bash
+pnpm typecheck
+pnpm lint
+pnpm --filter @aido/api lint:arch
+```
 
-## 새 기능 추가 순서
-
-**클린아키텍처 모듈(전 모듈)에 기능 추가:**
-
-1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm db:migrate`
-2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
-3. **Domain** → 애그리게잇 행동 메서드/자식 엔티티/VO/정책 함수/이벤트 (불변식은 DomainException, 생성은 planCreation, 판단 규칙은 domain/services/ 정책)
-4. **Application** → consumer-owned 포트 + `use-cases/<kebab>/<kebab>.use-case.ts` (+spec) — 순수 클래스, 단일 `execute(input)`
-5. **Infrastructure** → 어댑터에 포트 구현 (Prisma 저장소·벤더 SDK·BullMQ 등)
-6. **Controller** → DTO를 application input으로 변환하고 endpoint UseCase 직접 호출 + Swagger 문서화
-7. **Module** → UseCase와 Port→Adapter 바인딩을 명시적으로 등록
-8. **테스트** → use-case spec → e2e (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries` 통과
-
-> 상세 체크리스트: [architecture.md - 새 기능 추가 체크리스트](.claude/architecture.md#8-새-기능-추가-체크리스트)
+위 명령은 항상 실행한다. 변경 위험에 따라 API unit/integration/E2E를 추가한다. 공개 계약을 건드리는 작업은 OpenAPI snapshot과 배포 클라이언트 fingerprint의 의도치 않은 diff가 없어야 한다.
