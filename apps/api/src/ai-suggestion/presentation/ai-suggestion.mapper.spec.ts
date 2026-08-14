@@ -10,7 +10,7 @@
 import {
 	Suggestion,
 	type SuggestionProps,
-} from "../domain/entities/suggestion.entity";
+} from "../domain/entities/suggestion.aggregate";
 import { AiSuggestionMapper } from "./ai-suggestion.mapper";
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {

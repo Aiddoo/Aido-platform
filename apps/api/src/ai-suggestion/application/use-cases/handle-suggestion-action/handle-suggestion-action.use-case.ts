@@ -9,7 +9,7 @@ import { now } from "@/shared/domain/date/utils/core";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import type { Suggestion } from "../../../domain/entities/suggestion.entity";
+import type { Suggestion } from "../../../domain/entities/suggestion.aggregate";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,

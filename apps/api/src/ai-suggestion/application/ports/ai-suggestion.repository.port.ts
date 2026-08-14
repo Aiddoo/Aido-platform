@@ -3,7 +3,7 @@ import type { DayOfWeek } from "@aido/validators";
 import type {
 	Suggestion,
 	SuggestionStatus,
-} from "../../domain/entities/suggestion.entity";
+} from "../../domain/entities/suggestion.aggregate";
 import type {
 	CategoryCompletionRate,
 	DayCompletionRate,

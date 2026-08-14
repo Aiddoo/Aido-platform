@@ -11,7 +11,7 @@ import { TestBed } from "@suites/unit";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import { Suggestion } from "../../../domain/entities/suggestion.entity";
+import { Suggestion } from "../../../domain/entities/suggestion.aggregate";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,

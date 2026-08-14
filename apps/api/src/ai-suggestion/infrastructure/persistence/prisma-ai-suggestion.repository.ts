@@ -14,7 +14,7 @@ import type {
 import {
 	Suggestion,
 	type SuggestionStatus,
-} from "../../domain/entities/suggestion.entity";
+} from "../../domain/entities/suggestion.aggregate";
 import type {
 	CategoryCompletionRate,
 	DayCompletionRate,

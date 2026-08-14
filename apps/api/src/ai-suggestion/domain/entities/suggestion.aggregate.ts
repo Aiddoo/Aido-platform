@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-
+import { AggregateRoot } from "@/shared/domain";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 
 /** 제안 상태 — PENDING(대기) → ACCEPTED(수락) | DISMISSED(거절) */
@@ -30,11 +30,14 @@ export interface SuggestionProps {
  * daysOfWeek/matchedTodos는 저장소가 Json으로 보관하므로 원본(unknown)으로 노출하고,
  * 요일 파싱은 표현 계층 매퍼가 담당한다.
  */
-export class Suggestion {
-	private constructor(private readonly props: SuggestionProps) {}
-
+export class Suggestion extends AggregateRoot<SuggestionProps> {
 	static reconstitute(props: SuggestionProps): Suggestion {
-		return new Suggestion(props);
+		return new Suggestion({
+			...props,
+			expiresAt: new Date(props.expiresAt),
+			createdAt: new Date(props.createdAt),
+			updatedAt: new Date(props.updatedAt),
+		});
 	}
 
 	get id(): number {
@@ -74,11 +77,11 @@ export class Suggestion {
 	}
 
 	get expiresAt(): Date {
-		return this.props.expiresAt;
+		return new Date(this.props.expiresAt);
 	}
 
 	get createdAt(): Date {
-		return this.props.createdAt;
+		return new Date(this.props.createdAt);
 	}
 
 	isPending(): boolean {

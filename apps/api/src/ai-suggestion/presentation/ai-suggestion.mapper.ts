@@ -12,7 +12,7 @@ import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
 
 import type { SuggestionActionResult } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
-import type { Suggestion } from "../domain/entities/suggestion.entity";
+import type { Suggestion } from "../domain/entities/suggestion.aggregate";
 
 /**
  * AI 반복 제안 매퍼 클래스
