@@ -14,7 +14,7 @@ import {
 	createMemoRepositoryMock,
 	createTodoCreatorMock,
 } from "@test/mocks/ports/memo.mock";
-import { Memo } from "../../../domain/entities/memo.entity";
+import { Memo } from "../../../domain/entities/memo.aggregate";
 import {
 	MEMO_REPOSITORY,
 	type MemoRepositoryPort,

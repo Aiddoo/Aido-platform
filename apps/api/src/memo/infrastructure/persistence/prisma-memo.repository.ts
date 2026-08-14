@@ -7,7 +7,7 @@ import type {
 	FindMemosParams,
 	MemoRepositoryPort,
 } from "../../application/ports/memo.repository.port";
-import { Memo } from "../../domain/entities/memo.entity";
+import { Memo } from "../../domain/entities/memo.aggregate";
 
 /**
  * MemoRepositoryPort의 Prisma 어댑터.

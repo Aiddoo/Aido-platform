@@ -1,5 +1,5 @@
 import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port";
-import { TodoCategory } from "../domain/entities/todo-category.entity";
+import { TodoCategory } from "../domain/entities/todo-category.aggregate";
 import { TodoCategoryMapper } from "./todo-category.mapper";
 
 const createdAt = new Date("2026-01-01T00:00:00.000Z");

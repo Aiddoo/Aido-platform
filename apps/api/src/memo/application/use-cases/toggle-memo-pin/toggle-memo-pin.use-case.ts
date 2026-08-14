@@ -35,9 +35,10 @@ export class ToggleMemoPinUseCase {
 			});
 		}
 
+		memo.setPinned(input.isPinned);
 		const updated = await this.repository.updatePinned(
 			input.memoId,
-			input.isPinned,
+			memo.isPinned,
 		);
 
 		this.#logger.log(

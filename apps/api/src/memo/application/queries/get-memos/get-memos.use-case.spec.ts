@@ -9,7 +9,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
 import { PaginationService } from "@/shared/application/pagination";
-import { Memo } from "../../../domain/entities/memo.entity";
+import { Memo } from "../../../domain/entities/memo.aggregate";
 import {
 	MEMO_REPOSITORY,
 	type MemoRepositoryPort,

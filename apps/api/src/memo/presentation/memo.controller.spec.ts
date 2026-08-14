@@ -15,7 +15,19 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
-import { MemoFacade } from "../application/facades/memo.facade";
+import {
+	GetMemoResourceLimitUseCase,
+	GetMemosUseCase,
+	GetMemoUseCase,
+} from "../application/queries";
+import {
+	ConvertMemoToTodoUseCase,
+	CreateMemoUseCase,
+	DeleteMemoUseCase,
+	ReorderMemoUseCase,
+	ToggleMemoPinUseCase,
+	UpdateMemoUseCase,
+} from "../application/use-cases";
 import type {
 	ConvertMemoToTodoDto,
 	CreateMemoDto,
@@ -28,7 +40,15 @@ import { MemoController } from "./memo.controller";
 
 describe("MemoController — 메모 컨트롤러", () => {
 	let controller: MemoController;
-	let memoFacade: Mocked<MemoFacade>;
+	let createMemoUseCase: Mocked<CreateMemoUseCase>;
+	let getMemosUseCase: Mocked<GetMemosUseCase>;
+	let getMemoUseCase: Mocked<GetMemoUseCase>;
+	let getMemoResourceLimitUseCase: Mocked<GetMemoResourceLimitUseCase>;
+	let updateMemoUseCase: Mocked<UpdateMemoUseCase>;
+	let toggleMemoPinUseCase: Mocked<ToggleMemoPinUseCase>;
+	let reorderMemoUseCase: Mocked<ReorderMemoUseCase>;
+	let deleteMemoUseCase: Mocked<DeleteMemoUseCase>;
+	let convertMemoToTodoUseCase: Mocked<ConvertMemoToTodoUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -41,7 +61,15 @@ describe("MemoController — 메모 컨트롤러", () => {
 		const { unit, unitRef } = await TestBed.solitary(MemoController).compile();
 
 		controller = unit;
-		memoFacade = unitRef.get(MemoFacade);
+		createMemoUseCase = unitRef.get(CreateMemoUseCase);
+		getMemosUseCase = unitRef.get(GetMemosUseCase);
+		getMemoUseCase = unitRef.get(GetMemoUseCase);
+		getMemoResourceLimitUseCase = unitRef.get(GetMemoResourceLimitUseCase);
+		updateMemoUseCase = unitRef.get(UpdateMemoUseCase);
+		toggleMemoPinUseCase = unitRef.get(ToggleMemoPinUseCase);
+		reorderMemoUseCase = unitRef.get(ReorderMemoUseCase);
+		deleteMemoUseCase = unitRef.get(DeleteMemoUseCase);
+		convertMemoToTodoUseCase = unitRef.get(ConvertMemoToTodoUseCase);
 	});
 
 	describe("create", () => {
@@ -52,16 +80,16 @@ describe("MemoController — 메모 컨트롤러", () => {
 				message: "메모가 생성되었습니다.",
 				memo: { id: 1, content: "테스트 메모" },
 			};
-			memoFacade.create.mockResolvedValue(serviceResult as any);
+			createMemoUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - create를 호출하면
 			const result = await controller.create(mockUser, dto);
 
 			// Then - 서비스에 userId와 content를 전달하고 결과를 반환해야 한다
-			expect(memoFacade.create).toHaveBeenCalledWith(
-				mockUser.userId,
-				dto.content,
-			);
+			expect(createMemoUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				content: dto.content,
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -77,13 +105,13 @@ describe("MemoController — 메모 컨트롤러", () => {
 				items: [],
 				pagination: { hasNext: false, nextCursor: null, size: 20 },
 			};
-			memoFacade.findMany.mockResolvedValue(serviceResult as any);
+			getMemosUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
 			// Then - 서비스에 userId, cursor, size를 전달하고 결과를 반환해야 한다
-			expect(memoFacade.findMany).toHaveBeenCalledWith({
+			expect(getMemosUseCase.execute).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
 				size: query.size,
@@ -99,16 +127,16 @@ describe("MemoController — 메모 컨트롤러", () => {
 			const serviceResult = {
 				memo: { id: 1, content: "테스트 메모" },
 			};
-			memoFacade.findOne.mockResolvedValue(serviceResult as any);
+			getMemoUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - findOne을 호출하면
 			const result = await controller.findOne(mockUser, params);
 
 			// Then - 서비스에 userId와 memoId를 전달하고 결과를 반환해야 한다
-			expect(memoFacade.findOne).toHaveBeenCalledWith(
-				mockUser.userId,
-				params.id,
-			);
+			expect(getMemoUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				memoId: params.id,
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -122,17 +150,17 @@ describe("MemoController — 메모 컨트롤러", () => {
 				message: "메모가 수정되었습니다.",
 				memo: { id: 1, content: "수정된 메모" },
 			};
-			memoFacade.update.mockResolvedValue(serviceResult as any);
+			updateMemoUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - update를 호출하면
 			const result = await controller.update(mockUser, params, dto);
 
 			// Then - 서비스에 userId, memoId, content를 전달하고 결과를 반환해야 한다
-			expect(memoFacade.update).toHaveBeenCalledWith(
-				mockUser.userId,
-				params.id,
-				dto.content,
-			);
+			expect(updateMemoUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				memoId: params.id,
+				content: dto.content,
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -146,17 +174,17 @@ describe("MemoController — 메모 컨트롤러", () => {
 				message: "메모가 고정되었습니다.",
 				memo: { id: 1, isPinned: true },
 			};
-			memoFacade.togglePin.mockResolvedValue(serviceResult as any);
+			toggleMemoPinUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - togglePin을 호출하면
 			const result = await controller.togglePin(mockUser, params, dto);
 
 			// Then - 서비스에 userId, memoId, isPinned를 전달하고 결과를 반환해야 한다
-			expect(memoFacade.togglePin).toHaveBeenCalledWith(
-				mockUser.userId,
-				params.id,
-				dto.isPinned,
-			);
+			expect(toggleMemoPinUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				memoId: params.id,
+				isPinned: dto.isPinned,
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -173,20 +201,18 @@ describe("MemoController — 메모 컨트롤러", () => {
 				message: "메모 순서가 변경되었습니다.",
 				memo: { id: 1, sortOrder: 0 },
 			};
-			memoFacade.reorder.mockResolvedValue(serviceResult as any);
+			reorderMemoUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - reorder를 호출하면
 			const result = await controller.reorder(mockUser, params, dto);
 
 			// Then - 서비스에 memoId, userId, targetMemoId, position을 전달하고 결과를 반환해야 한다
-			expect(memoFacade.reorder).toHaveBeenCalledWith(
-				params.id,
-				mockUser.userId,
-				{
-					targetMemoId: dto.targetMemoId,
-					position: dto.position,
-				},
-			);
+			expect(reorderMemoUseCase.execute).toHaveBeenCalledWith({
+				memoId: params.id,
+				userId: mockUser.userId,
+				targetMemoId: dto.targetMemoId,
+				position: dto.position,
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -196,16 +222,16 @@ describe("MemoController — 메모 컨트롤러", () => {
 			// Given - 삭제 대상 메모 ID와 서비스 응답이 준비되었을 때
 			const params = { id: 1 };
 			const serviceResult = { message: "메모가 삭제되었습니다." };
-			memoFacade.delete.mockResolvedValue(serviceResult);
+			deleteMemoUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When - remove를 호출하면
 			const result = await controller.remove(mockUser, params);
 
 			// Then - 서비스에 userId와 memoId를 전달하고 결과를 반환해야 한다
-			expect(memoFacade.delete).toHaveBeenCalledWith(
-				mockUser.userId,
-				params.id,
-			);
+			expect(deleteMemoUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				memoId: params.id,
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -227,24 +253,25 @@ describe("MemoController — 메모 컨트롤러", () => {
 				message: "메모가 할 일로 변환되었습니다.",
 				todo: { id: "todo-1" },
 			};
-			memoFacade.convertToTodo.mockResolvedValue(serviceResult as any);
+			convertMemoToTodoUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - convertToTodo를 호출하면
 			const result = await controller.convertToTodo(mockUser, params, dto, tz);
 
 			// Then - 서비스에 Date 객체가 전달되고 결과를 반환해야 한다
-			expect(memoFacade.convertToTodo).toHaveBeenCalledWith(
-				mockUser.userId,
-				params.id,
-				{
+			expect(convertMemoToTodoUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				memoId: params.id,
+				data: {
 					categoryId: dto.categoryId,
 					startDate: expect.any(Date),
 					endDate: undefined,
 					scheduledTime: undefined,
 					isAllDay: dto.isAllDay,
 					visibility: dto.visibility,
+					items: undefined,
 				},
-			);
+			});
 			expect(result).toEqual(serviceResult);
 		});
 
@@ -264,24 +291,25 @@ describe("MemoController — 메모 컨트롤러", () => {
 				message: "메모가 할 일로 변환되었습니다.",
 				todo: { id: "todo-1" },
 			};
-			memoFacade.convertToTodo.mockResolvedValue(serviceResult as any);
+			convertMemoToTodoUseCase.execute.mockResolvedValue(serviceResult as any);
 
 			// When - convertToTodo를 호출하면
 			const result = await controller.convertToTodo(mockUser, params, dto, tz);
 
 			// Then - endDate와 scheduledTime이 Date 객체로 변환되어 전달되어야 한다
-			expect(memoFacade.convertToTodo).toHaveBeenCalledWith(
-				mockUser.userId,
-				params.id,
-				{
+			expect(convertMemoToTodoUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				memoId: params.id,
+				data: {
 					categoryId: dto.categoryId,
 					startDate: expect.any(Date),
 					endDate: expect.any(Date),
 					scheduledTime: expect.any(Date),
 					isAllDay: dto.isAllDay,
 					visibility: dto.visibility,
+					items: undefined,
 				},
-			);
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -290,13 +318,15 @@ describe("MemoController — 메모 컨트롤러", () => {
 		it("메모 리소스 제한 정보 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
 			// Given - 리소스 제한 정보 서비스 응답이 준비되었을 때
 			const serviceResult = { currentCount: 5, maxPerUser: 50 };
-			memoFacade.getResourceLimit.mockResolvedValue(serviceResult);
+			getMemoResourceLimitUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When - getResourceLimit를 호출하면
 			const result = await controller.getResourceLimit(mockUser);
 
 			// Then - 서비스에 userId를 전달하고 결과를 반환해야 한다
-			expect(memoFacade.getResourceLimit).toHaveBeenCalledWith(mockUser.userId);
+			expect(getMemoResourceLimitUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+			});
 			expect(result).toEqual(serviceResult);
 		});
 	});

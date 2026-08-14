@@ -8,7 +8,7 @@ import type {
 
 import { toISOString } from "@/shared/domain/date/utils/format";
 import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port";
-import type { TodoCategory } from "../domain/entities/todo-category.entity";
+import type { TodoCategory } from "../domain/entities/todo-category.aggregate";
 
 export abstract class TodoCategoryMapper {
 	static toResponse(category: TodoCategory): TodoCategoryDto {
