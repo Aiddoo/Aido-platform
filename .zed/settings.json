@@ -1,36 +1,29 @@
 {
-  "formatter": "language_server",
   "format_on_save": "on",
   "languages": {
     "TypeScript": {
       "formatter": "language_server",
-      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
+      "language_servers": ["oxlint", "oxfmt", "vtsls", "!typescript-language-server"],
       "code_actions_on_format": {
-        "source.organizeImports": false,
-        "source.organizeImports.biome": true,
-        "source.fixAll.eslint": false
+        "source.fixAll.oxc": true,
+        "source.organizeImports": false
       }
     },
     "TSX": {
       "formatter": "language_server",
-      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
+      "language_servers": ["oxlint", "oxfmt", "vtsls", "!typescript-language-server"],
       "code_actions_on_format": {
-        "source.organizeImports": false,
-        "source.organizeImports.biome": true,
-        "source.fixAll.eslint": false
+        "source.fixAll.oxc": true,
+        "source.organizeImports": false
       }
     },
     "JavaScript": {
       "formatter": "language_server",
-      "language_servers": ["biome"],
-      "code_actions_on_format": {
-        "source.organizeImports": false,
-        "source.organizeImports.biome": true
-      }
+      "language_servers": ["oxlint", "oxfmt"]
     },
     "JSON": {
       "formatter": "language_server",
-      "language_servers": ["biome"]
+      "language_servers": ["oxfmt"]
     }
   }
 }

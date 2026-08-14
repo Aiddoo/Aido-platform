@@ -6,15 +6,15 @@ NestJS API 작업의 세션 진입점이다. 이 파일은 우선순위가 높�
 
 ## 작업 전 읽기
 
-| 작업 | 필수 문서 |
-|---|---|
-| API 구조·의존성 | [.claude/architecture.md](.claude/architecture.md) |
+| 작업                           | 필수 문서                                                |
+| ------------------------------ | -------------------------------------------------------- |
+| API 구조·의존성                | [.claude/architecture.md](.claude/architecture.md)       |
 | Controller·UseCase·도메인 코드 | [.claude/api-conventions.md](.claude/api-conventions.md) |
-| Zod DTO·공개 스키마 | [.claude/validators.md](.claude/validators.md) |
-| Prisma·트랜잭션·마이그레이션 | [.claude/prisma.md](.claude/prisma.md) |
-| 테스트 | [.claude/testing-guide.md](.claude/testing-guide.md) |
-| 로깅 | [.claude/logging-guide.md](.claude/logging-guide.md) |
-| 배포 | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Zod DTO·공개 스키마            | [.claude/validators.md](.claude/validators.md)           |
+| Prisma·트랜잭션·마이그레이션   | [.claude/prisma.md](.claude/prisma.md)                   |
+| 테스트                         | [.claude/testing-guide.md](.claude/testing-guide.md)     |
+| 로깅                           | [.claude/logging-guide.md](.claude/logging-guide.md)     |
+| 배포                           | [DEPLOYMENT.md](DEPLOYMENT.md)                           |
 
 ## 정본 구조
 
@@ -60,7 +60,7 @@ HTTP → presentation → endpoint UseCase → domain + application port
 ```bash
 pnpm typecheck
 pnpm lint
-pnpm --filter @aido/api lint:arch
+pnpm format:check
 ```
 
-위 명령은 항상 실행한다. 변경 위험에 따라 API unit/integration/E2E를 추가한다. 공개 계약을 건드리는 작업은 OpenAPI snapshot과 배포 클라이언트 fingerprint의 의도치 않은 diff가 없어야 한다.
+위 명령은 항상 실행한다. Oxlint의 `no-restricted-imports`가 domain/application 의존성 경계를 검사한다. 변경 위험에 따라 API unit/integration/E2E를 추가한다. 공개 계약을 건드리는 작업은 OpenAPI snapshot과 배포 클라이언트 fingerprint의 의도치 않은 diff가 없어야 한다.

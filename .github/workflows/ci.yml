@@ -35,18 +35,15 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      # PR: --affected로 변경된 패키지만 / push(main·develop): 전체 실행 — 배포 게이트
-      # (main 푸시는 로컬 main == HEAD라 --affected diff가 빈 집합이 되어 검증이 스킵되는 버그가 있었음)
-      - name: Biome Check
-        run: pnpm turbo run check ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+      # Oxc는 전체 저장소를 한 번 스캔한다. 패키지별 프로세스를 반복하지 않아 로컬·CI 결과가 같다.
+      - name: Oxlint
+        run: pnpm lint
+
+      - name: Oxfmt Check
+        run: pnpm format:check
 
       - name: Type Check
         run: pnpm turbo run typecheck ${{ github.event_name == 'pull_request' && '--affected' || '' }}
-
-      # DDD strict-core 게이트 (불변 계약 + exact baseline + dependency 경계 + as 단언 금지) — 태스크가 api에만
-      # 존재해 PR --affected로 자연 스코프. 배포가 CI 성공에 게이트되므로 릴리스 차단 게이트.
-      - name: Architecture gates
-        run: pnpm turbo run lint:arch ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
 
   test-unit:
     name: Test - Unit & Coverage

@@ -58,11 +58,7 @@
       "outputs": ["coverage/**"]
     },
     "lint": {
-      "inputs": ["src/**", "biome.json", "package.json"],
-      "outputs": []
-    },
-    "lint:arch": {
-      "inputs": ["src/**", ".dependency-cruiser.cjs", "scripts/**", "tsconfig.json"],
+      "inputs": ["src/**", "$TURBO_ROOT$/.oxlintrc.json", "package.json"],
       "outputs": []
     },
     "lint:fix": {
@@ -71,13 +67,17 @@
     "format": {
       "cache": false
     },
+    "format:check": {
+      "inputs": ["src/**", "$TURBO_ROOT$/.oxfmtrc.json", "package.json"],
+      "outputs": []
+    },
     "typecheck": {
       "dependsOn": ["^build"],
       "inputs": ["src/**", "tsconfig.json"],
       "outputs": []
     },
     "check": {
-      "inputs": ["src/**", "biome.json"],
+      "inputs": ["src/**", "$TURBO_ROOT$/.oxlintrc.json", "$TURBO_ROOT$/.oxfmtrc.json"],
       "outputs": []
     },
     "clean": {

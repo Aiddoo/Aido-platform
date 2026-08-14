@@ -1,6 +1,6 @@
 # Aido
 
-> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+> **Version**: 1.1.0 · **Last Updated**: 2026-08-14 · **Owner**: Aido Platform Team
 
 메모가 할 일이 되고, 친구와 함께 끝내는 투두. Aido의 API 서버와 모바일 앱을
 관리하는 Turborepo + pnpm 모노레포입니다.
@@ -20,15 +20,15 @@
 
 ## 기술 스택
 
-| 분류 | 기술 |
-|------|------|
-| Monorepo | Turborepo 2.9, pnpm 10.29 |
-| Backend | NestJS 11, Prisma 7, PostgreSQL 16 |
-| Mobile | Expo 55, React Native 0.83, React 19.2 |
-| Validation | Zod 4.3, nestjs-zod |
-| Testing | Jest 29, Vitest 4, Testcontainers |
-| Code Quality | Biome 2.4 |
-| Runtime | Node.js 22.x |
+| 분류         | 기술                                   |
+| ------------ | -------------------------------------- |
+| Monorepo     | Turborepo 2.9, pnpm 10.29              |
+| Backend      | NestJS 11, Prisma 7, PostgreSQL 16     |
+| Mobile       | Expo 55, React Native 0.83, React 19.2 |
+| Validation   | Zod 4.3, nestjs-zod                    |
+| Testing      | Jest 29, Vitest 4, Testcontainers      |
+| Code Quality | Oxlint 1.78, Oxfmt 0.63                |
+| Runtime      | Node.js 22.23.2                        |
 
 ## 구조
 
@@ -44,8 +44,7 @@ aido/
 ├── tooling/
 │   ├── typescript/   # TypeScript 프리셋
 │   ├── jest/         # Jest 프리셋
-│   ├── vitest/       # Vitest 프리셋
-│   └── biome/        # Biome 프리셋
+│   └── vitest/       # Vitest 프리셋
 └── turbo.json
 ```
 
@@ -69,50 +68,51 @@ pnpm dev
 
 ### 개발
 
-| 명령어 | 설명 |
-|--------|------|
-| `pnpm dev` | 전체 개발 서버 |
-| `pnpm build` | 전체 빌드 |
-| `pnpm typecheck` | 타입 검사 |
-| `pnpm lint` | Biome 린트 |
-| `pnpm format` | 코드 포맷팅 |
-| `pnpm clean` | 빌드 산출물 전체 삭제 |
+| 명령어              | 설명                  |
+| ------------------- | --------------------- |
+| `pnpm dev`          | 전체 개발 서버        |
+| `pnpm build`        | 전체 빌드             |
+| `pnpm typecheck`    | 타입 검사             |
+| `pnpm lint`         | Oxlint 정적 검사      |
+| `pnpm format`       | 코드 포맷팅           |
+| `pnpm format:check` | Oxfmt 포맷 검사       |
+| `pnpm clean`        | 빌드 산출물 전체 삭제 |
 
 ### 데이터베이스
 
-| 명령어 | 설명 |
-|--------|------|
-| `pnpm db:migrate` | Prisma 마이그레이션 |
-| `pnpm db:generate` | Prisma Client 생성 |
-| `pnpm db:push` | 스키마 즉시 반영 |
+| 명령어             | 설명                |
+| ------------------ | ------------------- |
+| `pnpm db:migrate`  | Prisma 마이그레이션 |
+| `pnpm db:generate` | Prisma Client 생성  |
+| `pnpm db:push`     | 스키마 즉시 반영    |
 
 ### 테스트
 
-| 명령어 | 설명 |
-|--------|------|
-| `pnpm test` | 단위 테스트 |
-| `pnpm test:e2e` | E2E 테스트 |
+| 명령어          | 설명                                   |
+| --------------- | -------------------------------------- |
+| `pnpm test`     | 단위 테스트                            |
+| `pnpm test:e2e` | E2E 테스트                             |
 | `pnpm test:all` | 전체 테스트 (Unit + Integration + E2E) |
-| `pnpm test:cov` | 커버리지 리포트 |
+| `pnpm test:cov` | 커버리지 리포트                        |
 
 ### Docker
 
-| 명령어 | 설명 |
-|--------|------|
-| `pnpm docker:up` | DB 컨테이너 (로컬 개발) |
-| `pnpm docker:down` | DB 컨테이너 중지 |
-| `pnpm docker:dev:up` | 개발 환경 전체 (DB + API) |
-| `pnpm docker:dev:down` | 개발 환경 중지 |
-| `pnpm docker:prod:up` | 프로덕션 환경 (DB + Migrate + API) |
-| `pnpm docker:prod:down` | 프로덕션 환경 중지 |
+| 명령어                  | 설명                               |
+| ----------------------- | ---------------------------------- |
+| `pnpm docker:up`        | DB 컨테이너 (로컬 개발)            |
+| `pnpm docker:down`      | DB 컨테이너 중지                   |
+| `pnpm docker:dev:up`    | 개발 환경 전체 (DB + API)          |
+| `pnpm docker:dev:down`  | 개발 환경 중지                     |
+| `pnpm docker:prod:up`   | 프로덕션 환경 (DB + Migrate + API) |
+| `pnpm docker:prod:down` | 프로덕션 환경 중지                 |
 
 ## Docker 워크플로우
 
-| 모드 | Compose 파일 | 용도 |
-|------|-------------|------|
-| DB Only | `docker-compose.yml` | 로컬 개발 (추천) |
-| Development | `docker-compose.dev.yml` | Docker 전체 개발 |
-| Production | `docker-compose.prod.yml` | 프로덕션 배포 테스트 |
+| 모드        | Compose 파일              | 용도                 |
+| ----------- | ------------------------- | -------------------- |
+| DB Only     | `docker-compose.yml`      | 로컬 개발 (추천)     |
+| Development | `docker-compose.dev.yml`  | Docker 전체 개발     |
+| Production  | `docker-compose.prod.yml` | 프로덕션 배포 테스트 |
 
 - **DB Only**: PostgreSQL만 Docker로 실행하고 API는 로컬에서 `pnpm dev`로 실행
 - **Development**: DB + API를 모두 Docker로 실행 (`.env.docker.dev` 필요)
@@ -120,18 +120,18 @@ pnpm dev
 
 ## 패키지
 
-| 패키지 | 설명 |
-|--------|------|
-| [@aido/api](./apps/api) | NestJS 백엔드 API |
-| [@aido/mobile](./apps/mobile) | Expo 모바일 앱 |
-| [@aido/validators](./packages/validators) | Zod 스키마 |
-| [@aido/utils](./packages/utils) | 유틸리티 함수 |
-| [@aido/errors](./packages/errors) | 에러 정의 |
+| 패키지                                    | 설명              |
+| ----------------------------------------- | ----------------- |
+| [@aido/api](./apps/api)                   | NestJS 백엔드 API |
+| [@aido/mobile](./apps/mobile)             | Expo 모바일 앱    |
+| [@aido/validators](./packages/validators) | Zod 스키마        |
+| [@aido/utils](./packages/utils)           | 유틸리티 함수     |
+| [@aido/errors](./packages/errors)         | 에러 정의         |
 
 ## 개발 가이드
 
 - **커밋**: Conventional Commits (`pnpm commit`)
-- **린트/포맷**: Biome 2.4
+- **린트/포맷**: Oxlint + Oxfmt (`pnpm lint && pnpm format:check`)
 - **타입**: TypeScript strict 모드
 - **DTO**: Zod 스키마 (`@aido/validators`)
 - **에러 코드**: `@aido/errors`의 `ErrorCode` 사용 (하드코딩 금지)

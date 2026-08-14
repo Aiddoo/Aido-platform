@@ -14,22 +14,22 @@
 
 ## 2. 파일과 역할
 
-| 역할 | 위치·형식 |
-|---|---|
-| Aggregate Root | `domain/entities/<name>.aggregate.ts` |
-| 자식 Entity | `domain/entities/<name>.entity.ts` |
-| Value Object | `domain/value-objects/<name>.vo.ts` |
-| 순수 판단 | `domain/policies/<name>.policy.ts` 또는 기존 `domain/services/<specific-name>.ts` |
-| Domain event | `domain/events/<event>.event.ts` |
-| 쓰기 UseCase | `application/use-cases/<verb-object>/<verb-object>.use-case.ts` |
-| 읽기 UseCase | `application/queries/<verb-object>/<verb-object>.use-case.ts` |
-| Port | `application/ports/<capability>.<role>.port.ts` |
-| Adapter | `infrastructure/adapters/<purpose>.adapter.ts` |
-| Prisma 구현 | `infrastructure/adapters/prisma-<capability>.<role>.ts` 또는 모듈의 기존 persistence 구조 |
-| Cache keyspace | `infrastructure/cache/<context>-cache.keyspace.ts` |
-| Queue contract | `infrastructure/queue/<context>-queue.constants.ts` |
-| Queue consumer | `<purpose>.processor.ts` 또는 `<purpose>.job-handler.ts` |
-| HTTP mapper | `presentation/<purpose>.mapper.ts` |
+| 역할           | 위치·형식                                                                                 |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| Aggregate Root | `domain/entities/<name>.aggregate.ts`                                                     |
+| 자식 Entity    | `domain/entities/<name>.entity.ts`                                                        |
+| Value Object   | `domain/value-objects/<name>.vo.ts`                                                       |
+| 순수 판단      | `domain/policies/<name>.policy.ts` 또는 기존 `domain/services/<specific-name>.ts`         |
+| Domain event   | `domain/events/<event>.event.ts`                                                          |
+| 쓰기 UseCase   | `application/use-cases/<verb-object>/<verb-object>.use-case.ts`                           |
+| 읽기 UseCase   | `application/queries/<verb-object>/<verb-object>.use-case.ts`                             |
+| Port           | `application/ports/<capability>.<role>.port.ts`                                           |
+| Adapter        | `infrastructure/adapters/<purpose>.adapter.ts`                                            |
+| Prisma 구현    | `infrastructure/adapters/prisma-<capability>.<role>.ts` 또는 모듈의 기존 persistence 구조 |
+| Cache keyspace | `infrastructure/cache/<context>-cache.keyspace.ts`                                        |
+| Queue contract | `infrastructure/queue/<context>-queue.constants.ts`                                       |
+| Queue consumer | `<purpose>.processor.ts` 또는 `<purpose>.job-handler.ts`                                  |
+| HTTP mapper    | `presentation/<purpose>.mapper.ts`                                                        |
 
 역할 접미사:
 
@@ -248,7 +248,7 @@ TestBed는 금지 대상이 아니다. domain 테스트에 Nest container를 불
 ```bash
 pnpm typecheck
 pnpm lint
-pnpm --filter @aido/api lint:arch
+pnpm format:check
 ```
 
 ## 15. 금지 검색어 점검

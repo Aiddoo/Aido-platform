@@ -8,9 +8,9 @@
 
 ## 관련 문서
 
-| 문서 | 설명 |
-|------|------|
-| [architecture.md](./architecture.md) | 전체 아키텍처 개요 |
+| 문서                                       | 설명                               |
+| ------------------------------------------ | ---------------------------------- |
+| [architecture.md](./architecture.md)       | 전체 아키텍처 개요                 |
 | [api-conventions.md](./api-conventions.md) | Controller/Service/Repository 규칙 |
 
 ---
@@ -19,13 +19,13 @@
 
 ### 타입 공유의 이점
 
-| 이점 | 설명 |
-|------|------|
-| **타입 안전성** | 클라이언트-서버 간 타입 불일치로 인한 런타임 에러 방지 |
-| **자동 완성** | IDE에서 요청/응답 필드를 자동 완성 |
-| **유효성 검증 재사용** | 동일한 Zod 스키마로 클라이언트/서버 양쪽에서 검증 |
-| **API 문서 자동 생성** | `.describe()`로 OpenAPI 문서 자동 생성 |
-| **리팩토링 안전성** | 스키마 변경 시 양쪽에서 타입 에러 감지 |
+| 이점                   | 설명                                                   |
+| ---------------------- | ------------------------------------------------------ |
+| **타입 안전성**        | 클라이언트-서버 간 타입 불일치로 인한 런타임 에러 방지 |
+| **자동 완성**          | IDE에서 요청/응답 필드를 자동 완성                     |
+| **유효성 검증 재사용** | 동일한 Zod 스키마로 클라이언트/서버 양쪽에서 검증      |
+| **API 문서 자동 생성** | `.describe()`로 OpenAPI 문서 자동 생성                 |
+| **리팩토링 안전성**    | 스키마 변경 시 양쪽에서 타입 에러 감지                 |
 
 ### 아키텍처 흐름
 
@@ -72,13 +72,8 @@ export const createTodoSchema = z
       .int()
       .positive('유효하지 않은 카테고리 ID입니다')
       .describe('카테고리 ID'),
-    startDate: z.iso
-      .date()
-      .describe('시작 날짜 (YYYY-MM-DD)'),
-    endDate: z.iso
-      .date()
-      .nullish()
-      .describe('종료 날짜 (YYYY-MM-DD, 선택)'),
+    startDate: z.iso.date().describe('시작 날짜 (YYYY-MM-DD)'),
+    endDate: z.iso.date().nullish().describe('종료 날짜 (YYYY-MM-DD, 선택)'),
   })
   .describe('Todo 생성 요청');
 
@@ -170,11 +165,7 @@ export class {Feature}Service {
 // apps/mobile/src/api/todo.api.ts
 
 import axios from 'axios';
-import { 
-  createTodoSchema,
-  CreateTodoInput, 
-  TodoResponse,
-} from '@aido/validators';
+import { createTodoSchema, CreateTodoInput, TodoResponse } from '@aido/validators';
 
 const api = axios.create({
   baseURL: 'https://api.example.com',
@@ -184,7 +175,7 @@ const api = axios.create({
 export async function createTodo(input: CreateTodoInput): Promise<TodoResponse> {
   // 클라이언트에서도 동일한 스키마로 사전 검증 가능
   const validated = createTodoSchema.parse(input);
-  
+
   const { data } = await api.post<{ data: TodoResponse }>('/todos', validated);
   return data.data;
 }
@@ -216,7 +207,7 @@ export function CreateTodoScreen() {
   const handleSubmit = async () => {
     // 클라이언트 사전 검증
     const result = createTodoSchema.safeParse({ title, categoryId: 1, startDate: '2026-04-11' });
-    
+
     if (!result.success) {
       // Zod 에러를 폼 에러로 변환
       const fieldErrors: Record<string, string> = {};
@@ -291,12 +282,12 @@ packages/validators/src/
 
 ### 필수 규칙
 
-| 규칙 | 설명 |
-|------|------|
-| `.describe()` 필수 | OpenAPI 문서 자동 생성 |
-| JSDoc 주석 | 스키마 그룹 구분 |
+| 규칙               | 설명                               |
+| ------------------ | ---------------------------------- |
+| `.describe()` 필수 | OpenAPI 문서 자동 생성             |
+| JSDoc 주석         | 스키마 그룹 구분                   |
 | 공통 스키마 재사용 | `emailSchema`, `passwordSchema` 등 |
-| Type export | `z.infer<typeof schema>` 사용 |
+| Type export        | `z.infer<typeof schema>` 사용      |
 
 ### 스키마 파일 구조
 
@@ -325,11 +316,7 @@ export const emailSchema = z
 
 export const createExampleSchema = z
   .object({
-    title: z
-      .string()
-      .min(1, '제목은 필수입니다')
-      .max(200, '제목은 200자 이내')
-      .describe('제목'),
+    title: z.string().min(1, '제목은 필수입니다').max(200, '제목은 200자 이내').describe('제목'),
   })
   .describe('예시 생성 요청');
 
@@ -340,13 +327,13 @@ export type CreateExampleInput = z.infer<typeof createExampleSchema>;
 
 ```typescript
 // ✅ 한국어 에러 메시지
-z.string().min(1, '제목은 필수입니다')
-z.string().email('올바른 이메일 형식이 아닙니다')
-z.literal(true, { message: '약관에 동의해주세요' })
+z.string().min(1, '제목은 필수입니다');
+z.string().email('올바른 이메일 형식이 아닙니다');
+z.literal(true, { message: '약관에 동의해주세요' });
 
 // ❌ 영어 또는 메시지 생략
-z.string().min(1)
-z.string().email()
+z.string().min(1);
+z.string().email();
 ```
 
 ### Refine 사용법
@@ -369,13 +356,13 @@ export const registerSchema = z
 
 ```typescript
 // optional: 필드 자체가 없어도 됨
-name: z.string().optional()  // undefined 허용
+name: z.string().optional(); // undefined 허용
 
 // nullable: null 값 허용
-profileImage: z.string().nullable()  // null 허용
+profileImage: z.string().nullable(); // null 허용
 
 // 둘 다 허용
-bio: z.string().optional().nullable()  // undefined, null 모두 허용
+bio: z.string().optional().nullable(); // undefined, null 모두 허용
 ```
 
 ---
@@ -409,10 +396,7 @@ export type ExampleResponse = z.infer<typeof exampleResponseSchema>;
 // nestjs/domains/{name}/{name}.request.dto.ts
 
 import { createZodDto } from 'nestjs-zod';
-import {
-  createExampleSchema,
-  updateExampleSchema,
-} from '../../../domains/{name}/{name}.request';
+import { createExampleSchema, updateExampleSchema } from '../../../domains/{name}/{name}.request';
 
 /** 예시 생성 요청 DTO */
 export class CreateExampleDto extends createZodDto(createExampleSchema) {}
@@ -441,10 +425,10 @@ export class ExampleResponseDto extends createZodDto(exampleResponseSchema) {}
 
 ```typescript
 // 스키마 + 타입 import (검증 및 타입 사용)
-import { 
-  createTodoSchema,     // Zod 스키마 (클라이언트 검증용)
-  CreateTodoInput,      // Request 타입
-  TodoResponse,         // Response 타입
+import {
+  createTodoSchema, // Zod 스키마 (클라이언트 검증용)
+  CreateTodoInput, // Request 타입
+  TodoResponse, // Response 타입
 } from '@aido/validators';
 ```
 
@@ -550,15 +534,15 @@ pnpm build
 
 ### Deprecated → 신규 문법
 
-| Deprecated | 신규 문법 | 비고 |
-|------------|----------|------|
-| `z.string().email()` | `z.email()` | 이메일 검증 |
-| `z.string().url()` | `z.url()` | URL 검증 |
-| `z.string().cuid()` | `z.cuid()` | CUID 검증 |
-| `z.string().cuid2()` | `z.cuid2()` | CUID2 검증 |
-| `z.string().uuid()` | `z.uuid()` | UUID 검증 |
-| `z.string().ulid()` | `z.ulid()` | ULID 검증 |
-| `z.string().jwt()` | `z.jwt()` | JWT 검증 |
+| Deprecated            | 신규 문법    | 비고        |
+| --------------------- | ------------ | ----------- |
+| `z.string().email()`  | `z.email()`  | 이메일 검증 |
+| `z.string().url()`    | `z.url()`    | URL 검증    |
+| `z.string().cuid()`   | `z.cuid()`   | CUID 검증   |
+| `z.string().cuid2()`  | `z.cuid2()`  | CUID2 검증  |
+| `z.string().uuid()`   | `z.uuid()`   | UUID 검증   |
+| `z.string().ulid()`   | `z.ulid()`   | ULID 검증   |
+| `z.string().jwt()`    | `z.jwt()`    | JWT 검증    |
 | `z.string().base64()` | `z.base64()` | Base64 검증 |
 
 ### 예시
@@ -585,7 +569,7 @@ const schema = z.object({
 
 1. **점진적 마이그레이션**: 기존 코드는 당장 변경하지 않아도 동작합니다
 2. **새 파일 우선**: 새로 작성하는 스키마부터 신규 문법 사용
-3. **린트 규칙**: Biome에서 deprecated 경고 확인
+3. **린트·타입 검사**: Oxlint와 TypeScript에서 deprecated 사용 및 타입 오류 확인
 
 > **참고**: 현재 프로젝트에서 deprecated 문법 사용 중인 파일은 린트 시 경고가 표시됩니다.
 
@@ -593,16 +577,16 @@ const schema = z.object({
 
 ## 자주 사용하는 Zod 패턴
 
-| 패턴 | 코드 |
-|------|------|
-| CUID ID | `z.cuid('유효하지 않은 ID입니다')` |
-| ISO 날짜 | `z.string().datetime()` |
-| Date 변환 | `z.coerce.date()` |
-| Enum | `z.enum(['A', 'B'] as const)` |
-| 배열 | `z.array(z.string()).min(1)` |
-| URL | `z.url('올바른 URL이 아닙니다')` |
-| Email | `z.email('올바른 이메일이 아닙니다')` |
-| 정규식 | `z.string().regex(/pattern/, '에러 메시지')` |
+| 패턴      | 코드                                         |
+| --------- | -------------------------------------------- |
+| CUID ID   | `z.cuid('유효하지 않은 ID입니다')`           |
+| ISO 날짜  | `z.string().datetime()`                      |
+| Date 변환 | `z.coerce.date()`                            |
+| Enum      | `z.enum(['A', 'B'] as const)`                |
+| 배열      | `z.array(z.string()).min(1)`                 |
+| URL       | `z.url('올바른 URL이 아닙니다')`             |
+| Email     | `z.email('올바른 이메일이 아닙니다')`        |
+| 정규식    | `z.string().regex(/pattern/, '에러 메시지')` |
 
 ---
 

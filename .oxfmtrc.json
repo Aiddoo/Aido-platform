@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "proseWrap": "preserve",
+  "sortImports": true,
+  "sortPackageJson": true,
+  "overrides": [
+    {
+      "files": ["apps/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc}"],
+      "options": {
+        "useTabs": true,
+        "singleQuote": false
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "**/*.generated.*",
+    "apps/api/prisma/generated/**",
+    "apps/api/src/generated/**",
+    "apps/api/test/e2e/__snapshots__/**",
+    "apps/api/test/e2e/fixtures/released-v1-openapi-contract.ts",
+    "apps/mobile/assets/**",
+    "apps/mobile/.agents/**",
+    "apps/mobile/.claude/skills/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**"
+  ]
+}
