@@ -2,7 +2,7 @@
  * DailyCompletion 통합 테스트 (Testcontainers)
  *
  * @description
- * DailyCompletionFacade → use-case → Prisma 어댑터가 실제 PostgreSQL DB와
+ * endpoint use-case → Prisma 어댑터가 실제 PostgreSQL DB와
  * 함께 올바르게 작동하는지 검증합니다.
  * Testcontainers를 사용하여 독립적인 PostgreSQL 컨테이너에서 테스트합니다.
  *
@@ -28,11 +28,11 @@ import {
 } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
-import { DailyCompletionFacade } from "@/daily-completion/application/facades/daily-completion.facade";
 import { DAILY_COMPLETION_CACHE } from "@/daily-completion/application/ports/daily-completion-cache.port";
 import { FRIEND_PORT } from "@/daily-completion/application/ports/friend.port";
 import { TODO_COMPLETION_REPOSITORY } from "@/daily-completion/application/ports/todo-completion.repository.port";
 import { DailyCompletionQueryUseCases } from "@/daily-completion/application/queries";
+import { GetDailyCompletionsUseCase } from "@/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case";
 import { PrismaTodoCompletionRepository } from "@/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -40,7 +40,7 @@ import { TestDatabase } from "../setup/test-database";
 
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
-	let facade: DailyCompletionFacade;
+	let getDailyCompletionsUseCase: GetDailyCompletionsUseCase;
 	let repository: PrismaTodoCompletionRepository;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -58,7 +58,6 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(실제 DB)
 		module = await Test.createTestingModule({
 			providers: [
-				DailyCompletionFacade,
 				...DailyCompletionQueryUseCases,
 				{
 					provide: TODO_COMPLETION_REPOSITORY,
@@ -79,9 +78,17 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		}).compile();
 
 		await module.init();
-		facade = module.get(DailyCompletionFacade);
+		getDailyCompletionsUseCase = module.get(GetDailyCompletionsUseCase);
 		repository = module.get(TODO_COMPLETION_REPOSITORY);
 	}, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
+
+	function getDailyCompletions(
+		userId: string,
+		startDate: string,
+		endDate: string,
+	) {
+		return getDailyCompletionsUseCase.execute({ userId, startDate, endDate });
+	}
 
 	// 각 테스트 전 데이터 초기화
 	beforeEach(async () => {
@@ -189,13 +196,13 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 	}
 
 	describe("배선 확인", () => {
-		it("facade가 정의되어 있어야 한다", () => {
+		it("조회 UseCase가 정의되어 있어야 한다", () => {
 			// Given - DI 컨테이너가 구성됨
 
-			// When - Facade 인스턴스 확인
+			// When - UseCase 인스턴스 확인
 
-			// Then - Facade가 정의되어 있어야 함
-			expect(facade).toBeDefined();
+			// Then - UseCase가 정의되어 있어야 함
+			expect(getDailyCompletionsUseCase).toBeDefined();
 		});
 
 		it("repository가 연결되어 있어야 한다", () => {
@@ -355,7 +362,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			); // 미완료
 
 			// When
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
@@ -382,7 +389,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			); // 75%
 
 			// When
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
@@ -406,7 +413,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
@@ -444,7 +451,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
@@ -461,7 +468,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			const user = await createTestUser();
 
 			// When - 완료 현황 조회
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
@@ -493,7 +500,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - 1월만 조회
-			const janResult = await facade.getDailyCompletions(
+			const janResult = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
@@ -504,7 +511,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			expect(janResult.completions[0]?.date).toBe("2026-01-31");
 
 			// When - 2월만 조회
-			const febResult = await facade.getDailyCompletions(
+			const febResult = await getDailyCompletions(
 				user.id,
 				"2026-02-01",
 				"2026-02-28",
@@ -527,7 +534,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - 해당 날짜 조회
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-15",
 				"2026-01-15",
@@ -552,7 +559,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When - 완료 현황 조회
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
@@ -588,7 +595,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 
 			// When - 한 달 전체 조회
 			const startTime = Date.now();
-			const result = await facade.getDailyCompletions(
+			const result = await getDailyCompletions(
 				user.id,
 				"2026-01-01",
 				"2026-01-31",
