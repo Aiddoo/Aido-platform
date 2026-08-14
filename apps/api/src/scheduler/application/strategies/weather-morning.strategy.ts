@@ -5,7 +5,7 @@ import {
 	resolveTemplateLocale,
 } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
-import { WeatherFacade } from "@/weather";
+import { WeatherForecastAccess } from "@/weather";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
@@ -36,7 +36,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 		@Inject(WEATHER_REMINDER_READER)
 		private readonly reader: WeatherReminderReaderPort,
 		private readonly notificationService: NotificationFacade,
-		private readonly weatherFacade: WeatherFacade,
+		private readonly weatherForecastAccess: WeatherForecastAccess,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -103,7 +103,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 				},
 			];
 		});
-		const forecasts = await this.weatherFacade.getForecastsByGridBatch(
+		const forecasts = await this.weatherForecastAccess.getForecastsByGridBatch(
 			gridInputs,
 			today,
 		);

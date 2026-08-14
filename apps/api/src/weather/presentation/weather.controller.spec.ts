@@ -1,7 +1,7 @@
 /**
  * WeatherController 단위 테스트
  *
- * Suites + Builder + GWT 패턴 적용. 컨트롤러는 WeatherFacade만 주입받는다.
+ * Suites + Builder + GWT 패턴 적용. 컨트롤러는 endpoint UseCase를 직접 주입받는다.
  *
  * 실행 명령:
  * pnpm --filter @aido/api test weather.controller.spec
