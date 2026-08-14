@@ -25,7 +25,7 @@ import { VerificationService } from "./verification.service";
 describe("VerificationService — 인증 코드 서비스", () => {
 	let service: VerificationService;
 	let verificationRepo: Mocked<AuthVerificationRepositoryPort>;
-	let emailFacade: Mocked<AuthEmailSenderPort>;
+	let emailSender: Mocked<AuthEmailSenderPort>;
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
@@ -34,7 +34,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 		service = unit;
 		verificationRepo = unitRef.get(AUTH_VERIFICATION_REPOSITORY);
-		emailFacade = unitRef.get(AUTH_EMAIL_SENDER);
+		emailSender = unitRef.get(AUTH_EMAIL_SENDER);
 	});
 
 	describe("createAndSendPasswordReset", () => {
@@ -55,7 +55,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			emailFacade.sendPasswordResetCode.mockResolvedValue({
+			emailSender.sendPasswordResetCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -68,7 +68,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 			// Then
 			expect(result.code).toMatch(/^\d{6}$/);
-			expect(emailFacade.sendPasswordResetCode).toHaveBeenCalledWith(email, {
+			expect(emailSender.sendPasswordResetCode).toHaveBeenCalledWith(email, {
 				code: expect.any(String),
 				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 			});
@@ -144,7 +144,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			emailFacade.sendPasswordSetupCode.mockResolvedValue({
+			emailSender.sendPasswordSetupCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -172,7 +172,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await service.createAndSendPasswordSetup(userId, email);
 
 			// Then
-			expect(emailFacade.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
+			expect(emailSender.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
 				code: expect.any(String),
 				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 			});
@@ -232,7 +232,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 		it("이메일 발송 실패해도 결과를 반환한다", async () => {
 			// Given
-			emailFacade.sendPasswordSetupCode.mockResolvedValue({
+			emailSender.sendPasswordSetupCode.mockResolvedValue({
 				success: false,
 				error: "SMTP error",
 			});

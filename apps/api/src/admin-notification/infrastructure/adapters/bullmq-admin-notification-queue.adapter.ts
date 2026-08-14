@@ -10,6 +10,7 @@ import type {
 } from "../../application/ports/admin-notification-queue.port";
 import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
 import {
+	ADMIN_NOTIFICATION_JOB_POLICY,
 	ADMIN_NOTIFICATION_QUEUE,
 	AdminNotificationJobName,
 	type AdminNotificationSendData,
@@ -37,15 +38,7 @@ export class BullmqAdminNotificationQueueAdapter
 				name: AdminNotificationJobName.SEND,
 				data: { channel, notification } satisfies AdminNotificationSendData,
 			},
-			{
-				jobKey: options?.jobId,
-				retryLimit: 2,
-				retryDelaySeconds: 5,
-				retryBackoff: true,
-				expireInSeconds: 5 * 60,
-				retentionSeconds: 24 * 60 * 60,
-				deleteAfterSeconds: 24 * 60 * 60,
-			},
+			{ ...ADMIN_NOTIFICATION_JOB_POLICY, jobKey: options?.jobId },
 		);
 	}
 }

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { CreateNotificationData } from "@/notification";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString, toIsoWeekId } from "@/shared/domain/date/utils/format";
@@ -34,7 +34,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		private readonly reader: ReEngagementReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationFacade,
+		private readonly notificationService: NotificationSender,
 		@Inject(DEDUP_PROVIDER)
 		private readonly dedupProvider: IDedupProvider,
 	) {}

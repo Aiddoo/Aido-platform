@@ -9,6 +9,7 @@ import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-ini
 import {
 	ADMIN_NOTIFICATION_QUEUE,
 	AdminNotificationJobName,
+	DAILY_SIGNUP_SUMMARY_SCHEDULE,
 } from "../queue/admin-notification-queue.constants";
 
 /**
@@ -38,18 +39,13 @@ export class DailySignupSummaryScheduler implements OnModuleInit {
 			"Daily signup summary scheduler registration",
 			async () => {
 				await this.runtime.schedule(
-					"daily-signup-summary-scheduler",
-					"10 0 * * *",
+					DAILY_SIGNUP_SUMMARY_SCHEDULE.key,
+					DAILY_SIGNUP_SUMMARY_SCHEDULE.cron,
 					ADMIN_NOTIFICATION_QUEUE,
 					{ name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
 					{
-						retryLimit: 2,
-						retryDelaySeconds: 1,
-						retryBackoff: true,
-						expireInSeconds: 5 * 60,
-						retentionSeconds: 24 * 60 * 60,
-						deleteAfterSeconds: 24 * 60 * 60,
-						timezone: "Asia/Seoul",
+						...DAILY_SIGNUP_SUMMARY_SCHEDULE.jobPolicy,
+						timezone: DAILY_SIGNUP_SUMMARY_SCHEDULE.timezone,
 					},
 				);
 

@@ -23,7 +23,7 @@ import { NotificationBuilder, TodoBuilder } from "@test/builders";
 import { asJob } from "@test/mocks/bull-job.mock";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
-import { NotificationFacade } from "@/notification";
+import { NotificationSender } from "@/notification";
 import { TodoReminderProcessor } from "@/scheduler";
 import { TODO_REMINDER_READER } from "@/scheduler/application/ports/todo-reminder-reader.port";
 
@@ -45,7 +45,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 		existsRecentReminderNotification: jest.fn(),
 	};
 
-	// Mock NotificationFacade (발송 + 로케일 조회)
+	// Mock NotificationSender (발송 + 로케일 조회)
 	// 발송 시점 로케일은 UserPreference 캐시 경유 (getUserLocale)
 	const mockNotificationService = {
 		createAndSend: jest.fn(),
@@ -67,7 +67,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 					useValue: mockReader,
 				},
 				{
-					provide: NotificationFacade,
+					provide: NotificationSender,
 					useValue: mockNotificationService,
 				},
 			],

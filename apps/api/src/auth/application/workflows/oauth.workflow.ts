@@ -83,7 +83,7 @@ export class OAuthWorkflow {
 		@Inject(AUTH_RUNTIME_CONFIG)
 		private readonly configService: AuthRuntimeConfigPort,
 		@Inject(AUTH_REGISTRATION_NOTIFIER)
-		private readonly adminNotificationFacade: AuthRegistrationNotifierPort,
+		private readonly adminEventNotifier: AuthRegistrationNotifierPort,
 		@Inject(AUTH_CACHE) private readonly cacheService: AuthCachePort,
 		private readonly issueLoginUseCase: IssueLoginUseCase,
 		private readonly provisionUserUseCase: ProvisionUserUseCase,
@@ -678,7 +678,7 @@ export class OAuthWorkflow {
 
 			this.#logger.log(`New ${provider} user registered: ${userId}`);
 
-			this.adminNotificationFacade.notifyUserRegistered({
+			this.adminEventNotifier.notifyUserRegistered({
 				userId,
 				email: effectiveEmail,
 				provider: ACCOUNT_PROVIDER_TO_EVENT[provider],

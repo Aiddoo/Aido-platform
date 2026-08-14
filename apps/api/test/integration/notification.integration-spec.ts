@@ -25,15 +25,18 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import {
 	NOTIFICATION_REPOSITORY,
-	NotificationFacade,
 	NotificationMessageBuilder,
+	NotificationSender,
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
-import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
+import {
+	PUSH_DISPATCHER,
+	type PushDispatcherPort,
+} from "@/notification/application/ports/push-dispatcher.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
@@ -62,9 +65,50 @@ import { LOCK_PROVIDER } from "@/shared/infrastructure/lock/interfaces/lock.inte
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 
+function buildNotificationTestApi(module: TestingModule) {
+	const sender = new NotificationSender(
+		module.get(SendNotificationUseCase),
+		module.get(SendNotificationWithDedupUseCase),
+		module.get(SendBatchNotificationUseCase),
+		module.get(FindAlreadyNotifiedUsersUseCase),
+		module.get<PushDispatcherPort>(PUSH_DISPATCHER),
+	);
+	const getNotificationsUseCase = module.get(GetNotificationsUseCase);
+	const getUnreadCountUseCase = module.get(GetUnreadCountUseCase);
+	const markAsReadUseCase = module.get(MarkAsReadUseCase);
+	const markNotificationOpenedUseCase = module.get(
+		MarkNotificationOpenedUseCase,
+	);
+	const markAllAsReadUseCase = module.get(MarkAllAsReadUseCase);
+	const registerPushTokenUseCase = module.get(RegisterPushTokenUseCase);
+	const optOutMarketingPushUseCase = module.get(OptOutMarketingPushUseCase);
+
+	return {
+		...sender,
+		createAndSend: sender.createAndSend.bind(sender),
+		createAndSendWithDedup: sender.createAndSendWithDedup.bind(sender),
+		createAndSendBatch: sender.createAndSendBatch.bind(sender),
+		registerPushToken: registerPushTokenUseCase.execute.bind(
+			registerPushTokenUseCase,
+		),
+		getNotifications: getNotificationsUseCase.execute.bind(
+			getNotificationsUseCase,
+		),
+		getUnreadCount: getUnreadCountUseCase.execute.bind(getUnreadCountUseCase),
+		markAsRead: markAsReadUseCase.execute.bind(markAsReadUseCase),
+		markOpened: markNotificationOpenedUseCase.execute.bind(
+			markNotificationOpenedUseCase,
+		),
+		markAllAsRead: markAllAsReadUseCase.execute.bind(markAllAsReadUseCase),
+		optOutMarketingPush: optOutMarketingPushUseCase.execute.bind(
+			optOutMarketingPushUseCase,
+		),
+	};
+}
+
 describe("Notification 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: NotificationFacade;
+	let facade: ReturnType<typeof buildNotificationTestApi>;
 	let repository: NotificationRepository;
 	let pushDispatcher: PushDispatcherAdapter;
 
@@ -172,7 +216,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 						recordNotifiedUsers: jest.fn().mockResolvedValue(undefined),
 					},
 				},
-				NotificationFacade,
 				GetNotificationsUseCase,
 				GetUnreadCountUseCase,
 				MarkAsReadUseCase,
@@ -305,7 +348,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		facade = module.get<NotificationFacade>(NotificationFacade);
+		facade = buildNotificationTestApi(module);
 		repository = module.get<NotificationRepository>(NotificationRepository);
 		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
 	});
@@ -344,14 +387,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합 테스트", () => {
-		it("NotificationFacade가 정상적으로 주입되어야 함", () => {
+		it("Notification endpoint UseCase와 발송 capability가 정상적으로 조립되어야 함", () => {
 			// Given - DI 컨테이너가 구성됨
 
 			// When - 파사드 인스턴스 확인
 
-			// Then - 파사드가 정의되어 있어야 함
+			// Then - 테스트 수직 경계가 정의되어 있어야 함
 			expect(facade).toBeDefined();
-			expect(facade).toBeInstanceOf(NotificationFacade);
+			expect(facade.createAndSend).toBeInstanceOf(Function);
+			expect(facade.getNotifications).toBeInstanceOf(Function);
 		});
 
 		it("NotificationRepository가 정상적으로 주입되어야 함", () => {

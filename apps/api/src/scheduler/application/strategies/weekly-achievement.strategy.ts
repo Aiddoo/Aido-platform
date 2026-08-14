@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
@@ -28,7 +28,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		private readonly reader: WeeklyAchievementStatsReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationFacade,
+		private readonly notificationService: NotificationSender,
 		private readonly weeklyAchievementWriter: WeeklyAchievementWriterAccess,
 	) {}
 

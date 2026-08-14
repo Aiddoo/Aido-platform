@@ -4,19 +4,22 @@ import type Redis from "ioredis";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 import { UserSettingsModule } from "@/user-settings/user-settings.module";
-
-import { NotificationFacade } from "./application/facades/notification.facade";
+import { NotificationBatchDispatcher } from "./application/dispatchers/notification-batch.dispatcher";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "./application/ports/notification-dedup.port";
-import { PUSH_DISPATCHER } from "./application/ports/push-dispatcher.port";
+import {
+	PUSH_DISPATCHER,
+	type PushDispatcherPort,
+} from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
+import { NotificationSender } from "./application/senders/notification.sender";
 import { DispatchBatchNotificationUseCase } from "./application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "./application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
@@ -61,7 +64,45 @@ import { NotificationController } from "./presentation/notification.controller";
 	controllers: [NotificationController],
 	providers: [
 		// 크로스 모듈 호환 경계 + endpoint UseCase
-		NotificationFacade,
+		{
+			provide: NotificationSender,
+			inject: [
+				SendNotificationUseCase,
+				SendNotificationWithDedupUseCase,
+				SendBatchNotificationUseCase,
+				FindAlreadyNotifiedUsersUseCase,
+				PUSH_DISPATCHER,
+			],
+			useFactory: (
+				sendNotificationUseCase: SendNotificationUseCase,
+				sendNotificationWithDedupUseCase: SendNotificationWithDedupUseCase,
+				sendBatchNotificationUseCase: SendBatchNotificationUseCase,
+				findAlreadyNotifiedUsersUseCase: FindAlreadyNotifiedUsersUseCase,
+				pushDispatcher: PushDispatcherPort,
+			) =>
+				new NotificationSender(
+					sendNotificationUseCase,
+					sendNotificationWithDedupUseCase,
+					sendBatchNotificationUseCase,
+					findAlreadyNotifiedUsersUseCase,
+					pushDispatcher,
+				),
+		},
+		{
+			provide: NotificationBatchDispatcher,
+			inject: [
+				PersistBatchNotificationUseCase,
+				DispatchBatchNotificationUseCase,
+			],
+			useFactory: (
+				persistBatchNotificationUseCase: PersistBatchNotificationUseCase,
+				dispatchBatchNotificationUseCase: DispatchBatchNotificationUseCase,
+			) =>
+				new NotificationBatchDispatcher(
+					persistBatchNotificationUseCase,
+					dispatchBatchNotificationUseCase,
+				),
+		},
 		GetNotificationsUseCase,
 		GetUnreadCountUseCase,
 		MarkAsReadUseCase,
@@ -125,7 +166,7 @@ import { NotificationController } from "./presentation/notification.controller";
 		NotificationQueueProcessor,
 	],
 	exports: [
-		NotificationFacade,
+		NotificationSender,
 		NotificationQueueModule,
 		PUSH_PROVIDER,
 		PUSH_RATE_LIMITER,

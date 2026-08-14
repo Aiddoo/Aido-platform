@@ -2,8 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseModule } from "@/shared/infrastructure/database";
-
-import { AdminNotificationFacade } from "./application/facades/admin-notification.facade";
+import { AdminEventNotifier } from "./application/notifiers/admin-event.notifier";
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "./application/ports/admin-notification-queue.port";
 import {
 	ADMIN_NOTIFIER,
@@ -27,7 +26,7 @@ function isTestRuntime(config: TypedConfigService): boolean {
 @Module({
 	imports: [DatabaseModule],
 	providers: [
-		AdminNotificationFacade,
+		AdminEventNotifier,
 		EnqueueUserRegisteredUseCase,
 		EnqueueSubscriptionEventUseCase,
 		SendAdminNotificationUseCase,
@@ -59,6 +58,6 @@ function isTestRuntime(config: TypedConfigService): boolean {
 			inject: [TypedConfigService],
 		},
 	],
-	exports: [AdminNotificationFacade, ADMIN_NOTIFIER, PAYMENT_NOTIFIER],
+	exports: [AdminEventNotifier, ADMIN_NOTIFIER, PAYMENT_NOTIFIER],
 })
 export class AdminNotificationModule {}

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
@@ -27,7 +27,7 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 		private readonly reader: ScheduledReminderReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationFacade,
+		private readonly notificationService: NotificationSender,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {

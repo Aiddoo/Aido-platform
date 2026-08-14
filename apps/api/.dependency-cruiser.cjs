@@ -10,6 +10,7 @@
 
 /** 배럴 외 허용되는 공개 서브엔트리 (사유는 각 파일 헤더 참조) */
 const PUBLIC_SUBENTRIES = [
+	"^src/admin-notification/queue\\.ts$", // health 전용 큐 이름 계약 — 구현 미노출
 	"^src/notification/queue\\.ts$", // enqueue 전용 경량 심 — heavy 배럴 순환 절단
 	"^src/scheduler/queue\\.ts$",
 	"^src/auth/presentation/decorators/index\\.ts$", // @CurrentUser·@Public·@Admin 경량 공개 표면

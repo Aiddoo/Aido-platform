@@ -3,7 +3,7 @@
  *
  * @description
  * endpoint use-case → 포트 어댑터(Prisma/Notification)까지의
- * 배선을 검증합니다. DatabaseService·NotificationFacade는
+ * 배선을 검증합니다. DatabaseService·NotificationSender는
  * mock으로 대체해 실제 DB/발송 없이 대상 필터링·배치 발송·예외를 확인합니다.
  *
  * 실행 명령:
@@ -24,7 +24,7 @@ import { BroadcastNotificationUseCase } from "@/admin/application/use-cases/broa
 import { SendTargetedNotificationUseCase } from "@/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
 import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "@/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
-import { NotificationFacade } from "@/notification";
+import { NotificationSender } from "@/notification";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -66,7 +66,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 					useClass: NotificationAdminBroadcastNotifierAdapter,
 				},
 				{ provide: DatabaseService, useValue: mockDatabaseService },
-				{ provide: NotificationFacade, useValue: mockNotificationService },
+				{ provide: NotificationSender, useValue: mockNotificationService },
 			],
 		}).compile();
 

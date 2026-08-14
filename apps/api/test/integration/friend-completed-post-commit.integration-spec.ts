@@ -7,7 +7,7 @@ import {
 } from "@test/mocks/ports/notification.mock";
 import {
 	NOTIFICATION_REPOSITORY,
-	NotificationFacade,
+	NotificationSender,
 	PUSH_PROVIDER,
 } from "@/notification";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
@@ -168,7 +168,7 @@ describe("friend-completed post-commit dispatch (component)", () => {
 		module = await Test.createTestingModule({
 			providers: [
 				NotificationQueueProcessor,
-				NotificationFacade,
+				NotificationSender,
 				PersistBatchNotificationUseCase,
 				DispatchBatchNotificationUseCase,
 				SendBatchNotificationUseCase,

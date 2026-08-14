@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
-	NotificationFacade,
 	NotificationMessageBuilder,
+	NotificationSender,
 	resolveTemplateLocale,
 } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
@@ -35,7 +35,7 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 	constructor(
 		@Inject(WEATHER_REMINDER_READER)
 		private readonly reader: WeatherReminderReaderPort,
-		private readonly notificationService: NotificationFacade,
+		private readonly notificationService: NotificationSender,
 		private readonly weatherForecastAccess: WeatherForecastAccess,
 	) {}
 
