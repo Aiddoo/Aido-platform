@@ -25,7 +25,9 @@ import {
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
 
-import { AiFacade } from "../application/facades/ai.facade";
+import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case";
+import { ParseMemoUseCase } from "../application/use-cases/parse-memo/parse-memo.use-case";
+import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case";
 import { AiUsageGuard } from "../infrastructure/guards/ai-usage.guard";
 import {
 	AiUsageResponseDto,
@@ -39,7 +41,11 @@ import {
 @ApiBearerAuth()
 @Controller("ai")
 export class AiController {
-	constructor(private readonly aiFacade: AiFacade) {}
+	constructor(
+		private readonly parseTodoUseCase: ParseTodoUseCase,
+		private readonly parseMemoUseCase: ParseMemoUseCase,
+		private readonly getAiUsageUseCase: GetAiUsageUseCase,
+	) {}
 
 	/**
 	 * @example
@@ -188,13 +194,13 @@ if (confirmed) {
 		@Timezone() tz: string,
 		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<ParseTodoResponseDto> {
-		const result = await this.aiFacade.parseTodo(
-			dto.text,
-			user.userId,
-			tz,
-			dto.categoryId,
-			locale,
-		);
+		const result = await this.parseTodoUseCase.execute({
+			text: dto.text,
+			userId: user.userId,
+			timezone: tz,
+			categoryId: dto.categoryId,
+			locale: locale ?? "ko",
+		});
 
 		return {
 			success: true,
@@ -335,13 +341,13 @@ if (confirmed) {
 		@Timezone() tz: string,
 		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<ParseMemoResponseDto> {
-		const result = await this.aiFacade.parseMemo(
-			dto.content,
-			user.userId,
-			tz,
-			dto.categoryId,
-			locale,
-		);
+		const result = await this.parseMemoUseCase.execute({
+			content: dto.content,
+			userId: user.userId,
+			timezone: tz,
+			categoryId: dto.categoryId,
+			locale: locale ?? "ko",
+		});
 
 		return {
 			success: true,
@@ -411,7 +417,7 @@ if (limit !== null && used >= limit) {
 	async getUsage(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<AiUsageResponseDto> {
-		const usage = await this.aiFacade.getUsage(user.userId);
+		const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
 
 		return {
 			success: true,
