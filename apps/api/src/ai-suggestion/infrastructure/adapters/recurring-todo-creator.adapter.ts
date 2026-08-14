@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoFacade } from "@/todo";
+import { CreateRecurringTodosUseCase } from "@/todo";
 
 import type {
 	CreateRecurringTodoInput,
@@ -10,17 +10,22 @@ import type {
 /**
  * RecurringTodoCreatorPort의 어댑터.
  *
- * todo 모듈의 공개 계약(TodoFacade)에 위임하여 반복 할 일 생성을 수행한다.
+ * AI Suggestion의 계약을 Todo 반복 생성 UseCase에 연결한다.
  */
 @Injectable()
 export class RecurringTodoCreatorAdapter implements RecurringTodoCreatorPort {
-	constructor(private readonly todoFacade: TodoFacade) {}
+	constructor(
+		private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
+	) {}
 
 	async createRecurring(
 		input: CreateRecurringTodoInput,
 		timezone: string,
 	): Promise<{ count: number }> {
-		const result = await this.todoFacade.createRecurring(input, timezone);
+		const result = await this.createRecurringTodosUseCase.execute({
+			data: input,
+			timezone,
+		});
 		return { count: result.count };
 	}
 }

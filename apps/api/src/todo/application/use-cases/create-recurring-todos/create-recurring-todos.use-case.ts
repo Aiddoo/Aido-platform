@@ -15,7 +15,7 @@ import { parseLocalDateTime } from "@/shared/domain/date/utils/timezone";
 import {
 	Todo,
 	type TodoCreationPlan,
-} from "../../../domain/entities/todo.entity";
+} from "../../../domain/entities/todo.aggregate";
 import { expandRecurringDates } from "../../../domain/services/expand-recurring-dates";
 import {
 	CATEGORY_OWNERSHIP,

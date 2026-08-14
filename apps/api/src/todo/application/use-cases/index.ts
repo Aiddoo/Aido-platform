@@ -13,6 +13,23 @@ import { UpdateTodoScheduleUseCase } from "./update-todo-schedule/update-todo-sc
 import { UpdateTodoTitleUseCase } from "./update-todo-title/update-todo-title.use-case";
 import { UpdateTodoVisibilityUseCase } from "./update-todo-visibility/update-todo-visibility.use-case";
 
+export {
+	AddTodoItemUseCase,
+	ChangeTodoCategoryUseCase,
+	CreateRecurringTodosUseCase,
+	CreateTodoUseCase,
+	DeleteTodoItemUseCase,
+	DeleteTodoUseCase,
+	ReorderTodoItemsUseCase,
+	ReorderTodoUseCase,
+	ToggleTodoCompleteUseCase,
+	UpdateTodoItemUseCase,
+	UpdateTodoScheduleUseCase,
+	UpdateTodoTitleUseCase,
+	UpdateTodoUseCase,
+	UpdateTodoVisibilityUseCase,
+};
+
 /** Todo 커맨드 use-case (모듈 등록용 배럴). */
 export const TodoUseCases = [
 	AddTodoItemUseCase,

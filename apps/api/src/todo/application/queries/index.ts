@@ -4,6 +4,14 @@ import { GetTodoResourceLimitUseCase } from "./get-todo-resource-limit/get-todo-
 import { GetTodoSummaryUseCase } from "./get-todo-summary/get-todo-summary.use-case";
 import { GetTodosUseCase } from "./get-todos/get-todos.use-case";
 
+export {
+	GetFriendTodosUseCase,
+	GetTodoByIdUseCase,
+	GetTodoResourceLimitUseCase,
+	GetTodoSummaryUseCase,
+	GetTodosUseCase,
+};
+
 /** Todo 쿼리 use-case (모듈 등록용 배럴). */
 export const TodoQueryUseCases = [
 	GetTodoByIdUseCase,

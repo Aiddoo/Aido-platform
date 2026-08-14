@@ -9,7 +9,7 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
-import { Todo } from "../../../domain/entities/todo.entity";
+import { Todo } from "../../../domain/entities/todo.aggregate";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
