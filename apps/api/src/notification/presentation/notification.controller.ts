@@ -37,7 +37,14 @@ import {
 	type CurrentUserPayload,
 	Public,
 } from "../../auth/presentation/decorators";
-import { NotificationFacade } from "../application/facades/notification.facade";
+import { GetNotificationsUseCase } from "../application/use-cases/get-notifications/get-notifications.use-case";
+import { GetUnreadCountUseCase } from "../application/use-cases/get-unread-count/get-unread-count.use-case";
+import { MarkAllAsReadUseCase } from "../application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
+import { MarkAsReadUseCase } from "../application/use-cases/mark-as-read/mark-as-read.use-case";
+import { MarkNotificationOpenedUseCase } from "../application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
+import { OptOutMarketingPushUseCase } from "../application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
+import { RegisterPushTokenUseCase } from "../application/use-cases/register-push-token/register-push-token.use-case";
+import { UnregisterPushTokenUseCase } from "../application/use-cases/unregister-push-token/unregister-push-token.use-case";
 
 import {
 	GetNotificationsQueryDto,
@@ -59,7 +66,16 @@ import { NotificationMapper } from "./notification.mapper";
 export class NotificationController {
 	readonly #logger = new Logger(NotificationController.name);
 
-	constructor(private readonly notificationFacade: NotificationFacade) {}
+	constructor(
+		private readonly getNotificationsUseCase: GetNotificationsUseCase,
+		private readonly getUnreadCountUseCase: GetUnreadCountUseCase,
+		private readonly markAsReadUseCase: MarkAsReadUseCase,
+		private readonly markNotificationOpenedUseCase: MarkNotificationOpenedUseCase,
+		private readonly markAllAsReadUseCase: MarkAllAsReadUseCase,
+		private readonly registerPushTokenUseCase: RegisterPushTokenUseCase,
+		private readonly unregisterPushTokenUseCase: UnregisterPushTokenUseCase,
+		private readonly optOutMarketingPushUseCase: OptOutMarketingPushUseCase,
+	) {}
 
 	@Post("marketing-push/opt-out")
 	@Public()
@@ -74,7 +90,7 @@ export class NotificationController {
 	async optOutMarketingPush(
 		@Body() dto: MarketingPushOptOutDto,
 	): Promise<MarketingPushOptOutResponseDto> {
-		await this.notificationFacade.optOutMarketingPush(dto.token);
+		await this.optOutMarketingPushUseCase.execute(dto.token);
 		// 토큰 유효 여부를 노출하지 않아 사용자 열거/토큰 탐색을 방지한다.
 		return { optedOut: true };
 	}
@@ -115,7 +131,7 @@ export class NotificationController {
 	): Promise<RegisterTokenResponseDto> {
 		this.#logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
 
-		await this.notificationFacade.registerPushToken({
+		await this.registerPushTokenUseCase.execute({
 			userId: user.userId,
 			token: dto.token,
 			deviceId: dto.deviceId,
@@ -158,7 +174,7 @@ export class NotificationController {
 			`푸시 토큰 해제: userId=${user.userId}, deviceId=${deviceId ?? "all"}`,
 		);
 
-		await this.notificationFacade.unregisterPushToken(user.userId, deviceId);
+		await this.unregisterPushTokenUseCase.execute(user.userId, deviceId);
 
 		this.#logger.log(
 			`푸시 토큰 해제 완료: userId=${user.userId}, deviceId=${deviceId ?? "all"}`,
@@ -213,14 +229,14 @@ export class NotificationController {
 		);
 
 		const [result, unreadCount] = await Promise.all([
-			this.notificationFacade.getNotifications({
+			this.getNotificationsUseCase.execute({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 				unreadOnly: query.unreadOnly,
 				category: query.category,
 			}),
-			this.notificationFacade.getUnreadCount(user.userId),
+			this.getUnreadCountUseCase.execute(user.userId),
 		]);
 
 		return {
@@ -242,9 +258,7 @@ export class NotificationController {
 	async getUnreadCount(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<UnreadCountResponseDto> {
-		const unreadCount = await this.notificationFacade.getUnreadCount(
-			user.userId,
-		);
+		const unreadCount = await this.getUnreadCountUseCase.execute(user.userId);
 
 		return { unreadCount };
 	}
@@ -274,7 +288,7 @@ export class NotificationController {
 			`알림 읽음 처리: userId=${user.userId}, id=${params.id}`,
 		);
 
-		await this.notificationFacade.markAsRead(user.userId, params.id);
+		await this.markAsReadUseCase.execute(user.userId, params.id);
 
 		return {
 			message: "알림을 읽음 처리했습니다.",
@@ -295,7 +309,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: NotificationIdParamDto,
 	): Promise<NotificationOpenedResponseDto> {
-		const opened = await this.notificationFacade.markOpened(
+		const opened = await this.markNotificationOpenedUseCase.execute(
 			user.userId,
 			params.id,
 		);
@@ -316,7 +330,7 @@ export class NotificationController {
 	): Promise<MarkReadResponseDto> {
 		this.#logger.debug(`모든 알림 읽음 처리: userId=${user.userId}`);
 
-		const result = await this.notificationFacade.markAllAsRead(user.userId);
+		const result = await this.markAllAsReadUseCase.execute(user.userId);
 
 		return {
 			message: "모든 알림을 읽음 처리했습니다.",

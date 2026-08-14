@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/errors";
+import { AggregateRoot } from "@/shared/domain";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import type { NotificationRecord } from "../records/notification.record";
 
@@ -8,21 +9,21 @@ import type { NotificationRecord } from "../records/notification.record";
  * 읽음 처리 시 소유권 불변식(타 사용자 알림 접근 금지 → NOTIFICATION_1005)과
  * 멱등성(이미 읽은 알림은 무동작)을 소유한다.
  */
-export class Notification {
-	private constructor(
-		private readonly _id: number,
-		private readonly _userId: string,
-		private readonly _isRead: boolean,
-	) {}
+interface NotificationProps {
+	id: number;
+	userId: string;
+	isRead: boolean;
+}
 
+export class Notification extends AggregateRoot<NotificationProps> {
 	static reconstitute(
 		record: Pick<NotificationRecord, "id" | "userId" | "isRead">,
 	): Notification {
-		return new Notification(record.id, record.userId, record.isRead);
+		return new Notification({ ...record });
 	}
 
 	get id(): number {
-		return this._id;
+		return this.props.id;
 	}
 
 	/**
@@ -32,11 +33,13 @@ export class Notification {
 	 * @throws {DomainException} NOTIFICATION_1005 — 다른 사용자의 알림
 	 */
 	planMarkRead(requesterId: string): boolean {
-		if (this._userId !== requesterId) {
+		if (this.props.userId !== requesterId) {
 			throw new DomainException(ErrorCode.NOTIFICATION_1005, {
-				notificationId: this._id,
+				notificationId: this.props.id,
 			});
 		}
-		return !this._isRead;
+		if (this.props.isRead) return false;
+		this.props.isRead = true;
+		return true;
 	}
 }

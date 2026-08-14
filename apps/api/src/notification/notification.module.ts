@@ -47,8 +47,8 @@ import { NotificationController } from "./presentation/notification.controller";
 /**
  * Notification 모듈 (클린아키텍처 4계층 + 포트/어댑터)
  *
- * - presentation: NotificationController → NotificationFacade(유스케이스 조합)
- * - application: 조회·읽음·토큰·발송 유스케이스 + NotificationFacade
+ * - presentation: NotificationController → endpoint UseCase
+ * - application: 조회·읽음·토큰·발송 UseCase
  * - infrastructure: Prisma 저장소·Expo 푸시 프로바이더·PushDispatcher·rate limiter·BullMQ 프로세서
  *
  * Provider 추상화(PUSH_PROVIDER 포트)로 Expo → FCM/APNs 교체를 어댑터 추가만으로 대비.
@@ -60,7 +60,7 @@ import { NotificationController } from "./presentation/notification.controller";
 	imports: [NotificationQueueModule, UserSettingsModule],
 	controllers: [NotificationController],
 	providers: [
-		// Facade + Use-cases (presentation 진입점)
+		// 크로스 모듈 호환 경계 + endpoint UseCase
 		NotificationFacade,
 		GetNotificationsUseCase,
 		GetUnreadCountUseCase,
@@ -126,7 +126,6 @@ import { NotificationController } from "./presentation/notification.controller";
 	],
 	exports: [
 		NotificationFacade,
-		NotificationRepository,
 		NotificationQueueModule,
 		PUSH_PROVIDER,
 		PUSH_RATE_LIMITER,

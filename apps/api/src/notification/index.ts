@@ -46,8 +46,8 @@ export {
 // --- Templates (메시지 빌더 + 로케일 해석) ---
 export * from "./domain/services/templates/notification-templates";
 export type { NotificationType } from "./domain/types/notification-type";
-// --- Repository (미이관 소비자 전이용 concrete + 포트 토큰) ---
-export { NotificationRepository } from "./infrastructure/persistence/notification.repository";
+// Prisma repository is internal to NotificationModule.
+// Cross-module consumers use the public capability boundary above.
 // --- Queue constants + job data ---
 export * from "./infrastructure/queue/notification-queue.constants";
 export { NotificationQueueModule } from "./infrastructure/queue/notification-queue.module";
