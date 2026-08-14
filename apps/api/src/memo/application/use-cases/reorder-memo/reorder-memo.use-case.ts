@@ -1,16 +1,15 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
 	type ReorderPlan,
 } from "../../../domain/services/memo-reorder";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 import type { MemoMutationResult } from "../create-memo/create-memo.use-case";
 
 /**
@@ -62,10 +61,7 @@ export class ReorderMemoUseCase {
 				plan.shift.to,
 				plan.shift.delta,
 			);
-			const updated = await this.repository.updateSortOrder(
-				memoId,
-				plan.newSortOrder,
-			);
+			const updated = await this.repository.updateSortOrder(memoId, plan.newSortOrder);
 
 			this.#logger.log(
 				`Memo reordered: ${memoId} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
@@ -75,30 +71,19 @@ export class ReorderMemoUseCase {
 		});
 	}
 
-	async #planReorder(
-		currentSortOrder: number,
-		input: ReorderMemoInput,
-	): Promise<ReorderPlan> {
+	async #planReorder(currentSortOrder: number, input: ReorderMemoInput): Promise<ReorderPlan> {
 		const { userId, targetMemoId, position } = input;
 
 		if (targetMemoId) {
-			const target = await this.repository.findByIdAndUserId(
-				targetMemoId,
-				userId,
-			);
+			const target = await this.repository.findByIdAndUserId(targetMemoId, userId);
 			if (!target) {
 				throw new ApplicationException(ErrorCode.MEMO_2002, { targetMemoId });
 			}
-			return planReorderRelativeTo(
-				currentSortOrder,
-				target.sortOrder,
-				position,
-			);
+			return planReorderRelativeTo(currentSortOrder, target.sortOrder, position);
 		}
 
 		// 맨 뒤 이동만 maxSortOrder가 필요하다 (맨 앞은 0 고정).
-		const maxSortOrder =
-			position === "after" ? await this.repository.getMaxSortOrder(userId) : 0;
+		const maxSortOrder = position === "after" ? await this.repository.getMaxSortOrder(userId) : 0;
 		return planReorderToEdge(currentSortOrder, position, maxSortOrder);
 	}
 }

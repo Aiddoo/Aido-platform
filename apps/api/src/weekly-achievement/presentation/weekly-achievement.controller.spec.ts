@@ -27,9 +27,7 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			WeeklyAchievementController,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(WeeklyAchievementController).compile();
 
 		controller = unit;
 		getWeeklyAchievementsUseCase = unitRef.get(GetWeeklyAchievementsUseCase);
@@ -124,11 +122,7 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 			});
 
 			// When
-			await controller.getWeeklyAchievement(
-				mockUser,
-				{ year: 2026, week: 10 },
-				undefined,
-			);
+			await controller.getWeeklyAchievement(mockUser, { year: 2026, week: 10 }, undefined);
 
 			// Then
 			expect(getWeeklyAchievementUseCase.execute).toHaveBeenCalledWith({

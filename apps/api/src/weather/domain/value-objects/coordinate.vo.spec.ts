@@ -4,6 +4,7 @@
  * 한국 좌표 범위 불변식과 격자 변환을 검증한다.
  */
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { Coordinate } from "./coordinate.vo";
 import { GridCoordinate } from "./grid-coordinate.vo";
 
@@ -16,12 +17,9 @@ describe("Coordinate — WGS84 위경도 값 객체", () => {
 			expect(coord.longitude).toBe(126.978);
 		});
 
-		it.each([32.9, 39.1])(
-			"위도가 범위(33~39)를 벗어나면 DomainException을 던진다: %p",
-			(lat) => {
-				expect(() => Coordinate.of(lat, 126.978)).toThrow(DomainException);
-			},
-		);
+		it.each([32.9, 39.1])("위도가 범위(33~39)를 벗어나면 DomainException을 던진다: %p", (lat) => {
+			expect(() => Coordinate.of(lat, 126.978)).toThrow(DomainException);
+		});
 
 		it.each([123.9, 132.1])(
 			"경도가 범위(124~132)를 벗어나면 DomainException을 던진다: %p",

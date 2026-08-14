@@ -5,11 +5,9 @@
  */
 
 import { TestBed } from "@suites/unit";
+
 import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 import { TodoRescheduledHandler } from "./todo-rescheduled.handler";
 
 describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
@@ -35,16 +33,10 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 		const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
 
 		// When
-		await handler.handle(
-			new TodoRescheduledEvent(1, "user-123", scheduledTime),
-		);
+		await handler.handle(new TodoRescheduledEvent(1, "user-123", scheduledTime));
 
 		// Then
-		expect(todoReminder.scheduleReminder).toHaveBeenCalledWith(
-			1,
-			scheduledTime,
-			"user-123",
-		);
+		expect(todoReminder.scheduleReminder).toHaveBeenCalledWith(1, scheduledTime, "user-123");
 		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 	});
 
@@ -77,9 +69,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
 
 		// When & Then - 성공/missing으로 삼키지 않음
-		await expect(
-			handler.handle(new TodoRescheduledEvent(1, "user-123", null)),
-		).rejects.toBe(error);
+		await expect(handler.handle(new TodoRescheduledEvent(1, "user-123", null))).rejects.toBe(error);
 	});
 
 	it("non-null 재스케줄 중 기존 리마인더 취소 실패도 전파한다", async () => {
@@ -93,9 +83,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 
 		// When & Then - schedule 호출만 시작하고 성공으로 조기 반환하지 않음
 		await expect(
-			handler.handle(
-				new TodoRescheduledEvent(1, "user-123", new Date("2026-03-01")),
-			),
+			handler.handle(new TodoRescheduledEvent(1, "user-123", new Date("2026-03-01"))),
 		).rejects.toBe(error);
 	});
 });

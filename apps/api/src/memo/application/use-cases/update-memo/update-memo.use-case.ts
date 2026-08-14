@@ -1,10 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 import type { MemoMutationResult } from "../create-memo/create-memo.use-case";
 
 /** 메모 내용 수정 입력. */
@@ -25,10 +24,7 @@ export class UpdateMemoUseCase {
 	) {}
 
 	async execute(input: UpdateMemoInput): Promise<MemoMutationResult> {
-		const memo = await this.repository.findByIdAndUserId(
-			input.memoId,
-			input.userId,
-		);
+		const memo = await this.repository.findByIdAndUserId(input.memoId, input.userId);
 		if (!memo) {
 			throw new ApplicationException(ErrorCode.MEMO_2001, {
 				memoId: input.memoId,
@@ -36,10 +32,7 @@ export class UpdateMemoUseCase {
 		}
 
 		memo.rename(input.content);
-		const updated = await this.repository.updateContent(
-			input.memoId,
-			memo.content.value,
-		);
+		const updated = await this.repository.updateContent(input.memoId, memo.content.value);
 
 		this.#logger.log(`Memo updated: ${input.memoId} for user: ${input.userId}`);
 

@@ -1,7 +1,4 @@
-import {
-	growthSummaryQuerySchema,
-	growthSummaryResponseSchema,
-} from "@aido/validators";
+import { growthSummaryQuerySchema, growthSummaryResponseSchema } from "@aido/validators";
 
 describe("관리자 성장 지표 스키마", () => {
 	it("cohort 조회 범위를 최대 90개 현지 날짜로 제한한다", () => {

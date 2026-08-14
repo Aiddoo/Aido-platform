@@ -6,10 +6,9 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+
 import { ADMIN_NOTIFICATION_QUEUE } from "../queue/admin-notification-queue.constants";
 import { BullmqAdminNotificationQueueAdapter } from "./bullmq-admin-notification-queue.adapter";
 
@@ -18,9 +17,7 @@ describe("BullmqAdminNotificationQueueAdapter", () => {
 	let runtime: Mocked<JobRuntimePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			BullmqAdminNotificationQueueAdapter,
-		)
+		const { unit, unitRef } = await TestBed.solitary(BullmqAdminNotificationQueueAdapter)
 			.mock<JobRuntimePort>(JOB_RUNTIME)
 			.impl(() => ({ enqueue: jest.fn().mockResolvedValue("job-1") }))
 			.compile();

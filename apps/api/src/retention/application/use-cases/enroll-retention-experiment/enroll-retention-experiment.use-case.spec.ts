@@ -1,23 +1,19 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createRetentionRepositoryMock } from "@test/mocks/ports";
+
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
 } from "../../ports/retention.repository.port";
-import {
-	RETENTION_CONFIG,
-	type RetentionConfigPort,
-} from "../../ports/retention-config.port";
 import { EnrollRetentionExperimentUseCase } from "./enroll-retention-experiment.use-case";
 
 describe("EnrollRetentionExperimentUseCase — 신규 사용자만 등록", () => {
 	let repository: Mocked<RetentionRepositoryPort>;
 
 	async function build(enabled: boolean) {
-		const { unit, unitRef } = await TestBed.solitary(
-			EnrollRetentionExperimentUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(EnrollRetentionExperimentUseCase)
 			.mock<RetentionRepositoryPort>(RETENTION_REPOSITORY)
 			.impl(() => createRetentionRepositoryMock())
 			.mock<RetentionConfigPort>(RETENTION_CONFIG)

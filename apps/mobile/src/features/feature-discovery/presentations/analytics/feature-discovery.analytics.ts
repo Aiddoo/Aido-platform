@@ -2,6 +2,7 @@ import type { Analytics } from '@src/core/ports/analytics';
 import type { FeatureHubSource, FeatureKey } from '@src/shared/analytics/events/growth.events';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { track } from '@src/shared/analytics/track';
+
 import type { FeatureDiscoveryCardId } from '../../models/feature-discovery.registry';
 
 const CARD_FEATURE_KEYS = {

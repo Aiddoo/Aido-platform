@@ -8,13 +8,14 @@
 import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createWeatherCacheMock } from "@test/mocks/ports/weather-cache.mock";
 import {
 	createAirQualityProviderMock,
 	createLifestyleIndexProviderMock,
 	createSunTimeProviderMock,
 	createWeatherLocationRepositoryMock,
 } from "@test/mocks/ports/weather.mock";
-import { createWeatherCacheMock } from "@test/mocks/ports/weather-cache.mock";
+
 import { UserLocation } from "../../../domain/entities/user-location.entity";
 import {
 	AIR_QUALITY_PROVIDER,
@@ -24,14 +25,8 @@ import {
 	LIFESTYLE_INDEX_PROVIDER,
 	type LifestyleIndexProvider,
 } from "../../ports/lifestyle-index-provider.port";
-import {
-	SUN_TIME_PROVIDER,
-	type SunTimeProvider,
-} from "../../ports/sun-time-provider.port";
-import {
-	WEATHER_CACHE,
-	type WeatherCachePort,
-} from "../../ports/weather-cache.port";
+import { SUN_TIME_PROVIDER, type SunTimeProvider } from "../../ports/sun-time-provider.port";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
@@ -75,9 +70,7 @@ describe("GetWeatherConditionsUseCase — 날씨 부가정보(체감·자외선�
 	const input = { userId: "user-123", date };
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetWeatherConditionsUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(GetWeatherConditionsUseCase)
 			.mock<WeatherLocationRepositoryPort>(WEATHER_LOCATION_REPOSITORY)
 			.impl(() => createWeatherLocationRepositoryMock())
 			.mock<AirQualityProvider>(AIR_QUALITY_PROVIDER)
@@ -91,13 +84,9 @@ describe("GetWeatherConditionsUseCase — 날씨 부가정보(체감·자외선�
 			.compile();
 
 		useCase = unit;
-		repository = unitRef.get<WeatherLocationRepositoryPort>(
-			WEATHER_LOCATION_REPOSITORY,
-		);
+		repository = unitRef.get<WeatherLocationRepositoryPort>(WEATHER_LOCATION_REPOSITORY);
 		airQualityProvider = unitRef.get<AirQualityProvider>(AIR_QUALITY_PROVIDER);
-		lifestyleIndexProvider = unitRef.get<LifestyleIndexProvider>(
-			LIFESTYLE_INDEX_PROVIDER,
-		);
+		lifestyleIndexProvider = unitRef.get<LifestyleIndexProvider>(LIFESTYLE_INDEX_PROVIDER);
 		sunTimeProvider = unitRef.get<SunTimeProvider>(SUN_TIME_PROVIDER);
 		forecastReader = unitRef.get(WeatherForecastReader);
 		cache = unitRef.get<WeatherCachePort>(WEATHER_CACHE);
@@ -160,10 +149,7 @@ describe("GetWeatherConditionsUseCase — 날씨 부가정보(체감·자외선�
 		const result = await useCase.execute(input);
 
 		// Then - 좌표는 프로바이더에, 병합 결과는 격자 캐시에
-		expect(airQualityProvider.getAirQuality).toHaveBeenCalledWith(
-			37.5665,
-			126.978,
-		);
+		expect(airQualityProvider.getAirQuality).toHaveBeenCalledWith(37.5665, 126.978);
 		const conditions = {
 			feelsLikeTemperature: 27,
 			uvIndex: 5,
@@ -194,13 +180,7 @@ describe("GetWeatherConditionsUseCase — 날씨 부가정보(체감·자외선�
 		await useCase.execute(input);
 
 		// Then - currentTemp=temperatureMax(28), windSpeed=4
-		expect(lifestyleIndexProvider.getIndex).toHaveBeenCalledWith(
-			37.5665,
-			126.978,
-			date,
-			28,
-			4,
-		);
+		expect(lifestyleIndexProvider.getIndex).toHaveBeenCalledWith(37.5665, 126.978, date, 28, 4);
 	});
 
 	it("일부 프로바이더 실패 시 해당 필드만 null로 강등한다 (graceful degradation)", async () => {
@@ -270,12 +250,6 @@ describe("GetWeatherConditionsUseCase — 날씨 부가정보(체감·자외선�
 		await useCase.execute(input);
 
 		// Then - currentTemp=0, windSpeed=0으로 lifestyle 계산 진입
-		expect(lifestyleIndexProvider.getIndex).toHaveBeenCalledWith(
-			37.5665,
-			126.978,
-			date,
-			0,
-			0,
-		);
+		expect(lifestyleIndexProvider.getIndex).toHaveBeenCalledWith(37.5665, 126.978, date, 0, 0);
 	});
 });

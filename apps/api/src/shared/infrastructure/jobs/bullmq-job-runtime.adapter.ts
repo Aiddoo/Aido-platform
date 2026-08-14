@@ -1,11 +1,7 @@
-import {
-	type FactoryProvider,
-	Inject,
-	Injectable,
-	Logger,
-} from "@nestjs/common";
+import { type FactoryProvider, Inject, Injectable, Logger } from "@nestjs/common";
 import { type JobState, type JobsOptions, Queue, Worker } from "bullmq";
 import type Redis from "ioredis";
+
 import type {
 	EnqueueJobOptions,
 	JobCancellationResult,
@@ -34,11 +30,7 @@ export interface BullJobClient {
 }
 
 export interface BullQueueClient {
-	add(
-		name: string,
-		data: object,
-		options: object,
-	): Promise<{ readonly id?: string }>;
+	add(name: string, data: object, options: object): Promise<{ readonly id?: string }>;
 	upsertJobScheduler(
 		key: string,
 		repeat: { readonly pattern: string; readonly tz?: string },
@@ -95,11 +87,7 @@ interface RuntimePayload {
 class DefaultBullQueueClient implements BullQueueClient {
 	constructor(private readonly queue: Queue<JobData>) {}
 
-	async add(
-		name: string,
-		data: object,
-		options: JobsOptions,
-	): Promise<{ readonly id?: string }> {
+	async add(name: string, data: object, options: JobsOptions): Promise<{ readonly id?: string }> {
 		return this.queue.add(name, data, options);
 	}
 
@@ -135,12 +123,7 @@ class DefaultBullQueueClient implements BullQueueClient {
 		readonly active: number;
 		readonly failed: number;
 	}> {
-		const counts = await this.queue.getJobCounts(
-			"wait",
-			"delayed",
-			"active",
-			"failed",
-		);
+		const counts = await this.queue.getJobCounts("wait", "delayed", "active", "failed");
 		return {
 			wait: counts.wait ?? 0,
 			delayed: counts.delayed ?? 0,
@@ -184,9 +167,7 @@ class DefaultBullMqClientFactory implements BullMqClientFactory {
 	}
 
 	createQueue(name: string): BullQueueClient {
-		return new DefaultBullQueueClient(
-			new Queue<JobData>(name, { connection: this.connection() }),
-		);
+		return new DefaultBullQueueClient(new Queue<JobData>(name, { connection: this.connection() }));
 	}
 
 	createWorker(
@@ -203,12 +184,11 @@ class DefaultBullMqClientFactory implements BullMqClientFactory {
 	}
 }
 
-export const bullMqClientFactoryProvider: FactoryProvider<BullMqClientFactory> =
-	{
-		provide: BULLMQ_CLIENT_FACTORY,
-		inject: [REDIS_CLIENT],
-		useFactory: (redis: Redis | null) => new DefaultBullMqClientFactory(redis),
-	};
+export const bullMqClientFactoryProvider: FactoryProvider<BullMqClientFactory> = {
+	provide: BULLMQ_CLIENT_FACTORY,
+	inject: [REDIS_CLIENT],
+	useFactory: (redis: Redis | null) => new DefaultBullMqClientFactory(redis),
+};
 
 @Injectable()
 export class BullMqJobRuntimeAdapter implements JobRuntimePort {
@@ -288,10 +268,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 		await this.queue(queueName).removeJobScheduler(scheduleKey);
 	}
 
-	async cancel(
-		queueName: string,
-		jobKey: string,
-	): Promise<JobCancellationResult> {
+	async cancel(queueName: string, jobKey: string): Promise<JobCancellationResult> {
 		const job = await this.queue(queueName).getJob(jobKey);
 		if (!job) {
 			return { status: "missing" };
@@ -427,10 +404,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 		};
 	}
 
-	private wrap<T extends JobData>(
-		data: T,
-		options: EnqueueJobOptions,
-	): RuntimePayload {
+	private wrap<T extends JobData>(data: T, options: EnqueueJobOptions): RuntimePayload {
 		return {
 			__aidoJobRuntime: 1,
 			data,
@@ -452,17 +426,13 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 				__aidoJobRuntime: 1,
 				data: data.data,
 				deadLetter:
-					"deadLetter" in data && typeof data.deadLetter === "string"
-						? data.deadLetter
-						: undefined,
+					"deadLetter" in data && typeof data.deadLetter === "string" ? data.deadLetter : undefined,
 				retentionSeconds:
-					"retentionSeconds" in data &&
-					typeof data.retentionSeconds === "number"
+					"retentionSeconds" in data && typeof data.retentionSeconds === "number"
 						? data.retentionSeconds
 						: 14 * 24 * 60 * 60,
 				deleteAfterSeconds:
-					"deleteAfterSeconds" in data &&
-					typeof data.deleteAfterSeconds === "number"
+					"deleteAfterSeconds" in data && typeof data.deleteAfterSeconds === "number"
 						? data.deleteAfterSeconds
 						: 7 * 24 * 60 * 60,
 			};
@@ -476,9 +446,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 		};
 	}
 
-	private async moveToDeadLetter(
-		job: BullJobClient | undefined,
-	): Promise<void> {
+	private async moveToDeadLetter(job: BullJobClient | undefined): Promise<void> {
 		if (!job || job.attemptsMade < (job.opts.attempts ?? 1)) {
 			return;
 		}

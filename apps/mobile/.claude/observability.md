@@ -8,10 +8,10 @@
 
 ## 역할 분리
 
-| 도구 | 답하는 질문 | 진입점 |
-|------|-------------|--------|
-| **Firebase Analytics** | "얼마나 많이/자주 쓰나" (제품 지표) | `Analytics` 포트 + 타입 카탈로그 `track()`/`useTrack()` |
-| **Sentry** | "무엇이 왜 깨졌나" (관측·진단) | `ErrorReporter` 포트 (`captureException`/`captureMessage`/`addBreadcrumb`) |
+| 도구                   | 답하는 질문                         | 진입점                                                                     |
+| ---------------------- | ----------------------------------- | -------------------------------------------------------------------------- |
+| **Firebase Analytics** | "얼마나 많이/자주 쓰나" (제품 지표) | `Analytics` 포트 + 타입 카탈로그 `track()`/`useTrack()`                    |
+| **Sentry**             | "무엇이 왜 깨졌나" (관측·진단)      | `ErrorReporter` 포트 (`captureException`/`captureMessage`/`addBreadcrumb`) |
 
 - **Crashlytics는 쓰지 않는다** — 네이티브 크래시까지 Sentry로 일원화(2026-07 정리).
 - 이중 목적 이벤트(예: 비자발 로그아웃)는 두 시스템에 **각자의 타입 경로**로 각각 기록한다. 억지로 합치지 않는다.
@@ -26,7 +26,9 @@
 
 ```ts
 // 이벤트 정의 (auth.events.ts)
-session_expired: { reason: SessionExpiredReason };
+session_expired: {
+  reason: SessionExpiredReason;
+}
 
 // 전송 (무캐스트, 타입 검증됨)
 track(analytics, 'session_expired', { reason });
@@ -37,24 +39,37 @@ track(analytics, 'session_expired', { reason });
 ## Sentry — 관측 (3원소)
 
 ### 1) Event — `captureException` / `captureMessage`
+
 Sentry Issue로 그룹핑되는 1급 신호. `severity`(→ Sentry level)와 tags를 함께 넘긴다.
 
 ```ts
-errorReporter.captureException(error, { feature: 'error_boundary' });          // 예측 불가 에러
-errorReporter.captureMessage('session_expired', { feature: 'auth', severity: 'warning', errorCode: reason });
+errorReporter.captureException(error, { feature: 'error_boundary' }); // 예측 불가 에러
+errorReporter.captureMessage('session_expired', {
+  feature: 'auth',
+  severity: 'warning',
+  errorCode: reason,
+});
 ```
 
 ### 2) Breadcrumb — `addBreadcrumb`
+
 이벤트 **직전 행적**(자체 Issue 아님). `category`는 `BreadcrumbCategory` union으로 고정.
 
 ```ts
-errorReporter.addBreadcrumb({ category: 'http', level: 'warning', message: 'API 요청 실패', data: { status, code } });
+errorReporter.addBreadcrumb({
+  category: 'http',
+  level: 'warning',
+  message: 'API 요청 실패',
+  data: { status, code },
+});
 errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', data: { from, to } });
 ```
+
 - DI 밖(HTTP 훅·화면 추적)에서는 전역 접근자 `errorReporter`(`shared/infra/error-reporter/global-error-reporter`)를 쓴다 — `global-logger`와 동일 패턴.
 - 일반 로그(`logger.info/warn`)도 Sentry breadcrumb로 남지만 **카테고리는 없다**. 카테고리 breadcrumb는 반드시 `addBreadcrumb`로.
 
 ### 3) User — `setUserId`
+
 로그인 시 `setUserId(id)`, 로그아웃 시 `setUserId(null)`. PII는 넣지 않는다(`sendDefaultPii: false`).
 
 ---
@@ -65,11 +80,11 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 예) `session_expired`의 reason별 판정(`sessionExpiredSeverity`):
 
-| reason | severity | 의미 |
-|--------|----------|------|
-| `no-refresh-token` | `info` | 정상 만료 (알림 X) |
-| `refresh-rejected-401` | `warning` | 재사용/거부 의심 |
-| `invalid-refresh-response` | `error` | 계약·프록시 이상 (알림 O) |
+| reason                     | severity  | 의미                      |
+| -------------------------- | --------- | ------------------------- |
+| `no-refresh-token`         | `info`    | 정상 만료 (알림 X)        |
+| `refresh-rejected-401`     | `warning` | 재사용/거부 의심          |
+| `invalid-refresh-response` | `error`   | 계약·프록시 이상 (알림 O) |
 
 ---
 
@@ -90,11 +105,11 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ## 관련 코드
 
-| 관심사 | 위치 |
-|--------|------|
-| 포트 | `core/ports/{error-reporter,severity,breadcrumb,analytics,telemetry-event}.ts` |
-| Sentry 어댑터 | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts` |
-| Sentry init | `shared/infra/observability/sentry.ts` (앱 루트 `initSentry()`) |
-| Analytics 카탈로그/파사드 | `shared/analytics/events/*.events.ts`, `track.ts`, `use-track.ts` |
-| DI 배선 | `bootstrap/providers/di-provider.tsx` |
-| 계측 지점 | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/providers/auth-provider.tsx`(session) |
+| 관심사                    | 위치                                                                                                                                            |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 포트                      | `core/ports/{error-reporter,severity,breadcrumb,analytics,telemetry-event}.ts`                                                                  |
+| Sentry 어댑터             | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                  |
+| Sentry init               | `shared/infra/observability/sentry.ts` (앱 루트 `initSentry()`)                                                                                 |
+| Analytics 카탈로그/파사드 | `shared/analytics/events/*.events.ts`, `track.ts`, `use-track.ts`                                                                               |
+| DI 배선                   | `bootstrap/providers/di-provider.tsx`                                                                                                           |
+| 계측 지점                 | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/providers/auth-provider.tsx`(session) |

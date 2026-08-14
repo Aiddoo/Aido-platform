@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Suspense } from 'react';
 import { Pressable, View } from 'react-native';
+
 import { useGetUnreadCountQueryOptions } from '../queries/use-get-unread-count-query-options';
 
 export const NotificationBell = () => {

@@ -4,10 +4,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import type {
-	ReorderPlan,
-	ReorderPosition,
-} from "../../../domain/services/friend-reorder";
+import type { ReorderPlan, ReorderPosition } from "../../../domain/services/friend-reorder";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
@@ -42,10 +39,7 @@ export class ReorderFriendUseCase {
 		const { followId, userId, targetFollowId, position } = input;
 
 		return this.uow.run(async () => {
-			const follow = await this.followRepository.findAcceptedByIdAndFollowerId(
-				followId,
-				userId,
-			);
+			const follow = await this.followRepository.findAcceptedByIdAndFollowerId(followId, userId);
 			if (!follow) {
 				throw new ApplicationException(ErrorCode.FOLLOW_0910, {
 					targetFollowId: followId,
@@ -65,11 +59,10 @@ export class ReorderFriendUseCase {
 
 			let plan: ReorderPlan;
 			if (targetFollowId) {
-				const target =
-					await this.followRepository.findAcceptedByIdAndFollowerId(
-						targetFollowId,
-						userId,
-					);
+				const target = await this.followRepository.findAcceptedByIdAndFollowerId(
+					targetFollowId,
+					userId,
+				);
 				if (!target) {
 					throw new ApplicationException(ErrorCode.FOLLOW_0910, {
 						targetFollowId,
@@ -77,8 +70,7 @@ export class ReorderFriendUseCase {
 				}
 				plan = follow.planReorderRelativeTo(target.sortOrder, position);
 			} else {
-				const maxSortOrder =
-					await this.followRepository.getMaxSortOrderForFriends(userId);
+				const maxSortOrder = await this.followRepository.getMaxSortOrderForFriends(userId);
 				plan = follow.planReorderToEdge(position, maxSortOrder);
 			}
 

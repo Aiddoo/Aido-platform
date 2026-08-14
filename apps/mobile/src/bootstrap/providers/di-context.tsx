@@ -8,8 +8,8 @@ import type { AchievementService } from '@src/features/achievement/services/achi
 import type { ActivationService } from '@src/features/activation/services/activation.service';
 import type { AiService } from '@src/features/ai/services/ai.service';
 import type { AuthService } from '@src/features/auth/services/auth.service';
-import type { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
 import type { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
+import type { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
 import type { FriendService } from '@src/features/friend/services/friend.service';
 import type { InquiryService } from '@src/features/inquiry/services/inquiry.service';
 import type { MemoService } from '@src/features/memo/services/memo.service';
@@ -19,9 +19,9 @@ import type { SubscriptionService } from '@src/features/subscription/services/su
 import type { ReorderCoachmarkService } from '@src/features/todo/services/reorder-coachmark.service';
 import type { StoreReviewPromptService } from '@src/features/todo/services/store-review-prompt.service';
 import type { SubTodoService } from '@src/features/todo/services/sub-todo.service';
-import type { TodoService } from '@src/features/todo/services/todo.service';
 import type { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
 import type { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
+import type { TodoService } from '@src/features/todo/services/todo.service';
 import type { UserService } from '@src/features/user/services/user.service';
 import type { WeatherService } from '@src/features/weather/services/weather.service';
 import type { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';

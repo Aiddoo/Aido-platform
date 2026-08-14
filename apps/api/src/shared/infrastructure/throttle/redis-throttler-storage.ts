@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import type { ThrottlerStorage } from "@nestjs/throttler";
 import type { ThrottlerStorageRecord } from "@nestjs/throttler/dist/throttler-storage-record.interface";
 import type Redis from "ioredis";
+
 import { RedisErrorLogSampler } from "../redis/redis-error-log-sampler";
 
 /**
@@ -57,18 +58,12 @@ const THROTTLE_INCREMENT_SCRIPT = `
  *         fail-open으로 흡수된다
  */
 function isNumberQuad(raw: unknown): raw is [number, number, number, number] {
-	return (
-		Array.isArray(raw) &&
-		raw.length === 4 &&
-		raw.every((value) => typeof value === "number")
-	);
+	return Array.isArray(raw) && raw.length === 4 && raw.every((value) => typeof value === "number");
 }
 
 function parseThrottleResult(raw: unknown): ThrottlerStorageRecord {
 	if (!isNumberQuad(raw)) {
-		throw new Error(
-			`Unexpected throttle script result: ${JSON.stringify(raw)}`,
-		);
+		throw new Error(`Unexpected throttle script result: ${JSON.stringify(raw)}`);
 	}
 
 	const [totalHits, timeToExpire, isBlocked, timeToBlockExpire] = raw;

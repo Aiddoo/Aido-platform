@@ -61,12 +61,7 @@ export class AdminNotificationMessage {
 				reason: "관리자 알림 본문은 비어 있을 수 없습니다",
 			});
 		}
-		return new AdminNotificationMessage(
-			input.title,
-			input.body,
-			input.color,
-			input.fields ?? [],
-		);
+		return new AdminNotificationMessage(input.title, input.body, input.color, input.fields ?? []);
 	}
 
 	toPayload(): AdminNotification {

@@ -5,7 +5,9 @@
  */
 
 import { ErrorCode } from "@aido/errors";
+
 import { DomainException } from "@/shared/domain";
+
 import { TodoItem, type TodoItemProps } from "./todo-item.entity";
 
 function buildProps(overrides: Partial<TodoItemProps> = {}): TodoItemProps {

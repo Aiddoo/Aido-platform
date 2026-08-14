@@ -4,8 +4,10 @@ import { formatReminderTime, type TimeFormat } from '@src/shared/utils/time';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-interface SettingsTimeRowProps
-  extends Pick<ComponentProps<typeof PressableFeedback>, 'onPress' | 'isDisabled'> {
+interface SettingsTimeRowProps extends Pick<
+  ComponentProps<typeof PressableFeedback>,
+  'onPress' | 'isDisabled'
+> {
   label: string;
   description: string;
   hour: number;

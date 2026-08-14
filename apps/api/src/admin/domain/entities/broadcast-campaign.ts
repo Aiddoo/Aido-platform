@@ -1,6 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 import type { NotificationAction } from "@aido/validators";
+
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import type {
 	AdminBroadcastMessage,
 	AdminBroadcastType,
@@ -63,10 +65,7 @@ export class BroadcastCampaign {
 	}
 
 	/** 대상 사용자 ID 목록으로부터 발송 메시지를 조립한다 */
-	toMessages(
-		userIds: string[],
-		type: AdminBroadcastType,
-	): AdminBroadcastMessage[] {
+	toMessages(userIds: string[], type: AdminBroadcastType): AdminBroadcastMessage[] {
 		const metadata = this.#metadata();
 		return userIds.map((userId) => ({
 			userId,

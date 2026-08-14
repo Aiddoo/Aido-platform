@@ -1,10 +1,7 @@
 import type { RetentionVariant } from "../retention.constants";
 
 /** 사용자별로 영구히 안정적인 실험군을 선택한다. */
-export function assignRetentionVariant(
-	userId: string,
-	treatmentPercent: number,
-): RetentionVariant {
+export function assignRetentionVariant(userId: string, treatmentPercent: number): RetentionVariant {
 	let hash = 2_166_136_261;
 	for (const character of userId) {
 		hash ^= character.charCodeAt(0);

@@ -8,6 +8,7 @@
  */
 
 import { PrismaPg } from "@prisma/adapter-pg";
+
 import { PrismaClient } from "../../src/generated/prisma/client";
 import { assertManagedTestDatabaseEnvironment } from "./managed-test-database";
 
@@ -92,9 +93,7 @@ export class TestDatabase {
 		const tableList = tables
 			.map(({ table_name }) => `"public"."${table_name.replaceAll('"', '""')}"`)
 			.join(", ");
-		await this.prisma.$executeRawUnsafe(
-			`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`,
-		);
+		await this.prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
 	}
 
 	/**

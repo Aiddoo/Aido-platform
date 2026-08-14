@@ -35,9 +35,7 @@ describe("timezone", () => {
 	describe("timezone validation", () => {
 		it("유효한 IANA 타임존만 정규화한다", () => {
 			expect(normalizeIanaTimezone("Asia/Seoul")).toBe("Asia/Seoul");
-			expect(normalizeIanaTimezone("America/New_York")).toBe(
-				"America/New_York",
-			);
+			expect(normalizeIanaTimezone("America/New_York")).toBe("America/New_York");
 			expect(normalizeIanaTimezone("Mars/Olympus")).toBeNull();
 			expect(normalizeIanaTimezone(undefined)).toBeNull();
 		});
@@ -45,18 +43,14 @@ describe("timezone", () => {
 		it("잘못 저장된 타임존은 UTC로 안전하게 폴백한다", () => {
 			expect(resolveTimezone("Mars/Olympus")).toBe("UTC");
 			expect(() => todayInTimezone("Mars/Olympus")).not.toThrow();
-			expect(todayInTimezone("Mars/Olympus")).toEqual(
-				new Date("2026-03-03T00:00:00.000Z"),
-			);
+			expect(todayInTimezone("Mars/Olympus")).toEqual(new Date("2026-03-03T00:00:00.000Z"));
 		});
 	});
 
 	describe("resolveDeliveryTimezone", () => {
 		it("유효한 IANA 타임존은 그대로 보존한다", () => {
 			expect(resolveDeliveryTimezone("Asia/Seoul")).toBe("Asia/Seoul");
-			expect(resolveDeliveryTimezone("America/New_York")).toBe(
-				"America/New_York",
-			);
+			expect(resolveDeliveryTimezone("America/New_York")).toBe("America/New_York");
 		});
 
 		it("저장값 UTC는 '미상'으로 보아 KST 배송 폴백으로 매핑한다", () => {
@@ -65,13 +59,9 @@ describe("timezone", () => {
 		});
 
 		it("누락/무효 값은 KST 배송 폴백으로 매핑한다", () => {
-			expect(resolveDeliveryTimezone(undefined)).toBe(
-				DEFAULT_DELIVERY_TIMEZONE,
-			);
+			expect(resolveDeliveryTimezone(undefined)).toBe(DEFAULT_DELIVERY_TIMEZONE);
 			expect(resolveDeliveryTimezone("")).toBe(DEFAULT_DELIVERY_TIMEZONE);
-			expect(resolveDeliveryTimezone("Mars/Olympus")).toBe(
-				DEFAULT_DELIVERY_TIMEZONE,
-			);
+			expect(resolveDeliveryTimezone("Mars/Olympus")).toBe(DEFAULT_DELIVERY_TIMEZONE);
 		});
 
 		it("일반 resolveTimezone(→UTC)의 폴백과 분리돼 있다", () => {
@@ -101,20 +91,12 @@ describe("timezone", () => {
 		});
 
 		it("EST 14:00을 UTC 19:00으로 변환", () => {
-			const result = parseLocalDateTime(
-				"2026-01-15",
-				"14:00",
-				"America/New_York",
-			);
+			const result = parseLocalDateTime("2026-01-15", "14:00", "America/New_York");
 			expect(result).toEqual(new Date("2026-01-15T19:00:00.000Z"));
 		});
 
 		it("DST 기간의 뉴욕 14:00을 UTC 18:00으로 변환", () => {
-			const result = parseLocalDateTime(
-				"2026-07-15",
-				"14:00",
-				"America/New_York",
-			);
+			const result = parseLocalDateTime("2026-07-15", "14:00", "America/New_York");
 			expect(result).toEqual(new Date("2026-07-15T18:00:00.000Z"));
 		});
 
@@ -206,9 +188,7 @@ describe("timezone", () => {
 
 		it("UTC 기본값: 해당 월의 UTC 1일 00:00 반환", () => {
 			const date = new Date("2026-04-18T05:00:00.000Z");
-			expect(firstOfMonthInTimezone(date)).toEqual(
-				new Date("2026-04-01T00:00:00.000Z"),
-			);
+			expect(firstOfMonthInTimezone(date)).toEqual(new Date("2026-04-01T00:00:00.000Z"));
 		});
 
 		it("date 미지정 시 현재 시각 기준", () => {

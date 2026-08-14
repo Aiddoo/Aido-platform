@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
@@ -9,20 +10,18 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
 } from "../../ports/category-ownership.port";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import type { CreateTodoData } from "../../types";
 
 /** Todo 생성 입력. */
@@ -70,10 +69,7 @@ export class CreateTodoUseCase {
 		});
 
 		// 카테고리 존재 및 소유권 확인 (읽기 전용, TX 외부)
-		await this.categoryOwnership.validateOwnership(
-			data.categoryId,
-			data.userId,
-		);
+		await this.categoryOwnership.validateOwnership(data.categoryId, data.userId);
 
 		// TX 내에서 제한 체크 + sortOrder 결정 + 생성 (race condition 방지)
 		const created = await this.uow.run(async () => {
@@ -88,9 +84,7 @@ export class CreateTodoUseCase {
 				});
 			}
 
-			const maxSortOrder = await this.todoRepository.getMaxSortOrder(
-				data.userId,
-			);
+			const maxSortOrder = await this.todoRepository.getMaxSortOrder(data.userId);
 
 			const todo = await this.todoRepository.create({
 				...draft,
@@ -98,18 +92,13 @@ export class CreateTodoUseCase {
 			});
 
 			if (data.items?.length) {
-				await this.todoRepository.createInlineItems(
-					todo.getId().getValue(),
-					data.items,
-				);
+				await this.todoRepository.createInlineItems(todo.getId().getValue(), data.items);
 			}
 
 			return todo;
 		});
 
-		this.#logger.log(
-			`Todo created: ${created.getId().getValue()} for user: ${data.userId}`,
-		);
+		this.#logger.log(`Todo created: ${created.getId().getValue()} for user: ${data.userId}`);
 
 		await this.todoCache.invalidateTodoCategories(data.userId);
 		await this.todoCache.invalidateFriendTodos(data.userId);

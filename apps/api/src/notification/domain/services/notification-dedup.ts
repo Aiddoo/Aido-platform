@@ -1,4 +1,5 @@
 import { TIME_UNIT } from "@/shared/domain/date/constants/date.constant";
+
 import type { NotificationType } from "../types/notification-type";
 
 /**
@@ -46,17 +47,12 @@ const DEDUP_STRATEGIES: Partial<Record<NotificationType, DedupStrategy>> = {
 export const DEDUP_LOCK_TTL = 5_000;
 
 /** 타입별 dedup 전략 조회 (없으면 서비스 레이어 dedup 미적용) */
-export function resolveDedupStrategy(
-	type: NotificationType,
-): DedupStrategy | undefined {
+export function resolveDedupStrategy(type: NotificationType): DedupStrategy | undefined {
 	return DEDUP_STRATEGIES[type];
 }
 
 /** 중복 방지 잠금 키 생성 */
-export function buildDedupKey(
-	data: DedupContext,
-	strategy: DedupStrategy,
-): string {
+export function buildDedupKey(data: DedupContext, strategy: DedupStrategy): string {
 	const parts = ["dedup", data.userId, data.type];
 	for (const key of strategy.keys) {
 		const value = data[key];

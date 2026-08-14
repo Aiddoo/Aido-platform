@@ -24,9 +24,7 @@ export interface RedisConnectionSettings {
  * - `commandTimeout`/`enableOfflineQueue: false`를 적용하면 안 됨
  *   (블로킹 대기가 타임아웃으로 끊기거나 재연결 중 잡이 유실됨)
  */
-export function buildBullRedisOptions(
-	settings: RedisConnectionSettings,
-): RedisOptions {
+export function buildBullRedisOptions(settings: RedisConnectionSettings): RedisOptions {
 	return {
 		...baseHostOptions(settings),
 		maxRetriesPerRequest: null,
@@ -47,9 +45,7 @@ export function buildBullRedisOptions(
  * retryStrategy는 ioredis 기본값 유지 — 백그라운드 자동 재접속이
  * half-open probe 역할을 하므로 복구 시 별도 조치 없이 정상화된다.
  */
-export function buildCommandRedisOptions(
-	settings: RedisConnectionSettings,
-): RedisOptions {
+export function buildCommandRedisOptions(settings: RedisConnectionSettings): RedisOptions {
 	return {
 		...baseHostOptions(settings),
 		maxRetriesPerRequest: 1,

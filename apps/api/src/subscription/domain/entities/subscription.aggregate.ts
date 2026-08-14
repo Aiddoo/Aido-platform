@@ -2,11 +2,7 @@ import { AggregateRoot } from "@/shared/domain";
 import { isSame } from "@/shared/domain/date/utils/compare";
 
 /** 구독 상태 — Prisma SubscriptionStatus와 동일한 리터럴(도메인 계층은 generated를 참조하지 않는다) */
-export type SubscriptionStatusValue =
-	| "FREE"
-	| "ACTIVE"
-	| "EXPIRED"
-	| "CANCELLED";
+export type SubscriptionStatusValue = "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED";
 
 export interface SubscriptionProps {
 	id: number;

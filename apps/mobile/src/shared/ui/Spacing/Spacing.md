@@ -16,10 +16,10 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `size` | `number` | - | 간격 크기 (px) |
-| `direction` | `'vertical' \| 'horizontal'` | `'vertical'` | 간격 방향 |
+| Prop        | 타입                         | 기본값       | 설명           |
+| ----------- | ---------------------------- | ------------ | -------------- |
+| `size`      | `number`                     | -            | 간격 크기 (px) |
+| `direction` | `'vertical' \| 'horizontal'` | `'vertical'` | 간격 방향      |
 
 ## 예시
 

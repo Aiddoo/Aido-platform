@@ -2,11 +2,12 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NotificationBuilder } from "@test/builders";
 import { createNotificationRepositoryMock } from "@test/mocks/ports/notification.mock";
+
+import type { CreateNotificationData } from "../../ports/notification-data";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
-import type { CreateNotificationData } from "../../ports/notification-data";
 import { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case";
 
 describe("PersistBatchNotificationUseCase", () => {
@@ -15,9 +16,7 @@ describe("PersistBatchNotificationUseCase", () => {
 
 	beforeEach(async () => {
 		NotificationBuilder.resetIdCounter();
-		const { unit, unitRef } = await TestBed.solitary(
-			PersistBatchNotificationUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(PersistBatchNotificationUseCase)
 			.mock<NotificationRepositoryPort>(NOTIFICATION_REPOSITORY)
 			.impl(() => createNotificationRepositoryMock())
 			.compile();
@@ -43,9 +42,7 @@ describe("PersistBatchNotificationUseCase", () => {
 
 		const result = await useCase.execute(dataList);
 
-		expect(repository.createManyNotificationsAndReturn).toHaveBeenCalledWith(
-			dataList,
-		);
+		expect(repository.createManyNotificationsAndReturn).toHaveBeenCalledWith(dataList);
 		expect(result).toMatchObject({
 			count: 2,
 			sourceData: dataList,

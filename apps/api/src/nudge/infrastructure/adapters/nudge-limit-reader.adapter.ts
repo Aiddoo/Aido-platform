@@ -1,11 +1,8 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 
-import {
-	EntitlementService,
-	Feature,
-} from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import type { NudgeLimitReaderPort } from "../../application/ports/nudge-limit-reader.port";
@@ -19,9 +16,7 @@ import type { NudgeLimitReaderPort } from "../../application/ports/nudge-limit-r
 @Injectable()
 export class NudgeLimitReaderAdapter implements NudgeLimitReaderPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 		private readonly entitlementService: EntitlementService,
 	) {}
 

@@ -4,6 +4,7 @@ import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import type { GrowthEventMap } from '@src/shared/analytics';
 import type { QueryClient } from '@tanstack/react-query';
+
 import { ActivationPolicy } from '../models/activation.model';
 import type { ActivationService } from '../services/activation.service';
 import { ACTIVATION_QUERY_KEYS } from './constants/activation-query-keys.constant';

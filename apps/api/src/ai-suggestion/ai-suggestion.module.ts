@@ -1,11 +1,10 @@
 import { Module } from "@nestjs/common";
 
-import { AiModule } from "../ai/ai.module";
 import { AiReportModule } from "../ai-report/ai-report.module";
+import { AiModule } from "../ai/ai.module";
 import { NotificationModule } from "../notification/notification.module";
 import { TodoModule } from "../todo/todo.module";
 import { WeatherModule } from "../weather/weather.module";
-
 import { AI_SUGGESTION_REPOSITORY } from "./application/ports/ai-suggestion.repository.port";
 import { RECURRING_TODO_CREATOR } from "./application/ports/recurring-todo-creator.port";
 import { WEEKLY_REPORT_READER } from "./application/ports/weekly-report-reader.port";
@@ -39,13 +38,7 @@ import { AiSuggestionController } from "./presentation/ai-suggestion.controller"
  * - NotificationModule: 새 제안 생성 시 알림 발송(프로세서)
  */
 @Module({
-	imports: [
-		AiModule,
-		AiReportModule,
-		NotificationModule,
-		TodoModule,
-		WeatherModule,
-	],
+	imports: [AiModule, AiReportModule, NotificationModule, TodoModule, WeatherModule],
 	controllers: [AiSuggestionController],
 	providers: [
 		{

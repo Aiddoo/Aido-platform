@@ -3,7 +3,9 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+
 import {
 	AI_USAGE_REPOSITORY,
 	type AiUsageRepositoryPort,
@@ -16,8 +18,7 @@ describe("GetAiUsageUseCase — AI 사용량 조회 use-case", () => {
 	let entitlement: Mocked<EntitlementService>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(GetAiUsageUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(GetAiUsageUseCase).compile();
 		useCase = unit;
 		repository = unitRef.get(AI_USAGE_REPOSITORY);
 		entitlement = unitRef.get(EntitlementService);

@@ -29,11 +29,7 @@ export function sanitizeForPrompt(input: string): string {
  * 메모의 리스트·문단·코드 표현을 보존합니다.
  */
 export function sanitizeMemoForPrompt(input: string): string {
-	return input
-		.normalize("NFKC")
-		.replace(/\r\n?/g, "\n")
-		.trim()
-		.slice(0, MAX_MEMO_PROMPT_LENGTH);
+	return input.normalize("NFKC").replace(/\r\n?/g, "\n").trim().slice(0, MAX_MEMO_PROMPT_LENGTH);
 }
 
 /**

@@ -1,5 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import type { AccountProvider, UserStatus } from "@/auth/domain/types";
+
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_USER_REPOSITORY,
@@ -77,10 +79,7 @@ export class ProvisionUserUseCase {
 		const account = input.account;
 		switch (account.kind) {
 			case "credential":
-				await this.accountRepository.createCredentialAccount(
-					user.id,
-					account.hashedPassword,
-				);
+				await this.accountRepository.createCredentialAccount(user.id, account.hashedPassword);
 				break;
 			case "oauth":
 				await this.accountRepository.createOAuthAccount({
@@ -99,10 +98,7 @@ export class ProvisionUserUseCase {
 		await this.seeder.seedDefaultCategories(user.id);
 
 		// 신규 User 생성 경로에만 존재한다. 기존 로그인/인증 경로는 호출하지 않는다.
-		await this.retentionEnroller.enrollNewUser(
-			user.id,
-			input.status === "ACTIVE",
-		);
+		await this.retentionEnroller.enrollNewUser(user.id, input.status === "ACTIVE");
 
 		return user;
 	}

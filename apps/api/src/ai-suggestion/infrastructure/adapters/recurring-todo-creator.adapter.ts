@@ -14,9 +14,7 @@ import type {
  */
 @Injectable()
 export class RecurringTodoCreatorAdapter implements RecurringTodoCreatorPort {
-	constructor(
-		private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
-	) {}
+	constructor(private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase) {}
 
 	async createRecurring(
 		input: CreateRecurringTodoInput,

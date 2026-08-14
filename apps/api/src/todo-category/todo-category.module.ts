@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 
-import { TODO_CATEGORY_REPOSITORY } from "./application/ports/todo-category.repository.port";
 import { TODO_CATEGORY_CACHE } from "./application/ports/todo-category-cache.port";
 import { TODO_CATEGORY_LIMIT_READER } from "./application/ports/todo-category-limit-reader.port";
+import { TODO_CATEGORY_REPOSITORY } from "./application/ports/todo-category.repository.port";
 import { TodoCategoryReader } from "./application/services/todo-category.reader";
 import { CreateTodoCategoryUseCase } from "./application/use-cases/create-todo-category/create-todo-category.use-case";
 import { DeleteTodoCategoryUseCase } from "./application/use-cases/delete-todo-category/delete-todo-category.use-case";

@@ -9,6 +9,7 @@ import {
 import * as Sentry from "@sentry/nestjs";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
+
 import { Prisma } from "@/generated/prisma/client";
 import {
 	BusinessException,
@@ -40,11 +41,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		// 동일 ErrorCode를 사용하므로 응답 포맷이 기존과 바이트 단위로 동일
 		const normalized =
 			exception instanceof ErrorCodedException
-				? new BusinessException(
-						exception.errorCode,
-						exception.details,
-						exception.message,
-					)
+				? new BusinessException(exception.errorCode, exception.details, exception.message)
 				: exception;
 
 		let errorResponse: ErrorResponse;
@@ -56,10 +53,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			const response = normalized.getResponse() as ErrorResponse;
 
 			// 프로덕션에서는 details 필드 제거 (민감 정보 노출 방지)
-			if (
-				!this.configService.isDevelopment &&
-				response.error?.details !== undefined
-			) {
+			if (!this.configService.isDevelopment && response.error?.details !== undefined) {
 				const { details: _, ...errorWithoutDetails } = response.error;
 				errorResponse = {
 					...response,
@@ -73,10 +67,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			statusCode = normalized.getStatus();
 			const exceptionResponse = normalized.getResponse();
 
-			if (
-				typeof exceptionResponse === "object" &&
-				"message" in exceptionResponse
-			) {
+			if (typeof exceptionResponse === "object" && "message" in exceptionResponse) {
 				errorResponse = {
 					success: false,
 					error: {
@@ -102,17 +93,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			}
 		} else if (normalized instanceof Prisma.PrismaClientKnownRequestError) {
 			// Prisma 에러 처리
-			const businessException =
-				this.#mapPrismaErrorToBusinessException(normalized);
+			const businessException = this.#mapPrismaErrorToBusinessException(normalized);
 			statusCode = businessException.getStatus();
 			errorResponse = businessException.getResponse() as ErrorResponse;
 		} else {
 			// 알 수 없는 예외 처리
 			statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
 			const errorMessage =
-				exception instanceof Error
-					? exception.message
-					: Errors[ErrorCode.SYS_0001].message;
+				exception instanceof Error ? exception.message : Errors[ErrorCode.SYS_0001].message;
 			errorResponse = {
 				success: false,
 				error: {
@@ -128,8 +116,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
 		// 사용자 ID 추출 (Sentry 컨텍스트 + 로깅 공용)
 		const userId =
-			(request as Request & { user?: { userId?: string } }).user?.userId ??
-			"anonymous";
+			(request as Request & { user?: { userId?: string } }).user?.userId ?? "anonymous";
 
 		// 서버 에러(5xx)만 Sentry에 캡처 (4xx 클라이언트 에러는 노이즈 방지)
 		if (statusCode >= 500) {
@@ -199,9 +186,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 					`Unhandled Prisma error: ${error.code} (meta: ${JSON.stringify(error.meta)})`,
 				);
 				return BusinessExceptions.internalServerError(
-					this.configService.isDevelopment
-						? { prismaCode: error.code }
-						: undefined,
+					this.configService.isDevelopment ? { prismaCode: error.code } : undefined,
 				);
 		}
 	}
@@ -215,39 +200,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		error: InstanceType<typeof Prisma.PrismaClientKnownRequestError>,
 	): BusinessException {
 		const target = error.meta?.target;
-		const constraintKey = Array.isArray(target)
-			? target.join("_")
-			: String(target ?? "unknown");
+		const constraintKey = Array.isArray(target) ? target.join("_") : String(target ?? "unknown");
 
 		const constraintMap: Record<string, () => BusinessException> = {
 			User_email_key: () => BusinessExceptions.emailAlreadyRegistered(""),
 			email: () => BusinessExceptions.emailAlreadyRegistered(""),
 			User_userTag_key: () =>
 				BusinessExceptions.internalServerError({ detail: "userTag collision" }),
-			userTag: () =>
-				BusinessExceptions.internalServerError({ detail: "userTag collision" }),
-			TodoCategory_userId_name_key: () =>
-				BusinessExceptions.todoCategoryNameDuplicate(""),
+			userTag: () => BusinessExceptions.internalServerError({ detail: "userTag collision" }),
+			TodoCategory_userId_name_key: () => BusinessExceptions.todoCategoryNameDuplicate(""),
 			userId_name: () => BusinessExceptions.todoCategoryNameDuplicate(""),
-			Follow_followerId_followingId_key: () =>
-				BusinessExceptions.followRequestAlreadySent(""),
-			followerId_followingId: () =>
-				BusinessExceptions.followRequestAlreadySent(""),
-			Account_provider_providerAccountId_key: () =>
-				BusinessExceptions.accountAlreadyExists(),
-			provider_providerAccountId: () =>
-				BusinessExceptions.accountAlreadyExists(),
-			Account_userId_provider_key: () =>
-				BusinessExceptions.accountAlreadyExists(),
+			Follow_followerId_followingId_key: () => BusinessExceptions.followRequestAlreadySent(""),
+			followerId_followingId: () => BusinessExceptions.followRequestAlreadySent(""),
+			Account_provider_providerAccountId_key: () => BusinessExceptions.accountAlreadyExists(),
+			provider_providerAccountId: () => BusinessExceptions.accountAlreadyExists(),
+			Account_userId_provider_key: () => BusinessExceptions.accountAlreadyExists(),
 			userId_provider: () => BusinessExceptions.accountAlreadyExists(),
-			Notification_daily_dedup: () =>
-				BusinessExceptions.concurrentModification(),
-			userId_type_notificationDate: () =>
-				BusinessExceptions.concurrentModification(),
-			Notification_friend_dedup: () =>
-				BusinessExceptions.concurrentModification(),
-			userId_type_friendId_notificationDate: () =>
-				BusinessExceptions.concurrentModification(),
+			Notification_daily_dedup: () => BusinessExceptions.concurrentModification(),
+			userId_type_notificationDate: () => BusinessExceptions.concurrentModification(),
+			Notification_friend_dedup: () => BusinessExceptions.concurrentModification(),
+			userId_type_friendId_notificationDate: () => BusinessExceptions.concurrentModification(),
 		};
 
 		const factory = constraintMap[constraintKey];

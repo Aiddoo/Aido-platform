@@ -15,19 +15,13 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 
 import { evaluateCheerCooldown } from "../../../domain/services/cheer-cooldown";
 import { CheerMessage } from "../../../domain/value-objects/cheer-message.vo";
+import { CHEER_LIMIT_READER, type CheerLimitReaderPort } from "../../ports/cheer-limit-reader.port";
+import { CHEER_NOTIFIER, type CheerNotifierPort } from "../../ports/cheer-notifier.port";
 import {
 	CHEER_REPOSITORY,
 	type CheerRepositoryPort,
 	type CheerWithRelations,
 } from "../../ports/cheer.repository.port";
-import {
-	CHEER_LIMIT_READER,
-	type CheerLimitReaderPort,
-} from "../../ports/cheer-limit-reader.port";
-import {
-	CHEER_NOTIFIER,
-	type CheerNotifierPort,
-} from "../../ports/cheer-notifier.port";
 
 export interface SendCheerInput {
 	senderId: string;
@@ -59,20 +53,14 @@ export class SendCheerUseCase {
 		private readonly followReader: FollowReader,
 	) {}
 
-	async execute(
-		input: SendCheerInput,
-		tz: string = "UTC",
-	): Promise<CheerWithRelations> {
+	async execute(input: SendCheerInput, tz: string = "UTC"): Promise<CheerWithRelations> {
 		const { senderId, receiverId, message } = input;
 
 		if (senderId === receiverId) {
 			throw new ApplicationException(ErrorCode.CHEER_1204);
 		}
 
-		const isFriend = await this.followReader.isMutualFriend(
-			senderId,
-			receiverId,
-		);
+		const isFriend = await this.followReader.isMutualFriend(senderId, receiverId);
 		if (!isFriend) {
 			throw new ApplicationException(ErrorCode.CHEER_1203, {
 				targetUserId: receiverId,
@@ -101,10 +89,7 @@ export class SendCheerUseCase {
 				});
 			}
 
-			const lastCheer = await this.cheerRepository.findLastCheerToUser(
-				senderId,
-				receiverId,
-			);
+			const lastCheer = await this.cheerRepository.findLastCheerToUser(senderId, receiverId);
 			if (lastCheer) {
 				const cooldown = evaluateCheerCooldown(lastCheer.createdAt);
 				if (cooldown.isActive) {
@@ -123,9 +108,7 @@ export class SendCheerUseCase {
 			});
 		});
 
-		this.#logger.log(
-			`Cheer sent: senderId=${senderId}, receiverId=${receiverId}`,
-		);
+		this.#logger.log(`Cheer sent: senderId=${senderId}, receiverId=${receiverId}`);
 
 		const senderName = cheer.sender.profile?.name ?? cheer.sender.userTag;
 		this.notifier.notifyCheerSent({

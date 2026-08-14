@@ -2,23 +2,16 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import { FollowReader } from "@/follow";
-import {
-	MUTATION_LOCK,
-	type MutationLockPort,
-	UNIT_OF_WORK,
-} from "@/shared/application/ports";
+import { MUTATION_LOCK, type MutationLockPort, UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { ReminderNudge } from "../../../domain/entities/reminder-nudge.entity";
+import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type ReminderNudgeWithRelations,
 } from "../../ports/nudge.repository.port";
-import {
-	NUDGE_NOTIFIER,
-	type NudgeNotifierPort,
-} from "../../ports/nudge-notifier.port";
 import { SendRemindNudgeUseCase } from "./send-remind-nudge.use-case";
 
 const createdRemind: ReminderNudgeWithRelations = {
@@ -62,23 +55,23 @@ describe("SendRemindNudgeUseCase", () => {
 	});
 
 	it("자기 자신이면 NUDGE_1104", async () => {
-		await expect(
-			useCase.execute({ senderId: "s", receiverId: "s" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ senderId: "s", receiverId: "s" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("친구가 아니면 NUDGE_1103", async () => {
 		follow.isMutualFriend.mockResolvedValue(false);
-		await expect(
-			useCase.execute({ senderId: "s", receiverId: "r" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("친구가 오늘 할 일이 있으면 NUDGE_1107", async () => {
 		repo.countTodayTodos.mockResolvedValue(2);
-		await expect(
-			useCase.execute({ senderId: "s", receiverId: "r" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("쿨다운 중이면 NUDGE_1108", async () => {
@@ -91,9 +84,9 @@ describe("SendRemindNudgeUseCase", () => {
 				createdAt: new Date(),
 			}),
 		);
-		await expect(
-			useCase.execute({ senderId: "s", receiverId: "r" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("성공 시 생성 + 알림 enqueue (todoId 없음)", async () => {
@@ -126,9 +119,7 @@ describe("SendRemindNudgeUseCase", () => {
 		await useCase.execute({ senderId: "s", receiverId: "r" }, "Asia/Seoul");
 
 		// Then
-		expect(mutationLock.acquire).toHaveBeenCalledWith([
-			"mutation:v1:remind-nudge:cooldown:s:r",
-		]);
+		expect(mutationLock.acquire).toHaveBeenCalledWith(["mutation:v1:remind-nudge:cooldown:s:r"]);
 		expect(events).toEqual(["lock", "today-todo-read", "cooldown-read"]);
 	});
 });

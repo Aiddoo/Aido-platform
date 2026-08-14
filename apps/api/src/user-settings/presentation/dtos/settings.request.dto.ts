@@ -7,9 +7,5 @@ import { createZodDto } from "nestjs-zod";
 
 export class UpdatePreferenceDto extends createZodDto(updatePreferenceSchema) {}
 
-export class UpdateMarketingConsentDto extends createZodDto(
-	updateMarketingConsentSchema,
-) {}
-export class UpdateMarketingPushConsentDto extends createZodDto(
-	updateMarketingPushConsentSchema,
-) {}
+export class UpdateMarketingConsentDto extends createZodDto(updateMarketingConsentSchema) {}
+export class UpdateMarketingPushConsentDto extends createZodDto(updateMarketingPushConsentSchema) {}

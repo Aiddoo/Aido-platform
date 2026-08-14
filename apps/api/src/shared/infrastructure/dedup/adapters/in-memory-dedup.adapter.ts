@@ -1,9 +1,5 @@
-import {
-	Injectable,
-	Logger,
-	type OnModuleDestroy,
-	type OnModuleInit,
-} from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
+
 import type { IDedupProvider } from "../interfaces/dedup.interface";
 
 interface DedupEntry {
@@ -20,9 +16,7 @@ interface DedupEntry {
  * - 단일 프로세스 환경에서만 유효 (수평 확장 시 Redis 필요)
  */
 @Injectable()
-export class InMemoryDedupAdapter
-	implements IDedupProvider, OnModuleDestroy, OnModuleInit
-{
+export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, OnModuleInit {
 	readonly #logger = new Logger(InMemoryDedupAdapter.name);
 	readonly #sets = new Map<string, DedupEntry>();
 	#cleanupInterval: NodeJS.Timeout | undefined;
@@ -49,11 +43,7 @@ export class InMemoryDedupAdapter
 		return this.#getValid(setKey)?.members.has(member) ?? false;
 	}
 
-	async addMembers(
-		setKey: string,
-		members: string[],
-		ttlMs: number,
-	): Promise<void> {
+	async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
 		if (members.length === 0) return;
 
 		let entry = this.#getValid(setKey);

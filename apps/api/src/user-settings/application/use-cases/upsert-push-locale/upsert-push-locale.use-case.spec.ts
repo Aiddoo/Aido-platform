@@ -25,9 +25,7 @@ describe("UpsertPushLocaleUseCase", () => {
 			.impl(() => createUserPreferenceRepositoryMock())
 			.compile();
 		useCase = unit;
-		repo = unitRef.get<UserPreferenceRepositoryPort>(
-			USER_PREFERENCE_REPOSITORY,
-		);
+		repo = unitRef.get<UserPreferenceRepositoryPort>(USER_PREFERENCE_REPOSITORY);
 	});
 
 	it("전달된 로케일을 그대로 upsertLocale에 위임한다", async () => {

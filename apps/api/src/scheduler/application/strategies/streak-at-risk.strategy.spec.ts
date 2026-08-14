@@ -12,6 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -61,8 +62,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		jest.setSystemTime(FAKE_NOW);
 		jest.spyOn(Math, "random").mockReturnValue(0);
 
-		const { unit, unitRef } =
-			await TestBed.solitary(StreakAtRiskStrategy).compile();
+		const { unit, unitRef } = await TestBed.solitary(StreakAtRiskStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
@@ -83,9 +83,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		// Given
 		const ctx = makeCtx();
 
-		reader.findStreakAtRiskUsers.mockResolvedValue([
-			makeAtRiskUser("user-1", 5),
-		]);
+		reader.findStreakAtRiskUsers.mockResolvedValue([makeAtRiskUser("user-1", 5)]);
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -94,8 +92,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		expect(result).toEqual({ sent: 1 });
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -107,16 +104,13 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		// Given — 어제 완료(YESTERDAY) + 오늘 0/1 미완료 → effective streak = 7 유지
 		const ctx = makeCtx();
 
-		reader.findStreakAtRiskUsers.mockResolvedValue([
-			makeAtRiskUser("user-1", 7),
-		]);
+		reader.findStreakAtRiskUsers.mockResolvedValue([makeAtRiskUser("user-1", 7)]);
 
 		// When
 		await strategy.execute(ctx);
 
 		// Then — computeEffectiveStreak가 반환한 streak(7)이 메시지에 사용됨
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.streakAtRisk(7);
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -129,16 +123,13 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		// Given
 		const ctx = makeCtx();
 
-		reader.findStreakAtRiskUsers.mockResolvedValue([
-			makeAtRiskUser("user-1", 10),
-		]);
+		reader.findStreakAtRiskUsers.mockResolvedValue([makeAtRiskUser("user-1", 10)]);
 
 		// When
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		// computeEffectiveStreak는 currentStreak(10)을 그대로 반환 (미완료 시)
 		const expected = NotificationMessageBuilder.streakAtRisk(10);
 		expect(notifications?.[0]).toMatchObject({
@@ -205,17 +196,14 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 			makeAtRiskUser("user-2"),
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
@@ -232,8 +220,6 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
-		expect(
-			notificationService.findAlreadyNotifiedUserIds,
-		).not.toHaveBeenCalled();
+		expect(notificationService.findAlreadyNotifiedUserIds).not.toHaveBeenCalled();
 	});
 });

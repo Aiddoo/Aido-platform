@@ -124,9 +124,7 @@ describe("pattern-filter.util — AI 제안 순수 함수", () => {
 
 		it("서로 다른 제목 2개 이상이면 통과", () => {
 			// Given
-			const patterns = [
-				makePattern({ matchedTitles: ["운동", "공부"], confidence: 0.6 }),
-			];
+			const patterns = [makePattern({ matchedTitles: ["운동", "공부"], confidence: 0.6 })];
 
 			// When
 			const result = filterWeakPatterns(patterns, baseContext);
@@ -207,14 +205,8 @@ describe("pattern-filter.util — AI 제안 순수 함수", () => {
 	describe("mergeUniquePatterns", () => {
 		it("제목 기준으로 중복 없는 패턴만 병합", () => {
 			// Given
-			const primary = [
-				makePattern({ title: "A" }),
-				makePattern({ title: "B" }),
-			];
-			const secondary = [
-				makePattern({ title: "A" }),
-				makePattern({ title: "C" }),
-			];
+			const primary = [makePattern({ title: "A" }), makePattern({ title: "B" })];
+			const secondary = [makePattern({ title: "A" }), makePattern({ title: "C" })];
 
 			// When
 			const result = mergeUniquePatterns(primary, secondary);

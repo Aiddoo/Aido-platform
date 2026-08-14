@@ -1,6 +1,6 @@
-import type { FollowRepositoryPort } from "@/follow/application/ports/follow.repository.port";
 import type { FollowCachePort } from "@/follow/application/ports/follow-cache.port";
 import type { FollowNotifierPort } from "@/follow/application/ports/follow-notifier.port";
+import type { FollowRepositoryPort } from "@/follow/application/ports/follow.repository.port";
 
 /**
  * Follow 애플리케이션 포트 mock 팩토리 모음

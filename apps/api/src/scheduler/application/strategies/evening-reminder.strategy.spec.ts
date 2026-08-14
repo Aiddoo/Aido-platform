@@ -13,6 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -52,9 +53,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
 
-		const { unit, unitRef } = await TestBed.solitary(
-			EveningReminderStrategy,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(EveningReminderStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(SCHEDULED_REMINDER_READER);
@@ -98,8 +97,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		});
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({
 			userId: TEST_CUID.USER_1,
@@ -152,8 +150,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then — 완료 유저 1명에게 발송 (streak 계산 경로 실행)
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({ userId: TEST_CUID.USER_1 });
 	});
@@ -178,20 +175,12 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.eveningReminder(
-			2,
-			2,
-			1,
-			false,
-			"ko",
-			{
-				campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
-				recipientId: TEST_CUID.USER_1,
-				occurrenceKey: "2024-01-16",
-			},
-		);
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const expected = NotificationMessageBuilder.eveningReminder(2, 2, 1, false, "ko", {
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+			recipientId: TEST_CUID.USER_1,
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -207,11 +196,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([
 			{
 				id: TEST_CUID.USER_1,
-				todos: [
-					{ completed: true },
-					{ completed: false },
-					{ completed: false },
-				],
+				todos: [{ completed: true }, { completed: false }, { completed: false }],
 				preference: {
 					currentStreak: 0,
 					lastCompletedDate: null,
@@ -224,8 +209,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.eveningReminder(
 			1,
 			3,
@@ -260,8 +244,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.eveningReminder(
 			0,
 			2,
@@ -301,9 +284,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 			},
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set([TEST_CUID.USER_1]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set([TEST_CUID.USER_1]));
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -313,8 +294,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 			sent: 1,
 			recipientUserIds: [TEST_CUID.USER_2],
 		});
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe(TEST_CUID.USER_2);
 	});

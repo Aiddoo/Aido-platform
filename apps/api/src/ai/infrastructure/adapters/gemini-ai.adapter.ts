@@ -30,19 +30,13 @@ const API_TIMEOUT_MS = 30_000;
 
 @Injectable()
 export class GeminiAiAdapter implements AiProvider {
-	readonly #model: ReturnType<
-		ReturnType<typeof createGoogleGenerativeAI>
-	> | null;
+	readonly #model: ReturnType<ReturnType<typeof createGoogleGenerativeAI>> | null;
 	readonly #available: boolean;
 
 	constructor(private readonly configService: ConfigService) {
-		const apiKey = this.configService.get<string>(
-			"GOOGLE_GENERATIVE_AI_API_KEY",
-		);
+		const apiKey = this.configService.get<string>("GOOGLE_GENERATIVE_AI_API_KEY");
 		// API 키가 있으면 클라이언트와 모델을 한 번만 생성하여 재사용
-		this.#model = apiKey
-			? createGoogleGenerativeAI({ apiKey })(GEMINI_MODEL)
-			: null;
+		this.#model = apiKey ? createGoogleGenerativeAI({ apiKey })(GEMINI_MODEL) : null;
 		this.#available = this.#model !== null;
 	}
 

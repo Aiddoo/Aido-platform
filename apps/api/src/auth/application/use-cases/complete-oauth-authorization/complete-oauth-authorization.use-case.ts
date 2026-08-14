@@ -1,5 +1,6 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
+
 import type { RequestMetadata } from "../../types";
 import { OAuthWorkflow } from "../../workflows/oauth.workflow";
 
@@ -17,23 +18,11 @@ export class CompleteOAuthAuthorizationUseCase {
 	): ReturnType<OAuthWorkflow["handleGoogleWebCallbackWithExchangeCode"]> {
 		switch (provider) {
 			case "GOOGLE":
-				return this.workflow.handleGoogleWebCallbackWithExchangeCode(
-					code,
-					state,
-					metadata,
-				);
+				return this.workflow.handleGoogleWebCallbackWithExchangeCode(code, state, metadata);
 			case "KAKAO":
-				return this.workflow.handleKakaoWebCallbackWithExchangeCode(
-					code,
-					state,
-					metadata,
-				);
+				return this.workflow.handleKakaoWebCallbackWithExchangeCode(code, state, metadata);
 			case "NAVER":
-				return this.workflow.handleNaverWebCallbackWithExchangeCode(
-					code,
-					state,
-					metadata,
-				);
+				return this.workflow.handleNaverWebCallbackWithExchangeCode(code, state, metadata);
 		}
 	}
 }

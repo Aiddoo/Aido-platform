@@ -16,6 +16,7 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { SecurityLogBuilder } from "@test/builders";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import type { SecurityLog } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -48,9 +49,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 		db = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(SecurityLogRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 
@@ -222,13 +221,9 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
 
 			// When
-			const result = await repository.findRecentByEvent(
-				"LOGIN_SUCCESS",
-				since,
-				{
-					userId: "user-123",
-				},
-			);
+			const result = await repository.findRecentByEvent("LOGIN_SUCCESS", since, {
+				userId: "user-123",
+			});
 
 			// Then
 			expect(result).toHaveLength(1);
@@ -248,13 +243,9 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
 
 			// When
-			const result = await repository.findRecentByEvent(
-				"LOGIN_FAILURE",
-				since,
-				{
-					ipAddress: "192.168.1.1",
-				},
-			);
+			const result = await repository.findRecentByEvent("LOGIN_FAILURE", since, {
+				ipAddress: "192.168.1.1",
+			});
 
 			// Then
 			expect(result).toHaveLength(1);
@@ -300,10 +291,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			db.securityLog.findMany.mockResolvedValue(suspiciousLogs);
 
 			// When
-			const result = await repository.findSuspiciousActivityByIp(
-				"192.168.1.1",
-				since,
-			);
+			const result = await repository.findSuspiciousActivityByIp("192.168.1.1", since);
 
 			// Then
 			expect(result).toEqual(suspiciousLogs);
@@ -312,12 +300,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 					ipAddress: "192.168.1.1",
 					createdAt: { gte: since },
 					event: {
-						in: [
-							"LOGIN_FAILURE",
-							"SUSPICIOUS_ACTIVITY",
-							"TOKEN_REVOKED",
-							"SESSION_REVOKED_ALL",
-						],
+						in: ["LOGIN_FAILURE", "SUSPICIOUS_ACTIVITY", "TOKEN_REVOKED", "SESSION_REVOKED_ALL"],
 					},
 				},
 				orderBy: { createdAt: "desc" },
@@ -329,10 +312,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			db.securityLog.findMany.mockResolvedValue([]);
 
 			// When
-			const result = await repository.findSuspiciousActivityByIp(
-				"10.0.0.1",
-				since,
-			);
+			const result = await repository.findSuspiciousActivityByIp("10.0.0.1", since);
 
 			// Then
 			expect(result).toEqual([]);

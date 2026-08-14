@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { CreateNotificationData } from "@/notification";
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
@@ -6,10 +7,7 @@ import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
@@ -51,9 +49,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		});
 
 		// 전체 완료한 유저 제외
-		const incompleteUsers = users.filter((u) =>
-			u.todos.some((t) => !t.completed),
-		);
+		const incompleteUsers = users.filter((u) => u.todos.some((t) => !t.completed));
 
 		if (incompleteUsers.length === 0) {
 			return { sent: 0 };
@@ -121,9 +117,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 			}
 		}
 
-		const locales = await this.preferenceReader.findUserLocales(
-			candidates.map((u) => u.id),
-		);
+		const locales = await this.preferenceReader.findUserLocales(candidates.map((u) => u.id));
 
 		// 인메모리 매칭
 		const notifications: CreateNotificationData[] = [];
@@ -146,9 +140,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 			const locale = locales.get(user.id) ?? "ko";
 			const fallbackName = locale === "en" ? "Your friend" : "친구";
 			const friendName =
-				completedFriends.length === 1
-					? (completedFriends[0]?.name ?? fallbackName)
-					: undefined;
+				completedFriends.length === 1 ? (completedFriends[0]?.name ?? fallbackName) : undefined;
 
 			const message = NotificationMessageBuilder.socialDigest(
 				completedFriends.length,
@@ -175,9 +167,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 
 		if (notifications.length > 0) {
 			await this.notificationService.createAndSendBatch(notifications);
-			this.#logger.log(
-				`Social digest: tz=${tz}, count=${notifications.length}`,
-			);
+			this.#logger.log(`Social digest: tz=${tz}, count=${notifications.length}`);
 		}
 		return { sent: notifications.length };
 	}

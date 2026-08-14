@@ -51,10 +51,7 @@ export interface SubscriptionRepositoryPort {
 	findByRevenueCatId(revenueCatId: string): Promise<Subscription | null>;
 	findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
 	create(data: CreateSubscriptionData): Promise<void>;
-	updateStatus(
-		revenueCatId: string,
-		data: UpdateSubscriptionStatusData,
-	): Promise<void>;
+	updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void>;
 	updateUserSubscriptionStatus(
 		userId: string,
 		data: UpdateUserSubscriptionStatusData,

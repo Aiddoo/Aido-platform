@@ -5,8 +5,5 @@ module.exports = {
   ...preset,
   rootDir: '.',
   testMatch: ['<rootDir>/test/**/*.spec.ts'],
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/index.ts',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/index.ts'],
 };

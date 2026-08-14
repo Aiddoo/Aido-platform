@@ -58,8 +58,7 @@ export function convertToTm(lat: number, lon: number): TmCoordinate {
 	const M0 =
 		a *
 		((1 - e2 / 4 - (3 * e4) / 64 - (5 * e6) / 256) * TM_CENTRAL.phi0 -
-			((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1024) *
-				Math.sin(2 * TM_CENTRAL.phi0) +
+			((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1024) * Math.sin(2 * TM_CENTRAL.phi0) +
 			((15 * e4) / 256 + (45 * e6) / 1024) * Math.sin(4 * TM_CENTRAL.phi0) -
 			((35 * e6) / 3072) * Math.sin(6 * TM_CENTRAL.phi0));
 
@@ -73,9 +72,7 @@ export function convertToTm(lat: number, lon: number): TmCoordinate {
 		TM_CENTRAL.x0 +
 		TM_CENTRAL.k0 *
 			N *
-			(A +
-				((1 - T + C) * A3) / 6 +
-				((5 - 18 * T + T * T + 72 * C - 58 * ep2) * A5) / 120);
+			(A + ((1 - T + C) * A3) / 6 + ((5 - 18 * T + T * T + 72 * C - 58 * ep2) * A5) / 120);
 
 	const tmY =
 		TM_CENTRAL.y0 +

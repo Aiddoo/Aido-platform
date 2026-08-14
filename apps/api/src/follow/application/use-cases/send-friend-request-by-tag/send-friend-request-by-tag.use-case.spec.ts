@@ -6,10 +6,7 @@ import { TestBed } from "@suites/unit";
 import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
 
 import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 import {
 	type SendFriendRequestResult,
 	SendFriendRequestUseCase,
@@ -39,9 +36,7 @@ describe("SendFriendRequestByTagUseCase — 태그로 친구 요청", () => {
 	let sendFriendRequest: Mocked<SendFriendRequestUseCase>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SendFriendRequestByTagUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(SendFriendRequestByTagUseCase)
 			.mock<FollowRepositoryPort>(FOLLOW_REPOSITORY)
 			.impl(() => createFollowRepositoryMock())
 			.compile();
@@ -52,9 +47,9 @@ describe("SendFriendRequestByTagUseCase — 태그로 친구 요청", () => {
 
 	it("형식이 잘못된 태그는 SYS_0002로 거부하고 조회하지 않는다", async () => {
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, targetUserTag: "bad" }),
-		).rejects.toMatchObject({ errorCode: "SYS_0002" });
+		await expect(useCase.execute({ userId: ME, targetUserTag: "bad" })).rejects.toMatchObject({
+			errorCode: "SYS_0002",
+		});
 		expect(repo.findUserByTag).not.toHaveBeenCalled();
 	});
 
@@ -63,9 +58,9 @@ describe("SendFriendRequestByTagUseCase — 태그로 친구 요청", () => {
 		repo.findUserByTag.mockResolvedValue(null);
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, targetUserTag: VALID_TAG }),
-		).rejects.toMatchObject({ errorCode: "FOLLOW_0905" });
+		await expect(useCase.execute({ userId: ME, targetUserTag: VALID_TAG })).rejects.toMatchObject({
+			errorCode: "FOLLOW_0905",
+		});
 		expect(sendFriendRequest.execute).not.toHaveBeenCalled();
 	});
 

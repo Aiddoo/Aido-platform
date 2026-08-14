@@ -1,11 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+
 import { TODO_EVENTS } from "../../domain/events/todo-event-names";
 import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 
 /**
  * Todo 일정 변경 이벤트 핸들러
@@ -23,11 +21,7 @@ export class TodoRescheduledHandler {
 	@OnEvent(TODO_EVENTS.RESCHEDULED, { suppressErrors: false })
 	async handle(event: TodoRescheduledEvent): Promise<void> {
 		if (event.scheduledTime) {
-			await this.todoReminder.scheduleReminder(
-				event.todoId,
-				event.scheduledTime,
-				event.userId,
-			);
+			await this.todoReminder.scheduleReminder(event.todoId, event.scheduledTime, event.userId);
 			return;
 		}
 

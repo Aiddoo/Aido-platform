@@ -14,7 +14,9 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type {
 	CreateNotificationData,
 	FindNotificationsParams,
@@ -37,9 +39,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 		db = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(NotificationRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 
@@ -154,9 +154,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 	describe("findNotificationById", () => {
 		it("ID로 알림을 조회해야 한다", async () => {
 			// Given
-			const notification = NotificationBuilder.create("user-1")
-				.withId(1)
-				.build();
+			const notification = NotificationBuilder.create("user-1").withId(1).build();
 			asMock(db.notification.findUnique).mockResolvedValue(notification);
 
 			// When
@@ -213,9 +211,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 				cursor: 5,
 				size: 10,
 			};
-			const notifications = [
-				NotificationBuilder.create("user-1").withId(4).build(),
-			];
+			const notifications = [NotificationBuilder.create("user-1").withId(4).build()];
 			asMock(db.notification.findMany).mockResolvedValue(notifications);
 
 			// When
@@ -239,9 +235,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 				size: 10,
 				unreadOnly: true,
 			};
-			const notifications = [
-				NotificationBuilder.create("user-1").asUnread().build(),
-			];
+			const notifications = [NotificationBuilder.create("user-1").asUnread().build()];
 			asMock(db.notification.findMany).mockResolvedValue(notifications);
 
 			// When
@@ -389,10 +383,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 
 			// Then - orderBy가 복합키 배열인지 검증
 			const callArgs = db.notification.findMany.mock.calls[0]?.[0];
-			expect(callArgs?.orderBy).toEqual([
-				{ createdAt: "desc" },
-				{ id: "desc" },
-			]);
+			expect(callArgs?.orderBy).toEqual([{ createdAt: "desc" }, { id: "desc" }]);
 		});
 
 		it("cursor가 0이면 skip과 cursor가 적용된다", async () => {
@@ -483,9 +474,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 	describe("deleteNotification", () => {
 		it("알림을 삭제해야 한다", async () => {
 			// Given
-			const notification = NotificationBuilder.create("user-1")
-				.withId(1)
-				.build();
+			const notification = NotificationBuilder.create("user-1").withId(1).build();
 			asMock(db.notification.delete).mockResolvedValue(notification);
 
 			// When
@@ -742,9 +731,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 				userId: "user-1",
 				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
 			};
-			const expectedToken = PushTokenBuilder.create("user-1")
-				.withDeviceId("default")
-				.build();
+			const expectedToken = PushTokenBuilder.create("user-1").withDeviceId("default").build();
 			asMock(db.pushToken.upsert).mockResolvedValue(expectedToken);
 
 			// When
@@ -840,10 +827,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 		it("PROCESSING dispatch만 stable failure reason과 함께 FAILED로 전이한다", async () => {
 			asMock(db.pushDispatch.updateMany).mockResolvedValue({ count: 2 });
 
-			await repository.markPushDispatchFailed(
-				[41, 42],
-				"UNEXPECTED_DISPATCH_ERROR",
-			);
+			await repository.markPushDispatchFailed([41, 42], "UNEXPECTED_DISPATCH_ERROR");
 
 			expect(db.pushDispatch.updateMany).toHaveBeenCalledWith({
 				where: { id: { in: [41, 42] }, status: "PROCESSING" },
@@ -965,10 +949,7 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 			};
 			const tokens = [
 				PushTokenBuilder.create("user-1").withId(1).build(),
-				PushTokenBuilder.create("user-1")
-					.withId(2)
-					.withDeviceId("device-2")
-					.build(),
+				PushTokenBuilder.create("user-1").withId(2).withDeviceId("device-2").build(),
 			];
 			asMock(db.pushToken.findMany).mockResolvedValue(tokens);
 

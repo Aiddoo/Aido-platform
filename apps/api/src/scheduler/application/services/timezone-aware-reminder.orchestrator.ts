@@ -1,8 +1,10 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
+
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+
 import {
 	FIRST_DAY_OF_MONTH,
 	isWithinScheduleWindow,
@@ -131,20 +133,13 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 	/**
 	 * 리마인더 시간 변경 핸들러 — Catch-up 패턴
 	 */
-	async handleReminderHourChanged(
-		payload: ReminderHourChangedJobData,
-	): Promise<void> {
+	async handleReminderHourChanged(payload: ReminderHourChangedJobData): Promise<void> {
 		try {
 			const now = dayjs().tz(payload.timezone);
 			const localHour = now.hour();
 			const localMinute = now.minute();
 
-			const ctx = this.#buildContext(
-				payload.timezone,
-				localHour,
-				localMinute,
-				payload.userId,
-			);
+			const ctx = this.#buildContext(payload.timezone, localHour, localMinute, payload.userId);
 
 			const morningMinute = payload.morningReminderMinute ?? 0;
 			if (
@@ -198,23 +193,13 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 		}
 	}
 
-	async #processTimezone(
-		tz: string,
-		localHour: number,
-		localMinute: number,
-	): Promise<void> {
+	async #processTimezone(tz: string, localHour: number, localMinute: number): Promise<void> {
 		const local = dayjs().tz(tz);
 		const dayOfWeek = local.day(); // 0=일, 1=월
 		const ctx = this.#buildContext(tz, localHour, localMinute);
 
 		await this.morningReminder.execute(ctx);
-		if (
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.ONBOARDING,
-				localHour,
-				localMinute,
-			)
-		) {
+		if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.ONBOARDING, localHour, localMinute)) {
 			await this.onboarding.execute(ctx);
 		}
 		const eveningResult = await this.eveningReminder.execute(ctx);
@@ -231,20 +216,12 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 		const dayOfMonth = local.date();
 		const isMonthlyReportTime =
 			dayOfMonth === FIRST_DAY_OF_MONTH &&
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.MONTHLY_REPORT,
-				localHour,
-				localMinute,
-			);
+			isWithinScheduleWindow(NOTIFICATION_SCHEDULE.MONTHLY_REPORT, localHour, localMinute);
 		if (isMonthlyReportTime) {
 			await this.monthlyReport.execute(ctx);
 		} else if (
 			dayOfWeek === MONDAY &&
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.WEEKLY_REPORT,
-				localHour,
-				localMinute,
-			)
+			isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_REPORT, localHour, localMinute)
 		) {
 			await this.weeklyReport.execute(ctx);
 		}
@@ -252,56 +229,28 @@ export class TimezoneAwareReminderOrchestrator implements OnModuleInit {
 		// 월요일 11:30: 무료 사용자 주간 달성 요약 (전략 내부에서 구독 대상 분리)
 		if (
 			dayOfWeek === MONDAY &&
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT,
-				localHour,
-				localMinute,
-			)
+			isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT, localHour, localMinute)
 		) {
 			await this.weeklyAchievement.execute(ctx);
 		}
 
 		// 로컬 16:00: Win-back
-		if (
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.WINBACK,
-				localHour,
-				localMinute,
-			)
-		) {
+		if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WINBACK, localHour, localMinute)) {
 			await this.winback.execute(ctx);
 		}
 
 		// 로컬 15:00: 콕 찌르기 유도
-		if (
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.NUDGE_SUGGEST,
-				localHour,
-				localMinute,
-			)
-		) {
+		if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.NUDGE_SUGGEST, localHour, localMinute)) {
 			await this.nudgeSuggest.execute(ctx);
 		}
 
 		// 로컬 12:30: 점심 넛지
-		if (
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.LUNCH_NUDGE,
-				localHour,
-				localMinute,
-			)
-		) {
+		if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.LUNCH_NUDGE, localHour, localMinute)) {
 			await this.lunchNudge.execute(ctx);
 		}
 
 		// 로컬 20:15: 스트릭 위기 (야간 21:00 시작 전 마지막 넛지)
-		if (
-			isWithinScheduleWindow(
-				NOTIFICATION_SCHEDULE.STREAK_AT_RISK,
-				localHour,
-				localMinute,
-			)
-		) {
+		if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.STREAK_AT_RISK, localHour, localMinute)) {
 			await this.streakAtRisk.execute(ctx);
 		}
 

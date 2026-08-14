@@ -37,9 +37,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			NotificationController,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(NotificationController).compile();
 
 		controller = unit;
 		getUnreadCountUseCase = unitRef.get(GetUnreadCountUseCase);
@@ -57,9 +55,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 			const result = await controller.getUnreadCount(mockUser);
 
 			// Then -use-case에 userId를 전달하고 unreadCount를 반환해야 한다
-			expect(getUnreadCountUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-			);
+			expect(getUnreadCountUseCase.execute).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual({ unreadCount: 5 });
 		});
 
@@ -138,10 +134,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 			});
 
 			// Then -use-case에 userId와 id를 전달하고 성공 응답을 반환해야 한다
-			expect(markAsReadUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				notificationId,
-			);
+			expect(markAsReadUseCase.execute).toHaveBeenCalledWith(mockUser.userId, notificationId);
 			expect(result).toEqual({
 				message: "알림을 읽음 처리했습니다.",
 				readCount: 1,
@@ -158,9 +151,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 			const result = await controller.markAllAsRead(mockUser);
 
 			// Then -use-case에 userId를 전달하고 처리된 개수를 반환해야 한다
-			expect(markAllAsReadUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-			);
+			expect(markAllAsReadUseCase.execute).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual({
 				message: "모든 알림을 읽음 처리했습니다.",
 				readCount: 3,

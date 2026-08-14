@@ -1,6 +1,7 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
 import { Text as RNText } from 'react-native';
+
 import type { TextProps } from './Text.types';
 import { shadeClasses, textVariants } from './Text.variants';
 

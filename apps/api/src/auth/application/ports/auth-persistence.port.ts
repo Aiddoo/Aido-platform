@@ -1,27 +1,16 @@
 import type { SubscriptionStatus, UserRole } from "@aido/validators";
-import type {
-	AccountProvider,
-	UserStatus,
-	VerificationType,
-} from "../../domain/types";
+
+import type { AccountProvider, UserStatus, VerificationType } from "../../domain/types";
 import type { CreateSessionData } from "../types";
 import type { OAuthMode } from "./oauth-identity-provider.port";
 
 export const AUTH_USER_REPOSITORY = Symbol("AUTH_USER_REPOSITORY");
 export const AUTH_ACCOUNT_REPOSITORY = Symbol("AUTH_ACCOUNT_REPOSITORY");
 export const AUTH_SESSION_REPOSITORY = Symbol("AUTH_SESSION_REPOSITORY");
-export const AUTH_VERIFICATION_REPOSITORY = Symbol(
-	"AUTH_VERIFICATION_REPOSITORY",
-);
-export const AUTH_LOGIN_ATTEMPT_REPOSITORY = Symbol(
-	"AUTH_LOGIN_ATTEMPT_REPOSITORY",
-);
-export const AUTH_SECURITY_LOG_REPOSITORY = Symbol(
-	"AUTH_SECURITY_LOG_REPOSITORY",
-);
-export const AUTH_OAUTH_STATE_REPOSITORY = Symbol(
-	"AUTH_OAUTH_STATE_REPOSITORY",
-);
+export const AUTH_VERIFICATION_REPOSITORY = Symbol("AUTH_VERIFICATION_REPOSITORY");
+export const AUTH_LOGIN_ATTEMPT_REPOSITORY = Symbol("AUTH_LOGIN_ATTEMPT_REPOSITORY");
+export const AUTH_SECURITY_LOG_REPOSITORY = Symbol("AUTH_SECURITY_LOG_REPOSITORY");
+export const AUTH_OAUTH_STATE_REPOSITORY = Symbol("AUTH_OAUTH_STATE_REPOSITORY");
 
 export interface AuthUserRecord {
 	id: string;
@@ -50,10 +39,7 @@ export interface AuthUserRepositoryPort {
 		status: UserStatus;
 		emailVerifiedAt?: Date;
 	}): Promise<AuthUserRecord>;
-	createProfile(
-		userId: string,
-		data: { name?: string; profileImage?: string },
-	): Promise<void>;
+	createProfile(userId: string, data: { name?: string; profileImage?: string }): Promise<void>;
 	markEmailVerified(id: string): Promise<unknown>;
 	updateLastLoginAt(id: string): Promise<void>;
 	updateProfile(
@@ -83,10 +69,7 @@ export interface AuthAccountRepositoryPort {
 		providerAccountId: string,
 	): Promise<AuthAccountRecord | null>;
 	findAllByUserId(userId: string): Promise<AuthAccountRecord[]>;
-	createCredentialAccount(
-		userId: string,
-		hashedPassword: string,
-	): Promise<unknown>;
+	createCredentialAccount(userId: string, hashedPassword: string): Promise<unknown>;
 	updatePassword(userId: string, hashedPassword: string): Promise<unknown>;
 	createOAuthAccount(data: {
 		userId: string;
@@ -125,24 +108,14 @@ export interface RotateAuthSessionInput {
 
 export interface AuthSessionRepositoryPort {
 	create(data: CreateSessionData): Promise<AuthSessionRecord>;
-	updateRefreshTokenHash(
-		id: string,
-		refreshTokenHash: string,
-	): Promise<unknown>;
+	updateRefreshTokenHash(id: string, refreshTokenHash: string): Promise<unknown>;
 	findById(id: string): Promise<AuthSessionRecord | null>;
 	findByRefreshTokenHash(hash: string): Promise<AuthSessionRecord | null>;
 	findActiveByUserId(userId: string): Promise<AuthSessionRecord[]>;
-	rotateToken(
-		id: string,
-		data: RotateAuthSessionInput,
-	): Promise<AuthSessionRecord | null>;
+	rotateToken(id: string, data: RotateAuthSessionInput): Promise<AuthSessionRecord | null>;
 	revoke(id: string, reason: string): Promise<unknown>;
 	revokeByTokenFamily(tokenFamily: string, reason: string): Promise<number>;
-	revokeAllByUserId(
-		userId: string,
-		reason: string,
-		excludeSessionId?: string,
-	): Promise<number>;
+	revokeAllByUserId(userId: string, reason: string, excludeSessionId?: string): Promise<number>;
 }
 
 export interface AuthVerificationRecord {
@@ -169,15 +142,8 @@ export interface AuthVerificationRepositoryPort {
 	): Promise<AuthVerificationRecord | null>;
 	markAsUsed(id: number): Promise<unknown>;
 	incrementAttempts(id: number): Promise<unknown>;
-	invalidateAllByUserIdAndType(
-		userId: string,
-		type: VerificationType,
-	): Promise<number>;
-	countRecentByUserIdAndType(
-		userId: string,
-		type: VerificationType,
-		since: Date,
-	): Promise<number>;
+	invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number>;
+	countRecentByUserIdAndType(userId: string, type: VerificationType, since: Date): Promise<number>;
 }
 
 export interface AuthLoginAttemptRepositoryPort {
@@ -233,9 +199,7 @@ export interface AuthOAuthStateRepositoryPort {
 		},
 	): Promise<AuthOAuthStateRecord>;
 	findByState(state: string): Promise<AuthOAuthStateRecord | null>;
-	findByExchangeCode(
-		exchangeCode: string,
-	): Promise<AuthOAuthStateRecord | null>;
+	findByExchangeCode(exchangeCode: string): Promise<AuthOAuthStateRecord | null>;
 	saveExchangeData(
 		id: number,
 		data: {
@@ -260,9 +224,7 @@ export interface AuthOAuthStateRepositoryPort {
 	generateExchangeCode(): string;
 }
 
-export type AuthPersistenceConflictKind =
-	| "EMAIL_ALREADY_EXISTS"
-	| "OAUTH_ACCOUNT_ALREADY_LINKED";
+export type AuthPersistenceConflictKind = "EMAIL_ALREADY_EXISTS" | "OAUTH_ACCOUNT_ALREADY_LINKED";
 
 export class AuthPersistenceConflict extends Error {
 	constructor(readonly kind: AuthPersistenceConflictKind) {

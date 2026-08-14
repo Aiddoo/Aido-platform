@@ -8,6 +8,7 @@ import type { CallHandler, ExecutionContext } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { of } from "rxjs";
+
 import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
 import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor";
 
@@ -28,9 +29,7 @@ describe("TimezoneSelfHealInterceptor", () => {
 
 	beforeEach(async () => {
 		jest.useFakeTimers();
-		const { unit, unitRef } = await TestBed.solitary(
-			TimezoneSelfHealInterceptor,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(TimezoneSelfHealInterceptor).compile();
 		interceptor = unit;
 		refreshPushTimezoneUseCase = unitRef.get(RefreshPushTimezoneUseCase);
 		refreshPushTimezoneUseCase.execute.mockResolvedValue(undefined);
@@ -47,17 +46,11 @@ describe("TimezoneSelfHealInterceptor", () => {
 			nextHandler,
 		);
 
-		expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledWith(
-			"u1",
-			"Asia/Seoul",
-		);
+		expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledWith("u1", "Asia/Seoul");
 	});
 
 	it("미인증(user 없음)이면 호출하지 않는다", () => {
-		interceptor.intercept(
-			contextFor(undefined, { "x-timezone": "Asia/Seoul" }),
-			nextHandler,
-		);
+		interceptor.intercept(contextFor(undefined, { "x-timezone": "Asia/Seoul" }), nextHandler);
 
 		expect(refreshPushTimezoneUseCase.execute).not.toHaveBeenCalled();
 	});
@@ -92,9 +85,6 @@ describe("TimezoneSelfHealInterceptor", () => {
 		);
 
 		expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(2);
-		expect(refreshPushTimezoneUseCase.execute).toHaveBeenLastCalledWith(
-			"u1",
-			"America/New_York",
-		);
+		expect(refreshPushTimezoneUseCase.execute).toHaveBeenLastCalledWith("u1", "America/New_York");
 	});
 });

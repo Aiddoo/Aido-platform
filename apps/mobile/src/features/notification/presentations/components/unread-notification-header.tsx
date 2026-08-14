@@ -2,6 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { BellIcon, HStack, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, SkeletonGroup } from 'heroui-native';
+
 import { useGetUnreadCountQueryOptions } from '../queries/use-get-unread-count-query-options';
 import { useMarkAllAsReadMutationOptions } from '../queries/use-mark-all-as-read-mutation-options';
 

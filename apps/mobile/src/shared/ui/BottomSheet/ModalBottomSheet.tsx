@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
+
 import { MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
 import { resolveSheetAnimationDuration } from './motion';
 
@@ -91,7 +92,7 @@ export const ModalBottomSheet = ({
         backdropOpacity.value = withTiming(0, { duration: enterDuration });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refs로 콜백 안정화, windowHeight는 초기값만 필요
+    // 콜백은 ref로 안정화하며 windowHeight는 열림 애니메이션의 초기값만 사용한다.
   }, [
     isOpen,
     backdropOpacity,

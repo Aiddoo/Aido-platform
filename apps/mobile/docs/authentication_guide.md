@@ -27,10 +27,10 @@
 
 **부팅은 읽기 전용이다.** 토큰을 지우지도, 저장하지도, 네트워크를 타지도 않는다.
 
-| `readRefreshToken()` | 상태 |
-|---|---|
-| 값 있음 | `authenticated` |
-| `null` | `unauthenticated` |
+| `readRefreshToken()`     | 상태                                                |
+| ------------------------ | --------------------------------------------------- |
+| 값 있음                  | `authenticated`                                     |
+| `null`                   | `unauthenticated`                                   |
 | **throw** (기기 잠김 등) | **`locked`** — 판정 보류, `AppState` 복귀 시 재판정 |
 
 - **첫 실행 플래그(MMKV)는 완전히 제거했다.** 플래그 부재는 "재설치"와 "그 키가 없던 구버전에서의
@@ -55,11 +55,11 @@
 세션 **유효성**의 진실의 원천은 서버다. 그러나 "왜 클라이언트가 세션을 끝냈는가"에는
 서버가 원리적으로 알 수 없는 경우가 있으므로 두 축을 분리해 관측한다.
 
-| `reason` (클라의 결정 경로) | 서버가 아는가 | `serverErrorCode` |
-|---|---|---|
-| `tokens-missing` | 모름 (요청조차 안 나감) | 없음 |
-| `invalid-refresh-response` | 모름 (서버는 200을 줬다) | 없음 |
-| `refresh-rejected` | **안다** | `SESSION_0704`(재사용 감지) / `SESSION_0702`(만료) / `AUTH_0104` … |
+| `reason` (클라의 결정 경로) | 서버가 아는가            | `serverErrorCode`                                                  |
+| --------------------------- | ------------------------ | ------------------------------------------------------------------ |
+| `tokens-missing`            | 모름 (요청조차 안 나감)  | 없음                                                               |
+| `invalid-refresh-response`  | 모름 (서버는 200을 줬다) | 없음                                                               |
+| `refresh-rejected`          | **안다**                 | `SESSION_0704`(재사용 감지) / `SESSION_0702`(만료) / `AUTH_0104` … |
 
 `refresh-rejected`일 때는 서버의 `ErrorCode`를 그대로 실어 보낸다. 401 하나로 뭉개면
 "세션이 만료됐다"와 "우리 앱이 토큰 패밀리를 태우고 있다"를 구분할 수 없다.
@@ -75,12 +75,12 @@
 
 ## 영속 계약 (변경 시 마이그레이션 필수)
 
-| 항목 | 위치 | 바꾸면 생기는 일 |
-|---|---|---|
-| 토큰 키 이름 (`accessToken`/`refreshToken`) | `storage-keys.constant.ts` | 기존 설치의 토큰을 못 읽음 → 전체 로그아웃 |
-| `keychainAccessible` 등 키체인 옵션 | `secure-storage.ts` | iOS 조회 쿼리엔 `kSecAttrAccessible`이 없으므로 **읽기는 깨지지 않는다**. 진짜 위험은 `SecItemUpdate`가 `kSecValueData`만 갱신해 **기존 설치의 accessibility가 영영 마이그레이션되지 않는다**는 것 |
-| refresh 응답 envelope (`{ data: { accessToken, refreshToken } }`) | 서버 `v1/auth/refresh` | 클라가 2xx를 파싱 못 해 `invalid-refresh-response`로 세션 종료 |
-| 토큰 키 이름을 아는 곳 | `secure-token-store.ts` **한 곳뿐** | 다른 레이어가 키를 직접 참조하면 저장 계약이 흩어진다 |
+| 항목                                                              | 위치                                | 바꾸면 생기는 일                                                                                                                                                                                   |
+| ----------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 토큰 키 이름 (`accessToken`/`refreshToken`)                       | `storage-keys.constant.ts`          | 기존 설치의 토큰을 못 읽음 → 전체 로그아웃                                                                                                                                                         |
+| `keychainAccessible` 등 키체인 옵션                               | `secure-storage.ts`                 | iOS 조회 쿼리엔 `kSecAttrAccessible`이 없으므로 **읽기는 깨지지 않는다**. 진짜 위험은 `SecItemUpdate`가 `kSecValueData`만 갱신해 **기존 설치의 accessibility가 영영 마이그레이션되지 않는다**는 것 |
+| refresh 응답 envelope (`{ data: { accessToken, refreshToken } }`) | 서버 `v1/auth/refresh`              | 클라가 2xx를 파싱 못 해 `invalid-refresh-response`로 세션 종료                                                                                                                                     |
+| 토큰 키 이름을 아는 곳                                            | `secure-token-store.ts` **한 곳뿐** | 다른 레이어가 키를 직접 참조하면 저장 계약이 흩어진다                                                                                                                                              |
 
 ## 서버 측 운영 불변식 (apps/api)
 

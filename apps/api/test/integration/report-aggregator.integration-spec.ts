@@ -18,18 +18,16 @@
  * ```
  */
 
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import {
 	TODO_STATS_READER,
 	type TodoStatsReaderPort,
 } from "@/ai-report/application/ports/todo-stats.reader.port";
 import { assembleAggregatedData } from "@/ai-report/domain/services/report-aggregation";
-import type {
-	AggregatedReportData,
-	AggregateParams,
-} from "@/ai-report/domain/types";
+import type { AggregatedReportData, AggregateParams } from "@/ai-report/domain/types";
 import { PrismaTodoStatsReader } from "@/ai-report/infrastructure/persistence/prisma-todo-stats.reader";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -45,16 +43,9 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 	 * 리포트 집계: reader(실 DB 조회) + 도메인 계산.
 	 * (구 ReportAggregatorService.aggregate와 동일 시퀀스 — 서비스 계층 제거)
 	 */
-	const aggregate = async (
-		params: AggregateParams,
-	): Promise<AggregatedReportData> => {
+	const aggregate = async (params: AggregateParams): Promise<AggregatedReportData> => {
 		const inputs = await reader.fetchAggregationInputs(params);
-		return assembleAggregatedData(
-			inputs,
-			params.startDate,
-			params.endDate,
-			params.timezone,
-		);
+		return assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone);
 	};
 
 	// 테스트 사용자 ID

@@ -1,9 +1,4 @@
-import type {
-	EmailSendResult,
-	EmailTag,
-	EmailType,
-	InquiryTemplateData,
-} from "@/email";
+import type { EmailSendResult, EmailTag, EmailType, InquiryTemplateData } from "@/email";
 
 /**
  * 발송된 이메일 기록
@@ -56,9 +51,7 @@ export class FakeEmailService {
 	): Promise<EmailSendResult> {
 		// Idempotency 체크 - 이미 처리된 요청이면 중복으로 표시
 		if (idempotencyKey && this._idempotencyKeys.has(idempotencyKey)) {
-			console.log(
-				`📧 [FakeEmail] Duplicate request detected (${idempotencyKey})`,
-			);
+			console.log(`📧 [FakeEmail] Duplicate request detected (${idempotencyKey})`);
 			return {
 				success: true,
 				messageId: `fake-duplicate-${Date.now()}`,
@@ -104,9 +97,7 @@ export class FakeEmailService {
 	): Promise<EmailSendResult> {
 		// Idempotency 체크
 		if (idempotencyKey && this._idempotencyKeys.has(idempotencyKey)) {
-			console.log(
-				`📧 [FakeEmail] Duplicate request detected (${idempotencyKey})`,
-			);
+			console.log(`📧 [FakeEmail] Duplicate request detected (${idempotencyKey})`);
 			return {
 				success: true,
 				messageId: `fake-duplicate-${Date.now()}`,
@@ -138,9 +129,7 @@ export class FakeEmailService {
 			tags,
 		});
 
-		console.log(
-			`📧 [FakeEmail] Password setup code sent to ${to}: ${data.code}`,
-		);
+		console.log(`📧 [FakeEmail] Password setup code sent to ${to}: ${data.code}`);
 		return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
 	}
 
@@ -154,9 +143,7 @@ export class FakeEmailService {
 	): Promise<EmailSendResult> {
 		// Idempotency 체크
 		if (idempotencyKey && this._idempotencyKeys.has(idempotencyKey)) {
-			console.log(
-				`📧 [FakeEmail] Duplicate request detected (${idempotencyKey})`,
-			);
+			console.log(`📧 [FakeEmail] Duplicate request detected (${idempotencyKey})`);
 			return {
 				success: true,
 				messageId: `fake-duplicate-${Date.now()}`,
@@ -188,19 +175,14 @@ export class FakeEmailService {
 			tags,
 		});
 
-		console.log(
-			`📧 [FakeEmail] Password reset code sent to ${to}: ${data.code}`,
-		);
+		console.log(`📧 [FakeEmail] Password reset code sent to ${to}: ${data.code}`);
 		return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
 	}
 
 	/**
 	 * 문의 이메일 발송 (Mock)
 	 */
-	async sendInquiry(
-		to: string,
-		data: InquiryTemplateData,
-	): Promise<EmailSendResult> {
+	async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
 		// 실패 시뮬레이션 체크
 		const failureResult = this._checkFailureSimulation();
 		if (failureResult) {
@@ -330,9 +312,7 @@ export class FakeEmailService {
 	private _checkFailureSimulation(): EmailSendResult | null {
 		if (this._shouldFail && this._failureCount < this._maxFailures) {
 			this._failureCount++;
-			console.log(
-				`📧 [FakeEmail] Simulated failure (${this._failureCount}/${this._maxFailures})`,
-			);
+			console.log(`📧 [FakeEmail] Simulated failure (${this._failureCount}/${this._maxFailures})`);
 			return {
 				success: false,
 				error: "Simulated failure for testing",

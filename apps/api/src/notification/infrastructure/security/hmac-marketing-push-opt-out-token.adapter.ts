@@ -1,14 +1,15 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+
 import { Injectable } from "@nestjs/common";
+
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import type { MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port";
 
 const TOKEN_TTL_SECONDS = 90 * 24 * 60 * 60;
 
 @Injectable()
-export class HmacMarketingPushOptOutTokenAdapter
-	implements MarketingPushOptOutTokenPort
-{
+export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutTokenPort {
 	constructor(private readonly config: TypedConfigService) {}
 
 	issue(userId: string): string {
@@ -34,8 +35,7 @@ export class HmacMarketingPushOptOutTokenAdapter
 		if (separator < 1) return null;
 		const userId = decoded.slice(0, separator);
 		const expiresAt = Number(decoded.slice(separator + 1));
-		if (!Number.isFinite(expiresAt) || expiresAt < Date.now() / 1000)
-			return null;
+		if (!Number.isFinite(expiresAt) || expiresAt < Date.now() / 1000) return null;
 		return userId;
 	}
 

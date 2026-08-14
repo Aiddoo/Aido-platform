@@ -7,6 +7,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("할 일 카테고리 E2E", () => {
@@ -63,12 +64,8 @@ describe("할 일 카테고리 E2E", () => {
 			expect(categoryNames).toContain("할 일");
 
 			// 색상 확인
-			const importantCategory = categories.find(
-				(c: { name: string }) => c.name === "중요한 일",
-			);
-			const todoCategory = categories.find(
-				(c: { name: string }) => c.name === "할 일",
-			);
+			const importantCategory = categories.find((c: { name: string }) => c.name === "중요한 일");
+			const todoCategory = categories.find((c: { name: string }) => c.name === "할 일");
 
 			expect(importantCategory.color).toBe("#FFB3B3");
 			expect(todoCategory.color).toBe("#FF6B43");
@@ -80,10 +77,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("카테고리 생성 → 조회 → 수정 → 삭제 전체 플로우", async () => {
 			// Given - 프리미엄 인증된 사용자
-			const { accessToken } = await createPremiumUser(
-				"category-crud@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("category-crud@example.com", testPassword);
 
 			// When - 카테고리 생성 API 호출
 			const createResponse = await request(ctx.app.getHttpServer())
@@ -96,9 +90,7 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(201);
 
 			// Then - 카테고리 생성 성공 검증
-			expect(createResponse.body.data.message).toBe(
-				"카테고리가 생성되었습니다.",
-			);
+			expect(createResponse.body.data.message).toBe("카테고리가 생성되었습니다.");
 			expect(createResponse.body.data.category).toMatchObject({
 				name: "공부",
 				color: "#00FF00",
@@ -128,12 +120,10 @@ describe("할 일 카테고리 E2E", () => {
 			const sortOrders = listResponse.body.data.items.map(
 				(c: { sortOrder: number }) => c.sortOrder,
 			);
-			const isSorted = sortOrders.every(
-				(val: number, i: number, arr: number[]) => {
-					const prev = arr[i - 1];
-					return i === 0 || (prev !== undefined && prev <= val);
-				},
-			);
+			const isSorted = sortOrders.every((val: number, i: number, arr: number[]) => {
+				const prev = arr[i - 1];
+				return i === 0 || (prev !== undefined && prev <= val);
+			});
 			expect(isSorted).toBe(true);
 
 			// When - 카테고리 상세 조회
@@ -155,12 +145,8 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(200);
 
 			// Then - 수정 결과 검증
-			expect(updateNameResponse.body.data.message).toBe(
-				"카테고리가 수정되었습니다.",
-			);
-			expect(updateNameResponse.body.data.category.name).toBe(
-				"수정된 카테고리",
-			);
+			expect(updateNameResponse.body.data.message).toBe("카테고리가 수정되었습니다.");
+			expect(updateNameResponse.body.data.category.name).toBe("수정된 카테고리");
 
 			// When - 색상 수정
 			const updateColorResponse = await request(ctx.app.getHttpServer())
@@ -190,9 +176,7 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(200);
 
 			// Then - 삭제 성공 검증
-			expect(deleteResponse.body.data.message).toBe(
-				"카테고리가 삭제되었습니다.",
-			);
+			expect(deleteResponse.body.data.message).toBe("카테고리가 삭제되었습니다.");
 
 			// 삭제 확인
 			await request(ctx.app.getHttpServer())
@@ -203,10 +187,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("중복된 이름으로 생성 시 409 에러", async () => {
 			// Given - 프리미엄 인증된 사용자, "공부" 카테고리 존재
-			const { accessToken } = await createPremiumUser(
-				"category-dup@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("category-dup@example.com", testPassword);
 
 			await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -227,10 +208,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("이름 누락 시 400 에러", async () => {
 			// Given - 프리미엄 인증된 사용자
-			const { accessToken } = await createPremiumUser(
-				"category-noname@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("category-noname@example.com", testPassword);
 
 			// When - 이름 없이 카테고리 생성 API 호출
 			await request(ctx.app.getHttpServer())
@@ -244,10 +222,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("색상 누락 시 400 에러", async () => {
 			// Given - 프리미엄 인증된 사용자
-			const { accessToken } = await createPremiumUser(
-				"category-nocolor@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("category-nocolor@example.com", testPassword);
 
 			// When - 색상 없이 카테고리 생성 API 호출
 			await request(ctx.app.getHttpServer())
@@ -290,10 +265,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("존재하지 않는 ID로 조회 시 404 에러", async () => {
 			// Given - 인증된 사용자
-			const { accessToken } = await createPremiumUser(
-				"category-404@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("category-404@example.com", testPassword);
 
 			// When - 존재하지 않는 ID로 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -309,9 +281,7 @@ describe("할 일 카테고리 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 인증 없이 카테고리 목록 조회 API 호출
-			await request(ctx.app.getHttpServer())
-				.get("/v1/todo-categories")
-				.expect(401);
+			await request(ctx.app.getHttpServer()).get("/v1/todo-categories").expect(401);
 
 			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 		});
@@ -376,9 +346,7 @@ describe("할 일 카테고리 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 인증 없이 카테고리 상세 조회 API 호출
-			await request(ctx.app.getHttpServer())
-				.get("/v1/todo-categories/1")
-				.expect(401);
+			await request(ctx.app.getHttpServer()).get("/v1/todo-categories/1").expect(401);
 
 			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 		});
@@ -425,9 +393,7 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(200);
 
 			// Then - 이동 성공 검증
-			expect(response.body.data.message).toBe(
-				"카테고리 순서가 변경되었습니다.",
-			);
+			expect(response.body.data.message).toBe("카테고리 순서가 변경되었습니다.");
 		});
 
 		it("특정 카테고리 뒤로 이동 성공 (after)", async () => {
@@ -462,9 +428,7 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(200);
 
 			// Then - 이동 성공 검증
-			expect(response.body.data.message).toBe(
-				"카테고리 순서가 변경되었습니다.",
-			);
+			expect(response.body.data.message).toBe("카테고리 순서가 변경되었습니다.");
 		});
 
 		it("맨 앞으로 이동 성공 (targetCategoryId 없이 before)", async () => {
@@ -494,10 +458,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("맨 뒤로 이동 성공 (targetCategoryId 없이 after)", async () => {
 			// Given - 프리미엄 사용자와 카테고리
-			const { accessToken } = await createPremiumUser(
-				"cat-reorder-last@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("cat-reorder-last@example.com", testPassword);
 
 			const res = await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -513,9 +474,7 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(200);
 
 			const maxSortOrder = Math.max(
-				...beforeResponse.body.data.items.map(
-					(c: { sortOrder: number }) => c.sortOrder,
-				),
+				...beforeResponse.body.data.items.map((c: { sortOrder: number }) => c.sortOrder),
 			);
 
 			// When - 맨 뒤로 이동
@@ -526,9 +485,7 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(200);
 
 			// Then - 맨 뒤로 이동 후 가장 큰 sortOrder 값을 가져야 함
-			expect(response.body.data.category.sortOrder).toBeGreaterThanOrEqual(
-				maxSortOrder,
-			);
+			expect(response.body.data.category.sortOrder).toBeGreaterThanOrEqual(maxSortOrder);
 		});
 	});
 
@@ -537,10 +494,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("Todo가 없는 카테고리 삭제 성공", async () => {
 			// Given - 프리미엄 사용자와 삭제용 카테고리
-			const { accessToken } = await createPremiumUser(
-				"cat-del-empty@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("cat-del-empty@example.com", testPassword);
 
 			const res = await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -567,10 +521,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("Todo가 있는 카테고리 삭제 시 이동 대상 필요", async () => {
 			// Given - 프리미엄 사용자, Todo가 있는 카테고리
-			const { accessToken } = await createPremiumUser(
-				"cat-del-todos@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("cat-del-todos@example.com", testPassword);
 
 			const catRes = await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -601,10 +552,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("moveToCategoryId가 삭제 대상과 같으면 400을 반환해야 한다", async () => {
 			// Given - 프리미엄 사용자, Todo가 있는 카테고리
-			const { accessToken } = await createPremiumUser(
-				"cat-del-self@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("cat-del-self@example.com", testPassword);
 
 			const catRes = await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -636,10 +584,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("Todo가 있는 카테고리를 이동 대상과 함께 삭제 성공", async () => {
 			// Given - 프리미엄 사용자, Todo가 있는 카테고리와 이동 대상 카테고리
-			const { accessToken } = await createPremiumUser(
-				"cat-del-move@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("cat-del-move@example.com", testPassword);
 
 			const listRes = await request(ctx.app.getHttpServer())
 				.get("/v1/todo-categories")
@@ -686,11 +631,10 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("마지막 카테고리 삭제 시 400 에러", async () => {
 			// Given - 새 사용자 생성 (카테고리 2개만 있음)
-			const { accessToken: newUserToken } =
-				await ctx.helpers.createVerifiedUser(
-					"last-category@example.com",
-					testPassword,
-				);
+			const { accessToken: newUserToken } = await ctx.helpers.createVerifiedUser(
+				"last-category@example.com",
+				testPassword,
+			);
 
 			// 카테고리 목록 조회
 			const listRes = await request(ctx.app.getHttpServer())
@@ -719,10 +663,7 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("존재하지 않는 ID로 삭제 시 404 에러", async () => {
 			// Given - 인증된 사용자
-			const { accessToken } = await createPremiumUser(
-				"cat-del-404@example.com",
-				testPassword,
-			);
+			const { accessToken } = await createPremiumUser("cat-del-404@example.com", testPassword);
 
 			// When - 존재하지 않는 ID로 삭제 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -738,9 +679,7 @@ describe("할 일 카테고리 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 인증 없이 카테고리 삭제 API 호출
-			await request(ctx.app.getHttpServer())
-				.delete("/v1/todo-categories/1")
-				.expect(401);
+			await request(ctx.app.getHttpServer()).delete("/v1/todo-categories/1").expect(401);
 
 			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 		});
@@ -751,14 +690,8 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("다른 사용자의 카테고리 조회 시 403 에러", async () => {
 			// Given - 두 프리미엄 사용자와 user1의 카테고리
-			const user1 = await createPremiumUser(
-				"cat-user1-403@example.com",
-				testPassword,
-			);
-			const user2 = await createPremiumUser(
-				"cat-user2-403@example.com",
-				testPassword,
-			);
+			const user1 = await createPremiumUser("cat-user1-403@example.com", testPassword);
+			const user2 = await createPremiumUser("cat-user2-403@example.com", testPassword);
 
 			const response = await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -779,14 +712,8 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("다른 사용자의 카테고리 수정 시 404 에러", async () => {
 			// Given - 두 프리미엄 사용자와 user1의 카테고리
-			const user1 = await createPremiumUser(
-				"cat-user1-patch@example.com",
-				testPassword,
-			);
-			const user2 = await createPremiumUser(
-				"cat-user2-patch@example.com",
-				testPassword,
-			);
+			const user1 = await createPremiumUser("cat-user1-patch@example.com", testPassword);
+			const user2 = await createPremiumUser("cat-user2-patch@example.com", testPassword);
 
 			const response = await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -808,14 +735,8 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("다른 사용자의 카테고리 삭제 시 404 에러", async () => {
 			// Given - 두 프리미엄 사용자와 user1의 카테고리
-			const user1 = await createPremiumUser(
-				"cat-user1-del@example.com",
-				testPassword,
-			);
-			const user2 = await createPremiumUser(
-				"cat-user2-del@example.com",
-				testPassword,
-			);
+			const user1 = await createPremiumUser("cat-user1-del@example.com", testPassword);
+			const user2 = await createPremiumUser("cat-user2-del@example.com", testPassword);
 
 			const response = await request(ctx.app.getHttpServer())
 				.post("/v1/todo-categories")
@@ -836,14 +757,8 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("같은 이름의 카테고리를 다른 사용자가 각각 생성 가능", async () => {
 			// Given - 두 프리미엄 사용자
-			const user1 = await createPremiumUser(
-				"cat-user1-same@example.com",
-				testPassword,
-			);
-			const user2 = await createPremiumUser(
-				"cat-user2-same@example.com",
-				testPassword,
-			);
+			const user1 = await createPremiumUser("cat-user1-same@example.com", testPassword);
+			const user2 = await createPremiumUser("cat-user2-same@example.com", testPassword);
 
 			// user1이 "운동" 카테고리 생성
 			await request(ctx.app.getHttpServer())
@@ -865,14 +780,8 @@ describe("할 일 카테고리 E2E", () => {
 
 		it("각 사용자는 자신의 카테고리만 목록에서 조회됨", async () => {
 			// Given - 두 프리미엄 사용자
-			const user1 = await createPremiumUser(
-				"cat-user1-list@example.com",
-				testPassword,
-			);
-			const user2 = await createPremiumUser(
-				"cat-user2-list@example.com",
-				testPassword,
-			);
+			const user1 = await createPremiumUser("cat-user1-list@example.com", testPassword);
+			const user2 = await createPremiumUser("cat-user2-list@example.com", testPassword);
 
 			// user1이 카테고리 생성
 			await request(ctx.app.getHttpServer())
@@ -894,12 +803,8 @@ describe("할 일 카테고리 E2E", () => {
 				.expect(200);
 
 			// Then - 격리 검증
-			const user1Names = user1List.body.data.items.map(
-				(c: { name: string }) => c.name,
-			);
-			const user2Names = user2List.body.data.items.map(
-				(c: { name: string }) => c.name,
-			);
+			const user1Names = user1List.body.data.items.map((c: { name: string }) => c.name);
+			const user2Names = user2List.body.data.items.map((c: { name: string }) => c.name);
 
 			expect(user1Names).toContain("User1 카테고리");
 			expect(user2Names).not.toContain("User1 카테고리");

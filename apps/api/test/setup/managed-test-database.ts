@@ -1,13 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
+
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 
 const TEST_DATABASE_NAME_PATTERN = /^aido_test_[a-z0-9]{6,32}$/;
 
-export type ManagedTestDatabaseEnvironment = Readonly<
-	Record<string, string | undefined>
->;
+export type ManagedTestDatabaseEnvironment = Readonly<Record<string, string | undefined>>;
 
 export interface ManagedTestDatabaseContainer {
 	getConnectionUri(): string;
@@ -17,9 +16,7 @@ export interface ManagedTestDatabaseContainer {
 interface StartManagedTestDatabaseDependencies {
 	env: NodeJS.ProcessEnv;
 	createRunId: () => string;
-	startContainer: (
-		databaseName: string,
-	) => Promise<ManagedTestDatabaseContainer>;
+	startContainer: (databaseName: string) => Promise<ManagedTestDatabaseContainer>;
 	migrate: (connectionUri: string) => Promise<void> | void;
 }
 
@@ -43,23 +40,19 @@ function getDatabaseName(connectionUri: string): string {
 		throw new Error("DATABASE_URL must be a valid PostgreSQL URL");
 	}
 
-	if (
-		parsedUrl.protocol !== "postgresql:" &&
-		parsedUrl.protocol !== "postgres:"
-	) {
+	if (parsedUrl.protocol !== "postgresql:" && parsedUrl.protocol !== "postgres:") {
 		throw new Error("DATABASE_URL must use the PostgreSQL protocol");
 	}
 
 	return decodeURIComponent(parsedUrl.pathname.replace(/^\//, ""));
 }
 
-export function assertManagedTestDatabaseEnvironment(
-	env: ManagedTestDatabaseEnvironment,
-): { connectionUri: string; databaseName: string } {
+export function assertManagedTestDatabaseEnvironment(env: ManagedTestDatabaseEnvironment): {
+	connectionUri: string;
+	databaseName: string;
+} {
 	if (env.AIDO_TEST_DB_MANAGED !== "1") {
-		throw new Error(
-			"Refusing test database access without AIDO_TEST_DB_MANAGED=1",
-		);
+		throw new Error("Refusing test database access without AIDO_TEST_DB_MANAGED=1");
 	}
 
 	if (!env.DATABASE_URL) {
@@ -68,9 +61,7 @@ export function assertManagedTestDatabaseEnvironment(
 
 	const databaseName = getDatabaseName(env.DATABASE_URL);
 	if (!TEST_DATABASE_NAME_PATTERN.test(databaseName)) {
-		throw new Error(
-			"Refusing test database access: database name must match aido_test_<run-id>",
-		);
+		throw new Error("Refusing test database access: database name must match aido_test_<run-id>");
 	}
 
 	return { connectionUri: env.DATABASE_URL, databaseName };
@@ -92,15 +83,11 @@ const defaultDependencies: StartManagedTestDatabaseDependencies = {
 		};
 	},
 	migrate: (connectionUri) => {
-		execFileSync(
-			resolvePnpmCommand(),
-			["exec", "prisma", "migrate", "deploy"],
-			{
-				cwd: path.resolve(__dirname, "../.."),
-				env: { ...process.env, DATABASE_URL: connectionUri },
-				stdio: "inherit",
-			},
-		);
+		execFileSync(resolvePnpmCommand(), ["exec", "prisma", "migrate", "deploy"], {
+			cwd: path.resolve(__dirname, "../.."),
+			env: { ...process.env, DATABASE_URL: connectionUri },
+			stdio: "inherit",
+		});
 	},
 };
 
@@ -134,9 +121,7 @@ export async function startManagedTestDatabase(
 		dependencies.env.DATABASE_URL = connectionUri;
 		dependencies.env.AIDO_TEST_DB_MANAGED = "1";
 
-		const managedDatabase = assertManagedTestDatabaseEnvironment(
-			dependencies.env,
-		);
+		const managedDatabase = assertManagedTestDatabaseEnvironment(dependencies.env);
 		if (managedDatabase.databaseName !== databaseName) {
 			throw new Error(
 				`Managed container database mismatch: expected ${databaseName}, received ${managedDatabase.databaseName}`,
@@ -162,10 +147,7 @@ export async function startManagedTestDatabase(
 		try {
 			await container?.stop();
 		} catch (stopError) {
-			console.error(
-				"Failed to stop managed test database container during cleanup:",
-				stopError,
-			);
+			console.error("Failed to stop managed test database container during cleanup:", stopError);
 		} finally {
 			restoreEnvironment();
 		}

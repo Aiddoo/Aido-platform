@@ -141,9 +141,7 @@ export interface ICacheService {
 	 *
 	 * Redis: Pipeline SET
 	 */
-	mset<T>(
-		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
-	): Promise<void>;
+	mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void>;
 
 	/**
 	 * 키 존재 여부 확인 (값 조회 없이)

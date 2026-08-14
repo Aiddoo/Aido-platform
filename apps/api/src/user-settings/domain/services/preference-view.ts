@@ -33,9 +33,7 @@ export interface PreferenceSnapshot {
 }
 
 /** 갱신 결과의 15개 응답 필드(프리미엄 게이팅 없음 — 저장된 값 그대로) */
-export function buildUpdatedPreferenceView(
-	record: PreferenceSnapshot,
-): UpdatePreferenceResponse {
+export function buildUpdatedPreferenceView(record: PreferenceSnapshot): UpdatePreferenceResponse {
 	return {
 		pushEnabled: record.pushEnabled,
 		nightPushEnabled: record.nightPushEnabled,

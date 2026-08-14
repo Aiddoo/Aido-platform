@@ -1,8 +1,10 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { Memo as MemoRow } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type {
 	FindMemosParams,
 	MemoRepositoryPort,
@@ -18,9 +20,7 @@ import { Memo } from "../../domain/entities/memo.aggregate";
 @Injectable()
 export class PrismaMemoRepository implements MemoRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	private get client() {
@@ -39,21 +39,14 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
 		});
 	}
 
-	async create(
-		userId: string,
-		content: string,
-		sortOrder: number,
-	): Promise<Memo> {
+	async create(userId: string, content: string, sortOrder: number): Promise<Memo> {
 		const row = await this.client.memo.create({
 			data: { user: { connect: { id: userId } }, content, sortOrder },
 		});
 		return PrismaMemoRepository.toDomain(row);
 	}
 
-	async findByIdAndUserId(
-		memoId: number,
-		userId: string,
-	): Promise<Memo | null> {
+	async findByIdAndUserId(memoId: number, userId: string): Promise<Memo | null> {
 		const row = await this.client.memo.findFirst({
 			where: { id: memoId, userId },
 		});

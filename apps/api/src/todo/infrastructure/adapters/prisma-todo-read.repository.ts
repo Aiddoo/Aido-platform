@@ -1,10 +1,8 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
+
 import type { TodoReadRepositoryPort } from "../../application/ports/todo-read.repository.port";
-import type {
-	FindFriendTodosParams,
-	FindTodosParams,
-} from "../../application/types";
+import type { FindFriendTodosParams, FindTodosParams } from "../../application/types";
 import { TodoMapper } from "../persistence/todo-response.mapper";
 import { TodoRowRepository } from "../persistence/todo-row.repository";
 
@@ -18,10 +16,7 @@ import { TodoRowRepository } from "../persistence/todo-row.repository";
 export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 	constructor(private readonly todoRepository: TodoRowRepository) {}
 
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-	): Promise<TodoResponse | null> {
+	async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
 		const row = await this.todoRepository.findByIdAndUserId(id, userId);
 		return row ? TodoMapper.toResponse(row) : null;
 	}
@@ -30,10 +25,7 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 		userId: string,
 		recurrenceGroupId: string,
 	): Promise<TodoResponse[]> {
-		const rows = await this.todoRepository.findManyByRecurrenceGroupId(
-			userId,
-			recurrenceGroupId,
-		);
+		const rows = await this.todoRepository.findManyByRecurrenceGroupId(userId, recurrenceGroupId);
 		return TodoMapper.toManyResponse(rows);
 	}
 
@@ -42,9 +34,7 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 		return TodoMapper.toManyResponse(rows);
 	}
 
-	async findPublicTodosByUserId(
-		params: FindFriendTodosParams,
-	): Promise<TodoResponse[]> {
+	async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<TodoResponse[]> {
 		const rows = await this.todoRepository.findPublicTodosByUserId(params);
 		return TodoMapper.toManyResponse(rows);
 	}
@@ -61,16 +51,11 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 		userId: string,
 		today: Date,
 		limit: number,
-	): Promise<
-		{ id: number; title: string; completed: boolean; categoryColor: string }[]
-	> {
+	): Promise<{ id: number; title: string; completed: boolean; categoryColor: string }[]> {
 		return this.todoRepository.findTodayTopTodos(userId, today, limit);
 	}
 
-	getTodayTodoStats(
-		userId: string,
-		today: Date,
-	): Promise<{ total: number; completed: number }> {
+	getTodayTodoStats(userId: string, today: Date): Promise<{ total: number; completed: number }> {
 		return this.todoRepository.getTodayTodoStats(userId, today);
 	}
 }

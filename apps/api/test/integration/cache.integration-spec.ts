@@ -11,16 +11,15 @@
  */
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
+
 import { CacheModule } from "@/shared/infrastructure/cache/cache.module";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
 	CACHE_SERVICE,
 	ICacheService,
 } from "@/shared/infrastructure/cache/interfaces/cache.interface";
-import {
-	createMockUserProfile,
-	MockCacheAdapter,
-} from "../mocks/cache-test-utils";
+
+import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils";
 
 describe("CacheModule 통합 테스트", () => {
 	describe("인메모리 어댑터 (기본 설정)", () => {
@@ -127,8 +126,7 @@ describe("CacheModule 통합 테스트", () => {
 				}).compile();
 
 				try {
-					const shortTtlService =
-						shortTtlModule.get<CacheService>(CacheService);
+					const shortTtlService = shortTtlModule.get<CacheService>(CacheService);
 					await shortTtlService.set("test-key", "test-value");
 
 					// When - 값이 설정됨을 확인
@@ -215,12 +213,8 @@ describe("CacheModule 통합 테스트", () => {
 
 				// Then
 				expect(await cacheService.getMutualFriend(userId, "user_2")).toBe(true);
-				expect(await cacheService.getMutualFriend(userId, "user_3")).toBe(
-					false,
-				);
-				expect(
-					await cacheService.getMutualFriend(userId, "user_4"),
-				).toBeUndefined();
+				expect(await cacheService.getMutualFriend(userId, "user_3")).toBe(false);
+				expect(await cacheService.getMutualFriend(userId, "user_4")).toBeUndefined();
 			});
 
 			it("패턴으로 친구 관계를 일괄 무효화할 수 있다", async () => {
@@ -234,15 +228,9 @@ describe("CacheModule 통합 테스트", () => {
 
 				// Then
 				expect(count).toBe(2);
-				expect(
-					await cacheService.getMutualFriend("user_1", "user_2"),
-				).toBeUndefined();
-				expect(
-					await cacheService.getMutualFriend("user_1", "user_3"),
-				).toBeUndefined();
-				expect(await cacheService.getMutualFriend("user_2", "user_3")).toBe(
-					true,
-				);
+				expect(await cacheService.getMutualFriend("user_1", "user_2")).toBeUndefined();
+				expect(await cacheService.getMutualFriend("user_1", "user_3")).toBeUndefined();
+				expect(await cacheService.getMutualFriend("user_2", "user_3")).toBe(true);
 			});
 		});
 
@@ -437,11 +425,7 @@ describe("CacheModule 통합 테스트", () => {
 				const factory = jest.fn().mockResolvedValue(true);
 
 				// When
-				const result = await cacheService.wrapMutualFriend(
-					userId,
-					targetUserId,
-					factory,
-				);
+				const result = await cacheService.wrapMutualFriend(userId, targetUserId, factory);
 
 				// Then
 				expect(result).toBe(true);
@@ -477,11 +461,7 @@ describe("CacheModule 통합 테스트", () => {
 				await cacheService.set("mget-2", "value-2");
 
 				// When
-				const results = await cacheService.mget([
-					"mget-1",
-					"mget-2",
-					"mget-nonexistent",
-				]);
+				const results = await cacheService.mget(["mget-1", "mget-2", "mget-nonexistent"]);
 
 				// Then
 				expect(results).toEqual(["value-1", "value-2", undefined]);
@@ -501,18 +481,12 @@ describe("CacheModule 통합 테스트", () => {
 					await cacheService.mset(entries);
 
 					// Then - 즉시 조회
-					const beforeExpiry = await cacheService.mget([
-						"mset-ttl-1",
-						"mset-ttl-2",
-					]);
+					const beforeExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"]);
 					expect(beforeExpiry).toEqual(["value-1", "value-2"]);
 
 					// TTL 만료 후로 시간 이동
 					now.mockReturnValue(baseTime + 1100);
-					const afterExpiry = await cacheService.mget([
-						"mset-ttl-1",
-						"mset-ttl-2",
-					]);
+					const afterExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"]);
 					expect(afterExpiry).toEqual([undefined, undefined]);
 				} finally {
 					now.mockRestore();

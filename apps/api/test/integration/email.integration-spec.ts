@@ -19,11 +19,9 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { TransactionalEmailSender } from "@/email";
-import {
-	EMAIL_SENDER,
-	type EmailSenderPort,
-} from "@/email/application/ports/email-sender.port";
+import { EMAIL_SENDER, type EmailSenderPort } from "@/email/application/ports/email-sender.port";
 import { ResendEmailSenderAdapter } from "@/email/infrastructure/adapters/resend-email-sender.adapter";
 import { EMAIL_CONSTANTS } from "@/email/infrastructure/constants/email.constants";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -66,8 +64,7 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 				{
 					provide: TransactionalEmailSender,
 					inject: [EMAIL_SENDER],
-					useFactory: (emailSender: EmailSenderPort) =>
-						new TransactionalEmailSender(emailSender),
+					useFactory: (emailSender: EmailSenderPort) => new TransactionalEmailSender(emailSender),
 				},
 				{ provide: EMAIL_SENDER, useClass: ResendEmailSenderAdapter },
 				{
@@ -244,9 +241,7 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Persistent failure");
 			expect(result.retryCount).toBe(EMAIL_CONSTANTS.MAX_RETRIES);
-			expect(resendMock.emails.send).toHaveBeenCalledTimes(
-				EMAIL_CONSTANTS.MAX_RETRIES + 1,
-			);
+			expect(resendMock.emails.send).toHaveBeenCalledTimes(EMAIL_CONSTANTS.MAX_RETRIES + 1);
 		});
 	});
 
@@ -405,9 +400,7 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 	describe("에러 핸들링 통합 테스트", () => {
 		it("네트워크 에러 발생 시 적절하게 처리한다", async () => {
 			// Given - 네트워크 에러 발생 설정
-			resendMock.emails.send.mockRejectedValue(
-				new Error("Network connection failed"),
-			);
+			resendMock.emails.send.mockRejectedValue(new Error("Network connection failed"));
 
 			// When - 인증 코드 이메일 발송
 			const result = await flushTimersAndAwait(

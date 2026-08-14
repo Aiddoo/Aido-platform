@@ -6,15 +6,16 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import type { CreateNotificationData } from "../../ports/notification-data";
 import {
 	NOTIFICATION_DEDUP_LOCK,
 	type NotificationDedupLockPort,
 } from "../../ports/notification-dedup.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case";
 
@@ -42,9 +43,7 @@ describe("SendNotificationWithDedupUseCase", () => {
 	const release = jest.fn().mockResolvedValue(undefined);
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SendNotificationWithDedupUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SendNotificationWithDedupUseCase).compile();
 		useCase = unit;
 		sendNotification = unitRef.get(SendNotificationUseCase);
 		repository = unitRef.get(NOTIFICATION_REPOSITORY);

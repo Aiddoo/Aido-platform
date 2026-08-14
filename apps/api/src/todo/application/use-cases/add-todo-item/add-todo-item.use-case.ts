@@ -1,17 +1,16 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
+
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 
 /** 하위 항목 추가 입력. */
 export interface AddTodoItemInput {
@@ -62,10 +61,7 @@ export class AddTodoItemUseCase {
 		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 3. 부모 할 일 전체 재조회 (items·itemStats 포함)
-		const response = await this.todoReadRepository.findByIdAndUserId(
-			todoId,
-			userId,
-		);
+		const response = await this.todoReadRepository.findByIdAndUserId(todoId, userId);
 		if (!response) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 		}

@@ -47,9 +47,7 @@ describe("GetPreferenceRecordUseCase", () => {
 			.impl(() => createUserPreferenceRepositoryMock())
 			.compile();
 		useCase = unit;
-		repo = unitRef.get<UserPreferenceRepositoryPort>(
-			USER_PREFERENCE_REPOSITORY,
-		);
+		repo = unitRef.get<UserPreferenceRepositoryPort>(USER_PREFERENCE_REPOSITORY);
 	});
 
 	it("게이팅 없이 원본 레코드를 그대로 반환한다", async () => {

@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { CreateNotificationData } from "@/notification";
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
@@ -7,18 +8,12 @@ import { toDateString, toIsoWeekId } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
-import {
-	SCHEDULER_DEDUP,
-	type SchedulerDedupPort,
-} from "../ports/scheduler-dedup.port";
+import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -52,12 +47,11 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		}
 
 		// 이미 오늘 NUDGE_SUGGEST 받은 유저 제외
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: activeUsers.map((u) => u.id),
-				type: "NUDGE_SUGGEST",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: activeUsers.map((u) => u.id),
+			type: "NUDGE_SUGGEST",
+			notificationDate: today,
+		});
 
 		const candidates = activeUsers.filter((u) => !alreadyNotified.has(u.id));
 
@@ -81,9 +75,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 			Array<{ id: string; name: string | null; lastActiveAt: Date | null }>
 		>();
 		for (const f of allFollows) {
-			const userIds = [f.followerId, f.followingId].filter((id) =>
-				candidateSet.has(id),
-			);
+			const userIds = [f.followerId, f.followingId].filter((id) => candidateSet.has(id));
 			for (const uid of userIds) {
 				const friend = f.followerId === uid ? f.following : f.follower;
 				if (!friendMap.has(uid)) friendMap.set(uid, []);
@@ -106,14 +98,9 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		}
 
 		// 단일 SMISMEMBER — O(allPairs.length)
-		const sentPairs = await this.schedulerDedup.findSentNudgePairs(
-			weekId,
-			allPairs,
-		);
+		const sentPairs = await this.schedulerDedup.findSentNudgePairs(weekId, allPairs);
 
-		const locales = await this.preferenceReader.findUserLocales(
-			candidates.map((u) => u.id),
-		);
+		const locales = await this.preferenceReader.findUserLocales(candidates.map((u) => u.id));
 
 		// 인메모리 매칭
 		const notifications: CreateNotificationData[] = [];
@@ -172,9 +159,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 			const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
 			void this.schedulerDedup.recordNudgePairs(weekId, members);
 
-			this.#logger.log(
-				`Nudge suggest: tz=${tz}, count=${notifications.length}`,
-			);
+			this.#logger.log(`Nudge suggest: tz=${tz}, count=${notifications.length}`);
 		}
 		return { sent: notifications.length };
 	}

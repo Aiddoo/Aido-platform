@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { SecurityEvent, SecurityLog } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -17,9 +18,7 @@ export interface CreateSecurityLogData {
 @Injectable()
 export class SecurityLogRepository {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -34,8 +33,7 @@ export class SecurityLogRepository {
 				event: data.event,
 				ipAddress: data.ipAddress,
 				userAgent: data.userAgent,
-				metadata:
-					data.metadata === undefined ? undefined : toInputJson(data.metadata),
+				metadata: data.metadata === undefined ? undefined : toInputJson(data.metadata),
 			},
 		});
 	}
@@ -78,21 +76,13 @@ export class SecurityLogRepository {
 		});
 	}
 
-	async findSuspiciousActivityByIp(
-		ipAddress: string,
-		since: Date,
-	): Promise<SecurityLog[]> {
+	async findSuspiciousActivityByIp(ipAddress: string, since: Date): Promise<SecurityLog[]> {
 		return this.client.securityLog.findMany({
 			where: {
 				ipAddress,
 				createdAt: { gte: since },
 				event: {
-					in: [
-						"LOGIN_FAILURE",
-						"SUSPICIOUS_ACTIVITY",
-						"TOKEN_REVOKED",
-						"SESSION_REVOKED_ALL",
-					],
+					in: ["LOGIN_FAILURE", "SUSPICIOUS_ACTIVITY", "TOKEN_REVOKED", "SESSION_REVOKED_ALL"],
 				},
 			},
 			orderBy: { createdAt: "desc" },

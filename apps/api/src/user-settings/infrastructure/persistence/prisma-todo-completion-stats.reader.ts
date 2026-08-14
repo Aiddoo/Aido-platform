@@ -14,16 +14,10 @@ import type {
  * (todo 모듈 순환 회피).
  */
 @Injectable()
-export class PrismaTodoCompletionStatsReader
-	implements TodoCompletionStatsReaderPort
-{
+export class PrismaTodoCompletionStatsReader implements TodoCompletionStatsReaderPort {
 	constructor(private readonly database: DatabaseService) {}
 
-	async countForDay(
-		userId: string,
-		dayStart: Date,
-		dayEnd: Date,
-	): Promise<TodoCompletionStats> {
+	async countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats> {
 		const where = {
 			userId,
 			startDate: { gte: dayStart, lt: dayEnd },

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { datetimeSchema } from '../../common/datetime';
 
 export const dailyCompletionSchema = z

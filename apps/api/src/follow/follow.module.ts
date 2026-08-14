@@ -2,9 +2,9 @@ import { Module } from "@nestjs/common";
 
 import { NotificationModule } from "@/notification/notification.module";
 
-import { FOLLOW_REPOSITORY } from "./application/ports/follow.repository.port";
 import { FOLLOW_CACHE } from "./application/ports/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "./application/ports/follow-notifier.port";
+import { FOLLOW_REPOSITORY } from "./application/ports/follow.repository.port";
 import { SearchUsersUseCase } from "./application/queries/search-users/search-users.use-case";
 import { FollowReader } from "./application/services/follow.reader";
 import { FriendshipEffects } from "./application/services/friendship-effects.service";
@@ -12,8 +12,8 @@ import { AcceptFriendRequestUseCase } from "./application/use-cases/accept-frien
 import { RejectFriendRequestUseCase } from "./application/use-cases/reject-friend-request/reject-friend-request.use-case";
 import { RemoveFriendUseCase } from "./application/use-cases/remove-friend/remove-friend.use-case";
 import { ReorderFriendUseCase } from "./application/use-cases/reorder-friend/reorder-friend.use-case";
-import { SendFriendRequestUseCase } from "./application/use-cases/send-friend-request/send-friend-request.use-case";
 import { SendFriendRequestByTagUseCase } from "./application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
+import { SendFriendRequestUseCase } from "./application/use-cases/send-friend-request/send-friend-request.use-case";
 import { FollowCacheAdapter } from "./infrastructure/adapters/follow-cache.adapter";
 import { FollowNotifierAdapter } from "./infrastructure/adapters/follow-notifier.adapter";
 import { PrismaFollowRepository } from "./infrastructure/persistence/prisma-follow.repository";

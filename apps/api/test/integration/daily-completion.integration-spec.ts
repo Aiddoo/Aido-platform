@@ -20,14 +20,12 @@
  * ```
  */
 
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import {
-	createDailyCompletionCacheMock,
-	createDailyCompletionFriendMock,
-} from "@test/mocks/ports";
+import { Test, type TestingModule } from "@nestjs/testing";
+import { createDailyCompletionCacheMock, createDailyCompletionFriendMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
+
 import { DAILY_COMPLETION_CACHE } from "@/daily-completion/application/ports/daily-completion-cache.port";
 import { FRIEND_PORT } from "@/daily-completion/application/ports/friend.port";
 import { TODO_COMPLETION_REPOSITORY } from "@/daily-completion/application/ports/todo-completion.repository.port";
@@ -82,11 +80,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		repository = module.get(TODO_COMPLETION_REPOSITORY);
 	}, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
-	function getDailyCompletions(
-		userId: string,
-		startDate: string,
-		endDate: string,
-	) {
+	function getDailyCompletions(userId: string, startDate: string, endDate: string) {
 		return getDailyCompletionsUseCase.execute({ userId, startDate, endDate });
 	}
 
@@ -158,9 +152,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 	): Promise<{ id: number }> {
 		// 문자열인 경우 UTC 자정으로 변환
 		const dateValue =
-			typeof startDate === "string"
-				? dayjs.utc(startDate).startOf("day").toDate()
-				: startDate;
+			typeof startDate === "string" ? dayjs.utc(startDate).startOf("day").toDate() : startDate;
 
 		return databaseService.todo.create({
 			data: {
@@ -219,20 +211,8 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("날짜 범위 내 Todo를 날짜별로 집계해야 한다", async () => {
 			// Given
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				3,
-				2,
-			);
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-16",
-				2,
-				2,
-			);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 3, 2);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-16", 2, 2);
 
 			// When
 			const result = await repository.aggregateByDateRange({
@@ -244,12 +224,8 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			// Then
 			expect(result).toHaveLength(2);
 
-			const day15 = result.find((r) =>
-				r.date.toISOString().includes("2026-01-15"),
-			);
-			const day16 = result.find((r) =>
-				r.date.toISOString().includes("2026-01-16"),
-			);
+			const day15 = result.find((r) => r.date.toISOString().includes("2026-01-15"));
+			const day16 = result.find((r) => r.date.toISOString().includes("2026-01-16"));
 
 			expect(day15?.total).toBe(3);
 			expect(day15?.completed).toBe(2);
@@ -261,20 +237,8 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			// Given - 두 사용자가 같은 날짜에 Todo를 가짐
 			const user1 = await createTestUser("user1@example.com");
 			const user2 = await createTestUser("user2@example.com");
-			await createTodosForDate(
-				user1.id,
-				user1.defaultCategoryId,
-				"2026-01-15",
-				3,
-				3,
-			);
-			await createTodosForDate(
-				user2.id,
-				user2.defaultCategoryId,
-				"2026-01-15",
-				5,
-				1,
-			);
+			await createTodosForDate(user1.id, user1.defaultCategoryId, "2026-01-15", 3, 3);
+			await createTodosForDate(user2.id, user2.defaultCategoryId, "2026-01-15", 5, 1);
 
 			// When - user1의 Todo만 집계
 			const result = await repository.aggregateByDateRange({
@@ -292,27 +256,9 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("날짜 범위 외의 Todo는 포함하지 않아야 한다", async () => {
 			// Given - 범위 내외에 각각 Todo가 있음
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2025-12-31",
-				2,
-				1,
-			);
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				3,
-				2,
-			);
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-02-01",
-				1,
-				1,
-			);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2025-12-31", 2, 1);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 3, 2);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-02-01", 1, 1);
 
 			// When - 1월 범위만 조회
 			const result = await repository.aggregateByDateRange({
@@ -346,27 +292,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("날짜 범위 내 완료 현황을 반환해야 한다", async () => {
 			// Given
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				3,
-				3,
-			); // 완료
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-16",
-				2,
-				1,
-			); // 미완료
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 3, 3); // 완료
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-16", 2, 1); // 미완료
 
 			// When
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 
 			// Then
 			expect(result.completions).toHaveLength(2);
@@ -380,20 +310,10 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("완료율을 정확히 계산해야 한다", async () => {
 			// Given
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				4,
-				3,
-			); // 75%
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 4, 3); // 75%
 
 			// When
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 
 			// Then
 			const day15 = result.completions.find((c) => c.date === "2026-01-15");
@@ -404,20 +324,10 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("모든 Todo 완료 시 isComplete가 true여야 한다", async () => {
 			// Given
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				5,
-				5,
-			);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 5, 5);
 
 			// When
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 
 			// Then
 			const day15 = result.completions.find((c) => c.date === "2026-01-15");
@@ -428,34 +338,12 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("결과를 날짜순으로 정렬해야 한다", async () => {
 			// Given
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-20",
-				1,
-				1,
-			);
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-10",
-				2,
-				1,
-			);
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				3,
-				2,
-			);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-20", 1, 1);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-10", 2, 1);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 3, 2);
 
 			// When
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 
 			// Then
 			expect(result.completions[0]?.date).toBe("2026-01-10");
@@ -468,11 +356,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			const user = await createTestUser();
 
 			// When - 완료 현황 조회
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 
 			// Then - 빈 결과 반환
 			expect(result.completions).toEqual([]);
@@ -484,38 +368,18 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("월 경계를 정확히 처리해야 한다", async () => {
 			// Given - 1월 마지막 날과 2월 첫 날에 Todo가 있음
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-31",
-				2,
-				2,
-			);
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-02-01",
-				3,
-				1,
-			);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-31", 2, 2);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-02-01", 3, 1);
 
 			// When - 1월만 조회
-			const janResult = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const janResult = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 
 			// Then - 1월 데이터만 반환
 			expect(janResult.completions).toHaveLength(1);
 			expect(janResult.completions[0]?.date).toBe("2026-01-31");
 
 			// When - 2월만 조회
-			const febResult = await getDailyCompletions(
-				user.id,
-				"2026-02-01",
-				"2026-02-28",
-			);
+			const febResult = await getDailyCompletions(user.id, "2026-02-01", "2026-02-28");
 
 			// Then - 2월 데이터만 반환
 			expect(febResult.completions).toHaveLength(1);
@@ -525,20 +389,10 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("하루 동안의 여러 Todo를 정확히 집계해야 한다", async () => {
 			// Given - 같은 날짜에 10개 Todo (7개 완료)
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				10,
-				7,
-			);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 10, 7);
 
 			// When - 해당 날짜 조회
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-15",
-				"2026-01-15",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-15", "2026-01-15");
 
 			// Then - 정확한 집계 결과 반환
 			expect(result.completions).toHaveLength(1);
@@ -550,20 +404,10 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		it("완료된 Todo가 0개인 날도 정확히 처리해야 한다", async () => {
 			// Given - 완료된 Todo가 없는 날
 			const user = await createTestUser();
-			await createTodosForDate(
-				user.id,
-				user.defaultCategoryId,
-				"2026-01-15",
-				5,
-				0,
-			);
+			await createTodosForDate(user.id, user.defaultCategoryId, "2026-01-15", 5, 0);
 
 			// When - 완료 현황 조회
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 
 			// Then - 0% 완료율 반환
 			const day15 = result.completions.find((c) => c.date === "2026-01-15");
@@ -581,25 +425,13 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 			const promises = [];
 			for (let day = 1; day <= 31; day++) {
 				const dateStr = `2026-01-${String(day).padStart(2, "0")}`;
-				promises.push(
-					createTodosForDate(
-						user.id,
-						user.defaultCategoryId,
-						dateStr,
-						3,
-						day % 4,
-					),
-				);
+				promises.push(createTodosForDate(user.id, user.defaultCategoryId, dateStr, 3, day % 4));
 			}
 			await Promise.all(promises);
 
 			// When - 한 달 전체 조회
 			const startTime = Date.now();
-			const result = await getDailyCompletions(
-				user.id,
-				"2026-01-01",
-				"2026-01-31",
-			);
+			const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
 			const duration = Date.now() - startTime;
 
 			// Then - 31일 데이터가 5초 이내에 반환됨

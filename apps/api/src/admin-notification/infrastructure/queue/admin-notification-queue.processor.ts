@@ -1,19 +1,11 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
-import {
-	fromLegacyJob,
-	type NamedJob,
-} from "@/shared/infrastructure/jobs/named-job";
+import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
 
 import { DispatchDailySignupSummaryUseCase } from "../../application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
 import { SendAdminNotificationUseCase } from "../../application/use-cases/send-admin-notification/send-admin-notification.use-case";
@@ -61,10 +53,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	) {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,

@@ -1,7 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 import { TODO_ITEM_LIMITS } from "@aido/validators";
+
 import { AggregateRoot, DomainException } from "@/shared/domain";
 import { now } from "@/shared/domain/date/utils/core";
+
 import { TodoCategoryChangedEvent } from "../events/todo-category-changed.event";
 import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoDeletedEvent } from "../events/todo-deleted.event";
@@ -10,10 +12,7 @@ import { TodoToggledEvent } from "../events/todo-toggled.event";
 import { TodoUpdatedEvent } from "../events/todo-updated.event";
 import { TodoVisibilityChangedEvent } from "../events/todo-visibility-changed.event";
 import { TodoId } from "../value-objects/todo-id.vo";
-import {
-	TodoSchedule,
-	type TodoScheduleProps,
-} from "../value-objects/todo-schedule.vo";
+import { TodoSchedule, type TodoScheduleProps } from "../value-objects/todo-schedule.vo";
 import { TodoTitle } from "../value-objects/todo-title.vo";
 import type { TodoItem } from "./todo-item.entity";
 
@@ -198,12 +197,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 		this.props.completedAt = completed ? now() : null;
 
 		this.raise(
-			new TodoToggledEvent(
-				this.props.id.getValue(),
-				this.props.userId,
-				completed,
-				timezone,
-			),
+			new TodoToggledEvent(this.props.id.getValue(), this.props.userId, completed, timezone),
 		);
 		return true;
 	}
@@ -243,9 +237,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 			schedulePatch.isAllDay = patch.isAllDay;
 		}
 		const nextSchedule =
-			Object.keys(schedulePatch).length > 0
-				? this.props.schedule.patch(schedulePatch)
-				: null;
+			Object.keys(schedulePatch).length > 0 ? this.props.schedule.patch(schedulePatch) : null;
 
 		if (patch.title !== undefined) {
 			this.props.title = patch.title;
@@ -262,19 +254,12 @@ export class Todo extends AggregateRoot<TodoProps> {
 		this.applyCompletionPatch(patch.completed);
 
 		this.raise(
-			new TodoUpdatedEvent(
-				this.props.id.getValue(),
-				this.props.userId,
-				this.props.completed,
-			),
+			new TodoUpdatedEvent(this.props.id.getValue(), this.props.userId, this.props.completed),
 		);
 	}
 
 	private applyCompletionPatch(requestedCompletion: boolean | undefined): void {
-		if (
-			requestedCompletion === undefined ||
-			requestedCompletion === this.props.completed
-		) {
+		if (requestedCompletion === undefined || requestedCompletion === this.props.completed) {
 			return;
 		}
 
@@ -307,9 +292,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 * 커밋 후 이벤트 핸들러가 리마인더를 취소합니다.
 	 */
 	markDeleted(): void {
-		this.raise(
-			new TodoDeletedEvent(this.props.id.getValue(), this.props.userId),
-		);
+		this.raise(new TodoDeletedEvent(this.props.id.getValue(), this.props.userId));
 	}
 
 	/**
@@ -320,12 +303,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 */
 	changeVisibility(visibility: TodoVisibility): void {
 		this.props.visibility = visibility;
-		this.raise(
-			new TodoVisibilityChangedEvent(
-				this.props.id.getValue(),
-				this.props.userId,
-			),
-		);
+		this.raise(new TodoVisibilityChangedEvent(this.props.id.getValue(), this.props.userId));
 	}
 
 	/**
@@ -339,11 +317,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	changeCategory(categoryId: number): void {
 		this.props.categoryId = categoryId;
 		this.raise(
-			new TodoCategoryChangedEvent(
-				this.props.id.getValue(),
-				this.props.userId,
-				categoryId,
-			),
+			new TodoCategoryChangedEvent(this.props.id.getValue(), this.props.userId, categoryId),
 		);
 	}
 
@@ -381,10 +355,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 * 존재하지 않는 항목이면 DomainException(TODO_0822).
 	 * 변경된 항목 엔티티를 반환하며, 핸들러는 그 상태를 영속화합니다.
 	 */
-	updateItem(
-		itemId: number,
-		patch: { title?: string; completed?: boolean },
-	): TodoItem {
+	updateItem(itemId: number, patch: { title?: string; completed?: boolean }): TodoItem {
 		const item = this.#requireItem(itemId);
 		if (patch.title !== undefined) {
 			item.rename(patch.title);
@@ -398,9 +369,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	/** 하위 항목을 제거합니다 — 존재하지 않으면 DomainException(TODO_0822). */
 	removeItem(itemId: number): void {
 		this.#requireItem(itemId);
-		this.props.items = this.props.items.filter(
-			(item) => item.getId() !== itemId,
-		);
+		this.props.items = this.props.items.filter((item) => item.getId() !== itemId);
 	}
 
 	/**
@@ -461,9 +430,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 			isAllDay: schedule.isAllDay,
 			visibility: this.props.visibility,
 			completed: this.props.completed,
-			completedAt: this.props.completedAt
-				? new Date(this.props.completedAt)
-				: null,
+			completedAt: this.props.completedAt ? new Date(this.props.completedAt) : null,
 		};
 	}
 

@@ -10,6 +10,7 @@ import { t } from '@src/shared/i18n';
 import { usePremiumDialog } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+
 import { isFriendError } from '../../models/friend.error';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 

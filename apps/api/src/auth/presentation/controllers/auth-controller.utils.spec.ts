@@ -1,4 +1,5 @@
 import type { Request } from "express";
+
 import { extractMetadata } from "./auth-controller.utils";
 
 describe("extractMetadata", () => {

@@ -24,8 +24,7 @@ describe("AirkoreaProvider — 에어코리아 대기질 프로바이더", () =>
 	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(AirkoreaProvider).compile();
+		const { unit, unitRef } = await TestBed.solitary(AirkoreaProvider).compile();
 
 		provider = unit;
 		configService = unitRef.get(TypedConfigService);

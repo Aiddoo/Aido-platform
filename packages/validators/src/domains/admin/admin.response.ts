@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { dateSchema, nullableDatetimeSchema } from '../../common/datetime';
 
 /** 성장/리텐션 cohort 달성 지표 */

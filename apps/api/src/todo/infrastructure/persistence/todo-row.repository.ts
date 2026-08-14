@@ -1,18 +1,13 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { Prisma, Todo } from "@/generated/prisma/client";
 import { now } from "@/shared/domain/date/utils/core";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type {
-	FindFriendTodosParams,
-	FindTodosParams,
-} from "../../application/types";
-import {
-	TODO_CATEGORY_INCLUDE,
-	type TodoItemData,
-	type TodoWithCategory,
-} from "./todo-row.types";
+
+import type { FindFriendTodosParams, FindTodosParams } from "../../application/types";
+import { TODO_CATEGORY_INCLUDE, type TodoItemData, type TodoWithCategory } from "./todo-row.types";
 
 /**
  * 날짜 범위 필터 조건 생성 (Overlapping Intervals 패턴)
@@ -42,10 +37,7 @@ import {
  * | 2026-01-15 | 미지정 | 해당 날짜에 해당하는 투두 (exact match) |
  * | 미지정 | 2026-01-31 | 해당 날짜에 해당하는 투두 (exact match) |
  */
-function buildDateRangeFilter(
-	startDate?: Date,
-	endDate?: Date,
-): Prisma.TodoWhereInput | undefined {
+function buildDateRangeFilter(startDate?: Date, endDate?: Date): Prisma.TodoWhereInput | undefined {
 	if (!startDate && !endDate) {
 		return undefined;
 	}
@@ -86,9 +78,7 @@ function buildDateRangeFilter(
 @Injectable()
 export class TodoRowRepository {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -109,10 +99,7 @@ export class TodoRowRepository {
 	/**
 	 * 사용자의 Todo 조회 (소유권 확인용)
 	 */
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-	): Promise<TodoWithCategory | null> {
+	async findByIdAndUserId(id: number, userId: string): Promise<TodoWithCategory | null> {
 		return this.client.todo.findFirst({
 			where: { id, userId },
 			include: TODO_CATEGORY_INCLUDE,
@@ -123,8 +110,7 @@ export class TodoRowRepository {
 	 * 사용자의 Todo 목록 조회 (커서 기반 페이지네이션)
 	 */
 	async findManyByUserId(params: FindTodosParams): Promise<TodoWithCategory[]> {
-		const { userId, cursor, size, completed, categoryId, startDate, endDate } =
-			params;
+		const { userId, cursor, size, completed, categoryId, startDate, endDate } = params;
 
 		const where: Prisma.TodoWhereInput = {
 			userId,
@@ -153,11 +139,7 @@ export class TodoRowRepository {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: [
-				{ category: { sortOrder: "asc" } },
-				{ sortOrder: "asc" },
-				{ id: "asc" },
-			],
+			orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 			include: TODO_CATEGORY_INCLUDE,
 		});
 	}
@@ -165,10 +147,7 @@ export class TodoRowRepository {
 	/**
 	 * Todo 수정
 	 */
-	async update(
-		id: number,
-		data: Prisma.TodoUpdateInput,
-	): Promise<TodoWithCategory> {
+	async update(id: number, data: Prisma.TodoUpdateInput): Promise<TodoWithCategory> {
 		return this.client.todo.update({
 			where: { id },
 			data,
@@ -188,9 +167,7 @@ export class TodoRowRepository {
 	/**
 	 * 친구의 PUBLIC Todo 목록 조회 (커서 기반 페이지네이션)
 	 */
-	async findPublicTodosByUserId(
-		params: FindFriendTodosParams,
-	): Promise<TodoWithCategory[]> {
+	async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<TodoWithCategory[]> {
 		const { friendUserId, cursor, size, startDate, endDate } = params;
 
 		const where: Prisma.TodoWhereInput = {
@@ -211,11 +188,7 @@ export class TodoRowRepository {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: [
-				{ category: { sortOrder: "asc" } },
-				{ sortOrder: "asc" },
-				{ id: "asc" },
-			],
+			orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 			include: TODO_CATEGORY_INCLUDE,
 		});
 	}
@@ -232,10 +205,7 @@ export class TodoRowRepository {
 	/**
 	 * 특정 카테고리 내 활성(미완료) Todo 개수 조회
 	 */
-	async countActiveByCategory(
-		userId: string,
-		categoryId: number,
-	): Promise<number> {
+	async countActiveByCategory(userId: string, categoryId: number): Promise<number> {
 		return this.client.todo.count({
 			where: { userId, categoryId, completed: false },
 		});
@@ -274,9 +244,7 @@ export class TodoRowRepository {
 		userId: string,
 		today: Date,
 		limit: number,
-	): Promise<
-		{ id: number; title: string; completed: boolean; categoryColor: string }[]
-	> {
+	): Promise<{ id: number; title: string; completed: boolean; categoryColor: string }[]> {
 		const dateFilter = buildDateRangeFilter(today, today);
 		const where: Prisma.TodoWhereInput = {
 			userId,
@@ -353,10 +321,7 @@ export class TodoRowRepository {
 	/**
 	 * Todo의 sortOrder 업데이트
 	 */
-	async updateSortOrder(
-		id: number,
-		sortOrder: number,
-	): Promise<TodoWithCategory> {
+	async updateSortOrder(id: number, sortOrder: number): Promise<TodoWithCategory> {
 		return this.client.todo.update({
 			where: { id },
 			data: { sortOrder },
@@ -407,10 +372,7 @@ export class TodoRowRepository {
 	 *
 	 * Todo 생성 시 함께 전달된 체크리스트를 배열 순서대로 sortOrder를 부여해 생성합니다.
 	 */
-	async createManyItems(
-		todoId: number,
-		items: { title: string }[],
-	): Promise<void> {
+	async createManyItems(todoId: number, items: { title: string }[]): Promise<void> {
 		await this.client.todoItem.createMany({
 			data: items.map((item, index) => ({
 				todoId,
@@ -437,10 +399,7 @@ export class TodoRowRepository {
 		});
 	}
 
-	async updateItem(
-		itemId: number,
-		data: { title?: string; completed?: boolean },
-	): Promise<void> {
+	async updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void> {
 		await this.client.todoItem.update({ where: { id: itemId }, data });
 	}
 

@@ -2,7 +2,6 @@ import type { UpdateMarketingConsentResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { buildMarketingConsentView } from "../../../domain/services/consent-view";
-
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
@@ -20,20 +19,12 @@ export class UpdateMarketingConsentUseCase {
 		private readonly consentRepository: UserConsentRepositoryPort,
 	) {}
 
-	async execute(
-		userId: string,
-		agreed: boolean,
-	): Promise<UpdateMarketingConsentResponse> {
-		const updated = await this.consentRepository.upsertMarketingConsent(
-			userId,
-			{
-				agreed,
-			},
-		);
+	async execute(userId: string, agreed: boolean): Promise<UpdateMarketingConsentResponse> {
+		const updated = await this.consentRepository.upsertMarketingConsent(userId, {
+			agreed,
+		});
 
-		this.#logger.log(
-			`User ${userId} updated marketing consent: agreed=${agreed}`,
-		);
+		this.#logger.log(`User ${userId} updated marketing consent: agreed=${agreed}`);
 
 		return buildMarketingConsentView(updated);
 	}

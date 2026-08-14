@@ -8,6 +8,7 @@ import type { TimeFormat } from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip, Separator, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
+
 import type { AiReport } from '../../models/ai.model';
 import { formatHour } from '../utils/format-report';
 import { ScallopedContainer } from './ScallopedContainer';

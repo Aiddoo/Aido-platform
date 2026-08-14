@@ -14,7 +14,6 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "../../auth/presentation/decorators";
-
 import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case";
 import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case";
 import { AiUsage } from "../domain/value-objects/ai-usage.vo";
@@ -63,12 +62,7 @@ describe("AiController — AI 컨트롤러", () => {
 			parseTodoUseCase.execute.mockResolvedValue(facadeResult);
 
 			// When - parseTodo를 호출하면
-			const result = await controller.parseTodo(
-				mockUser,
-				dto,
-				"Asia/Seoul",
-				undefined,
-			);
+			const result = await controller.parseTodo(mockUser, dto, "Asia/Seoul", undefined);
 
 			// Then - Facade에 text, userId, timezone, categoryId를 전달하고 성공 응답을 반환해야 한다
 			expect(parseTodoUseCase.execute).toHaveBeenCalledWith({
@@ -108,12 +102,7 @@ describe("AiController — AI 컨트롤러", () => {
 			parseTodoUseCase.execute.mockResolvedValue(facadeResult);
 
 			// When - parseTodo를 호출하면
-			const result = await controller.parseTodo(
-				mockUser,
-				dto,
-				"Asia/Seoul",
-				undefined,
-			);
+			const result = await controller.parseTodo(mockUser, dto, "Asia/Seoul", undefined);
 
 			// Then - categoryId가 Facade에 전달되고 응답에 포함되어야 한다
 			expect(parseTodoUseCase.execute).toHaveBeenCalledWith({

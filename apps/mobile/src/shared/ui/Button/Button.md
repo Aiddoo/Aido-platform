@@ -31,9 +31,7 @@ import { Button } from '@src/shared/ui/Button/Button';
 ```tsx
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveButton';
 
-<KeyboardAdaptiveButton onPress={handleSubmit}>
-  회원가입
-</KeyboardAdaptiveButton>
+<KeyboardAdaptiveButton onPress={handleSubmit}>회원가입</KeyboardAdaptiveButton>;
 ```
 
 ### 동작 방식
@@ -43,26 +41,26 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveBu
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `children` | `ReactNode` | - | 버튼 내용. 문자열이면 자동으로 Text로 감싸짐 |
-| `size` | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'xlarge'` | 버튼 크기 |
-| `variant` | `'fill' \| 'weak'` | `'fill'` | 버튼 스타일 |
-| `color` | `'primary' \| 'danger' \| 'dark'` | `'primary'` | 버튼 색상 |
-| `display` | `'inline' \| 'block' \| 'full'` | `'full'` | 버튼 너비 |
-| `radius` | `'sm' \| 'md' \| 'lg' \| 'full'` | `'lg'` | 모서리 둥글기 |
-| `isLoading` | `boolean` | `false` | 로딩 상태 |
-| `isDisabled` | `boolean` | `false` | 비활성화 상태 |
-| `className` | `string` | - | 추가 스타일 |
+| Prop         | 타입                                         | 기본값      | 설명                                         |
+| ------------ | -------------------------------------------- | ----------- | -------------------------------------------- |
+| `children`   | `ReactNode`                                  | -           | 버튼 내용. 문자열이면 자동으로 Text로 감싸짐 |
+| `size`       | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'xlarge'`  | 버튼 크기                                    |
+| `variant`    | `'fill' \| 'weak'`                           | `'fill'`    | 버튼 스타일                                  |
+| `color`      | `'primary' \| 'danger' \| 'dark'`            | `'primary'` | 버튼 색상                                    |
+| `display`    | `'inline' \| 'block' \| 'full'`              | `'full'`    | 버튼 너비                                    |
+| `radius`     | `'sm' \| 'md' \| 'lg' \| 'full'`             | `'lg'`      | 모서리 둥글기                                |
+| `isLoading`  | `boolean`                                    | `false`     | 로딩 상태                                    |
+| `isDisabled` | `boolean`                                    | `false`     | 비활성화 상태                                |
+| `className`  | `string`                                     | -           | 추가 스타일                                  |
 
 ## 크기 (size)
 
-| Size | 높이 | 패딩 | 폰트 크기 |
-|------|------|------|----------|
-| `small` | 32px (h-8) | px-3 | e1 |
-| `medium` | 40px (h-10) | px-4 | b4 |
-| `large` | 48px (h-12) | px-5 | b4 |
-| `xlarge` | 56px (h-14) | px-6 | b3 |
+| Size     | 높이        | 패딩 | 폰트 크기 |
+| -------- | ----------- | ---- | --------- |
+| `small`  | 32px (h-8)  | px-3 | e1        |
+| `medium` | 40px (h-10) | px-4 | b4        |
+| `large`  | 48px (h-12) | px-5 | b4        |
+| `xlarge` | 56px (h-14) | px-6 | b3        |
 
 ```tsx
 <Button size="small">Small</Button>
@@ -74,6 +72,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveBu
 ## 스타일 (variant)
 
 ### fill
+
 배경색이 채워진 기본 스타일입니다. 텍스트는 흰색입니다.
 
 ```tsx
@@ -83,6 +82,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveBu
 ```
 
 ### weak
+
 배경색이 연한 스타일입니다. 텍스트는 배경색과 같은 계열입니다.
 
 ```tsx
@@ -93,11 +93,11 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveBu
 
 ## 너비 (display)
 
-| Display | 설명 | CSS |
-|---------|------|-----|
-| `inline` | 콘텐츠 크기만큼 | `self-start` |
-| `block` | 부모 컨테이너 너비에 맞게 확장 | `self-stretch` |
-| `full` | 전체 너비 | `w-full` |
+| Display  | 설명                           | CSS            |
+| -------- | ------------------------------ | -------------- |
+| `inline` | 콘텐츠 크기만큼                | `self-start`   |
+| `block`  | 부모 컨테이너 너비에 맞게 확장 | `self-stretch` |
+| `full`   | 전체 너비                      | `w-full`       |
 
 ```tsx
 <Button display="inline">Inline</Button>
@@ -108,6 +108,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveBu
 ## 상태
 
 ### 로딩 상태
+
 `isLoading`이 `true`면 스피너가 표시되고 버튼이 비활성화됩니다.
 
 ```tsx
@@ -115,6 +116,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveBu
 ```
 
 ### 비활성화 상태
+
 `isDisabled`가 `true`면 버튼이 비활성화되고 투명도가 적용됩니다.
 
 ```tsx

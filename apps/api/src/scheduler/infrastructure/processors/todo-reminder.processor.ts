@@ -1,10 +1,5 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import {
 	JOB_RUNTIME,
@@ -12,10 +7,7 @@ import {
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import {
-	fromLegacyJob,
-	type NamedJob,
-} from "@/shared/infrastructure/jobs/named-job";
+import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
 
 import {
 	TODO_REMINDER_READER,
@@ -61,8 +53,7 @@ export class TodoReminderProcessor implements OnModuleInit {
 		await this.runtime.work<JobData>(
 			TODO_REMINDER_LEGACY_QUEUE,
 			async (jobs) => {
-				for (const job of jobs)
-					await this.process(fromLegacyJob<TodoReminderJobMap>(job).data);
+				for (const job of jobs) await this.process(fromLegacyJob<TodoReminderJobMap>(job).data);
 			},
 			{ teamSize: 1, pollingIntervalSeconds: 2 },
 		);
@@ -76,33 +67,24 @@ export class TodoReminderProcessor implements OnModuleInit {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	) {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
 		);
 	}
 
-	async process(
-		job: ReminderJobData | { readonly data: ReminderJobData },
-	): Promise<void> {
+	async process(job: ReminderJobData | { readonly data: ReminderJobData }): Promise<void> {
 		const data = "data" in job ? job.data : job;
 		const { todoId, userId, stageLabel } = data;
 
-		this.#logger.debug(
-			`Processing reminder: todoId=${todoId}, stage=${stageLabel}`,
-		);
+		this.#logger.debug(`Processing reminder: todoId=${todoId}, stage=${stageLabel}`);
 
 		// 1. 투두가 아직 유효한지 확인 (완료/삭제 여부)
 		const todo = await this.reader.findActiveTodo(todoId);
 
 		if (!todo) {
-			this.#logger.debug(
-				`Reminder skipped (todo completed/deleted): todoId=${todoId}`,
-			);
+			this.#logger.debug(`Reminder skipped (todo completed/deleted): todoId=${todoId}`);
 			return;
 		}
 
@@ -124,16 +106,11 @@ export class TodoReminderProcessor implements OnModuleInit {
 		// 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
 		// 언어는 UserPreference 캐시 경유 (발송 여부 판정과 같은 캐시 엔트리 공유)
 		const locale = await this.notification.getUserLocale(userId);
-		const message = NotificationMessageBuilder.todoReminder(
-			todo.title,
-			stageLabel,
-			locale,
-			{
-				campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
-				recipientId: userId,
-				occurrenceKey: `${todoId}:${stageLabel}`,
-			},
-		);
+		const message = NotificationMessageBuilder.todoReminder(todo.title, stageLabel, locale, {
+			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
+			recipientId: userId,
+			occurrenceKey: `${todoId}:${stageLabel}`,
+		});
 
 		await this.notification.createAndSend({
 			userId,
@@ -147,8 +124,6 @@ export class TodoReminderProcessor implements OnModuleInit {
 			metadata: { stage: stageLabel },
 		});
 
-		this.#logger.log(
-			`Reminder sent: todoId=${todoId}, stage=${stageLabel}, userId=${userId}`,
-		);
+		this.#logger.log(`Reminder sent: todoId=${todoId}, stage=${stageLabel}, userId=${userId}`);
 	}
 }

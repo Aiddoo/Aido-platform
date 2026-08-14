@@ -16,9 +16,7 @@ export interface SearchCursor {
 
 /** (rank, id) → 불투명 base64url 문자열 */
 export function encodeSearchCursor(cursor: SearchCursor): string {
-	return Buffer.from(`${cursor.rank}:${cursor.id}`, "utf8").toString(
-		"base64url",
-	);
+	return Buffer.from(`${cursor.rank}:${cursor.id}`, "utf8").toString("base64url");
 }
 
 /**

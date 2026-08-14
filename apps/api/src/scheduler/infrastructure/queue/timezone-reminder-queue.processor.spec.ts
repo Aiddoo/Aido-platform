@@ -29,9 +29,7 @@ describe("TimezoneReminderProcessor — 타임존 리마인더 프로세서", ()
 	let orchestrator: Mocked<TimezoneAwareReminderOrchestrator>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			TimezoneReminderProcessor,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(TimezoneReminderProcessor).compile();
 
 		processor = unit;
 		orchestrator = unitRef.get(TimezoneAwareReminderOrchestrator);
@@ -60,10 +58,7 @@ describe("TimezoneReminderProcessor — 타임존 리마인더 프로세서", ()
 				morningReminderHour: 8,
 				morningReminderMinute: 0,
 			};
-			const job = createMockJob(
-				TimezoneReminderJobName.REMINDER_HOUR_CHANGED,
-				data,
-			);
+			const job = createMockJob(TimezoneReminderJobName.REMINDER_HOUR_CHANGED, data);
 
 			// When
 			await processor.process(job);

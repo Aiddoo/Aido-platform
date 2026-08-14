@@ -5,6 +5,7 @@ import { i18n } from '@src/shared/i18n';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
+
 import { FEATURE_DISCOVERY_CAMPAIGN_ID } from '../../models/feature-discovery.registry';
 import { FeatureDiscoverySheet } from './FeatureDiscoverySheet';
 

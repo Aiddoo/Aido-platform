@@ -1,13 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
 } from "../../ports/retention.repository.port";
-import {
-	RETENTION_CONFIG,
-	type RetentionConfigPort,
-} from "../../ports/retention-config.port";
 
 @Injectable()
 export class ActivateRetentionExperimentUseCase {
@@ -21,8 +20,6 @@ export class ActivateRetentionExperimentUseCase {
 
 	async execute(userId: string): Promise<void> {
 		if (!this.config.enabled) return;
-		await this.unitOfWork.run(() =>
-			this.repository.activate(userId, new Date()),
-		);
+		await this.unitOfWork.run(() => this.repository.activate(userId, new Date()));
 	}
 }

@@ -14,12 +14,14 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
+
 import {
 	LoginWithPasswordUseCase,
 	LogoutAllUseCase,
 	RegisterUseCase,
 } from "@/auth/application/use-cases";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import type { LoginDto, RegisterDto } from "../dtos";
 import { AuthController } from "./auth.controller";
 
@@ -70,16 +72,10 @@ describe("AuthController — 인증 컨트롤러", () => {
 			registerUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -register를 호출하면
-			const result = await controller.register(
-				dto as unknown as RegisterDto,
-				mockReq,
-			);
+			const result = await controller.register(dto as unknown as RegisterDto, mockReq);
 
 			// Then -서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
-			expect(registerUseCase.execute).toHaveBeenCalledWith(
-				dto,
-				expect.any(Object),
-			);
+			expect(registerUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
 			expect(result).toEqual({
 				message: serviceResult.message,
 				email: serviceResult.email,
@@ -110,16 +106,10 @@ describe("AuthController — 인증 컨트롤러", () => {
 			loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -login을 호출하면
-			const result = await controller.login(
-				dto as unknown as LoginDto,
-				mockReq,
-			);
+			const result = await controller.login(dto as unknown as LoginDto, mockReq);
 
 			// Then -서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
-			expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith(
-				dto,
-				expect.any(Object),
-			);
+			expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
 			expect(result).toEqual({
 				userId: serviceResult.userId,
 				userTag: serviceResult.userTag,
@@ -144,10 +134,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 			const result = await controller.logoutAll(mockUser, mockReq);
 
 			// Then -서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
-			expect(logoutAllUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				expect.any(Object),
-			);
+			expect(logoutAllUseCase.execute).toHaveBeenCalledWith(mockUser.userId, expect.any(Object));
 			expect(result).toEqual({
 				message: "모든 기기에서 로그아웃되었습니다.",
 			});

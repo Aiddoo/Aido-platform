@@ -1,6 +1,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { mockOf } from "@test/mocks";
+
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_USER_REPOSITORY,
@@ -16,10 +17,7 @@ import {
 	USER_PROVISIONING_SEEDER,
 	type UserProvisioningSeederPort,
 } from "../../ports/user-provisioning-seeder.port";
-import {
-	type ProvisionUserInput,
-	ProvisionUserUseCase,
-} from "./provision-user.use-case";
+import { type ProvisionUserInput, ProvisionUserUseCase } from "./provision-user.use-case";
 
 describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시퀀스", () => {
 	let useCase: ProvisionUserUseCase;
@@ -34,8 +32,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 	});
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(ProvisionUserUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(ProvisionUserUseCase).compile();
 		useCase = unit;
 		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
 		accountRepo = unitRef.get(AUTH_ACCOUNT_REPOSITORY);
@@ -61,10 +58,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 			status: "PENDING_VERIFY",
 			emailVerifiedAt: undefined,
 		});
-		expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith(
-			"user-1",
-			"hashed-pw",
-		);
+		expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith("user-1", "hashed-pw");
 		expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
 		expect(userRepo.createProfile).toHaveBeenCalledWith("user-1", {
 			name: "홍길동",
@@ -73,10 +67,7 @@ describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시�
 			termsAgreedAt: new Date("2026-01-01T00:00:00Z"),
 		});
 		expect(seeder.seedDefaultCategories).toHaveBeenCalledWith("user-1");
-		expect(retentionEnroller.enrollNewUser).toHaveBeenCalledWith(
-			"user-1",
-			false,
-		);
+		expect(retentionEnroller.enrollNewUser).toHaveBeenCalledWith("user-1", false);
 		expect(result).toBe(createdUser);
 	});
 

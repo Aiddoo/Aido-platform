@@ -114,8 +114,6 @@ export class PushTokenBuilder {
 
 	/** 여러 개 생성 */
 	static createMany(userId: string, count: number): PushToken[] {
-		return Array.from({ length: count }, () =>
-			PushTokenBuilder.create(userId).build(),
-		);
+		return Array.from({ length: count }, () => PushTokenBuilder.create(userId).build());
 	}
 }

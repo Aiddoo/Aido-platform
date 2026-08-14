@@ -1,10 +1,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import {
-	CHEER_REPOSITORY,
-	type CheerRepositoryPort,
-} from "../ports/cheer.repository.port";
+
+import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../ports/cheer.repository.port";
 import { CheerReader } from "./cheer.reader";
 
 describe("CheerReader — 사용자 로컬 일일 한도", () => {

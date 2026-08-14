@@ -1,9 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger } from "@nestjs/common";
-import Expo, {
-	type ExpoPushMessage,
-	type ExpoPushTicket,
-} from "expo-server-sdk";
+import Expo, { type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -114,9 +111,7 @@ export class ExpoPushProvider implements PushProvider {
 	 * (부분 성공 허용)
 	 */
 	async sendBatch(payloads: PushPayload[]): Promise<BatchPushResult> {
-		const orderedResults: Array<PushResult | undefined> = Array(
-			payloads.length,
-		);
+		const orderedResults: Array<PushResult | undefined> = Array(payloads.length);
 		const invalidTokens: string[] = [];
 
 		// 유효한 토큰만 필터링
@@ -149,9 +144,7 @@ export class ExpoPushProvider implements PushProvider {
 		}
 
 		// 메시지 빌드
-		const messages = validPayloads.map(({ payload }) =>
-			this.#buildMessage(payload),
-		);
+		const messages = validPayloads.map(({ payload }) => this.#buildMessage(payload));
 
 		// Expo는 내부적으로 청크를 나눠서 처리
 		const chunks = this.#expo.chunkPushNotifications(messages);

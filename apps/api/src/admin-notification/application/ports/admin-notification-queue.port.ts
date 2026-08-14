@@ -23,6 +23,4 @@ export interface AdminNotificationQueuePort {
 	): Promise<void>;
 }
 
-export const ADMIN_NOTIFICATION_QUEUE_PORT = Symbol(
-	"ADMIN_NOTIFICATION_QUEUE_PORT",
-);
+export const ADMIN_NOTIFICATION_QUEUE_PORT = Symbol("ADMIN_NOTIFICATION_QUEUE_PORT");

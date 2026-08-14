@@ -12,9 +12,11 @@
  */
 
 import request from "supertest";
+
 import { AI_PROVIDER } from "@/ai";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
@@ -26,8 +28,7 @@ describe("AI 제안 E2E", () => {
 		fakeAiProvider = new FakeAiProvider();
 
 		ctx = await createE2eApp({
-			customizeBuilder: (builder) =>
-				builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
+			customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
 			additionalResetters: [() => fakeAiProvider.clear()],
 		});
 	}, 60000);
@@ -68,10 +69,7 @@ describe("AI 제안 E2E", () => {
 				userId,
 				title: "팀 미팅",
 				daysOfWeek: overrides?.daysOfWeek ?? ["MON", "WED", "FRI"],
-				scheduledTime:
-					overrides?.scheduledTime === undefined
-						? "10:00"
-						: overrides.scheduledTime,
+				scheduledTime: overrides?.scheduledTime === undefined ? "10:00" : overrides.scheduledTime,
 				confidence: 0.85,
 				reason: "최근 2주간 반복 패턴 감지",
 				matchedTodos: [],
@@ -86,10 +84,7 @@ describe("AI 제안 E2E", () => {
 	describe("GET /ai/suggestions", () => {
 		it("200: 빈 제안 목록을 반환해야 한다 (초기 상태)", async () => {
 			// Given - 프리미엄 사용자, 제안이 없는 초기 상태
-			const user = await createPremiumUser(
-				"ai-suggestion-list@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-suggestion-list@example.com", "Test1234!");
 
 			// When - 제안 목록 조회
 			const response = await request(ctx.app.getHttpServer())
@@ -106,9 +101,7 @@ describe("AI 제안 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 토큰 없이 목록 조회
-			const response = await request(ctx.app.getHttpServer()).get(
-				"/v1/ai/suggestions",
-			);
+			const response = await request(ctx.app.getHttpServer()).get("/v1/ai/suggestions");
 
 			// Then - 401 Unauthorized 반환
 			expect(response.status).toBe(401);
@@ -118,13 +111,8 @@ describe("AI 제안 E2E", () => {
 	describe("PATCH /ai/suggestions/:id", () => {
 		it("200(accept): 제안 수락 시 ACCEPTED로 전이되고 반복 할 일이 생성된다", async () => {
 			// Given - 프리미엄 사용자와 PENDING 제안
-			const user = await createPremiumUser(
-				"ai-suggestion-accept@example.com",
-				"Test1234!",
-			);
-			const categoryId = await ctx.helpers.getDefaultCategoryId(
-				user.accessToken,
-			);
+			const user = await createPremiumUser("ai-suggestion-accept@example.com", "Test1234!");
+			const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 			const suggestionId = await seedPendingSuggestion(user.userId);
 
 			// When - accept 액션 수행
@@ -143,10 +131,7 @@ describe("AI 제안 E2E", () => {
 
 		it("200(dismiss): 제안 거절 시 DISMISSED로 전이되고 할 일은 생성되지 않는다", async () => {
 			// Given - 프리미엄 사용자와 PENDING 제안
-			const user = await createPremiumUser(
-				"ai-suggestion-dismiss@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-suggestion-dismiss@example.com", "Test1234!");
 			const suggestionId = await seedPendingSuggestion(user.userId);
 
 			// When - dismiss 액션 수행
@@ -164,13 +149,8 @@ describe("AI 제안 E2E", () => {
 
 		it("409: 이미 처리된 제안 재처리 시 에러를 반환해야 한다 (AI_1306)", async () => {
 			// Given - 이미 ACCEPTED 상태인 제안
-			const user = await createPremiumUser(
-				"ai-suggestion-409@example.com",
-				"Test1234!",
-			);
-			const categoryId = await ctx.helpers.getDefaultCategoryId(
-				user.accessToken,
-			);
+			const user = await createPremiumUser("ai-suggestion-409@example.com", "Test1234!");
+			const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 			const suggestionId = await seedPendingSuggestion(user.userId, {
 				status: "ACCEPTED",
 			});
@@ -189,10 +169,7 @@ describe("AI 제안 E2E", () => {
 
 		it("400: 잘못된 action 값 요청 시 에러를 반환해야 한다", async () => {
 			// Given - 프리미엄 사용자와 PENDING 제안
-			const user = await createPremiumUser(
-				"ai-suggestion-400@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-suggestion-400@example.com", "Test1234!");
 			const suggestionId = await seedPendingSuggestion(user.userId);
 
 			// When - 유효하지 않은 action 값으로 요청
@@ -209,10 +186,7 @@ describe("AI 제안 E2E", () => {
 
 		it("404: 존재하지 않는 제안에 대해 에러를 반환해야 한다", async () => {
 			// Given - 프리미엄 사용자, 존재하지 않는 제안 ID
-			const user = await createPremiumUser(
-				"ai-suggestion-404@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-suggestion-404@example.com", "Test1234!");
 
 			// When - 없는 제안에 대해 액션 수행
 			const response = await request(ctx.app.getHttpServer())

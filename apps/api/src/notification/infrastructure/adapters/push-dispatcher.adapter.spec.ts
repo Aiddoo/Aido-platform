@@ -9,19 +9,15 @@ import { pushNotificationDataSchema } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { z } from "zod";
+
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import type {
-	UserConsentRecordWithId,
-	UserPreferenceRecordWithId,
-} from "@/user-settings";
+import type { UserConsentRecordWithId, UserPreferenceRecordWithId } from "@/user-settings";
+
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../application/ports/notification.repository.port";
-import {
-	PUSH_PROVIDER,
-	type PushProvider,
-} from "../../application/ports/push-provider.port";
+import { PUSH_PROVIDER, type PushProvider } from "../../application/ports/push-provider.port";
 import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
@@ -65,9 +61,7 @@ const LEGACY_V1_2_NOTIFICATION_TYPES = [
 	"WEATHER_EVENING",
 ] as const;
 
-function legacyPushDataSchema(
-	notificationTypes: readonly [string, ...string[]],
-) {
+function legacyPushDataSchema(notificationTypes: readonly [string, ...string[]]) {
 	return z.object({
 		notificationId: z.number(),
 		type: z.enum(notificationTypes),
@@ -94,10 +88,7 @@ const LEGACY_PUSH_DATA_SCHEMAS = {
 /** 2026-07-16 12:00 KST — 마케팅 야간 게이트 밖의 결정적인 테스트 시각. */
 const KST_MARKETING_DAYTIME = new Date("2026-07-16T03:00:00.000Z");
 
-function makePreference(
-	userId: string,
-	timezone: string,
-): UserPreferenceRecordWithId {
+function makePreference(userId: string, timezone: string): UserPreferenceRecordWithId {
 	return {
 		userId,
 		pushEnabled: true,
@@ -153,9 +144,7 @@ describe("PushDispatcherAdapter", () => {
 	let pushProvider: Mocked<PushProvider>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			PushDispatcherAdapter,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(PushDispatcherAdapter).compile();
 		adapter = unit;
 		userSettings = unitRef.get(USER_NOTIFICATION_SETTINGS);
 		rateLimiter = unitRef.get(PUSH_RATE_LIMITER);
@@ -180,18 +169,13 @@ describe("PushDispatcherAdapter", () => {
 				),
 			);
 		});
-		repository.recordPushDeliveryResultsBatch.mockImplementation(
-			async (inputs) => {
-				await Promise.all(
-					inputs.map((input) =>
-						repository.recordPushDeliveryResults(
-							input.dispatchId,
-							input.results,
-						),
-					),
-				);
-			},
-		);
+		repository.recordPushDeliveryResultsBatch.mockImplementation(async (inputs) => {
+			await Promise.all(
+				inputs.map((input) =>
+					repository.recordPushDeliveryResults(input.dispatchId, input.results),
+				),
+			);
+		});
 	});
 
 	afterEach(() => jest.useRealTimers());
@@ -270,9 +254,7 @@ describe("PushDispatcherAdapter", () => {
 	});
 
 	it("활성 토큰이 없으면 fireAndForgetPush는 조용히 종료한다", async () => {
-		userSettings.getPreferenceRecord.mockResolvedValue(
-			makePreference("user-1", "Asia/Seoul"),
-		);
+		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
 		rateLimiter.isRateLimited.mockResolvedValue(false);
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
 		repository.findPushTokensByUser.mockResolvedValue([]);
@@ -291,20 +273,13 @@ describe("PushDispatcherAdapter", () => {
 	});
 
 	it("단일 dispatch 생성 후 예상하지 못한 토큰 조회 오류는 FAILED로 전이한다", async () => {
-		userSettings.getPreferenceRecord.mockResolvedValue(
-			makePreference("user-1", "Asia/Seoul"),
-		);
+		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
 		rateLimiter.isRateLimited.mockResolvedValue(false);
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
 		repository.createPushDispatch.mockResolvedValue({ id: 101 });
-		repository.findPushTokensByUser.mockRejectedValue(
-			new Error("token storage unavailable"),
-		);
+		repository.findPushTokensByUser.mockRejectedValue(new Error("token storage unavailable"));
 
-		adapter.fireAndForgetPush(
-			{ userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" },
-			1,
-		);
+		adapter.fireAndForgetPush({ userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" }, 1);
 		await adapter.beforeApplicationShutdown();
 
 		expect(repository.markPushDispatchFailed).toHaveBeenCalledWith(
@@ -316,9 +291,7 @@ describe("PushDispatcherAdapter", () => {
 	it("단일 feature-discovery 발송도 지원 토큰이 없으면 capability skip으로 기록한다", async () => {
 		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T03:00:00.000Z"));
 		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
-		userSettings.getPreferenceRecord.mockResolvedValue(
-			makePreference("user-1", "Asia/Seoul"),
-		);
+		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
 		userSettings.getConsentRecord.mockResolvedValue(makeConsent("user-1"));
 		rateLimiter.isRateLimited.mockResolvedValue(false);
 		rateLimiter.isEngagementRateLimited.mockResolvedValue(false);
@@ -423,9 +396,7 @@ describe("PushDispatcherAdapter", () => {
 			makeConsent("user-2"),
 		]);
 		rateLimiter.reserveBatch.mockResolvedValue([true, true]);
-		repository.createPushDispatch
-			.mockResolvedValueOnce({ id: 1 })
-			.mockResolvedValueOnce({ id: 2 });
+		repository.createPushDispatch.mockResolvedValueOnce({ id: 1 }).mockResolvedValueOnce({ id: 2 });
 
 		adapter.fireAndForgetBatchPush([
 			{
@@ -457,14 +428,8 @@ describe("PushDispatcherAdapter", () => {
 			{ userId: "user-2", engagementLocalDate: "2026-07-15" },
 		]);
 		expect(repository.createPushDispatch).toHaveBeenCalledTimes(2);
-		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(
-			1,
-			"RATE_LIMITED",
-		);
-		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(
-			2,
-			"RATE_LIMITED",
-		);
+		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(1, "RATE_LIMITED");
+		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(2, "RATE_LIMITED");
 	});
 
 	it("배치 발송은 dispatch 생성과 스킵 상태를 각각 한 번의 저장소 호출로 기록한다", async () => {
@@ -532,9 +497,7 @@ describe("PushDispatcherAdapter", () => {
 			{ id: 201, notificationId: 11 },
 			{ id: 202, notificationId: 12 },
 		]);
-		const recordPushDeliveryResultsBatch = jest
-			.fn()
-			.mockResolvedValue(undefined);
+		const recordPushDeliveryResultsBatch = jest.fn().mockResolvedValue(undefined);
 		Object.defineProperty(repository, "createPushDispatches", {
 			value: createPushDispatches,
 		});
@@ -663,9 +626,7 @@ describe("PushDispatcherAdapter", () => {
 		repository.createPushDispatch
 			.mockResolvedValueOnce({ id: 201 })
 			.mockResolvedValueOnce({ id: 202 });
-		rateLimiter.reserveBatch.mockRejectedValue(
-			new Error("rate limiter unavailable"),
-		);
+		rateLimiter.reserveBatch.mockRejectedValue(new Error("rate limiter unavailable"));
 
 		adapter.fireAndForgetBatchPush([
 			{
@@ -703,9 +664,7 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
 			{ ...makePreference("user-1", "Asia/Seoul"), pushEnabled: false },
 		]);
-		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
-			makeConsent("user-1"),
-		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		repository.createPushDispatch.mockResolvedValue({ id: 41 });
 
 		adapter.fireAndForgetBatchPush([
@@ -752,10 +711,7 @@ describe("PushDispatcherAdapter", () => {
 		]);
 		await adapter.beforeApplicationShutdown();
 
-		expect(markPushDispatchSkipped).toHaveBeenCalledWith(
-			42,
-			"MARKETING_CONSENT_REQUIRED",
-		);
+		expect(markPushDispatchSkipped).toHaveBeenCalledWith(42, "MARKETING_CONSENT_REQUIRED");
 		expect(pushProvider.sendBatch).not.toHaveBeenCalled();
 	});
 
@@ -767,9 +723,7 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
 			makePreference("user-1", "Asia/Seoul"),
 		]);
-		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
-			makeConsent("user-1"),
-		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		rateLimiter.reserveBatch.mockResolvedValue([false]);
 		repository.createPushDispatch.mockResolvedValue({ id: 43 });
 		cacheService.mget.mockResolvedValue([undefined]);
@@ -803,9 +757,7 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
 			makePreference("user-1", "Asia/Seoul"),
 		]);
-		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
-			makeConsent("user-1"),
-		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		rateLimiter.reserveBatch.mockResolvedValue([false]);
 		repository.createPushDispatch.mockResolvedValue({ id: 44 });
 		cacheService.mget.mockResolvedValue([undefined]);
@@ -897,9 +849,7 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
 			makePreference("user-1", "Asia/Seoul"),
 		]);
-		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
-			makeConsent("user-1"),
-		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		rateLimiter.reserveBatch.mockResolvedValue([false]);
 		repository.createPushDispatch.mockResolvedValue({ id: 45 });
 		cacheService.mget.mockResolvedValue([undefined]);
@@ -935,10 +885,7 @@ describe("PushDispatcherAdapter", () => {
 		]);
 		await adapter.beforeApplicationShutdown();
 
-		expect(markPushDispatchSkipped).toHaveBeenCalledWith(
-			45,
-			"UNSUPPORTED_APP_CAPABILITY",
-		);
+		expect(markPushDispatchSkipped).toHaveBeenCalledWith(45, "UNSUPPORTED_APP_CAPABILITY");
 		expect(pushProvider.sendBatch).not.toHaveBeenCalled();
 	});
 
@@ -1003,25 +950,18 @@ describe("PushDispatcherAdapter", () => {
 		await adapter.beforeApplicationShutdown();
 
 		// Then - force 항목만 설정 게이트를 우회해 rate limit 예약과 실제 발송에 도달한다
-		expect(rateLimiter.reserveBatch).toHaveBeenCalledWith([
-			{ userId: "user-1" },
-		]);
+		expect(rateLimiter.reserveBatch).toHaveBeenCalledWith([{ userId: "user-1" }]);
 		expect(repository.createPushDispatch).toHaveBeenCalledTimes(2);
 		expect(repository.createPushDispatch).toHaveBeenCalledWith(
 			expect.objectContaining({ userId: "user-1", notificationId: 11 }),
 		);
-		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(
-			10,
-			"PUSH_SETTINGS_MISSING",
-		);
+		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(10, "PUSH_SETTINGS_MISSING");
 		expect(pushProvider.sendBatch).toHaveBeenCalledTimes(1);
 	});
 
 	it("추가 분석 필드가 있어도 v1.0~v1.4와 현재 클라이언트 payload 계약을 모두 만족한다", async () => {
 		const token = "ExponentPushToken[legacy-compatible]";
-		userSettings.getPreferenceRecord.mockResolvedValue(
-			makePreference("user-1", "Asia/Seoul"),
-		);
+		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
 		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
 		repository.findPushTokensByUser.mockResolvedValue([
@@ -1064,12 +1004,8 @@ describe("PushDispatcherAdapter", () => {
 		await adapter.beforeApplicationShutdown();
 
 		const data = pushProvider.sendBatch.mock.calls[0]?.[0]?.[0]?.data;
-		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_0_TO_V1_1.safeParse(data).success).toBe(
-			true,
-		);
-		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_2_TO_V1_4.safeParse(data).success).toBe(
-			true,
-		);
+		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_0_TO_V1_1.safeParse(data).success).toBe(true);
+		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_2_TO_V1_4.safeParse(data).success).toBe(true);
 		expect(pushNotificationDataSchema.safeParse(data).success).toBe(true);
 		expect(data).toMatchObject({
 			notificationId: 101,

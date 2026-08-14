@@ -2,9 +2,11 @@ import { ErrorCode } from "@aido/errors";
 import type { ParsedTodoData } from "@aido/validators";
 import { parsedTodoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "@/shared/domain/locale";
+
 import { buildParseTodoPrompt } from "../../../domain/services/prompts/parse-todo.prompt";
 import { buildParseTodoPromptEn } from "../../../domain/services/prompts/parse-todo.prompt.en";
 import {
@@ -77,8 +79,7 @@ export class ParseTodoUseCase {
 		const userCategories = await this.categoryReader.findByUserId(userId);
 		const categoryIds = new Set(userCategories.map((c) => c.id));
 
-		const buildTodoPrompt =
-			locale === "en" ? buildParseTodoPromptEn : buildParseTodoPrompt;
+		const buildTodoPrompt = locale === "en" ? buildParseTodoPromptEn : buildParseTodoPrompt;
 		const { system, prompt } = buildTodoPrompt(
 			text,
 			timezone,

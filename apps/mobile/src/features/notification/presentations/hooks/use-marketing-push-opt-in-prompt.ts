@@ -8,6 +8,7 @@ import {
 } from '@src/shared/preferences/marketing-push-prompt.preference';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+
 import { MarketingPushPromptPolicy } from '../../models/marketing-push-prompt.policy';
 import { useMarketingPushConsentSheet } from './use-marketing-push-consent-sheet';
 

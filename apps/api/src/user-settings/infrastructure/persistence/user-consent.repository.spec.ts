@@ -14,6 +14,7 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { UserConsentBuilder } from "@test/builders";
 import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import type { UserConsent } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -44,9 +45,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 		db = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(UserConsentRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 

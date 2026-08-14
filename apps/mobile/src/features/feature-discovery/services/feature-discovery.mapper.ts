@@ -1,4 +1,5 @@
 import type { FeatureDiscoveryResponse } from '@aido/validators';
+
 import type { FeatureDiscoveryConfig } from '../models/feature-discovery.model';
 
 export const toFeatureDiscoveryConfig = (

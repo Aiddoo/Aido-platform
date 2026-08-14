@@ -1,12 +1,11 @@
 import dayjs from "dayjs";
+
 import {
 	PROMPT_OUTPUT_DISCIPLINE_EN,
 	PROMPT_SECURITY_GUARD_EN,
 } from "@/shared/domain/prompt/prompt-sections";
-import {
-	encodeUntrustedJson,
-	sanitizeMemoForPrompt,
-} from "@/shared/domain/prompt/sanitize";
+import { encodeUntrustedJson, sanitizeMemoForPrompt } from "@/shared/domain/prompt/sanitize";
+
 import type { CategoryInfo, ParseMemoPrompt } from "./parse-memo.prompt";
 import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules";
 

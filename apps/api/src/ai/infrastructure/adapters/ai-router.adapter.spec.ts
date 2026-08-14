@@ -7,6 +7,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { z } from "zod";
+
 import type {
 	AiProvider,
 	GenerateStructuredResult,
@@ -64,14 +65,10 @@ describe("AiRouterAdapter — 라우팅 Provider", () => {
 
 		it("Gemini 가 던진 에러는 그대로 전파한다", async () => {
 			// Given
-			mockGemini.generateStructured.mockRejectedValueOnce(
-				new Error("API 실패"),
-			);
+			mockGemini.generateStructured.mockRejectedValueOnce(new Error("API 실패"));
 
 			// When & Then
-			await expect(
-				router.generateStructured({ prompt: "x", schema }),
-			).rejects.toThrow("API 실패");
+			await expect(router.generateStructured({ prompt: "x", schema })).rejects.toThrow("API 실패");
 		});
 	});
 

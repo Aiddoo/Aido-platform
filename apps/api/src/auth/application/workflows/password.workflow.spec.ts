@@ -14,16 +14,12 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
 import { asMock } from "@test/mocks";
-import {
-	REVOKE_REASON,
-	SECURITY_EVENT,
-} from "@/auth/domain/constants/auth.constants";
+
+import { REVOKE_REASON, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	AUTH_PASSWORD_HASHER,
-	type AuthPasswordHasherPort,
-} from "../ports/auth-crypto.port";
+
+import { AUTH_PASSWORD_HASHER, type AuthPasswordHasherPort } from "../ports/auth-crypto.port";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_SECURITY_LOG_REPOSITORY,
@@ -48,8 +44,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 	let securityLogRepo: Mocked<AuthSecurityLogRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(PasswordWorkflow).compile();
+		const { unit, unitRef } = await TestBed.solitary(PasswordWorkflow).compile();
 
 		service = unit;
 		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
@@ -66,11 +61,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 		it("비밀번호 재설정 코드를 발송한다", async () => {
 			// Given
-			const mockUser = UserBuilder.create()
-				.withId("user-123")
-				.withEmail(email)
-				.verified()
-				.build();
+			const mockUser = UserBuilder.create().withId("user-123").withEmail(email).verified().build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			verificationService.createAndSendPasswordReset.mockResolvedValue({
@@ -82,9 +73,10 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			const result = await service.forgotPassword(email);
 
 			// Then
-			expect(
-				verificationService.createAndSendPasswordReset,
-			).toHaveBeenCalledWith(mockUser.id, email);
+			expect(verificationService.createAndSendPasswordReset).toHaveBeenCalledWith(
+				mockUser.id,
+				email,
+			);
 			expect(securityLogRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUser.id,
@@ -104,17 +96,12 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 			// Then
 			expect(result.message).toBeDefined();
-			expect(
-				verificationService.createAndSendPasswordReset,
-			).not.toHaveBeenCalled();
+			expect(verificationService.createAndSendPasswordReset).not.toHaveBeenCalled();
 		});
 
 		it("탈퇴한 사용자에게 비밀번호 재설정 코드를 발송하지 않는다", async () => {
 			// Given
-			const deletedUser = UserBuilder.create()
-				.withEmail(email)
-				.deleted()
-				.build();
+			const deletedUser = UserBuilder.create().withEmail(email).deleted().build();
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
 
 			// When
@@ -122,9 +109,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 			// Then — 보안상 동일 응답, 이메일 미발송
 			expect(result.message).toBeDefined();
-			expect(
-				verificationService.createAndSendPasswordReset,
-			).not.toHaveBeenCalled();
+			expect(verificationService.createAndSendPasswordReset).not.toHaveBeenCalled();
 		});
 	});
 
@@ -135,11 +120,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 		it("올바른 코드로 비밀번호를 재설정한다", async () => {
 			// Given
-			const mockUser = UserBuilder.create()
-				.withId("user-123")
-				.withEmail(email)
-				.verified()
-				.build();
+			const mockUser = UserBuilder.create().withId("user-123").withEmail(email).verified().build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
@@ -166,49 +147,39 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			userRepo.findByEmail.mockResolvedValue(null);
 
 			// When & Then
-			await expect(
-				service.resetPassword(email, code, newPassword),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.resetPassword(email, code, newPassword)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("소셜 전용 계정(Credential 없음)이면 USER_0613 에러를 던진다", async () => {
 			// Given
-			const mockUser = UserBuilder.create()
-				.withId("user-123")
-				.withEmail(email)
-				.build();
+			const mockUser = UserBuilder.create().withId("user-123").withEmail(email).build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
 
 			// When & Then
-			await expect(
-				service.resetPassword(email, code, newPassword),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.resetPassword(email, code, newPassword)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("탈퇴한 사용자의 비밀번호 재설정 시 USER_0606 에러", async () => {
 			// Given
-			const deletedUser = UserBuilder.create()
-				.withEmail(email)
-				.deleted()
-				.build();
+			const deletedUser = UserBuilder.create().withEmail(email).deleted().build();
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
 
 			// When & Then
-			await expect(
-				service.resetPassword(email, code, newPassword),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.resetPassword(email, code, newPassword)).rejects.toThrow(
+				ApplicationException,
+			);
 			expect(accountRepo.updatePassword).not.toHaveBeenCalled();
 		});
 
 		it("재설정 후 모든 세션을 무효화한다 (excludeSessionId=undefined)", async () => {
 			// Given
-			const mockUser = UserBuilder.create()
-				.withId("user-123")
-				.withEmail(email)
-				.verified()
-				.build();
+			const mockUser = UserBuilder.create().withId("user-123").withEmail(email).verified().build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
@@ -236,11 +207,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 		it("보안 로그에 PASSWORD_CHANGED 이벤트와 PASSWORD_RESET 사유를 기록한다", async () => {
 			// Given
-			const mockUser = UserBuilder.create()
-				.withId("user-123")
-				.withEmail(email)
-				.verified()
-				.build();
+			const mockUser = UserBuilder.create().withId("user-123").withEmail(email).verified().build();
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
@@ -292,11 +259,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
-			const result = await service.changePassword(
-				userId,
-				currentPassword,
-				newPassword,
-			);
+			const result = await service.changePassword(userId, currentPassword, newPassword);
 
 			// Then
 			expect(passwordService.verify).toHaveBeenCalled();
@@ -315,9 +278,9 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			passwordService.verify.mockResolvedValue(false);
 
 			// When & Then
-			await expect(
-				service.changePassword(userId, currentPassword, newPassword),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.changePassword(userId, currentPassword, newPassword)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("Credential 계정이 없으면 에러를 던진다", async () => {
@@ -327,9 +290,9 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
 
 			// When & Then
-			await expect(
-				service.changePassword(userId, currentPassword, newPassword),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.changePassword(userId, currentPassword, newPassword)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("보안 로그를 기록한다", async () => {
@@ -379,13 +342,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 				asMock(securityLogRepo.create).mockResolvedValue({});
 
 				// When
-				await service.changePassword(
-					userId,
-					currentPassword,
-					newPassword,
-					undefined,
-					sessionId,
-				);
+				await service.changePassword(userId, currentPassword, newPassword, undefined, sessionId);
 
 				// Then
 				expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
@@ -402,23 +359,20 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 				accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
 
 				// When & Then
-				await expect(
-					service.changePassword(userId, currentPassword, newPassword),
-				).rejects.toThrow(ApplicationException);
+				await expect(service.changePassword(userId, currentPassword, newPassword)).rejects.toThrow(
+					ApplicationException,
+				);
 			});
 
 			it("탈퇴한 사용자의 비밀번호 변경 시 USER_0606 에러", async () => {
 				// Given
-				const deletedUser = UserBuilder.create()
-					.withId(userId)
-					.deleted()
-					.build();
+				const deletedUser = UserBuilder.create().withId(userId).deleted().build();
 				userRepo.findById.mockResolvedValue(deletedUser);
 
 				// When & Then
-				await expect(
-					service.changePassword(userId, currentPassword, newPassword),
-				).rejects.toThrow(ApplicationException);
+				await expect(service.changePassword(userId, currentPassword, newPassword)).rejects.toThrow(
+					ApplicationException,
+				);
 				expect(accountRepo.findByUserIdAndProvider).not.toHaveBeenCalled();
 			});
 		});
@@ -442,13 +396,11 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 			// Then
 			expect(result.message).toBeDefined();
-			expect(accountRepo.findByUserIdAndProvider).toHaveBeenCalledWith(
+			expect(accountRepo.findByUserIdAndProvider).toHaveBeenCalledWith(userId, "CREDENTIAL");
+			expect(verificationService.createAndSendPasswordSetup).toHaveBeenCalledWith(
 				userId,
-				"CREDENTIAL",
+				user.email,
 			);
-			expect(
-				verificationService.createAndSendPasswordSetup,
-			).toHaveBeenCalledWith(userId, user.email);
 		});
 
 		it("CREDENTIAL 계정이 이미 존재하면 에러를 던진다", async () => {
@@ -459,9 +411,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(account);
 
 			// When & Then
-			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(ApplicationException);
 		});
 
 		it("존재하지 않는 사용자면 에러를 던진다", async () => {
@@ -469,24 +419,16 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			userRepo.findById.mockResolvedValue(null);
 
 			// When & Then
-			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(ApplicationException);
 		});
 
 		it("탈퇴한 사용자면 에러를 던진다", async () => {
 			// Given
-			const user = UserBuilder.create()
-				.withId(userId)
-				.verified()
-				.deleted()
-				.build();
+			const user = UserBuilder.create().withId(userId).verified().deleted().build();
 			userRepo.findById.mockResolvedValue(user);
 
 			// When & Then
-			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -516,12 +458,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			setupSuccessfulSetPassword();
 
 			// When
-			const result = await service.setPassword(
-				userId,
-				code,
-				newPassword,
-				metadata,
-			);
+			const result = await service.setPassword(userId, code, newPassword, metadata);
 
 			// Then
 			expect(result.message).toBeDefined();
@@ -536,10 +473,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			await service.setPassword(userId, code, newPassword, metadata);
 
 			// Then
-			expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith(
-				userId,
-				"hashed-password",
-			);
+			expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith(userId, "hashed-password");
 		});
 
 		it("보안 로그를 기록한다 (PASSWORD_SETUP)", async () => {
@@ -577,9 +511,9 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(account);
 
 			// When & Then
-			await expect(
-				service.setPassword(userId, code, newPassword, metadata),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.setPassword(userId, code, newPassword, metadata)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("비밀번호를 Argon2id로 해싱한다", async () => {
@@ -598,24 +532,20 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			userRepo.findById.mockResolvedValue(null);
 
 			// When & Then
-			await expect(
-				service.setPassword(userId, code, newPassword, metadata),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.setPassword(userId, code, newPassword, metadata)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("탈퇴한 사용자면 에러를 던진다", async () => {
 			// Given
-			const user = UserBuilder.create()
-				.withId(userId)
-				.verified()
-				.deleted()
-				.build();
+			const user = UserBuilder.create().withId(userId).verified().deleted().build();
 			userRepo.findById.mockResolvedValue(user);
 
 			// When & Then
-			await expect(
-				service.setPassword(userId, code, newPassword, metadata),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.setPassword(userId, code, newPassword, metadata)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("인증 코드를 PASSWORD_SETUP 타입으로 검증한다", async () => {
@@ -626,11 +556,7 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			await service.setPassword(userId, code, newPassword, metadata);
 
 			// Then
-			expect(verificationService.verifyCode).toHaveBeenCalledWith(
-				userId,
-				code,
-				"PASSWORD_SETUP",
-			);
+			expect(verificationService.verifyCode).toHaveBeenCalledWith(userId, code, "PASSWORD_SETUP");
 		});
 	});
 });

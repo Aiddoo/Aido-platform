@@ -62,8 +62,7 @@ describe("weekly-achievement 도메인", () => {
 
 			const start = new Date(range.startDate);
 			const end = new Date(range.endDate);
-			const diffDays =
-				(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+			const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
 			expect(diffDays).toBe(6);
 		});
 
@@ -203,17 +202,13 @@ describe("weekly-achievement 도메인", () => {
 		});
 
 		it("totalTodos가 0이면 completionRate는 0이다", () => {
-			const view = toWeeklyAchievementView(
-				row({ totalTodos: 0, completedTodos: 0 }),
-			);
+			const view = toWeeklyAchievementView(row({ totalTodos: 0, completedTodos: 0 }));
 			expect(view.completionRate).toBe(0);
 		});
 	});
 
 	describe("buildWeeklyAchievementSnapshot — 불변식", () => {
-		function upsert(
-			overrides?: Partial<WeeklyAchievementUpsert>,
-		): WeeklyAchievementUpsert {
+		function upsert(overrides?: Partial<WeeklyAchievementUpsert>): WeeklyAchievementUpsert {
 			return {
 				userId: "user-1",
 				year: 2026,
@@ -232,16 +227,12 @@ describe("weekly-achievement 도메인", () => {
 
 		it("완료 수가 전체 수를 초과하면 SYS_0002로 실패한다", () => {
 			expect(() =>
-				buildWeeklyAchievementSnapshot(
-					upsert({ totalTodos: 2, completedTodos: 5 }),
-				),
+				buildWeeklyAchievementSnapshot(upsert({ totalTodos: 2, completedTodos: 5 })),
 			).toThrow();
 		});
 
 		it("주차가 ISO 범위를 벗어나면 SYS_0002로 실패한다", () => {
-			expect(() =>
-				buildWeeklyAchievementSnapshot(upsert({ week: 54 })),
-			).toThrow();
+			expect(() => buildWeeklyAchievementSnapshot(upsert({ week: 54 }))).toThrow();
 		});
 	});
 });

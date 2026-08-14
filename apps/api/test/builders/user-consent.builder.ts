@@ -9,6 +9,7 @@
  */
 
 import * as crypto from "node:crypto";
+
 import type { UserConsent } from "@/generated/prisma/client";
 
 export class UserConsentBuilder {

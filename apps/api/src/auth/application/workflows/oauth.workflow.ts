@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
@@ -19,11 +20,9 @@ import { generateRandomName } from "@/auth/domain/services/random-name.util";
 import type { AccountProvider } from "@/auth/domain/types";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
-import {
-	toISOString,
-	toISOStringOrNull,
-} from "@/shared/domain/date/utils/format";
+import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import {
 	AUTH_CACHE,
 	AUTH_REGISTRATION_NOTIFIER,
@@ -137,14 +136,10 @@ export class OAuthWorkflow {
 			return this.#DEFAULT_REDIRECT_URI;
 		}
 
-		const isValid = this.#allowedRedirectPatterns.some((pattern) =>
-			pattern.test(redirectUri),
-		);
+		const isValid = this.#allowedRedirectPatterns.some((pattern) => pattern.test(redirectUri));
 
 		if (!isValid) {
-			this.#logger.warn(
-				`Invalid redirect_uri rejected: ${redirectUri}. Using default.`,
-			);
+			this.#logger.warn(`Invalid redirect_uri rejected: ${redirectUri}. Using default.`);
 			return this.#DEFAULT_REDIRECT_URI;
 		}
 
@@ -284,16 +279,12 @@ export class OAuthWorkflow {
 			metadata,
 		);
 
-		const exchangeCode = await this.createExchangeCode(
-			oauthState.id,
-			loginResult.tokens,
-			{
-				userId: loginResult.userId,
-				userName: loginResult.name ?? undefined,
-				profileImage: loginResult.profileImage ?? undefined,
-				accountRestored: loginResult.accountRestored,
-			},
-		);
+		const exchangeCode = await this.createExchangeCode(oauthState.id, loginResult.tokens, {
+			userId: loginResult.userId,
+			userName: loginResult.name ?? undefined,
+			profileImage: loginResult.profileImage ?? undefined,
+			accountRestored: loginResult.accountRestored,
+		});
 
 		return {
 			exchangeCode,
@@ -354,12 +345,7 @@ export class OAuthWorkflow {
 		state: string,
 		metadata?: RequestMetadata,
 	) {
-		return this.#handleWebCallbackWithExchangeCode(
-			"KAKAO",
-			code,
-			state,
-			metadata,
-		);
+		return this.#handleWebCallbackWithExchangeCode("KAKAO", code, state, metadata);
 	}
 
 	async handleGoogleWebCallbackWithExchangeCode(
@@ -367,12 +353,7 @@ export class OAuthWorkflow {
 		state: string,
 		metadata?: RequestMetadata,
 	) {
-		return this.#handleWebCallbackWithExchangeCode(
-			"GOOGLE",
-			code,
-			state,
-			metadata,
-		);
+		return this.#handleWebCallbackWithExchangeCode("GOOGLE", code, state, metadata);
 	}
 
 	async handleNaverWebCallbackWithExchangeCode(
@@ -380,12 +361,7 @@ export class OAuthWorkflow {
 		state: string,
 		metadata?: RequestMetadata,
 	) {
-		return this.#handleWebCallbackWithExchangeCode(
-			"NAVER",
-			code,
-			state,
-			metadata,
-		);
+		return this.#handleWebCallbackWithExchangeCode("NAVER", code, state, metadata);
 	}
 
 	async handleAppleMobileLogin(
@@ -428,17 +404,13 @@ export class OAuthWorkflow {
 		refreshToken?: string,
 		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
-		const existingAccount =
-			await this.accountRepository.findByProviderAccountId(
-				provider,
-				providerAccountId,
-			);
+		const existingAccount = await this.accountRepository.findByProviderAccountId(
+			provider,
+			providerAccountId,
+		);
 
 		if (existingAccount && existingAccount.userId !== userId) {
-			throw this.#getAlreadyLinkedExceptionForProvider(
-				provider,
-				providerAccountId,
-			);
+			throw this.#getAlreadyLinkedExceptionForProvider(provider, providerAccountId);
 		}
 
 		if (existingAccount) {
@@ -470,10 +442,7 @@ export class OAuthWorkflow {
 				error instanceof AuthPersistenceConflict &&
 				error.kind === "OAUTH_ACCOUNT_ALREADY_LINKED"
 			) {
-				throw this.#getAlreadyLinkedExceptionForProvider(
-					provider,
-					providerAccountId,
-				);
+				throw this.#getAlreadyLinkedExceptionForProvider(provider, providerAccountId);
 			}
 			throw error;
 		}
@@ -517,10 +486,7 @@ export class OAuthWorkflow {
 		provider: AccountProvider,
 		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
-		const account = await this.accountRepository.findByUserIdAndProvider(
-			userId,
-			provider,
-		);
+		const account = await this.accountRepository.findByUserIdAndProvider(userId, provider);
 
 		if (!account) {
 			throw new ApplicationException(ErrorCode.USER_0603, {
@@ -607,14 +573,12 @@ export class OAuthWorkflow {
 		},
 	): Promise<LoginResult> {
 		const ip = options.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
-		const userAgent =
-			options.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+		const userAgent = options.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		const existingAccount =
-			await this.accountRepository.findByProviderAccountId(
-				provider,
-				providerAccountId,
-			);
+		const existingAccount = await this.accountRepository.findByProviderAccountId(
+			provider,
+			providerAccountId,
+		);
 
 		let userId: string;
 		let userEmail: string;
@@ -644,23 +608,17 @@ export class OAuthWorkflow {
 			this.#logger.debug(`Existing ${provider} user login: ${userId}`);
 		} else {
 			const effectiveEmail =
-				email ??
-				`${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
+				email ?? `${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
 
 			if (email) {
 				const existingUser = await this.userRepository.findByEmail(email);
 				if (existingUser) {
-					return this.#handleEmailConflict(
-						existingUser,
-						provider,
-						providerAccountId,
-						{
-							emailVerified: options.emailVerified,
-							appleRefreshToken: options.appleRefreshToken,
-							ip,
-							userAgent,
-						},
-					);
+					return this.#handleEmailConflict(existingUser, provider, providerAccountId, {
+						emailVerified: options.emailVerified,
+						appleRefreshToken: options.appleRefreshToken,
+						ip,
+						userAgent,
+					});
 				}
 			}
 
@@ -905,17 +863,11 @@ export class OAuthWorkflow {
 		provider: AccountProvider,
 		providerAccountId: string,
 	): ApplicationException {
-		const exceptionMap: Partial<
-			Record<AccountProvider, (id: string) => ApplicationException>
-		> = {
-			KAKAO: (kakaoId) =>
-				new ApplicationException(ErrorCode.KAKAO_0306, { kakaoId }),
-			APPLE: (appleId) =>
-				new ApplicationException(ErrorCode.APPLE_0355, { appleId }),
-			GOOGLE: (googleId) =>
-				new ApplicationException(ErrorCode.GOOGLE_0405, { googleId }),
-			NAVER: (naverId) =>
-				new ApplicationException(ErrorCode.NAVER_0455, { naverId }),
+		const exceptionMap: Partial<Record<AccountProvider, (id: string) => ApplicationException>> = {
+			KAKAO: (kakaoId) => new ApplicationException(ErrorCode.KAKAO_0306, { kakaoId }),
+			APPLE: (appleId) => new ApplicationException(ErrorCode.APPLE_0355, { appleId }),
+			GOOGLE: (googleId) => new ApplicationException(ErrorCode.GOOGLE_0405, { googleId }),
+			NAVER: (naverId) => new ApplicationException(ErrorCode.NAVER_0455, { naverId }),
 		};
 		const factory = exceptionMap[provider];
 		return factory
@@ -948,19 +900,14 @@ export class OAuthWorkflow {
 	): Promise<LoginResult> {
 		// 탈퇴 사용자: 유예 기간 내 복구 또는 차단(도메인 정책이 소유)
 		// 유예 기간 이내면 needsRestore=true(아래에서 트랜잭션 내 복구), 초과면 USER_0606
-		const needsRestore = assertRestorableWithinGracePeriod(
-			existingUser.deletedAt,
-			existingUser.id,
-		);
+		const needsRestore = assertRestorableWithinGracePeriod(existingUser.deletedAt, existingUser.id);
 
 		const isTrusted = this.#isTrustedProvider(provider);
 		const isEmailVerified = options.emailVerified === true;
 
 		if (isTrusted && isEmailVerified) {
 			// 자동 연동: 신뢰된 Provider + 이메일 검증됨
-			this.#logger.log(
-				`Auto-linking ${provider} account to existing user: ${existingUser.id}`,
-			);
+			this.#logger.log(`Auto-linking ${provider} account to existing user: ${existingUser.id}`);
 
 			// 사용자 상태 검증 (복구 대상은 skip — 트랜잭션 내에서 ACTIVE로 변경됨)
 			if (!needsRestore) {
@@ -976,16 +923,11 @@ export class OAuthWorkflow {
 					existingUser,
 					{ ip: options.ip, userAgent: options.userAgent, provider },
 					() =>
-						this.#linkOAuthAccount(
-							existingUser.id,
-							provider,
-							providerAccountId,
-							{
-								ip: options.ip,
-								userAgent: options.userAgent,
-								appleRefreshToken: options.appleRefreshToken,
-							},
-						),
+						this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
+							ip: options.ip,
+							userAgent: options.userAgent,
+							appleRefreshToken: options.appleRefreshToken,
+						}),
 				);
 
 				return { ...loginResult, accountRestored: true };
@@ -995,22 +937,17 @@ export class OAuthWorkflow {
 			// IssueLoginUseCase는 호출측 트랜잭션에 참여하는 순수 DB write이므로
 			// (커밋 후 enqueue/캐시 등 부수효과 없음) 안전하게 한 트랜잭션으로 묶인다.
 			return this.uow.run(async () => {
-				await this.#linkOAuthAccount(
-					existingUser.id,
-					provider,
-					providerAccountId,
-					{
-						ip: options.ip,
-						userAgent: options.userAgent,
-						appleRefreshToken: options.appleRefreshToken,
-					},
-				);
+				await this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
+					ip: options.ip,
+					userAgent: options.userAgent,
+					appleRefreshToken: options.appleRefreshToken,
+				});
 
-				return this.#createSessionAndTokens(
-					existingUser.id,
-					existingUser.email,
-					{ ip: options.ip, userAgent: options.userAgent, provider },
-				);
+				return this.#createSessionAndTokens(existingUser.id, existingUser.email, {
+					ip: options.ip,
+					userAgent: options.userAgent,
+					provider,
+				});
 			});
 		}
 
@@ -1108,13 +1045,7 @@ export class OAuthWorkflow {
 			`Linking exchange code redeemed for user ${userId}, provider ${provider}, OAuthState ID: ${oauthState.id}`,
 		);
 
-		return this.linkAccount(
-			userId,
-			provider,
-			providerAccountId,
-			undefined,
-			metadata,
-		);
+		return this.linkAccount(userId, provider, providerAccountId, undefined, metadata);
 	}
 
 	async createExchangeCode(
@@ -1157,20 +1088,12 @@ export class OAuthWorkflow {
 		const oauthState = await this.oauthStateRepository.findByExchangeCode(code);
 
 		if (!oauthState) {
-			this.#logger.warn(
-				`Invalid or expired exchange code attempted: ${code.substring(0, 8)}...`,
-			);
+			this.#logger.warn(`Invalid or expired exchange code attempted: ${code.substring(0, 8)}...`);
 			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
-		if (
-			!oauthState.accessToken ||
-			!oauthState.refreshToken ||
-			!oauthState.userId
-		) {
-			this.#logger.error(
-				`Exchange code found but tokens missing: OAuthState ID ${oauthState.id}`,
-			);
+		if (!oauthState.accessToken || !oauthState.refreshToken || !oauthState.userId) {
+			this.#logger.error(`Exchange code found but tokens missing: OAuthState ID ${oauthState.id}`);
 			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 

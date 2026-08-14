@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Timezone } from "@/shared/presentation/decorators";
 
+import { Timezone } from "@/shared/presentation/decorators";
 import {
 	ApiDoc,
 	ApiForbiddenError,
@@ -12,10 +12,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case";
 import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case";
 import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case";
@@ -228,10 +225,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: AiReportIdParamDto,
 	): Promise<AiReportResponseDto> {
-		const report = await this.getReportByIdUseCase.execute(
-			user.userId,
-			params.id,
-		);
+		const report = await this.getReportByIdUseCase.execute(user.userId, params.id);
 
 		return { report };
 	}

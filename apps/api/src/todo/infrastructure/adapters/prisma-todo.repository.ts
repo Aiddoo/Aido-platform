@@ -1,19 +1,17 @@
 import { Injectable } from "@nestjs/common";
+
 import type {
 	TodoRepositoryPort,
 	TodoUpdatePatch,
 } from "../../application/ports/todo.repository.port";
+import { TodoItem } from "../../domain/entities/todo-item.entity";
 import {
 	Todo,
 	type TodoCreationPlan,
 	type TodoVisibility,
 } from "../../domain/entities/todo.aggregate";
-import { TodoItem } from "../../domain/entities/todo-item.entity";
 import { TodoId } from "../../domain/value-objects/todo-id.vo";
-import {
-	TodoSchedule,
-	type TodoScheduleProps,
-} from "../../domain/value-objects/todo-schedule.vo";
+import { TodoSchedule, type TodoScheduleProps } from "../../domain/value-objects/todo-schedule.vo";
 import { TodoRowRepository } from "../persistence/todo-row.repository";
 import type { TodoWithCategory } from "../persistence/todo-row.types";
 
@@ -82,18 +80,11 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		return PrismaTodoRepository.toDomain(row);
 	}
 
-	async createInlineItems(
-		todoId: number,
-		items: { title: string }[],
-	): Promise<void> {
+	async createInlineItems(todoId: number, items: { title: string }[]): Promise<void> {
 		await this.todoRepository.createManyItems(todoId, items);
 	}
 
-	async updateCompletion(
-		id: number,
-		completed: boolean,
-		completedAt: Date | null,
-	): Promise<void> {
+	async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
 		await this.todoRepository.update(id, { completed, completedAt });
 	}
 
@@ -107,10 +98,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		await this.todoRepository.update(id, { title });
 	}
 
-	async updateVisibility(
-		id: number,
-		visibility: TodoVisibility,
-	): Promise<void> {
+	async updateVisibility(id: number, visibility: TodoVisibility): Promise<void> {
 		await this.todoRepository.update(id, { visibility });
 	}
 
@@ -146,10 +134,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		await this.todoRepository.shiftSortOrders(userId, from, to, delta);
 	}
 
-	async createMany(
-		items: TodoCreationPlan[],
-		recurrenceGroupId: string,
-	): Promise<Todo[]> {
+	async createMany(items: TodoCreationPlan[], recurrenceGroupId: string): Promise<Todo[]> {
 		const rows = await this.todoRepository.createManyBatch(
 			items.map((item) => ({
 				userId: item.userId,
@@ -178,17 +163,11 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 
 	// ===== 하위 항목 (체크리스트) =====
 
-	async createItem(
-		todoId: number,
-		data: { title: string; sortOrder: number },
-	): Promise<void> {
+	async createItem(todoId: number, data: { title: string; sortOrder: number }): Promise<void> {
 		await this.todoRepository.createItem(todoId, data);
 	}
 
-	async updateItem(
-		itemId: number,
-		data: { title?: string; completed?: boolean },
-	): Promise<void> {
+	async updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void> {
 		await this.todoRepository.updateItem(itemId, data);
 	}
 

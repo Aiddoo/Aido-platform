@@ -3,10 +3,10 @@ import { Module } from "@nestjs/common";
 import { AdminNotificationModule } from "@/admin-notification/admin-notification.module";
 import { NotificationModule } from "@/notification/notification.module";
 
-import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscription.repository.port";
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscription-event-notifier.port";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscription-webhook-lock.port";
+import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscription.repository.port";
 import { HandleWebhookEventUseCase } from "./application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
 import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscription-cache.adapter";
 import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscription-event-notifier.adapter";

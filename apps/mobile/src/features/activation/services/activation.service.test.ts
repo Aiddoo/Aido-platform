@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/models/feature-discovery.model';
+
 import { createActivationProgressRepository } from '../repositories/activation-progress.repository';
 import { ActivationService } from './activation.service';
 

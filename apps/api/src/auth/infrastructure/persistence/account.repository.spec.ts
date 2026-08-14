@@ -17,6 +17,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder } from "@test/builders";
 import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import { AuthPersistenceConflict } from "@/auth/application/ports";
 import { Prisma } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -56,9 +57,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 		db = createMockPrisma();
 
 		const { unit, unitRef } = await TestBed.solitary(AccountRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 
@@ -78,10 +77,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.findUnique.mockResolvedValue(mockCredentialAccount);
 
 			// When
-			const result = await repository.findByUserIdAndProvider(
-				"user-123",
-				"CREDENTIAL",
-			);
+			const result = await repository.findByUserIdAndProvider("user-123", "CREDENTIAL");
 
 			// Then
 			expect(result).toEqual(mockCredentialAccount);
@@ -97,10 +93,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.findUnique.mockResolvedValue(null);
 
 			// When
-			const result = await repository.findByUserIdAndProvider(
-				"user-123",
-				"GOOGLE",
-			);
+			const result = await repository.findByUserIdAndProvider("user-123", "GOOGLE");
 
 			// Then
 			expect(result).toBeNull();
@@ -113,10 +106,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.findUnique.mockResolvedValue(mockOAuthAccount);
 
 			// When
-			const result = await repository.findByProviderAccountId(
-				"GOOGLE",
-				"google-user-id",
-			);
+			const result = await repository.findByProviderAccountId("GOOGLE", "google-user-id");
 
 			// Then
 			expect(result).toEqual(mockOAuthAccount);
@@ -135,10 +125,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.findUnique.mockResolvedValue(null);
 
 			// When
-			const result = await repository.findByProviderAccountId(
-				"GOOGLE",
-				"non-existent-id",
-			);
+			const result = await repository.findByProviderAccountId("GOOGLE", "non-existent-id");
 
 			// Then
 			expect(result).toBeNull();
@@ -151,10 +138,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.create.mockResolvedValue(mockCredentialAccount);
 
 			// When
-			const result = await repository.createCredentialAccount(
-				"user-123",
-				"hashed-password",
-			);
+			const result = await repository.createCredentialAccount("user-123", "hashed-password");
 
 			// Then
 			expect(result).toEqual(mockCredentialAccount);
@@ -173,10 +157,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.create.mockResolvedValue(mockCredentialAccount);
 
 			// When
-			const result = await repository.createCredentialAccount(
-				"user-123",
-				"hashed-password",
-			);
+			const result = await repository.createCredentialAccount("user-123", "hashed-password");
 
 			// Then
 			expect(result).toEqual(mockCredentialAccount);
@@ -203,10 +184,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.update.mockResolvedValue(updatedAccount);
 
 			// When
-			const result = await repository.updatePassword(
-				"user-123",
-				"new-hashed-password",
-			);
+			const result = await repository.updatePassword("user-123", "new-hashed-password");
 
 			// Then
 			expect(result).toEqual(updatedAccount);
@@ -228,10 +206,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			db.account.update.mockResolvedValue(updatedAccount);
 
 			// When
-			const result = await repository.updatePassword(
-				"user-123",
-				"new-hashed-password",
-			);
+			const result = await repository.updatePassword("user-123", "new-hashed-password");
 
 			// Then
 			expect(result).toEqual(updatedAccount);
@@ -346,11 +321,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			const updatedOAuthAccount = AccountBuilder.create("user-123")
 				.withId(2)
 				.asGoogle("google-user-id")
-				.withOAuthTokens(
-					"new-access-token",
-					"new-refresh-token",
-					new Date("2025-03-01T00:00:00Z"),
-				)
+				.withOAuthTokens("new-access-token", "new-refresh-token", new Date("2025-03-01T00:00:00Z"))
 				.build();
 			db.account.update.mockResolvedValue(updatedOAuthAccount);
 			const tokens = {
@@ -360,11 +331,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			};
 
 			// When
-			const result = await repository.updateOAuthTokens(
-				"user-123",
-				"GOOGLE",
-				tokens,
-			);
+			const result = await repository.updateOAuthTokens("user-123", "GOOGLE", tokens);
 
 			// Then
 			expect(result).toEqual(updatedOAuthAccount);
@@ -393,11 +360,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			};
 
 			// When
-			const result = await repository.updateOAuthTokens(
-				"user-123",
-				"GOOGLE",
-				tokens,
-			);
+			const result = await repository.updateOAuthTokens("user-123", "GOOGLE", tokens);
 
 			// Then
 			expect(result).toEqual(partialUpdatedAccount);
@@ -425,11 +388,7 @@ describe("AccountRepository — 계정 리포지토리", () => {
 			};
 
 			// When
-			const result = await repository.updateOAuthTokens(
-				"user-123",
-				"GOOGLE",
-				tokens,
-			);
+			const result = await repository.updateOAuthTokens("user-123", "GOOGLE", tokens);
 
 			// Then
 			expect(result).toEqual(updatedOAuthAccount);

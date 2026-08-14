@@ -11,13 +11,10 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
+
 import { Subscription } from "../../../domain/entities/subscription.aggregate";
-import {
-	SUBSCRIPTION_REPOSITORY,
-	type SubscriptionRepositoryPort,
-	type SubscriptionUser,
-} from "../../ports/subscription.repository.port";
 import {
 	SUBSCRIPTION_CACHE,
 	type SubscriptionCachePort,
@@ -27,6 +24,11 @@ import {
 	type SubscriptionEventNotifierPort,
 } from "../../ports/subscription-event-notifier.port";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "../../ports/subscription-webhook-lock.port";
+import {
+	SUBSCRIPTION_REPOSITORY,
+	type SubscriptionRepositoryPort,
+	type SubscriptionUser,
+} from "../../ports/subscription.repository.port";
 import { HandleWebhookEventUseCase } from "./handle-webhook-event.use-case";
 
 describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
@@ -93,10 +95,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 	 * 비-1605 처리 실패는 execute가 삼켜 200({ received: true })을 반환하고 notifier로
 	 * 보고한다(Sentry·Discord 오케스트레이션은 어댑터 소유). Lock 경합(1605)만 rethrow한다.
 	 */
-	const expectSwallowedFailure = async (
-		payload: unknown,
-		errorCode: string,
-	): Promise<void> => {
+	const expectSwallowedFailure = async (payload: unknown, errorCode: string): Promise<void> => {
 		const result = await useCase.execute(payload);
 		expect(result).toEqual({ received: true });
 		expect(mockNotifier.reportWebhookFailure).toHaveBeenCalledWith(
@@ -138,9 +137,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 	describe("Lock / 사용자 조회", () => {
 		it("Lock 획득 실패 → SUBSCRIPTION_1605는 rethrow(429 유도), DB 조회 없음", async () => {
 			acquireMock.mockResolvedValue(null);
-			const payload = SubscriptionEventBuilder.initialPurchase()
-				.withAppUserId(APP_USER_ID)
-				.build();
+			const payload = SubscriptionEventBuilder.initialPurchase().withAppUserId(APP_USER_ID).build();
 
 			await expect(useCase.execute(payload)).rejects.toMatchObject({
 				errorCode: "SUBSCRIPTION_1605",
@@ -182,9 +179,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 		});
 
 		it("TEST 이벤트 → 무시 (핸들러 미실행)", async () => {
-			const payload = SubscriptionEventBuilder.test()
-				.withAppUserId(APP_USER_ID)
-				.build();
+			const payload = SubscriptionEventBuilder.test().withAppUserId(APP_USER_ID).build();
 
 			await useCase.execute(payload);
 
@@ -193,9 +188,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 		});
 
 		it("SUBSCRIBER_ALIAS 이벤트 → 무시", async () => {
-			const payload = SubscriptionEventBuilder.subscriberAlias()
-				.withAppUserId(APP_USER_ID)
-				.build();
+			const payload = SubscriptionEventBuilder.subscriberAlias().withAppUserId(APP_USER_ID).build();
 
 			await useCase.execute(payload);
 
@@ -501,15 +494,11 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 	describe("TRANSFER", () => {
 		it("이미 올바른 매핑 → updateUser 스킵 (멱등)", async () => {
 			mockRepository.findUserByAppUserId.mockResolvedValue(mockUser);
-			const payload = SubscriptionEventBuilder.transfer()
-				.withAppUserId(APP_USER_ID)
-				.build();
+			const payload = SubscriptionEventBuilder.transfer().withAppUserId(APP_USER_ID).build();
 
 			await useCase.execute(payload);
 
-			expect(
-				mockRepository.updateUserSubscriptionStatus,
-			).not.toHaveBeenCalled();
+			expect(mockRepository.updateUserSubscriptionStatus).not.toHaveBeenCalled();
 			// 이벤트는 발행됨 (payload 반환)
 			expect(mockNotifier.notifySubscriptionEvent).toHaveBeenCalledWith(
 				expect.objectContaining({ eventType: "TRANSFER" }),
@@ -521,9 +510,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 			mockRepository.findUserByAppUserId
 				.mockResolvedValueOnce(mockUser)
 				.mockResolvedValueOnce(null);
-			const payload = SubscriptionEventBuilder.transfer()
-				.withAppUserId("rc-new-app-user")
-				.build();
+			const payload = SubscriptionEventBuilder.transfer().withAppUserId("rc-new-app-user").build();
 
 			await useCase.execute(payload);
 

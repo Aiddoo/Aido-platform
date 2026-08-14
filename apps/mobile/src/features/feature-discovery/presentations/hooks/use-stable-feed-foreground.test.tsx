@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import * as Linking from 'expo-linking';
 import type { EffectCallback } from 'react';
 import { AppState, InteractionManager, Keyboard } from 'react-native';
+
 import { useStableFeedForeground } from './use-stable-feed-foreground';
 
 let mockHasActiveOverlay = false;

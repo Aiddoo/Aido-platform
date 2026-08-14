@@ -8,11 +8,11 @@
 
 ## 관련 문서
 
-| 문서 | 내용 |
-|------|------|
+| 문서                                   | 내용               |
+| -------------------------------------- | ------------------ |
 | [testing-guide.md](./testing-guide.md) | 종합 테스팅 가이드 |
-| [unit-test.md](./unit-test.md) | 단위 테스트 가이드 |
-| [e2e-test.md](./e2e-test.md) | E2E 테스트 가이드 |
+| [unit-test.md](./unit-test.md)         | 단위 테스트 가이드 |
+| [e2e-test.md](./e2e-test.md)           | E2E 테스트 가이드  |
 
 ---
 
@@ -20,10 +20,10 @@
 
 통합 테스트는 두 가지 유형으로 나뉩니다:
 
-| 유형 | DB | 도구 | 목적 | 예시 |
-|------|-----|------|------|------|
-| **Mock DB** | `createMockDatabaseService()` | NestJS `TestingModule` | Service → Repository DI 검증 | cheer, follow, nudge, todo 등 |
-| **실제 DB** | Jest 실행당 Testcontainers PostgreSQL 1개 | `TestDatabase` + 모듈 팩토리 | 전체 DB 트랜잭션 검증 | auth, oauth, account-deletion |
+| 유형        | DB                                        | 도구                         | 목적                         | 예시                          |
+| ----------- | ----------------------------------------- | ---------------------------- | ---------------------------- | ----------------------------- |
+| **Mock DB** | `createMockDatabaseService()`             | NestJS `TestingModule`       | Service → Repository DI 검증 | cheer, follow, nudge, todo 등 |
+| **실제 DB** | Jest 실행당 Testcontainers PostgreSQL 1개 | `TestDatabase` + 모듈 팩토리 | 전체 DB 트랜잭션 검증        | auth, oauth, account-deletion |
 
 ### 파일 위치 및 명명
 
@@ -51,11 +51,11 @@ test/
 
 ### 핵심 도구
 
-| 도구 | import | 역할 |
-|------|--------|------|
+| 도구                          | import                              | 역할                               |
+| ----------------------------- | ----------------------------------- | ---------------------------------- |
 | `createMockDatabaseService()` | `@test/mocks/mock-database.factory` | DB Mock + `$transaction` 자동 설정 |
-| `suppressLogger()` | `@test/setup/suppress-logger` | Logger 출력 억제 |
-| Builder | `@test/builders` | 테스트 데이터 생성 |
+| `suppressLogger()`            | `@test/setup/suppress-logger`       | Logger 출력 억제                   |
+| Builder                       | `@test/builders`                    | 테스트 데이터 생성                 |
 
 ### 전체 템플릿
 
@@ -137,7 +137,7 @@ describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
 ### `createMockDatabaseService()` 사용법
 
 ```typescript
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createMockDatabaseService } from '@test/mocks/mock-database.factory';
 
 // 필요한 모델만 전달 — $transaction은 자동 설정됨
 const mockDb = createMockDatabaseService({
@@ -179,12 +179,12 @@ const mockDb = createMockDatabaseService({
 
 ### 핵심 도구
 
-| 도구 | import | 역할 |
-|------|--------|------|
-| `TestDatabase` | `@test/setup/test-database` | global setup DB에 Prisma 연결 및 데이터 초기화 |
-| `createAuthTestModule()` | `@test/integration/helpers/auth-test-module.factory` | Auth 관련 TestingModule 팩토리 |
-| `suppressLogger()` | `@test/setup/suppress-logger` | Logger 출력 억제 |
-| `FakeEmailService` | `@test/mocks/fake-email.service` | 이메일 발송 Mock |
+| 도구                     | import                                               | 역할                                           |
+| ------------------------ | ---------------------------------------------------- | ---------------------------------------------- |
+| `TestDatabase`           | `@test/setup/test-database`                          | global setup DB에 Prisma 연결 및 데이터 초기화 |
+| `createAuthTestModule()` | `@test/integration/helpers/auth-test-module.factory` | Auth 관련 TestingModule 팩토리                 |
+| `suppressLogger()`       | `@test/setup/suppress-logger`                        | Logger 출력 억제                               |
+| `FakeEmailService`       | `@test/mocks/fake-email.service`                     | 이메일 발송 Mock                               |
 
 ### Auth 모듈 팩토리 사용 (password-setup, password-change, password-reset)
 

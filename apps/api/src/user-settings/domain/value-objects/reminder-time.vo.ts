@@ -9,20 +9,11 @@ import { DomainException } from "@/shared/domain/exceptions/domain.exception";
  * 범위를 벗어나면 PREFERENCE_1702.
  */
 export const ReminderTime = {
-	assertValidRanges(input: {
-		morningReminderHour?: number;
-		eveningReminderHour?: number;
-	}): void {
-		if (
-			input.morningReminderHour !== undefined &&
-			input.morningReminderHour > 11
-		) {
+	assertValidRanges(input: { morningReminderHour?: number; eveningReminderHour?: number }): void {
+		if (input.morningReminderHour !== undefined && input.morningReminderHour > 11) {
 			throw new DomainException(ErrorCode.PREFERENCE_1702);
 		}
-		if (
-			input.eveningReminderHour !== undefined &&
-			input.eveningReminderHour < 12
-		) {
+		if (input.eveningReminderHour !== undefined && input.eveningReminderHour < 12) {
 			throw new DomainException(ErrorCode.PREFERENCE_1702);
 		}
 	},

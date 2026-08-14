@@ -5,10 +5,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createCheerRepositoryMock } from "@test/mocks/ports/cheer.mock";
 
-import {
-	CHEER_REPOSITORY,
-	type CheerRepositoryPort,
-} from "../../ports/cheer.repository.port";
+import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../../ports/cheer.repository.port";
 import { MarkManyCheersReadUseCase } from "./mark-many-cheers-read.use-case";
 
 const USER = "u-receiver";

@@ -1,9 +1,5 @@
 import type { NotificationType } from "../../../types/notification-type";
-
-import type {
-	NotificationTemplate,
-	WeatherFallbackTemplates,
-} from "../template.types";
+import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
 
 // English templates — same keys/variants as ko.ts (parity is unit-tested).
 // No josa placeholders ({name:이/가}) — plain {name} substitution only.

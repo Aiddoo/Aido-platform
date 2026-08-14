@@ -1,4 +1,5 @@
 import type { EnqueueJobOptions } from "@/shared/application/ports/job-runtime.port";
+
 import {
 	type BullJobClient,
 	type BullMqClientFactory,
@@ -19,9 +20,7 @@ type FakeBullJobState =
 	| "waiting"
 	| "waiting-children";
 
-function options(
-	overrides: Partial<EnqueueJobOptions> = {},
-): EnqueueJobOptions {
+function options(overrides: Partial<EnqueueJobOptions> = {}): EnqueueJobOptions {
 	return {
 		jobKey: "document:42",
 		retryLimit: 2,
@@ -60,11 +59,7 @@ class FakeQueue implements BullQueueClient {
 		this.closeOrder = closeOrder;
 	}
 
-	async add(
-		name: string,
-		data: object,
-		options: object,
-	): Promise<{ id?: string }> {
+	async add(name: string, data: object, options: object): Promise<{ id?: string }> {
 		this.added.push({ name, data, options });
 		return { id: "bull-job-1" };
 	}
@@ -168,12 +163,7 @@ class FakeFactory implements BullMqClientFactory {
 		processor: (job: BullJobClient) => Promise<void>,
 		concurrency: number,
 	): BullWorkerClient {
-		const worker = new FakeWorker(
-			name,
-			processor,
-			concurrency,
-			this.closeOrder,
-		);
+		const worker = new FakeWorker(name, processor, concurrency, this.closeOrder);
 		this.workers.set(name, worker);
 		return worker;
 	}
@@ -194,9 +184,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		jest.useFakeTimers({ now: new Date("2026-07-22T12:00:00.000Z") });
 		const startAfter = new Date(Date.now() + 10_000);
 
-		await expect(
-			runtime.enqueue(QUEUE, { documentId: 42 }, options({ startAfter })),
-		).resolves.toBe("bull-job-1");
+		await expect(runtime.enqueue(QUEUE, { documentId: 42 }, options({ startAfter }))).resolves.toBe(
+			"bull-job-1",
+		);
 
 		expect(factory.queues.get(QUEUE)?.added).toEqual([
 			{
@@ -242,9 +232,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 				}),
 			},
 		]);
-		expect(
-			factory.queues.get("document-generation")?.removedScheduleKeys,
-		).toEqual(["weekly-document"]);
+		expect(factory.queues.get("document-generation")?.removedScheduleKeys).toEqual([
+			"weekly-document",
+		]);
 	});
 
 	it("worker가 신규 wrapper와 기존 raw payload를 같은 envelope로 전달한다", async () => {
@@ -316,9 +306,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 			timestamp: Date.now(),
 		});
 
-		expect(
-			factory.queues.get("document-generation-dead-letter")?.added,
-		).toEqual([
+		expect(factory.queues.get("document-generation-dead-letter")?.added).toEqual([
 			{
 				name: "document-generation-dead-letter",
 				data: { documentId: 42 },
@@ -384,9 +372,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		if (!queue) return;
 		queue.removeError = new Error("redis unavailable");
 
-		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
-			"redis unavailable",
-		);
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow("redis unavailable");
 	});
 
 	it("cancel은 BullMQ 상태 조회 오류를 missing으로 바꾸지 않고 전파한다", async () => {
@@ -396,9 +382,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		if (!queue) return;
 		queue.getStateError = new Error("redis state unavailable");
 
-		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
-			"redis state unavailable",
-		);
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow("redis state unavailable");
 		expect(queue.removedJobIds).toHaveLength(0);
 	});
 

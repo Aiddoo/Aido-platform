@@ -6,11 +6,11 @@
 
 ## 관련 문서
 
-| 문서 | 내용 |
-|------|------|
-| [unit-test.md](./unit-test.md) | 단위 테스트 상세 (Suites, Builder, GWT) |
-| [integration-test.md](./integration-test.md) | 통합 테스트 상세 (Mock DB, 실제 DB) |
-| [e2e-test.md](./e2e-test.md) | E2E 테스트 상세 (createE2eApp, supertest) |
+| 문서                                         | 내용                                      |
+| -------------------------------------------- | ----------------------------------------- |
+| [unit-test.md](./unit-test.md)               | 단위 테스트 상세 (Suites, Builder, GWT)   |
+| [integration-test.md](./integration-test.md) | 통합 테스트 상세 (Mock DB, 실제 DB)       |
+| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 상세 (createE2eApp, supertest) |
 
 ---
 
@@ -27,25 +27,25 @@
  /----------------\
 ```
 
-| 유형 | 파일 패턴 | 목적 | 상세 가이드 |
-|------|----------|------|------------|
-| Unit | `*.spec.ts` | 개별 클래스/메서드 동작 검증 | [unit-test.md](./unit-test.md) |
+| 유형        | 파일 패턴               | 목적                                   | 상세 가이드                                  |
+| ----------- | ----------------------- | -------------------------------------- | -------------------------------------------- |
+| Unit        | `*.spec.ts`             | 개별 클래스/메서드 동작 검증           | [unit-test.md](./unit-test.md)               |
 | Integration | `*.integration-spec.ts` | Service + Repository DI / DB 스택 검증 | [integration-test.md](./integration-test.md) |
-| E2E | `*.e2e-spec.ts` | 전체 API 흐름 검증 | [e2e-test.md](./e2e-test.md) |
+| E2E         | `*.e2e-spec.ts`         | 전체 API 흐름 검증                     | [e2e-test.md](./e2e-test.md)                 |
 
 ---
 
 ## 2. 유형 선택 기준
 
-| 검증하려는 것 | 유형 | 이유 |
-|-------------|------|------|
-| 단일 메서드의 입력 검증 / 예외 분기 | Unit | `TestBed.solitary`가 의존성 자동 Mock |
-| Repository 쿼리 파라미터 | Unit | `toHaveBeenCalledWith`로 충분 |
-| NestJS DI 연결 정합성 | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요 |
-| `$transaction` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증 |
-| 실제 DB 쿼리 + 마이그레이션 정합성 | Integration (실제 DB) | Testcontainers PostgreSQL |
-| HTTP 요청 → 응답 전체 흐름 | E2E | supertest + 인증 + DB |
-| Guard / Interceptor 동작 | E2E | 실제 HTTP 파이프라인 필요 |
+| 검증하려는 것                       | 유형                  | 이유                                  |
+| ----------------------------------- | --------------------- | ------------------------------------- |
+| 단일 메서드의 입력 검증 / 예외 분기 | Unit                  | `TestBed.solitary`가 의존성 자동 Mock |
+| Repository 쿼리 파라미터            | Unit                  | `toHaveBeenCalledWith`로 충분         |
+| NestJS DI 연결 정합성               | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요            |
+| `$transaction` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증               |
+| 실제 DB 쿼리 + 마이그레이션 정합성  | Integration (실제 DB) | Testcontainers PostgreSQL             |
+| HTTP 요청 → 응답 전체 흐름          | E2E                   | supertest + 인증 + DB                 |
+| Guard / Interceptor 동작            | E2E                   | 실제 HTTP 파이프라인 필요             |
 
 ---
 
@@ -76,13 +76,13 @@ apps/api/
 
 ```ts
 const { unit, unitRef } = await TestBed.solitary(UpdateTodoUseCase)
-	.mock<TodoRepositoryPort>(TODO_REPOSITORY)
-	.impl(() => createTodoRepositoryMock())
-	.mock(UNIT_OF_WORK)
-	.impl(() => createUnitOfWorkMock())   // run(work) 즉시 실행 패스스루
-	.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-	.impl(() => ({ publishAll: jest.fn() }))
-	.compile();
+  .mock<TodoRepositoryPort>(TODO_REPOSITORY)
+  .impl(() => createTodoRepositoryMock())
+  .mock(UNIT_OF_WORK)
+  .impl(() => createUnitOfWorkMock()) // run(work) 즉시 실행 패스스루
+  .mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
+  .impl(() => ({ publishAll: jest.fn() }))
+  .compile();
 useCase = unit;
 eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 ```
@@ -95,11 +95,11 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 ### 3.2 동작 동일성 게이트 (마이그레이션 필수)
 
-| 게이트 | 파일 | 검증 내용 |
-|--------|------|----------|
-| **OpenAPI 계약 스냅샷** | `test/e2e/openapi-contract.e2e-spec.ts` | 전체 라우트·요청/응답 스키마 스냅샷 — **diff 0 = 클라이언트 영향 0**. 의도적 계약 변경 시에만 `-u`로 재생성 |
+| 게이트                           | 파일                                                | 검증 내용                                                                                                                                     |
+| -------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **OpenAPI 계약 스냅샷**          | `test/e2e/openapi-contract.e2e-spec.ts`             | 전체 라우트·요청/응답 스키마 스냅샷 — **diff 0 = 클라이언트 영향 0**. 의도적 계약 변경 시에만 `-u`로 재생성                                   |
 | **스토어 배포 계약 fingerprint** | `test/e2e/fixtures/released-v1-openapi-contract.ts` | 배포된 1.7.x 클라이언트의 111 paths·137 schemas를 고정. 문서 문구와 새 API 추가는 허용하되 기존 request/response/status/Zod shape 변경은 차단 |
-| **블랙박스 E2E** | `test/e2e/todo.e2e-spec.ts` 등 | 리팩터링 시 **무수정 통과**가 원칙 — 테스트를 고치면 동일성 증명이 깨진다 |
+| **블랙박스 E2E**                 | `test/e2e/todo.e2e-spec.ts` 등                      | 리팩터링 시 **무수정 통과**가 원칙 — 테스트를 고치면 동일성 증명이 깨진다                                                                     |
 
 ---
 
@@ -107,35 +107,35 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 ### 4.1 핵심 인프라
 
-| 파일 | 용도 | 사용처 |
-|------|------|--------|
-| `test/setup/suppress-logger.ts` | `suppressLogger()` — Logger 출력 억제 | Integration |
-| `test/mocks/mock-database.factory.ts` | `createMockDatabaseService()` — DB Mock + `$transaction` 자동 설정 | Integration (Mock DB) |
-| `test/e2e/helpers/e2e-app-factory.ts` | `createE2eApp()` / `destroyE2eApp()` | E2E |
-| `test/e2e/helpers/e2e-helpers.ts` | `E2eHelpers` — `createVerifiedUser()` 등 | E2E |
-| `test/setup/managed-test-database.ts` | Jest 실행당 Testcontainers PostgreSQL + migration 수명주기 | Integration (실제 DB) + E2E |
-| `test/setup/test-database.ts` | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate | Integration (실제 DB) + E2E |
-| `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()` | Integration (실제 DB, Auth) |
+| 파일                                                   | 용도                                                               | 사용처                      |
+| ------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------- |
+| `test/setup/suppress-logger.ts`                        | `suppressLogger()` — Logger 출력 억제                              | Integration                 |
+| `test/mocks/mock-database.factory.ts`                  | `createMockDatabaseService()` — DB Mock + `$transaction` 자동 설정 | Integration (Mock DB)       |
+| `test/e2e/helpers/e2e-app-factory.ts`                  | `createE2eApp()` / `destroyE2eApp()`                               | E2E                         |
+| `test/e2e/helpers/e2e-helpers.ts`                      | `E2eHelpers` — `createVerifiedUser()` 등                           | E2E                         |
+| `test/setup/managed-test-database.ts`                  | Jest 실행당 Testcontainers PostgreSQL + migration 수명주기         | Integration (실제 DB) + E2E |
+| `test/setup/test-database.ts`                          | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate                   | Integration (실제 DB) + E2E |
+| `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()`                                           | Integration (실제 DB, Auth) |
 
 ### 4.2 FakeService 목록
 
-| 파일 | 대체 대상 |
-|------|----------|
-| `fake-email.service.ts` | 이메일 발송 |
-| `fake-oauth-token-verifier.service.ts` | OAuth 토큰 검증 |
-| `fake-admin-notifier.ts` | Discord 관리자 알림 |
-| `fake-ai.provider.ts` | Gemini AI |
-| `fake-push.provider.ts` | Expo 푸시 알림 |
-| `fake-bull-queue.ts` | BullMQ 큐 |
-| `fake-logger.service.ts` | Pino Logger |
+| 파일                                   | 대체 대상           |
+| -------------------------------------- | ------------------- |
+| `fake-email.service.ts`                | 이메일 발송         |
+| `fake-oauth-token-verifier.service.ts` | OAuth 토큰 검증     |
+| `fake-admin-notifier.ts`               | Discord 관리자 알림 |
+| `fake-ai.provider.ts`                  | Gemini AI           |
+| `fake-push.provider.ts`                | Expo 푸시 알림      |
+| `fake-bull-queue.ts`                   | BullMQ 큐           |
+| `fake-logger.service.ts`               | Pino Logger         |
 
 ### 4.3 Builder vs Fixture 선택 기준
 
-| 상황 | 선택 | 예시 |
-|------|------|------|
-| 단일 엔티티 mock 반환값 | Builder | `UserBuilder.create().verified().build()` |
-| 도메인 상태가 중요한 테스트 | Builder | `.locked()`, `.expired()`, `.asPremium()` |
-| DB에 실제 삽입할 복합 데이터 | Fixture | `UserFixture.createFull()` |
+| 상황                         | 선택    | 예시                                      |
+| ---------------------------- | ------- | ----------------------------------------- |
+| 단일 엔티티 mock 반환값      | Builder | `UserBuilder.create().verified().build()` |
+| 도메인 상태가 중요한 테스트  | Builder | `.locked()`, `.expired()`, `.asPremium()` |
+| DB에 실제 삽입할 복합 데이터 | Fixture | `UserFixture.createFull()`                |
 
 ---
 
@@ -187,15 +187,15 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 
 ## 7. 예제 파일 경로
 
-| 유형 | 예제 파일 |
-|------|----------|
+| 유형                     | 예제 파일                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
 | **Unit (쓰기 use-case)** | `src/todo/application/use-cases/update-todo/update-todo.use-case.spec.ts` — UoW·이벤트·포트 팩토리 |
-| Unit (읽기 query) | `src/todo/application/queries/get-todo-summary/get-todo-summary.use-case.spec.ts` |
-| Integration (Mock DB) | `test/integration/cheer.integration-spec.ts` |
-| Integration (실제 DB) | `test/integration/auth-password-setup.integration-spec.ts` |
-| E2E | `test/e2e/todo.e2e-spec.ts` |
-| Builder | `test/builders/user.builder.ts` |
-| FakeService | `test/mocks/fake-*.ts` |
+| Unit (읽기 query)        | `src/todo/application/queries/get-todo-summary/get-todo-summary.use-case.spec.ts`                  |
+| Integration (Mock DB)    | `test/integration/cheer.integration-spec.ts`                                                       |
+| Integration (실제 DB)    | `test/integration/auth-password-setup.integration-spec.ts`                                         |
+| E2E                      | `test/e2e/todo.e2e-spec.ts`                                                                        |
+| Builder                  | `test/builders/user.builder.ts`                                                                    |
+| FakeService              | `test/mocks/fake-*.ts`                                                                             |
 
 ---
 

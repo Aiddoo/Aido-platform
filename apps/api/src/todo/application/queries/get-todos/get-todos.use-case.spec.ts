@@ -10,7 +10,9 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 import { createTodoReadRepositoryMock } from "@test/mocks/ports";
+
 import { PaginationService } from "@/shared/application/pagination";
+
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	TODO_READ_REPOSITORY,
@@ -19,9 +21,7 @@ import {
 import { GetTodosUseCase } from "./get-todos.use-case";
 
 function buildResponse(id: number): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("user-123").withId(id).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(id).build());
 }
 
 describe("GetTodosUseCase — Todo 목록 커서 페이지네이션 조회", () => {
@@ -38,8 +38,7 @@ describe("GetTodosUseCase — Todo 목록 커서 페이지네이션 조회", () 
 			.compile();
 
 		useCase = unit;
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		paginationService = unitRef.get(PaginationService);
 
 		// PaginationService는 auto-mock이므로 실제 규칙과 동일하게 스텁한다
@@ -47,22 +46,20 @@ describe("GetTodosUseCase — Todo 목록 커서 페이지네이션 조회", () 
 			const size = params.size ?? 20;
 			return { cursor: params.cursor, size, take: size + 1 };
 		});
-		paginationService.createCursorPaginatedResponse.mockImplementation(
-			(params) => {
-				const { items, size } = params;
-				const hasNext = items.length > size;
-				const actualItems = hasNext ? items.slice(0, size) : items;
-				const lastItem = actualItems[actualItems.length - 1];
-				return {
-					items: actualItems,
-					pagination: {
-						nextCursor: hasNext && lastItem ? lastItem.id : null,
-						hasNext,
-						size,
-					},
-				};
-			},
-		);
+		paginationService.createCursorPaginatedResponse.mockImplementation((params) => {
+			const { items, size } = params;
+			const hasNext = items.length > size;
+			const actualItems = hasNext ? items.slice(0, size) : items;
+			const lastItem = actualItems[actualItems.length - 1];
+			return {
+				items: actualItems,
+				pagination: {
+					nextCursor: hasNext && lastItem ? lastItem.id : null,
+					hasNext,
+					size,
+				},
+			};
+		});
 	});
 
 	it("필터·커서·날짜 범위를 정규화된 size와 함께 저장소 파라미터로 매핑한다", async () => {

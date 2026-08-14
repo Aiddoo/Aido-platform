@@ -15,6 +15,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("날씨 E2E", () => {
@@ -153,10 +154,7 @@ describe("날씨 E2E", () => {
 
 			it("위치 등록 후 예보를 조회한다", async () => {
 				// Given - 위치가 등록된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"weather-fc-ok@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("weather-fc-ok@example.com", "Test1234!");
 				await request(ctx.app.getHttpServer())
 					.put("/v1/weather/location")
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -226,9 +224,7 @@ describe("날씨 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 예보 조회 API 호출
-				await request(ctx.app.getHttpServer())
-					.get("/v1/weather/forecast")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/weather/forecast").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -288,9 +284,7 @@ describe("날씨 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 부가 정보 조회 API 호출
-				await request(ctx.app.getHttpServer())
-					.get("/v1/weather/conditions")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/weather/conditions").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});

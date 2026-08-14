@@ -24,9 +24,7 @@ import { createZodDto } from "nestjs-zod";
 export class RegisterDto extends createZodDto(registerSchema) {}
 export class LoginDto extends createZodDto(loginSchema) {}
 export class VerifyEmailDto extends createZodDto(verifyEmailSchema) {}
-export class ResendVerificationDto extends createZodDto(
-	resendVerificationSchema,
-) {}
+export class ResendVerificationDto extends createZodDto(resendVerificationSchema) {}
 export class ForgotPasswordDto extends createZodDto(forgotPasswordSchema) {}
 export class ResetPasswordDto extends createZodDto(resetPasswordSchema) {}
 export class ChangePasswordDto extends createZodDto(changePasswordSchema) {}
@@ -36,20 +34,10 @@ export class ExchangeCodeDto extends createZodDto(exchangeCodeSchema) {}
 export class RevokeSessionDto extends createZodDto(revokeSessionSchema) {}
 export class UpdateProfileDto extends createZodDto(updateProfileSchema) {}
 
-export class AppleMobileCallbackDto extends createZodDto(
-	appleMobileCallbackSchema,
-) {}
-export class GoogleMobileCallbackDto extends createZodDto(
-	googleMobileCallbackSchema,
-) {}
-export class KakaoMobileCallbackDto extends createZodDto(
-	kakaoMobileCallbackSchema,
-) {}
-export class NaverMobileCallbackDto extends createZodDto(
-	naverMobileCallbackSchema,
-) {}
-export class LinkSocialAccountDto extends createZodDto(
-	linkSocialAccountSchema,
-) {}
+export class AppleMobileCallbackDto extends createZodDto(appleMobileCallbackSchema) {}
+export class GoogleMobileCallbackDto extends createZodDto(googleMobileCallbackSchema) {}
+export class KakaoMobileCallbackDto extends createZodDto(kakaoMobileCallbackSchema) {}
+export class NaverMobileCallbackDto extends createZodDto(naverMobileCallbackSchema) {}
+export class LinkSocialAccountDto extends createZodDto(linkSocialAccountSchema) {}
 export class UnlinkAccountDto extends createZodDto(unlinkAccountSchema) {}
 export class DeleteAccountDto extends createZodDto(deleteAccountSchema) {}

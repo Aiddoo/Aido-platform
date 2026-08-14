@@ -12,6 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -52,8 +53,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
 
-		const { unit, unitRef } =
-			await TestBed.solitary(OnboardingStrategy).compile();
+		const { unit, unitRef } = await TestBed.solitary(OnboardingStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
@@ -76,9 +76,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 		// Given: 오늘 가입한 유저가 있다
 		const ctx = makeCtx();
 
-		reader.findOnboardingCandidates.mockResolvedValueOnce([
-			{ id: "user-1", createdAt: TODAY },
-		]);
+		reader.findOnboardingCandidates.mockResolvedValueOnce([{ id: "user-1", createdAt: TODAY }]);
 
 		// When: 온보딩 전략을 실행한다
 		const result = await strategy.execute(ctx);
@@ -87,8 +85,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 		expect(result).toEqual({ sent: 1 });
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.onboarding(0);
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -108,9 +105,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 			{ id: "user-1", createdAt: fiveDaysAgo },
 		]);
 
-		reader.countCompletedTodosByUsers.mockResolvedValueOnce([
-			{ userId: "user-1", count: 3 },
-		]);
+		reader.countCompletedTodosByUsers.mockResolvedValueOnce([{ userId: "user-1", count: 3 }]);
 
 		// When: 온보딩 전략을 실행한다
 		const result = await strategy.execute(ctx);
@@ -118,8 +113,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 		// Then: completedCount=3이 포함된 알림이 발송된다
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.onboarding(5, 3);
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -173,9 +167,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 			{ id: "user-2", createdAt: TODAY },
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When: 온보딩 전략을 실행한다
 		const result = await strategy.execute(ctx);
@@ -183,8 +175,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 		// Then: user-2에게만 알림이 발송된다
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});

@@ -6,9 +6,7 @@
  */
 import type { UserLocaleMap } from "./scheduler-read-models";
 
-export const SCHEDULER_PREFERENCE_READER = Symbol(
-	"SCHEDULER_PREFERENCE_READER",
-);
+export const SCHEDULER_PREFERENCE_READER = Symbol("SCHEDULER_PREFERENCE_READER");
 
 export interface SchedulerPreferenceReaderPort {
 	/** 활성화된 고유 타임존 목록 (모든 유저 대상, 캐시 스루) */

@@ -1,11 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+
 import { TodoCreatedEvent } from "../../domain/events/todo-created.event";
 import { TODO_EVENTS } from "../../domain/events/todo-event-names";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 
 /**
  * Todo 생성 이벤트 핸들러
@@ -26,10 +24,6 @@ export class TodoCreatedHandler {
 			return;
 		}
 
-		await this.todoReminder.scheduleReminder(
-			event.todoId,
-			event.scheduledTime,
-			event.userId,
-		);
+		await this.todoReminder.scheduleReminder(event.todoId, event.scheduledTime, event.userId);
 	}
 }

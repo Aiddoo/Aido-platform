@@ -44,12 +44,8 @@ describe("SeedUserSettingsUseCase", () => {
 			.impl(() => createUserPreferenceRepositoryMock())
 			.compile();
 		useCase = unit;
-		consentRepo = unitRef.get<UserConsentRepositoryPort>(
-			USER_CONSENT_REPOSITORY,
-		);
-		preferenceRepo = unitRef.get<UserPreferenceRepositoryPort>(
-			USER_PREFERENCE_REPOSITORY,
-		);
+		consentRepo = unitRef.get<UserConsentRepositoryPort>(USER_CONSENT_REPOSITORY);
+		preferenceRepo = unitRef.get<UserPreferenceRepositoryPort>(USER_PREFERENCE_REPOSITORY);
 	});
 
 	it("동의 레코드와 푸시 설정 기본 행을 함께 생성한다", async () => {

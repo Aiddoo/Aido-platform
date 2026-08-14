@@ -10,19 +10,11 @@
 import type { Todo } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	createMemoRepositoryMock,
-	createTodoCreatorMock,
-} from "@test/mocks/ports/memo.mock";
+import { createMemoRepositoryMock, createTodoCreatorMock } from "@test/mocks/ports/memo.mock";
+
 import { Memo } from "../../../domain/entities/memo.aggregate";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
-import {
-	TODO_CREATOR,
-	type TodoCreatorPort,
-} from "../../ports/todo-creator.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
 import {
 	type ConvertMemoToSingleTodoData,
 	type ConvertMemoToTodosInput,
@@ -70,9 +62,7 @@ const singleTodo = (
 	...overrides,
 });
 
-const input = (
-	todos: ConvertMemoToSingleTodoData[],
-): ConvertMemoToTodosInput => ({
+const input = (todos: ConvertMemoToSingleTodoData[]): ConvertMemoToTodosInput => ({
 	userId: "user-1",
 	memoId: 1,
 	data: { todos },
@@ -113,16 +103,11 @@ describe("ConvertMemoToTodosUseCase — 메모→다중 할 일 일괄 변환", 
 	it("단건 항목은 createTodo로 생성하고 모든 생성 후 메모를 삭제한다", async () => {
 		// Given - 비반복 항목 2개
 		repository.findByIdAndUserId.mockResolvedValue(memoEntity());
-		todoCreator.createTodo
-			.mockResolvedValueOnce(todoView(10))
-			.mockResolvedValueOnce(todoView(11));
+		todoCreator.createTodo.mockResolvedValueOnce(todoView(10)).mockResolvedValueOnce(todoView(11));
 
 		// When
 		const result = await useCase.execute(
-			input([
-				singleTodo({ title: "장보기" }),
-				singleTodo({ title: "청소하기" }),
-			]),
+			input([singleTodo({ title: "장보기" }), singleTodo({ title: "청소하기" })]),
 		);
 
 		// Then - createTodo 2회, 반복 경로 미사용
@@ -220,9 +205,7 @@ describe("ConvertMemoToTodosUseCase — 메모→다중 할 일 일괄 변환", 
 
 		// When & Then
 		await expect(
-			useCase.execute(
-				input([singleTodo({ title: "먼저" }), singleTodo({ title: "실패" })]),
-			),
+			useCase.execute(input([singleTodo({ title: "먼저" }), singleTodo({ title: "실패" })])),
 		).rejects.toThrow("todo 생성 실패");
 
 		// 이미 생성된 첫 Todo는 롤백하지 않고, 메모는 유지되어 재시도 가능

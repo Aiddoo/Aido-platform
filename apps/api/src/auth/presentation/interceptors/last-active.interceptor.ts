@@ -14,10 +14,7 @@ import {
 	AUTH_USER_ACTIVITY_WRITER,
 	type AuthUserActivityWriterPort,
 } from "@/auth/application/ports/auth-collaboration.port";
-import {
-	resolveTimezone,
-	startOfDayInTimezone,
-} from "@/shared/domain/date/utils/timezone";
+import { resolveTimezone, startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
 
 /**
  * 인증된 API 요청 시 User.lastActiveAt을 갱신하는 인터셉터
@@ -42,10 +39,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		@Inject(AUTH_USER_ACTIVITY_WRITER)
 		private readonly userActivityWriter: AuthUserActivityWriterPort,
 	) {
-		this.#cleanupInterval = setInterval(
-			() => this.#cleanup(),
-			LastActiveInterceptor.THROTTLE_MS,
-		);
+		this.#cleanupInterval = setInterval(() => this.#cleanup(), LastActiveInterceptor.THROTTLE_MS);
 	}
 
 	onModuleDestroy(): void {
@@ -57,10 +51,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		const user = request.user as CurrentUserPayload | undefined;
 
 		if (user?.userId) {
-			this.#touchLastActive(
-				user.userId,
-				resolveTimezone(request.headers?.["x-timezone"]),
-			);
+			this.#touchLastActive(user.userId, resolveTimezone(request.headers?.["x-timezone"]));
 		}
 
 		return next.handle();
@@ -74,26 +65,19 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		const throttleKey = `${userId}:${localDate}`;
 		const lastUpdated = this.#throttleMap.get(throttleKey);
 
-		if (
-			lastUpdated &&
-			touchedAt - lastUpdated < LastActiveInterceptor.THROTTLE_MS
-		) {
+		if (lastUpdated && touchedAt - lastUpdated < LastActiveInterceptor.THROTTLE_MS) {
 			return;
 		}
 
 		this.#throttleMap.set(throttleKey, touchedAt);
 
 		// fire-and-forget — 응답을 블로킹하지 않음
-		this.userActivityWriter
-			.updateLastActiveAt(userId, timezone)
-			.catch((error) => {
-				if (this.#throttleMap.get(throttleKey) === touchedAt) {
-					this.#throttleMap.delete(throttleKey);
-				}
-				this.#logger.error(
-					`Failed to update lastActiveAt: userId=${userId}, error=${error}`,
-				);
-			});
+		this.userActivityWriter.updateLastActiveAt(userId, timezone).catch((error) => {
+			if (this.#throttleMap.get(throttleKey) === touchedAt) {
+				this.#throttleMap.delete(throttleKey);
+			}
+			this.#logger.error(`Failed to update lastActiveAt: userId=${userId}, error=${error}`);
+		});
 	}
 
 	#cleanup(): void {
@@ -108,9 +92,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
 		}
 
 		if (cleaned > 0) {
-			this.#logger.debug(
-				`Throttle cleanup: removed ${cleaned} expired entries`,
-			);
+			this.#logger.debug(`Throttle cleanup: removed ${cleaned} expired entries`);
 		}
 	}
 }

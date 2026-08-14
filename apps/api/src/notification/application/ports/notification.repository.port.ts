@@ -1,7 +1,4 @@
-import type {
-	NotificationRecord,
-	PushTokenRecord,
-} from "../../domain/records/notification.record";
+import type { NotificationRecord, PushTokenRecord } from "../../domain/records/notification.record";
 import type { NotificationType } from "../../domain/types/notification-type";
 import type {
 	CreateNotificationData,
@@ -74,16 +71,12 @@ export interface PushDeliveryResultsInput {
 export interface NotificationRepositoryPort {
 	// --- Notification ---
 	createNotification(data: CreateNotificationData): Promise<NotificationRecord>;
-	createManyNotifications(
-		dataList: CreateNotificationData[],
-	): Promise<{ count: number }>;
+	createManyNotifications(dataList: CreateNotificationData[]): Promise<{ count: number }>;
 	createManyNotificationsAndReturn(
 		dataList: CreateNotificationData[],
 	): Promise<NotificationRecord[]>;
 	findNotificationById(id: number): Promise<NotificationRecord | null>;
-	findNotificationsByUser(
-		params: FindNotificationsParams,
-	): Promise<NotificationRecord[]>;
+	findNotificationsByUser(params: FindNotificationsParams): Promise<NotificationRecord[]>;
 	markAsRead(id: number, userId: string): Promise<boolean>;
 	markAsOpened(id: number, userId: string): Promise<boolean>;
 	markAllAsRead(userId: string): Promise<{ count: number }>;
@@ -107,36 +100,19 @@ export interface NotificationRepositoryPort {
 
 	// --- PushToken ---
 	registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord>;
-	findPushTokensByUser(
-		params: FindPushTokensParams,
-	): Promise<PushTokenRecord[]>;
+	findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]>;
 	findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenRecord[]>;
 	deletePushToken(userId: string, deviceId: string): Promise<PushTokenRecord>;
 	deleteAllPushTokensByUser(userId: string): Promise<{ count: number }>;
 	deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }>;
 
 	createPushDispatch(input: CreatePushDispatchInput): Promise<{ id: number }>;
-	createPushDispatches(
-		inputs: CreatePushDispatchInput[],
-	): Promise<PushDispatchRecord[]>;
-	markPushDispatchSkipped(
-		dispatchId: number,
-		reason: PushDispatchSkipReason,
-	): Promise<void>;
+	createPushDispatches(inputs: CreatePushDispatchInput[]): Promise<PushDispatchRecord[]>;
+	markPushDispatchSkipped(dispatchId: number, reason: PushDispatchSkipReason): Promise<void>;
 	markPushDispatchesSkipped(updates: PushDispatchSkipUpdate[]): Promise<void>;
-	markPushDispatchFailed(
-		dispatchIds: number[],
-		reason: PushDispatchFailureReason,
-	): Promise<void>;
-	recordPushDeliveryResults(
-		dispatchId: number,
-		results: PushResult[],
-	): Promise<void>;
-	recordPushDeliveryResultsBatch(
-		inputs: PushDeliveryResultsInput[],
-	): Promise<void>;
-	findPendingPushReceipts(
-		limit: number,
-	): Promise<Array<{ ticketId: string; token: string }>>;
+	markPushDispatchFailed(dispatchIds: number[], reason: PushDispatchFailureReason): Promise<void>;
+	recordPushDeliveryResults(dispatchId: number, results: PushResult[]): Promise<void>;
+	recordPushDeliveryResultsBatch(inputs: PushDeliveryResultsInput[]): Promise<void>;
+	findPendingPushReceipts(limit: number): Promise<Array<{ ticketId: string; token: string }>>;
 	recordPushReceipts(results: PushReceiptResult[]): Promise<string[]>;
 }

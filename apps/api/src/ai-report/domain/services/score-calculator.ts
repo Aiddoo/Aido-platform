@@ -22,8 +22,7 @@ export function calculateConsistencyScore(dailyCounts: number[]): number {
 	}
 
 	const variance =
-		dailyCounts.reduce((sum, count) => sum + (count - mean) ** 2, 0) /
-		dailyCounts.length;
+		dailyCounts.reduce((sum, count) => sum + (count - mean) ** 2, 0) / dailyCounts.length;
 	const cv = Math.sqrt(variance) / mean;
 
 	return Math.round(Math.max(0, Math.min(100, (1 - cv) * 100)));
@@ -42,17 +41,10 @@ export interface ProductivityScoreInput {
  *
  * 가중 합산: 달성률(40%) + 일관성(30%) + 스트릭 비율(20%) + 추세(10%)
  */
-export function calculateProductivityScore(
-	input: ProductivityScoreInput,
-): number {
+export function calculateProductivityScore(input: ProductivityScoreInput): number {
 	const streakRatio =
-		input.periodDays > 0
-			? Math.min(input.streakDays / input.periodDays, 1) * 100
-			: 0;
-	const trendBonus =
-		input.rateChange !== null
-			? Math.min(Math.max(input.rateChange, -10), 10)
-			: 0;
+		input.periodDays > 0 ? Math.min(input.streakDays / input.periodDays, 1) * 100 : 0;
+	const trendBonus = input.rateChange !== null ? Math.min(Math.max(input.rateChange, -10), 10) : 0;
 
 	return Math.round(
 		input.completionRate * 0.4 +

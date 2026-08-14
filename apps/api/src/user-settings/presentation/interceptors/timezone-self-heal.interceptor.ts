@@ -8,7 +8,9 @@ import {
 	type OnModuleDestroy,
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
+
 import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
+
 import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
 
 /**
@@ -24,9 +26,7 @@ import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-
  * - THROTTLE_MS 주기로 만료 엔트리 정리 (메모리 누수 방지)
  */
 @Injectable()
-export class TimezoneSelfHealInterceptor
-	implements NestInterceptor, OnModuleDestroy
-{
+export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDestroy {
 	readonly #logger = new Logger(TimezoneSelfHealInterceptor.name);
 
 	/** userId → 마지막으로 반영한 tz + 반영 시각(epoch ms) */
@@ -36,9 +36,7 @@ export class TimezoneSelfHealInterceptor
 
 	static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
 
-	constructor(
-		private readonly refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase,
-	) {
+	constructor(private readonly refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase) {
 		this.#cleanupInterval = setInterval(
 			() => this.#cleanup(),
 			TimezoneSelfHealInterceptor.THROTTLE_MS,
@@ -66,11 +64,7 @@ export class TimezoneSelfHealInterceptor
 		const seen = this.#seen.get(userId);
 
 		// 같은 tz를 스로틀 창 안에서 이미 반영했으면 재요청하지 않는다.
-		if (
-			seen &&
-			seen.tz === timezone &&
-			now - seen.at < TimezoneSelfHealInterceptor.THROTTLE_MS
-		) {
+		if (seen && seen.tz === timezone && now - seen.at < TimezoneSelfHealInterceptor.THROTTLE_MS) {
 			return;
 		}
 
@@ -96,9 +90,7 @@ export class TimezoneSelfHealInterceptor
 		}
 
 		if (cleaned > 0) {
-			this.#logger.debug(
-				`Timezone self-heal cleanup: removed ${cleaned} expired entries`,
-			);
+			this.#logger.debug(`Timezone self-heal cleanup: removed ${cleaned} expired entries`);
 		}
 	}
 }

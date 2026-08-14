@@ -11,14 +11,12 @@
  */
 
 import { createHash } from "node:crypto";
+
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { cleanupOpenApiDoc } from "nestjs-zod";
+
 import { RELEASED_V1_OPENAPI_CONTRACT } from "./fixtures/released-v1-openapi-contract";
-import {
-	createE2eApp,
-	destroyE2eApp,
-	type E2eTestContext,
-} from "./helpers/e2e-app-factory";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/e2e-app-factory";
 
 const DOCUMENTATION_ONLY_FIELDS = new Set([
 	"description",
@@ -36,9 +34,7 @@ function normalizeVolatileExamples<T>(doc: T): T {
 	return JSON.parse(
 		JSON.stringify(doc, (key, value) => {
 			const isEpochMillisExample =
-				key === "example" &&
-				typeof value === "number" &&
-				value > 1_000_000_000_000;
+				key === "example" && typeof value === "number" && value > 1_000_000_000_000;
 			if (isEpochMillisExample) {
 				return 1_700_000_000_000;
 			}
@@ -59,10 +55,7 @@ function stableContract(value: unknown, parentKey?: string): unknown {
 	const isJsonSchemaPropertiesMap = parentKey === "properties";
 	return Object.fromEntries(
 		Object.keys(record)
-			.filter(
-				(key) =>
-					isJsonSchemaPropertiesMap || !DOCUMENTATION_ONLY_FIELDS.has(key),
-			)
+			.filter((key) => isJsonSchemaPropertiesMap || !DOCUMENTATION_ONLY_FIELDS.has(key))
 			.sort()
 			.map((key) => [key, stableContract(record[key], key)]),
 	);
@@ -79,9 +72,7 @@ function selectReleasedContract(
 	releasedNames: readonly string[],
 ): Record<string, unknown> {
 	return Object.fromEntries(
-		releasedNames
-			.filter((name) => name in source)
-			.map((name) => [name, source[name]]),
+		releasedNames.filter((name) => name in source).map((name) => [name, source[name]]),
 	);
 }
 
@@ -129,10 +120,7 @@ describe("OpenAPI 계약 (e2e)", () => {
 
 	it("OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경)", () => {
 		// Given - main.ts와 동일한 기본 문서 설정 (paths/schemas는 컨트롤러에서 파생)
-		const config = new DocumentBuilder()
-			.setTitle("Aido API")
-			.setVersion("1.0.0")
-			.build();
+		const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
 
 		// When
 		const document = normalizeVolatileExamples(
@@ -146,17 +134,9 @@ describe("OpenAPI 계약 (e2e)", () => {
 
 	it("스토어 배포된 1.7.x 클라이언트의 요청·응답·상태 코드 계약을 보존한다", () => {
 		// Given - 운영과 같은 /v1 prefix가 적용된 현재 OpenAPI 계약
-		const config = new DocumentBuilder()
-			.setTitle("Aido API")
-			.setVersion("1.0.0")
-			.build();
-		const document = cleanupOpenApiDoc(
-			SwaggerModule.createDocument(ctx.app, config),
-		);
-		const currentSchemas = (document.components?.schemas ?? {}) as Record<
-			string,
-			unknown
-		>;
+		const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+		const document = cleanupOpenApiDoc(SwaggerModule.createDocument(ctx.app, config));
+		const currentSchemas = (document.components?.schemas ?? {}) as Record<string, unknown>;
 		const currentPaths = Object.fromEntries(
 			Object.entries(document.paths).map(([route, contract]) => [
 				route === "/health" ? route : route.replace(/^\/v1/, ""),

@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
+
 import { Injectable, Logger } from "@nestjs/common";
 import type Redis from "ioredis";
+
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
 import type { ILockProvider } from "../interfaces/lock.interface";
 
@@ -45,10 +47,7 @@ export class RedisLockAdapter implements ILockProvider {
 		this.#errorSampler = errorSampler ?? new RedisErrorLogSampler(this.#logger);
 	}
 
-	async acquire(
-		resource: string,
-		ttlMs: number,
-	): Promise<(() => Promise<void>) | null> {
+	async acquire(resource: string, ttlMs: number): Promise<(() => Promise<void>) | null> {
 		const key = this.#keyPrefix + resource;
 		const value = randomUUID();
 
@@ -81,9 +80,7 @@ export class RedisLockAdapter implements ILockProvider {
 			if (released === 1) {
 				this.#logger.debug(`LOCK_RELEASED ${resource}`);
 			} else {
-				this.#logger.warn(
-					`LOCK_RELEASE_SKIPPED ${resource} (expired or stolen)`,
-				);
+				this.#logger.warn(`LOCK_RELEASE_SKIPPED ${resource} (expired or stolen)`);
 			}
 		};
 

@@ -16,8 +16,10 @@ import { Reflector } from "@nestjs/core";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockExecutionContext } from "@test/mocks";
+
 import { IS_PUBLIC_KEY } from "@/auth/presentation/decorators/public.decorator";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
 describe("JwtAuthGuard — JWT 인증 가드", () => {
@@ -80,16 +82,12 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 			};
 
 			// When & Then — 기존(변경 전) 동작 유지: 클라 계약 불변
-			expect(() => guard.handleRequest(error, mockUser)).toThrow(
-				ApplicationException,
-			);
+			expect(() => guard.handleRequest(error, mockUser)).toThrow(ApplicationException);
 		});
 
 		it("사용자가 false이면 ApplicationException을 던져야 한다", () => {
 			// Given & When & Then
-			expect(() => guard.handleRequest(null, false)).toThrow(
-				ApplicationException,
-			);
+			expect(() => guard.handleRequest(null, false)).toThrow(ApplicationException);
 		});
 
 		it("HttpException 에러 발생 시 AUTH_0101 에러 코드를 반환해야 한다", () => {
@@ -118,9 +116,7 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 
 			// When & Then
 			expect(() => guard.handleRequest(infraError, false)).toThrow(infraError);
-			expect(() => guard.handleRequest(infraError, false)).not.toThrow(
-				ApplicationException,
-			);
+			expect(() => guard.handleRequest(infraError, false)).not.toThrow(ApplicationException);
 		});
 
 		it("에러 메시지가 없으면 기본 메시지를 사용해야 한다", () => {

@@ -12,9 +12,10 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+
+import type { TodoCategoriesResult } from '../../models/todo-category.model';
 import { isTodoError } from '../../models/todo.error';
 import type { OptimisticTodoItem, TodosResult } from '../../models/todo.model';
-import type { TodoCategoriesResult } from '../../models/todo-category.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 export interface CreateTodoParams {

@@ -79,8 +79,7 @@ export const LOGIN_FAILURE_REASON = {
 	ACCOUNT_SUSPENDED: "ACCOUNT_SUSPENDED",
 } as const;
 
-export type LoginFailureReason =
-	(typeof LOGIN_FAILURE_REASON)[keyof typeof LOGIN_FAILURE_REASON];
+export type LoginFailureReason = (typeof LOGIN_FAILURE_REASON)[keyof typeof LOGIN_FAILURE_REASON];
 
 // ============================================
 // 토큰 검증 결과 (API 내부용)
@@ -97,8 +96,7 @@ export const TOKEN_VERIFY_ERROR = {
 	MALFORMED: "malformed",
 } as const;
 
-export type TokenVerifyError =
-	(typeof TOKEN_VERIFY_ERROR)[keyof typeof TOKEN_VERIFY_ERROR];
+export type TokenVerifyError = (typeof TOKEN_VERIFY_ERROR)[keyof typeof TOKEN_VERIFY_ERROR];
 
 // ============================================
 // Device Fingerprint 타입 (API 내부용)

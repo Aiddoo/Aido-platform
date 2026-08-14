@@ -8,12 +8,11 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+
 import { PaginationService } from "@/shared/application/pagination";
+
 import { Memo } from "../../../domain/entities/memo.aggregate";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 import { GetMemosUseCase } from "./get-memos.use-case";
 
 const memoEntity = (id: number, isPinned = false): Memo =>
@@ -47,22 +46,20 @@ describe("GetMemosUseCase — 메모 목록 조회 (커서 페이지네이션)",
 			const size = params.size ?? 20;
 			return { cursor: params.cursor, size, take: size + 1 };
 		});
-		paginationService.createCursorPaginatedResponse.mockImplementation(
-			(params) => {
-				const { items, size } = params;
-				const hasNext = items.length > size;
-				const actualItems = hasNext ? items.slice(0, size) : items;
-				const lastItem = actualItems[actualItems.length - 1];
-				return {
-					items: actualItems,
-					pagination: {
-						nextCursor: hasNext && lastItem ? lastItem.id : null,
-						hasNext,
-						size,
-					},
-				};
-			},
-		);
+		paginationService.createCursorPaginatedResponse.mockImplementation((params) => {
+			const { items, size } = params;
+			const hasNext = items.length > size;
+			const actualItems = hasNext ? items.slice(0, size) : items;
+			const lastItem = actualItems[actualItems.length - 1];
+			return {
+				items: actualItems,
+				pagination: {
+					nextCursor: hasNext && lastItem ? lastItem.id : null,
+					hasNext,
+					size,
+				},
+			};
+		});
 	});
 
 	it("정규화된 커서·사이즈로 저장소를 조회한다", async () => {
@@ -86,11 +83,7 @@ describe("GetMemosUseCase — 메모 목록 조회 (커서 페이지네이션)",
 
 	it("size보다 1개 더 오면 hasNext=true, 초과분 트리밍 후 nextCursor를 마지막 항목 id로 설정한다", async () => {
 		// Given - size 2 요청, 저장소가 다음 페이지 확인용 1개 더(3개) 반환
-		repository.findManyByUserId.mockResolvedValue([
-			memoEntity(30),
-			memoEntity(20),
-			memoEntity(10),
-		]);
+		repository.findManyByUserId.mockResolvedValue([memoEntity(30), memoEntity(20), memoEntity(10)]);
 
 		// When
 		const result = await useCase.execute({ userId: "user-1", size: 2 });
@@ -104,10 +97,7 @@ describe("GetMemosUseCase — 메모 목록 조회 (커서 페이지네이션)",
 
 	it("size 이하로 오면 hasNext=false, nextCursor=null이다 (마지막 페이지)", async () => {
 		// Given
-		repository.findManyByUserId.mockResolvedValue([
-			memoEntity(2),
-			memoEntity(1),
-		]);
+		repository.findManyByUserId.mockResolvedValue([memoEntity(2), memoEntity(1)]);
 
 		// When
 		const result = await useCase.execute({ userId: "user-1", size: 5 });

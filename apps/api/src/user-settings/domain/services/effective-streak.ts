@@ -19,13 +19,7 @@ export function computeEffectiveStreak(params: {
 	todosTotal: number;
 	today: Date;
 }): EffectiveStreakResult {
-	const {
-		currentStreak,
-		lastCompletedDate,
-		todosCompleted,
-		todosTotal,
-		today,
-	} = params;
+	const { currentStreak, lastCompletedDate, todosCompleted, todosTotal, today } = params;
 	const yesterday = subtractDays(1, today);
 
 	// 전체 완료 시: streak 갱신 여부 판별

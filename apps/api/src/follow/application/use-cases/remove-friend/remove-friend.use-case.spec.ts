@@ -7,22 +7,16 @@ import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+
 import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 import { FriendshipEffects } from "../../services/friendship-effects.service";
 import { RemoveFriendUseCase } from "./remove-friend.use-case";
 
 const ME = "u-me";
 const TARGET = "u-target";
 
-const friendship = (
-	id: string,
-	followerId: string,
-	followingId: string,
-): Friendship =>
+const friendship = (id: string, followerId: string, followingId: string): Friendship =>
 	Friendship.reconstitute({
 		id,
 		followerId,
@@ -57,9 +51,9 @@ describe("RemoveFriendUseCase — 친구 삭제/요청 철회", () => {
 		repo.findByFollowerAndFollowing.mockResolvedValue(null);
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, targetUserId: TARGET }),
-		).rejects.toMatchObject({ errorCode: "FOLLOW_0907" });
+		await expect(useCase.execute({ userId: ME, targetUserId: TARGET })).rejects.toMatchObject({
+			errorCode: "FOLLOW_0907",
+		});
 		expect(uow.run).not.toHaveBeenCalled();
 		expect(effects.invalidateFriendshipCaches).not.toHaveBeenCalled();
 	});
@@ -105,8 +99,7 @@ describe("RemoveFriendUseCase — 친구 삭제/요청 철회", () => {
 
 		// Then
 		const runOrder = uow.run.mock.invocationCallOrder[0] ?? 0;
-		const invalidateOrder =
-			effects.invalidateFriendshipCaches.mock.invocationCallOrder[0] ?? 0;
+		const invalidateOrder = effects.invalidateFriendshipCaches.mock.invocationCallOrder[0] ?? 0;
 		expect(invalidateOrder).toBeGreaterThan(runOrder);
 	});
 });

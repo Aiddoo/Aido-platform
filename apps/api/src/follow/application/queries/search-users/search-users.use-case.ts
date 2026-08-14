@@ -49,8 +49,7 @@ export class SearchUsersUseCase {
 			size: input.size,
 		});
 
-		const cursor =
-			input.cursor != null ? decodeSearchCursor(input.cursor) : undefined;
+		const cursor = input.cursor != null ? decodeSearchCursor(input.cursor) : undefined;
 
 		const [rows, totalCount] = await Promise.all([
 			this.followRepository.searchUsers({
@@ -71,13 +70,9 @@ export class SearchUsersUseCase {
 		const items = hasMore ? rows.slice(0, size) : rows;
 		const last = items.at(-1);
 		const nextCursor =
-			hasMore && last != null
-				? encodeSearchCursor({ rank: last.rank, id: last.id })
-				: null;
+			hasMore && last != null ? encodeSearchCursor({ rank: last.rank, id: last.id }) : null;
 
-		this.#logger.debug(
-			`User search: ${items.length} items for viewer: ${input.viewerId}`,
-		);
+		this.#logger.debug(`User search: ${items.length} items for viewer: ${input.viewerId}`);
 
 		return { items, totalCount, hasMore, nextCursor };
 	}

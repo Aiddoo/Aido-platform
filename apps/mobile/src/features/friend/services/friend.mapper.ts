@@ -9,6 +9,7 @@ import type {
   SentRequestsResponse,
 } from '@aido/validators';
 import type { Page } from '@src/shared/types/page.type';
+
 import type {
   FriendRequest,
   FriendUser,

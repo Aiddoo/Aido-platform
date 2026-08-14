@@ -8,15 +8,14 @@ import {
 	type UserPreferenceRecord,
 	type UserPreferenceRecordWithId,
 } from "@/user-settings";
+
 import type { UserNotificationSettingsPort } from "../../application/ports/user-notification-settings.port";
 
 /**
  * notification의 설정 포트를 user-settings의 공개 capability에 연결한다.
  */
 @Injectable()
-export class UserNotificationSettingsAdapter
-	implements UserNotificationSettingsPort
-{
+export class UserNotificationSettingsAdapter implements UserNotificationSettingsPort {
 	constructor(
 		@Inject(USER_NOTIFICATION_SETTINGS_ACCESS)
 		private readonly userSettingsAccess: UserNotificationSettingsAccessPort,
@@ -34,9 +33,7 @@ export class UserNotificationSettingsAdapter
 		return this.userSettingsAccess.getPreferenceRecord(userId);
 	}
 
-	getPreferenceRecordsByUserIds(
-		userIds: string[],
-	): Promise<UserPreferenceRecordWithId[]> {
+	getPreferenceRecordsByUserIds(userIds: string[]): Promise<UserPreferenceRecordWithId[]> {
 		return this.userSettingsAccess.getPreferenceRecordsByUserIds(userIds);
 	}
 
@@ -44,16 +41,11 @@ export class UserNotificationSettingsAdapter
 		return this.userSettingsAccess.getConsentRecord(userId);
 	}
 
-	getConsentRecordsByUserIds(
-		userIds: string[],
-	): Promise<UserConsentRecordWithId[]> {
+	getConsentRecordsByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]> {
 		return this.userSettingsAccess.getConsentRecordsByUserIds(userIds);
 	}
 
-	async updateMarketingPushConsent(
-		userId: string,
-		agreed: boolean,
-	): Promise<void> {
+	async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
 		await this.userSettingsAccess.updateMarketingPushConsent(userId, agreed);
 	}
 }

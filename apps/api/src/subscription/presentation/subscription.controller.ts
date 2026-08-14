@@ -1,14 +1,8 @@
-import {
-	Controller,
-	HttpCode,
-	HttpStatus,
-	Post,
-	Req,
-	UseGuards,
-} from "@nestjs/common";
+import { Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiExcludeEndpoint } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import type { Request } from "express";
+
 import { Public } from "@/auth/presentation/decorators";
 
 import { HandleWebhookEventUseCase } from "../application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
@@ -29,18 +23,14 @@ import { WebhookSignatureGuard } from "../infrastructure/guards/webhook-signatur
 @Controller("webhooks")
 @SkipThrottle()
 export class SubscriptionController {
-	constructor(
-		private readonly handleWebhookEventUseCase: HandleWebhookEventUseCase,
-	) {}
+	constructor(private readonly handleWebhookEventUseCase: HandleWebhookEventUseCase) {}
 
 	@Post("revenuecat")
 	@Public()
 	@ApiExcludeEndpoint()
 	@UseGuards(WebhookSignatureGuard)
 	@HttpCode(HttpStatus.OK)
-	handleRevenueCatWebhook(
-		@Req() request: Request,
-	): Promise<{ received: true }> {
+	handleRevenueCatWebhook(@Req() request: Request): Promise<{ received: true }> {
 		return this.handleWebhookEventUseCase.execute(request.body);
 	}
 }

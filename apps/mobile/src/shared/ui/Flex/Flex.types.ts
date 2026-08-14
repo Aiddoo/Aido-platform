@@ -1,4 +1,5 @@
 import type { VariantProps } from 'tailwind-variants';
+
 import type { BoxProps } from '../Box/Box.types';
 import type { flexVariants } from './Flex.variants';
 

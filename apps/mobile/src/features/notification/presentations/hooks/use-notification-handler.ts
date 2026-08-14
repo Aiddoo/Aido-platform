@@ -12,6 +12,7 @@ import type * as Notifications from 'expo-notifications';
 import type { Href } from 'expo-router';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
+
 import { resolveNotificationDestination } from '../../models/notification.model';
 
 interface UseNotificationHandlerOptions {

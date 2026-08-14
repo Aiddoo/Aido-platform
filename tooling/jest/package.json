@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
-  "main": "jest.preset.cjs",
   "files": [
     "jest.preset.cjs"
   ],
+  "main": "jest.preset.cjs",
   "devDependencies": {
     "@types/jest": "catalog:",
     "jest": "catalog:",

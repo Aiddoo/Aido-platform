@@ -8,11 +8,7 @@ export const STREAK_PORT = Symbol("STREAK_PORT");
  */
 export interface StreakPort {
 	/** 완료/미완료 전이를 스트릭에 기록합니다. */
-	recordTodoToggle(
-		userId: string,
-		completed: boolean,
-		timezone: string,
-	): Promise<void>;
+	recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void>;
 
 	/**
 	 * 스트릭 판정 컨텍스트를 조회합니다 (기록 없으면 0/null).

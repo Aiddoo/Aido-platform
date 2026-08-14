@@ -1,9 +1,7 @@
 import type { UserLocation } from "../../domain/entities/user-location.entity";
 
 /** WeatherLocationRepositoryPort DI 토큰 */
-export const WEATHER_LOCATION_REPOSITORY = Symbol(
-	"WEATHER_LOCATION_REPOSITORY",
-);
+export const WEATHER_LOCATION_REPOSITORY = Symbol("WEATHER_LOCATION_REPOSITORY");
 
 /**
  * 사용자 위치 저장소 포트.

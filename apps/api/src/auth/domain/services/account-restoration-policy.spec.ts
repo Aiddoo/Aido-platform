@@ -14,18 +14,12 @@ describe("account-restoration-policy 도메인 서비스", () => {
 		});
 
 		it("유예 기간 이내 탈퇴 계정은 복구 필요(true)를 반환한다", () => {
-			const withinGrace = new Date(
-				Date.now() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1) * DAY_MS,
-			);
-			expect(assertRestorableWithinGracePeriod(withinGrace, "user-123")).toBe(
-				true,
-			);
+			const withinGrace = new Date(Date.now() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1) * DAY_MS);
+			expect(assertRestorableWithinGracePeriod(withinGrace, "user-123")).toBe(true);
 		});
 
 		it("유예 기간 초과 탈퇴 계정은 DomainException(USER_0606)을 던진다", () => {
-			const pastGrace = new Date(
-				Date.now() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1) * DAY_MS,
-			);
+			const pastGrace = new Date(Date.now() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1) * DAY_MS);
 			try {
 				assertRestorableWithinGracePeriod(pastGrace, "user-123");
 				throw new Error("예외가 발생해야 한다");

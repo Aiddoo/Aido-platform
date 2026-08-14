@@ -13,10 +13,10 @@ import {
 	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
 import { parseLocalDateTime } from "@/shared/domain/date/utils/timezone";
 import { Timezone } from "@/shared/presentation/decorators";
-
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -28,11 +28,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
-
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import {
 	GetMemoResourceLimitUseCase,
 	GetMemosUseCase,
@@ -198,8 +194,7 @@ export class MemoController {
 	@ApiDoc({
 		summary: "메모 고정/해제",
 		operationId: "toggleMemoPin",
-		description:
-			"메모를 고정하거나 해제합니다. 고정된 메모는 목록 상단에 표시됩니다.",
+		description: "메모를 고정하거나 해제합니다. 고정된 메모는 목록 상단에 표시됩니다.",
 	})
 	@ApiSuccessResponse({ type: MemoMutationResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)

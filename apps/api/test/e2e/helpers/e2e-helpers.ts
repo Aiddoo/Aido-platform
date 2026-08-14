@@ -8,6 +8,7 @@
 
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
+
 import type { FakeEmailService } from "../../mocks/fake-email.service";
 
 export interface VerifiedUser {
@@ -25,11 +26,7 @@ export class E2eHelpers {
 	/**
 	 * 사용자 등록 (이메일 인증 전 단계)
 	 */
-	async registerUser(
-		email: string,
-		password: string,
-		options?: { name?: string },
-	): Promise<void> {
+	async registerUser(email: string, password: string, options?: { name?: string }): Promise<void> {
 		await request(this.app.getHttpServer())
 			.post("/v1/auth/register")
 			.send({
@@ -102,10 +99,7 @@ export class E2eHelpers {
 	/**
 	 * 두 사용자 간 양방향 친구 관계 생성
 	 */
-	async createFriendship(
-		user1: VerifiedUser,
-		user2: VerifiedUser,
-	): Promise<void> {
+	async createFriendship(user1: VerifiedUser, user2: VerifiedUser): Promise<void> {
 		// user1 -> user2 팔로우 요청
 		await request(this.app.getHttpServer())
 			.post(`/v1/follows/${user2.userTag}`)
@@ -130,8 +124,7 @@ export class E2eHelpers {
 
 		const categories = response.body.data.items;
 		const defaultCategory =
-			categories.find((c: { name: string }) => c.name === "할 일") ||
-			categories[0];
+			categories.find((c: { name: string }) => c.name === "할 일") || categories[0];
 		return defaultCategory.id;
 	}
 }

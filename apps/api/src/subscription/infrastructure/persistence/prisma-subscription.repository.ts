@@ -1,11 +1,13 @@
 import { ErrorCode } from "@aido/errors";
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type * as PrismaModels from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type {
 	CreateSubscriptionData,
 	SubscriptionRepositoryPort,
@@ -36,13 +38,9 @@ const USER_SELECT = {
  * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환한다.
  */
 @Injectable()
-export class PrismaSubscriptionRepository
-	implements SubscriptionRepositoryPort
-{
+export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -66,9 +64,7 @@ export class PrismaSubscriptionRepository
 	 * revenueCatUserId 또는 id로 사용자를 찾는다. RevenueCat은 최초에 User.id를
 	 * appUserId로 사용하고, 이후 alias가 설정되면 revenueCatUserId가 다를 수 있다.
 	 */
-	async findUserByAppUserId(
-		appUserId: string,
-	): Promise<SubscriptionUser | null> {
+	async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
 		return this.client.user.findFirst({
 			where: {
 				OR: [{ revenueCatUserId: appUserId }, { id: appUserId }],
@@ -99,20 +95,14 @@ export class PrismaSubscriptionRepository
 	/**
 	 * 구독 상태 업데이트
 	 */
-	async updateStatus(
-		revenueCatId: string,
-		data: UpdateSubscriptionStatusData,
-	): Promise<void> {
+	async updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void> {
 		try {
 			await this.client.subscription.update({
 				where: { revenueCatId },
 				data,
 			});
 		} catch (error) {
-			if (
-				error instanceof Prisma.PrismaClientKnownRequestError &&
-				error.code === "P2025"
-			) {
+			if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
 				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 					reason: `Subscription not found: ${revenueCatId}`,
 				});

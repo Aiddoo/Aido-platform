@@ -110,9 +110,7 @@ const FriendCompletedJobDataSchema = z.object({
 	notifyUserIds: z.array(z.string().min(1)),
 	timezone: z.string().min(1),
 });
-export type FriendCompletedJobData = z.infer<
-	typeof FriendCompletedJobDataSchema
->;
+export type FriendCompletedJobData = z.infer<typeof FriendCompletedJobDataSchema>;
 
 /**
  * 마일스톤 달성 잡 데이터
@@ -128,9 +126,7 @@ const MilestoneReachedJobDataSchema = z.object({
 		"FIRST_FRIEND",
 	]),
 });
-export type MilestoneReachedJobData = z.infer<
-	typeof MilestoneReachedJobDataSchema
->;
+export type MilestoneReachedJobData = z.infer<typeof MilestoneReachedJobDataSchema>;
 
 export const NotificationRuntimeJobSchema = z.discriminatedUnion("name", [
 	z.object({
@@ -186,6 +182,4 @@ export interface NotificationJobMap {
 /** 모든 잡 데이터 유니온 타입 */
 export type NotificationJobData = NotificationJobMap[keyof NotificationJobMap];
 
-export type NotificationRuntimeJob = z.infer<
-	typeof NotificationRuntimeJobSchema
->;
+export type NotificationRuntimeJob = z.infer<typeof NotificationRuntimeJobSchema>;

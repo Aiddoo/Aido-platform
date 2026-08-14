@@ -1,5 +1,6 @@
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { ParseError } from '@src/shared/errors/infra-error';
+
 import { FeatureDiscoveryService } from './feature-discovery.service';
 
 const createMockJsonFetcher = (): jest.Mocked<JsonFetcher> => ({

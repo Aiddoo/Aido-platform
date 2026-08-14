@@ -14,10 +14,6 @@ export abstract class ErrorCodedException extends Error {
 		message?: string,
 	) {
 		// 패키지 버전 불일치 등으로 코드 매핑이 없어도 2차 TypeError 없이 안전하게 폴백
-		super(
-			message ??
-				Errors[errorCode]?.message ??
-				"알 수 없는 오류가 발생했습니다.",
-		);
+		super(message ?? Errors[errorCode]?.message ?? "알 수 없는 오류가 발생했습니다.");
 	}
 }

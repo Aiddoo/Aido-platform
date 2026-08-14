@@ -1,11 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type Redis from "ioredis";
+
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
-import type {
-	CacheStats,
-	ICacheService,
-	TtlValue,
-} from "../interfaces/cache.interface";
+import type { CacheStats, ICacheService, TtlValue } from "../interfaces/cache.interface";
 import { parseTtl } from "../interfaces/cache.interface";
 
 /**
@@ -45,11 +42,7 @@ export class RedisCacheAdapter implements ICacheService {
 	readonly #errorSampler: RedisErrorLogSampler;
 	#stats = { hits: 0, misses: 0 };
 
-	constructor(
-		redis: Redis,
-		defaultTtlMs: number,
-		errorSampler?: RedisErrorLogSampler,
-	) {
+	constructor(redis: Redis, defaultTtlMs: number, errorSampler?: RedisErrorLogSampler) {
 		this.#redis = redis;
 		this.#defaultTtlMs = defaultTtlMs;
 		this.#errorSampler = errorSampler ?? new RedisErrorLogSampler(this.#logger);
@@ -79,12 +72,7 @@ export class RedisCacheAdapter implements ICacheService {
 			"SET",
 			async () => {
 				const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
-				await this.#redis.set(
-					this.#keyPrefix + key,
-					JSON.stringify(value),
-					"PX",
-					ttlMs,
-				);
+				await this.#redis.set(this.#keyPrefix + key, JSON.stringify(value), "PX", ttlMs);
 			},
 			undefined,
 		);
@@ -167,11 +155,7 @@ export class RedisCacheAdapter implements ICacheService {
 		};
 	}
 
-	async wrap<T>(
-		key: string,
-		factory: () => Promise<T>,
-		ttl?: TtlValue,
-	): Promise<T> {
+	async wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
 		// get/set이 fail-open이므로 Redis 장애 시 자동으로 factory 직행 (DB 폴백)
 		const cached = await this.get<T>(key);
 		if (cached !== undefined) {
@@ -225,9 +209,7 @@ export class RedisCacheAdapter implements ICacheService {
 		);
 	}
 
-	async mset<T>(
-		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
-	): Promise<void> {
+	async mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {
 		if (entries.length === 0) return;
 
 		await this.#failOpen(
@@ -236,12 +218,7 @@ export class RedisCacheAdapter implements ICacheService {
 				const pipeline = this.#redis.pipeline();
 				for (const { key, value, ttl } of entries) {
 					const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
-					pipeline.set(
-						this.#keyPrefix + key,
-						JSON.stringify(value),
-						"PX",
-						ttlMs,
-					);
+					pipeline.set(this.#keyPrefix + key, JSON.stringify(value), "PX", ttlMs);
 				}
 				await pipeline.exec();
 			},
@@ -262,11 +239,7 @@ export class RedisCacheAdapter implements ICacheService {
 
 	async ttl(key: string): Promise<number> {
 		// fail-open 시 -2 = "키 없음" 시맨틱
-		return this.#failOpen(
-			"PTTL",
-			() => this.#redis.pttl(this.#keyPrefix + key),
-			-2,
-		);
+		return this.#failOpen("PTTL", () => this.#redis.pttl(this.#keyPrefix + key), -2);
 	}
 
 	async touch(key: string, ttl: TtlValue): Promise<boolean> {
@@ -284,11 +257,7 @@ export class RedisCacheAdapter implements ICacheService {
 	/**
 	 * fail-open 래퍼: Redis 장애 시 fallback을 반환하고 샘플드 warn만 남긴다
 	 */
-	async #failOpen<T>(
-		operation: string,
-		action: () => Promise<T>,
-		fallback: T,
-	): Promise<T> {
+	async #failOpen<T>(operation: string, action: () => Promise<T>, fallback: T): Promise<T> {
 		try {
 			return await action();
 		} catch (error) {

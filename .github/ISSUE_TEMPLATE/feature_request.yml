@@ -1,7 +1,7 @@
 name: ✨ 기능 요청
 description: 새로운 기능이나 개선 사항을 제안해주세요.
-title: "[Feature]: "
-labels: ["type: feat"]
+title: '[Feature]: '
+labels: ['type: feat']
 body:
   - type: markdown
     attributes:
@@ -68,7 +68,7 @@ body:
     attributes:
       label: 문제 상황
       description: 이 기능으로 해결하고자 하는 문제가 무엇인가요?
-      placeholder: "예: 현재 사용자가 프로필을 수정할 수 없어서 불편합니다."
+      placeholder: '예: 현재 사용자가 프로필을 수정할 수 없어서 불편합니다.'
     validations:
       required: true
 
@@ -87,10 +87,10 @@ body:
     id: alternatives
     attributes:
       label: 고려한 대안
-      placeholder: "다른 해결 방법이 있다면 작성해주세요."
+      placeholder: '다른 해결 방법이 있다면 작성해주세요.'
 
   - type: textarea
     id: references
     attributes:
       label: 참고 자료
-      placeholder: "목업, 레퍼런스 링크, 관련 문서 등"
+      placeholder: '목업, 레퍼런스 링크, 관련 문서 등'

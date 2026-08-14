@@ -7,7 +7,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NotificationBuilder } from "@test/builders";
+
 import { PaginationService } from "@/shared/application/pagination";
+
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
@@ -24,9 +26,7 @@ describe("GetNotificationsUseCase", () => {
 	beforeEach(async () => {
 		NotificationBuilder.resetIdCounter();
 
-		const { unit, unitRef } = await TestBed.solitary(
-			GetNotificationsUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(GetNotificationsUseCase).compile();
 		useCase = unit;
 		notificationRepo = unitRef.get(NOTIFICATION_REPOSITORY);
 		paginationService = unitRef.get(PaginationService);
@@ -36,21 +36,19 @@ describe("GetNotificationsUseCase", () => {
 			size: 20,
 			take: 21,
 		});
-		paginationService.createCursorPaginatedResponse.mockImplementation(
-			(params) => {
-				const { items, size } = params;
-				const hasNext = items.length > size;
-				const actualItems = hasNext ? items.slice(0, size) : items;
-				return {
-					items: actualItems,
-					pagination: {
-						hasNext,
-						nextCursor: null,
-						size,
-					},
-				};
-			},
-		);
+		paginationService.createCursorPaginatedResponse.mockImplementation((params) => {
+			const { items, size } = params;
+			const hasNext = items.length > size;
+			const actualItems = hasNext ? items.slice(0, size) : items;
+			return {
+				items: actualItems,
+				pagination: {
+					hasNext,
+					nextCursor: null,
+					size,
+				},
+			};
+		});
 	});
 
 	it("알림 목록을 페이지네이션으로 조회해야 한다", async () => {
@@ -111,11 +109,7 @@ describe("GetNotificationsUseCase", () => {
 
 		expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
 			expect.objectContaining({
-				types: expect.arrayContaining([
-					"SYSTEM_NOTICE",
-					"ADMIN_BROADCAST",
-					"ADMIN_TARGETED",
-				]),
+				types: expect.arrayContaining(["SYSTEM_NOTICE", "ADMIN_BROADCAST", "ADMIN_TARGETED"]),
 			}),
 		);
 	});

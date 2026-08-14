@@ -1,5 +1,6 @@
 import { TODO_ITEM_LIMITS } from '@aido/validators';
 import { z } from 'zod';
+
 import type { TodoItem } from './todo.model';
 
 export const subTodoSchema = z.object({

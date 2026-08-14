@@ -1,5 +1,7 @@
 import { HealthIndicatorService } from "@nestjs/terminus";
+
 import type { JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+
 import { BullHealthIndicator } from "./bull.health";
 
 function runtime(): jest.Mocked<JobRuntimePort> {
@@ -29,10 +31,7 @@ function runtime(): jest.Mocked<JobRuntimePort> {
 describe("BullHealthIndicator — durable job runtime health", () => {
 	it("선택된 backend와 큐 카운트를 up 응답으로 반환한다", async () => {
 		const jobRuntime = runtime();
-		const indicator = new BullHealthIndicator(
-			new HealthIndicatorService(),
-			jobRuntime,
-		);
+		const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
 		const result = await indicator.isHealthy("queues");
 
@@ -57,10 +56,7 @@ describe("BullHealthIndicator — durable job runtime health", () => {
 			reason: "job_runtime_unavailable",
 			queues: {},
 		});
-		const indicator = new BullHealthIndicator(
-			new HealthIndicatorService(),
-			jobRuntime,
-		);
+		const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
 		const result = await indicator.isHealthy("queues");
 
@@ -74,10 +70,7 @@ describe("BullHealthIndicator — durable job runtime health", () => {
 	it("health 수집 실패도 up + degraded로 정규화한다", async () => {
 		const jobRuntime = runtime();
 		jobRuntime.health.mockRejectedValue(new Error("database unavailable"));
-		const indicator = new BullHealthIndicator(
-			new HealthIndicatorService(),
-			jobRuntime,
-		);
+		const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
 		const result = await indicator.isHealthy("queues");
 
@@ -92,10 +85,7 @@ describe("BullHealthIndicator — durable job runtime health", () => {
 		jest.useFakeTimers();
 		const jobRuntime = runtime();
 		jobRuntime.health.mockReturnValue(new Promise(() => {}));
-		const indicator = new BullHealthIndicator(
-			new HealthIndicatorService(),
-			jobRuntime,
-		);
+		const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
 		const pending = indicator.isHealthy("queues");
 		await jest.advanceTimersByTimeAsync(2_000);

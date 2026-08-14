@@ -1,15 +1,13 @@
 import { ErrorCode } from "@aido/errors";
-import type {
-	UpdatePreferenceInput,
-	UpdatePreferenceResponse,
-} from "@aido/validators";
+import type { UpdatePreferenceInput, UpdatePreferenceResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { buildUpdatedPreferenceView } from "../../../domain/services/preference-view";
 import { ReminderTime } from "../../../domain/value-objects/reminder-time.vo";
-
 import {
 	REMINDER_SCHEDULE_ENQUEUER,
 	type ReminderScheduleEnqueuerPort,
@@ -43,10 +41,7 @@ export class UpdatePreferenceUseCase {
 		private readonly reminderEnqueuer: ReminderScheduleEnqueuerPort,
 	) {}
 
-	async execute(
-		userId: string,
-		input: UpdatePreferenceInput,
-	): Promise<UpdatePreferenceResponse> {
+	async execute(userId: string, input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> {
 		const changesReminder =
 			input.morningReminderHour !== undefined ||
 			input.morningReminderMinute !== undefined ||
@@ -65,9 +60,7 @@ export class UpdatePreferenceUseCase {
 		ReminderTime.assertValidRanges(input);
 
 		const timezone =
-			input.timezone === undefined
-				? undefined
-				: normalizeIanaTimezone(input.timezone);
+			input.timezone === undefined ? undefined : normalizeIanaTimezone(input.timezone);
 		if (input.timezone !== undefined && timezone === null) {
 			throw new ApplicationException(ErrorCode.SYS_0002, {
 				field: "timezone",

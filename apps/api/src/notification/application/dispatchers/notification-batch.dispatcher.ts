@@ -10,9 +10,7 @@ export class NotificationBatchDispatcher {
 		private readonly dispatchBatchNotificationUseCase: DispatchBatchNotificationUseCase,
 	) {}
 
-	persistBatch(
-		dataList: CreateNotificationData[],
-	): Promise<PersistedBatchNotificationDispatch> {
+	persistBatch(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationDispatch> {
 		return this.persistBatchNotificationUseCase.execute(dataList);
 	}
 

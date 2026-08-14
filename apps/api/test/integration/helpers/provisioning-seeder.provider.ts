@@ -25,10 +25,7 @@ export const provisioningSeederTestProvider: Provider = {
 		preferenceRepository: UserPreferenceRepository,
 		defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
 	): UserProvisioningSeederPort => ({
-		async seedDefaultSettings(
-			userId: string,
-			consent: ProvisioningConsent,
-		): Promise<void> {
+		async seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
 			await consentRepository.create(userId, consent);
 			await preferenceRepository.create(userId, {
 				pushEnabled: true,
@@ -39,9 +36,5 @@ export const provisioningSeederTestProvider: Provider = {
 			await defaultTodoCategorySeeder.seed(userId);
 		},
 	}),
-	inject: [
-		UserConsentRepository,
-		UserPreferenceRepository,
-		DefaultTodoCategorySeeder,
-	],
+	inject: [UserConsentRepository, UserPreferenceRepository, DefaultTodoCategorySeeder],
 };

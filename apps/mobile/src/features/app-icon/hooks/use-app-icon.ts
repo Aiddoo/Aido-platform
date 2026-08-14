@@ -1,5 +1,6 @@
 import * as AppIcon from 'expo-quick-actions/icon';
 import { useCallback, useEffect, useState } from 'react';
+
 import type { AppIconKey } from '../types/app-icon.types';
 
 const APP_ICON_KEYS = new Set<AppIconKey>([

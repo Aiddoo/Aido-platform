@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/errors";
+
 import { DomainException, ValueObject } from "@/shared/domain";
 
 /**
@@ -49,17 +50,13 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
 	patch(partial: Partial<TodoScheduleProps>): TodoSchedule {
 		const merged: TodoScheduleProps = {
 			startDate: partial.startDate ?? this.getStartDate(),
-			endDate:
-				partial.endDate !== undefined ? partial.endDate : this.getEndDate(),
+			endDate: partial.endDate !== undefined ? partial.endDate : this.getEndDate(),
 			scheduledTime:
-				partial.scheduledTime !== undefined
-					? partial.scheduledTime
-					: this.getScheduledTime(),
+				partial.scheduledTime !== undefined ? partial.scheduledTime : this.getScheduledTime(),
 			isAllDay: partial.isAllDay ?? this.value.isAllDay,
 		};
 
-		const touchesDates =
-			partial.startDate !== undefined || partial.endDate !== undefined;
+		const touchesDates = partial.startDate !== undefined || partial.endDate !== undefined;
 		if (touchesDates) {
 			return TodoSchedule.create(merged);
 		}

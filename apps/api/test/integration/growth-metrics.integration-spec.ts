@@ -1,9 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+
 import { PrismaAdminGrowthMetricsAdapter } from "@/admin/infrastructure/adapters/prisma-admin-growth-metrics.adapter";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { TestDatabase } from "../setup/test-database";
 
 describe("성장 지표 통합 테스트 (실제 DB)", () => {
@@ -17,13 +19,9 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 		prisma = await testDb.start();
 		const txHost = {
 			tx: prisma,
-		} as unknown as TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>;
+		} as unknown as TransactionHost<TransactionalAdapterPrisma<DatabaseService>>;
 		activityWriter = new UserRepository(txHost);
-		growthMetrics = new PrismaAdminGrowthMetricsAdapter(
-			prisma as DatabaseService,
-		);
+		growthMetrics = new PrismaAdminGrowthMetricsAdapter(prisma as DatabaseService);
 	}, 60_000);
 
 	beforeEach(async () => {
@@ -93,9 +91,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 		}).format(row.lastSeenAt);
 		expect(row.localDate.toISOString().slice(0, 10)).toBe(expectedLocalDate);
 		expect(row.firstSeenAt).toEqual(preservedFirstSeenAt);
-		expect(row.lastSeenAt.getTime()).toBeGreaterThan(
-			preservedFirstSeenAt.getTime(),
-		);
+		expect(row.lastSeenAt.getTime()).toBeGreaterThan(preservedFirstSeenAt.getTime());
 		expect(user.lastActiveAt).toEqual(row.lastSeenAt);
 	});
 
@@ -119,10 +115,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 		try {
 			// When - 최신 활동이 먼저 커밋되고 과거 시각의 writer가 나중에 커밋되면
 			jest.setSystemTime(later);
-			await activityWriter.updateLastActiveAt(
-				"out-of-order-user",
-				"Asia/Seoul",
-			);
+			await activityWriter.updateLastActiveAt("out-of-order-user", "Asia/Seoul");
 			jest.setSystemTime(earlier);
 			await otherWriter.updateLastActiveAt("out-of-order-user", "Asia/Seoul");
 		} finally {
@@ -161,15 +154,9 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 		try {
 			// When - 같은 현지 날짜의 서로 다른 시각을 병렬 기록하면
 			jest.setSystemTime(earlier);
-			const earlierWrite = activityWriter.updateLastActiveAt(
-				"parallel-insert-user",
-				"Asia/Seoul",
-			);
+			const earlierWrite = activityWriter.updateLastActiveAt("parallel-insert-user", "Asia/Seoul");
 			jest.setSystemTime(later);
-			const laterWrite = otherWriter.updateLastActiveAt(
-				"parallel-insert-user",
-				"Asia/Seoul",
-			);
+			const laterWrite = otherWriter.updateLastActiveAt("parallel-insert-user", "Asia/Seoul");
 			await Promise.all([earlierWrite, laterWrite]);
 		} finally {
 			jest.useRealTimers();
@@ -262,12 +249,8 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 		// Then - 정확한 MIN과 삭제 제외 가입 범위가 index scan 가능한 구조다
 		expect(indexes.map(({ indexdef }) => indexdef)).toEqual(
 			expect.arrayContaining([
-				expect.stringContaining(
-					'ON public."UserActivityDay" USING btree ("firstSeenAt")',
-				),
-				expect.stringContaining(
-					'ON public."User" USING btree ("deletedAt", "createdAt")',
-				),
+				expect.stringContaining('ON public."UserActivityDay" USING btree ("firstSeenAt")'),
+				expect.stringContaining('ON public."User" USING btree ("deletedAt", "createdAt")'),
 			]),
 		);
 	});
@@ -312,42 +295,12 @@ async function seedGrowthScenario(prisma: PrismaClient): Promise<void> {
 	});
 	await prisma.userActivityDay.createMany({
 		data: [
-			activity(
-				"pre-measurement",
-				"2026-06-02",
-				"Pacific/Kiritimati",
-				"2026-06-01T00:00:00.000Z",
-			),
-			activity(
-				"activated-retained",
-				"2026-06-02",
-				"Asia/Seoul",
-				"2026-06-02T01:00:00.000Z",
-			),
-			activity(
-				"activated-retained",
-				"2026-06-03",
-				"Asia/Seoul",
-				"2026-06-03T01:00:00.000Z",
-			),
-			activity(
-				"activated-retained",
-				"2026-06-09",
-				"Asia/Seoul",
-				"2026-06-09T01:00:00.000Z",
-			),
-			activity(
-				"activated-retained",
-				"2026-07-02",
-				"Asia/Seoul",
-				"2026-07-02T01:00:00.000Z",
-			),
-			activity(
-				"not-activated",
-				"2026-06-11",
-				"UTC",
-				"2026-06-11T10:00:00.000Z",
-			),
+			activity("pre-measurement", "2026-06-02", "Pacific/Kiritimati", "2026-06-01T00:00:00.000Z"),
+			activity("activated-retained", "2026-06-02", "Asia/Seoul", "2026-06-02T01:00:00.000Z"),
+			activity("activated-retained", "2026-06-03", "Asia/Seoul", "2026-06-03T01:00:00.000Z"),
+			activity("activated-retained", "2026-06-09", "Asia/Seoul", "2026-06-09T01:00:00.000Z"),
+			activity("activated-retained", "2026-07-02", "Asia/Seoul", "2026-07-02T01:00:00.000Z"),
+			activity("not-activated", "2026-06-11", "UTC", "2026-06-11T10:00:00.000Z"),
 			activity("immature-d30", "2026-07-21", "UTC", "2026-07-21T10:00:00.000Z"),
 			activity("immature-d30", "2026-07-27", "UTC", "2026-07-27T10:00:00.000Z"),
 		],
@@ -450,40 +403,15 @@ async function seedDeletedGrowthUser(prisma: PrismaClient): Promise<void> {
 	});
 	await prisma.userActivityDay.createMany({
 		data: [
-			activity(
-				"deleted-growth-user",
-				"2026-06-02",
-				"UTC",
-				"2026-06-02T10:00:00.000Z",
-			),
-			activity(
-				"deleted-growth-user",
-				"2026-06-08",
-				"UTC",
-				"2026-06-08T10:00:00.000Z",
-			),
-			activity(
-				"deleted-growth-user",
-				"2026-07-01",
-				"UTC",
-				"2026-07-01T10:00:00.000Z",
-			),
-			activity(
-				"deleted-growth-user",
-				"2026-07-30",
-				"UTC",
-				"2026-07-30T10:00:00.000Z",
-			),
+			activity("deleted-growth-user", "2026-06-02", "UTC", "2026-06-02T10:00:00.000Z"),
+			activity("deleted-growth-user", "2026-06-08", "UTC", "2026-06-08T10:00:00.000Z"),
+			activity("deleted-growth-user", "2026-07-01", "UTC", "2026-07-01T10:00:00.000Z"),
+			activity("deleted-growth-user", "2026-07-30", "UTC", "2026-07-30T10:00:00.000Z"),
 		],
 	});
 }
 
-function activity(
-	userId: string,
-	localDate: string,
-	timezone: string,
-	seenAt: string,
-) {
+function activity(userId: string, localDate: string, timezone: string, seenAt: string) {
 	const timestamp = new Date(seenAt);
 	return {
 		userId,

@@ -100,8 +100,6 @@ export class UserLocationBuilder {
 	}
 
 	static createMany(userId: string, count: number): UserLocation[] {
-		return Array.from({ length: count }, () =>
-			UserLocationBuilder.create(userId).build(),
-		);
+		return Array.from({ length: count }, () => UserLocationBuilder.create(userId).build());
 	}
 }

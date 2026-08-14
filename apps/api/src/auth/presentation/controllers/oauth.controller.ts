@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+
 import { ErrorCode } from "@aido/errors";
 import {
 	Body,
@@ -15,6 +16,7 @@ import {
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
+
 import { GetOAuthRedirectUriQuery } from "@/auth/application/queries";
 import {
 	CompleteOAuthAuthorizationUseCase,
@@ -24,13 +26,8 @@ import {
 	LoginWithOAuthTokenUseCase,
 	StartOAuthAuthorizationUseCase,
 } from "@/auth/application/use-cases";
-
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-	Public,
-} from "@/auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload, Public } from "@/auth/presentation/decorators";
 import {
 	ApiConflictError,
 	ApiDoc,
@@ -39,6 +36,7 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
+
 import {
 	AppleMobileCallbackDto,
 	AuthTokensDto,
@@ -49,10 +47,7 @@ import {
 	MessageResponseDto,
 	NaverMobileCallbackDto,
 } from "../dtos";
-import {
-	buildOAuthErrorParams,
-	extractMetadata,
-} from "./auth-controller.utils";
+import { buildOAuthErrorParams, extractMetadata } from "./auth-controller.utils";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
@@ -69,10 +64,7 @@ export class OAuthController {
 		private readonly exchangeOAuthCodeUseCase: ExchangeOAuthCodeUseCase,
 	) {}
 
-	async #resolveOAuthErrorRedirectUri(
-		state: string,
-		defaultRedirectUri: string,
-	): Promise<string> {
+	async #resolveOAuthErrorRedirectUri(state: string, defaultRedirectUri: string): Promise<string> {
 		try {
 			const redirectUri = await this.getOAuthRedirectUriQuery.execute(state);
 			return redirectUri || defaultRedirectUri;
@@ -157,10 +149,7 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async appleCallback(
-		@Body() dto: AppleMobileCallbackDto,
-		@Req() req: Request,
-	) {
+	async appleCallback(@Body() dto: AppleMobileCallbackDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"APPLE",
@@ -216,10 +205,7 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async googleCallback(
-		@Body() dto: GoogleMobileCallbackDto,
-		@Req() req: Request,
-	) {
+	async googleCallback(@Body() dto: GoogleMobileCallbackDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"GOOGLE",
@@ -360,10 +346,7 @@ export class OAuthController {
 				error instanceof Error ? error.stack : undefined,
 			);
 			const params = buildOAuthErrorParams(error, state);
-			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(
-				state,
-				defaultRedirectUri,
-			);
+			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
 
 			res.redirect(`${errorRedirectUri}?${params.toString()}`);
 		}
@@ -411,10 +394,7 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async kakaoCallback(
-		@Body() dto: KakaoMobileCallbackDto,
-		@Req() req: Request,
-	) {
+	async kakaoCallback(@Body() dto: KakaoMobileCallbackDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"KAKAO",
@@ -549,10 +529,7 @@ export class OAuthController {
 			res.redirect(`${redirectUri}?${params.toString()}`);
 		} catch (error) {
 			const params = buildOAuthErrorParams(error, state);
-			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(
-				state,
-				defaultRedirectUri,
-			);
+			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
 
 			res.redirect(`${errorRedirectUri}?${params.toString()}`);
 		}
@@ -600,10 +577,7 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async naverCallback(
-		@Body() dto: NaverMobileCallbackDto,
-		@Req() req: Request,
-	) {
+	async naverCallback(@Body() dto: NaverMobileCallbackDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"NAVER",
@@ -740,10 +714,7 @@ export class OAuthController {
 			res.redirect(`${redirectUri}?${params.toString()}`);
 		} catch (error) {
 			const params = buildOAuthErrorParams(error, state);
-			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(
-				state,
-				defaultRedirectUri,
-			);
+			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
 
 			res.redirect(`${errorRedirectUri}?${params.toString()}`);
 		}
@@ -869,10 +840,6 @@ provider에 따라 필수 토큰이 다릅니다:
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.linkOAuthAccountWithCodeUseCase.execute(
-			user.userId,
-			dto.code,
-			metadata,
-		);
+		return this.linkOAuthAccountWithCodeUseCase.execute(user.userId, dto.code, metadata);
 	}
 }

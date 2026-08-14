@@ -4,6 +4,7 @@ import { FEATURE_DISCOVERY_QUERY_KEYS } from '@src/features/feature-discovery/pr
 import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { QueryClient } from '@tanstack/react-query';
+
 import { createActivationProgressRepository } from '../repositories/activation-progress.repository';
 import { ActivationService } from '../services/activation.service';
 import {

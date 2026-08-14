@@ -4,10 +4,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 import { FriendshipEffects } from "../../services/friendship-effects.service";
 
 export interface RemoveFriendInput {
@@ -34,10 +31,7 @@ export class RemoveFriendUseCase {
 	async execute(input: RemoveFriendInput): Promise<void> {
 		const { userId, targetUserId } = input;
 
-		const myFollow = await this.followRepository.findByFollowerAndFollowing(
-			userId,
-			targetUserId,
-		);
+		const myFollow = await this.followRepository.findByFollowerAndFollowing(userId, targetUserId);
 		if (!myFollow) {
 			throw new ApplicationException(ErrorCode.FOLLOW_0907, { targetUserId });
 		}
@@ -45,11 +39,10 @@ export class RemoveFriendUseCase {
 		await this.uow.run(async () => {
 			await this.followRepository.delete(myFollow.id);
 
-			const theirFollow =
-				await this.followRepository.findByFollowerAndFollowing(
-					targetUserId,
-					userId,
-				);
+			const theirFollow = await this.followRepository.findByFollowerAndFollowing(
+				targetUserId,
+				userId,
+			);
 			if (theirFollow) {
 				await this.followRepository.delete(theirFollow.id);
 			}

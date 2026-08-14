@@ -7,11 +7,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+
 import { Memo } from "../../../domain/entities/memo.aggregate";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 import { DeleteMemoUseCase } from "./delete-memo.use-case";
 
 const memoEntity = (): Memo =>
@@ -44,9 +42,9 @@ describe("DeleteMemoUseCase — 메모 삭제", () => {
 		repository.findByIdAndUserId.mockResolvedValue(null);
 
 		// When & Then
-		await expect(
-			useCase.execute({ userId: "user-1", memoId: 99 }),
-		).rejects.toMatchObject({ errorCode: "MEMO_2001" });
+		await expect(useCase.execute({ userId: "user-1", memoId: 99 })).rejects.toMatchObject({
+			errorCode: "MEMO_2001",
+		});
 		expect(repository.delete).not.toHaveBeenCalled();
 	});
 

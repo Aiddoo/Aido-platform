@@ -1,7 +1,4 @@
-import type {
-	RetentionStageName,
-	RetentionVariant,
-} from "../../domain/retention.constants";
+import type { RetentionStageName, RetentionVariant } from "../../domain/retention.constants";
 
 export const RETENTION_REPOSITORY = Symbol("RETENTION_REPOSITORY");
 
@@ -96,8 +93,5 @@ export interface RetentionRepositoryPort {
 	claimDispatch(outboxId: string): Promise<RetentionDispatchCandidate | null>;
 	releaseDispatch(dispatchId: number, reason: string): Promise<void>;
 	markDispatchSkipped(dispatchId: number, reason: string): Promise<void>;
-	recordDeliveryResults(
-		dispatchId: number,
-		results: RetentionDeliveryResult[],
-	): Promise<void>;
+	recordDeliveryResults(dispatchId: number, results: RetentionDeliveryResult[]): Promise<void>;
 }

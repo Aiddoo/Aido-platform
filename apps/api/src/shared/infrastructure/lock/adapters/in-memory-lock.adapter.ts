@@ -1,9 +1,5 @@
-import {
-	Injectable,
-	Logger,
-	type OnModuleDestroy,
-	type OnModuleInit,
-} from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
+
 import type { ILockProvider } from "../interfaces/lock.interface";
 
 interface LockEntry {
@@ -19,9 +15,7 @@ interface LockEntry {
  * - 단일 프로세스 환경에서만 유효 (수평 확장 시 Redis 잠금 필요)
  */
 @Injectable()
-export class InMemoryLockAdapter
-	implements ILockProvider, OnModuleDestroy, OnModuleInit
-{
+export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnModuleInit {
 	readonly #logger = new Logger(InMemoryLockAdapter.name);
 	readonly #locks = new Map<string, LockEntry>();
 	readonly #cleanupInterval: NodeJS.Timeout;
@@ -29,10 +23,7 @@ export class InMemoryLockAdapter
 	constructor(config?: { cleanupIntervalMs?: number }) {
 		const cleanupIntervalMs = config?.cleanupIntervalMs ?? 30_000;
 
-		this.#cleanupInterval = setInterval(
-			() => this.#cleanup(),
-			cleanupIntervalMs,
-		);
+		this.#cleanupInterval = setInterval(() => this.#cleanup(), cleanupIntervalMs);
 	}
 
 	onModuleInit(): void {
@@ -46,10 +37,7 @@ export class InMemoryLockAdapter
 		clearInterval(this.#cleanupInterval);
 	}
 
-	async acquire(
-		resource: string,
-		ttlMs: number,
-	): Promise<(() => Promise<void>) | null> {
+	async acquire(resource: string, ttlMs: number): Promise<(() => Promise<void>) | null> {
 		const now = Date.now();
 		const existing = this.#locks.get(resource);
 

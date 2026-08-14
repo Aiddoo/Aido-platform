@@ -45,10 +45,7 @@ describe("forEachBatch", () => {
 		// Given
 		const page1 = [{ id: "a" }, { id: "b" }];
 		const page2 = [{ id: "c" }];
-		const fetchPage = jest
-			.fn()
-			.mockResolvedValueOnce(page1)
-			.mockResolvedValueOnce(page2);
+		const fetchPage = jest.fn().mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
 		const onBatch = jest.fn();
 
 		// When
@@ -68,19 +65,16 @@ describe("forEachBatch", () => {
 		const onBatch = jest.fn().mockRejectedValue(new Error("batch error"));
 
 		// When & Then
-		await expect(
-			forEachBatch({ fetchPage, batchSize: 10, onBatch }),
-		).rejects.toThrow("batch error");
+		await expect(forEachBatch({ fetchPage, batchSize: 10, onBatch })).rejects.toThrow(
+			"batch error",
+		);
 	});
 
 	it("정확히 batchSize만큼 반환하면 다음 페이지를 요청해야 한다", async () => {
 		// Given
 		const page1 = [{ id: "a" }, { id: "b" }];
 		const page2: { id: string }[] = [];
-		const fetchPage = jest
-			.fn()
-			.mockResolvedValueOnce(page1)
-			.mockResolvedValueOnce(page2);
+		const fetchPage = jest.fn().mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
 		const onBatch = jest.fn();
 
 		// When

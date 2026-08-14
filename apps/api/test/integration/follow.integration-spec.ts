@@ -10,16 +10,16 @@
  * 실행: pnpm --filter @aido/api test follow.integration-spec
  */
 
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { FollowBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
-import { FOLLOW_REPOSITORY } from "@/follow/application/ports/follow.repository.port";
 import { FOLLOW_CACHE } from "@/follow/application/ports/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "@/follow/application/ports/follow-notifier.port";
+import { FOLLOW_REPOSITORY } from "@/follow/application/ports/follow.repository.port";
 import { SearchUsersUseCase } from "@/follow/application/queries/search-users/search-users.use-case";
 import { FollowReader } from "@/follow/application/services/follow.reader";
 import { FriendshipEffects } from "@/follow/application/services/friendship-effects.service";
@@ -27,8 +27,8 @@ import { AcceptFriendRequestUseCase } from "@/follow/application/use-cases/accep
 import { RejectFriendRequestUseCase } from "@/follow/application/use-cases/reject-friend-request/reject-friend-request.use-case";
 import { RemoveFriendUseCase } from "@/follow/application/use-cases/remove-friend/remove-friend.use-case";
 import { ReorderFriendUseCase } from "@/follow/application/use-cases/reorder-friend/reorder-friend.use-case";
-import { SendFriendRequestUseCase } from "@/follow/application/use-cases/send-friend-request/send-friend-request.use-case";
 import { SendFriendRequestByTagUseCase } from "@/follow/application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
+import { SendFriendRequestUseCase } from "@/follow/application/use-cases/send-friend-request/send-friend-request.use-case";
 import { FollowCacheAdapter } from "@/follow/infrastructure/adapters/follow-cache.adapter";
 import { FollowNotifierAdapter } from "@/follow/infrastructure/adapters/follow-notifier.adapter";
 import { PrismaFollowRepository } from "@/follow/infrastructure/persistence/prisma-follow.repository";
@@ -78,18 +78,11 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		invalidateMutualFriend: jest.fn().mockResolvedValue(undefined),
 		invalidateMutualFriendIds: jest.fn().mockResolvedValue(undefined),
 		invalidateFriendCount: jest.fn().mockResolvedValue(undefined),
-		wrapFriendCount: jest
-			.fn()
-			.mockImplementation((_userId, factory) => factory()),
-		wrapMutualFriendIds: jest
-			.fn()
-			.mockImplementation((_userId, factory) => factory()),
+		wrapFriendCount: jest.fn().mockImplementation((_userId, factory) => factory()),
+		wrapMutualFriendIds: jest.fn().mockImplementation((_userId, factory) => factory()),
 	};
 
-	const mockUser = UserBuilder.create()
-		.withId("user-integration-123")
-		.verified()
-		.build();
+	const mockUser = UserBuilder.create().withId("user-integration-123").verified().build();
 	const mockTargetUser = UserBuilder.create()
 		.withId("user-integration-456")
 		.withUserTag("TGT67890")
@@ -173,9 +166,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("FollowRepository 포트가 주입된다", () => {
-			expect(module.get(FOLLOW_REPOSITORY)).toBeInstanceOf(
-				PrismaFollowRepository,
-			);
+			expect(module.get(FOLLOW_REPOSITORY)).toBeInstanceOf(PrismaFollowRepository);
 		});
 	});
 
@@ -185,10 +176,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.create.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId)
-					.withId(mockFollowId)
-					.pending()
-					.build(),
+				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
 			);
 			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
 
@@ -222,10 +210,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		it("이미 친구인 경우 ApplicationException", async () => {
 			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
 			mockFollowDb.findUnique.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId)
-					.withId(mockFollowId)
-					.accepted()
-					.build(),
+				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).accepted().build(),
 			);
 			await expect(
 				sendUseCase.execute({
@@ -248,10 +233,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 				FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
 			);
 			mockFollowDb.create.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId)
-					.withId(mockFollowId)
-					.accepted()
-					.build(),
+				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).accepted().build(),
 			);
 			mockUserDb.findUnique.mockResolvedValue({
 				userTag: "USR12345",
@@ -275,10 +257,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.create.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId)
-					.withId(mockFollowId)
-					.pending()
-					.build(),
+				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
 			);
 			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
 
@@ -360,10 +339,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	describe("친구 요청 거절 / 삭제 (facade)", () => {
 		it("거절 시 요청이 삭제된다", async () => {
 			mockFollowDb.findUnique.mockResolvedValue(
-				FollowBuilder.create(mockTargetUserId, mockUserId)
-					.withId(mockFollowId)
-					.pending()
-					.build(),
+				FollowBuilder.create(mockTargetUserId, mockUserId).withId(mockFollowId).pending().build(),
 			);
 			mockFollowDb.delete.mockResolvedValue(undefined);
 
@@ -376,10 +352,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("친구 삭제는 양방향으로 수행된다", async () => {
 			mockFollowDb.findUnique.mockResolvedValueOnce(
-				FollowBuilder.create(mockUserId, mockTargetUserId)
-					.withId(mockFollowId)
-					.accepted()
-					.build(),
+				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).accepted().build(),
 			);
 			mockFollowDb.delete.mockResolvedValue(undefined);
 			mockFollowDb.findUnique.mockResolvedValueOnce(
@@ -400,14 +373,8 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	describe("친구 목록 조회 (facade)", () => {
 		it("친구 목록이 페이지네이션과 함께 조회된다", async () => {
 			mockFollowDb.findMany.mockResolvedValue([
-				FollowBuilder.create(mockUserId, "friend-1")
-					.withId("follow-1")
-					.accepted()
-					.buildWithUser(),
-				FollowBuilder.create(mockUserId, "friend-2")
-					.withId("follow-2")
-					.accepted()
-					.buildWithUser(),
+				FollowBuilder.create(mockUserId, "friend-1").withId("follow-1").accepted().buildWithUser(),
+				FollowBuilder.create(mockUserId, "friend-2").withId("follow-2").accepted().buildWithUser(),
 			]);
 
 			const result = await followReader.getFriends({ userId: mockUserId });
@@ -440,10 +407,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 					FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
 				);
 
-			const result = await followReader.isMutualFriend(
-				mockUserId,
-				mockTargetUserId,
-			);
+			const result = await followReader.isMutualFriend(mockUserId, mockTargetUserId);
 			expect(result).toBe(true);
 		});
 
@@ -454,10 +418,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 				)
 				.mockResolvedValueOnce(null);
 
-			const result = await followReader.isMutualFriend(
-				mockUserId,
-				mockTargetUserId,
-			);
+			const result = await followReader.isMutualFriend(mockUserId, mockTargetUserId);
 			expect(result).toBe(false);
 		});
 

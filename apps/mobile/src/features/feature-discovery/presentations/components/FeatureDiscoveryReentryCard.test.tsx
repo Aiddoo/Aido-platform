@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+
 import { FeatureDiscoveryReentryCard } from './FeatureDiscoveryReentryCard';
 
 jest.mock('@src/shared/ui', () => {

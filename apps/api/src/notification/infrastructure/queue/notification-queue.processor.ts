@@ -1,12 +1,7 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import { Prisma } from "@/generated/prisma/client";
 import {
 	JOB_RUNTIME,
@@ -17,20 +12,15 @@ import {
 } from "@/shared/application/ports";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import {
-	fromLegacyJob,
-	type NamedJob,
-} from "@/shared/infrastructure/jobs/named-job";
+import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
 import type { SupportedLocale } from "@/shared/presentation/decorators";
+
 import { NotificationBatchDispatcher } from "../../application/dispatchers/notification-batch.dispatcher";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../application/ports/notification.repository.port";
-import {
-	PUSH_PROVIDER,
-	type PushProvider,
-} from "../../application/ports/push-provider.port";
+import { PUSH_PROVIDER, type PushProvider } from "../../application/ports/push-provider.port";
 import { NotificationSender } from "../../application/senders/notification.sender";
 import {
 	NotificationMessageBuilder,
@@ -69,9 +59,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 		private readonly batchDispatcher: NotificationBatchDispatcher,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
@@ -88,10 +76,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	) {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
@@ -161,14 +146,12 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	}
 
 	async #handlePushReceipts(): Promise<void> {
-		const pending =
-			await this.notificationRepository.findPendingPushReceipts(900);
+		const pending = await this.notificationRepository.findPendingPushReceipts(900);
 		if (pending.length === 0) return;
 		const receipts = await this.pushProvider.getReceipts(
 			pending.map((attempt) => attempt.ticketId),
 		);
-		const invalidTokens =
-			await this.notificationRepository.recordPushReceipts(receipts);
+		const invalidTokens = await this.notificationRepository.recordPushReceipts(receipts);
 		if (invalidTokens.length > 0) {
 			await this.notificationRepository.deactivateInvalidTokens(invalidTokens);
 		}
@@ -180,10 +163,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	async #handleFollowNew(data: FollowNewJobData): Promise<void> {
 		try {
 			const locale = await this.#getLocale(data.followingId);
-			const message = NotificationMessageBuilder.followNew(
-				data.followerName,
-				locale,
-			);
+			const message = NotificationMessageBuilder.followNew(data.followerName, locale);
 
 			await this.notification.createAndSendWithDedup({
 				userId: data.followingId,
@@ -193,9 +173,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				friendId: data.followerId,
 			});
 
-			this.#logger.log(
-				`Follow request notification sent to user: ${data.followingId}`,
-			);
+			this.#logger.log(`Follow request notification sent to user: ${data.followingId}`);
 		} catch (error) {
 			this.#logger.error(
 				`Failed to send follow request notification: ${error}`,
@@ -208,10 +186,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	async #handleFollowMutual(data: FollowMutualJobData): Promise<void> {
 		try {
 			const locale = await this.#getLocale(data.userId);
-			const message = NotificationMessageBuilder.followAccepted(
-				data.friendName,
-				locale,
-			);
+			const message = NotificationMessageBuilder.followAccepted(data.friendName, locale);
 
 			await this.notification.createAndSendWithDedup({
 				userId: data.userId,
@@ -221,9 +196,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				friendId: data.friendId,
 			});
 
-			this.#logger.log(
-				`Mutual follow notification sent to user: ${data.userId}`,
-			);
+			this.#logger.log(`Mutual follow notification sent to user: ${data.userId}`);
 		} catch (error) {
 			this.#logger.error(
 				`Failed to send mutual follow notification: ${error}`,
@@ -243,11 +216,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 						data.message,
 						locale,
 					)
-				: NotificationMessageBuilder.remindNudgeReceived(
-						data.senderName,
-						data.message,
-						locale,
-					);
+				: NotificationMessageBuilder.remindNudgeReceived(data.senderName, data.message, locale);
 
 			await this.notification.createAndSendWithDedup({
 				userId: data.receiverId,
@@ -260,9 +229,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				metadata: data.message ? { message: data.message } : undefined,
 			});
 
-			this.#logger.log(
-				`Nudge notification sent: from=${data.senderId}, to=${data.receiverId}`,
-			);
+			this.#logger.log(`Nudge notification sent: from=${data.senderId}, to=${data.receiverId}`);
 		} catch (error) {
 			this.#logger.error(
 				`Failed to send nudge notification: ${error}`,
@@ -291,9 +258,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				metadata: data.message ? { message: data.message } : undefined,
 			});
 
-			this.#logger.log(
-				`Cheer notification sent: from=${data.senderId}, to=${data.receiverId}`,
-			);
+			this.#logger.log(`Cheer notification sent: from=${data.senderId}, to=${data.receiverId}`);
 		} catch (error) {
 			this.#logger.error(
 				`Failed to send cheer notification: ${error}`,
@@ -315,9 +280,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				body: message.body,
 			});
 
-			this.#logger.log(
-				`Billing issue notification sent: userId=${data.userId}`,
-			);
+			this.#logger.log(`Billing issue notification sent: userId=${data.userId}`);
 		} catch (error) {
 			this.#logger.error(
 				`Failed to send billing issue notification: ${error}`,
@@ -338,22 +301,17 @@ export class NotificationQueueProcessor implements OnModuleInit {
 			const today = todayInTimezone(data.timezone);
 
 			const persisted = await this.uow.run(async () => {
-				const alreadyNotified =
-					await this.notification.findAlreadyNotifiedUserIds({
-						userIds: data.notifyUserIds,
-						type: "FRIEND_COMPLETED",
-						notificationDate: today,
-						friendId: data.friendId,
-					});
+				const alreadyNotified = await this.notification.findAlreadyNotifiedUserIds({
+					userIds: data.notifyUserIds,
+					type: "FRIEND_COMPLETED",
+					notificationDate: today,
+					friendId: data.friendId,
+				});
 
-				const newUserIds = data.notifyUserIds.filter(
-					(id) => !alreadyNotified.has(id),
-				);
+				const newUserIds = data.notifyUserIds.filter((id) => !alreadyNotified.has(id));
 
 				if (newUserIds.length === 0) {
-					this.#logger.debug(
-						`Friend completion already sent today: friendId=${data.friendId}`,
-					);
+					this.#logger.debug(`Friend completion already sent today: friendId=${data.friendId}`);
 					return null;
 				}
 
@@ -365,19 +323,13 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				const localeByUserId = new Map(
 					preferences.map((p) => [p.userId, resolveTemplateLocale(p.locale)]),
 				);
-				const messageByLocale = new Map<
-					SupportedLocale,
-					{ title: string; body: string }
-				>();
+				const messageByLocale = new Map<SupportedLocale, { title: string; body: string }>();
 
 				const notifications = newUserIds.map((userId) => {
 					const locale = localeByUserId.get(userId) ?? "ko";
 					let message = messageByLocale.get(locale);
 					if (!message) {
-						message = NotificationMessageBuilder.friendCompleted(
-							data.friendName,
-							locale,
-						);
+						message = NotificationMessageBuilder.friendCompleted(data.friendName, locale);
 						messageByLocale.set(locale, message);
 					}
 					return {
@@ -402,10 +354,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				`Friend completion push delivery scheduled: friendId=${data.friendId}, count=${persisted.count}`,
 			);
 		} catch (error) {
-			if (
-				error instanceof Prisma.PrismaClientKnownRequestError &&
-				error.code === "P2002"
-			) {
+			if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
 				this.#logger.debug(
 					`Friend completion duplicate prevented by constraint: friendId=${data.friendId}`,
 				);
@@ -437,10 +386,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 			}
 
 			const locale = await this.#getLocale(data.userId);
-			const message = NotificationMessageBuilder.milestone(
-				data.milestone,
-				locale,
-			);
+			const message = NotificationMessageBuilder.milestone(data.milestone, locale);
 
 			await this.notification.createAndSend({
 				userId: data.userId,

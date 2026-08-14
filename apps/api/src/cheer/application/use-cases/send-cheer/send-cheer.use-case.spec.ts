@@ -2,25 +2,16 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import { FollowReader } from "@/follow";
-import {
-	MUTATION_LOCK,
-	type MutationLockPort,
-	UNIT_OF_WORK,
-} from "@/shared/application/ports";
+import { MUTATION_LOCK, type MutationLockPort, UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
+import { CHEER_LIMIT_READER, type CheerLimitReaderPort } from "../../ports/cheer-limit-reader.port";
+import { CHEER_NOTIFIER, type CheerNotifierPort } from "../../ports/cheer-notifier.port";
 import {
 	CHEER_REPOSITORY,
 	type CheerRepositoryPort,
 	type CheerWithRelations,
 } from "../../ports/cheer.repository.port";
-import {
-	CHEER_LIMIT_READER,
-	type CheerLimitReaderPort,
-} from "../../ports/cheer-limit-reader.port";
-import {
-	CHEER_NOTIFIER,
-	type CheerNotifierPort,
-} from "../../ports/cheer-notifier.port";
 import { SendCheerUseCase } from "./send-cheer.use-case";
 
 const createdCheer: CheerWithRelations = {
@@ -69,23 +60,23 @@ describe("SendCheerUseCase", () => {
 	});
 
 	it("자기 자신이면 CHEER_1204", async () => {
-		await expect(
-			useCase.execute({ senderId: "s", receiverId: "s" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ senderId: "s", receiverId: "s" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("친구가 아니면 CHEER_1203", async () => {
 		follow.isMutualFriend.mockResolvedValue(false);
-		await expect(
-			useCase.execute({ senderId: "s", receiverId: "r" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("일일 한도 초과면 CHEER_1201", async () => {
 		repo.countSentSince.mockResolvedValue(3);
-		await expect(
-			useCase.execute({ senderId: "s", receiverId: "r" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("성공 시 응원 생성 + 알림 enqueue", async () => {

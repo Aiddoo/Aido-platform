@@ -71,12 +71,14 @@
 ### Task 1: Freeze public and authentication contracts before queue changes
 
 **Files:**
+
 - Create: `apps/api/test/e2e/auth-session-restart.e2e-spec.ts`
 - Modify: `apps/api/test/e2e/helpers/e2e-app-factory.ts`
 - Test: `apps/api/test/e2e/openapi-contract.e2e-spec.ts`
 - Test: `apps/api/test/e2e/auth.e2e-spec.ts`
 
 **Interfaces:**
+
 - Consumes: existing `createE2eApp()`, `E2eHelpers.createVerifiedUser()`, `E2eHelpers.loginUser()`, public refresh and protected account endpoints.
 - Produces: `restartAppPreservingDatabase()` test helper that closes/recreates only Nest application state while preserving the same Testcontainers PostgreSQL instance.
 
@@ -85,25 +87,19 @@
 Create a test that calls `createVerifiedUser()`, then `loginUser()`, stores both tokens, recreates the Nest app against the same `TestDatabase`, then asserts the old access token still calls `GET /auth/me` and the old refresh token still calls `POST /auth/refresh`. The E2E app intentionally omits the production `/v1` prefix; the production prefix remains covered by the unchanged OpenAPI contract. The helper must not truncate the DB between app instances.
 
 ```ts
-it("재시작 전 세션과 토큰을 재시작 후에도 유지한다", async () => {
-	await ctx.helpers.createVerifiedUser(
-		"restart-session@example.com",
-		"Test1234!",
-	);
-	const tokens = await ctx.helpers.loginUser(
-		"restart-session@example.com",
-		"Test1234!",
-	);
-	ctx = await restartAppPreservingDatabase(ctx);
+it('재시작 전 세션과 토큰을 재시작 후에도 유지한다', async () => {
+  await ctx.helpers.createVerifiedUser('restart-session@example.com', 'Test1234!');
+  const tokens = await ctx.helpers.loginUser('restart-session@example.com', 'Test1234!');
+  ctx = await restartAppPreservingDatabase(ctx);
 
-	await request(ctx.app.getHttpServer())
-		.get("/auth/me")
-		.set("Authorization", `Bearer ${tokens.accessToken}`)
-		.expect(200);
-	await request(ctx.app.getHttpServer())
-		.post("/auth/refresh")
-		.set("Authorization", `Bearer ${tokens.refreshToken}`)
-		.expect(200);
+  await request(ctx.app.getHttpServer())
+    .get('/auth/me')
+    .set('Authorization', `Bearer ${tokens.accessToken}`)
+    .expect(200);
+  await request(ctx.app.getHttpServer())
+    .post('/auth/refresh')
+    .set('Authorization', `Bearer ${tokens.refreshToken}`)
+    .expect(200);
 });
 ```
 
@@ -137,6 +133,7 @@ git commit -m "test(api): protect sessions across restarts"
 ### Task 2: Define the vendor-neutral job runtime and configuration
 
 **Files:**
+
 - Create: `apps/api/src/shared/application/ports/job-runtime.port.ts`
 - Create: `apps/api/src/shared/infrastructure/jobs/job-runtime.constants.ts`
 - Create: `apps/api/src/shared/infrastructure/jobs/job-runtime.module.ts`
@@ -147,44 +144,67 @@ git commit -m "test(api): protect sessions across restarts"
 - Modify: `apps/api/src/shared/infrastructure/config/services/config.service.ts`
 
 **Interfaces:**
+
 - Consumes: `ConfigService<EnvConfig, true>` and Nest lifecycle hooks.
 - Produces:
 
 ```ts
-export type JobBackend = "postgres" | "redis";
+export type JobBackend = 'postgres' | 'redis';
 export type JobData = object;
 export interface JobEnvelope<T extends JobData = JobData> {
-	id: string;
-	name: string;
-	data: Readonly<T>;
-	attempt: number;
+  id: string;
+  name: string;
+  data: Readonly<T>;
+  attempt: number;
 }
 export interface EnqueueJobOptions {
-	jobKey?: string;
-	startAfter?: Date;
-	retryLimit: number;
-	retryDelaySeconds: number;
-	retryBackoff: boolean;
-	expireInSeconds: number;
-	retentionSeconds: number;
-	deadLetter?: string;
+  jobKey?: string;
+  startAfter?: Date;
+  retryLimit: number;
+  retryDelaySeconds: number;
+  retryBackoff: boolean;
+  expireInSeconds: number;
+  retentionSeconds: number;
+  deadLetter?: string;
 }
-export interface WorkJobOptions { teamSize: number; pollingIntervalSeconds: number; }
+export interface WorkJobOptions {
+  teamSize: number;
+  pollingIntervalSeconds: number;
+}
 export interface JobRuntimeHealth {
-	backend: JobBackend;
-	degraded: boolean;
-	queues: Readonly<Record<string, { waiting: number; active: number; failed: number; oldestAgeSeconds: number | null }>>;
+  backend: JobBackend;
+  degraded: boolean;
+  queues: Readonly<
+    Record<
+      string,
+      { waiting: number; active: number; failed: number; oldestAgeSeconds: number | null }
+    >
+  >;
 }
 export interface JobRuntimePort {
-	start(): Promise<void>;
-	stop(): Promise<void>;
-	enqueue<T extends JobData>(queue: string, data: T, options: EnqueueJobOptions): Promise<string | null>;
-	schedule<T extends JobData>(scheduleKey: string, cron: string, queue: string, data: T, options: EnqueueJobOptions): Promise<void>;
-	cancel(queue: string, jobKey: string): Promise<void>;
-	work<T extends JobData>(queue: string, handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>, options: WorkJobOptions): Promise<void>;
-	health(queueNames: readonly string[]): Promise<JobRuntimeHealth>;
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  enqueue<T extends JobData>(
+    queue: string,
+    data: T,
+    options: EnqueueJobOptions,
+  ): Promise<string | null>;
+  schedule<T extends JobData>(
+    scheduleKey: string,
+    cron: string,
+    queue: string,
+    data: T,
+    options: EnqueueJobOptions,
+  ): Promise<void>;
+  cancel(queue: string, jobKey: string): Promise<void>;
+  work<T extends JobData>(
+    queue: string,
+    handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>,
+    options: WorkJobOptions,
+  ): Promise<void>;
+  health(queueNames: readonly string[]): Promise<JobRuntimeHealth>;
 }
-export const JOB_RUNTIME = Symbol("JOB_RUNTIME");
+export const JOB_RUNTIME = Symbol('JOB_RUNTIME');
 ```
 
 - [ ] **Step 1: Write schema and provider-selection tests**
@@ -223,6 +243,7 @@ git commit -m "feat(api): define durable job runtime port"
 ### Task 3: Implement and contract-test the PostgreSQL runtime
 
 **Files:**
+
 - Create: `apps/api/src/shared/infrastructure/jobs/pg-boss-job-runtime.adapter.ts`
 - Create: `apps/api/src/shared/infrastructure/jobs/pg-boss-job-runtime.adapter.spec.ts`
 - Create: `apps/api/test/integration/job-runtime-postgres.integration-spec.ts`
@@ -230,6 +251,7 @@ git commit -m "feat(api): define durable job runtime port"
 - Modify: `pnpm-lock.yaml`
 
 **Interfaces:**
+
 - Consumes: `JobRuntimePort`, `DatabaseService`, `TransactionHost<TransactionalAdapterPrisma<DatabaseService>>`, `TypedConfigService`.
 - Produces: `PgBossJobRuntimeAdapter implements JobRuntimePort` and the `pgboss` schema.
 
@@ -267,12 +289,14 @@ git commit -m "feat(api): add postgres job runtime"
 ### Task 4: Implement the Redis rollback runtime with the same contract
 
 **Files:**
+
 - Create: `apps/api/src/shared/infrastructure/jobs/bullmq-job-runtime.adapter.ts`
 - Create: `apps/api/src/shared/infrastructure/jobs/bullmq-job-runtime.adapter.spec.ts`
 - Create: `apps/api/src/shared/infrastructure/jobs/job-runtime.contract.ts`
 - Modify: `apps/api/src/shared/infrastructure/jobs/job-runtime.module.ts`
 
 **Interfaces:**
+
 - Consumes: `REDIS_CLIENT`, BullMQ `Queue`, `Worker`, `JobScheduler`, and the Task 2 port.
 - Produces: `BullMqJobRuntimeAdapter implements JobRuntimePort` with identical business semantics.
 
@@ -306,6 +330,7 @@ git commit -m "feat(api): preserve redis job runtime rollback"
 ### Task 5: Migrate bounded-context queues behind JobRuntimePort
 
 **Files:**
+
 - Modify: all BullMQ files listed in the File Map under Bounded contexts.
 - Modify: each corresponding `*.module.ts` and existing `*.spec.ts`.
 - Modify: `apps/api/src/app.module.ts`.
@@ -313,21 +338,22 @@ git commit -m "feat(api): preserve redis job runtime rollback"
 - Create: `apps/api/test/mocks/fake-job-runtime.ts`.
 
 **Interfaces:**
+
 - Consumes: `JOB_RUNTIME`, existing semantic ports and existing processor business methods.
 - Produces: processors/jobs that register with the selected runtime without decorators or vendor job types.
 
 The exact mapping is:
 
-| Existing queue | Runtime queue | Handler concurrency | Retry base |
-|---|---|---:|---:|
-| `notification` | `notification.v1` | existing value | 1s |
-| `admin-notification` | `admin-notification.v1` | existing value | 1s |
-| `retention` | `retention.v1` | 1 | 1s |
-| `timezone-reminder` | `timezone-reminder.v1` | existing value | 1s |
-| `todo-reminder` | `todo-reminder.v1` | existing value | 1s |
-| `ai-suggestion-analysis` | `ai-suggestion-analysis.v1` | existing value | 5s |
-| `ai-report-generation` | `ai-report-generation.v1` | 5 | 5s |
-| `account-purge` | `account-purge.v1` | 1 | 1s |
+| Existing queue           | Runtime queue               | Handler concurrency | Retry base |
+| ------------------------ | --------------------------- | ------------------: | ---------: |
+| `notification`           | `notification.v1`           |      existing value |         1s |
+| `admin-notification`     | `admin-notification.v1`     |      existing value |         1s |
+| `retention`              | `retention.v1`              |                   1 |         1s |
+| `timezone-reminder`      | `timezone-reminder.v1`      |      existing value |         1s |
+| `todo-reminder`          | `todo-reminder.v1`          |      existing value |         1s |
+| `ai-suggestion-analysis` | `ai-suggestion-analysis.v1` |      existing value |         5s |
+| `ai-report-generation`   | `ai-report-generation.v1`   |                   5 |         5s |
+| `account-purge`          | `account-purge.v1`          |                   1 |         1s |
 
 - [ ] **Step 1: Add FakeJobRuntime and failing module tests**
 
@@ -389,6 +415,7 @@ git commit -m "refactor(api): route queues through job runtime"
 ### Task 6: Replace Redis-specific health with backend-neutral queue health
 
 **Files:**
+
 - Create: `apps/api/src/health/indicators/job-runtime.health.ts`
 - Create: `apps/api/src/health/indicators/job-runtime.health.spec.ts`
 - Modify: `apps/api/src/health/health.controller.ts`
@@ -397,6 +424,7 @@ git commit -m "refactor(api): route queues through job runtime"
 - Delete: `apps/api/src/health/indicators/bull.health.ts`
 
 **Interfaces:**
+
 - Consumes: `JobRuntimePort.health()`.
 - Produces: the existing `/health` field name `queues`, `status: up`, per-queue `active|waiting|failed`, optional `degraded` and `reason`.
 
@@ -429,6 +457,7 @@ git commit -m "refactor(api): make queue health backend neutral"
 ### Task 7: Add schema migration, Docker profiles, and restart smoke tests
 
 **Files:**
+
 - Create: `scripts/migrate-jobs.sh`
 - Create: `scripts/smoke-job-runtime.sh`
 - Create: `docker-compose.redis.yml`
@@ -440,6 +469,7 @@ git commit -m "refactor(api): make queue health backend neutral"
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: `PGBOSS_DATABASE_URL`, `JOB_BACKEND`, Docker Compose service names.
 - Produces: default dev PostgreSQL backend, optional Redis override, migration/doctor gate, 120-second graceful stop.
 
@@ -500,6 +530,7 @@ git commit -m "build(api): add postgres queue deployment path"
 ### Task 8: Harden deploy gates and document expand/cutover/rollback
 
 **Files:**
+
 - Modify: `scripts/deploy.sh`
 - Modify: `.github/workflows/ci.yml`
 - Modify: `apps/api/DEPLOYMENT.md`
@@ -507,6 +538,7 @@ git commit -m "build(api): add postgres queue deployment path"
 - Modify: `apps/api/.claude/architecture.md`
 
 **Interfaces:**
+
 - Consumes: Docker smoke scripts, `/health`, `JOB_BACKEND`.
 - Produces: expand release, cutover preflight, rollback, and 7-day soak runbooks.
 

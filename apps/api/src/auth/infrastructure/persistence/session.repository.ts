@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { Injectable } from "@nestjs/common";
+
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { CreateSessionData } from "@/auth/application/types";
 import { AUTH_DEFAULTS } from "@/auth/domain/constants/auth.constants";
 import type { Session } from "@/generated/prisma/client";
@@ -11,9 +13,7 @@ import type { DatabaseService } from "@/shared/infrastructure/database/database.
 @Injectable()
 export class SessionRepository {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -24,8 +24,7 @@ export class SessionRepository {
 	// refreshTokenHash가 없는 경우 unique 제약 조건을 위해 임시 placeholder 해시 사용
 	async create(data: CreateSessionData): Promise<Session> {
 		// refreshTokenHash가 없으면 임시 placeholder 생성 (unique 제약 조건 충족)
-		const refreshTokenHash =
-			data.refreshTokenHash ?? `pending_${randomUUID().replace(/-/g, "")}`;
+		const refreshTokenHash = data.refreshTokenHash ?? `pending_${randomUUID().replace(/-/g, "")}`;
 
 		return this.client.session.create({
 			data: {
@@ -44,10 +43,7 @@ export class SessionRepository {
 		});
 	}
 
-	async updateRefreshTokenHash(
-		id: string,
-		refreshTokenHash: string,
-	): Promise<Session> {
+	async updateRefreshTokenHash(id: string, refreshTokenHash: string): Promise<Session> {
 		return this.client.session.update({
 			where: { id },
 			data: { refreshTokenHash },
@@ -146,10 +142,7 @@ export class SessionRepository {
 	}
 
 	// 토큰 재사용 감지 시 전체 폐기
-	async revokeByTokenFamily(
-		tokenFamily: string,
-		reason: string,
-	): Promise<number> {
+	async revokeByTokenFamily(tokenFamily: string, reason: string): Promise<number> {
 		const result = await this.client.session.updateMany({
 			where: {
 				tokenFamily,

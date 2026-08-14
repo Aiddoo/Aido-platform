@@ -1,5 +1,6 @@
 import { PressableFeedback } from 'heroui-native';
 import type { PropsWithChildren, ReactNode } from 'react';
+
 import { ArrowRightIcon } from '../Icon';
 import { ListRow } from '../ListRow';
 import { Text } from '../Text';

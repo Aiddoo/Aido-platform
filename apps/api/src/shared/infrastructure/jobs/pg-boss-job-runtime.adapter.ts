@@ -1,11 +1,7 @@
 import { createHash } from "node:crypto";
-import {
-	type FactoryProvider,
-	Inject,
-	Injectable,
-	Logger,
-} from "@nestjs/common";
+
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { type FactoryProvider, Inject, Injectable, Logger } from "@nestjs/common";
 import type {
 	Db,
 	FindJobsOptions,
@@ -17,6 +13,7 @@ import type {
 	StopOptions,
 	WorkOptions,
 } from "pg-boss";
+
 import type {
 	EnqueueJobOptions,
 	JobCancellationResult,
@@ -34,17 +31,8 @@ export interface PgBossClient {
 	stop(options?: StopOptions): Promise<void>;
 	on(event: "error", listener: (error: Error) => void): unknown;
 	createQueue(name: string): Promise<void>;
-	send(
-		name: string,
-		data: object,
-		options: SendOptions,
-	): Promise<string | null>;
-	schedule(
-		name: string,
-		cron: string,
-		data: object,
-		options: ScheduleOptions,
-	): Promise<void>;
+	send(name: string, data: object, options: SendOptions): Promise<string | null>;
+	schedule(name: string, cron: string, data: object, options: ScheduleOptions): Promise<void>;
 	unschedule(name: string, key?: string): Promise<void>;
 	findJobs<T extends JobData>(
 		name: string,
@@ -87,11 +75,7 @@ export class LazyPgBossClient implements PgBossClient {
 		await (await this.ensureStarted()).createQueue(name);
 	}
 
-	async send(
-		name: string,
-		data: object,
-		options: SendOptions,
-	): Promise<string | null> {
+	async send(name: string, data: object, options: SendOptions): Promise<string | null> {
 		return (await this.ensureStarted()).send(name, data, options);
 	}
 
@@ -115,11 +99,7 @@ export class LazyPgBossClient implements PgBossClient {
 		return (await this.ensureStarted()).findJobs<T>(name, options);
 	}
 
-	async cancel(
-		name: string,
-		ids: string[],
-		options?: { db?: Db },
-	): Promise<unknown> {
+	async cancel(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
 		return (await this.ensureStarted()).cancel(name, ids, options);
 	}
 
@@ -227,10 +207,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 			await this.ensureQueue(options.deadLetter);
 		}
 		await this.ensureQueue(queue);
-		const pgBossOptions = this.toPgBossOptions(
-			options,
-			this.transactionDatabase(),
-		);
+		const pgBossOptions = this.toPgBossOptions(options, this.transactionDatabase());
 		return this.boss.send(queue, data, {
 			...pgBossOptions,
 			...(options.jobKey && {
@@ -284,9 +261,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		if (!hasAffectedCount(result)) {
 			throw new Error("Invalid pg-boss cancellation response");
 		}
-		return result.affected > 0
-			? { status: "cancelled" }
-			: { status: "missing" };
+		return result.affected > 0 ? { status: "cancelled" } : { status: "missing" };
 	}
 
 	async work<T extends JobData>(
@@ -410,9 +385,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 	}
 }
 
-function hasAffectedCount(
-	result: unknown,
-): result is { readonly affected: number } {
+function hasAffectedCount(result: unknown): result is { readonly affected: number } {
 	return (
 		typeof result === "object" &&
 		result !== null &&

@@ -13,6 +13,7 @@ import type {
   UpdateMarketingConsentResponse,
   UpdateMarketingPushConsentResponse,
 } from '@aido/validators';
+
 import type {
   AuthTokens,
   ChangePasswordResult,

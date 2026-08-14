@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type {
 	AdminGrowthMetricsPort,
 	AdminGrowthSummaryCounts,

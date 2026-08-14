@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+
 import type { AccountProvider, LoginAttempt } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { DatabaseService } from "@/shared/infrastructure/database";
@@ -47,10 +48,7 @@ export class LoginAttemptRepository {
 		});
 	}
 
-	async countRecentFailuresByEmail(
-		email: string,
-		since: Date,
-	): Promise<number> {
+	async countRecentFailuresByEmail(email: string, since: Date): Promise<number> {
 		return this.database.loginAttempt.count({
 			where: {
 				email,
@@ -60,10 +58,7 @@ export class LoginAttemptRepository {
 		});
 	}
 
-	async countRecentFailuresByIp(
-		ipAddress: string,
-		since: Date,
-	): Promise<number> {
+	async countRecentFailuresByIp(ipAddress: string, since: Date): Promise<number> {
 		return this.database.loginAttempt.count({
 			where: {
 				ipAddress,
@@ -94,10 +89,7 @@ export class LoginAttemptRepository {
 	}
 
 	// 감사 로그 목적으로 삭제하지 않음
-	async clearRecentFailuresByEmail(
-		_email: string,
-		_since: Date,
-	): Promise<void> {
+	async clearRecentFailuresByEmail(_email: string, _since: Date): Promise<void> {
 		// 감사 로그 목적으로 삭제하지 않음
 		// 필요시 별도 플래그 추가 가능
 	}

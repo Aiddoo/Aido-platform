@@ -1,10 +1,5 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import {
 	NotificationMessageBuilder,
 	NotificationSender,
@@ -16,10 +11,8 @@ import {
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import {
-	fromLegacyJob,
-	type NamedJob,
-} from "@/shared/infrastructure/jobs/named-job";
+import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
+
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
 import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 import {
@@ -74,8 +67,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 		await this.runtime.work<JobData>(
 			AI_SUGGESTION_LEGACY_QUEUE,
 			async (jobs) => {
-				for (const job of jobs)
-					await this.process(fromLegacyJob<AiSuggestionJobMap>(job));
+				for (const job of jobs) await this.process(fromLegacyJob<AiSuggestionJobMap>(job));
 			},
 			AI_SUGGESTION_WORKER_POLICY,
 		);
@@ -89,10 +81,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	) {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
@@ -130,9 +119,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 		);
 
 		if (createdCount === 0) {
-			this.#logger.debug(
-				`Suggestion analysis skipped (no patterns): userId=${userId}`,
-			);
+			this.#logger.debug(`Suggestion analysis skipped (no patterns): userId=${userId}`);
 			return;
 		}
 
@@ -146,8 +133,6 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 			body: message.body,
 		});
 
-		this.#logger.log(
-			`Suggestion analysis complete: userId=${userId}, created=${createdCount}`,
-		);
+		this.#logger.log(`Suggestion analysis complete: userId=${userId}, created=${createdCount}`);
 	}
 }

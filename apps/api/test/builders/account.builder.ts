@@ -60,10 +60,7 @@ export class AccountBuilder {
 
 	// === Provider 관련 ===
 
-	withProvider(
-		provider: AccountProvider,
-		providerAccountId: string,
-	): AccountBuilder {
+	withProvider(provider: AccountProvider, providerAccountId: string): AccountBuilder {
 		this.data.provider = provider;
 		this.data.providerAccountId = providerAccountId;
 		return this;
@@ -115,11 +112,7 @@ export class AccountBuilder {
 		return this;
 	}
 
-	withOAuthTokens(
-		accessToken: string,
-		refreshToken?: string,
-		expiresAt?: Date,
-	): AccountBuilder {
+	withOAuthTokens(accessToken: string, refreshToken?: string, expiresAt?: Date): AccountBuilder {
 		this.data.accessToken = accessToken;
 		this.data.refreshToken = refreshToken ?? null;
 		this.data.accessTokenExpiresAt = expiresAt ?? null;
@@ -151,8 +144,6 @@ export class AccountBuilder {
 
 	/** 여러 개 생성 */
 	static createMany(userId: string, count: number): Account[] {
-		return Array.from({ length: count }, () =>
-			AccountBuilder.create(userId).build(),
-		);
+		return Array.from({ length: count }, () => AccountBuilder.create(userId).build());
 	}
 }

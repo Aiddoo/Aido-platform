@@ -3,11 +3,7 @@
  *
  * 타입 안전한 Session 및 인증 관련 엔티티 테스트 데이터 생성
  */
-import type {
-	Session,
-	Verification,
-	VerificationType,
-} from "@/generated/prisma/client";
+import type { Session, Verification, VerificationType } from "@/generated/prisma/client";
 
 let sessionCounter = 0;
 let verificationCounter = 0;
@@ -36,8 +32,7 @@ export const SessionFixture = {
 		return {
 			id: overrides.id ?? `session-${id}`,
 			userId: overrides.userId ?? `user-${id}`,
-			refreshTokenHash:
-				overrides.refreshTokenHash ?? `hash-${id}-${Date.now()}`,
+			refreshTokenHash: overrides.refreshTokenHash ?? `hash-${id}-${Date.now()}`,
 			tokenFamily: overrides.tokenFamily ?? `family-${id}`,
 			tokenVersion: overrides.tokenVersion ?? 1,
 			previousTokenHash: overrides.previousTokenHash ?? null,
@@ -79,9 +74,7 @@ export const SessionFixture = {
 	 * 여러 Session 생성
 	 */
 	createMany: (count: number, overrides: Partial<Session> = {}): Session[] => {
-		return Array.from({ length: count }, () =>
-			SessionFixture.create(overrides),
-		);
+		return Array.from({ length: count }, () => SessionFixture.create(overrides));
 	},
 
 	/**

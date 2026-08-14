@@ -22,10 +22,12 @@
 
 import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
@@ -110,8 +112,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const userId = await createSocialOnlyUser(email);
 
 			// When
-			const result =
-				await passwordManagementService.requestPasswordSetupCode(userId);
+			const result = await passwordManagementService.requestPasswordSetupCode(userId);
 
 			// Then
 			expect(result.message).toBeDefined();
@@ -131,9 +132,9 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			await passwordManagementService.setPassword(userId, code, "NewPassword1");
 
 			// When & Then
-			await expect(
-				passwordManagementService.requestPasswordSetupCode(userId),
-			).rejects.toThrow(ApplicationException);
+			await expect(passwordManagementService.requestPasswordSetupCode(userId)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -147,11 +148,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const code = getCode(email);
 
 			// When
-			const result = await passwordManagementService.setPassword(
-				userId,
-				code,
-				"NewPassword1",
-			);
+			const result = await passwordManagementService.setPassword(userId, code, "NewPassword1");
 
 			// Then
 			expect(result.message).toBeDefined();
@@ -162,9 +159,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 				where: { userId },
 			});
 
-			const credentialAccount = accounts.find(
-				(a) => a.provider === "CREDENTIAL",
-			);
+			const credentialAccount = accounts.find((a) => a.provider === "CREDENTIAL");
 			expect(credentialAccount).toBeDefined();
 			expect(credentialAccount?.password).toBeTruthy();
 		});
@@ -178,15 +173,10 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const code = getCode(email);
 
 			// When
-			await passwordManagementService.setPassword(
-				userId,
-				code,
-				"NewPassword1",
-				{
-					ip: "192.168.1.1",
-					userAgent: "IntegrationTest/1.0",
-				},
-			);
+			await passwordManagementService.setPassword(userId, code, "NewPassword1", {
+				ip: "192.168.1.1",
+				userAgent: "IntegrationTest/1.0",
+			});
 
 			// Then
 			const prisma = testDb.getPrisma();
@@ -241,9 +231,9 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			await passwordManagementService.setPassword(userId, code, "NewPassword1");
 
 			// When & Then - 다시 설정 시도 (코드 요청도 실패해야 함)
-			await expect(
-				passwordManagementService.requestPasswordSetupCode(userId),
-			).rejects.toThrow(ApplicationException);
+			await expect(passwordManagementService.requestPasswordSetupCode(userId)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("기존 소셜 계정은 유지된다", async () => {

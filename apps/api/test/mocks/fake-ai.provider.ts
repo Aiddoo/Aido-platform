@@ -6,6 +6,7 @@
  */
 
 import type { ParsedTodoData } from "@aido/validators";
+
 import type {
 	AiProvider,
 	GenerateStructuredOptions,
@@ -308,8 +309,6 @@ export class FakeAiProvider implements AiProvider {
  *
  * @param options - 초기 설정
  */
-export function createFakeAiProvider(
-	options?: FakeAiProviderOptions,
-): FakeAiProvider {
+export function createFakeAiProvider(options?: FakeAiProviderOptions): FakeAiProvider {
 	return new FakeAiProvider(options);
 }

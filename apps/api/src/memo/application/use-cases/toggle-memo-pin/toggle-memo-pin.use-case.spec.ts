@@ -9,11 +9,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+
 import { Memo } from "../../../domain/entities/memo.aggregate";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 import { ToggleMemoPinUseCase } from "./toggle-memo-pin.use-case";
 
 const memoEntity = (isPinned: boolean): Memo =>

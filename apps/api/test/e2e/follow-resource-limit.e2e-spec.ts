@@ -8,6 +8,7 @@
 
 import { FOLLOW_LIMITS } from "@aido/validators";
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 import type { VerifiedUser } from "./helpers/e2e-helpers";
 
@@ -33,10 +34,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 	describe("Free 유저 친구 제한", () => {
 		it(`친구 ${FREE_LIMIT}명 도달 후 추가 요청 시 403 에러, 리소스 제한 조회 확인`, async () => {
 			// Given - Free 유저와 FREE_LIMIT + 1명의 친구 후보 생성
-			const freeUser = await ctx.helpers.createVerifiedUser(
-				"follow-limit-free@test.com",
-				password,
-			);
+			const freeUser = await ctx.helpers.createVerifiedUser("follow-limit-free@test.com", password);
 			const friends: VerifiedUser[] = [];
 
 			for (let i = 0; i < FREE_LIMIT + 1; i++) {

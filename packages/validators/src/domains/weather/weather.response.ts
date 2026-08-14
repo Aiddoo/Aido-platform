@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { datetimeSchema } from '../../common/datetime';
 import { PRECIPITATION_TYPES, SKY_CONDITIONS } from './weather.constants';
 

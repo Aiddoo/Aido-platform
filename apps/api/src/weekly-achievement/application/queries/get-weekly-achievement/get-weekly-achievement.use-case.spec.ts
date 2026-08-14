@@ -9,6 +9,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createWeeklyAchievementRepositoryMock } from "@test/mocks/ports/weekly-achievement.mock";
+
 import type { WeeklyAchievementRow } from "../../../domain/weekly-achievement";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
@@ -33,17 +34,13 @@ describe("GetWeeklyAchievementUseCase — 특정 연도/주차 주간 달성 상
 	let repository: Mocked<WeeklyAchievementRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetWeeklyAchievementUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(GetWeeklyAchievementUseCase)
 			.mock<WeeklyAchievementRepositoryPort>(WEEKLY_ACHIEVEMENT_REPOSITORY)
 			.impl(() => createWeeklyAchievementRepositoryMock())
 			.compile();
 
 		useCase = unit;
-		repository = unitRef.get<WeeklyAchievementRepositoryPort>(
-			WEEKLY_ACHIEVEMENT_REPOSITORY,
-		);
+		repository = unitRef.get<WeeklyAchievementRepositoryPort>(WEEKLY_ACHIEVEMENT_REPOSITORY);
 	});
 
 	it("조회한 레코드를 완료율·라벨·날짜범위가 채워진 뷰로 변환한다 (ko)", async () => {
@@ -59,11 +56,7 @@ describe("GetWeeklyAchievementUseCase — 특정 연도/주차 주간 달성 상
 		});
 
 		// Then
-		expect(repository.findByYearAndWeek).toHaveBeenCalledWith(
-			"user-123",
-			2026,
-			10,
-		);
+		expect(repository.findByYearAndWeek).toHaveBeenCalledWith("user-123", 2026, 10);
 		expect(result).toEqual({
 			id: 1,
 			year: 2026,

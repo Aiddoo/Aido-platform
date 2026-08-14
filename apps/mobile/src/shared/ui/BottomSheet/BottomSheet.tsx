@@ -7,6 +7,7 @@ import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } fro
 import { type LayoutChangeEvent, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
+
 import { MIN_CONTENT_HEIGHT, SHEET_INDEX, sharedSheetStyles, TOP_MARGIN } from './constants';
 
 interface BottomSheetProps {

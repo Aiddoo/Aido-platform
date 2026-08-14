@@ -16,11 +16,13 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -29,15 +31,12 @@ import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
 } from "../../ports/category-ownership.port";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import type { CreateRecurringTodoData } from "../../types";
 import { CreateRecurringTodosUseCase } from "./create-recurring-todos.use-case";
 
@@ -83,9 +82,7 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			CreateRecurringTodosUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(CreateRecurringTodosUseCase)
 			.mock<TodoRepositoryPort>(TODO_REPOSITORY)
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
@@ -102,13 +99,10 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get<DomainEventPublisherPort>(
-			DOMAIN_EVENT_PUBLISHER,
-		);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 	});
 
 	it("요일 매칭 날짜만큼 일괄 생성하고 인스턴스별 TodoCreatedEvent를 발행한 뒤 캐시를 무효화한다", async () => {
@@ -126,10 +120,7 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 		});
 
 		// Then - 3개 인스턴스, sortOrder는 max+1부터 연속
-		expect(categoryOwnership.validateOwnership).toHaveBeenCalledWith(
-			1,
-			"user-123",
-		);
+		expect(categoryOwnership.validateOwnership).toHaveBeenCalledWith(1, "user-123");
 		const [items, groupId] = todoRepository.createMany.mock.calls[0] ?? [];
 		expect(items).toHaveLength(3);
 		expect(items?.[0]).toMatchObject({ sortOrder: 0, title: "반복 할 일" });
@@ -155,9 +146,9 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 		};
 
 		// When & Then
-		await expect(
-			useCase.execute({ data, timezone: "UTC" }),
-		).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+		await expect(useCase.execute({ data, timezone: "UTC" })).rejects.toMatchObject({
+			errorCode: ErrorCode.SYS_0002,
+		});
 		expect(categoryOwnership.validateOwnership).not.toHaveBeenCalled();
 	});
 
@@ -165,11 +156,7 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 		// Given - 3개 생성 + 이벤트 publisher gate
 		todoRepository.countActiveByCategory.mockResolvedValue(0);
 		todoRepository.getMaxSortOrder.mockResolvedValue(-1);
-		todoRepository.createMany.mockResolvedValue([
-			buildEntity(1),
-			buildEntity(2),
-			buildEntity(3),
-		]);
+		todoRepository.createMany.mockResolvedValue([buildEntity(1), buildEntity(2), buildEntity(3)]);
 		todoReadRepository.findManyByRecurrenceGroupId.mockResolvedValue([]);
 		let release: (() => void) | undefined;
 		const publication = new Promise<void>((resolve) => {
@@ -185,9 +172,7 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 		await new Promise((resolve) => setImmediate(resolve));
 
 		// Then - publisher 완료 전에는 그룹 재조회로 진행하지 않음
-		expect(
-			todoReadRepository.findManyByRecurrenceGroupId,
-		).not.toHaveBeenCalled();
+		expect(todoReadRepository.findManyByRecurrenceGroupId).not.toHaveBeenCalled();
 		release?.();
 		await execution;
 		expect(todoReadRepository.findManyByRecurrenceGroupId).toHaveBeenCalled();
@@ -203,21 +188,19 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 		};
 
 		// When & Then
-		await expect(
-			useCase.execute({ data, timezone: "UTC" }),
-		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0812 });
+		await expect(useCase.execute({ data, timezone: "UTC" })).rejects.toMatchObject({
+			errorCode: ErrorCode.TODO_0812,
+		});
 	});
 
 	it("생성 시 카테고리 활성 한도를 넘으면 ApplicationException(TODO_0813)을 던진다", async () => {
 		// Given - 여유 2개뿐인데 3개 생성 시도
-		todoRepository.countActiveByCategory.mockResolvedValue(
-			TODO_LIMITS.MAX_PER_CATEGORY - 2,
-		);
+		todoRepository.countActiveByCategory.mockResolvedValue(TODO_LIMITS.MAX_PER_CATEGORY - 2);
 
 		// When & Then
-		await expect(
-			useCase.execute({ data: baseData, timezone: "UTC" }),
-		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0813 });
+		await expect(useCase.execute({ data: baseData, timezone: "UTC" })).rejects.toMatchObject({
+			errorCode: ErrorCode.TODO_0813,
+		});
 		expect(todoRepository.createMany).not.toHaveBeenCalled();
 	});
 
@@ -241,8 +224,6 @@ describe("CreateRecurringTodosUseCase — 반복 할 일 일괄 생성 핸들러
 
 		// Then - KST 09:00 = UTC 00:00
 		const [items] = todoRepository.createMany.mock.calls[0] ?? [];
-		expect(items?.[0]?.scheduledTime).toEqual(
-			new Date("2026-03-02T00:00:00.000Z"),
-		);
+		expect(items?.[0]?.scheduledTime).toEqual(new Date("2026-03-02T00:00:00.000Z"));
 	});
 });

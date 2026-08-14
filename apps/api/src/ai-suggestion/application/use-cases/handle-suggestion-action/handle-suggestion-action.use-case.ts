@@ -55,16 +55,11 @@ export class HandleSuggestionActionUseCase {
 		private readonly entitlementService: EntitlementService,
 	) {}
 
-	async execute(
-		input: HandleSuggestionActionInput,
-	): Promise<SuggestionActionResult> {
+	async execute(input: HandleSuggestionActionInput): Promise<SuggestionActionResult> {
 		await this.#enforcePremium(input.userId);
 
 		// 1. 제안 조회
-		const suggestion = await this.repository.findByIdAndUserId(
-			input.suggestionId,
-			input.userId,
-		);
+		const suggestion = await this.repository.findByIdAndUserId(input.suggestionId, input.userId);
 		if (!suggestion) {
 			throw new ApplicationException(ErrorCode.AI_1305, {
 				suggestionId: input.suggestionId,
@@ -76,10 +71,7 @@ export class HandleSuggestionActionUseCase {
 
 		// 3. 거절 처리
 		if (input.action === "dismiss") {
-			const updated = await this.repository.updateStatus(
-				input.suggestionId,
-				"DISMISSED",
-			);
+			const updated = await this.repository.updateStatus(input.suggestionId, "DISMISSED");
 			return {
 				message: "제안이 거절되었습니다.",
 				suggestion: updated,
@@ -94,9 +86,7 @@ export class HandleSuggestionActionUseCase {
 			});
 		}
 
-		const daysOfWeekResult = z
-			.array(dayOfWeekSchema)
-			.safeParse(suggestion.daysOfWeek);
+		const daysOfWeekResult = z.array(dayOfWeekSchema).safeParse(suggestion.daysOfWeek);
 		if (!daysOfWeekResult.success) {
 			throw new ApplicationException(ErrorCode.SYS_0002, {
 				field: "daysOfWeek",
@@ -108,17 +98,10 @@ export class HandleSuggestionActionUseCase {
 		const startDate = input.startDate ?? toDateString(currentDate.toDate());
 		const endDate =
 			input.endDate ??
-			toDateString(
-				currentDate
-					.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week")
-					.toDate(),
-			);
+			toDateString(currentDate.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week").toDate());
 
 		// 상태를 먼저 ACCEPTED로 변경 (재수락 방지)
-		const updated = await this.repository.updateStatus(
-			input.suggestionId,
-			"ACCEPTED",
-		);
+		const updated = await this.repository.updateStatus(input.suggestionId, "ACCEPTED");
 
 		try {
 			const result = await this.recurringTodoCreator.createRecurring(

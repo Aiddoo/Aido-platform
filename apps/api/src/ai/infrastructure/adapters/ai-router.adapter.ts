@@ -18,9 +18,7 @@ export const AI_PROVIDER_GEMINI = Symbol("AI_PROVIDER_GEMINI");
 
 @Injectable()
 export class AiRouterAdapter implements AiProvider {
-	constructor(
-		@Inject(AI_PROVIDER_GEMINI) private readonly gemini: GeminiAiAdapter,
-	) {}
+	constructor(@Inject(AI_PROVIDER_GEMINI) private readonly gemini: GeminiAiAdapter) {}
 
 	async generateStructured<T>(
 		options: GenerateStructuredOptions<T>,
@@ -32,9 +30,7 @@ export class AiRouterAdapter implements AiProvider {
 		return this.gemini.isAvailable();
 	}
 
-	#selectProvider(
-		_hint: GenerateStructuredOptions<unknown>["modelHint"],
-	): AiProvider {
+	#selectProvider(_hint: GenerateStructuredOptions<unknown>["modelHint"]): AiProvider {
 		return this.gemini;
 	}
 }

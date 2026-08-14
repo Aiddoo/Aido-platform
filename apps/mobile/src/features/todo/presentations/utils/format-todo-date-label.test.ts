@@ -1,4 +1,5 @@
 import { i18n } from '@src/shared/i18n';
+
 import { formatTodoDateLabel } from './format-todo-date-label';
 
 afterEach(async () => {

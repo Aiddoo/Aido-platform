@@ -1,20 +1,19 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/validators";
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
+
 import type * as PrismaModels from "@/generated/prisma/client";
 import { now } from "@/shared/domain/date/utils/core";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type {
 	AiSuggestionRepositoryPort,
 	CreateSuggestionInput,
 } from "../../application/ports/ai-suggestion.repository.port";
-import {
-	Suggestion,
-	type SuggestionStatus,
-} from "../../domain/entities/suggestion.aggregate";
+import { Suggestion, type SuggestionStatus } from "../../domain/entities/suggestion.aggregate";
 import type {
 	CategoryCompletionRate,
 	DayCompletionRate,
@@ -31,13 +30,9 @@ import type {
  * 분석용 통계 읽기는 도메인 프로젝션으로 반환한다. 트랜잭션은 CLS(TransactionHost.tx)로 전파된다.
  */
 @Injectable()
-export class PrismaAiSuggestionRepository
-	implements AiSuggestionRepositoryPort
-{
+export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -75,20 +70,14 @@ export class PrismaAiSuggestionRepository
 		return rows.map((row) => PrismaAiSuggestionRepository.toEntity(row));
 	}
 
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-	): Promise<Suggestion | null> {
+	async findByIdAndUserId(id: number, userId: string): Promise<Suggestion | null> {
 		const row = await this.client.recurringSuggestion.findFirst({
 			where: { id, userId },
 		});
 		return row ? PrismaAiSuggestionRepository.toEntity(row) : null;
 	}
 
-	async updateStatus(
-		id: number,
-		status: SuggestionStatus,
-	): Promise<Suggestion> {
+	async updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion> {
 		const row = await this.client.recurringSuggestion.update({
 			where: { id },
 			data: { status },
@@ -240,10 +229,7 @@ export class PrismaAiSuggestionRepository
 				name,
 				total: stats.total,
 				completed: stats.completed,
-				rate:
-					stats.total > 0
-						? Math.round((stats.completed / stats.total) * 100)
-						: 0,
+				rate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
 			}))
 			.sort((a, b) => b.total - a.total);
 	}
@@ -291,19 +277,14 @@ export class PrismaAiSuggestionRepository
 		return todos.map((t) => ({
 			title: t.title,
 			startDate: toDateString(t.startDate),
-			scheduledTime: t.scheduledTime
-				? dayjs(t.scheduledTime).tz(timezone).format("HH:mm")
-				: null,
+			scheduledTime: t.scheduledTime ? dayjs(t.scheduledTime).tz(timezone).format("HH:mm") : null,
 			categoryId: t.categoryId,
 			completed: t.completed,
 			categoryName: t.category.name,
 		}));
 	}
 
-	async findRecentResponded(
-		userId: string,
-		since: Date,
-	): Promise<SuggestionHistoryItem[]> {
+	async findRecentResponded(userId: string, since: Date): Promise<SuggestionHistoryItem[]> {
 		const rows = await this.client.recurringSuggestion.findMany({
 			where: {
 				userId,

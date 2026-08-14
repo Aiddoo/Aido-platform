@@ -14,12 +14,10 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
-import type {
-	FindFriendTodosParams,
-	FindTodosParams,
-} from "../../application/types";
+import type { FindFriendTodosParams, FindTodosParams } from "../../application/types";
 import { TodoRowRepository } from "./todo-row.repository";
 
 describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
@@ -35,9 +33,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 		db = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(TodoRowRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 
@@ -64,11 +60,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 			expect(db.todo.findMany).toHaveBeenCalledWith({
 				where: { userId: "user-1" },
 				take: 11, // size + 1 for pagination check
-				orderBy: [
-					{ category: { sortOrder: "asc" } },
-					{ sortOrder: "asc" },
-					{ id: "asc" },
-				],
+				orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
@@ -108,11 +100,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				take: 11,
 				skip: 1,
 				cursor: { id: 5 },
-				orderBy: [
-					{ category: { sortOrder: "asc" } },
-					{ sortOrder: "asc" },
-					{ id: "asc" },
-				],
+				orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
@@ -151,11 +139,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				take: 11,
 				skip: 1,
 				cursor: { id: 0 },
-				orderBy: [
-					{ category: { sortOrder: "asc" } },
-					{ sortOrder: "asc" },
-					{ id: "asc" },
-				],
+				orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
@@ -291,11 +275,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 					visibility: "PUBLIC",
 				},
 				take: 11,
-				orderBy: [
-					{ category: { sortOrder: "asc" } },
-					{ sortOrder: "asc" },
-					{ id: "asc" },
-				],
+				orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
@@ -337,11 +317,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				take: 11,
 				skip: 1,
 				cursor: { id: 5 },
-				orderBy: [
-					{ category: { sortOrder: "asc" } },
-					{ sortOrder: "asc" },
-					{ id: "asc" },
-				],
+				orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
@@ -382,11 +358,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				take: 11,
 				skip: 1,
 				cursor: { id: 0 },
-				orderBy: [
-					{ category: { sortOrder: "asc" } },
-					{ sortOrder: "asc" },
-					{ id: "asc" },
-				],
+				orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { id: "asc" }],
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
@@ -604,10 +576,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 			];
 
 			// When
-			const result = await repository.createManyBatch(
-				dataArray,
-				recurrenceGroupId,
-			);
+			const result = await repository.createManyBatch(dataArray, recurrenceGroupId);
 
 			// Then - createMany가 전체 데이터로 호출됨
 			expect(db.todo.createMany).toHaveBeenCalledWith({

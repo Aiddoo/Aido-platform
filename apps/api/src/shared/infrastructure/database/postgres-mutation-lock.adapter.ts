@@ -1,8 +1,9 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 
 import type { MutationLockPort } from "@/shared/application/ports";
+
 import type { DatabaseService } from "./database.service";
 
 /**
@@ -15,9 +16,7 @@ import type { DatabaseService } from "./database.service";
 @Injectable()
 export class PostgresMutationLockAdapter implements MutationLockPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	async acquire(keys: readonly string[]): Promise<void> {

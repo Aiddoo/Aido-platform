@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
+
+import type { CreateNotificationData } from "../../ports/notification-data";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
-import type { CreateNotificationData } from "../../ports/notification-data";
 import type { PersistedBatchNotificationDispatch } from "../../ports/push-dispatcher.port";
 
 /**
@@ -18,19 +19,13 @@ export class PersistBatchNotificationUseCase {
 		private readonly notificationRepository: NotificationRepositoryPort,
 	) {}
 
-	async execute(
-		dataList: CreateNotificationData[],
-	): Promise<PersistedBatchNotificationDispatch> {
+	async execute(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationDispatch> {
 		if (dataList.length === 0) {
 			return { count: 0, items: [], sourceData: [] };
 		}
 
-		const created =
-			await this.notificationRepository.createManyNotificationsAndReturn(
-				dataList,
-			);
-		const forceKey = (userId: string, type: string): string =>
-			`${userId}\u0000${type}`;
+		const created = await this.notificationRepository.createManyNotificationsAndReturn(dataList);
+		const forceKey = (userId: string, type: string): string => `${userId}\u0000${type}`;
 		const forcedKeys = new Set(
 			dataList
 				.filter((data) => data.force === true)
@@ -56,9 +51,7 @@ export class PersistBatchNotificationUseCase {
 					purpose: notification.purpose,
 					campaignKey: notification.campaignKey,
 					variantId: notification.variantId,
-					force: forcedKeys.has(
-						forceKey(notification.userId, notification.type),
-					),
+					force: forcedKeys.has(forceKey(notification.userId, notification.type)),
 				},
 				notificationId: notification.id,
 			})),

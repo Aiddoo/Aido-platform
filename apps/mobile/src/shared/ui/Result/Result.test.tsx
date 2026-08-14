@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
+
 import { Result } from './Result';
 
 jest.mock('heroui-native', () => {

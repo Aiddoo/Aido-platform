@@ -5,6 +5,7 @@ import { Result, Spacing, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useCallback, useState } from 'react';
+
 import { useTimePalette } from '../hooks/use-time-palette';
 import { useUpdateLocationMutationOptions } from '../queries/use-update-location-mutation-options';
 

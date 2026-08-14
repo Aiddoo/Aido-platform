@@ -1,14 +1,14 @@
 import type { PrismaTransactionLike } from "pg-boss";
 import { PgBoss } from "pg-boss";
+
 import type { EnqueueJobOptions } from "@/shared/application/ports/job-runtime.port";
 import { PgBossJobRuntimeAdapter } from "@/shared/infrastructure/jobs/pg-boss-job-runtime.adapter";
+
 import { TestDatabase } from "../setup/test-database";
 
 const SCHEMA = "pgboss";
 
-function options(
-	overrides: Partial<EnqueueJobOptions> = {},
-): EnqueueJobOptions {
+function options(overrides: Partial<EnqueueJobOptions> = {}): EnqueueJobOptions {
 	return {
 		retryLimit: 1,
 		retryDelaySeconds: 1,
@@ -20,10 +20,7 @@ function options(
 	};
 }
 
-async function eventually(
-	assertion: () => Promise<void>,
-	timeoutMs = 15_000,
-): Promise<void> {
+async function eventually(assertion: () => Promise<void>, timeoutMs = 15_000): Promise<void> {
 	const deadline = Date.now() + timeoutMs;
 	let lastError: unknown;
 	while (Date.now() < deadline) {
@@ -86,11 +83,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 
 	it("enqueue한 작업을 처리하고 완료 상태로 보존한다", async () => {
 		const queue = "integration-complete";
-		const id = await runtime.enqueue(
-			queue,
-			{ documentId: 1 },
-			options({ jobKey: "complete:1" }),
-		);
+		const id = await runtime.enqueue(queue, { documentId: 1 }, options({ jobKey: "complete:1" }));
 		const handled = jest.fn().mockResolvedValue(undefined);
 
 		await runtime.work(queue, handled, {
@@ -149,11 +142,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 		const queue = "integration-retry";
 		const deadLetter = "integration-retry-dead-letter";
 		const handled = jest.fn().mockRejectedValue(new Error("expected failure"));
-		await runtime.enqueue(
-			queue,
-			{ documentId: 4 },
-			options({ jobKey: "retry:4", deadLetter }),
-		);
+		await runtime.enqueue(queue, { documentId: 4 }, options({ jobKey: "retry:4", deadLetter }));
 		await runtime.work(queue, handled, {
 			teamSize: 1,
 			pollingIntervalSeconds: 1,
@@ -169,20 +158,8 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 
 	it("같은 scheduleKey 등록은 하나의 스케줄로 교체된다", async () => {
 		const queue = "integration-schedule";
-		await runtime.schedule(
-			"weekly",
-			"0 1 * * 1",
-			queue,
-			{ version: 1 },
-			options(),
-		);
-		await runtime.schedule(
-			"weekly",
-			"0 2 * * 1",
-			queue,
-			{ version: 2 },
-			options(),
-		);
+		await runtime.schedule("weekly", "0 1 * * 1", queue, { version: 1 }, options());
+		await runtime.schedule("weekly", "0 2 * * 1", queue, { version: 2 }, options());
 
 		const schedules = await boss.getSchedules(queue, "weekly");
 		expect(schedules).toHaveLength(1);
@@ -196,11 +173,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 
 	it("API runtime 재시작 중에도 대기 작업이 유실되지 않는다", async () => {
 		const queue = "integration-restart";
-		const id = await runtime.enqueue(
-			queue,
-			{ documentId: 5 },
-			options({ jobKey: "restart:5" }),
-		);
+		const id = await runtime.enqueue(queue, { documentId: 5 }, options({ jobKey: "restart:5" }));
 		await runtime.stop();
 
 		boss = new PgBoss({
@@ -240,11 +213,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 						"INSERT INTO public.job_runtime_probe (id) VALUES ($1)",
 						probeId,
 					);
-					await runtime.enqueue(
-						queue,
-						{ probeId },
-						options({ jobKey: probeId }),
-					);
+					await runtime.enqueue(queue, { probeId }, options({ jobKey: probeId }));
 					throw new Error("force rollback");
 				} finally {
 					transactionSource.tx = prisma;

@@ -40,13 +40,7 @@ const featureDiscoveryEnabledSchema = {
 	title: "FeatureDiscoveryEnabledResponse",
 	type: "object",
 	additionalProperties: false,
-	required: [
-		"enabled",
-		"campaignId",
-		"minAppVersion",
-		"launchedAt",
-		"autoOpen",
-	],
+	required: ["enabled", "campaignId", "minAppVersion", "launchedAt", "autoOpen"],
 	properties: {
 		enabled: { type: "boolean", enum: [true] },
 		campaignId: { type: "string", minLength: 1 },

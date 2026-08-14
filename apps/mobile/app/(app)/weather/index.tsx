@@ -2,12 +2,12 @@ import { ErrorCode } from '@aido/errors';
 import catImage from '@assets/images/cat_weather_anchor.png';
 import type { DailyForecast, HourlyForecast } from '@src/features/weather/models/weather.model';
 import { WeatherPolicy } from '@src/features/weather/models/weather.model';
-import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
   resolveSkyIconColor,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
+import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
 import {
   getPrecipitationTypeLabel,
   getSkyConditionLabel,

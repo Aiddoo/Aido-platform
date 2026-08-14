@@ -7,6 +7,7 @@ import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/u
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { InteractionManager } from 'react-native';
+
 import { useFeatureDiscoveryQueryOptions } from '../queries/use-feature-discovery-query-options';
 import { claimAndOpenFeatureDiscovery } from '../state/feature-discovery-auto-open';
 import { useFeatureDiscoveryHub } from './use-feature-discovery-hub';

@@ -13,10 +13,7 @@ export interface ProvisioningConsent {
  * 어댑터가 설정과 기본 카테고리 생성을 위임하며, 호출측이 연 CLS 트랜잭션에 참여한다.
  */
 export interface UserProvisioningSeederPort {
-	seedDefaultSettings(
-		userId: string,
-		consent: ProvisioningConsent,
-	): Promise<void>;
+	seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void>;
 	seedDefaultCategories(userId: string): Promise<void>;
 }
 

@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+
 import { debounce, throttle } from './retry';
 
 describe('debounce', () => {

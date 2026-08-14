@@ -1,14 +1,16 @@
 import type { AiReport as AiReportDto } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
+
 import { AI_PROVIDER, type AiProvider } from "@/ai";
 import { now } from "@/shared/domain/date/utils/core";
 import type { SupportedLocale } from "@/shared/domain/locale";
+
+import { buildFallbackContent } from "../../../domain/services/prompts/report-fallback";
 import {
 	buildReportPrompt,
 	getReportAiResponseSchema,
 } from "../../../domain/services/prompts/report.prompt";
-import { buildFallbackContent } from "../../../domain/services/prompts/report-fallback";
 import { assembleAggregatedData } from "../../../domain/services/report-aggregation";
 import { computePeriodLabel } from "../../../domain/services/report-period";
 import type {
@@ -22,10 +24,7 @@ import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port";
-import {
-	TODO_STATS_READER,
-	type TodoStatsReaderPort,
-} from "../../ports/todo-stats.reader.port";
+import { TODO_STATS_READER, type TodoStatsReaderPort } from "../../ports/todo-stats.reader.port";
 
 /** AI 리포트 생성 기본 설정 */
 const REPORT_AI_MAX_TOKENS = 800;
@@ -68,17 +67,9 @@ export class GenerateReportUseCase {
 		const { userId, timezone, type, locale = "ko" } = input;
 		const localNow = dayjs(now()).tz(timezone);
 
-		const window =
-			type === "WEEKLY"
-				? this.#weeklyWindow(localNow)
-				: this.#monthlyWindow(localNow);
+		const window = type === "WEEKLY" ? this.#weeklyWindow(localNow) : this.#monthlyWindow(localNow);
 
-		const exists = await this.aiReportRepository.exists(
-			userId,
-			type,
-			window.year,
-			window.period,
-		);
+		const exists = await this.aiReportRepository.exists(userId, type, window.year, window.period);
 		if (exists) {
 			this.#logger.debug(
 				`${type === "WEEKLY" ? "주간" : "월간"} 리포트 이미 존재: userId=${userId}, ${window.year}년 ${window.period}${type === "WEEKLY" ? "주차" : "월"}`,
@@ -166,9 +157,7 @@ export class GenerateReportUseCase {
 			locale,
 		} = params;
 
-		this.#logger.log(
-			`리포트 생성 시작: userId=${userId}, type=${type}, ${periodLabel}`,
-		);
+		this.#logger.log(`리포트 생성 시작: userId=${userId}, type=${type}, ${periodLabel}`);
 
 		// 1. 데이터 집계 + 이전 보고서 조회 (병렬)
 		const [aggregatedData, prevReport] = await Promise.all([
@@ -229,21 +218,14 @@ export class GenerateReportUseCase {
 	 */
 	async #aggregate(params: AggregateParams): Promise<AggregatedReportData> {
 		const inputs = await this.todoStatsReader.fetchAggregationInputs(params);
-		return assembleAggregatedData(
-			inputs,
-			params.startDate,
-			params.endDate,
-			params.timezone,
-		);
+		return assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone);
 	}
 
 	/**
 	 * AI 콘텐츠 생성: AI Provider로 요약·팁 생성. 불가용/실패 시 폴백.
 	 * 시스템 호출이므로 사용량 제한에 포함되지 않는다(AI_PROVIDER 직접 사용).
 	 */
-	async #generateAiContent(
-		params: GenerateReportParams,
-	): Promise<GeneratedReportContent> {
+	async #generateAiContent(params: GenerateReportParams): Promise<GeneratedReportContent> {
 		const { aggregatedData, periodLabel, type, locale = "ko" } = params;
 
 		if (!this.aiProvider.isAvailable()) {

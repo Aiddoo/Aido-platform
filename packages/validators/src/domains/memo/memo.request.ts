@@ -1,7 +1,8 @@
 import { z } from 'zod';
+
+import { reorderPositionSchema } from '../todo-category/todo-category.common';
 import { todoVisibilitySchema } from '../todo/todo.common';
 import { TODO_ITEM_LIMITS } from '../todo/todo.constants';
-import { reorderPositionSchema } from '../todo-category/todo-category.common';
 import { MEMO_LIMITS } from './memo.constants';
 
 export const createMemoSchema = z.object({

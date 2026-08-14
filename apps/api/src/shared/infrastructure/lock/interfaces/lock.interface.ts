@@ -35,10 +35,7 @@ export interface ILockProvider {
 	 *   await release();
 	 * }
 	 */
-	acquire(
-		resource: string,
-		ttlMs: number,
-	): Promise<(() => Promise<void>) | null>;
+	acquire(resource: string, ttlMs: number): Promise<(() => Promise<void>) | null>;
 
 	/**
 	 * 리소스가 현재 잠겨있는지 확인합니다.

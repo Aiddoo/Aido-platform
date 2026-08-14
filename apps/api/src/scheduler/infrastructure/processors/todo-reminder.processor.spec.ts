@@ -12,6 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
+
 import { NotificationSender } from "@/notification";
 
 import {
@@ -38,9 +39,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 	let notification: Mocked<NotificationSender>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			TodoReminderProcessor,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(TodoReminderProcessor).compile();
 
 		processor = unit;
 		reader = unitRef.get(TODO_REMINDER_READER);
@@ -56,18 +55,10 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			todoTitle?: string;
 		} = {},
 	) => {
-		const {
-			todoExists = true,
-			notificationExists = false,
-			todoTitle = TODO_TITLE,
-		} = options;
+		const { todoExists = true, notificationExists = false, todoTitle = TODO_TITLE } = options;
 
-		reader.findActiveTodo.mockResolvedValue(
-			todoExists ? { id: 1, title: todoTitle } : null,
-		);
-		reader.existsRecentReminderNotification.mockResolvedValue(
-			notificationExists,
-		);
+		reader.findActiveTodo.mockResolvedValue(todoExists ? { id: 1, title: todoTitle } : null);
+		reader.existsRecentReminderNotification.mockResolvedValue(notificationExists);
 	};
 
 	describe("onStalled", () => {
@@ -207,14 +198,10 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 
 		it("DB 조회 실패 시 에러가 전파된다 (BullMQ 재시도)", async () => {
 			// Given
-			reader.findActiveTodo.mockRejectedValue(
-				new Error("DB connection failed"),
-			);
+			reader.findActiveTodo.mockRejectedValue(new Error("DB connection failed"));
 
 			// When & Then
-			await expect(processor.process(makeJob())).rejects.toThrow(
-				"DB connection failed",
-			);
+			await expect(processor.process(makeJob())).rejects.toThrow("DB connection failed");
 		});
 	});
 });

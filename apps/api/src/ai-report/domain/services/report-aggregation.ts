@@ -36,9 +36,7 @@ export function computeCategoryBreakdown(
 	completedGroups: CategoryGroupRow[],
 	categories: CategoryMetaRow[],
 ): CategoryBreakdownItem[] {
-	const completedMap = new Map(
-		completedGroups.map((g) => [g.categoryId, g._count.id]),
-	);
+	const completedMap = new Map(completedGroups.map((g) => [g.categoryId, g._count.id]));
 	const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
 	return totalGroups
@@ -78,15 +76,7 @@ export function computeDayPatterns(
 		dayCompleted.set(day, (dayCompleted.get(day) ?? 0) + g._count.id);
 	}
 
-	const dayOrder: DayOfWeek[] = [
-		"MON",
-		"TUE",
-		"WED",
-		"THU",
-		"FRI",
-		"SAT",
-		"SUN",
-	];
+	const dayOrder: DayOfWeek[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 	return dayOrder.map((day) => {
 		const total = dayTotals.get(day) ?? 0;
@@ -146,10 +136,7 @@ export function computeStreakDays(
 	}
 	for (const g of completedGroups) {
 		const dateStr = dayjs(g.startDate).tz(timezone).format("YYYY-MM-DD");
-		completedByDate.set(
-			dateStr,
-			(completedByDate.get(dateStr) ?? 0) + g._count.id,
-		);
+		completedByDate.set(dateStr, (completedByDate.get(dateStr) ?? 0) + g._count.id);
 	}
 
 	// endDate 전날부터 역순으로 연속 달성일 계산
@@ -158,10 +145,7 @@ export function computeStreakDays(
 
 	let streak = 0;
 	let cursor = current;
-	while (
-		cursor.isAfter(rangeStart, "day") ||
-		cursor.isSame(rangeStart, "day")
-	) {
+	while (cursor.isAfter(rangeStart, "day") || cursor.isSame(rangeStart, "day")) {
 		const dateStr = cursor.format("YYYY-MM-DD");
 		const total = totalByDate.get(dateStr) ?? 0;
 		const completed = completedByDate.get(dateStr) ?? 0;
@@ -207,18 +191,12 @@ export function assembleAggregatedData(
 
 	// 전체/완료 계산
 	const totalTodos = dailyTotalGroups.reduce((sum, g) => sum + g._count.id, 0);
-	const completedTodosCount = dailyCompletedGroups.reduce(
-		(sum, g) => sum + g._count.id,
-		0,
-	);
-	const completionRate =
-		totalTodos > 0 ? Math.round((completedTodosCount / totalTodos) * 100) : 0;
+	const completedTodosCount = dailyCompletedGroups.reduce((sum, g) => sum + g._count.id, 0);
+	const completionRate = totalTodos > 0 ? Math.round((completedTodosCount / totalTodos) * 100) : 0;
 
 	// 이전 기간 달성률
 	const prevCompletionRate =
-		prevTotalCount > 0
-			? Math.round((prevCompletedCount / prevTotalCount) * 100)
-			: null;
+		prevTotalCount > 0 ? Math.round((prevCompletedCount / prevTotalCount) * 100) : null;
 
 	const categoryBreakdown = computeCategoryBreakdown(
 		catTotalGroups,
@@ -226,11 +204,7 @@ export function assembleAggregatedData(
 		categories,
 	);
 
-	const dayPatterns = computeDayPatterns(
-		dailyTotalGroups,
-		dailyCompletedGroups,
-		timezone,
-	);
+	const dayPatterns = computeDayPatterns(dailyTotalGroups, dailyCompletedGroups, timezone);
 
 	const timePatterns = computeTimePatterns(completedTodos, timezone);
 

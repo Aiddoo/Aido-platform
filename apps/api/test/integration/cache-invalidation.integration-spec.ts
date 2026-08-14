@@ -9,9 +9,11 @@
 import type { INestApplication } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
+
 import { CacheModule } from "@/shared/infrastructure/cache/cache.module";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
+
 import { createMockUserProfile } from "../mocks/cache-test-utils";
 
 describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
@@ -206,24 +208,16 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 			// Then - 친구 관계 조회 가능
 			expect(await cacheService.getMutualFriend(userId, "friend_1")).toBe(true);
 			expect(await cacheService.getMutualFriend(userId, "friend_2")).toBe(true);
-			expect(await cacheService.getMutualFriend(userId, "friend_3")).toBe(
-				false,
-			);
+			expect(await cacheService.getMutualFriend(userId, "friend_3")).toBe(false);
 
 			// When - 친구 관계 변경으로 인한 일괄 무효화
 			const deletedCount = await cacheService.invalidateFriendRelations(userId);
 
 			// Then - 모든 친구 관계 캐시 삭제
 			expect(deletedCount).toBe(3);
-			expect(
-				await cacheService.getMutualFriend(userId, "friend_1"),
-			).toBeUndefined();
-			expect(
-				await cacheService.getMutualFriend(userId, "friend_2"),
-			).toBeUndefined();
-			expect(
-				await cacheService.getMutualFriend(userId, "friend_3"),
-			).toBeUndefined();
+			expect(await cacheService.getMutualFriend(userId, "friend_1")).toBeUndefined();
+			expect(await cacheService.getMutualFriend(userId, "friend_2")).toBeUndefined();
+			expect(await cacheService.getMutualFriend(userId, "friend_3")).toBeUndefined();
 		});
 
 		it("양방향 친구 관계가 독립적으로 캐시된다", async () => {
@@ -235,9 +229,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 			await cacheService.invalidateFriendRelations("user_a");
 
 			// Then - user_a→user_b는 삭제, user_b→user_a는 유지
-			expect(
-				await cacheService.getMutualFriend("user_a", "user_b"),
-			).toBeUndefined();
+			expect(await cacheService.getMutualFriend("user_a", "user_b")).toBeUndefined();
 			expect(await cacheService.getMutualFriend("user_b", "user_a")).toBe(true);
 		});
 	});
@@ -327,15 +319,9 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 			const targetId = "target_key_test";
 
 			// Then - 캐시 키 형식 검증
-			expect(CacheKeys.session("sess_123")).toBe(
-				"aido:v1:auth:session:sess_123",
-			);
-			expect(CacheKeys.userProfile(userId)).toBe(
-				`aido:v1:auth:user-profile:${userId}`,
-			);
-			expect(CacheKeys.subscription(userId)).toBe(
-				`aido:v1:subscription:status:${userId}`,
-			);
+			expect(CacheKeys.session("sess_123")).toBe("aido:v1:auth:session:sess_123");
+			expect(CacheKeys.userProfile(userId)).toBe(`aido:v1:auth:user-profile:${userId}`);
+			expect(CacheKeys.subscription(userId)).toBe(`aido:v1:subscription:status:${userId}`);
 			expect(CacheKeys.mutualFriend(userId, targetId)).toBe(
 				`aido:v1:follow:mutual:${userId}:${targetId}`,
 			);

@@ -7,9 +7,7 @@ import {
 	toSummaries,
 } from "./daily-completion";
 
-function aggregate(
-	overrides: Partial<TodoAggregateByDate> & { date: Date },
-): TodoAggregateByDate {
+function aggregate(overrides: Partial<TodoAggregateByDate> & { date: Date }): TodoAggregateByDate {
 	return {
 		total: 0,
 		completed: 0,
@@ -59,10 +57,7 @@ describe("daily-completion 도메인", () => {
 				aggregate({ date: new Date("2026-01-20"), total: 1, completed: 1 }),
 				aggregate({ date: new Date("2026-01-10"), total: 1, completed: 0 }),
 			]);
-			expect(summaries.map((s) => s.date)).toEqual([
-				"2026-01-10",
-				"2026-01-20",
-			]);
+			expect(summaries.map((s) => s.date)).toEqual(["2026-01-10", "2026-01-20"]);
 		});
 	});
 

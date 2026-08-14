@@ -1,9 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-	LATEST_REPORT_STATS_READER,
-	type LatestReportStatsReaderPort,
-} from "@/ai-report";
+import { LATEST_REPORT_STATS_READER, type LatestReportStatsReaderPort } from "@/ai-report";
 
 import type {
 	WeeklyReportReaderPort,

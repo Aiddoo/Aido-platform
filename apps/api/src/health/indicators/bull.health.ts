@@ -1,16 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
-import {
-	type HealthIndicatorResult,
-	HealthIndicatorService,
-} from "@nestjs/terminus";
+import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
+
 import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue";
 import { AI_REPORT_QUEUE } from "@/ai-report";
 import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { TODO_REMINDER_QUEUE } from "@/scheduler";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { withTimeout } from "@/shared/application/utils/with-timeout.util";
 
 const QUEUE_STATS_TIMEOUT_MS = 2_000;

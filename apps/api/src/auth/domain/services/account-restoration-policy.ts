@@ -16,10 +16,7 @@ import { DomainException } from "@/shared/domain/exceptions/domain.exception";
  * @throws DomainException(USER_0606) 유예 기간(30일)을 초과한 탈퇴 계정
  *   (cron이 아직 hard delete 처리하지 못한 edge case — 복구 거부)
  */
-export function assertRestorableWithinGracePeriod(
-	deletedAt: Date | null,
-	userId: string,
-): boolean {
+export function assertRestorableWithinGracePeriod(deletedAt: Date | null, userId: string): boolean {
 	if (!deletedAt) {
 		return false;
 	}

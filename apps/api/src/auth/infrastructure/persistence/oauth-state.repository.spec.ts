@@ -13,6 +13,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { DatabaseService } from "@/shared/infrastructure/database";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 
@@ -46,17 +47,14 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(OAuthStateRepository).compile();
+		const { unit, unitRef } = await TestBed.solitary(OAuthStateRepository).compile();
 
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 		encryptionService = unitRef.get(EncryptionService);
 
 		// encrypt를 "encrypted-{value}" 형태로 반환하도록 설정
-		encryptionService.encrypt.mockImplementation(
-			(value: string) => `encrypted-${value}`,
-		);
+		encryptionService.encrypt.mockImplementation((value: string) => `encrypted-${value}`);
 		encryptionService.decryptSafe.mockImplementation((value: string) =>
 			value.replace("encrypted-", ""),
 		);
@@ -217,12 +215,8 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 				accessToken: "access-token",
 				refreshToken: "refresh-token",
 			});
-			expect(encryptionService.decryptSafe).toHaveBeenCalledWith(
-				"encrypted-access-token",
-			);
-			expect(encryptionService.decryptSafe).toHaveBeenCalledWith(
-				"encrypted-refresh-token",
-			);
+			expect(encryptionService.decryptSafe).toHaveBeenCalledWith("encrypted-access-token");
+			expect(encryptionService.decryptSafe).toHaveBeenCalledWith("encrypted-refresh-token");
 		});
 
 		it("교환 코드가 없으면 null을 반환한다", async () => {

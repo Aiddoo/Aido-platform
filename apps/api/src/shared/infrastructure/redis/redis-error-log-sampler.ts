@@ -1,4 +1,5 @@
 import type { Logger } from "@nestjs/common";
+
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 
 /**
@@ -29,11 +30,8 @@ export class RedisErrorLogSampler {
 		}
 
 		// 정책 문구(fail-open/closed)는 어댑터별 계약이 다르므로 중립 유지
-		const suffix =
-			this.#suppressed > 0 ? ` (+${this.#suppressed} suppressed)` : "";
-		this.#logger.warn(
-			`Redis ${operation} failed: ${toErrorMessage(error)}${suffix}`,
-		);
+		const suffix = this.#suppressed > 0 ? ` (+${this.#suppressed} suppressed)` : "";
+		this.#logger.warn(`Redis ${operation} failed: ${toErrorMessage(error)}${suffix}`);
 		this.#windowStartedAt = now;
 		this.#suppressed = 0;
 	}

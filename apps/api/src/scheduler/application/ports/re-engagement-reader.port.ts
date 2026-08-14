@@ -60,9 +60,7 @@ export interface ReEngagementReaderPort {
 	}): Promise<NudgeSuggestFollow[]>;
 
 	/** 소셜 다이제스트 후보: 오늘 미완료 투두 보유 유저 */
-	findSocialDigestCandidates(
-		params: SocialDigestCandidateParams,
-	): Promise<SocialDigestCandidate[]>;
+	findSocialDigestCandidates(params: SocialDigestCandidateParams): Promise<SocialDigestCandidate[]>;
 
 	/** candidate들의 ACCEPTED 맞팔 관계 ID 쌍 */
 	findAcceptedFollows(candidateIds: string[]): Promise<FollowPair[]>;
@@ -75,7 +73,5 @@ export interface ReEngagementReaderPort {
 	}): Promise<FriendWithTodos[]>;
 
 	/** 스트릭 위기 대상: 스트릭 3일+ & 오늘 미완료 투두 보유 유저 */
-	findStreakAtRiskUsers(
-		params: TodayRangeParams,
-	): Promise<UserWithTodosAndStreak[]>;
+	findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]>;
 }

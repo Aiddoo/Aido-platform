@@ -1,11 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import {
-	Admin,
-	CurrentUser,
-	type CurrentUserPayload,
-} from "@/auth/presentation/decorators";
+
+import { Admin, CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -13,6 +10,7 @@ import {
 	ApiSuccessResponse,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
+
 import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query";
 import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "./dtos";
 

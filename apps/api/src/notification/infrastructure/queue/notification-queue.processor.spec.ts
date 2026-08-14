@@ -13,16 +13,13 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	asMock,
-	createMockJob,
-	createMockPrisma,
-	type MockPrismaClient,
-} from "@test/mocks";
+import { asMock, createMockJob, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
+
 import { Prisma } from "@/generated/prisma/client";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { NotificationBatchDispatcher } from "../../application/dispatchers/notification-batch.dispatcher";
 import { NotificationSender } from "../../application/senders/notification.sender";
 import { NotificationMessageBuilder } from "../../domain/services/templates/notification-templates";
@@ -56,9 +53,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 		const { unit, unitRef } = await TestBed.solitary(NotificationQueueProcessor)
 			.mock(UNIT_OF_WORK)
 			.impl(() => uow)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 
@@ -104,9 +99,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
-			notification.createAndSendWithDedup.mockRejectedValue(
-				new Error("DB error"),
-			);
+			notification.createAndSendWithDedup.mockRejectedValue(new Error("DB error"));
 			const data: FollowNewJobData = {
 				followerId: "user-1",
 				followingId: "user-2",
@@ -145,9 +138,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
-			notification.createAndSendWithDedup.mockRejectedValue(
-				new Error("DB error"),
-			);
+			notification.createAndSendWithDedup.mockRejectedValue(new Error("DB error"));
 			const data: FollowMutualJobData = {
 				userId: "user-1",
 				friendId: "user-2",
@@ -172,11 +163,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				todoTitle: "밥먹기",
 			};
 			const job = createMockJob(NotificationJobName.NUDGE_SENT, data);
-			const message = NotificationMessageBuilder.nudgeReceived(
-				"보낸 유저",
-				"밥먹기",
-				undefined,
-			);
+			const message = NotificationMessageBuilder.nudgeReceived("보낸 유저", "밥먹기", undefined);
 
 			// When
 			await processor.process(job);
@@ -219,9 +206,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
-			notification.createAndSendWithDedup.mockRejectedValue(
-				new Error("DB error"),
-			);
+			notification.createAndSendWithDedup.mockRejectedValue(new Error("DB error"));
 			const data: NudgeSentJobData = {
 				nudgeId: 1,
 				senderId: "user-1",
@@ -246,10 +231,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				message: "화이팅!",
 			};
 			const job = createMockJob(NotificationJobName.CHEER_SENT, data);
-			const message = NotificationMessageBuilder.cheerReceived(
-				"응원 유저",
-				"화이팅!",
-			);
+			const message = NotificationMessageBuilder.cheerReceived("응원 유저", "화이팅!");
 
 			// When
 			await processor.process(job);
@@ -275,10 +257,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				senderName: "응원 유저",
 			};
 			const job = createMockJob(NotificationJobName.CHEER_SENT, data);
-			const message = NotificationMessageBuilder.cheerReceived(
-				"응원 유저",
-				undefined,
-			);
+			const message = NotificationMessageBuilder.cheerReceived("응원 유저", undefined);
 
 			// When
 			await processor.process(job);
@@ -297,9 +276,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
-			notification.createAndSendWithDedup.mockRejectedValue(
-				new Error("DB error"),
-			);
+			notification.createAndSendWithDedup.mockRejectedValue(new Error("DB error"));
 			const data: CheerSentJobData = {
 				cheerId: 1,
 				senderId: "user-1",
@@ -353,10 +330,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("대상 유저들에게 FRIEND_COMPLETED 알림을 배치 생성한다", async () => {
 			// Given
-			const job = createMockJob(
-				NotificationJobName.FRIEND_COMPLETED,
-				friendCompletedData,
-			);
+			const job = createMockJob(NotificationJobName.FRIEND_COMPLETED, friendCompletedData);
 			notification.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 			const message = NotificationMessageBuilder.friendCompleted("완료 친구");
 
@@ -393,13 +367,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("이미 알림 받은 유저는 필터링한다", async () => {
 			// Given
-			const job = createMockJob(
-				NotificationJobName.FRIEND_COMPLETED,
-				friendCompletedData,
-			);
-			notification.findAlreadyNotifiedUserIds.mockResolvedValue(
-				new Set(["user-1"]),
-			);
+			const job = createMockJob(NotificationJobName.FRIEND_COMPLETED, friendCompletedData);
+			notification.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 			// When
 			await processor.process(job);
 
@@ -417,13 +386,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("전원 이미 받은 경우 생성하지 않는다", async () => {
 			// Given
-			const job = createMockJob(
-				NotificationJobName.FRIEND_COMPLETED,
-				friendCompletedData,
-			);
-			notification.findAlreadyNotifiedUserIds.mockResolvedValue(
-				new Set(["user-1", "user-2"]),
-			);
+			const job = createMockJob(NotificationJobName.FRIEND_COMPLETED, friendCompletedData);
+			notification.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1", "user-2"]));
 
 			// When
 			await processor.process(job);
@@ -452,14 +416,11 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("P2002 unique constraint 시 graceful skip한다", async () => {
 			// Given
-			const job = createMockJob(
-				NotificationJobName.FRIEND_COMPLETED,
-				friendCompletedData,
-			);
-			const prismaError = new Prisma.PrismaClientKnownRequestError(
-				"Unique constraint failed",
-				{ code: "P2002", clientVersion: "5.0.0" },
-			);
+			const job = createMockJob(NotificationJobName.FRIEND_COMPLETED, friendCompletedData);
+			const prismaError = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+				code: "P2002",
+				clientVersion: "5.0.0",
+			});
 			jest.mocked(uow.run).mockRejectedValue(prismaError);
 
 			// When & Then — 에러 전파 없음
@@ -468,10 +429,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		it("일반 에러 시 재전파해 BullMQ 재시도를 유도한다", async () => {
 			// Given
-			const job = createMockJob(
-				NotificationJobName.FRIEND_COMPLETED,
-				friendCompletedData,
-			);
+			const job = createMockJob(NotificationJobName.FRIEND_COMPLETED, friendCompletedData);
 			jest.mocked(uow.run).mockRejectedValue(new Error("DB error"));
 
 			// When & Then — 에러 전파 없음
@@ -490,10 +448,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			asMock(db.notification.findFirst).mockResolvedValue(null);
 			notification.createAndSend.mockResolvedValue(null);
 
-			const job = createMockJob(
-				NotificationJobName.MILESTONE_REACHED,
-				milestoneData,
-			);
+			const job = createMockJob(NotificationJobName.MILESTONE_REACHED, milestoneData);
 
 			// When
 			await processor.process(job);
@@ -515,10 +470,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				userId: "user-milestone",
 			});
 
-			const job = createMockJob(
-				NotificationJobName.MILESTONE_REACHED,
-				milestoneData,
-			);
+			const job = createMockJob(NotificationJobName.MILESTONE_REACHED, milestoneData);
 
 			// When
 			await processor.process(job);
@@ -532,10 +484,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			asMock(db.notification.findFirst).mockResolvedValue(null);
 			notification.createAndSend.mockRejectedValue(new Error("DB error"));
 
-			const job = createMockJob(
-				NotificationJobName.MILESTONE_REACHED,
-				milestoneData,
-			);
+			const job = createMockJob(NotificationJobName.MILESTONE_REACHED, milestoneData);
 
 			// When & Then — 에러 throw 없음
 			await expect(processor.process(job)).rejects.toThrow("DB error");

@@ -20,9 +20,7 @@ describe("UpdateMarketingPushConsentUseCase", () => {
 	let repo: Mocked<UserConsentRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UpdateMarketingPushConsentUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(UpdateMarketingPushConsentUseCase)
 			.mock<UserConsentRepositoryPort>(USER_CONSENT_REPOSITORY)
 			.impl(() => createUserConsentRepositoryMock())
 			.compile();

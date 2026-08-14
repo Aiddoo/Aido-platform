@@ -1,6 +1,7 @@
 // import 순서와 무관하게 init이 선행되도록 사이드이펙트로 로드한다
 import './init';
 import i18n from 'i18next';
+
 import type { Namespace } from './resources';
 
 export { useTranslation } from 'react-i18next';

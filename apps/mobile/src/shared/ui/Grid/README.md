@@ -12,49 +12,49 @@ import { GridItem } from '@src/shared/ui/Grid/GridItem';
   <GridItem>아이템 1</GridItem>
   <GridItem>아이템 2</GridItem>
   <GridItem>아이템 3</GridItem>
-</Grid>
+</Grid>;
 ```
 
 ## Props
 
 ### Grid Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `columns` | `number` | `1` | 열 개수 |
-| `rowGap` | `number` | - | 행 간격 (px) |
-| `columnGap` | `number` | - | 열 간격 (px) |
+| Prop        | 타입     | 기본값 | 설명         |
+| ----------- | -------- | ------ | ------------ |
+| `columns`   | `number` | `1`    | 열 개수      |
+| `rowGap`    | `number` | -      | 행 간격 (px) |
+| `columnGap` | `number` | -      | 열 간격 (px) |
 
 ### GridItem Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `colSpan` | `number` | `1` | 차지할 열 수 |
+| Prop      | 타입     | 기본값 | 설명         |
+| --------- | -------- | ------ | ------------ |
+| `colSpan` | `number` | `1`    | 차지할 열 수 |
 
 ### Flex Props (Grid 상속)
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `justify` | `'start' \| 'center' \| 'end' \| 'between' \| 'around' \| 'evenly'` | `'start'` | justify-content |
-| `align` | `'start' \| 'center' \| 'end' \| 'stretch' \| 'baseline'` | `'stretch'` | align-items |
+| Prop      | 타입                                                                | 기본값      | 설명            |
+| --------- | ------------------------------------------------------------------- | ----------- | --------------- |
+| `justify` | `'start' \| 'center' \| 'end' \| 'between' \| 'around' \| 'evenly'` | `'start'`   | justify-content |
+| `align`   | `'start' \| 'center' \| 'end' \| 'stretch' \| 'baseline'`           | `'stretch'` | align-items     |
 
 ### Spacing Props (BoxProps 상속)
 
-| Prop | 타입 | 설명 |
-|------|------|------|
-| `flex` | `number` | flex 값 |
-| `gap` | `number` | 자식 요소 간격 (px) |
-| `p` | `number` | padding 전체 |
-| `px` | `number` | padding 좌우 |
-| `m` | `number` | margin 전체 |
-| `mx` | `number` | margin 좌우 |
+| Prop   | 타입     | 설명                |
+| ------ | -------- | ------------------- |
+| `flex` | `number` | flex 값             |
+| `gap`  | `number` | 자식 요소 간격 (px) |
+| `p`    | `number` | padding 전체        |
+| `px`   | `number` | padding 좌우        |
+| `m`    | `number` | margin 전체         |
+| `mx`   | `number` | margin 좌우         |
 
 ### 기타 Props
 
-| Prop | 타입 | 설명 |
-|------|------|------|
-| `className` | `string` | 추가 Tailwind 클래스 |
-| `style` | `ViewStyle` | 인라인 스타일 |
+| Prop        | 타입        | 설명                 |
+| ----------- | ----------- | -------------------- |
+| `className` | `string`    | 추가 Tailwind 클래스 |
+| `style`     | `ViewStyle` | 인라인 스타일        |
 
 ## 예시
 

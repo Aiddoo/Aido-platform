@@ -15,6 +15,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("사용자 설정 E2E", () => {
@@ -36,10 +37,7 @@ describe("사용자 설정 E2E", () => {
 		describe("GET /auth/preference - 환경설정 조회", () => {
 			it("사용자의 환경설정을 조회한다", async () => {
 				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"settings-pref@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("settings-pref@example.com", "Test1234!");
 
 				// When - 환경설정 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -57,9 +55,7 @@ describe("사용자 설정 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 환경설정 조회 API 호출
-				await request(ctx.app.getHttpServer())
-					.get("/v1/auth/preference")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/auth/preference").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -68,10 +64,7 @@ describe("사용자 설정 E2E", () => {
 		describe("PATCH /auth/preference - 환경설정 수정", () => {
 			it("푸시 알림 설정을 변경한다", async () => {
 				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"settings-push@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("settings-push@example.com", "Test1234!");
 
 				// When - 푸시 알림 비활성화
 				const response = await request(ctx.app.getHttpServer())
@@ -86,10 +79,7 @@ describe("사용자 설정 E2E", () => {
 
 			it("타임존을 변경한다", async () => {
 				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"settings-tz@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("settings-tz@example.com", "Test1234!");
 
 				// When - 타임존 변경
 				const response = await request(ctx.app.getHttpServer())
@@ -141,9 +131,7 @@ describe("사용자 설정 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 동의 정보 조회 API 호출
-				await request(ctx.app.getHttpServer())
-					.get("/v1/auth/consent")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/auth/consent").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});

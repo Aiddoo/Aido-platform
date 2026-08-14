@@ -4,6 +4,7 @@ import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
+
 import type { ReorderCoachmarkKind } from '../../repositories/reorder-coachmark.repository';
 
 interface ReorderCoachmarkProps {

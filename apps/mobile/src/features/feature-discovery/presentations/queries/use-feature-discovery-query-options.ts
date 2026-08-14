@@ -1,5 +1,6 @@
 import { useFeatureDiscoveryService } from '@src/bootstrap/providers/di-context';
 import { queryOptions } from '@tanstack/react-query';
+
 import { FEATURE_DISCOVERY_QUERY_KEYS } from '../constants/feature-discovery-query-keys.constant';
 
 export const useFeatureDiscoveryQueryOptions = () => {

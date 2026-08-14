@@ -9,14 +9,16 @@ import {
 	type Provider,
 } from "@nestjs/common";
 import Redis, { type RedisOptions } from "ioredis";
+
 import { withTimeout } from "@/shared/application/utils/with-timeout.util";
+
 import { TypedConfigService } from "../config/services/config.service";
-import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants";
 import {
 	buildBullRedisOptions,
 	buildCommandRedisOptions,
 	type RedisConnectionSettings,
 } from "./redis-client.factory";
+import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants";
 
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
 const QUIT_TIMEOUT_MS = 3_000;
@@ -68,13 +70,8 @@ export class RedisModule implements OnApplicationShutdown {
 		const bullProvider: Provider = {
 			provide: REDIS_CLIENT,
 			useFactory: (configService: TypedConfigService): Redis | null =>
-				configService.job.backend === "redis" ||
-				configService.job.redisDrainEnabled
-					? RedisModule.createClient(
-							configService,
-							buildBullRedisOptions,
-							"main",
-						)
+				configService.job.backend === "redis" || configService.job.redisDrainEnabled
+					? RedisModule.createClient(configService, buildBullRedisOptions, "main")
 					: null,
 			inject: [TypedConfigService],
 		};
@@ -83,11 +80,7 @@ export class RedisModule implements OnApplicationShutdown {
 			provide: REDIS_COMMAND_CLIENT,
 			useFactory: (configService: TypedConfigService): Redis | null =>
 				configService.cache.type === "redis"
-					? RedisModule.createClient(
-							configService,
-							buildCommandRedisOptions,
-							"command",
-						)
+					? RedisModule.createClient(configService, buildCommandRedisOptions, "command")
 					: null,
 			inject: [TypedConfigService],
 		};
@@ -105,10 +98,7 @@ export class RedisModule implements OnApplicationShutdown {
 	 * @param client BullMQ용 클라이언트
 	 * @param commandClient 명령용 클라이언트 (생략 시 client 재사용)
 	 */
-	static forTesting(
-		client: Redis,
-		commandClient: Redis = client,
-	): DynamicModule {
+	static forTesting(client: Redis, commandClient: Redis = client): DynamicModule {
 		return {
 			module: RedisModule,
 			providers: [
@@ -138,10 +128,7 @@ export class RedisModule implements OnApplicationShutdown {
 		]);
 	}
 
-	private async shutdownClient(
-		client: RedisLifecycleClient | null,
-		name: string,
-	): Promise<void> {
+	private async shutdownClient(client: RedisLifecycleClient | null, name: string): Promise<void> {
 		if (!client || client.status === "end") {
 			return;
 		}
@@ -167,9 +154,7 @@ export class RedisModule implements OnApplicationShutdown {
 		};
 
 		const options = buildOptions(settings);
-		const client = settings.url
-			? new Redis(settings.url, options)
-			: new Redis(options);
+		const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
 
 		client.on("connect", () => {
 			RedisModule.logger.log(`Redis[${name}] connected`);

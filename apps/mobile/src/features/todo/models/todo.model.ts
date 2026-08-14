@@ -1,5 +1,6 @@
 import { dayOfWeekSchema } from '@aido/validators';
 import { z } from 'zod';
+
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
 
 export { type SubTodo, SubTodoPolicy, type SubTodoStats } from './sub-todo.model';

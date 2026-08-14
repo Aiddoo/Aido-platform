@@ -98,17 +98,12 @@ const SEASONAL_EVENTS: readonly SeasonalEvent[] = [
  *
  * @returns 시즌 프롬프트 섹션 문자열. 해당 시즌 없으면 빈 문자열.
  */
-export function getKoreanSeasonalContext(
-	date: Date,
-	locale: "ko" | "en" = "ko",
-): string {
+export function getKoreanSeasonalContext(date: Date, locale: "ko" | "en" = "ko"): string {
 	const month = date.getMonth() + 1;
 	const day = date.getDate();
 
 	const matched = SEASONAL_EVENTS.filter((event) => {
-		return (
-			event.month === month && day >= event.startDay && day <= event.endDay
-		);
+		return event.month === month && day >= event.startDay && day <= event.endDay;
 	});
 
 	if (matched.length === 0) {

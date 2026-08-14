@@ -8,9 +8,11 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createUserPreferenceRepositoryMock } from "@test/mocks/ports/user-settings.mock";
 import { createUserSettingsCacheMock } from "@test/mocks/ports/user-settings-cache.mock";
+import { createUserPreferenceRepositoryMock } from "@test/mocks/ports/user-settings.mock";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+
 import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record";
 import type { PreferenceSnapshot } from "../../../domain/services/preference-view";
 import {
@@ -60,15 +62,11 @@ describe("GetPreferenceUseCase", () => {
 			.impl(() => createUserSettingsCacheMock())
 			.compile();
 		useCase = unit;
-		repo = unitRef.get<UserPreferenceRepositoryPort>(
-			USER_PREFERENCE_REPOSITORY,
-		);
+		repo = unitRef.get<UserPreferenceRepositoryPort>(USER_PREFERENCE_REPOSITORY);
 		entitlement = unitRef.get(EntitlementService);
 		cache = unitRef.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
 		// 캐시 미스: 팩토리를 실행해 원본을 로드한다(캐시 스루).
-		cache.wrapUserPreference.mockImplementation((_userId, factory) =>
-			factory(),
-		);
+		cache.wrapUserPreference.mockImplementation((_userId, factory) => factory());
 	});
 
 	it("캐시 스루로 원본을 읽고, 프리미엄이면 저장된 리마인더 시간을 그대로 반환한다", async () => {
@@ -80,10 +78,7 @@ describe("GetPreferenceUseCase", () => {
 		const result = await useCase.execute(userId);
 
 		// Then: 팩토리로 원본을 읽고 저장된 리마인더 시간이 그대로 노출
-		expect(cache.wrapUserPreference).toHaveBeenCalledWith(
-			userId,
-			expect.any(Function),
-		);
+		expect(cache.wrapUserPreference).toHaveBeenCalledWith(userId, expect.any(Function));
 		expect(repo.findByUserId).toHaveBeenCalledWith(userId);
 		expect(entitlement.hasPremiumAccess).toHaveBeenCalledWith(userId);
 		expect(result).toMatchObject({
@@ -105,18 +100,10 @@ describe("GetPreferenceUseCase", () => {
 		const result = await useCase.execute(userId);
 
 		// Then: 리마인더는 기본값으로 게이팅, 그 외 필드는 저장값 유지
-		expect(result.morningReminderHour).toBe(
-			USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
-		);
-		expect(result.morningReminderMinute).toBe(
-			USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
-		);
-		expect(result.eveningReminderHour).toBe(
-			USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
-		);
-		expect(result.eveningReminderMinute).toBe(
-			USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
-		);
+		expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
+		expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
+		expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
+		expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
 		expect(result.timezone).toBe("Asia/Seoul");
 		expect(result.timeFormat).toBe("TWENTY_FOUR_HOUR");
 	});

@@ -13,12 +13,14 @@
 
 import { createHash } from "node:crypto";
 import { createServer, type Server } from "node:http";
+
 import { ErrorCode } from "@aido/errors";
 import { ConfigService } from "@nestjs/config";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock } from "@test/mocks";
 import { exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
+
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -43,9 +45,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			verifyIdToken: mockGoogleVerifyIdToken,
 		}));
 
-		const { unit, unitRef } = await TestBed.solitary(
-			OAuthTokenVerifierService,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(OAuthTokenVerifierService).compile();
 
 		service = unit;
 		configService = unitRef.get(ConfigService);
@@ -134,9 +134,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("만료된 토큰은 socialTokenExpired 에러를 발생시킨다", async () => {
 			// Given
-			mockGoogleVerifyIdToken.mockRejectedValue(
-				new Error("Token used too late, expired"),
-			);
+			mockGoogleVerifyIdToken.mockRejectedValue(new Error("Token used too late, expired"));
 
 			// When & Then
 			await expect(service.verifyGoogleToken("expired-token")).rejects.toThrow(
@@ -149,9 +147,9 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			mockGoogleVerifyIdToken.mockRejectedValue(new Error("Invalid signature"));
 
 			// When & Then
-			await expect(
-				service.verifyGoogleToken("malformed-token"),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.verifyGoogleToken("malformed-token")).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -233,9 +231,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.verifyKakaoToken("expired-token")).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyKakaoToken("expired-token")).rejects.toThrow(ApplicationException);
 		});
 
 		it("기타 에러 응답은 socialTokenInvalid 에러를 발생시킨다", async () => {
@@ -246,9 +242,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.verifyKakaoToken("invalid-token")).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyKakaoToken("invalid-token")).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -350,9 +344,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.verifyNaverToken("expired-token")).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyNaverToken("expired-token")).rejects.toThrow(ApplicationException);
 		});
 
 		it("resultcode가 00이 아니면 에러를 발생시킨다", async () => {
@@ -367,9 +359,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(ApplicationException);
 		});
 
 		it("response가 없으면 에러를 발생시킨다", async () => {
@@ -384,9 +374,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -524,9 +512,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(
-				service.verifyAppleToken(idToken, "request-raw-nonce"),
-			).rejects.toMatchObject({
+			await expect(service.verifyAppleToken(idToken, "request-raw-nonce")).rejects.toMatchObject({
 				errorCode: ErrorCode.SOCIAL_0202,
 				details: { provider: "APPLE" },
 			});
@@ -536,11 +522,9 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 		it("캐시된 kid가 교체되면 JWKS를 다시 조회하고 새 키를 검증한다", async () => {
 			// Given
 			const firstToken = await signAppleToken("first", keyIds.first);
-			await expect(service.verifyAppleToken(firstToken)).resolves.toMatchObject(
-				{
-					id: "apple-user-1",
-				},
-			);
+			await expect(service.verifyAppleToken(firstToken)).resolves.toMatchObject({
+				id: "apple-user-1",
+			});
 			activeJwks = [publicJwks.second];
 			const rotatedToken = await signAppleToken("second", keyIds.second);
 

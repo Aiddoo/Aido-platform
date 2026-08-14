@@ -6,6 +6,7 @@ import type { Page } from '@src/shared/types/page.type';
 import type { InfiniteData } from '@tanstack/react-query';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const useRemoveFriendMutationOptions = () => {

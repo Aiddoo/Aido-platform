@@ -5,6 +5,7 @@ import { i18n } from '@src/shared/i18n';
 import * as Notifications from 'expo-notifications';
 import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
+
 import { useAuth } from './auth-provider';
 import { useLogger, useNotificationService } from './di-context';
 

@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import { TestDatabase } from "@test/setup/test-database";
+
 import { PrismaClient } from "@/generated/prisma/client";
 
 const MIGRATION_PATH = path.resolve(
@@ -108,20 +110,12 @@ describe("성장 지표 마이그레이션 (실제 PostgreSQL)", () => {
 		for (const client of [blocker, ddl, writer]) {
 			await client.$executeRawUnsafe(`SET search_path TO "${TEST_SCHEMA}"`);
 		}
-		await writer.$executeRawUnsafe(
-			`SET lock_timeout TO '${LOCK_TIMEOUT_MS}ms'`,
-		);
+		await writer.$executeRawUnsafe(`SET lock_timeout TO '${LOCK_TIMEOUT_MS}ms'`);
 	}, 60_000);
 
 	afterAll(async () => {
-		await control?.$executeRawUnsafe(
-			`DROP SCHEMA IF EXISTS "${TEST_SCHEMA}" CASCADE`,
-		);
-		await Promise.all([
-			blocker?.$disconnect(),
-			ddl?.$disconnect(),
-			writer?.$disconnect(),
-		]);
+		await control?.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${TEST_SCHEMA}" CASCADE`);
+		await Promise.all([blocker?.$disconnect(), ddl?.$disconnect(), writer?.$disconnect()]);
 		await testDatabase?.stop();
 	});
 
@@ -145,17 +139,11 @@ describe("성장 지표 마이그레이션 (실제 PostgreSQL)", () => {
 			// When - migration deploy와 다음 기존 앱 쓰기가 겹친다
 			// PrismaPromise is lazy; attaching a continuation starts the DDL before
 			// we probe pg_locks and issue the competing write.
-			const migration = ddl
-				.$executeRawUnsafe(statement)
-				.then((affectedRows) => affectedRows);
+			const migration = ddl.$executeRawUnsafe(statement).then((affectedRows) => affectedRows);
 			let relationLock: RelationLock | undefined;
 			let writerError: unknown;
 			try {
-				relationLock = await waitForRelationLock(
-					control,
-					ddlPid,
-					qualifiedTableName,
-				);
+				relationLock = await waitForRelationLock(control, ddlPid, qualifiedTableName);
 				try {
 					await writer.$executeRawUnsafe(insertStatement);
 				} catch (error) {

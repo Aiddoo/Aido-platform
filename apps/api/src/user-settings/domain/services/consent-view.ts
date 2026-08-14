@@ -9,9 +9,7 @@ import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
 import type { UserConsentRecord } from "../records/user-consent.record";
 
 /** 약관 동의 응답 뷰. 기록이 없으면 전부 null(기존 사용자 호환). */
-export function buildConsentView(
-	consent: UserConsentRecord | null,
-): ConsentResponse {
+export function buildConsentView(consent: UserConsentRecord | null): ConsentResponse {
 	if (!consent) {
 		return {
 			termsAgreedAt: null,

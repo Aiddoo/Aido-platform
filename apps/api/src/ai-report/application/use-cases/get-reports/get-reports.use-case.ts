@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { AiReport as AiReportDto } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 

@@ -1,6 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import {
 	toWeeklyAchievementView,
 	type WeekLabelLocale,
@@ -28,9 +30,7 @@ export class GetWeeklyAchievementUseCase {
 		private readonly repository: WeeklyAchievementRepositoryPort,
 	) {}
 
-	async execute(
-		input: GetWeeklyAchievementInput,
-	): Promise<WeeklyAchievementView> {
+	async execute(input: GetWeeklyAchievementInput): Promise<WeeklyAchievementView> {
 		const { userId, year, week, locale } = input;
 
 		const row = await this.repository.findByYearAndWeek(userId, year, week);

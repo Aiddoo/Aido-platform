@@ -1,8 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 
 import type {
 	IReminderScheduler,
@@ -44,11 +42,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 
 	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
-	scheduleReminder(
-		todoId: number,
-		scheduledTime: Date,
-		userId: string,
-	): Promise<void> {
+	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
 		return this.#scheduleAsync(todoId, scheduledTime, userId);
 	}
 
@@ -56,11 +50,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 		return this.#cancelAsync(todoId);
 	}
 
-	async #scheduleAsync(
-		todoId: number,
-		scheduledTime: Date,
-		userId: string,
-	): Promise<void> {
+	async #scheduleAsync(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
 		// 기존 잡 제거 (재스케줄링 지원)
 		await this.#cancelAsync(todoId);
 
@@ -68,9 +58,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 
 		// scheduledTime이 이미 과거면 아무것도 안 함
 		if (jobs.length === 0) {
-			this.#logger.debug(
-				`Scheduled time already passed: todoId=${todoId}, skipping`,
-			);
+			this.#logger.debug(`Scheduled time already passed: todoId=${todoId}, skipping`);
 			return;
 		}
 
@@ -112,9 +100,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 				const result = await this.runtime.cancel(TODO_REMINDER_QUEUE, jobId);
 				if (result.status === "cancelled") {
 					cancellationStatus = "cancelled";
-					this.#logger.debug(
-						`Reminder cancelled: todoId=${todoId}, stage=${label}`,
-					);
+					this.#logger.debug(`Reminder cancelled: todoId=${todoId}, stage=${label}`);
 				}
 			} catch (error) {
 				throw new Error(

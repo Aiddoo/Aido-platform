@@ -14,14 +14,8 @@ export {
 	SentRequestsResponseDto,
 } from "./follow-list.response.dto";
 export { FollowResourceLimitResponseDto } from "./follow-resource-limit.response.dto";
-export {
-	FriendRequestUserResponseDto,
-	FriendUserResponseDto,
-} from "./friend-user.response.dto";
-export {
-	GetFollowsQueryDto,
-	GetFriendsQueryDto,
-} from "./get-follows-query.request.dto";
+export { FriendRequestUserResponseDto, FriendUserResponseDto } from "./friend-user.response.dto";
+export { GetFollowsQueryDto, GetFriendsQueryDto } from "./get-follows-query.request.dto";
 export { ReorderFriendDto } from "./reorder-friend.request.dto";
 export { SearchUsersResponseDto } from "./search-users.response.dto";
 export { SearchUsersQueryDto } from "./search-users-query.request.dto";

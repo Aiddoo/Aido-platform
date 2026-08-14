@@ -19,10 +19,7 @@ export interface DomainEvent {
  * 네이밍: 이벤트소싱의 `apply`(이벤트로 상태 재구성)와 구분하기 위해
  * "발생 사실 기록"을 뜻하는 `raise`를 사용합니다.
  */
-export abstract class AggregateRoot<
-	TProps,
-	TEvent extends DomainEvent = DomainEvent,
-> {
+export abstract class AggregateRoot<TProps, TEvent extends DomainEvent = DomainEvent> {
 	#domainEvents: TEvent[] = [];
 
 	protected constructor(protected readonly props: TProps) {}

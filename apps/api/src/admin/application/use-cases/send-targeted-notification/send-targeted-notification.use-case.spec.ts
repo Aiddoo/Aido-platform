@@ -22,9 +22,7 @@ describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
 	let notifier: Mocked<AdminBroadcastNotifierPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SendTargetedNotificationUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SendTargetedNotificationUseCase).compile();
 
 		useCase = unit;
 		userDirectory = unitRef.get(ADMIN_USER_DIRECTORY);

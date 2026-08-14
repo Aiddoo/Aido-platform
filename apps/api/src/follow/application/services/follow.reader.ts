@@ -1,17 +1,15 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-	EntitlementService,
-	Resource,
-} from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService, Resource } from "@/shared/application/entitlement/entitlement.service";
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
+
+import { FOLLOW_CACHE, type FollowCachePort } from "../ports/follow-cache.port";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
 	type FollowWithUser,
 } from "../ports/follow.repository.port";
-import { FOLLOW_CACHE, type FollowCachePort } from "../ports/follow-cache.port";
 
 /** 친구/요청 목록 조회 파라미터 (정규화 전 — size 선택) */
 export interface GetFollowsParams {
@@ -55,11 +53,10 @@ export class FollowReader {
 	async getFriends(
 		params: GetFollowsParams,
 	): Promise<CursorPaginatedResponse<FollowWithUser, string>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<string>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<string>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const follows = await this.followRepository.findMutualFriends({
 			userId: params.userId,
@@ -68,25 +65,22 @@ export class FollowReader {
 			search: params.search,
 		});
 
-		this.#logger.debug(
-			`Friends listed: ${follows.length} items for user: ${params.userId}`,
-		);
+		this.#logger.debug(`Friends listed: ${follows.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			FollowWithUser,
-			string
-		>({ items: follows, size });
+		return this.paginationService.createCursorPaginatedResponse<FollowWithUser, string>({
+			items: follows,
+			size,
+		});
 	}
 
 	/** 받은 친구 요청 목록 */
 	async getReceivedRequests(
 		params: GetFollowsParams,
 	): Promise<CursorPaginatedResponse<FollowWithUser, string>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<string>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<string>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const follows = await this.followRepository.findReceivedRequests({
 			userId: params.userId,
@@ -98,21 +92,20 @@ export class FollowReader {
 			`Received requests listed: ${follows.length} items for user: ${params.userId}`,
 		);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			FollowWithUser,
-			string
-		>({ items: follows, size });
+		return this.paginationService.createCursorPaginatedResponse<FollowWithUser, string>({
+			items: follows,
+			size,
+		});
 	}
 
 	/** 보낸 친구 요청 목록 */
 	async getSentRequests(
 		params: GetFollowsParams,
 	): Promise<CursorPaginatedResponse<FollowWithUser, string>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<string>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<string>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const follows = await this.followRepository.findSentRequests({
 			userId: params.userId,
@@ -120,14 +113,12 @@ export class FollowReader {
 			size,
 		});
 
-		this.#logger.debug(
-			`Sent requests listed: ${follows.length} items for user: ${params.userId}`,
-		);
+		this.#logger.debug(`Sent requests listed: ${follows.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			FollowWithUser,
-			string
-		>({ items: follows, size });
+		return this.paginationService.createCursorPaginatedResponse<FollowWithUser, string>({
+			items: follows,
+			size,
+		});
 	}
 
 	/** 맞팔 여부 확인 (캐시 적용, 키는 정규화된 (smaller, larger)) */
@@ -140,10 +131,7 @@ export class FollowReader {
 			return cached;
 		}
 
-		const isMutual = await this.followRepository.isMutualFriend(
-			userId,
-			targetUserId,
-		);
+		const isMutual = await this.followRepository.isMutualFriend(userId, targetUserId);
 		await this.cache.setMutualFriend(smallerId, largerId, isMutual);
 		return isMutual;
 	}

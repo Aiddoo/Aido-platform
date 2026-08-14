@@ -14,8 +14,10 @@ import {
 	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 } from "@test/mocks/ports";
+
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
+
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
@@ -26,14 +28,10 @@ import {
 import { GetFriendTodosUseCase } from "./get-friend-todos.use-case";
 
 function buildResponse(id: number): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("friend-1").withId(id).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("friend-1").withId(id).build());
 }
 
-function buildPage(
-	items: TodoResponse[],
-): CursorPaginatedResponse<TodoResponse, number> {
+function buildPage(items: TodoResponse[]): CursorPaginatedResponse<TodoResponse, number> {
 	return {
 		items,
 		pagination: { nextCursor: null, hasNext: false, size: 20 },
@@ -63,8 +61,7 @@ describe("GetFriendTodosUseCase — 친구 PUBLIC Todo 조회 핸들러", () => 
 			.compile();
 
 		useCase = unit;
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		friendPort = unitRef.get<FriendPort>(FRIEND_PORT);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
 		paginationService = unitRef.get(PaginationService);
@@ -74,17 +71,15 @@ describe("GetFriendTodosUseCase — 친구 PUBLIC Todo 조회 핸들러", () => 
 			const size = params.size ?? 20;
 			return { cursor: params.cursor, size, take: size + 1 };
 		});
-		paginationService.createCursorPaginatedResponse.mockImplementation(
-			(params) => {
-				const { items, size } = params;
-				const hasNext = items.length > size;
-				const actualItems = hasNext ? items.slice(0, size) : items;
-				return {
-					items: actualItems,
-					pagination: { nextCursor: null, hasNext, size },
-				};
-			},
-		);
+		paginationService.createCursorPaginatedResponse.mockImplementation((params) => {
+			const { items, size } = params;
+			const hasNext = items.length > size;
+			const actualItems = hasNext ? items.slice(0, size) : items;
+			return {
+				items: actualItems,
+				pagination: { nextCursor: null, hasNext, size },
+			};
+		});
 	});
 
 	it("첫 페이지 캐시 히트 시 저장소를 거치지 않고 캐시 값을 반환한다 (권한 확인은 수행)", async () => {
@@ -100,10 +95,7 @@ describe("GetFriendTodosUseCase — 친구 PUBLIC Todo 조회 핸들러", () => 
 		});
 
 		// Then - 맞팔 확인은 매 요청 수행, 저장소·set은 미호출
-		expect(friendPort.isMutualFriend).toHaveBeenCalledWith(
-			"user-123",
-			"friend-1",
-		);
+		expect(friendPort.isMutualFriend).toHaveBeenCalledWith("user-123", "friend-1");
 		expect(todoCache.getFriendTodosFirstPage).toHaveBeenCalledWith(
 			"friend-1",
 			"2026-07-01",
@@ -155,12 +147,7 @@ describe("GetFriendTodosUseCase — 친구 PUBLIC Todo 조회 핸들러", () => 
 		await useCase.execute(baseInput);
 
 		// Then
-		expect(todoCache.getFriendTodosFirstPage).toHaveBeenCalledWith(
-			"friend-1",
-			"-",
-			"-",
-			20,
-		);
+		expect(todoCache.getFriendTodosFirstPage).toHaveBeenCalledWith("friend-1", "-", "-", 20);
 		expect(todoCache.setFriendTodosFirstPage).toHaveBeenCalledWith(
 			"friend-1",
 			"-",
@@ -172,9 +159,7 @@ describe("GetFriendTodosUseCase — 친구 PUBLIC Todo 조회 핸들러", () => 
 
 	it("커서 페이지는 캐시를 조회하지도 저장하지도 않는다", async () => {
 		// Given - cursor 지정 (2페이지 이후)
-		todoReadRepository.findPublicTodosByUserId.mockResolvedValue([
-			buildResponse(6),
-		]);
+		todoReadRepository.findPublicTodosByUserId.mockResolvedValue([buildResponse(6)]);
 
 		// When
 		await useCase.execute({ ...baseInput, cursor: 5 });

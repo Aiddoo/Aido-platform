@@ -1,11 +1,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock } from "@test/mocks";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { SuggestionAnalysisProcessor } from "../processors/suggestion-analysis.processor";
 import { AI_SUGGESTION_QUEUE } from "../queue/ai-suggestion-queue";
 import { AiSuggestionQueueMaintenanceService } from "../queue/ai-suggestion-queue-maintenance.service";

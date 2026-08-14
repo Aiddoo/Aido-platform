@@ -2,6 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
+
 import { TodoCheckbox, TodoLabel, TodoRow } from '../TodoRow';
 
 interface SubTodoListProps {

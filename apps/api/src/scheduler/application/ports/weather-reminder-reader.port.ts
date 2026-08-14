@@ -3,10 +3,7 @@
  *
  * 아침/저녁 날씨 알림의 위치 보유 유저·폴백(위치 없음) 유저 조회를 담당한다.
  */
-import type {
-	WeatherFallbackUser,
-	WeatherReminderUser,
-} from "./scheduler-read-models";
+import type { WeatherFallbackUser, WeatherReminderUser } from "./scheduler-read-models";
 
 export const WEATHER_REMINDER_READER = Symbol("WEATHER_REMINDER_READER");
 
@@ -26,9 +23,7 @@ export interface WeatherReminderReaderPort {
 	): Promise<WeatherReminderUser[]>;
 
 	/** 아침 날씨 알림: 위치 없는 폴백 유저 */
-	findWeatherMorningFallbackUsers(
-		params: WeatherReminderParams,
-	): Promise<WeatherFallbackUser[]>;
+	findWeatherMorningFallbackUsers(params: WeatherReminderParams): Promise<WeatherFallbackUser[]>;
 
 	/** 저녁 날씨 알림: 위치 보유 유저 */
 	findWeatherEveningUsersWithLocation(
@@ -36,7 +31,5 @@ export interface WeatherReminderReaderPort {
 	): Promise<WeatherReminderUser[]>;
 
 	/** 저녁 날씨 알림: 위치 없는 폴백 유저 */
-	findWeatherEveningFallbackUsers(
-		params: WeatherReminderParams,
-	): Promise<WeatherFallbackUser[]>;
+	findWeatherEveningFallbackUsers(params: WeatherReminderParams): Promise<WeatherFallbackUser[]>;
 }

@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "uniwind";
-@import "heroui-native/styles";
+@import 'tailwindcss';
+@import 'uniwind';
+@import 'heroui-native/styles';
 
 @source "./node_modules/heroui-native/lib";
 @source "./src/shared/ui/**/*.variants.ts";
@@ -103,10 +103,10 @@
 }
 
 @theme {
-  --font-normal: "WantedSans-Regular";
-  --font-medium: "WantedSans-Medium";
-  --font-semibold: "WantedSans-SemiBold";
-  --font-bold: "WantedSans-Bold";
+  --font-normal: 'WantedSans-Regular';
+  --font-medium: 'WantedSans-Medium';
+  --font-semibold: 'WantedSans-SemiBold';
+  --font-bold: 'WantedSans-Bold';
 
   --text-h1: 30px;
   --text-h1--line-height: 40px;

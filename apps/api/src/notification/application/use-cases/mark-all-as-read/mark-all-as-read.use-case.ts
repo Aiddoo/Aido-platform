@@ -1,12 +1,13 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 
 /**
  * 모든 알림 읽음 처리 유스케이스.
@@ -26,9 +27,7 @@ export class MarkAllAsReadUseCase {
 		const result = await this.notificationRepository.markAllAsRead(userId);
 		await this.cache.invalidateUnreadCount(userId);
 
-		this.#logger.debug(
-			`All notifications read processed: userId=${userId}, count=${result.count}`,
-		);
+		this.#logger.debug(`All notifications read processed: userId=${userId}, count=${result.count}`);
 
 		return result;
 	}

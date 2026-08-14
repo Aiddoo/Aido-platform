@@ -7,7 +7,6 @@ import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

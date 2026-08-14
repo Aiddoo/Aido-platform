@@ -7,6 +7,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -47,8 +48,7 @@ describe("GetReportsUseCase", () => {
 	let mockEntitlement: Mocked<EntitlementService>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(GetReportsUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(GetReportsUseCase).compile();
 		useCase = unit;
 		mockRepository = unitRef.get(AI_REPORT_REPOSITORY);
 		mockEntitlement = unitRef.get(EntitlementService);
@@ -58,9 +58,9 @@ describe("GetReportsUseCase", () => {
 	it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
 		mockEntitlement.hasPremiumAccess.mockResolvedValue(false);
 
-		await expect(
-			useCase.execute("user-123", { type: "WEEKLY", limit: 10 }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute("user-123", { type: "WEEKLY", limit: 10 })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 		expect(mockRepository.findMany).not.toHaveBeenCalled();
 	});
 

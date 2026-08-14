@@ -8,6 +8,7 @@ import { TODO_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createTodoReadRepositoryMock } from "@test/mocks/ports";
+
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -19,16 +20,13 @@ describe("GetTodoResourceLimitUseCase — 카테고리 활성 Todo 리소스 제
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetTodoResourceLimitUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(GetTodoResourceLimitUseCase)
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
 			.compile();
 
 		useCase = unit;
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 	});
 
 	it("categoryId가 있으면 활성 개수를 조회해 상한과 함께 반환한다", async () => {
@@ -39,10 +37,7 @@ describe("GetTodoResourceLimitUseCase — 카테고리 활성 Todo 리소스 제
 		const result = await useCase.execute({ userId: "user-123", categoryId: 3 });
 
 		// Then
-		expect(todoReadRepository.countActiveByCategory).toHaveBeenCalledWith(
-			"user-123",
-			3,
-		);
+		expect(todoReadRepository.countActiveByCategory).toHaveBeenCalledWith("user-123", 3);
 		expect(result).toEqual({
 			activeCount: 12,
 			maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,

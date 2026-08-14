@@ -1,18 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+
 import { decideRetentionOutboxRetry } from "../../policies/retention-outbox-retry.policy";
-import {
-	RETENTION_REPOSITORY,
-	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
-import {
-	RETENTION_CONFIG,
-	type RetentionConfigPort,
-} from "../../ports/retention-config.port";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
 import {
 	RETENTION_JOB_ENQUEUER,
 	type RetentionJobEnqueuerPort,
 } from "../../ports/retention-job-enqueuer.port";
+import {
+	RETENTION_REPOSITORY,
+	type RetentionRepositoryPort,
+} from "../../ports/retention.repository.port";
 
 const OUTBOX_RELAY_BATCH_SIZE = 25;
 const OUTBOX_PROCESSING_LEASE_MS = 2 * 60_000;
@@ -46,8 +45,7 @@ export class RelayRetentionOutboxUseCase {
 					await this.enqueuer.enqueueDispatch(outbox.id);
 					await this.repository.markOutboxPublished(outbox.id);
 				} catch (error) {
-					const normalizedError =
-						error instanceof Error ? error : new Error(String(error));
+					const normalizedError = error instanceof Error ? error : new Error(String(error));
 					const retryDecision = decideRetentionOutboxRetry(outbox.attempts);
 					await this.repository.markOutboxFailed({
 						outboxId: outbox.id,

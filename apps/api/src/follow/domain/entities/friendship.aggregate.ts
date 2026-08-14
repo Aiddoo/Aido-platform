@@ -1,4 +1,5 @@
 import { AggregateRoot } from "@/shared/domain";
+
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
@@ -87,22 +88,12 @@ export class Friendship extends AggregateRoot<
 	}
 
 	/** 기준 대상(targetSortOrder)의 앞/뒤로 이동하는 재정렬 계획 */
-	planReorderRelativeTo(
-		targetSortOrder: number,
-		position: ReorderPosition,
-	): ReorderPlan {
-		return planReorderRelativeTo(
-			this.props.sortOrder,
-			targetSortOrder,
-			position,
-		);
+	planReorderRelativeTo(targetSortOrder: number, position: ReorderPosition): ReorderPlan {
+		return planReorderRelativeTo(this.props.sortOrder, targetSortOrder, position);
 	}
 
 	/** 목록의 맨 앞/뒤로 이동하는 재정렬 계획 */
-	planReorderToEdge(
-		position: ReorderPosition,
-		maxSortOrder: number,
-	): ReorderPlan {
+	planReorderToEdge(position: ReorderPosition, maxSortOrder: number): ReorderPlan {
 		return planReorderToEdge(this.props.sortOrder, position, maxSortOrder);
 	}
 }

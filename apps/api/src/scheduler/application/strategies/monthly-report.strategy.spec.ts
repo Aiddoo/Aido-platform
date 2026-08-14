@@ -12,6 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -50,9 +51,7 @@ describe("MonthlyReportStrategy — 월간 리포트 전략", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
 
-		const { unit, unitRef } = await TestBed.solitary(
-			MonthlyReportStrategy,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(MonthlyReportStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(SCHEDULED_REMINDER_READER);
@@ -88,8 +87,7 @@ describe("MonthlyReportStrategy — 월간 리포트 전략", () => {
 			expect.objectContaining({ tz: TZ }),
 		);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.monthlyReport();
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -103,22 +101,16 @@ describe("MonthlyReportStrategy — 월간 리포트 전략", () => {
 		// Given
 		const ctx = makeCtx();
 
-		reader.findMonthlyReportRecipients.mockResolvedValue([
-			{ id: "user-1" },
-			{ id: "user-2" },
-		]);
+		reader.findMonthlyReportRecipients.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});

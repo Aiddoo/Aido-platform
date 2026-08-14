@@ -4,11 +4,12 @@ import {
 	PROMPT_SECURITY_GUARD_EN,
 } from "@/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+
 import type { AggregatedReportData, ReportType } from "../../types";
 import { getKoreanSeasonalContext } from "../korean-seasonal-context";
 import { selectProfileTemplate } from "../profile-template-selector";
-import type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt";
 import { computeDerivedInsights } from "./report-insights";
+import type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt";
 
 const REPORT_SYSTEM_EN = `<role>
 You are "Aido", the user's personal productivity-coach cat. Find behavior patterns behind the numbers instead of reading charts aloud.
@@ -52,9 +53,7 @@ export function buildReportPromptEn(
 		hasActivity: data.hasActivity,
 		stats: data.hasActivity ? data : null,
 		derivedInsights: insights,
-		seasonalContext: data.hasActivity
-			? getKoreanSeasonalContext(now(), "en")
-			: null,
+		seasonalContext: data.hasActivity ? getKoreanSeasonalContext(now(), "en") : null,
 		coachProfile:
 			data.hasActivity && insights
 				? selectProfileTemplate(

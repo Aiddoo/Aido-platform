@@ -1,8 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+
 import type {
 	AdminNotificationQueuePort,
 	EnqueueSendOptions,
@@ -22,9 +21,7 @@ import {
  * 조립된 관리자 알림을 SEND 잡으로 등록한다.
  */
 @Injectable()
-export class BullmqAdminNotificationQueueAdapter
-	implements AdminNotificationQueuePort
-{
+export class BullmqAdminNotificationQueueAdapter implements AdminNotificationQueuePort {
 	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
 	async enqueueSend(

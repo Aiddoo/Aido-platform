@@ -1,4 +1,5 @@
 import { View, type ViewStyle } from 'react-native';
+
 import type { BoxProps } from './Box.types';
 
 export function Box({

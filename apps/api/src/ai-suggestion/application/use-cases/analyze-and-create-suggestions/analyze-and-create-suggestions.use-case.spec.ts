@@ -8,6 +8,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
+
 import type { AiProvider } from "@/ai";
 import { AI_PROVIDER } from "@/ai";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
@@ -29,9 +30,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 
 	const mockUserId = "user-123";
 
-	function createMockContext(
-		overrides?: Partial<SuggestionContext>,
-	): SuggestionContext {
+	function createMockContext(overrides?: Partial<SuggestionContext>): SuggestionContext {
 		return {
 			todos: [],
 			dayCompletionRates: "월:80%|화:70%",
@@ -48,9 +47,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 	}
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			AnalyzeAndCreateSuggestionsUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(AnalyzeAndCreateSuggestionsUseCase)
 			.mock(AI_PROVIDER)
 			.impl(() => ({
 				generateStructured: jest.fn(),
@@ -115,9 +112,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 
 		expect(result).toBe(1);
 		expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(1);
-		expect(mockRepository.createMany.mock.calls[0]?.[0][0]?.reason).toContain(
-			"최근 기록이 2개",
-		);
+		expect(mockRepository.createMany.mock.calls[0]?.[0][0]?.reason).toContain("최근 기록이 2개");
 	});
 
 	it("할 일이 없으면 기존 빈 상태를 유지하고 AI를 호출하지 않는다", async () => {
@@ -204,10 +199,8 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 
 		await useCase.execute(mockUserId, "Asia/Seoul");
 
-		const deletePendingOrder =
-			mockRepository.deletePending.mock.invocationCallOrder[0] ?? 0;
-		const deleteExpiredOrder =
-			mockRepository.deleteExpired.mock.invocationCallOrder[0] ?? 0;
+		const deletePendingOrder = mockRepository.deletePending.mock.invocationCallOrder[0] ?? 0;
+		const deleteExpiredOrder = mockRepository.deleteExpired.mock.invocationCallOrder[0] ?? 0;
 		expect(deletePendingOrder).toBeLessThan(deleteExpiredOrder);
 	});
 
@@ -280,9 +273,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 		mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
 		mockRepository.createMany.mockRejectedValue(new Error("DB 에러"));
 
-		await expect(useCase.execute(mockUserId, "Asia/Seoul")).rejects.toThrow(
-			"DB 에러",
-		);
+		await expect(useCase.execute(mockUserId, "Asia/Seoul")).rejects.toThrow("DB 에러");
 	});
 
 	it("최대 5개까지만 생성해야 한다", async () => {
@@ -535,9 +526,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 			completed: true,
 			categoryName: "운동",
 		}));
-		mockContextBuilder.build.mockResolvedValue(
-			createMockContext({ todos, weather: null }),
-		);
+		mockContextBuilder.build.mockResolvedValue(createMockContext({ todos, weather: null }));
 
 		mockAiProvider.generateStructured.mockResolvedValue({
 			output: {

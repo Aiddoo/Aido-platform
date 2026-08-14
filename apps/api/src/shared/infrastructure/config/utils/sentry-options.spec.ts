@@ -128,10 +128,7 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
 				"에어코리아 대기질",
 				"https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty",
 			],
-			[
-				"Google Generative AI",
-				"https://generativelanguage.googleapis.com/v1beta/models",
-			],
+			["Google Generative AI", "https://generativelanguage.googleapis.com/v1beta/models"],
 			["Resend 메일", "https://api.resend.com/emails"],
 			["Expo 푸시", "https://exp.host/--/api/v2/push/send"],
 		])("%s 요청에는 추적 헤더를 전파하지 않는다", (_label, url) => {
@@ -149,12 +146,8 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
 		});
 
 		it("production 기본값은 0.2, 그 외는 1.0이다", () => {
-			expect(
-				resolveSentryOptions({ APP_ENV: "production" }).tracesSampleRate,
-			).toBe(0.2);
-			expect(
-				resolveSentryOptions({ APP_ENV: "development" }).tracesSampleRate,
-			).toBe(1.0);
+			expect(resolveSentryOptions({ APP_ENV: "production" }).tracesSampleRate).toBe(0.2);
+			expect(resolveSentryOptions({ APP_ENV: "development" }).tracesSampleRate).toBe(1.0);
 		});
 	});
 });

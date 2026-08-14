@@ -28,10 +28,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { NudgeReader } from "../application/services/nudge.reader";
 import { MarkNudgeReadUseCase } from "../application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
 import { SendNudgeUseCase } from "../application/use-cases/send-nudge/send-nudge.use-case";
@@ -221,8 +218,7 @@ export class NudgeController {
 	@Get("cooldown/:userId")
 	@ApiParam({
 		name: "userId",
-		description:
-			"쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		description: "쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
 		example: "clz7x5p8k0005qz0z8z8z8z8z",
 	})
 	@ApiDoc({
@@ -239,18 +235,12 @@ export class NudgeController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("userId") targetUserId: string,
 	): Promise<NudgeCooldownResponseDto> {
-		const cooldownInfo = await this.nudgeReader.getCooldownInfoForUser(
-			user.userId,
-			targetUserId,
-		);
+		const cooldownInfo = await this.nudgeReader.getCooldownInfoForUser(user.userId, targetUserId);
 
 		return {
 			canNudge: !cooldownInfo.isActive,
 			cooldownEndsAt: toISOStringOrNull(cooldownInfo.cooldownEndsAt ?? null),
-			remainingSeconds:
-				cooldownInfo.remainingSeconds > 0
-					? cooldownInfo.remainingSeconds
-					: null,
+			remainingSeconds: cooldownInfo.remainingSeconds > 0 ? cooldownInfo.remainingSeconds : null,
 		};
 	}
 
@@ -286,9 +276,7 @@ export class NudgeController {
 		@Body() dto: SendRemindNudgeDto,
 		@Timezone() tz: string,
 	): Promise<CreateRemindNudgeResponseDto> {
-		this.#logger.debug(
-			`리마인드 콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}`,
-		);
+		this.#logger.debug(`리마인드 콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}`);
 
 		const remindNudge = await this.sendRemindNudgeUseCase.execute(
 			{
@@ -312,8 +300,7 @@ export class NudgeController {
 	@Get("remind/cooldown/:userId")
 	@ApiParam({
 		name: "userId",
-		description:
-			"쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		description: "쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
 		example: "clz7x5p8k0005qz0z8z8z8z8z",
 	})
 	@ApiDoc({
@@ -329,18 +316,12 @@ export class NudgeController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("userId") targetUserId: string,
 	): Promise<NudgeCooldownResponseDto> {
-		const cooldownInfo = await this.nudgeReader.getRemindCooldownInfo(
-			user.userId,
-			targetUserId,
-		);
+		const cooldownInfo = await this.nudgeReader.getRemindCooldownInfo(user.userId, targetUserId);
 
 		return {
 			canNudge: !cooldownInfo.isActive,
 			cooldownEndsAt: toISOStringOrNull(cooldownInfo.cooldownEndsAt ?? null),
-			remainingSeconds:
-				cooldownInfo.remainingSeconds > 0
-					? cooldownInfo.remainingSeconds
-					: null,
+			remainingSeconds: cooldownInfo.remainingSeconds > 0 ? cooldownInfo.remainingSeconds : null,
 		};
 	}
 
@@ -358,9 +339,7 @@ export class NudgeController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: NudgeIdParamDto,
 	): Promise<MarkNudgeReadResponseDto> {
-		this.#logger.debug(
-			`콕 찌름 읽음 처리: userId=${user.userId}, id=${params.id}`,
-		);
+		this.#logger.debug(`콕 찌름 읽음 처리: userId=${user.userId}, id=${params.id}`);
 
 		await this.markNudgeReadUseCase.execute({
 			userId: user.userId,

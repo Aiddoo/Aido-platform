@@ -21,6 +21,7 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
+
 import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "@/admin-notification";
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "@/admin-notification/application/ports/admin-notification-queue.port";
 import { SIGNUP_STATS_READER } from "@/admin-notification/application/ports/signup-stats.reader.port";
@@ -88,9 +89,7 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		processor = module.get<AdminNotificationProcessor>(
-			AdminNotificationProcessor,
-		);
+		processor = module.get<AdminNotificationProcessor>(AdminNotificationProcessor);
 	});
 
 	afterAll(async () => {
@@ -166,9 +165,7 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When & Then - 에러가 throw되어야 함
-			await expect(processor.process(job)).rejects.toThrow(
-				"Discord webhook failed",
-			);
+			await expect(processor.process(job)).rejects.toThrow("Discord webhook failed");
 		});
 	});
 
@@ -195,9 +192,7 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 
 		it("DISPATCH_SUMMARY 잡 — 집계 실패 시에도 예외를 전파하지 않는다", async () => {
 			// Given - 리더가 실패
-			mockSignupStatsReader.getSignupStats.mockRejectedValueOnce(
-				new Error("DB connection error"),
-			);
+			mockSignupStatsReader.getSignupStats.mockRejectedValueOnce(new Error("DB connection error"));
 
 			const job = createMockJob("dispatch-signup-summary", {});
 

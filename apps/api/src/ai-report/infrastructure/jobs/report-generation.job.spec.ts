@@ -3,9 +3,11 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import type { JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { ReportGenerationProcessor } from "../processors/report-generation.processor";
 import { AI_REPORT_QUEUE } from "../queue/ai-report-queue";
 import { ReportGenerationJob } from "./report-generation.job";
@@ -19,9 +21,7 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 	beforeEach(async () => {
 		database = createMockPrisma();
 		const { unit, unitRef } = await TestBed.solitary(ReportGenerationJob)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: database }))
 			.mock(JOB_RUNTIME)
 			.impl(() => ({
@@ -92,9 +92,7 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 	});
 
 	it("preference가 없으면 기존 기본값을 유지한다", async () => {
-		asMock(database.user.findMany).mockResolvedValue([
-			{ id: "user-1", preference: null },
-		]);
+		asMock(database.user.findMany).mockResolvedValue([{ id: "user-1", preference: null }]);
 		await job.dispatchReports("MONTHLY");
 
 		expect(runtime.enqueue).toHaveBeenCalledWith(

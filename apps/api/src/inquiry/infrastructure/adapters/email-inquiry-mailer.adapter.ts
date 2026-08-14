@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
+
 import { TransactionalEmailSender } from "@/email";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import type {
 	InquiryDeliveryResult,
 	InquiryMailerPort,

@@ -68,11 +68,7 @@ export class MockCacheAdapter implements ICacheService {
 		return { ...this.stats, keys: this.#store.size };
 	}
 
-	async wrap<T>(
-		key: string,
-		factory: () => Promise<T>,
-		ttl?: TtlValue,
-	): Promise<T> {
+	async wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
 		const cached = await this.get<T>(key);
 		if (cached !== undefined) {
 			return cached;
@@ -88,12 +84,8 @@ export class MockCacheAdapter implements ICacheService {
 		return Promise.all(keys.map((key) => this.get<T>(key)));
 	}
 
-	async mset<T>(
-		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
-	): Promise<void> {
-		await Promise.all(
-			entries.map(({ key, value, ttl }) => this.set(key, value, ttl)),
-		);
+	async mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {
+		await Promise.all(entries.map(({ key, value, ttl }) => this.set(key, value, ttl)));
 	}
 
 	async has(key: string): Promise<boolean> {
@@ -176,9 +168,7 @@ export async function setMultipleCacheEntries(
 	cache: ICacheService,
 	entries: Array<{ key: string; value: unknown; ttl?: TtlValue }>,
 ): Promise<void> {
-	await Promise.all(
-		entries.map((entry) => cache.set(entry.key, entry.value, entry.ttl)),
-	);
+	await Promise.all(entries.map((entry) => cache.set(entry.key, entry.value, entry.ttl)));
 }
 
 /**

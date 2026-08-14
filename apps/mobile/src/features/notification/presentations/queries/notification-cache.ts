@@ -1,4 +1,5 @@
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
+
 import type { NotificationListResult } from '../../models/notification.model';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys.constant';
 

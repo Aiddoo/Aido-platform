@@ -4,11 +4,11 @@
 
 ## 컴포넌트 선택 가이드
 
-| 컴포넌트 | 용도 | 키보드 연동 |
-|----------|------|------------|
-| `KeyboardBottomSheet` | 키보드가 필요한 폼 (텍스트 입력) | O |
-| `BottomSheet` | 키보드 불필요 (피커, 액션시트) | X |
-| `ModalBottomSheet` | 시트 위에 시트 (Overlay 절대 위치 기반) | X |
+| 컴포넌트              | 용도                                    | 키보드 연동 |
+| --------------------- | --------------------------------------- | ----------- |
+| `KeyboardBottomSheet` | 키보드가 필요한 폼 (텍스트 입력)        | O           |
+| `BottomSheet`         | 키보드 불필요 (피커, 액션시트)          | X           |
+| `ModalBottomSheet`    | 시트 위에 시트 (Overlay 절대 위치 기반) | X           |
 
 ## 사용법
 
@@ -19,7 +19,7 @@ import { BottomSheet } from '@src/shared/ui/BottomSheet';
 
 <BottomSheet isOpen={isOpen} onOpenChange={setIsOpen}>
   {/* 피커, 액션시트 등 */}
-</BottomSheet>
+</BottomSheet>;
 ```
 
 ### KeyboardBottomSheet
@@ -29,7 +29,7 @@ import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 
 <KeyboardBottomSheet isOpen={isOpen} onOpenChange={setIsOpen}>
   {/* 텍스트 입력 폼 */}
-</KeyboardBottomSheet>
+</KeyboardBottomSheet>;
 ```
 
 ### ModalBottomSheet
@@ -47,29 +47,29 @@ import { ModalBottomSheet } from '@src/shared/ui/BottomSheet';
   reduceMotion={prefersReducedMotion}
 >
   {/* 피커 내용 */}
-</ModalBottomSheet>
+</ModalBottomSheet>;
 ```
 
 ## Props
 
 ### BottomSheet
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `isOpen` | `boolean` | - | 시트 열림 상태 |
-| `onOpenChange` | `(isOpen: boolean) => void` | - | 열림/닫힘 상태 변경 콜백 |
-| `onCloseStart` | `() => void` | - | 닫기 시작 시 콜백 (선택) |
-| `children` | `ReactNode` | - | 시트 내용 |
+| Prop           | 타입                        | 기본값 | 설명                     |
+| -------------- | --------------------------- | ------ | ------------------------ |
+| `isOpen`       | `boolean`                   | -      | 시트 열림 상태           |
+| `onOpenChange` | `(isOpen: boolean) => void` | -      | 열림/닫힘 상태 변경 콜백 |
+| `onCloseStart` | `() => void`                | -      | 닫기 시작 시 콜백 (선택) |
+| `children`     | `ReactNode`                 | -      | 시트 내용                |
 
 ### ModalBottomSheet
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `isOpen` | `boolean` | - | 시트 열림 상태 |
-| `onClose` | `() => void` | - | 닫기 시작 (backdrop tap, swipe) → 부모가 isOpen을 false로 전환 |
-| `onExit` | `() => void` | - | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 |
-| `reduceMotion` | `boolean` | `false` | 시스템 모션 감소 설정에 맞춰 전환 시간을 제거 |
-| `children` | `ReactNode` | - | 시트 내용 |
+| Prop           | 타입         | 기본값  | 설명                                                           |
+| -------------- | ------------ | ------- | -------------------------------------------------------------- |
+| `isOpen`       | `boolean`    | -       | 시트 열림 상태                                                 |
+| `onClose`      | `() => void` | -       | 닫기 시작 (backdrop tap, swipe) → 부모가 isOpen을 false로 전환 |
+| `onExit`       | `() => void` | -       | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거        |
+| `reduceMotion` | `boolean`    | `false` | 시스템 모션 감소 설정에 맞춰 전환 시간을 제거                  |
+| `children`     | `ReactNode`  | -       | 시트 내용                                                      |
 
 ## 파일 구조
 

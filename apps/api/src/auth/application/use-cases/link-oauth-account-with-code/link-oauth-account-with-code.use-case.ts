@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+
 import { OAuthWorkflow } from "../../workflows/oauth.workflow";
 
 @Injectable()

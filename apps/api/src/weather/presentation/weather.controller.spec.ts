@@ -10,6 +10,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { UserLocationBuilder } from "@test/builders";
+
 import type { CurrentUserPayload } from "../../auth/presentation/decorators";
 import type { WeatherConditions } from "../application/ports/weather-provider.port";
 import { GetWeatherConditionsUseCase } from "../application/queries/get-weather-conditions/get-weather-conditions.use-case";
@@ -46,8 +47,7 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 	beforeEach(async () => {
 		UserLocationBuilder.resetIdCounter();
 
-		const { unit, unitRef } =
-			await TestBed.solitary(WeatherController).compile();
+		const { unit, unitRef } = await TestBed.solitary(WeatherController).compile();
 
 		controller = unit;
 		upsertLocationUseCase = unitRef.get(UpsertLocationUseCase);

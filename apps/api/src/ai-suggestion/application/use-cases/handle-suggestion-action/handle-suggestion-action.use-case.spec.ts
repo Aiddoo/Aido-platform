@@ -12,10 +12,7 @@ import { EntitlementService } from "@/shared/application/entitlement/entitlement
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 
-import {
-	Suggestion,
-	type SuggestionProps,
-} from "../../../domain/entities/suggestion.aggregate";
+import { Suggestion, type SuggestionProps } from "../../../domain/entities/suggestion.aggregate";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
@@ -54,9 +51,7 @@ describe("HandleSuggestionActionUseCase", () => {
 	let entitlement: Mocked<EntitlementService>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			HandleSuggestionActionUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(HandleSuggestionActionUseCase).compile();
 
 		useCase = unit;
 		repo = unitRef.get(AI_SUGGESTION_REPOSITORY);
@@ -96,9 +91,7 @@ describe("HandleSuggestionActionUseCase", () => {
 	});
 
 	it("이미 처리된 제안에 대해 AI_1306(DomainException)을 던져야 한다", async () => {
-		repo.findByIdAndUserId.mockResolvedValue(
-			createSuggestion({ status: "ACCEPTED" }),
-		);
+		repo.findByIdAndUserId.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
 
 		await expect(
 			useCase.execute({
@@ -127,9 +120,7 @@ describe("HandleSuggestionActionUseCase", () => {
 
 	it("거절 시 상태를 DISMISSED로 업데이트해야 한다", async () => {
 		repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
-		repo.updateStatus.mockResolvedValue(
-			createSuggestion({ status: "DISMISSED" }),
-		);
+		repo.updateStatus.mockResolvedValue(createSuggestion({ status: "DISMISSED" }));
 
 		const result = await useCase.execute({
 			userId: mockUserId,
@@ -161,9 +152,7 @@ describe("HandleSuggestionActionUseCase", () => {
 
 	it("수락 시 상태를 먼저 ACCEPTED로 변경한 후 반복 할 일을 생성해야 한다", async () => {
 		repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
-		repo.updateStatus.mockResolvedValue(
-			createSuggestion({ status: "ACCEPTED" }),
-		);
+		repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
 		creator.createRecurring.mockResolvedValue({ count: 12 });
 
 		const result = await useCase.execute({
@@ -175,10 +164,8 @@ describe("HandleSuggestionActionUseCase", () => {
 		});
 
 		// 상태 변경이 반복 생성보다 먼저 호출되어야 한다
-		const updateStatusOrder =
-			repo.updateStatus.mock.invocationCallOrder[0] ?? 0;
-		const createRecurringOrder =
-			creator.createRecurring.mock.invocationCallOrder[0] ?? 0;
+		const updateStatusOrder = repo.updateStatus.mock.invocationCallOrder[0] ?? 0;
+		const createRecurringOrder = creator.createRecurring.mock.invocationCallOrder[0] ?? 0;
 		expect(updateStatusOrder).toBeLessThan(createRecurringOrder);
 
 		expect(repo.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
@@ -198,9 +185,7 @@ describe("HandleSuggestionActionUseCase", () => {
 
 	it("수락 시 투두 생성 실패하면 상태가 PENDING으로 롤백되어야 한다", async () => {
 		repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
-		repo.updateStatus.mockResolvedValue(
-			createSuggestion({ status: "ACCEPTED" }),
-		);
+		repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
 		creator.createRecurring.mockRejectedValue(new Error("투두 생성 실패"));
 
 		await expect(

@@ -12,13 +12,7 @@ export interface TodoCompletionStats {
  */
 export interface TodoCompletionStatsReaderPort {
 	/** [dayStart, dayEnd) 구간의 total/completed 카운트 */
-	countForDay(
-		userId: string,
-		dayStart: Date,
-		dayEnd: Date,
-	): Promise<TodoCompletionStats>;
+	countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats>;
 }
 
-export const TODO_COMPLETION_STATS_READER = Symbol(
-	"TODO_COMPLETION_STATS_READER",
-);
+export const TODO_COMPLETION_STATS_READER = Symbol("TODO_COMPLETION_STATS_READER");

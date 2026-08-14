@@ -1,4 +1,5 @@
 import { TestBed } from "@suites/unit";
+
 import {
 	FEATURE_DISCOVERY_CONFIG,
 	type FeatureDiscoveryConfigPort,

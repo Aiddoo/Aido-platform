@@ -1,8 +1,10 @@
-import { Inject, Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Inject, Injectable } from "@nestjs/common";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type { WeeklyAchievementRepositoryPort } from "../../application/ports/weekly-achievement.repository.port";
 import type {
 	WeeklyAchievementRow,
@@ -26,13 +28,9 @@ const ROW_SELECT = {
  * 반환하며, 일괄 upsert는 UnitOfWork로 원자성을 보장한다.
  */
 @Injectable()
-export class PrismaWeeklyAchievementRepository
-	implements WeeklyAchievementRepositoryPort
-{
+export class PrismaWeeklyAchievementRepository implements WeeklyAchievementRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 	) {}
@@ -85,14 +83,7 @@ export class PrismaWeeklyAchievementRepository
 		}
 
 		await this.uow.run(async () => {
-			for (const {
-				userId,
-				year,
-				week,
-				totalTodos,
-				completedTodos,
-				achievedAt,
-			} of snapshots) {
+			for (const { userId, year, week, totalTodos, completedTodos, achievedAt } of snapshots) {
 				await this.client.weeklyAchievement.upsert({
 					where: { userId_year_week: { userId, year, week } },
 					create: {

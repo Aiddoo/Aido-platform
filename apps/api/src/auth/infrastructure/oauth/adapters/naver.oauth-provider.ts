@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import type { Logger } from "@nestjs/common";
+
 import type {
 	ExchangedToken,
 	GenerateAuthUrlParams,
@@ -33,11 +34,7 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
 	readonly #verifier: OAuthTokenVerifier;
 	readonly #logger: Logger;
 
-	constructor(
-		getConfig: () => OAuthConfig,
-		verifier: OAuthTokenVerifier,
-		logger: Logger,
-	) {
+	constructor(getConfig: () => OAuthConfig, verifier: OAuthTokenVerifier, logger: Logger) {
 		this.#getConfig = getConfig;
 		this.#verifier = verifier;
 		this.#logger = logger;
@@ -52,8 +49,7 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
 
 		await params.persistState("NAVER", params.validatedRedirectUri, {
 			mode: params.mode,
-			initiatingUserId:
-				params.mode === "link" ? params.initiatingUserId : undefined,
+			initiatingUserId: params.mode === "link" ? params.initiatingUserId : undefined,
 		});
 
 		const urlParams = new URLSearchParams({
@@ -67,8 +63,7 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
 	}
 
 	async exchangeCode(code: string, state?: string): Promise<ExchangedToken> {
-		const { clientId, clientSecret, callbackUrl, isConfigured } =
-			this.#getConfig();
+		const { clientId, clientSecret, callbackUrl, isConfigured } = this.#getConfig();
 
 		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
 			throw new ApplicationException(ErrorCode.USER_0602);
@@ -112,10 +107,7 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
 		return this.#verifier.verifyNaverToken(accessToken);
 	}
 
-	buildLoginOptions(
-		verifiedProfile: VerifiedProfile,
-		userName?: string,
-	): SocialLoginOptions {
+	buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
 		return {
 			userName: userName ?? verifiedProfile.name,
 			emailVerified: verifiedProfile.emailVerified,

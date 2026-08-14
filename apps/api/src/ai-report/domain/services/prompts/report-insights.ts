@@ -1,4 +1,5 @@
 import type { SupportedLocale } from "@/shared/domain/locale";
+
 import type { AggregatedReportData } from "../../types";
 
 const DAY_KOREAN: Record<string, string> = {
@@ -56,13 +57,9 @@ export function computeDerivedInsights(
 	// 카테고리 분석
 	const activeCats = data.categoryBreakdown.filter((c) => c.total > 0);
 	const bestCategory =
-		activeCats.length > 0
-			? activeCats.reduce((a, b) => (b.rate > a.rate ? b : a))
-			: null;
+		activeCats.length > 0 ? activeCats.reduce((a, b) => (b.rate > a.rate ? b : a)) : null;
 	const worstCategory =
-		activeCats.length > 1
-			? activeCats.reduce((a, b) => (b.rate < a.rate ? b : a))
-			: null;
+		activeCats.length > 1 ? activeCats.reduce((a, b) => (b.rate < a.rate ? b : a)) : null;
 
 	// 요일 분석
 	const activeDayPatterns = data.dayPatterns.filter((d) => d.total > 0);
@@ -77,16 +74,13 @@ export function computeDerivedInsights(
 
 	const activeDays = activeDayPatterns.length;
 	const perfectDays = activeDayPatterns.filter((d) => d.rate === 100).length;
-	const avgDailyTodos =
-		activeDays > 0 ? Math.round(data.totalTodos / activeDays) : 0;
+	const avgDailyTodos = activeDays > 0 ? Math.round(data.totalTodos / activeDays) : 0;
 
 	// 주중 vs 주말
 	const weekdayDays = activeDayPatterns.filter((d) => WEEKDAYS.has(d.day));
 	const weekendDays = activeDayPatterns.filter((d) => !WEEKDAYS.has(d.day));
 
-	const computeAvgRate = (
-		days: { total: number; completed: number }[],
-	): number => {
+	const computeAvgRate = (days: { total: number; completed: number }[]): number => {
 		const totalAll = days.reduce((s, d) => s + d.total, 0);
 		const compAll = days.reduce((s, d) => s + d.completed, 0);
 		return totalAll > 0 ? Math.round((compAll / totalAll) * 100) : 0;
@@ -117,15 +111,9 @@ export function computeDerivedInsights(
 	return {
 		rateChange,
 		rateDirection,
-		bestCategory: bestCategory
-			? { name: bestCategory.name, rate: bestCategory.rate }
-			: null,
-		worstCategory: worstCategory
-			? { name: worstCategory.name, rate: worstCategory.rate }
-			: null,
-		bestDay: bestDay
-			? { day: dayNames[bestDay.day] ?? bestDay.day, rate: bestDay.rate }
-			: null,
+		bestCategory: bestCategory ? { name: bestCategory.name, rate: bestCategory.rate } : null,
+		worstCategory: worstCategory ? { name: worstCategory.name, rate: worstCategory.rate } : null,
+		bestDay: bestDay ? { day: dayNames[bestDay.day] ?? bestDay.day, rate: bestDay.rate } : null,
 		worstDay: worstDay
 			? { day: dayNames[worstDay.day] ?? worstDay.day, rate: worstDay.rate }
 			: null,

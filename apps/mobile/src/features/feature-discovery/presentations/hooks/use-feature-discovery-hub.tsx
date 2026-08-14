@@ -8,6 +8,7 @@ import { useOverlay } from '@src/shared/ui';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { useWindowDimensions } from 'react-native';
+
 import {
   recordFeatureDiscoveryCardCta,
   recordFeatureDiscoveryDismissed,

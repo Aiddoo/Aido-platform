@@ -63,11 +63,7 @@ export class AuthSession extends AggregateRoot<AuthSessionProps> {
 		return this.props.previousTokenHash === refreshTokenHash;
 	}
 
-	isRetryWithin(
-		refreshTokenHash: string,
-		now: Date,
-		gracePeriodMs: number,
-	): boolean {
+	isRetryWithin(refreshTokenHash: string, now: Date, gracePeriodMs: number): boolean {
 		if (!this.wasPreviouslyIssued(refreshTokenHash)) {
 			return false;
 		}

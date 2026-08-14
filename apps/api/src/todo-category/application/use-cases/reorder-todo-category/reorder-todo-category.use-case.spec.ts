@@ -1,22 +1,18 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import {
-	MUTATION_LOCK,
-	type MutationLockPort,
-	UNIT_OF_WORK,
-} from "@/shared/application/ports";
+import { MUTATION_LOCK, type MutationLockPort, UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
+import {
+	TODO_CATEGORY_REPOSITORY,
+	type TodoCategoryRepositoryPort,
+} from "../../ports/todo-category.repository.port";
 import { ReorderTodoCategoryUseCase } from "./reorder-todo-category.use-case";
 
 const cat = (id: number, sortOrder: number) =>
@@ -71,9 +67,7 @@ describe("ReorderTodoCategoryUseCase", () => {
 	});
 
 	it("특정 카테고리 기준 재배치: 시프트 + 갱신 + 캐시 무효화", async () => {
-		repo.findByIdAndUserId
-			.mockResolvedValueOnce(cat(3, 2))
-			.mockResolvedValueOnce(cat(1, 0));
+		repo.findByIdAndUserId.mockResolvedValueOnce(cat(3, 2)).mockResolvedValueOnce(cat(1, 0));
 		repo.shiftSortOrders.mockResolvedValue(2);
 		repo.update.mockResolvedValue(cat(3, 0));
 
@@ -149,9 +143,7 @@ describe("ReorderTodoCategoryUseCase", () => {
 		});
 
 		// Then
-		expect(mutationLock.acquire).toHaveBeenCalledWith([
-			"mutation:v1:todo-category:u1",
-		]);
+		expect(mutationLock.acquire).toHaveBeenCalledWith(["mutation:v1:todo-category:u1"]);
 		expect(events).toEqual([
 			"uow:start",
 			"lock",

@@ -12,6 +12,7 @@ apps/api의 마지막 미이관 모듈이자 최대 모듈인 `auth`를 나머�
 **사용자 핵심 요구**: 소셜로그인 4종(네이버·카카오·구글·애플)을 **하나의 통합 포트**(Payment 인터페이스 스타일 — 교체가능한 프로바이더 어댑터가 하나의 포트를 구현하고 레지스트리로 조회)로 추상화하고, 이메일 로그인까지 깔끔하게 정리한다.
 
 **절대 불변(클라이언트 영향 zero)**:
+
 - `test/e2e/__snapshots__/openapi-contract.e2e-spec.ts.snap` **diff 0** — 매 커밋 게이트.
 - request/response 형태, **에러코드(@aido/errors)**, 상태코드, 시맨틱 동결. `BusinessExceptions`→`ApplicationException`/`DomainException` 변환 시 필터가 정규화하는 최종 errorCode + details가 byte-identical해야 함.
 - 라우트 ~35개(아래 §7 인벤토리) 전부 경로·메서드·인증·throttle 불변.
@@ -52,6 +53,7 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 > 사용자 지침(⚑): "다른데도 싹다 Todo 처럼. 오버엔지니어링이라 생각하더라도. SOLID 준수." → 순수 함수는 domain/services/, 상태+행위는 애그리게잇/VO 클래스로.
 
 **애그리게잇**:
+
 - `User` — status 전이(PENDING_VERIFY→ACTIVE, LOCKED/SUSPENDED, 소프트삭제 deletedAt+30일 grace, restore), `markEmailVerified`, `planSoftDelete`/`planRestore`, grace-period 판정. 상태 검증 불변식(accountLocked/Suspended/Deleted)을 애그리게잇이 소유.
 - `Account` — 크레덴셜(argon2 해시) + OAuth 링크 컬렉션. 불변식: **마지막 계정 unlink 금지**(cannotUnlinkLastAccount), 크레덴셜 중복 방지(credentialAccountAlreadyExists), provider별 링크 중복(`*AccountAlreadyLinked`).
 - `Session` — 회전(rotate)·재사용 탐지(previousTokenHash + grace)·tokenFamily 폐기·tokenVersion 낙관적락(CAS). 만료/폐기 판정.
@@ -68,17 +70,20 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 ## 4. 애플리케이션 레이어
 
 **Facades**(컨트롤러의 유일 주입 대상):
+
 - `AuthFacade` — register/verifyEmail/resendVerification/login/logout/logoutAll/refresh/getCurrentUser/updateProfile/getActiveSessions/revokeSession/deleteAccount.
 - `PasswordFacade` — forgot/reset/change/setup-code/setPassword.
 - `OAuthFacade` — 4프로바이더 web start/callback + 4 mobile callback + link/unlink/getLinkedAccounts/exchange/link-with-code.
 
 **포트**:
+
 - `OAUTH_IDENTITY_PROVIDER_REGISTRY` — provider→어댑터 조회. `#getStrategy` 로직이 포트로.
 - `USER_REPOSITORY`·`ACCOUNT_REPOSITORY`·`SESSION_REPOSITORY`·`VERIFICATION_REPOSITORY`·`LOGIN_ATTEMPT_REPOSITORY`·`SECURITY_LOG_REPOSITORY`·`OAUTH_STATE_REPOSITORY` — 저장소 포트(interface+Symbol).
 - `TOKEN_SIGNER`(JWT)·`PASSWORD_HASHER`(argon2)·`EMAIL_SENDER`(기존 EmailFacade 위임)·`ADMIN_NOTIFIER`(AdminNotificationFacade 위임) — 벤더/크로스모듈 포트.
 - 크로스모듈 소비용: `user-settings`/`ai` 등이 쓰는 `UserPreferenceRepository`/`UserConsentRepository`/`TodoCategoryRepository`는 **각 모듈 배럴/파사드 주입**으로 역전(이미 이관됨).
 
 **Use-cases**(@Injectable, `execute(input)` — 무버스):
+
 - 공유 수렴: `IssueLoginUseCase`(세션+토큰+보안로그+로그인시도+프로필→LoginResult) · `ProvisionUserUseCase`(유저+프로필+동의+프리퍼런스+기본카테고리). **이것이 email login ↔ social login의 중복 흡수 지점.**
 - 이메일: `RegisterUseCase`·`VerifyEmailUseCase`·`LoginUseCase`·`RefreshTokensUseCase`·`LogoutUseCase`·`DeleteAccountUseCase` 등.
 - OAuth: `SocialLoginUseCase`(mobile+web 수렴, `#handleSocialLogin` 승격) · `LinkAccountUseCase`·`UnlinkAccountUseCase`·`ExchangeCodeUseCase`.
@@ -101,6 +106,7 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 ## 6. 시더 트랜잭션 특이점 (⚠️ 계약 보존 핵심)
 
 `register`·`#createSocialUser`가 유저 생성 시 **명시적 `database.$transaction(tx)`에 기본 카테고리 createMany + 동의 + 프리퍼런스를 함께 참여**시킴(CLS 아님, 원자성 필수). Wave 4a에서 이를 위해 레거시 `TodoCategoryRepository`(createMany 전용)를 배럴에 남겨둠. 이관 시:
+
 - `ProvisionUserUseCase`가 `UNIT_OF_WORK.run`으로 CLS 트랜잭션 열고, 그 안에서 user-settings/todo-category **파사드의 CLS 경로**로 시딩 통합.
 - 레거시 concrete `TodoCategoryRepository`(createMany)·`UserPreferenceRepository`·`UserConsentRepository` 배럴 잔재 삭제 — **이관의 마감 항목(7e)**.
 
@@ -109,6 +115,7 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 ## 7. 크로스모듈 & 배럴 공개 API
 
 **auth 배럴이 유지해야 할 공개 표면**(현재 딥임포트 → 배럴/서브엔트리로 정리):
+
 - `Public` 데코레이터 — app.controller, health, subscription controller(3).
 - `CurrentUser` + `type CurrentUserPayload` — user-settings controller(런타임 1) + 스펙 타입 다수.
 - `JwtAuthGuard`·`LastActiveInterceptor`·`AuthModule` — app.module 전역.
@@ -121,6 +128,7 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 ## 8. 예외/계약 보존 전략
 
 `BusinessExceptions`(770줄, ~40 팩토리) → `ApplicationException`/`DomainException` 변환. **각 변환은 동일 errorCode + details 필수**. 방식:
+
 - errorCode별 1:1 매핑표 작성(invalidCredentials, accountLocked, emailNotVerified, socialTokenInvalid/Expired, cannotUnlinkLastAccount, *AccountAlreadyLinked, verificationCodeInvalid/MaxAttempts, accountDeletionPasswordRequired 등 전량).
 - GlobalExceptionFilter가 이미 두 예외 계열을 동일 errorCode로 정규화 → HTTP 바디 불변.
 - e2e auth 스위트(81) + integration(oauth/account-deletion/password 3종)로 행동 파리티 검증.
@@ -129,13 +137,13 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 
 ## 9. 스테이지드 커밋 계획 (매 커밋 green — 승인됨)
 
-| 커밋 | 범위 | green 게이트 | CLEAN_MODULES |
-|---|---|---|---|
-| **7a foundation** | git mv로 4계층 스켈레톤 배치, 배럴 공개표면 정리(guards/decorators/interceptor/Public/CurrentUser), 외부 딥임포트 4곳 재배선, ai `UserRepository`→포트, ACCOUNT_PURGE_QUEUE 배럴. **로직 무변경**. | typecheck·lint·유닛·통합·e2e·**OpenAPI diff 0** | 미등록 |
-| **7b oauth port** | `OAuthIdentityProvider` 포트 + 레지스트리 DI + 4 어댑터(fetch→infra, readJson 캐스트격리) + verifier 어댑터. OAuthService는 포트 소비로 전환. | ↑ + oauth 통합/e2e | 미등록 |
-| **7c convergence** | `IssueLoginUseCase`·`ProvisionUserUseCase` 추출, email `login`/`verifyEmail` ↔ social `#createSessionAndTokens` 중복 흡수, `#createSocialUser`↔`register` 유저생성 통합. | ↑ + auth/oauth e2e | 미등록 |
-| **7d domain+CLS** | User/Account/Session/Verification 애그리게잇 + VO + 도메인서비스, 저장소 CLS 전환, `BusinessExceptions`→Application/DomainException(errorCode 매핑표). Facade/use-case 완성. | ↑ 전부 | 미등록 |
-| **7e purge+마감** | account-purge 어댑터화, 레거시 시더 배럴 잔재 삭제, **auth를 CLEAN_MODULES + no-cast TARGET_DIRS 등록**(코드 이미 clean), 문서 종합 개편(이중트랙→단일트랙), Waves 1-2 버스 소급 제거 검토. | ↑ + **no-cast·boundaries ON** + 전체 유닛/통합/e2e | **등록** |
+| 커밋               | 범위                                                                                                                                                                                               | green 게이트                                       | CLEAN_MODULES |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------- |
+| **7a foundation**  | git mv로 4계층 스켈레톤 배치, 배럴 공개표면 정리(guards/decorators/interceptor/Public/CurrentUser), 외부 딥임포트 4곳 재배선, ai `UserRepository`→포트, ACCOUNT_PURGE_QUEUE 배럴. **로직 무변경**. | typecheck·lint·유닛·통합·e2e·**OpenAPI diff 0**    | 미등록        |
+| **7b oauth port**  | `OAuthIdentityProvider` 포트 + 레지스트리 DI + 4 어댑터(fetch→infra, readJson 캐스트격리) + verifier 어댑터. OAuthService는 포트 소비로 전환.                                                      | ↑ + oauth 통합/e2e                                 | 미등록        |
+| **7c convergence** | `IssueLoginUseCase`·`ProvisionUserUseCase` 추출, email `login`/`verifyEmail` ↔ social `#createSessionAndTokens` 중복 흡수, `#createSocialUser`↔`register` 유저생성 통합.                           | ↑ + auth/oauth e2e                                 | 미등록        |
+| **7d domain+CLS**  | User/Account/Session/Verification 애그리게잇 + VO + 도메인서비스, 저장소 CLS 전환, `BusinessExceptions`→Application/DomainException(errorCode 매핑표). Facade/use-case 완성.                       | ↑ 전부                                             | 미등록        |
+| **7e purge+마감**  | account-purge 어댑터화, 레거시 시더 배럴 잔재 삭제, **auth를 CLEAN_MODULES + no-cast TARGET_DIRS 등록**(코드 이미 clean), 문서 종합 개편(이중트랙→단일트랙), Waves 1-2 버스 소급 제거 검토.        | ↑ + **no-cast·boundaries ON** + 전체 유닛/통합/e2e | **등록**      |
 
 각 커밋 전: `pnpm exec biome check --write src test` 선실행(프리커밋 훅 임포트 재정렬 대비). commitlint body-max-line-length 100자. Co-Authored-By: Claude Opus 4.8 (1M context).
 
@@ -163,4 +171,5 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 ---
 
 ## 관련 메모리
+
 [[project-clean-arch-migration]] · [[feedback-clean-arch-module-rigor]] · [[feedback-di-tests-minimal-mocking]] · [[braces-always]] · [[feedback-no-biome-ignore]]

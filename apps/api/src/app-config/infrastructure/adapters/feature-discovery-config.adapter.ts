@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import type {
 	FeatureDiscoveryConfig,
 	FeatureDiscoveryConfigPort,
@@ -10,9 +12,7 @@ import type {
  * loader bypasses startup validation.
  */
 @Injectable()
-export class FeatureDiscoveryConfigAdapter
-	implements FeatureDiscoveryConfigPort
-{
+export class FeatureDiscoveryConfigAdapter implements FeatureDiscoveryConfigPort {
 	constructor(private readonly config: TypedConfigService) {}
 
 	getFeatureDiscovery(): FeatureDiscoveryConfig {

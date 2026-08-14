@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+
 import type { DomainEventPublisherPort } from "@/shared/application/ports";
 import type { DomainEvent } from "@/shared/domain/aggregate-root";
 
@@ -14,9 +15,7 @@ import type { DomainEvent } from "@/shared/domain/aggregate-root";
  * 재시도가 필수인 부수효과는 별도의 내구성 큐/아웃박스가 필요합니다.
  */
 @Injectable()
-export class EventEmitterDomainEventPublisher
-	implements DomainEventPublisherPort
-{
+export class EventEmitterDomainEventPublisher implements DomainEventPublisherPort {
 	readonly #logger = new Logger(EventEmitterDomainEventPublisher.name);
 
 	constructor(private readonly eventEmitter: EventEmitter2) {}

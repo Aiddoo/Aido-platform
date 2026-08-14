@@ -1,4 +1,5 @@
 import { t } from '@src/shared/i18n';
+
 import type { FriendUser } from '../../models/friend.model';
 
 export interface FriendUserViewModel extends FriendUser {

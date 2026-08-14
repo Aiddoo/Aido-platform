@@ -58,8 +58,10 @@ export function TodoRow({
   );
 }
 
-interface TodoCheckboxProps
-  extends Omit<ComponentProps<typeof Checkbox>, 'isSelected' | 'onSelectedChange' | 'className'> {
+interface TodoCheckboxProps extends Omit<
+  ComponentProps<typeof Checkbox>,
+  'isSelected' | 'onSelectedChange' | 'className'
+> {
   isChecked: boolean;
   onCheckedChange?: (checked: boolean) => void;
 }
@@ -81,11 +83,10 @@ export function TodoCheckbox({
   );
 }
 
-interface TodoLabelProps
-  extends Omit<
-    ComponentProps<typeof Text>,
-    'size' | 'weight' | 'strikethrough' | 'shade' | 'children'
-  > {
+interface TodoLabelProps extends Omit<
+  ComponentProps<typeof Text>,
+  'size' | 'weight' | 'strikethrough' | 'shade' | 'children'
+> {
   isChecked: boolean;
   children: string;
 }

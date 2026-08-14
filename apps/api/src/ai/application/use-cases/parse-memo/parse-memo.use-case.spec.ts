@@ -6,11 +6,8 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	AI_PROVIDER,
-	type AiProvider,
-	AiProviderCallError,
-} from "../../ports/ai-provider.port";
+
+import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
@@ -45,8 +42,7 @@ describe("ParseMemoUseCase — 메모 다중 투두 파싱 use-case", () => {
 	});
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(ParseMemoUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(ParseMemoUseCase).compile();
 		useCase = unit;
 		aiProvider = unitRef.get(AI_PROVIDER);
 		categoryReader = unitRef.get(USER_CATEGORY_READER);
@@ -92,9 +88,7 @@ describe("ParseMemoUseCase — 메모 다중 투두 파싱 use-case", () => {
 	});
 
 	it("AI provider 호출 실패 시 롤백하고 AI_1301을 던진다", async () => {
-		aiProvider.generateStructured.mockRejectedValue(
-			new AiProviderCallError("boom", 500),
-		);
+		aiProvider.generateStructured.mockRejectedValue(new AiProviderCallError("boom", 500));
 
 		await expect(useCase.execute(input())).rejects.toMatchObject({
 			errorCode: "AI_1301",

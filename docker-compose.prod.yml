@@ -8,12 +8,12 @@ services:
     container_name: aido-prod-migrate
     env_file:
       - .env.docker.prod
-    restart: "no"
+    restart: 'no'
     logging:
       driver: json-file
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: '20m'
+        max-file: '5'
 
   api:
     build:
@@ -24,12 +24,12 @@ services:
     container_name: aido-prod-api
     ports:
       # host-local Nginx만 API에 접근하도록 loopback에 한정한다.
-      - "127.0.0.1:${PORT:-8080}:8080"
+      - '127.0.0.1:${PORT:-8080}:8080'
     environment:
       TZ: Asia/Seoul
       # 컨테이너 내부 포트는 8080 불변 — Dockerfile HEALTHCHECK·서버 nginx proxy_pass가 8080 전제
       # (env_file의 PORT 정의가 컨테이너에 주입되어 미스매치 나는 것을 차단)
-      PORT: "8080"
+      PORT: '8080'
     env_file:
       - .env.docker.prod
     depends_on:
@@ -40,12 +40,12 @@ services:
       resources:
         limits:
           memory: 512M
-          cpus: "1"
+          cpus: '1'
         reservations:
           memory: 128M
-          cpus: "0.25"
+          cpus: '0.25'
     logging:
       driver: json-file
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: '20m'
+        max-file: '5'

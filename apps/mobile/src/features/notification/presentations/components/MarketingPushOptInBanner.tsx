@@ -2,6 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import { Pressable } from 'react-native';
+
 import { useMarketingPushOptInPrompt } from '../hooks/use-marketing-push-opt-in-prompt';
 
 /**

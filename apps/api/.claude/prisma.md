@@ -6,22 +6,22 @@
 
 ## 관련 문서
 
-| 문서 | 설명 |
-|------|------|
-| [architecture.md](./architecture.md) | 전체 아키텍처 개요 |
-| [api-conventions.md](./api-conventions.md) | Controller/Service/Repository 규칙 |
-| [integration-test.md](./integration-test.md) | Testcontainers 통합 테스트 |
+| 문서                                         | 설명                               |
+| -------------------------------------------- | ---------------------------------- |
+| [architecture.md](./architecture.md)         | 전체 아키텍처 개요                 |
+| [api-conventions.md](./api-conventions.md)   | Controller/Service/Repository 규칙 |
+| [integration-test.md](./integration-test.md) | Testcontainers 통합 테스트         |
 
 ---
 
 ## 개요
 
-| 항목 | 값 |
-|------|-----|
-| 버전 | Prisma 7.4.0 |
-| 스키마 위치 | `prisma/schema.prisma` |
-| 생성 클라이언트 | `src/generated/prisma/` |
-| 어댑터 | `@prisma/adapter-pg` (PostgreSQL) |
+| 항목            | 값                                |
+| --------------- | --------------------------------- |
+| 버전            | Prisma 7.4.0                      |
+| 스키마 위치     | `prisma/schema.prisma`            |
+| 생성 클라이언트 | `src/generated/prisma/`           |
+| 어댑터          | `@prisma/adapter-pg` (PostgreSQL) |
 
 Prisma 7은 Rust에서 TypeScript로 재작성되어 **90% 작은 번들**, **3배 빠른 쿼리 성능**을 제공합니다.
 
@@ -60,12 +60,12 @@ const prisma = new PrismaClient({ adapter });
 
 ## 주요 명령어
 
-| 명령어 | 설명 |
-|--------|------|
-| `pnpm db:generate` | 클라이언트 생성 |
-| `pnpm db:migrate` | 마이그레이션 실행 |
-| `pnpm db:push` | 스키마 즉시 반영 (개발용) |
-| `pnpm --filter @aido/api prisma:studio` | Prisma Studio 실행 |
+| 명령어                                  | 설명                      |
+| --------------------------------------- | ------------------------- |
+| `pnpm db:generate`                      | 클라이언트 생성           |
+| `pnpm db:migrate`                       | 마이그레이션 실행         |
+| `pnpm db:push`                          | 스키마 즉시 반영 (개발용) |
+| `pnpm --filter @aido/api prisma:studio` | Prisma Studio 실행        |
 
 ---
 
@@ -211,7 +211,7 @@ const users = await this.db.user.findMany({
 });
 
 // ✅ 또는 별도 쿼리로 일괄 조회
-const userIds = users.map(u => u.id);
+const userIds = users.map((u) => u.id);
 const todos = await this.db.todo.findMany({
   where: { userId: { in: userIds } },
 });

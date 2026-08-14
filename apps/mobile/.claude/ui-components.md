@@ -46,30 +46,29 @@ import { ScrollView, FlatList, Image } from 'react-native';
 
 ## Shared UI 컴포넌트 목록
 
-| 컴포넌트 | 용도 | 문서 |
-|----------|------|------|
-| `Text`, `H1`~`H4` | 텍스트, 헤딩 | `src/shared/ui/Text/README.md` |
-| `Button` | 기본 버튼 | `src/shared/ui/Button/Button.md` |
-| `KeyboardAdaptiveButton` | 키보드 반응 버튼 | `src/shared/ui/Button/Button.md` |
-| `TextButton` | 텍스트/링크 버튼 | `src/shared/ui/TextButton/TextButton.md` |
-| `Input` | 입력 필드 | `src/shared/ui/Input/Input.md` |
-| `BottomSheetInput` | BottomSheet 내부 입력 필드 | `src/shared/ui/Input/Input.md` |
-| `Spacing` | 간격 유틸리티 | `src/shared/ui/Spacing/Spacing.md` |
-| `Box` | 단순 컨테이너 | `src/shared/ui/Box/README.md` |
-| `Flex` | Flexbox 레이아웃 | `src/shared/ui/Flex/README.md` |
-| `HStack` | 수평 레이아웃 | `src/shared/ui/HStack/README.md` |
-| `VStack` | 수직 레이아웃 | `src/shared/ui/VStack/README.md` |
-| `Grid` | 그리드 레이아웃 | `src/shared/ui/Grid/README.md` |
-| `GridItem` | 그리드 아이템 | `src/shared/ui/Grid/README.md` |
-| `Result` | 결과 화면 (에러, 빈 상태) | `src/shared/ui/Result/Result.md` |
-| `TextArea` | 여러 줄 텍스트 입력 | `src/shared/ui/TextArea/TextArea.md` |
-| `Avatar` | 선택 가능 아바타 아이콘 | `src/shared/ui/Avatar/Avatar.md` |
-| `ConfirmDialog` | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화) | `src/shared/ui/ConfirmDialog/ConfirmDialog.md` |
-| `SettingNavigation`, `SettingNavigation.Item` | 설정 화면 섹션 그룹 + 네비게이션 아이템 (Compound Component) | `src/shared/ui/SettingNavigation/SettingNavigation.md` |
-| `KeyboardBottomSheet` | 키보드 연동 바텀시트 (폼용) | `src/shared/ui/BottomSheet/BottomSheet.md` |
-| `BottomSheet` | 키보드 불필요 바텀시트 (피커, 액션시트) | `src/shared/ui/BottomSheet/BottomSheet.md` |
-| `ModalBottomSheet` | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트) | `src/shared/ui/BottomSheet/BottomSheet.md` |
-
+| 컴포넌트                                      | 용도                                                                  | 문서                                                   |
+| --------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------ |
+| `Text`, `H1`~`H4`                             | 텍스트, 헤딩                                                          | `src/shared/ui/Text/README.md`                         |
+| `Button`                                      | 기본 버튼                                                             | `src/shared/ui/Button/Button.md`                       |
+| `KeyboardAdaptiveButton`                      | 키보드 반응 버튼                                                      | `src/shared/ui/Button/Button.md`                       |
+| `TextButton`                                  | 텍스트/링크 버튼                                                      | `src/shared/ui/TextButton/TextButton.md`               |
+| `Input`                                       | 입력 필드                                                             | `src/shared/ui/Input/Input.md`                         |
+| `BottomSheetInput`                            | BottomSheet 내부 입력 필드                                            | `src/shared/ui/Input/Input.md`                         |
+| `Spacing`                                     | 간격 유틸리티                                                         | `src/shared/ui/Spacing/Spacing.md`                     |
+| `Box`                                         | 단순 컨테이너                                                         | `src/shared/ui/Box/README.md`                          |
+| `Flex`                                        | Flexbox 레이아웃                                                      | `src/shared/ui/Flex/README.md`                         |
+| `HStack`                                      | 수평 레이아웃                                                         | `src/shared/ui/HStack/README.md`                       |
+| `VStack`                                      | 수직 레이아웃                                                         | `src/shared/ui/VStack/README.md`                       |
+| `Grid`                                        | 그리드 레이아웃                                                       | `src/shared/ui/Grid/README.md`                         |
+| `GridItem`                                    | 그리드 아이템                                                         | `src/shared/ui/Grid/README.md`                         |
+| `Result`                                      | 결과 화면 (에러, 빈 상태)                                             | `src/shared/ui/Result/Result.md`                       |
+| `TextArea`                                    | 여러 줄 텍스트 입력                                                   | `src/shared/ui/TextArea/TextArea.md`                   |
+| `Avatar`                                      | 선택 가능 아바타 아이콘                                               | `src/shared/ui/Avatar/Avatar.md`                       |
+| `ConfirmDialog`                               | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화) | `src/shared/ui/ConfirmDialog/ConfirmDialog.md`         |
+| `SettingNavigation`, `SettingNavigation.Item` | 설정 화면 섹션 그룹 + 네비게이션 아이템 (Compound Component)          | `src/shared/ui/SettingNavigation/SettingNavigation.md` |
+| `KeyboardBottomSheet`                         | 키보드 연동 바텀시트 (폼용)                                           | `src/shared/ui/BottomSheet/BottomSheet.md`             |
+| `BottomSheet`                                 | 키보드 불필요 바텀시트 (피커, 액션시트)                               | `src/shared/ui/BottomSheet/BottomSheet.md`             |
+| `ModalBottomSheet`                            | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                      | `src/shared/ui/BottomSheet/BottomSheet.md`             |
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
 
@@ -118,9 +117,7 @@ import { cn } from '@src/shared/utils/cn';
 // StyledSafeAreaView - withUniwind로 래핑됨
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 
-<StyledSafeAreaView className="flex-1 bg-gray-1">
-  {children}
-</StyledSafeAreaView>
+<StyledSafeAreaView className="flex-1 bg-gray-1">{children}</StyledSafeAreaView>;
 ```
 
 **새로운 외부 컴포넌트 래핑:**
@@ -131,7 +128,7 @@ import { SomeComponent } from 'some-library';
 
 const StyledComponent = withUniwind(SomeComponent);
 
-<StyledComponent className="flex-1 bg-white" />
+<StyledComponent className="flex-1 bg-white" />;
 ```
 
 ---
@@ -146,32 +143,32 @@ const StyledComponent = withUniwind(SomeComponent);
 
 ```tsx
 // ❌ 금지 - 다크 모드에서 안 바뀜
-backgroundColor: '#F5F5F5'
-backgroundColor: 'white'
-color: '#9CA3AF'
-tabBarInactiveTintColor: '#8E8E93'
+backgroundColor: '#F5F5F5';
+backgroundColor: 'white';
+color: '#9CA3AF';
+tabBarInactiveTintColor: '#8E8E93';
 
 // ✅ 올바름 - 다크 모드에서 자동 변환
-className="bg-gray-3"
-className="bg-white"
-className="text-gray-5"
+className = 'bg-gray-3';
+className = 'bg-white';
+className = 'text-gray-5';
 ```
 
 ### 사용 가능한 색상 변수
 
-| 변수 | 용도 |
-|------|------|
-| `bg-white` | 카드, 섹션 배경 (다크 모드에서 #121212) |
-| `bg-gray-1` ~ `bg-gray-10` | 배경색 계열 |
-| `text-gray-1` ~ `text-gray-10` | 텍스트 색상 계열 |
-| `bg-main`, `text-main` | 메인 브랜드 색상 |
-| `bg-error`, `text-error` | 에러 색상 |
-| `bg-success`, `text-success` | 성공 색상 |
-| `bg-warning`, `text-warning` | 경고 색상 |
-| `bg-background` | 전체 화면 배경 |
-| `bg-surface` | 컴포넌트 표면 |
-| `text-foreground` | 기본 텍스트 |
-| `text-muted` | 보조 텍스트 |
+| 변수                           | 용도                                    |
+| ------------------------------ | --------------------------------------- |
+| `bg-white`                     | 카드, 섹션 배경 (다크 모드에서 #121212) |
+| `bg-gray-1` ~ `bg-gray-10`     | 배경색 계열                             |
+| `text-gray-1` ~ `text-gray-10` | 텍스트 색상 계열                        |
+| `bg-main`, `text-main`         | 메인 브랜드 색상                        |
+| `bg-error`, `text-error`       | 에러 색상                               |
+| `bg-success`, `text-success`   | 성공 색상                               |
+| `bg-warning`, `text-warning`   | 경고 색상                               |
+| `bg-background`                | 전체 화면 배경                          |
+| `bg-surface`                   | 컴포넌트 표면                           |
+| `text-foreground`              | 기본 텍스트                             |
+| `text-muted`                   | 보조 텍스트                             |
 
 ### className으로 색상 적용 (권장)
 
@@ -199,7 +196,7 @@ function MyComponent() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: activeStyle.color as string,
-        tabBarInactiveTintColor: inactiveStyle.color as string,  // ✅ 하드코딩 금지
+        tabBarInactiveTintColor: inactiveStyle.color as string, // ✅ 하드코딩 금지
         tabBarStyle: { borderTopColor: borderStyle.borderColor as string },
       }}
     />
@@ -250,14 +247,14 @@ withTiming(value, { duration: 300 });
 withTiming(value, { duration: 200 });
 ```
 
-| 상수 | 값 | 용도 |
-|------|-----|------|
-| `ANIMATION.duration.fast` | 150ms | 빠른 전환 |
+| 상수                        | 값    | 용도      |
+| --------------------------- | ----- | --------- |
+| `ANIMATION.duration.fast`   | 150ms | 빠른 전환 |
 | `ANIMATION.duration.normal` | 200ms | 일반 전환 |
-| `ANIMATION.duration.slow` | 300ms | 느린 전환 |
-| `ANIMATION.delay.short` | 50ms | 짧은 지연 |
-| `ANIMATION.delay.medium` | 100ms | 중간 지연 |
-| `ANIMATION.delay.long` | 200ms | 긴 지연 |
+| `ANIMATION.duration.slow`   | 300ms | 느린 전환 |
+| `ANIMATION.delay.short`     | 50ms  | 짧은 지연 |
+| `ANIMATION.delay.medium`    | 100ms | 중간 지연 |
+| `ANIMATION.delay.long`      | 200ms | 긴 지연   |
 
 ---
 
@@ -309,7 +306,7 @@ MyComponent.Loading = function Loading() {
 // 사용 예시
 <Suspense fallback={<MyComponent.Loading />}>
   <MyComponent />
-</Suspense>
+</Suspense>;
 ```
 
 ### 주의사항

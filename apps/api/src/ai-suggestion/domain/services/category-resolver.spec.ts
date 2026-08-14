@@ -4,9 +4,7 @@
 import type { TodoSummaryForAnalysis } from "../types";
 import { resolveSuggestedCategoryId } from "./category-resolver";
 
-const makeTodo = (
-	overrides: Partial<TodoSummaryForAnalysis> = {},
-): TodoSummaryForAnalysis => ({
+const makeTodo = (overrides: Partial<TodoSummaryForAnalysis> = {}): TodoSummaryForAnalysis => ({
 	title: "기본 할일",
 	startDate: "2026-04-01",
 	scheduledTime: null,
@@ -26,11 +24,7 @@ describe("resolveSuggestedCategoryId — 제안 카테고리 해석", () => {
 		];
 
 		// When — "운동 30분" 제안
-		const result = resolveSuggestedCategoryId(
-			"운동 30분",
-			["매칭A", "매칭B"],
-			todos,
-		);
+		const result = resolveSuggestedCategoryId("운동 30분", ["매칭A", "매칭B"], todos);
 
 		// Then — 제목 매칭(30) 이 최빈(5) 보다 우선
 		expect(result).toBe(30);
@@ -45,11 +39,7 @@ describe("resolveSuggestedCategoryId — 제안 카테고리 해석", () => {
 		];
 
 		// When
-		const result = resolveSuggestedCategoryId(
-			"팀 미팅",
-			["팀 미팅", "팀 미팅", "팀 미팅"],
-			todos,
-		);
+		const result = resolveSuggestedCategoryId("팀 미팅", ["팀 미팅", "팀 미팅", "팀 미팅"], todos);
 
 		// Then — 최빈 3
 		expect(result).toBe(3);
@@ -57,16 +47,10 @@ describe("resolveSuggestedCategoryId — 제안 카테고리 해석", () => {
 
 	it("제목 매칭 없고 매칭된 투두도 없으면 null", () => {
 		// Given
-		const todos: TodoSummaryForAnalysis[] = [
-			makeTodo({ title: "공부", categoryName: "자기계발" }),
-		];
+		const todos: TodoSummaryForAnalysis[] = [makeTodo({ title: "공부", categoryName: "자기계발" })];
 
 		// When
-		const result = resolveSuggestedCategoryId(
-			"영화 감상",
-			["존재하지않음"],
-			todos,
-		);
+		const result = resolveSuggestedCategoryId("영화 감상", ["존재하지않음"], todos);
 
 		// Then
 		expect(result).toBeNull();

@@ -15,6 +15,7 @@
  */
 
 import * as crypto from "node:crypto";
+
 import type { Session } from "@/generated/prisma/client";
 
 export class SessionBuilder {

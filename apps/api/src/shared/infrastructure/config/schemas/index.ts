@@ -1,12 +1,9 @@
 import { z } from "zod";
+
 import { type AppConfig, appSchema } from "./app.schema";
 import { type CacheEnvConfig, cacheSchema } from "./cache.schema";
 import { type DatabaseConfig, databaseSchema } from "./database.schema";
-import {
-	type EmailConfig,
-	emailSchema,
-	validateEmailForProduction,
-} from "./email.schema";
+import { type EmailConfig, emailSchema, validateEmailForProduction } from "./email.schema";
 import { type ExternalConfig, externalSchema } from "./external.schema";
 import {
 	type FeatureDiscoveryConfig,
@@ -15,11 +12,7 @@ import {
 } from "./feature-discovery.schema";
 import { type JobConfig, jobSchema } from "./job.schema";
 import { type JwtConfig, jwtSchema } from "./jwt.schema";
-import {
-	type OAuthConfig,
-	oauthSchema,
-	validateOAuthForProduction,
-} from "./oauth.schema";
+import { type OAuthConfig, oauthSchema, validateOAuthForProduction } from "./oauth.schema";
 import { type PushConfig, pushSchema } from "./push.schema";
 import { type SecurityConfig, securitySchema } from "./security.schema";
 import { type WebhookConfig, webhookSchema } from "./webhook.schema";

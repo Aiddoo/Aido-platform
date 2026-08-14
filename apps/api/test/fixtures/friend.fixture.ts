@@ -59,10 +59,7 @@ export const FollowFixture = {
 	/**
 	 * 상호 팔로우 관계 생성
 	 */
-	createMutual: (
-		userId1: string,
-		userId2: string,
-	): { follow1: Follow; follow2: Follow } => {
+	createMutual: (userId1: string, userId2: string): { follow1: Follow; follow2: Follow } => {
 		const follow1 = FollowFixture.createAccepted({
 			followerId: userId1,
 			followingId: userId2,
@@ -118,10 +115,7 @@ export const NudgeFixture = {
 	/**
 	 * 메시지가 있는 Nudge 생성
 	 */
-	createWithMessage: (
-		message: string,
-		overrides: Partial<Nudge> = {},
-	): Nudge => {
+	createWithMessage: (message: string, overrides: Partial<Nudge> = {}): Nudge => {
 		return NudgeFixture.create({
 			message,
 			...overrides,

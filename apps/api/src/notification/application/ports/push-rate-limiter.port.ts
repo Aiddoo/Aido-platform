@@ -29,9 +29,7 @@ export interface IPushRateLimiter {
 	 * 배치 발송 자격을 한 번에 예약합니다.
 	 * 반환 배열은 입력 순서를 보존하며 true는 제한 초과를 의미합니다.
 	 */
-	reserveBatch(
-		requests: readonly PushRateLimitRequest[],
-	): Promise<readonly boolean[]>;
+	reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]>;
 
 	/** 리소스 정리 (lifecycle) */
 	destroy?(): void;

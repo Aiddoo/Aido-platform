@@ -44,8 +44,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(SettingsController).compile();
+		const { unit, unitRef } = await TestBed.solitary(SettingsController).compile();
 
 		controller = unit;
 		getPreferenceUseCase = unitRef.get(GetPreferenceUseCase);
@@ -74,9 +73,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			const result = await controller.getPreference(mockUser);
 
 			// Then
-			expect(getPreferenceUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-			);
+			expect(getPreferenceUseCase.execute).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual(expectedResult);
 		});
 
@@ -124,10 +121,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			const result = await controller.updatePreference(mockUser, dto);
 
 			// Then
-			expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				dto,
-			);
+			expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(mockUser.userId, dto);
 			expect(result).toEqual(expectedResult);
 		});
 
@@ -151,10 +145,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			const result = await controller.updatePreference(mockUser, dto);
 
 			// Then
-			expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				dto,
-			);
+			expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(mockUser.userId, dto);
 			expect(result).toEqual(expectedResult);
 		});
 	});
@@ -211,10 +202,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			const result = await controller.updateMarketingConsent(mockUser, dto);
 
 			// Then
-			expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				true,
-			);
+			expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(mockUser.userId, true);
 			expect(result).toEqual(expectedResult);
 		});
 
@@ -228,10 +216,7 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
 			const result = await controller.updateMarketingConsent(mockUser, dto);
 
 			// Then
-			expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				false,
-			);
+			expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(mockUser.userId, false);
 			expect(result).toEqual(expectedResult);
 		});
 	});

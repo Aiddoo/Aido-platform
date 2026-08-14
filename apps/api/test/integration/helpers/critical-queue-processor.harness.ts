@@ -1,15 +1,13 @@
+import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { type DynamicModule, Module, type Provider } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import {
-	ClsPluginTransactional,
-	TransactionHost,
-} from "@nestjs-cls/transactional";
-import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { FakePushProvider } from "@test/mocks/fake-push.provider";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { TestDatabase } from "@test/setup/test-database";
 import { ClsModule } from "nestjs-cls";
 import { PgBoss } from "pg-boss";
+
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
@@ -37,8 +35,8 @@ import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases
 import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
-import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
+import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupAdapter } from "@/notification/infrastructure/adapters/notification-dedup.adapter";
@@ -46,23 +44,19 @@ import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/pu
 import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
 import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
 import { InMemoryPushRateLimiter } from "@/notification/infrastructure/rate-limiter/in-memory-push-rate-limiter";
-import { RETENTION_REPOSITORY } from "@/retention/application/ports/retention.repository.port";
 import {
 	RETENTION_CONFIG,
 	type RetentionConfigPort,
 } from "@/retention/application/ports/retention-config.port";
 import { RETENTION_PUSH_SENDER } from "@/retention/application/ports/retention-push-sender.port";
+import { RETENTION_REPOSITORY } from "@/retention/application/ports/retention.repository.port";
 import { DispatchRetentionPushUseCase } from "@/retention/application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
 import { ProcessRetentionStagesUseCase } from "@/retention/application/use-cases/process-retention-stages/process-retention-stages.use-case";
 import { RelayRetentionOutboxUseCase } from "@/retention/application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case";
 import { ExpoRetentionPushSenderAdapter } from "@/retention/infrastructure/adapters/expo-retention-push-sender.adapter";
 import { PrismaRetentionRepository } from "@/retention/infrastructure/persistence/prisma-retention.repository";
 import { RetentionQueueProcessor } from "@/retention/infrastructure/queue/retention-queue.processor";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-	UNIT_OF_WORK,
-} from "@/shared/application/ports";
+import { JOB_RUNTIME, type JobRuntimePort, UNIT_OF_WORK } from "@/shared/application/ports";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
@@ -159,9 +153,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
 			{
 				provide: JOB_RUNTIME,
 				inject: [TransactionHost],
-				useFactory: (
-					txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-				) =>
+				useFactory: (txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>) =>
 					new PgBossJobRuntimeAdapter(boss, txHost, {
 						job: { shutdownTimeoutMs: 10_000 },
 					}),
@@ -227,10 +219,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 		},
 		{
 			provide: NotificationBatchDispatcher,
-			inject: [
-				PersistBatchNotificationUseCase,
-				DispatchBatchNotificationUseCase,
-			],
+			inject: [PersistBatchNotificationUseCase, DispatchBatchNotificationUseCase],
 			useFactory: (
 				persistBatch: PersistBatchNotificationUseCase,
 				dispatchBatch: DispatchBatchNotificationUseCase,
@@ -262,9 +251,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 			useValue: {
 				issue: (userId: string) => `fake-opt-out:${userId}`,
 				verify: (token: string) =>
-					token.startsWith("fake-opt-out:")
-						? token.slice("fake-opt-out:".length)
-						: null,
+					token.startsWith("fake-opt-out:") ? token.slice("fake-opt-out:".length) : null,
 			},
 		},
 		{
@@ -316,9 +303,7 @@ function retentionProviders(): Provider[] {
 	];
 }
 
-function createDatabaseBackedSettingsPort(
-	database: DatabaseService,
-): UserNotificationSettingsPort {
+function createDatabaseBackedSettingsPort(database: DatabaseService): UserNotificationSettingsPort {
 	return {
 		upsertPushTimezone: async (userId, timezone) => {
 			await database.userPreference.upsert({
@@ -336,17 +321,13 @@ function createDatabaseBackedSettingsPort(
 		},
 		getPreferenceRecord: async (userId): Promise<UserPreferenceRecord | null> =>
 			database.userPreference.findUnique({ where: { userId } }),
-		getPreferenceRecordsByUserIds: async (
-			userIds,
-		): Promise<UserPreferenceRecordWithId[]> =>
+		getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceRecordWithId[]> =>
 			database.userPreference.findMany({
 				where: { userId: { in: userIds } },
 			}),
 		getConsentRecord: async (userId): Promise<UserConsentRecord | null> =>
 			database.userConsent.findUnique({ where: { userId } }),
-		getConsentRecordsByUserIds: async (
-			userIds,
-		): Promise<UserConsentRecordWithId[]> =>
+		getConsentRecordsByUserIds: async (userIds): Promise<UserConsentRecordWithId[]> =>
 			database.userConsent.findMany({
 				where: { userId: { in: userIds } },
 			}),

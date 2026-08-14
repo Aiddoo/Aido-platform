@@ -1,4 +1,5 @@
 import type { Logger } from "@nestjs/common";
+
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 
 /**

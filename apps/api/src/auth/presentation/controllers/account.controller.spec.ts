@@ -14,10 +14,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
-import {
-	GetCurrentUserQuery,
-	ListLinkedAccountsQuery,
-} from "@/auth/application/queries";
+
+import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "@/auth/application/queries";
 import {
 	DeleteAccountUseCase,
 	UnlinkOAuthAccountUseCase,
@@ -25,6 +23,7 @@ import {
 } from "@/auth/application/use-cases";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import type { DeleteAccountDto, UpdateProfileDto } from "../dtos";
 import { AccountController } from "./account.controller";
 
@@ -53,8 +52,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 	} as unknown as Request;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(AccountController).compile();
+		const { unit, unitRef } = await TestBed.solitary(AccountController).compile();
 
 		controller = unit;
 		getCurrentUserQuery = unitRef.get(GetCurrentUserQuery);
@@ -110,17 +108,13 @@ describe("AccountController — 계정 컨트롤러", () => {
 				profileImage: null,
 			};
 			updateProfileUseCase.execute.mockResolvedValue(serviceResult);
-			const expectedResponse =
-				AuthMapper.toUpdateProfileResponse(serviceResult);
+			const expectedResponse = AuthMapper.toUpdateProfileResponse(serviceResult);
 
 			// When -updateProfile을 호출하면
 			const result = await controller.updateProfile(mockUser, dto);
 
 			// Then -서비스에 userId와 DTO를 전달하고 매핑된 결과를 반환해야 한다
-			expect(updateProfileUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				dto,
-			);
+			expect(updateProfileUseCase.execute).toHaveBeenCalledWith(mockUser.userId, dto);
 			expect(result).toEqual(expectedResponse);
 		});
 	});
@@ -163,9 +157,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			const result = await controller.getLinkedAccounts(mockUser);
 
 			// Then -서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
-			expect(listLinkedAccountsQuery.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-			);
+			expect(listLinkedAccountsQuery.execute).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual(serviceResult);
 		});
 	});
@@ -178,11 +170,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 			unlinkOAuthAccountUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -unlinkAccount를 호출하면
-			const result = await controller.unlinkAccount(
-				mockUser,
-				provider,
-				mockRequest,
-			);
+			const result = await controller.unlinkAccount(mockUser, provider, mockRequest);
 
 			// Then -서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
 			expect(unlinkOAuthAccountUseCase.execute).toHaveBeenCalledWith(

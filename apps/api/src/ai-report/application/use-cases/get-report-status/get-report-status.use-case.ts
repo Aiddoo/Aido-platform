@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { ReportStatus } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -40,9 +41,7 @@ export class GetReportStatusUseCase {
 
 		// 다음 주간 리포트: 이번 주 또는 다음 주 월요일 08:00 KST
 		const thisMonday = kstNow.startOf("isoWeek").hour(REPORT_HOUR);
-		const nextWeeklyKst = kstNow.isBefore(thisMonday)
-			? thisMonday
-			: thisMonday.add(1, "week");
+		const nextWeeklyKst = kstNow.isBefore(thisMonday) ? thisMonday : thisMonday.add(1, "week");
 
 		// 다음 월간 리포트: 이번 달 또는 다음 달 1일 08:00 KST
 		const thisFirst = kstNow.startOf("month").hour(REPORT_HOUR);
@@ -50,12 +49,8 @@ export class GetReportStatusUseCase {
 			? thisFirst
 			: kstNow.add(1, "month").startOf("month").hour(REPORT_HOUR);
 
-		const daysUntilWeekly = nextWeeklyKst
-			.startOf("day")
-			.diff(kstNow.startOf("day"), "day");
-		const daysUntilMonthly = nextMonthlyKst
-			.startOf("day")
-			.diff(kstNow.startOf("day"), "day");
+		const daysUntilWeekly = nextWeeklyKst.startOf("day").diff(kstNow.startOf("day"), "day");
+		const daysUntilMonthly = nextMonthlyKst.startOf("day").diff(kstNow.startOf("day"), "day");
 
 		const [latestWeekly, latestMonthly] = await Promise.all([
 			this.aiReportRepository.findLatest(userId, "WEEKLY"),

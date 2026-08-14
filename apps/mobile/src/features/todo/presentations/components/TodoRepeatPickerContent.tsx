@@ -12,6 +12,7 @@ import {
 } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
+
 import { useDatePicker } from '../hooks/useDatePicker';
 import { useRepeatSetting } from '../hooks/useRepeatSetting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
@@ -192,7 +193,7 @@ const RepeatCalendar = ({
 
       <VStack>
         {weeks.map((week, weekIndex) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: 주 순서가 변경되지 않음
+          // 주 순서는 고정되어 index가 안정적인 key다.
           <HStack key={weekIndex} px={8}>
             {week.map((date) =>
               isSameMonth(date, displayMonth) ? (

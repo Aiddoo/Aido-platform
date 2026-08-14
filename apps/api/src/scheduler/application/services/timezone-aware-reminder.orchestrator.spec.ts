@@ -56,9 +56,7 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 	beforeEach(async () => {
 		jest.useFakeTimers();
 
-		const { unit, unitRef } = await TestBed.solitary(
-			TimezoneAwareReminderOrchestrator,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(TimezoneAwareReminderOrchestrator).compile();
 
 		orchestrator = unit;
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
@@ -129,10 +127,7 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 			const fakeNow = new Date("2024-01-16T23:00:00Z");
 			jest.setSystemTime(fakeNow);
 
-			preferenceReader.findActiveTimezones.mockResolvedValue([
-				"Asia/Seoul",
-				"America/New_York",
-			]);
+			preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul", "America/New_York"]);
 
 			// When
 			await orchestrator.handleMinuteSweep();
@@ -324,22 +319,14 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 				eveningReminder.execute.mockResolvedValue({
 					sent: 3,
-					recipientUserIds: [
-						TEST_CUID.USER_1,
-						TEST_CUID.USER_2,
-						TEST_CUID.USER_3,
-					],
+					recipientUserIds: [TEST_CUID.USER_1, TEST_CUID.USER_2, TEST_CUID.USER_3],
 				});
 
 				await orchestrator.handleMinuteSweep();
 
 				expect(enqueuer.enqueueSocialDigest).toHaveBeenCalledWith({
 					timezone: "Asia/Seoul",
-					recipientUserIds: [
-						TEST_CUID.USER_1,
-						TEST_CUID.USER_2,
-						TEST_CUID.USER_3,
-					],
+					recipientUserIds: [TEST_CUID.USER_1, TEST_CUID.USER_2, TEST_CUID.USER_3],
 				});
 			});
 
@@ -360,9 +347,7 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 		describe("에러 처리", () => {
 			it("조회 에러 시 throw하지 않고 로깅", async () => {
 				// Given
-				preferenceReader.findActiveTimezones.mockRejectedValue(
-					new Error("DB Error"),
-				);
+				preferenceReader.findActiveTimezones.mockRejectedValue(new Error("DB Error"));
 
 				// When & Then
 				await expect(orchestrator.handleMinuteSweep()).resolves.toBeUndefined();
@@ -371,10 +356,7 @@ describe("TimezoneAwareReminderOrchestrator — 타임존 리마인더 오케스
 			it("한 타임존 Strategy 실패 시 다른 타임존은 정상 처리된다", async () => {
 				// Given
 				jest.setSystemTime(new Date("2024-01-16T23:00:00Z"));
-				preferenceReader.findActiveTimezones.mockResolvedValue([
-					"Asia/Seoul",
-					"America/New_York",
-				]);
+				preferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul", "America/New_York"]);
 
 				// 첫 번째 타임존에서 morning이 실패 → #processTimezone 전체가 reject
 				morningReminder.execute

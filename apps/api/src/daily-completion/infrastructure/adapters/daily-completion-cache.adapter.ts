@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+
 import type { DailyCompletionCachePort } from "../../application/ports/daily-completion-cache.port";
 import type { DailyCompletionsRange } from "../../domain/daily-completion";
 import {
@@ -62,8 +64,6 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
 	}
 
 	async invalidate(userId: string): Promise<void> {
-		await this.cacheService.delByPattern(
-			DailyCompletionCacheKey.pattern(userId),
-		);
+		await this.cacheService.delByPattern(DailyCompletionCacheKey.pattern(userId));
 	}
 }

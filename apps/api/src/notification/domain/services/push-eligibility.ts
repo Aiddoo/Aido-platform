@@ -19,8 +19,7 @@ export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
 		"STREAK_AT_RISK",
 	]);
 
-export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES =
-	MARKETING_NOTIFICATION_TYPES;
+export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES = MARKETING_NOTIFICATION_TYPES;
 
 /**
  * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
@@ -36,9 +35,7 @@ export function isMarketingNotification(type: NotificationType): boolean {
 	return MARKETING_NOTIFICATION_TYPES.has(type);
 }
 
-export function isAutomatedEngagementNotification(
-	type: NotificationType,
-): boolean {
+export function isAutomatedEngagementNotification(type: NotificationType): boolean {
 	return AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES.has(type);
 }
 

@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import isoWeek from "dayjs/plugin/isoWeek";
 import isoWeeksInYear from "dayjs/plugin/isoWeeksInYear";
+
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 
 dayjs.extend(isoWeek);
@@ -121,10 +122,7 @@ export function computeWeekLabel(
 		adjustedFirst = adjustedFirst.add(7, "day");
 	}
 
-	const weekInMonth = Math.max(
-		1,
-		Math.floor(thursday.diff(adjustedFirst, "day") / 7) + 1,
-	);
+	const weekInMonth = Math.max(1, Math.floor(thursday.diff(adjustedFirst, "day") / 7) + 1);
 
 	if (locale === "en") {
 		return `Week ${weekInMonth} of ${MONTH_SHORT_EN[month - 1]}`;
@@ -154,10 +152,7 @@ export function computeDateRange(
 /**
  * 두 주차가 연속인지 판별합니다 (연말→연초 경계 포함).
  */
-function isConsecutiveWeek(
-	prev: WeeklyAchievementRecord,
-	curr: WeeklyAchievementRecord,
-): boolean {
+function isConsecutiveWeek(prev: WeeklyAchievementRecord, curr: WeeklyAchievementRecord): boolean {
 	// 같은 해, 연속 주차
 	if (prev.year === curr.year && curr.week === prev.week + 1) {
 		return true;
@@ -179,9 +174,7 @@ function isConsecutiveWeek(
  * @param records - year/week 오름차순 정렬된 기록 배열
  * @returns currentStreak (최신 주차부터 거슬러 올라간 연속 수), bestStreak (최고 연속)
  */
-export function computeStreak(
-	records: WeeklyAchievementRecord[],
-): StreakResult {
+export function computeStreak(records: WeeklyAchievementRecord[]): StreakResult {
 	if (records.length === 0) {
 		return { currentStreak: 0, bestStreak: 0 };
 	}
@@ -209,9 +202,7 @@ export function computeStreak(
 /**
  * 전체 기록에서 통계 요약을 계산합니다.
  */
-export function computeSummary(
-	rows: WeeklyAchievementRow[],
-): WeeklyAchievementSummary {
+export function computeSummary(rows: WeeklyAchievementRow[]): WeeklyAchievementSummary {
 	const totalWeeks = rows.length;
 
 	if (totalWeeks === 0) {
@@ -228,12 +219,8 @@ export function computeSummary(
 		(r) => r.totalTodos > 0 && r.completedTodos === r.totalTodos,
 	).length;
 
-	const rates = rows.map((r) =>
-		completionRateOf(r.totalTodos, r.completedTodos),
-	);
-	const averageRate = Math.round(
-		rates.reduce((sum, r) => sum + r, 0) / totalWeeks,
-	);
+	const rates = rows.map((r) => completionRateOf(r.totalTodos, r.completedTodos));
+	const averageRate = Math.round(rates.reduce((sum, r) => sum + r, 0) / totalWeeks);
 
 	const records: WeeklyAchievementRecord[] = rows
 		.map((r) => ({ year: r.year, week: r.week }))

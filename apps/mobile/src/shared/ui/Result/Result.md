@@ -30,13 +30,13 @@ import { Result } from '@src/shared/ui/Result/Result';
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `icon` | `ReactNode` | - | 상단 아이콘 |
-| `title` | `string` | - | 제목 (필수) |
-| `description` | `string` | - | 설명 (줄바꿈 `\n` 지원) |
-| `button` | `ReactNode` | - | 하단 버튼 (`Result.Button` 사용) |
-| `className` | `string` | - | 추가 스타일 |
+| Prop          | 타입        | 기본값 | 설명                             |
+| ------------- | ----------- | ------ | -------------------------------- |
+| `icon`        | `ReactNode` | -      | 상단 아이콘                      |
+| `title`       | `string`    | -      | 제목 (필수)                      |
+| `description` | `string`    | -      | 설명 (줄바꿈 `\n` 지원)          |
+| `button`      | `ReactNode` | -      | 하단 버튼 (`Result.Button` 사용) |
+| `className`   | `string`    | -      | 추가 스타일                      |
 
 ## Result.Button
 
@@ -51,12 +51,12 @@ Result 내부에서 사용하는 버튼 서브컴포넌트입니다.
 
 ### Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `children` | `ReactNode` | - | 버튼 내용 |
-| `color` | `'primary' \| 'danger' \| 'dark'` | `'dark'` | 버튼 색상 |
-| `onPress` | `() => void` | - | 클릭 핸들러 |
-| `...rest` | `ButtonProps` | - | Button 컴포넌트의 나머지 props |
+| Prop       | 타입                              | 기본값   | 설명                           |
+| ---------- | --------------------------------- | -------- | ------------------------------ |
+| `children` | `ReactNode`                       | -        | 버튼 내용                      |
+| `color`    | `'primary' \| 'danger' \| 'dark'` | `'dark'` | 버튼 색상                      |
+| `onPress`  | `() => void`                      | -        | 클릭 핸들러                    |
+| `...rest`  | `ButtonProps`                     | -        | Button 컴포넌트의 나머지 props |
 
 ## 레이아웃
 
@@ -79,4 +79,3 @@ Result 내부에서 사용하는 버튼 서브컴포넌트입니다.
 
 - 아이콘은 장식용으로 처리됨 (`accessible={false}`)
 - 스크린 리더는 title과 description만 읽음
-

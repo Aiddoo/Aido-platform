@@ -27,6 +27,5 @@ export const PushRateLimiterKeys = {
 	 * 인게이지먼트가 없는 배치 슬롯의 placeholder 키 (Lua 인자 정렬용, 미사용 슬롯)
 	 * @example push-engagement:unused:0
 	 */
-	engagementPlaceholder: (index: number): string =>
-		`push-engagement:unused:${index}`,
+	engagementPlaceholder: (index: number): string => `push-engagement:unused:${index}`,
 } as const;

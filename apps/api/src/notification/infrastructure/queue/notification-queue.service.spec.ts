@@ -12,14 +12,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { flushPromises } from "@test/mocks";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
-import {
-	NOTIFICATION_QUEUE,
-	NotificationJobName,
-} from "./notification-queue.constants";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+
+import { NOTIFICATION_QUEUE, NotificationJobName } from "./notification-queue.constants";
 import { NotificationQueueService } from "./notification-queue.service";
 
 describe("NotificationQueueService — 알림 큐 서비스", () => {

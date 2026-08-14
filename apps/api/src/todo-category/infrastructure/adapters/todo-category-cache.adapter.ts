@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import type { TodoCategoryWithCountView } from "../../application/ports/todo-category.repository.port";
+
 import type { TodoCategoryCachePort } from "../../application/ports/todo-category-cache.port";
+import type { TodoCategoryWithCountView } from "../../application/ports/todo-category.repository.port";
 
 /**
  * TodoCategoryCachePort의 어댑터 — 공유 CacheService에 위임한다(키·TTL은 CacheService가 소유).

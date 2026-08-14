@@ -18,32 +18,32 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `tone` | `'neutral' \| 'brand' \| 'danger' \| 'warning' \| 'success' \| 'info'` | `'neutral'` | 시맨틱 색상 |
-| `shade` | `1 \| 2 \| 3 \| ... \| 10` | - | 회색 명도 (tone="neutral"일 때만 적용) |
-| `size` | `'h1' \| 't1' \| 't2' \| 't3' \| 'b1' \| 'b2' \| 'b3' \| 'b4' \| 'e1' \| 'e2'` | `'b3'` | 텍스트 크기 |
-| `weight` | `'normal' \| 'medium' \| 'semibold' \| 'bold'` | `'normal'` | 폰트 굵기 |
-| `align` | `'left' \| 'center' \| 'right'` | `'left'` | 텍스트 정렬 |
-| `maxLines` | `number` | - | 최대 줄 수 (numberOfLines) |
-| `strikethrough` | `boolean` | `false` | 취소선 |
-| `underline` | `boolean` | `false` | 밑줄 |
-| `className` | `string` | - | 추가 Tailwind 클래스 |
+| Prop            | 타입                                                                           | 기본값      | 설명                                   |
+| --------------- | ------------------------------------------------------------------------------ | ----------- | -------------------------------------- |
+| `tone`          | `'neutral' \| 'brand' \| 'danger' \| 'warning' \| 'success' \| 'info'`         | `'neutral'` | 시맨틱 색상                            |
+| `shade`         | `1 \| 2 \| 3 \| ... \| 10`                                                     | -           | 회색 명도 (tone="neutral"일 때만 적용) |
+| `size`          | `'h1' \| 't1' \| 't2' \| 't3' \| 'b1' \| 'b2' \| 'b3' \| 'b4' \| 'e1' \| 'e2'` | `'b3'`      | 텍스트 크기                            |
+| `weight`        | `'normal' \| 'medium' \| 'semibold' \| 'bold'`                                 | `'normal'`  | 폰트 굵기                              |
+| `align`         | `'left' \| 'center' \| 'right'`                                                | `'left'`    | 텍스트 정렬                            |
+| `maxLines`      | `number`                                                                       | -           | 최대 줄 수 (numberOfLines)             |
+| `strikethrough` | `boolean`                                                                      | `false`     | 취소선                                 |
+| `underline`     | `boolean`                                                                      | `false`     | 밑줄                                   |
+| `className`     | `string`                                                                       | -           | 추가 Tailwind 클래스                   |
 
 ## 크기 (size)
 
-| 사이즈 | 픽셀 | 용도 |
-|--------|------|------|
-| `h1` | 30px | 대제목 |
-| `t1` | 28px | Title 1 |
-| `t2` | 22px | Title 2 |
-| `t3` | 20px | Title 3 |
-| `b1` | 17px | Body 1 |
-| `b2` | 16px | Body 2 |
-| `b3` | 15px | Body 3 (기본값) |
-| `b4` | 13px | Body 4 |
-| `e1` | 12px | Extra 1 (캡션) |
-| `e2` | 11px | Extra 2 (가장 작음) |
+| 사이즈 | 픽셀 | 용도                |
+| ------ | ---- | ------------------- |
+| `h1`   | 30px | 대제목              |
+| `t1`   | 28px | Title 1             |
+| `t2`   | 22px | Title 2             |
+| `t3`   | 20px | Title 3             |
+| `b1`   | 17px | Body 1              |
+| `b2`   | 16px | Body 2              |
+| `b3`   | 15px | Body 3 (기본값)     |
+| `b4`   | 13px | Body 4              |
+| `e1`   | 12px | Extra 1 (캡션)      |
+| `e2`   | 11px | Extra 2 (가장 작음) |
 
 ## 색상 시스템 (tone + shade)
 
@@ -73,7 +73,9 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 
 ```tsx
 // shade가 무시됨 - brand 색상만 적용
-<Text tone="brand" shade={8}>브랜드 색상</Text>
+<Text tone="brand" shade={8}>
+  브랜드 색상
+</Text>
 ```
 
 ## Heading 컴포넌트

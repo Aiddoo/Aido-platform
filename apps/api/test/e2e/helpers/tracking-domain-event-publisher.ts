@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
+
 import type { DomainEventPublisherPort } from "@/shared/application/ports";
 import type { DomainEvent } from "@/shared/domain/aggregate-root";
 
@@ -42,9 +43,7 @@ export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
 		while (this.#pending.size > 0) {
 			rounds += 1;
 			if (rounds > 25) {
-				throw new Error(
-					"Domain event drain exceeded 25 rounds — 이벤트 연쇄 루프 의심",
-				);
+				throw new Error("Domain event drain exceeded 25 rounds — 이벤트 연쇄 루프 의심");
 			}
 			await Promise.allSettled([...this.#pending]);
 		}

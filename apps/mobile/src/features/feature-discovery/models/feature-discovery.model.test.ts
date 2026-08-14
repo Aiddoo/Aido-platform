@@ -1,4 +1,5 @@
 import type { User } from '@src/features/user/models/user.model';
+
 import {
   type FeatureDiscoveryConfig,
   FeatureDiscoveryPolicy,

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+
 import { WeatherForecastAccess } from "./application/access/weather-forecast.access";
 import { AIR_QUALITY_PROVIDER } from "./application/ports/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "./application/ports/lifestyle-index-provider.port";
@@ -32,9 +33,8 @@ import { WeatherController } from "./presentation/weather.controller";
 		{
 			provide: WeatherForecastAccess,
 			inject: [GetForecastsByGridBatchUseCase],
-			useFactory: (
-				getForecastsByGridBatchUseCase: GetForecastsByGridBatchUseCase,
-			) => new WeatherForecastAccess(getForecastsByGridBatchUseCase),
+			useFactory: (getForecastsByGridBatchUseCase: GetForecastsByGridBatchUseCase) =>
+				new WeatherForecastAccess(getForecastsByGridBatchUseCase),
 		},
 		WeatherForecastReader,
 		{

@@ -8,6 +8,7 @@ import { type ReactNode, type RefObject, useCallback } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
+
 import { FAST_DISMISS, MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
 
 interface StackedBottomSheetModalProps {

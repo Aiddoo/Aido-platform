@@ -1,16 +1,15 @@
 import { Module } from "@nestjs/common";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
-import {
-	AdminEventNotifier,
-	AdminNotificationModule,
-} from "@/admin-notification";
+
+import { AdminEventNotifier, AdminNotificationModule } from "@/admin-notification";
 import { EmailModule, TransactionalEmailSender } from "@/email";
 import { RetentionModule } from "@/retention";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { TodoCategoryModule } from "@/todo-category";
 import { UserSettingsModule } from "@/user-settings";
+
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_CACHE,
@@ -64,11 +63,7 @@ import {
 } from "./application/use-cases";
 import { IssueLoginUseCase } from "./application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "./application/use-cases/provision-user/provision-user.use-case";
-import {
-	CredentialAuthWorkflow,
-	OAuthWorkflow,
-	PasswordWorkflow,
-} from "./application/workflows";
+import { CredentialAuthWorkflow, OAuthWorkflow, PasswordWorkflow } from "./application/workflows";
 import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/node-verification-code-security.adapter";
 import { PasswordService } from "./infrastructure/adapters/password.service";
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter";
@@ -121,12 +116,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 		TodoCategoryModule,
 		RetentionModule,
 	],
-	controllers: [
-		AuthController,
-		OAuthController,
-		SessionController,
-		AccountController,
-	],
+	controllers: [AuthController, OAuthController, SessionController, AccountController],
 	providers: [
 		// Repositories
 		UserRepository,
@@ -220,10 +210,8 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 		{
 			provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
 			inject: [TypedConfigService, OAuthTokenVerifierService],
-			useFactory: (
-				configService: TypedConfigService,
-				tokenVerifier: OAuthTokenVerifierService,
-			) => createOAuthProviderRegistry(configService, tokenVerifier),
+			useFactory: (configService: TypedConfigService, tokenVerifier: OAuthTokenVerifierService) =>
+				createOAuthProviderRegistry(configService, tokenVerifier),
 		},
 		// Strategies
 		JwtStrategy,

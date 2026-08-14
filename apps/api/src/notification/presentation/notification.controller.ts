@@ -13,13 +13,8 @@ import {
 	Post,
 	Query,
 } from "@nestjs/common";
-import {
-	ApiBearerAuth,
-	ApiHeader,
-	ApiParam,
-	ApiQuery,
-	ApiTags,
-} from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+
 import { Locale, Timezone } from "@/shared/presentation/decorators";
 import {
 	ApiBadRequestError,
@@ -32,11 +27,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-	Public,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload, Public } from "../../auth/presentation/decorators";
 import { GetNotificationsUseCase } from "../application/use-cases/get-notifications/get-notifications.use-case";
 import { GetUnreadCountUseCase } from "../application/use-cases/get-unread-count/get-unread-count.use-case";
 import { MarkAllAsReadUseCase } from "../application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
@@ -45,7 +36,6 @@ import { MarkNotificationOpenedUseCase } from "../application/use-cases/mark-not
 import { OptOutMarketingPushUseCase } from "../application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { RegisterPushTokenUseCase } from "../application/use-cases/register-push-token/register-push-token.use-case";
 import { UnregisterPushTokenUseCase } from "../application/use-cases/unregister-push-token/unregister-push-token.use-case";
-
 import {
 	GetNotificationsQueryDto,
 	MarketingPushOptOutDto,
@@ -83,8 +73,7 @@ export class NotificationController {
 	@ApiDoc({
 		summary: "광고성 앱 푸시 수신 철회",
 		operationId: "optOutMarketingPush",
-		description:
-			"푸시 액션에 포함된 서명 토큰으로 로그인 없이 수신을 철회합니다.",
+		description: "푸시 액션에 포함된 서명 토큰으로 로그인 없이 수신을 철회합니다.",
 	})
 	@ApiSuccessResponse({ type: MarketingPushOptOutResponseDto })
 	async optOutMarketingPush(
@@ -115,8 +104,7 @@ export class NotificationController {
 	})
 	@ApiHeader({
 		name: "Accept-Language",
-		description:
-			'푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko',
+		description: '푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko',
 		required: false,
 		example: "ko",
 	})
@@ -170,15 +158,11 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("deviceId") deviceId?: string,
 	): Promise<RegisterTokenResponseDto> {
-		this.#logger.debug(
-			`푸시 토큰 해제: userId=${user.userId}, deviceId=${deviceId ?? "all"}`,
-		);
+		this.#logger.debug(`푸시 토큰 해제: userId=${user.userId}, deviceId=${deviceId ?? "all"}`);
 
 		await this.unregisterPushTokenUseCase.execute(user.userId, deviceId);
 
-		this.#logger.log(
-			`푸시 토큰 해제 완료: userId=${user.userId}, deviceId=${deviceId ?? "all"}`,
-		);
+		this.#logger.log(`푸시 토큰 해제 완료: userId=${user.userId}, deviceId=${deviceId ?? "all"}`);
 
 		return {
 			message: "푸시 토큰이 해제되었습니다.",
@@ -213,8 +197,7 @@ export class NotificationController {
 	@ApiQuery({
 		name: "category",
 		required: false,
-		description:
-			"알림 카테고리 필터 (ALL: 전체, NOTICE: 공지, TODO: 할일, SOCIAL: 소셜)",
+		description: "알림 카테고리 필터 (ALL: 전체, NOTICE: 공지, TODO: 할일, SOCIAL: 소셜)",
 		enum: Object.values(NOTIFICATION_CATEGORY),
 		example: "ALL",
 	})
@@ -224,9 +207,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetNotificationsQueryDto,
 	): Promise<NotificationListResponseDto> {
-		this.#logger.debug(
-			`알림 목록 조회: userId=${user.userId}, category=${query.category}`,
-		);
+		this.#logger.debug(`알림 목록 조회: userId=${user.userId}, category=${query.category}`);
 
 		const [result, unreadCount] = await Promise.all([
 			this.getNotificationsUseCase.execute({
@@ -255,9 +236,7 @@ export class NotificationController {
 	})
 	@ApiSuccessResponse({ type: UnreadCountResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getUnreadCount(
-		@CurrentUser() user: CurrentUserPayload,
-	): Promise<UnreadCountResponseDto> {
+	async getUnreadCount(@CurrentUser() user: CurrentUserPayload): Promise<UnreadCountResponseDto> {
 		const unreadCount = await this.getUnreadCountUseCase.execute(user.userId);
 
 		return { unreadCount };
@@ -284,9 +263,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: NotificationIdParamDto,
 	): Promise<MarkReadResponseDto> {
-		this.#logger.debug(
-			`알림 읽음 처리: userId=${user.userId}, id=${params.id}`,
-		);
+		this.#logger.debug(`알림 읽음 처리: userId=${user.userId}, id=${params.id}`);
 
 		await this.markAsReadUseCase.execute(user.userId, params.id);
 
@@ -309,10 +286,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: NotificationIdParamDto,
 	): Promise<NotificationOpenedResponseDto> {
-		const opened = await this.markNotificationOpenedUseCase.execute(
-			user.userId,
-			params.id,
-		);
+		const opened = await this.markNotificationOpenedUseCase.execute(user.userId, params.id);
 		return { opened };
 	}
 
@@ -325,9 +299,7 @@ export class NotificationController {
 	})
 	@ApiSuccessResponse({ type: MarkReadResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async markAllAsRead(
-		@CurrentUser() user: CurrentUserPayload,
-	): Promise<MarkReadResponseDto> {
+	async markAllAsRead(@CurrentUser() user: CurrentUserPayload): Promise<MarkReadResponseDto> {
 		this.#logger.debug(`모든 알림 읽음 처리: userId=${user.userId}`);
 
 		const result = await this.markAllAsReadUseCase.execute(user.userId);

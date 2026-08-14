@@ -1,7 +1,4 @@
-import type {
-	SunTime,
-	SunTimeProvider,
-} from "@/weather/application/ports/sun-time-provider.port";
+import type { SunTime, SunTimeProvider } from "@/weather/application/ports/sun-time-provider.port";
 
 /**
  * 테스트용 FakeSunTimeProvider
@@ -11,11 +8,7 @@ import type {
 export class FakeSunTimeProvider implements SunTimeProvider {
 	private _calls: Array<{ lat: number; lon: number; date: Date }> = [];
 
-	async getSunTime(
-		lat: number,
-		lon: number,
-		date: Date,
-	): Promise<SunTime | null> {
+	async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
 		this._calls.push({ lat, lon, date });
 		return { sunrise: "06:15", sunset: "18:45" };
 	}

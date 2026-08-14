@@ -8,6 +8,7 @@ import {
   useQueryClient,
   useSuspenseInfiniteQuery,
 } from '@tanstack/react-query';
+
 import type { SearchedUser } from '../../models/friend.model';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';

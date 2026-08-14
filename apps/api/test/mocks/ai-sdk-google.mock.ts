@@ -5,6 +5,4 @@
  * 위한 모킹. createGoogleGenerativeAI(설정) → 모델 팩토리 형태만 재현한다.
  */
 
-export const createGoogleGenerativeAI = jest.fn(() =>
-	jest.fn(() => "mock-google-model"),
-);
+export const createGoogleGenerativeAI = jest.fn(() => jest.fn(() => "mock-google-model"));

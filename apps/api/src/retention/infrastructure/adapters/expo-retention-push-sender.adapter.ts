@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import {
 	type IPushRateLimiter,
 	MARKETING_PUSH_OPT_OUT_TOKEN,
@@ -7,11 +8,12 @@ import {
 	PUSH_RATE_LIMITER,
 	type PushProvider,
 } from "@/notification";
+
+import type { RetentionPushSenderPort } from "../../application/ports/retention-push-sender.port";
 import type {
 	RetentionDeliveryResult,
 	RetentionDispatchCandidate,
 } from "../../application/ports/retention.repository.port";
-import type { RetentionPushSenderPort } from "../../application/ports/retention-push-sender.port";
 import { retentionPushSkipReason } from "../../domain/services/push-eligibility";
 
 @Injectable()
@@ -23,10 +25,7 @@ export class ExpoRetentionPushSenderAdapter implements RetentionPushSenderPort {
 		private readonly optOutTokens: MarketingPushOptOutTokenPort,
 	) {}
 
-	async canSend(
-		candidate: RetentionDispatchCandidate,
-		now: Date,
-	): Promise<boolean> {
+	async canSend(candidate: RetentionDispatchCandidate, now: Date): Promise<boolean> {
 		if (
 			retentionPushSkipReason({
 				pushEnabled: candidate.pushEnabled,
@@ -45,9 +44,7 @@ export class ExpoRetentionPushSenderAdapter implements RetentionPushSenderPort {
 		));
 	}
 
-	async send(
-		candidate: RetentionDispatchCandidate,
-	): Promise<RetentionDeliveryResult[]> {
+	async send(candidate: RetentionDispatchCandidate): Promise<RetentionDeliveryResult[]> {
 		const result = await this.provider.sendBatch(
 			candidate.tokens.map((entry) => ({
 				token: entry.token,

@@ -165,8 +165,6 @@ export class CheerBuilder {
 
 	/** 여러 개 생성 */
 	static createMany(senderId: string, receiverIds: string[]): Cheer[] {
-		return receiverIds.map((receiverId) =>
-			CheerBuilder.create(senderId, receiverId).build(),
-		);
+		return receiverIds.map((receiverId) => CheerBuilder.create(senderId, receiverId).build());
 	}
 }

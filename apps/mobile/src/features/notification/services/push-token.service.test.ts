@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+
 import { PushTokenService } from './push-token.service';
 
 jest.mock('expo-notifications', () => ({

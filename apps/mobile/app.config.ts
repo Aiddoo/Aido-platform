@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 import { match } from 'ts-pattern';
 
@@ -108,9 +109,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
 
-  const EAS_PROJECT_ID = (process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? config.extra?.eas?.projectId) as
-    | string
-    | undefined;
+  const EAS_PROJECT_ID = (process.env.EXPO_PUBLIC_EAS_PROJECT_ID ??
+    config.extra?.eas?.projectId) as string | undefined;
 
   restoreBase64File({
     envVar: process.env.GOOGLE_SERVICES_JSON,
@@ -313,7 +313,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-local-authentication',
         {
           faceIDPermission:
-            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
             '${PRODUCT_NAME}이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         },
       ],
@@ -322,7 +322,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-location',
         {
           locationWhenInUsePermission:
-            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
             '${PRODUCT_NAME}이(가) 현재 위치 기반 날씨 정보를 제공하기 위해 위치에 접근하려고 합니다.',
           locationAlwaysAndWhenInUsePermission: false,
           locationAlwaysPermission: false,
@@ -340,10 +340,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-speech-recognition',
         {
           microphonePermission:
-            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
             '${PRODUCT_NAME}이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
           speechRecognitionPermission:
-            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
             '${PRODUCT_NAME}이(가) 음성을 텍스트로 변환하기 위해 음성 인식에 접근하려고 합니다.',
           androidSpeechServicePackages: [
             'com.google.android.googlequicksearchbox',

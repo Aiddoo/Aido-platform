@@ -7,11 +7,10 @@
 import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { ApplicationException } from "@/shared/domain";
-import type {
-	DailyCompletionsRange,
-	TodoAggregateByDate,
-} from "../../../domain/daily-completion";
+
+import type { DailyCompletionsRange, TodoAggregateByDate } from "../../../domain/daily-completion";
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
@@ -48,9 +47,7 @@ describe("GetFriendDailyCompletionsUseCase — 친구 기간별 완료 현황 �
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetFriendDailyCompletionsUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(GetFriendDailyCompletionsUseCase)
 			.mock<TodoCompletionRepositoryPort>(TODO_COMPLETION_REPOSITORY)
 			.impl(() => ({
 				aggregatePublicByDateRange: jest.fn().mockResolvedValue([]),
@@ -65,9 +62,7 @@ describe("GetFriendDailyCompletionsUseCase — 친구 기간별 완료 현황 �
 			.compile();
 
 		useCase = unit;
-		repository = unitRef.get<TodoCompletionRepositoryPort>(
-			TODO_COMPLETION_REPOSITORY,
-		);
+		repository = unitRef.get<TodoCompletionRepositoryPort>(TODO_COMPLETION_REPOSITORY);
 		cache = unitRef.get<DailyCompletionCachePort>(DAILY_COMPLETION_CACHE);
 		friendPort = unitRef.get<FriendPort>(FRIEND_PORT);
 	});
@@ -80,9 +75,7 @@ describe("GetFriendDailyCompletionsUseCase — 친구 기간별 완료 현황 �
 		await expect(useCase.execute(input)).rejects.toMatchObject({
 			errorCode: ErrorCode.FOLLOW_0906,
 		});
-		await expect(useCase.execute(input)).rejects.toBeInstanceOf(
-			ApplicationException,
-		);
+		await expect(useCase.execute(input)).rejects.toBeInstanceOf(ApplicationException);
 		expect(repository.aggregatePublicByDateRange).not.toHaveBeenCalled();
 	});
 
@@ -91,10 +84,7 @@ describe("GetFriendDailyCompletionsUseCase — 친구 기간별 완료 현황 �
 		await useCase.execute(input);
 
 		// Then - 소유자(친구) 기준, 종료일 포함 위해 end에 +1일
-		expect(friendPort.isMutualFriend).toHaveBeenCalledWith(
-			"viewer-123",
-			"friend-456",
-		);
+		expect(friendPort.isMutualFriend).toHaveBeenCalledWith("viewer-123", "friend-456");
 		expect(repository.aggregatePublicByDateRange).toHaveBeenCalledWith({
 			userId: "friend-456",
 			startDate: new Date("2026-01-01T00:00:00.000Z"),
@@ -142,11 +132,7 @@ describe("GetFriendDailyCompletionsUseCase — 친구 기간별 완료 현황 �
 		// Then - 권한 확인은 캐시 히트와 무관하게 수행, 저장소 미호출
 		expect(result).toBe(cachedResult);
 		expect(friendPort.isMutualFriend).toHaveBeenCalled();
-		expect(cache.getPublicRange).toHaveBeenCalledWith(
-			"friend-456",
-			"2026-01-01",
-			"2026-01-31",
-		);
+		expect(cache.getPublicRange).toHaveBeenCalledWith("friend-456", "2026-01-01", "2026-01-31");
 		expect(repository.aggregatePublicByDateRange).not.toHaveBeenCalled();
 		expect(cache.setPublicRange).not.toHaveBeenCalled();
 	});

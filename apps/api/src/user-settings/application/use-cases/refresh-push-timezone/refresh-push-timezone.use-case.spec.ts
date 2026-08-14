@@ -7,6 +7,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createUserSettingsCacheMock } from "@test/mocks/ports";
+
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
@@ -37,10 +38,7 @@ describe("RefreshPushTimezoneUseCase — 타임존 자가치유", () => {
 
 		await useCase.execute("user-1", "Asia/Seoul");
 
-		expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith(
-			"user-1",
-			"Asia/Seoul",
-		);
+		expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
 		expect(cache.invalidateActiveTimezones).toHaveBeenCalledTimes(1);
 	});
 
@@ -49,10 +47,7 @@ describe("RefreshPushTimezoneUseCase — 타임존 자가치유", () => {
 
 		await useCase.execute("user-1", "Asia/Seoul");
 
-		expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith(
-			"user-1",
-			"Asia/Seoul",
-		);
+		expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
 		expect(cache.invalidateActiveTimezones).not.toHaveBeenCalled();
 	});
 });

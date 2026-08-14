@@ -1,4 +1,5 @@
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/models/feature-discovery.model';
+
 import { ActivationPolicy, type ActivationProgress } from './activation.model';
 
 const LAUNCHED_AT = new Date('2026-08-01T00:00:00.000Z');

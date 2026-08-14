@@ -16,6 +16,7 @@ import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
 
 import { PAYMENT_NOTIFIER } from "@/admin-notification";
+
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter";
 
 const captureException = jest.mocked(Sentry.captureException);
@@ -57,19 +58,10 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 
 		// Then — 컨트롤러에서 옮겨온 태그/extra 그대로 유지
 		expect(mockScope.setTag).toHaveBeenCalledWith("domain", "payment");
-		expect(mockScope.setTag).toHaveBeenCalledWith(
-			"webhook.event_type",
-			"INITIAL_PURCHASE",
-		);
+		expect(mockScope.setTag).toHaveBeenCalledWith("webhook.event_type", "INITIAL_PURCHASE");
 		expect(mockScope.setTag).toHaveBeenCalledWith("webhook.store", "APP_STORE");
-		expect(mockScope.setExtra).toHaveBeenCalledWith(
-			"webhook.app_user_id",
-			"user-123",
-		);
-		expect(mockScope.setExtra).toHaveBeenCalledWith(
-			"webhook.product_id",
-			"premium_monthly",
-		);
+		expect(mockScope.setExtra).toHaveBeenCalledWith("webhook.app_user_id", "user-123");
+		expect(mockScope.setExtra).toHaveBeenCalledWith("webhook.product_id", "premium_monthly");
 		expect(captureException).toHaveBeenCalledWith(error);
 	});
 
@@ -105,9 +97,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 		mockNotifier.send.mockRejectedValue(new Error("Discord down"));
 
 		// When & Then — 동기 호출은 throw하지 않는다
-		expect(() =>
-			adapter.reportWebhookFailure(new Error("x"), payload),
-		).not.toThrow();
+		expect(() => adapter.reportWebhookFailure(new Error("x"), payload)).not.toThrow();
 		await new Promise((resolve) => setTimeout(resolve, 0));
 	});
 });

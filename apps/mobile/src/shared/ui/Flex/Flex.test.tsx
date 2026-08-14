@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
+
 import { Flex } from './Flex';
 import { flexVariants } from './Flex.variants';
 

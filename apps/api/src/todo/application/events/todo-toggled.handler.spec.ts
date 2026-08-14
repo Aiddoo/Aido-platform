@@ -13,21 +13,16 @@ import {
 	createTodoNotificationMock,
 	createTodoReadRepositoryMock,
 } from "@test/mocks/ports";
+
 import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
 import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
 import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
-import {
-	TODO_NOTIFICATION,
-	type TodoNotificationPort,
-} from "../ports/todo-notification.port";
+import { TODO_NOTIFICATION, type TodoNotificationPort } from "../ports/todo-notification.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../ports/todo-read.repository.port";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 import { TodoToggledHandler } from "./todo-toggled.handler";
 
 describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
@@ -58,8 +53,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 			.compile();
 
 		handler = unit;
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		friendPort = unitRef.get<FriendPort>(FRIEND_PORT);
 		todoNotification = unitRef.get<TodoNotificationPort>(TODO_NOTIFICATION);
 		streakPort = unitRef.get<StreakPort>(STREAK_PORT);
@@ -78,11 +72,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 
 		// Then
 		expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
-		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith(
-			"user-123",
-			true,
-			"UTC",
-		);
+		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith("user-123", true, "UTC");
 	});
 
 	it("오늘 할일을 전부 완료하면 친구 완료 알림을 큐에 등록한다", async () => {
@@ -96,9 +86,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		friendPort.getUserDisplayName.mockResolvedValue("홍길동");
 
 		// When
-		await handler.handle(
-			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),
-		);
+		await handler.handle(new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"));
 
 		// Then
 		expect(todoNotification.enqueueFriendCompleted).toHaveBeenCalledWith(
@@ -132,11 +120,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		await handler.handle(new TodoToggledEvent(1, "user-123", false, "UTC"));
 
 		// Then
-		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith(
-			"user-123",
-			false,
-			"UTC",
-		);
+		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith("user-123", false, "UTC");
 		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 		expect(todoNotification.enqueueFriendCompleted).not.toHaveBeenCalled();
 		expect(todoNotification.enqueueMilestoneReached).not.toHaveBeenCalled();
@@ -172,13 +156,9 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		todoReadRepository.countCompletedByUser.mockResolvedValue(5);
 
 		// When & Then - 취소 실패가 유실되지 않고, 스트릭 작업도 떠다니지 않음
-		await expect(
-			handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC")),
-		).rejects.toBe(error);
-		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith(
-			"user-123",
-			true,
-			"UTC",
+		await expect(handler.handle(new TodoToggledEvent(1, "user-123", true, "UTC"))).rejects.toBe(
+			error,
 		);
+		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith("user-123", true, "UTC");
 	});
 });

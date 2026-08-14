@@ -7,15 +7,10 @@ import { TestBed } from "@suites/unit";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
-import {
-	FOLLOW_NOTIFIER,
-	type FollowNotifierPort,
-} from "../../ports/follow-notifier.port";
+import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../../ports/follow-notifier.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 import { FollowReader } from "../../services/follow.reader";
 import { FriendshipEffects } from "../../services/friendship-effects.service";
 import { SendFriendRequestUseCase } from "./send-friend-request.use-case";
@@ -45,9 +40,7 @@ describe("SendFriendRequestUseCase", () => {
 	let uow: Mocked<{ run: (fn: () => unknown) => unknown }>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SendFriendRequestUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SendFriendRequestUseCase).compile();
 		useCase = unit;
 		repo = unitRef.get(FOLLOW_REPOSITORY);
 		notifier = unitRef.get(FOLLOW_NOTIFIER);
@@ -68,9 +61,9 @@ describe("SendFriendRequestUseCase", () => {
 	});
 
 	it("자기 자신에게 요청하면 FOLLOW_0904", async () => {
-		await expect(
-			useCase.execute({ userId: "u1", targetUserId: "u1" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ userId: "u1", targetUserId: "u1" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("한도 초과면 FOLLOW_0909", async () => {
@@ -80,34 +73,30 @@ describe("SendFriendRequestUseCase", () => {
 			isAdmin: false,
 			subscriptionStatus: "FREE",
 		});
-		await expect(
-			useCase.execute({ userId: "u1", targetUserId: "u2" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ userId: "u1", targetUserId: "u2" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("대상이 없으면 FOLLOW_0905", async () => {
 		repo.userExists.mockResolvedValue(false);
-		await expect(
-			useCase.execute({ userId: "u1", targetUserId: "u2" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute({ userId: "u1", targetUserId: "u2" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("이미 ACCEPTED면 FOLLOW_0902", async () => {
-		repo.findByFollowerAndFollowing.mockResolvedValueOnce(
-			friendship("u1", "u2", "ACCEPTED"),
+		repo.findByFollowerAndFollowing.mockResolvedValueOnce(friendship("u1", "u2", "ACCEPTED"));
+		await expect(useCase.execute({ userId: "u1", targetUserId: "u2" })).rejects.toBeInstanceOf(
+			ApplicationException,
 		);
-		await expect(
-			useCase.execute({ userId: "u1", targetUserId: "u2" }),
-		).rejects.toBeInstanceOf(ApplicationException);
 	});
 
 	it("이미 PENDING이면 FOLLOW_0901", async () => {
-		repo.findByFollowerAndFollowing.mockResolvedValueOnce(
-			friendship("u1", "u2"),
+		repo.findByFollowerAndFollowing.mockResolvedValueOnce(friendship("u1", "u2"));
+		await expect(useCase.execute({ userId: "u1", targetUserId: "u2" })).rejects.toBeInstanceOf(
+			ApplicationException,
 		);
-		await expect(
-			useCase.execute({ userId: "u1", targetUserId: "u2" }),
-		).rejects.toBeInstanceOf(ApplicationException);
 	});
 
 	it("신규 요청은 PENDING 생성 + 새 팔로우 알림", async () => {
