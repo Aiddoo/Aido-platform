@@ -1,8 +1,8 @@
 /**
  * Nudge 모듈 통합 테스트 (Mock DB)
  *
- * 클린아키텍처(무버스 use-case) 구조로 재작성. NudgeFacade·use-case·NudgeReader가
- * PrismaNudgeRepository(Mock DB)·알림/한도 어댑터·FollowFacade와 함께 DI로 조립되고
+ * endpoint use-case와 NudgeReader가
+ * PrismaNudgeRepository(Mock DB)·알림/한도 어댑터·FollowReader와 함께 DI로 조립되고
  * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
  * 실행: pnpm --filter @aido/api test nudge.integration-spec
@@ -15,9 +15,8 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
-import { FollowFacade } from "@/follow";
-import { NotificationQueueService } from "@/notification";
-import { NudgeFacade } from "@/nudge";
+import { FollowReader } from "@/follow";
+import { NotificationQueueService } from "@/notification/queue";
 import { NUDGE_REPOSITORY } from "@/nudge/application/ports/nudge.repository.port";
 import { NUDGE_LIMIT_READER } from "@/nudge/application/ports/nudge-limit-reader.port";
 import { NUDGE_NOTIFIER } from "@/nudge/application/ports/nudge-notifier.port";
@@ -38,7 +37,33 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 
 describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: NudgeFacade;
+	let reader: NudgeReader;
+	let sendNudgeUseCase: SendNudgeUseCase;
+	let sendRemindNudgeUseCase: SendRemindNudgeUseCase;
+	let markNudgeReadUseCase: MarkNudgeReadUseCase;
+	const nudgeApi = {
+		sendNudge: (
+			input: Parameters<SendNudgeUseCase["execute"]>[0],
+			timezone: string,
+		) => sendNudgeUseCase.execute(input, timezone),
+		sendRemindNudge: (
+			input: Parameters<SendRemindNudgeUseCase["execute"]>[0],
+			timezone: string,
+		) => sendRemindNudgeUseCase.execute(input, timezone),
+		getReceivedNudges: (
+			input: Parameters<NudgeReader["getReceivedNudges"]>[0],
+		) => reader.getReceivedNudges(input),
+		getSentNudges: (input: Parameters<NudgeReader["getSentNudges"]>[0]) =>
+			reader.getSentNudges(input),
+		getLimitInfo: (userId: string, timezone: string) =>
+			reader.getLimitInfo(userId, timezone),
+		getCooldownInfoForUser: (senderId: string, receiverId: string) =>
+			reader.getCooldownInfoForUser(senderId, receiverId),
+		getRemindCooldownInfo: (senderId: string, receiverId: string) =>
+			reader.getRemindCooldownInfo(senderId, receiverId),
+		markAsRead: (userId: string, nudgeId: number) =>
+			markNudgeReadUseCase.execute({ userId, nudgeId }),
+	};
 
 	const mockNudgeDb = {
 		create: jest.fn(),
@@ -62,7 +87,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 		todo: mockTodoDb,
 	});
 
-	const mockFollowFacade = { isMutualFriend: jest.fn() };
+	const mockFollowReader = { isMutualFriend: jest.fn() };
 	const mockNotificationQueueService = { enqueueNudgeSent: jest.fn() };
 	const mockEntitlementService = {
 		getFeatureLimit: jest.fn(),
@@ -97,7 +122,6 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				NudgeFacade,
 				NudgeReader,
 				SendNudgeUseCase,
 				SendRemindNudgeUseCase,
@@ -118,7 +142,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 						pagination: { defaultPageSize: 20, maxPageSize: 100 },
 					},
 				},
-				{ provide: FollowFacade, useValue: mockFollowFacade },
+				{ provide: FollowReader, useValue: mockFollowReader },
 				{
 					provide: NotificationQueueService,
 					useValue: mockNotificationQueueService,
@@ -127,7 +151,10 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		facade = module.get(NudgeFacade);
+		reader = module.get(NudgeReader);
+		sendNudgeUseCase = module.get(SendNudgeUseCase);
+		sendRemindNudgeUseCase = module.get(SendRemindNudgeUseCase);
+		markNudgeReadUseCase = module.get(MarkNudgeReadUseCase);
 	});
 
 	afterAll(async () => {
@@ -159,8 +186,9 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 		TodoBuilder.create(receiverId).withId(todoId).withStartDate(today).build();
 
 	describe("DI 통합", () => {
-		it("NudgeFacade가 조립된다", () => {
-			expect(facade).toBeInstanceOf(NudgeFacade);
+		it("Nudge UseCase와 Reader가 조립된다", () => {
+			expect(sendNudgeUseCase).toBeInstanceOf(SendNudgeUseCase);
+			expect(reader).toBeInstanceOf(NudgeReader);
 		});
 		it("NudgeRepository 포트가 주입된다", () => {
 			expect(module.get(NUDGE_REPOSITORY)).toBeInstanceOf(
@@ -171,19 +199,19 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("콕 찌르기 전송", () => {
 		it("친구에게 콕 찌르기를 전송하고 알림을 enqueue한다", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.findUnique.mockResolvedValue(publicTodayTodo());
 			mockNudgeDb.count.mockResolvedValue(0);
 			mockNudgeDb.findFirst.mockResolvedValue(null);
 			mockNudgeDb.create.mockResolvedValue(buildRelations(nudgeId));
 
-			const result = await facade.sendNudge(
+			const result = await nudgeApi.sendNudge(
 				{ senderId, receiverId, todoId },
 				"UTC",
 			);
 
 			expect(result.id).toBe(nudgeId);
-			expect(mockFollowFacade.isMutualFriend).toHaveBeenCalledWith(
+			expect(mockFollowReader.isMutualFriend).toHaveBeenCalledWith(
 				senderId,
 				receiverId,
 			);
@@ -193,29 +221,29 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("친구가 아니면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(false);
+			mockFollowReader.isMutualFriend.mockResolvedValue(false);
 			await expect(
-				facade.sendNudge({ senderId, receiverId, todoId }, "UTC"),
+				nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("자기 자신에게 전송하면 ApplicationException", async () => {
 			await expect(
-				facade.sendNudge({ senderId, receiverId: senderId, todoId }, "UTC"),
+				nudgeApi.sendNudge({ senderId, receiverId: senderId, todoId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("일일 제한 초과면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.findUnique.mockResolvedValue(publicTodayTodo());
 			mockNudgeDb.count.mockResolvedValue(3);
 			await expect(
-				facade.sendNudge({ senderId, receiverId, todoId }, "UTC"),
+				nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("쿨다운 중이면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.findUnique.mockResolvedValue(publicTodayTodo());
 			mockNudgeDb.count.mockResolvedValue(0);
 			mockNudgeDb.findFirst.mockResolvedValue(
@@ -224,12 +252,12 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 					.build(),
 			);
 			await expect(
-				facade.sendNudge({ senderId, receiverId, todoId }, "UTC"),
+				nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("오늘의 할 일이 아니면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.findUnique.mockResolvedValue(
 				TodoBuilder.create(receiverId)
 					.withId(todoId)
@@ -237,12 +265,12 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 					.build(),
 			);
 			await expect(
-				facade.sendNudge({ senderId, receiverId, todoId }, "UTC"),
+				nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("비공개 Todo면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.findUnique.mockResolvedValue(
 				TodoBuilder.create(receiverId)
 					.withId(todoId)
@@ -251,12 +279,12 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 					.build(),
 			);
 			await expect(
-				facade.sendNudge({ senderId, receiverId, todoId }, "UTC"),
+				nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("다른 사용자의 Todo면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.findUnique.mockResolvedValue(
 				TodoBuilder.create("other-user")
 					.withId(todoId)
@@ -264,14 +292,14 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 					.build(),
 			);
 			await expect(
-				facade.sendNudge({ senderId, receiverId, todoId }, "UTC"),
+				nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
 
 	describe("리마인드 콕 찌르기 전송", () => {
 		it("친구가 오늘 할 일이 없으면 전송하고 알림을 enqueue한다", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.count.mockResolvedValue(0);
 			mockReminderNudgeDb.findFirst.mockResolvedValue(null);
 			mockReminderNudgeDb.create.mockResolvedValue({
@@ -287,7 +315,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				},
 			});
 
-			const result = await facade.sendRemindNudge(
+			const result = await nudgeApi.sendRemindNudge(
 				{ senderId, receiverId },
 				"UTC",
 			);
@@ -301,15 +329,15 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("친구가 오늘 할 일이 있으면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.count.mockResolvedValue(2);
 			await expect(
-				facade.sendRemindNudge({ senderId, receiverId }, "UTC"),
+				nudgeApi.sendRemindNudge({ senderId, receiverId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("쿨다운 중이면 ApplicationException", async () => {
-			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
+			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.count.mockResolvedValue(0);
 			mockReminderNudgeDb.findFirst.mockResolvedValue({
 				id: 11,
@@ -319,7 +347,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				createdAt: new Date(),
 			});
 			await expect(
-				facade.sendRemindNudge({ senderId, receiverId }, "UTC"),
+				nudgeApi.sendRemindNudge({ senderId, receiverId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -329,7 +357,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 			mockNudgeDb.findMany.mockResolvedValue([buildRelations(1)]);
 			mockNudgeDb.count.mockResolvedValue(1);
 
-			const result = await facade.getReceivedNudges({ userId: receiverId });
+			const result = await nudgeApi.getReceivedNudges({ userId: receiverId });
 			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 		});
 
@@ -338,7 +366,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				buildRelations(1),
 				buildRelations(2),
 			]);
-			const result = await facade.getSentNudges({ userId: senderId });
+			const result = await nudgeApi.getSentNudges({ userId: senderId });
 			expect(result.items).toHaveLength(2);
 			expect(result.pagination).toBeDefined();
 		});
@@ -347,7 +375,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 	describe("일일 제한 정보", () => {
 		it("FREE 사용자의 제한 정보", async () => {
 			mockNudgeDb.count.mockResolvedValue(2);
-			const result = await facade.getLimitInfo(senderId, "UTC");
+			const result = await nudgeApi.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBe(3);
 			expect(result.used).toBe(2);
 			expect(result.remaining).toBe(1);
@@ -360,7 +388,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				subscriptionStatus: "ACTIVE",
 			});
 			mockNudgeDb.count.mockResolvedValue(10);
-			const result = await facade.getLimitInfo(senderId, "UTC");
+			const result = await nudgeApi.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBeNull();
 			expect(result.remaining).toBeNull();
 		});
@@ -369,7 +397,10 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 	describe("쿨다운 정보", () => {
 		it("기록이 없으면 비활성", async () => {
 			mockNudgeDb.findFirst.mockResolvedValue(null);
-			const result = await facade.getCooldownInfoForUser(senderId, receiverId);
+			const result = await nudgeApi.getCooldownInfoForUser(
+				senderId,
+				receiverId,
+			);
 			expect(result.isActive).toBe(false);
 		});
 
@@ -379,14 +410,17 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 					.withCreatedAt(new Date())
 					.build(),
 			);
-			const result = await facade.getCooldownInfoForUser(senderId, receiverId);
+			const result = await nudgeApi.getCooldownInfoForUser(
+				senderId,
+				receiverId,
+			);
 			expect(result.isActive).toBe(true);
 			expect(result.remainingSeconds).toBeGreaterThan(0);
 		});
 
 		it("리마인드 쿨다운 정보를 조회한다", async () => {
 			mockReminderNudgeDb.findFirst.mockResolvedValue(null);
-			const result = await facade.getRemindCooldownInfo(senderId, receiverId);
+			const result = await nudgeApi.getRemindCooldownInfo(senderId, receiverId);
 			expect(result.isActive).toBe(false);
 		});
 	});
@@ -401,7 +435,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 			);
 			mockNudgeDb.update.mockResolvedValue({});
 
-			await facade.markAsRead(receiverId, nudgeId);
+			await nudgeApi.markAsRead(receiverId, nudgeId);
 			expect(mockNudgeDb.update).toHaveBeenCalledWith(
 				expect.objectContaining({ where: { id: nudgeId } }),
 			);
@@ -409,7 +443,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockNudgeDb.findUnique.mockResolvedValue(null);
-			await expect(facade.markAsRead(receiverId, 999)).rejects.toThrow(
+			await expect(nudgeApi.markAsRead(receiverId, 999)).rejects.toThrow(
 				ApplicationException,
 			);
 		});
@@ -420,7 +454,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 					.withId(nudgeId)
 					.build(),
 			);
-			await expect(facade.markAsRead(receiverId, nudgeId)).rejects.toThrow(
+			await expect(nudgeApi.markAsRead(receiverId, nudgeId)).rejects.toThrow(
 				ApplicationException,
 			);
 		});

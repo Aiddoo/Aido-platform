@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
 import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
-import { UserSettingsFacade } from "../../application/facades/user-settings.facade";
+import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
 
 /**
  * 인증 요청의 X-Timezone 헤더로 UserPreference.timezone을 자가치유하는 인터셉터.
@@ -36,7 +36,9 @@ export class TimezoneSelfHealInterceptor
 
 	static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
 
-	constructor(private readonly userSettings: UserSettingsFacade) {
+	constructor(
+		private readonly refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase,
+	) {
 		this.#cleanupInterval = setInterval(
 			() => this.#cleanup(),
 			TimezoneSelfHealInterceptor.THROTTLE_MS,
@@ -75,13 +77,11 @@ export class TimezoneSelfHealInterceptor
 		this.#seen.set(userId, { tz: timezone, at: now });
 
 		// fire-and-forget — 응답을 블로킹하지 않음. 저장값과 다를 때만 실제 쓰기가 발생.
-		this.userSettings
-			.refreshPushTimezoneIfChanged(userId, timezone)
-			.catch((error) => {
-				this.#logger.error(
-					`Failed to self-heal timezone: userId=${userId}, tz=${timezone}, error=${error}`,
-				);
-			});
+		this.refreshPushTimezoneUseCase.execute(userId, timezone).catch((error) => {
+			this.#logger.error(
+				`Failed to self-heal timezone: userId=${userId}, tz=${timezone}, error=${error}`,
+			);
+		});
 	}
 
 	#cleanup(): void {

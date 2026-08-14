@@ -7,7 +7,7 @@ import {
 	Todo,
 	type TodoCreationPlan,
 	type TodoVisibility,
-} from "../../domain/entities/todo.entity";
+} from "../../domain/entities/todo.aggregate";
 import { TodoItem } from "../../domain/entities/todo-item.entity";
 import { TodoId } from "../../domain/value-objects/todo-id.vo";
 import {

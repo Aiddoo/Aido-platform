@@ -1,10 +1,10 @@
 import { josa } from "es-hangul";
-import { deterministicIndex } from "@/shared/domain/services/deterministic-variant";
 import {
 	DEFAULT_LOCALE,
 	SUPPORTED_LOCALES,
 	type SupportedLocale,
-} from "@/shared/presentation/decorators";
+} from "@/shared/domain/locale";
+import { deterministicIndex } from "@/shared/domain/services/deterministic-variant";
 import type { WeatherForecast } from "@/weather";
 
 import * as en from "./locales/en";

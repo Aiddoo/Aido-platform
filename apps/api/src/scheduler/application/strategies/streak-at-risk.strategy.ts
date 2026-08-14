@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
-	NotificationFacade,
 	NotificationMessageBuilder,
+	NotificationSender,
 	resolveTemplateLocale,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
@@ -33,7 +33,7 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 	constructor(
 		@Inject(RE_ENGAGEMENT_READER)
 		private readonly reader: ReEngagementReaderPort,
-		private readonly notificationService: NotificationFacade,
+		private readonly notificationService: NotificationSender,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {

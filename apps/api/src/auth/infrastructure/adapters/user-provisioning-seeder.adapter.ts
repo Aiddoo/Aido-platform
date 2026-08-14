@@ -1,33 +1,37 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
-import { TodoCategoryFacade } from "@/todo-category";
-import { UserSettingsFacade } from "@/user-settings";
+import { DefaultTodoCategorySeeder } from "@/todo-category";
+import {
+	USER_SETTINGS_PROVISIONER,
+	type UserSettingsProvisionerPort,
+} from "@/user-settings";
 import type {
 	ProvisioningConsent,
 	UserProvisioningSeederPort,
 } from "../../application/ports/user-provisioning-seeder.port";
 
 /**
- * UserProvisioningSeederPort 어댑터 — UserSettingsFacade·TodoCategoryFacade에 위임한다.
- * auth → user-settings·todo-category 단방향 의존을 파사드 배럴 경유로만 유지한다.
+ * UserProvisioningSeederPort 어댑터 — 설정과 기본 카테고리 생성을 조정한다.
+ * 호출측이 연 CLS 트랜잭션에 참여하며 기본 상태만 생성한다.
  */
 @Injectable()
 export class UserProvisioningSeederAdapter
 	implements UserProvisioningSeederPort
 {
 	constructor(
-		private readonly userSettings: UserSettingsFacade,
-		private readonly todoCategory: TodoCategoryFacade,
+		@Inject(USER_SETTINGS_PROVISIONER)
+		private readonly userSettingsProvisioner: UserSettingsProvisionerPort,
+		private readonly defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
 	) {}
 
 	seedDefaultSettings(
 		userId: string,
 		consent: ProvisioningConsent,
 	): Promise<void> {
-		return this.userSettings.seedDefaults(userId, consent);
+		return this.userSettingsProvisioner.seedDefaults(userId, consent);
 	}
 
-	seedDefaultCategories(userId: string): Promise<void> {
-		return this.todoCategory.seedDefaultCategories(userId);
+	async seedDefaultCategories(userId: string): Promise<void> {
+		await this.defaultTodoCategorySeeder.seed(userId);
 	}
 }

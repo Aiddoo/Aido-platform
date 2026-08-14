@@ -17,7 +17,7 @@ import type {
 	UpdateFollowInput,
 	UserSearchResult,
 } from "../../application/ports/follow.repository.port";
-import { Friendship } from "../../domain/entities/friendship.entity";
+import { Friendship } from "../../domain/entities/friendship.aggregate";
 
 /** USER_BRIEF_SELECT 결과가 포함된 Follow 행 형태 */
 type FollowRowWithUser = FollowRow & {

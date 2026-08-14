@@ -1,30 +1,4 @@
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
-
-import { resolveTemplateLocale } from "../../domain/services/templates/notification-templates";
-
-/** 사용자들의 푸시 언어를 일괄 조회한다 (preference 없으면 ko) */
-export async function fetchUserLocales(
-	database: DatabaseService,
-	userIds: string[],
-): Promise<Map<string, SupportedLocale>> {
-	if (userIds.length === 0) {
-		return new Map();
-	}
-
-	const preferences = await database.userPreference.findMany({
-		where: { userId: { in: userIds } },
-		select: { userId: true, locale: true },
-	});
-
-	return new Map(
-		preferences.map((preference) => [
-			preference.userId,
-			resolveTemplateLocale(preference.locale),
-		]),
-	);
-}
-
+import type { SupportedLocale } from "@/shared/domain/locale";
 /**
  * 로케일별로 메시지를 1회만 조립하는 캐시.
  * (한 실행에서 같은 로케일 수신자들은 동일 variant를 받는 기존 동작 보존)

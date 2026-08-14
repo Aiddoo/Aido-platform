@@ -2,7 +2,7 @@
  * Weather 통합 테스트 (Mock DB)
  *
  * @description
- * WeatherFacade → use-case → WeatherForecastReader / Prisma
+ * endpoint use-case → WeatherForecastReader / Prisma
  * 위치 어댑터의 수직 배선을 검증합니다. 외부 날씨 프로바이더(KMA·Airkorea·KASI)와
  * 캐시는 Mock으로 처리하며, 실제 DB 연동은 E2E에서 담당합니다.
  *
@@ -19,7 +19,6 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { WeatherFacade } from "@/weather/application/facades/weather.facade";
 import {
 	AIR_QUALITY_PROVIDER,
 	type AirQualityProvider,
@@ -39,14 +38,19 @@ import {
 	type WeatherProvider,
 } from "@/weather/application/ports/weather-provider.port";
 import { WeatherQueryUseCases } from "@/weather/application/queries";
+import { GetWeatherConditionsUseCase } from "@/weather/application/queries/get-weather-conditions/get-weather-conditions.use-case";
+import { GetWeatherForecastUseCase } from "@/weather/application/queries/get-weather-forecast/get-weather-forecast.use-case";
 import { WeatherForecastReader } from "@/weather/application/services/weather-forecast.reader";
 import { WeatherUseCases } from "@/weather/application/use-cases";
+import { UpsertLocationUseCase } from "@/weather/application/use-cases/upsert-location/upsert-location.use-case";
 import { WeatherCacheAdapter } from "@/weather/infrastructure/adapters/weather-cache.adapter";
 import { PrismaWeatherLocationRepository } from "@/weather/infrastructure/persistence/prisma-weather-location.repository";
 
 describe("Weather 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: WeatherFacade;
+	let upsertLocationUseCase: UpsertLocationUseCase;
+	let getWeatherForecastUseCase: GetWeatherForecastUseCase;
+	let getWeatherConditionsUseCase: GetWeatherConditionsUseCase;
 
 	// Mock 데이터베이스 서비스
 	const mockUserLocationDb = {
@@ -117,7 +121,6 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 		// 클린아키 수직 배선: Facade → use-case → 리더/어댑터(mock 인프라)
 		module = await Test.createTestingModule({
 			providers: [
-				WeatherFacade,
 				WeatherForecastReader,
 				...WeatherQueryUseCases,
 				...WeatherUseCases,
@@ -144,7 +147,9 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 		}).compile();
 
 		await module.init();
-		facade = module.get(WeatherFacade);
+		upsertLocationUseCase = module.get(UpsertLocationUseCase);
+		getWeatherForecastUseCase = module.get(GetWeatherForecastUseCase);
+		getWeatherConditionsUseCase = module.get(GetWeatherConditionsUseCase);
 	});
 
 	afterAll(async () => {
@@ -157,8 +162,10 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합", () => {
-		it("WeatherFacade가 정상적으로 생성되어야 한다", () => {
-			expect(facade).toBeDefined();
+		it("endpoint 유스케이스가 정상적으로 생성되어야 한다", () => {
+			expect(upsertLocationUseCase).toBeDefined();
+			expect(getWeatherForecastUseCase).toBeDefined();
+			expect(getWeatherConditionsUseCase).toBeDefined();
 		});
 	});
 
@@ -170,7 +177,11 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 			mockUserLocationDb.upsert.mockResolvedValue(location);
 
 			// When
-			const result = await facade.upsertLocation("user-1", 37.5665, 126.978);
+			const result = await upsertLocationUseCase.execute({
+				userId: "user-1",
+				latitude: 37.5665,
+				longitude: 126.978,
+			});
 
 			// Then
 			expect(result.latitude).toBe(location.latitude);
@@ -185,7 +196,10 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 			mockUserLocationDb.findUnique.mockResolvedValue(location);
 
 			// When
-			const result = await facade.getForecastForUser("user-1", new Date());
+			const result = await getWeatherForecastUseCase.execute({
+				userId: "user-1",
+				date: new Date(),
+			});
 
 			// Then
 			expect(result.forecast).toBeDefined();
@@ -199,7 +213,10 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 
 			// When & Then
 			await expect(
-				facade.getForecastForUser("user-999", new Date()),
+				getWeatherForecastUseCase.execute({
+					userId: "user-999",
+					date: new Date(),
+				}),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -211,7 +228,10 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 			mockUserLocationDb.findUnique.mockResolvedValue(location);
 
 			// When
-			const result = await facade.getConditionsForUser("user-1", new Date());
+			const result = await getWeatherConditionsUseCase.execute({
+				userId: "user-1",
+				date: new Date(),
+			});
 
 			// Then
 			expect(result).toHaveProperty("feelsLikeTemperature");
@@ -228,7 +248,10 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 
 			// When & Then
 			await expect(
-				facade.getConditionsForUser("user-999", new Date()),
+				getWeatherConditionsUseCase.execute({
+					userId: "user-999",
+					date: new Date(),
+				}),
 			).rejects.toThrow(ApplicationException);
 		});
 	});

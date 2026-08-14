@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { WeeklyAchievementFacade } from "@/weekly-achievement";
+import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type {
@@ -28,8 +28,8 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		private readonly reader: WeeklyAchievementStatsReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationFacade,
-		private readonly weeklyAchievementFacade: WeeklyAchievementFacade,
+		private readonly notificationService: NotificationSender,
+		private readonly weeklyAchievementWriter: WeeklyAchievementWriterAccess,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -71,7 +71,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		}));
 
 		// ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
-		await this.weeklyAchievementFacade.upsertMany(records);
+		await this.weeklyAchievementWriter.upsertMany(records);
 
 		// ─── C. 알림 발송 (completed > 0 + dedup) ────
 		const completedUserIds = records

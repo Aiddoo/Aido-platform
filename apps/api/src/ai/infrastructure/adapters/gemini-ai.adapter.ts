@@ -21,6 +21,7 @@ import type {
 	GenerateStructuredOptions,
 	GenerateStructuredResult,
 } from "../../application/ports/ai-provider.port";
+import { AiProviderCallError } from "../../application/ports/ai-provider.port";
 
 /** Gemini 모델 설정 */
 const GEMINI_MODEL = "gemini-3.1-flash-lite" as const;
@@ -83,6 +84,11 @@ export class GeminiAiAdapter implements AiProvider {
 		} catch (error) {
 			if (APICallError.isInstance(error) && error.statusCode === 429) {
 				throw BusinessExceptions.aiRateLimitExceeded();
+			}
+			if (APICallError.isInstance(error)) {
+				throw new AiProviderCallError(error.message, error.statusCode, {
+					cause: error,
+				});
 			}
 			throw error;
 		}

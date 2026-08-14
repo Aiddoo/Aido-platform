@@ -33,7 +33,20 @@ import {
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
 
-import { MemoFacade } from "../application/facades/memo.facade";
+import {
+	GetMemoResourceLimitUseCase,
+	GetMemosUseCase,
+	GetMemoUseCase,
+} from "../application/queries";
+import {
+	ConvertMemoToTodosUseCase,
+	ConvertMemoToTodoUseCase,
+	CreateMemoUseCase,
+	DeleteMemoUseCase,
+	ReorderMemoUseCase,
+	ToggleMemoPinUseCase,
+	UpdateMemoUseCase,
+} from "../application/use-cases";
 import {
 	ConvertMemoToTodoDto,
 	ConvertMemoToTodoResponseDto,
@@ -56,7 +69,18 @@ import {
 @ApiBearerAuth()
 @Controller("memos")
 export class MemoController {
-	constructor(private readonly memoFacade: MemoFacade) {}
+	constructor(
+		private readonly getMemoResourceLimitUseCase: GetMemoResourceLimitUseCase,
+		private readonly createMemoUseCase: CreateMemoUseCase,
+		private readonly getMemosUseCase: GetMemosUseCase,
+		private readonly getMemoUseCase: GetMemoUseCase,
+		private readonly updateMemoUseCase: UpdateMemoUseCase,
+		private readonly toggleMemoPinUseCase: ToggleMemoPinUseCase,
+		private readonly reorderMemoUseCase: ReorderMemoUseCase,
+		private readonly deleteMemoUseCase: DeleteMemoUseCase,
+		private readonly convertMemoToTodoUseCase: ConvertMemoToTodoUseCase,
+		private readonly convertMemoToTodosUseCase: ConvertMemoToTodosUseCase,
+	) {}
 
 	@Get("resource-limit")
 	@ApiDoc({
@@ -73,7 +97,7 @@ export class MemoController {
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<MemoResourceLimitResponseDto> {
-		return this.memoFacade.getResourceLimit(user.userId);
+		return this.getMemoResourceLimitUseCase.execute({ userId: user.userId });
 	}
 
 	@Post()
@@ -100,7 +124,10 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateMemoDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoFacade.create(user.userId, dto.content);
+		return this.createMemoUseCase.execute({
+			userId: user.userId,
+			content: dto.content,
+		});
 	}
 
 	@Get()
@@ -119,7 +146,7 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetMemosQueryDto,
 	): Promise<MemoListResponseDto> {
-		return this.memoFacade.findMany({
+		return this.getMemosUseCase.execute({
 			userId: user.userId,
 			cursor: query.cursor,
 			size: query.size,
@@ -139,7 +166,10 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: MemoIdParamDto,
 	): Promise<MemoDetailResponseDto> {
-		return this.memoFacade.findOne(user.userId, params.id);
+		return this.getMemoUseCase.execute({
+			userId: user.userId,
+			memoId: params.id,
+		});
 	}
 
 	@Patch(":id")
@@ -157,7 +187,11 @@ export class MemoController {
 		@Param() params: MemoIdParamDto,
 		@Body() dto: UpdateMemoDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoFacade.update(user.userId, params.id, dto.content);
+		return this.updateMemoUseCase.execute({
+			userId: user.userId,
+			memoId: params.id,
+			content: dto.content,
+		});
 	}
 
 	@Patch(":id/pin")
@@ -175,7 +209,11 @@ export class MemoController {
 		@Param() params: MemoIdParamDto,
 		@Body() dto: ToggleMemoPinDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoFacade.togglePin(user.userId, params.id, dto.isPinned);
+		return this.toggleMemoPinUseCase.execute({
+			userId: user.userId,
+			memoId: params.id,
+			isPinned: dto.isPinned,
+		});
 	}
 
 	@Patch(":id/reorder")
@@ -197,7 +235,9 @@ export class MemoController {
 		@Param() params: MemoIdParamDto,
 		@Body() dto: ReorderMemoDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoFacade.reorder(params.id, user.userId, {
+		return this.reorderMemoUseCase.execute({
+			memoId: params.id,
+			userId: user.userId,
 			targetMemoId: dto.targetMemoId,
 			position: dto.position,
 		});
@@ -217,7 +257,10 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: MemoIdParamDto,
 	): Promise<MemoDeleteResponseDto> {
-		return this.memoFacade.delete(user.userId, params.id);
+		return this.deleteMemoUseCase.execute({
+			userId: user.userId,
+			memoId: params.id,
+		});
 	}
 
 	@Post(":id/convert-to-todo")
@@ -257,16 +300,20 @@ export class MemoController {
 		@Body() dto: ConvertMemoToTodoDto,
 		@Timezone() tz: string,
 	): Promise<ConvertMemoToTodoResponseDto> {
-		return this.memoFacade.convertToTodo(user.userId, params.id, {
-			categoryId: dto.categoryId,
-			startDate: parseDateOnly(dto.startDate),
-			endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-			scheduledTime: dto.scheduledTime
-				? parseLocalDateTime(dto.startDate, dto.scheduledTime, tz)
-				: undefined,
-			isAllDay: dto.isAllDay,
-			visibility: dto.visibility,
-			items: dto.items,
+		return this.convertMemoToTodoUseCase.execute({
+			userId: user.userId,
+			memoId: params.id,
+			data: {
+				categoryId: dto.categoryId,
+				startDate: parseDateOnly(dto.startDate),
+				endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
+				scheduledTime: dto.scheduledTime
+					? parseLocalDateTime(dto.startDate, dto.scheduledTime, tz)
+					: undefined,
+				isAllDay: dto.isAllDay,
+				visibility: dto.visibility,
+				items: dto.items,
+			},
 		});
 	}
 
@@ -311,10 +358,10 @@ export class MemoController {
 		@Body() dto: ConvertMemoToTodosDto,
 		@Timezone() tz: string,
 	): Promise<ConvertMemoToTodosResponseDto> {
-		return this.memoFacade.convertToTodos(
-			user.userId,
-			params.id,
-			{
+		return this.convertMemoToTodosUseCase.execute({
+			userId: user.userId,
+			memoId: params.id,
+			data: {
 				todos: dto.todos.map((todo) => ({
 					title: todo.title,
 					categoryId: todo.categoryId,
@@ -335,7 +382,7 @@ export class MemoController {
 					items: todo.items,
 				})),
 			},
-			tz,
-		);
+			timezone: tz,
+		});
 	}
 }

@@ -13,7 +13,7 @@ import type {
 	TodoCategoryWithCountView,
 	UpdateCategoryInput,
 } from "../../application/ports/todo-category.repository.port";
-import { TodoCategory } from "../../domain/entities/todo-category.entity";
+import { TodoCategory } from "../../domain/entities/todo-category.aggregate";
 
 type TodoCategoryRowWithCount = PrismaModels.TodoCategory & {
 	_count: { todos: number };

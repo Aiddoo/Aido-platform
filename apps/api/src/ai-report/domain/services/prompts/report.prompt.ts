@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { now } from "@/shared/domain/date/utils/core";
+import type { SupportedLocale } from "@/shared/domain/locale";
 import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
 } from "@/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
 import type { AggregatedReportData, ReportType } from "../../types";
 import { getKoreanSeasonalContext } from "../korean-seasonal-context";
 import { selectProfileTemplate } from "../profile-template-selector";

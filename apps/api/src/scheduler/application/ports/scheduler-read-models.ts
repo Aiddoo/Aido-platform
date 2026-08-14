@@ -4,7 +4,7 @@
  * Prisma select 형태를 애플리케이션 레이어에 노출하지 않기 위한 명시적 계약.
  * 어댑터가 이 형태로 투영(projection)하고, 전략은 이 타입만 소비한다.
  */
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 
 /** 아침 리마인더 수신자 (오늘 시작 투두 개수 포함) */
 export interface ReminderCountUser {

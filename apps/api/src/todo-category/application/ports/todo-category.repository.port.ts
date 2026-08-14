@@ -1,4 +1,4 @@
-import type { TodoCategory } from "../../domain/entities/todo-category.entity";
+import type { TodoCategory } from "../../domain/entities/todo-category.aggregate";
 
 /** 카테고리 + 할 일 개수 읽기 프로젝션 */
 export interface TodoCategoryWithCountView {

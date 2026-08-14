@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 
 import type { NotificationType } from "../../domain/types/notification-type";
 import type { CreateNotificationData } from "./notification-data";

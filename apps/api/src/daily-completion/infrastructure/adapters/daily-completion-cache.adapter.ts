@@ -1,8 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
 import type { DailyCompletionCachePort } from "../../application/ports/daily-completion-cache.port";
 import type { DailyCompletionsRange } from "../../domain/daily-completion";
+import {
+	DAILY_COMPLETION_CACHE_TTL_MS,
+	DailyCompletionCacheKey,
+} from "../cache/daily-completion-cache.keyspace";
 
 /**
  * DailyCompletionCachePort 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임.
@@ -18,7 +21,7 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
 		endDate: string,
 	): Promise<DailyCompletionsRange | undefined> {
 		return this.cacheService.get<DailyCompletionsRange>(
-			CacheKeys.dailyCompletionRange(userId, startDate, endDate),
+			DailyCompletionCacheKey.range(userId, startDate, endDate),
 		);
 	}
 
@@ -29,9 +32,9 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
 		value: DailyCompletionsRange,
 	): Promise<void> {
 		return this.cacheService.set(
-			CacheKeys.dailyCompletionRange(userId, startDate, endDate),
+			DailyCompletionCacheKey.range(userId, startDate, endDate),
 			value,
-			CacheKeys.TTL.DAILY_COMPLETIONS,
+			DAILY_COMPLETION_CACHE_TTL_MS,
 		);
 	}
 
@@ -41,7 +44,7 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
 		endDate: string,
 	): Promise<DailyCompletionsRange | undefined> {
 		return this.cacheService.get<DailyCompletionsRange>(
-			CacheKeys.dailyCompletionPublicRange(ownerUserId, startDate, endDate),
+			DailyCompletionCacheKey.publicRange(ownerUserId, startDate, endDate),
 		);
 	}
 
@@ -52,15 +55,15 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
 		value: DailyCompletionsRange,
 	): Promise<void> {
 		return this.cacheService.set(
-			CacheKeys.dailyCompletionPublicRange(ownerUserId, startDate, endDate),
+			DailyCompletionCacheKey.publicRange(ownerUserId, startDate, endDate),
 			value,
-			CacheKeys.TTL.DAILY_COMPLETIONS,
+			DAILY_COMPLETION_CACHE_TTL_MS,
 		);
 	}
 
 	async invalidate(userId: string): Promise<void> {
 		await this.cacheService.delByPattern(
-			CacheKeys.dailyCompletionPattern(userId),
+			DailyCompletionCacheKey.pattern(userId),
 		);
 	}
 }

@@ -3,7 +3,6 @@ import { Module } from "@nestjs/common";
 import { FollowModule } from "@/follow/follow.module";
 import { NotificationModule } from "@/notification/notification.module";
 
-import { NudgeFacade } from "./application/facades/nudge.facade";
 import { NUDGE_REPOSITORY } from "./application/ports/nudge.repository.port";
 import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit-reader.port";
 import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port";
@@ -20,7 +19,7 @@ import { NudgeController } from "./presentation/nudge.controller";
  * Nudge 모듈 (DDD 클린아키텍처 · use-case 기반).
  *
  * 친구의 할 일을 콕 찌르거나(sendNudge), 오늘 할 일이 없는 친구를 독촉한다(sendRemindNudge).
- * 컨트롤러는 NudgeFacade만 주입한다.
+ * 컨트롤러는 endpoint별 UseCase와 Reader를 직접 주입한다.
  *
  * 제한 정책:
  * - 콕 찌르기: FREE 하루 3회 / ACTIVE 무제한, 동일 Todo 24시간 쿨다운, 오늘의 공개 할 일만 대상
@@ -39,8 +38,6 @@ import { NudgeController } from "./presentation/nudge.controller";
 		SendNudgeUseCase,
 		SendRemindNudgeUseCase,
 		MarkNudgeReadUseCase,
-		NudgeFacade,
 	],
-	exports: [NudgeFacade],
 })
 export class NudgeModule {}

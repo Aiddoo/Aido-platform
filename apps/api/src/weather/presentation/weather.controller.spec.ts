@@ -1,7 +1,7 @@
 /**
  * WeatherController 단위 테스트
  *
- * Suites + Builder + GWT 패턴 적용. 컨트롤러는 WeatherFacade만 주입받는다.
+ * Suites + Builder + GWT 패턴 적용. 컨트롤러는 endpoint UseCase를 직접 주입받는다.
  *
  * 실행 명령:
  * pnpm --filter @aido/api test weather.controller.spec
@@ -11,14 +11,18 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { UserLocationBuilder } from "@test/builders";
 import type { CurrentUserPayload } from "../../auth/presentation/decorators";
-import { WeatherFacade } from "../application/facades/weather.facade";
 import type { WeatherConditions } from "../application/ports/weather-provider.port";
+import { GetWeatherConditionsUseCase } from "../application/queries/get-weather-conditions/get-weather-conditions.use-case";
+import { GetWeatherForecastUseCase } from "../application/queries/get-weather-forecast/get-weather-forecast.use-case";
+import { UpsertLocationUseCase } from "../application/use-cases/upsert-location/upsert-location.use-case";
 import { UserLocation } from "../domain/entities/user-location.entity";
 import { WeatherController } from "./weather.controller";
 
 describe("WeatherController — 날씨 컨트롤러", () => {
 	let controller: WeatherController;
-	let weatherFacade: Mocked<WeatherFacade>;
+	let upsertLocationUseCase: Mocked<UpsertLocationUseCase>;
+	let getWeatherForecastUseCase: Mocked<GetWeatherForecastUseCase>;
+	let getWeatherConditionsUseCase: Mocked<GetWeatherConditionsUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-1",
@@ -46,7 +50,9 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 			await TestBed.solitary(WeatherController).compile();
 
 		controller = unit;
-		weatherFacade = unitRef.get(WeatherFacade);
+		upsertLocationUseCase = unitRef.get(UpsertLocationUseCase);
+		getWeatherForecastUseCase = unitRef.get(GetWeatherForecastUseCase);
+		getWeatherConditionsUseCase = unitRef.get(GetWeatherConditionsUseCase);
 	});
 
 	describe("updateLocation", () => {
@@ -54,17 +60,17 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 			// Given
 			const dto = { latitude: 37.5665, longitude: 126.978 };
 			const location = buildLocation();
-			weatherFacade.upsertLocation.mockResolvedValue(location);
+			upsertLocationUseCase.execute.mockResolvedValue(location);
 
 			// When
 			const result = await controller.updateLocation(mockUser, dto);
 
 			// Then
-			expect(weatherFacade.upsertLocation).toHaveBeenCalledWith(
-				"user-1",
-				37.5665,
-				126.978,
-			);
+			expect(upsertLocationUseCase.execute).toHaveBeenCalledWith({
+				userId: "user-1",
+				latitude: 37.5665,
+				longitude: 126.978,
+			});
 			expect(result).toEqual({
 				latitude: location.latitude,
 				longitude: location.longitude,
@@ -90,7 +96,7 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 				dailyForecasts: [],
 			};
 			const location = buildLocation();
-			weatherFacade.getForecastForUser.mockResolvedValue({
+			getWeatherForecastUseCase.execute.mockResolvedValue({
 				forecast,
 				location,
 			});
@@ -99,10 +105,10 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 			const result = await controller.getForecast(mockUser, {});
 
 			// Then
-			expect(weatherFacade.getForecastForUser).toHaveBeenCalledWith(
-				"user-1",
-				expect.any(Date),
-			);
+			expect(getWeatherForecastUseCase.execute).toHaveBeenCalledWith({
+				userId: "user-1",
+				date: expect.any(Date),
+			});
 			expect(result).toMatchObject({
 				latitude: location.latitude,
 				longitude: location.longitude,
@@ -125,7 +131,7 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 				dailyForecasts: [],
 			};
 			const location = buildLocation();
-			weatherFacade.getForecastForUser.mockResolvedValue({
+			getWeatherForecastUseCase.execute.mockResolvedValue({
 				forecast,
 				location,
 			});
@@ -136,10 +142,10 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 			});
 
 			// Then
-			expect(weatherFacade.getForecastForUser).toHaveBeenCalledWith(
-				"user-1",
-				expect.any(Date),
-			);
+			expect(getWeatherForecastUseCase.execute).toHaveBeenCalledWith({
+				userId: "user-1",
+				date: expect.any(Date),
+			});
 			expect(result.skyCondition).toBe("CLOUDY");
 		});
 	});
@@ -155,16 +161,16 @@ describe("WeatherController — 날씨 컨트롤러", () => {
 				pm10: 45,
 				pm25: 22,
 			};
-			weatherFacade.getConditionsForUser.mockResolvedValue(conditions);
+			getWeatherConditionsUseCase.execute.mockResolvedValue(conditions);
 
 			// When
 			const result = await controller.getConditions(mockUser, {});
 
 			// Then
-			expect(weatherFacade.getConditionsForUser).toHaveBeenCalledWith(
-				"user-1",
-				expect.any(Date),
-			);
+			expect(getWeatherConditionsUseCase.execute).toHaveBeenCalledWith({
+				userId: "user-1",
+				date: expect.any(Date),
+			});
 			expect(result).toEqual(conditions);
 		});
 	});

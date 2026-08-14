@@ -12,9 +12,7 @@ import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
-
-import { Subscription } from "../../../domain/entities/subscription.entity";
+import { Subscription } from "../../../domain/entities/subscription.aggregate";
 import {
 	SUBSCRIPTION_REPOSITORY,
 	type SubscriptionRepositoryPort,
@@ -28,6 +26,7 @@ import {
 	SUBSCRIPTION_EVENT_NOTIFIER,
 	type SubscriptionEventNotifierPort,
 } from "../../ports/subscription-event-notifier.port";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "../../ports/subscription-webhook-lock.port";
 import { HandleWebhookEventUseCase } from "./handle-webhook-event.use-case";
 
 describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
@@ -77,7 +76,7 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 		const { unit, unitRef } = await TestBed.solitary(HandleWebhookEventUseCase)
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
-			.mock(LOCK_PROVIDER)
+			.mock(SUBSCRIPTION_WEBHOOK_LOCK)
 			.impl(() => ({ acquire: acquireMock, isLocked: jest.fn() }))
 			.compile();
 

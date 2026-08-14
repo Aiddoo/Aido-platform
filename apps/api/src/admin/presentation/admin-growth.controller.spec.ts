@@ -2,7 +2,7 @@ import type { CurrentUserPayload } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { IS_ADMIN_KEY } from "@/auth/presentation/decorators/admin.decorator";
-import { AdminFacade } from "../application/facades/admin.facade";
+import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query";
 import { AdminGrowthController } from "./admin-growth.controller";
 
 describe("AdminGrowthController — 관리자 성장 지표", () => {
@@ -11,7 +11,9 @@ describe("AdminGrowthController — 관리자 성장 지표", () => {
 		const { unit, unitRef } = await TestBed.solitary(
 			AdminGrowthController,
 		).compile();
-		const facade: Mocked<AdminFacade> = unitRef.get(AdminFacade);
+		const getGrowthSummaryQuery: Mocked<GetGrowthSummaryQuery> = unitRef.get(
+			GetGrowthSummaryQuery,
+		);
 		const admin: CurrentUserPayload = {
 			userId: "admin-1",
 			email: "admin@example.com",
@@ -37,13 +39,13 @@ describe("AdminGrowthController — 관리자 성장 지표", () => {
 			d30: null,
 			d7RetainedActivatedUsers: null,
 		};
-		facade.getGrowthSummary.mockResolvedValue(summary);
+		getGrowthSummaryQuery.execute.mockResolvedValue(summary);
 
 		// When - 성장 요약 endpoint를 호출하면
 		const result = await unit.getGrowthSummary(admin, query);
 
 		// Then - query를 그대로 위임하고 AdminGuard 메타데이터를 보존한다
-		expect(facade.getGrowthSummary).toHaveBeenCalledWith(query);
+		expect(getGrowthSummaryQuery.execute).toHaveBeenCalledWith(query);
 		expect(result).toEqual(summary);
 		expect(Reflect.getMetadata(IS_ADMIN_KEY, unit.getGrowthSummary)).toBe(true);
 	});

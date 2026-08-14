@@ -5,13 +5,16 @@ import {
 	parsedMemoDataSchema,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { APICallError } from "ai";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 import { buildParseMemoPrompt } from "../../../domain/services/prompts/parse-memo.prompt";
 import { buildParseMemoPromptEn } from "../../../domain/services/prompts/parse-memo.prompt.en";
-import { AI_PROVIDER, type AiProvider } from "../../ports/ai-provider.port";
+import {
+	AI_PROVIDER,
+	type AiProvider,
+	AiProviderCallError,
+} from "../../ports/ai-provider.port";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
@@ -119,7 +122,7 @@ export class ParseMemoUseCase {
 		} catch (error) {
 			await this.usageMeter.decrement(userId);
 
-			if (error instanceof APICallError) {
+			if (error instanceof AiProviderCallError) {
 				this.#logger.error(
 					`AI API 호출 실패: userId=${userId}, status=${error.statusCode}, message=${error.message}`,
 				);

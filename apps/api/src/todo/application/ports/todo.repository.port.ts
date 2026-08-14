@@ -3,7 +3,7 @@ import type {
 	TodoCreationPlan,
 	TodoDetailsPatch,
 	TodoVisibility,
-} from "../../domain/entities/todo.entity";
+} from "../../domain/entities/todo.aggregate";
 import type { TodoScheduleProps } from "../../domain/value-objects/todo-schedule.vo";
 
 export const TODO_REPOSITORY = Symbol("TODO_REPOSITORY");

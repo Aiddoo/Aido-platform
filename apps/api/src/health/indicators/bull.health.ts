@@ -3,7 +3,7 @@ import {
 	type HealthIndicatorResult,
 	HealthIndicatorService,
 } from "@nestjs/terminus";
-import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification";
+import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue";
 import { AI_REPORT_QUEUE } from "@/ai-report";
 import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { TODO_REMINDER_QUEUE } from "@/scheduler";

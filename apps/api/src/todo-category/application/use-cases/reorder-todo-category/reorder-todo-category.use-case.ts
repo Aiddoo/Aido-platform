@@ -10,7 +10,7 @@ import {
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import type { TodoCategory } from "../../../domain/entities/todo-category.entity";
+import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,

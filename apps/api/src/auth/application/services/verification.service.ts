@@ -16,6 +16,10 @@ import {
 	AUTH_VERIFICATION_REPOSITORY,
 	type AuthVerificationRepositoryPort,
 } from "../ports/auth-persistence.port";
+import {
+	VERIFICATION_CODE_SECURITY,
+	type VerificationCodeSecurityPort,
+} from "../ports/verification-code-security.port";
 
 export interface VerificationCodeResult {
 	code: string;
@@ -31,7 +35,9 @@ export class VerificationService {
 		@Inject(AUTH_VERIFICATION_REPOSITORY)
 		private readonly verificationRepository: AuthVerificationRepositoryPort,
 		@Inject(AUTH_EMAIL_SENDER)
-		private readonly emailFacade: AuthEmailSenderPort,
+		private readonly emailSender: AuthEmailSenderPort,
+		@Inject(VERIFICATION_CODE_SECURITY)
+		private readonly verificationCodeSecurity: VerificationCodeSecurityPort,
 	) {}
 
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
@@ -56,7 +62,7 @@ export class VerificationService {
 
 	// 이메일 발송 실패는 로그만 남기고 예외를 던지지 않음 (재발송 가능)
 	async sendVerificationEmail(email: string, code: string): Promise<void> {
-		const emailResult = await this.emailFacade.sendVerificationCode(email, {
+		const emailResult = await this.emailSender.sendVerificationCode(email, {
 			code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});
@@ -86,7 +92,7 @@ export class VerificationService {
 		const result = await this.#createVerificationCode(userId, "PASSWORD_RESET");
 
 		// 이메일 발송
-		const emailResult = await this.emailFacade.sendPasswordResetCode(email, {
+		const emailResult = await this.emailSender.sendPasswordResetCode(email, {
 			code: result.code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});
@@ -118,7 +124,7 @@ export class VerificationService {
 		const result = await this.#createVerificationCode(userId, "PASSWORD_SETUP");
 
 		// 이메일 발송
-		const emailResult = await this.emailFacade.sendPasswordSetupCode(email, {
+		const emailResult = await this.emailSender.sendPasswordSetupCode(email, {
 			code: result.code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});
@@ -153,7 +159,7 @@ export class VerificationService {
 			throw new ApplicationException(ErrorCode.VERIFY_0754);
 		}
 
-		const tokenHash = VerificationCode.hashOf(code);
+		const tokenHash = this.verificationCodeSecurity.hash(code);
 
 		// 코드 일치 확인
 		if (verification.token !== tokenHash) {
@@ -202,7 +208,11 @@ export class VerificationService {
 		type: VerificationType,
 	): Promise<VerificationCodeResult> {
 		// 6자리 랜덤 숫자 생성 + SHA-256 해시(도메인 값 객체가 소유)
-		const verificationCode = VerificationCode.generate();
+		const generatedCode = this.verificationCodeSecurity.generate();
+		const verificationCode = VerificationCode.create(
+			generatedCode.plaintext,
+			generatedCode.digest,
+		);
 
 		// 만료 시간 계산
 		const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);

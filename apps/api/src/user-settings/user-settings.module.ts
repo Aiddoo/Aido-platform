@@ -3,12 +3,16 @@ import { Module } from "@nestjs/common";
 import { NotificationQueueModule } from "@/notification/queue";
 import { TimezoneReminderQueueModule } from "@/scheduler/queue";
 
-import { UserSettingsFacade } from "./application/facades/user-settings.facade";
 import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/reminder-schedule.enqueuer.port";
 import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/streak-milestone.notifier.port";
 import { TODO_COMPLETION_STATS_READER } from "./application/ports/todo-completion-stats.reader.port";
 import { USER_CONSENT_REPOSITORY } from "./application/ports/user-consent.repository.port";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/user-preference.repository.port";
+import {
+	USER_NOTIFICATION_SETTINGS_ACCESS,
+	USER_SETTINGS_PROVISIONER,
+	USER_STREAK_ACCESS,
+} from "./application/ports/user-settings-access.port";
 import { USER_SETTINGS_CACHE } from "./application/ports/user-settings-cache.port";
 import { GetConsentUseCase } from "./application/use-cases/get-consent/get-consent.use-case";
 import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record/get-consent-record.use-case";
@@ -26,6 +30,7 @@ import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-loc
 import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case";
 import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/streak-milestone-notifier.adapter";
 import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/timezone-reminder-enqueuer.adapter";
+import { UserSettingsAccessAdapter } from "./infrastructure/adapters/user-settings-access.adapter";
 import { UserSettingsCacheAdapter } from "./infrastructure/adapters/user-settings-cache.adapter";
 import { PrismaTodoCompletionStatsReader } from "./infrastructure/persistence/prisma-todo-completion-stats.reader";
 import { UserConsentRepository } from "./infrastructure/persistence/user-consent.repository";
@@ -37,7 +42,7 @@ import { SettingsController } from "./presentation/user-settings.controller";
 	imports: [NotificationQueueModule, TimezoneReminderQueueModule],
 	controllers: [SettingsController],
 	providers: [
-		UserSettingsFacade,
+		UserSettingsAccessAdapter,
 		GetPreferenceUseCase,
 		UpdatePreferenceUseCase,
 		GetConsentUseCase,
@@ -75,7 +80,21 @@ import { SettingsController } from "./presentation/user-settings.controller";
 		},
 		// 조회 캐시 포트 (application → CacheService 직접 의존 역전)
 		{ provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
+		{
+			provide: USER_SETTINGS_PROVISIONER,
+			useExisting: UserSettingsAccessAdapter,
+		},
+		{ provide: USER_STREAK_ACCESS, useExisting: UserSettingsAccessAdapter },
+		{
+			provide: USER_NOTIFICATION_SETTINGS_ACCESS,
+			useExisting: UserSettingsAccessAdapter,
+		},
 	],
-	exports: [UserSettingsFacade, TimezoneSelfHealInterceptor],
+	exports: [
+		USER_SETTINGS_PROVISIONER,
+		USER_STREAK_ACCESS,
+		USER_NOTIFICATION_SETTINGS_ACCESS,
+		TimezoneSelfHealInterceptor,
+	],
 })
 export class UserSettingsModule {}

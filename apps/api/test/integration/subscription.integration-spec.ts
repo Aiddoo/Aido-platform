@@ -26,11 +26,8 @@ import { SubscriptionEventBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import {
-	AdminNotificationFacade,
-	PAYMENT_NOTIFIER,
-} from "@/admin-notification";
-import { NotificationQueueService } from "@/notification";
+import { AdminEventNotifier, PAYMENT_NOTIFIER } from "@/admin-notification";
+import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
@@ -38,9 +35,11 @@ import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
 import { SUBSCRIPTION_REPOSITORY } from "@/subscription/application/ports/subscription.repository.port";
 import { SUBSCRIPTION_CACHE } from "@/subscription/application/ports/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "@/subscription/application/ports/subscription-event-notifier.port";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "@/subscription/application/ports/subscription-webhook-lock.port";
 import { HandleWebhookEventUseCase } from "@/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
 import { SubscriptionCacheAdapter } from "@/subscription/infrastructure/adapters/subscription-cache.adapter";
 import { SubscriptionEventNotifierAdapter } from "@/subscription/infrastructure/adapters/subscription-event-notifier.adapter";
+import { SubscriptionWebhookLockAdapter } from "@/subscription/infrastructure/adapters/subscription-webhook-lock.adapter";
 import { PrismaSubscriptionRepository } from "@/subscription/infrastructure/persistence/prisma-subscription.repository";
 
 describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
@@ -71,8 +70,8 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		invalidateUserProfile: jest.fn().mockResolvedValue(undefined),
 	};
 
-	// Mock AdminNotificationFacade
-	const mockAdminNotificationFacade = {
+	// Mock AdminEventNotifier
+	const mockAdminEventNotifier = {
 		notifySubscriptionEvent: jest.fn(),
 	};
 
@@ -123,6 +122,10 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 					useClass: SubscriptionEventNotifierAdapter,
 				},
 				{
+					provide: SUBSCRIPTION_WEBHOOK_LOCK,
+					useClass: SubscriptionWebhookLockAdapter,
+				},
+				{
 					provide: UNIT_OF_WORK,
 					useValue: createUnitOfWorkMock(),
 				},
@@ -136,8 +139,8 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 					useValue: mockCacheService,
 				},
 				{
-					provide: AdminNotificationFacade,
-					useValue: mockAdminNotificationFacade,
+					provide: AdminEventNotifier,
+					useValue: mockAdminEventNotifier,
 				},
 				{
 					provide: NotificationQueueService,
@@ -215,9 +218,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		expect(mockCacheService.invalidateUserProfile).toHaveBeenCalledWith(
 			mockUser.id,
 		);
-		expect(
-			mockAdminNotificationFacade.notifySubscriptionEvent,
-		).toHaveBeenCalledWith(
+		expect(mockAdminEventNotifier.notifySubscriptionEvent).toHaveBeenCalledWith(
 			expect.objectContaining({
 				userId: mockUser.id,
 				eventType: "INITIAL_PURCHASE",
@@ -369,9 +370,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(
 			mockUser.id,
 		);
-		expect(
-			mockAdminNotificationFacade.notifySubscriptionEvent,
-		).toHaveBeenCalledWith(
+		expect(mockAdminEventNotifier.notifySubscriptionEvent).toHaveBeenCalledWith(
 			expect.objectContaining({
 				eventType: "BILLING_ISSUE",
 			}),
@@ -409,7 +408,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		expect(mockCacheService.invalidateSubscription).not.toHaveBeenCalled();
 		expect(mockCacheService.invalidateUserProfile).not.toHaveBeenCalled();
 		expect(
-			mockAdminNotificationFacade.notifySubscriptionEvent,
+			mockAdminEventNotifier.notifySubscriptionEvent,
 		).not.toHaveBeenCalled();
 	});
 

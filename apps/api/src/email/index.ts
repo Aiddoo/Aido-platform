@@ -5,8 +5,12 @@
  * 타입은 계약.
  */
 
-export * from "./application/facades/email.facade";
 export * from "./application/ports/email-sender.port";
+export * from "./application/senders/transactional-email.sender";
 export * from "./domain/templates";
-export * from "./domain/value-objects/email-message.vo";
+export {
+	EmailMessage,
+	type EmailTag,
+	type EmailType,
+} from "./domain/value-objects/email-message.vo";
 export * from "./email.module";

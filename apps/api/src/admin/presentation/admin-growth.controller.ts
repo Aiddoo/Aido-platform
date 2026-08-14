@@ -13,14 +13,14 @@ import {
 	ApiSuccessResponse,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
-import { AdminFacade } from "../application/facades/admin.facade";
+import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query";
 import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "./dtos";
 
 @ApiTags(SWAGGER_TAGS.ADMIN_GROWTH)
 @ApiBearerAuth()
 @Controller("admin/growth")
 export class AdminGrowthController {
-	constructor(private readonly adminFacade: AdminFacade) {}
+	constructor(private readonly getGrowthSummaryQuery: GetGrowthSummaryQuery) {}
 
 	@Get("summary")
 	@Admin()
@@ -37,6 +37,6 @@ export class AdminGrowthController {
 		@CurrentUser() _user: CurrentUserPayload,
 		@Query() query: GrowthSummaryQueryDto,
 	): Promise<GrowthSummaryResponseDto> {
-		return this.adminFacade.getGrowthSummary(query);
+		return this.getGrowthSummaryQuery.execute(query);
 	}
 }

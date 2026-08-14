@@ -6,7 +6,6 @@ import { NotificationModule } from "../notification/notification.module";
 import { TodoModule } from "../todo/todo.module";
 import { WeatherModule } from "../weather/weather.module";
 
-import { AiSuggestionFacade } from "./application/facades/ai-suggestion.facade";
 import { AI_SUGGESTION_REPOSITORY } from "./application/ports/ai-suggestion.repository.port";
 import { RECURRING_TODO_CREATOR } from "./application/ports/recurring-todo-creator.port";
 import { WEEKLY_REPORT_READER } from "./application/ports/weekly-report-reader.port";
@@ -34,7 +33,7 @@ import { AiSuggestionController } from "./presentation/ai-suggestion.controller"
  *
  * ### 크로스모듈(전부 포트/어댑터로 역전)
  * - AiModule: AI_PROVIDER(Gemini)로 제안 생성
- * - TodoModule: 수락 시 RECURRING_TODO_CREATOR가 TodoFacade에 반복 생성 위임
+ * - TodoModule: 수락 시 RECURRING_TODO_CREATOR가 반복 생성 UseCase에 위임
  * - AiReportModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
  * - WeatherModule: 날씨 기반 제안을 위한 격자 예보 조회
  * - NotificationModule: 새 제안 생성 시 알림 발송(프로세서)
@@ -59,11 +58,9 @@ import { AiSuggestionController } from "./presentation/ai-suggestion.controller"
 		GetPendingSuggestionsUseCase,
 		HandleSuggestionActionUseCase,
 		AnalyzeAndCreateSuggestionsUseCase,
-		AiSuggestionFacade,
 		SuggestionAnalysisJob,
 		SuggestionAnalysisProcessor,
 		AiSuggestionQueueMaintenanceService,
 	],
-	exports: [AiSuggestionFacade],
 })
 export class AiSuggestionModule {}

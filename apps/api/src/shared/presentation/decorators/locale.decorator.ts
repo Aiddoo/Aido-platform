@@ -1,10 +1,16 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
+import {
+	DEFAULT_LOCALE,
+	SUPPORTED_LOCALES,
+	type SupportedLocale,
+} from "@/shared/domain/locale";
 
-export const SUPPORTED_LOCALES = ["ko", "en"] as const;
-
-export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
-
-export const DEFAULT_LOCALE: SupportedLocale = "ko";
+export {
+	DEFAULT_LOCALE,
+	SUPPORTED_LOCALES,
+	type SupportedLocale,
+	toSupportedLocale,
+} from "@/shared/domain/locale";
 
 /**
  * Accept-Language 헤더에서 지원 로케일을 추출한다.
@@ -34,11 +40,6 @@ export function parseAcceptLanguage(
  * DB 저장값·큐 페이로드 등 신뢰할 수 없는 문자열을 지원 로케일로 내로잉한다.
  * 화이트리스트 밖 값은 DEFAULT_LOCALE("ko") — 기존 유저 하위 호환.
  */
-export function toSupportedLocale(value: unknown): SupportedLocale {
-	const matched = SUPPORTED_LOCALES.find((locale) => locale === value);
-	return matched ?? DEFAULT_LOCALE;
-}
-
 export const Locale = createParamDecorator(
 	(_data: unknown, ctx: ExecutionContext): SupportedLocale | undefined => {
 		const request = ctx.switchToHttp().getRequest();

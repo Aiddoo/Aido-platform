@@ -16,7 +16,7 @@ import {
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { Todo } from "../../../domain/entities/todo.entity";
+import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";

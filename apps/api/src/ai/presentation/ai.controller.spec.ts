@@ -15,13 +15,15 @@ import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "../../auth/presentation/decorators";
 
-import { AiFacade } from "../application/facades/ai.facade";
+import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case";
+import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case";
 import { AiUsage } from "../domain/value-objects/ai-usage.vo";
 import { AiController } from "./ai.controller";
 
 describe("AiController — AI 컨트롤러", () => {
 	let controller: AiController;
-	let mockAiFacade: Mocked<AiFacade>;
+	let parseTodoUseCase: Mocked<ParseTodoUseCase>;
+	let getAiUsageUseCase: Mocked<GetAiUsageUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -34,7 +36,8 @@ describe("AiController — AI 컨트롤러", () => {
 		const { unit, unitRef } = await TestBed.solitary(AiController).compile();
 
 		controller = unit;
-		mockAiFacade = unitRef.get(AiFacade);
+		parseTodoUseCase = unitRef.get(ParseTodoUseCase);
+		getAiUsageUseCase = unitRef.get(GetAiUsageUseCase);
 	});
 
 	describe("parseTodo", () => {
@@ -57,7 +60,7 @@ describe("AiController — AI 컨트롤러", () => {
 					tokenUsage: { input: 180, output: 45 },
 				},
 			};
-			mockAiFacade.parseTodo.mockResolvedValue(facadeResult);
+			parseTodoUseCase.execute.mockResolvedValue(facadeResult);
 
 			// When - parseTodo를 호출하면
 			const result = await controller.parseTodo(
@@ -68,13 +71,13 @@ describe("AiController — AI 컨트롤러", () => {
 			);
 
 			// Then - Facade에 text, userId, timezone, categoryId를 전달하고 성공 응답을 반환해야 한다
-			expect(mockAiFacade.parseTodo).toHaveBeenCalledWith(
-				dto.text,
-				mockUser.userId,
-				"Asia/Seoul",
-				undefined,
-				undefined,
-			);
+			expect(parseTodoUseCase.execute).toHaveBeenCalledWith({
+				text: dto.text,
+				userId: mockUser.userId,
+				timezone: "Asia/Seoul",
+				categoryId: undefined,
+				locale: "ko",
+			});
 			expect(result).toEqual({
 				success: true,
 				data: facadeResult.data,
@@ -102,7 +105,7 @@ describe("AiController — AI 컨트롤러", () => {
 					tokenUsage: { input: 180, output: 45 },
 				},
 			};
-			mockAiFacade.parseTodo.mockResolvedValue(facadeResult);
+			parseTodoUseCase.execute.mockResolvedValue(facadeResult);
 
 			// When - parseTodo를 호출하면
 			const result = await controller.parseTodo(
@@ -113,13 +116,13 @@ describe("AiController — AI 컨트롤러", () => {
 			);
 
 			// Then - categoryId가 Facade에 전달되고 응답에 포함되어야 한다
-			expect(mockAiFacade.parseTodo).toHaveBeenCalledWith(
-				dto.text,
-				mockUser.userId,
-				"Asia/Seoul",
-				42,
-				undefined,
-			);
+			expect(parseTodoUseCase.execute).toHaveBeenCalledWith({
+				text: dto.text,
+				userId: mockUser.userId,
+				timezone: "Asia/Seoul",
+				categoryId: 42,
+				locale: "ko",
+			});
 			expect(result.data.categoryId).toBe(42);
 		});
 	});
@@ -128,13 +131,15 @@ describe("AiController — AI 컨트롤러", () => {
 		it("AI 사용량을 Facade에서 조회하고 평면 뷰를 반환해야 한다", async () => {
 			// Given - 사용량 조회 Facade 응답이 준비되었을 때
 			const usage = AiUsage.of(3, 5, "2026-02-22T15:00:00.000Z");
-			mockAiFacade.getUsage.mockResolvedValue(usage);
+			getAiUsageUseCase.execute.mockResolvedValue(usage);
 
 			// When - getUsage를 호출하면
 			const result = await controller.getUsage(mockUser);
 
 			// Then - Facade에 userId를 전달하고 성공 응답을 반환해야 한다
-			expect(mockAiFacade.getUsage).toHaveBeenCalledWith(mockUser.userId);
+			expect(getAiUsageUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+			});
 			expect(result).toEqual({
 				success: true,
 				data: { used: 3, limit: 5, resetsAt: "2026-02-22T15:00:00.000Z" },
@@ -144,7 +149,7 @@ describe("AiController — AI 컨트롤러", () => {
 		it("사용량이 0일 때도 정상적으로 반환해야 한다", async () => {
 			// Given - 사용량이 없을 때
 			const usage = AiUsage.of(0, 5, "2026-02-22T15:00:00.000Z");
-			mockAiFacade.getUsage.mockResolvedValue(usage);
+			getAiUsageUseCase.execute.mockResolvedValue(usage);
 
 			// When - getUsage를 호출하면
 			const result = await controller.getUsage(mockUser);

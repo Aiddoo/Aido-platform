@@ -12,16 +12,17 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
-import type { IDedupProvider } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
-import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
-
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
+import {
+	SCHEDULER_DEDUP,
+	type SchedulerDedupPort,
+} from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -32,8 +33,8 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 	let strategy: NudgeSuggestStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationFacade>;
-	let dedupProvider: Mocked<IDedupProvider>;
+	let notificationService: Mocked<NotificationSender>;
+	let schedulerDedup: Mocked<SchedulerDedupPort>;
 
 	const TZ = "Asia/Seoul";
 
@@ -60,8 +61,8 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationFacade);
-		dedupProvider = unitRef.get(DEDUP_PROVIDER);
+		notificationService = unitRef.get(NotificationSender);
+		schedulerDedup = unitRef.get(SCHEDULER_DEDUP);
 
 		// 기본 mock 설정
 		reader.findActiveUsersInTimezone.mockResolvedValue([]);
@@ -69,8 +70,8 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
-		dedupProvider.filterMembers.mockResolvedValue(new Set());
-		dedupProvider.addMembers.mockResolvedValue(undefined);
+		schedulerDedup.findSentNudgePairs.mockResolvedValue(new Set());
+		schedulerDedup.recordNudgePairs.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -152,7 +153,9 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		]);
 
 		// 이번 주 이미 friend-1에게 발송 이력 (Redis)
-		dedupProvider.filterMembers.mockResolvedValue(new Set(["user-1:friend-1"]));
+		schedulerDedup.findSentNudgePairs.mockResolvedValue(
+			new Set(["user-1:friend-1"]),
+		);
 
 		// When
 		const result = await strategy.execute(ctx);

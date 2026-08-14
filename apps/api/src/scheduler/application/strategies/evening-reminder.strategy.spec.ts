@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -26,7 +26,7 @@ import { EveningReminderStrategy } from "./evening-reminder.strategy";
 describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 	let strategy: EveningReminderStrategy;
 	let reader: Mocked<ScheduledReminderReaderPort>;
-	let notificationService: Mocked<NotificationFacade>;
+	let notificationService: Mocked<NotificationSender>;
 
 	const TZ = "Asia/Seoul";
 	const VARIANT_CONTEXT = {
@@ -58,7 +58,7 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		strategy = unit;
 		reader = unitRef.get(SCHEDULED_REMINDER_READER);
-		notificationService = unitRef.get(NotificationFacade);
+		notificationService = unitRef.get(NotificationSender);
 
 		// 기본 mock 설정
 		reader.findPremiumEveningReminderUsers.mockResolvedValue([]);

@@ -1,14 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DedupKeys } from "@/shared/infrastructure/dedup/constants/dedup-keys";
-import {
-	DEDUP_PROVIDER,
-	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
 import type { NotificationType } from "../../../domain/types/notification-type";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
+import {
+	NOTIFICATION_DEDUP,
+	type NotificationDedupPort,
+} from "../../ports/notification-dedup.port";
 
 /**
  * 이미 알림을 받은 사용자 ID 목록 조회 유스케이스 (배치)
@@ -21,8 +20,8 @@ import {
 @Injectable()
 export class FindAlreadyNotifiedUsersUseCase {
 	constructor(
-		@Inject(DEDUP_PROVIDER)
-		private readonly dedupProvider: IDedupProvider,
+		@Inject(NOTIFICATION_DEDUP)
+		private readonly notificationDedup: NotificationDedupPort,
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
 	) {}
@@ -33,28 +32,23 @@ export class FindAlreadyNotifiedUsersUseCase {
 		notificationDate: Date;
 		friendId?: string;
 	}): Promise<Set<string>> {
-		const setKey = DedupKeys.notified(params.type, params.notificationDate);
-
-		// 단일 SMISMEMBER: sentinel + userIds → atomic cold-start 감지
-		const result = await this.dedupProvider.filterMembers(setKey, [
-			DedupKeys.SENTINEL,
-			...params.userIds,
-		]);
-
-		if (result.has(DedupKeys.SENTINEL)) {
-			// Set이 warm 상태 → Redis 결과 신뢰
-			result.delete(DedupKeys.SENTINEL);
-			return result;
+		const knownRecipients = await this.notificationDedup.readKnownRecipients(
+			params.type,
+			params.notificationDate,
+			params.userIds,
+		);
+		if (knownRecipients) {
+			return knownRecipients;
 		}
 
 		// Cold start: DB fallback + Redis warm-up
 		const fromDb =
 			await this.notificationRepository.findAlreadyNotifiedUserIds(params);
 
-		void this.dedupProvider.addMembers(
-			setKey,
-			[DedupKeys.SENTINEL, ...[...fromDb]],
-			DedupKeys.TTL.NOTIFIED,
+		void this.notificationDedup.warmRecipients(
+			params.type,
+			params.notificationDate,
+			[...fromDb],
 		);
 
 		return fromDb;

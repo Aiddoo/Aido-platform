@@ -3,9 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import type { TodoCategory } from "../../../domain/entities/todo-category.entity";
-import { CategoryColor } from "../../../domain/value-objects/category-color.vo";
-import { CategoryName } from "../../../domain/value-objects/category-name.vo";
+import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
@@ -47,13 +45,6 @@ export class UpdateTodoCategoryUseCase {
 			});
 		}
 
-		if (data.name !== undefined) {
-			CategoryName.of(data.name);
-		}
-		if (data.color !== undefined) {
-			CategoryColor.of(data.color);
-		}
-
 		if (data.name && data.name !== category.name) {
 			const duplicate = await this.repository.existsByUserIdAndName(
 				userId,
@@ -67,9 +58,11 @@ export class UpdateTodoCategoryUseCase {
 			}
 		}
 
+		category.updateDetails(data);
+
 		const updated = await this.repository.update(id, {
-			name: data.name,
-			color: data.color,
+			name: data.name === undefined ? undefined : category.name,
+			color: data.color === undefined ? undefined : category.color,
 		});
 
 		await this.cache.invalidate(userId);

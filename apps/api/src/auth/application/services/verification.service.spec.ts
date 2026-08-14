@@ -20,12 +20,17 @@ import {
 	AUTH_VERIFICATION_REPOSITORY,
 	type AuthVerificationRepositoryPort,
 } from "../ports/auth-persistence.port";
+import {
+	VERIFICATION_CODE_SECURITY,
+	type VerificationCodeSecurityPort,
+} from "../ports/verification-code-security.port";
 import { VerificationService } from "./verification.service";
 
 describe("VerificationService — 인증 코드 서비스", () => {
 	let service: VerificationService;
 	let verificationRepo: Mocked<AuthVerificationRepositoryPort>;
-	let emailFacade: Mocked<AuthEmailSenderPort>;
+	let emailSender: Mocked<AuthEmailSenderPort>;
+	let verificationCodeSecurity: Mocked<VerificationCodeSecurityPort>;
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
@@ -34,7 +39,15 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 		service = unit;
 		verificationRepo = unitRef.get(AUTH_VERIFICATION_REPOSITORY);
-		emailFacade = unitRef.get(AUTH_EMAIL_SENDER);
+		emailSender = unitRef.get(AUTH_EMAIL_SENDER);
+		verificationCodeSecurity = unitRef.get(VERIFICATION_CODE_SECURITY);
+		verificationCodeSecurity.generate.mockReturnValue({
+			plaintext: "123456",
+			digest: "hashed-token",
+		});
+		verificationCodeSecurity.hash.mockReturnValue(
+			"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+		);
 	});
 
 	describe("createAndSendPasswordReset", () => {
@@ -55,7 +68,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			emailFacade.sendPasswordResetCode.mockResolvedValue({
+			emailSender.sendPasswordResetCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -68,7 +81,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 			// Then
 			expect(result.code).toMatch(/^\d{6}$/);
-			expect(emailFacade.sendPasswordResetCode).toHaveBeenCalledWith(email, {
+			expect(emailSender.sendPasswordResetCode).toHaveBeenCalledWith(email, {
 				code: expect.any(String),
 				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 			});
@@ -144,7 +157,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			emailFacade.sendPasswordSetupCode.mockResolvedValue({
+			emailSender.sendPasswordSetupCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -172,7 +185,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await service.createAndSendPasswordSetup(userId, email);
 
 			// Then
-			expect(emailFacade.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
+			expect(emailSender.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
 				code: expect.any(String),
 				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 			});
@@ -232,7 +245,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 		it("이메일 발송 실패해도 결과를 반환한다", async () => {
 			// Given
-			emailFacade.sendPasswordSetupCode.mockResolvedValue({
+			emailSender.sendPasswordSetupCode.mockResolvedValue({
 				success: false,
 				error: "SMTP error",
 			});
@@ -314,6 +327,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 		it("잘못된 코드면 시도 횟수를 증가시키고 INVALID_VERIFICATION_CODE 에러를 던진다", async () => {
 			// Given
 			const wrongCode = "999999";
+			verificationCodeSecurity.hash.mockReturnValue("wrong-hash");
 
 			// When & Then
 			await expect(service.verifyCode(userId, wrongCode, type)).rejects.toThrow(
@@ -354,6 +368,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 		it("실패 시 시도 횟수는 트랜잭션 외부에서 증가시킨다", async () => {
 			// Given
 			const wrongCode = "999999";
+			verificationCodeSecurity.hash.mockReturnValue("wrong-hash");
 
 			// When & Then
 			await expect(service.verifyCode(userId, wrongCode, type)).rejects.toThrow(

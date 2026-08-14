@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { TodoCategoryFacade } from "@/todo-category";
+import { TodoCategoryReader } from "@/todo-category";
 import type {
 	UserCategory,
 	UserCategoryReaderPort,
@@ -12,10 +12,10 @@ import type {
  */
 @Injectable()
 export class TodoCategoryReaderAdapter implements UserCategoryReaderPort {
-	constructor(private readonly todoCategoryFacade: TodoCategoryFacade) {}
+	constructor(private readonly todoCategoryReader: TodoCategoryReader) {}
 
 	async findByUserId(userId: string): Promise<UserCategory[]> {
-		const categories = await this.todoCategoryFacade.listForUser(userId);
+		const categories = await this.todoCategoryReader.listForUser(userId);
 		return categories.map((c) => ({ id: c.id, name: c.name }));
 	}
 }

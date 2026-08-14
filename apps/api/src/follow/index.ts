@@ -1,2 +1,2 @@
-export { FollowFacade } from "./application/facades/follow.facade";
+export { FollowReader } from "./application/services/follow.reader";
 export { FollowModule } from "./follow.module";

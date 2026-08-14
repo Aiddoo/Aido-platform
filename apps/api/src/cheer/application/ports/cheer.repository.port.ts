@@ -1,4 +1,4 @@
-import type { Cheer } from "../../domain/entities/cheer.entity";
+import type { Cheer } from "../../domain/entities/cheer.aggregate";
 
 /** 응원 목록/응답에 필요한 사용자 요약 */
 export interface CheerUserBrief {

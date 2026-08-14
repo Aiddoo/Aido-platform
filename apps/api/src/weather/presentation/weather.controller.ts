@@ -21,7 +21,9 @@ import {
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
 
-import { WeatherFacade } from "../application/facades/weather.facade";
+import { GetWeatherConditionsUseCase } from "../application/queries/get-weather-conditions/get-weather-conditions.use-case";
+import { GetWeatherForecastUseCase } from "../application/queries/get-weather-forecast/get-weather-forecast.use-case";
+import { UpsertLocationUseCase } from "../application/use-cases/upsert-location/upsert-location.use-case";
 import {
 	GetForecastQueryDto,
 	LocationResponseDto,
@@ -34,7 +36,11 @@ import {
 @ApiBearerAuth()
 @Controller("weather")
 export class WeatherController {
-	constructor(private readonly weatherFacade: WeatherFacade) {}
+	constructor(
+		private readonly upsertLocationUseCase: UpsertLocationUseCase,
+		private readonly getWeatherForecastUseCase: GetWeatherForecastUseCase,
+		private readonly getWeatherConditionsUseCase: GetWeatherConditionsUseCase,
+	) {}
 
 	@Put("location")
 	@HttpCode(HttpStatus.OK)
@@ -62,11 +68,11 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateLocationDto,
 	) {
-		const location = await this.weatherFacade.upsertLocation(
-			user.userId,
-			dto.latitude,
-			dto.longitude,
-		);
+		const location = await this.upsertLocationUseCase.execute({
+			userId: user.userId,
+			latitude: dto.latitude,
+			longitude: dto.longitude,
+		});
 		return {
 			latitude: location.latitude,
 			longitude: location.longitude,
@@ -145,9 +151,11 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 		@Query() query: GetForecastQueryDto,
 	) {
 		const date = query.date ? parseDateOnly(query.date) : now();
-		const { forecast, location } = await this.weatherFacade.getForecastForUser(
-			user.userId,
-			date,
+		const { forecast, location } = await this.getWeatherForecastUseCase.execute(
+			{
+				userId: user.userId,
+				date,
+			},
 		);
 		return {
 			latitude: location.latitude,
@@ -210,6 +218,9 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 		@Query() query: GetForecastQueryDto,
 	) {
 		const date = query.date ? parseDateOnly(query.date) : now();
-		return this.weatherFacade.getConditionsForUser(user.userId, date);
+		return this.getWeatherConditionsUseCase.execute({
+			userId: user.userId,
+			date,
+		});
 	}
 }

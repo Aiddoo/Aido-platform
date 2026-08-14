@@ -1,4 +1,4 @@
-import type { Memo } from "../../domain/entities/memo.entity";
+import type { Memo } from "../../domain/entities/memo.aggregate";
 
 /** 메모 목록 조회 파라미터 (정규화된 커서/사이즈). */
 export interface FindMemosParams {

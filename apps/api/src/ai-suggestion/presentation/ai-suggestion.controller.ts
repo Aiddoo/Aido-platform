@@ -24,7 +24,8 @@ import {
 	CurrentUser,
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
-import { AiSuggestionFacade } from "../application/facades/ai-suggestion.facade";
+import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case";
+import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
 import { AiSuggestionMapper } from "./ai-suggestion.mapper";
 import {
 	SuggestionActionDto,
@@ -75,7 +76,10 @@ import {
 @ApiBearerAuth()
 @Controller("ai/suggestions")
 export class AiSuggestionController {
-	constructor(private readonly aiSuggestionFacade: AiSuggestionFacade) {}
+	constructor(
+		private readonly getPendingSuggestionsUseCase: GetPendingSuggestionsUseCase,
+		private readonly handleSuggestionActionUseCase: HandleSuggestionActionUseCase,
+	) {}
 
 	/**
 	 * GET /ai/suggestions - 대기 중인 제안 목록 조회
@@ -226,7 +230,7 @@ export class AiSuggestionController {
 	async getPendingSuggestions(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<SuggestionListResponseDto> {
-		const suggestions = await this.aiSuggestionFacade.getPendingSuggestions(
+		const suggestions = await this.getPendingSuggestionsUseCase.execute(
 			user.userId,
 		);
 
@@ -269,7 +273,7 @@ export class AiSuggestionController {
 		@Body() body: SuggestionActionDto,
 		@Timezone() tz: string,
 	): Promise<SuggestionActionResponseDto> {
-		const result = await this.aiSuggestionFacade.handleAction({
+		const result = await this.handleSuggestionActionUseCase.execute({
 			userId: user.userId,
 			suggestionId: params.id,
 			action: body.action,

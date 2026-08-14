@@ -4,19 +4,25 @@ import type Redis from "ioredis";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 import { UserSettingsModule } from "@/user-settings/user-settings.module";
-
-import { NotificationFacade } from "./application/facades/notification.facade";
+import { NotificationBatchDispatcher } from "./application/dispatchers/notification-batch.dispatcher";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
-import { NOTIFICATION_DEDUP } from "./application/ports/notification-dedup.port";
-import { PUSH_DISPATCHER } from "./application/ports/push-dispatcher.port";
+import {
+	NOTIFICATION_DEDUP,
+	NOTIFICATION_DEDUP_LOCK,
+} from "./application/ports/notification-dedup.port";
+import {
+	PUSH_DISPATCHER,
+	type PushDispatcherPort,
+} from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
 	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 } from "./application/ports/push-rate-limiter.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
+import { NotificationSender } from "./application/senders/notification.sender";
 import { DispatchBatchNotificationUseCase } from "./application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "./application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
@@ -33,6 +39,7 @@ import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-n
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
+import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter";
 import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
@@ -47,8 +54,8 @@ import { NotificationController } from "./presentation/notification.controller";
 /**
  * Notification 모듈 (클린아키텍처 4계층 + 포트/어댑터)
  *
- * - presentation: NotificationController → NotificationFacade(유스케이스 조합)
- * - application: 조회·읽음·토큰·발송 유스케이스 + NotificationFacade
+ * - presentation: NotificationController → endpoint UseCase
+ * - application: 조회·읽음·토큰·발송 UseCase
  * - infrastructure: Prisma 저장소·Expo 푸시 프로바이더·PushDispatcher·rate limiter·BullMQ 프로세서
  *
  * Provider 추상화(PUSH_PROVIDER 포트)로 Expo → FCM/APNs 교체를 어댑터 추가만으로 대비.
@@ -60,8 +67,46 @@ import { NotificationController } from "./presentation/notification.controller";
 	imports: [NotificationQueueModule, UserSettingsModule],
 	controllers: [NotificationController],
 	providers: [
-		// Facade + Use-cases (presentation 진입점)
-		NotificationFacade,
+		// 크로스 모듈 호환 경계 + endpoint UseCase
+		{
+			provide: NotificationSender,
+			inject: [
+				SendNotificationUseCase,
+				SendNotificationWithDedupUseCase,
+				SendBatchNotificationUseCase,
+				FindAlreadyNotifiedUsersUseCase,
+				PUSH_DISPATCHER,
+			],
+			useFactory: (
+				sendNotificationUseCase: SendNotificationUseCase,
+				sendNotificationWithDedupUseCase: SendNotificationWithDedupUseCase,
+				sendBatchNotificationUseCase: SendBatchNotificationUseCase,
+				findAlreadyNotifiedUsersUseCase: FindAlreadyNotifiedUsersUseCase,
+				pushDispatcher: PushDispatcherPort,
+			) =>
+				new NotificationSender(
+					sendNotificationUseCase,
+					sendNotificationWithDedupUseCase,
+					sendBatchNotificationUseCase,
+					findAlreadyNotifiedUsersUseCase,
+					pushDispatcher,
+				),
+		},
+		{
+			provide: NotificationBatchDispatcher,
+			inject: [
+				PersistBatchNotificationUseCase,
+				DispatchBatchNotificationUseCase,
+			],
+			useFactory: (
+				persistBatchNotificationUseCase: PersistBatchNotificationUseCase,
+				dispatchBatchNotificationUseCase: DispatchBatchNotificationUseCase,
+			) =>
+				new NotificationBatchDispatcher(
+					persistBatchNotificationUseCase,
+					dispatchBatchNotificationUseCase,
+				),
+		},
 		GetNotificationsUseCase,
 		GetUnreadCountUseCase,
 		MarkAsReadUseCase,
@@ -97,6 +142,10 @@ import { NotificationController } from "./presentation/notification.controller";
 			provide: NOTIFICATION_DEDUP,
 			useExisting: NotificationDedupAdapter,
 		},
+		{
+			provide: NOTIFICATION_DEDUP_LOCK,
+			useClass: NotificationDedupLockAdapter,
+		},
 		// 푸시 디스패처 (전송 메커니즘 + 발송 자격 판단)
 		{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)
@@ -125,8 +174,7 @@ import { NotificationController } from "./presentation/notification.controller";
 		NotificationQueueProcessor,
 	],
 	exports: [
-		NotificationFacade,
-		NotificationRepository,
+		NotificationSender,
 		NotificationQueueModule,
 		PUSH_PROVIDER,
 		PUSH_RATE_LIMITER,

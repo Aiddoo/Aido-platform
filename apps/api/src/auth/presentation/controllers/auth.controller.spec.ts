@@ -14,14 +14,20 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
-import { AuthFacade } from "@/auth/application/facades";
+import {
+	LoginWithPasswordUseCase,
+	LogoutAllUseCase,
+	RegisterUseCase,
+} from "@/auth/application/use-cases";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import type { LoginDto, RegisterDto } from "../dtos";
 import { AuthController } from "./auth.controller";
 
 describe("AuthController — 인증 컨트롤러", () => {
 	let controller: AuthController;
-	let mockAuthFacade: Mocked<AuthFacade>;
+	let registerUseCase: Mocked<RegisterUseCase>;
+	let loginWithPasswordUseCase: Mocked<LoginWithPasswordUseCase>;
+	let logoutAllUseCase: Mocked<LogoutAllUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -39,7 +45,9 @@ describe("AuthController — 인증 컨트롤러", () => {
 		const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
 
 		controller = unit;
-		mockAuthFacade = unitRef.get(AuthFacade);
+		registerUseCase = unitRef.get(RegisterUseCase);
+		loginWithPasswordUseCase = unitRef.get(LoginWithPasswordUseCase);
+		logoutAllUseCase = unitRef.get(LogoutAllUseCase);
 	});
 
 	describe("register", () => {
@@ -59,7 +67,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 				email: "test@example.com",
 				emailSent: true,
 			};
-			mockAuthFacade.register.mockResolvedValue(serviceResult);
+			registerUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -register를 호출하면
 			const result = await controller.register(
@@ -68,7 +76,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 			);
 
 			// Then -서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
-			expect(mockAuthFacade.register).toHaveBeenCalledWith(
+			expect(registerUseCase.execute).toHaveBeenCalledWith(
 				dto,
 				expect.any(Object),
 			);
@@ -99,7 +107,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 					expiresIn: 3600,
 				},
 			};
-			mockAuthFacade.login.mockResolvedValue(serviceResult);
+			loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -login을 호출하면
 			const result = await controller.login(
@@ -108,7 +116,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 			);
 
 			// Then -서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
-			expect(mockAuthFacade.login).toHaveBeenCalledWith(
+			expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith(
 				dto,
 				expect.any(Object),
 			);
@@ -127,7 +135,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 	describe("logoutAll", () => {
 		it("전체 로그아웃 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
 			// Given -인증된 사용자가 있을 때
-			mockAuthFacade.logoutAll.mockResolvedValue({
+			logoutAllUseCase.execute.mockResolvedValue({
 				message: "모든 기기에서 로그아웃되었습니다.",
 				revokedCount: 3,
 			});
@@ -136,7 +144,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 			const result = await controller.logoutAll(mockUser, mockReq);
 
 			// Then -서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
-			expect(mockAuthFacade.logoutAll).toHaveBeenCalledWith(
+			expect(logoutAllUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 				expect.any(Object),
 			);

@@ -17,7 +17,6 @@ import {
 	type CachedUserPreference,
 	CacheService,
 } from "@/shared/infrastructure/cache/cache.service";
-import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
 import {
 	DEFAULT_LOCALE,
 	type SupportedLocale,
@@ -65,6 +64,10 @@ import {
 	isNightExemptNotification,
 } from "../../domain/services/push-eligibility";
 import type { NotificationType } from "../../domain/types/notification-type";
+import {
+	NOTIFICATION_CACHE_TTL_MS,
+	NotificationCacheKey,
+} from "../cache/notification-cache.keyspace";
 
 /**
  * 푸시 발송 디스패처 어댑터(PUSH_DISPATCHER 구현).
@@ -760,7 +763,9 @@ export class PushDispatcherAdapter
 	): Promise<Map<string, string[]>> {
 		const tokensByUser = new Map<string, string[]>();
 
-		const cacheKeys = userIds.map((uid) => CacheKeys.pushTokens(uid));
+		const cacheKeys = userIds.map((uid) =>
+			NotificationCacheKey.pushTokens(uid),
+		);
 		const cached = await this.cacheService.mget<string[]>(cacheKeys);
 
 		const missedUserIds: string[] = [];
@@ -790,9 +795,9 @@ export class PushDispatcherAdapter
 
 			await this.cacheService.mset(
 				missedUserIds.map((uid) => ({
-					key: CacheKeys.pushTokens(uid),
+					key: NotificationCacheKey.pushTokens(uid),
 					value: dbTokensByUser.get(uid) ?? [],
-					ttl: CacheKeys.TTL.PUSH_TOKENS,
+					ttl: NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
 				})),
 			);
 

@@ -5,7 +5,7 @@ import { MEMO_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { Memo } from "../../../domain/entities/memo.entity";
+import { Memo } from "../../../domain/entities/memo.aggregate";
 import {
 	MEMO_REPOSITORY,
 	type MemoRepositoryPort,

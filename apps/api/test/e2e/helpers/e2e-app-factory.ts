@@ -16,13 +16,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types";
-import {
-	ADMIN_NOTIFICATION_QUEUE,
-	ADMIN_NOTIFIER,
-	PAYMENT_NOTIFIER,
-} from "@/admin-notification";
+import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "@/admin-notification";
 import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "@/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
+import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue";
 import { AI_PROVIDER } from "@/ai";
 import { AI_REPORT_QUEUE } from "@/ai-report";
 import { ReportGenerationJob } from "@/ai-report/infrastructure/jobs/report-generation.job";
@@ -39,14 +36,12 @@ import {
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
-import { EmailFacade } from "@/email";
-import {
-	NOTIFICATION_QUEUE,
-	NotificationQueueProcessor,
-	PUSH_PROVIDER,
-} from "@/notification";
+import { TransactionalEmailSender } from "@/email";
+import { PUSH_PROVIDER } from "@/notification";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
+import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
+import { NOTIFICATION_QUEUE } from "@/notification/queue";
 import { RETENTION_QUEUE } from "@/retention/infrastructure/queue/retention-queue.constants";
 import { RetentionQueueProcessor } from "@/retention/infrastructure/queue/retention-queue.processor";
 import { RetentionQueueService } from "@/retention/infrastructure/queue/retention-queue.service";
@@ -271,7 +266,7 @@ async function createE2eAppContext(
 		.useValue(cacheAdapter)
 		.overrideProvider(DatabaseService)
 		.useValue(testDatabase.getPrisma())
-		.overrideProvider(EmailFacade)
+		.overrideProvider(TransactionalEmailSender)
 		.useValue(fakeEmailService)
 		.overrideProvider(OAuthTokenVerifierService)
 		.useValue(fakeOAuthTokenVerifierService)

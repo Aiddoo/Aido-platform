@@ -7,7 +7,7 @@ import {
 } from "@/shared/application/entitlement/entitlement.service";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { Friendship } from "../../../domain/entities/friendship.entity";
+import type { Friendship } from "../../../domain/entities/friendship.aggregate";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,

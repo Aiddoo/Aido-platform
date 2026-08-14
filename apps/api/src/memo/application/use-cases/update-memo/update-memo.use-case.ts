@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { MemoContent } from "../../../domain/value-objects/memo-content.vo";
 import {
 	MEMO_REPOSITORY,
 	type MemoRepositoryPort,
@@ -36,10 +35,10 @@ export class UpdateMemoUseCase {
 			});
 		}
 
-		const content = MemoContent.of(input.content);
+		memo.rename(input.content);
 		const updated = await this.repository.updateContent(
 			input.memoId,
-			content.value,
+			memo.content.value,
 		);
 
 		this.#logger.log(`Memo updated: ${input.memoId} for user: ${input.userId}`);

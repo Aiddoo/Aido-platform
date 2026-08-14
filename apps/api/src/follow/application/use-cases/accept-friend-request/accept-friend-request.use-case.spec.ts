@@ -7,7 +7,7 @@ import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { Friendship } from "../../../domain/entities/friendship.entity";
+import { Friendship } from "../../../domain/entities/friendship.aggregate";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,

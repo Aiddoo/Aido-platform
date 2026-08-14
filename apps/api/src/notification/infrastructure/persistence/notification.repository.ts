@@ -6,6 +6,10 @@ import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { toInputJson } from "@/shared/infrastructure/database/json.util";
+import {
+	isRecordNotFoundError,
+	isUniqueConstraintViolation,
+} from "@/shared/infrastructure/database/prisma-error.util";
 import type {
 	CreatePushDispatchInput,
 	NotificationRepositoryPort,
@@ -14,6 +18,10 @@ import type {
 	PushDispatchRecord,
 	PushDispatchSkipReason,
 	PushDispatchSkipUpdate,
+} from "../../application/ports/notification.repository.port";
+import {
+	DuplicateNotificationError,
+	PushTokenNotFoundError,
 } from "../../application/ports/notification.repository.port";
 import type {
 	CreateNotificationData,
@@ -54,27 +62,34 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	async createNotification(
 		data: CreateNotificationData,
 	): Promise<NotificationRecord> {
-		return this.client.notification.create({
-			data: {
-				userId: data.userId,
-				type: data.type,
-				title: data.title,
-				body: data.body,
-				todoId: data.todoId,
-				friendId: data.friendId,
-				nudgeId: data.nudgeId,
-				cheerId: data.cheerId,
-				// metadata가 null이면 undefined로 변환 (Prisma에서 null 직접 할당 불가)
-				metadata:
-					data.metadata != null ? toInputJson(data.metadata) : undefined,
-				notificationDate: data.notificationDate ?? undefined,
-				actionType: data.action?.type ?? "DEEP_LINK",
-				actionUrl: data.action?.url,
-				campaignKey: data.campaignKey,
-				variantId: data.variantId,
-				purpose: data.purpose ?? "TRANSACTIONAL",
-			},
-		});
+		try {
+			return await this.client.notification.create({
+				data: {
+					userId: data.userId,
+					type: data.type,
+					title: data.title,
+					body: data.body,
+					todoId: data.todoId,
+					friendId: data.friendId,
+					nudgeId: data.nudgeId,
+					cheerId: data.cheerId,
+					// metadata가 null이면 undefined로 변환 (Prisma에서 null 직접 할당 불가)
+					metadata:
+						data.metadata != null ? toInputJson(data.metadata) : undefined,
+					notificationDate: data.notificationDate ?? undefined,
+					actionType: data.action?.type ?? "DEEP_LINK",
+					actionUrl: data.action?.url,
+					campaignKey: data.campaignKey,
+					variantId: data.variantId,
+					purpose: data.purpose ?? "TRANSACTIONAL",
+				},
+			});
+		} catch (error) {
+			if (isUniqueConstraintViolation(error)) {
+				throw new DuplicateNotificationError();
+			}
+			throw error;
+		}
 	}
 
 	/**
@@ -682,14 +697,21 @@ export class NotificationRepository implements NotificationRepositoryPort {
 		userId: string,
 		deviceId: string,
 	): Promise<PushTokenRecord> {
-		return this.client.pushToken.delete({
-			where: {
-				userId_deviceId: {
-					userId,
-					deviceId,
+		try {
+			return await this.client.pushToken.delete({
+				where: {
+					userId_deviceId: {
+						userId,
+						deviceId,
+					},
 				},
-			},
-		});
+			});
+		} catch (error) {
+			if (isRecordNotFoundError(error)) {
+				throw new PushTokenNotFoundError();
+			}
+			throw error;
+		}
 	}
 
 	/**

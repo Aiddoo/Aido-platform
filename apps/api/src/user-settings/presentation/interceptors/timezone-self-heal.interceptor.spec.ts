@@ -8,7 +8,7 @@ import type { CallHandler, ExecutionContext } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { of } from "rxjs";
-import { UserSettingsFacade } from "../../application/facades/user-settings.facade";
+import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
 import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor";
 
 const nextHandler: CallHandler = { handle: () => of("ok") };
@@ -24,7 +24,7 @@ function contextFor(
 
 describe("TimezoneSelfHealInterceptor", () => {
 	let interceptor: TimezoneSelfHealInterceptor;
-	let facade: Mocked<UserSettingsFacade>;
+	let refreshPushTimezoneUseCase: Mocked<RefreshPushTimezoneUseCase>;
 
 	beforeEach(async () => {
 		jest.useFakeTimers();
@@ -32,8 +32,8 @@ describe("TimezoneSelfHealInterceptor", () => {
 			TimezoneSelfHealInterceptor,
 		).compile();
 		interceptor = unit;
-		facade = unitRef.get(UserSettingsFacade);
-		facade.refreshPushTimezoneIfChanged.mockResolvedValue(undefined);
+		refreshPushTimezoneUseCase = unitRef.get(RefreshPushTimezoneUseCase);
+		refreshPushTimezoneUseCase.execute.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -47,7 +47,7 @@ describe("TimezoneSelfHealInterceptor", () => {
 			nextHandler,
 		);
 
-		expect(facade.refreshPushTimezoneIfChanged).toHaveBeenCalledWith(
+		expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledWith(
 			"u1",
 			"Asia/Seoul",
 		);
@@ -59,7 +59,7 @@ describe("TimezoneSelfHealInterceptor", () => {
 			nextHandler,
 		);
 
-		expect(facade.refreshPushTimezoneIfChanged).not.toHaveBeenCalled();
+		expect(refreshPushTimezoneUseCase.execute).not.toHaveBeenCalled();
 	});
 
 	it("무효/누락 타임존 헤더면 호출하지 않는다", () => {
@@ -69,7 +69,7 @@ describe("TimezoneSelfHealInterceptor", () => {
 			nextHandler,
 		);
 
-		expect(facade.refreshPushTimezoneIfChanged).not.toHaveBeenCalled();
+		expect(refreshPushTimezoneUseCase.execute).not.toHaveBeenCalled();
 	});
 
 	it("같은 tz는 스로틀 창 안에서 한 번만 호출한다", () => {
@@ -78,7 +78,7 @@ describe("TimezoneSelfHealInterceptor", () => {
 		interceptor.intercept(ctx, nextHandler);
 		interceptor.intercept(ctx, nextHandler);
 
-		expect(facade.refreshPushTimezoneIfChanged).toHaveBeenCalledTimes(1);
+		expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(1);
 	});
 
 	it("tz가 바뀌면 즉시 다시 호출한다 (여행 등)", () => {
@@ -91,8 +91,8 @@ describe("TimezoneSelfHealInterceptor", () => {
 			nextHandler,
 		);
 
-		expect(facade.refreshPushTimezoneIfChanged).toHaveBeenCalledTimes(2);
-		expect(facade.refreshPushTimezoneIfChanged).toHaveBeenLastCalledWith(
+		expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(2);
+		expect(refreshPushTimezoneUseCase.execute).toHaveBeenLastCalledWith(
 			"u1",
 			"America/New_York",
 		);

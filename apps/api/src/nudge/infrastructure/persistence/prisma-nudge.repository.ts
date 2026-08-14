@@ -18,7 +18,7 @@ import type {
 	ReminderNudgeWithRelations,
 	TargetTodoRecord,
 } from "../../application/ports/nudge.repository.port";
-import { Nudge } from "../../domain/entities/nudge.entity";
+import { Nudge } from "../../domain/entities/nudge.aggregate";
 import { ReminderNudge } from "../../domain/entities/reminder-nudge.entity";
 
 type UserBriefRow = {

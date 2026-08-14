@@ -22,8 +22,7 @@ import {
 	type NamedJob,
 } from "@/shared/infrastructure/jobs/named-job";
 import type { SupportedLocale } from "@/shared/presentation/decorators";
-
-import { NotificationFacade } from "../../application/facades/notification.facade";
+import { NotificationBatchDispatcher } from "../../application/dispatchers/notification-batch.dispatcher";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
@@ -32,6 +31,7 @@ import {
 	PUSH_PROVIDER,
 	type PushProvider,
 } from "../../application/ports/push-provider.port";
+import { NotificationSender } from "../../application/senders/notification.sender";
 import {
 	NotificationMessageBuilder,
 	resolveTemplateLocale,
@@ -45,8 +45,10 @@ import {
 	type MilestoneReachedJobData,
 	NOTIFICATION_LEGACY_QUEUE,
 	NOTIFICATION_QUEUE,
+	NOTIFICATION_WORKER_POLICY,
 	type NotificationJobMap,
 	NotificationJobName,
+	NotificationRuntimeJobSchema,
 	type NudgeSentJobData,
 } from "./notification-queue.constants";
 
@@ -63,7 +65,8 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	readonly #logger = new Logger(NotificationQueueProcessor.name);
 
 	constructor(
-		private readonly notification: NotificationFacade,
+		private readonly notification: NotificationSender,
+		private readonly batchDispatcher: NotificationBatchDispatcher,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 		private readonly txHost: TransactionHost<
@@ -102,7 +105,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 			async (jobs) => {
 				for (const job of jobs) await this.process(job.data);
 			},
-			{ teamSize: 5, pollingIntervalSeconds: 2 },
+			NOTIFICATION_WORKER_POLICY,
 		);
 		await this.runtime.work<JobData>(
 			NOTIFICATION_LEGACY_QUEUE,
@@ -111,7 +114,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 					await this.process(fromLegacyJob<NotificationJobMap>(job));
 				}
 			},
-			{ teamSize: 5, pollingIntervalSeconds: 2 },
+			NOTIFICATION_WORKER_POLICY,
 		);
 	}
 
@@ -120,7 +123,8 @@ export class NotificationQueueProcessor implements OnModuleInit {
 		return this.notification.getUserLocale(userId);
 	}
 
-	async process(job: NotificationJob): Promise<void> {
+	async process(untrustedJob: NotificationJob): Promise<void> {
+		const job = NotificationRuntimeJobSchema.parse(untrustedJob);
 		const jobName: string = job.name;
 		switch (job.name) {
 			case NotificationJobName.FOLLOW_NEW:
@@ -386,14 +390,14 @@ export class NotificationQueueProcessor implements OnModuleInit {
 					};
 				});
 
-				return this.notification.persistBatch(notifications);
+				return this.batchDispatcher.persistBatch(notifications);
 			});
 			if (!persisted) return;
 
 			this.#logger.log(
 				`Friend completion notifications persisted: friendId=${data.friendId}, count=${persisted.count}`,
 			);
-			this.notification.dispatchPersistedBatch(persisted);
+			this.batchDispatcher.dispatchPersistedBatch(persisted);
 			this.#logger.debug(
 				`Friend completion push delivery scheduled: friendId=${data.friendId}, count=${persisted.count}`,
 			);

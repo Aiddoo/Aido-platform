@@ -2,6 +2,7 @@
  * Admin Notification BullMQ 큐 상수 및 잡 데이터 타입 정의
  */
 
+import { z } from "zod";
 import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
 
 // =============================================================================
@@ -21,6 +22,35 @@ export const AdminNotificationJobName = {
 	SEND: "send-notification",
 } as const;
 
+/** 기존 재시도·보관 계약. JobRuntime이 각 backend 옵션으로 변환한다. */
+export const ADMIN_NOTIFICATION_JOB_POLICY = {
+	retryLimit: 2,
+	retryDelaySeconds: 5,
+	retryBackoff: true,
+	expireInSeconds: 5 * 60,
+	retentionSeconds: 24 * 60 * 60,
+	deleteAfterSeconds: 24 * 60 * 60,
+} as const;
+
+export const ADMIN_NOTIFICATION_WORKER_POLICY = {
+	teamSize: 3,
+	pollingIntervalSeconds: 2,
+} as const;
+
+export const DAILY_SIGNUP_SUMMARY_SCHEDULE = {
+	key: "daily-signup-summary-scheduler",
+	cron: "10 0 * * *",
+	timezone: "Asia/Seoul",
+	jobPolicy: {
+		retryLimit: 2,
+		retryDelaySeconds: 1,
+		retryBackoff: true,
+		expireInSeconds: 5 * 60,
+		retentionSeconds: 24 * 60 * 60,
+		deleteAfterSeconds: 24 * 60 * 60,
+	},
+} as const;
+
 // =============================================================================
 // Job Data Interfaces
 // =============================================================================
@@ -31,6 +61,35 @@ export interface AdminNotificationSendData {
 	notification: AdminNotification;
 }
 
+const AdminNotificationSchema = z.object({
+	title: z.string(),
+	body: z.string(),
+	fields: z
+		.array(
+			z.object({
+				name: z.string(),
+				value: z.string(),
+				inline: z.boolean().optional(),
+			}),
+		)
+		.optional(),
+	color: z.number().optional(),
+});
+
+export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
+	z.object({
+		name: z.literal(AdminNotificationJobName.DISPATCH_SUMMARY),
+		data: z.object({}),
+	}),
+	z.object({
+		name: z.literal(AdminNotificationJobName.SEND),
+		data: z.object({
+			channel: z.enum(["admin", "payment"]),
+			notification: AdminNotificationSchema,
+		}),
+	}),
+]);
+
 /** 잡 이름 → 데이터 타입 매핑 */
 export interface AdminNotificationJobMap {
 	[AdminNotificationJobName.DISPATCH_SUMMARY]: Record<string, never>;
@@ -40,21 +99,6 @@ export interface AdminNotificationJobMap {
 export type AdminNotificationJobData =
 	AdminNotificationJobMap[keyof AdminNotificationJobMap];
 
-export type AdminNotificationRuntimeJob = {
-	[K in keyof AdminNotificationJobMap]: {
-		readonly name: K;
-		readonly data: AdminNotificationJobMap[K];
-	};
-}[keyof AdminNotificationJobMap];
-
-// =============================================================================
-// Job Options
-// =============================================================================
-
-/** 잡 등록 시 공통 옵션 */
-export const ADMIN_NOTIFICATION_JOB_OPTS = {
-	attempts: 3,
-	backoff: { type: "exponential" as const, delay: 5_000 },
-	removeOnComplete: true,
-	removeOnFail: { count: 100, age: 86_400 },
-} as const;
+export type AdminNotificationRuntimeJob = z.infer<
+	typeof AdminNotificationRuntimeJobSchema
+>;

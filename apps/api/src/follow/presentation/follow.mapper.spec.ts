@@ -5,7 +5,7 @@ import type {
 	FollowWithUser,
 	UserSearchResult,
 } from "../application/ports/follow.repository.port";
-import { Friendship } from "../domain/entities/friendship.entity";
+import { Friendship } from "../domain/entities/friendship.aggregate";
 import { FollowMapper } from "./follow.mapper";
 
 describe("FollowMapper", () => {

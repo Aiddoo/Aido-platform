@@ -12,7 +12,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { AdminNotificationFacade } from "@/admin-notification";
+import { AdminEventNotifier } from "@/admin-notification";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_CACHE,
@@ -26,12 +26,14 @@ import {
 	AUTH_USER_REPOSITORY,
 	AUTH_VERIFICATION_REPOSITORY,
 } from "@/auth/application/ports";
+import { VERIFICATION_CODE_SECURITY } from "@/auth/application/ports/verification-code-security.port";
 import { SessionService } from "@/auth/application/services/session.service";
 import { VerificationService } from "@/auth/application/services/verification.service";
 import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "@/auth/application/use-cases/provision-user/provision-user.use-case";
 import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
+import { NodeVerificationCodeSecurityAdapter } from "@/auth/infrastructure/adapters/node-verification-code-security.adapter";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -40,15 +42,15 @@ import { SecurityLogRepository } from "@/auth/infrastructure/persistence/securit
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import { VerificationRepository } from "@/auth/infrastructure/persistence/verification.repository";
-import { EmailFacade } from "@/email";
-import { NotificationQueueService } from "@/notification";
+import { TransactionalEmailSender } from "@/email";
+import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
-import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
+import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 import type { FakeEmailService } from "../../mocks/fake-email.service";
@@ -75,6 +77,10 @@ export async function createAuthTestModule(
 			SessionService,
 			TokenService,
 			VerificationService,
+			{
+				provide: VERIFICATION_CODE_SECURITY,
+				useClass: NodeVerificationCodeSecurityAdapter,
+			},
 			{
 				provide: EncryptionService,
 				useValue: {
@@ -105,15 +111,15 @@ export async function createAuthTestModule(
 			},
 			{ provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
 			{ provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
-			{ provide: AUTH_EMAIL_SENDER, useExisting: EmailFacade },
+			{ provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
 			{ provide: AUTH_CACHE, useExisting: CacheService },
 			{
 				provide: AUTH_REGISTRATION_NOTIFIER,
-				useExisting: AdminNotificationFacade,
+				useExisting: AdminEventNotifier,
 			},
 			UserConsentRepository,
 			UserPreferenceRepository,
-			TodoCategoryRepository,
+			DefaultTodoCategorySeeder,
 			provisioningSeederTestProvider,
 			retentionEnrollerTestProvider,
 			{
@@ -133,7 +139,7 @@ export async function createAuthTestModule(
 				},
 			},
 			{
-				provide: EmailFacade,
+				provide: TransactionalEmailSender,
 				useValue: fakeEmailService,
 			},
 			{
@@ -207,7 +213,7 @@ export async function createAuthTestModule(
 				},
 			},
 			{
-				provide: AdminNotificationFacade,
+				provide: AdminEventNotifier,
 				useValue: {
 					notifyUserRegistered: () => {},
 					notifySubscriptionEvent: () => {},

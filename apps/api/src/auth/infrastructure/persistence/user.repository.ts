@@ -3,7 +3,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { AuthPersistenceConflict } from "@/auth/application/ports/auth-persistence.port";
-import { generateUserTag } from "@/auth/domain/services/user-tag.util";
 import type {
 	AccountProvider,
 	Prisma,
@@ -18,6 +17,7 @@ import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
+import { generateUserTag } from "./user-tag.generator";
 
 export interface UserWithAccount {
 	id: string;

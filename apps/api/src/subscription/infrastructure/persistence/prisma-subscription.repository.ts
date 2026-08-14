@@ -13,7 +13,7 @@ import type {
 	UpdateSubscriptionStatusData,
 	UpdateUserSubscriptionStatusData,
 } from "../../application/ports/subscription.repository.port";
-import { Subscription } from "../../domain/entities/subscription.entity";
+import { Subscription } from "../../domain/entities/subscription.aggregate";
 
 /**
  * 사용자 조회 시 필요한 필드만 select

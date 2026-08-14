@@ -1,6 +1,6 @@
 # API 아키텍처 가이드
 
-**Version**: 4.1.0 · **Last Updated**: 2026-07-23 · **Owner**: Aido Platform Team
+**Version**: 5.0.0 · **Last Updated**: 2026-08-14 · **Owner**: Aido Platform Team
 
 > NestJS 기반 백엔드 API의 전체 아키텍처 · 에러 처리 · BullMQ 큐 · 보안 · 공통 모듈
 
@@ -37,7 +37,7 @@
 
 ### 1.1 계층 다이어그램 (클린아키텍처 use-case 표준 — 전 모듈)
 
-> **전 모듈**(auth 포함)이 클린아키텍처 4계층(domain/application/infrastructure/presentation) + Facade + Ports/Adapters + 무버스 `@Injectable` use-case 표준을 따른다. 참조 구현: **todo**. 상세 계층·의존성 규칙은 §1.4.
+> 전환 완료 모듈은 `presentation → endpoint UseCase → domain + 필요한 port` 흐름을 따른다. domain은 순수 TypeScript이고 application은 Nest DI를 사용할 수 있다. 외부 SDK·DB·캐시 구현은 infrastructure adapter 뒤에 둔다.
 
 ```
 HTTP Request
@@ -46,11 +46,9 @@ Middleware (CORS)
      ↓
 Guard (JwtAuthGuard → ThrottlerGuard → AdminGuard)   ── @Public()로 인증 스킵
      ↓
-Controller (presentation/)  ── HTTP 요청/응답, DTO 검증, Swagger. Facade만 주입
+Controller (presentation/)  ── HTTP 요청/응답, DTO 검증, Swagger, Input 변환
      ↓
-Facade (application/facades/)  ── use-case에 한 줄 위임. 공개 시그니처 = 모듈 공개 계약
-     ↓
-UseCase (application/use-cases|queries/)  ── @Injectable, 단일 execute(input)
+Endpoint UseCase (application/use-cases/)  ── @Injectable 클래스, 단일 execute(input)
      │  · 포트(Symbol 토큰 인터페이스)에만 의존
      │  · UNIT_OF_WORK.run(async () => ...) — 리포지토리가 CLS에서 활성 TX를 읽음
      │  · 규칙 위반은 ApplicationException(ErrorCode)
@@ -73,13 +71,13 @@ UseCase/Adapter → QueueService.enqueueXxx() → BullMQ Queue → Processor →
 
 | 방향 | 허용 | 비고 |
 |------|------|------|
-| Controller → Facade | ✅ | 컨트롤러의 유일한 주입 지점 |
-| Facade → use-case | ✅ | 한 줄 위임 |
+| Controller → endpoint UseCase | ✅ | 엔드포인트별 직접 주입 |
 | application → domain / 포트 | ✅ | use-case가 도메인·포트 사용 |
 | infrastructure → application 포트 | ✅ | 어댑터가 포트 구현 |
 | domain → application/infrastructure/@nestjs/DB | ❌ | 도메인은 프레임워크 제로 의존 |
 | application → Prisma 타입/타 모듈 내부 | ❌ | 포트·CLS UnitOfWork로 역전 |
-| 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)의 Facade만 |
+| 외부 모듈 → capability port/access module | ✅ | 소비자가 소유한 좁은 계약만 사용 |
+| 외부 모듈 → UseCase/구현체 직접 호출 | ❌ | 컨텍스트 결합 금지 |
 
 ### 1.3 디렉토리 구조
 
@@ -133,10 +131,38 @@ apps/api/
 
 ---
 
-### 1.4 클린아키텍처 모듈 (Use-case + DDD) — 전 모듈 표준
+### 1.4 실용형 DDD·Clean Architecture — 최종 표준
 
-**전 모듈**(auth 포함)이 이 표준으로 전환 완료됐다. **참조 구현은 todo 모듈** — 구조·패턴이 모호하면 todo를 따른다.
-**@nestjs/cqrs는 사용하지 않는다** — CommandBus/QueryBus/EventBus/CqrsModule 금지. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 EventEmitter2 기반 도메인 이벤트로 처리한다.
+**참조 구현은 todo 모듈**이며 모듈별 stacked PR로 순차 전환한다. **@nestjs/cqrs는 사용하지 않는다.** UseCase는 `@Injectable`·`@Inject`로 Nest DI에 참여하며 Controller가 직접 주입한다. domain만 프레임워크 비의존을 강제한다.
+
+핵심 규칙:
+
+- Controller가 endpoint UseCase를 직접 주입하며 Facade는 제거한다.
+- 쓰기는 `application/use-cases/`, 읽기는 `application/queries/`에 두고 모두 `<Verb><Object>UseCase`로 명명한다.
+- domain은 `@nestjs/*`, Prisma, infrastructure, presentation에 의존하지 않는다. application은 Nest DI와 Logger만 허용하며 Prisma·vendor SDK·바깥 계층 타입에는 의존하지 않는다.
+- Zod DTO와 원시 HTTP 값은 presentation mapper에서 application input으로 변환한다.
+- 같은 컨텍스트의 식별자는 branded `EntityId` VO를 쓰고 원시값 변환은 controller/infrastructure mapper에서만 한다.
+- 단건 상태 전이는 Aggregate가, 다중 행 batch/claim/counter는 명명된 port 뒤의 원자적 SQL이 담당한다.
+- 커밋 후·크로스모듈 부수효과만 도메인 이벤트로 전달한다. 큐 payload·Redis key·TTL은 기존 계약을 유지한다.
+- `AggregateRoot` 상속 클래스는 `.aggregate.ts`, 일반 `Entity` 상속 클래스는 `.entity.ts`로 양방향 강제한다.
+
+최종 의존성은 다음과 같다.
+
+```text
+presentation   → endpoint UseCase
+application    → domain + consumer-owned port
+domain         → pure TypeScript
+infrastructure → port implementation + Nest/Prisma/BullMQ/vendor SDK
+```
+
+전환 기준선과 계약 고정:
+
+- `scripts/check-ddd-architecture.mjs`는 계층 import, vendor SDK 누출, Aggregate 파일명, public barrel을 검사한다.
+- 기존 위반은 exact baseline 이하만 허용한다. 새 파일·새 위치·증가한 개수는 즉시 실패하며 baseline은 위반 제거 시에만 줄인다.
+- `scripts/check-immutable-contracts.mjs`는 OpenAPI snapshot, 배포 fingerprint, Prisma schema/migrations의 내용 해시를 고정한다. 리팩터링을 승인하기 위한 snapshot 갱신은 금지한다.
+- 각 stacked PR은 독립적으로 typecheck/lint/arch/unit/integration/E2E를 통과하고 바로 아래 브랜치만 base로 삼는다.
+
+아래 Facade 기반 설명은 아직 전환되지 않은 코드의 **현행 기준선 설명**이며 신규 코드의 표준이 아니다. `@Injectable` UseCase와 Nest TestBed 사용은 최종 표준이다.
 코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처-모듈-규칙)
 
 ```

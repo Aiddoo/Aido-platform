@@ -15,7 +15,15 @@ import {
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
-import { OAuthFacade } from "@/auth/application/facades";
+import { GetOAuthRedirectUriQuery } from "@/auth/application/queries";
+import {
+	CompleteOAuthAuthorizationUseCase,
+	ExchangeOAuthCodeUseCase,
+	LinkOAuthAccountUseCase,
+	LinkOAuthAccountWithCodeUseCase,
+	LoginWithOAuthTokenUseCase,
+	StartOAuthAuthorizationUseCase,
+} from "@/auth/application/use-cases";
 
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
 import {
@@ -51,14 +59,22 @@ import {
 export class OAuthController {
 	readonly #logger = new Logger(OAuthController.name);
 
-	constructor(private readonly oauthFacade: OAuthFacade) {}
+	constructor(
+		private readonly getOAuthRedirectUriQuery: GetOAuthRedirectUriQuery,
+		private readonly startOAuthAuthorizationUseCase: StartOAuthAuthorizationUseCase,
+		private readonly completeOAuthAuthorizationUseCase: CompleteOAuthAuthorizationUseCase,
+		private readonly loginWithOAuthTokenUseCase: LoginWithOAuthTokenUseCase,
+		private readonly linkOAuthAccountUseCase: LinkOAuthAccountUseCase,
+		private readonly linkOAuthAccountWithCodeUseCase: LinkOAuthAccountWithCodeUseCase,
+		private readonly exchangeOAuthCodeUseCase: ExchangeOAuthCodeUseCase,
+	) {}
 
 	async #resolveOAuthErrorRedirectUri(
 		state: string,
 		defaultRedirectUri: string,
 	): Promise<string> {
 		try {
-			const redirectUri = await this.oauthFacade.getRedirectUriByState(state);
+			const redirectUri = await this.getOAuthRedirectUriQuery.execute(state);
 			return redirectUri || defaultRedirectUri;
 		} catch {
 			return defaultRedirectUri;
@@ -97,7 +113,7 @@ export class OAuthController {
 	})
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async exchangeCode(@Body() dto: ExchangeCodeDto): Promise<AuthTokensDto> {
-		const result = await this.oauthFacade.exchangeCodeForTokens(dto.code);
+		const result = await this.exchangeOAuthCodeUseCase.execute(dto.code);
 		return AuthMapper.toExchangeCodeResponse(result);
 	}
 
@@ -146,7 +162,7 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthFacade.loginWithToken(
+		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"APPLE",
 			dto.idToken,
 			dto.userName,
@@ -205,7 +221,7 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthFacade.loginWithToken(
+		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"GOOGLE",
 			dto.idToken,
 			dto.userName,
@@ -272,7 +288,7 @@ export class OAuthController {
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
-		const authUrl = await this.oauthFacade.startAuthorization(
+		const authUrl = await this.startOAuthAuthorizationUseCase.execute(
 			"GOOGLE",
 			effectiveState,
 			redirectUri,
@@ -324,7 +340,7 @@ export class OAuthController {
 		try {
 			const metadata = extractMetadata(req);
 
-			const result = await this.oauthFacade.completeAuthorization(
+			const result = await this.completeOAuthAuthorizationUseCase.execute(
 				"GOOGLE",
 				code,
 				state,
@@ -400,7 +416,7 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthFacade.loginWithToken(
+		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"KAKAO",
 			dto.accessToken,
 			dto.userName,
@@ -467,7 +483,7 @@ export class OAuthController {
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
-		const authUrl = await this.oauthFacade.startAuthorization(
+		const authUrl = await this.startOAuthAuthorizationUseCase.execute(
 			"KAKAO",
 			effectiveState,
 			redirectUri,
@@ -517,7 +533,7 @@ export class OAuthController {
 		try {
 			const metadata = extractMetadata(req);
 
-			const result = await this.oauthFacade.completeAuthorization(
+			const result = await this.completeOAuthAuthorizationUseCase.execute(
 				"KAKAO",
 				code,
 				state,
@@ -589,7 +605,7 @@ export class OAuthController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.oauthFacade.loginWithToken(
+		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"NAVER",
 			dto.accessToken,
 			dto.userName,
@@ -656,7 +672,7 @@ export class OAuthController {
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
-		const authUrl = await this.oauthFacade.startAuthorization(
+		const authUrl = await this.startOAuthAuthorizationUseCase.execute(
 			"NAVER",
 			effectiveState,
 			redirectUri,
@@ -708,7 +724,7 @@ export class OAuthController {
 		try {
 			const metadata = extractMetadata(req);
 
-			const result = await this.oauthFacade.completeAuthorization(
+			const result = await this.completeOAuthAuthorizationUseCase.execute(
 				"NAVER",
 				code,
 				state,
@@ -795,7 +811,7 @@ provider에 따라 필수 토큰이 다릅니다:
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.oauthFacade.linkAccountWithToken(user.userId, dto, metadata);
+		return this.linkOAuthAccountUseCase.execute(user.userId, dto, metadata);
 	}
 
 	@Post("link-with-code")
@@ -853,7 +869,7 @@ provider에 따라 필수 토큰이 다릅니다:
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.oauthFacade.linkAccountWithExchangeCode(
+		return this.linkOAuthAccountWithCodeUseCase.execute(
 			user.userId,
 			dto.code,
 			metadata,

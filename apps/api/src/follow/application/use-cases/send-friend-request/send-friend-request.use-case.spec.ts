@@ -7,7 +7,7 @@ import { TestBed } from "@suites/unit";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { Friendship } from "../../../domain/entities/friendship.entity";
+import { Friendship } from "../../../domain/entities/friendship.aggregate";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,

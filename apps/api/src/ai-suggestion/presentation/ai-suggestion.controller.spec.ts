@@ -10,11 +10,12 @@ import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
-import { AiSuggestionFacade } from "../application/facades/ai-suggestion.facade";
+import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case";
+import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
 import {
 	Suggestion,
 	type SuggestionProps,
-} from "../domain/entities/suggestion.entity";
+} from "../domain/entities/suggestion.aggregate";
 import { AiSuggestionController } from "./ai-suggestion.controller";
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
@@ -38,7 +39,8 @@ function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
 
 describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 	let controller: AiSuggestionController;
-	let mockFacade: Mocked<AiSuggestionFacade>;
+	let getPendingSuggestionsUseCase: Mocked<GetPendingSuggestionsUseCase>;
+	let handleSuggestionActionUseCase: Mocked<HandleSuggestionActionUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -53,19 +55,20 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 		).compile();
 
 		controller = unit;
-		mockFacade = unitRef.get(AiSuggestionFacade);
+		getPendingSuggestionsUseCase = unitRef.get(GetPendingSuggestionsUseCase);
+		handleSuggestionActionUseCase = unitRef.get(HandleSuggestionActionUseCase);
 	});
 
 	describe("getPendingSuggestions", () => {
 		it("대기 중인 제안 목록 조회를 파사드에 위임하고 DTO로 변환해야 한다", async () => {
 			// Given -파사드에서 빈 제안 목록을 반환하도록 설정
-			mockFacade.getPendingSuggestions.mockResolvedValue([]);
+			getPendingSuggestionsUseCase.execute.mockResolvedValue([]);
 
 			// When -getPendingSuggestions를 호출하면
 			const result = await controller.getPendingSuggestions(mockUser);
 
 			// Then -파사드에 올바른 파라미터를 전달하고 응답을 반환해야 한다
-			expect(mockFacade.getPendingSuggestions).toHaveBeenCalledWith(
+			expect(getPendingSuggestionsUseCase.execute).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
 			expect(result).toEqual({ suggestions: [] });
@@ -73,7 +76,9 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 
 		it("여러 제안이 있는 목록을 DTO로 변환해야 한다", async () => {
 			// Given -파사드에서 1개의 제안을 반환
-			mockFacade.getPendingSuggestions.mockResolvedValue([createSuggestion()]);
+			getPendingSuggestionsUseCase.execute.mockResolvedValue([
+				createSuggestion(),
+			]);
 
 			// When -getPendingSuggestions를 호출하면
 			const result = await controller.getPendingSuggestions(mockUser);
@@ -91,7 +96,7 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 			const params = { id: 1 };
 			const body = { action: "accept" as const, categoryId: 1 };
 			const tz = "Asia/Seoul";
-			mockFacade.handleAction.mockResolvedValue({
+			handleSuggestionActionUseCase.execute.mockResolvedValue({
 				message: "제안이 수락되어 반복 할 일이 생성되었습니다.",
 				suggestion: createSuggestion({ status: "ACCEPTED" }),
 				createdTodosCount: 4,
@@ -106,7 +111,7 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 			);
 
 			// Then -파사드에 올바른 입력을 전달하고 응답을 반환해야 한다
-			expect(mockFacade.handleAction).toHaveBeenCalledWith({
+			expect(handleSuggestionActionUseCase.execute).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				suggestionId: params.id,
 				action: "accept",
@@ -124,7 +129,7 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 			const params = { id: 2 };
 			const body = { action: "dismiss" as const };
 			const tz = "Asia/Seoul";
-			mockFacade.handleAction.mockResolvedValue({
+			handleSuggestionActionUseCase.execute.mockResolvedValue({
 				message: "제안이 거절되었습니다.",
 				suggestion: createSuggestion({ id: 2, status: "DISMISSED" }),
 			});
@@ -138,7 +143,7 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 			);
 
 			// Then -파사드에 올바른 입력을 전달하고 응답을 반환해야 한다
-			expect(mockFacade.handleAction).toHaveBeenCalledWith(
+			expect(handleSuggestionActionUseCase.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUser.userId,
 					suggestionId: params.id,

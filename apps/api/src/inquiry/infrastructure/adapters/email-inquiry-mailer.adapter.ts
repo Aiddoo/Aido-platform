@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { EmailFacade } from "@/email";
+import { TransactionalEmailSender } from "@/email";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import type {
 	InquiryDeliveryResult,
@@ -17,14 +17,14 @@ import type { InquirySubmission } from "../../domain/services/inquiry-submission
 @Injectable()
 export class EmailInquiryMailerAdapter implements InquiryMailerPort {
 	constructor(
-		private readonly emailFacade: EmailFacade,
+		private readonly emailSender: TransactionalEmailSender,
 		private readonly configService: TypedConfigService,
 	) {}
 
 	async deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
 		const supportEmail = this.configService.email.supportEmail;
 
-		const result = await this.emailFacade.sendInquiry(supportEmail, {
+		const result = await this.emailSender.sendInquiry(supportEmail, {
 			userEmail: submission.userEmail,
 			category: submission.category,
 			categoryLabel: submission.categoryLabel,

@@ -17,7 +17,6 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
-import { FollowFacade } from "@/follow";
 import { FOLLOW_REPOSITORY } from "@/follow/application/ports/follow.repository.port";
 import { FOLLOW_CACHE } from "@/follow/application/ports/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "@/follow/application/ports/follow-notifier.port";
@@ -33,7 +32,7 @@ import { SendFriendRequestByTagUseCase } from "@/follow/application/use-cases/se
 import { FollowCacheAdapter } from "@/follow/infrastructure/adapters/follow-cache.adapter";
 import { FollowNotifierAdapter } from "@/follow/infrastructure/adapters/follow-notifier.adapter";
 import { PrismaFollowRepository } from "@/follow/infrastructure/persistence/prisma-follow.repository";
-import { NotificationQueueService } from "@/notification";
+import { NotificationQueueService } from "@/notification/queue";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
@@ -43,8 +42,12 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 
 describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: FollowFacade;
+	let followReader: FollowReader;
 	let sendUseCase: SendFriendRequestUseCase;
+	let sendByTagUseCase: SendFriendRequestByTagUseCase;
+	let acceptUseCase: AcceptFriendRequestUseCase;
+	let rejectUseCase: RejectFriendRequestUseCase;
+	let removeUseCase: RemoveFriendUseCase;
 
 	const mockFollowDb = {
 		create: jest.fn(),
@@ -102,7 +105,6 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				FollowFacade,
 				FollowReader,
 				FriendshipEffects,
 				SendFriendRequestUseCase,
@@ -146,8 +148,12 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		facade = module.get(FollowFacade);
+		followReader = module.get(FollowReader);
 		sendUseCase = module.get(SendFriendRequestUseCase);
+		sendByTagUseCase = module.get(SendFriendRequestByTagUseCase);
+		acceptUseCase = module.get(AcceptFriendRequestUseCase);
+		rejectUseCase = module.get(RejectFriendRequestUseCase);
+		removeUseCase = module.get(RemoveFriendUseCase);
 	});
 
 	afterAll(async () => {
@@ -161,9 +167,9 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합", () => {
-		it("FollowFacade가 올바르게 조립된다", () => {
-			expect(facade).toBeDefined();
-			expect(facade).toBeInstanceOf(FollowFacade);
+		it("FollowReader가 올바르게 조립된다", () => {
+			expect(followReader).toBeDefined();
+			expect(followReader).toBeInstanceOf(FollowReader);
 		});
 
 		it("FollowRepository 포트가 주입된다", () => {
@@ -276,10 +282,10 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 			);
 			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
 
-			const result = await facade.sendRequestByTag(
-				mockUserId,
-				mockTargetUserTag,
-			);
+			const result = await sendByTagUseCase.execute({
+				userId: mockUserId,
+				targetUserTag: mockTargetUserTag,
+			});
 
 			expect(result.follow.status).toBe("PENDING");
 			expect(result.autoAccepted).toBe(false);
@@ -288,7 +294,10 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		it("존재하지 않는 userTag → ApplicationException", async () => {
 			mockUserDb.findUnique.mockResolvedValue(null);
 			await expect(
-				facade.sendRequestByTag(mockUserId, "NOTEXIST"),
+				sendByTagUseCase.execute({
+					userId: mockUserId,
+					targetUserTag: "NOTEXIST",
+				}),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -328,7 +337,10 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 					.buildWithUser(),
 			);
 
-			const result = await facade.acceptRequest(mockUserId, mockTargetUserId);
+			const result = await acceptUseCase.execute({
+				userId: mockUserId,
+				requesterUserId: mockTargetUserId,
+			});
 
 			expect(result.status).toBe("ACCEPTED");
 			expect(mockFollowDb.create).toHaveBeenCalled();
@@ -337,7 +349,10 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		it("존재하지 않는 요청 수락 → ApplicationException", async () => {
 			mockFollowDb.findUnique.mockResolvedValue(null);
 			await expect(
-				facade.acceptRequest(mockUserId, mockTargetUserId),
+				acceptUseCase.execute({
+					userId: mockUserId,
+					requesterUserId: mockTargetUserId,
+				}),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -352,7 +367,10 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 			);
 			mockFollowDb.delete.mockResolvedValue(undefined);
 
-			await facade.rejectRequest(mockUserId, mockTargetUserId);
+			await rejectUseCase.execute({
+				userId: mockUserId,
+				requesterUserId: mockTargetUserId,
+			});
 			expect(mockFollowDb.delete).toHaveBeenCalled();
 		});
 
@@ -371,7 +389,10 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 					.build(),
 			);
 
-			await facade.remove(mockUserId, mockTargetUserId);
+			await removeUseCase.execute({
+				userId: mockUserId,
+				targetUserId: mockTargetUserId,
+			});
 			expect(mockFollowDb.delete).toHaveBeenCalledTimes(2);
 		});
 	});
@@ -389,14 +410,14 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 					.buildWithUser(),
 			]);
 
-			const result = await facade.getFriends({ userId: mockUserId });
+			const result = await followReader.getFriends({ userId: mockUserId });
 			expect(result.items).toHaveLength(2);
 			expect(result.pagination).toBeDefined();
 		});
 
 		it("userTag 검색 조건이 쿼리에 포함된다", async () => {
 			mockFollowDb.findMany.mockResolvedValue([]);
-			await facade.getFriends({ userId: mockUserId, search: "TGT" });
+			await followReader.getFriends({ userId: mockUserId, search: "TGT" });
 			expect(mockFollowDb.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
@@ -419,7 +440,10 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 					FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
 				);
 
-			const result = await facade.isMutualFriend(mockUserId, mockTargetUserId);
+			const result = await followReader.isMutualFriend(
+				mockUserId,
+				mockTargetUserId,
+			);
 			expect(result).toBe(true);
 		});
 
@@ -430,13 +454,16 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 				)
 				.mockResolvedValueOnce(null);
 
-			const result = await facade.isMutualFriend(mockUserId, mockTargetUserId);
+			const result = await followReader.isMutualFriend(
+				mockUserId,
+				mockTargetUserId,
+			);
 			expect(result).toBe(false);
 		});
 
 		it("친구 수가 집계된다", async () => {
 			mockFollowDb.count.mockResolvedValue(5);
-			expect(await facade.countFriends(mockUserId)).toBe(5);
+			expect(await followReader.countFriends(mockUserId)).toBe(5);
 		});
 	});
 });

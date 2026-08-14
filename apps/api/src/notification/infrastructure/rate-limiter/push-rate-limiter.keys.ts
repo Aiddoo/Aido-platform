@@ -1,7 +1,7 @@
 /**
  * 푸시 레이트리미터 Redis 키 (모듈 로컬 중앙 관리)
  *
- * DedupKeys 패턴을 따르되, 이 키들은 공유 CacheService 키스페이스가 아니라
+ * 컨텍스트 소유 keyspace 패턴을 따르되, 이 키들은 공유 CacheService가 아니라
  * REDIS_COMMAND_CLIENT의 raw 키스페이스(ZSET/HASH, Lua 스크립트 대상)에 산다.
  * 따라서 `cacheKey()`(네임스페이스 접두어 부여)를 쓰지 않고 문자열을 그대로 노출한다.
  *

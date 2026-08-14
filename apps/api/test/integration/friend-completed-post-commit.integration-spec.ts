@@ -7,9 +7,10 @@ import {
 } from "@test/mocks/ports/notification.mock";
 import {
 	NOTIFICATION_REPOSITORY,
-	NotificationFacade,
+	NotificationSender,
 	PUSH_PROVIDER,
 } from "@/notification";
+import { NotificationBatchDispatcher } from "@/notification/application/dispatchers/notification-batch.dispatcher";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import type { CreateNotificationData } from "@/notification/application/ports/notification-data";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
@@ -168,7 +169,41 @@ describe("friend-completed post-commit dispatch (component)", () => {
 		module = await Test.createTestingModule({
 			providers: [
 				NotificationQueueProcessor,
-				NotificationFacade,
+				{
+					provide: NotificationSender,
+					inject: [
+						SendNotificationUseCase,
+						SendNotificationWithDedupUseCase,
+						SendBatchNotificationUseCase,
+						FindAlreadyNotifiedUsersUseCase,
+						PUSH_DISPATCHER,
+					],
+					useFactory: (
+						sendNotification: SendNotificationUseCase,
+						sendWithDedup: SendNotificationWithDedupUseCase,
+						sendBatch: SendBatchNotificationUseCase,
+						findAlreadyNotified: FindAlreadyNotifiedUsersUseCase,
+						pushDispatcher: PushDispatcherPort,
+					) =>
+						new NotificationSender(
+							sendNotification,
+							sendWithDedup,
+							sendBatch,
+							findAlreadyNotified,
+							pushDispatcher,
+						),
+				},
+				{
+					provide: NotificationBatchDispatcher,
+					inject: [
+						PersistBatchNotificationUseCase,
+						DispatchBatchNotificationUseCase,
+					],
+					useFactory: (
+						persistBatch: PersistBatchNotificationUseCase,
+						dispatchBatch: DispatchBatchNotificationUseCase,
+					) => new NotificationBatchDispatcher(persistBatch, dispatchBatch),
+				},
 				PersistBatchNotificationUseCase,
 				DispatchBatchNotificationUseCase,
 				SendBatchNotificationUseCase,
@@ -197,7 +232,11 @@ describe("friend-completed post-commit dispatch (component)", () => {
 				},
 				{
 					provide: NOTIFICATION_DEDUP,
-					useValue: { recordNotifiedUsers: jest.fn() },
+					useValue: {
+						recordNotifiedUsers: jest.fn().mockResolvedValue(undefined),
+						readKnownRecipients: jest.fn().mockResolvedValue(new Set()),
+						warmRecipients: jest.fn().mockResolvedValue(undefined),
+					},
 				},
 				{ provide: DEDUP_PROVIDER, useValue: dedupProvider },
 				{

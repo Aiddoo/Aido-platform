@@ -15,7 +15,7 @@ import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import {
 	Suggestion,
 	type SuggestionProps,
-} from "../../../domain/entities/suggestion.entity";
+} from "../../../domain/entities/suggestion.aggregate";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,

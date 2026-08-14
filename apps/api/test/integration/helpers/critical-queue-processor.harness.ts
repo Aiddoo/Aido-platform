@@ -17,7 +17,7 @@ import {
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
-import { NotificationFacade } from "@/notification/application/facades/notification.facade";
+import { NotificationBatchDispatcher } from "@/notification/application/dispatchers/notification-batch.dispatcher";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
@@ -25,6 +25,7 @@ import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "@/notification/application/ports/user-notification-settings.port";
+import { NotificationSender } from "@/notification/application/senders/notification.sender";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
@@ -200,7 +201,41 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
 function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 	return [
 		NotificationQueueProcessor,
-		NotificationFacade,
+		{
+			provide: NotificationSender,
+			inject: [
+				SendNotificationUseCase,
+				SendNotificationWithDedupUseCase,
+				SendBatchNotificationUseCase,
+				FindAlreadyNotifiedUsersUseCase,
+				PUSH_DISPATCHER,
+			],
+			useFactory: (
+				sendNotification: SendNotificationUseCase,
+				sendWithDedup: SendNotificationWithDedupUseCase,
+				sendBatch: SendBatchNotificationUseCase,
+				findAlreadyNotified: FindAlreadyNotifiedUsersUseCase,
+				pushDispatcher: PushDispatcherAdapter,
+			) =>
+				new NotificationSender(
+					sendNotification,
+					sendWithDedup,
+					sendBatch,
+					findAlreadyNotified,
+					pushDispatcher,
+				),
+		},
+		{
+			provide: NotificationBatchDispatcher,
+			inject: [
+				PersistBatchNotificationUseCase,
+				DispatchBatchNotificationUseCase,
+			],
+			useFactory: (
+				persistBatch: PersistBatchNotificationUseCase,
+				dispatchBatch: DispatchBatchNotificationUseCase,
+			) => new NotificationBatchDispatcher(persistBatch, dispatchBatch),
+		},
 		PersistBatchNotificationUseCase,
 		DispatchBatchNotificationUseCase,
 		FindAlreadyNotifiedUsersUseCase,

@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
-import { AiFacade } from "./application/facades/ai.facade";
 import { AI_PROVIDER } from "./application/ports/ai-provider.port";
 import { AI_USAGE_REPOSITORY } from "./application/ports/ai-usage.repository.port";
 import { USER_CATEGORY_READER } from "./application/ports/user-category-reader.port";
@@ -46,7 +45,6 @@ import { AiController } from "./presentation/ai.controller";
 	imports: [TodoCategoryModule],
 	controllers: [AiController],
 	providers: [
-		AiFacade,
 		AiUsageGuard,
 		AiUsageMeter,
 		{ provide: AI_PROVIDER_GEMINI, useClass: GeminiAiAdapter },
@@ -56,6 +54,6 @@ import { AiController } from "./presentation/ai.controller";
 		...AiUseCases,
 		...AiQueryUseCases,
 	],
-	exports: [AiFacade, AI_PROVIDER],
+	exports: [AI_PROVIDER],
 })
 export class AiModule {}

@@ -1,16 +1,22 @@
-import { Injectable } from "@nestjs/common";
-import { RetentionFacade } from "@/retention";
+import { Inject, Injectable } from "@nestjs/common";
+import {
+	RETENTION_ENROLLMENT,
+	type RetentionEnrollmentPort,
+} from "@/retention";
 import type { RetentionEnrollerPort } from "../../application/ports/retention-enroller.port";
 
 @Injectable()
 export class RetentionEnrollerAdapter implements RetentionEnrollerPort {
-	constructor(private readonly retention: RetentionFacade) {}
+	constructor(
+		@Inject(RETENTION_ENROLLMENT)
+		private readonly retentionEnrollment: RetentionEnrollmentPort,
+	) {}
 
 	enrollNewUser(userId: string, activated: boolean): Promise<void> {
-		return this.retention.enrollNewUser(userId, activated);
+		return this.retentionEnrollment.enrollNewUser(userId, activated);
 	}
 
 	activateNewUser(userId: string): Promise<void> {
-		return this.retention.activateNewUser(userId);
+		return this.retentionEnrollment.activateNewUser(userId);
 	}
 }

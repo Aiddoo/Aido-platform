@@ -12,16 +12,17 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import { NotificationFacade, NotificationMessageBuilder } from "@/notification";
-import type { IDedupProvider } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
-import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
-
+import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
+import {
+	SCHEDULER_DEDUP,
+	type SchedulerDedupPort,
+} from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -32,8 +33,8 @@ describe("WinbackStrategy — 윈백 전략", () => {
 	let strategy: WinbackStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationFacade>;
-	let dedupProvider: Mocked<IDedupProvider>;
+	let notificationService: Mocked<NotificationSender>;
+	let schedulerDedup: Mocked<SchedulerDedupPort>;
 
 	const TZ = "Asia/Seoul";
 
@@ -59,16 +60,16 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationFacade);
-		dedupProvider = unitRef.get(DEDUP_PROVIDER);
+		notificationService = unitRef.get(NotificationSender);
+		schedulerDedup = unitRef.get(SCHEDULER_DEDUP);
 
 		// 기본 mock 설정
 		reader.findWinbackUsers.mockResolvedValue([]);
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
-		dedupProvider.isMember.mockResolvedValue(false);
-		dedupProvider.addMembers.mockResolvedValue(undefined);
+		schedulerDedup.hasWinbackStage.mockResolvedValue(false);
+		schedulerDedup.recordWinbackStages.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -238,7 +239,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		]);
 
 		// 이미 day7 단계 발송 이력 (Redis)
-		dedupProvider.isMember.mockResolvedValueOnce(true);
+		schedulerDedup.hasWinbackStage.mockResolvedValueOnce(true);
 
 		// When
 		const result = await strategy.execute(ctx);

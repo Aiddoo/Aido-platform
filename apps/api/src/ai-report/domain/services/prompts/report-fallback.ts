@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 
 import type { GeneratedReportContent } from "../../types";
 

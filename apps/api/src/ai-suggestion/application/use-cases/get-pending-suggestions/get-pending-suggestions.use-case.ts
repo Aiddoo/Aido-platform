@@ -4,7 +4,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import type { Suggestion } from "../../../domain/entities/suggestion.entity";
+import type { Suggestion } from "../../../domain/entities/suggestion.aggregate";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,

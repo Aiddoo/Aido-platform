@@ -4,7 +4,7 @@ import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Public } from "@/auth/presentation/decorators";
 import { RawResponse } from "@/shared/presentation/decorators";
 import { ApiDoc } from "@/shared/presentation/swagger";
-import { AppConfigFacade } from "../application/facades/app-config.facade";
+import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case";
 import {
 	FeatureDiscoveryDisabledResponseDto,
 	FeatureDiscoveryEnabledResponseDto,
@@ -14,7 +14,9 @@ import {
 @ApiTags("App Config")
 @Controller("app-config")
 export class AppConfigController {
-	constructor(private readonly appConfigFacade: AppConfigFacade) {}
+	constructor(
+		private readonly getFeatureDiscoveryUseCase: GetFeatureDiscoveryUseCase,
+	) {}
 
 	@Get("feature-discovery")
 	@Public()
@@ -46,6 +48,6 @@ export class AppConfigController {
 		schema: featureDiscoveryResponseOpenApiSchema,
 	})
 	getFeatureDiscovery(): FeatureDiscoveryResponse {
-		return this.appConfigFacade.getFeatureDiscovery();
+		return this.getFeatureDiscoveryUseCase.execute();
 	}
 }

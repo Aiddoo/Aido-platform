@@ -7,7 +7,6 @@ import { TodoCategoryModule } from "../todo-category/todo-category.module";
 import { UserSettingsModule } from "../user-settings/user-settings.module";
 
 import { EventHandlers } from "./application/events";
-import { TodoFacade } from "./application/facades/todo.facade";
 import { CATEGORY_OWNERSHIP } from "./application/ports/category-ownership.port";
 import { FRIEND_PORT } from "./application/ports/friend.port";
 import { STREAK_PORT } from "./application/ports/streak.port";
@@ -17,7 +16,11 @@ import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port";
 import { TODO_READ_REPOSITORY } from "./application/ports/todo-read.repository.port";
 import { TODO_REMINDER } from "./application/ports/todo-reminder.port";
 import { TodoQueryUseCases } from "./application/queries";
-import { TodoUseCases } from "./application/use-cases";
+import {
+	CreateRecurringTodosUseCase,
+	CreateTodoUseCase,
+	TodoUseCases,
+} from "./application/use-cases";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
 import { PrismaTodoRepository } from "./infrastructure/adapters/prisma-todo.repository";
@@ -46,8 +49,8 @@ import { TodoController } from "./presentation/todo.controller";
  * - 모든 유스케이스가 단일 execute(input)를 가진 use-case + 도메인 애그리게잇으로 처리됨
  * - 쓰기(애그리게잇)/읽기(응답 read model) 리포지토리를 포트로 분리
  * - 크로스모듈 의존(카테고리·친구·스트릭·알림·캐시)은 포트/어댑터로 역전
- * - 외부 모듈(memo·ai-suggestion)은 TodoFacade를 주입해 사용
- *   (Facade가 이 모듈의 공개 API — index.ts에서 export)
+ * - Controller는 endpoint UseCase를 직접 주입
+ * - 외부 모듈에는 실제로 필요한 생성 UseCase만 명시적으로 공개
  */
 @Module({
 	imports: [
@@ -70,11 +73,10 @@ import { TodoController } from "./presentation/todo.controller";
 		{ provide: STREAK_PORT, useClass: StreakAdapter },
 		{ provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
 		{ provide: TODO_REMINDER, useClass: TodoReminderAdapter },
-		TodoFacade,
 		...TodoUseCases,
 		...TodoQueryUseCases,
 		...EventHandlers,
 	],
-	exports: [TodoFacade],
+	exports: [CreateTodoUseCase, CreateRecurringTodosUseCase],
 })
 export class TodoModule {}

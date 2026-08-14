@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { NotificationModule } from "@/notification/notification.module";
-import { AdminFacade } from "./application/facades/admin.facade";
 import { ADMIN_BROADCAST_NOTIFIER } from "./application/ports/admin-broadcast-notifier.port";
 import { ADMIN_GROWTH_METRICS } from "./application/ports/admin-growth-metrics.port";
 import { ADMIN_USER_DIRECTORY } from "./application/ports/admin-user-directory.port";
@@ -22,7 +21,6 @@ import { AdminGrowthController } from "./presentation/admin-growth.controller";
 	imports: [NotificationModule],
 	controllers: [AdminController, AdminGrowthController],
 	providers: [
-		AdminFacade,
 		{
 			provide: ADMIN_USER_DIRECTORY,
 			useClass: PrismaAdminUserDirectoryAdapter,

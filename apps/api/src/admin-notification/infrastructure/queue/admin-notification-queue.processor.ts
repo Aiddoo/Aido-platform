@@ -20,10 +20,11 @@ import { SendAdminNotificationUseCase } from "../../application/use-cases/send-a
 import {
 	ADMIN_NOTIFICATION_LEGACY_QUEUE,
 	ADMIN_NOTIFICATION_QUEUE,
+	ADMIN_NOTIFICATION_WORKER_POLICY,
 	type AdminNotificationJobData,
 	type AdminNotificationJobMap,
 	AdminNotificationJobName,
-	type AdminNotificationSendData,
+	AdminNotificationRuntimeJobSchema,
 } from "./admin-notification-queue.constants";
 
 /**
@@ -77,7 +78,7 @@ export class AdminNotificationProcessor implements OnModuleInit {
 			async (jobs) => {
 				for (const job of jobs) await this.process(job.data);
 			},
-			{ teamSize: 3, pollingIntervalSeconds: 2 },
+			ADMIN_NOTIFICATION_WORKER_POLICY,
 		);
 		await this.runtime.work<JobData>(
 			ADMIN_NOTIFICATION_LEGACY_QUEUE,
@@ -86,30 +87,23 @@ export class AdminNotificationProcessor implements OnModuleInit {
 					await this.process(fromLegacyJob<AdminNotificationJobMap>(job));
 				}
 			},
-			{ teamSize: 3, pollingIntervalSeconds: 2 },
+			ADMIN_NOTIFICATION_WORKER_POLICY,
 		);
 	}
 
-	async process(job: AdminNotificationJobLike): Promise<void> {
+	async process(untrustedJob: AdminNotificationJobLike): Promise<void> {
+		const parsedJob = AdminNotificationRuntimeJobSchema.safeParse(untrustedJob);
+		if (!parsedJob.success) {
+			this.#logger.warn(`Unknown job name: ${untrustedJob.name}`);
+			return;
+		}
+		const job = parsedJob.data;
 		if (job.name === AdminNotificationJobName.DISPATCH_SUMMARY) {
 			await this.dispatchDailySummary.execute();
 			return;
 		}
 
-		if (isSendJob(job)) {
-			const { channel, notification } = job.data;
-			await this.sendAdminNotification.execute(channel, notification);
-			return;
-		}
-
-		this.#logger.warn(`Unknown job name: ${job.name}`);
+		const { channel, notification } = job.data;
+		await this.sendAdminNotification.execute(channel, notification);
 	}
-}
-
-/** SEND 잡 여부(잡 이름 기반 내로잉) */
-function isSendJob(job: AdminNotificationJobLike): job is {
-	readonly name: typeof AdminNotificationJobName.SEND;
-	readonly data: AdminNotificationSendData;
-} {
-	return job.name === AdminNotificationJobName.SEND;
 }

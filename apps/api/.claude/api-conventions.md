@@ -1,10 +1,10 @@
 # API 코드 규칙
 
-**Version**: 1.2.0 · **Last Updated**: 2026-07-12 · **Owner**: Aido Platform Team
+**Version**: 2.0.0 · **Last Updated**: 2026-08-14 · **Owner**: Aido Platform Team
 
 > Controller, DTO/Swagger, Module 계층별 코드 작성 규칙
 >
-> ✅ **적용 범위**: **전 모듈이 클린아키텍처 use-case 표준**(참조 구현: todo)을 따른다 — 규칙은 **§9 클린아키텍처 모듈 규칙**이 정본이다. Controller/DTO/Swagger/Module 규칙(§2·§5~§8)은 공통. **§3 Service·§4 Repository는 이관 이전 3계층 패턴의 역사적 참고**이며 현재 이 패턴을 쓰는 모듈은 없다(2026-07 auth 이관 완료로 3계층 소멸).
+> ✅ **적용 범위**: 신규·전환 코드는 §9의 실용형 DDD·Clean Architecture 표준을 따른다. Controller/DTO/Swagger 공통 계약은 유지한다. 단순 위임 Facade와 §3 Service·§4 Repository 패턴은 전환 중인 기존 코드 설명이다.
 
 ## 관련 문서
 
@@ -23,9 +23,8 @@
 
 | 계층 | 역할 | 핵심 규칙 |
 |------|------|----------|
-| Controller | HTTP 요청/응답 처리 | 비즈니스 로직 금지, Facade만 주입, Swagger 문서화 필수 |
-| Facade | 유스케이스 조합 | 컨트롤러·크로스모듈의 유일한 주입 대상, 얇은 위임 |
-| UseCase | 비즈니스 로직 | `@Injectable` 단일 `execute()`, `ApplicationException`/`DomainException` throw, 포트로 데이터 접근 |
+| Controller | HTTP 요청/응답 처리 | 비즈니스 로직 금지, endpoint UseCase 직접 주입, Swagger 문서화 필수 |
+| UseCase | 비즈니스 로직 | 순수 클래스의 단일 `execute()`, `ApplicationException`/`DomainException` throw, 포트로 데이터 접근 |
 | Port/Adapter | 외부 의존 추상화 | 포트=인터페이스+Symbol, 어댑터가 구현(Prisma·벤더·큐) |
 | Repository | 데이터 액세스 | 포트 구현, CLS(`TransactionHost.tx`)에서 활성 TX 읽음 |
 | Module | 의존성 주입 | 모듈 경계 정의, `app.module.ts`에 등록 |
@@ -626,10 +625,24 @@ pnpm docker:down
 
 ---
 
-## 9. 클린아키텍처 모듈 규칙
+## 9. 실용형 DDD·Clean Architecture 모듈 규칙
 
-> **전 모듈 표준** (참조 구현: todo). 2026-07 auth 이관 완료로 전 모듈이 이 표준을 따른다(§3·§4 3계층 패턴은 소멸).
-> **@nestjs/cqrs 사용 금지** — CommandBus/QueryBus/EventBus/CqrsModule 없음. 유스케이스는 plain `@Injectable()` use-case 클래스, 부수효과는 `DOMAIN_EVENT_PUBLISHER` → EventEmitter2 → `@OnEvent`로 처리한다.
+> **최종 표준** (참조 구현: todo). 모듈별 stacked PR로 전환하며 기존 위반은 exact baseline으로만 격리한다.
+> **@nestjs/cqrs 사용 금지** — UseCase는 `@Injectable` 클래스이고 포트는 `@Inject(Symbol)`로 주입한다. domain만 순수 TypeScript로 유지한다.
+
+전환 완료 코드의 필수 조건:
+
+- Controller → endpoint UseCase 직접 주입. Facade 금지.
+- domain → `@nestjs/*`, Prisma, infrastructure, presentation import 금지.
+- application → Prisma, vendor SDK, infrastructure, presentation import 금지. Nest DI와 Logger는 허용.
+- 쓰기는 `application/use-cases/`, 읽기는 `application/queries/`에 둔다.
+- 입력은 하나의 `readonly XxxInput`, 무입력은 무인자. 반환 객체는 `XxxResult`로 명명.
+- `repo`, `svc`, `ctx`, `tx`, `res`, `req`, `impl`, `idem`과 단독 `data`, `result`, `repository`, `effects`, `service` 금지.
+- Aggregate는 `.aggregate.ts`, 일반 Entity는 `.entity.ts`; 판단 규칙은 `domain/policies/*.policy.ts`.
+- 역할 접미사는 `Repository`, `Reader`, `Store`, `Client`, `Sender`, `Recorder`, `Publisher`, `Adapter`, `Policy`, `Resolver`, `Registry`, `JobHandler` 중 실제 책임에 맞게 사용.
+- Controller/infrastructure mapper만 Zod DTO와 원시 ID를 경계 타입으로 변환.
+- cross-module 호출은 consumer-owned capability port/access module만 사용. UseCase나 구현체 직접 호출 금지.
+- 단건 전이는 Aggregate, 다중 행 batch SQL·atomic claim/counter는 명시적 예외.
 
 ### 디렉터리 구조
 

@@ -8,6 +8,7 @@ import { WeeklyAchievementModule } from "../weekly-achievement/weekly-achievemen
 import { RE_ENGAGEMENT_READER } from "./application/ports/re-engagement-reader.port";
 import { REMINDER_SCHEDULER } from "./application/ports/reminder-scheduler.port";
 import { SCHEDULED_REMINDER_READER } from "./application/ports/scheduled-reminder-reader.port";
+import { SCHEDULER_DEDUP } from "./application/ports/scheduler-dedup.port";
 import { SCHEDULER_PREFERENCE_READER } from "./application/ports/scheduler-preference-reader.port";
 import { TIMEZONE_REMINDER_ENQUEUER } from "./application/ports/timezone-reminder-enqueuer.port";
 import { TODO_REMINDER_READER } from "./application/ports/todo-reminder-reader.port";
@@ -29,6 +30,7 @@ import {
 	WeeklyReportStrategy,
 	WinbackStrategy,
 } from "./application/strategies";
+import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter";
 import { PrismaSchedulerReader } from "./infrastructure/persistence/prisma-scheduler.reader";
 import { TodoReminderProcessor } from "./infrastructure/processors/todo-reminder.processor";
 import {
@@ -75,6 +77,8 @@ import { BullMQReminderSchedulerAdapter } from "./infrastructure/scheduler/bullm
 		WeatherEveningStrategy,
 		// 리더 어댑터 (단일 Prisma 어댑터 → 분리된 리더 포트들에 바인딩)
 		PrismaSchedulerReader,
+		SchedulerDedupAdapter,
+		{ provide: SCHEDULER_DEDUP, useExisting: SchedulerDedupAdapter },
 		{ provide: SCHEDULED_REMINDER_READER, useExisting: PrismaSchedulerReader },
 		{ provide: RE_ENGAGEMENT_READER, useExisting: PrismaSchedulerReader },
 		{ provide: WEATHER_REMINDER_READER, useExisting: PrismaSchedulerReader },

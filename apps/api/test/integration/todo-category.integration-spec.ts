@@ -1,7 +1,7 @@
 /**
  * TodoCategory 모듈 통합 테스트 (Mock DB)
  *
- * 클린아키텍처(무버스 use-case) 구조로 재작성. TodoCategoryFacade·use-case·TodoCategoryReader가
+ * endpoint use-case·TodoCategoryReader가
  * PrismaTodoCategoryRepository(Mock DB)·캐시 어댑터·EntitlementService와 함께 DI로 조립되고
  * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
@@ -20,7 +20,6 @@ import { EntitlementService } from "@/shared/application/entitlement/entitlement
 import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TodoCategoryFacade } from "@/todo-category";
 import { TODO_CATEGORY_REPOSITORY } from "@/todo-category/application/ports/todo-category.repository.port";
 import { TODO_CATEGORY_CACHE } from "@/todo-category/application/ports/todo-category-cache.port";
 import { TODO_CATEGORY_LIMIT_READER } from "@/todo-category/application/ports/todo-category-limit-reader.port";
@@ -31,11 +30,15 @@ import { ReorderTodoCategoryUseCase } from "@/todo-category/application/use-case
 import { UpdateTodoCategoryUseCase } from "@/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case";
 import { TodoCategoryCacheAdapter } from "@/todo-category/infrastructure/adapters/todo-category-cache.adapter";
 import { PrismaTodoCategoryRepository } from "@/todo-category/infrastructure/persistence/prisma-todo-category.repository";
-import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
+import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
 
 describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: TodoCategoryFacade;
+	let reader: TodoCategoryReader;
+	let createUseCase: CreateTodoCategoryUseCase;
+	let updateUseCase: UpdateTodoCategoryUseCase;
+	let deleteUseCase: DeleteTodoCategoryUseCase;
+	let reorderUseCase: ReorderTodoCategoryUseCase;
 
 	const mockTodoCategoryDb = {
 		create: jest.fn(),
@@ -81,13 +84,12 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				TodoCategoryFacade,
 				TodoCategoryReader,
 				CreateTodoCategoryUseCase,
 				UpdateTodoCategoryUseCase,
 				DeleteTodoCategoryUseCase,
 				ReorderTodoCategoryUseCase,
-				TodoCategoryRepository,
+				DefaultTodoCategorySeeder,
 				{
 					provide: TODO_CATEGORY_REPOSITORY,
 					useClass: PrismaTodoCategoryRepository,
@@ -125,7 +127,11 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		facade = module.get(TodoCategoryFacade);
+		reader = module.get(TodoCategoryReader);
+		createUseCase = module.get(CreateTodoCategoryUseCase);
+		updateUseCase = module.get(UpdateTodoCategoryUseCase);
+		deleteUseCase = module.get(DeleteTodoCategoryUseCase);
+		reorderUseCase = module.get(ReorderTodoCategoryUseCase);
 	});
 
 	afterAll(async () => {
@@ -145,8 +151,9 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합", () => {
-		it("TodoCategoryFacade가 조립된다", () => {
-			expect(facade).toBeInstanceOf(TodoCategoryFacade);
+		it("endpoint use-case와 reader가 조립된다", () => {
+			expect(reader).toBeInstanceOf(TodoCategoryReader);
+			expect(createUseCase).toBeInstanceOf(CreateTodoCategoryUseCase);
 		});
 		it("Repository 포트가 주입된다", () => {
 			expect(module.get(TODO_CATEGORY_REPOSITORY)).toBeInstanceOf(
@@ -166,7 +173,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				makeCategory({ name: "새 카테고리" }),
 			);
 
-			const result = await facade.create({
+			const result = await createUseCase.execute({
 				userId,
 				name: "새 카테고리",
 				color: "#FFB3B3",
@@ -188,7 +195,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 
 			await expect(
-				facade.create({ userId, name: "중요한 일", color: "#FFB3B3" }),
+				createUseCase.execute({ userId, name: "중요한 일", color: "#FFB3B3" }),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -197,7 +204,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		it("카테고리를 todoCount와 함께 조회한다", async () => {
 			mockTodoCategoryDb.findUnique.mockResolvedValue(makeWithCount({}, 3));
 
-			const result = await facade.findById(categoryId, userId);
+			const result = await reader.findById(categoryId, userId);
 
 			expect(result.id).toBe(categoryId);
 			expect(result.todoCount).toBe(3);
@@ -205,7 +212,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findUnique.mockResolvedValue(null);
-			await expect(facade.findById(999, userId)).rejects.toThrow(
+			await expect(reader.findById(999, userId)).rejects.toThrow(
 				ApplicationException,
 			);
 		});
@@ -214,7 +221,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoCategoryDb.findUnique.mockResolvedValue(
 				makeWithCount({ userId: "other-user" }),
 			);
-			await expect(facade.findById(categoryId, userId)).rejects.toThrow(
+			await expect(reader.findById(categoryId, userId)).rejects.toThrow(
 				ApplicationException,
 			);
 		});
@@ -227,7 +234,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				makeWithCount({ id: 2, name: "할 일", sortOrder: 1 }),
 			]);
 
-			const result = await facade.findMany(userId);
+			const result = await reader.findMany(userId);
 
 			expect(result).toHaveLength(2);
 			expect(mockTodoCategoryDb.findMany).toHaveBeenCalledWith(
@@ -248,7 +255,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				makeCategory({ name: "수정된 이름", color: "#FF0000" }),
 			);
 
-			const result = await facade.update(categoryId, userId, {
+			const result = await updateUseCase.execute(categoryId, userId, {
 				name: "수정된 이름",
 				color: "#FF0000",
 			});
@@ -263,14 +270,14 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(makeCategory({ id: 2, name: "카테고리 2" }));
 
 			await expect(
-				facade.update(1, userId, { name: "카테고리 2" }),
+				updateUseCase.execute(1, userId, { name: "카테고리 2" }),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
 			await expect(
-				facade.update(999, userId, { name: "수정" }),
+				updateUseCase.execute(999, userId, { name: "수정" }),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -282,7 +289,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoDb.count.mockResolvedValue(0);
 			mockTodoCategoryDb.delete.mockResolvedValue(makeCategory());
 
-			await facade.delete({ userId, categoryId });
+			await deleteUseCase.execute({ userId, categoryId });
 
 			expect(mockTodoCategoryDb.delete).toHaveBeenCalledWith({
 				where: { id: categoryId },
@@ -295,9 +302,9 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoCategoryDb.count.mockResolvedValue(2);
 			mockTodoDb.count.mockResolvedValue(5);
 
-			await expect(facade.delete({ userId, categoryId })).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(
+				deleteUseCase.execute({ userId, categoryId }),
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("할 일을 이동 후 삭제한다", async () => {
@@ -309,7 +316,11 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoDb.updateMany.mockResolvedValue({ count: 5 });
 			mockTodoCategoryDb.delete.mockResolvedValue(makeCategory({ id: 1 }));
 
-			await facade.delete({ userId, categoryId: 1, moveToCategoryId: 2 });
+			await deleteUseCase.execute({
+				userId,
+				categoryId: 1,
+				moveToCategoryId: 2,
+			});
 
 			expect(mockTodoDb.updateMany).toHaveBeenCalledWith({
 				where: { categoryId: 1 },
@@ -321,16 +332,16 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		it("마지막 카테고리면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 			mockTodoCategoryDb.count.mockResolvedValue(1);
-			await expect(facade.delete({ userId, categoryId })).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(
+				deleteUseCase.execute({ userId, categoryId }),
+			).rejects.toThrow(ApplicationException);
 		});
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-			await expect(facade.delete({ userId, categoryId: 999 })).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(
+				deleteUseCase.execute({ userId, categoryId: 999 }),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -344,7 +355,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				makeCategory({ id: 3, sortOrder: 0 }),
 			);
 
-			const result = await facade.reorder({
+			const result = await reorderUseCase.execute({
 				userId,
 				categoryId: 3,
 				targetCategoryId: 1,
@@ -367,7 +378,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				makeCategory({ id: 1, sortOrder: 2 }),
 			);
 
-			const result = await facade.reorder({
+			const result = await reorderUseCase.execute({
 				userId,
 				categoryId: 1,
 				position: "after",
@@ -379,7 +390,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		it("자기 자신 대상이면 변경 없이 반환한다", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 
-			const result = await facade.reorder({
+			const result = await reorderUseCase.execute({
 				userId,
 				categoryId,
 				targetCategoryId: categoryId,
@@ -393,7 +404,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
 			await expect(
-				facade.reorder({ userId, categoryId: 999, position: "before" }),
+				reorderUseCase.execute({ userId, categoryId: 999, position: "before" }),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -402,14 +413,14 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		it("소유하면 통과한다", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 			await expect(
-				facade.validateOwnership(categoryId, userId),
+				reader.validateOwnership(categoryId, userId),
 			).resolves.toBeUndefined();
 		});
 
 		it("미소유면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
 			await expect(
-				facade.validateOwnership(categoryId, "other-user"),
+				reader.validateOwnership(categoryId, "other-user"),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -426,14 +437,14 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			);
 
 			await expect(
-				facade.create({ userId, name: "테스트", color: "#FF0000" }),
+				createUseCase.execute({ userId, name: "테스트", color: "#FF0000" }),
 			).rejects.toThrow("Database connection failed");
 		});
 
 		it("findById ApplicationException의 errorCode는 TODO_CATEGORY 계열이다", async () => {
 			mockTodoCategoryDb.findUnique.mockResolvedValue(null);
 			try {
-				await facade.findById(999, userId);
+				await reader.findById(999, userId);
 				throw new Error("should have thrown");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);

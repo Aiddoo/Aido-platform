@@ -6,5 +6,4 @@
  */
 
 export * from "./ai.module";
-export * from "./application/facades/ai.facade";
 export * from "./application/ports/ai-provider.port";

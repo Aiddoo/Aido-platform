@@ -15,7 +15,8 @@ import {
 	CurrentUser,
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
-import { DailyCompletionFacade } from "../application/facades/daily-completion.facade";
+import { GetDailyCompletionsUseCase } from "../application/queries/get-daily-completions/get-daily-completions.use-case";
+import { GetFriendDailyCompletionsUseCase } from "../application/queries/get-friend-daily-completions/get-friend-daily-completions.use-case";
 import type { DailyCompletionsRange } from "../domain/daily-completion";
 import {
 	DailyCompletionsRangeResponseDto,
@@ -28,7 +29,10 @@ import {
 export class DailyCompletionController {
 	readonly #logger = new Logger(DailyCompletionController.name);
 
-	constructor(private readonly dailyCompletionFacade: DailyCompletionFacade) {}
+	constructor(
+		private readonly getDailyCompletionsUseCase: GetDailyCompletionsUseCase,
+		private readonly getFriendDailyCompletionsUseCase: GetFriendDailyCompletionsUseCase,
+	) {}
 
 	@Get()
 	@ApiQuery({
@@ -127,11 +131,11 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 			`일일 완료 현황 조회: user=${user.userId}, range=${query.startDate}~${query.endDate}`,
 		);
 
-		const result = await this.dailyCompletionFacade.getDailyCompletions(
-			user.userId,
-			query.startDate,
-			query.endDate,
-		);
+		const result = await this.getDailyCompletionsUseCase.execute({
+			userId: user.userId,
+			startDate: query.startDate,
+			endDate: query.endDate,
+		});
 
 		this.#logger.debug(
 			`일일 완료 현황 조회 완료: user=${user.userId}, days=${result.completions.length}, completeDays=${result.totalCompleteDays}`,
@@ -197,12 +201,12 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
 			`친구 일일 완료 현황 조회: friendUserId=${params.userId}, user=${user.userId}, range=${query.startDate}~${query.endDate}`,
 		);
 
-		const result = await this.dailyCompletionFacade.getFriendDailyCompletions(
-			user.userId,
-			params.userId,
-			query.startDate,
-			query.endDate,
-		);
+		const result = await this.getFriendDailyCompletionsUseCase.execute({
+			userId: user.userId,
+			friendUserId: params.userId,
+			startDate: query.startDate,
+			endDate: query.endDate,
+		});
 
 		return this.#mapToResponse(result);
 	}
