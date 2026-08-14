@@ -2,11 +2,14 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
-import { NudgeFacade } from "../application/facades/nudge.facade";
 import type {
 	NudgeWithRelations,
 	ReminderNudgeWithRelations,
 } from "../application/ports/nudge.repository.port";
+import { NudgeReader } from "../application/services/nudge.reader";
+import { MarkNudgeReadUseCase } from "../application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
+import { SendNudgeUseCase } from "../application/use-cases/send-nudge/send-nudge.use-case";
+import { SendRemindNudgeUseCase } from "../application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
 import type {
 	GetNudgesQueryDto,
 	SendNudgeDto,
@@ -45,16 +48,22 @@ const remindNudge: ReminderNudgeWithRelations = {
 
 describe("NudgeController", () => {
 	let controller: NudgeController;
-	let facade: Mocked<NudgeFacade>;
+	let nudgeReader: Mocked<NudgeReader>;
+	let sendNudgeUseCase: Mocked<SendNudgeUseCase>;
+	let sendRemindNudgeUseCase: Mocked<SendRemindNudgeUseCase>;
+	let markNudgeReadUseCase: Mocked<MarkNudgeReadUseCase>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(NudgeController).compile();
 		controller = unit;
-		facade = unitRef.get(NudgeFacade);
+		nudgeReader = unitRef.get(NudgeReader);
+		sendNudgeUseCase = unitRef.get(SendNudgeUseCase);
+		sendRemindNudgeUseCase = unitRef.get(SendRemindNudgeUseCase);
+		markNudgeReadUseCase = unitRef.get(MarkNudgeReadUseCase);
 	});
 
 	it("sendNudge는 파사드에 위임하고 응답을 구성한다", async () => {
-		facade.sendNudge.mockResolvedValue(nudge);
+		sendNudgeUseCase.execute.mockResolvedValue(nudge);
 		const dto = {
 			receiverId: "receiver",
 			todoId: 10,
@@ -63,7 +72,7 @@ describe("NudgeController", () => {
 
 		const result = await controller.sendNudge(user, dto, "Asia/Seoul");
 
-		expect(facade.sendNudge).toHaveBeenCalledWith(
+		expect(sendNudgeUseCase.execute).toHaveBeenCalledWith(
 			{ senderId: "sender", receiverId: "receiver", todoId: 10, message: "hi" },
 			"Asia/Seoul",
 		);
@@ -72,12 +81,12 @@ describe("NudgeController", () => {
 	});
 
 	it("getReceivedNudges는 목록/총계/미읽음을 병렬 조회한다", async () => {
-		facade.getReceivedNudges.mockResolvedValue({
+		nudgeReader.getReceivedNudges.mockResolvedValue({
 			items: [nudge],
 			pagination: { hasNext: true, nextCursor: 1, size: 20 },
 		});
-		facade.countReceivedNudges.mockResolvedValue(5);
-		facade.countUnreadReceivedNudges.mockResolvedValue(2);
+		nudgeReader.countReceivedNudges.mockResolvedValue(5);
+		nudgeReader.countUnreadReceivedNudges.mockResolvedValue(2);
 		const query = {
 			cursor: undefined,
 			limit: 20,
@@ -92,7 +101,7 @@ describe("NudgeController", () => {
 	});
 
 	it("getLimitInfo는 한도 정보를 매핑한다", async () => {
-		facade.getLimitInfo.mockResolvedValue({
+		nudgeReader.getLimitInfo.mockResolvedValue({
 			dailyLimit: 3,
 			used: 1,
 			remaining: 2,
@@ -109,7 +118,7 @@ describe("NudgeController", () => {
 	});
 
 	it("getCooldownInfo는 canNudge를 반전한다", async () => {
-		facade.getCooldownInfoForUser.mockResolvedValue({
+		nudgeReader.getCooldownInfoForUser.mockResolvedValue({
 			isActive: true,
 			remainingSeconds: 100,
 			cooldownEndsAt: new Date("2026-01-01T01:00:00.000Z"),
@@ -122,12 +131,12 @@ describe("NudgeController", () => {
 	});
 
 	it("sendRemindNudge는 파사드에 위임한다", async () => {
-		facade.sendRemindNudge.mockResolvedValue(remindNudge);
+		sendRemindNudgeUseCase.execute.mockResolvedValue(remindNudge);
 		const dto = { receiverId: "receiver" } as SendRemindNudgeDto;
 
 		const result = await controller.sendRemindNudge(user, dto, "UTC");
 
-		expect(facade.sendRemindNudge).toHaveBeenCalledWith(
+		expect(sendRemindNudgeUseCase.execute).toHaveBeenCalledWith(
 			{ senderId: "sender", receiverId: "receiver", message: undefined },
 			"UTC",
 		);
@@ -136,7 +145,7 @@ describe("NudgeController", () => {
 	});
 
 	it("getRemindCooldownInfo는 canNudge를 반전한다", async () => {
-		facade.getRemindCooldownInfo.mockResolvedValue({
+		nudgeReader.getRemindCooldownInfo.mockResolvedValue({
 			isActive: false,
 			remainingSeconds: 0,
 			cooldownEndsAt: null,
@@ -149,11 +158,14 @@ describe("NudgeController", () => {
 	});
 
 	it("markAsRead는 파사드에 위임한다", async () => {
-		facade.markAsRead.mockResolvedValue(undefined);
+		markNudgeReadUseCase.execute.mockResolvedValue(undefined);
 
 		const result = await controller.markAsRead(user, { id: 9 });
 
-		expect(facade.markAsRead).toHaveBeenCalledWith("sender", 9);
+		expect(markNudgeReadUseCase.execute).toHaveBeenCalledWith({
+			userId: "sender",
+			nudgeId: 9,
+		});
 		expect(result.readCount).toBe(1);
 	});
 });

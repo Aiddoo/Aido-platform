@@ -1,17 +1,5 @@
 import { Injectable } from "@nestjs/common";
-
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-
-import type { NudgeCooldown } from "../../domain/services/nudge-cooldown";
-import type {
-	NudgeWithRelations,
-	ReminderNudgeWithRelations,
-} from "../ports/nudge.repository.port";
-import {
-	type GetNudgesParams,
-	type NudgeLimitInfo,
-	NudgeReader,
-} from "../services/nudge.reader";
+import { NudgeReader } from "../services/nudge.reader";
 import { MarkNudgeReadUseCase } from "../use-cases/mark-nudge-read/mark-nudge-read.use-case";
 import {
 	type SendNudgeInput,
@@ -22,10 +10,7 @@ import {
 	SendRemindNudgeUseCase,
 } from "../use-cases/send-remind-nudge/send-remind-nudge.use-case";
 
-/**
- * NudgeFacade — nudge 모듈의 유일한 공개 표면.
- * 컨트롤러는 이 파사드만 주입하며, 파사드는 use-case·reader에 직접 위임한다(버스 없음).
- */
+/** @deprecated HTTP 진입점은 endpoint UseCase를 직접 사용한다. */
 @Injectable()
 export class NudgeFacade {
 	constructor(
@@ -34,61 +19,37 @@ export class NudgeFacade {
 		private readonly sendRemindNudgeUseCase: SendRemindNudgeUseCase,
 		private readonly markNudgeReadUseCase: MarkNudgeReadUseCase,
 	) {}
-
-	sendNudge(input: SendNudgeInput, tz: string): Promise<NudgeWithRelations> {
-		return this.sendNudgeUseCase.execute(input, tz);
+	sendNudge(input: SendNudgeInput, timezone: string) {
+		return this.sendNudgeUseCase.execute(input, timezone);
 	}
-
-	sendRemindNudge(
-		input: SendRemindNudgeInput,
-		tz: string,
-	): Promise<ReminderNudgeWithRelations> {
-		return this.sendRemindNudgeUseCase.execute(input, tz);
+	sendRemindNudge(input: SendRemindNudgeInput, timezone: string) {
+		return this.sendRemindNudgeUseCase.execute(input, timezone);
 	}
-
-	getReceivedNudges(
-		params: GetNudgesParams,
-	): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
-		return this.reader.getReceivedNudges(params);
+	getReceivedNudges(input: Parameters<NudgeReader["getReceivedNudges"]>[0]) {
+		return this.reader.getReceivedNudges(input);
 	}
-
-	getSentNudges(
-		params: GetNudgesParams,
-	): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
-		return this.reader.getSentNudges(params);
+	getSentNudges(input: Parameters<NudgeReader["getSentNudges"]>[0]) {
+		return this.reader.getSentNudges(input);
 	}
-
-	getLimitInfo(userId: string, tz: string): Promise<NudgeLimitInfo> {
-		return this.reader.getLimitInfo(userId, tz);
+	getLimitInfo(userId: string, timezone: string) {
+		return this.reader.getLimitInfo(userId, timezone);
 	}
-
-	getCooldownInfoForUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<NudgeCooldown> {
+	getCooldownInfoForUser(senderId: string, receiverId: string) {
 		return this.reader.getCooldownInfoForUser(senderId, receiverId);
 	}
-
-	getRemindCooldownInfo(
-		senderId: string,
-		receiverId: string,
-	): Promise<NudgeCooldown> {
+	getRemindCooldownInfo(senderId: string, receiverId: string) {
 		return this.reader.getRemindCooldownInfo(senderId, receiverId);
 	}
-
-	markAsRead(userId: string, nudgeId: number): Promise<void> {
+	markAsRead(userId: string, nudgeId: number) {
 		return this.markNudgeReadUseCase.execute({ userId, nudgeId });
 	}
-
-	countReceivedNudges(userId: string): Promise<number> {
+	countReceivedNudges(userId: string) {
 		return this.reader.countReceivedNudges(userId);
 	}
-
-	countSentNudges(userId: string): Promise<number> {
+	countSentNudges(userId: string) {
 		return this.reader.countSentNudges(userId);
 	}
-
-	countUnreadReceivedNudges(userId: string): Promise<number> {
+	countUnreadReceivedNudges(userId: string) {
 		return this.reader.countUnreadReceivedNudges(userId);
 	}
 }

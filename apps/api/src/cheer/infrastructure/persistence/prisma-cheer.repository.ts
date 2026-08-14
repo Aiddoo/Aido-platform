@@ -15,7 +15,7 @@ import type {
 	CreateCheerInput,
 	FindCheersParams,
 } from "../../application/ports/cheer.repository.port";
-import { Cheer } from "../../domain/entities/cheer.entity";
+import { Cheer } from "../../domain/entities/cheer.aggregate";
 
 type UserBriefRow = {
 	id: string;

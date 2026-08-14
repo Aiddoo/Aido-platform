@@ -2,8 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { FollowModule } from "@/follow/follow.module";
 import { NotificationModule } from "@/notification/notification.module";
-
 import { CheerFacade } from "./application/facades/cheer.facade";
+
 import { CHEER_REPOSITORY } from "./application/ports/cheer.repository.port";
 import { CHEER_LIMIT_READER } from "./application/ports/cheer-limit-reader.port";
 import { CHEER_NOTIFIER } from "./application/ports/cheer-notifier.port";

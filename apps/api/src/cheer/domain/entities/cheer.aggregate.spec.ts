@@ -1,4 +1,4 @@
-import { Cheer } from "./cheer.entity";
+import { Cheer } from "./cheer.aggregate";
 
 const make = (
 	over: Partial<{ readAt: Date | null; receiverId: string }> = {},
