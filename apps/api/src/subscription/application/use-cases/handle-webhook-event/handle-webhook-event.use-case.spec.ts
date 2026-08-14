@@ -14,7 +14,7 @@ import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
 
-import { Subscription } from "../../../domain/entities/subscription.entity";
+import { Subscription } from "../../../domain/entities/subscription.aggregate";
 import {
 	SUBSCRIPTION_REPOSITORY,
 	type SubscriptionRepositoryPort,

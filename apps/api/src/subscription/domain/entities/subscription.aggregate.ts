@@ -1,3 +1,4 @@
+import { AggregateRoot } from "@/shared/domain";
 import { isSame } from "@/shared/domain/date/utils/compare";
 
 /** 구독 상태 — Prisma SubscriptionStatus와 동일한 리터럴(도메인 계층은 generated를 참조하지 않는다) */
@@ -26,11 +27,14 @@ export interface SubscriptionProps {
  * 상태·만료·마지막 처리 이벤트 조회 행위를 소유한다. 상태 전이(갱신/취소/만료)는 웹훅
  * 유스케이스가 저장소를 통해 반영하므로, 이 애그리게잇은 읽기 판정만 담당한다.
  */
-export class Subscription {
-	private constructor(private readonly props: SubscriptionProps) {}
-
+export class Subscription extends AggregateRoot<SubscriptionProps> {
 	static reconstitute(props: SubscriptionProps): Subscription {
-		return new Subscription(props);
+		return new Subscription({
+			...props,
+			startedAt: new Date(props.startedAt),
+			expiresAt: new Date(props.expiresAt),
+			cancelledAt: props.cancelledAt ? new Date(props.cancelledAt) : null,
+		});
 	}
 
 	get id(): number {
@@ -54,11 +58,11 @@ export class Subscription {
 	}
 
 	get expiresAt(): Date {
-		return this.props.expiresAt;
+		return new Date(this.props.expiresAt);
 	}
 
 	get cancelledAt(): Date | null {
-		return this.props.cancelledAt;
+		return this.props.cancelledAt ? new Date(this.props.cancelledAt) : null;
 	}
 
 	get lastProcessedEventId(): string | null {
