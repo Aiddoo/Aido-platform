@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 
 import { FollowModule } from "@/follow/follow.module";
 import { NotificationModule } from "@/notification/notification.module";
-import { CheerFacade } from "./application/facades/cheer.facade";
 
 import { CHEER_REPOSITORY } from "./application/ports/cheer.repository.port";
 import { CHEER_LIMIT_READER } from "./application/ports/cheer-limit-reader.port";
@@ -19,7 +18,7 @@ import { CheerController } from "./presentation/cheer.controller";
 /**
  * Cheer 모듈 (DDD 클린아키텍처 · use-case 기반).
  *
- * 친구에게 응원 메시지를 보내고 조회한다. 컨트롤러는 CheerFacade만 주입한다.
+ * 친구에게 응원 메시지를 보내고 조회한다. 컨트롤러는 endpoint별 UseCase와 Reader를 직접 주입한다.
  * 제한 정책: FREE 하루 3회 / ACTIVE 무제한, 동일 친구 24시간 쿨다운.
  */
 @Module({
@@ -33,8 +32,6 @@ import { CheerController } from "./presentation/cheer.controller";
 		SendCheerUseCase,
 		MarkCheerReadUseCase,
 		MarkManyCheersReadUseCase,
-		CheerFacade,
 	],
-	exports: [CheerFacade],
 })
 export class CheerModule {}

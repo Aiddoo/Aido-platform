@@ -1,7 +1,7 @@
 /**
  * Cheer 모듈 통합 테스트 (Mock DB)
  *
- * 클린아키텍처(무버스 use-case) 구조로 재작성. CheerFacade·use-case·CheerReader가
+ * endpoint use-case와 CheerReader가
  * PrismaCheerRepository(Mock DB)·알림/한도 어댑터·FollowReader와 함께 DI로 조립되고
  * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
@@ -15,7 +15,6 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
-import { CheerFacade } from "@/cheer";
 import { CHEER_REPOSITORY } from "@/cheer/application/ports/cheer.repository.port";
 import { CHEER_LIMIT_READER } from "@/cheer/application/ports/cheer-limit-reader.port";
 import { CHEER_NOTIFIER } from "@/cheer/application/ports/cheer-notifier.port";
@@ -36,7 +35,29 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 
 describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let facade: CheerFacade;
+	let reader: CheerReader;
+	let sendCheerUseCase: SendCheerUseCase;
+	let markCheerReadUseCase: MarkCheerReadUseCase;
+	let markManyCheersReadUseCase: MarkManyCheersReadUseCase;
+	const cheerApi = {
+		sendCheer: (
+			input: Parameters<SendCheerUseCase["execute"]>[0],
+			timezone: string,
+		) => sendCheerUseCase.execute(input, timezone),
+		getReceivedCheers: (
+			input: Parameters<CheerReader["getReceivedCheers"]>[0],
+		) => reader.getReceivedCheers(input),
+		getSentCheers: (input: Parameters<CheerReader["getSentCheers"]>[0]) =>
+			reader.getSentCheers(input),
+		getLimitInfo: (userId: string, timezone: string) =>
+			reader.getLimitInfo(userId, timezone),
+		getCooldownInfoForUser: (senderId: string, receiverId: string) =>
+			reader.getCooldownInfoForUser(senderId, receiverId),
+		markAsRead: (userId: string, cheerId: number) =>
+			markCheerReadUseCase.execute({ userId, cheerId }),
+		markManyAsRead: (userId: string, cheerIds: number[]) =>
+			markManyCheersReadUseCase.execute({ userId, cheerIds }),
+	};
 
 	const mockCheerDb = {
 		create: jest.fn(),
@@ -84,7 +105,6 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				CheerFacade,
 				CheerReader,
 				SendCheerUseCase,
 				MarkCheerReadUseCase,
@@ -114,7 +134,10 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			],
 		}).compile();
 
-		facade = module.get(CheerFacade);
+		reader = module.get(CheerReader);
+		sendCheerUseCase = module.get(SendCheerUseCase);
+		markCheerReadUseCase = module.get(MarkCheerReadUseCase);
+		markManyCheersReadUseCase = module.get(MarkManyCheersReadUseCase);
 	});
 
 	afterAll(async () => {
@@ -142,8 +165,9 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("DI 통합", () => {
-		it("CheerFacade가 조립된다", () => {
-			expect(facade).toBeInstanceOf(CheerFacade);
+		it("Cheer UseCase와 Reader가 조립된다", () => {
+			expect(sendCheerUseCase).toBeInstanceOf(SendCheerUseCase);
+			expect(reader).toBeInstanceOf(CheerReader);
 		});
 		it("CheerRepository 포트가 주입된다", () => {
 			expect(module.get(CHEER_REPOSITORY)).toBeInstanceOf(
@@ -165,7 +189,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 				),
 			);
 
-			const result = await facade.sendCheer(
+			const result = await cheerApi.sendCheer(
 				{ senderId, receiverId, message: "축하해요!" },
 				"UTC",
 			);
@@ -190,20 +214,20 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 				),
 			);
 
-			const result = await facade.sendCheer({ senderId, receiverId }, "UTC");
+			const result = await cheerApi.sendCheer({ senderId, receiverId }, "UTC");
 			expect(result.id).toBe(cheerId);
 		});
 
 		it("친구가 아니면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(false);
 			await expect(
-				facade.sendCheer({ senderId, receiverId }, "UTC"),
+				cheerApi.sendCheer({ senderId, receiverId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
 		it("자기 자신에게 전송하면 ApplicationException", async () => {
 			await expect(
-				facade.sendCheer({ senderId, receiverId: senderId }, "UTC"),
+				cheerApi.sendCheer({ senderId, receiverId: senderId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
@@ -211,7 +235,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockCheerDb.count.mockResolvedValue(3);
 			await expect(
-				facade.sendCheer({ senderId, receiverId }, "UTC"),
+				cheerApi.sendCheer({ senderId, receiverId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 
@@ -224,7 +248,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 					.build(),
 			);
 			await expect(
-				facade.sendCheer({ senderId, receiverId }, "UTC"),
+				cheerApi.sendCheer({ senderId, receiverId }, "UTC"),
 			).rejects.toThrow(ApplicationException);
 		});
 	});
@@ -236,7 +260,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			]);
 			mockCheerDb.count.mockResolvedValue(1);
 
-			const result = await facade.getReceivedCheers({ userId: receiverId });
+			const result = await cheerApi.getReceivedCheers({ userId: receiverId });
 			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 		});
 
@@ -245,7 +269,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 				withSenderReceiver(CheerBuilder.create(senderId, receiverId).withId(1)),
 				withSenderReceiver(CheerBuilder.create(senderId, receiverId).withId(2)),
 			]);
-			const result = await facade.getSentCheers({ userId: senderId });
+			const result = await cheerApi.getSentCheers({ userId: senderId });
 			expect(result.items).toHaveLength(2);
 			expect(result.pagination).toBeDefined();
 		});
@@ -254,7 +278,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	describe("일일 제한 정보", () => {
 		it("FREE 사용자의 제한 정보", async () => {
 			mockCheerDb.count.mockResolvedValue(2);
-			const result = await facade.getLimitInfo(senderId, "UTC");
+			const result = await cheerApi.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBe(3);
 			expect(result.used).toBe(2);
 			expect(result.remaining).toBe(1);
@@ -267,7 +291,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 				subscriptionStatus: "ACTIVE",
 			});
 			mockCheerDb.count.mockResolvedValue(10);
-			const result = await facade.getLimitInfo(senderId, "UTC");
+			const result = await cheerApi.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBeNull();
 			expect(result.remaining).toBeNull();
 		});
@@ -276,7 +300,10 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	describe("쿨다운 정보", () => {
 		it("기록이 없으면 비활성", async () => {
 			mockCheerDb.findFirst.mockResolvedValue(null);
-			const result = await facade.getCooldownInfoForUser(senderId, receiverId);
+			const result = await cheerApi.getCooldownInfoForUser(
+				senderId,
+				receiverId,
+			);
 			expect(result.isActive).toBe(false);
 		});
 
@@ -286,7 +313,10 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 					.withCreatedAt(new Date())
 					.build(),
 			);
-			const result = await facade.getCooldownInfoForUser(senderId, receiverId);
+			const result = await cheerApi.getCooldownInfoForUser(
+				senderId,
+				receiverId,
+			);
 			expect(result.isActive).toBe(true);
 			expect(result.remainingSeconds).toBeGreaterThan(0);
 		});
@@ -302,7 +332,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			);
 			mockCheerDb.update.mockResolvedValue({});
 
-			await facade.markAsRead(receiverId, cheerId);
+			await cheerApi.markAsRead(receiverId, cheerId);
 			expect(mockCheerDb.update).toHaveBeenCalledWith(
 				expect.objectContaining({ where: { id: cheerId } }),
 			);
@@ -310,7 +340,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockCheerDb.findUnique.mockResolvedValue(null);
-			await expect(facade.markAsRead(receiverId, 999)).rejects.toThrow(
+			await expect(cheerApi.markAsRead(receiverId, 999)).rejects.toThrow(
 				ApplicationException,
 			);
 		});
@@ -319,14 +349,14 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			mockCheerDb.findUnique.mockResolvedValue(
 				CheerBuilder.create(senderId, "other-user").withId(cheerId).build(),
 			);
-			await expect(facade.markAsRead(receiverId, cheerId)).rejects.toThrow(
+			await expect(cheerApi.markAsRead(receiverId, cheerId)).rejects.toThrow(
 				ApplicationException,
 			);
 		});
 
 		it("여러 응원을 읽음 처리한다", async () => {
 			mockCheerDb.updateMany.mockResolvedValue({ count: 5 });
-			const result = await facade.markManyAsRead(receiverId, [1, 2, 3, 4, 5]);
+			const result = await cheerApi.markManyAsRead(receiverId, [1, 2, 3, 4, 5]);
 			expect(result).toBe(5);
 			expect(mockCheerDb.updateMany).toHaveBeenCalledWith({
 				where: { id: { in: [1, 2, 3, 4, 5] }, receiverId, readAt: null },
