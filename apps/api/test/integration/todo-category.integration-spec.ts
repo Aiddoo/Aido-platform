@@ -30,7 +30,7 @@ import { ReorderTodoCategoryUseCase } from "@/todo-category/application/use-case
 import { UpdateTodoCategoryUseCase } from "@/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case";
 import { TodoCategoryCacheAdapter } from "@/todo-category/infrastructure/adapters/todo-category-cache.adapter";
 import { PrismaTodoCategoryRepository } from "@/todo-category/infrastructure/persistence/prisma-todo-category.repository";
-import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
+import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
 
 describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -89,7 +89,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				UpdateTodoCategoryUseCase,
 				DeleteTodoCategoryUseCase,
 				ReorderTodoCategoryUseCase,
-				TodoCategoryRepository,
+				DefaultTodoCategorySeeder,
 				{
 					provide: TODO_CATEGORY_REPOSITORY,
 					useClass: PrismaTodoCategoryRepository,

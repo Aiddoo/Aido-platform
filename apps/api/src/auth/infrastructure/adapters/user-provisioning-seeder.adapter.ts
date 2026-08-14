@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { DEFAULT_CATEGORIES, TodoCategoryRepository } from "@/todo-category";
+import { DefaultTodoCategorySeeder } from "@/todo-category";
 import { UserSettingsFacade } from "@/user-settings";
 import type {
 	ProvisioningConsent,
@@ -17,7 +17,7 @@ export class UserProvisioningSeederAdapter
 {
 	constructor(
 		private readonly userSettings: UserSettingsFacade,
-		private readonly todoCategoryRepository: TodoCategoryRepository,
+		private readonly defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
 	) {}
 
 	seedDefaultSettings(
@@ -28,13 +28,6 @@ export class UserProvisioningSeederAdapter
 	}
 
 	async seedDefaultCategories(userId: string): Promise<void> {
-		await this.todoCategoryRepository.createMany(
-			DEFAULT_CATEGORIES.map((category) => ({
-				userId,
-				name: category.name,
-				color: category.color,
-				sortOrder: category.sortOrder,
-			})),
-		);
+		await this.defaultTodoCategorySeeder.seed(userId);
 	}
 }

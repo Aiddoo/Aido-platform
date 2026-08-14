@@ -11,8 +11,8 @@ import { UpdateTodoCategoryUseCase } from "./application/use-cases/update-todo-c
 import { TodoCategoryCacheAdapter } from "./infrastructure/adapters/todo-category-cache.adapter";
 import { TodoCategoryLimitReaderAdapter } from "./infrastructure/adapters/todo-category-limit-reader.adapter";
 import { PrismaTodoCategoryRepository } from "./infrastructure/persistence/prisma-todo-category.repository";
+import { DefaultTodoCategorySeeder } from "./infrastructure/seeders/default-todo-category.seeder";
 import { TodoCategoryController } from "./presentation/todo-category.controller";
-import { TodoCategoryRepository } from "./todo-category.repository";
 
 /**
  * TodoCategory 모듈 (DDD 클린아키텍처 · use-case 기반).
@@ -21,7 +21,7 @@ import { TodoCategoryRepository } from "./todo-category.repository";
  * Controller는 endpoint UseCase와 Reader를 직접 주입한다.
  *
  * 회원가입 기본 카테고리 시딩은 CLS 트랜잭션에 참여하는
- * TodoCategoryRepository(createMany)를 사용한다.
+ * DefaultTodoCategorySeeder를 사용한다.
  */
 @Module({
 	controllers: [TodoCategoryController],
@@ -40,8 +40,8 @@ import { TodoCategoryRepository } from "./todo-category.repository";
 		UpdateTodoCategoryUseCase,
 		DeleteTodoCategoryUseCase,
 		ReorderTodoCategoryUseCase,
-		TodoCategoryRepository,
+		DefaultTodoCategorySeeder,
 	],
-	exports: [TodoCategoryReader, TodoCategoryRepository],
+	exports: [TodoCategoryReader, DefaultTodoCategorySeeder],
 })
 export class TodoCategoryModule {}

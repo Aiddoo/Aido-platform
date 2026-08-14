@@ -3,17 +3,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
-
-/** 기본 카테고리 시딩 입력 */
-export interface SeedCategoryInput {
-	userId: string;
-	name: string;
-	color: string;
-	sortOrder: number;
-}
+import { DEFAULT_CATEGORIES } from "../../domain/default-categories";
 
 /**
- * TodoCategoryRepository — 회원가입 기본 카테고리 시딩 전용 레거시 저장소.
+ * 회원가입 기본 카테고리 생성 전용 capability.
  *
  * auth·oauth 회원가입은 아직 레거시 `database.$transaction(tx)`를 사용하며, 기본 카테고리 생성을
  * 그 트랜잭션에 명시적으로 참여시키기 위해 `tx`를 받는 이 경로를 유지한다. auth 이관(Wave 7) 시
@@ -23,7 +16,7 @@ export interface SeedCategoryInput {
  * DatabaseService를 반환한다.
  */
 @Injectable()
-export class TodoCategoryRepository {
+export class DefaultTodoCategorySeeder {
 	constructor(
 		private readonly txHost: TransactionHost<
 			TransactionalAdapterPrisma<DatabaseService>
@@ -36,11 +29,12 @@ export class TodoCategoryRepository {
 	}
 
 	/** 기본 카테고리 일괄 생성 (레거시 명시적 tx 경로 지원) */
-	async createMany(
-		data: SeedCategoryInput[],
-		tx?: TransactionClient,
-	): Promise<number> {
+	async seed(userId: string, tx?: TransactionClient): Promise<number> {
 		const client = tx ?? this.client;
+		const data = DEFAULT_CATEGORIES.map((category) => ({
+			userId,
+			...category,
+		}));
 		const result = await client.todoCategory.createMany({ data });
 		return result.count;
 	}
