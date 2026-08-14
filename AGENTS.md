@@ -60,7 +60,7 @@ tooling/*           공유 설정 (biome, jest, vitest, typescript)
 
 | 하려는 일 | 읽을 문서 |
 |-----------|-----------|
-| API 기능 추가 (클린아키텍처 use-case 표준 — 전 모듈, 참조 구현: todo) | [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → [`apps/api/.claude/architecture.md`](apps/api/.claude/architecture.md) |
+| API 기능 추가 (실용형 DDD·Clean Architecture, 참조 구현: todo) | [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → [`apps/api/.claude/architecture.md`](apps/api/.claude/architecture.md) → [`apps/api/.claude/api-conventions.md`](apps/api/.claude/api-conventions.md) |
 | Mobile 기능 추가 (Feature-based) | [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) → [`apps/mobile/.claude/architecture.md`](apps/mobile/.claude/architecture.md) |
 | Zod 스키마 / DTO 추가 | [`apps/api/.claude/validators.md`](apps/api/.claude/validators.md) |
 | Prisma 스키마 변경 | [`apps/api/.claude/prisma.md`](apps/api/.claude/prisma.md) |
