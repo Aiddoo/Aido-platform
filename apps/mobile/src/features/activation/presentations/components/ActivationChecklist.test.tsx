@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import { render, screen } from '@testing-library/react-native';
+
 import { ActivationChecklist } from './ActivationChecklist';
 
 jest.mock('@src/shared/ui', () => {

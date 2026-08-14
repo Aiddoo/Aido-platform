@@ -1,13 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { forEachBatch } from "@/shared/infrastructure/database/utils/batch-cursor.util";
+
 import { SuggestionAnalysisProcessor } from "../processors/suggestion-analysis.processor";
 import {
 	AI_SUGGESTION_LEGACY_QUEUE,
@@ -51,10 +50,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 			"Suggestion analysis scheduler registration",
 			async () => {
 				// 구 weekly 스케줄러 제거 (마이그레이션)
-				await this.runtime.unschedule(
-					"weekly-suggestion-scheduler",
-					AI_SUGGESTION_LEGACY_QUEUE,
-				);
+				await this.runtime.unschedule("weekly-suggestion-scheduler", AI_SUGGESTION_LEGACY_QUEUE);
 				await this.runtime.schedule(
 					"daily-suggestion-scheduler",
 					"30 7 * * *",
@@ -145,9 +141,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 			},
 		});
 
-		this.#logger.log(
-			`Suggestion analysis jobs enqueued: total=${totalEnqueued}`,
-		);
+		this.#logger.log(`Suggestion analysis jobs enqueued: total=${totalEnqueued}`);
 	}
 
 	/**

@@ -1,6 +1,7 @@
 import { CHEER_LIMITS } from "@aido/validators";
 
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { CheerMessage } from "./cheer-message.vo";
 
 describe("CheerMessage VO", () => {

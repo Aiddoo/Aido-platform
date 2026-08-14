@@ -29,11 +29,7 @@ export class Streak {
 	) {}
 
 	static of(state: StreakState): Streak {
-		return new Streak(
-			state.currentStreak,
-			state.longestStreak,
-			state.lastCompletedDate,
-		);
+		return new Streak(state.currentStreak, state.longestStreak, state.lastCompletedDate);
 	}
 
 	get currentStreak(): number {
@@ -50,10 +46,7 @@ export class Streak {
 
 	/** 오늘 완료가 이미 반영되어 있는지 */
 	isCompletedOn(today: Date): boolean {
-		return (
-			this._lastCompletedDate !== null &&
-			isSameDay(this._lastCompletedDate, today)
-		);
+		return this._lastCompletedDate !== null && isSameDay(this._lastCompletedDate, today);
 	}
 
 	/**
@@ -66,8 +59,7 @@ export class Streak {
 		}
 
 		const yesterday = subtractDays(1, today);
-		const isConsecutive =
-			this._lastCompletedDate && isSameDay(this._lastCompletedDate, yesterday);
+		const isConsecutive = this._lastCompletedDate && isSameDay(this._lastCompletedDate, yesterday);
 
 		const newStreak = isConsecutive ? this._currentStreak + 1 : 1;
 		const newLongest = Math.max(this._longestStreak, newStreak);
@@ -86,14 +78,8 @@ export class Streak {
 	 * 완료 취소 → 오늘 전체 완료가 아니게 되면 스트릭 재계산 계획을 반환한다.
 	 * 오늘 완료 반영이 없었으면 null(무변경).
 	 */
-	planUncompletion(
-		today: Date,
-		hadYesterdayCompletion: boolean,
-	): StreakState | null {
-		if (
-			!this._lastCompletedDate ||
-			!isSameDay(this._lastCompletedDate, today)
-		) {
+	planUncompletion(today: Date, hadYesterdayCompletion: boolean): StreakState | null {
+		if (!this._lastCompletedDate || !isSameDay(this._lastCompletedDate, today)) {
 			return null;
 		}
 

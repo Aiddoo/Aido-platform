@@ -13,6 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -52,8 +53,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
 
-		const { unit, unitRef } =
-			await TestBed.solitary(SocialDigestStrategy).compile();
+		const { unit, unitRef } = await TestBed.solitary(SocialDigestStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
@@ -108,8 +108,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 			expect.objectContaining({ recipientUserIds: [TEST_CUID.USER_1] }),
 		);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.socialDigest(1, "친구1", "ko", {
 			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
 			recipientId: TEST_CUID.USER_1,
@@ -160,18 +159,12 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.socialDigest(
-			2,
-			undefined,
-			"ko",
-			{
-				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-				recipientId: TEST_CUID.USER_1,
-				occurrenceKey: "2024-01-16",
-			},
-		);
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const expected = NotificationMessageBuilder.socialDigest(2, undefined, "ko", {
+			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+			recipientId: TEST_CUID.USER_1,
+			occurrenceKey: "2024-01-16",
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -230,9 +223,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 			},
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set([TEST_CUID.USER_1]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set([TEST_CUID.USER_1]));
 
 		// When
 		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
@@ -254,9 +245,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		expect(result).toEqual({ sent: 0 });
-		expect(
-			notificationService.findAlreadyNotifiedUserIds,
-		).toHaveBeenNthCalledWith(
+		expect(notificationService.findAlreadyNotifiedUserIds).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({ type: "STREAK_AT_RISK" }),
 		);

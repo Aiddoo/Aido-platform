@@ -1,4 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
+
 import { createConsoleLogger } from './console-logger';
 
 const fallback = createConsoleLogger({ minLevel: 'debug' });

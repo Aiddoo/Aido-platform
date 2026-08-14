@@ -1,4 +1,5 @@
 import type { ErrorCodeType } from '@aido/errors';
+
 import type { BusinessError } from './result';
 
 /**

@@ -12,10 +12,7 @@ import type { Job } from "bullmq";
  * 잡 이름 리터럴(N)을 반환 타입에 보존하여, discriminated union 기반 프로세서
  * (`process(job: 특정잡유니온)`)에도 캐스트 없이 전달할 수 있게 한다.
  */
-export function createMockJob<T, N extends string = string>(
-	name: N,
-	data: T,
-): Job<T, unknown, N> {
+export function createMockJob<T, N extends string = string>(name: N, data: T): Job<T, unknown, N> {
 	return {
 		name,
 		data,

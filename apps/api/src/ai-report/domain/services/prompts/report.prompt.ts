@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { now } from "@/shared/domain/date/utils/core";
 import type { SupportedLocale } from "@/shared/domain/locale";
 import {
@@ -6,32 +7,23 @@ import {
 	PROMPT_SECURITY_GUARD,
 } from "@/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+
 import type { AggregatedReportData, ReportType } from "../../types";
 import { getKoreanSeasonalContext } from "../korean-seasonal-context";
 import { selectProfileTemplate } from "../profile-template-selector";
-import { buildReportPromptEn } from "./report.prompt.en";
 import { computeDerivedInsights } from "./report-insights";
+import { buildReportPromptEn } from "./report.prompt.en";
 
 export const reportAiResponseSchema = z.object({
 	summary: z.string().describe("한국어로 작성된 주간/월간 요약 (4-6문장)"),
-	tips: z
-		.array(z.string())
-		.min(1)
-		.max(3)
-		.describe("실천 가능한 팁 1-3개 (한국어)"),
+	tips: z.array(z.string()).min(1).max(3).describe("실천 가능한 팁 1-3개 (한국어)"),
 });
 
 export type ReportAiResponse = z.infer<typeof reportAiResponseSchema>;
 
 export const reportAiResponseSchemaEn = z.object({
-	summary: z
-		.string()
-		.describe("Weekly/monthly summary written in English (4-6 sentences)"),
-	tips: z
-		.array(z.string())
-		.min(1)
-		.max(3)
-		.describe("1-3 actionable tips (English)"),
+	summary: z.string().describe("Weekly/monthly summary written in English (4-6 sentences)"),
+	tips: z.array(z.string()).min(1).max(3).describe("1-3 actionable tips (English)"),
 });
 
 export function getReportAiResponseSchema(locale: SupportedLocale) {

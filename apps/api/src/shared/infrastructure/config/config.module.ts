@@ -1,5 +1,6 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigModule as NestConfigModule } from "@nestjs/config";
+
 import { validateEnv } from "./schemas";
 import { TypedConfigService } from "./services/config.service";
 

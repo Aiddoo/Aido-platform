@@ -2,17 +2,17 @@ name: Deploy to EC2
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ['CI']
     types: [completed]
     branches: [main]
   workflow_dispatch:
     inputs:
       sha:
-        description: "배포할 커밋 SHA (비우면 main의 최신 CI 성공 커밋)"
+        description: '배포할 커밋 SHA (비우면 main의 최신 CI 성공 커밋)'
         required: false
-        default: ""
+        default: ''
       force:
-        description: "이전 커밋으로의 배포 허용 (수동 롤백용)"
+        description: '이전 커밋으로의 배포 허용 (수동 롤백용)'
         type: boolean
         default: false
 

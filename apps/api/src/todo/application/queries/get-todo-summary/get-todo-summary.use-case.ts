@@ -1,6 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { computeEffectiveStreak } from "@/user-settings";
+
 import { summarizeCompletion } from "../../../domain/services/completion-policy";
 import { STREAK_PORT, type StreakPort } from "../../ports/streak.port";
 import {

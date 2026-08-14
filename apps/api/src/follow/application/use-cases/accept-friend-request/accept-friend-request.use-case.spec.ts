@@ -7,6 +7,7 @@ import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+
 import { Friendship } from "../../../domain/entities/friendship.aggregate";
 import {
 	FOLLOW_REPOSITORY,
@@ -81,9 +82,9 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 		repo.findByFollowerAndFollowing.mockResolvedValue(null);
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, requesterUserId: REQUESTER }),
-		).rejects.toMatchObject({ errorCode: "FOLLOW_0903" });
+		await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
+			{ errorCode: "FOLLOW_0903" },
+		);
 		expect(uow.run).not.toHaveBeenCalled();
 	});
 
@@ -94,9 +95,9 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 		);
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, requesterUserId: REQUESTER }),
-		).rejects.toMatchObject({ errorCode: "FOLLOW_0903" });
+		await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
+			{ errorCode: "FOLLOW_0903" },
+		);
 	});
 
 	it("수락 성공: 요청 ACCEPTED 갱신 + 역방향 생성 + 맞팔 알림/캐시 무효화", async () => {
@@ -104,9 +105,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 		repo.findByFollowerAndFollowing
 			.mockResolvedValueOnce(friendship("req-1", REQUESTER, ME)) // 받은 PENDING 요청
 			.mockResolvedValueOnce(null); // 역방향 관계 없음 → create
-		repo.create.mockResolvedValue(
-			friendship("rev-1", ME, REQUESTER, "ACCEPTED"),
-		);
+		repo.create.mockResolvedValue(friendship("rev-1", ME, REQUESTER, "ACCEPTED"));
 		repo.findByIdWithUser.mockResolvedValue(withUser("rev-1"));
 
 		// When
@@ -127,10 +126,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 				status: "ACCEPTED",
 			}),
 		);
-		expect(effects.invalidateFriendshipCaches).toHaveBeenCalledWith(
-			ME,
-			REQUESTER,
-		);
+		expect(effects.invalidateFriendshipCaches).toHaveBeenCalledWith(ME, REQUESTER);
 		expect(effects.notifyMutual).toHaveBeenCalledTimes(2);
 		expect(effects.checkFirstFriendMilestone).toHaveBeenCalledWith(ME);
 		expect(effects.checkFirstFriendMilestone).toHaveBeenCalledWith(REQUESTER);
@@ -142,9 +138,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 		repo.findByFollowerAndFollowing
 			.mockResolvedValueOnce(friendship("req-1", REQUESTER, ME)) // 받은 PENDING
 			.mockResolvedValueOnce(friendship("rev-old", ME, REQUESTER, "PENDING")); // 역방향 존재
-		repo.update.mockResolvedValue(
-			friendship("rev-old", ME, REQUESTER, "ACCEPTED"),
-		);
+		repo.update.mockResolvedValue(friendship("rev-old", ME, REQUESTER, "ACCEPTED"));
 		repo.findByIdWithUser.mockResolvedValue(withUser("rev-old"));
 
 		// When
@@ -160,9 +154,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 		repo.findByFollowerAndFollowing
 			.mockResolvedValueOnce(friendship("req-1", REQUESTER, ME))
 			.mockResolvedValueOnce(null);
-		repo.create.mockResolvedValue(
-			friendship("rev-1", ME, REQUESTER, "ACCEPTED"),
-		);
+		repo.create.mockResolvedValue(friendship("rev-1", ME, REQUESTER, "ACCEPTED"));
 		repo.findByIdWithUser.mockResolvedValue(withUser("rev-1"));
 
 		// When
@@ -170,8 +162,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 
 		// Then
 		const runOrder = uow.run.mock.invocationCallOrder[0] ?? 0;
-		const invalidateOrder =
-			effects.invalidateFriendshipCaches.mock.invocationCallOrder[0] ?? 0;
+		const invalidateOrder = effects.invalidateFriendshipCaches.mock.invocationCallOrder[0] ?? 0;
 		expect(invalidateOrder).toBeGreaterThan(runOrder);
 	});
 
@@ -180,14 +171,12 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 		repo.findByFollowerAndFollowing
 			.mockResolvedValueOnce(friendship("req-1", REQUESTER, ME))
 			.mockResolvedValueOnce(null);
-		repo.create.mockResolvedValue(
-			friendship("rev-1", ME, REQUESTER, "ACCEPTED"),
-		);
+		repo.create.mockResolvedValue(friendship("rev-1", ME, REQUESTER, "ACCEPTED"));
 		repo.findByIdWithUser.mockResolvedValue(null);
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, requesterUserId: REQUESTER }),
-		).rejects.toMatchObject({ errorCode: "SYS_0001" });
+		await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
+			{ errorCode: "SYS_0001" },
+		);
 	});
 });

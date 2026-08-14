@@ -1,4 +1,5 @@
 import { createMockSyncStorage } from '@src/shared/__tests__';
+
 import {
   readMarketingPushPromptState,
   recordMarketingPushPrompt,

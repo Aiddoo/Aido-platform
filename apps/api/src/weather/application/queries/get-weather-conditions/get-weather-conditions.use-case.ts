@@ -1,6 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import type { UserLocation } from "../../../domain/entities/user-location.entity";
 import {
 	AIR_QUALITY_PROVIDER,
@@ -10,14 +12,8 @@ import {
 	LIFESTYLE_INDEX_PROVIDER,
 	type LifestyleIndexProvider,
 } from "../../ports/lifestyle-index-provider.port";
-import {
-	SUN_TIME_PROVIDER,
-	type SunTimeProvider,
-} from "../../ports/sun-time-provider.port";
-import {
-	WEATHER_CACHE,
-	type WeatherCachePort,
-} from "../../ports/weather-cache.port";
+import { SUN_TIME_PROVIDER, type SunTimeProvider } from "../../ports/sun-time-provider.port";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
@@ -58,26 +54,17 @@ export class GetWeatherConditionsUseCase {
 		}
 
 		// 1. 캐시 확인 (1h TTL)
-		const cached = await this.cache.getConditions(
-			location.gridX,
-			location.gridY,
-		);
+		const cached = await this.cache.getConditions(location.gridX, location.gridY);
 		if (cached) {
 			return cached;
 		}
 
 		// 2. 현재 기온/풍속 (lifestyle 계산용)
-		const { currentTemp, windSpeed } = await this.#currentTempAndWind(
-			location,
-			input.date,
-		);
+		const { currentTemp, windSpeed } = await this.#currentTempAndWind(location, input.date);
 
 		// 3. 3개 프로바이더 병렬 호출
 		const [airResult, lifestyleResult, sunResult] = await Promise.allSettled([
-			this.airQualityProvider.getAirQuality(
-				location.latitude,
-				location.longitude,
-			),
+			this.airQualityProvider.getAirQuality(location.latitude, location.longitude),
 			this.lifestyleIndexProvider.getIndex(
 				location.latitude,
 				location.longitude,
@@ -85,17 +72,12 @@ export class GetWeatherConditionsUseCase {
 				currentTemp,
 				windSpeed,
 			),
-			this.sunTimeProvider.getSunTime(
-				location.latitude,
-				location.longitude,
-				input.date,
-			),
+			this.sunTimeProvider.getSunTime(location.latitude, location.longitude, input.date),
 		]);
 
 		// 4. 결과 병합 (실패한 프로바이더는 null)
 		const air = airResult.status === "fulfilled" ? airResult.value : null;
-		const lifestyle =
-			lifestyleResult.status === "fulfilled" ? lifestyleResult.value : null;
+		const lifestyle = lifestyleResult.status === "fulfilled" ? lifestyleResult.value : null;
 		const sun = sunResult.status === "fulfilled" ? sunResult.value : null;
 
 		const conditions: WeatherConditions = {
@@ -119,22 +101,15 @@ export class GetWeatherConditionsUseCase {
 		date: Date,
 	): Promise<{ currentTemp: number; windSpeed: number }> {
 		try {
-			const forecast = await this.forecastReader.fetchForLocation(
-				location,
-				date,
-			);
+			const forecast = await this.forecastReader.fetchForLocation(location, date);
 			const currentHour = date.getHours();
-			const hourly = forecast.hourlyForecasts.find(
-				(h) => h.hour === currentHour,
-			);
+			const hourly = forecast.hourlyForecasts.find((h) => h.hour === currentHour);
 			return {
 				currentTemp: hourly?.temperature ?? forecast.temperatureMax,
 				windSpeed: forecast.windSpeed,
 			};
 		} catch {
-			this.#logger.warn(
-				"Failed to get forecast for lifestyle calculation, using defaults",
-			);
+			this.#logger.warn("Failed to get forecast for lifestyle calculation, using defaults");
 			return { currentTemp: 0, windSpeed: 0 };
 		}
 	}

@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { CreateNotificationData } from "@/notification";
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
@@ -12,10 +13,7 @@ import {
 	ONBOARDING_MAX_DAY,
 	requiresCompletedCount,
 } from "../../domain/services/onboarding";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
@@ -65,16 +63,13 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		}
 
 		// 오늘 SYSTEM_NOTICE 중복 방지
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: eligibleUsers.map(({ user }) => user.id),
-				type: "SYSTEM_NOTICE",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: eligibleUsers.map(({ user }) => user.id),
+			type: "SYSTEM_NOTICE",
+			notificationDate: today,
+		});
 
-		const filteredUsers = eligibleUsers.filter(
-			({ user }) => !alreadyNotified.has(user.id),
-		);
+		const filteredUsers = eligibleUsers.filter(({ user }) => !alreadyNotified.has(user.id));
 
 		if (filteredUsers.length === 0) {
 			return { sent: 0 };
@@ -87,8 +82,7 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 
 		const completedCountMap = new Map<string, number>();
 		if (needsCountUserIds.length > 0) {
-			const counts =
-				await this.reader.countCompletedTodosByUsers(needsCountUserIds);
+			const counts = await this.reader.countCompletedTodosByUsers(needsCountUserIds);
 
 			for (const row of counts) {
 				completedCountMap.set(row.userId, row.count);

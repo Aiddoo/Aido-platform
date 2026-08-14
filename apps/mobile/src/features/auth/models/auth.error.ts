@@ -1,5 +1,6 @@
 import type { BusinessError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
+
 import type { OAuthProviderSlug } from './oauth.model';
 
 export interface ExpoCodedError extends Error {

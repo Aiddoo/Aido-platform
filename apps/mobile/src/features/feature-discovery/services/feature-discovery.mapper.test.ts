@@ -1,4 +1,5 @@
 import type { FeatureDiscoveryResponse } from '@aido/validators';
+
 import { toFeatureDiscoveryConfig } from './feature-discovery.mapper';
 
 describe('toFeatureDiscoveryConfig', () => {

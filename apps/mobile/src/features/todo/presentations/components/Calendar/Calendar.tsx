@@ -29,13 +29,14 @@ import {
   View,
 } from 'react-native';
 import { match } from 'ts-pattern';
+
 import type { DailyCompletionSummary } from '../../../models/todo.model';
 import type { CompletionsByDate } from '../../queries/use-get-daily-completions-query-options';
+import { useCalendarContext } from './calendar-view-mode-context';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarNavigation } from './CalendarNavigation';
 import { CalendarViewModeToggle } from './CalendarViewModeToggle';
 import { CalendarWeekdayHeader } from './CalendarWeekdayHeader';
-import { useCalendarContext } from './calendar-view-mode-context';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const WEEKDAY_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
@@ -319,7 +320,7 @@ function MonthGrid({ month, completions }: MonthGridProps) {
   return (
     <VStack>
       {weeks.map((week, weekIndex) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: 주 순서가 변경되지 않음
+        // 주 순서는 고정되어 index가 안정적인 key다.
         <HStack key={weekIndex} px={8}>
           {week.map((date) => (
             <CalendarDateCell

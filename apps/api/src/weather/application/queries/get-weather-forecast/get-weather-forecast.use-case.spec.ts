@@ -9,6 +9,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createWeatherLocationRepositoryMock } from "@test/mocks/ports/weather.mock";
+
 import { UserLocation } from "../../../domain/entities/user-location.entity";
 import {
 	WEATHER_LOCATION_REPOSITORY,
@@ -54,9 +55,7 @@ describe("GetWeatherForecastUseCase — 사용자 위치 기반 예보 조회", 
 			.compile();
 
 		useCase = unit;
-		repository = unitRef.get<WeatherLocationRepositoryPort>(
-			WEATHER_LOCATION_REPOSITORY,
-		);
+		repository = unitRef.get<WeatherLocationRepositoryPort>(WEATHER_LOCATION_REPOSITORY);
 		forecastReader = unitRef.get(WeatherForecastReader);
 	});
 
@@ -71,10 +70,7 @@ describe("GetWeatherForecastUseCase — 사용자 위치 기반 예보 조회", 
 
 		// Then - 컨트롤러가 좌표를 병합할 수 있도록 location도 함께 반환
 		expect(repository.findByUserId).toHaveBeenCalledWith("user-123");
-		expect(forecastReader.fetchForLocation).toHaveBeenCalledWith(
-			location,
-			date,
-		);
+		expect(forecastReader.fetchForLocation).toHaveBeenCalledWith(location, date);
 		expect(result).toEqual({ forecast, location });
 	});
 
@@ -83,9 +79,9 @@ describe("GetWeatherForecastUseCase — 사용자 위치 기반 예보 조회", 
 		repository.findByUserId.mockResolvedValue(null);
 
 		// When & Then
-		await expect(
-			useCase.execute({ userId: "user-123", date }),
-		).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1902 });
+		await expect(useCase.execute({ userId: "user-123", date })).rejects.toMatchObject({
+			errorCode: ErrorCode.WEATHER_1902,
+		});
 		expect(forecastReader.fetchForLocation).not.toHaveBeenCalled();
 	});
 });

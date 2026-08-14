@@ -7,6 +7,7 @@ import {
 import { i18n } from '@src/shared/i18n';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+
 import LanguageSettingsScreen from '../language';
 
 // vendor UI(heroui-native)와 그 배럴만 mock — 나머지 의존성은 DI(prop/컨테이너)로 주입한다
@@ -14,12 +15,12 @@ jest.mock('@src/shared/ui', () => {
   const React = require('react');
   const { Text, View } = require('react-native');
 
-  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  // jest.mock 팩토리는 out-of-scope 타입 참조가 금지되어 테스트 대역만 any를 사용한다.
   const StyledSafeAreaView = (props: any) => React.createElement(View, null, props.children);
 
-  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  // jest.mock 팩토리는 out-of-scope 타입 참조가 금지되어 테스트 대역만 any를 사용한다.
   const ListRow = (props: any) => React.createElement(View, null, props.contents, props.right);
-  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  // jest.mock 팩토리는 out-of-scope 타입 참조가 금지되어 테스트 대역만 any를 사용한다.
   ListRow.Texts = (props: any) =>
     React.createElement(
       View,
@@ -45,7 +46,7 @@ jest.mock('heroui-native', () => {
 
   const RadioGroupContext = React.createContext(() => {});
 
-  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  // jest.mock 팩토리는 out-of-scope 타입 참조가 금지되어 테스트 대역만 any를 사용한다.
   const RadioGroup = (props: any) =>
     React.createElement(
       RadioGroupContext.Provider,
@@ -53,7 +54,7 @@ jest.mock('heroui-native', () => {
       React.createElement(View, null, props.children),
     );
 
-  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  // jest.mock 팩토리는 out-of-scope 타입 참조가 금지되어 테스트 대역만 any를 사용한다.
   RadioGroup.Item = (props: any) => {
     const onValueChange = React.useContext(RadioGroupContext);
     const rendered =
@@ -65,9 +66,9 @@ jest.mock('heroui-native', () => {
     );
   };
 
-  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  // jest.mock 팩토리는 out-of-scope 타입 참조가 금지되어 테스트 대역만 any를 사용한다.
   const Radio = (props: any) => React.createElement(View, null, props.children);
-  // biome-ignore lint/suspicious/noExplicitAny: jest.mock 팩토리는 out-of-scope 타입 참조가 금지됨
+  // jest.mock 팩토리는 out-of-scope 타입 참조가 금지되어 테스트 대역만 any를 사용한다.
   Radio.Indicator = (props: any) => React.createElement(View, null, props.children);
 
   return { Radio, RadioGroup };

@@ -1,6 +1,7 @@
 import { NUDGE_LIMITS } from "@aido/validators";
 
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { NudgeMessage } from "./nudge-message.vo";
 
 describe("NudgeMessage", () => {

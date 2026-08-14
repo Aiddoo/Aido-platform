@@ -7,7 +7,7 @@ import type { Prisma } from "@/generated/prisma/client";
  * any 사용 이유: Prisma.TransactionClient와 MockTransactionClient 간
  * 함수 파라미터 반공변성(contravariance) 호환을 위해 불가피.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Prisma $transaction mock 호환성
+// Prisma $transaction의 제네릭 콜백 시그니처와 호환하기 위한 테스트 전용 타입이다.
 export type TransactionCallback = (tx: any) => Promise<any>;
 
 /**
@@ -107,9 +107,7 @@ export function createMockTxClient(): MockTransactionClient {
  * MockTransactionClient를 Prisma.TransactionClient 타입으로 캐스팅
  * Repository 메서드 호출 시 타입 호환성을 위해 사용
  */
-export function asTxClient(
-	mock: MockTransactionClient,
-): Prisma.TransactionClient {
+export function asTxClient(mock: MockTransactionClient): Prisma.TransactionClient {
 	return mock as unknown as Prisma.TransactionClient;
 }
 

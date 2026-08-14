@@ -4,15 +4,16 @@ import {
 	reportStatsSchema,
 	timePatternItemSchema,
 } from "@aido/validators";
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import type * as PrismaModels from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { toInputJson } from "@/shared/infrastructure/database/json.util";
 import { toSupportedLocale } from "@/shared/presentation/decorators";
+
 import type {
 	AiReportRepositoryPort,
 	CreateAiReportInput,
@@ -38,9 +39,7 @@ const DEFAULT_STATS = {
 @Injectable()
 export class PrismaAiReportRepository implements AiReportRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -69,10 +68,7 @@ export class PrismaAiReportRepository implements AiReportRepositoryPort {
 		return PrismaAiReportRepository.toDomain(row);
 	}
 
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-	): Promise<AiReport | null> {
+	async findByIdAndUserId(id: number, userId: string): Promise<AiReport | null> {
 		const row = await this.client.aiReport.findFirst({
 			where: { id, userId },
 		});
@@ -99,12 +95,7 @@ export class PrismaAiReportRepository implements AiReportRepositoryPort {
 		return rows.map((row) => PrismaAiReportRepository.toDomain(row));
 	}
 
-	async exists(
-		userId: string,
-		type: ReportType,
-		year: number,
-		period: number,
-	): Promise<boolean> {
+	async exists(userId: string, type: ReportType, year: number, period: number): Promise<boolean> {
 		const count = await this.client.aiReport.count({
 			where: { userId, type, year, period },
 		});
@@ -133,10 +124,7 @@ export class PrismaAiReportRepository implements AiReportRepositoryPort {
 				row.timePatterns,
 			),
 			aiSummary: row.aiSummary,
-			aiTips: PrismaAiReportRepository.parseArray(
-				z.array(z.string()),
-				row.aiTips,
-			),
+			aiTips: PrismaAiReportRepository.parseArray(z.array(z.string()), row.aiTips),
 			locale: toSupportedLocale(row.locale),
 			hasActivity: row.hasActivity,
 			generatedAt: row.generatedAt,

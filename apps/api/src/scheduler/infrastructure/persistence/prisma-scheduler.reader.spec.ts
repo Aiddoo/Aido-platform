@@ -1,8 +1,10 @@
 import { TEST_CUID } from "@test/fixtures";
 import { asDep, mockOf } from "@test/mocks";
+
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { PrismaSchedulerReader } from "./prisma-scheduler.reader";
 
 describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
@@ -22,11 +24,7 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
 		const config = mockOf<TypedConfigService>({
 			retentionOnboardingV2: { enabled, treatmentPercent: 50 },
 		});
-		return new PrismaSchedulerReader(
-			asDep(database),
-			asDep(cache),
-			asDep(config),
-		);
+		return new PrismaSchedulerReader(asDep(database), asDep(cache), asDep(config));
 	}
 
 	it("kill switch가 꺼지면 legacy 후보 쿼리에 조건을 전혀 추가하지 않는다", async () => {
@@ -97,10 +95,7 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
 			{ timezone: "UTC" },
 		]);
 
-		await expect(reader(false).findActiveTimezones()).resolves.toEqual([
-			"Asia/Seoul",
-			"UTC",
-		]);
+		await expect(reader(false).findActiveTimezones()).resolves.toEqual(["Asia/Seoul", "UTC"]);
 	});
 
 	it("유효한 레거시 타임존 별칭은 저장값 그대로 반환해 기존 사용자를 누락하지 않는다", async () => {

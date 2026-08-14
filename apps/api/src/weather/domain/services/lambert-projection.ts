@@ -20,19 +20,14 @@ const GRID = {
 
 const DEG_TO_RAD = Math.PI / 180.0;
 
-export function convertToGrid(
-	lat: number,
-	lon: number,
-): { nx: number; ny: number } {
+export function convertToGrid(lat: number, lon: number): { nx: number; ny: number } {
 	const re = GRID.RE / GRID.GRID;
 	const slat1 = GRID.SLAT1 * DEG_TO_RAD;
 	const slat2 = GRID.SLAT2 * DEG_TO_RAD;
 	const olon = GRID.OLON * DEG_TO_RAD;
 	const olat = GRID.OLAT * DEG_TO_RAD;
 
-	let sn =
-		Math.tan(Math.PI * 0.25 + slat2 * 0.5) /
-		Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+	let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
 	sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
 
 	let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);

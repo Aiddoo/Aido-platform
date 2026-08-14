@@ -11,6 +11,7 @@ import {
 	TODO_CATEGORY_LIMITS,
 } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import {
 	ENTITLEMENT_CACHE,
 	ENTITLEMENT_DATABASE,
@@ -126,10 +127,7 @@ export class EntitlementService {
 	 *
 	 * getLimitInfo 등 조회 API에서 사용
 	 */
-	async getFeatureLimit(
-		userId: string,
-		feature: Feature,
-	): Promise<FeatureEntitlement> {
+	async getFeatureLimit(userId: string, feature: Feature): Promise<FeatureEntitlement> {
 		const { role, subscriptionStatus } = await this.#resolveUserInfo(userId);
 		const dailyLimit = resolveFeatureLimit(role, subscriptionStatus, feature);
 		return { dailyLimit, isAdmin: role === "ADMIN", subscriptionStatus };
@@ -168,10 +166,7 @@ export class EntitlementService {
 	 *
 	 * 일일 사용량(Feature)이 아닌 총 보유량(Resource) 제한에 사용합니다.
 	 */
-	async getResourceLimit(
-		userId: string,
-		resource: Resource,
-	): Promise<ResourceEntitlement> {
+	async getResourceLimit(userId: string, resource: Resource): Promise<ResourceEntitlement> {
 		const { role, subscriptionStatus } = await this.#resolveUserInfo(userId);
 		const maxCount = resolveResourceLimit(role, subscriptionStatus, resource);
 		return { maxCount, isAdmin: role === "ADMIN", subscriptionStatus };
@@ -226,22 +221,17 @@ export class EntitlementService {
 		return Math.max(0, dailyLimit - used);
 	}
 
-	async #resolveUserInfo(
-		userId: string,
-	): Promise<{ role: string; subscriptionStatus: string }> {
-		const cached = await this.cacheService.wrapSubscription(
-			userId,
-			async () => {
-				const user = await this.database.user.findUnique({
-					where: { id: userId },
-					select: { role: true, subscriptionStatus: true },
-				});
-				return {
-					status: user?.subscriptionStatus ?? null,
-					isAdmin: (user?.role ?? "USER") === "ADMIN",
-				};
-			},
-		);
+	async #resolveUserInfo(userId: string): Promise<{ role: string; subscriptionStatus: string }> {
+		const cached = await this.cacheService.wrapSubscription(userId, async () => {
+			const user = await this.database.user.findUnique({
+				where: { id: userId },
+				select: { role: true, subscriptionStatus: true },
+			});
+			return {
+				status: user?.subscriptionStatus ?? null,
+				isAdmin: (user?.role ?? "USER") === "ADMIN",
+			};
+		});
 
 		return {
 			role: cached?.isAdmin ? "ADMIN" : "USER",

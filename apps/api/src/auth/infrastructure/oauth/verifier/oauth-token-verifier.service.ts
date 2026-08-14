@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
+
 import type { VerifiedProfile } from "@/auth/application/ports/oauth-identity-provider.port";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { readJson } from "@/shared/infrastructure/http/read-json";
@@ -36,8 +37,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	#appleJWKS: JWKSFunction | null = null;
 
 	// Apple JWKS URL
-	private static readonly APPLE_JWKS_URL =
-		"https://appleid.apple.com/auth/keys";
+	private static readonly APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
 	private static readonly APPLE_ISSUER = "https://appleid.apple.com";
 
 	// Kakao API URL
@@ -45,14 +45,11 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		"https://kapi.kakao.com/v2/user/me?secure_resource=true";
 
 	// Naver API URL
-	private static readonly NAVER_USER_INFO_URL =
-		"https://openapi.naver.com/v1/nid/me";
+	private static readonly NAVER_USER_INFO_URL = "https://openapi.naver.com/v1/nid/me";
 
 	constructor(private readonly configService: ConfigService) {
 		// Google OAuth2 클라이언트 초기화
-		this.#googleClient = new OAuth2Client(
-			this.configService.get("GOOGLE_CLIENT_ID"),
-		);
+		this.#googleClient = new OAuth2Client(this.configService.get("GOOGLE_CLIENT_ID"));
 	}
 
 	async onModuleInit(): Promise<void> {
@@ -90,10 +87,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	}
 
 	// @see https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
-	async verifyAppleToken(
-		idToken: string,
-		expectedNonce?: string,
-	): Promise<VerifiedProfile> {
+	async verifyAppleToken(idToken: string, expectedNonce?: string): Promise<VerifiedProfile> {
 		const jose = await this.#getJose();
 
 		try {
@@ -102,9 +96,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				const jwksUrl =
 					this.configService.get<string>("APPLE_JWKS_URL") ??
 					OAuthTokenVerifierService.APPLE_JWKS_URL;
-				const cooldownDuration = this.configService.get<number>(
-					"APPLE_JWKS_COOLDOWN_DURATION_MS",
-				);
+				const cooldownDuration = this.configService.get<number>("APPLE_JWKS_COOLDOWN_DURATION_MS");
 				this.#appleJWKS = jose.createRemoteJWKSet(
 					new URL(jwksUrl),
 					cooldownDuration === undefined ? undefined : { cooldownDuration },
@@ -114,21 +106,15 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 			const appleClientId = this.configService.get<string>("APPLE_CLIENT_ID");
 
 			// ID Token 검증
-			const { payload } = await jose.jwtVerify<AppleIdTokenClaims>(
-				idToken,
-				this.#appleJWKS,
-				{
-					issuer: OAuthTokenVerifierService.APPLE_ISSUER,
-					audience: appleClientId,
-				},
-			);
+			const { payload } = await jose.jwtVerify<AppleIdTokenClaims>(idToken, this.#appleJWKS, {
+				issuer: OAuthTokenVerifierService.APPLE_ISSUER,
+				audience: appleClientId,
+			});
 
 			// nonce 검증 (제공된 경우)
 			if (expectedNonce) {
 				const { createHash } = await import("node:crypto");
-				const hashedNonce = createHash("sha256")
-					.update(expectedNonce)
-					.digest("hex");
+				const hashedNonce = createHash("sha256").update(expectedNonce).digest("hex");
 				if (payload.nonce !== hashedNonce) {
 					this.#logger.warn("Apple nonce mismatch");
 					throw new ApplicationException(ErrorCode.SOCIAL_0202, {
@@ -139,9 +125,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 			// 이메일 인증 여부 확인
 			const emailVerified =
-				payload.email_verified === true ||
-				payload.email_verified === "true" ||
-				false;
+				payload.email_verified === true || payload.email_verified === "true" || false;
 
 			this.#logger.debug(`Apple token verified for user: ${payload.sub}`);
 
@@ -217,15 +201,12 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	// @see https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#req-user-info
 	async verifyKakaoToken(accessToken: string): Promise<VerifiedProfile> {
 		try {
-			const response = await fetch(
-				OAuthTokenVerifierService.KAKAO_USER_INFO_URL,
-				{
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-						"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
-					},
+			const response = await fetch(OAuthTokenVerifierService.KAKAO_USER_INFO_URL, {
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
 				},
-			);
+			});
 
 			if (!response.ok) {
 				if (response.status === 401) {
@@ -279,14 +260,11 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	// @see https://developers.naver.com/docs/login/profile/profile.md
 	async verifyNaverToken(accessToken: string): Promise<VerifiedProfile> {
 		try {
-			const response = await fetch(
-				OAuthTokenVerifierService.NAVER_USER_INFO_URL,
-				{
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-					},
+			const response = await fetch(OAuthTokenVerifierService.NAVER_USER_INFO_URL, {
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
 				},
-			);
+			});
 
 			if (!response.ok) {
 				if (response.status === 401) {

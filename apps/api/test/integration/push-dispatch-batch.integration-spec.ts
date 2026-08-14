@@ -1,8 +1,10 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+
 import type { PrismaClient } from "@/generated/prisma/client";
 import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { TestDatabase } from "../setup/test-database";
 
 describe("푸시 dispatch 배치 저장 통합 테스트 (실제 DB)", () => {
@@ -15,9 +17,7 @@ describe("푸시 dispatch 배치 저장 통합 테스트 (실제 DB)", () => {
 		prisma = await testDb.start();
 		const txHost = {
 			tx: prisma,
-		} as unknown as TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>;
+		} as unknown as TransactionHost<TransactionalAdapterPrisma<DatabaseService>>;
 		repository = new NotificationRepository(txHost);
 	}, 60_000);
 
@@ -101,12 +101,7 @@ describe("푸시 dispatch 배치 저장 통합 테스트 (실제 DB)", () => {
 		const failedDispatch = retriedDispatches[1];
 		const successfulToken = tokens[0];
 		const invalidToken = tokens[1];
-		if (
-			!successfulDispatch ||
-			!failedDispatch ||
-			!successfulToken ||
-			!invalidToken
-		) {
+		if (!successfulDispatch || !failedDispatch || !successfulToken || !invalidToken) {
 			throw new Error("푸시 배치 테스트 fixture 생성에 실패했습니다.");
 		}
 		await repository.recordPushDeliveryResultsBatch([
@@ -155,13 +150,8 @@ describe("푸시 dispatch 배치 저장 통합 테스트 (실제 DB)", () => {
 		const attempts = await prisma.pushDeliveryAttempt.findMany({
 			orderBy: { id: "asc" },
 		});
-		expect(attempts.map((attempt) => attempt.status)).toEqual([
-			"DELIVERED",
-			"FAILED",
-		]);
-		expect(attempts.every((attempt) => attempt.receiptCheckedAt !== null)).toBe(
-			true,
-		);
+		expect(attempts.map((attempt) => attempt.status)).toEqual(["DELIVERED", "FAILED"]);
+		expect(attempts.every((attempt) => attempt.receiptCheckedAt !== null)).toBe(true);
 		expect(invalidTokens).toEqual(["ExponentPushToken[batch-invalid]"]);
 	});
 });

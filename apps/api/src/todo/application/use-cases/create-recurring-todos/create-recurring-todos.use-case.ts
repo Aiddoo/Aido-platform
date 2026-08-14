@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
+
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { RECURRING_TODO_LIMITS, TODO_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
@@ -12,24 +14,19 @@ import {
 import { ApplicationException } from "@/shared/domain";
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
 import { parseLocalDateTime } from "@/shared/domain/date/utils/timezone";
-import {
-	Todo,
-	type TodoCreationPlan,
-} from "../../../domain/entities/todo.aggregate";
+
+import { Todo, type TodoCreationPlan } from "../../../domain/entities/todo.aggregate";
 import { expandRecurringDates } from "../../../domain/services/expand-recurring-dates";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
 } from "../../ports/category-ownership.port";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import type { CreateRecurringTodoData } from "../../types";
 
 /** 반복 생성 결과 read model — use-case가 계약(반환 타입)을 소유합니다 */
@@ -71,9 +68,7 @@ export class CreateRecurringTodosUseCase {
 		private readonly eventPublisher: DomainEventPublisherPort,
 	) {}
 
-	async execute(
-		input: CreateRecurringTodosInput,
-	): Promise<CreateRecurringTodosResult> {
+	async execute(input: CreateRecurringTodosInput): Promise<CreateRecurringTodosResult> {
 		const { data, timezone } = input;
 
 		// 생성 초안 — 생성 불변식(제목)·기본값 파생의 단일 지점 (도메인 팩토리)
@@ -89,11 +84,7 @@ export class CreateRecurringTodosUseCase {
 		});
 
 		// 1. 날짜 확장 (요일 매칭, 도메인 서비스)
-		const matchingDates = expandRecurringDates(
-			data.startDate,
-			data.endDate,
-			data.daysOfWeek,
-		);
+		const matchingDates = expandRecurringDates(data.startDate, data.endDate, data.daysOfWeek);
 		const todoCount = matchingDates.length;
 
 		// 2. 인스턴스 수 검증
@@ -113,10 +104,7 @@ export class CreateRecurringTodosUseCase {
 		}
 
 		// 3. 카테고리 소유권 확인 (읽기 전용, TX 외부)
-		await this.categoryOwnership.validateOwnership(
-			data.categoryId,
-			data.userId,
-		);
+		await this.categoryOwnership.validateOwnership(data.categoryId, data.userId);
 
 		// 4. TX 안에서 한도 체크 + sortOrder 결정 + 일괄 생성 (race condition 방지)
 		const recurrenceGroupId = randomUUID();
@@ -134,9 +122,7 @@ export class CreateRecurringTodosUseCase {
 				});
 			}
 
-			const maxSortOrder = await this.todoRepository.getMaxSortOrder(
-				data.userId,
-			);
+			const maxSortOrder = await this.todoRepository.getMaxSortOrder(data.userId);
 
 			const items: TodoCreationPlan[] = matchingDates.map((dateStr, index) => ({
 				...draft,

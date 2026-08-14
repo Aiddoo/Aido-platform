@@ -6,12 +6,11 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import {
-	AI_USAGE_REPOSITORY,
-	type AiUsageRepositoryPort,
-} from "../ports/ai-usage.repository.port";
+
+import { AI_USAGE_REPOSITORY, type AiUsageRepositoryPort } from "../ports/ai-usage.repository.port";
 import { AiUsageMeter } from "./ai-usage-meter.service";
 
 describe("AiUsageMeter — AI 사용량 미터", () => {

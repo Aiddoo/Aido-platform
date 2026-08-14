@@ -15,25 +15,24 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoToggledEvent } from "../../../domain/events/todo-toggled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { ToggleTodoCompleteUseCase } from "./toggle-todo-complete.use-case";
 
 function buildEntity(completed = false): Todo {
@@ -61,9 +60,7 @@ function buildEntity(completed = false): Todo {
 
 function buildResponse(completed: boolean): TodoResponse {
 	const builder = TodoBuilder.create("user-123").withId(1);
-	return TodoMapper.toResponse(
-		(completed ? builder.completed() : builder.uncompleted()).build(),
-	);
+	return TodoMapper.toResponse((completed ? builder.completed() : builder.uncompleted()).build());
 }
 
 describe("ToggleTodoCompleteUseCase — 완료 토글 핸들러", () => {
@@ -89,12 +86,9 @@ describe("ToggleTodoCompleteUseCase — 완료 토글 핸들러", () => {
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get<DomainEventPublisherPort>(
-			DOMAIN_EVENT_PUBLISHER,
-		);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 	});
 
 	it("대상 할 일이 없으면 ApplicationException(TODO_0801)을 던진다", async () => {
@@ -127,11 +121,7 @@ describe("ToggleTodoCompleteUseCase — 완료 토글 핸들러", () => {
 		});
 
 		// Then - completed=true, completedAt(Date)로 저장을 위임하고 이벤트를 발행한다
-		expect(todoRepository.updateCompletion).toHaveBeenCalledWith(
-			1,
-			true,
-			expect.any(Date),
-		);
+		expect(todoRepository.updateCompletion).toHaveBeenCalledWith(1, true, expect.any(Date));
 		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),
 		]);

@@ -1,18 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-	EntitlementService,
-	Feature,
-} from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
 import { now } from "@/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
 
-import {
-	type CheerCooldown,
-	evaluateCheerCooldown,
-} from "../../domain/services/cheer-cooldown";
+import { type CheerCooldown, evaluateCheerCooldown } from "../../domain/services/cheer-cooldown";
 import {
 	CHEER_REPOSITORY,
 	type CheerRepositoryPort,
@@ -52,11 +46,10 @@ export class CheerReader {
 	async getReceivedCheers(
 		params: GetCheersParams,
 	): Promise<CursorPaginatedResponse<CheerWithRelations, number>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<number>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const cheers = await this.cheerRepository.findReceivedCheers({
 			userId: params.userId,
@@ -64,24 +57,21 @@ export class CheerReader {
 			size,
 		});
 
-		this.#logger.debug(
-			`Received cheers listed: ${cheers.length} items for user: ${params.userId}`,
-		);
+		this.#logger.debug(`Received cheers listed: ${cheers.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			CheerWithRelations,
-			number
-		>({ items: cheers, size });
+		return this.paginationService.createCursorPaginatedResponse<CheerWithRelations, number>({
+			items: cheers,
+			size,
+		});
 	}
 
 	async getSentCheers(
 		params: GetCheersParams,
 	): Promise<CursorPaginatedResponse<CheerWithRelations, number>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<number>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const cheers = await this.cheerRepository.findSentCheers({
 			userId: params.userId,
@@ -89,26 +79,18 @@ export class CheerReader {
 			size,
 		});
 
-		this.#logger.debug(
-			`Sent cheers listed: ${cheers.length} items for user: ${params.userId}`,
-		);
+		this.#logger.debug(`Sent cheers listed: ${cheers.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			CheerWithRelations,
-			number
-		>({ items: cheers, size });
+		return this.paginationService.createCursorPaginatedResponse<CheerWithRelations, number>({
+			items: cheers,
+			size,
+		});
 	}
 
-	async getLimitInfo(
-		userId: string,
-		tz: string = "UTC",
-	): Promise<CheerLimitInfo> {
+	async getLimitInfo(userId: string, tz: string = "UTC"): Promise<CheerLimitInfo> {
 		const capturedAt = now();
 		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
-		const { dailyLimit } = await this.entitlementService.getFeatureLimit(
-			userId,
-			Feature.CHEER,
-		);
+		const { dailyLimit } = await this.entitlementService.getFeatureLimit(userId, Feature.CHEER);
 
 		const used = await this.cheerRepository.countSentSince(
 			userId,
@@ -123,14 +105,8 @@ export class CheerReader {
 		};
 	}
 
-	async getCooldownInfoForUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<CheerCooldown> {
-		const lastCheer = await this.cheerRepository.findLastCheerToUser(
-			senderId,
-			receiverId,
-		);
+	async getCooldownInfoForUser(senderId: string, receiverId: string): Promise<CheerCooldown> {
+		const lastCheer = await this.cheerRepository.findLastCheerToUser(senderId, receiverId);
 		return evaluateCheerCooldown(lastCheer?.createdAt ?? null);
 	}
 

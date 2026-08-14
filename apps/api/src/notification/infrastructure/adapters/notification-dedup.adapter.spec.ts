@@ -1,9 +1,11 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import {
 	DEDUP_PROVIDER,
 	type IDedupProvider,
 } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
+
 import { NotificationDedupAdapter } from "./notification-dedup.adapter";
 
 describe("NotificationDedupAdapter", () => {

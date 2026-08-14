@@ -8,6 +8,7 @@ import {
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type {
 	CurrentUserResult,
 	DeleteAccountResult,
@@ -35,17 +36,12 @@ import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-p
 import type { UserStatus } from "@/auth/domain/types";
 import { Email } from "@/auth/domain/value-objects/email.vo";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import {
-	addMilliseconds,
-	subtractMinutes,
-} from "@/shared/domain/date/utils/arithmetic";
+import { addMilliseconds, subtractMinutes } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
-import {
-	toISOString,
-	toISOStringOrNull,
-} from "@/shared/domain/date/utils/format";
+import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
+
 import {
 	AUTH_CACHE,
 	AUTH_REGISTRATION_NOTIFIER,
@@ -72,10 +68,7 @@ import {
 	type AuthSessionRepositoryPort,
 	type AuthUserRepositoryPort,
 } from "../ports/auth-persistence.port";
-import {
-	RETENTION_ENROLLER,
-	type RetentionEnrollerPort,
-} from "../ports/retention-enroller.port";
+import { RETENTION_ENROLLER, type RetentionEnrollerPort } from "../ports/retention-enroller.port";
 import { SessionService } from "../services/session.service";
 import { VerificationService } from "../services/verification.service";
 import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
@@ -112,21 +105,12 @@ export class CredentialAuthWorkflow {
 		private readonly retentionEnroller: RetentionEnrollerPort,
 	) {}
 
-	async register(
-		input: RegisterInput,
-		metadata?: RequestMetadata,
-	): Promise<RegisterResult> {
+	async register(input: RegisterInput, metadata?: RequestMetadata): Promise<RegisterResult> {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		const {
-			password,
-			name,
-			termsAgreed,
-			privacyAgreed,
-			marketingAgreed,
-			marketingPushAgreed,
-		} = input;
+		const { password, name, termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed } =
+			input;
 		// 이메일 형식 불변식을 도메인 경계에서 방어(정규화 없음 → 값 그대로)
 		const email = Email.of(input.email).value;
 
@@ -158,15 +142,14 @@ export class CredentialAuthWorkflow {
 						termsAgreedAt: termsAgreed ? currentTime : undefined,
 						privacyAgreedAt: privacyAgreed ? currentTime : undefined,
 						marketingAgreedAt: marketingAgreed ? currentTime : undefined,
-						marketingPushAgreedAt: marketingPushAgreed
-							? currentTime
-							: undefined,
+						marketingPushAgreedAt: marketingPushAgreed ? currentTime : undefined,
 					},
 				});
 
 				// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
-				const verificationResult =
-					await this.verificationService.createEmailVerification(newUser.id);
+				const verificationResult = await this.verificationService.createEmailVerification(
+					newUser.id,
+				);
 
 				// 보안 로그 기록
 				await this.securityLogRepository.create({
@@ -184,10 +167,7 @@ export class CredentialAuthWorkflow {
 		} catch (error) {
 			// 사전 findByEmail 체크와 create 사이의 레이스로 이메일 유니크 위반이
 			// 발생하면 EMAIL_0501로 정규화(그 외 유니크 위반은 원본 재전파).
-			if (
-				error instanceof AuthPersistenceConflict &&
-				error.kind === "EMAIL_ALREADY_EXISTS"
-			) {
+			if (error instanceof AuthPersistenceConflict && error.kind === "EMAIL_ALREADY_EXISTS") {
 				throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
 			}
 			throw error;
@@ -197,10 +177,7 @@ export class CredentialAuthWorkflow {
 		// 이메일 발송 실패는 로그만 남고 회원가입은 성공 처리
 		let emailSent = true;
 		try {
-			await this.verificationService.sendVerificationEmail(
-				email,
-				result.verificationCode,
-			);
+			await this.verificationService.sendVerificationEmail(email, result.verificationCode);
 		} catch (error) {
 			emailSent = false;
 			this.#logger.error(
@@ -209,9 +186,7 @@ export class CredentialAuthWorkflow {
 			);
 		}
 
-		this.#logger.log(
-			`User registered: ${result.user.id} (${maskEmail(email)})`,
-		);
+		this.#logger.log(`User registered: ${result.user.id} (${maskEmail(email)})`);
 
 		this.adminEventNotifier.notifyUserRegistered({
 			userId: result.user.id,
@@ -290,9 +265,7 @@ export class CredentialAuthWorkflow {
 			});
 
 			// 프로필 조회
-			const userWithProfile = await this.userRepository.findByIdWithProfile(
-				user.id,
-			);
+			const userWithProfile = await this.userRepository.findByIdWithProfile(user.id);
 
 			return {
 				tokens,
@@ -340,10 +313,7 @@ export class CredentialAuthWorkflow {
 
 		// 트랜잭션 후 이메일 발송
 		try {
-			await this.verificationService.sendVerificationEmail(
-				email,
-				verificationResult.code,
-			);
+			await this.verificationService.sendVerificationEmail(email, verificationResult.code);
 		} catch (error) {
 			this.#logger.error(
 				`Unexpected error sending verification email to ${maskEmail(email)}:`,
@@ -351,9 +321,7 @@ export class CredentialAuthWorkflow {
 			);
 		}
 
-		this.#logger.log(
-			`Verification code resent: ${user.id} (${maskEmail(email)})`,
-		);
+		this.#logger.log(`Verification code resent: ${user.id} (${maskEmail(email)})`);
 
 		return {
 			message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요.",
@@ -361,10 +329,7 @@ export class CredentialAuthWorkflow {
 	}
 
 	// Rate limiting: 30분 내 5회 실패 시 잠금
-	async login(
-		input: LoginInput,
-		metadata?: RequestMetadata,
-	): Promise<LoginResult> {
+	async login(input: LoginInput, metadata?: RequestMetadata): Promise<LoginResult> {
 		const { password, deviceName } = input;
 		// 이메일 형식 불변식을 도메인 경계에서 방어(정규화 없음 → 값 그대로)
 		const email = Email.of(input.email).value;
@@ -373,11 +338,10 @@ export class CredentialAuthWorkflow {
 
 		// 1. 로그인 시도 횟수 확인
 		const lockoutSince = subtractMinutes(LOGIN_ATTEMPT.LOCKOUT_MINUTES);
-		const recentFailures =
-			await this.loginAttemptRepository.countRecentFailuresByEmail(
-				email,
-				lockoutSince,
-			);
+		const recentFailures = await this.loginAttemptRepository.countRecentFailuresByEmail(
+			email,
+			lockoutSince,
+		);
 
 		if (recentFailures >= LOGIN_ATTEMPT.MAX_FAILURES) {
 			// 보안 로그 기록
@@ -409,10 +373,7 @@ export class CredentialAuthWorkflow {
 			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
-		const account = await this.accountRepository.findByUserIdAndProvider(
-			user.id,
-			"CREDENTIAL",
-		);
+		const account = await this.accountRepository.findByUserIdAndProvider(user.id, "CREDENTIAL");
 		if (!account?.password) {
 			// Credential 계정이 아닌 경우 (소셜 로그인 등)
 			await this.loginAttemptRepository.create({
@@ -427,10 +388,7 @@ export class CredentialAuthWorkflow {
 		}
 
 		// 3. 비밀번호 검증
-		const isPasswordValid = await this.passwordService.verify(
-			account.password,
-			password,
-		);
+		const isPasswordValid = await this.passwordService.verify(account.password, password);
 		if (!isPasswordValid) {
 			await this.loginAttemptRepository.create({
 				email,
@@ -457,15 +415,9 @@ export class CredentialAuthWorkflow {
 		if (this.passwordService.needsRehash(account.password)) {
 			this.passwordService
 				.hash(password)
-				.then((newHash) =>
-					this.accountRepository.updatePassword(user.id, newHash),
-				)
-				.then(() =>
-					this.#logger.debug(`Password rehashed for user: ${user.id}`),
-				)
-				.catch((err) =>
-					this.#logger.error(`Password rehash failed for ${user.id}:`, err),
-				);
+				.then((newHash) => this.accountRepository.updatePassword(user.id, newHash))
+				.then(() => this.#logger.debug(`Password rehashed for user: ${user.id}`))
+				.catch((err) => this.#logger.error(`Password rehash failed for ${user.id}:`, err));
 		}
 
 		// 5. 사용자 상태 확인 (탈퇴 유예 기간 내 복구 처리)
@@ -499,9 +451,7 @@ export class CredentialAuthWorkflow {
 		// 복구된 계정의 캐시 무효화
 		if (needsRestore) {
 			await this.cacheService.invalidateUserProfile(user.id);
-			this.#logger.log(
-				`Deleted account restored on login: ${user.id} (${maskEmail(email)})`,
-			);
+			this.#logger.log(`Deleted account restored on login: ${user.id} (${maskEmail(email)})`);
 		}
 
 		this.#logger.log(`User logged in: ${user.id} (${maskEmail(email)})`);
@@ -573,8 +523,7 @@ export class CredentialAuthWorkflow {
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
 		// 활성 세션 ID 조회 (캐시 무효화용, revoke 전에 조회)
-		const activeSessions =
-			await this.sessionRepository.findActiveByUserId(userId);
+		const activeSessions = await this.sessionRepository.findActiveByUserId(userId);
 
 		// 모든 세션 만료 처리
 		const revokedCount = await this.sessionRepository.revokeAllByUserId(
@@ -583,9 +532,7 @@ export class CredentialAuthWorkflow {
 		);
 
 		// 모든 세션 캐시 즉시 무효화
-		await Promise.all(
-			activeSessions.map((s) => this.cacheService.invalidateSession(s.id)),
-		);
+		await Promise.all(activeSessions.map((s) => this.cacheService.invalidateSession(s.id)));
 
 		// 보안 로그 기록
 		await this.securityLogRepository.create({
@@ -596,9 +543,7 @@ export class CredentialAuthWorkflow {
 			metadata: { revokedCount },
 		});
 
-		this.#logger.log(
-			`User logged out from all devices: ${userId}, revoked: ${revokedCount}`,
-		);
+		this.#logger.log(`User logged out from all devices: ${userId}, revoked: ${revokedCount}`);
 
 		return {
 			message: "모든 기기에서 로그아웃되었습니다.",
@@ -625,26 +570,19 @@ export class CredentialAuthWorkflow {
 
 		// 2. 리프레시 토큰 해시로 세션 조회
 		const refreshTokenHash = this.tokenService.hashRefreshToken(refreshToken);
-		const session =
-			await this.sessionRepository.findByRefreshTokenHash(refreshTokenHash);
+		const session = await this.sessionRepository.findByRefreshTokenHash(refreshTokenHash);
 
 		// 세션이 없으면 sessionId(PK)로 조회 — O(1) PK lookup
 		if (!session) {
 			// sessionId(PK)로 조회 — O(1) PK lookup
 			const currentSession = await this.sessionRepository.findById(sessionId);
-			const currentAuthSession = currentSession
-				? AuthSession.reconstitute(currentSession)
-				: null;
+			const currentAuthSession = currentSession ? AuthSession.reconstitute(currentSession) : null;
 
 			// previousTokenHash가 제출된 토큰 해시와 일치 → 이전 토큰 재사용
-			if (
-				currentSession &&
-				currentAuthSession?.wasPreviouslyIssued(refreshTokenHash)
-			) {
+			if (currentSession && currentAuthSession?.wasPreviouslyIssued(refreshTokenHash)) {
 				// Grace period 확인
 				const currentTime = now();
-				const timeSinceLastRotation =
-					currentTime.getTime() - currentSession.lastUsedAt.getTime();
+				const timeSinceLastRotation = currentTime.getTime() - currentSession.lastUsedAt.getTime();
 
 				if (
 					currentAuthSession.isRetryWithin(
@@ -660,10 +598,7 @@ export class CredentialAuthWorkflow {
 
 					this.sessionService.assertSessionValid(currentSession);
 
-					if (
-						currentSession.userId !== userId ||
-						currentSession.id !== sessionId
-					) {
+					if (currentSession.userId !== userId || currentSession.id !== sessionId) {
 						throw new ApplicationException(ErrorCode.SESSION_0701, {
 							sessionId: undefined,
 						});
@@ -679,11 +614,8 @@ export class CredentialAuthWorkflow {
 						newTokenVersion,
 					);
 
-					const newRefreshTokenHash = this.tokenService.hashRefreshToken(
-						newTokens.refreshToken,
-					);
-					const refreshExpiresInSeconds =
-						this.tokenService.getRefreshTokenExpiresInSeconds();
+					const newRefreshTokenHash = this.tokenService.hashRefreshToken(newTokens.refreshToken);
+					const refreshExpiresInSeconds = this.tokenService.getRefreshTokenExpiresInSeconds();
 					const newExpiresAt = addMilliseconds(refreshExpiresInSeconds * 1000);
 
 					// Sliding window 방지: previousTokenHash를 현재 세션의 refreshTokenHash로 설정
@@ -693,10 +625,7 @@ export class CredentialAuthWorkflow {
 						currentAuthSession.refreshTokenHash,
 						newExpiresAt,
 					);
-					const rotatedSession = await this.sessionRepository.rotateToken(
-						sessionId,
-						rotationPlan,
-					);
+					const rotatedSession = await this.sessionRepository.rotateToken(sessionId, rotationPlan);
 
 					if (!rotatedSession) {
 						throw new ApplicationException(ErrorCode.SESSION_0702, {
@@ -736,9 +665,7 @@ export class CredentialAuthWorkflow {
 					},
 				});
 
-				this.#logger.warn(
-					`Token reuse detected for user: ${currentSession.userId}`,
-				);
+				this.#logger.warn(`Token reuse detected for user: ${currentSession.userId}`);
 				throw new ApplicationException(ErrorCode.SESSION_0704, {
 					tokenFamily: undefined,
 				});
@@ -771,12 +698,9 @@ export class CredentialAuthWorkflow {
 		);
 
 		// 5. 세션 업데이트 (Token Rotation with Optimistic Locking)
-		const newRefreshTokenHash = this.tokenService.hashRefreshToken(
-			newTokens.refreshToken,
-		);
+		const newRefreshTokenHash = this.tokenService.hashRefreshToken(newTokens.refreshToken);
 
-		const refreshExpiresInSeconds =
-			this.tokenService.getRefreshTokenExpiresInSeconds();
+		const refreshExpiresInSeconds = this.tokenService.getRefreshTokenExpiresInSeconds();
 		const newExpiresAt = addMilliseconds(refreshExpiresInSeconds * 1000);
 
 		const rotationPlan = authSession.planRotation(
@@ -784,16 +708,11 @@ export class CredentialAuthWorkflow {
 			refreshTokenHash,
 			newExpiresAt,
 		);
-		const rotatedSession = await this.sessionRepository.rotateToken(
-			sessionId,
-			rotationPlan,
-		);
+		const rotatedSession = await this.sessionRepository.rotateToken(sessionId, rotationPlan);
 
 		// 로테이션 실패 시 (다른 요청이 먼저 로테이션함)
 		if (!rotatedSession) {
-			this.#logger.warn(
-				`Token rotation race condition detected for session: ${sessionId}`,
-			);
+			this.#logger.warn(`Token rotation race condition detected for session: ${sessionId}`);
 			throw new ApplicationException(ErrorCode.SESSION_0702, {
 				sessionId: undefined,
 			});
@@ -811,9 +730,7 @@ export class CredentialAuthWorkflow {
 			userAgent,
 		});
 
-		this.#logger.debug(
-			`Token refreshed for user: ${userId}, session: ${sessionId}`,
-		);
+		this.#logger.debug(`Token refreshed for user: ${userId}, session: ${sessionId}`);
 
 		return {
 			tokens: newTokens,
@@ -884,29 +801,26 @@ export class CredentialAuthWorkflow {
 		sessionId: string,
 	): Promise<CurrentUserResult> {
 		// wrapUserProfile을 사용하여 캐시된 프로필 조회 또는 DB에서 조회
-		const cachedProfile = await this.cacheService.wrapUserProfile(
-			userId,
-			async () => {
-				const user = await this.userRepository.findByIdWithProfile(userId);
-				if (!user) {
-					return undefined;
-				}
-				return {
-					id: user.id,
-					email: user.email,
-					role: user.role,
-					userTag: user.userTag,
-					status: user.status,
-					emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
-					subscriptionStatus: user.subscriptionStatus,
-					subscriptionExpiresAt: toISOStringOrNull(user.subscriptionExpiresAt),
-					name: user.profile?.name ?? null,
-					profileImage: user.profile?.profileImage ?? null,
-					createdAt: toISOString(user.createdAt),
-					providers: user.accounts.map((a) => a.provider),
-				};
-			},
-		);
+		const cachedProfile = await this.cacheService.wrapUserProfile(userId, async () => {
+			const user = await this.userRepository.findByIdWithProfile(userId);
+			if (!user) {
+				return undefined;
+			}
+			return {
+				id: user.id,
+				email: user.email,
+				role: user.role,
+				userTag: user.userTag,
+				status: user.status,
+				emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
+				subscriptionStatus: user.subscriptionStatus,
+				subscriptionExpiresAt: toISOStringOrNull(user.subscriptionExpiresAt),
+				name: user.profile?.name ?? null,
+				profileImage: user.profile?.profileImage ?? null,
+				createdAt: toISOString(user.createdAt),
+				providers: user.accounts.map((a) => a.provider),
+			};
+		});
 
 		if (!cachedProfile) {
 			throw new ApplicationException(ErrorCode.USER_0601, { userId });
@@ -929,10 +843,7 @@ export class CredentialAuthWorkflow {
 		};
 	}
 
-	async updateProfile(
-		userId: string,
-		data: UpdateProfileInput,
-	): Promise<UpdateProfileResult> {
+	async updateProfile(userId: string, data: UpdateProfileInput): Promise<UpdateProfileResult> {
 		const profile = await this.userRepository.updateProfile(userId, data);
 
 		// 캐시 무효화 (프로필 변경)
@@ -973,17 +884,13 @@ export class CredentialAuthWorkflow {
 			if (!credentialPassword) {
 				throw new ApplicationException(ErrorCode.USER_0602);
 			}
-			const isValid = await this.passwordService.verify(
-				credentialPassword,
-				input.password,
-			);
+			const isValid = await this.passwordService.verify(credentialPassword, input.password);
 			if (!isValid) throw new ApplicationException(ErrorCode.USER_0602);
 		}
 		// 소셜 전용: JWT 인증 통과 = 확인 완료
 
 		// 3. 활성 세션 ID 조회 (캐시 무효화용, 트랜잭션 전에 조회)
-		const activeSessions =
-			await this.sessionRepository.findActiveByUserId(userId);
+		const activeSessions = await this.sessionRepository.findActiveByUserId(userId);
 
 		// 4. 트랜잭션: soft delete + 세션 전체 폐기 + 보안 로그
 		const deletedAt = now();
@@ -1008,9 +915,7 @@ export class CredentialAuthWorkflow {
 		});
 
 		// 5. 캐시 무효화: 모든 기기의 세션 캐시 즉시 삭제
-		await Promise.all(
-			activeSessions.map((s) => this.cacheService.invalidateSession(s.id)),
-		);
+		await Promise.all(activeSessions.map((s) => this.cacheService.invalidateSession(s.id)));
 		await this.cacheService.invalidateUserProfile(userId);
 
 		this.#logger.log(`Account deletion requested: ${userId}`);

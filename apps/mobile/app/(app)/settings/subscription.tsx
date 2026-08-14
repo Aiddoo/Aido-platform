@@ -487,7 +487,7 @@ function ReceiptBarcode() {
     <View className="flex-row items-end justify-center gap-[1.5px]">
       {BARCODE_BARS.map((w, i) => (
         <View
-          // biome-ignore lint/suspicious/noArrayIndexKey: <단순 ui 장식용>
+          // 순서와 개수가 고정된 장식 요소이므로 index가 안정적인 key다.
           key={i}
           className="bg-gray-7 rounded-[0.5px]"
           style={{ width: w * 1.8, height: 32 }}

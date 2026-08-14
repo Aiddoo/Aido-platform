@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto";
+
 import { Controller, Get, Logger } from "@nestjs/common";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
+
 import { Public } from "@/auth/presentation/decorators";
 import { ApiDoc, SWAGGER_TAGS } from "@/shared/presentation/swagger";
+
 import { BullHealthIndicator } from "./indicators/bull.health";
 import { DatabaseHealthIndicator } from "./indicators/database.health";
 

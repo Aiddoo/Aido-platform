@@ -5,6 +5,7 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const useAcceptRequestMutationOptions = () => {

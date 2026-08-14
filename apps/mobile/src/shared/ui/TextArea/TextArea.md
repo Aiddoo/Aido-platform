@@ -28,15 +28,15 @@ import { TextArea } from '@src/shared/ui/TextArea';
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `variant` | `'filled' \| 'line'` | `'filled'` | 입력 필드 스타일 |
-| `label` | `string` | - | 라벨 텍스트 |
-| `isDisabled` | `boolean` | `false` | 비활성화 상태 |
-| `isInvalid` | `boolean` | `false` | 에러 상태 |
-| `errorMessage` | `string` | - | 에러 메시지 (하단 좌측) |
-| `className` | `string` | - | 컨테이너 추가 스타일 |
-| `...TextInputProps` | - | - | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장) |
+| Prop                | 타입                 | 기본값     | 설명                                                             |
+| ------------------- | -------------------- | ---------- | ---------------------------------------------------------------- |
+| `variant`           | `'filled' \| 'line'` | `'filled'` | 입력 필드 스타일                                                 |
+| `label`             | `string`             | -          | 라벨 텍스트                                                      |
+| `isDisabled`        | `boolean`            | `false`    | 비활성화 상태                                                    |
+| `isInvalid`         | `boolean`            | `false`    | 에러 상태                                                        |
+| `errorMessage`      | `string`             | -          | 에러 메시지 (하단 좌측)                                          |
+| `className`         | `string`             | -          | 컨테이너 추가 스타일                                             |
+| `...TextInputProps` | -                    | -          | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장) |
 
 ## 스타일 (variant)
 
@@ -76,18 +76,18 @@ import { TextArea } from '@src/shared/ui/TextArea';
 
 ## Input과의 차이점
 
-| 항목 | Input | TextArea |
-|------|-------|----------|
-| 줄 수 | 단일 행 | 여러 줄 (`multiline` 내장) |
-| 높이 | 고정 (`h-12`/`h-14`) | 유동적 (`min-h` 사용) |
-| 크기 variant | `medium` / `large` | 없음 |
-| leftContent/rightContent | 지원 | 미지원 |
+| 항목                     | Input                | TextArea                   |
+| ------------------------ | -------------------- | -------------------------- |
+| 줄 수                    | 단일 행              | 여러 줄 (`multiline` 내장) |
+| 높이                     | 고정 (`h-12`/`h-14`) | 유동적 (`min-h` 사용)      |
+| 크기 variant             | `medium` / `large`   | 없음                       |
+| leftContent/rightContent | 지원                 | 미지원                     |
 
 ## 파일 구조
 
-| 파일 | 역할 |
-|------|------|
-| `TextArea.tsx` | 여러 줄 입력 컴포넌트 |
-| `TextArea.types.ts` | 타입 정의 (`TextAreaProps`, `TextAreaVariant`) |
-| `TextArea.variants.ts` | Tailwind 스타일 (variant/상태) |
-| `index.ts` | Export: `TextArea`, `TextAreaProps`, `TextAreaVariant` |
+| 파일                   | 역할                                                   |
+| ---------------------- | ------------------------------------------------------ |
+| `TextArea.tsx`         | 여러 줄 입력 컴포넌트                                  |
+| `TextArea.types.ts`    | 타입 정의 (`TextAreaProps`, `TextAreaVariant`)         |
+| `TextArea.variants.ts` | Tailwind 스타일 (variant/상태)                         |
+| `index.ts`             | Export: `TextArea`, `TextAreaProps`, `TextAreaVariant` |

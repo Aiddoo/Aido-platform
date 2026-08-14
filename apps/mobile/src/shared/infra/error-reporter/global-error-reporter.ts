@@ -1,4 +1,5 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+
 import { createConsoleErrorReporter } from './console-error-reporter';
 
 /**

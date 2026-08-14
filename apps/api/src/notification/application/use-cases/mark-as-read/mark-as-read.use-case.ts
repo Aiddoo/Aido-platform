@@ -1,15 +1,17 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { Notification } from "../../../domain/entities/notification.aggregate";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 
 /**
  * 단일 알림 읽음 처리 유스케이스.
@@ -29,8 +31,7 @@ export class MarkAsReadUseCase {
 	) {}
 
 	async execute(userId: string, notificationId: number): Promise<void> {
-		const record =
-			await this.notificationRepository.findNotificationById(notificationId);
+		const record = await this.notificationRepository.findNotificationById(notificationId);
 
 		if (!record) {
 			throw new ApplicationException(ErrorCode.NOTIFICATION_1004, {
@@ -43,10 +44,7 @@ export class MarkAsReadUseCase {
 			return;
 		}
 
-		const changed = await this.notificationRepository.markAsRead(
-			notificationId,
-			userId,
-		);
+		const changed = await this.notificationRepository.markAsRead(notificationId, userId);
 		if (changed) {
 			await this.cache.invalidateUnreadCount(userId);
 		}

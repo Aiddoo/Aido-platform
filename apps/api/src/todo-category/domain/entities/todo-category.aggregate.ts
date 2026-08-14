@@ -1,4 +1,5 @@
 import { AggregateRoot } from "@/shared/domain";
+
 import { CategoryColor } from "../value-objects/category-color.vo";
 import { CategoryName } from "../value-objects/category-name.vo";
 

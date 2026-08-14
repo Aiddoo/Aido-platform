@@ -1,7 +1,9 @@
 import { CATEGORY_TYPE_MAP, type NotificationCategory } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
+
 import type { NotificationRecord } from "../../../domain/records/notification.record";
 import type { NotificationType } from "../../../domain/types/notification-type";
 import {
@@ -35,34 +37,29 @@ export class GetNotificationsUseCase {
 	async execute(
 		input: GetNotificationsInput,
 	): Promise<CursorPaginatedResponse<NotificationRecord, number>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<number>({
-				cursor: input.cursor,
-				size: input.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+			cursor: input.cursor,
+			size: input.size,
+		});
 
 		const types: NotificationType[] | undefined =
 			input.category && input.category !== "ALL"
 				? [...CATEGORY_TYPE_MAP[input.category]]
 				: undefined;
 
-		const notifications =
-			await this.notificationRepository.findNotificationsByUser({
-				userId: input.userId,
-				cursor,
-				size,
-				unreadOnly: input.unreadOnly,
-				types,
-			});
+		const notifications = await this.notificationRepository.findNotificationsByUser({
+			userId: input.userId,
+			cursor,
+			size,
+			unreadOnly: input.unreadOnly,
+			types,
+		});
 
 		this.#logger.debug(
 			`Notifications listed: ${notifications.length} items for user: ${input.userId}`,
 		);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			NotificationRecord,
-			number
-		>({
+		return this.paginationService.createCursorPaginatedResponse<NotificationRecord, number>({
 			items: notifications,
 			size,
 		});

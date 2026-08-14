@@ -2,12 +2,10 @@ import { Module } from "@nestjs/common";
 
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseModule } from "@/shared/infrastructure/database";
+
 import { AdminEventNotifier } from "./application/notifiers/admin-event.notifier";
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "./application/ports/admin-notification-queue.port";
-import {
-	ADMIN_NOTIFIER,
-	PAYMENT_NOTIFIER,
-} from "./application/ports/admin-notifier.port";
+import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "./application/ports/admin-notifier.port";
 import { SIGNUP_STATS_READER } from "./application/ports/signup-stats.reader.port";
 import { DispatchDailySignupSummaryUseCase } from "./application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
 import { EnqueueSubscriptionEventUseCase } from "./application/use-cases/enqueue-subscription-event/enqueue-subscription-event.use-case";

@@ -1,5 +1,6 @@
 import { createMockStorage } from '@src/shared/__tests__';
 import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
+
 import { createSecureTokenStore } from './secure-token-store';
 
 describe('createSecureTokenStore', () => {

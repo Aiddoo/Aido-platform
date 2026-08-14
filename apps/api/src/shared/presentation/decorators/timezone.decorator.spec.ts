@@ -15,14 +15,8 @@ describe("parseTimezoneHeader", () => {
 	});
 
 	it("토큰 등록 모드에서는 헤더가 없거나 잘못되면 undefined로 보존한다", () => {
-		expect(
-			parseTimezoneHeader(undefined, { preserveIfMissing: true }),
-		).toBeUndefined();
-		expect(
-			parseTimezoneHeader("Mars/Olympus", { preserveIfMissing: true }),
-		).toBeUndefined();
-		expect(
-			parseTimezoneHeader(["Asia/Seoul"], { preserveIfMissing: true }),
-		).toBeUndefined();
+		expect(parseTimezoneHeader(undefined, { preserveIfMissing: true })).toBeUndefined();
+		expect(parseTimezoneHeader("Mars/Olympus", { preserveIfMissing: true })).toBeUndefined();
+		expect(parseTimezoneHeader(["Asia/Seoul"], { preserveIfMissing: true })).toBeUndefined();
 	});
 });

@@ -1,6 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import type { UserLocation } from "../../../domain/entities/user-location.entity";
 import {
 	WEATHER_LOCATION_REPOSITORY,
@@ -31,18 +33,13 @@ export class GetWeatherForecastUseCase {
 		private readonly forecastReader: WeatherForecastReader,
 	) {}
 
-	async execute(
-		input: GetWeatherForecastInput,
-	): Promise<WeatherForecastWithLocation> {
+	async execute(input: GetWeatherForecastInput): Promise<WeatherForecastWithLocation> {
 		const location = await this.repository.findByUserId(input.userId);
 		if (!location) {
 			throw new ApplicationException(ErrorCode.WEATHER_1902);
 		}
 
-		const forecast = await this.forecastReader.fetchForLocation(
-			location,
-			input.date,
-		);
+		const forecast = await this.forecastReader.fetchForLocation(location, input.date);
 		return { forecast, location };
 	}
 }

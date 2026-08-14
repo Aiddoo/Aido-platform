@@ -12,9 +12,7 @@ describe("TestDatabase", () => {
 		});
 
 		// When & Then - marker/name 검증에서 즉시 중단
-		await expect(testDatabase.start()).rejects.toThrow(
-			"AIDO_TEST_DB_MANAGED=1",
-		);
+		await expect(testDatabase.start()).rejects.toThrow("AIDO_TEST_DB_MANAGED=1");
 		expect(createPrismaClient).not.toHaveBeenCalled();
 	});
 });

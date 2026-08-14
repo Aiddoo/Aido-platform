@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import { View } from 'react-native';
+
 import { ListRow } from './ListRow';
 
 describe('ListRow', () => {

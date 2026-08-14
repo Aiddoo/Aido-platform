@@ -13,8 +13,10 @@
 
 import { asDep, mockOf } from "@test/mocks";
 import type { Request } from "express";
+
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { JwtRefreshStrategy } from "./jwt-refresh.strategy";
 
 describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
@@ -66,9 +68,7 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 		const payload = { ...validPayload, type: "access" as const };
 
 		// When & Then
-		await expect(strategy.validate(req, payload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(req, payload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("sessionId가 없으면 에러를 던진다", async () => {
@@ -80,9 +80,7 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 		});
 
 		// When & Then
-		await expect(strategy.validate(req, payload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(req, payload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("Authorization 헤더가 없으면 에러를 던진다", async () => {
@@ -90,8 +88,6 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 		const req = createMockRequest(undefined);
 
 		// When & Then
-		await expect(strategy.validate(req, validPayload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(req, validPayload)).rejects.toThrow(ApplicationException);
 	});
 });

@@ -11,13 +11,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockUserProfile } from "@test/mocks/cache-test-utils";
+
 import { CacheService } from "./cache.service";
 import { CacheKeys } from "./constants/cache-keys";
-import {
-	CACHE_SERVICE,
-	type ICacheService,
-	type TtlValue,
-} from "./interfaces/cache.interface";
+import { CACHE_SERVICE, type ICacheService, type TtlValue } from "./interfaces/cache.interface";
 
 describe("CacheService — 캐시 서비스", () => {
 	let service: CacheService;
@@ -227,9 +224,7 @@ describe("CacheService — 캐시 서비스", () => {
 			const result = await service.getSession(sessionId);
 
 			// Then
-			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				CacheKeys.session(sessionId),
-			);
+			expect(mockCacheAdapter.get).toHaveBeenCalledWith(CacheKeys.session(sessionId));
 			expect(result).toEqual(sessionData);
 		});
 
@@ -267,9 +262,7 @@ describe("CacheService — 캐시 서비스", () => {
 			await service.invalidateSession(sessionId);
 
 			// Then
-			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				CacheKeys.session(sessionId),
-			);
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(CacheKeys.session(sessionId));
 		});
 
 		it("wrapSession이 wrap을 올바른 키와 TTL로 호출한다", async () => {
@@ -319,9 +312,7 @@ describe("CacheService — 캐시 서비스", () => {
 			const result = await service.getUserProfile(userId);
 
 			// Then
-			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				CacheKeys.userProfile(userId),
-			);
+			expect(mockCacheAdapter.get).toHaveBeenCalledWith(CacheKeys.userProfile(userId));
 			expect(result).toEqual(profile);
 		});
 
@@ -359,9 +350,7 @@ describe("CacheService — 캐시 서비스", () => {
 			await service.invalidateUserProfile(userId);
 
 			// Then
-			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				CacheKeys.userProfile(userId),
-			);
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(CacheKeys.userProfile(userId));
 		});
 
 		it("wrapUserProfile이 wrap을 올바른 키와 TTL로 호출한다", async () => {
@@ -408,9 +397,7 @@ describe("CacheService — 캐시 서비스", () => {
 			const result = await service.getSubscription(userId);
 
 			// Then
-			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				CacheKeys.subscription(userId),
-			);
+			expect(mockCacheAdapter.get).toHaveBeenCalledWith(CacheKeys.subscription(userId));
 			expect(result).toEqual(subscription);
 		});
 
@@ -448,9 +435,7 @@ describe("CacheService — 캐시 서비스", () => {
 			await service.invalidateSubscription(userId);
 
 			// Then
-			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				CacheKeys.subscription(userId),
-			);
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(CacheKeys.subscription(userId));
 		});
 
 		it("wrapSubscription이 wrap을 올바른 키와 TTL로 호출한다", async () => {
@@ -566,9 +551,7 @@ describe("CacheService — 캐시 서비스", () => {
 			await service.invalidateMutualFriend(userA, userB);
 
 			// Then - 작은 ID가 먼저 오도록 정규화됨
-			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				CacheKeys.mutualFriend("user_a", "user_b"),
-			);
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(CacheKeys.mutualFriend("user_a", "user_b"));
 		});
 
 		it("이미 정렬된 ID로 친구 관계 캐시를 무효화한다", async () => {
@@ -580,9 +563,7 @@ describe("CacheService — 캐시 서비스", () => {
 			await service.invalidateMutualFriend(userA, userB);
 
 			// Then
-			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
-				CacheKeys.mutualFriend("user_1", "user_2"),
-			);
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(CacheKeys.mutualFriend("user_1", "user_2"));
 		});
 
 		it("wrapMutualFriend가 wrap을 올바른 키와 TTL로 호출한다", async () => {
@@ -591,11 +572,7 @@ describe("CacheService — 캐시 서비스", () => {
 			mockCacheAdapter.wrap.mockResolvedValue(true);
 
 			// When
-			const result = await service.wrapMutualFriend(
-				userId,
-				targetUserId,
-				factory,
-			);
+			const result = await service.wrapMutualFriend(userId, targetUserId, factory);
 
 			// Then
 			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
@@ -612,11 +589,7 @@ describe("CacheService — 캐시 서비스", () => {
 			mockCacheAdapter.wrap.mockResolvedValue(false);
 
 			// When
-			const result = await service.wrapMutualFriend(
-				userId,
-				targetUserId,
-				factory,
-			);
+			const result = await service.wrapMutualFriend(userId, targetUserId, factory);
 
 			// Then
 			expect(result).toBe(false);
@@ -652,9 +625,7 @@ describe("CacheService — 캐시 서비스", () => {
 			await service.getUserProfile(specialUserId);
 
 			// Then
-			expect(mockCacheAdapter.get).toHaveBeenCalledWith(
-				CacheKeys.userProfile(specialUserId),
-			);
+			expect(mockCacheAdapter.get).toHaveBeenCalledWith(CacheKeys.userProfile(specialUserId));
 		});
 	});
 });

@@ -1,6 +1,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import { HmacMarketingPushOptOutTokenAdapter } from "./hmac-marketing-push-opt-out-token.adapter";
 
 describe("HmacMarketingPushOptOutTokenAdapter", () => {
@@ -10,9 +12,7 @@ describe("HmacMarketingPushOptOutTokenAdapter", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date("2026-07-14T12:00:00.000Z"));
-		const testBed = await TestBed.solitary(
-			HmacMarketingPushOptOutTokenAdapter,
-		).compile();
+		const testBed = await TestBed.solitary(HmacMarketingPushOptOutTokenAdapter).compile();
 		adapter = testBed.unit;
 		config = testBed.unitRef.get(TypedConfigService);
 		Object.defineProperty(config, "jwtSecret", {

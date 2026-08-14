@@ -1,9 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import {
-	PAGINATION_DEFAULT,
-	SORT_DEFAULT,
-	type SortOrder,
-} from "../constants/pagination.constant";
+
+import { PAGINATION_DEFAULT, SORT_DEFAULT, type SortOrder } from "../constants/pagination.constant";
 import type {
 	CursorPaginatedResponse,
 	CursorPaginationInfo,
@@ -29,11 +26,7 @@ export class PaginationService {
 	/**
 	 * 페이지네이션 정보 생성
 	 */
-	createPaginationInfo(params: {
-		page: number;
-		size: number;
-		total: number;
-	}): PaginationInfo {
+	createPaginationInfo(params: { page: number; size: number; total: number }): PaginationInfo {
 		const { page, size, total } = params;
 		const totalPages = Math.ceil(total / size);
 
@@ -71,10 +64,7 @@ export class PaginationService {
 		const page = Math.max(1, params.page ?? PAGINATION_DEFAULT.PAGE);
 		const size = Math.min(
 			PAGINATION_DEFAULT.MAX_SIZE,
-			Math.max(
-				PAGINATION_DEFAULT.MIN_SIZE,
-				params.size ?? PAGINATION_DEFAULT.SIZE,
-			),
+			Math.max(PAGINATION_DEFAULT.MIN_SIZE, params.size ?? PAGINATION_DEFAULT.SIZE),
 		);
 
 		return {
@@ -88,15 +78,11 @@ export class PaginationService {
 	/**
 	 * 정렬 조건 정규화
 	 */
-	normalizeSortOrder(
-		params: SortParams & { allowedFields?: string[] },
-	): Record<string, SortOrder> {
+	normalizeSortOrder(params: SortParams & { allowedFields?: string[] }): Record<string, SortOrder> {
 		const { sortBy, sortOrder, allowedFields = [] } = params;
 
 		const normalizedSortBy =
-			sortBy && allowedFields.includes(sortBy)
-				? sortBy
-				: (allowedFields[0] ?? SORT_DEFAULT.FIELD);
+			sortBy && allowedFields.includes(sortBy) ? sortBy : (allowedFields[0] ?? SORT_DEFAULT.FIELD);
 
 		const normalizedSortOrder: SortOrder = sortOrder === "ASC" ? "ASC" : "DESC";
 
@@ -118,10 +104,7 @@ export class PaginationService {
 	): NormalizedCursorPagination<T> {
 		const size = Math.min(
 			PAGINATION_DEFAULT.MAX_SIZE,
-			Math.max(
-				PAGINATION_DEFAULT.MIN_SIZE,
-				params.size ?? PAGINATION_DEFAULT.SIZE,
-			),
+			Math.max(PAGINATION_DEFAULT.MIN_SIZE, params.size ?? PAGINATION_DEFAULT.SIZE),
 		);
 
 		return {
@@ -136,10 +119,10 @@ export class PaginationService {
 	 * @template TItem - 아이템 타입 (id 필드 필수)
 	 * @template TCursor - 커서 타입 (string | number)
 	 */
-	createCursorPaginationInfo<
-		TItem extends { id: TCursor },
-		TCursor extends CursorType,
-	>(params: { items: TItem[]; size: number }): CursorPaginationInfo<TCursor> {
+	createCursorPaginationInfo<TItem extends { id: TCursor }, TCursor extends CursorType>(params: {
+		items: TItem[];
+		size: number;
+	}): CursorPaginationInfo<TCursor> {
 		const { items, size } = params;
 		const hasNext = items.length > size;
 
@@ -159,10 +142,7 @@ export class PaginationService {
 	 * @template TItem - 아이템 타입 (id 필드 필수)
 	 * @template TCursor - 커서 타입 (string | number)
 	 */
-	createCursorPaginatedResponse<
-		TItem extends { id: TCursor },
-		TCursor extends CursorType,
-	>(params: {
+	createCursorPaginatedResponse<TItem extends { id: TCursor }, TCursor extends CursorType>(params: {
 		items: TItem[];
 		size: number;
 	}): CursorPaginatedResponse<TItem, TCursor> {

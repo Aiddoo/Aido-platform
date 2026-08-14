@@ -1,19 +1,12 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
-import {
-	fromLegacyJob,
-	type NamedJob,
-} from "@/shared/infrastructure/jobs/named-job";
+import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
+
 import { DispatchRetentionPushUseCase } from "../../application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
 import { ProcessRetentionStagesUseCase } from "../../application/use-cases/process-retention-stages/process-retention-stages.use-case";
 import { RelayRetentionOutboxUseCase } from "../../application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case";
@@ -86,10 +79,7 @@ export class RetentionQueueProcessor implements OnModuleInit {
 		}
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	): void {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error): void {
 		this.#logger.error(
 			`Retention job failed: id=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,

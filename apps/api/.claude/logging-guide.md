@@ -6,11 +6,11 @@
 
 ## 관련 문서
 
-| 문서 | 내용 |
-|------|------|
-| [AGENTS.md](../AGENTS.md) | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션) |
-| [architecture.md](./architecture.md) | 전체 아키텍처, 에러 처리 (GlobalExceptionFilter 로깅 전략) |
-| [api-conventions.md](./api-conventions.md) | Controller/Service/Repository 계층 규칙 |
+| 문서                                       | 내용                                                       |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| [AGENTS.md](../AGENTS.md)                  | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션)      |
+| [architecture.md](./architecture.md)       | 전체 아키텍처, 에러 처리 (GlobalExceptionFilter 로깅 전략) |
+| [api-conventions.md](./api-conventions.md) | Controller/Service/Repository 계층 규칙                    |
 
 ## 개요
 
@@ -18,13 +18,13 @@
 
 ## 로깅 레벨 규칙
 
-| 레벨 | 사용 시점 | 예시 |
-|------|----------|------|
-| `error` | 예외 발생, 시스템 오류 | DB 연결 실패, 외부 API 오류 |
-| `warn` | 비정상적이지만 처리 가능한 상황 | 인증 실패, 잘못된 입력 |
-| `log` | 중요한 비즈니스 이벤트 | 사용자 생성, 결제 완료 |
-| `debug` | 개발 중 디버깅용 | 함수 호출 추적, 변수 값 |
-| `verbose` | 상세 추적 정보 | 요청/응답 전체 내용 |
+| 레벨      | 사용 시점                       | 예시                        |
+| --------- | ------------------------------- | --------------------------- |
+| `error`   | 예외 발생, 시스템 오류          | DB 연결 실패, 외부 API 오류 |
+| `warn`    | 비정상적이지만 처리 가능한 상황 | 인증 실패, 잘못된 입력      |
+| `log`     | 중요한 비즈니스 이벤트          | 사용자 생성, 결제 완료      |
+| `debug`   | 개발 중 디버깅용                | 함수 호출 추적, 변수 값     |
+| `verbose` | 상세 추적 정보                  | 요청/응답 전체 내용         |
 
 ## 레이어별 로깅 패턴
 
@@ -62,6 +62,7 @@ export class UserService {
 ### Repository 레이어
 
 Repository는 데이터 접근 계층이므로 **일반적으로 로깅 불필요**합니다.
+
 - Service에서 이미 비즈니스 이벤트를 로깅
 - 복잡한 쿼리나 성능 모니터링 시에만 `debug` 레벨 사용
 
@@ -76,6 +77,7 @@ async findByEmail(email: string): Promise<User | null> {
 ### Controller 레이어
 
 Controller는 **로깅 불필요**합니다.
+
 - 요청/응답 로깅은 Interceptor에서 처리
 - 인증/인가 로깅은 Guard에서 처리
 
@@ -99,11 +101,11 @@ this.#logger.warn(`권한 부족: userId=${userId}, resource=${resource}`);
 
 ### 마스킹 필수
 
-| 데이터 | 마스킹 방법 | 예시 |
-|--------|------------|------|
-| 이메일 | 첫 글자 + *** + 도메인 | `t***@example.com` |
-| 전화번호 | 앞 3자리 + **** + 뒤 4자리 | `010-****-1234` |
-| IP 주소 | 전체 출력 가능 | `192.168.1.100` |
+| 데이터   | 마스킹 방법                | 예시               |
+| -------- | -------------------------- | ------------------ |
+| 이메일   | 첫 글자 + *** + 도메인     | `t***@example.com` |
+| 전화번호 | 앞 3자리 + **** + 뒤 4자리 | `010-****-1234`    |
+| IP 주소  | 전체 출력 가능             | `192.168.1.100`    |
 
 ### 마스킹 유틸리티
 
@@ -139,9 +141,9 @@ this.#logger.warn(`인증 실패: 잘못된 비밀번호 - email=${maskEmail(ema
 this.#logger.error(`외부 API 호출 실패: provider=kakao, status=${status}`);
 
 // 나쁜 예
-this.#logger.log(`user created`);  // 한국어 사용, 상세 정보 부족
-this.#logger.log(`사용자가 생성되었습니다.`);  // ID 정보 누락
-this.#logger.error(error);  // 메시지 없이 에러 객체만
+this.#logger.log(`user created`); // 한국어 사용, 상세 정보 부족
+this.#logger.log(`사용자가 생성되었습니다.`); // ID 정보 누락
+this.#logger.error(error); // 메시지 없이 에러 객체만
 ```
 
 ## 에러 로깅 패턴

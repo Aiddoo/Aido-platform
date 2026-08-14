@@ -13,20 +13,15 @@ import {
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
-import {
-	GetCurrentUserQuery,
-	ListLinkedAccountsQuery,
-} from "@/auth/application/queries";
+
+import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "@/auth/application/queries";
 import {
 	DeleteAccountUseCase,
 	UnlinkOAuthAccountUseCase,
 	UpdateProfileUseCase,
 } from "@/auth/application/use-cases";
 import { AuthMapper } from "@/auth/presentation/auth.mapper";
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "@/auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -36,6 +31,7 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
+
 import {
 	CurrentUserDto,
 	DeleteAccountDto,
@@ -82,11 +78,7 @@ export class AccountController {
 	@ApiSuccessResponse({ type: CurrentUserDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getMe(@CurrentUser() user: CurrentUserPayload) {
-		const result = await this.getCurrentUserQuery.execute(
-			user.userId,
-			user.email,
-			user.sessionId,
-		);
+		const result = await this.getCurrentUserQuery.execute(user.userId, user.email, user.sessionId);
 		return AuthMapper.toCurrentUserResponse(result);
 	}
 
@@ -109,10 +101,7 @@ export class AccountController {
 	})
 	@ApiSuccessResponse({ type: UpdateProfileResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async updateProfile(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: UpdateProfileDto,
-	) {
+	async updateProfile(@CurrentUser() user: CurrentUserPayload, @Body() dto: UpdateProfileDto) {
 		const result = await this.updateProfileUseCase.execute(user.userId, dto);
 		return AuthMapper.toUpdateProfileResponse(result);
 	}
@@ -201,11 +190,7 @@ export class AccountController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.unlinkOAuthAccountUseCase.execute(
-			user.userId,
-			provider,
-			metadata,
-		);
+		return this.unlinkOAuthAccountUseCase.execute(user.userId, provider, metadata);
 	}
 
 	@Delete("account")
@@ -250,11 +235,6 @@ export class AccountController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.deleteAccountUseCase.execute(
-			user.userId,
-			user.sessionId,
-			dto,
-			metadata,
-		);
+		return this.deleteAccountUseCase.execute(user.userId, user.sessionId, dto, metadata);
 	}
 }

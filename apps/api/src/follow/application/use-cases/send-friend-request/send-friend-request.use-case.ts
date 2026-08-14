@@ -1,21 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-	EntitlementService,
-	Resource,
-} from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService, Resource } from "@/shared/application/entitlement/entitlement.service";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import type { Friendship } from "../../../domain/entities/friendship.aggregate";
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
-import {
-	FOLLOW_NOTIFIER,
-	type FollowNotifierPort,
-} from "../../ports/follow-notifier.port";
+import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../../ports/follow-notifier.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 import { FollowReader } from "../../services/follow.reader";
 import { FriendshipEffects } from "../../services/friendship-effects.service";
 
@@ -52,9 +44,7 @@ export class SendFriendRequestUseCase {
 		private readonly effects: FriendshipEffects,
 	) {}
 
-	async execute(
-		input: SendFriendRequestInput,
-	): Promise<SendFriendRequestResult> {
+	async execute(input: SendFriendRequestInput): Promise<SendFriendRequestResult> {
 		const { userId, targetUserId } = input;
 
 		// 1. 자기 자신 체크
@@ -81,11 +71,10 @@ export class SendFriendRequestUseCase {
 		}
 
 		// 4. 기존 관계 체크
-		const existingFollow =
-			await this.followRepository.findByFollowerAndFollowing(
-				userId,
-				targetUserId,
-			);
+		const existingFollow = await this.followRepository.findByFollowerAndFollowing(
+			userId,
+			targetUserId,
+		);
 		if (existingFollow?.isAccepted()) {
 			throw new ApplicationException(ErrorCode.FOLLOW_0902, { targetUserId });
 		}
@@ -94,11 +83,10 @@ export class SendFriendRequestUseCase {
 		}
 
 		// 5. 상대방이 이미 나에게 요청을 보냈는지 확인
-		const reverseFollow =
-			await this.followRepository.findByFollowerAndFollowing(
-				targetUserId,
-				userId,
-			);
+		const reverseFollow = await this.followRepository.findByFollowerAndFollowing(
+			targetUserId,
+			userId,
+		);
 		if (reverseFollow?.isAccepted()) {
 			throw new ApplicationException(ErrorCode.FOLLOW_0902, { targetUserId });
 		}
@@ -126,21 +114,17 @@ export class SendFriendRequestUseCase {
 		return { follow, autoAccepted: false };
 	}
 
-	async #autoAccept(
-		userId: string,
-		targetUserId: string,
-	): Promise<SendFriendRequestResult> {
+	async #autoAccept(userId: string, targetUserId: string): Promise<SendFriendRequestResult> {
 		const follow = await this.uow.run(async () => {
 			const [maxSortUser, maxSortTarget] = await Promise.all([
 				this.followRepository.getMaxSortOrderForFriends(userId),
 				this.followRepository.getMaxSortOrderForFriends(targetUserId),
 			]);
 
-			await this.followRepository.updateByFollowerAndFollowing(
-				targetUserId,
-				userId,
-				{ status: "ACCEPTED", sortOrder: maxSortTarget + 1 },
-			);
+			await this.followRepository.updateByFollowerAndFollowing(targetUserId, userId, {
+				status: "ACCEPTED",
+				sortOrder: maxSortTarget + 1,
+			});
 
 			return this.followRepository.create({
 				followerId: userId,
@@ -150,9 +134,7 @@ export class SendFriendRequestUseCase {
 			});
 		});
 
-		this.#logger.log(
-			`Friend request auto-accepted: ${userId} <-> ${targetUserId}`,
-		);
+		this.#logger.log(`Friend request auto-accepted: ${userId} <-> ${targetUserId}`);
 
 		const [userName, targetUserName] = await Promise.all([
 			this.followRepository.getUserDisplayName(userId),

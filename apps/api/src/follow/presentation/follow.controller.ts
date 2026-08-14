@@ -27,10 +27,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { SearchUsersUseCase } from "../application/queries/search-users/search-users.use-case";
 import { FollowReader } from "../application/services/follow.reader";
 import { AcceptFriendRequestUseCase } from "../application/use-cases/accept-friend-request/accept-friend-request.use-case";
@@ -87,8 +84,7 @@ export class FollowController {
 	@Post(":userTag")
 	@ApiParam({
 		name: "userTag",
-		description:
-			"친구 요청을 보낼 대상 Aido ID (8자 영문 대문자·숫자, 예: JOHN2026)",
+		description: "친구 요청을 보낼 대상 Aido ID (8자 영문 대문자·숫자, 예: JOHN2026)",
 		example: "JOHN2026",
 		schema: { type: "string", pattern: "^[A-Z0-9]{8}$" },
 	})
@@ -117,9 +113,7 @@ export class FollowController {
 			targetUserTag: params.userTag,
 		});
 
-		const message = result.autoAccepted
-			? "친구가 되었습니다."
-			: "친구 요청을 보냈습니다.";
+		const message = result.autoAccepted ? "친구가 되었습니다." : "친구 요청을 보냈습니다.";
 
 		this.#logger.log(
 			`친구 요청 완료: ${user.userId} -> ${params.userTag}, autoAccepted=${result.autoAccepted}`,
@@ -136,8 +130,7 @@ export class FollowController {
 	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: "userId",
-		description:
-			"수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		description: "수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
 		example: "clz7x5p8k0005qz0z8z8z8z8z",
 	})
 	@ApiDoc({
@@ -161,9 +154,7 @@ export class FollowController {
 			requesterUserId: params.userId,
 		});
 
-		this.#logger.log(
-			`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`,
-		);
+		this.#logger.log(`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`);
 
 		return {
 			message: "친구 요청을 수락했습니다.",
@@ -175,8 +166,7 @@ export class FollowController {
 	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: "userId",
-		description:
-			"거절할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		description: "거절할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
 		example: "clz7x5p8k0005qz0z8z8z8z8z",
 	})
 	@ApiDoc({
@@ -209,8 +199,7 @@ export class FollowController {
 	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: "userId",
-		description:
-			"삭제할 친구의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		description: "삭제할 친구의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
 		example: "clz7x5p8k0005qz0z8z8z8z8z",
 	})
 	@ApiDoc({
@@ -227,18 +216,14 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserIdParamDto,
 	): Promise<RemoveFriendResponseDto> {
-		this.#logger.debug(
-			`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`,
-		);
+		this.#logger.debug(`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`);
 
 		await this.removeFriendUseCase.execute({
 			userId: user.userId,
 			targetUserId: params.userId,
 		});
 
-		this.#logger.log(
-			`친구 삭제/요청 철회 완료: ${user.userId} X ${params.userId}`,
-		);
+		this.#logger.log(`친구 삭제/요청 철회 완료: ${user.userId} X ${params.userId}`);
 
 		return { message: "친구를 삭제했습니다." };
 	}
@@ -247,8 +232,7 @@ export class FollowController {
 	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: "followId",
-		description:
-			"순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
+		description: "순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
 		example: "clz7x5p8k0010qz0z8z8z8z8z",
 	})
 	@ApiDoc({
@@ -268,9 +252,7 @@ export class FollowController {
 		@Param("followId") followId: string,
 		@Body() dto: ReorderFriendDto,
 	): Promise<ReorderFriendResponseDto> {
-		this.#logger.debug(
-			`친구 순서 변경: user=${user.userId}, followId=${followId}`,
-		);
+		this.#logger.debug(`친구 순서 변경: user=${user.userId}, followId=${followId}`);
 
 		const result = await this.reorderFriendUseCase.execute({
 			followId,

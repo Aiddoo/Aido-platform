@@ -17,12 +17,8 @@ export interface AggregateByDateRangeParams {
  * groupBy 등)은 인프라 어댑터가 담당한다.
  */
 export interface TodoCompletionRepositoryPort {
-	aggregateByDateRange(
-		params: AggregateByDateRangeParams,
-	): Promise<TodoAggregateByDate[]>;
+	aggregateByDateRange(params: AggregateByDateRangeParams): Promise<TodoAggregateByDate[]>;
 
 	/** 친구에게 보이는 PUBLIC 투두만 집계한다 (파라미터·반환 형태는 동일). */
-	aggregatePublicByDateRange(
-		params: AggregateByDateRangeParams,
-	): Promise<TodoAggregateByDate[]>;
+	aggregatePublicByDateRange(params: AggregateByDateRangeParams): Promise<TodoAggregateByDate[]>;
 }

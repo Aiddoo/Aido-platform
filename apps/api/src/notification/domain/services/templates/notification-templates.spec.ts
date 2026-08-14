@@ -10,7 +10,9 @@
  * ```
  */
 import { TEST_CUID } from "@test/fixtures";
+
 import type { WeatherForecast } from "@/weather";
+
 import {
 	fillTemplate,
 	NotificationMessageBuilder,
@@ -85,40 +87,24 @@ describe("notification-templates", () => {
 
 		it("{key:이/가} 구문으로 받침에 맞는 조사를 붙인다", () => {
 			// Given — 받침 있음: 홍길동 → 이
-			expect(fillTemplate("{name:이/가} 했다", { name: "홍길동" })).toBe(
-				"홍길동이 했다",
-			);
+			expect(fillTemplate("{name:이/가} 했다", { name: "홍길동" })).toBe("홍길동이 했다");
 			// Given — 받침 없음: 철수 → 가
-			expect(fillTemplate("{name:이/가} 했다", { name: "철수" })).toBe(
-				"철수가 했다",
-			);
+			expect(fillTemplate("{name:이/가} 했다", { name: "철수" })).toBe("철수가 했다");
 		});
 
 		it("{key:을/를} 구문도 정상 동작한다", () => {
-			expect(fillTemplate("{item:을/를} 완료", { item: "밥먹기" })).toBe(
-				"밥먹기를 완료",
-			);
-			expect(fillTemplate("{item:을/를} 완료", { item: "운동" })).toBe(
-				"운동을 완료",
-			);
+			expect(fillTemplate("{item:을/를} 완료", { item: "밥먹기" })).toBe("밥먹기를 완료");
+			expect(fillTemplate("{item:을/를} 완료", { item: "운동" })).toBe("운동을 완료");
 		});
 
 		it("{key:와/과} 구문도 정상 동작한다", () => {
-			expect(fillTemplate("{name:와/과} 연결", { name: "민지" })).toBe(
-				"민지와 연결",
-			);
-			expect(fillTemplate("{name:와/과} 연결", { name: "길동" })).toBe(
-				"길동과 연결",
-			);
+			expect(fillTemplate("{name:와/과} 연결", { name: "민지" })).toBe("민지와 연결");
+			expect(fillTemplate("{name:와/과} 연결", { name: "길동" })).toBe("길동과 연결");
 		});
 
 		it("{key:은/는} 구문도 정상 동작한다", () => {
-			expect(fillTemplate("{name:은/는} 끝냈어", { name: "민지" })).toBe(
-				"민지는 끝냈어",
-			);
-			expect(fillTemplate("{name:은/는} 끝냈어", { name: "길동" })).toBe(
-				"길동은 끝냈어",
-			);
+			expect(fillTemplate("{name:은/는} 끝냈어", { name: "민지" })).toBe("민지는 끝냈어");
+			expect(fillTemplate("{name:은/는} 끝냈어", { name: "길동" })).toBe("길동은 끝냈어");
 		});
 
 		it("조사 구문과 일반 구문을 혼합 사용할 수 있다", () => {
@@ -212,12 +198,8 @@ describe("notification-templates", () => {
 			);
 
 			// Then
-			expect(
-				new Set(results.map((result) => result.variantId)).size,
-			).toBeGreaterThan(1);
-			expect(
-				new Set(results.map((result) => result.title)).size,
-			).toBeGreaterThan(1);
+			expect(new Set(results.map((result) => result.variantId)).size).toBeGreaterThan(1);
+			expect(new Set(results.map((result) => result.title)).size).toBeGreaterThan(1);
 		});
 
 		it("선택 컨텍스트가 없으면 첫 variant를 사용해 기존 호출을 안정적으로 유지한다", () => {
@@ -246,63 +228,25 @@ describe("notification-templates", () => {
 		} as const;
 
 		it("같은 캠페인의 아침 상태별 템플릿은 서로 다른 variantId를 갖는다", () => {
-			const noTodo = NotificationMessageBuilder.morningNoTodo(
-				"ko",
-				variantContext,
-			);
-			const hasTodo = NotificationMessageBuilder.morningReminder(
-				3,
-				"ko",
-				variantContext,
-			);
+			const noTodo = NotificationMessageBuilder.morningNoTodo("ko", variantContext);
+			const hasTodo = NotificationMessageBuilder.morningReminder(3, "ko", variantContext);
 
 			expect(noTodo.variantId).not.toBe(hasTodo.variantId);
 		});
 
 		it("같은 캠페인의 저녁 진행 상태별 템플릿은 서로 다른 variantId를 갖는다", () => {
 			const ids = [
-				NotificationMessageBuilder.eveningReminder(
-					3,
-					3,
-					0,
-					false,
-					"ko",
-					variantContext,
-				).variantId,
-				NotificationMessageBuilder.eveningReminder(
-					1,
-					3,
-					0,
-					false,
-					"ko",
-					variantContext,
-				).variantId,
-				NotificationMessageBuilder.eveningReminder(
-					0,
-					3,
-					0,
-					false,
-					"ko",
-					variantContext,
-				).variantId,
+				NotificationMessageBuilder.eveningReminder(3, 3, 0, false, "ko", variantContext).variantId,
+				NotificationMessageBuilder.eveningReminder(1, 3, 0, false, "ko", variantContext).variantId,
+				NotificationMessageBuilder.eveningReminder(0, 3, 0, false, "ko", variantContext).variantId,
 			];
 
 			expect(new Set(ids)).toHaveProperty("size", 3);
 		});
 
 		it("소셜 다이제스트 단일·복수 친구 템플릿은 서로 다른 variantId를 갖는다", () => {
-			const single = NotificationMessageBuilder.socialDigest(
-				1,
-				"민지",
-				"ko",
-				variantContext,
-			);
-			const multiple = NotificationMessageBuilder.socialDigest(
-				2,
-				undefined,
-				"ko",
-				variantContext,
-			);
+			const single = NotificationMessageBuilder.socialDigest(1, "민지", "ko", variantContext);
+			const multiple = NotificationMessageBuilder.socialDigest(2, undefined, "ko", variantContext);
 
 			expect(single.variantId).not.toBe(multiple.variantId);
 		});
@@ -344,10 +288,7 @@ describe("notification-templates", () => {
 		describe("nudgeReceived", () => {
 			it("title에 이름(조사) + todoTitle이 포함된다 (받침 있음)", () => {
 				// When
-				const result = NotificationMessageBuilder.nudgeReceived(
-					"홍길동",
-					"밥먹기",
-				);
+				const result = NotificationMessageBuilder.nudgeReceived("홍길동", "밥먹기");
 
 				// Then — 첫 번째 variant
 				expect(result.title).toBe("👉 홍길동이 '밥먹기' 콕!");
@@ -355,10 +296,7 @@ describe("notification-templates", () => {
 
 			it("title에 이름(조사) + todoTitle이 포함된다 (받침 없음)", () => {
 				// When
-				const result = NotificationMessageBuilder.nudgeReceived(
-					"철수",
-					"운동하기",
-				);
+				const result = NotificationMessageBuilder.nudgeReceived("철수", "운동하기");
 
 				// Then
 				expect(result.title).toBe("👉 철수가 '운동하기' 콕!");
@@ -366,10 +304,7 @@ describe("notification-templates", () => {
 
 			it("message가 없으면 body는 variants 풀 내의 값을 반환한다", () => {
 				// When
-				const result = NotificationMessageBuilder.nudgeReceived(
-					"홍길동",
-					"밥먹기",
-				);
+				const result = NotificationMessageBuilder.nudgeReceived("홍길동", "밥먹기");
 
 				// Then — 첫 번째 variant body
 				expect(result.body).toBe("가볍게 시작하라는 응원이야 🙌");
@@ -377,11 +312,7 @@ describe("notification-templates", () => {
 
 			it("message가 있으면 body에 메시지만 표시한다", () => {
 				// When
-				const result = NotificationMessageBuilder.nudgeReceived(
-					"홍길동",
-					"밥먹기",
-					"같이 먹자",
-				);
+				const result = NotificationMessageBuilder.nudgeReceived("홍길동", "밥먹기", "같이 먹자");
 
 				// Then — WITH_MESSAGE 템플릿은 variants 없음, 고정 포맷
 				expect(result.body).toBe("💬 '같이 먹자'");
@@ -457,12 +388,7 @@ describe("notification-templates", () => {
 
 			it("스트릭 위기 + 일부 완료 시 streak과 remaining이 포함된다", () => {
 				// When
-				const result = NotificationMessageBuilder.eveningReminder(
-					2,
-					5,
-					4,
-					true,
-				);
+				const result = NotificationMessageBuilder.eveningReminder(2, 5, 4, true);
 
 				// Then
 				expect(result.title).toContain("4");
@@ -470,12 +396,7 @@ describe("notification-templates", () => {
 
 			it("스트릭 위기 + 미완료 시 streak이 포함된다", () => {
 				// When
-				const result = NotificationMessageBuilder.eveningReminder(
-					0,
-					5,
-					4,
-					true,
-				);
+				const result = NotificationMessageBuilder.eveningReminder(0, 5, 4, true);
 
 				// Then
 				expect(result.title).toContain("4");
@@ -589,12 +510,8 @@ describe("notification-templates", () => {
 		describe("milestone", () => {
 			it("FIRST_COMPLETE 마일스톤 메시지를 반환한다", () => {
 				const result = NotificationMessageBuilder.milestone("FIRST_COMPLETE");
-				expect(result.title).toBe(
-					SYSTEM_TEMPLATES.MILESTONE_FIRST_COMPLETE.title,
-				);
-				expect(result.body).toBe(
-					SYSTEM_TEMPLATES.MILESTONE_FIRST_COMPLETE.body,
-				);
+				expect(result.title).toBe(SYSTEM_TEMPLATES.MILESTONE_FIRST_COMPLETE.title);
+				expect(result.body).toBe(SYSTEM_TEMPLATES.MILESTONE_FIRST_COMPLETE.body);
 			});
 
 			it("COUNT_100 마일스톤 메시지를 반환한다", () => {
@@ -604,9 +521,7 @@ describe("notification-templates", () => {
 
 			it("FIRST_FRIEND 마일스톤 메시지를 반환한다", () => {
 				const result = NotificationMessageBuilder.milestone("FIRST_FRIEND");
-				expect(result.title).toBe(
-					SYSTEM_TEMPLATES.MILESTONE_FIRST_FRIEND.title,
-				);
+				expect(result.title).toBe(SYSTEM_TEMPLATES.MILESTONE_FIRST_FRIEND.title);
 			});
 		});
 
@@ -639,9 +554,7 @@ describe("notification-templates", () => {
 		});
 
 		describe("weatherMorning / weatherEvening — 템플릿 선택", () => {
-			const makeForecast = (
-				overrides: Partial<WeatherForecast>,
-			): WeatherForecast => ({
+			const makeForecast = (overrides: Partial<WeatherForecast>): WeatherForecast => ({
 				date: new Date("2026-07-05T00:00:00Z"),
 				skyCondition: "CLEAR",
 				precipitationType: "NONE",
@@ -656,9 +569,8 @@ describe("notification-templates", () => {
 			});
 
 			// Math.random=0 → 항상 첫 번째 variant
-			const firstTitle = (
-				template: (typeof WEATHER_TEMPLATES)[keyof typeof WEATHER_TEMPLATES],
-			) => template.variants[0]?.title ?? template.title;
+			const firstTitle = (template: (typeof WEATHER_TEMPLATES)[keyof typeof WEATHER_TEMPLATES]) =>
+				template.variants[0]?.title ?? template.title;
 
 			it("비 예보면 강수확률 40% 미만이어도 비 템플릿을 선택한다", () => {
 				const result = NotificationMessageBuilder.weatherMorning(
@@ -766,11 +678,7 @@ describe("NotificationMessageBuilder locale 분기", () => {
 
 	it("en에서 이름이 단순 치환되고 잔여 플레이스홀더가 없다", () => {
 		// Given / When
-		const message = NotificationMessageBuilder.remindNudgeReceived(
-			"John",
-			undefined,
-			"en",
-		);
+		const message = NotificationMessageBuilder.remindNudgeReceived("John", undefined, "en");
 
 		// Then
 		expect(`${message.title} ${message.body}`).toContain("John");

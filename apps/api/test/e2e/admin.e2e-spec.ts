@@ -13,7 +13,9 @@
  */
 
 import request from "supertest";
+
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("관리자 E2E", () => {
@@ -48,10 +50,7 @@ describe("관리자 E2E", () => {
 		describe("POST /admin/notifications/broadcast — 브로드캐스트 알림", () => {
 			it("관리자가 브로드캐스트 알림을 발송한다", async () => {
 				// Given - 관리자 계정 생성
-				const adminUser = await createAdminUser(
-					"admin-e2e@example.com",
-					"Test1234!",
-				);
+				const adminUser = await createAdminUser("admin-e2e@example.com", "Test1234!");
 
 				// When - 브로드캐스트 알림 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -113,10 +112,7 @@ describe("관리자 E2E", () => {
 		describe("POST /admin/notifications/targeted — 타겟 알림", () => {
 			it("관리자가 타겟 알림을 발송한다", async () => {
 				// Given - 관리자 계정과 대상 사용자 생성
-				const adminUser = await createAdminUser(
-					"admin-target@example.com",
-					"Test1234!",
-				);
+				const adminUser = await createAdminUser("admin-target@example.com", "Test1234!");
 				const regularUser = await ctx.helpers.createVerifiedUser(
 					"target-user@example.com",
 					"Test1234!",

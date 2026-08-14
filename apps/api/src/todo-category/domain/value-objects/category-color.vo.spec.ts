@@ -1,4 +1,5 @@
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { CategoryColor } from "./category-color.vo";
 
 describe("CategoryColor", () => {

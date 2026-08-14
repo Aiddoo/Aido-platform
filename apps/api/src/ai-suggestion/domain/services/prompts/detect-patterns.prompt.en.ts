@@ -3,6 +3,7 @@ import {
 	PROMPT_SECURITY_GUARD_EN,
 } from "@/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+
 import type { SuggestionContext } from "../../types";
 import type { SuggestionPrompt } from "./detect-patterns.prompt";
 
@@ -32,8 +33,7 @@ export function buildSuggestionPromptEn(
 	context: SuggestionContext,
 	minOccurrences: number,
 ): SuggestionPrompt {
-	const isStarter =
-		context.todos.length > 0 && context.todos.length < minOccurrences;
+	const isStarter = context.todos.length > 0 && context.todos.length < minOccurrences;
 	const mode = isStarter ? "STARTER" : "PATTERN";
 	const system = `<role>
 You are a coach who analyzes the user's to-do data and suggests actionable routines.

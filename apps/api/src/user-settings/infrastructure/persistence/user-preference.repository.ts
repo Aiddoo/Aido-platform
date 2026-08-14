@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { UserPreference } from "@/generated/prisma/client";
 import type { TimeFormat } from "@/generated/prisma/enums";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -27,9 +28,7 @@ export interface UpdatePreferenceData {
 @Injectable()
 export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -43,10 +42,7 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 		});
 	}
 
-	async create(
-		userId: string,
-		data?: Partial<UpdatePreferenceData>,
-	): Promise<UserPreference> {
+	async create(userId: string, data?: Partial<UpdatePreferenceData>): Promise<UserPreference> {
 		return this.client.userPreference.create({
 			data: {
 				userId,
@@ -72,10 +68,7 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 		});
 	}
 
-	async upsert(
-		userId: string,
-		data: UpdatePreferenceData,
-	): Promise<UserPreference> {
+	async upsert(userId: string, data: UpdatePreferenceData): Promise<UserPreference> {
 		return this.client.userPreference.upsert({
 			where: { userId },
 			create: {
@@ -103,10 +96,7 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 		});
 	}
 
-	async update(
-		userId: string,
-		data: UpdatePreferenceData,
-	): Promise<UserPreference> {
+	async update(userId: string, data: UpdatePreferenceData): Promise<UserPreference> {
 		return this.client.userPreference.update({
 			where: { userId },
 			data: this.buildUpdatePayload(data),
@@ -206,10 +196,7 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	 * updateMany는 매칭 0행이면 no-op — 값이 같거나 설정 행이 없으면 쓰기가 발생하지 않는다.
 	 * 갱신된 행 수를 반환해 호출자가 캐시 무효화 여부를 결정한다.
 	 */
-	async refreshTimezoneIfChanged(
-		userId: string,
-		timezone: string,
-	): Promise<number> {
+	async refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number> {
 		const result = await this.client.userPreference.updateMany({
 			where: { userId, timezone: { not: timezone } },
 			data: { timezone },

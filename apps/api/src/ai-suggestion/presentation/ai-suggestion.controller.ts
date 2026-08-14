@@ -1,16 +1,8 @@
 import { ErrorCode } from "@aido/errors";
-import {
-	Body,
-	Controller,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Param,
-	Patch,
-} from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Timezone } from "@/shared/presentation/decorators";
 
+import { Timezone } from "@/shared/presentation/decorators";
 import {
 	ApiDoc,
 	ApiForbiddenError,
@@ -20,10 +12,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case";
 import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
 import { AiSuggestionMapper } from "./ai-suggestion.mapper";
@@ -230,9 +219,7 @@ export class AiSuggestionController {
 	async getPendingSuggestions(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<SuggestionListResponseDto> {
-		const suggestions = await this.getPendingSuggestionsUseCase.execute(
-			user.userId,
-		);
+		const suggestions = await this.getPendingSuggestionsUseCase.execute(user.userId);
 
 		return { suggestions: AiSuggestionMapper.toManyResponse(suggestions) };
 	}

@@ -48,12 +48,12 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 
 ## 2. 설정 지점
 
-| 위치 | 내용 |
-|------|------|
-| `app.config.ts` | `expo-widgets` + `react-native-android-widget` 플러그인, App Group(`group.<bundleId>` — 환경별 자동 분리), 메인 앱 entitlements |
-| `index.ts` | Android task handler 등록 (`Platform.OS === 'android'` 가드) |
-| `di-provider.tsx` | repository → bridge → `WidgetSyncService` 조립, `useWidgetSyncService` 훅 |
-| `auth-provider.tsx` | `useWidgetSnapshotSync(authState)` 마운트 (유일한 통합 지점) |
+| 위치                | 내용                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `app.config.ts`     | `expo-widgets` + `react-native-android-widget` 플러그인, App Group(`group.<bundleId>` — 환경별 자동 분리), 메인 앱 entitlements |
+| `index.ts`          | Android task handler 등록 (`Platform.OS === 'android'` 가드)                                                                    |
+| `di-provider.tsx`   | repository → bridge → `WidgetSyncService` 조립, `useWidgetSyncService` 훅                                                       |
+| `auth-provider.tsx` | `useWidgetSnapshotSync(authState)` 마운트 (유일한 통합 지점)                                                                    |
 
 ## 3. 새 위젯 추가 방법
 
@@ -61,7 +61,7 @@ GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyn
 2. iOS: `presentations/ios/`에 `'widget'` 디렉티브 레이아웃 작성 + `createWidget(name, layout)` export
    — **함수는 자기완결이어야 함**(모듈 스코프 값 참조 금지, 팔레트 인라인)
    — **검증된 프리미티브만 사용**: Text/HStack/VStack/Spacer/선형 Gauge(linearCapacity).
-     Gauge 링 중앙 라벨(currentValueLabel)·strikethrough는 위젯 런타임에서 렌더되지 않음(시뮬레이터 확인)
+   Gauge 링 중앙 라벨(currentValueLabel)·strikethrough는 위젯 런타임에서 렌더되지 않음(시뮬레이터 확인)
 3. Android: `presentations/android/`에 FlexWidget 트리 + `android-widget-layout.ts`의
    `ANDROID_WIDGET_NAMES`/family 정책에 이름 추가
 4. 브리지: iOS `expo-widgets.bridge.ts`에 `updateTimeline` 대상 추가 (Android는 이름 배열로 자동)

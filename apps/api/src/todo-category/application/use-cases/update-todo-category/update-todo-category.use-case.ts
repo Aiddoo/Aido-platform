@@ -5,13 +5,13 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 
 import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
+import {
+	TODO_CATEGORY_REPOSITORY,
+	type TodoCategoryRepositoryPort,
+} from "../../ports/todo-category.repository.port";
 
 export interface UpdateTodoCategoryInput {
 	name?: string;
@@ -33,11 +33,7 @@ export class UpdateTodoCategoryUseCase {
 		private readonly cache: TodoCategoryCachePort,
 	) {}
 
-	async execute(
-		id: number,
-		userId: string,
-		data: UpdateTodoCategoryInput,
-	): Promise<TodoCategory> {
+	async execute(id: number, userId: string, data: UpdateTodoCategoryInput): Promise<TodoCategory> {
 		const category = await this.repository.findByIdAndUserId(id, userId);
 		if (!category) {
 			throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
@@ -46,11 +42,7 @@ export class UpdateTodoCategoryUseCase {
 		}
 
 		if (data.name && data.name !== category.name) {
-			const duplicate = await this.repository.existsByUserIdAndName(
-				userId,
-				data.name,
-				id,
-			);
+			const duplicate = await this.repository.existsByUserIdAndName(userId, data.name, id);
 			if (duplicate) {
 				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
 					name: data.name,

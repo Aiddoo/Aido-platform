@@ -1,16 +1,13 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
+
 import type { RetentionJobEnqueuerPort } from "../../application/ports/retention-job-enqueuer.port";
 import { RETENTION_QUEUE, RetentionJobName } from "./retention-queue.constants";
 
 @Injectable()
-export class RetentionQueueService
-	implements RetentionJobEnqueuerPort, OnModuleInit
-{
+export class RetentionQueueService implements RetentionJobEnqueuerPort, OnModuleInit {
 	readonly #logger = new Logger(RetentionQueueService.name);
 	schedulerRegistration: Promise<void> = Promise.resolve();
 

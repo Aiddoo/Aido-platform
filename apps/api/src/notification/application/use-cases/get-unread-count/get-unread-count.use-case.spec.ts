@@ -4,14 +4,15 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createNotificationCacheMock } from "@test/mocks/ports";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 import { GetUnreadCountUseCase } from "./get-unread-count.use-case";
 
 describe("GetUnreadCountUseCase", () => {
@@ -38,10 +39,7 @@ describe("GetUnreadCountUseCase", () => {
 
 		const result = await useCase.execute(mockUserId);
 
-		expect(cache.wrapUnreadCount).toHaveBeenCalledWith(
-			mockUserId,
-			expect.any(Function),
-		);
+		expect(cache.wrapUnreadCount).toHaveBeenCalledWith(mockUserId, expect.any(Function));
 		expect(result).toBe(5);
 	});
 });

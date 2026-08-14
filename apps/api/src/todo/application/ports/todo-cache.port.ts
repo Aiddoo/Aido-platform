@@ -1,4 +1,5 @@
 import type { Todo as TodoResponse } from "@aido/validators";
+
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 
 export const TODO_CACHE = Symbol("TODO_CACHE");

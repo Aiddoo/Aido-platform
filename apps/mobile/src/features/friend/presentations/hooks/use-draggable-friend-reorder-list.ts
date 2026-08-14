@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DragEndParams } from 'react-native-draggable-flatlist';
+
 import {
   type FriendReorderInstruction,
   getFriendReorderInstruction,

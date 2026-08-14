@@ -1,15 +1,14 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { toIsoMonthId, toIsoWeekId } from "@/shared/domain/date/utils/format";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { forEachBatch } from "@/shared/infrastructure/database/utils/batch-cursor.util";
+
 import { ReportGenerationProcessor } from "../processors/report-generation.processor";
 import {
 	AI_REPORT_QUEUE,
@@ -37,9 +36,7 @@ export class ReportGenerationJob implements OnModuleInit {
 	readonly #logger = new Logger(ReportGenerationJob.name);
 
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 		@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
 		private readonly processor: ReportGenerationProcessor,
 	) {}
@@ -185,9 +182,7 @@ export class ReportGenerationJob implements OnModuleInit {
 	 */
 	#getJobDeduplicationId(type: "WEEKLY" | "MONTHLY"): string {
 		const now = new Date();
-		return type === "WEEKLY"
-			? toIsoWeekId(now, CRON_TZ)
-			: toIsoMonthId(now, CRON_TZ);
+		return type === "WEEKLY" ? toIsoWeekId(now, CRON_TZ) : toIsoMonthId(now, CRON_TZ);
 	}
 
 	#jobOptions() {

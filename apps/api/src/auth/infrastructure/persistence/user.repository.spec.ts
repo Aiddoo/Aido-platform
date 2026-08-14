@@ -16,6 +16,7 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import { AuthPersistenceConflict } from "@/auth/application/ports";
 import type {
 	AccountProvider,
@@ -25,6 +26,7 @@ import type {
 } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { UserRepository } from "./user.repository";
 
 /**
@@ -90,9 +92,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 		db = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(UserRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 
@@ -145,8 +145,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 			asMock(db.user.findUnique).mockResolvedValue(userWithAccount);
 
 			// When - 이메일로 사용자와 Credential 계정 조회
-			const result =
-				await repository.findByEmailWithCredential("test@example.com");
+			const result = await repository.findByEmailWithCredential("test@example.com");
 
 			// Then - 사용자와 계정 정보가 함께 반환되고 올바른 select 쿼리가 실행됨
 			expect(result).toEqual(userWithAccount);
@@ -396,10 +395,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 	describe("updateStatus", () => {
 		it("사용자 상태를 업데이트한다", async () => {
 			// Given - 상태가 업데이트된 사용자 데이터 모킹
-			const updatedUser = UserBuilder.create()
-				.withId("user-123")
-				.suspended()
-				.build();
+			const updatedUser = UserBuilder.create().withId("user-123").suspended().build();
 			db.user.update.mockResolvedValue(updatedUser);
 
 			// When - 사용자 상태를 SUSPENDED로 업데이트
@@ -415,10 +411,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 
 		it("활성 트랜잭션 클라이언트로 상태를 업데이트한다", async () => {
 			// Given - 업데이트 결과 모킹
-			const activeUser = UserBuilder.create()
-				.withId("user-123")
-				.verified()
-				.build();
+			const activeUser = UserBuilder.create().withId("user-123").verified().build();
 			db.user.update.mockResolvedValue(activeUser);
 
 			// When - 활성 트랜잭션 클라이언트로 상태 업데이트
@@ -435,10 +428,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 	describe("markEmailVerified", () => {
 		it("이메일 인증을 완료 처리한다", async () => {
 			// Given - 이메일 인증 완료된 사용자 데이터 모킹
-			const verifiedUser = UserBuilder.create()
-				.withId("user-123")
-				.verified()
-				.build();
+			const verifiedUser = UserBuilder.create().withId("user-123").verified().build();
 			db.user.update.mockResolvedValue(verifiedUser);
 
 			// When - 이메일 인증 완료 처리
@@ -458,10 +448,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 
 		it("활성 트랜잭션 클라이언트로 인증 완료 처리한다", async () => {
 			// Given - 인증 완료 결과 모킹
-			const verifiedUser = UserBuilder.create()
-				.withId("user-123")
-				.verified()
-				.build();
+			const verifiedUser = UserBuilder.create().withId("user-123").verified().build();
 			db.user.update.mockResolvedValue(verifiedUser);
 
 			// When - 활성 트랜잭션 클라이언트로 이메일 인증 완료 처리
@@ -548,10 +535,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 	describe("restore", () => {
 		it("사용자의 deletedAt을 null로, status를 ACTIVE로 업데이트한다", async () => {
 			// Given - 탈퇴된 사용자
-			const deletedUser = UserBuilder.create()
-				.withId("user-123")
-				.deleted()
-				.build();
+			const deletedUser = UserBuilder.create().withId("user-123").deleted().build();
 			db.user.update.mockResolvedValue({
 				...deletedUser,
 				deletedAt: null,

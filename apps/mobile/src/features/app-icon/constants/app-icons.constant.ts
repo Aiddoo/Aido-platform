@@ -5,6 +5,7 @@ import scottishFoldAppIcon from '@assets/premium-app-icons/scottish-fold.png';
 import siameseAppIcon from '@assets/premium-app-icons/siamese.png';
 import whiteCatAppIcon from '@assets/premium-app-icons/white-cat.png';
 import { tDynamic } from '@src/shared/i18n';
+
 import type { AppIconItem } from '../types/app-icon.types';
 
 export const APP_ICONS: AppIconItem[] = [

@@ -18,6 +18,13 @@ import {
 } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
+import {
+	ENTITLEMENT_CACHE,
+	ENTITLEMENT_DATABASE,
+	type EntitlementCachePort,
+	type EntitlementDatabasePort,
+} from "./entitlement-state.port";
 import {
 	EntitlementService,
 	Feature,
@@ -25,12 +32,6 @@ import {
 	Resource,
 	type ResourceEntitlement,
 } from "./entitlement.service";
-import {
-	ENTITLEMENT_CACHE,
-	ENTITLEMENT_DATABASE,
-	type EntitlementCachePort,
-	type EntitlementDatabasePort,
-} from "./entitlement-state.port";
 
 describe("EntitlementService — 권한 관리 서비스", () => {
 	let service: EntitlementService;
@@ -40,8 +41,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 	const userId = "user-test-123";
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(EntitlementService).compile();
+		const { unit, unitRef } = await TestBed.solitary(EntitlementService).compile();
 
 		service = unit;
 		cacheService = unitRef.get(ENTITLEMENT_CACHE);
@@ -78,54 +78,36 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				["CHEER", Feature.CHEER],
 				["NUDGE", Feature.NUDGE],
 				["AI_PARSE", Feature.AI_PARSE],
-			] as const)(
-				"ACTIVE 구독 + %s 기능은 무제한이다",
-				async (_name, feature) => {
-					// Given - 캐시에 ACTIVE 구독 사용자 정보 존재
-					(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
-						status: "ACTIVE",
-						isAdmin: false,
-					});
+			] as const)("ACTIVE 구독 + %s 기능은 무제한이다", async (_name, feature) => {
+				// Given - 캐시에 ACTIVE 구독 사용자 정보 존재
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+					status: "ACTIVE",
+					isAdmin: false,
+				});
 
-					// When
-					const result = await service.getFeatureLimit(userId, feature);
+				// When
+				const result = await service.getFeatureLimit(userId, feature);
 
-					// Then - ACTIVE 구독은 무제한
-					expect(result).toEqual<FeatureEntitlement>({
-						dailyLimit: null,
-						isAdmin: false,
-						subscriptionStatus: "ACTIVE",
-					});
-				},
-			);
+				// Then - ACTIVE 구독은 무제한
+				expect(result).toEqual<FeatureEntitlement>({
+					dailyLimit: null,
+					isAdmin: false,
+					subscriptionStatus: "ACTIVE",
+				});
+			});
 		});
 
 		describe("USER 역할 + 비프리미엄 구독 (제한 적용)", () => {
 			it.each([
 				["FREE", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
 				["FREE", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
-				[
-					"FREE",
-					"AI_PARSE",
-					Feature.AI_PARSE,
-					AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-				],
+				["FREE", "AI_PARSE", Feature.AI_PARSE, AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT],
 				["EXPIRED", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
 				["EXPIRED", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
-				[
-					"EXPIRED",
-					"AI_PARSE",
-					Feature.AI_PARSE,
-					AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-				],
+				["EXPIRED", "AI_PARSE", Feature.AI_PARSE, AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT],
 				["CANCELLED", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
 				["CANCELLED", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
-				[
-					"CANCELLED",
-					"AI_PARSE",
-					Feature.AI_PARSE,
-					AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-				],
+				["CANCELLED", "AI_PARSE", Feature.AI_PARSE, AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT],
 			] as const)(
 				"%s 구독 + %s 기능은 일일 %d회 제한이다",
 				async (status, _featureName, feature, expectedLimit) => {
@@ -183,10 +165,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				});
 
 				// Then - wrapSubscription 호출 확인 (내부적으로 캐싱 처리)
-				expect(cacheService.wrapSubscription).toHaveBeenCalledWith(
-					userId,
-					expect.any(Function),
-				);
+				expect(cacheService.wrapSubscription).toHaveBeenCalledWith(userId, expect.any(Function));
 
 				// Then - 올바른 결과 반환
 				expect(result).toEqual<FeatureEntitlement>({
@@ -260,11 +239,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			});
 
 			// When - 트랜잭션 내 NUDGE 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(
-				txMock as never,
-				userId,
-				Feature.NUDGE,
-			);
+			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.NUDGE);
 
 			// Then - ADMIN은 무제한
 			expect(result).toEqual<FeatureEntitlement>({
@@ -282,11 +257,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			});
 
 			// When - 트랜잭션 내 AI_PARSE 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(
-				txMock as never,
-				userId,
-				Feature.AI_PARSE,
-			);
+			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.AI_PARSE);
 
 			// Then - ADMIN은 무제한
 			expect(result).toEqual<FeatureEntitlement>({
@@ -304,11 +275,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			});
 
 			// When - 트랜잭션 내 CHEER 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(
-				txMock as never,
-				userId,
-				Feature.CHEER,
-			);
+			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.CHEER);
 
 			// Then - FREE는 일일 제한 적용
 			expect(result).toEqual<FeatureEntitlement>({
@@ -332,11 +299,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			});
 
 			// When - 트랜잭션 내 AI_PARSE 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(
-				txMock as never,
-				userId,
-				Feature.AI_PARSE,
-			);
+			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.AI_PARSE);
 
 			// Then - FREE는 일일 제한 적용
 			expect(result).toEqual<FeatureEntitlement>({
@@ -357,11 +320,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			txMock.user.findUnique.mockResolvedValue(null);
 
 			// When - 트랜잭션 내 CHEER 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(
-				txMock as never,
-				userId,
-				Feature.CHEER,
-			);
+			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.CHEER);
 
 			// Then - 기본값(USER/FREE) 적용으로 일일 제한
 			expect(result).toEqual<FeatureEntitlement>({
@@ -437,10 +396,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				});
 
 				// When
-				const result = await service.getResourceLimit(
-					userId,
-					Resource.CATEGORY,
-				);
+				const result = await service.getResourceLimit(userId, Resource.CATEGORY);
 
 				// Then
 				expect(result).toEqual<ResourceEntitlement>({
@@ -453,19 +409,9 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		describe("비프리미엄 구독 (제한 적용)", () => {
 			it.each([
-				[
-					"FREE",
-					"CATEGORY",
-					Resource.CATEGORY,
-					TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
-				],
+				["FREE", "CATEGORY", Resource.CATEGORY, TODO_CATEGORY_LIMITS.FREE_MAX_COUNT],
 				["FREE", "FRIEND", Resource.FRIEND, FOLLOW_LIMITS.FREE_MAX_FRIENDS],
-				[
-					"CANCELLED",
-					"FRIEND",
-					Resource.FRIEND,
-					FOLLOW_LIMITS.FREE_MAX_FRIENDS,
-				],
+				["CANCELLED", "FRIEND", Resource.FRIEND, FOLLOW_LIMITS.FREE_MAX_FRIENDS],
 			] as const)(
 				"%s 구독 + %s 리소스는 최대 %d개 제한이다",
 				async (status, _name, resource, expectedLimit) => {
@@ -509,11 +455,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			);
 
 			// When
-			const result = await service.getResourceLimitInTx(
-				tx as never,
-				userId,
-				Resource.CATEGORY,
-			);
+			const result = await service.getResourceLimitInTx(tx as never, userId, Resource.CATEGORY);
 
 			// Then - tx 결과로 FREE category limit을 계산
 			expect(result).toEqual<ResourceEntitlement>({

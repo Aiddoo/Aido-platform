@@ -1,11 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
+
 import { ErrorCode } from "@aido/errors";
-import {
-	CanActivate,
-	ExecutionContext,
-	Injectable,
-	Logger,
-} from "@nestjs/common";
+import { CanActivate, ExecutionContext, Injectable, Logger } from "@nestjs/common";
 import type { Request } from "express";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -33,9 +29,7 @@ export class WebhookSignatureGuard implements CanActivate {
 		// webhook secret이 미설정이면 환경에 따라 분기
 		if (!webhookSecret) {
 			if (this.config.isProduction) {
-				this.#logger.error(
-					"REVENUECAT_WEBHOOK_SECRET not configured in production",
-				);
+				this.#logger.error("REVENUECAT_WEBHOOK_SECRET not configured in production");
 				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
 			}
 			this.#logger.warn(
@@ -57,8 +51,7 @@ export class WebhookSignatureGuard implements CanActivate {
 		const isValid = candidates.some((candidate) => {
 			const candidateBuffer = Buffer.from(candidate);
 			return (
-				authBuffer.length === candidateBuffer.length &&
-				timingSafeEqual(authBuffer, candidateBuffer)
+				authBuffer.length === candidateBuffer.length && timingSafeEqual(authBuffer, candidateBuffer)
 			);
 		});
 

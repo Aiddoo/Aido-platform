@@ -1,21 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { NotificationMessageBuilder } from "@/notification";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+
 import { RETENTION_CAMPAIGN_KEY } from "../../../domain/retention.constants";
 import { retentionPushSkipReason } from "../../../domain/services/push-eligibility";
-import {
-	decideRetentionStage,
-	localDateString,
-} from "../../../domain/services/stage-policy";
+import { decideRetentionStage, localDateString } from "../../../domain/services/stage-policy";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
 	type RetentionStageCandidate,
 } from "../../ports/retention.repository.port";
-import {
-	RETENTION_CONFIG,
-	type RetentionConfigPort,
-} from "../../ports/retention-config.port";
 
 @Injectable()
 export class ProcessRetentionStagesUseCase {
@@ -44,26 +40,20 @@ export class ProcessRetentionStagesUseCase {
 		}
 	}
 
-	async #processCandidate(
-		candidate: RetentionStageCandidate,
-		now: Date,
-	): Promise<void> {
+	async #processCandidate(candidate: RetentionStageCandidate, now: Date): Promise<void> {
 		const returnedWithinWindow = Boolean(
 			candidate.lastActiveAt &&
-				localDateString(candidate.lastActiveAt, candidate.timezone) >
-					localDateString(candidate.startedAt, candidate.timezone),
+			localDateString(candidate.lastActiveAt, candidate.timezone) >
+				localDateString(candidate.startedAt, candidate.timezone),
 		);
 		const activeToday = Boolean(
 			candidate.lastActiveAt &&
-				localDateString(candidate.lastActiveAt, candidate.timezone) ===
-					localDateString(now, candidate.timezone),
+			localDateString(candidate.lastActiveAt, candidate.timezone) ===
+				localDateString(now, candidate.timezone),
 		);
 
 		if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
-			await this.repository.markStageSkipped(
-				candidate.stageId,
-				"CONTROL_GROUP",
-			);
+			await this.repository.markStageSkipped(candidate.stageId, "CONTROL_GROUP");
 			return;
 		}
 
@@ -90,17 +80,11 @@ export class ProcessRetentionStagesUseCase {
 			}
 
 			if (candidate.variant === "CONTROL") {
-				await this.repository.markStageSkipped(
-					candidate.stageId,
-					"CONTROL_MEASUREMENT_COMPLETE",
-				);
+				await this.repository.markStageSkipped(candidate.stageId, "CONTROL_MEASUREMENT_COMPLETE");
 				return;
 			}
 			if (decision.kind === "SKIP" || decision.kind === "EVALUATE_ONLY") {
-				await this.repository.markStageSkipped(
-					candidate.stageId,
-					decision.reason,
-				);
+				await this.repository.markStageSkipped(candidate.stageId, decision.reason);
 				return;
 			}
 

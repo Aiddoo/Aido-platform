@@ -32,9 +32,7 @@ describe("DailyCompletionController — 일일 달성 컨트롤러", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			DailyCompletionController,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(DailyCompletionController).compile();
 
 		controller = unit;
 		getDailyCompletionsUseCase = unitRef.get(GetDailyCompletionsUseCase);

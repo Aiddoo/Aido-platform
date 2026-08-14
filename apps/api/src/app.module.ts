@@ -1,16 +1,13 @@
+import { ClsPluginTransactional } from "@nestjs-cls/transactional";
+import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
-import {
-	ThrottlerGuard,
-	ThrottlerModule,
-	type ThrottlerStorage,
-} from "@nestjs/throttler";
-import { ClsPluginTransactional } from "@nestjs-cls/transactional";
-import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from "@nestjs/throttler";
 import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
+
 import { AdminModule } from "@/admin";
 import { AdminNotificationModule } from "@/admin-notification";
 import { AiModule } from "@/ai";
@@ -31,10 +28,7 @@ import { PaginationModule } from "@/shared/application/pagination";
 import { CacheModule } from "@/shared/infrastructure/cache";
 import type { EnvConfig } from "@/shared/infrastructure/config";
 import { AppConfigModule } from "@/shared/infrastructure/config";
-import {
-	DatabaseModule,
-	DatabaseService,
-} from "@/shared/infrastructure/database";
+import { DatabaseModule, DatabaseService } from "@/shared/infrastructure/database";
 import { DedupModule } from "@/shared/infrastructure/dedup";
 import { EncryptionModule } from "@/shared/infrastructure/encryption";
 import { EntitlementModule } from "@/shared/infrastructure/entitlement/entitlement.module";
@@ -44,19 +38,14 @@ import { LockModule } from "@/shared/infrastructure/lock";
 import { LoggerModule } from "@/shared/infrastructure/logging";
 import { RedisModule } from "@/shared/infrastructure/redis";
 import { SharedKernelModule } from "@/shared/infrastructure/shared-kernel.module";
-import {
-	THROTTLER_STORAGE,
-	ThrottleModule,
-} from "@/shared/infrastructure/throttle";
+import { THROTTLER_STORAGE, ThrottleModule } from "@/shared/infrastructure/throttle";
 import { SubscriptionModule } from "@/subscription";
 import { TodoModule } from "@/todo";
 import { TodoCategoryModule } from "@/todo-category";
-import {
-	TimezoneSelfHealInterceptor,
-	UserSettingsModule,
-} from "@/user-settings";
+import { TimezoneSelfHealInterceptor, UserSettingsModule } from "@/user-settings";
 import { WeatherModule } from "@/weather/weather.module";
 import { WeeklyAchievementModule } from "@/weekly-achievement";
+
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
@@ -103,10 +92,7 @@ import { AppService } from "./app.service";
 		ThrottlerModule.forRootAsync({
 			imports: [ThrottleModule.forRoot()],
 			inject: [ConfigService, { token: THROTTLER_STORAGE, optional: true }],
-			useFactory: (
-				config: ConfigService<EnvConfig, true>,
-				storage?: ThrottlerStorage,
-			) => ({
+			useFactory: (config: ConfigService<EnvConfig, true>, storage?: ThrottlerStorage) => ({
 				throttlers: [
 					{
 						ttl: config.get("THROTTLE_TTL", { infer: true }),

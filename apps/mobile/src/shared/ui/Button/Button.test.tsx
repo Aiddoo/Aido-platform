@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
+
 import { Button } from './Button';
 import { buttonVariants } from './Button.variants';
 

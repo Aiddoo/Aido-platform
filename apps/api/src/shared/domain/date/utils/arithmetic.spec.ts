@@ -35,9 +35,7 @@ describe("arithmetic", () => {
 
 	describe("addMinutes", () => {
 		it("지정 분을 더한 시각 반환", () => {
-			expect(addMinutes(30, base)).toEqual(
-				new Date("2026-03-03T12:30:00.000Z"),
-			);
+			expect(addMinutes(30, base)).toEqual(new Date("2026-03-03T12:30:00.000Z"));
 		});
 
 		it("from 미지정 시 현재 시각 기준", () => {
@@ -86,17 +84,13 @@ describe("arithmetic", () => {
 
 	describe("addMilliseconds", () => {
 		it("지정 밀리초를 더한 시각 반환", () => {
-			expect(addMilliseconds(1500, base)).toEqual(
-				new Date("2026-03-03T12:00:01.500Z"),
-			);
+			expect(addMilliseconds(1500, base)).toEqual(new Date("2026-03-03T12:00:01.500Z"));
 		});
 	});
 
 	describe("subtractSeconds", () => {
 		it("지정 초를 뺀 시각 반환", () => {
-			expect(subtractSeconds(30, base)).toEqual(
-				new Date("2026-03-03T11:59:30.000Z"),
-			);
+			expect(subtractSeconds(30, base)).toEqual(new Date("2026-03-03T11:59:30.000Z"));
 		});
 
 		it("from 미지정 시 현재 시각 기준", () => {
@@ -106,9 +100,7 @@ describe("arithmetic", () => {
 
 	describe("subtractDays", () => {
 		it("지정 일수를 뺀 시각 반환", () => {
-			expect(subtractDays(1, base)).toEqual(
-				new Date("2026-03-02T12:00:00.000Z"),
-			);
+			expect(subtractDays(1, base)).toEqual(new Date("2026-03-02T12:00:00.000Z"));
 		});
 
 		it("from 미지정 시 현재 시각 기준", () => {
@@ -118,9 +110,7 @@ describe("arithmetic", () => {
 
 	describe("subtractMilliseconds", () => {
 		it("지정 밀리초를 뺀 시각 반환", () => {
-			expect(subtractMilliseconds(500, base)).toEqual(
-				new Date("2026-03-03T11:59:59.500Z"),
-			);
+			expect(subtractMilliseconds(500, base)).toEqual(new Date("2026-03-03T11:59:59.500Z"));
 		});
 
 		it("from 미지정 시 현재 시각 기준", () => {

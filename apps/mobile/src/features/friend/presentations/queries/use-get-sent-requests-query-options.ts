@@ -1,6 +1,7 @@
 import { useFriendService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
+
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const useGetSentRequestsQueryOptions = () => {

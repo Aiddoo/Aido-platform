@@ -1,4 +1,5 @@
 import { t } from '@src/shared/i18n';
+
 import type { SearchedUser } from '../../models/friend.model';
 
 /** 검색 결과 행 액션 상태 (도메인 flag를 UI 역할로 축약해 Props 누출 방지) */

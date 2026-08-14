@@ -20,8 +20,5 @@ export interface CreateRecurringTodoInput {
  * (TodoCreator)으로 컨텍스트 경계를 흡수한다.
  */
 export interface RecurringTodoCreatorPort {
-	createRecurring(
-		input: CreateRecurringTodoInput,
-		timezone: string,
-	): Promise<{ count: number }>;
+	createRecurring(input: CreateRecurringTodoInput, timezone: string): Promise<{ count: number }>;
 }

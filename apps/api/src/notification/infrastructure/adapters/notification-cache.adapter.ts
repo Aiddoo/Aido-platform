@@ -13,10 +13,7 @@ import type { NotificationCachePort } from "../../application/ports/notification
 export class NotificationCacheAdapter implements NotificationCachePort {
 	constructor(private readonly cacheService: CacheService) {}
 
-	wrapUnreadCount(
-		userId: string,
-		factory: () => Promise<number>,
-	): Promise<number> {
+	wrapUnreadCount(userId: string, factory: () => Promise<number>): Promise<number> {
 		return this.cacheService.wrapUnreadCount(userId, factory);
 	}
 

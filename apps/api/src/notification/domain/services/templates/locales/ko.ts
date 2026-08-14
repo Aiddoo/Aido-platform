@@ -1,9 +1,5 @@
 import type { NotificationType } from "../../../types/notification-type";
-
-import type {
-	NotificationTemplate,
-	WeatherFallbackTemplates,
-} from "../template.types";
+import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
 
 export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER: {

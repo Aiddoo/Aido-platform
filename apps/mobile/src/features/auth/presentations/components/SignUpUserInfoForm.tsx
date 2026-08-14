@@ -9,6 +9,7 @@ import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, type TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
+
 import { type SignUpFormData, signUpFormSchema } from '../schemas/sign-up-form.schema';
 import { SuggestedEmailDomainList } from './SuggestedEmailDomainList';
 

@@ -2,6 +2,7 @@ import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type KyInstance } from 'ky';
+
 import { recordPublicApiFailureBreadcrumb } from './error-handler';
 
 /**

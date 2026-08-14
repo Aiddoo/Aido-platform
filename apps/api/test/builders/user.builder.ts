@@ -21,12 +21,7 @@
  * const verifiedUser = UserBuilder.create().verified().build();
  * ```
  */
-import type {
-	SubscriptionStatus,
-	User,
-	UserRole,
-	UserStatus,
-} from "@/generated/prisma/client";
+import type { SubscriptionStatus, User, UserRole, UserStatus } from "@/generated/prisma/client";
 
 export class UserBuilder {
 	private data: User;
@@ -57,10 +52,9 @@ export class UserBuilder {
 
 	private generateUserTag(): string {
 		const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		return Array.from(
-			{ length: 8 },
-			() => chars[Math.floor(Math.random() * chars.length)],
-		).join("");
+		return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join(
+			"",
+		);
 	}
 
 	static create(): UserBuilder {
@@ -137,9 +131,7 @@ export class UserBuilder {
 	/** 프리미엄 구독 사용자 */
 	asPremium(expiresInDays = 30): UserBuilder {
 		this.data.subscriptionStatus = "ACTIVE";
-		this.data.subscriptionExpiresAt = new Date(
-			Date.now() + expiresInDays * 24 * 60 * 60 * 1000,
-		);
+		this.data.subscriptionExpiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
 		return this;
 	}
 

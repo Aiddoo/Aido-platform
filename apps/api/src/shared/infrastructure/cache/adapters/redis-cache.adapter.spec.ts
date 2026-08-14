@@ -12,6 +12,7 @@
  * ```
  */
 import RedisMock from "ioredis-mock";
+
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
 import { describeCacheAdapterContract } from "./cache-adapter.contract";
 import { RedisCacheAdapter } from "./redis-cache.adapter";
@@ -31,11 +32,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 		beforeEach(() => {
 			redis = new RedisMock();
 			warn = jest.fn();
-			cache = new RedisCacheAdapter(
-				redis,
-				60_000,
-				new RedisErrorLogSampler({ warn }),
-			);
+			cache = new RedisCacheAdapter(redis, 60_000, new RedisErrorLogSampler({ warn }));
 		});
 
 		it("get 실패 시 캐시 미스(undefined)로 취급한다", async () => {
@@ -95,9 +92,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 			// When / Then
 			await expect(cache.set("key", "value")).resolves.toBeUndefined();
 			await expect(cache.del("key")).resolves.toBeUndefined();
-			await expect(
-				cache.mset([{ key: "a", value: 1 }]),
-			).resolves.toBeUndefined();
+			await expect(cache.mset([{ key: "a", value: 1 }])).resolves.toBeUndefined();
 		});
 
 		it("delByPattern 실패 시 지금까지 삭제한 개수를 반환한다", async () => {

@@ -174,8 +174,6 @@ export class FollowBuilder {
 
 	/** 여러 개 생성 */
 	static createMany(followerId: string, followingIds: string[]): Follow[] {
-		return followingIds.map((followingId) =>
-			FollowBuilder.create(followerId, followingId).build(),
-		);
+		return followingIds.map((followingId) => FollowBuilder.create(followerId, followingId).build());
 	}
 }

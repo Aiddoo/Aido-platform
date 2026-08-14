@@ -9,6 +9,7 @@
 
 import { TODO_LIMITS } from "@aido/validators";
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 const CATEGORY_LIMIT = TODO_LIMITS.MAX_PER_CATEGORY; // 300
@@ -33,10 +34,7 @@ describe("할 일 리소스 제한 E2E", () => {
 	describe("카테고리당 활성 Todo 제한", () => {
 		it(`활성 Todo ${CATEGORY_LIMIT}개 도달 후 생성 시 403 에러, 리소스 제한 조회, categoryId 없이 조회`, async () => {
 			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재
-			const user = await ctx.helpers.createVerifiedUser(
-				"todo-limit-cat@test.com",
-				password,
-			);
+			const user = await ctx.helpers.createVerifiedUser("todo-limit-cat@test.com", password);
 			const accessToken = user.accessToken;
 			const userId = user.userId;
 			const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
@@ -91,10 +89,7 @@ describe("할 일 리소스 제한 E2E", () => {
 	describe("활성 Todo 완료 후 생성 가능", () => {
 		it("활성 Todo 1개 완료 후 새 Todo 생성 성공", async () => {
 			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재
-			const user = await ctx.helpers.createVerifiedUser(
-				"todo-limit-complete@test.com",
-				password,
-			);
+			const user = await ctx.helpers.createVerifiedUser("todo-limit-complete@test.com", password);
 			const accessToken = user.accessToken;
 			const userId = user.userId;
 			const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
@@ -142,14 +137,10 @@ describe("할 일 리소스 제한 E2E", () => {
 	describe("다른 카테고리에는 생성 가능", () => {
 		it("한 카테고리가 꽉 차도 다른 카테고리에는 생성 가능", async () => {
 			// Given - fullCategoryId에 CATEGORY_LIMIT개, emptyCategoryId에 0개
-			const user = await ctx.helpers.createVerifiedUser(
-				"todo-limit-other-cat@test.com",
-				password,
-			);
+			const user = await ctx.helpers.createVerifiedUser("todo-limit-other-cat@test.com", password);
 			const accessToken = user.accessToken;
 			const userId = user.userId;
-			const fullCategoryId =
-				await ctx.helpers.getDefaultCategoryId(accessToken);
+			const fullCategoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
 			// 새 카테고리 생성
 			const catResponse = await request(ctx.app.getHttpServer())
@@ -200,10 +191,7 @@ describe("할 일 리소스 제한 E2E", () => {
 	describe("프리미엄/무료 동일 카테고리당 제한", () => {
 		it("프리미엄 유저도 카테고리당 한도에 도달하면 생성 불가, 리소스 제한 조회 확인", async () => {
 			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재하는 Premium 유저
-			const user = await ctx.helpers.createVerifiedUser(
-				"todo-limit-premium@test.com",
-				password,
-			);
+			const user = await ctx.helpers.createVerifiedUser("todo-limit-premium@test.com", password);
 			const accessToken = user.accessToken;
 			const userId = user.userId;
 

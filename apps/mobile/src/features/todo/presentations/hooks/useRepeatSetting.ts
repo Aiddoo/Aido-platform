@@ -2,6 +2,7 @@ import type { DayOfWeek } from '@aido/validators';
 import { without } from 'es-toolkit';
 import { useReducer } from 'react';
 import { match } from 'ts-pattern';
+
 import { getDayOfWeekFromDate } from '../utils/day-of-week';
 
 const ALL_DAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];

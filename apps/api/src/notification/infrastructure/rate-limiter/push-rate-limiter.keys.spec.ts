@@ -18,11 +18,7 @@ describe("PushRateLimiterKeys — 키 문자열 고정", () => {
 	});
 
 	it("engagementPlaceholder 키는 push-engagement:unused:{index}", () => {
-		expect(PushRateLimiterKeys.engagementPlaceholder(0)).toBe(
-			"push-engagement:unused:0",
-		);
-		expect(PushRateLimiterKeys.engagementPlaceholder(3)).toBe(
-			"push-engagement:unused:3",
-		);
+		expect(PushRateLimiterKeys.engagementPlaceholder(0)).toBe("push-engagement:unused:0");
+		expect(PushRateLimiterKeys.engagementPlaceholder(3)).toBe("push-engagement:unused:3");
 	});
 });

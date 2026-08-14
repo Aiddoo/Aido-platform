@@ -22,9 +22,7 @@ describe("Admin notification queue contract", () => {
 			teamSize: 3,
 			pollingIntervalSeconds: 2,
 		});
-		expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.key).toBe(
-			"daily-signup-summary-scheduler",
-		);
+		expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.key).toBe("daily-signup-summary-scheduler");
 		expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.timezone).toBe("Asia/Seoul");
 	});
 

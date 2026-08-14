@@ -14,10 +14,6 @@ import type { TodoCategory } from "../../../domain/entities/todo-category.aggreg
 import { CategoryColor } from "../../../domain/value-objects/category-color.vo";
 import { CategoryName } from "../../../domain/value-objects/category-name.vo";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
@@ -25,6 +21,10 @@ import {
 	TODO_CATEGORY_LIMIT_READER,
 	type TodoCategoryLimitReaderPort,
 } from "../../ports/todo-category-limit-reader.port";
+import {
+	TODO_CATEGORY_REPOSITORY,
+	type TodoCategoryRepositoryPort,
+} from "../../ports/todo-category.repository.port";
 
 export interface CreateTodoCategoryInput {
 	userId: string;

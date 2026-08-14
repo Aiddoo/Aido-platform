@@ -33,14 +33,8 @@ export interface PreferenceWriteInput {
 export interface UserPreferenceRepositoryPort {
 	findByUserId(userId: string): Promise<UserPreferenceRecord | null>;
 	findByUserIds(userIds: string[]): Promise<UserPreferenceRecordWithId[]>;
-	create(
-		userId: string,
-		data?: PreferenceWriteInput,
-	): Promise<UserPreferenceRecord>;
-	upsert(
-		userId: string,
-		data: PreferenceWriteInput,
-	): Promise<UserPreferenceRecord>;
+	create(userId: string, data?: PreferenceWriteInput): Promise<UserPreferenceRecord>;
+	upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRecord>;
 	upsertTimezone(userId: string, timezone: string): Promise<void>;
 	/**
 	 * 저장된 타임존이 다를 때만 갱신하고, 실제 갱신된 행 수를 반환한다.

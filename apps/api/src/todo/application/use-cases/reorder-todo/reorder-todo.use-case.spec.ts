@@ -15,19 +15,18 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
-import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { ReorderTodoUseCase } from "./reorder-todo.use-case";
 
 function buildEntity(id: number, sortOrder: number): Todo {
@@ -54,9 +53,7 @@ function buildEntity(id: number, sortOrder: number): Todo {
 }
 
 function buildResponse(): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("user-123").withId(1).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
 }
 
 describe("ReorderTodoUseCase — 할 일 순서 변경 핸들러", () => {
@@ -76,8 +73,7 @@ describe("ReorderTodoUseCase — 할 일 순서 변경 핸들러", () => {
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 	});
 
 	it("아래 방향 상대 이동(before): 사이 구간을 -1 시프트하고 보정된 위치로 이동한다", async () => {
@@ -96,12 +92,7 @@ describe("ReorderTodoUseCase — 할 일 순서 변경 핸들러", () => {
 		});
 
 		// Then - [1, 2] 구간 -1, 보정 위치 2
-		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith(
-			"user-123",
-			1,
-			2,
-			-1,
-		);
+		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith("user-123", 1, 2, -1);
 		expect(todoRepository.updateSortOrder).toHaveBeenCalledWith(1, 2);
 	});
 
@@ -121,12 +112,7 @@ describe("ReorderTodoUseCase — 할 일 순서 변경 핸들러", () => {
 		});
 
 		// Then - [2, 4] 구간 +1, 새 위치 2
-		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith(
-			"user-123",
-			2,
-			4,
-			1,
-		);
+		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith("user-123", 2, 4, 1);
 		expect(todoRepository.updateSortOrder).toHaveBeenCalledWith(1, 2);
 	});
 
@@ -144,12 +130,7 @@ describe("ReorderTodoUseCase — 할 일 순서 변경 핸들러", () => {
 		});
 
 		// Then - [0, 3] 구간 +1, 새 위치 0
-		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith(
-			"user-123",
-			0,
-			3,
-			1,
-		);
+		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith("user-123", 0, 3, 1);
 		expect(todoRepository.updateSortOrder).toHaveBeenCalledWith(1, 0);
 	});
 
@@ -168,12 +149,7 @@ describe("ReorderTodoUseCase — 할 일 순서 변경 핸들러", () => {
 		});
 
 		// Then - [3, null] 구간 -1, 새 위치 7
-		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith(
-			"user-123",
-			3,
-			null,
-			-1,
-		);
+		expect(todoRepository.shiftSortOrders).toHaveBeenCalledWith("user-123", 3, null, -1);
 		expect(todoRepository.updateSortOrder).toHaveBeenCalledWith(1, 7);
 	});
 

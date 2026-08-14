@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/errors";
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type * as PrismaModels from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -29,13 +30,9 @@ const WITH_COUNT_INCLUDE = {
  * 트랜잭션은 CLS(TransactionHost.tx)로 전파되며, 이름 유니크 위반(P2002)은 TODO_CATEGORY_0853으로 번역한다.
  */
 @Injectable()
-export class PrismaTodoCategoryRepository
-	implements TodoCategoryRepositoryPort
-{
+export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	private get client() {
@@ -54,9 +51,7 @@ export class PrismaTodoCategoryRepository
 		});
 	}
 
-	private static toView(
-		row: TodoCategoryRowWithCount,
-	): TodoCategoryWithCountView {
+	private static toView(row: TodoCategoryRowWithCount): TodoCategoryWithCountView {
 		return {
 			id: row.id,
 			userId: row.userId,
@@ -70,10 +65,7 @@ export class PrismaTodoCategoryRepository
 	}
 
 	private static isUniqueViolation(error: unknown): boolean {
-		return (
-			error instanceof Prisma.PrismaClientKnownRequestError &&
-			error.code === "P2002"
-		);
+		return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 	}
 
 	async create(input: CreateCategoryInput): Promise<TodoCategory> {
@@ -122,19 +114,14 @@ export class PrismaTodoCategoryRepository
 		await this.client.todoCategory.delete({ where: { id } });
 	}
 
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-	): Promise<TodoCategory | null> {
+	async findByIdAndUserId(id: number, userId: string): Promise<TodoCategory | null> {
 		const row = await this.client.todoCategory.findFirst({
 			where: { id, userId },
 		});
 		return row ? PrismaTodoCategoryRepository.toEntity(row) : null;
 	}
 
-	async findByIdWithCount(
-		id: number,
-	): Promise<TodoCategoryWithCountView | null> {
+	async findByIdWithCount(id: number): Promise<TodoCategoryWithCountView | null> {
 		const row = await this.client.todoCategory.findUnique({
 			where: { id },
 			include: WITH_COUNT_INCLUDE,
@@ -155,11 +142,7 @@ export class PrismaTodoCategoryRepository
 		return this.client.todoCategory.count({ where: { userId } });
 	}
 
-	async existsByUserIdAndName(
-		userId: string,
-		name: string,
-		excludeId?: number,
-	): Promise<boolean> {
+	async existsByUserIdAndName(userId: string, name: string, excludeId?: number): Promise<boolean> {
 		const row = await this.client.todoCategory.findFirst({
 			where: {
 				userId,
@@ -201,10 +184,7 @@ export class PrismaTodoCategoryRepository
 		return this.client.todo.count({ where: { categoryId } });
 	}
 
-	async moveTodosToCategory(
-		fromCategoryId: number,
-		toCategoryId: number,
-	): Promise<number> {
+	async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<number> {
 		const result = await this.client.todo.updateMany({
 			where: { categoryId: fromCategoryId },
 			data: { categoryId: toCategoryId },

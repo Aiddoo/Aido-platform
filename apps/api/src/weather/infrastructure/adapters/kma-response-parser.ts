@@ -1,4 +1,5 @@
 import { toCompactDateString } from "@/shared/domain/date/utils/format";
+
 import type {
 	DailyForecast,
 	HourlyForecast,
@@ -55,10 +56,7 @@ function mostFrequentPty(ptyCounts: Map<string, number>): string {
 /**
  * 특정 날짜의 아이템들로부터 DailyForecast를 생성
  */
-function buildDailyForecast(
-	dateStr: string,
-	dateItems: KmaResponseItem[],
-): DailyForecast {
+function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): DailyForecast {
 	let tempMin = Number.POSITIVE_INFINITY;
 	let tempMax = Number.NEGATIVE_INFINITY;
 	let maxPrecipProb = 0;
@@ -130,10 +128,7 @@ function buildDailyForecast(
 /**
  * 기상청 단기예보 응답을 WeatherForecast로 변환
  */
-export function parseKmaResponse(
-	data: KmaApiResponse,
-	targetDate: Date,
-): WeatherForecast {
+export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): WeatherForecast {
 	const allItems = data.response.body?.items?.item ?? [];
 	const targetDateStr = toCompactDateString(targetDate);
 	const nextDay = new Date(targetDate);
@@ -270,10 +265,7 @@ export function parseKmaResponse(
 	}
 
 	// TMN/TMX가 없으면 시간별 기온에서 추출
-	if (
-		tempMin === Number.POSITIVE_INFINITY ||
-		tempMax === Number.NEGATIVE_INFINITY
-	) {
+	if (tempMin === Number.POSITIVE_INFINITY || tempMax === Number.NEGATIVE_INFINITY) {
 		for (const entry of hourlyMap.values()) {
 			if (entry.temperature !== 0) {
 				tempMin = Math.min(tempMin, entry.temperature);
@@ -302,13 +294,11 @@ export function parseKmaResponse(
 		dateItemsMap.set(item.fcstDate, existing);
 	}
 
-	const dailyForecasts: DailyForecast[] = [...dateItemsMap.keys()]
-		.sort()
-		.map((dateStr) => {
-			const items = dateItemsMap.get(dateStr);
-			if (!items) return buildDailyForecast(dateStr, []);
-			return buildDailyForecast(dateStr, items);
-		});
+	const dailyForecasts: DailyForecast[] = [...dateItemsMap.keys()].sort().map((dateStr) => {
+		const items = dateItemsMap.get(dateStr);
+		if (!items) return buildDailyForecast(dateStr, []);
+		return buildDailyForecast(dateStr, items);
+	});
 
 	return {
 		date: targetDate,
@@ -318,8 +308,7 @@ export function parseKmaResponse(
 		temperatureMin: tempMin === Number.POSITIVE_INFINITY ? 0 : tempMin,
 		temperatureMax: tempMax === Number.NEGATIVE_INFINITY ? 0 : tempMax,
 		humidity: humidityCount > 0 ? Math.round(avgHumidity / humidityCount) : 0,
-		windSpeed:
-			windCount > 0 ? Math.round((avgWindSpeed / windCount) * 10) / 10 : 0,
+		windSpeed: windCount > 0 ? Math.round((avgWindSpeed / windCount) * 10) / 10 : 0,
 		hourlyForecasts,
 		dailyForecasts,
 	};

@@ -1,17 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import type { DayOfWeek, Todo } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { toLocalTimeString } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
-import {
-	TODO_CREATOR,
-	type TodoCreatorPort,
-} from "../../ports/todo-creator.port";
+
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
 
 /** 일괄 변환 단일 항목 입력 (컨트롤러가 날짜/시간을 파싱해 전달). */
 export interface ConvertMemoToSingleTodoData {
@@ -70,9 +66,7 @@ export class ConvertMemoToTodosUseCase {
 		private readonly todoCreator: TodoCreatorPort,
 	) {}
 
-	async execute(
-		input: ConvertMemoToTodosInput,
-	): Promise<ConvertMemoToTodosResult> {
+	async execute(input: ConvertMemoToTodosInput): Promise<ConvertMemoToTodosResult> {
 		const { userId, memoId, data, timezone } = input;
 
 		// 1. 소유권 확인 (읽기 전용, TX 외부)
@@ -125,9 +119,7 @@ export class ConvertMemoToTodosUseCase {
 		// 참고: 카테고리 캐시 무효화는 TodoCreatorPort(create-todo·create-recurring-todos)가
 		// 각자 쓰기 경로에서 소유한다 — 메모가 타 모듈 캐시를 직접 만지지 않는다.
 
-		this.#logger.log(
-			`Memo ${memoId} converted to ${todos.length} todos for user: ${userId}`,
-		);
+		this.#logger.log(`Memo ${memoId} converted to ${todos.length} todos for user: ${userId}`);
 
 		return {
 			message: `메모가 ${todos.length}개의 할 일로 변환되었습니다.`,

@@ -7,11 +7,9 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import type { WeatherForecast } from "../../ports/weather-provider.port";
-import {
-	type GridInput,
-	WeatherForecastReader,
-} from "../../services/weather-forecast.reader";
+import { type GridInput, WeatherForecastReader } from "../../services/weather-forecast.reader";
 import { GetForecastsByGridBatchUseCase } from "./get-forecasts-by-grid-batch.use-case";
 
 function buildForecast(temperatureMax: number): WeatherForecast {
@@ -40,9 +38,7 @@ describe("GetForecastsByGridBatchUseCase — 격자 예보 배치 조회 위임"
 	];
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetForecastsByGridBatchUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(GetForecastsByGridBatchUseCase).compile();
 
 		useCase = unit;
 		forecastReader = unitRef.get(WeatherForecastReader);

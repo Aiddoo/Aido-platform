@@ -1,14 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
-import {
-	ApiBearerAuth,
-	ApiHeader,
-	ApiParam,
-	ApiQuery,
-	ApiTags,
-} from "@nestjs/swagger";
-import { Locale } from "@/shared/presentation/decorators";
+import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
+import { Locale } from "@/shared/presentation/decorators";
 import {
 	ApiDoc,
 	ApiSuccessResponse,
@@ -16,13 +10,9 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { GetWeeklyAchievementUseCase } from "../application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
 import { GetWeeklyAchievementsUseCase } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
-
 import {
 	GetWeeklyAchievementsQueryDto,
 	WeeklyAchievementDetailResponseDto,
@@ -52,8 +42,7 @@ export class WeeklyAchievementController {
 	@ApiQuery({
 		name: "cursor",
 		required: false,
-		description:
-			"페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
+		description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
 		schema: { type: "number" },
 	})
 	@ApiQuery({
@@ -104,9 +93,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 		@Query() query: GetWeeklyAchievementsQueryDto,
 		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<WeeklyAchievementListResponseDto> {
-		this.#logger.debug(
-			`주간 달성 목록 조회: user=${user.userId}, year=${query.year}`,
-		);
+		this.#logger.debug(`주간 달성 목록 조회: user=${user.userId}, year=${query.year}`);
 
 		return this.getWeeklyAchievementsUseCase.execute({
 			userId: user.userId,

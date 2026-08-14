@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService as NestConfigService } from "@nestjs/config";
+
 import type { EnvConfig } from "../schemas";
 
 /**
@@ -125,9 +126,7 @@ export class TypedConfigService {
 			clientId: this.get("GOOGLE_CLIENT_ID"),
 			clientSecret: this.get("GOOGLE_CLIENT_SECRET"),
 			callbackUrl: this.get("GOOGLE_CALLBACK_URL"),
-			isConfigured: !!(
-				this.get("GOOGLE_CLIENT_ID") && this.get("GOOGLE_CLIENT_SECRET")
-			),
+			isConfigured: !!(this.get("GOOGLE_CLIENT_ID") && this.get("GOOGLE_CLIENT_SECRET")),
 		};
 	}
 
@@ -159,9 +158,7 @@ export class TypedConfigService {
 			clientId: this.get("KAKAO_CLIENT_ID"),
 			clientSecret: this.get("KAKAO_CLIENT_SECRET"),
 			callbackUrl: this.get("KAKAO_CALLBACK_URL"),
-			isConfigured: !!(
-				this.get("KAKAO_CLIENT_ID") && this.get("KAKAO_CLIENT_SECRET")
-			),
+			isConfigured: !!(this.get("KAKAO_CLIENT_ID") && this.get("KAKAO_CLIENT_SECRET")),
 		};
 	}
 
@@ -170,9 +167,7 @@ export class TypedConfigService {
 			clientId: this.get("NAVER_CLIENT_ID"),
 			clientSecret: this.get("NAVER_CLIENT_SECRET"),
 			callbackUrl: this.get("NAVER_CALLBACK_URL"),
-			isConfigured: !!(
-				this.get("NAVER_CLIENT_ID") && this.get("NAVER_CLIENT_SECRET")
-			),
+			isConfigured: !!(this.get("NAVER_CLIENT_ID") && this.get("NAVER_CLIENT_SECRET")),
 		};
 	}
 

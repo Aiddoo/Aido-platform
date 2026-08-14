@@ -11,11 +11,9 @@ import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
 
 import { NotificationSender } from "@/notification";
+
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
-import {
-	type AiSuggestionJobData,
-	AiSuggestionJobName,
-} from "../queue/ai-suggestion-queue";
+import { type AiSuggestionJobData, AiSuggestionJobName } from "../queue/ai-suggestion-queue";
 import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor";
 
 describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
@@ -24,14 +22,10 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 	let mockNotificationService: Mocked<NotificationSender>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SuggestionAnalysisProcessor,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SuggestionAnalysisProcessor).compile();
 
 		processor = unit;
-		analyzeAndCreateSuggestionsUseCase = unitRef.get(
-			AnalyzeAndCreateSuggestionsUseCase,
-		);
+		analyzeAndCreateSuggestionsUseCase = unitRef.get(AnalyzeAndCreateSuggestionsUseCase);
 		mockNotificationService = unitRef.get(NotificationSender);
 	});
 

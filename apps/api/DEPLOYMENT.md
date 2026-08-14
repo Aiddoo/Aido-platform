@@ -110,27 +110,27 @@ push(main) ─→ CI (lint / test / build / docker*)   * arm64 러너에서 이�
 
 서버 레이아웃: 레포 `~/apps/Aido-platform` · 배포 상태 `~/apps/deploy-state/{deploy.lock, last_deployed_sha, history.log}`
 
-| 단계 | 동작 |
-|------|------|
-| 락 | `flock` — 동시 배포 차단 (GH concurrency + 서버 락 이중 방어) |
-| SHA 검증 | 작업트리 == `DEPLOY_SHA`, 마지막 배포 커밋의 후손인지 확인 (역행 배포 차단, `FORCE_DEPLOY=1`로 우회) |
-| 디스크 점검 | §3.3 참조 — 부족하면 빌드 시작 전 중단 |
-| 롤백 태깅 | 현재 `latest` → `:rollback` (자동 롤백 지점, 첫 실행 시 자동 시드) |
+| 단계        | 동작                                                                                                                                                                                                                        |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 락          | `flock` — 동시 배포 차단 (GH concurrency + 서버 락 이중 방어)                                                                                                                                                               |
+| SHA 검증    | 작업트리 == `DEPLOY_SHA`, 마지막 배포 커밋의 후손인지 확인 (역행 배포 차단, `FORCE_DEPLOY=1`로 우회)                                                                                                                        |
+| 디스크 점검 | §3.3 참조 — 부족하면 빌드 시작 전 중단                                                                                                                                                                                      |
+| 롤백 태깅   | 현재 `latest` → `:rollback` (자동 롤백 지점, 첫 실행 시 자동 시드)                                                                                                                                                          |
 | 이미지 준비 | 기본: CI(arm64 러너)가 빌드해 GHCR에 올린 `:{sha}` 이미지 pull → 로컬 이름 retag — **서버 빌드 부하 0**. pull 실패 시 컨테이너 무접촉 중단. 폴백: `--build` 또는 `GHCR_TOKEN` 부재 시 서버 로컬 빌드 (`compose build` 순차) |
-| 기동 | `compose up -d` — migrate 완료 대기 후 api 재생성 |
-| 헬스 게이트 | 90초 내 Docker HEALTHCHECK `healthy` **AND** `/health` 연속 3회 성공, 실패 시 자동 롤백 |
-| 정리 | dangling 이미지 + 캐시 6GB 초과분만 (**`-a` prune 금지** — 롤백 이미지가 삭제됨) |
+| 기동        | `compose up -d` — migrate 완료 대기 후 api 재생성                                                                                                                                                                           |
+| 헬스 게이트 | 90초 내 Docker HEALTHCHECK `healthy` **AND** `/health` 연속 3회 성공, 실패 시 자동 롤백                                                                                                                                     |
+| 정리        | dangling 이미지 + 캐시 6GB 초과분만 (**`-a` prune 금지** — 롤백 이미지가 삭제됨)                                                                                                                                            |
 
 ### 3.3 디스크·캐시 관리
 
 모든 성장 벡터에 상한을 걸어 "디스크 꽉 참" 자체를 방지한다:
 
-| 성장 벡터 | 상한 장치 |
-|-----------|-----------|
+| 성장 벡터          | 상한 장치                                                                     |
+| ------------------ | ----------------------------------------------------------------------------- |
 | BuildKit 빌드 캐시 | 매 배포 성공 후 6GB 초과분 LRU 정리 (`docker builder prune --max-used-space`) |
-| Docker 이미지 | `latest` + `rollback` 2세대만 유지, dangling 매회 정리 |
-| 컨테이너 로그 | json-file 20m × 5 로테이션 (compose 설정) |
-| DB 백업 | 로컬 7일 보존 + S3 업로드 (서버 cron) |
+| Docker 이미지      | `latest` + `rollback` 2세대만 유지, dangling 매회 정리                        |
+| 컨테이너 로그      | json-file 20m × 5 로테이션 (compose 설정)                                     |
+| DB 백업            | 로컬 7일 보존 + S3 업로드 (서버 cron)                                         |
 
 - 용량 예산: 29GB 디스크 기준 정상 상태 ≈ 15GB (기본 ~8 + 캐시 ≤6 + 빌드 중 임시 1세대).
 - 빌드 전 사전 점검: 여유 <3GB → 캐시 전체 정리 → 재확인 → **그래도 부족하면 빌드를 시작하지 않고 중단** (서비스 무영향).
@@ -140,15 +140,15 @@ push(main) ─→ CI (lint / test / build / docker*)   * arm64 러너에서 이�
 
 ### 3.4 장애 대응 런북
 
-| 시나리오 | 자동 동작 | 서비스 영향 | 운영자 조치 |
-|----------|-----------|-------------|-------------|
-| 디스크 <3GB (빌드 전) | 전체 정리 → 재확인 → 부족 시 빌드 미시작 중단 | 없음 | `df -h`/`docker system df`로 원인 확인 후 재배포 |
-| 빌드 실패 (ENOSPC 포함) | `latest` 태그 불변 → 서비스 유지, run 실패(red) | 없음 | 원인 수정 후 재배포 |
-| migrate 실패 | 구 api 유지된 채 compose 비정상 종료 → 롤백 경로 | 없음 | 마이그레이션 수정 후 재배포 |
-| 헬스 게이트 실패 | `:rollback` → `latest` retag + `up -d --no-deps api` | 수십 초 내 자동 복구 | 원인 수정 후 재배포 |
-| 롤백마저 실패 | FATAL 로그 + exit 2 | 장애 | 아래 수동 복구 |
-| 동시 배포 | flock으로 후발 즉시 중단 | 없음 | 선행 완료 후 재시도 |
-| 구 SHA 배포 시도 | ancestor 검사로 중단 | 없음 | 의도적 롤백이면 `force` 체크 |
+| 시나리오                | 자동 동작                                            | 서비스 영향          | 운영자 조치                                      |
+| ----------------------- | ---------------------------------------------------- | -------------------- | ------------------------------------------------ |
+| 디스크 <3GB (빌드 전)   | 전체 정리 → 재확인 → 부족 시 빌드 미시작 중단        | 없음                 | `df -h`/`docker system df`로 원인 확인 후 재배포 |
+| 빌드 실패 (ENOSPC 포함) | `latest` 태그 불변 → 서비스 유지, run 실패(red)      | 없음                 | 원인 수정 후 재배포                              |
+| migrate 실패            | 구 api 유지된 채 compose 비정상 종료 → 롤백 경로     | 없음                 | 마이그레이션 수정 후 재배포                      |
+| 헬스 게이트 실패        | `:rollback` → `latest` retag + `up -d --no-deps api` | 수십 초 내 자동 복구 | 원인 수정 후 재배포                              |
+| 롤백마저 실패           | FATAL 로그 + exit 2                                  | 장애                 | 아래 수동 복구                                   |
+| 동시 배포               | flock으로 후발 즉시 중단                             | 없음                 | 선행 완료 후 재시도                              |
+| 구 SHA 배포 시도        | ancestor 검사로 중단                                 | 없음                 | 의도적 롤백이면 `force` 체크                     |
 
 ```bash
 # 수동 재배포 (GitHub UI): Actions → Deploy to EC2 → Run workflow (sha 비움)
@@ -183,10 +183,10 @@ docker logs --tail 100 aido-prod-api                     # 원인 확인
 
 기능 PR과 릴리스 PR의 merge 방식을 구분한다.
 
-| PR 방향 | merge 방식 | 이유 |
-|----------|------------|------|
-| feature → `develop` | Squash merge 허용 | 기능 단위로 이력을 정리한다. |
-| `develop` → `main` | **Create a merge commit 필수** | 두 브랜치의 공통 조상을 유지해 다음 릴리스 PR의 중복 diff·충돌을 막는다. |
+| PR 방향             | merge 방식                     | 이유                                                                     |
+| ------------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| feature → `develop` | Squash merge 허용              | 기능 단위로 이력을 정리한다.                                             |
+| `develop` → `main`  | **Create a merge commit 필수** | 두 브랜치의 공통 조상을 유지해 다음 릴리스 PR의 중복 diff·충돌을 막는다. |
 
 `develop` → `main` 릴리스 PR은 squash merge 또는 rebase merge하지 않는다. GitHub CLI를 사용할 때도 `--merge`를 명시한다.
 
@@ -233,28 +233,28 @@ git push origin develop
 
 ## 4. 환경변수 레퍼런스
 
-| 변수 | 필수 | 기본값 | 설명 |
-|------|------|--------|------|
-| `NODE_ENV` | - | development | 런타임 모드 (빌드 최적화 기준) |
-| `APP_ENV` | - | NODE_ENV 폴백 | 배포 환경 (`development`/`staging`/`production`). **Sentry는 `production`에서만 발송** — 개발서버는 반드시 `APP_ENV=development` 설정 |
-| `PORT` | - | 8080 | API 포트 |
-| `DATABASE_URL` | Y | - | PostgreSQL 연결 URL |
-| `JWT_SECRET` | Y | - | JWT 서명 키 (min 32자) |
-| `JWT_REFRESH_SECRET` | Y | - | Refresh 토큰 키 (min 32자) |
-| `JWT_EXPIRES_IN` | - | 15m | Access 토큰 만료 |
-| `JWT_REFRESH_EXPIRES_IN` | - | 7d | Refresh 토큰 만료 |
-| `TOKEN_ENCRYPTION_KEY` | Y | - | AES-256-GCM 키 (min 32자) |
-| `CORS_ORIGINS` | - | localhost | 허용 오리진 (쉼표 구분) |
-| `THROTTLE_TTL` | - | 60000 | Rate limit 윈도우 (ms) |
-| `THROTTLE_LIMIT` | - | 100 | Rate limit 횟수 |
-| `GOOGLE_CLIENT_ID` | Prod* | - | Google OAuth |
-| `GOOGLE_CLIENT_SECRET` | Prod* | - | Google OAuth |
-| `KAKAO_CLIENT_ID` | Prod* | - | Kakao OAuth |
-| `NAVER_CLIENT_ID` | Prod* | - | Naver OAuth |
-| `RESEND_API_KEY` | Prod | - | Resend 이메일 API 키 |
-| `EXPO_ACCESS_TOKEN` | - | - | 푸시 알림 |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | - | - | AI 기능 |
-| `DISCORD_SIGNUP_WEBHOOK_URL` | - | - | 가입 알림 웹훅 |
+| 변수                           | 필수  | 기본값        | 설명                                                                                                                                  |
+| ------------------------------ | ----- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                     | -     | development   | 런타임 모드 (빌드 최적화 기준)                                                                                                        |
+| `APP_ENV`                      | -     | NODE_ENV 폴백 | 배포 환경 (`development`/`staging`/`production`). **Sentry는 `production`에서만 발송** — 개발서버는 반드시 `APP_ENV=development` 설정 |
+| `PORT`                         | -     | 8080          | API 포트                                                                                                                              |
+| `DATABASE_URL`                 | Y     | -             | PostgreSQL 연결 URL                                                                                                                   |
+| `JWT_SECRET`                   | Y     | -             | JWT 서명 키 (min 32자)                                                                                                                |
+| `JWT_REFRESH_SECRET`           | Y     | -             | Refresh 토큰 키 (min 32자)                                                                                                            |
+| `JWT_EXPIRES_IN`               | -     | 15m           | Access 토큰 만료                                                                                                                      |
+| `JWT_REFRESH_EXPIRES_IN`       | -     | 7d            | Refresh 토큰 만료                                                                                                                     |
+| `TOKEN_ENCRYPTION_KEY`         | Y     | -             | AES-256-GCM 키 (min 32자)                                                                                                             |
+| `CORS_ORIGINS`                 | -     | localhost     | 허용 오리진 (쉼표 구분)                                                                                                               |
+| `THROTTLE_TTL`                 | -     | 60000         | Rate limit 윈도우 (ms)                                                                                                                |
+| `THROTTLE_LIMIT`               | -     | 100           | Rate limit 횟수                                                                                                                       |
+| `GOOGLE_CLIENT_ID`             | Prod* | -             | Google OAuth                                                                                                                          |
+| `GOOGLE_CLIENT_SECRET`         | Prod* | -             | Google OAuth                                                                                                                          |
+| `KAKAO_CLIENT_ID`              | Prod* | -             | Kakao OAuth                                                                                                                           |
+| `NAVER_CLIENT_ID`              | Prod* | -             | Naver OAuth                                                                                                                           |
+| `RESEND_API_KEY`               | Prod  | -             | Resend 이메일 API 키                                                                                                                  |
+| `EXPO_ACCESS_TOKEN`            | -     | -             | 푸시 알림                                                                                                                             |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | -     | -             | AI 기능                                                                                                                               |
+| `DISCORD_SIGNUP_WEBHOOK_URL`   | -     | -             | 가입 알림 웹훅                                                                                                                        |
 
 > *Prod: 프로덕션에서 OAuth 최소 1개 필수
 

@@ -12,20 +12,19 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoDeletedEvent } from "../../../domain/events/todo-deleted.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { DeleteTodoUseCase } from "./delete-todo.use-case";
 
 function buildEntity(): Todo {
@@ -72,9 +71,7 @@ describe("DeleteTodoUseCase — 할 일 삭제 핸들러", () => {
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get<DomainEventPublisherPort>(
-			DOMAIN_EVENT_PUBLISHER,
-		);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 	});
 
 	it("삭제 후 TodoDeletedEvent를 발행하고 캐시를 무효화한다", async () => {
@@ -86,9 +83,7 @@ describe("DeleteTodoUseCase — 할 일 삭제 핸들러", () => {
 
 		// Then - 삭제 → 이벤트(리마인더 취소는 이벤트 핸들러) → 캐시
 		expect(todoRepository.delete).toHaveBeenCalledWith(1);
-		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
-			new TodoDeletedEvent(1, "user-123"),
-		]);
+		expect(eventPublisher.publishAll).toHaveBeenCalledWith([new TodoDeletedEvent(1, "user-123")]);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 		expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
 	});
@@ -118,9 +113,9 @@ describe("DeleteTodoUseCase — 할 일 삭제 핸들러", () => {
 		todoRepository.findByIdAndUserId.mockResolvedValue(null);
 
 		// When & Then
-		await expect(
-			useCase.execute({ id: 999, userId: "user-123" }),
-		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+		await expect(useCase.execute({ id: 999, userId: "user-123" })).rejects.toMatchObject({
+			errorCode: ErrorCode.TODO_0801,
+		});
 		expect(todoRepository.delete).not.toHaveBeenCalled();
 		expect(todoCache.invalidateTodoCategories).not.toHaveBeenCalled();
 		expect(todoCache.invalidateFriendTodos).not.toHaveBeenCalled();
@@ -131,8 +126,8 @@ describe("DeleteTodoUseCase — 할 일 삭제 핸들러", () => {
 		todoRepository.findByIdAndUserId.mockResolvedValue(null);
 
 		// When & Then
-		await expect(
-			useCase.execute({ id: 1, userId: "other-user" }),
-		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+		await expect(useCase.execute({ id: 1, userId: "other-user" })).rejects.toMatchObject({
+			errorCode: ErrorCode.TODO_0801,
+		});
 	});
 });

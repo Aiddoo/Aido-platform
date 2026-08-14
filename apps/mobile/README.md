@@ -17,14 +17,14 @@
 
 ## 기술 스택
 
-| 분류 | 기술 |
-|------|------|
-| Framework | Expo SDK 57, React Native 0.86 |
-| Routing | Expo Router |
-| State | TanStack Query v5 |
-| HTTP | Ky |
-| Validation | Zod 4.3 |
-| UI | HeroUI Native, NativeWind |
+| 분류       | 기술                           |
+| ---------- | ------------------------------ |
+| Framework  | Expo SDK 57, React Native 0.86 |
+| Routing    | Expo Router                    |
+| State      | TanStack Query v5              |
+| HTTP       | Ky                             |
+| Validation | Zod 4.3                        |
+| UI         | HeroUI Native, NativeWind      |
 
 ## 개발 환경
 
@@ -76,23 +76,23 @@ pnpm update:production "메시지"
 
 ## 스크립트
 
-| 명령어 | 설명 |
-|--------|------|
-| `pnpm dev` | 개발 서버 |
-| `pnpm dev:android` | Android 실행 |
-| `pnpm dev:ios` | iOS 실행 |
-| `pnpm test` | 테스트 |
-| `pnpm typecheck` | 타입 검사 |
-| `pnpm build:development` | 개발 빌드 |
-| `pnpm build:production` | 프로덕션 빌드 |
+| 명령어                   | 설명          |
+| ------------------------ | ------------- |
+| `pnpm dev`               | 개발 서버     |
+| `pnpm dev:android`       | Android 실행  |
+| `pnpm dev:ios`           | iOS 실행      |
+| `pnpm test`              | 테스트        |
+| `pnpm typecheck`         | 타입 검사     |
+| `pnpm build:development` | 개발 빌드     |
+| `pnpm build:production`  | 프로덕션 빌드 |
 
 ## 환경별 API URL
 
-| 환경 | Platform | API URL 변환 |
-|------|----------|-------------|
-| Android 에뮬레이터 | android | localhost → 10.0.2.2 |
-| iOS 시뮬레이터 | ios | localhost 유지 |
-| 실제 기기 | 둘 다 | localhost → {개발 머신 IP} |
+| 환경               | Platform | API URL 변환               |
+| ------------------ | -------- | -------------------------- |
+| Android 에뮬레이터 | android  | localhost → 10.0.2.2       |
+| iOS 시뮬레이터     | ios      | localhost 유지             |
+| 실제 기기          | 둘 다    | localhost → {개발 머신 IP} |
 
 ## 배포
 

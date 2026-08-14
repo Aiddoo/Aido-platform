@@ -1,11 +1,13 @@
 import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
+
 import type { SupportedLocale } from "@/shared/domain/locale";
 import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
 } from "@/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+
 import type { SuggestionContext } from "../../types";
 import { buildSuggestionPromptEn } from "./detect-patterns.prompt.en";
 
@@ -13,13 +15,8 @@ export const detectedPatternsSchema = z.object({
 	patterns: z.array(
 		z.object({
 			title: z.string().describe("반복 할 일의 제목"),
-			daysOfWeek: z
-				.array(dayOfWeekSchema)
-				.describe("반복 요일 (예: ['MON', 'WED', 'FRI'])"),
-			scheduledTime: z
-				.string()
-				.nullable()
-				.describe("예약 시간 (HH:mm 형식, 없으면 null)"),
+			daysOfWeek: z.array(dayOfWeekSchema).describe("반복 요일 (예: ['MON', 'WED', 'FRI'])"),
+			scheduledTime: z.string().nullable().describe("예약 시간 (HH:mm 형식, 없으면 null)"),
 			confidence: z.number().min(0).max(1).describe("패턴 확신도 (0.0~1.0)"),
 			reason: z.string().describe("이 패턴을 감지한 이유 (한국어, 1-2문장)"),
 			matchedTitles: z
@@ -35,21 +32,10 @@ export const detectedPatternsSchemaEn = z.object({
 	patterns: z.array(
 		z.object({
 			title: z.string().describe("Title of the recurring to-do"),
-			daysOfWeek: z
-				.array(dayOfWeekSchema)
-				.describe("Recurring days (e.g. ['MON', 'WED', 'FRI'])"),
-			scheduledTime: z
-				.string()
-				.nullable()
-				.describe("Scheduled time (HH:mm format, null if none)"),
-			confidence: z
-				.number()
-				.min(0)
-				.max(1)
-				.describe("Pattern confidence (0.0~1.0)"),
-			reason: z
-				.string()
-				.describe("Why this pattern was detected (English, 1-2 sentences)"),
+			daysOfWeek: z.array(dayOfWeekSchema).describe("Recurring days (e.g. ['MON', 'WED', 'FRI'])"),
+			scheduledTime: z.string().nullable().describe("Scheduled time (HH:mm format, null if none)"),
+			confidence: z.number().min(0).max(1).describe("Pattern confidence (0.0~1.0)"),
+			reason: z.string().describe("Why this pattern was detected (English, 1-2 sentences)"),
 			matchedTitles: z
 				.array(z.string())
 				.describe("Original to-do titles supporting this suggestion"),
@@ -97,8 +83,7 @@ export function buildSuggestionPrompt(
 		return buildSuggestionPromptEn(context, minOccurrences);
 	}
 
-	const isStarter =
-		context.todos.length > 0 && context.todos.length < minOccurrences;
+	const isStarter = context.todos.length > 0 && context.todos.length < minOccurrences;
 	const mode = isStarter ? "STARTER" : "PATTERN";
 	const system = `<role>
 너는 사용자의 할 일 데이터를 분석해서 실행 가능한 루틴을 제안하는 코치야.

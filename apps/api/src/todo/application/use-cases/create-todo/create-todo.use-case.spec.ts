@@ -17,12 +17,14 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
 import { DomainException } from "@/shared/domain";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -32,15 +34,12 @@ import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
 } from "../../ports/category-ownership.port";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import type { CreateTodoData } from "../../types";
 import { CreateTodoUseCase } from "./create-todo.use-case";
 
@@ -108,13 +107,10 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get<DomainEventPublisherPort>(
-			DOMAIN_EVENT_PUBLISHER,
-		);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 	});
 
 	it("카테고리 소유권 확인 후 할 일을 생성하고 캐시를 무효화한 뒤 응답을 반환한다", async () => {
@@ -128,10 +124,7 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 		const result = await useCase.execute(baseData);
 
 		// Then - 생성 + 캐시 + TodoCreatedEvent 발행(리마인더는 이벤트 핸들러)
-		expect(categoryOwnership.validateOwnership).toHaveBeenCalledWith(
-			1,
-			"user-123",
-		);
+		expect(categoryOwnership.validateOwnership).toHaveBeenCalledWith(1, "user-123");
 		expect(todoRepository.create).toHaveBeenCalledTimes(1);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 		expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
@@ -143,9 +136,7 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 
 	it("카테고리 소유권 확인이 실패하면 예외를 전파하고 생성하지 않는다", async () => {
 		// Given - 소유권 검증 실패
-		categoryOwnership.validateOwnership.mockRejectedValue(
-			new Error("not owner"),
-		);
+		categoryOwnership.validateOwnership.mockRejectedValue(new Error("not owner"));
 
 		// When & Then
 		await expect(useCase.execute(baseData)).rejects.toThrow("not owner");
@@ -192,9 +183,7 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 
 	it("카테고리 활성 한도를 초과하면 ApplicationException(TODO_0811)을 던진다", async () => {
 		// Given - 카테고리가 가득 참
-		todoRepository.countActiveByCategory.mockResolvedValue(
-			TODO_LIMITS.MAX_PER_CATEGORY,
-		);
+		todoRepository.countActiveByCategory.mockResolvedValue(TODO_LIMITS.MAX_PER_CATEGORY);
 
 		// When & Then
 		await expect(useCase.execute(baseData)).rejects.toMatchObject({
@@ -221,9 +210,6 @@ describe("CreateTodoUseCase — 할 일 생성 핸들러", () => {
 			{ title: "하위1" },
 			{ title: "하위2" },
 		]);
-		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(
-			1,
-			"user-123",
-		);
+		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(1, "user-123");
 	});
 });

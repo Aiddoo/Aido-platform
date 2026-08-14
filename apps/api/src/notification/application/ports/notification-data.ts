@@ -1,8 +1,6 @@
 import type { NotificationActionType } from "@aido/validators";
-import type {
-	NotificationRecord,
-	PushTokenRecord,
-} from "../../domain/records/notification.record";
+
+import type { NotificationRecord, PushTokenRecord } from "../../domain/records/notification.record";
 import type { NotificationType } from "../../domain/types/notification-type";
 
 /** 알림 메타데이터 입력 (DB Json 컬럼에 저장, 어댑터가 Prisma Json으로 변환) */

@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+
 import { FollowReader } from "@/follow";
+
 import type { FriendPort } from "../../application/ports/friend.port";
 
 /**

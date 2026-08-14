@@ -2,6 +2,7 @@ import { createMockSyncStorage } from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
+
 import { LanguageProvider, useLanguage } from './language-provider';
 
 const createWrapper =

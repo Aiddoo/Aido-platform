@@ -1,9 +1,6 @@
 import type { DayOfWeek } from "@aido/validators";
 
-import type {
-	Suggestion,
-	SuggestionStatus,
-} from "../../domain/entities/suggestion.aggregate";
+import type { Suggestion, SuggestionStatus } from "../../domain/entities/suggestion.aggregate";
 import type {
 	CategoryCompletionRate,
 	DayCompletionRate,
@@ -67,8 +64,5 @@ export interface AiSuggestionRepositoryPort {
 		to: Date,
 		timezone: string,
 	): Promise<TodoSummaryForAnalysis[]>;
-	findRecentResponded(
-		userId: string,
-		since: Date,
-	): Promise<SuggestionHistoryItem[]>;
+	findRecentResponded(userId: string, since: Date): Promise<SuggestionHistoryItem[]>;
 }

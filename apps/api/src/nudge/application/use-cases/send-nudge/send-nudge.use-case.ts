@@ -16,19 +16,13 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 import { evaluateNudgeCooldown } from "../../../domain/services/nudge-cooldown";
 import { NudgeMessage } from "../../../domain/value-objects/nudge-message.vo";
 import { NudgeTargetTodo } from "../../../domain/value-objects/nudge-target-todo.vo";
+import { NUDGE_LIMIT_READER, type NudgeLimitReaderPort } from "../../ports/nudge-limit-reader.port";
+import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type NudgeWithRelations,
 } from "../../ports/nudge.repository.port";
-import {
-	NUDGE_LIMIT_READER,
-	type NudgeLimitReaderPort,
-} from "../../ports/nudge-limit-reader.port";
-import {
-	NUDGE_NOTIFIER,
-	type NudgeNotifierPort,
-} from "../../ports/nudge-notifier.port";
 
 export interface SendNudgeInput {
 	senderId: string;
@@ -61,20 +55,14 @@ export class SendNudgeUseCase {
 		private readonly followReader: FollowReader,
 	) {}
 
-	async execute(
-		input: SendNudgeInput,
-		tz: string = "UTC",
-	): Promise<NudgeWithRelations> {
+	async execute(input: SendNudgeInput, tz: string = "UTC"): Promise<NudgeWithRelations> {
 		const { senderId, receiverId, todoId, message } = input;
 
 		if (senderId === receiverId) {
 			throw new ApplicationException(ErrorCode.NUDGE_1104);
 		}
 
-		const isFriend = await this.followReader.isMutualFriend(
-			senderId,
-			receiverId,
-		);
+		const isFriend = await this.followReader.isMutualFriend(senderId, receiverId);
 		if (!isFriend) {
 			throw new ApplicationException(ErrorCode.NUDGE_1103, {
 				targetUserId: receiverId,
@@ -120,10 +108,7 @@ export class SendNudgeUseCase {
 				});
 			}
 
-			const lastNudge = await this.nudgeRepository.findLastNudgeForTodo(
-				senderId,
-				todoId,
-			);
+			const lastNudge = await this.nudgeRepository.findLastNudgeForTodo(senderId, todoId);
 			if (lastNudge) {
 				const cooldown = evaluateNudgeCooldown(lastNudge.createdAt);
 				if (cooldown.isActive) {

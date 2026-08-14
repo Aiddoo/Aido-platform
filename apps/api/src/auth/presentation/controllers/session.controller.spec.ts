@@ -14,9 +14,11 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
+
 import { ListActiveSessionsQuery } from "@/auth/application/queries";
 import { RevokeSessionUseCase } from "@/auth/application/use-cases";
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import { SessionController } from "./session.controller";
 
 describe("SessionController — 세션 컨트롤러", () => {
@@ -41,8 +43,7 @@ describe("SessionController — 세션 컨트롤러", () => {
 	} as unknown as Request;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(SessionController).compile();
+		const { unit, unitRef } = await TestBed.solitary(SessionController).compile();
 
 		controller = unit;
 		listActiveSessionsQuery = unitRef.get(ListActiveSessionsQuery);
@@ -80,9 +81,7 @@ describe("SessionController — 세션 컨트롤러", () => {
 			const result = await controller.getSessions(mockUser);
 
 			// Then -서비스에 userId를 전달하고 isCurrent 필드가 추가된 세션 목록을 반환해야 한다
-			expect(listActiveSessionsQuery.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-			);
+			expect(listActiveSessionsQuery.execute).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual({
 				sessions: [
 					expect.objectContaining({
@@ -117,11 +116,7 @@ describe("SessionController — 세션 컨트롤러", () => {
 			revokeSessionUseCase.execute.mockResolvedValue(serviceResult);
 
 			// When -revokeSession을 호출하면
-			const result = await controller.revokeSession(
-				mockUser,
-				sessionId,
-				mockRequest,
-			);
+			const result = await controller.revokeSession(mockUser, sessionId, mockRequest);
 
 			// Then -서비스에 userId, sessionId, metadata를 전달하고 결과를 반환해야 한다
 			expect(revokeSessionUseCase.execute).toHaveBeenCalledWith(

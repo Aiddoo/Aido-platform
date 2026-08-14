@@ -6,14 +6,15 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
 } from "../../ports/notification-dedup.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 import { FindAlreadyNotifiedUsersUseCase } from "./find-already-notified-users.use-case";
 
 const params = {
@@ -29,18 +30,14 @@ describe("FindAlreadyNotifiedUsersUseCase", () => {
 	let repository: Mocked<NotificationRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			FindAlreadyNotifiedUsersUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(FindAlreadyNotifiedUsersUseCase).compile();
 		useCase = unit;
 		notificationDedup = unitRef.get(NOTIFICATION_DEDUP);
 		repository = unitRef.get(NOTIFICATION_REPOSITORY);
 	});
 
 	it("warm(센티넬 존재): Redis 결과에서 센티넬 제거 후 반환, DB 미조회", async () => {
-		notificationDedup.readKnownRecipients.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationDedup.readKnownRecipients.mockResolvedValue(new Set(["user-1"]));
 
 		const result = await useCase.execute(params);
 
@@ -51,9 +48,7 @@ describe("FindAlreadyNotifiedUsersUseCase", () => {
 
 	it("cold(센티넬 없음): DB fallback + Redis warm-up", async () => {
 		notificationDedup.readKnownRecipients.mockResolvedValue(null);
-		repository.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-2"]),
-		);
+		repository.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-2"]));
 
 		const result = await useCase.execute(params);
 

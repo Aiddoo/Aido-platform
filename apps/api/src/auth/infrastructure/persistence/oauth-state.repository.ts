@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
+
 import { Injectable } from "@nestjs/common";
+
 import type { AuthOAuthStateRecord } from "@/auth/application/ports/auth-persistence.port";
 import type { OAuthMode } from "@/auth/application/ports/oauth-identity-provider.port";
 import type { AccountProvider, OAuthState } from "@/generated/prisma/client";
@@ -75,9 +77,7 @@ export class OAuthStateRepository {
 	}
 
 	// 아직 교환되지 않은 (exchangedAt이 null인) 레코드만 반환
-	async findByExchangeCode(
-		exchangeCode: string,
-	): Promise<AuthOAuthStateRecord | null> {
+	async findByExchangeCode(exchangeCode: string): Promise<AuthOAuthStateRecord | null> {
 		const state = await this.database.oAuthState.findFirst({
 			where: {
 				exchangeCode,
@@ -96,9 +96,7 @@ export class OAuthStateRepository {
 			mode: state.mode,
 			initiatingUserId: state.initiatingUserId,
 			exchangeCode: state.exchangeCode,
-			accessToken: state.accessToken
-				? this.encryptionService.decryptSafe(state.accessToken)
-				: null,
+			accessToken: state.accessToken ? this.encryptionService.decryptSafe(state.accessToken) : null,
 			refreshToken: state.refreshToken
 				? this.encryptionService.decryptSafe(state.refreshToken)
 				: null,

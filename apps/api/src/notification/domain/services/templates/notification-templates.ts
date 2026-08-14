@@ -1,9 +1,6 @@
 import { josa } from "es-hangul";
-import {
-	DEFAULT_LOCALE,
-	SUPPORTED_LOCALES,
-	type SupportedLocale,
-} from "@/shared/domain/locale";
+
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "@/shared/domain/locale";
 import { deterministicIndex } from "@/shared/domain/services/deterministic-variant";
 import type { WeatherForecast } from "@/weather";
 
@@ -58,9 +55,7 @@ const TEMPLATE_VARIANT_KEY = {
  * 저장된 locale 값(신뢰 불가 문자열)을 지원 로케일로 내로잉한다.
  * 미지원/누락 값은 ko — 기존 유저(전원 ko) 동작 보존.
  */
-export function resolveTemplateLocale(
-	value: string | null | undefined,
-): SupportedLocale {
+export function resolveTemplateLocale(value: string | null | undefined): SupportedLocale {
 	const matched = SUPPORTED_LOCALES.find((locale) => locale === value);
 	return matched ?? DEFAULT_LOCALE;
 }
@@ -115,9 +110,7 @@ export function pickVariant(
 	return {
 		title: picked.title,
 		body: picked.body,
-		variantId: variantNamespace
-			? `${variantNamespace}.v${index + 1}`
-			: `v${index + 1}`,
+		variantId: variantNamespace ? `${variantNamespace}.v${index + 1}` : `v${index + 1}`,
 	};
 }
 
@@ -228,9 +221,7 @@ export class NotificationMessageBuilder {
 		locale: SupportedLocale = DEFAULT_LOCALE,
 	): { title: string; body: string } {
 		const templates = LOCALE_TEMPLATES[locale];
-		const { title, body } = pickVariant(
-			templates.SOCIAL_TEMPLATES.FOLLOW_ACCEPTED,
-		);
+		const { title, body } = pickVariant(templates.SOCIAL_TEMPLATES.FOLLOW_ACCEPTED);
 		return {
 			title: fillTemplate(title, { senderName }),
 			body: fillTemplate(body, { senderName }),
@@ -249,19 +240,16 @@ export class NotificationMessageBuilder {
 		const templates = LOCALE_TEMPLATES[locale];
 		if (message) {
 			return {
-				title: fillTemplate(
-					templates.SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.title,
-					{ senderName, todoTitle },
-				),
-				body: fillTemplate(
-					templates.SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.body,
-					{ message },
-				),
+				title: fillTemplate(templates.SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.title, {
+					senderName,
+					todoTitle,
+				}),
+				body: fillTemplate(templates.SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.body, {
+					message,
+				}),
 			};
 		}
-		const { title, body } = pickVariant(
-			templates.SOCIAL_TEMPLATES.NUDGE_RECEIVED,
-		);
+		const { title, body } = pickVariant(templates.SOCIAL_TEMPLATES.NUDGE_RECEIVED);
 		return {
 			title: fillTemplate(title, { senderName, todoTitle }),
 			body: fillTemplate(body, { senderName }),
@@ -279,19 +267,15 @@ export class NotificationMessageBuilder {
 		const templates = LOCALE_TEMPLATES[locale];
 		if (message) {
 			return {
-				title: fillTemplate(
-					templates.SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED_WITH_MESSAGE.title,
-					{ senderName },
-				),
-				body: fillTemplate(
-					templates.SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED_WITH_MESSAGE.body,
-					{ message },
-				),
+				title: fillTemplate(templates.SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED_WITH_MESSAGE.title, {
+					senderName,
+				}),
+				body: fillTemplate(templates.SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED_WITH_MESSAGE.body, {
+					message,
+				}),
 			};
 		}
-		const { title, body } = pickVariant(
-			templates.SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED,
-		);
+		const { title, body } = pickVariant(templates.SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED);
 		return {
 			title: fillTemplate(title, { senderName }),
 			body: fillTemplate(body, { senderName }),
@@ -317,9 +301,7 @@ export class NotificationMessageBuilder {
 				}),
 			};
 		}
-		const { title, body } = pickVariant(
-			templates.SOCIAL_TEMPLATES.CHEER_RECEIVED_NO_MESSAGE,
-		);
+		const { title, body } = pickVariant(templates.SOCIAL_TEMPLATES.CHEER_RECEIVED_NO_MESSAGE);
 		return {
 			title: fillTemplate(title, { senderName }),
 			body: fillTemplate(body, { senderName }),
@@ -334,9 +316,7 @@ export class NotificationMessageBuilder {
 		locale: SupportedLocale = DEFAULT_LOCALE,
 	): { title: string; body: string } {
 		const templates = LOCALE_TEMPLATES[locale];
-		const { title, body } = pickVariant(
-			templates.SOCIAL_TEMPLATES.FRIEND_COMPLETED,
-		);
+		const { title, body } = pickVariant(templates.SOCIAL_TEMPLATES.FRIEND_COMPLETED);
 		return {
 			title: fillTemplate(title, { friendName }),
 			body: fillTemplate(body, { friendName }),
@@ -658,10 +638,7 @@ export class NotificationMessageBuilder {
 		locale: SupportedLocale = DEFAULT_LOCALE,
 		context?: NotificationVariantContext,
 	): NotificationMessage {
-		return pickVariant(
-			LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES.LUNCH_NUDGE,
-			context,
-		);
+		return pickVariant(LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES.LUNCH_NUDGE, context);
 	}
 
 	/**
@@ -673,10 +650,7 @@ export class NotificationMessageBuilder {
 		context?: NotificationVariantContext,
 	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
-		const message = pickVariant(
-			templates.SCHEDULER_TEMPLATES.STREAK_AT_RISK,
-			context,
-		);
+		const message = pickVariant(templates.SCHEDULER_TEMPLATES.STREAK_AT_RISK, context);
 		return fillMessage(message, { streak });
 	}
 
@@ -690,10 +664,7 @@ export class NotificationMessageBuilder {
 		context?: NotificationVariantContext,
 	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
-		const message = pickVariant(
-			templates.SOCIAL_TEMPLATES.NUDGE_SUGGEST,
-			context,
-		);
+		const message = pickVariant(templates.SOCIAL_TEMPLATES.NUDGE_SUGGEST, context);
 		return fillMessage(message, { friendName, days });
 	}
 
@@ -719,23 +690,14 @@ export class NotificationMessageBuilder {
 		const template = templateMap[day];
 		if (!template) return null;
 
-		return fillMessage(
-			pickVariant(template, context, `onboarding.day_${day}`),
-			{ completedCount },
-		);
+		return fillMessage(pickVariant(template, context, `onboarding.day_${day}`), { completedCount });
 	}
 
 	/**
 	 * 마일스톤 축하 알림 메시지 생성
 	 */
 	static milestone(
-		type:
-			| "FIRST_COMPLETE"
-			| "COUNT_10"
-			| "COUNT_50"
-			| "COUNT_100"
-			| "STREAK_3"
-			| "FIRST_FRIEND",
+		type: "FIRST_COMPLETE" | "COUNT_10" | "COUNT_50" | "COUNT_100" | "STREAK_3" | "FIRST_FRIEND",
 		locale: SupportedLocale = DEFAULT_LOCALE,
 	): { title: string; body: string } {
 		const templates = LOCALE_TEMPLATES[locale];
@@ -815,11 +777,7 @@ export class NotificationMessageBuilder {
 		);
 
 		return fillMessage(
-			pickVariant(
-				selection.template,
-				context,
-				`weather.morning.${selection.condition}`,
-			),
+			pickVariant(selection.template, context, `weather.morning.${selection.condition}`),
 			vars,
 		);
 	}
@@ -831,8 +789,7 @@ export class NotificationMessageBuilder {
 	): NotificationMessage {
 		const templates = LOCALE_TEMPLATES[locale];
 		const skyMap = templates.SKY_LABEL_MAP;
-		const skyLabel =
-			skyMap[tomorrowForecast.skyCondition] ?? skyMap.CLEAR ?? "";
+		const skyLabel = skyMap[tomorrowForecast.skyCondition] ?? skyMap.CLEAR ?? "";
 		const vars = {
 			skyLabel,
 			tempMin: Math.round(tomorrowForecast.temperatureMin),
@@ -848,11 +805,7 @@ export class NotificationMessageBuilder {
 		);
 
 		return fillMessage(
-			pickVariant(
-				selection.template,
-				context,
-				`weather.evening.${selection.condition}`,
-			),
+			pickVariant(selection.template, context, `weather.evening.${selection.condition}`),
 			vars,
 		);
 	}
@@ -909,11 +862,7 @@ function selectWeatherTemplate(
 	if (type === "SNOW" || type === "RAIN_SNOW") {
 		return { template: snow, condition: "snow" };
 	}
-	if (
-		type === "RAIN" ||
-		type === "SHOWER" ||
-		forecast.precipitationProbability >= 40
-	) {
+	if (type === "RAIN" || type === "SHOWER" || forecast.precipitationProbability >= 40) {
 		return { template: rain, condition: "rain" };
 	}
 	return { template: clear, condition: "clear" };

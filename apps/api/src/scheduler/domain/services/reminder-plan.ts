@@ -17,8 +17,7 @@ export const REMINDER_STAGES: readonly ReminderStage[] = [
 ] as const;
 
 /** 최대 리드 타임 (복구/크론 범위 계산용) */
-export const REMINDER_MAX_LEAD_TIME_MS =
-	REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
+export const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
 
 /** 즉시 발송 label */
 export const REMINDER_IMMEDIATE_LABEL = "immediate";
@@ -39,10 +38,7 @@ export interface PlannedReminderJob {
  * - 각 단계 중 리드 타임을 빼도 여전히 미래인 단계만 지연 잡으로 계획한다.
  * - 모든 단계가 이미 지났지만 scheduledTime은 미래라면 즉시 발송 잡 1건을 계획한다.
  */
-export function planReminderJobs(
-	scheduledMs: number,
-	nowMs: number,
-): PlannedReminderJob[] {
+export function planReminderJobs(scheduledMs: number, nowMs: number): PlannedReminderJob[] {
 	if (scheduledMs <= nowMs) {
 		return [];
 	}

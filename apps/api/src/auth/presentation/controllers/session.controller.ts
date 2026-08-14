@@ -1,22 +1,11 @@
 import { ErrorCode } from "@aido/errors";
-import {
-	Controller,
-	Delete,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Param,
-	Req,
-} from "@nestjs/common";
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
+
 import { ListActiveSessionsQuery } from "@/auth/application/queries";
 import { RevokeSessionUseCase } from "@/auth/application/use-cases";
-
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "@/auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
 import {
 	ApiDoc,
 	ApiNotFoundError,
@@ -24,6 +13,7 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
+
 import { MessageResponseDto, SessionListDto } from "../dtos";
 import { extractMetadata } from "./auth-controller.utils";
 
@@ -127,11 +117,7 @@ export class SessionController {
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.revokeSessionUseCase.execute(
-			user.userId,
-			sessionId,
-			metadata,
-		);
+		const result = await this.revokeSessionUseCase.execute(user.userId, sessionId, metadata);
 		return result;
 	}
 }

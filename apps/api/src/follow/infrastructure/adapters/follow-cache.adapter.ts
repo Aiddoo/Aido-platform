@@ -13,18 +13,11 @@ import type { FollowCachePort } from "../../application/ports/follow-cache.port"
 export class FollowCacheAdapter implements FollowCachePort {
 	constructor(private readonly cacheService: CacheService) {}
 
-	getMutualFriend(
-		smallerId: string,
-		largerId: string,
-	): Promise<boolean | undefined> {
+	getMutualFriend(smallerId: string, largerId: string): Promise<boolean | undefined> {
 		return this.cacheService.getMutualFriend(smallerId, largerId);
 	}
 
-	setMutualFriend(
-		smallerId: string,
-		largerId: string,
-		isMutual: boolean,
-	): Promise<void> {
+	setMutualFriend(smallerId: string, largerId: string, isMutual: boolean): Promise<void> {
 		return this.cacheService.setMutualFriend(smallerId, largerId, isMutual);
 	}
 
@@ -32,10 +25,7 @@ export class FollowCacheAdapter implements FollowCachePort {
 		return this.cacheService.invalidateMutualFriend(userId, targetUserId);
 	}
 
-	wrapMutualFriendIds(
-		userId: string,
-		factory: () => Promise<string[]>,
-	): Promise<string[]> {
+	wrapMutualFriendIds(userId: string, factory: () => Promise<string[]>): Promise<string[]> {
 		return this.cacheService.wrapMutualFriendIds(userId, factory);
 	}
 
@@ -43,10 +33,7 @@ export class FollowCacheAdapter implements FollowCachePort {
 		return this.cacheService.invalidateMutualFriendIds(userId);
 	}
 
-	wrapFriendCount(
-		userId: string,
-		factory: () => Promise<number>,
-	): Promise<number> {
+	wrapFriendCount(userId: string, factory: () => Promise<number>): Promise<number> {
 		return this.cacheService.wrapFriendCount(userId, factory);
 	}
 

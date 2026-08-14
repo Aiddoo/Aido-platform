@@ -29,8 +29,7 @@ export function validateFeatureDiscoveryConfig(
 		context.addIssue({
 			code: "custom",
 			path: ["FEATURE_DISCOVERY_CAMPAIGN_ID"],
-			message:
-				"FEATURE_DISCOVERY_CAMPAIGN_ID is required when FEATURE_DISCOVERY_ENABLED is true",
+			message: "FEATURE_DISCOVERY_CAMPAIGN_ID is required when FEATURE_DISCOVERY_ENABLED is true",
 		});
 	}
 

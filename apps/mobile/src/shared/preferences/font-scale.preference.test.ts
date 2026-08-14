@@ -1,4 +1,5 @@
 import { createMockSyncStorage } from '@src/shared/__tests__';
+
 import { isFontScale, readFontScale, writeFontScale } from './font-scale.preference';
 
 describe('isFontScale', () => {

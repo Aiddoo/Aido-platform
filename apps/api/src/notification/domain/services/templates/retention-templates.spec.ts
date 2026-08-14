@@ -15,18 +15,8 @@ const ctx = (user: number) => ({
 
 describe("NotificationMessageBuilder.retention", () => {
 	it("같은 사용자·단계·로컬 날짜는 재시도에도 같은 문구를 반환한다", () => {
-		const first = NotificationMessageBuilder.retention(
-			"D1",
-			"d1_no_todo",
-			"ko",
-			ctx(1),
-		);
-		const retry = NotificationMessageBuilder.retention(
-			"D1",
-			"d1_no_todo",
-			"ko",
-			ctx(1),
-		);
+		const first = NotificationMessageBuilder.retention("D1", "d1_no_todo", "ko", ctx(1));
+		const retry = NotificationMessageBuilder.retention("D1", "d1_no_todo", "ko", ctx(1));
 
 		expect(retry).toEqual(first);
 		expect(first.variantId).toMatch(/^d1_no_todo\.v[1-3]$/);
@@ -34,57 +24,29 @@ describe("NotificationMessageBuilder.retention", () => {
 
 	it("여러 사용자에게 둘 이상의 카피 variant를 분산한다", () => {
 		const messages = Array.from({ length: 30 }, (_, index) =>
-			NotificationMessageBuilder.retention(
-				"D3",
-				"d3_restart",
-				"ko",
-				ctx(index),
-			),
+			NotificationMessageBuilder.retention("D3", "d3_restart", "ko", ctx(index)),
 		);
 
-		expect(
-			new Set(messages.map((message) => message.variantId)).size,
-		).toBeGreaterThan(1);
+		expect(new Set(messages.map((message) => message.variantId)).size).toBeGreaterThan(1);
 	});
 
 	it("한국어는 친근한 반말이며 존댓말 종결을 쓰지 않는다", () => {
-		const message = NotificationMessageBuilder.retention(
-			"D7",
-			"d7_restart",
-			"ko",
-			ctx(1),
-		);
+		const message = NotificationMessageBuilder.retention("D7", "d7_restart", "ko", ctx(1));
 
-		expect(`${message.title} ${message.body}`).not.toMatch(
-			/(하세요|해보세요|해요|이에요|예요)/,
-		);
+		expect(`${message.title} ${message.body}`).not.toMatch(/(하세요|해보세요|해요|이에요|예요)/);
 		expect(message.title).toMatch(/\p{Extended_Pictographic}/u);
 	});
 
 	it("ko/en은 같은 variant ID와 플레이스홀더 없는 문구를 제공한다", () => {
-		const korean = NotificationMessageBuilder.retention(
-			"D7",
-			"d7_has_progress",
-			"ko",
-			ctx(1),
-		);
-		const english = NotificationMessageBuilder.retention(
-			"D7",
-			"d7_has_progress",
-			"en",
-			ctx(1),
-		);
+		const korean = NotificationMessageBuilder.retention("D7", "d7_has_progress", "ko", ctx(1));
+		const english = NotificationMessageBuilder.retention("D7", "d7_has_progress", "en", ctx(1));
 
 		expect(english.variantId).toBe(korean.variantId);
-		expect(
-			`${korean.title}${korean.body}${english.title}${english.body}`,
-		).not.toMatch(/[{}]/);
+		expect(`${korean.title}${korean.body}${english.title}${english.body}`).not.toMatch(/[{}]/);
 	});
 
 	it("context가 없으면 첫 variant(.v1)를 결정적으로 반환한다", () => {
-		expect(
-			NotificationMessageBuilder.retention("D3", "d3_restart", "ko"),
-		).toEqual({
+		expect(NotificationMessageBuilder.retention("D3", "d3_restart", "ko")).toEqual({
 			title: "오늘부터 다시 시작해도 돼 🌱",
 			body: "지금 필요한 일 하나만 새로 적어봐",
 			variantId: "d3_restart.v1",
@@ -137,17 +99,9 @@ describe("NotificationMessageBuilder.retention", () => {
 				variantId: "d1_has_todo_no_completion.v3",
 			},
 		],
-	] as const)(
-		"[골든] %s:%s %s user-%d",
-		(stage, variantId, locale, user, expected) => {
-			expect(
-				NotificationMessageBuilder.retention(
-					stage,
-					variantId,
-					locale,
-					ctx(user),
-				),
-			).toEqual(expected);
-		},
-	);
+	] as const)("[골든] %s:%s %s user-%d", (stage, variantId, locale, user, expected) => {
+		expect(NotificationMessageBuilder.retention(stage, variantId, locale, ctx(user))).toEqual(
+			expected,
+		);
+	});
 });

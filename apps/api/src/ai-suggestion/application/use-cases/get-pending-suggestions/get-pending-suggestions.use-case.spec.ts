@@ -44,9 +44,7 @@ describe("GetPendingSuggestionsUseCase", () => {
 	let entitlement: Mocked<EntitlementService>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetPendingSuggestionsUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(GetPendingSuggestionsUseCase).compile();
 
 		useCase = unit;
 		repo = unitRef.get(AI_SUGGESTION_REPOSITORY);
@@ -58,9 +56,7 @@ describe("GetPendingSuggestionsUseCase", () => {
 	it("비프리미엄 사용자면 AI_1309 예외를 던지고 조회하지 않아야 한다", async () => {
 		entitlement.hasPremiumAccess.mockResolvedValue(false);
 
-		await expect(useCase.execute(mockUserId)).rejects.toBeInstanceOf(
-			ApplicationException,
-		);
+		await expect(useCase.execute(mockUserId)).rejects.toBeInstanceOf(ApplicationException);
 		expect(repo.findPendingByUserId).not.toHaveBeenCalled();
 	});
 

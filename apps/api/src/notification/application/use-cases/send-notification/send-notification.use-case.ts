@@ -1,19 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { NotificationRecord } from "../../../domain/records/notification.record";
-import {
-	DuplicateNotificationError,
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import type { CreateNotificationData } from "../../ports/notification-data";
 import {
-	PUSH_DISPATCHER,
-	type PushDispatcherPort,
-} from "../../ports/push-dispatcher.port";
+	DuplicateNotificationError,
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
+import { PUSH_DISPATCHER, type PushDispatcherPort } from "../../ports/push-dispatcher.port";
 
 /**
  * 알림 생성 및 푸시 발송 유스케이스.
@@ -34,9 +32,7 @@ export class SendNotificationUseCase {
 		private readonly cache: NotificationCachePort,
 	) {}
 
-	async execute(
-		data: CreateNotificationData,
-	): Promise<NotificationRecord | null> {
+	async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
 		let notification: NotificationRecord;
 		try {
 			notification = await this.notificationRepository.createNotification(data);

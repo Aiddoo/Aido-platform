@@ -1,4 +1,5 @@
 import { t } from '@src/shared/i18n';
+
 import type { AiReport } from '../../models/ai.model';
 
 // 샘플 리포트는 표시 시점 언어를 따라야 하므로 상수가 아닌 빌더 함수로 구성한다

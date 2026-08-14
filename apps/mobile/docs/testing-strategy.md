@@ -8,13 +8,13 @@
 
 ## 테스트 환경
 
-| 항목 | 설정 |
-|------|------|
-| 프레임워크 | Jest + jest-expo |
-| 컴포넌트 테스트 | @testing-library/react-native |
-| 타입체크 | TypeScript strict mode |
-| mock 초기화 | `clearMocks: true`, `restoreMocks: true` |
-| 경로 별칭 | `@src/*`, `@/*`, `@assets/*` + 모노레포 패키지 |
+| 항목            | 설정                                           |
+| --------------- | ---------------------------------------------- |
+| 프레임워크      | Jest + jest-expo                               |
+| 컴포넌트 테스트 | @testing-library/react-native                  |
+| 타입체크        | TypeScript strict mode                         |
+| mock 초기화     | `clearMocks: true`, `restoreMocks: true`       |
+| 경로 별칭       | `@src/*`, `@/*`, `@assets/*` + 모노레포 패키지 |
 
 ```bash
 # 전체 테스트
@@ -54,13 +54,13 @@ pnpm test -- --coverage
 
 ## 테스트 우선순위
 
-| 우선순위 | 레이어 | mock | ROI | 이유 |
-|---------|--------|------|-----|------|
-| 1 | **Policy** | 없음 | 최고 | 순수 함수, 비즈니스 핵심 |
-| 2 | **Mapper** | 없음 | 높음 | 서버 변경 감지의 방파제 |
-| 3 | **Service** | Repository | 중간 | Policy + Repository 위임 검증 |
-| 4 | **Repository** | HttpClient | 중간 | API 호출 + Zod 검증 |
-| 5 | **UI 컴포넌트** | Service 훅 | 낮음 | 렌더링 + 인터랙션 |
+| 우선순위 | 레이어          | mock       | ROI  | 이유                          |
+| -------- | --------------- | ---------- | ---- | ----------------------------- |
+| 1        | **Policy**      | 없음       | 최고 | 순수 함수, 비즈니스 핵심      |
+| 2        | **Mapper**      | 없음       | 높음 | 서버 변경 감지의 방파제       |
+| 3        | **Service**     | Repository | 중간 | Policy + Repository 위임 검증 |
+| 4        | **Repository**  | HttpClient | 중간 | API 호출 + Zod 검증           |
+| 5        | **UI 컴포넌트** | Service 훅 | 낮음 | 렌더링 + 인터랙션             |
 
 ---
 
@@ -93,6 +93,7 @@ src/shared/
 ```
 
 **규칙:**
+
 - 테스트 파일은 **대상 파일과 같은 디렉토리**에 배치 (co-located)
 - `.spec.ts` 가 아니라 **`.test.ts`** / **`.test.tsx`** 사용
 - `describe`/`it`은 **한국어**로 작성
@@ -122,12 +123,12 @@ it('유효한 비밀번호는 모든 규칙을 통과한다', () => {
 
 모든 `describe` 블록에 최소 **성공 1개 + 실패 1개**:
 
-| 레이어 | 성공 케이스 | 실패 케이스 |
-|--------|-----------|-----------|
-| Policy | `isValid('Password1!')` → `true` | `isValid('')` → `false` |
-| Mapper | 정상 DTO → Domain 변환 | nullable 필드가 null인 경우 |
-| Service | Repository 성공 → ok 전파 | Policy 실패 → err + Repository 미호출 |
-| Repository | ok Response → ok Result | 4xx → err Result, 잘못된 응답 → ParseError |
+| 레이어     | 성공 케이스                      | 실패 케이스                                |
+| ---------- | -------------------------------- | ------------------------------------------ |
+| Policy     | `isValid('Password1!')` → `true` | `isValid('')` → `false`                    |
+| Mapper     | 정상 DTO → Domain 변환           | nullable 필드가 null인 경우                |
+| Service    | Repository 성공 → ok 전파        | Policy 실패 → err + Repository 미호출      |
+| Repository | ok Response → ok Result          | 4xx → err Result, 잘못된 응답 → ParseError |
 
 ---
 
@@ -172,8 +173,8 @@ describe('toAuthTokens', () => {
       refreshToken: dto.refreshToken,
       userId: dto.userId,
       userTag: dto.userTag,
-      userName: 'Kim',                // name → userName 리네이밍
-      userProfileImage: 'url',        // profileImage → userProfileImage
+      userName: 'Kim', // name → userName 리네이밍
+      userProfileImage: 'url', // profileImage → userProfileImage
       accountRestored: false,
     });
   });
@@ -271,9 +272,7 @@ describe('Button', () => {
 // features/auth/__tests__/auth.factories.ts
 
 /** DTO (서버 응답) 팩토리 */
-export const createAuthTokensDto = (
-  overrides?: Partial<AuthTokensDto>,
-): AuthTokensDto => ({
+export const createAuthTokensDto = (overrides?: Partial<AuthTokensDto>): AuthTokensDto => ({
   userId: 'user-123',
   userTag: 'test#1234',
   accessToken: 'mock-access-token',
@@ -285,9 +284,7 @@ export const createAuthTokensDto = (
 });
 
 /** API 에러 팩토리 */
-export const createAuthApiError = (
-  overrides?: Partial<ApiError>,
-): ApiError =>
+export const createAuthApiError = (overrides?: Partial<ApiError>): ApiError =>
   new ApiError(
     overrides?.code ?? 'USER_0602',
     overrides?.message ?? '이메일 또는 비밀번호를 확인해주세요',
@@ -298,7 +295,7 @@ export const createAuthApiError = (
 **사용법:**
 
 ```typescript
-const dto = createAuthTokensDto();                                // 기본값
+const dto = createAuthTokensDto(); // 기본값
 const restoredDto = createAuthTokensDto({ accountRestored: true }); // 오버라이드
 ```
 
@@ -329,11 +326,11 @@ export const createMockStorage = (): jest.Mocked<Storage> => ({
 
 3가지 에러 트랙을 모두 테스트:
 
-| 트랙 | 에러 | 테스트 위치 | 검증 방법 |
-|------|------|-----------|----------|
-| 4xx ApiError | `Result.err(ApiError)` | Service/Repository | `expect(result.ok).toBe(false)` |
-| 5xx/Network InfraError | `throw InfraError` | Service/Repository | `rejects.toThrow()` |
-| Policy 실패 | `Result.err({Feature}Error)` | Service | `expect(result.ok).toBe(false)` + Repository 미호출 |
+| 트랙                   | 에러                         | 테스트 위치        | 검증 방법                                           |
+| ---------------------- | ---------------------------- | ------------------ | --------------------------------------------------- |
+| 4xx ApiError           | `Result.err(ApiError)`       | Service/Repository | `expect(result.ok).toBe(false)`                     |
+| 5xx/Network InfraError | `throw InfraError`           | Service/Repository | `rejects.toThrow()`                                 |
+| Policy 실패            | `Result.err({Feature}Error)` | Service            | `expect(result.ok).toBe(false)` + Repository 미호출 |
 
 ```typescript
 // 부수효과 보장 테스트 (로그아웃: API 실패해도 토큰 삭제)
@@ -342,8 +339,8 @@ it('API 실패해도 토큰 삭제 (finally 보장)', async () => {
 
   const result = await service.logout();
 
-  expect(storage.remove).toHaveBeenCalledWith('accessToken');   // 삭제됨
-  expect(storage.remove).toHaveBeenCalledWith('refreshToken');  // 삭제됨
+  expect(storage.remove).toHaveBeenCalledWith('accessToken'); // 삭제됨
+  expect(storage.remove).toHaveBeenCalledWith('refreshToken'); // 삭제됨
   expect(result).toEqual({ ok: false, error: apiError });
 });
 ```
@@ -354,23 +351,23 @@ it('API 실패해도 토큰 삭제 (finally 보장)', async () => {
 
 ### 테스트 파일 (20 suites, 228 tests)
 
-| 카테고리 | 파일 수 | 테스트 수 |
-|----------|--------|----------|
-| Auth (Service/Mapper/Model) | 3 | ~90 |
-| User (Service/Mapper/Model) | 3 | ~30 |
-| Todo (Utility) | 2 | ~20 |
-| Shared UI 컴포넌트 | 11 | ~80 |
-| Shared 유틸리티 | 1 | ~8 |
+| 카테고리                    | 파일 수 | 테스트 수 |
+| --------------------------- | ------- | --------- |
+| Auth (Service/Mapper/Model) | 3       | ~90       |
+| User (Service/Mapper/Model) | 3       | ~30       |
+| Todo (Utility)              | 2       | ~20       |
+| Shared UI 컴포넌트          | 11      | ~80       |
+| Shared 유틸리티             | 1       | ~8        |
 
 ### 아직 미작성
 
-| 레이어 | 대상 | 우선순위 |
-|--------|------|---------|
-| Repository | Auth, User, Todo, Friend | 높음 |
-| Service | Todo, Friend, Notification | 중간 |
-| Policy | Todo, Friend | 높음 |
-| Mapper | Todo, Friend, Notification | 중간 |
-| UI 컴포넌트 | 주요 Screen 컴포넌트 | 낮음 |
+| 레이어      | 대상                       | 우선순위 |
+| ----------- | -------------------------- | -------- |
+| Repository  | Auth, User, Todo, Friend   | 높음     |
+| Service     | Todo, Friend, Notification | 중간     |
+| Policy      | Todo, Friend               | 높음     |
+| Mapper      | Todo, Friend, Notification | 중간     |
+| UI 컴포넌트 | 주요 Screen 컴포넌트       | 낮음     |
 
 ---
 

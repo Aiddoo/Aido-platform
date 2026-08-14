@@ -15,10 +15,7 @@ import {
 	SCHEDULER_DEDUP_TTL_MS,
 	SchedulerDedupKey,
 } from "@/scheduler/infrastructure/cache/scheduler-dedup.keyspace";
-import {
-	TODO_CACHE_TTL_MS,
-	TodoCacheKey,
-} from "@/todo/infrastructure/cache/todo-cache.keyspace";
+import { TODO_CACHE_TTL_MS, TodoCacheKey } from "@/todo/infrastructure/cache/todo-cache.keyspace";
 import {
 	WEATHER_CACHE_TTL_MS,
 	WeatherCacheKey,
@@ -29,27 +26,20 @@ describe("bounded-context cache keyspace contracts", () => {
 		expect(WeatherCacheKey.forecast(60, 127, "20260401", "0800")).toBe(
 			"aido:v1:weather:forecast:60:127:20260401:0800",
 		);
-		expect(WeatherCacheKey.latestForecast(60, 127)).toBe(
-			"aido:v1:weather:forecast-latest:60:127",
-		);
-		expect(WeatherCacheKey.conditions(60, 127)).toBe(
-			"aido:v1:weather:conditions:60:127",
-		);
+		expect(WeatherCacheKey.latestForecast(60, 127)).toBe("aido:v1:weather:forecast-latest:60:127");
+		expect(WeatherCacheKey.conditions(60, 127)).toBe("aido:v1:weather:conditions:60:127");
 		expect(TodoCacheKey.friendTodosFirstPage("user-1", "-", "-", 20)).toBe(
 			"aido:v1:todo:friend-view-v1:user-1:-:-:20",
 		);
-		expect(
-			DailyCompletionCacheKey.range("user-1", "2026-01-01", "2026-01-31"),
-		).toBe("aido:v1:daily-completion:range-v1:user-1:2026-01-01:2026-01-31");
+		expect(DailyCompletionCacheKey.range("user-1", "2026-01-01", "2026-01-31")).toBe(
+			"aido:v1:daily-completion:range-v1:user-1:2026-01-01:2026-01-31",
+		);
 		expect(NotificationCacheKey.pushTokens("user-1")).toBe(
 			"aido:v1:notification:push-tokens:user-1",
 		);
-		expect(
-			notificationDedupKey(
-				"MORNING_REMINDER",
-				new Date("2026-01-01T00:00:00.000Z"),
-			),
-		).toBe("aido:v1:notification:dedup-notified:MORNING_REMINDER:2026-01-01");
+		expect(notificationDedupKey("MORNING_REMINDER", new Date("2026-01-01T00:00:00.000Z"))).toBe(
+			"aido:v1:notification:dedup-notified:MORNING_REMINDER:2026-01-01",
+		);
 		expect(SchedulerDedupKey.winbackStages("user-1")).toBe(
 			"aido:v1:scheduler:dedup-winback-stages:user-1",
 		);

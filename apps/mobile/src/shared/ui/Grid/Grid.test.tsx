@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
+
 import { Grid } from './Grid';
 import { GridItem } from './GridItem';
 

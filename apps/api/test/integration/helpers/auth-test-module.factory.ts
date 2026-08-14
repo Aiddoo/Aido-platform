@@ -8,10 +8,11 @@
  * 실제 DB (Testcontainers)를 사용하는 통합 테스트용입니다.
  */
 
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { TransactionHost } from "@nestjs-cls/transactional";
+
 import { AdminEventNotifier } from "@/admin-notification";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
@@ -53,6 +54,7 @@ import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
+
 import type { FakeEmailService } from "../../mocks/fake-email.service";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider";
 import { retentionEnrollerTestProvider } from "./retention-enroller.provider";
@@ -147,10 +149,7 @@ export async function createAuthTestModule(
 				useValue: {
 					invalidateSession: async () => {},
 					invalidateUserProfile: async () => {},
-					wrapUserProfile: async (
-						_userId: string,
-						fn: () => Promise<unknown>,
-					) => fn(),
+					wrapUserProfile: async (_userId: string, fn: () => Promise<unknown>) => fn(),
 				},
 			},
 			{
@@ -166,30 +165,24 @@ export async function createAuthTestModule(
 				useValue: {
 					get: (key: string) => {
 						const config: Record<string, string> = {
-							JWT_SECRET:
-								process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+							JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
 							JWT_REFRESH_SECRET:
-								process.env.JWT_REFRESH_SECRET ??
-								"test-jwt-refresh-secret-for-integration",
-							JWT_REFRESH_EXPIRES_IN:
-								process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+								process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
+							JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 						};
 						return config[key];
 					},
-					jwtSecret:
-						process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+					jwtSecret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 					jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
 					jwtRefreshSecret:
-						process.env.JWT_REFRESH_SECRET ??
-						"test-jwt-refresh-secret-for-integration",
+						process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
 					jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 					jwtConfig: {
 						secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 						expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
 						refreshSecret:
-							process.env.JWT_REFRESH_SECRET ??
-							"test-jwt-refresh-secret-for-integration",
+							process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
 						refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 					},
 				},
@@ -199,14 +192,11 @@ export async function createAuthTestModule(
 				useValue: {
 					get: (key: string) => {
 						const config: Record<string, string> = {
-							JWT_SECRET:
-								process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+							JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
 							JWT_REFRESH_SECRET:
-								process.env.JWT_REFRESH_SECRET ??
-								"test-jwt-refresh-secret-for-integration",
-							JWT_REFRESH_EXPIRES_IN:
-								process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+								process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
+							JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 						};
 						return config[key];
 					},

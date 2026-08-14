@@ -7,11 +7,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createWeatherCacheMock } from "@test/mocks/ports";
+
 import { UserLocation } from "../../../domain/entities/user-location.entity";
-import {
-	WEATHER_CACHE,
-	type WeatherCachePort,
-} from "../../ports/weather-cache.port";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,

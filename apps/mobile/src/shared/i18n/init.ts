@@ -6,6 +6,7 @@ import { readLanguageMode, resolveLanguage } from '@src/shared/preferences/langu
 import dayjs from 'dayjs';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+
 import { getDeviceLanguage } from './device-language';
 import { resources } from './resources';
 

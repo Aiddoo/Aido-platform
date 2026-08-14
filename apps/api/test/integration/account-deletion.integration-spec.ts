@@ -21,11 +21,12 @@
  */
 
 import { ACCOUNT_DELETION } from "@aido/validators";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { AdminEventNotifier } from "@/admin-notification";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
@@ -71,6 +72,7 @@ import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
+
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { FakeJobRuntime } from "../mocks/fake-job-runtime";
 import { TestDatabase } from "../setup/test-database";
@@ -187,10 +189,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					useValue: {
 						invalidateSession: async () => {},
 						invalidateUserProfile: async () => {},
-						wrapUserProfile: async (
-							_userId: string,
-							fn: () => Promise<unknown>,
-						) => fn(),
+						wrapUserProfile: async (_userId: string, fn: () => Promise<unknown>) => fn(),
 					},
 				},
 				{
@@ -206,31 +205,24 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					useValue: {
 						get: (key: string) => {
 							const config: Record<string, string> = {
-								JWT_SECRET:
-									process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+								JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 								JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
 								JWT_REFRESH_SECRET:
-									process.env.JWT_REFRESH_SECRET ??
-									"test-jwt-refresh-secret-for-integration",
-								JWT_REFRESH_EXPIRES_IN:
-									process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+									process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
+								JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 							};
 							return config[key];
 						},
-						jwtSecret:
-							process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+						jwtSecret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 						jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
 						jwtRefreshSecret:
-							process.env.JWT_REFRESH_SECRET ??
-							"test-jwt-refresh-secret-for-integration",
+							process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
 						jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 						jwtConfig: {
-							secret:
-								process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+							secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 							expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
 							refreshSecret:
-								process.env.JWT_REFRESH_SECRET ??
-								"test-jwt-refresh-secret-for-integration",
+								process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
 							refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 						},
 					},
@@ -240,14 +232,11 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					useValue: {
 						get: (key: string) => {
 							const config: Record<string, string> = {
-								JWT_SECRET:
-									process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+								JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
 								JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
 								JWT_REFRESH_SECRET:
-									process.env.JWT_REFRESH_SECRET ??
-									"test-jwt-refresh-secret-for-integration",
-								JWT_REFRESH_EXPIRES_IN:
-									process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+									process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
+								JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 							};
 							return config[key];
 						},
@@ -279,9 +268,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 		_userRepository = module.get<UserRepository>(UserRepository);
 		_accountRepository = module.get<AccountRepository>(AccountRepository);
 		_sessionRepository = module.get<SessionRepository>(SessionRepository);
-		_securityLogRepository = module.get<SecurityLogRepository>(
-			SecurityLogRepository,
-		);
+		_securityLogRepository = module.get<SecurityLogRepository>(SecurityLogRepository);
 	}, 60000);
 
 	beforeEach(async () => {
@@ -301,10 +288,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 	 * 테스트용 이메일 계정 생성 + 인증 완료 헬퍼
 	 * @returns userId
 	 */
-	async function createVerifiedCredentialUser(
-		email: string,
-		password: string,
-	): Promise<string> {
+	async function createVerifiedCredentialUser(email: string, password: string): Promise<string> {
 		// 1. 회원가입
 		const registerResult = await authService.register({
 			email,
@@ -388,11 +372,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			});
 
 			// When
-			const result = await authService.deleteAccount(
-				user.id,
-				"test-session",
-				{},
-			);
+			const result = await authService.deleteAccount(user.id, "test-session", {});
 
 			// Then
 			expect(result.gracePeriodDays).toBe(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
@@ -436,9 +416,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			// Given - 31일 전 탈퇴된 사용자 (DB 직접 생성)
 			const prisma = testDb.getPrisma();
 			const pastDate = new Date();
-			pastDate.setDate(
-				pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1),
-			);
+			pastDate.setDate(pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1));
 
 			const email = "expired-delete@example.com";
 			const password = "Test1234!";
@@ -451,9 +429,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			});
 
 			// When & Then (탈퇴 복구 유예 초과 — 도메인 정책 USER_0606)
-			await expect(authService.login({ email, password })).rejects.toThrow(
-				DomainException,
-			);
+			await expect(authService.login({ email, password })).rejects.toThrow(DomainException);
 		});
 	});
 
@@ -462,9 +438,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			// Given - deletedAt이 31일 전인 사용자 DB에 직접 생성
 			const prisma = testDb.getPrisma();
 			const pastDate = new Date();
-			pastDate.setDate(
-				pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1),
-			);
+			pastDate.setDate(pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1));
 
 			const user = await prisma.user.create({
 				data: {
@@ -489,9 +463,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			// Given - deletedAt이 29일 전인 사용자
 			const prisma = testDb.getPrisma();
 			const recentDate = new Date();
-			recentDate.setDate(
-				recentDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1),
-			);
+			recentDate.setDate(recentDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1));
 
 			const user = await prisma.user.create({
 				data: {

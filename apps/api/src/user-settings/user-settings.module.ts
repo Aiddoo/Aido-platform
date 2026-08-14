@@ -14,12 +14,12 @@ import {
 	USER_STREAK_ACCESS,
 } from "./application/ports/user-settings-access.port";
 import { USER_SETTINGS_CACHE } from "./application/ports/user-settings-cache.port";
-import { GetConsentUseCase } from "./application/use-cases/get-consent/get-consent.use-case";
 import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record/get-consent-record.use-case";
 import { GetConsentRecordsUseCase } from "./application/use-cases/get-consent-records/get-consent-records.use-case";
-import { GetPreferenceUseCase } from "./application/use-cases/get-preference/get-preference.use-case";
+import { GetConsentUseCase } from "./application/use-cases/get-consent/get-consent.use-case";
 import { GetPreferenceRecordUseCase } from "./application/use-cases/get-preference-record/get-preference-record.use-case";
 import { GetPreferenceRecordsUseCase } from "./application/use-cases/get-preference-records/get-preference-records.use-case";
+import { GetPreferenceUseCase } from "./application/use-cases/get-preference/get-preference.use-case";
 import { OnTodoToggledUseCase } from "./application/use-cases/on-todo-toggled/on-todo-toggled.use-case";
 import { RefreshPushTimezoneUseCase } from "./application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
 import { SeedUserSettingsUseCase } from "./application/use-cases/seed-user-settings/seed-user-settings.use-case";

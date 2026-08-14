@@ -1,9 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
-import {
-	ACCOUNT_DELETION,
-	SECURITY_EVENT,
-} from "@/auth/domain/constants/auth.constants";
+
+import { ACCOUNT_DELETION, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import {
@@ -12,10 +10,7 @@ import {
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 
 /**

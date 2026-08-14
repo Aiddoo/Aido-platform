@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { Verification, VerificationType } from "@/generated/prisma/client";
 import { now } from "@/shared/domain/date/utils/core";
 import { DatabaseService } from "@/shared/infrastructure/database";
@@ -8,9 +9,7 @@ import { DatabaseService } from "@/shared/infrastructure/database";
 @Injectable()
 export class VerificationRepository {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 		// incrementAttempts는 활성 트랜잭션을 우회해야 하므로 베이스 클라이언트를 별도 주입한다.
 		private readonly database: DatabaseService,
 	) {}
@@ -135,10 +134,7 @@ export class VerificationRepository {
 		});
 	}
 
-	async invalidateAllByUserIdAndType(
-		userId: string,
-		type: VerificationType,
-	): Promise<number> {
+	async invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number> {
 		// 만료 시간을 현재 시간으로 설정하여 무효화
 		const result = await this.client.verification.updateMany({
 			where: {

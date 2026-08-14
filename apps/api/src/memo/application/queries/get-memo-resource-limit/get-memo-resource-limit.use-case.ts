@@ -1,9 +1,7 @@
 import { MEMO_LIMITS } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 
 /** 메모 리소스 제한 정보 조회 입력. */
 export interface GetMemoResourceLimitInput {

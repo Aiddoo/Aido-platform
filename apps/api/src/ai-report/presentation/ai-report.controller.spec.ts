@@ -11,6 +11,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case";
 import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case";
 import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case";
@@ -30,8 +31,7 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(AiReportController).compile();
+		const { unit, unitRef } = await TestBed.solitary(AiReportController).compile();
 
 		controller = unit;
 		getReportStatusUseCase = unitRef.get(GetReportStatusUseCase);
@@ -57,10 +57,7 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 			const result = await controller.getStatus(mockUser, tz);
 
 			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
-			expect(getReportStatusUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				tz,
-			);
+			expect(getReportStatusUseCase.execute).toHaveBeenCalledWith(mockUser.userId, tz);
 			expect(result).toEqual({ status: mockStatus });
 		});
 	});
@@ -136,10 +133,7 @@ describe("AiReportController — AI 리포트 컨트롤러", () => {
 			const result = await controller.getReport(mockUser, { id: reportId });
 
 			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
-			expect(getReportByIdUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-				reportId,
-			);
+			expect(getReportByIdUseCase.execute).toHaveBeenCalledWith(mockUser.userId, reportId);
 			expect(result).toEqual({ report: mockReport });
 		});
 	});

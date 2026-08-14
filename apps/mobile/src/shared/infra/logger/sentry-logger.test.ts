@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+
 import { createSentryLogger } from './sentry-logger';
 
 jest.mock('@sentry/react-native', () => ({

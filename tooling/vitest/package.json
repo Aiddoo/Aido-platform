@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "main": "./vitest.preset.ts",
   "exports": {
     ".": "./vitest.preset.ts"
   },
-  "main": "./vitest.preset.ts",
   "devDependencies": {
     "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",

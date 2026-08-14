@@ -53,11 +53,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
 		locale: SupportedLocale = "ko",
 	): Promise<number> {
 		// 1. 컨텍스트 수집 (통계 분석 + 투두 조회 + 날씨)
-		const context = await this.contextBuilder.build(
-			userId,
-			timezone,
-			weatherGrid ?? null,
-		);
+		const context = await this.contextBuilder.build(userId, timezone, weatherGrid ?? null);
 
 		if (context.todos.length === 0) {
 			this.#logger.debug(`제안 분석 스킵: userId=${userId}, todoCount=0`);
@@ -79,8 +75,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
 			maxOutputTokens: 1500,
 		});
 
-		const isStarter =
-			context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
+		const isStarter = context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
 		let patterns = isStarter
 			? normalizeStarterSuggestions(result.output.patterns, context, locale)
 			: filterWeakPatterns(result.output.patterns, context);
@@ -97,9 +92,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
 
 		// 3. 기존 PENDING 교체 + 만료 정리 + 새 제안 저장 (트랜잭션)
 		const currentDate = dayjs.utc(now());
-		const expiresAt = currentDate
-			.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day")
-			.toDate();
+		const expiresAt = currentDate.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day").toDate();
 
 		// 신뢰도 내림차순 정렬 후 상한 적용 (Gemini review 반영)
 		const limitedPatterns = [...patterns]

@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -10,10 +11,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { CreateInquiryUseCase } from "../application/use-cases/create-inquiry/create-inquiry.use-case";
 import { CreateInquiryDto, CreateInquiryResponseDto } from "./dtos";
 
@@ -42,10 +40,7 @@ export class InquiryController {
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async createInquiry(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: CreateInquiryDto,
-	) {
+	async createInquiry(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateInquiryDto) {
 		await this.createInquiryUseCase.execute({
 			userId: user.userId,
 			userEmail: user.email,

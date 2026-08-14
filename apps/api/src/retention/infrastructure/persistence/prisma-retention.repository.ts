@@ -1,7 +1,9 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type {
 	ClaimedOutbox,
 	CreateRetentionDeliveryInput,
@@ -39,9 +41,7 @@ interface RetentionStageRow {
 @Injectable()
 export class PrismaRetentionRepository implements RetentionRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	private get client() {
@@ -83,16 +83,15 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 			data: { startedAt },
 		});
 		if (claimed.count !== 1) return false;
-		const assignment =
-			await this.client.retentionExperimentAssignment.findUniqueOrThrow({
-				where: {
-					userId_experimentKey: {
-						userId,
-						experimentKey: RETENTION_EXPERIMENT_KEY,
-					},
+		const assignment = await this.client.retentionExperimentAssignment.findUniqueOrThrow({
+			where: {
+				userId_experimentKey: {
+					userId,
+					experimentKey: RETENTION_EXPERIMENT_KEY,
 				},
-				select: { id: true },
-			});
+			},
+			select: { id: true },
+		});
 		await this.client.retentionExperimentStage.createMany({
 			data: RETENTION_STAGE_NAMES.map((stage) => ({
 				assignmentId: assignment.id,
@@ -104,10 +103,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 	}
 
 	async findScheduledStages(limit: number): Promise<RetentionStageCandidate[]> {
-		const perStageLimit = Math.max(
-			1,
-			Math.ceil(limit / RETENTION_STAGE_NAMES.length),
-		);
+		const perStageLimit = Math.max(1, Math.ceil(limit / RETENTION_STAGE_NAMES.length));
 		const rows = await this.client.$queryRaw<RetentionStageRow[]>`
 			WITH valid_timezones AS MATERIALIZED (
 				SELECT timezone.name
@@ -224,9 +220,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 			},
 			select: { id: true },
 		});
-		const localDate = new Date(
-			`${localDateString(new Date(), input.timezone)}T00:00:00.000Z`,
-		);
+		const localDate = new Date(`${localDateString(new Date(), input.timezone)}T00:00:00.000Z`);
 		const dispatch = await this.client.pushDispatch.create({
 			data: {
 				notificationId: notification.id,
@@ -335,9 +329,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 		});
 	}
 
-	async claimDispatch(
-		outboxId: string,
-	): Promise<RetentionDispatchCandidate | null> {
+	async claimDispatch(outboxId: string): Promise<RetentionDispatchCandidate | null> {
 		const outbox = await this.client.retentionPushOutbox.findUnique({
 			where: { id: outboxId },
 			select: { dispatchId: true },
@@ -388,8 +380,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 			timezone: dispatch.timezone,
 			pushEnabled: dispatch.user.preference?.pushEnabled ?? false,
 			nightPushEnabled: dispatch.user.preference?.nightPushEnabled ?? false,
-			marketingPushAgreedAt:
-				dispatch.user.consent?.marketingPushAgreedAt ?? null,
+			marketingPushAgreedAt: dispatch.user.consent?.marketingPushAgreedAt ?? null,
 			tokens: dispatch.user.pushTokens,
 		};
 	}
@@ -424,9 +415,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 				{
 					dispatchId,
 					pushTokenId,
-					status: result.success
-						? ("TICKET_ACCEPTED" as const)
-						: ("FAILED" as const),
+					status: result.success ? ("TICKET_ACCEPTED" as const) : ("FAILED" as const),
 					expoTicketId: result.ticketId,
 					errorCode: result.errorCode,
 					errorMessage: result.error?.slice(0, 500),

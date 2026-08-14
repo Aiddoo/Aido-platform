@@ -37,9 +37,7 @@ export interface DailyCompletionsRange {
  * 도메인 규칙: 완료일(isComplete) = 할 일이 1개 이상이고 전부 완료된 날,
  * 완료율(completionRate) = round(완료/전체 × 100).
  */
-export function toSummaries(
-	aggregates: TodoAggregateByDate[],
-): DailyCompletionSummary[] {
+export function toSummaries(aggregates: TodoAggregateByDate[]): DailyCompletionSummary[] {
 	return aggregates
 		.map(({ date, total, completed, categoryColors }) => ({
 			date: toDateString(date),
@@ -61,9 +59,7 @@ export function buildDailyCompletionsRange(
 	dateRange: { startDate: string; endDate: string },
 ): DailyCompletionsRange {
 	const completions = toSummaries(aggregates);
-	const totalCompleteDays = completions.filter(
-		(summary) => summary.isComplete,
-	).length;
+	const totalCompleteDays = completions.filter((summary) => summary.isComplete).length;
 
 	return { completions, totalCompleteDays, dateRange };
 }

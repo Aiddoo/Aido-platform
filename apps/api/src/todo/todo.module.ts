@@ -5,16 +5,15 @@ import { NotificationModule } from "../notification/notification.module";
 import { SchedulerModule } from "../scheduler/scheduler.module";
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
 import { UserSettingsModule } from "../user-settings/user-settings.module";
-
 import { EventHandlers } from "./application/events";
 import { CATEGORY_OWNERSHIP } from "./application/ports/category-ownership.port";
 import { FRIEND_PORT } from "./application/ports/friend.port";
 import { STREAK_PORT } from "./application/ports/streak.port";
-import { TODO_REPOSITORY } from "./application/ports/todo.repository.port";
 import { TODO_CACHE } from "./application/ports/todo-cache.port";
 import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port";
 import { TODO_READ_REPOSITORY } from "./application/ports/todo-read.repository.port";
 import { TODO_REMINDER } from "./application/ports/todo-reminder.port";
+import { TODO_REPOSITORY } from "./application/ports/todo.repository.port";
 import { TodoQueryUseCases } from "./application/queries";
 import {
 	CreateRecurringTodosUseCase,
@@ -23,8 +22,8 @@ import {
 } from "./application/use-cases";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
-import { PrismaTodoRepository } from "./infrastructure/adapters/prisma-todo.repository";
 import { PrismaTodoReadRepository } from "./infrastructure/adapters/prisma-todo-read.repository";
+import { PrismaTodoRepository } from "./infrastructure/adapters/prisma-todo.repository";
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter";
 import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter";

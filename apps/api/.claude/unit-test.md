@@ -10,32 +10,32 @@
 
 ## 관련 문서
 
-| 문서 | 내용 |
-|------|------|
-| [testing-guide.md](./testing-guide.md) | 종합 테스팅 가이드 |
+| 문서                                         | 내용               |
+| -------------------------------------------- | ------------------ |
+| [testing-guide.md](./testing-guide.md)       | 종합 테스팅 가이드 |
 | [integration-test.md](./integration-test.md) | 통합 테스트 가이드 |
-| [e2e-test.md](./e2e-test.md) | E2E 테스트 가이드 |
+| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 가이드  |
 
 ---
 
 ## 개요
 
-| 항목 | 설명 |
-|------|------|
-| **파일 위치** | 테스트 대상과 같은 폴더 (`src/{name}/`) |
-| **명명 규칙** | `{파일명}.spec.ts` |
-| **핵심 도구** | `@suites/unit` (TestBed.solitary) + `@suites/doubles.jest` (Mocked) |
-| **데이터 생성** | Builder 패턴 (`@test/builders`) |
-| **실행 속도** | 빠름 (DB 연결 없음, 모든 의존성 자동 Mock) |
+| 항목            | 설명                                                                |
+| --------------- | ------------------------------------------------------------------- |
+| **파일 위치**   | 테스트 대상과 같은 폴더 (`src/{name}/`)                             |
+| **명명 규칙**   | `{파일명}.spec.ts`                                                  |
+| **핵심 도구**   | `@suites/unit` (TestBed.solitary) + `@suites/doubles.jest` (Mocked) |
+| **데이터 생성** | Builder 패턴 (`@test/builders`)                                     |
+| **실행 속도**   | 빠름 (DB 연결 없음, 모든 의존성 자동 Mock)                          |
 
 ---
 
 ## 핵심 라이브러리
 
-| 패키지 | 역할 | import |
-|--------|------|--------|
-| `@suites/unit` | 자동 Mock DI 컨테이너 | `import { TestBed } from "@suites/unit"` |
-| `@suites/doubles.jest` | Mock 타입 유틸리티 | `import type { Mocked } from "@suites/doubles.jest"` |
+| 패키지                 | 역할                  | import                                               |
+| ---------------------- | --------------------- | ---------------------------------------------------- |
+| `@suites/unit`         | 자동 Mock DI 컨테이너 | `import { TestBed } from "@suites/unit"`             |
+| `@suites/doubles.jest` | Mock 타입 유틸리티    | `import type { Mocked } from "@suites/doubles.jest"` |
 
 ---
 
@@ -99,12 +99,14 @@ beforeEach(async () => {
 ### 예외: Suites 미사용
 
 순수 함수/상수 테스트는 DI가 불필요하므로 Suites 없이 직접 테스트합니다:
+
 - `cache-keys.spec.ts` - 캐시 키 생성 함수
 - `date.util.spec.ts` - 날짜 유틸리티
 - `notification-templates.spec.ts` - 알림 템플릿 상수
 - `in-memory-cache.adapter.spec.ts` - 캐시 어댑터
 
 외부 SDK의 **모듈 레벨 mock**(`jest.mock()`)이 필요한 경우에도 `Test.createTestingModule()`을 사용합니다:
+
 - `gemini.provider.spec.ts` - AI SDK(`ai` 패키지)를 `jest.mock("ai")`로 모킹. Suites는 모듈 레벨 mock을 지원하지 않으므로 이 방식이 정당함
 
 ---
@@ -116,23 +118,19 @@ beforeEach(async () => {
 ### 사용법
 
 ```typescript
-import { UserBuilder, VerificationBuilder, LoginAttemptBuilder } from "@test/builders";
+import { UserBuilder, VerificationBuilder, LoginAttemptBuilder } from '@test/builders';
 
 // 기본 사용자
 const user = UserBuilder.create().build();
 
 // 커스텀 사용자
-const admin = UserBuilder.create()
-  .withEmail("admin@example.com")
-  .asAdmin()
-  .verified()
-  .build();
+const admin = UserBuilder.create().withEmail('admin@example.com').asAdmin().verified().build();
 
 // 만료된 인증
-const expired = VerificationBuilder.create("user-123", "PASSWORD_RESET").expired().build();
+const expired = VerificationBuilder.create('user-123', 'PASSWORD_RESET').expired().build();
 
 // 실패한 로그인 시도
-const attempt = LoginAttemptBuilder.create("test@example.com").asFailed().build();
+const attempt = LoginAttemptBuilder.create('test@example.com').asFailed().build();
 ```
 
 ### `buildWithRelations()` — 관계 데이터 포함 빌드
@@ -146,14 +144,14 @@ const cheer = CheerBuilder.create(senderId, receiverId).build();
 
 // 관계 포함 빌드 — sender/receiver 프로필 등 포함
 const cheerWithRelations = CheerBuilder.create(senderId, receiverId)
-  .withMessage("잘했어!")
-  .withSenderProfile({ name: "테스트유저", profileImage: null })
+  .withMessage('잘했어!')
+  .withSenderProfile({ name: '테스트유저', profileImage: null })
   .buildWithRelations();
 
 // 목록 mock에서 여러 Builder 조합
 mockRepo.findMany.mockResolvedValue([
-  CheerBuilder.create("sender-1", userId).withId(1).buildWithRelations(),
-  CheerBuilder.create("sender-2", userId).withId(2).buildWithRelations(),
+  CheerBuilder.create('sender-1', userId).withId(1).buildWithRelations(),
+  CheerBuilder.create('sender-2', userId).withId(2).buildWithRelations(),
 ]);
 ```
 
@@ -215,26 +213,26 @@ export class {Model}Builder {
 
 **체이닝 메서드 네이밍**:
 
-| 패턴 | 용도 | 예시 |
-|------|------|------|
-| `with{Field}()` | 단일 필드 설정 | `.withEmail("a@b.com")`, `.withMessage("화이팅")` |
-| `as{State}()` / `{state}()` | 도메인 상태 전환 | `.verified()`, `.asAdmin()`, `.completed()`, `.expired()` |
-| `buildWithRelations()` | 관계 데이터 포함 빌드 | `CheerBuilder`, `NudgeBuilder`, `NotificationBuilder` |
+| 패턴                        | 용도                  | 예시                                                      |
+| --------------------------- | --------------------- | --------------------------------------------------------- |
+| `with{Field}()`             | 단일 필드 설정        | `.withEmail("a@b.com")`, `.withMessage("화이팅")`         |
+| `as{State}()` / `{state}()` | 도메인 상태 전환      | `.verified()`, `.asAdmin()`, `.completed()`, `.expired()` |
+| `buildWithRelations()`      | 관계 데이터 포함 빌드 | `CheerBuilder`, `NudgeBuilder`, `NotificationBuilder`     |
 
 **`create()` 파라미터 기준**: 외래키(FK)만 파라미터로 받고, 나머지는 기본값 → 체이닝으로 override.
 
 ```typescript
 // FK가 없는 모델 → 파라미터 없음
-UserBuilder.create()
+UserBuilder.create();
 
 // FK 1개 → userId
-TodoBuilder.create(userId)
+TodoBuilder.create(userId);
 
 // FK 2개 → senderId, receiverId
-CheerBuilder.create(senderId, receiverId)
+CheerBuilder.create(senderId, receiverId);
 
 // 복합 키 → 필수 식별 필드
-VerificationBuilder.create(userId, type)
+VerificationBuilder.create(userId, type);
 ```
 
 > 전체 Builder 목록: `test/builders/index.ts` 참조
@@ -248,9 +246,9 @@ VerificationBuilder.create(userId, type)
 ### 정상 케이스
 
 ```typescript
-it("유효한 토큰을 등록해야 한다", async () => {
+it('유효한 토큰을 등록해야 한다', async () => {
   // Given - 유효한 Expo 푸시 토큰 데이터 준비
-  const data = { userId: mockUserId, token: "ExponentPushToken[xxx]" };
+  const data = { userId: mockUserId, token: 'ExponentPushToken[xxx]' };
   const expectedToken = PushTokenBuilder.create(mockUserId).build();
   notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
 
@@ -266,13 +264,14 @@ it("유효한 토큰을 등록해야 한다", async () => {
 ### 예외 케이스
 
 ```typescript
-it("유효하지 않은 토큰이면 예외를 던져야 한다", async () => {
+it('유효하지 않은 토큰이면 예외를 던져야 한다', async () => {
   // Given - 유효하지 않은 토큰
   pushProvider.validateToken.mockReturnValue(false);
 
   // When & Then - ApplicationException(ErrorCode) 발생
-  await expect(useCase.execute({ userId: mockUserId, token: "invalid" }))
-    .rejects.toMatchObject({ errorCode: "NOTIFICATION_1001" });
+  await expect(useCase.execute({ userId: mockUserId, token: 'invalid' })).rejects.toMatchObject({
+    errorCode: 'NOTIFICATION_1001',
+  });
   expect(notificationRepo.registerPushToken).not.toHaveBeenCalled();
 });
 ```
@@ -282,11 +281,11 @@ it("유효하지 않은 토큰이면 예외를 던져야 한다", async () => {
 ## 테스트 구조
 
 ```typescript
-describe("클래스명 — 한국어 설명", () => {
+describe('클래스명 — 한국어 설명', () => {
   // 변수 선언 + beforeEach (Suites 설정)
 
-  describe("메서드명", () => {
-    it("조건일 때 동작해야 한다", () => {
+  describe('메서드명', () => {
+    it('조건일 때 동작해야 한다', () => {
       // Given / When / Then
     });
   });

@@ -8,6 +8,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Avatar, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
+
 import { formatUserHashtag } from '../../utils/user-hashtag';
 import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
 

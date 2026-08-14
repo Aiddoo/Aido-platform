@@ -1,23 +1,16 @@
 import { TestDatabase } from "../setup/test-database";
 import { createE2eApp } from "./helpers/e2e-app-factory";
-import {
-	bypassE2eThrottler,
-	isE2eThrottlerBypassed,
-} from "./helpers/e2e-throttler-control";
+import { bypassE2eThrottler, isE2eThrottlerBypassed } from "./helpers/e2e-throttler-control";
 
 describe("E2E app factory throttler lifecycle failures", () => {
 	it("DB setup 시작이 실패해도 원래 오류를 유지하고 ordinary bypass를 복원한다", async () => {
 		// Given - real throttler opt-in 직후 DB setup이 실패
 		const setupError = new Error("fault: test database start");
-		jest
-			.spyOn(TestDatabase.prototype, "start")
-			.mockRejectedValueOnce(setupError);
+		jest.spyOn(TestDatabase.prototype, "start").mockRejectedValueOnce(setupError);
 
 		try {
 			// When/Then - setup 오류를 다른 cleanup 오류로 가리지 않음
-			await expect(createE2eApp({ withRealThrottler: true })).rejects.toBe(
-				setupError,
-			);
+			await expect(createE2eApp({ withRealThrottler: true })).rejects.toBe(setupError);
 			expect(isE2eThrottlerBypassed()).toBe(true);
 		} finally {
 			bypassE2eThrottler();

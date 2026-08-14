@@ -13,9 +13,7 @@ export interface CheerCooldown {
  *
  * 마지막 응원 시각으로부터 CHEER_LIMITS.COOLDOWN_HOURS 동안 재응원을 제한하는 정책을 계산한다.
  */
-export function evaluateCheerCooldown(
-	lastCheerTime: Date | null,
-): CheerCooldown {
+export function evaluateCheerCooldown(lastCheerTime: Date | null): CheerCooldown {
 	const { isActive, remainingSeconds, endsAt } = calculateCooldown(
 		lastCheerTime,
 		CHEER_LIMITS.COOLDOWN_HOURS,

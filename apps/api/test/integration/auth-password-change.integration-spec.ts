@@ -22,10 +22,12 @@
 
 import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
@@ -77,10 +79,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 	 * 이메일/비밀번호 사용자 생성 헬퍼 (register + verify-email 시뮬레이션)
 	 * @returns userId
 	 */
-	async function createCredentialUser(
-		email: string,
-		password: string,
-	): Promise<string> {
+	async function createCredentialUser(email: string, password: string): Promise<string> {
 		const registerResult = await authService.register({
 			email,
 			password,
@@ -101,10 +100,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 	/**
 	 * 로그인 후 sessionId를 반환하는 헬퍼
 	 */
-	async function loginAndGetSession(
-		email: string,
-		password: string,
-	): Promise<string> {
+	async function loginAndGetSession(email: string, password: string): Promise<string> {
 		const result = await authService.login({ email, password });
 		return result.sessionId;
 	}
@@ -212,9 +208,9 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			);
 
 			// When & Then
-			await expect(
-				authService.login({ email, password: currentPassword }),
-			).rejects.toThrow(ApplicationException);
+			await expect(authService.login({ email, password: currentPassword })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("현재 세션은 유지되고 다른 세션은 폐기된다", async () => {
@@ -260,11 +256,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 
 			// When & Then
 			await expect(
-				passwordManagementService.changePassword(
-					userId,
-					"WrongPassword999!",
-					"NewPassword456!",
-				),
+				passwordManagementService.changePassword(userId, "WrongPassword999!", "NewPassword456!"),
 			).rejects.toThrow(ApplicationException);
 		});
 
@@ -275,11 +267,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 
 			// When & Then
 			await expect(
-				passwordManagementService.changePassword(
-					userId,
-					"AnyPassword123!",
-					"NewPassword456!",
-				),
+				passwordManagementService.changePassword(userId, "AnyPassword123!", "NewPassword456!"),
 			).rejects.toThrow(ApplicationException);
 		});
 

@@ -26,25 +26,13 @@ describe("AuthSession", () => {
 		const session = createSession();
 
 		expect(
-			session.isRetryWithin(
-				"previous-hash",
-				new Date("2026-08-14T00:00:10.000Z"),
-				10_000,
-			),
+			session.isRetryWithin("previous-hash", new Date("2026-08-14T00:00:10.000Z"), 10_000),
 		).toBe(true);
 		expect(
-			session.isRetryWithin(
-				"previous-hash",
-				new Date("2026-08-14T00:00:10.001Z"),
-				10_000,
-			),
+			session.isRetryWithin("previous-hash", new Date("2026-08-14T00:00:10.001Z"), 10_000),
 		).toBe(false);
 		expect(
-			session.isRetryWithin(
-				"unknown-hash",
-				new Date("2026-08-14T00:00:01.000Z"),
-				10_000,
-			),
+			session.isRetryWithin("unknown-hash", new Date("2026-08-14T00:00:01.000Z"), 10_000),
 		).toBe(false);
 	});
 
@@ -52,9 +40,7 @@ describe("AuthSession", () => {
 		const session = createSession();
 		const expiresAt = new Date("2026-08-22T00:00:00.000Z");
 
-		expect(
-			session.planRotation("next-hash", "current-hash", expiresAt),
-		).toEqual({
+		expect(session.planRotation("next-hash", "current-hash", expiresAt)).toEqual({
 			refreshTokenHash: "next-hash",
 			tokenVersion: 4,
 			previousTokenHash: "current-hash",

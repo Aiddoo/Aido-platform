@@ -5,18 +5,11 @@
  * 변환하는 Static 메서드를 제공한다. 필드·직렬화 규칙은 레거시와 동일하다(계약 불변).
  */
 
-import type {
-	Follow,
-	FriendRequestUser,
-	FriendUser,
-	SearchUser,
-} from "@aido/validators";
+import type { Follow, FriendRequestUser, FriendUser, SearchUser } from "@aido/validators";
 
 import { toISOString } from "@/shared/domain/date/utils/format";
-import type {
-	FollowWithUser,
-	UserSearchResult,
-} from "../application/ports/follow.repository.port";
+
+import type { FollowWithUser, UserSearchResult } from "../application/ports/follow.repository.port";
 import type { Friendship } from "../domain/entities/friendship.aggregate";
 
 export abstract class FollowMapper {

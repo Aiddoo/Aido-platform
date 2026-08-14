@@ -1,18 +1,14 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	createRetentionRepositoryMock,
-	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+import { createRetentionRepositoryMock, createUnitOfWorkMock } from "@test/mocks/ports";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
+
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
 } from "../../ports/retention.repository.port";
-import {
-	RETENTION_CONFIG,
-	type RetentionConfigPort,
-} from "../../ports/retention-config.port";
 import { ActivateRetentionExperimentUseCase } from "./activate-retention-experiment.use-case";
 
 describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", () => {
@@ -37,10 +33,7 @@ describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", (
 
 		await useCase.execute("new-user");
 
-		expect(repository.activate).toHaveBeenCalledWith(
-			"new-user",
-			new Date("2026-07-15T00:00:00Z"),
-		);
+		expect(repository.activate).toHaveBeenCalledWith("new-user", new Date("2026-07-15T00:00:00Z"));
 		jest.useRealTimers();
 	});
 

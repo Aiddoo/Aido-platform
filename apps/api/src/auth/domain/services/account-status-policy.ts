@@ -16,10 +16,7 @@ import { DomainException } from "@/shared/domain/exceptions/domain.exception";
  * @param identifier 오류 details에 담을 사용자 식별자(이메일 로그인=email,
  *   소셜 로그인=식별 불가 시 플레이스홀더). 기존 계약을 그대로 보존한다.
  */
-export function assertStatusAllowsLogin(
-	status: string,
-	identifier: string,
-): void {
+export function assertStatusAllowsLogin(status: string, identifier: string): void {
 	switch (status) {
 		case "LOCKED":
 			throw new DomainException(ErrorCode.USER_0607, {

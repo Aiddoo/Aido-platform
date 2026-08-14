@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 
 import { type Follow as FollowRow, Prisma } from "@/generated/prisma/client";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
@@ -61,9 +61,7 @@ interface UserSearchRow {
 @Injectable()
 export class PrismaFollowRepository implements FollowRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	private get client() {
@@ -116,10 +114,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 			});
 			return PrismaFollowRepository.toFriendship(row);
 		} catch (error) {
-			if (
-				error instanceof Prisma.PrismaClientKnownRequestError &&
-				error.code === "P2002"
-			) {
+			if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
 				throw new ApplicationException(ErrorCode.FOLLOW_0901, {
 					targetUserId: input.followingId,
 				});
@@ -176,9 +171,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 		await this.client.follow.delete({ where: { id } });
 	}
 
-	async findMutualFriends(
-		params: FindFollowsParams,
-	): Promise<FollowWithUser[]> {
+	async findMutualFriends(params: FindFollowsParams): Promise<FollowWithUser[]> {
 		const { userId, cursor, size, search } = params;
 		const searchCondition = search
 			? { userTag: { contains: search, mode: "insensitive" as const } }
@@ -207,9 +200,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 		return rows.map((row) => PrismaFollowRepository.toWithUser(row));
 	}
 
-	async findReceivedRequests(
-		params: FindFollowsParams,
-	): Promise<FollowWithUser[]> {
+	async findReceivedRequests(params: FindFollowsParams): Promise<FollowWithUser[]> {
 		const { userId, cursor, size } = params;
 		const rows = await this.client.follow.findMany({
 			where: { followingId: userId, status: "PENDING" },
@@ -233,10 +224,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 		return rows.map((row) => PrismaFollowRepository.toWithUser(row));
 	}
 
-	async findAcceptedByIdAndFollowerId(
-		id: string,
-		followerId: string,
-	): Promise<Friendship | null> {
+	async findAcceptedByIdAndFollowerId(id: string, followerId: string): Promise<Friendship | null> {
 		const row = await this.client.follow.findFirst({
 			where: { id, followerId, status: "ACCEPTED" },
 		});
@@ -271,10 +259,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 		return result.count;
 	}
 
-	async updateFollowSortOrder(
-		id: string,
-		sortOrder: number,
-	): Promise<FollowWithUser> {
+	async updateFollowSortOrder(id: string, sortOrder: number): Promise<FollowWithUser> {
 		const row = await this.client.follow.update({
 			where: { id },
 			data: { sortOrder },
@@ -428,9 +413,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 		}));
 	}
 
-	async countSearchUsers(
-		params: Omit<SearchUsersParams, "cursor" | "size">,
-	): Promise<number> {
+	async countSearchUsers(params: Omit<SearchUsersParams, "cursor" | "size">): Promise<number> {
 		const { viewerId, nfcQuery, upperTag } = params;
 		const result = await this.client.$queryRaw<{ count: bigint }[]>`
 			SELECT COUNT(*) AS count

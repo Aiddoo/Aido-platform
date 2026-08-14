@@ -1,4 +1,5 @@
 import type { CurrentUser, UpdateProfileResponse } from '@aido/validators';
+
 import type { UpdateProfileResult, User } from '../models/user.model';
 
 export const toUser = (dto: CurrentUser): User => ({

@@ -17,11 +17,11 @@
 └── Track 3: InfraError               — 5xx, 네트워크 끊김, 타임아웃, 파싱 실패
 ```
 
-| 트랙 | 에러 타입 | 전달 방식 | 처리 위치 |
-|------|----------|----------|----------|
-| Track 1 | `ApiError` (4xx) | `err()` → `unwrap()` → throw | Mutation `onError` |
-| Track 2 | `{Feature}Error` (Policy/SDK) | `err()` → `unwrap()` → throw | Mutation `onError` |
-| Track 3 | `InfraError` (5xx/네트워크) | 직접 `throw` | `<QueryErrorBoundary>` |
+| 트랙    | 에러 타입                     | 전달 방식                    | 처리 위치              |
+| ------- | ----------------------------- | ---------------------------- | ---------------------- |
+| Track 1 | `ApiError` (4xx)              | `err()` → `unwrap()` → throw | Mutation `onError`     |
+| Track 2 | `{Feature}Error` (Policy/SDK) | `err()` → `unwrap()` → throw | Mutation `onError`     |
+| Track 3 | `InfraError` (5xx/네트워크)   | 직접 `throw`                 | `<QueryErrorBoundary>` |
 
 - 예상한 에러: 사용자에게 구체적 안내 가능 → `err()`로 반환
 - 예상하지 못한 에러: 구체적 안내 불가, "재시도"만 가능 → `throw`로 ErrorBoundary 위임
@@ -133,11 +133,13 @@ InfraError:
 // shared/errors/api-error.ts
 class ApiError extends Error implements BusinessError {
   constructor(
-    public readonly code: string,       // 서버 에러 코드 (AUTH_0101 등)
-    message: string,                     // 한국어 사용자 메시지
-    public readonly status: number,      // HTTP 상태 코드
+    public readonly code: string, // 서버 에러 코드 (AUTH_0101 등)
+    message: string, // 한국어 사용자 메시지
+    public readonly status: number, // HTTP 상태 코드
     public readonly details?: Record<string, unknown>,
-  ) { super(message); }
+  ) {
+    super(message);
+  }
 
   hasCode<C extends ErrorCodeType>(code: C): this is ApiError & { code: C };
   isDomain(prefix: string): boolean;
@@ -152,19 +154,20 @@ class ApiError extends Error implements BusinessError {
 // shared/infra/http/error-handler.ts
 const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
   // 보안: 구체적 원인 숨김
-  USER_0602: '이메일 또는 비밀번호를 확인해주세요',  // 어떤 것이 틀렸는지 숨김
-  EMAIL_0502: '입력 정보를 확인해주세요',            // 이메일 존재 여부 숨김
+  USER_0602: '이메일 또는 비밀번호를 확인해주세요', // 어떤 것이 틀렸는지 숨김
+  EMAIL_0502: '입력 정보를 확인해주세요', // 이메일 존재 여부 숨김
 
   // 일반 에러
   FOLLOW_0901: '이미 친구 요청을 보냈어요',
   VERIFY_0752: '인증 코드가 만료되었어요. 다시 요청해주세요.',
-  USER_0615:   '탈퇴한 계정이 복구되었어요',
-  AI_1303:     '이번 달 AI 사용 횟수를 모두 사용했어요',
+  USER_0615: '탈퇴한 계정이 복구되었어요',
+  AI_1303: '이번 달 AI 사용 횟수를 모두 사용했어요',
   // ... 150+ 에러 코드 매핑
 };
 ```
 
 2가지 AfterResponseHook이 존재합니다:
+
 - `handleApiErrors` — auth-client용: 401은 refresh 로직에서 처리하므로 건너뜀
 - `handlePublicApiErrors` — public-client용: 401 포함 모든 에러 처리
 
@@ -180,10 +183,12 @@ const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
 
 ```typescript
 // features/friend/services/friend.service.ts
-sendRequestByTag = async (userTag: string): Promise<Result<SendRequestResult, FriendServiceError>> => {
-  if (!userTag.trim()) return err(FriendErrors.emptyTag());           // 즉시 반환
+sendRequestByTag = async (
+  userTag: string,
+): Promise<Result<SendRequestResult, FriendServiceError>> => {
+  if (!userTag.trim()) return err(FriendErrors.emptyTag()); // 즉시 반환
   if (!FriendPolicy.isValidTag(userTag)) return err(FriendErrors.invalidTag()); // 즉시 반환
-  return this.#repository.sendRequest(userTag);                        // 검증 통과 후 서버 요청
+  return this.#repository.sendRequest(userTag); // 검증 통과 후 서버 요청
 };
 ```
 
@@ -221,7 +226,12 @@ export const FriendErrorCode = {
 // 2) 에러 클래스 (Error + BusinessError 구현)
 export class FriendError extends Error implements BusinessError {
   override readonly name = 'FriendError';
-  constructor(public readonly code: FriendErrorCode, message: string) { super(message); }
+  constructor(
+    public readonly code: FriendErrorCode,
+    message: string,
+  ) {
+    super(message);
+  }
 }
 
 // 3) 팩토리 객체
@@ -240,12 +250,12 @@ export const isFriendError = (error: unknown): error is FriendError => error ins
 
 복구 불가능한 에러. ErrorBoundary에서 일괄 처리하고 "재시도"만 제공합니다.
 
-| 서브클래스 | 발생 시점 | 메시지 |
-|-----------|----------|--------|
-| `ServerError(status)` | HTTP 5xx | "서버에 문제가 발생했어요" |
-| `NetworkError` | 네트워크 끊김 | "네트워크 연결을 확인해주세요" |
-| `TimeoutError` | 요청 시간 초과 | "요청 시간이 초과되었어요" |
-| `ParseError` | Zod safeParse 실패 | "응답 형식이 올바르지 않아요" |
+| 서브클래스            | 발생 시점          | 메시지                         |
+| --------------------- | ------------------ | ------------------------------ |
+| `ServerError(status)` | HTTP 5xx           | "서버에 문제가 발생했어요"     |
+| `NetworkError`        | 네트워크 끊김      | "네트워크 연결을 확인해주세요" |
+| `TimeoutError`        | 요청 시간 초과     | "요청 시간이 초과되었어요"     |
+| `ParseError`          | Zod safeParse 실패 | "응답 형식이 올바르지 않아요"  |
 
 ### 4xx 에러 흐름 상세
 
@@ -294,7 +304,7 @@ async #request<T>(request: () => Promise<Response>): Promise<Result<T, ApiError>
 ```typescript
 // Repository — Zod 검증 실패도 InfraError
 const parsed = todoListResponseSchema.safeParse(result.value);
-if (!parsed.success) throw new ParseError();  // 서버 응답이 깨진 건 인프라 문제
+if (!parsed.success) throw new ParseError(); // 서버 응답이 깨진 건 인프라 문제
 ```
 
 ### QueryErrorBoundary
@@ -342,11 +352,11 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
 
 에러 처리는 관측(Sentry)과 어휘를 공유한다. 벤더 직접호출 없이 `ErrorReporter` 포트만 사용한다.
 
-| 상황 | 남기는 것 | 왜 |
-|------|-----------|----|
-| 예측 불가(ErrorBoundary 도달, 5xx·네트워크·파싱) | `captureException(error, { feature })` — **event** | 진짜 문제만 Sentry Issue로 |
-| 도메인 신호(비자발 로그아웃 등) | `captureMessage(msg, { severity, errorCode })` — **event** | 검색·집계·알림 대상 |
-| 행적(HTTP 실패·화면 이동) | `addBreadcrumb({ category, level, data })` — **breadcrumb** | 이벤트 타임라인 재현용 |
+| 상황                                             | 남기는 것                                                   | 왜                         |
+| ------------------------------------------------ | ----------------------------------------------------------- | -------------------------- |
+| 예측 불가(ErrorBoundary 도달, 5xx·네트워크·파싱) | `captureException(error, { feature })` — **event**          | 진짜 문제만 Sentry Issue로 |
+| 도메인 신호(비자발 로그아웃 등)                  | `captureMessage(msg, { severity, errorCode })` — **event**  | 검색·집계·알림 대상        |
+| 행적(HTTP 실패·화면 이동)                        | `addBreadcrumb({ category, level, data })` — **breadcrumb** | 이벤트 타임라인 재현용     |
 
 - **예측 가능한 4xx는 event가 아니다.** `Result.err()`로 UI가 처리하고, HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남는다 → Sentry Issue는 예상 못한 문제로만 채워져 신호 대 잡음비가 좋다.
 - **Severity**는 `Severity` union(`debug`~`fatal`)으로 판정 → 알림 규칙/우선순위에 사용.
@@ -378,6 +388,7 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
 ```
 
 배치 원칙:
+
 1. 독립된 데이터 영역마다 개별 ErrorBoundary
 2. `ErrorBoundary` → `Suspense` → `Component` 순서
 3. `key` prop으로 데이터 변경 시 에러 상태 초기화
@@ -388,13 +399,13 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
 
 `shared/errors/storage-error.ts`. `InfraError`가 **아니다** — ErrorBoundary로 보내지 않는다.
 
-| 상황 | `Storage.get()` 결과 |
-|------|---------------------|
-| 값이 있음 | 파싱된 값 |
-| 값이 없음 (`errSecItemNotFound`) | `null` |
-| **지금 못 읽음** (기기 잠금) | `throw KeychainLockedError` |
-| 영구 오류 (키체인 손상, entitlement 오설정) | **원본 오류 그대로 throw** |
-| 저장된 값 파싱 실패 | `null` (손상된 항목 하나가 부팅을 막지 않는다) |
+| 상황                                        | `Storage.get()` 결과                           |
+| ------------------------------------------- | ---------------------------------------------- |
+| 값이 있음                                   | 파싱된 값                                      |
+| 값이 없음 (`errSecItemNotFound`)            | `null`                                         |
+| **지금 못 읽음** (기기 잠금)                | `throw KeychainLockedError`                    |
+| 영구 오류 (키체인 손상, entitlement 오설정) | **원본 오류 그대로 throw**                     |
+| 저장된 값 파싱 실패                         | `null` (손상된 항목 하나가 부팅을 막지 않는다) |
 
 "지금 못 읽는다"를 "토큰이 없다"로 확정하면 **잠긴 키체인이 곧 로그아웃**이 된다.
 반대로 모든 읽기 실패를 잠김으로 뭉개면 재판정도 계속 실패해 **조용히 무한 로딩**에 갇힌다.
@@ -412,20 +423,20 @@ JS는 무엇이든 throw할 수 있다. RN 네이티브 브릿지와 서드파�
 
 ```typescript
 // ❌ 평범한 객체가 "[object Object]"가 되어 원인이 사라진다
-new Error(String(error))
+new Error(String(error));
 
 // ❌ 더 나쁘다 — 에러를 통째로 버린다
-logger.error('failed', error instanceof Error ? error : undefined)
+logger.error('failed', error instanceof Error ? error : undefined);
 
 // ✅ 값의 모양이 아니라 내용으로 판단. 원본은 cause로 보존
 errorReporter.captureException(toError(error), { feature: 'auth' });
 logger.warn('갱신 실패', { error: errorMessageOf(error) });
 ```
 
-| 함수 | 용도 |
-|------|------|
-| `toError(value)` | `ErrorReporter.captureException`·`logger.error`처럼 `Error`를 요구하는 곳 |
-| `errorMessageOf(value)` | 로그 필드, 벤더 에러 메시지 판별 |
+| 함수                    | 용도                                                                      |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `toError(value)`        | `ErrorReporter.captureException`·`logger.error`처럼 `Error`를 요구하는 곳 |
+| `errorMessageOf(value)` | 로그 필드, 벤더 에러 메시지 판별                                          |
 
 ---
 
@@ -490,24 +501,24 @@ retry: (failureCount, error) => {
 
 ## 도메인 에러 현황
 
-| 도메인 | 에러 코드 | 추가 기능 |
-|--------|----------|----------|
-| Auth | `LOGIN_CANCELLED`, `PROVIDER_ERROR`, `VALIDATION_FAILED`, `NO_CODE_RECEIVED`, `UNKNOWN` | `fromExpoAppleError()`, `fromUnknown()` |
-| Friend | `INVALID_TAG`, `EMPTY_TAG` | - |
-| Todo | `VALIDATION_FAILED` | - |
-| TodoCategory | `VALIDATION_FAILED` | - |
-| TodoNudge | `VALIDATION_FAILED`, `DAILY_LIMIT_EXCEEDED` | - |
-| Notification | `PERMISSION_DENIED`, `NOT_PHYSICAL_DEVICE`, `VALIDATION_FAILED` | `isPermissionDeniedError()` 등 |
+| 도메인       | 에러 코드                                                                               | 추가 기능                               |
+| ------------ | --------------------------------------------------------------------------------------- | --------------------------------------- |
+| Auth         | `LOGIN_CANCELLED`, `PROVIDER_ERROR`, `VALIDATION_FAILED`, `NO_CODE_RECEIVED`, `UNKNOWN` | `fromExpoAppleError()`, `fromUnknown()` |
+| Friend       | `INVALID_TAG`, `EMPTY_TAG`                                                              | -                                       |
+| Todo         | `VALIDATION_FAILED`                                                                     | -                                       |
+| TodoCategory | `VALIDATION_FAILED`                                                                     | -                                       |
+| TodoNudge    | `VALIDATION_FAILED`, `DAILY_LIMIT_EXCEEDED`                                             | -                                       |
+| Notification | `PERMISSION_DENIED`, `NOT_PHYSICAL_DEVICE`, `VALIDATION_FAILED`                         | `isPermissionDeniedError()` 등          |
 
 ### 네이밍 규칙
 
-| 요소 | 패턴 | 예시 |
-|------|------|------|
-| 에러 코드 상수 | `{Feature}ErrorCode` | `AuthErrorCode` |
-| 에러 클래스 | `{Feature}Error` | `AuthError` |
-| 팩토리 객체 | `{Feature}Errors` | `AuthErrors` |
-| 타입 가드 | `is{Feature}Error` | `isAuthError` |
-| 파일 위치 | `features/{domain}/models/{domain}.error.ts` | `auth.error.ts` |
+| 요소           | 패턴                                         | 예시            |
+| -------------- | -------------------------------------------- | --------------- |
+| 에러 코드 상수 | `{Feature}ErrorCode`                         | `AuthErrorCode` |
+| 에러 클래스    | `{Feature}Error`                             | `AuthError`     |
+| 팩토리 객체    | `{Feature}Errors`                            | `AuthErrors`    |
+| 타입 가드      | `is{Feature}Error`                           | `isAuthError`   |
+| 파일 위치      | `features/{domain}/models/{domain}.error.ts` | `auth.error.ts` |
 
 ---
 
@@ -533,13 +544,13 @@ retry: (failureCount, error) => {
 
 ## 참고 파일
 
-| 파일 | 설명 |
-|------|------|
-| `shared/errors/result.ts` | Result 타입, ok/err/unwrap |
-| `shared/errors/api-error.ts` | ApiError (4xx) |
-| `shared/errors/infra-error.ts` | InfraError (5xx, 네트워크, 파싱) |
-| `shared/infra/http/ky-client.ts` | KyHttpClient 구현 |
-| `shared/infra/http/error-handler.ts` | 에러 코드 → 메시지 매핑 (150+ 코드) |
-| `shared/ui/QueryErrorBoundary/` | QueryErrorBoundary 컴포넌트 |
-| `features/*/models/*.error.ts` | 각 도메인 에러 정의 |
+| 파일                                         | 설명                                |
+| -------------------------------------------- | ----------------------------------- |
+| `shared/errors/result.ts`                    | Result 타입, ok/err/unwrap          |
+| `shared/errors/api-error.ts`                 | ApiError (4xx)                      |
+| `shared/errors/infra-error.ts`               | InfraError (5xx, 네트워크, 파싱)    |
+| `shared/infra/http/ky-client.ts`             | KyHttpClient 구현                   |
+| `shared/infra/http/error-handler.ts`         | 에러 코드 → 메시지 매핑 (150+ 코드) |
+| `shared/ui/QueryErrorBoundary/`              | QueryErrorBoundary 컴포넌트         |
+| `features/*/models/*.error.ts`               | 각 도메인 에러 정의                 |
 | [testing-strategy.md](./testing-strategy.md) | 테스트 전략 (에러 테스트 패턴 포함) |

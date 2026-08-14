@@ -29,18 +29,18 @@ import { Input } from '@src/shared/ui/Input/Input';
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `variant` | `'filled' \| 'line'` | `'filled'` | 입력 필드 스타일 |
-| `size` | `'medium' \| 'large'` | `'large'` | 입력 필드 크기 |
-| `label` | `string` | - | 라벨 텍스트 |
-| `isDisabled` | `boolean` | `false` | 비활성화 상태 |
-| `isInvalid` | `boolean` | `false` | 에러 상태 |
-| `errorMessage` | `string` | - | 에러 메시지 |
-| `leftContent` | `ReactNode` | - | 왼쪽 아이콘/컴포넌트 |
-| `rightContent` | `ReactNode` | - | 오른쪽 아이콘/컴포넌트 |
-| `className` | `string` | - | 컨테이너 추가 스타일 |
-| `...TextInputProps` | - | - | `TextInput` 기본 props |
+| Prop                | 타입                  | 기본값     | 설명                   |
+| ------------------- | --------------------- | ---------- | ---------------------- |
+| `variant`           | `'filled' \| 'line'`  | `'filled'` | 입력 필드 스타일       |
+| `size`              | `'medium' \| 'large'` | `'large'`  | 입력 필드 크기         |
+| `label`             | `string`              | -          | 라벨 텍스트            |
+| `isDisabled`        | `boolean`             | `false`    | 비활성화 상태          |
+| `isInvalid`         | `boolean`             | `false`    | 에러 상태              |
+| `errorMessage`      | `string`              | -          | 에러 메시지            |
+| `leftContent`       | `ReactNode`           | -          | 왼쪽 아이콘/컴포넌트   |
+| `rightContent`      | `ReactNode`           | -          | 오른쪽 아이콘/컴포넌트 |
+| `className`         | `string`              | -          | 컨테이너 추가 스타일   |
+| `...TextInputProps` | -                     | -          | `TextInput` 기본 props |
 
 ## 스타일 (variant)
 
@@ -62,10 +62,10 @@ import { Input } from '@src/shared/ui/Input/Input';
 
 ## 크기 (size)
 
-| Size | 높이 | 패딩 |
-|------|------|------|
+| Size     | 높이        | 패딩 |
+| -------- | ----------- | ---- |
 | `medium` | 48px (h-12) | px-4 |
-| `large` | 56px (h-14) | px-4 |
+| `large`  | 56px (h-14) | px-4 |
 
 ```tsx
 <Input size="medium" />
@@ -75,6 +75,7 @@ import { Input } from '@src/shared/ui/Input/Input';
 ## 상태
 
 ### 비활성화
+
 `isDisabled`가 `true`면 입력이 불가능하고 투명도가 적용됩니다.
 
 ```tsx
@@ -82,6 +83,7 @@ import { Input } from '@src/shared/ui/Input/Input';
 ```
 
 ### 에러
+
 `isInvalid`와 `errorMessage`로 에러 상태를 표시합니다.
 
 ```tsx
@@ -99,11 +101,8 @@ import { BottomSheetInput } from '@src/shared/ui/Input';
 
 // BottomSheet 내부에서 사용
 <BottomSheet>
-  <BottomSheetInput
-    label="이메일"
-    placeholder="example@email.com"
-  />
-</BottomSheet>
+  <BottomSheetInput label="이메일" placeholder="example@email.com" />
+</BottomSheet>;
 ```
 
 ### Props
@@ -123,10 +122,10 @@ import { BottomSheetInput } from '@src/shared/ui/Input';
 
 ## 파일 구조
 
-| 파일 | 역할 |
-|------|------|
-| `Input.tsx` | 기본 입력 컴포넌트 |
-| `Input.types.ts` | 타입 정의 (`InputProps`, `InputInternalProps`) |
-| `Input.variants.ts` | Tailwind 스타일 (variant/size/상태) |
-| `BottomSheetInput.tsx` | BottomSheet용 Input 래퍼 |
-| `index.ts` | Export: `Input`, `BottomSheetInput`, `InputProps`, `InputSize`, `InputVariant` |
+| 파일                   | 역할                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `Input.tsx`            | 기본 입력 컴포넌트                                                             |
+| `Input.types.ts`       | 타입 정의 (`InputProps`, `InputInternalProps`)                                 |
+| `Input.variants.ts`    | Tailwind 스타일 (variant/size/상태)                                            |
+| `BottomSheetInput.tsx` | BottomSheet용 Input 래퍼                                                       |
+| `index.ts`             | Export: `Input`, `BottomSheetInput`, `InputProps`, `InputSize`, `InputVariant` |

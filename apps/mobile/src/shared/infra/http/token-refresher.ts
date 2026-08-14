@@ -5,6 +5,7 @@ import { errorMessageOf, NetworkError, ServerError, TimeoutError } from '@src/sh
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { TimeoutError as KyTimeoutError } from 'ky';
 import { z } from 'zod';
+
 import { toServerErrorCode } from './server-error-code';
 
 const refreshEnvelopeSchema = z.object({ data: refreshTokensSchema });

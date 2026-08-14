@@ -1,10 +1,8 @@
 import type * as Validators from "@aido/validators";
+
 import type { SupportedLocale } from "@/shared/domain/locale";
 
-import {
-	computeDateRange,
-	computePeriodLabel,
-} from "../services/report-period";
+import { computeDateRange, computePeriodLabel } from "../services/report-period";
 import type { ReportType } from "../types";
 
 export interface AiReportProps {

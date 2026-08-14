@@ -22,9 +22,7 @@ describe("Nudge", () => {
 
 	it("isRead: readAt 유무로 판별", () => {
 		expect(Nudge.reconstitute(base).isRead()).toBe(false);
-		expect(Nudge.reconstitute({ ...base, readAt: new Date() }).isRead()).toBe(
-			true,
-		);
+		expect(Nudge.reconstitute({ ...base, readAt: new Date() }).isRead()).toBe(true);
 	});
 
 	it("isReceivedBy: 수신자 소유 판별", () => {

@@ -36,10 +36,7 @@ export { SecurityLogBuilder } from "./security-log.builder";
 export { SessionBuilder } from "./session.builder";
 export { SubscriptionEventBuilder } from "./subscription-event.builder";
 export { TodoBuilder } from "./todo.builder";
-export {
-	TodoCategoryBuilder,
-	type TodoCategoryWithCount,
-} from "./todo-category.builder";
+export { TodoCategoryBuilder, type TodoCategoryWithCount } from "./todo-category.builder";
 export { UserBuilder } from "./user.builder";
 export { UserConsentBuilder } from "./user-consent.builder";
 export { UserLocationBuilder } from "./user-location.builder";

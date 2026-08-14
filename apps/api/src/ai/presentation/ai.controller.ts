@@ -1,14 +1,7 @@
 import { ErrorCode } from "@aido/errors";
-import {
-	Body,
-	Controller,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Post,
-	UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+
 import { Locale, Timezone } from "@/shared/presentation/decorators";
 import {
 	ApiBadRequestError,
@@ -20,11 +13,8 @@ import {
 	ApiUnprocessableError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
 
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case";
 import { ParseMemoUseCase } from "../application/use-cases/parse-memo/parse-memo.use-case";
 import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case";
@@ -414,9 +404,7 @@ if (limit !== null && used >= limit) {
 	})
 	@ApiSuccessResponse({ type: AiUsageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getUsage(
-		@CurrentUser() user: CurrentUserPayload,
-	): Promise<AiUsageResponseDto> {
+	async getUsage(@CurrentUser() user: CurrentUserPayload): Promise<AiUsageResponseDto> {
 		const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
 
 		return {

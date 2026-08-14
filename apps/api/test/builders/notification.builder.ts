@@ -192,8 +192,6 @@ export class NotificationBuilder {
 
 	/** 여러 개 생성 */
 	static createMany(userId: string, count: number): Notification[] {
-		return Array.from({ length: count }, () =>
-			NotificationBuilder.create(userId).build(),
-		);
+		return Array.from({ length: count }, () => NotificationBuilder.create(userId).build());
 	}
 }

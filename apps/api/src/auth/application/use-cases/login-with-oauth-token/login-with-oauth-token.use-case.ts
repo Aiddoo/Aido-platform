@@ -1,5 +1,6 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
+
 import type { RequestMetadata } from "../../types";
 import { OAuthWorkflow } from "../../workflows/oauth.workflow";
 
@@ -17,12 +18,7 @@ export class LoginWithOAuthTokenUseCase {
 	): ReturnType<OAuthWorkflow["handleAppleMobileLogin"]> {
 		switch (provider) {
 			case "APPLE":
-				return this.workflow.handleAppleMobileLogin(
-					token,
-					userName,
-					metadata,
-					nonce,
-				);
+				return this.workflow.handleAppleMobileLogin(token, userName, metadata, nonce);
 			case "GOOGLE":
 				return this.workflow.handleGoogleMobileLogin(token, userName, metadata);
 			case "KAKAO":

@@ -1,7 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
+
 import {
 	buildDailyCompletionsRange,
 	type DailyCompletionsRange,
@@ -35,9 +37,7 @@ export class GetDailyCompletionsUseCase {
 		private readonly cache: DailyCompletionCachePort,
 	) {}
 
-	async execute(
-		input: GetDailyCompletionsInput,
-	): Promise<DailyCompletionsRange> {
+	async execute(input: GetDailyCompletionsInput): Promise<DailyCompletionsRange> {
 		const start = parseDateOnly(input.startDate);
 		const endInclusive = parseDateOnly(input.endDate);
 

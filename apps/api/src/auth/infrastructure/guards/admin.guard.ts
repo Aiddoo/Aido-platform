@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
+
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -24,9 +25,7 @@ export class AdminGuard implements CanActivate {
 	constructor(readonly _reflector: Reflector) {}
 
 	canActivate(context: ExecutionContext): boolean {
-		const request = context
-			.switchToHttp()
-			.getRequest<Request & { user?: CurrentUserPayload }>();
+		const request = context.switchToHttp().getRequest<Request & { user?: CurrentUserPayload }>();
 		const user = request.user;
 
 		if (!user) {

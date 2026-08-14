@@ -1,10 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import { UserLocation } from "../../../domain/entities/user-location.entity";
 import { Coordinate } from "../../../domain/value-objects/coordinate.vo";
-import {
-	WEATHER_CACHE,
-	type WeatherCachePort,
-} from "../../ports/weather-cache.port";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,

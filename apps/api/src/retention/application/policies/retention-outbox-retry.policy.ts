@@ -8,10 +8,7 @@ export function decideRetentionOutboxRetry(attempts: number): {
 	readonly hasExhaustedRetries: boolean;
 } {
 	return {
-		delayMs: Math.min(
-			OUTBOX_RETRY_MAX_DELAY_MS,
-			OUTBOX_RETRY_BASE_DELAY_MS * 2 ** attempts,
-		),
+		delayMs: Math.min(OUTBOX_RETRY_MAX_DELAY_MS, OUTBOX_RETRY_BASE_DELAY_MS * 2 ** attempts),
 		hasExhaustedRetries: attempts >= OUTBOX_MAX_ATTEMPTS,
 	};
 }

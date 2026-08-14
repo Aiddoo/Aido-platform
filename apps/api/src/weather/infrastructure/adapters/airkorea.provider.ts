@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { readJson } from "@/shared/infrastructure/http/read-json";
+
 import type {
 	AirQuality,
 	AirQualityProvider,
@@ -57,16 +58,10 @@ export class AirkoreaProvider implements AirQualityProvider {
 		}
 	}
 
-	async #findNearestStation(
-		apiKey: string,
-		lat: number,
-		lon: number,
-	): Promise<string | null> {
+	async #findNearestStation(apiKey: string, lat: number, lon: number): Promise<string | null> {
 		const { tmX, tmY } = convertToTm(lat, lon);
 
-		const url = new URL(
-			"https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getNearbyMsrstnList",
-		);
+		const url = new URL("https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getNearbyMsrstnList");
 		url.searchParams.set("serviceKey", apiKey);
 		url.searchParams.set("returnType", "json");
 		url.searchParams.set("tmX", String(tmX));
@@ -104,10 +99,7 @@ export class AirkoreaProvider implements AirQualityProvider {
 		return stationName;
 	}
 
-	async #fetchAirQuality(
-		apiKey: string,
-		stationName: string,
-	): Promise<AirQuality | null> {
+	async #fetchAirQuality(apiKey: string, stationName: string): Promise<AirQuality | null> {
 		const url = new URL(
 			"https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty",
 		);
@@ -146,12 +138,7 @@ export class AirkoreaProvider implements AirQualityProvider {
 	}
 
 	#parseValue(value: string | undefined): number | null {
-		if (
-			value === undefined ||
-			value === null ||
-			value === "" ||
-			value === "-"
-		) {
+		if (value === undefined || value === null || value === "" || value === "-") {
 			return null;
 		}
 

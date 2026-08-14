@@ -26,10 +26,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { TodoCategoryReader } from "../application/services/todo-category.reader";
 import { CreateTodoCategoryUseCase } from "../application/use-cases/create-todo-category/create-todo-category.use-case";
 import { DeleteTodoCategoryUseCase } from "../application/use-cases/delete-todo-category/delete-todo-category.use-case";
@@ -116,9 +113,7 @@ export class TodoCategoryController {
 			color: dto.color,
 		});
 
-		this.#logger.log(
-			`카테고리 생성 완료: id=${category.id}, user=${user.userId}`,
-		);
+		this.#logger.log(`카테고리 생성 완료: id=${category.id}, user=${user.userId}`);
 
 		return {
 			message: "카테고리가 생성되었습니다.",
@@ -143,9 +138,7 @@ export class TodoCategoryController {
 	})
 	@ApiSuccessResponse({ type: TodoCategoryListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async findAll(
-		@CurrentUser() user: CurrentUserPayload,
-	): Promise<TodoCategoryListResponseDto> {
+	async findAll(@CurrentUser() user: CurrentUserPayload): Promise<TodoCategoryListResponseDto> {
 		this.#logger.debug(`카테고리 목록 조회: user=${user.userId}`);
 
 		const categories = await this.todoCategoryReader.findMany(user.userId);
@@ -174,10 +167,7 @@ export class TodoCategoryController {
 	): Promise<TodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
 
-		const category = await this.todoCategoryReader.findById(
-			params.id,
-			user.userId,
-		);
+		const category = await this.todoCategoryReader.findById(params.id, user.userId);
 
 		return {
 			category: TodoCategoryMapper.toResponseWithCount(category),
@@ -211,11 +201,7 @@ export class TodoCategoryController {
 	): Promise<UpdateTodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
 
-		const category = await this.updateTodoCategoryUseCase.execute(
-			params.id,
-			user.userId,
-			dto,
-		);
+		const category = await this.updateTodoCategoryUseCase.execute(params.id, user.userId, dto);
 
 		this.#logger.log(`카테고리 수정 완료: id=${params.id}`);
 
@@ -328,9 +314,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 		@Param() params: TodoCategoryIdParamDto,
 		@Query() query: DeleteTodoCategoryQueryDto,
 	): Promise<DeleteTodoCategoryResponseDto> {
-		this.#logger.debug(
-			`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`,
-		);
+		this.#logger.debug(`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`);
 
 		await this.deleteTodoCategoryUseCase.execute({
 			userId: user.userId,

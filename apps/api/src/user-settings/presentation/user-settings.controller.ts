@@ -1,17 +1,8 @@
 import { ErrorCode } from "@aido/errors";
-import {
-	Body,
-	Controller,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Patch,
-} from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "@/auth/presentation/decorators";
+
+import { CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -182,9 +173,6 @@ export class SettingsController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateMarketingPushConsentDto,
 	) {
-		return this.updateMarketingPushConsentUseCase.execute(
-			user.userId,
-			dto.agreed,
-		);
+		return this.updateMarketingPushConsentUseCase.execute(user.userId, dto.agreed);
 	}
 }

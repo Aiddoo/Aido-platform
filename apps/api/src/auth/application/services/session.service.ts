@@ -1,9 +1,11 @@
 import { ErrorCode } from "@aido/errors";
 import type { UserRole } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { addMilliseconds } from "@/shared/domain/date/utils/arithmetic";
 import { isExpired } from "@/shared/domain/date/utils/compare";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import {
 	AUTH_TOKEN_ISSUER,
 	type AuthTokenIssuerPort,
@@ -60,13 +62,10 @@ export class SessionService {
 	 *
 	 * @param params 세션 생성에 필요한 사용자/디바이스 정보
 	 */
-	async createSessionWithTokens(
-		params: CreateSessionParams,
-	): Promise<CreateSessionResult> {
+	async createSessionWithTokens(params: CreateSessionParams): Promise<CreateSessionResult> {
 		const tokenFamily = this.tokenService.generateTokenFamily();
 
-		const expiresInSeconds =
-			this.tokenService.getRefreshTokenExpiresInSeconds();
+		const expiresInSeconds = this.tokenService.getRefreshTokenExpiresInSeconds();
 		const expiresAt = addMilliseconds(expiresInSeconds * 1000);
 
 		// 1. 세션 생성 (refreshTokenHash 없이)
@@ -91,13 +90,8 @@ export class SessionService {
 		);
 
 		// 3. refreshTokenHash로 세션 업데이트
-		const refreshTokenHash = this.tokenService.hashRefreshToken(
-			tokens.refreshToken,
-		);
-		await this.sessionRepository.updateRefreshTokenHash(
-			session.id,
-			refreshTokenHash,
-		);
+		const refreshTokenHash = this.tokenService.hashRefreshToken(tokens.refreshToken);
+		await this.sessionRepository.updateRefreshTokenHash(session.id, refreshTokenHash);
 
 		return {
 			sessionId: session.id,
@@ -129,9 +123,7 @@ export class SessionService {
 		}
 
 		const expiresAt =
-			session.expiresAt instanceof Date
-				? session.expiresAt
-				: new Date(session.expiresAt);
+			session.expiresAt instanceof Date ? session.expiresAt : new Date(session.expiresAt);
 
 		if (isExpired(expiresAt)) {
 			throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId });

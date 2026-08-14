@@ -14,10 +14,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock } from "@test/mocks";
-import {
-	ACCOUNT_DELETION,
-	SECURITY_EVENT,
-} from "@/auth/domain/constants/auth.constants";
+
+import { ACCOUNT_DELETION, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
 import {
@@ -25,10 +23,8 @@ import {
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+
 import { AccountPurgeJob } from "./account-purge.job";
 
 describe("AccountPurgeJob — 계정 삭제 잡", () => {
@@ -105,9 +101,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 
 		it("스케줄러 등록 실패 시 로그만 남기고 throw하지 않는다", async () => {
 			// Given
-			asMock(runtime.schedule).mockRejectedValue(
-				new Error("Connection is closed."),
-			);
+			asMock(runtime.schedule).mockRejectedValue(new Error("Connection is closed."));
 
 			// When / Then — 부팅 실패로 이어지지 않아야 한다
 			job.onModuleInit();

@@ -11,9 +11,7 @@ import type { AccountProvider } from "@/auth/domain/types";
  * OAuthWorkflow는 공통 흐름(로그인, URL 생성, 콜백 처리)만 관리하고,
  * provider-specific 로직은 각 어댑터가 담당한다. (Payment 프로바이더 레지스트리 패턴)
  */
-export const OAUTH_IDENTITY_PROVIDER_REGISTRY = Symbol(
-	"OAUTH_IDENTITY_PROVIDER_REGISTRY",
-);
+export const OAUTH_IDENTITY_PROVIDER_REGISTRY = Symbol("OAUTH_IDENTITY_PROVIDER_REGISTRY");
 
 /** OAuth 흐름 모드: 신규 로그인 vs 기존 계정 링크 */
 export type OAuthMode = "login" | "link";
@@ -94,14 +92,8 @@ export interface OAuthIdentityProvider {
 	 * Apple: userName 파라미터만 사용, profileImage 없음
 	 * Google/Kakao/Naver: userName ?? profile.name, profileImage = profile.picture
 	 */
-	buildLoginOptions(
-		verifiedProfile: VerifiedProfile,
-		userName?: string,
-	): SocialLoginOptions;
+	buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions;
 }
 
 /** provider → 어댑터 레지스트리(불변) */
-export type OAuthIdentityProviderRegistry = ReadonlyMap<
-	AccountProvider,
-	OAuthIdentityProvider
->;
+export type OAuthIdentityProviderRegistry = ReadonlyMap<AccountProvider, OAuthIdentityProvider>;

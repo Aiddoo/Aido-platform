@@ -23,9 +23,7 @@ describe("SendAdminNotificationUseCase", () => {
 	const notification: AdminNotification = { title: "테스트", body: "내용" };
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SendAdminNotificationUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SendAdminNotificationUseCase).compile();
 		useCase = unit;
 		adminNotifier = unitRef.get(ADMIN_NOTIFIER);
 		paymentNotifier = unitRef.get(PAYMENT_NOTIFIER);

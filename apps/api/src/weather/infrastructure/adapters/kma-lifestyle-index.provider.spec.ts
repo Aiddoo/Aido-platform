@@ -24,9 +24,7 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			KmaLifestyleIndexProvider,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(KmaLifestyleIndexProvider).compile();
 
 		provider = unit;
 		configService = unitRef.get(TypedConfigService);
@@ -66,13 +64,7 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 			);
 
 			// When - 생활지수 조회
-			const result = await provider.getIndex(
-				lat,
-				lon,
-				date,
-				currentTemp,
-				windSpeed,
-			);
+			const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
 
 			// Then - UV 지수와 체감온도 반환 확인
 			expect(result).not.toBeNull();
@@ -88,13 +80,7 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 			});
 
 			// When - 생활지수 조회
-			const result = await provider.getIndex(
-				lat,
-				lon,
-				date,
-				currentTemp,
-				windSpeed,
-			);
+			const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
 
 			// Then - feelsLikeTemperature 반환, uvIndex null, fetch 미호출
 			expect(result.feelsLikeTemperature).toBe(currentTemp);
@@ -110,13 +96,7 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 			fetchSpy.mockRejectedValue(new Error("Network error"));
 
 			// When - 생활지수 조회
-			const result = await provider.getIndex(
-				lat,
-				lon,
-				date,
-				currentTemp,
-				windSpeed,
-			);
+			const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
 
 			// Then - feelsLikeTemperature 반환, uvIndex null
 			expect(result.feelsLikeTemperature).toBe(currentTemp);
@@ -131,13 +111,7 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 			fetchSpy.mockRejectedValue(new DOMException("Aborted", "AbortError"));
 
 			// When - 생활지수 조회
-			const result = await provider.getIndex(
-				lat,
-				lon,
-				date,
-				currentTemp,
-				windSpeed,
-			);
+			const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
 
 			// Then - feelsLikeTemperature 반환, uvIndex null
 			expect(result.feelsLikeTemperature).toBe(currentTemp);
@@ -167,20 +141,13 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 			);
 
 			// When - 체감온도 공식 적용 조건으로 조회
-			const result = await provider.getIndex(
-				lat,
-				lon,
-				date,
-				coldTemp,
-				highWindMs,
-			);
+			const result = await provider.getIndex(lat, lon, date, coldTemp, highWindMs);
 
 			// Then - Wind Chill 공식에 따라 계산된 체감온도 확인 (km/h 변환 적용)
 			expect(result).not.toBeNull();
 			const windKmh = highWindMs * 3.6;
 			const v016 = windKmh ** 0.16;
-			const expectedFeelsLike =
-				13.12 + 0.6215 * coldTemp - 11.37 * v016 + 0.3965 * coldTemp * v016;
+			const expectedFeelsLike = 13.12 + 0.6215 * coldTemp - 11.37 * v016 + 0.3965 * coldTemp * v016;
 			expect(result.feelsLikeTemperature).toBeCloseTo(expectedFeelsLike, 2);
 			expect(result.uvIndex).toBe(3);
 		});

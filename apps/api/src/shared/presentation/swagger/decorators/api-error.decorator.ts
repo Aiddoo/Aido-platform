@@ -40,9 +40,7 @@ function createErrorSchema(errorCode: ErrorCodeType, message: string) {
  * findById(@Param('id') id: number) { ... }
  * ```
  */
-export function ApiErrorResponse(
-	options: ApiErrorResponseOptions,
-): MethodDecorator {
+export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecorator {
 	const { errorCode, description } = options;
 
 	const errorDef = Errors[errorCode];
@@ -90,9 +88,7 @@ export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
  * getProfile() { ... }
  * ```
  */
-export function ApiUnauthorizedError(
-	errorCode?: ErrorCodeType,
-): MethodDecorator {
+export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator {
 	const code = errorCode ?? ("AUTH_0107" as ErrorCodeType);
 	const message = Errors[code]?.message ?? "인증이 필요합니다.";
 
@@ -159,9 +155,7 @@ export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
  * verify(@Body() dto: VerifyDto) { ... }
  * ```
  */
-export function ApiUnprocessableError(
-	errorCode: ErrorCodeType,
-): MethodDecorator {
+export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator {
 	const message = Errors[errorCode]?.message ?? "Unprocessable";
 
 	return applyDecorators(
@@ -205,9 +199,7 @@ export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
  * parse(@Body() dto: ParseDto) { ... }
  * ```
  */
-export function ApiServiceUnavailableError(
-	errorCode: ErrorCodeType,
-): MethodDecorator {
+export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDecorator {
 	const message = Errors[errorCode]?.message ?? "Service unavailable";
 
 	return applyDecorators(
@@ -229,9 +221,7 @@ export function ApiServiceUnavailableError(
  * parse(@Body() dto: ParseDto) { ... }
  * ```
  */
-export function ApiTooManyRequestsError(
-	errorCode: ErrorCodeType,
-): MethodDecorator {
+export function ApiTooManyRequestsError(errorCode: ErrorCodeType): MethodDecorator {
 	const message = Errors[errorCode]?.message ?? "Too many requests";
 
 	return applyDecorators(

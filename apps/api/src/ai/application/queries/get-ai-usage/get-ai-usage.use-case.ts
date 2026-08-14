@@ -1,15 +1,11 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
-import {
-	EntitlementService,
-	Feature,
-} from "@/shared/application/entitlement/entitlement.service";
+
+import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	isNewBillingMonth,
-	nextBillingResetIso,
-} from "../../../domain/services/ai-usage-period";
+
+import { isNewBillingMonth, nextBillingResetIso } from "../../../domain/services/ai-usage-period";
 import { AiUsage } from "../../../domain/value-objects/ai-usage.vo";
 import {
 	AI_USAGE_REPOSITORY,

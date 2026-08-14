@@ -4,6 +4,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+
 import { Result } from '../Result/Result';
 
 interface FallbackProps {

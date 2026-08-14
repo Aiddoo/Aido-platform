@@ -15,11 +15,7 @@ export const googleOAuthSchema = z.object({
 export const appleOAuthSchema = z.object({
 	APPLE_CLIENT_ID: z.string().optional(),
 	APPLE_JWKS_URL: z.url().optional(),
-	APPLE_JWKS_COOLDOWN_DURATION_MS: z.coerce
-		.number()
-		.int()
-		.nonnegative()
-		.optional(),
+	APPLE_JWKS_COOLDOWN_DURATION_MS: z.coerce.number().int().nonnegative().optional(),
 	APPLE_SERVICE_ID: z.string().optional(),
 	APPLE_TEAM_ID: z.string().optional(),
 	APPLE_KEY_ID: z.string().optional(),

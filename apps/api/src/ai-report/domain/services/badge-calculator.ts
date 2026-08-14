@@ -57,11 +57,7 @@ export function calculateBadges(input: BadgeCalculatorInput): Badge[] {
 		});
 	}
 
-	if (
-		input.peakHour !== null &&
-		input.peakHour < 12 &&
-		input.completionRate >= 60
-	) {
+	if (input.peakHour !== null && input.peakHour < 12 && input.completionRate >= 60) {
 		badges.push({
 			id: "early_bird",
 			label: "얼리버드",
@@ -70,11 +66,7 @@ export function calculateBadges(input: BadgeCalculatorInput): Badge[] {
 		});
 	}
 
-	if (
-		input.peakHour !== null &&
-		input.peakHour >= 20 &&
-		input.completionRate >= 60
-	) {
+	if (input.peakHour !== null && input.peakHour >= 20 && input.completionRate >= 60) {
 		badges.push({
 			id: "night_owl",
 			label: "올빼미",

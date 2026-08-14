@@ -1,5 +1,6 @@
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/models/feature-discovery.model';
 import { renderHook, waitFor } from '@testing-library/react-native';
+
 import type { ActivationProgress, ActivationUser } from '../../models/activation.model';
 import { useAutomaticPushRegistration } from './use-automatic-push-registration';
 

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+
 import { FEATURE_DISCOVERY_CONFIG } from "./application/ports/feature-discovery-config.port";
 import { AppConfigQueryUseCases } from "./application/queries";
 import { FeatureDiscoveryConfigAdapter } from "./infrastructure/adapters/feature-discovery-config.adapter";

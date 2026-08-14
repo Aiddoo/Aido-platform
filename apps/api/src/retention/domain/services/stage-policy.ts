@@ -1,4 +1,5 @@
 import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+
 import type { RetentionStageName } from "../retention.constants";
 
 export interface RetentionStageState {
@@ -86,9 +87,7 @@ function localDayDifference(from: Date, to: Date, timezone: string): number {
 	const fromDate = localDateString(from, timezone);
 	const toDate = localDateString(to, timezone);
 	return Math.floor(
-		(Date.parse(`${toDate}T00:00:00.000Z`) -
-			Date.parse(`${fromDate}T00:00:00.000Z`)) /
-			86_400_000,
+		(Date.parse(`${toDate}T00:00:00.000Z`) - Date.parse(`${fromDate}T00:00:00.000Z`)) / 86_400_000,
 	);
 }
 
@@ -105,23 +104,14 @@ export function localDateString(date: Date, timezone: string): string {
 	return `${year}-${month}-${day}`;
 }
 
-function isAtOrAfterLocalTime(
-	date: Date,
-	timezone: string,
-	hour: number,
-	minute: number,
-): boolean {
+function isAtOrAfterLocalTime(date: Date, timezone: string, hour: number, minute: number): boolean {
 	const parts = new Intl.DateTimeFormat("en-US", {
 		timeZone: resolveTimezone(timezone),
 		hour: "2-digit",
 		minute: "2-digit",
 		hourCycle: "h23",
 	}).formatToParts(date);
-	const localHour = Number(
-		parts.find((part) => part.type === "hour")?.value ?? 0,
-	);
-	const localMinute = Number(
-		parts.find((part) => part.type === "minute")?.value ?? 0,
-	);
+	const localHour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+	const localMinute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
 	return localHour > hour || (localHour === hour && localMinute >= minute);
 }

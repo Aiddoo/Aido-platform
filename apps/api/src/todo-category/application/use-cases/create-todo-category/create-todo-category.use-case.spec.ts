@@ -11,10 +11,6 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 
 import { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
@@ -22,6 +18,10 @@ import {
 	TODO_CATEGORY_LIMIT_READER,
 	type TodoCategoryLimitReaderPort,
 } from "../../ports/todo-category-limit-reader.port";
+import {
+	TODO_CATEGORY_REPOSITORY,
+	type TodoCategoryRepositoryPort,
+} from "../../ports/todo-category.repository.port";
 import { CreateTodoCategoryUseCase } from "./create-todo-category.use-case";
 
 const created = TodoCategory.reconstitute({
@@ -139,9 +139,7 @@ describe("CreateTodoCategoryUseCase", () => {
 		});
 
 		// Then - 한 user-scoped key가 모든 구조 읽기보다 먼저이고 cache는 commit 뒤
-		expect(mutationLock.acquire).toHaveBeenCalledWith([
-			"mutation:v1:todo-category:u1",
-		]);
+		expect(mutationLock.acquire).toHaveBeenCalledWith(["mutation:v1:todo-category:u1"]);
 		expect(events).toEqual([
 			"uow:start",
 			"lock",

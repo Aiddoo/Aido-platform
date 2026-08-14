@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { NOTIFICATION_TYPE } from './notification.constants';
 
 // =============================================================================

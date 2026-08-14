@@ -1,9 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-	CHEER_REPOSITORY,
-	type CheerRepositoryPort,
-} from "../../ports/cheer.repository.port";
+import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../../ports/cheer.repository.port";
 
 export interface MarkManyCheersReadInput {
 	userId: string;
@@ -24,10 +21,7 @@ export class MarkManyCheersReadUseCase {
 	) {}
 
 	async execute(input: MarkManyCheersReadInput): Promise<number> {
-		const count = await this.cheerRepository.markManyAsRead(
-			input.cheerIds,
-			input.userId,
-		);
+		const count = await this.cheerRepository.markManyAsRead(input.cheerIds, input.userId);
 		this.#logger.debug(`${count}건 응원 읽음 처리: user=${input.userId}`);
 		return count;
 	}

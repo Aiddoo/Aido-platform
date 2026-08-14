@@ -1,20 +1,15 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-	EntitlementService,
-	Resource,
-} from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService, Resource } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
+import { TODO_CATEGORY_CACHE, type TodoCategoryCachePort } from "../ports/todo-category-cache.port";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
 	type TodoCategoryWithCountView,
 } from "../ports/todo-category.repository.port";
-import {
-	TODO_CATEGORY_CACHE,
-	type TodoCategoryCachePort,
-} from "../ports/todo-category-cache.port";
 
 export interface ResourceLimitInfo {
 	categoryCount: number;
@@ -45,9 +40,7 @@ export class TodoCategoryReader {
 	}
 
 	findMany(userId: string): Promise<TodoCategoryWithCountView[]> {
-		return this.cache.wrapList(userId, () =>
-			this.repository.findManyByUserId(userId),
-		);
+		return this.cache.wrapList(userId, () => this.repository.findManyByUserId(userId));
 	}
 
 	/** 캐시 없이 사용자 카테고리 목록을 읽는다. 타 모듈(ai) 크로스모듈 소비용(레거시 비캐시 경로 보존). */
@@ -55,10 +48,7 @@ export class TodoCategoryReader {
 		return this.repository.findManyByUserId(userId);
 	}
 
-	async findById(
-		id: number,
-		userId: string,
-	): Promise<TodoCategoryWithCountView> {
+	async findById(id: number, userId: string): Promise<TodoCategoryWithCountView> {
 		const category = await this.repository.findByIdWithCount(id);
 		if (!category) {
 			throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {

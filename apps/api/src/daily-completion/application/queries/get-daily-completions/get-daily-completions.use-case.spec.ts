@@ -6,10 +6,8 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import type {
-	DailyCompletionsRange,
-	TodoAggregateByDate,
-} from "../../../domain/daily-completion";
+
+import type { DailyCompletionsRange, TodoAggregateByDate } from "../../../domain/daily-completion";
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
@@ -61,9 +59,7 @@ describe("GetDailyCompletionsUseCase — 기간별 완료 현황 조회", () => 
 			.compile();
 
 		useCase = unit;
-		repository = unitRef.get<TodoCompletionRepositoryPort>(
-			TODO_COMPLETION_REPOSITORY,
-		);
+		repository = unitRef.get<TodoCompletionRepositoryPort>(TODO_COMPLETION_REPOSITORY);
 		cache = unitRef.get<DailyCompletionCachePort>(DAILY_COMPLETION_CACHE);
 	});
 
@@ -120,11 +116,7 @@ describe("GetDailyCompletionsUseCase — 기간별 완료 현황 조회", () => 
 
 		// Then - 저장소 미호출, 재캐싱도 없음
 		expect(result).toBe(cachedResult);
-		expect(cache.getRange).toHaveBeenCalledWith(
-			"user-123",
-			"2026-01-01",
-			"2026-01-31",
-		);
+		expect(cache.getRange).toHaveBeenCalledWith("user-123", "2026-01-01", "2026-01-31");
 		expect(repository.aggregateByDateRange).not.toHaveBeenCalled();
 		expect(cache.setRange).not.toHaveBeenCalled();
 	});
@@ -137,12 +129,7 @@ describe("GetDailyCompletionsUseCase — 기간별 완료 현황 조회", () => 
 		const result = await useCase.execute(input);
 
 		// Then - YYYY-MM-DD 키 세그먼트로 결과 저장
-		expect(cache.setRange).toHaveBeenCalledWith(
-			"user-123",
-			"2026-01-01",
-			"2026-01-31",
-			result,
-		);
+		expect(cache.setRange).toHaveBeenCalledWith("user-123", "2026-01-01", "2026-01-31", result);
 	});
 
 	it("집계가 없으면 빈 결과를 반환한다", async () => {

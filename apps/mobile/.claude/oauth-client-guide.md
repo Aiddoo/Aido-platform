@@ -43,7 +43,7 @@ npx expo install expo-apple-authentication
 ### 클라이언트 구현
 
 ```typescript
-import * as AppleAuthentication from "expo-apple-authentication";
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 async function signInWithApple() {
   const credential = await AppleAuthentication.signInAsync({
@@ -54,13 +54,13 @@ async function signInWithApple() {
   });
 
   // 백엔드로 전송
-  const response = await fetch("/auth/apple/callback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/auth/apple/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       idToken: credential.identityToken,
       userName: credential.fullName
-        ? `${credential.fullName.givenName ?? ""} ${credential.fullName.familyName ?? ""}`.trim()
+        ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
         : undefined,
     }),
   });
@@ -98,20 +98,20 @@ npx expo install expo-auth-session expo-crypto expo-web-browser
 ### 클라이언트 구현
 
 ```typescript
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
 
 function useGoogleAuth() {
   const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: "YOUR_IOS_CLIENT_ID",
-    androidClientId: "YOUR_ANDROID_CLIENT_ID",
-    webClientId: "YOUR_WEB_CLIENT_ID",
+    iosClientId: 'YOUR_IOS_CLIENT_ID',
+    androidClientId: 'YOUR_ANDROID_CLIENT_ID',
+    webClientId: 'YOUR_WEB_CLIENT_ID',
   });
 
   useEffect(() => {
-    if (response?.type === "success") {
+    if (response?.type === 'success') {
       const { id_token } = response.params;
       handleGoogleLogin(id_token);
     }
@@ -121,9 +121,9 @@ function useGoogleAuth() {
 }
 
 async function handleGoogleLogin(idToken: string) {
-  const response = await fetch("/auth/google/callback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/auth/google/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),
   });
 
@@ -157,31 +157,31 @@ npx expo install expo-auth-session expo-crypto expo-web-browser
 ### 클라이언트 구현
 
 ```typescript
-import { makeRedirectUri, useAuthRequest } from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
+import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const KAKAO_REST_API_KEY = "YOUR_REST_API_KEY";
+const KAKAO_REST_API_KEY = 'YOUR_REST_API_KEY';
 const discovery = {
-  authorizationEndpoint: "https://kauth.kakao.com/oauth/authorize",
-  tokenEndpoint: "https://kauth.kakao.com/oauth/token",
+  authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
+  tokenEndpoint: 'https://kauth.kakao.com/oauth/token',
 };
 
 function useKakaoAuth() {
-  const redirectUri = makeRedirectUri({ scheme: "your-app-scheme" });
+  const redirectUri = makeRedirectUri({ scheme: 'your-app-scheme' });
 
   const [request, response, promptAsync] = useAuthRequest(
     {
       clientId: KAKAO_REST_API_KEY,
       redirectUri,
-      scopes: ["profile_nickname", "account_email"],
+      scopes: ['profile_nickname', 'account_email'],
     },
     discovery,
   );
 
   useEffect(() => {
-    if (response?.type === "success") {
+    if (response?.type === 'success') {
       exchangeCodeForToken(response.params.code, redirectUri);
     }
   }, [response]);
@@ -191,11 +191,11 @@ function useKakaoAuth() {
 
 async function exchangeCodeForToken(code: string, redirectUri: string) {
   // Authorization Code → Access Token 교환
-  const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: "authorization_code",
+      grant_type: 'authorization_code',
       client_id: KAKAO_REST_API_KEY,
       redirect_uri: redirectUri,
       code,
@@ -205,16 +205,16 @@ async function exchangeCodeForToken(code: string, redirectUri: string) {
   const { access_token } = await tokenResponse.json();
 
   // Access Token으로 사용자 정보 조회
-  const userResponse = await fetch("https://kapi.kakao.com/v2/user/me", {
+  const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
     headers: { Authorization: `Bearer ${access_token}` },
   });
 
   const userData = await userResponse.json();
 
   // 백엔드로 전송
-  const response = await fetch("/auth/kakao/callback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/auth/kakao/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       accessToken: access_token,
       profile: {
@@ -257,32 +257,32 @@ npx expo install expo-auth-session expo-crypto expo-web-browser
 ### 클라이언트 구현
 
 ```typescript
-import { makeRedirectUri, useAuthRequest } from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
+import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const NAVER_CLIENT_ID = "YOUR_CLIENT_ID";
-const NAVER_CLIENT_SECRET = "YOUR_CLIENT_SECRET"; // ⚠️ 보안 주의
+const NAVER_CLIENT_ID = 'YOUR_CLIENT_ID';
+const NAVER_CLIENT_SECRET = 'YOUR_CLIENT_SECRET'; // ⚠️ 보안 주의
 const discovery = {
-  authorizationEndpoint: "https://nid.naver.com/oauth2.0/authorize",
-  tokenEndpoint: "https://nid.naver.com/oauth2.0/token",
+  authorizationEndpoint: 'https://nid.naver.com/oauth2.0/authorize',
+  tokenEndpoint: 'https://nid.naver.com/oauth2.0/token',
 };
 
 function useNaverAuth() {
-  const redirectUri = makeRedirectUri({ scheme: "your-app-scheme" });
+  const redirectUri = makeRedirectUri({ scheme: 'your-app-scheme' });
 
   const [request, response, promptAsync] = useAuthRequest(
     {
       clientId: NAVER_CLIENT_ID,
       redirectUri,
-      responseType: "code",
+      responseType: 'code',
     },
     discovery,
   );
 
   useEffect(() => {
-    if (response?.type === "success") {
+    if (response?.type === 'success') {
       exchangeCodeForToken(response.params.code, response.params.state);
     }
   }, [response]);
@@ -292,11 +292,11 @@ function useNaverAuth() {
 
 async function exchangeCodeForToken(code: string, state: string) {
   // Authorization Code → Access Token 교환 (client_secret 필수)
-  const tokenResponse = await fetch("https://nid.naver.com/oauth2.0/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  const tokenResponse = await fetch('https://nid.naver.com/oauth2.0/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: "authorization_code",
+      grant_type: 'authorization_code',
       client_id: NAVER_CLIENT_ID,
       client_secret: NAVER_CLIENT_SECRET,
       code,
@@ -307,16 +307,16 @@ async function exchangeCodeForToken(code: string, state: string) {
   const { access_token } = await tokenResponse.json();
 
   // Access Token으로 사용자 정보 조회
-  const userResponse = await fetch("https://openapi.naver.com/v1/nid/me", {
+  const userResponse = await fetch('https://openapi.naver.com/v1/nid/me', {
     headers: { Authorization: `Bearer ${access_token}` },
   });
 
   const { response: profile } = await userResponse.json();
 
   // 백엔드로 전송
-  const apiResponse = await fetch("/auth/naver/callback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const apiResponse = await fetch('/auth/naver/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       accessToken: access_token,
       profile: {
@@ -344,29 +344,29 @@ async function exchangeCodeForToken(code: string, state: string) {
 
 ### 보안 권장사항
 
-| 항목 | 권장 | 비권장 |
-|------|------|--------|
-| 인증 UI | 시스템 브라우저 / 네이티브 SDK | WebView (토큰 탈취 위험) |
-| client_secret | 프록시 서버 경유 | 앱 번들에 직접 포함 |
-| 토큰 저장 | SecureStore | AsyncStorage |
-| HTTPS | 필수 | HTTP |
+| 항목          | 권장                           | 비권장                   |
+| ------------- | ------------------------------ | ------------------------ |
+| 인증 UI       | 시스템 브라우저 / 네이티브 SDK | WebView (토큰 탈취 위험) |
+| client_secret | 프록시 서버 경유               | 앱 번들에 직접 포함      |
+| 토큰 저장     | SecureStore                    | AsyncStorage             |
+| HTTPS         | 필수                           | HTTP                     |
 
 ### 에러 처리
 
 모든 OAuth 콜백 엔드포인트는 동일한 에러 구조를 사용합니다:
 
-| 에러 코드 | HTTP | 상황 |
-|-----------|------|------|
-| `SOCIAL_0202` | 401 | 유효하지 않은 토큰 (만료, 위변조) |
+| 에러 코드     | HTTP | 상황                              |
+| ------------- | ---- | --------------------------------- |
+| `SOCIAL_0202` | 401  | 유효하지 않은 토큰 (만료, 위변조) |
 
 ### 토큰 저장 예시
 
 ```typescript
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from 'expo-secure-store';
 
 async function saveTokens(accessToken: string, refreshToken: string) {
-  await SecureStore.setItemAsync("accessToken", accessToken);
-  await SecureStore.setItemAsync("refreshToken", refreshToken);
+  await SecureStore.setItemAsync('accessToken', accessToken);
+  await SecureStore.setItemAsync('refreshToken', refreshToken);
 }
 ```
 

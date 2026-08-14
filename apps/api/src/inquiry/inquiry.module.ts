@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
+
 import { EmailModule } from "@/email/email.module";
+
 import { INQUIRY_MAILER } from "./application/ports/inquiry-mailer.port";
 import { InquiryUseCases } from "./application/use-cases";
 import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/email-inquiry-mailer.adapter";
@@ -14,9 +16,6 @@ import { InquiryController } from "./presentation/inquiry.controller";
 @Module({
 	imports: [EmailModule],
 	controllers: [InquiryController],
-	providers: [
-		{ provide: INQUIRY_MAILER, useClass: EmailInquiryMailerAdapter },
-		...InquiryUseCases,
-	],
+	providers: [{ provide: INQUIRY_MAILER, useClass: EmailInquiryMailerAdapter }, ...InquiryUseCases],
 })
 export class InquiryModule {}

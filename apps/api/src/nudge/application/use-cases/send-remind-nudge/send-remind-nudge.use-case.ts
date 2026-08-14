@@ -15,15 +15,12 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 
 import { evaluateRemindNudgeCooldown } from "../../../domain/services/nudge-cooldown";
 import { NudgeMessage } from "../../../domain/value-objects/nudge-message.vo";
+import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type ReminderNudgeWithRelations,
 } from "../../ports/nudge.repository.port";
-import {
-	NUDGE_NOTIFIER,
-	type NudgeNotifierPort,
-} from "../../ports/nudge-notifier.port";
 
 export interface SendRemindNudgeInput {
 	senderId: string;
@@ -64,10 +61,7 @@ export class SendRemindNudgeUseCase {
 			throw new ApplicationException(ErrorCode.NUDGE_1104);
 		}
 
-		const isFriend = await this.followReader.isMutualFriend(
-			senderId,
-			receiverId,
-		);
+		const isFriend = await this.followReader.isMutualFriend(senderId, receiverId);
 		if (!isFriend) {
 			throw new ApplicationException(ErrorCode.NUDGE_1103, {
 				targetUserId: receiverId,
@@ -79,22 +73,14 @@ export class SendRemindNudgeUseCase {
 		const today = startOfDayInTimezone(capturedAt, tz);
 
 		const remindNudge = await this.uow.run(async () => {
-			await this.mutationLock.acquire([
-				MutationLockKeys.remindNudgeCooldown(senderId, receiverId),
-			]);
+			await this.mutationLock.acquire([MutationLockKeys.remindNudgeCooldown(senderId, receiverId)]);
 
-			const todayTodoCount = await this.nudgeRepository.countTodayTodos(
-				receiverId,
-				today,
-			);
+			const todayTodoCount = await this.nudgeRepository.countTodayTodos(receiverId, today);
 			if (todayTodoCount > 0) {
 				throw new ApplicationException(ErrorCode.NUDGE_1107, { receiverId });
 			}
 
-			const lastRemind = await this.nudgeRepository.findLastRemindNudge(
-				senderId,
-				receiverId,
-			);
+			const lastRemind = await this.nudgeRepository.findLastRemindNudge(senderId, receiverId);
 			if (lastRemind) {
 				const cooldown = evaluateRemindNudgeCooldown(lastRemind.createdAt);
 				if (cooldown.isActive) {
@@ -112,12 +98,9 @@ export class SendRemindNudgeUseCase {
 			});
 		});
 
-		this.#logger.log(
-			`Remind nudge sent: senderId=${senderId}, receiverId=${receiverId}`,
-		);
+		this.#logger.log(`Remind nudge sent: senderId=${senderId}, receiverId=${receiverId}`);
 
-		const senderName =
-			remindNudge.sender.profile?.name ?? remindNudge.sender.userTag;
+		const senderName = remindNudge.sender.profile?.name ?? remindNudge.sender.userTag;
 		this.notifier.notifyNudgeSent({
 			nudgeId: remindNudge.id,
 			senderId,

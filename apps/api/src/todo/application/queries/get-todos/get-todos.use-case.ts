@@ -1,10 +1,12 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
 import { ApplicationException } from "@/shared/domain";
 import { isAfter } from "@/shared/domain/date/utils/compare";
+
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -25,16 +27,10 @@ export class GetTodosUseCase {
 		private readonly paginationService: PaginationService,
 	) {}
 
-	async execute(
-		input: GetTodosInput,
-	): Promise<CursorPaginatedResponse<TodoResponse, number>> {
+	async execute(input: GetTodosInput): Promise<CursorPaginatedResponse<TodoResponse, number>> {
 		const params = input;
 
-		if (
-			params.startDate &&
-			params.endDate &&
-			isAfter(params.startDate, params.endDate)
-		) {
+		if (params.startDate && params.endDate && isAfter(params.startDate, params.endDate)) {
 			throw new ApplicationException(ErrorCode.SYS_0002, {
 				message: "startDate must be less than or equal to endDate",
 				startDate: params.startDate,
@@ -42,11 +38,10 @@ export class GetTodosUseCase {
 			});
 		}
 
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<number>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const repoParams: FindTodosParams = {
 			userId: params.userId,
@@ -60,9 +55,9 @@ export class GetTodosUseCase {
 
 		const items = await this.todoReadRepository.findManyByUserId(repoParams);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			TodoResponse,
-			number
-		>({ items, size });
+		return this.paginationService.createCursorPaginatedResponse<TodoResponse, number>({
+			items,
+			size,
+		});
 	}
 }

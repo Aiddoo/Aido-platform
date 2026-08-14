@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
@@ -32,12 +33,8 @@ export class DispatchBatchNotificationUseCase {
 
 		this.pushDispatcher.fireAndForgetBatchPush(input.items);
 
-		const uniqueUserIds = [
-			...new Set(input.sourceData.map((data) => data.userId)),
-		];
-		void Promise.all(
-			uniqueUserIds.map((userId) => this.cache.invalidateUnreadCount(userId)),
-		);
+		const uniqueUserIds = [...new Set(input.sourceData.map((data) => data.userId))];
+		void Promise.all(uniqueUserIds.map((userId) => this.cache.invalidateUnreadCount(userId)));
 
 		void this.notificationDedup.recordNotifiedUsers(
 			input.sourceData.flatMap((data) =>

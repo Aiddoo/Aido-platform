@@ -7,6 +7,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("일일 달성 E2E", () => {
@@ -113,10 +114,7 @@ describe("일일 달성 E2E", () => {
 		describe("파라미터 검증", () => {
 			it("startDate 누락 시 400 반환", async () => {
 				// Given - 인증된 사용자 준비
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-param1@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-param1@test.com", password);
 
 				// When - startDate 없이 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -131,10 +129,7 @@ describe("일일 달성 E2E", () => {
 
 			it("endDate 누락 시 400 반환", async () => {
 				// Given - 인증된 사용자 준비
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-param2@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-param2@test.com", password);
 
 				// When - endDate 없이 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -149,10 +144,7 @@ describe("일일 달성 E2E", () => {
 
 			it("잘못된 날짜 형식 시 400 반환", async () => {
 				// Given - 인증된 사용자 준비
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-param3@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-param3@test.com", password);
 
 				// When - 잘못된 날짜 형식으로 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -167,10 +159,7 @@ describe("일일 달성 E2E", () => {
 
 			it("endDate가 startDate보다 이전인 경우 400 반환", async () => {
 				// Given - 인증된 사용자 준비
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-param4@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-param4@test.com", password);
 
 				// When - endDate가 startDate보다 이전인 값으로 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -187,10 +176,7 @@ describe("일일 달성 E2E", () => {
 		describe("정상 조회", () => {
 			it("날짜 범위 내 완료 현황 조회 성공", async () => {
 				// Given - 인증된 사용자와 4개 날짜에 Todo 데이터 준비 (100% 완료 2일)
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-normal1@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-normal1@test.com", password);
 				const accessToken = user.accessToken;
 
 				await createTodosForDate(accessToken, "2026-01-15", 3, 3);
@@ -211,8 +197,7 @@ describe("일일 달성 E2E", () => {
 				expect(response.body.data).toHaveProperty("totalCompleteDays");
 				expect(response.body.data).toHaveProperty("dateRange");
 
-				const { completions, totalCompleteDays, dateRange } =
-					response.body.data;
+				const { completions, totalCompleteDays, dateRange } = response.body.data;
 
 				// 날짜 범위 확인
 				expect(dateRange.startDate).toBe("2026-01-01");
@@ -227,10 +212,7 @@ describe("일일 달성 E2E", () => {
 
 			it("완료 현황 상세 데이터 검증", async () => {
 				// Given - 인증된 사용자와 3일간의 Todo 데이터 준비
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-normal2@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-normal2@test.com", password);
 				const accessToken = user.accessToken;
 
 				await createTodosForDate(accessToken, "2026-01-15", 3, 3);
@@ -253,27 +235,21 @@ describe("일일 달성 E2E", () => {
 				expect(completions[2].date).toBe("2026-01-17");
 
 				// 2026-01-15: 3개 중 3개 완료
-				const day15 = completions.find(
-					(c: { date: string }) => c.date === "2026-01-15",
-				);
+				const day15 = completions.find((c: { date: string }) => c.date === "2026-01-15");
 				expect(day15.totalTodos).toBe(3);
 				expect(day15.completedTodos).toBe(3);
 				expect(day15.isComplete).toBe(true);
 				expect(day15.completionRate).toBe(100);
 
 				// 2026-01-16: 4개 중 2개 완료
-				const day16 = completions.find(
-					(c: { date: string }) => c.date === "2026-01-16",
-				);
+				const day16 = completions.find((c: { date: string }) => c.date === "2026-01-16");
 				expect(day16.totalTodos).toBe(4);
 				expect(day16.completedTodos).toBe(2);
 				expect(day16.isComplete).toBe(false);
 				expect(day16.completionRate).toBe(50);
 
 				// 2026-01-17: 2개 중 0개 완료
-				const day17 = completions.find(
-					(c: { date: string }) => c.date === "2026-01-17",
-				);
+				const day17 = completions.find((c: { date: string }) => c.date === "2026-01-17");
 				expect(day17.totalTodos).toBe(2);
 				expect(day17.completedTodos).toBe(0);
 				expect(day17.isComplete).toBe(false);
@@ -282,10 +258,7 @@ describe("일일 달성 E2E", () => {
 
 			it("특정 날짜만 조회", async () => {
 				// Given - 인증된 사용자와 2026-01-20에 100% 완료된 Todo 준비
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-normal3@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-normal3@test.com", password);
 				const accessToken = user.accessToken;
 
 				await createTodosForDate(accessToken, "2026-01-20", 1, 1);
@@ -308,10 +281,7 @@ describe("일일 달성 E2E", () => {
 
 			it("Todo가 없는 날짜 범위 조회 시 빈 배열 반환", async () => {
 				// Given - 인증된 사용자 준비 (2월에는 Todo 없음)
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-normal4@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-normal4@test.com", password);
 				const accessToken = user.accessToken;
 
 				// When - Todo가 없는 2월 기간 조회
@@ -331,14 +301,8 @@ describe("일일 달성 E2E", () => {
 		describe("사용자 격리", () => {
 			it("사용자 1은 자신의 데이터만 조회하고, 사용자 2는 자신의 데이터만 조회한다", async () => {
 				// Given - 사용자 1 (3개 Todo, 100% 완료)과 사용자 2 (2개 Todo, 50% 완료) 준비
-				const user1 = await ctx.helpers.createVerifiedUser(
-					"dc-iso1@test.com",
-					password,
-				);
-				const user2 = await ctx.helpers.createVerifiedUser(
-					"dc-iso2@test.com",
-					password,
-				);
+				const user1 = await ctx.helpers.createVerifiedUser("dc-iso1@test.com", password);
+				const user2 = await ctx.helpers.createVerifiedUser("dc-iso2@test.com", password);
 				await createTodosForDate(user1.accessToken, "2026-03-01", 3, 3);
 				await createTodosForDate(user2.accessToken, "2026-03-01", 2, 1);
 
@@ -373,10 +337,7 @@ describe("일일 달성 E2E", () => {
 		describe("Todo 상태 변경 반영", () => {
 			it("Todo 완료 상태 변경 시 완료 현황 즉시 반영", async () => {
 				// Given - 2개의 미완료 Todo 생성
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-state@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-state@test.com", password);
 				const accessToken = user.accessToken;
 
 				await createTodo(accessToken, {
@@ -435,10 +396,7 @@ describe("일일 달성 E2E", () => {
 
 			it("맞팔 관계가 아니면 403 반환", async () => {
 				// Given - 팔로우 관계가 없는 두 사용자 준비
-				const viewer = await ctx.helpers.createVerifiedUser(
-					"dc-friend-viewer1@test.com",
-					password,
-				);
+				const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer1@test.com", password);
 				const stranger = await ctx.helpers.createVerifiedUser(
 					"dc-friend-stranger@test.com",
 					password,
@@ -458,14 +416,8 @@ describe("일일 달성 E2E", () => {
 
 			it("맞팔이면 친구의 PUBLIC 할 일만 집계해 반환한다", async () => {
 				// Given - 맞팔 관계인 두 사용자와 친구의 PUBLIC/PRIVATE 할 일 준비
-				const viewer = await ctx.helpers.createVerifiedUser(
-					"dc-friend-viewer2@test.com",
-					password,
-				);
-				const friend = await ctx.helpers.createVerifiedUser(
-					"dc-friend-owner@test.com",
-					password,
-				);
+				const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer2@test.com", password);
+				const friend = await ctx.helpers.createVerifiedUser("dc-friend-owner@test.com", password);
 				await ctx.helpers.createFriendship(viewer, friend);
 
 				// 6/1: PUBLIC 2개(1개 완료) + PRIVATE 1개(완료) → PUBLIC 기준 2개 중 1개
@@ -519,16 +471,12 @@ describe("일일 달성 E2E", () => {
 
 				expect(completions.length).toBe(2);
 
-				const day1 = completions.find(
-					(c: { date: string }) => c.date === "2026-06-01",
-				);
+				const day1 = completions.find((c: { date: string }) => c.date === "2026-06-01");
 				expect(day1.totalTodos).toBe(2);
 				expect(day1.completedTodos).toBe(1);
 				expect(day1.isComplete).toBe(false);
 
-				const day2 = completions.find(
-					(c: { date: string }) => c.date === "2026-06-02",
-				);
+				const day2 = completions.find((c: { date: string }) => c.date === "2026-06-02");
 				expect(day2.totalTodos).toBe(1);
 				expect(day2.completedTodos).toBe(1);
 				expect(day2.isComplete).toBe(true);
@@ -538,14 +486,8 @@ describe("일일 달성 E2E", () => {
 
 			it("내 완료 현황 조회는 PRIVATE을 포함해 친구용 조회와 독립적이다", async () => {
 				// Given - 맞팔 친구가 PUBLIC 1개(완료) + PRIVATE 1개(미완료) 보유
-				const viewer = await ctx.helpers.createVerifiedUser(
-					"dc-friend-viewer3@test.com",
-					password,
-				);
-				const friend = await ctx.helpers.createVerifiedUser(
-					"dc-friend-owner2@test.com",
-					password,
-				);
+				const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer3@test.com", password);
+				const friend = await ctx.helpers.createVerifiedUser("dc-friend-owner2@test.com", password);
 				await ctx.helpers.createFriendship(viewer, friend);
 
 				await createTodo(friend.accessToken, {
@@ -672,10 +614,7 @@ describe("일일 달성 E2E", () => {
 		describe("월간 캘린더 시나리오", () => {
 			it("월간 조회 시 물고기 개수 정확히 계산하고 UI 매핑 데이터 검증", async () => {
 				// Given - 5월에 7일간 다양한 완료율의 Todo 준비 (100% 완료 4일)
-				const user = await ctx.helpers.createVerifiedUser(
-					"dc-calendar@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("dc-calendar@test.com", password);
 				const accessToken = user.accessToken;
 
 				await createTodosForDate(accessToken, "2026-05-01", 1, 1); // 100%
@@ -703,15 +642,12 @@ describe("일일 달성 E2E", () => {
 				expect(totalCompleteDays).toBe(4);
 
 				// isComplete 검증
-				const completeDays = completions.filter(
-					(c: { isComplete: boolean }) => c.isComplete,
-				);
+				const completeDays = completions.filter((c: { isComplete: boolean }) => c.isComplete);
 				expect(completeDays.length).toBe(4);
 
 				// Then - 각 날짜별 UI 표시 로직에 맞는 데이터 검증
 				for (const completion of completions) {
-					const incompleteTodos =
-						completion.totalTodos - completion.completedTodos;
+					const incompleteTodos = completion.totalTodos - completion.completedTodos;
 
 					if (completion.isComplete) {
 						// 물고기 표시 조건: 100% 완료

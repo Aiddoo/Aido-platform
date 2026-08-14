@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/errors";
+
 import { AggregateRoot } from "@/shared/domain";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 

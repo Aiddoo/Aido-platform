@@ -2,6 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { useOverlay } from '@src/shared/ui/Overlay';
 import { useRouter } from 'expo-router';
+
 import type { PremiumDialogProps } from './PremiumDialog.types';
 
 export function PremiumDialog({

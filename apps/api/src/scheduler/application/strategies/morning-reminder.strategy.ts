@@ -1,5 +1,6 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	NotificationMessageBuilder,
 	NotificationSender,
@@ -10,10 +11,7 @@ import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
@@ -48,8 +46,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 		// 무료 사용자: 고정 시간(08:00)에만 리마인더 발송 (catch-up 핸들러에서는 스킵)
 		const defaultHour = USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR;
 		const defaultMinute = USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE;
-		const isFreeReminderTime =
-			localHour === defaultHour && localMinute === defaultMinute;
+		const isFreeReminderTime = localHour === defaultHour && localMinute === defaultMinute;
 
 		let freeUsers: ReminderCountUser[] = [];
 		if (!userId && isFreeReminderTime) {
@@ -67,12 +64,11 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지: 이미 오늘 아침 리마인더를 받은 사용자 제외
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: users.map((u) => u.id),
-				type: "MORNING_REMINDER",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: users.map((u) => u.id),
+			type: "MORNING_REMINDER",
+			notificationDate: today,
+		});
 
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
@@ -90,11 +86,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 			};
 			const message =
 				count > 0
-					? NotificationMessageBuilder.morningReminder(
-							count,
-							locale,
-							variantContext,
-						)
+					? NotificationMessageBuilder.morningReminder(count, locale, variantContext)
 					: NotificationMessageBuilder.morningNoTodo(locale, variantContext);
 
 			return {

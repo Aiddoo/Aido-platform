@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
@@ -29,10 +30,7 @@ export class RefreshPushTimezoneUseCase {
 	) {}
 
 	async execute(userId: string, timezone: string): Promise<void> {
-		const changed = await this.preferenceRepository.refreshTimezoneIfChanged(
-			userId,
-			timezone,
-		);
+		const changed = await this.preferenceRepository.refreshTimezoneIfChanged(userId, timezone);
 		if (changed > 0) {
 			await this.cache.invalidateActiveTimezones();
 		}

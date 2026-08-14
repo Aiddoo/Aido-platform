@@ -35,12 +35,12 @@
 
 ## 테스트 우선순위
 
-| 우선순위 | 레이어 | 이유 | mock 필요 |
-|---------|--------|------|----------|
-| 1 | **Policy** | 비즈니스 로직의 핵심, 순수 함수라 작성 쉬움 | 없음 |
-| 2 | **Mapper** | 서버 변경 감지의 방파제, 순수 함수 | 없음 |
-| 3 | **Service** | HTTP + Zod + Mapper + Policy 통합 검증 | mock HttpClient |
-| 4 | **UI 컴포넌트** | 렌더링 + 사용자 상호작용 | mock Service (DI 훅) |
+| 우선순위 | 레이어          | 이유                                        | mock 필요            |
+| -------- | --------------- | ------------------------------------------- | -------------------- |
+| 1        | **Policy**      | 비즈니스 로직의 핵심, 순수 함수라 작성 쉬움 | 없음                 |
+| 2        | **Mapper**      | 서버 변경 감지의 방파제, 순수 함수          | 없음                 |
+| 3        | **Service**     | HTTP + Zod + Mapper + Policy 통합 검증      | mock HttpClient      |
+| 4        | **UI 컴포넌트** | 렌더링 + 사용자 상호작용                    | mock Service (DI 훅) |
 
 ---
 
@@ -48,12 +48,12 @@
 
 테스트 파일은 **대상 파일과 같은 디렉토리**에 배치한다.
 
-| 테스트 대상 | 파일명 패턴 |
-|------------|-----------|
-| Policy | `{feature}.model.test.ts` |
-| Mapper | `{feature}.mapper.test.ts` (services/ 하위) |
-| Service | `{feature}.service.test.ts` |
-| UI 컴포넌트 | `{Component}.test.tsx` |
+| 테스트 대상 | 파일명 패턴                                 |
+| ----------- | ------------------------------------------- |
+| Policy      | `{feature}.model.test.ts`                   |
+| Mapper      | `{feature}.mapper.test.ts` (services/ 하위) |
+| Service     | `{feature}.service.test.ts`                 |
+| UI 컴포넌트 | `{Component}.test.tsx`                      |
 
 > **주의**: `.spec.ts`가 아니라 **`.test.ts` / `.test.tsx`** 를 사용한다 (코드베이스 컨벤션).
 
@@ -84,12 +84,12 @@ it('활성 상태이면 true를 반환한다', async () => {
 
 모든 `describe` 블록에는 최소 **성공 1개 + 실패 1개** 테스트가 있어야 한다.
 
-| 레이어 | 성공 케이스 | 실패 케이스 |
-|--------|-----------|-----------|
-| Policy | `isValid('valid')` → `true` | `isValid('')` → `false` |
-| Mapper | 정상 DTO → Domain 변환 | nullable 필드가 null인 경우 |
-| Service | ok Response → Zod → Mapper → ok Result | 4xx → err Result, Zod 실패 → ParseError |
-| UI 컴포넌트 | 정상 데이터 렌더링 | 에러 상태 UI 렌더링 |
+| 레이어      | 성공 케이스                            | 실패 케이스                             |
+| ----------- | -------------------------------------- | --------------------------------------- |
+| Policy      | `isValid('valid')` → `true`            | `isValid('')` → `false`                 |
+| Mapper      | 정상 DTO → Domain 변환                 | nullable 필드가 null인 경우             |
+| Service     | ok Response → Zod → Mapper → ok Result | 4xx → err Result, Zod 실패 → ParseError |
+| UI 컴포넌트 | 정상 데이터 렌더링                     | 에러 상태 UI 렌더링                     |
 
 ### 테스트 데이터 팩토리
 
@@ -190,6 +190,7 @@ httpClient.get.mockRejectedValue(new ServerError(500));
 ### 1. Policy 테스트 (순수 함수, mock 없음)
 
 Policy는 비즈니스 로직의 핵심이다. 5가지 카테고리별로 테스트한다:
+
 - **상태 판단** (`is{상태}`) — 경계값 + 양쪽 케이스
 - **가능 여부** (`can{동작}`) — 허용/거부 조건
 - **표시값** (`get{값}`) — 파생 값 계산 결과
@@ -732,12 +733,12 @@ pnpm --filter @aido/mobile test -- --coverage
 
 ### jest.config.js 주요 설정
 
-| 설정 | 값 |
-|------|-----|
-| preset | `jest-expo` |
-| testMatch | `**/*.test.[jt]s?(x)`, `**/*.spec.[jt]s?(x)` |
-| setupFilesAfterSetup | (현재 주석 처리됨) |
-| moduleNameMapper | `@aido/api-types` → packages, `@aido/utils` → packages, `expo-secure-store` → mock |
+| 설정                 | 값                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| preset               | `jest-expo`                                                                        |
+| testMatch            | `**/*.test.[jt]s?(x)`, `**/*.spec.[jt]s?(x)`                                       |
+| setupFilesAfterSetup | (현재 주석 처리됨)                                                                 |
+| moduleNameMapper     | `@aido/api-types` → packages, `@aido/utils` → packages, `expo-secure-store` → mock |
 
 ---
 
@@ -785,11 +786,11 @@ pnpm --filter @aido/mobile test -- --coverage
 
 **자체 로직이 있는 함수만 테스트한다.** 라이브러리 함수를 그대로 호출만 하는 wrapper는 테스트하지 않는다 — 라이브러리 테스트는 라이브러리에 위임한다.
 
-| 구분 | 예시 | 테스트 여부 |
-|------|------|-----------|
-| 자체 로직 있음 | 산술 연산 + 반올림 등 자체 계산 | O |
-| 자체 로직 있음 | 조건 분기 + 포맷팅 등 비즈니스 변환 | O |
-| 라이브러리 래핑 | 라이브러리 함수를 그대로 위임하는 wrapper | X |
+| 구분            | 예시                                      | 테스트 여부 |
+| --------------- | ----------------------------------------- | ----------- |
+| 자체 로직 있음  | 산술 연산 + 반올림 등 자체 계산           | O           |
+| 자체 로직 있음  | 조건 분기 + 포맷팅 등 비즈니스 변환       | O           |
+| 라이브러리 래핑 | 라이브러리 함수를 그대로 위임하는 wrapper | X           |
 
 ### 패턴
 
@@ -825,14 +826,14 @@ jest.mock('react-native', () => ({
 
 ## 참고 파일
 
-| 파일 | 설명 |
-|------|------|
-| `src/core/ports/http.ts` | HttpClient 인터페이스 |
-| `src/core/ports/storage.ts` | Storage 인터페이스 |
-| `src/shared/errors/result.ts` | Result 타입, ok/err/unwrap |
-| `src/shared/errors/api-error.ts` | ApiError (서버 4xx) |
-| `src/shared/errors/infra-error.ts` | InfraError (5xx, 네트워크, 파싱) |
-| `src/features/*/models/*.model.ts` | Domain Model + Policy |
-| `src/features/*/services/*.service.ts` | Service 구현 |
-| `src/features/*/services/*.mapper.ts` | Mapper (DTO → Domain) |
-| `jest.config.js` | Jest 설정 |
+| 파일                                   | 설명                             |
+| -------------------------------------- | -------------------------------- |
+| `src/core/ports/http.ts`               | HttpClient 인터페이스            |
+| `src/core/ports/storage.ts`            | Storage 인터페이스               |
+| `src/shared/errors/result.ts`          | Result 타입, ok/err/unwrap       |
+| `src/shared/errors/api-error.ts`       | ApiError (서버 4xx)              |
+| `src/shared/errors/infra-error.ts`     | InfraError (5xx, 네트워크, 파싱) |
+| `src/features/*/models/*.model.ts`     | Domain Model + Policy            |
+| `src/features/*/services/*.service.ts` | Service 구현                     |
+| `src/features/*/services/*.mapper.ts`  | Mapper (DTO → Domain)            |
+| `jest.config.js`                       | Jest 설정                        |

@@ -5,6 +5,7 @@
  * 외부 의존성(DB/Queue/Network) 없이 입력 → 출력만으로 정의되어 테스트·재사용이 용이.
  */
 import { AI_SUGGESTION_LIMITS } from "@aido/validators";
+
 import type { SuggestionContext } from "../types";
 import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt";
 
@@ -39,10 +40,7 @@ export function isWeatherRelated(reason: string): boolean {
  * - 단순 반복(같은 제목): 2회+면 인정하되 신뢰도 게이트 적용
  * - 순차/발전(서로 다른 제목): 2개 이상이면 허용
  */
-export function filterWeakPatterns(
-	patterns: Pattern[],
-	context: SuggestionContext,
-): Pattern[] {
+export function filterWeakPatterns(patterns: Pattern[], context: SuggestionContext): Pattern[] {
 	return patterns.filter((p) => {
 		if (p.matchedTitles.length === 0) {
 			return true;
@@ -82,10 +80,7 @@ export function normalizeStarterSuggestions(
 ): Pattern[] {
 	return patterns
 		.filter((pattern) => pattern.daysOfWeek.length > 0)
-		.filter(
-			(pattern) =>
-				context.weather || !isWeatherRelated(pattern.reason.toLowerCase()),
-		)
+		.filter((pattern) => context.weather || !isWeatherRelated(pattern.reason.toLowerCase()))
 		.slice(0, 2)
 		.map((pattern) => ({
 			...pattern,
@@ -144,10 +139,7 @@ export function dedupeByTitlePrefixAndDays(patterns: Pattern[]): Pattern[] {
  * 두 패턴 리스트를 제목 기준으로 중복 제거하여 병합.
  * 1차 결과가 임계치 미만이라 재시도했을 때 사용.
  */
-export function mergeUniquePatterns(
-	primary: Pattern[],
-	secondary: Pattern[],
-): Pattern[] {
+export function mergeUniquePatterns(primary: Pattern[], secondary: Pattern[]): Pattern[] {
 	const seen = new Set(primary.map((p) => p.title));
 	const merged = [...primary];
 	for (const p of secondary) {

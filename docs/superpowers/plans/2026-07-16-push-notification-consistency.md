@@ -22,6 +22,7 @@
 ### Task 1: 결정적 variant 계약과 카피 카탈로그
 
 **Files:**
+
 - Modify: `apps/api/src/notification/domain/services/templates/template.types.ts`
 - Modify: `apps/api/src/notification/domain/services/templates/notification-templates.ts`
 - Modify: `apps/api/src/notification/domain/services/templates/locales/ko.ts`
@@ -30,6 +31,7 @@
 - Modify: `apps/api/src/notification/domain/services/templates/locale-parity.spec.ts`
 
 **Interfaces:**
+
 - Produces: `NotificationVariant { id, title, body }`, `NotificationVariantContext { campaignKey, recipientId, occurrenceKey }`, and builder results with optional `variantId`.
 - Preserves: locale parameters and all existing builder call signatures by appending optional selection context only.
 
@@ -43,12 +45,14 @@
 ### Task 2: Retention V2 copy and daytime eligibility
 
 **Files:**
+
 - Modify: `apps/api/src/retention/domain/services/retention-message.ts`
 - Create or modify: `apps/api/src/retention/domain/services/retention-message.spec.ts`
 - Modify: `apps/api/src/retention/domain/services/stage-policy.spec.ts`
 - Modify: `apps/api/src/retention/domain/services/push-eligibility.spec.ts`
 
 **Interfaces:**
+
 - Produces: typed ko/en retention variants with deterministic `variantId` selected from user/stage/local-date seed.
 - Preserves: stage names, outbox schema, push payload routes and campaign attribution.
 
@@ -59,6 +63,7 @@
 ### Task 3: Timezone validation and registration preservation
 
 **Files:**
+
 - Modify: `apps/api/src/shared/presentation/decorators/timezone.decorator.ts`
 - Create: `apps/api/src/shared/presentation/decorators/timezone.decorator.spec.ts`
 - Modify: `apps/api/src/shared/domain/date/utils/timezone.ts`
@@ -68,6 +73,7 @@
 - Modify: `apps/api/src/notification/application/use-cases/register-push-token/register-push-token.use-case.spec.ts`
 
 **Interfaces:**
+
 - Produces: IANA validation/normalization helper and optional raw-header mode for token registration.
 - Preserves: UTC fallback for ordinary endpoints; missing token-registration header means preserve stored preference instead of writing UTC.
 
@@ -78,6 +84,7 @@
 ### Task 4: Korean retention schedule and eligibility precedence
 
 **Files:**
+
 - Modify: `apps/api/src/scheduler/domain/services/notification-schedule.ts`
 - Modify: `apps/api/src/scheduler/domain/services/onboarding.ts`
 - Modify: `apps/api/src/scheduler/application/services/timezone-aware-reminder.orchestrator.ts`
@@ -87,6 +94,7 @@
 - Modify: default preference values in the owning user-settings domain files and their tests.
 
 **Interfaces:**
+
 - Produces schedule constants for 10:30 onboarding, Monday/first-day 11:30 summaries, 12:30 lunch, 15:00 nudge suggestion, 16:00 winback, 20:15 streak risk, and evening+90m social digest.
 - Preserves premium/admin custom reminder times and free morning 08:00; changes free evening default to 19:00.
 
@@ -99,6 +107,7 @@
 ### Task 5: Batch Redis frequency limiting
 
 **Files:**
+
 - Modify: `apps/api/src/notification/application/ports/push-rate-limiter.port.ts`
 - Modify: `apps/api/src/notification/infrastructure/rate-limiter/redis-push-rate-limiter.ts`
 - Create or modify: `apps/api/src/notification/infrastructure/rate-limiter/redis-push-rate-limiter.spec.ts`
@@ -108,6 +117,7 @@
 - Modify: `apps/api/src/notification/infrastructure/adapters/push-dispatcher.adapter.spec.ts`
 
 **Interfaces:**
+
 - Produces: batch reservation API returning eligibility by recipient in input order.
 - Preserves: max 2/day, 4-hour spacing, local-day keys, fail-open/fail-closed behavior already defined by each push purpose.
 
@@ -119,11 +129,13 @@
 ### Task 6: Compatibility fixtures and operator documentation
 
 **Files:**
+
 - Create: `apps/api/docs/push-notifications.md`
 - Create or modify: payload compatibility fixtures/specs under `apps/api/src/notification/` or `apps/api/test/fixtures/`
 - Modify: related tests only where required to assert the unchanged public contract.
 
 **Interfaces:**
+
 - Documents: every notification scenario, local time, trigger, free/premium/admin eligibility, OS permission requirement, marketing consent, quiet-hour/daily-cap behavior, payload action/route, and precedence.
 - Verifies: historical payloadVersion 1 and current payloadVersion 2 parsers accept the server payload superset.
 
@@ -135,6 +147,7 @@
 ### Task 7: Full verification, Docker smoke, and ship
 
 **Files:**
+
 - Verify all task files and protect the unrelated untracked script.
 
 - [ ] Run targeted unit tests, complete API unit/integration/E2E suites, `pnpm typecheck`, and `pnpm lint` with fresh output.

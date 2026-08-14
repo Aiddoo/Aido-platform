@@ -12,17 +12,16 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
-import {
-	SCHEDULER_DEDUP,
-	type SchedulerDedupPort,
-} from "../ports/scheduler-dedup.port";
+import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -81,9 +80,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		const ctx = makeCtx();
 		const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
 
-		reader.findWinbackUsers.mockResolvedValueOnce([
-			{ id: "user-1", lastActiveAt: sevenDaysAgo },
-		]);
+		reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: sevenDaysAgo }]);
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -91,8 +88,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.winback(7, "ko", {
 			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day7`,
 			recipientId: "user-1",
@@ -124,8 +120,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.winback(14, "ko", {
 			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day14`,
 			recipientId: "user-1",
@@ -153,8 +148,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.winback(21, "ko", {
 			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day21`,
 			recipientId: "user-1",
@@ -174,9 +168,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		const ctx = makeCtx();
 		const thirtyDaysAgo = dayjs.utc("2023-12-17").startOf("day").toDate();
 
-		reader.findWinbackUsers.mockResolvedValueOnce([
-			{ id: "user-1", lastActiveAt: thirtyDaysAgo },
-		]);
+		reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: thirtyDaysAgo }]);
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -184,8 +176,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.winback(30, "ko", {
 			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day30`,
 			recipientId: "user-1",
@@ -205,9 +196,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		const ctx = makeCtx();
 		const threeDaysAgo = dayjs.utc("2024-01-13").startOf("day").toDate();
 
-		reader.findWinbackUsers.mockResolvedValueOnce([
-			{ id: "user-1", lastActiveAt: threeDaysAgo },
-		]);
+		reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: threeDaysAgo }]);
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -215,8 +204,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.winback(3, "ko", {
 			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.day3`,
 			recipientId: "user-1",
@@ -234,9 +222,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		const ctx = makeCtx();
 		const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
 
-		reader.findWinbackUsers.mockResolvedValueOnce([
-			{ id: "user-1", lastActiveAt: sevenDaysAgo },
-		]);
+		reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: sevenDaysAgo }]);
 
 		// 이미 day7 단계 발송 이력 (Redis)
 		schedulerDedup.hasWinbackStage.mockResolvedValueOnce(true);
@@ -254,13 +240,9 @@ describe("WinbackStrategy — 윈백 전략", () => {
 		const ctx = makeCtx();
 		const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
 
-		reader.findWinbackUsers.mockResolvedValueOnce([
-			{ id: "user-1", lastActiveAt: sevenDaysAgo },
-		]);
+		reader.findWinbackUsers.mockResolvedValueOnce([{ id: "user-1", lastActiveAt: sevenDaysAgo }]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);

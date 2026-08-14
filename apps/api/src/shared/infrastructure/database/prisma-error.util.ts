@@ -9,18 +9,12 @@ import { Prisma } from "@/generated/prisma/client";
 
 /** 유니크 제약 위반(P2002) 여부 */
 export function isUniqueConstraintViolation(error: unknown): boolean {
-	return (
-		error instanceof Prisma.PrismaClientKnownRequestError &&
-		error.code === "P2002"
-	);
+	return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
 /** 대상 레코드 부재(P2025) 여부 */
 export function isRecordNotFoundError(error: unknown): boolean {
-	return (
-		error instanceof Prisma.PrismaClientKnownRequestError &&
-		error.code === "P2025"
-	);
+	return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 }
 
 /**

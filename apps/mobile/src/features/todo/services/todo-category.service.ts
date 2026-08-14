@@ -20,10 +20,11 @@ import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
-import type { TodoItem } from '../models/todo.model';
+
 import type { TodoCategoriesResult, TodoCategory } from '../models/todo-category.model';
-import { toTodoItem } from './todo.mapper';
+import type { TodoItem } from '../models/todo.model';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
+import { toTodoItem } from './todo.mapper';
 
 export class TodoCategoryService {
   readonly #httpClient: HttpClient;

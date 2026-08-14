@@ -26,24 +26,28 @@ src/shared/i18n/
 ## 규칙
 
 ### 새 문자열 추가
+
 1. **하드코딩 금지** — 사용자 노출 문자열은 반드시 ko/en 카탈로그 동시 추가 (`locale-parity.test.ts`가 키·보간 변수 불일치를 CI에서 잡음)
 2. 키: `{screen|section}.{element}` camelCase, 최대 3단계 (예: `todo:detail.deleteConfirm.title`)
 3. 공용 문구(확인/취소/저장 등)는 `common:actions.*` 재사용
 
 ### 컴포넌트 vs 비컴포넌트
+
 ```tsx
 // 컴포넌트 — 언어 변경 시 자동 리렌더
 const { t } = useTranslation('todo');
-<Text>{t('list.empty')}</Text>
+<Text>{t('list.empty')}</Text>;
 
 // 비컴포넌트(에러 팩토리, mutation onError, 토스트 헬퍼) — 싱글턴
 import { t } from '@src/shared/i18n';
 toast.error(t('friend:toast.sendFailed'));
 ```
+
 - **모듈 로드 시점 평가 금지**: `const MSG = t('...')` (톱레벨) ❌ — 언어 변경 시 갱신 안 됨. 반드시 호출 시점 `t()`.
 - ns 바인딩된 `useTranslation('ns')`의 t는 크로스 ns 접두사 키를 타입에서 거부 → 크로스 ns는 `useTranslation(['ns', 'common'])` 배열 또는 싱글턴 `t as tGlobal`.
 
 ### 패턴
+
 - **보간**: `t('repeat.weekly', { days })` / 카탈로그 `"매주 {{days}} 반복"`
 - **복수형**: ko는 단일 키(`"{{count}}개"`), en은 `_one`/`_other` 접미사 — `t('list.count', { count })`
 - **enum 라벨 맵**: 값 대신 키를 담는다
@@ -58,16 +62,19 @@ toast.error(t('friend:toast.sendFailed'));
 - **날짜/시간**: `@src/shared/utils/date`(formatFullDate, getWeekdayLabels, formatRelativeTime, getDateSectionLabel 등)와 `time.ts`가 이미 로케일 인지 — 재구현 금지. dayjs 전역 locale은 init이 관리 (`dayjs.locale()` 직접 호출 금지)
 
 ### 에러 메시지
+
 - 서버 에러: `errors` 네임스페이스, **키 = ErrorCode 그대로** (145개 전 코드 커버). `error-handler.ts`의 `resolveMessage`가 카탈로그 → 서버 message → `errors:fallback` 순으로 해석
 - 보안 마스킹 그룹(EMAIL_0502/0507, USER_0602 등)은 **두 언어 모두 동일 문구 유지** — 번역 시에도 그룹 단위로 같게
 - `@aido/validators`의 zod message는 서버 소유(한국어 유지) — 모바일 폼은 필드+에러타입 → `validation:*` 키로 표시
 
 ### 비번역 대상
+
 - 코드 주석, 로그, Sentry breadcrumb/이벤트 메시지 (개발자용)
 - 언어 이름 자체("한국어", "English" — 해당 언어로 고정 표기)
 - 서버가 조립해 내려주는 텍스트(푸시 알림 title/body — 서버 locale이 처리)
 
 ### 레이아웃 안전 (영어 장문)
+
 - Row 내 텍스트 `shrink`(flexShrink), 고정 width 금지(padding 기반), 필요 시 `numberOfLines` + `ellipsizeMode`
 - en 번역은 ko 대비 ~1.4배 길이 상한 가이드
 - QA 최악 조합: **en × xlarge 글꼴 스케일**
@@ -76,7 +83,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 ## 자산 배치 원칙 (모노레포)
 
-- **카탈로그(locales/*.json)는 앱 소유** — 소비자가 모바일 하나뿐이라 패키지화하지 않는다 (dist 빌드 체인·Metro 우회 비용만 추가). 서버 푸시 템플릿과 중복 문자열 0건 확인됨 (2026-07)
+- **카탈로그(locales/\*.json)는 앱 소유** — 소비자가 모바일 하나뿐이라 패키지화하지 않는다 (dist 빌드 체인·Metro 우회 비용만 추가). 서버 푸시 템플릿과 중복 문자열 0건 확인됨 (2026-07)
 - **공유 계약은 `@aido/errors`의 ErrorCode뿐** — 클라 errors.json이 코드를 키로 소비. 메시지 문구는 서버(정중체)/클라(구어체)로 의도적 분리 유지
 - **서버 발송·생성 텍스트(푸시 템플릿, AI 프롬프트)는 서버 소유** — `apps/api/src/modules/notification/templates/locales/`
 - **저장된 히스토리는 생성 당시 언어 유지가 설계** — 과거 알림 title/body, 과거 AI 리포트 본문은 언어 변경 후에도 그대로 (본문-라벨 일관성)

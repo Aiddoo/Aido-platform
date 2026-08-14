@@ -5,6 +5,7 @@ import { VStack } from '@src/shared/ui/VStack';
 import { Dialog } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
+
 import type { ConfirmDialogProps } from './ConfirmDialog.types';
 
 export function ConfirmDialog({

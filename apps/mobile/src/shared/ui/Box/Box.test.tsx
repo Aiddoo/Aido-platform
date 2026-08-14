@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
+
 import { Box } from './Box';
 
 describe('Box 컴포넌트', () => {

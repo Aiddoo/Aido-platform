@@ -2,6 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createMockAnalytics, createMockDIContainer } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
+
 import { useFriendSearchTracking } from './use-friend-search-tracking';
 
 describe('useFriendSearchTracking', () => {

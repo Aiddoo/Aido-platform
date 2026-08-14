@@ -1,11 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
+
 import { toCompactDateString } from "@/shared/domain/date/utils/format";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { readJson } from "@/shared/infrastructure/http/read-json";
-import type {
-	SunTime,
-	SunTimeProvider,
-} from "../../application/ports/sun-time-provider.port";
+
+import type { SunTime, SunTimeProvider } from "../../application/ports/sun-time-provider.port";
 
 interface SunTimeResponse {
 	response?: {
@@ -29,11 +28,7 @@ export class KasiSunTimeProvider implements SunTimeProvider {
 
 	constructor(private readonly configService: TypedConfigService) {}
 
-	async getSunTime(
-		lat: number,
-		lon: number,
-		date: Date,
-	): Promise<SunTime | null> {
+	async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
 		try {
 			const apiKey = this.configService.dataGoKrApiKey;
 			if (!apiKey) {

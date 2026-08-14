@@ -15,6 +15,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asDep, asMock } from "@test/mocks";
+
 import { SessionService } from "@/auth/application/services/session.service";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
@@ -22,6 +23,7 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import { JwtStrategy } from "./jwt.strategy";
 
 describe("JwtStrategy — JWT 전략", () => {
@@ -65,9 +67,7 @@ describe("JwtStrategy — JWT 전략", () => {
 		const payload = { ...validPayload, type: "refresh" as const };
 
 		// When & Then
-		await expect(strategy.validate(payload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(payload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("sessionId가 없으면 에러를 던진다", async () => {
@@ -78,9 +78,7 @@ describe("JwtStrategy — JWT 전략", () => {
 		});
 
 		// When & Then
-		await expect(strategy.validate(payload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(payload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("캐시 히트 시 DB 조회 없이 사용자 정보를 반환한다", async () => {
@@ -120,9 +118,7 @@ describe("JwtStrategy — JWT 전략", () => {
 		});
 
 		// When & Then
-		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(validPayload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("캐시된 세션이 만료 상태면 에러를 던진다", async () => {
@@ -139,9 +135,7 @@ describe("JwtStrategy — JWT 전략", () => {
 		});
 
 		// When & Then
-		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(validPayload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("캐시 미스 시 DB에서 세션을 조회하고 캐시에 저장한다", async () => {
@@ -181,9 +175,7 @@ describe("JwtStrategy — JWT 전략", () => {
 		});
 
 		// When & Then
-		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(validPayload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("DB에서 조회한 세션이 폐기 상태면 에러를 던진다", async () => {
@@ -203,9 +195,7 @@ describe("JwtStrategy — JWT 전략", () => {
 		});
 
 		// When & Then
-		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(validPayload)).rejects.toThrow(ApplicationException);
 	});
 
 	it("DB에서 조회한 세션이 만료 상태면 에러를 던진다", async () => {
@@ -224,9 +214,7 @@ describe("JwtStrategy — JWT 전략", () => {
 		});
 
 		// When & Then
-		await expect(strategy.validate(validPayload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(strategy.validate(validPayload)).rejects.toThrow(ApplicationException);
 	});
 
 	describe("캐시 장애 폴백 (Redis 다운이어도 인증은 계속된다)", () => {
@@ -284,9 +272,7 @@ describe("JwtStrategy — JWT 전략", () => {
 			});
 
 			// When & Then
-			await expect(strategy.validate(validPayload)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(strategy.validate(validPayload)).rejects.toThrow(ApplicationException);
 		});
 	});
 });

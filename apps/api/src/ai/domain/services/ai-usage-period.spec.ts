@@ -6,9 +6,7 @@ import { isNewBillingMonth, nextBillingResetIso } from "./ai-usage-period";
 describe("ai-usage-period — 사용량 리셋 주기", () => {
 	describe("isNewBillingMonth", () => {
 		it("마지막 리셋이 null이면 새로운 달로 본다", () => {
-			expect(isNewBillingMonth(null, new Date("2026-04-15T00:00:00Z"))).toBe(
-				true,
-			);
+			expect(isNewBillingMonth(null, new Date("2026-04-15T00:00:00Z"))).toBe(true);
 		});
 
 		it("KST 기준 같은 달이면 false", () => {

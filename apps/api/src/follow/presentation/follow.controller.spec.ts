@@ -6,6 +6,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import type { FollowWithUser } from "../application/ports/follow.repository.port";
 import { FollowReader } from "../application/services/follow.reader";
 import { AcceptFriendRequestUseCase } from "../application/use-cases/accept-friend-request/accept-friend-request.use-case";
@@ -65,8 +66,7 @@ describe("FollowController", () => {
 	let reorderUseCase: Mocked<ReorderFriendUseCase>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(FollowController).compile();
+		const { unit, unitRef } = await TestBed.solitary(FollowController).compile();
 		controller = unit;
 		followReader = unitRef.get(FollowReader);
 		sendByTagUseCase = unitRef.get(SendFriendRequestByTagUseCase);
@@ -186,9 +186,7 @@ describe("FollowController", () => {
 
 			const result = await controller.getResourceLimit(user);
 
-			expect(followReader.getResourceLimitInfo).toHaveBeenCalledWith(
-				user.userId,
-			);
+			expect(followReader.getResourceLimitInfo).toHaveBeenCalledWith(user.userId);
 			expect(result).toEqual({ friendCount: 3, maxCount: 50 });
 		});
 	});

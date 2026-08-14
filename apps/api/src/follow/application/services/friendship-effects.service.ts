@@ -1,13 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../ports/follow.repository.port";
+
 import { FOLLOW_CACHE, type FollowCachePort } from "../ports/follow-cache.port";
-import {
-	FOLLOW_NOTIFIER,
-	type FollowNotifierPort,
-} from "../ports/follow-notifier.port";
+import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../ports/follow-notifier.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../ports/follow.repository.port";
 
 /**
  * FriendshipEffects — 친구 관계 성립/해제에 수반되는 부수효과 캡슐화.
@@ -30,10 +25,7 @@ export class FriendshipEffects {
 	) {}
 
 	/** 두 사용자 간 친구 관계 캐시 일괄 무효화 (맞팔 여부·양측 맞팔 ID·양측 친구 수) */
-	async invalidateFriendshipCaches(
-		userId: string,
-		targetUserId: string,
-	): Promise<void> {
+	async invalidateFriendshipCaches(userId: string, targetUserId: string): Promise<void> {
 		await Promise.all([
 			this.cache.invalidateMutualFriend(userId, targetUserId),
 			this.cache.invalidateMutualFriendIds(userId),
@@ -44,11 +36,7 @@ export class FriendshipEffects {
 	}
 
 	/** 양방향 맞팔 알림 enqueue */
-	notifyMutual(params: {
-		userId: string;
-		friendId: string;
-		friendName: string;
-	}): void {
+	notifyMutual(params: { userId: string; friendId: string; friendName: string }): void {
 		this.notifier.notifyFollowMutual(params);
 	}
 

@@ -2,6 +2,7 @@ import { TEST_CUID } from "@test/fixtures/id.fixture";
 import { mockOf } from "@test/mocks";
 import type Redis from "ioredis";
 import RedisMock from "ioredis-mock";
+
 import { RedisPushRateLimiter } from "./redis-push-rate-limiter";
 
 describe("RedisPushRateLimiter batch policy", () => {

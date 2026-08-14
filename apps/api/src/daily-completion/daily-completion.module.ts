@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
+
 import { FollowModule } from "@/follow";
+
 import { DailyCompletionCacheInvalidator } from "./application/events/daily-completion-cache.invalidator";
 import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completion-cache.port";
 import { FRIEND_PORT } from "./application/ports/friend.port";

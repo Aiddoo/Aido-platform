@@ -1,10 +1,9 @@
 import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
-import type {
-	JobBackend,
-	JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import type { JobBackend, JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
+
 import {
 	JobRuntimeLifecycle,
 	jobRuntimeProvider,
@@ -74,14 +73,8 @@ describe("selectJobRuntime — backend 선택", () => {
 		expect(redis.work).toHaveBeenCalledTimes(1);
 		expect(postgres.schedule).toHaveBeenCalledTimes(1);
 		expect(redis.schedule).not.toHaveBeenCalled();
-		expect(redis.unschedule).toHaveBeenCalledWith(
-			"paid-document-daily",
-			"paid-document.v1",
-		);
-		expect(redis.unschedule).toHaveBeenCalledWith(
-			"paid-document-daily",
-			"paid-document",
-		);
+		expect(redis.unschedule).toHaveBeenCalledWith("paid-document-daily", "paid-document.v1");
+		expect(redis.unschedule).toHaveBeenCalledWith("paid-document-daily", "paid-document");
 	});
 
 	it("postgres drain 모드는 현재·legacy queue 중 하나라도 취소되면 cancelled를 반환한다", async () => {
@@ -96,23 +89,12 @@ describe("selectJobRuntime — backend 선택", () => {
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);
 
 		// When & Then - 세 위치를 모두 확인하고 하나의 취소를 집계
-		await expect(
-			runtime.cancel("todo-reminder.v1", "reminder_42_60min"),
-		).resolves.toEqual({ status: "cancelled" });
-		expect(postgres.cancel).toHaveBeenCalledWith(
-			"todo-reminder.v1",
-			"reminder_42_60min",
-		);
-		expect(redis.cancel).toHaveBeenNthCalledWith(
-			1,
-			"todo-reminder.v1",
-			"reminder_42_60min",
-		);
-		expect(redis.cancel).toHaveBeenNthCalledWith(
-			2,
-			"todo-reminder",
-			"reminder_42_60min",
-		);
+		await expect(runtime.cancel("todo-reminder.v1", "reminder_42_60min")).resolves.toEqual({
+			status: "cancelled",
+		});
+		expect(postgres.cancel).toHaveBeenCalledWith("todo-reminder.v1", "reminder_42_60min");
+		expect(redis.cancel).toHaveBeenNthCalledWith(1, "todo-reminder.v1", "reminder_42_60min");
+		expect(redis.cancel).toHaveBeenNthCalledWith(2, "todo-reminder", "reminder_42_60min");
 	});
 
 	it("postgres drain 모드는 모든 backend와 queue에서 없을 때만 missing을 반환한다", async () => {
@@ -124,9 +106,9 @@ describe("selectJobRuntime — backend 선택", () => {
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);
 
 		// When & Then
-		await expect(
-			runtime.cancel("todo-reminder.v1", "missing"),
-		).resolves.toEqual({ status: "missing" });
+		await expect(runtime.cancel("todo-reminder.v1", "missing")).resolves.toEqual({
+			status: "missing",
+		});
 		expect(postgres.cancel).toHaveBeenCalledTimes(1);
 		expect(redis.cancel).toHaveBeenCalledTimes(2);
 	});
@@ -144,9 +126,9 @@ describe("selectJobRuntime — backend 선택", () => {
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);
 
 		// When & Then - 실패를 전파하면서 세 취소 시도는 모두 시작
-		await expect(
-			runtime.cancel("todo-reminder.v1", "reminder_42_60min"),
-		).rejects.toBe(infrastructureError);
+		await expect(runtime.cancel("todo-reminder.v1", "reminder_42_60min")).rejects.toBe(
+			infrastructureError,
+		);
 		expect(postgres.cancel).toHaveBeenCalledTimes(1);
 		expect(redis.cancel).toHaveBeenCalledTimes(2);
 	});
@@ -170,9 +152,7 @@ describe("selectJobRuntime — backend 선택", () => {
 				],
 			}).compile();
 
-			expect(module.get(JOB_RUNTIME)).toBe(
-				backend === "postgres" ? postgres : redis,
-			);
+			expect(module.get(JOB_RUNTIME)).toBe(backend === "postgres" ? postgres : redis);
 			await module.close();
 		},
 	);

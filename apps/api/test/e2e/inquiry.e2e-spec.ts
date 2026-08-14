@@ -14,6 +14,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("문의 E2E", () => {
@@ -34,10 +35,7 @@ describe("문의 E2E", () => {
 	describe("POST /inquiries - 문의 접수", () => {
 		it("인증된 사용자가 문의를 접수한다 (201)", async () => {
 			// Given - 인증된 사용자
-			const user = await ctx.helpers.createVerifiedUser(
-				"inquiry-user@example.com",
-				"Test1234!",
-			);
+			const user = await ctx.helpers.createVerifiedUser("inquiry-user@example.com", "Test1234!");
 
 			// When - 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -56,10 +54,7 @@ describe("문의 E2E", () => {
 
 		it("문의 접수 시 FakeEmailService에 문의가 기록된다", async () => {
 			// Given - 인증된 사용자
-			const user = await ctx.helpers.createVerifiedUser(
-				"inquiry-email@example.com",
-				"Test1234!",
-			);
+			const user = await ctx.helpers.createVerifiedUser("inquiry-email@example.com", "Test1234!");
 
 			// When - 문의 접수 API 호출
 			await request(ctx.app.getHttpServer())
@@ -94,10 +89,7 @@ describe("문의 E2E", () => {
 
 		it("잘못된 카테고리 시 400 에러 반환", async () => {
 			// Given - 인증된 사용자, 잘못된 카테고리 값
-			const user = await ctx.helpers.createVerifiedUser(
-				"inquiry-badcat@example.com",
-				"Test1234!",
-			);
+			const user = await ctx.helpers.createVerifiedUser("inquiry-badcat@example.com", "Test1234!");
 
 			// When - 잘못된 카테고리로 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -115,10 +107,7 @@ describe("문의 E2E", () => {
 
 		it("내용이 너무 짧으면 400 에러 반환", async () => {
 			// Given - 인증된 사용자, 너무 짧은 내용 (10자 미만)
-			const user = await ctx.helpers.createVerifiedUser(
-				"inquiry-short@example.com",
-				"Test1234!",
-			);
+			const user = await ctx.helpers.createVerifiedUser("inquiry-short@example.com", "Test1234!");
 
 			// When - 짧은 내용으로 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -159,10 +148,7 @@ describe("문의 E2E", () => {
 
 			it("OTHER 카테고리로 문의 접수", async () => {
 				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"inquiry-other@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("inquiry-other@example.com", "Test1234!");
 
 				// When - OTHER 카테고리로 문의 접수 API 호출
 				const response = await request(ctx.app.getHttpServer())

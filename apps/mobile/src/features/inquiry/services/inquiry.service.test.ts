@@ -1,5 +1,6 @@
 import { INQUIRY_CATEGORY } from '@aido/validators';
 import { createMockHttpClient } from '@src/shared/__tests__';
+
 import {
   createInquiryApiError,
   createInquiryResponseDto,

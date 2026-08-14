@@ -14,11 +14,9 @@ import {
 	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
+
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
-import {
-	parseLocalDateTime,
-	todayInTimezone,
-} from "@/shared/domain/date/utils/timezone";
+import { parseLocalDateTime, todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { Timezone } from "@/shared/presentation/decorators";
 import { UserIdParamDto } from "@/shared/presentation/dtos";
 import {
@@ -31,10 +29,8 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import {
 	GetFriendTodosUseCase,
 	GetTodoByIdUseCase,
@@ -312,9 +308,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			timezone: tz,
 		});
 
-		this.#logger.log(
-			`반복 Todo 생성 완료: ${result.count}개, user=${user.userId}`,
-		);
+		this.#logger.log(`반복 Todo 생성 완료: ${result.count}개, user=${user.userId}`);
 
 		return {
 			message: `반복 할 일이 ${result.count}개 생성되었습니다.`,
@@ -408,8 +402,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiQuery({
 		name: "cursor",
 		required: false,
-		description:
-			"페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
+		description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
 		schema: { type: "number" },
 		example: 123,
 	})
@@ -545,9 +538,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		@Param() params: UserIdParamDto,
 		@Query() query: GetFriendTodosQueryDto,
 	): Promise<TodoListResponseDto> {
-		this.#logger.debug(
-			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
-		);
+		this.#logger.debug(`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`);
 
 		const result = await this.getFriendTodosUseCase.execute({
 			userId: user.userId,
@@ -600,12 +591,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 				title: dto.title,
 				categoryId: dto.categoryId,
 				startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
-				endDate:
-					dto.endDate === null
-						? null
-						: dto.endDate
-							? parseDateOnly(dto.endDate)
-							: undefined,
+				endDate: dto.endDate === null ? null : dto.endDate ? parseDateOnly(dto.endDate) : undefined,
 				scheduledTime:
 					dto.scheduledTime === null
 						? null
@@ -669,9 +655,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		});
 
 		return {
-			message: dto.completed
-				? "할 일이 완료되었습니다."
-				: "할 일이 미완료로 변경되었습니다.",
+			message: dto.completed ? "할 일이 완료되었습니다." : "할 일이 미완료로 변경되었습니다.",
 			todo,
 		};
 	}
@@ -940,9 +924,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		@Param() params: TodoIdParamDto,
 		@Body() dto: CreateTodoItemDto,
 	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`,
-		);
+		this.#logger.debug(`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`);
 
 		const todo = await this.addTodoItemUseCase.execute({
 			todoId: params.id,
@@ -991,9 +973,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		@Param() params: TodoIdParamDto,
 		@Body() dto: ReorderTodoItemsDto,
 	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`,
-		);
+		this.#logger.debug(`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`);
 
 		const todo = await this.reorderTodoItemsUseCase.execute({
 			todoId: params.id,

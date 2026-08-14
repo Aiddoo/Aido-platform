@@ -9,14 +9,15 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
+
 import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
+import {
+	TODO_CATEGORY_REPOSITORY,
+	type TodoCategoryRepositoryPort,
+} from "../../ports/todo-category.repository.port";
 
 export interface DeleteTodoCategoryInput {
 	userId: string;
@@ -51,10 +52,7 @@ export class DeleteTodoCategoryUseCase {
 		await this.uow.run(async () => {
 			await this.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
 
-			const category = await this.repository.findByIdAndUserId(
-				categoryId,
-				userId,
-			);
+			const category = await this.repository.findByIdAndUserId(categoryId, userId);
 			if (!category) {
 				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
 					categoryId,
@@ -81,10 +79,7 @@ export class DeleteTodoCategoryUseCase {
 						moveToCategoryId,
 					});
 				}
-				const moveTarget = await this.repository.findByIdAndUserId(
-					moveToCategoryId,
-					userId,
-				);
+				const moveTarget = await this.repository.findByIdAndUserId(moveToCategoryId, userId);
 				if (!moveTarget) {
 					throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
 						categoryId: moveToCategoryId,

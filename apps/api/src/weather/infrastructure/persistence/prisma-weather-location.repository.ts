@@ -1,7 +1,9 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type { WeatherLocationRepositoryPort } from "../../application/ports/weather-location.repository.port";
 import { UserLocation } from "../../domain/entities/user-location.entity";
 
@@ -12,13 +14,9 @@ import { UserLocation } from "../../domain/entities/user-location.entity";
  * 전파된다 — TransactionHost.tx가 활성 트랜잭션(없으면 베이스)을 반환.
  */
 @Injectable()
-export class PrismaWeatherLocationRepository
-	implements WeatherLocationRepositoryPort
-{
+export class PrismaWeatherLocationRepository implements WeatherLocationRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	private get client() {

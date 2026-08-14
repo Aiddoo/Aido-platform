@@ -5,11 +5,9 @@
  */
 
 import { TestBed } from "@suites/unit";
+
 import { TodoUpdatedEvent } from "../../domain/events/todo-updated.event";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 import { TodoUpdatedHandler } from "./todo-updated.handler";
 
 describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
@@ -66,8 +64,6 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
 
 		// When & Then - 성공/missing으로 삼키지 않음
-		await expect(
-			handler.handle(new TodoUpdatedEvent(1, "user-123", true)),
-		).rejects.toBe(error);
+		await expect(handler.handle(new TodoUpdatedEvent(1, "user-123", true))).rejects.toBe(error);
 	});
 });

@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, InteractionManager, Keyboard } from 'react-native';
+
 import { isStableFeedForeground } from '../state/feature-discovery-auto-open';
 
 export function useStableFeedForeground(): boolean {

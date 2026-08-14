@@ -1,5 +1,6 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
+
 import type { OAuthMode } from "../../ports/oauth-identity-provider.port";
 import { OAuthWorkflow } from "../../workflows/oauth.workflow";
 
@@ -27,11 +28,6 @@ export class StartOAuthAuthorizationUseCase {
 		initiatingUserId?: string,
 	): Promise<string> {
 		const methodName = START_AUTHORIZATION_METHOD_BY_PROVIDER[provider];
-		return this.workflow[methodName](
-			state,
-			clientRedirectUri,
-			mode,
-			initiatingUserId,
-		);
+		return this.workflow[methodName](state, clientRedirectUri, mode, initiatingUserId);
 	}
 }

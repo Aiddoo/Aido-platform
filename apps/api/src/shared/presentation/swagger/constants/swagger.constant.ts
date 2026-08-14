@@ -102,26 +102,20 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 - Apple/Google/Kakao/Naver: OAuth 리다이렉트 → 콜백 URL에서 code 획득 → exchangeCode
 - Email: 직접 입력 → 서버 검증`,
 
-	[SWAGGER_TAGS.TODOS]:
-		"할 일 CRUD, 완료 처리, 순서 변경, 친구 할 일 조회 (공개 설정 시)",
+	[SWAGGER_TAGS.TODOS]: "할 일 CRUD, 완료 처리, 순서 변경, 친구 할 일 조회 (공개 설정 시)",
 
 	[SWAGGER_TAGS.TODO_CATEGORIES]:
 		"카테고리 CRUD, 순서/색상 관리. 회원가입 시 기본 카테고리 2개 자동 생성",
 
-	[SWAGGER_TAGS.FOLLOWS]:
-		"친구 요청/수락/거절, 친구 목록 조회. 맞팔 시 친구 관계 성립",
+	[SWAGGER_TAGS.FOLLOWS]: "친구 요청/수락/거절, 친구 목록 조회. 맞팔 시 친구 관계 성립",
 
-	[SWAGGER_TAGS.DAILY_COMPLETIONS]:
-		"일일 할 일 완료율, 주간/월간 통계, 친구 달성 현황",
+	[SWAGGER_TAGS.DAILY_COMPLETIONS]: "일일 할 일 완료율, 주간/월간 통계, 친구 달성 현황",
 
-	[SWAGGER_TAGS.NOTIFICATIONS]:
-		"푸시 토큰 등록/해제, 알림 목록 조회, 읽음 처리",
+	[SWAGGER_TAGS.NOTIFICATIONS]: "푸시 토큰 등록/해제, 알림 목록 조회, 읽음 처리",
 
-	[SWAGGER_TAGS.NUDGES]:
-		"친구 할 일에 콕 찌르기. FREE: 3회/일, 동일 할 일 24시간 쿨다운",
+	[SWAGGER_TAGS.NUDGES]: "친구 할 일에 콕 찌르기. FREE: 3회/일, 동일 할 일 24시간 쿨다운",
 
-	[SWAGGER_TAGS.CHEERS]:
-		"친구에게 응원 메시지. FREE: 3회/일, 동일 사용자 24시간 쿨다운",
+	[SWAGGER_TAGS.CHEERS]: "친구에게 응원 메시지. FREE: 3회/일, 동일 사용자 24시간 쿨다운",
 
 	[SWAGGER_TAGS.AI]:
 		"자연어 파싱 (스마트 시간 해석), 주간/월간 AI 리포트, 반복 패턴 제안. 리포트/제안은 프리미엄 전용",
@@ -132,19 +126,16 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 	[SWAGGER_TAGS.INQUIRIES]:
 		"사용자 문의 접수. 카테고리(버그 신고/기능 요청/기타) + 내용을 관리자 이메일로 발송",
 
-	[SWAGGER_TAGS.MEMOS]:
-		"빠른 메모 CRUD. 핀 고정, 순서 변경, 할 일 변환 지원. 최대 20개/유저",
+	[SWAGGER_TAGS.MEMOS]: "빠른 메모 CRUD. 핀 고정, 순서 변경, 할 일 변환 지원. 최대 20개/유저",
 
-	[SWAGGER_TAGS.WEATHER]:
-		"날씨 알림용 위치 등록, 날씨 예보 조회. 기상청 단기예보 기반, 격자 캐싱",
+	[SWAGGER_TAGS.WEATHER]: "날씨 알림용 위치 등록, 날씨 예보 조회. 기상청 단기예보 기반, 격자 캐싱",
 
 	[SWAGGER_TAGS.ADMIN_USERS]: "관리자용: 회원 조회, 정지, 탈퇴 처리",
 
 	[SWAGGER_TAGS.ADMIN_NOTIFICATIONS]:
 		"관리자용: 전체/조건부/특정 사용자 알림 발송. 대상 필터링 지원",
 
-	[SWAGGER_TAGS.ADMIN_GROWTH]:
-		"관리자용: 가입 cohort 활성화·리텐션 및 DAU/WAU/MAU 집계",
+	[SWAGGER_TAGS.ADMIN_GROWTH]: "관리자용: 가입 cohort 활성화·리텐션 및 DAU/WAU/MAU 집계",
 
 	[SWAGGER_TAGS.ADMIN_SYSTEM]: "관리자용: 앱 설정, 공지사항, 점검 모드",
 
@@ -168,8 +159,7 @@ export const SWAGGER_DESCRIPTION = {
 	INTERNAL_ERROR_500: "서버 내부 오류가 발생했습니다",
 } as const;
 
-export type SwaggerDescription =
-	(typeof SWAGGER_DESCRIPTION)[keyof typeof SWAGGER_DESCRIPTION];
+export type SwaggerDescription = (typeof SWAGGER_DESCRIPTION)[keyof typeof SWAGGER_DESCRIPTION];
 
 /**
  * Swagger 보안 스키마 이름

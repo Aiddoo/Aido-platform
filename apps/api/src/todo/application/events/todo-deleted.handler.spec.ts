@@ -5,11 +5,9 @@
  */
 
 import { TestBed } from "@suites/unit";
+
 import { TodoDeletedEvent } from "../../domain/events/todo-deleted.event";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 import { TodoDeletedHandler } from "./todo-deleted.handler";
 
 describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
@@ -45,9 +43,7 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
 		});
 
 		// When & Then - 명시적 missing만 정상 처리
-		await expect(
-			handler.handle(new TodoDeletedEvent(1, "user-123")),
-		).resolves.toBeUndefined();
+		await expect(handler.handle(new TodoDeletedEvent(1, "user-123"))).resolves.toBeUndefined();
 	});
 
 	it("리마인더 인프라 실패를 전파한다", async () => {
@@ -58,8 +54,6 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
 		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
 
 		// When & Then - 성공/missing으로 삼키지 않음
-		await expect(
-			handler.handle(new TodoDeletedEvent(1, "user-123")),
-		).rejects.toBe(error);
+		await expect(handler.handle(new TodoDeletedEvent(1, "user-123"))).rejects.toBe(error);
 	});
 });

@@ -1,12 +1,10 @@
 import type { RevenueCatWebhookPayload } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
-import {
-	AdminEventNotifier,
-	type AdminNotifier,
-	PAYMENT_NOTIFIER,
-} from "@/admin-notification";
+
+import { AdminEventNotifier, type AdminNotifier, PAYMENT_NOTIFIER } from "@/admin-notification";
 import { NotificationQueueService } from "@/notification/queue";
+
 import type { SubscriptionEventNotifierPort } from "../../application/ports/subscription-event-notifier.port";
 import type { SubscriptionEventPayload } from "../../application/types/subscription-event.payload";
 
@@ -19,9 +17,7 @@ import type { SubscriptionEventPayload } from "../../application/types/subscript
  * infrastructure에 격리한다.
  */
 @Injectable()
-export class SubscriptionEventNotifierAdapter
-	implements SubscriptionEventNotifierPort
-{
+export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {
 	readonly #logger = new Logger(SubscriptionEventNotifierAdapter.name);
 
 	constructor(
@@ -39,10 +35,7 @@ export class SubscriptionEventNotifierAdapter
 		this.notificationQueueService.enqueueBillingIssue({ userId });
 	}
 
-	reportWebhookFailure(
-		error: unknown,
-		payload: RevenueCatWebhookPayload,
-	): void {
+	reportWebhookFailure(error: unknown, payload: RevenueCatWebhookPayload): void {
 		// 1. Sentry 태깅 캡처 (결제 도메인 컨텍스트)
 		Sentry.withScope((scope) => {
 			scope.setTag("domain", "payment");
@@ -60,10 +53,7 @@ export class SubscriptionEventNotifierAdapter
 		);
 	}
 
-	async #notifyWebhookError(
-		error: unknown,
-		payload: RevenueCatWebhookPayload,
-	): Promise<void> {
+	async #notifyWebhookError(error: unknown, payload: RevenueCatWebhookPayload): Promise<void> {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 
 		await this.paymentNotifier.send({

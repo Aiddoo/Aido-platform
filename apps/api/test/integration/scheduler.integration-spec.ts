@@ -20,6 +20,7 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TEST_CUID } from "@test/fixtures";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import {
 	EveningReminderStrategy,
 	LunchNudgeStrategy,
@@ -121,9 +122,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 			],
 		}).compile();
 
-		orchestrator = module.get<TimezoneAwareReminderOrchestrator>(
-			TimezoneAwareReminderOrchestrator,
-		);
+		orchestrator = module.get<TimezoneAwareReminderOrchestrator>(TimezoneAwareReminderOrchestrator);
 	});
 
 	afterAll(async () => {

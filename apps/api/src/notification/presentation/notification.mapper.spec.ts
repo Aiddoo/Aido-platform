@@ -10,6 +10,7 @@
  * ```
  */
 import { NotificationBuilder } from "@test/builders";
+
 import { NotificationMapper } from "./notification.mapper";
 
 describe("NotificationMapper — 알림 매퍼", () => {
@@ -34,9 +35,7 @@ describe("NotificationMapper — 알림 매퍼", () => {
 
 		it("todoId가 있으면 context에 포함한다", () => {
 			// Given
-			const notification = NotificationBuilder.create("user-1")
-				.withTodoId(42)
-				.build();
+			const notification = NotificationBuilder.create("user-1").withTodoId(42).build();
 
 			// When
 			const result = NotificationMapper.toDto(notification);

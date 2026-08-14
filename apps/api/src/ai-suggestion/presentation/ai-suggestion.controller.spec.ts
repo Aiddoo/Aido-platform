@@ -12,10 +12,7 @@ import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
 import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case";
 import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
-import {
-	Suggestion,
-	type SuggestionProps,
-} from "../domain/entities/suggestion.aggregate";
+import { Suggestion, type SuggestionProps } from "../domain/entities/suggestion.aggregate";
 import { AiSuggestionController } from "./ai-suggestion.controller";
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
@@ -50,9 +47,7 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			AiSuggestionController,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(AiSuggestionController).compile();
 
 		controller = unit;
 		getPendingSuggestionsUseCase = unitRef.get(GetPendingSuggestionsUseCase);
@@ -68,17 +63,13 @@ describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 			const result = await controller.getPendingSuggestions(mockUser);
 
 			// Then -파사드에 올바른 파라미터를 전달하고 응답을 반환해야 한다
-			expect(getPendingSuggestionsUseCase.execute).toHaveBeenCalledWith(
-				mockUser.userId,
-			);
+			expect(getPendingSuggestionsUseCase.execute).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual({ suggestions: [] });
 		});
 
 		it("여러 제안이 있는 목록을 DTO로 변환해야 한다", async () => {
 			// Given -파사드에서 1개의 제안을 반환
-			getPendingSuggestionsUseCase.execute.mockResolvedValue([
-				createSuggestion(),
-			]);
+			getPendingSuggestionsUseCase.execute.mockResolvedValue([createSuggestion()]);
 
 			// When -getPendingSuggestions를 호출하면
 			const result = await controller.getPendingSuggestions(mockUser);

@@ -10,6 +10,7 @@ import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, View } from 'react-native';
+
 import { type Notification, NotificationPolicy } from '../../models/notification.model';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
 

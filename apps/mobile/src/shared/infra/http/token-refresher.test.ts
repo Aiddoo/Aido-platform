@@ -1,6 +1,7 @@
 import { createMockTokenStore } from '@src/shared/__tests__';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { TimeoutError as KyTimeoutError } from 'ky';
+
 import { createTokenRefresher, type RefreshTokensRequest } from './token-refresher';
 
 const createFakeResponse = (params: { ok: boolean; status: number; body?: unknown }): Response =>

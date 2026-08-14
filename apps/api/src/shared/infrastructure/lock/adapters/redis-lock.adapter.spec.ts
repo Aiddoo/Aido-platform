@@ -12,6 +12,7 @@
  * ```
  */
 import RedisMock from "ioredis-mock";
+
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
 import { RedisLockAdapter } from "./redis-lock.adapter";
 

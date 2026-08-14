@@ -1,19 +1,17 @@
 import type { CurrentUserPayload } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { IS_ADMIN_KEY } from "@/auth/presentation/decorators/admin.decorator";
+
 import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query";
 import { AdminGrowthController } from "./admin-growth.controller";
 
 describe("AdminGrowthController — 관리자 성장 지표", () => {
 	it("관리자 전용 summary 요청을 facade에 위임한다", async () => {
 		// Given - 관리자 컨트롤러, facade, 명시 cohort 범위
-		const { unit, unitRef } = await TestBed.solitary(
-			AdminGrowthController,
-		).compile();
-		const getGrowthSummaryQuery: Mocked<GetGrowthSummaryQuery> = unitRef.get(
-			GetGrowthSummaryQuery,
-		);
+		const { unit, unitRef } = await TestBed.solitary(AdminGrowthController).compile();
+		const getGrowthSummaryQuery: Mocked<GetGrowthSummaryQuery> = unitRef.get(GetGrowthSummaryQuery);
 		const admin: CurrentUserPayload = {
 			userId: "admin-1",
 			email: "admin@example.com",

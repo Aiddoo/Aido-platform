@@ -3,6 +3,7 @@ import type { CurrentUserPayload } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
+
 import { SessionService } from "@/auth/application/services/session.service";
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
@@ -10,10 +11,7 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { toErrorMessage } from "@/shared/application/utils/error-message.util";
 import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	type CachedSession,
-	CacheService,
-} from "@/shared/infrastructure/cache/cache.service";
+import { type CachedSession, CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 /**
@@ -81,10 +79,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 
 			// Defense in Depth: 캐시된 사용자 상태 검증
 			if (cachedSession.userStatus) {
-				this.#assertUserStatus(
-					cachedSession.userStatus,
-					cachedSession.userDeletedAt,
-				);
+				this.#assertUserStatus(cachedSession.userStatus, cachedSession.userDeletedAt);
 			}
 
 			return {
@@ -134,15 +129,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 	 * 레벨에서도 한 번 더 격리한다. try 안에는 캐시 I/O만 둔다 —
 	 * assertSessionValid/#assertUserStatus의 의도적 401은 절대 삼키지 않는다.
 	 */
-	async #getCachedSessionSafe(
-		sessionId: string,
-	): Promise<CachedSession | undefined> {
+	async #getCachedSessionSafe(sessionId: string): Promise<CachedSession | undefined> {
 		try {
 			return await this.cacheService.getSession(sessionId);
 		} catch (error) {
-			this.#logger.warn(
-				`Session cache read failed — falling back to DB: ${toErrorMessage(error)}`,
-			);
+			this.#logger.warn(`Session cache read failed — falling back to DB: ${toErrorMessage(error)}`);
 			return undefined;
 		}
 	}
@@ -150,16 +141,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 	/**
 	 * 세션 캐시 쓰기 — 실패 시 무시 (다음 요청이 다시 DB를 탈 뿐)
 	 */
-	async #setCachedSessionSafe(
-		sessionId: string,
-		session: CachedSession,
-	): Promise<void> {
+	async #setCachedSessionSafe(sessionId: string, session: CachedSession): Promise<void> {
 		try {
 			await this.cacheService.setSession(sessionId, session);
 		} catch (error) {
-			this.#logger.warn(
-				`Session cache write failed — skipping: ${toErrorMessage(error)}`,
-			);
+			this.#logger.warn(`Session cache write failed — skipping: ${toErrorMessage(error)}`);
 		}
 	}
 

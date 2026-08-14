@@ -33,9 +33,7 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
 
 		// Then
 		expect(warn).toHaveBeenCalledTimes(1);
-		expect(warn).toHaveBeenCalledWith(
-			expect.stringContaining("Connection is closed."),
-		);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining("Connection is closed."));
 		expect(warn).toHaveBeenCalledWith(expect.stringContaining("GET"));
 	});
 
@@ -65,9 +63,7 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
 
 		// Then
 		expect(warn).toHaveBeenCalledTimes(2);
-		expect(warn).toHaveBeenLastCalledWith(
-			expect.stringContaining("+4 suppressed"),
-		);
+		expect(warn).toHaveBeenLastCalledWith(expect.stringContaining("+4 suppressed"));
 	});
 
 	it("Error가 아닌 값도 메시지로 변환한다", () => {
@@ -78,8 +74,6 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
 		sampler.warn("DEL", "raw string error");
 
 		// Then
-		expect(warn).toHaveBeenCalledWith(
-			expect.stringContaining("raw string error"),
-		);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining("raw string error"));
 	});
 });

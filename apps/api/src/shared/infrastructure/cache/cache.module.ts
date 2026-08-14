@@ -1,19 +1,12 @@
-import {
-	type DynamicModule,
-	Global,
-	Module,
-	type Provider,
-} from "@nestjs/common";
+import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
 import type Redis from "ioredis";
+
 import { TypedConfigService } from "../config/services/config.service";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
 import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter";
 import { RedisCacheAdapter } from "./adapters/redis-cache.adapter";
 import { CacheService } from "./cache.service";
-import {
-	CACHE_SERVICE,
-	type ICacheService,
-} from "./interfaces/cache.interface";
+import { CACHE_SERVICE, type ICacheService } from "./interfaces/cache.interface";
 
 /**
  * 캐시 모듈
@@ -43,10 +36,7 @@ export class CacheModule {
 	static forRoot(): DynamicModule {
 		const cacheProvider: Provider = {
 			provide: CACHE_SERVICE,
-			useFactory: (
-				configService: TypedConfigService,
-				redis?: Redis,
-			): ICacheService => {
+			useFactory: (configService: TypedConfigService, redis?: Redis): ICacheService => {
 				const cacheConfig = configService.cache;
 
 				if (cacheConfig.type === "redis" && redis) {
@@ -59,10 +49,7 @@ export class CacheModule {
 					cleanupIntervalMs: cacheConfig.cleanupIntervalMs,
 				});
 			},
-			inject: [
-				TypedConfigService,
-				{ token: REDIS_COMMAND_CLIENT, optional: true },
-			],
+			inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
 		};
 
 		return {

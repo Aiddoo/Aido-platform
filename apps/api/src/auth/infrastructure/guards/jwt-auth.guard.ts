@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { ExecutionContext, HttpException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";
+
 import { IS_PUBLIC_KEY } from "@/auth/presentation/decorators/public.decorator";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { ErrorCodedException } from "@/shared/domain/exceptions/error-coded.exception";
@@ -32,11 +33,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
 	}
 
 	override handleRequest<TUser>(err: Error | null, user: TUser | false): TUser {
-		if (
-			err &&
-			!(err instanceof HttpException) &&
-			!(err instanceof ErrorCodedException)
-		) {
+		if (err && !(err instanceof HttpException) && !(err instanceof ErrorCodedException)) {
 			// 인프라 오류(DB/캐시 장애 등)는 401로 위장하지 않는다.
 			// 401은 클라이언트가 토큰 삭제(강제 로그아웃)로 반응하므로,
 			// GlobalExceptionFilter가 500으로 처리 + Sentry 리포트되도록 rethrow.

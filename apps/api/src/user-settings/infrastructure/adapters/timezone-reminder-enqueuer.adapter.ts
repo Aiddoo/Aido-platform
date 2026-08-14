@@ -14,12 +14,8 @@ import type {
  * heavy 배럴을 피해 scheduler ↔ user-settings 순환을 방지한다.
  */
 @Injectable()
-export class TimezoneReminderEnqueuerAdapter
-	implements ReminderScheduleEnqueuerPort
-{
-	constructor(
-		private readonly timezoneReminderQueueService: TimezoneReminderQueueService,
-	) {}
+export class TimezoneReminderEnqueuerAdapter implements ReminderScheduleEnqueuerPort {
+	constructor(private readonly timezoneReminderQueueService: TimezoneReminderQueueService) {}
 
 	enqueueReminderHourChanged(payload: ReminderHourChangedPayload): void {
 		this.timezoneReminderQueueService.enqueueReminderHourChanged(payload);

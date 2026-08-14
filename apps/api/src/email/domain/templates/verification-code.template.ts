@@ -10,9 +10,7 @@ export function getVerificationCodeSubject(): string {
 	return "[Aido] 이메일 인증 코드";
 }
 
-export function getVerificationCodeHtml(
-	data: VerificationCodeTemplateData,
-): string {
+export function getVerificationCodeHtml(data: VerificationCodeTemplateData): string {
 	return `
 <!DOCTYPE html>
 <html lang="ko">
@@ -76,9 +74,7 @@ export function getVerificationCodeHtml(
   `.trim();
 }
 
-export function getVerificationCodeText(
-	data: VerificationCodeTemplateData,
-): string {
+export function getVerificationCodeText(data: VerificationCodeTemplateData): string {
 	return `
 [Aido] 이메일 인증 코드
 

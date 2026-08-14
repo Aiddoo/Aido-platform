@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+
 import { now } from "./core";
 
 const DEFAULT_TIMEZONE = "UTC";
@@ -77,10 +78,7 @@ export function parseLocalDateTime(
 	timeStr: string,
 	tz: string = DEFAULT_TIMEZONE,
 ): Date {
-	return dayjs
-		.tz(`${dateStr}T${timeStr}:00`, resolveTimezone(tz))
-		.utc()
-		.toDate();
+	return dayjs.tz(`${dateStr}T${timeStr}:00`, resolveTimezone(tz)).utc().toDate();
 }
 
 /**
@@ -91,10 +89,7 @@ export function parseLocalDateTime(
  * @example startOfDayInTimezone(new Date('2026-02-06T20:00:00Z'), 'Asia/Seoul')
  *   // KST 2/7 → 2026-02-07T00:00:00.000Z
  */
-export function startOfDayInTimezone(
-	date: Date = now(),
-	tz: string = DEFAULT_TIMEZONE,
-): Date {
+export function startOfDayInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
 	const localDateStr = dayjs(date).tz(resolveTimezone(tz)).format("YYYY-MM-DD");
 	return dayjs.utc(localDateStr).startOf("day").toDate();
 }
@@ -108,10 +103,7 @@ export function startOfDayInTimezone(
  * @example toLocalTimeString(new Date('2026-01-15T05:00:00Z'), 'Asia/Seoul') // "14:00"
  * @example toLocalTimeString(new Date('2026-01-15T14:00:00Z'), 'America/New_York') // "09:00"
  */
-export function toLocalTimeString(
-	date: Date,
-	tz: string = DEFAULT_TIMEZONE,
-): string {
+export function toLocalTimeString(date: Date, tz: string = DEFAULT_TIMEZONE): string {
 	return dayjs(date).tz(resolveTimezone(tz)).format("HH:mm");
 }
 
@@ -123,10 +115,7 @@ export function toLocalTimeString(
  * @example midnightInTimezone(new Date('2026-02-11T00:00:00+09:00'), 'Asia/Seoul')
  *   // KST 2/11 자정 → 2026-02-10T15:00:00.000Z
  */
-export function midnightInTimezone(
-	date: Date = now(),
-	tz: string = DEFAULT_TIMEZONE,
-): Date {
+export function midnightInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
 	return dayjs(date).tz(resolveTimezone(tz)).startOf("day").utc().toDate();
 }
 
@@ -173,9 +162,6 @@ export function dayWindowInTimezone(
  * @example firstOfMonthInTimezone(new Date('2026-12-15T00:00:00Z'), 'Asia/Seoul')
  *   // KST 2026-12-15 → KST 2026-12-01 00:00 → 2026-11-30T15:00:00.000Z
  */
-export function firstOfMonthInTimezone(
-	date: Date = now(),
-	tz: string = DEFAULT_TIMEZONE,
-): Date {
+export function firstOfMonthInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
 	return dayjs(date).tz(resolveTimezone(tz)).startOf("month").utc().toDate();
 }

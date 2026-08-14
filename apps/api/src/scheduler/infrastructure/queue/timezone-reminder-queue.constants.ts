@@ -5,6 +5,7 @@
  * 프로세서용 판별 유니온(discriminated union)만 정의한다.
  */
 import { z } from "zod";
+
 import type {
 	ReminderHourChangedJobData,
 	SocialDigestJobData,

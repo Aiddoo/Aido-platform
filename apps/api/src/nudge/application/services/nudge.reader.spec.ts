@@ -1,10 +1,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import {
-	NUDGE_REPOSITORY,
-	type NudgeRepositoryPort,
-} from "../ports/nudge.repository.port";
+
+import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../ports/nudge.repository.port";
 import { NudgeReader } from "./nudge.reader";
 
 describe("NudgeReader — 사용자 로컬 일일 한도", () => {

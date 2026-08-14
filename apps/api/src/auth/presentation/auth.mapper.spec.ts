@@ -20,6 +20,7 @@ import type {
 	UpdateProfileResult,
 	VerifyEmailResult,
 } from "@/auth/application/types/auth.types";
+
 import { AuthMapper } from "./auth.mapper";
 
 describe("AuthMapper — 인증 매퍼", () => {

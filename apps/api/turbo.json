@@ -3,13 +3,7 @@
 	"extends": ["//"],
 	"tasks": {
 		"build": {
-			"inputs": [
-				"src/**",
-				"prisma/**",
-				"package.json",
-				"tsconfig.json",
-				"nest-cli.json"
-			]
+			"inputs": ["src/**", "prisma/**", "package.json", "tsconfig.json", "nest-cli.json"]
 		},
 		"test": {
 			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
@@ -24,19 +18,6 @@
 		},
 		"typecheck": {
 			"inputs": ["src/**", "prisma/**", "tsconfig.json"]
-		},
-		"lint:arch": {
-			"inputs": [
-				"src/**",
-				"scripts/check-*.mjs",
-				"test/architecture/**",
-				"test/e2e/__snapshots__/openapi-contract.e2e-spec.ts.snap",
-				"test/e2e/fixtures/released-v1-openapi-contract.ts",
-				"prisma/**",
-				".dependency-cruiser.cjs",
-				"package.json",
-				"tsconfig.json"
-			]
 		}
 	}
 }

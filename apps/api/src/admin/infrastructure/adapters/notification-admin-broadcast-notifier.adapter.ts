@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+
 import { NotificationSender } from "@/notification";
+
 import type { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port";
 import type { AdminBroadcastMessage } from "../../domain/broadcast-message";
 
@@ -10,9 +12,7 @@ import type { AdminBroadcastMessage } from "../../domain/broadcast-message";
  * 다른 발송 채널로 바꾸려면 이 어댑터만 교체하면 된다.
  */
 @Injectable()
-export class NotificationAdminBroadcastNotifierAdapter
-	implements AdminBroadcastNotifierPort
-{
+export class NotificationAdminBroadcastNotifierAdapter implements AdminBroadcastNotifierPort {
 	constructor(private readonly notificationService: NotificationSender) {}
 
 	sendBatch(messages: AdminBroadcastMessage[]): Promise<{ count: number }> {

@@ -1,8 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
-import {
-	type CursorPaginationInfo,
-	PaginationService,
-} from "@/shared/application/pagination";
+
+import { type CursorPaginationInfo, PaginationService } from "@/shared/application/pagination";
+
 import {
 	computeSummary,
 	toWeeklyAchievementView,
@@ -41,16 +40,13 @@ export class GetWeeklyAchievementsUseCase {
 		private readonly paginationService: PaginationService,
 	) {}
 
-	async execute(
-		input: GetWeeklyAchievementsInput,
-	): Promise<WeeklyAchievementListView> {
+	async execute(input: GetWeeklyAchievementsInput): Promise<WeeklyAchievementListView> {
 		const { userId, year, locale } = input;
 
-		const { cursor, size, take } =
-			this.paginationService.normalizeCursorPagination<number>({
-				cursor: input.cursor,
-				size: input.size,
-			});
+		const { cursor, size, take } = this.paginationService.normalizeCursorPagination<number>({
+			cursor: input.cursor,
+			size: input.size,
+		});
 
 		// 페이지네이션 목록 + 연도 전체 기록(summary 계산용) 병렬 조회 (waterfall 제거)
 		const [items, yearRecords] = await Promise.all([

@@ -9,6 +9,7 @@ import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Button, H3, HStack, ModalBottomSheet, Text, TextButton, VStack } from '@src/shared/ui';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { FeatureDiscoveryPreview } from './FeatureDiscoveryPreview';
 
 const MIN_CARD_LIST_HEIGHT = 96;

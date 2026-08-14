@@ -2,29 +2,19 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import { FollowReader } from "@/follow";
-import {
-	MUTATION_LOCK,
-	type MutationLockPort,
-	UNIT_OF_WORK,
-} from "@/shared/application/ports";
+import { MUTATION_LOCK, type MutationLockPort, UNIT_OF_WORK } from "@/shared/application/ports";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { Nudge } from "../../../domain/entities/nudge.aggregate";
+import { NUDGE_LIMIT_READER, type NudgeLimitReaderPort } from "../../ports/nudge-limit-reader.port";
+import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type NudgeWithRelations,
 	type TargetTodoRecord,
 } from "../../ports/nudge.repository.port";
-import {
-	NUDGE_LIMIT_READER,
-	type NudgeLimitReaderPort,
-} from "../../ports/nudge-limit-reader.port";
-import {
-	NUDGE_NOTIFIER,
-	type NudgeNotifierPort,
-} from "../../ports/nudge-notifier.port";
 import { SendNudgeUseCase } from "./send-nudge.use-case";
 
 const today = todayInTimezone("UTC");
@@ -205,10 +195,7 @@ describe("SendNudgeUseCase", () => {
 		});
 
 		// When
-		await useCase.execute(
-			{ senderId: "s", receiverId: "r", todoId: 10 },
-			"Asia/Seoul",
-		);
+		await useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }, "Asia/Seoul");
 
 		// Then - lock key와 quota 시작점 모두 7/26 KST 기준이고 lock이 먼저임
 		expect(mutationLock.acquire).toHaveBeenCalledWith([
@@ -225,13 +212,7 @@ describe("SendNudgeUseCase", () => {
 				createdAt: new Date("2026-07-26T14:59:59.900Z"),
 			}),
 		);
-		expect(events).toEqual([
-			"lock",
-			"target-read",
-			"limit",
-			"daily-count",
-			"cooldown-read",
-		]);
+		expect(events).toEqual(["lock", "target-read", "limit", "daily-count", "cooldown-read"]);
 		jest.useRealTimers();
 	});
 });

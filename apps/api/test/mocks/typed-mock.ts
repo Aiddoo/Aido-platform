@@ -8,9 +8,7 @@
  * @example
  *   const sessionService = mockOf<SessionService>({ createSessionWithTokens: jest.fn() });
  */
-export function mockOf<T extends object>(
-	impl: Partial<jest.Mocked<T>> = {},
-): jest.Mocked<T> {
+export function mockOf<T extends object>(impl: Partial<jest.Mocked<T>> = {}): jest.Mocked<T> {
 	return impl as jest.Mocked<T>;
 }
 

@@ -2,6 +2,7 @@ import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-
 import type { PropsWithChildren } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState, Platform } from 'react-native';
+
 import { shouldRetryQuery } from './query-retry';
 
 /**

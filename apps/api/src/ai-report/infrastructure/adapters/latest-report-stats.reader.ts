@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
@@ -13,10 +14,7 @@ export class LatestReportStatsReader implements LatestReportStatsReaderPort {
 	) {}
 
 	async findLatestWeekly(userId: string) {
-		const latestReport = await this.aiReportRepository.findLatest(
-			userId,
-			"WEEKLY",
-		);
+		const latestReport = await this.aiReportRepository.findLatest(userId, "WEEKLY");
 		return latestReport?.stats ?? null;
 	}
 }

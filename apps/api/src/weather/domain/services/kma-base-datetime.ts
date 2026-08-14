@@ -5,16 +5,7 @@ import { toCompactDateString } from "@/shared/domain/date/utils/format";
  * 하루 8회: 0200, 0500, 0800, 1100, 1400, 1700, 2000, 2300
  * API 제공 시간은 발표 시각 + 약 10분 이후
  */
-const KMA_BASE_TIMES = [
-	"0200",
-	"0500",
-	"0800",
-	"1100",
-	"1400",
-	"1700",
-	"2000",
-	"2300",
-] as const;
+const KMA_BASE_TIMES = ["0200", "0500", "0800", "1100", "1400", "1700", "2000", "2300"] as const;
 
 /** 기상청 API base_date + base_time 쌍 */
 export interface KmaBaseDateTime {

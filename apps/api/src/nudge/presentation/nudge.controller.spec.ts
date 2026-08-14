@@ -2,6 +2,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import type {
 	NudgeWithRelations,
 	ReminderNudgeWithRelations,
@@ -10,11 +11,7 @@ import { NudgeReader } from "../application/services/nudge.reader";
 import { MarkNudgeReadUseCase } from "../application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
 import { SendNudgeUseCase } from "../application/use-cases/send-nudge/send-nudge.use-case";
 import { SendRemindNudgeUseCase } from "../application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
-import type {
-	GetNudgesQueryDto,
-	SendNudgeDto,
-	SendRemindNudgeDto,
-} from "./dtos";
+import type { GetNudgesQueryDto, SendNudgeDto, SendRemindNudgeDto } from "./dtos";
 import { NudgeController } from "./nudge.controller";
 
 const user: CurrentUserPayload = {

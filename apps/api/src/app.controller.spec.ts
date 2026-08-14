@@ -11,6 +11,7 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 

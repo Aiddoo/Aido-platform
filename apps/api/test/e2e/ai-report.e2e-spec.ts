@@ -13,9 +13,11 @@
  */
 
 import request from "supertest";
+
 import { AI_PROVIDER } from "@/ai";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
@@ -27,8 +29,7 @@ describe("AI 리포트 E2E", () => {
 		fakeAiProvider = new FakeAiProvider();
 
 		ctx = await createE2eApp({
-			customizeBuilder: (builder) =>
-				builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
+			customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
 			additionalResetters: [() => fakeAiProvider.clear()],
 		});
 	}, 60000);
@@ -57,10 +58,7 @@ describe("AI 리포트 E2E", () => {
 	describe("GET /ai/reports/status", () => {
 		it("200: 다음 리포트 예정일을 포함한 상태를 반환해야 한다", async () => {
 			// Given - 프리미엄 사용자
-			const user = await createPremiumUser(
-				"ai-report-status@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-report-status@example.com", "Test1234!");
 
 			// When - 리포트 상태 조회
 			const response = await request(ctx.app.getHttpServer())
@@ -84,9 +82,7 @@ describe("AI 리포트 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 토큰 없이 상태 조회
-			const response = await request(ctx.app.getHttpServer()).get(
-				"/v1/ai/reports/status",
-			);
+			const response = await request(ctx.app.getHttpServer()).get("/v1/ai/reports/status");
 
 			// Then - 401 Unauthorized 반환
 			expect(response.status).toBe(401);
@@ -96,10 +92,7 @@ describe("AI 리포트 E2E", () => {
 	describe("GET /ai/reports", () => {
 		it("200: 빈 리포트 목록을 반환해야 한다 (초기 상태)", async () => {
 			// Given - 프리미엄 사용자, 리포트가 없는 초기 상태
-			const user = await createPremiumUser(
-				"ai-report-list@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-report-list@example.com", "Test1234!");
 
 			// When - 리포트 목록 조회
 			const response = await request(ctx.app.getHttpServer())
@@ -114,10 +107,7 @@ describe("AI 리포트 E2E", () => {
 
 		it("200: type 필터를 적용하여 조회할 수 있어야 한다", async () => {
 			// Given - 프리미엄 사용자
-			const user = await createPremiumUser(
-				"ai-report-filter@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-report-filter@example.com", "Test1234!");
 
 			// When - WEEKLY 타입으로 필터링
 			const response = await request(ctx.app.getHttpServer())
@@ -133,9 +123,7 @@ describe("AI 리포트 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 토큰 없이 목록 조회
-			const response = await request(ctx.app.getHttpServer()).get(
-				"/v1/ai/reports",
-			);
+			const response = await request(ctx.app.getHttpServer()).get("/v1/ai/reports");
 
 			// Then - 401 Unauthorized 반환
 			expect(response.status).toBe(401);
@@ -145,10 +133,7 @@ describe("AI 리포트 E2E", () => {
 	describe("GET /ai/reports/:id", () => {
 		it("404: 존재하지 않는 리포트 조회 시 에러를 반환해야 한다", async () => {
 			// Given - 프리미엄 사용자, 존재하지 않는 리포트 ID
-			const user = await createPremiumUser(
-				"ai-report-404@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-report-404@example.com", "Test1234!");
 
 			// When - 없는 리포트 상세 조회
 			const response = await request(ctx.app.getHttpServer())
@@ -164,9 +149,7 @@ describe("AI 리포트 E2E", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 토큰 없이 상세 조회
-			const response = await request(ctx.app.getHttpServer()).get(
-				"/v1/ai/reports/1",
-			);
+			const response = await request(ctx.app.getHttpServer()).get("/v1/ai/reports/1");
 
 			// Then - 401 Unauthorized 반환
 			expect(response.status).toBe(401);
@@ -174,10 +157,7 @@ describe("AI 리포트 E2E", () => {
 
 		it("400: 유효하지 않은 ID 형식 시 에러를 반환해야 한다", async () => {
 			// Given - 프리미엄 사용자
-			const user = await createPremiumUser(
-				"ai-report-invalid@example.com",
-				"Test1234!",
-			);
+			const user = await createPremiumUser("ai-report-invalid@example.com", "Test1234!");
 
 			// When - 문자열 ID로 조회
 			const response = await request(ctx.app.getHttpServer())

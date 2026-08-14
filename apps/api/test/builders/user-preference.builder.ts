@@ -124,8 +124,6 @@ export class UserPreferenceBuilder {
 
 	/** 여러 개 생성 */
 	static createMany(userIds: string[]): UserPreference[] {
-		return userIds.map((userId) =>
-			UserPreferenceBuilder.create(userId).build(),
-		);
+		return userIds.map((userId) => UserPreferenceBuilder.create(userId).build());
 	}
 }

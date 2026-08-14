@@ -3,6 +3,7 @@ import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests
 import { QueryClient, QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
+
 import { createSearchUsersDto } from '../../__tests__/friend.factories';
 import { FriendService } from '../../services/friend.service';
 import { useSearchUsersQueryOptions } from './use-search-users-query-options';

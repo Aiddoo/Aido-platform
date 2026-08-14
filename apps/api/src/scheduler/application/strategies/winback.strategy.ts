@@ -1,24 +1,20 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { CreateNotificationData } from "@/notification";
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import { resolveWinbackStage } from "../../domain/services/winback-stage";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
-import {
-	SCHEDULER_DEDUP,
-	type SchedulerDedupPort,
-} from "../ports/scheduler-dedup.port";
+import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -56,12 +52,11 @@ export class WinbackStrategy implements ITimezoneStrategy {
 		}
 
 		// 오늘 WINBACK 중복 방지
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: users.map((u) => u.id),
-				type: "WINBACK",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: users.map((u) => u.id),
+			type: "WINBACK",
+			notificationDate: today,
+		});
 
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
@@ -76,10 +71,7 @@ export class WinbackStrategy implements ITimezoneStrategy {
 
 				const inactiveDays = diffInDays(today, user.lastActiveAt);
 				const stage = resolveWinbackStage(inactiveDays);
-				const alreadySent = await this.schedulerDedup.hasWinbackStage(
-					user.id,
-					stage,
-				);
+				const alreadySent = await this.schedulerDedup.hasWinbackStage(user.id, stage);
 				return { user, stage, inactiveDays, alreadySent };
 			}),
 		);

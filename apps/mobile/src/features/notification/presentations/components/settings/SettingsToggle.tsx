@@ -3,11 +3,10 @@ import { ControlField } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { View } from 'react-native';
 
-interface SettingsToggleProps
-  extends Pick<
-    ComponentProps<typeof ControlField>,
-    'isSelected' | 'onSelectedChange' | 'isDisabled'
-  > {
+interface SettingsToggleProps extends Pick<
+  ComponentProps<typeof ControlField>,
+  'isSelected' | 'onSelectedChange' | 'isDisabled'
+> {
   label: string;
   description?: string;
 }

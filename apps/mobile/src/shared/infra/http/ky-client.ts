@@ -10,6 +10,7 @@ import {
   TimeoutError as KyTimeoutError,
   type Options,
 } from 'ky';
+
 import { resolveMessage } from './error-handler';
 
 interface ServerResponse<T> {

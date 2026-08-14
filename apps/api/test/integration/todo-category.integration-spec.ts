@@ -8,8 +8,8 @@
  * 실행: pnpm --filter @aido/api test:integration -- --testPathPattern=todo-category.integration
  */
 
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
@@ -20,9 +20,9 @@ import { EntitlementService } from "@/shared/application/entitlement/entitlement
 import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TODO_CATEGORY_REPOSITORY } from "@/todo-category/application/ports/todo-category.repository.port";
 import { TODO_CATEGORY_CACHE } from "@/todo-category/application/ports/todo-category-cache.port";
 import { TODO_CATEGORY_LIMIT_READER } from "@/todo-category/application/ports/todo-category-limit-reader.port";
+import { TODO_CATEGORY_REPOSITORY } from "@/todo-category/application/ports/todo-category.repository.port";
 import { TodoCategoryReader } from "@/todo-category/application/services/todo-category.reader";
 import { CreateTodoCategoryUseCase } from "@/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
 import { DeleteTodoCategoryUseCase } from "@/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case";
@@ -62,9 +62,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	const userId = "user-category-123";
 	const categoryId = 1;
 
-	const makeCategory = (
-		overrides: Partial<TodoCategory> = {},
-	): TodoCategory => {
+	const makeCategory = (overrides: Partial<TodoCategory> = {}): TodoCategory => {
 		const builder = TodoCategoryBuilder.create(userId)
 			.withId(overrides.id ?? categoryId)
 			.withName(overrides.name ?? "중요한 일")
@@ -74,10 +72,10 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		return overrides.userId ? { ...built, userId: overrides.userId } : built;
 	};
 
-	const makeWithCount = (
-		overrides: Partial<TodoCategory> = {},
-		todoCount = 0,
-	) => ({ ...makeCategory(overrides), _count: { todos: todoCount } });
+	const makeWithCount = (overrides: Partial<TodoCategory> = {}, todoCount = 0) => ({
+		...makeCategory(overrides),
+		_count: { todos: todoCount },
+	});
 
 	beforeAll(async () => {
 		suppressLogger();
@@ -119,9 +117,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 					provide: CacheService,
 					useValue: {
 						invalidateTodoCategories: jest.fn().mockResolvedValue(undefined),
-						wrapTodoCategories: jest
-							.fn()
-							.mockImplementation((_userId, factory) => factory()),
+						wrapTodoCategories: jest.fn().mockImplementation((_userId, factory) => factory()),
 					},
 				},
 			],
@@ -156,9 +152,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			expect(createUseCase).toBeInstanceOf(CreateTodoCategoryUseCase);
 		});
 		it("Repository 포트가 주입된다", () => {
-			expect(module.get(TODO_CATEGORY_REPOSITORY)).toBeInstanceOf(
-				PrismaTodoCategoryRepository,
-			);
+			expect(module.get(TODO_CATEGORY_REPOSITORY)).toBeInstanceOf(PrismaTodoCategoryRepository);
 		});
 	});
 
@@ -169,9 +163,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoCategoryDb.aggregate.mockResolvedValue({
 				_max: { sortOrder: 0 },
 			});
-			mockTodoCategoryDb.create.mockResolvedValue(
-				makeCategory({ name: "새 카테고리" }),
-			);
+			mockTodoCategoryDb.create.mockResolvedValue(makeCategory({ name: "새 카테고리" }));
 
 			const result = await createUseCase.execute({
 				userId,
@@ -212,18 +204,12 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findUnique.mockResolvedValue(null);
-			await expect(reader.findById(999, userId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(reader.findById(999, userId)).rejects.toThrow(ApplicationException);
 		});
 
 		it("다른 사용자의 카테고리면 ApplicationException", async () => {
-			mockTodoCategoryDb.findUnique.mockResolvedValue(
-				makeWithCount({ userId: "other-user" }),
-			);
-			await expect(reader.findById(categoryId, userId)).rejects.toThrow(
-				ApplicationException,
-			);
+			mockTodoCategoryDb.findUnique.mockResolvedValue(makeWithCount({ userId: "other-user" }));
+			await expect(reader.findById(categoryId, userId)).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -269,16 +255,16 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(makeCategory({ id: 1, name: "카테고리 1" }))
 				.mockResolvedValueOnce(makeCategory({ id: 2, name: "카테고리 2" }));
 
-			await expect(
-				updateUseCase.execute(1, userId, { name: "카테고리 2" }),
-			).rejects.toThrow(ApplicationException);
+			await expect(updateUseCase.execute(1, userId, { name: "카테고리 2" })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-			await expect(
-				updateUseCase.execute(999, userId, { name: "수정" }),
-			).rejects.toThrow(ApplicationException);
+			await expect(updateUseCase.execute(999, userId, { name: "수정" })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -302,9 +288,9 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoCategoryDb.count.mockResolvedValue(2);
 			mockTodoDb.count.mockResolvedValue(5);
 
-			await expect(
-				deleteUseCase.execute({ userId, categoryId }),
-			).rejects.toThrow(ApplicationException);
+			await expect(deleteUseCase.execute({ userId, categoryId })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("할 일을 이동 후 삭제한다", async () => {
@@ -332,16 +318,16 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		it("마지막 카테고리면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
 			mockTodoCategoryDb.count.mockResolvedValue(1);
-			await expect(
-				deleteUseCase.execute({ userId, categoryId }),
-			).rejects.toThrow(ApplicationException);
+			await expect(deleteUseCase.execute({ userId, categoryId })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-			await expect(
-				deleteUseCase.execute({ userId, categoryId: 999 }),
-			).rejects.toThrow(ApplicationException);
+			await expect(deleteUseCase.execute({ userId, categoryId: 999 })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -351,9 +337,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				.mockResolvedValueOnce(makeCategory({ id: 3, sortOrder: 2 }))
 				.mockResolvedValueOnce(makeCategory({ id: 1, sortOrder: 0 }));
 			mockTodoCategoryDb.updateMany.mockResolvedValue({ count: 2 });
-			mockTodoCategoryDb.update.mockResolvedValue(
-				makeCategory({ id: 3, sortOrder: 0 }),
-			);
+			mockTodoCategoryDb.update.mockResolvedValue(makeCategory({ id: 3, sortOrder: 0 }));
 
 			const result = await reorderUseCase.execute({
 				userId,
@@ -367,16 +351,12 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("맨 뒤로 이동한다", async () => {
-			mockTodoCategoryDb.findFirst.mockResolvedValue(
-				makeCategory({ id: 1, sortOrder: 0 }),
-			);
+			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory({ id: 1, sortOrder: 0 }));
 			mockTodoCategoryDb.aggregate.mockResolvedValue({
 				_max: { sortOrder: 2 },
 			});
 			mockTodoCategoryDb.updateMany.mockResolvedValue({ count: 2 });
-			mockTodoCategoryDb.update.mockResolvedValue(
-				makeCategory({ id: 1, sortOrder: 2 }),
-			);
+			mockTodoCategoryDb.update.mockResolvedValue(makeCategory({ id: 1, sortOrder: 2 }));
 
 			const result = await reorderUseCase.execute({
 				userId,
@@ -412,16 +392,14 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	describe("소유권 검증 (크로스모듈)", () => {
 		it("소유하면 통과한다", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(makeCategory());
-			await expect(
-				reader.validateOwnership(categoryId, userId),
-			).resolves.toBeUndefined();
+			await expect(reader.validateOwnership(categoryId, userId)).resolves.toBeUndefined();
 		});
 
 		it("미소유면 ApplicationException", async () => {
 			mockTodoCategoryDb.findFirst.mockResolvedValue(null);
-			await expect(
-				reader.validateOwnership(categoryId, "other-user"),
-			).rejects.toThrow(ApplicationException);
+			await expect(reader.validateOwnership(categoryId, "other-user")).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -432,9 +410,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 			mockTodoCategoryDb.aggregate.mockResolvedValue({
 				_max: { sortOrder: 0 },
 			});
-			mockTodoCategoryDb.create.mockRejectedValue(
-				new Error("Database connection failed"),
-			);
+			mockTodoCategoryDb.create.mockRejectedValue(new Error("Database connection failed"));
 
 			await expect(
 				createUseCase.execute({ userId, name: "테스트", color: "#FF0000" }),
@@ -448,9 +424,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				throw new Error("should have thrown");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
-				expect((error as ApplicationException).errorCode).toContain(
-					"TODO_CATEGORY",
-				);
+				expect((error as ApplicationException).errorCode).toContain("TODO_CATEGORY");
 			}
 		});
 	});

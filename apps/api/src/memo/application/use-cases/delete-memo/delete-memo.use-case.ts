@@ -1,10 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 
 /** 메모 삭제 입력 (소유권 확인 후 영구 삭제). */
 export interface DeleteMemoInput {
@@ -28,10 +27,7 @@ export class DeleteMemoUseCase {
 	) {}
 
 	async execute(input: DeleteMemoInput): Promise<DeleteMemoResult> {
-		const memo = await this.repository.findByIdAndUserId(
-			input.memoId,
-			input.userId,
-		);
+		const memo = await this.repository.findByIdAndUserId(input.memoId, input.userId);
 		if (!memo) {
 			throw new ApplicationException(ErrorCode.MEMO_2001, {
 				memoId: input.memoId,

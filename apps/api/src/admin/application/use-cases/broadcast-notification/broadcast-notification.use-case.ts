@@ -1,12 +1,11 @@
 import { ErrorCode } from "@aido/errors";
 import type { NotificationAction } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import type { BroadcastTargetFilter } from "../../../domain/broadcast-message";
-import {
-	type BroadcastResult,
-	buildBroadcastResult,
-} from "../../../domain/broadcast-result";
+import { type BroadcastResult, buildBroadcastResult } from "../../../domain/broadcast-result";
 import { BroadcastCampaign } from "../../../domain/entities/broadcast-campaign";
 import {
 	ADMIN_BROADCAST_NOTIFIER,
@@ -55,9 +54,7 @@ export class BroadcastNotificationUseCase {
 		let successCount = 0;
 
 		// 대상 사용자를 배치로 스트리밍하며 배치마다 발송 (메모리 절약)
-		for await (const userIds of this.userDirectory.streamTargetUserIds(
-			campaign.targetFilter,
-		)) {
+		for await (const userIds of this.userDirectory.streamTargetUserIds(campaign.targetFilter)) {
 			totalTargets += userIds.length;
 
 			const { count } = await this.notifier.sendBatch(

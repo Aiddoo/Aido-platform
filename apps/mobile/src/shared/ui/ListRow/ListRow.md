@@ -37,18 +37,18 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 
 #### Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `left` | `ReactNode` | - | 왼쪽 영역 컨텐츠 |
-| `contents` | `ReactNode` | - | 중앙 영역 컨텐츠 (필수) |
-| `right` | `ReactNode` | - | 오른쪽 영역 컨텐츠 |
-| `verticalPadding` | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩 |
-| `horizontalPadding` | `'small' \| 'medium' \| 'none'` | `'none'` | 좌우 패딩 |
-| `border` | `'indented' \| 'none'` | `'none'` | 하단 테두리 |
-| `leftAlignment` | `'top' \| 'center'` | `'center'` | 왼쪽 영역 정렬 |
-| `rightAlignment` | `'top' \| 'center'` | `'center'` | 오른쪽 영역 정렬 |
-| `disabled` | `boolean` | `false` | 비활성화 상태 |
-| `className` | `string` | - | 추가 클래스명 |
+| Prop                | Type                                         | Default    | Description             |
+| ------------------- | -------------------------------------------- | ---------- | ----------------------- |
+| `left`              | `ReactNode`                                  | -          | 왼쪽 영역 컨텐츠        |
+| `contents`          | `ReactNode`                                  | -          | 중앙 영역 컨텐츠 (필수) |
+| `right`             | `ReactNode`                                  | -          | 오른쪽 영역 컨텐츠      |
+| `verticalPadding`   | `'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 상하 패딩               |
+| `horizontalPadding` | `'small' \| 'medium' \| 'none'`              | `'none'`   | 좌우 패딩               |
+| `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리             |
+| `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬          |
+| `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬        |
+| `disabled`          | `boolean`                                    | `false`    | 비활성화 상태           |
+| `className`         | `string`                                     | -          | 추가 클래스명           |
 
 #### Vertical Padding 크기
 
@@ -72,19 +72,17 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 **1줄 레이아웃** - 제목만 표시
 
 ```tsx
-<ListRow.Texts
-  type="1RowTypeA"
-  top="제목"
-  topProps={{ size: 'b1', weight: 'bold' }}
-/>
+<ListRow.Texts type="1RowTypeA" top="제목" topProps={{ size: 'b1', weight: 'bold' }} />
 ```
 
 **Props:**
+
 - `type`: `'1RowTypeA'` (필수)
 - `top`: `ReactNode` (필수) - 제목 텍스트
 - `topProps`: `Omit<TextProps, 'children'>` (선택) - 제목 스타일
 
 **사용 예시:**
+
 - 단순 메뉴 항목
 - 설정 옵션
 - 간단한 리스트 아이템
@@ -106,6 +104,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 ```
 
 **Props:**
+
 - `type`: `'2RowTypeA'` (필수)
 - `top`: `ReactNode` (필수) - 제목 텍스트
 - `topProps`: `Omit<TextProps, 'children'>` (선택) - 제목 스타일
@@ -113,6 +112,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 - `bottomProps`: `Omit<TextProps, 'children'>` (선택) - 하단 스타일
 
 **사용 예시:**
+
 - 사용자 프로필 (이름 + 직책)
 - 파일 정보 (파일명 + 크기)
 - 상품 정보 (상품명 + 가격)
@@ -136,6 +136,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 ```
 
 **Props:**
+
 - `type`: `'3RowTypeA'` (필수)
 - `top`: `ReactNode` (필수) - 제목 텍스트
 - `topProps`: `Omit<TextProps, 'children'>` (선택) - 제목 스타일
@@ -145,6 +146,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 - `bottomProps`: `Omit<TextProps, 'children'>` (선택) - 하단 스타일
 
 **사용 예시:**
+
 - 프로젝트 카드 (제목 + 상태 + 참여자)
 - 알림 아이템 (제목 + 내용 + 시간)
 - 상세 정보 (제목 + 설명 + 추가정보)
@@ -157,11 +159,11 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 
 #### Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `source` | `ImageSourcePropType` | - | 이미지 소스 (필수) |
-| `size` | `'small' \| 'medium' \| 'large'` | `'medium'` | 이미지 크기 |
-| `rounded` | `boolean` | `true` | 둥근 모서리 적용 여부 |
+| Prop      | Type                             | Default    | Description           |
+| --------- | -------------------------------- | ---------- | --------------------- |
+| `source`  | `ImageSourcePropType`            | -          | 이미지 소스 (필수)    |
+| `size`    | `'small' \| 'medium' \| 'large'` | `'medium'` | 이미지 크기           |
+| `rounded` | `boolean`                        | `true`     | 둥근 모서리 적용 여부 |
 
 #### Size 크기
 
@@ -207,12 +209,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 
 ```tsx
 <ListRow
-  left={
-    <ListRow.Image
-      source={{ uri: 'https://example.com/avatar.jpg' }}
-      size="medium"
-    />
-  }
+  left={<ListRow.Image source={{ uri: 'https://example.com/avatar.jpg' }} size="medium" />}
   contents={
     <ListRow.Texts
       type="2RowTypeA"
@@ -232,12 +229,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 
 ```tsx
 <ListRow
-  left={
-    <ListRow.Image
-      source={{ uri: 'https://example.com/project.jpg' }}
-      size="large"
-    />
-  }
+  left={<ListRow.Image source={{ uri: 'https://example.com/project.jpg' }} size="large" />}
   contents={
     <ListRow.Texts
       type="3RowTypeA"
@@ -312,10 +304,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 
 ```tsx
 // 하단 테두리 (들여쓰기)
-<ListRow
-  border="indented"
-  horizontalPadding="medium"
-/>
+<ListRow border="indented" horizontalPadding="medium" />
 ```
 
 ### Alignment
@@ -372,10 +361,7 @@ ListRow.Texts는 **Discriminated Union** 타입을 사용하여 각 타입별로
 
 ```tsx
 <Pressable onPress={handlePress}>
-  <ListRow
-    contents={<ListRow.Texts type="1RowTypeA" top="설정" />}
-    right={<ArrowRightIcon />}
-  />
+  <ListRow contents={<ListRow.Texts type="1RowTypeA" top="설정" />} right={<ArrowRightIcon />} />
 </Pressable>
 ```
 

@@ -1,11 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+
 import { TodoDeletedEvent } from "../../domain/events/todo-deleted.event";
 import { TODO_EVENTS } from "../../domain/events/todo-event-names";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 
 /**
  * Todo 삭제 이벤트 핸들러

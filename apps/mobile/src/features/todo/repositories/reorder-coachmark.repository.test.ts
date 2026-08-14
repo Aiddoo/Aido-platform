@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+
 import { createReorderCoachmarkRepository } from './reorder-coachmark.repository';
 
 function createMemoryStorage(): SyncStorage {

@@ -12,11 +12,7 @@ export interface TimeContext {
 	remainingDays: string[];
 }
 
-export function buildTimeContext(
-	tz: string,
-	now: Date,
-	locale: "ko" | "en" = "ko",
-): TimeContext {
+export function buildTimeContext(tz: string, now: Date, locale: "ko" | "en" = "ko"): TimeContext {
 	const localNow = dayjs(now).tz(tz);
 	const todayDayIdx = localNow.day();
 	const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -28,14 +24,9 @@ export function buildTimeContext(
 		nextWeekMon: localNow.day(todayDayIdx === 0 ? 1 : 8).format("YYYY-MM-DD"),
 		nextWeekSat: localNow.day(todayDayIdx === 0 ? 6 : 13).format("YYYY-MM-DD"),
 		nextWeekSun: localNow.day(todayDayIdx === 0 ? 7 : 14).format("YYYY-MM-DD"),
-		nextNextWeekMon: localNow
-			.day(todayDayIdx === 0 ? 8 : 15)
-			.format("YYYY-MM-DD"),
-		nextNextWeekSun: localNow
-			.day(todayDayIdx === 0 ? 14 : 21)
-			.format("YYYY-MM-DD"),
-		remainingDays:
-			todayDayIdx === 0 ? ["SUN"] : dayNames.slice(todayDayIdx).concat("SUN"),
+		nextNextWeekMon: localNow.day(todayDayIdx === 0 ? 8 : 15).format("YYYY-MM-DD"),
+		nextNextWeekSun: localNow.day(todayDayIdx === 0 ? 14 : 21).format("YYYY-MM-DD"),
+		remainingDays: todayDayIdx === 0 ? ["SUN"] : dayNames.slice(todayDayIdx).concat("SUN"),
 	};
 }
 

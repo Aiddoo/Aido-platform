@@ -1,4 +1,5 @@
 import { createMockAnalytics } from '@src/shared/__tests__';
+
 import { track } from '../track';
 
 describe('track', () => {

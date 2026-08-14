@@ -11,9 +11,7 @@
  */
 import { type BadgeCalculatorInput, calculateBadges } from "./badge-calculator";
 
-function createInput(
-	overrides?: Partial<BadgeCalculatorInput>,
-): BadgeCalculatorInput {
+function createInput(overrides?: Partial<BadgeCalculatorInput>): BadgeCalculatorInput {
 	return {
 		completionRate: 70,
 		perfectDays: 3,

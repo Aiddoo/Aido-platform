@@ -14,6 +14,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("주간 성취 E2E", () => {
@@ -55,10 +56,7 @@ describe("주간 성취 E2E", () => {
 
 			it("size 파라미터로 조회 개수를 제한한다", async () => {
 				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"weekly-size@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("weekly-size@example.com", "Test1234!");
 
 				// When - size를 5로 설정하여 조회
 				const response = await request(ctx.app.getHttpServer())
@@ -74,10 +72,7 @@ describe("주간 성취 E2E", () => {
 
 			it("year 파라미터 없이 요청 시 400 에러 반환", async () => {
 				// Given - 인증된 사용자, year 미지정
-				const user = await ctx.helpers.createVerifiedUser(
-					"weekly-noyear@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("weekly-noyear@example.com", "Test1234!");
 
 				// When - year 없이 요청
 				const response = await request(ctx.app.getHttpServer())
@@ -105,10 +100,7 @@ describe("주간 성취 E2E", () => {
 		describe("GET /weekly-achievements/:year/:week - 특정 주 달성 상세 조회", () => {
 			it("데이터가 없는 주를 조회하면 404 에러 반환", async () => {
 				// Given - 달성 데이터가 없는 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"weekly-404@example.com",
-					"Test1234!",
-				);
+				const user = await ctx.helpers.createVerifiedUser("weekly-404@example.com", "Test1234!");
 
 				// When - 존재하지 않는 주 달성 상세 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -124,9 +116,7 @@ describe("주간 성취 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 요청
-				await request(ctx.app.getHttpServer())
-					.get("/v1/weekly-achievements/2026/1")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/weekly-achievements/2026/1").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});

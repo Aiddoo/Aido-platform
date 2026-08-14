@@ -6,6 +6,7 @@
 import { ErrorCode } from "@aido/errors";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor";
 
 describe("search-cursor — keyset 커서 코덱", () => {

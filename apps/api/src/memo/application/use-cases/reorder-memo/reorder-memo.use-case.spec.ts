@@ -5,12 +5,11 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+
 import { Memo } from "../../../domain/entities/memo.aggregate";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 import { ReorderMemoUseCase } from "./reorder-memo.use-case";
 
 const memoAt = (id: number, sortOrder: number): Memo =>
@@ -30,8 +29,7 @@ describe("ReorderMemoUseCase — 메모 순서 변경", () => {
 	let repository: Mocked<MemoRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(ReorderMemoUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(ReorderMemoUseCase).compile();
 		useCase = unit;
 		uow = unitRef.get(UNIT_OF_WORK);
 		repository = unitRef.get(MEMO_REPOSITORY);
@@ -64,9 +62,7 @@ describe("ReorderMemoUseCase — 메모 순서 변경", () => {
 	});
 
 	it("기준 메모가 없으면 MEMO_2002", async () => {
-		repository.findByIdAndUserId
-			.mockResolvedValueOnce(memoAt(1, 5))
-			.mockResolvedValueOnce(null);
+		repository.findByIdAndUserId.mockResolvedValueOnce(memoAt(1, 5)).mockResolvedValueOnce(null);
 		await expect(
 			useCase.execute({
 				userId: "user-1",
@@ -102,12 +98,7 @@ describe("ReorderMemoUseCase — 메모 순서 변경", () => {
 
 		await useCase.execute({ userId: "user-1", memoId: 1, position: "after" });
 
-		expect(repository.shiftSortOrders).toHaveBeenCalledWith(
-			"user-1",
-			4,
-			null,
-			-1,
-		);
+		expect(repository.shiftSortOrders).toHaveBeenCalledWith("user-1", 4, null, -1);
 		expect(repository.updateSortOrder).toHaveBeenCalledWith(1, 9);
 	});
 });

@@ -2,7 +2,9 @@ import type { CurrentUserPayload } from "@aido/validators";
 import { Logger } from "@nestjs/common";
 import { createMockExecutionContext } from "@test/mocks";
 import { of } from "rxjs";
+
 import type { AuthUserActivityWriterPort } from "@/auth/application/ports/auth-collaboration.port";
+
 import { LastActiveInterceptor } from "./last-active.interceptor";
 
 describe("LastActiveInterceptor — 사용자 활동 기록", () => {
@@ -39,10 +41,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 		interceptor.intercept(context, { handle: () => of("ok") });
 
 		// Then - 런타임이 정규화한 타임존과 사용자 ID가 기록 경계로 전달된다
-		expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith(
-			"user-1",
-			"America/New_York",
-		);
+		expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-1", "America/New_York");
 	});
 
 	it("기존 클라이언트가 X-Timezone을 보내지 않으면 UTC로 기록한다", () => {
@@ -60,10 +59,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 		interceptor.intercept(context, { handle: () => of("ok") });
 
 		// Then - 기존 기본 날짜 경계 계약인 UTC를 사용한다
-		expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith(
-			"user-legacy",
-			"UTC",
-		);
+		expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-legacy", "UTC");
 	});
 
 	it("같은 사용자의 한 시간 내 요청은 기존처럼 한 번만 기록한다", () => {
@@ -89,10 +85,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 
 		// Then - 첫 기록만 fire-and-forget writer로 전달한다
 		expect(activityWriter.updateLastActiveAt).toHaveBeenCalledTimes(1);
-		expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith(
-			"user-throttled",
-			"Asia/Seoul",
-		);
+		expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-throttled", "Asia/Seoul");
 	});
 
 	it("한 시간 이내라도 사용자 현지 날짜가 바뀌면 새 활동일을 기록한다", () => {

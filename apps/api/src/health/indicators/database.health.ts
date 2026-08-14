@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import {
-	HealthIndicatorResult,
-	HealthIndicatorService,
-} from "@nestjs/terminus";
+import { HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
+
 import { DatabaseService } from "@/shared/infrastructure/database";
 
 /**

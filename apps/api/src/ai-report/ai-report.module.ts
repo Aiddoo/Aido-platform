@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { AiModule } from "../ai/ai.module";
-
 import { AI_REPORT_REPOSITORY } from "./application/ports/ai-report.repository.port";
 import { LATEST_REPORT_STATS_READER } from "./application/ports/latest-report-stats.reader.port";
 import { TODO_STATS_READER } from "./application/ports/todo-stats.reader.port";

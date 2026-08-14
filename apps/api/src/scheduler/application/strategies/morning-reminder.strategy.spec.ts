@@ -13,6 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -53,9 +54,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		jest.setSystemTime(FAKE_NOW);
 		jest.spyOn(Math, "random").mockReturnValue(0);
 
-		const { unit, unitRef } = await TestBed.solitary(
-			MorningReminderStrategy,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(MorningReminderStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(SCHEDULED_REMINDER_READER);
@@ -88,8 +87,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		expect(result).toEqual({ sent: 1 });
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({
 			userId: TEST_CUID.USER_1,
@@ -158,13 +156,8 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.morningReminder(
-			5,
-			"ko",
-			VARIANT_CONTEXT,
-		);
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const expected = NotificationMessageBuilder.morningReminder(5, "ko", VARIANT_CONTEXT);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -183,12 +176,8 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.morningNoTodo(
-			"ko",
-			VARIANT_CONTEXT,
-		);
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const expected = NotificationMessageBuilder.morningNoTodo("ko", VARIANT_CONTEXT);
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -204,17 +193,14 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 			{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } },
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set([TEST_CUID.USER_1]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set([TEST_CUID.USER_1]));
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe(TEST_CUID.USER_2);
 	});

@@ -20,6 +20,7 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { createTodoReadRepositoryMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { STREAK_PORT } from "@/todo/application/ports/streak.port";
 import { TODO_READ_REPOSITORY } from "@/todo/application/ports/todo-read.repository.port";
 import { GetTodoSummaryUseCase } from "@/todo/application/queries/get-todo-summary/get-todo-summary.use-case";
@@ -82,9 +83,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 		expect(result.isComplete).toBe(true);
 		expect(result.completionRate).toBe(100);
 		expect(result.currentStreak).toBe(7);
-		expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith(
-			"user-123",
-		);
+		expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith("user-123");
 	});
 
 	it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {

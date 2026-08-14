@@ -22,16 +22,13 @@ export function buildFallbackContent(
 		return {
 			aiSummary:
 				"This report was generated from your to-do stats for the period. Check the data above for details.",
-			aiTips: [
-				"Keep up your current pace and check in on your progress regularly.",
-			],
+			aiTips: ["Keep up your current pace and check in on your progress regularly."],
 		};
 	}
 
 	if (!hasActivity) {
 		return {
-			aiSummary:
-				"이번 기간에는 등록된 할 일이 없었어요. 다음에는 작은 목표부터 시작해보세요!",
+			aiSummary: "이번 기간에는 등록된 할 일이 없었어요. 다음에는 작은 목표부터 시작해보세요!",
 			aiTips: ["하루에 할 일 1개씩 등록하는 습관을 만들어보세요."],
 		};
 	}

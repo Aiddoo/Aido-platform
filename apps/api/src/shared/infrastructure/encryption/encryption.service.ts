@@ -1,10 +1,7 @@
-import {
-	createCipheriv,
-	createDecipheriv,
-	randomBytes,
-	scryptSync,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
+
 import { Injectable } from "@nestjs/common";
+
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 const ALGORITHM = "aes-256-gcm";
@@ -28,10 +25,7 @@ export class EncryptionService {
 			authTagLength: AUTH_TAG_LENGTH,
 		});
 
-		const encrypted = Buffer.concat([
-			cipher.update(plaintext, "utf8"),
-			cipher.final(),
-		]);
+		const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
 		const authTag = cipher.getAuthTag();
 
 		return `${iv.toString("base64")}:${authTag.toString("base64")}:${encrypted.toString("base64")}`;
@@ -53,10 +47,7 @@ export class EncryptionService {
 		});
 		decipher.setAuthTag(authTag);
 
-		return Buffer.concat([
-			decipher.update(encrypted),
-			decipher.final(),
-		]).toString("utf8");
+		return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 	}
 
 	isEncrypted(value: string): boolean {

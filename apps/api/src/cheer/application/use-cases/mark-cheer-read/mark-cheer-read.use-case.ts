@@ -3,10 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import {
-	CHEER_REPOSITORY,
-	type CheerRepositoryPort,
-} from "../../ports/cheer.repository.port";
+import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../../ports/cheer.repository.port";
 
 export interface MarkCheerReadInput {
 	userId: string;

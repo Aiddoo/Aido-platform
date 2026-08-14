@@ -10,10 +10,7 @@ import { UserLocation } from "./user-location.entity";
 describe("UserLocation — 사용자 위치 애그리게잇", () => {
 	describe("create", () => {
 		it("좌표로부터 격자를 파생하여 생성한다", () => {
-			const location = UserLocation.create(
-				"user-1",
-				Coordinate.of(37.5665, 126.978),
-			);
+			const location = UserLocation.create("user-1", Coordinate.of(37.5665, 126.978));
 
 			expect(location.userId).toBe("user-1");
 			expect(location.latitude).toBe(37.5665);

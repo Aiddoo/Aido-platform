@@ -1,10 +1,7 @@
 /**
  * FollowMapper 단위 테스트 — 애플리케이션 타입 → API 응답 변환 검증(계약 불변).
  */
-import type {
-	FollowWithUser,
-	UserSearchResult,
-} from "../application/ports/follow.repository.port";
+import type { FollowWithUser, UserSearchResult } from "../application/ports/follow.repository.port";
 import { Friendship } from "../domain/entities/friendship.aggregate";
 import { FollowMapper } from "./follow.mapper";
 
@@ -95,9 +92,7 @@ describe("FollowMapper", () => {
 	});
 
 	describe("toSearchUser", () => {
-		const searchResult = (
-			overrides: Partial<UserSearchResult> = {},
-		): UserSearchResult => ({
+		const searchResult = (overrides: Partial<UserSearchResult> = {}): UserSearchResult => ({
 			id: "user-1",
 			userTag: "TAG00001",
 			profile: { name: "홍길동", profileImage: "https://img/1.jpg" },
@@ -110,9 +105,7 @@ describe("FollowMapper", () => {
 		});
 
 		it("관계 flag를 전달하고 내부 rank는 응답에서 제외한다", () => {
-			const result = FollowMapper.toSearchUser(
-				searchResult({ isFollowing: true, isFriend: true }),
-			);
+			const result = FollowMapper.toSearchUser(searchResult({ isFollowing: true, isFriend: true }));
 
 			expect(result).toEqual({
 				id: "user-1",

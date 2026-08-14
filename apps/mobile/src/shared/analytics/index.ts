@@ -5,10 +5,7 @@ export type {
   FriendSearchLengthBucket,
   GrowthEventMap,
 } from './events/growth.events';
-export {
-  FEATURE_KEYS,
-  toFriendSearchLengthBucket,
-} from './events/growth.events';
+export { FEATURE_KEYS, toFriendSearchLengthBucket } from './events/growth.events';
 export {
   createFeatureAttributionStore,
   FEATURE_ATTRIBUTION_TTL_MS,

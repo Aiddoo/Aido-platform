@@ -1,5 +1,4 @@
 import 'expo-router/entry';
-
 import { Platform } from 'react-native';
 
 // Android 홈 위젯: 시스템 갱신 이벤트를 headless JS로 수신해 스냅샷을 렌더한다.

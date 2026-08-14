@@ -8,9 +8,7 @@ export interface RetentionPushEligibilityInput {
 	readonly now: Date;
 }
 
-export function retentionPushSkipReason(
-	input: RetentionPushEligibilityInput,
-): string | null {
+export function retentionPushSkipReason(input: RetentionPushEligibilityInput): string | null {
 	if (!input.pushEnabled) return "PUSH_DISABLED";
 	if (!input.marketingPushAgreedAt) return "MARKETING_CONSENT_REQUIRED";
 	if (input.activeTokenCount === 0) return "NO_ACTIVE_TOKEN";

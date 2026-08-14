@@ -1,4 +1,5 @@
 import { useContext } from 'react';
+
 import { type OverlayState, OverlayStateContext } from './OverlayStateContext';
 
 export const useOverlayState = (): OverlayState => {

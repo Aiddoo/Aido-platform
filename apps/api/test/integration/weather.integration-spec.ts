@@ -12,11 +12,12 @@
  * ```
  */
 
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { UserLocationBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import {
@@ -95,15 +96,11 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 	};
 
 	const mockLifestyleIndexProvider: LifestyleIndexProvider = {
-		getIndex: jest
-			.fn()
-			.mockResolvedValue({ feelsLikeTemperature: 12, uvIndex: 5 }),
+		getIndex: jest.fn().mockResolvedValue({ feelsLikeTemperature: 12, uvIndex: 5 }),
 	};
 
 	const mockSunTimeProvider: SunTimeProvider = {
-		getSunTime: jest
-			.fn()
-			.mockResolvedValue({ sunrise: "06:15", sunset: "18:45" }),
+		getSunTime: jest.fn().mockResolvedValue({ sunrise: "06:15", sunset: "18:45" }),
 	};
 
 	const mockCacheService = {

@@ -1,17 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { VerificationType } from "@/auth/domain/types";
 import { VerificationCode } from "@/auth/domain/value-objects/verification-code.vo";
-import {
-	addMinutes,
-	subtractSeconds,
-} from "@/shared/domain/date/utils/arithmetic";
+import { addMinutes, subtractSeconds } from "@/shared/domain/date/utils/arithmetic";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	AUTH_EMAIL_SENDER,
-	type AuthEmailSenderPort,
-} from "../ports/auth-collaboration.port";
+
+import { AUTH_EMAIL_SENDER, type AuthEmailSenderPort } from "../ports/auth-collaboration.port";
 import {
 	AUTH_VERIFICATION_REPOSITORY,
 	type AuthVerificationRepositoryPort,
@@ -41,17 +37,12 @@ export class VerificationService {
 	) {}
 
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
-	async createEmailVerification(
-		userId: string,
-	): Promise<VerificationCodeResult> {
+	async createEmailVerification(userId: string): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
 		await this.#checkResendCooldown(userId, "EMAIL_VERIFY");
 
 		// 기존 미사용 인증 코드 무효화
-		await this.verificationRepository.invalidateAllByUserIdAndType(
-			userId,
-			"EMAIL_VERIFY",
-		);
+		await this.verificationRepository.invalidateAllByUserIdAndType(userId, "EMAIL_VERIFY");
 
 		// 새 인증 코드 생성
 		const result = await this.#createVerificationCode(userId, "EMAIL_VERIFY");
@@ -68,25 +59,17 @@ export class VerificationService {
 		});
 
 		if (!emailResult.success) {
-			this.#logger.error(
-				`Failed to send verification email to ${email}: ${emailResult.error}`,
-			);
+			this.#logger.error(`Failed to send verification email to ${email}: ${emailResult.error}`);
 			// 이메일 발송 실패해도 예외를 던지지 않음 (사용자는 재발송 가능)
 		}
 	}
 
-	async createAndSendPasswordReset(
-		userId: string,
-		email: string,
-	): Promise<VerificationCodeResult> {
+	async createAndSendPasswordReset(userId: string, email: string): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
 		await this.#checkResendCooldown(userId, "PASSWORD_RESET");
 
 		// 기존 미사용 인증 코드 무효화
-		await this.verificationRepository.invalidateAllByUserIdAndType(
-			userId,
-			"PASSWORD_RESET",
-		);
+		await this.verificationRepository.invalidateAllByUserIdAndType(userId, "PASSWORD_RESET");
 
 		// 새 인증 코드 생성
 		const result = await this.#createVerificationCode(userId, "PASSWORD_RESET");
@@ -98,27 +81,19 @@ export class VerificationService {
 		});
 
 		if (!emailResult.success) {
-			this.#logger.error(
-				`Failed to send password reset email to ${email}: ${emailResult.error}`,
-			);
+			this.#logger.error(`Failed to send password reset email to ${email}: ${emailResult.error}`);
 		}
 
 		this.#logger.log(`Password reset code created for user ${userId}`);
 		return result;
 	}
 
-	async createAndSendPasswordSetup(
-		userId: string,
-		email: string,
-	): Promise<VerificationCodeResult> {
+	async createAndSendPasswordSetup(userId: string, email: string): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
 		await this.#checkResendCooldown(userId, "PASSWORD_SETUP");
 
 		// 기존 미사용 인증 코드 무효화
-		await this.verificationRepository.invalidateAllByUserIdAndType(
-			userId,
-			"PASSWORD_SETUP",
-		);
+		await this.verificationRepository.invalidateAllByUserIdAndType(userId, "PASSWORD_SETUP");
 
 		// 새 인증 코드 생성
 		const result = await this.#createVerificationCode(userId, "PASSWORD_SETUP");
@@ -130,9 +105,7 @@ export class VerificationService {
 		});
 
 		if (!emailResult.success) {
-			this.#logger.error(
-				`Failed to send password setup email to ${email}: ${emailResult.error}`,
-			);
+			this.#logger.error(`Failed to send password setup email to ${email}: ${emailResult.error}`);
 		}
 
 		this.#logger.log(`Password setup code created for user ${userId}`);
@@ -140,14 +113,9 @@ export class VerificationService {
 	}
 
 	// 브루트포스 보호: 최대 시도 횟수 초과 시 검증 거부, 실패 시 시도 횟수 증가
-	async verifyCode(
-		userId: string,
-		code: string,
-		type: VerificationType,
-	): Promise<boolean> {
+	async verifyCode(userId: string, code: string, type: VerificationType): Promise<boolean> {
 		// 해당 사용자의 유효한 인증 코드 조회 (시도 횟수 포함)
-		const verification =
-			await this.verificationRepository.findValidByUserIdAndType(userId, type);
+		const verification = await this.verificationRepository.findValidByUserIdAndType(userId, type);
 
 		// 유효한 인증 코드가 없음
 		if (!verification) {
@@ -181,20 +149,14 @@ export class VerificationService {
 		return true;
 	}
 
-	async #checkResendCooldown(
-		userId: string,
-		type: VerificationType,
-	): Promise<void> {
-		const cooldownSince = subtractSeconds(
-			VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
-		);
+	async #checkResendCooldown(userId: string, type: VerificationType): Promise<void> {
+		const cooldownSince = subtractSeconds(VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
 
-		const recentCount =
-			await this.verificationRepository.countRecentByUserIdAndType(
-				userId,
-				type,
-				cooldownSince,
-			);
+		const recentCount = await this.verificationRepository.countRecentByUserIdAndType(
+			userId,
+			type,
+			cooldownSince,
+		);
 
 		if (recentCount > 0) {
 			throw new ApplicationException(ErrorCode.VERIFY_0753, {
@@ -209,10 +171,7 @@ export class VerificationService {
 	): Promise<VerificationCodeResult> {
 		// 6자리 랜덤 숫자 생성 + SHA-256 해시(도메인 값 객체가 소유)
 		const generatedCode = this.verificationCodeSecurity.generate();
-		const verificationCode = VerificationCode.create(
-			generatedCode.plaintext,
-			generatedCode.digest,
-		);
+		const verificationCode = VerificationCode.create(generatedCode.plaintext, generatedCode.digest);
 
 		// 만료 시간 계산
 		const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);

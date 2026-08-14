@@ -75,15 +75,13 @@ export const CacheKeys = {
 	 * 푸시 토큰 캐시 키
 	 * @example push:tokens:user_123
 	 */
-	pushTokens: (userId: string) =>
-		cacheKey("notification", "push-tokens", userId),
+	pushTokens: (userId: string) => cacheKey("notification", "push-tokens", userId),
 
 	/**
 	 * 사용자 설정 캐시 키
 	 * @example user:preference:user_123
 	 */
-	userPreference: (userId: string) =>
-		cacheKey("user-settings", "preference", userId),
+	userPreference: (userId: string) => cacheKey("user-settings", "preference", userId),
 
 	/**
 	 * 친구 수 캐시 키
@@ -95,8 +93,7 @@ export const CacheKeys = {
 	 * 읽지 않은 알림 수 캐시 키
 	 * @example notification:unread:user_123
 	 */
-	unreadCount: (userId: string) =>
-		cacheKey("notification", "unread-count", userId),
+	unreadCount: (userId: string) => cacheKey("notification", "unread-count", userId),
 
 	/**
 	 * 활성 타임존 목록 캐시 키 (pushEnabled=true 유저만)
@@ -126,8 +123,7 @@ export const CacheKeys = {
 	 * 특정 사용자의 모든 친구 관계 캐시 패턴
 	 * @example friends:mutual:user_1:*
 	 */
-	mutualFriendPattern: (userId: string) =>
-		cachePattern("follow", "mutual", userId),
+	mutualFriendPattern: (userId: string) => cachePattern("follow", "mutual", userId),
 
 	/**
 	 * 특정 소유자의 친구 공개 투두 캐시 전체 패턴

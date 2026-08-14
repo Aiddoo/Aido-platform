@@ -1,5 +1,7 @@
 import { TestBed } from "@suites/unit";
+
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import { FeatureDiscoveryConfigAdapter } from "./feature-discovery-config.adapter";
 
 describe("FeatureDiscoveryConfigAdapter — environment kill switch", () => {

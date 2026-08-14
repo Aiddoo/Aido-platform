@@ -5,11 +5,9 @@
  */
 
 import { TestBed } from "@suites/unit";
+
 import { TodoCreatedEvent } from "../../domain/events/todo-created.event";
-import {
-	TODO_REMINDER,
-	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
 import { TodoCreatedHandler } from "./todo-created.handler";
 
 describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
@@ -38,11 +36,7 @@ describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
 		await handler.handle(new TodoCreatedEvent(1, "user-123", scheduledTime));
 
 		// Then
-		expect(todoReminder.scheduleReminder).toHaveBeenCalledWith(
-			1,
-			scheduledTime,
-			"user-123",
-		);
+		expect(todoReminder.scheduleReminder).toHaveBeenCalledWith(1, scheduledTime, "user-123");
 	});
 
 	it("scheduledTime이 null이면 리마인더를 스케줄하지 않는다", async () => {
@@ -62,8 +56,8 @@ describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
 		jest.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
 
 		// When & Then - handler에서 성공으로 삼키지 않음
-		await expect(
-			handler.handle(new TodoCreatedEvent(1, "user-123", new Date())),
-		).rejects.toBe(error);
+		await expect(handler.handle(new TodoCreatedEvent(1, "user-123", new Date()))).rejects.toBe(
+			error,
+		);
 	});
 });

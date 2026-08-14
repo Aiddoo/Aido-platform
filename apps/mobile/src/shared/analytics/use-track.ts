@@ -1,6 +1,7 @@
 import { useAnalytics, useFeatureAttribution } from '@src/bootstrap/providers/di-context';
 import type { AnalyticsEventParams } from '@src/core/ports/analytics';
 import { useCallback } from 'react';
+
 import type { AppEventMap } from './events';
 import type { FeatureKey } from './events/growth.events';
 import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from './feature-attribution';

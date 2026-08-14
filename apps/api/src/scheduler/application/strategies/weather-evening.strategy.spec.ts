@@ -13,6 +13,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationSender } from "@/notification";
 import type { WeatherForecast } from "@/weather";
 import { WeatherForecastAccess } from "@/weather";
@@ -36,9 +37,7 @@ const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
 	...overrides,
 });
 
-const makeForecast = (
-	overrides?: Partial<WeatherForecast>,
-): WeatherForecast => ({
+const makeForecast = (overrides?: Partial<WeatherForecast>): WeatherForecast => ({
 	date: new Date("2024-01-17"),
 	skyCondition: "CLOUDY",
 	precipitationType: "RAIN",
@@ -61,9 +60,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 	beforeEach(async () => {
 		jest.spyOn(Math, "random").mockReturnValue(0);
 
-		const { unit, unitRef } = await TestBed.solitary(
-			WeatherEveningStrategy,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(WeatherEveningStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(WEATHER_REMINDER_READER);
@@ -100,9 +97,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 
 		const forecastMap = new Map<string, WeatherForecast>();
 		forecastMap.set("60:127", makeForecast());
-		weatherForecastAccess.getForecastsByGridBatch.mockResolvedValue(
-			forecastMap,
-		);
+		weatherForecastAccess.getForecastsByGridBatch.mockResolvedValue(forecastMap);
 
 		// When
 		const result = await strategy.execute(makeCtx());

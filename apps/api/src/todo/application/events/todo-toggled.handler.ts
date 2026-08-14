@@ -1,18 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+
 import { TODO_EVENTS } from "../../domain/events/todo-event-names";
 import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
-import {
-	isAllCompletedToday,
-	milestoneForCount,
-} from "../../domain/services/completion-policy";
+import { isAllCompletedToday, milestoneForCount } from "../../domain/services/completion-policy";
 import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
 import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
-import {
-	TODO_NOTIFICATION,
-	type TodoNotificationPort,
-} from "../ports/todo-notification.port";
+import { TODO_NOTIFICATION, type TodoNotificationPort } from "../ports/todo-notification.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -77,11 +73,7 @@ export class TodoToggledHandler {
 		}
 	}
 
-	async #recordStreakSafely(
-		userId: string,
-		completed: boolean,
-		timezone: string,
-	): Promise<void> {
+	async #recordStreakSafely(userId: string, completed: boolean, timezone: string): Promise<void> {
 		try {
 			await this.streakPort.recordTodoToggle(userId, completed, timezone);
 		} catch (error) {
@@ -95,16 +87,10 @@ export class TodoToggledHandler {
 	/**
 	 * 오늘 할일 전체 완료 시 친구들에게 알림 큐에 등록
 	 */
-	async #checkAndEnqueueFriendCompleted(
-		userId: string,
-		timezone: string,
-	): Promise<void> {
+	async #checkAndEnqueueFriendCompleted(userId: string, timezone: string): Promise<void> {
 		try {
 			const today = todayInTimezone(timezone);
-			const stats = await this.todoReadRepository.getTodayTodoStats(
-				userId,
-				today,
-			);
+			const stats = await this.todoReadRepository.getTodayTodoStats(userId, today);
 
 			if (isAllCompletedToday(stats)) {
 				const [friendIds, userName] = await Promise.all([
@@ -120,9 +106,7 @@ export class TodoToggledHandler {
 						timezone,
 					});
 
-					this.#logger.log(
-						`Friend completed event enqueued for ${friendIds.length} friends`,
-					);
+					this.#logger.log(`Friend completed event enqueued for ${friendIds.length} friends`);
 				}
 			}
 		} catch (error) {

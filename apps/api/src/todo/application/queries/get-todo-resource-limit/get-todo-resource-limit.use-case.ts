@@ -1,5 +1,6 @@
 import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -27,9 +28,7 @@ export class GetTodoResourceLimitUseCase {
 		private readonly todoReadRepository: TodoReadRepositoryPort,
 	) {}
 
-	async execute(
-		input: GetTodoResourceLimitInput,
-	): Promise<TodoResourceLimitResult> {
+	async execute(input: GetTodoResourceLimitInput): Promise<TodoResourceLimitResult> {
 		if (input.categoryId) {
 			const activeCount = await this.todoReadRepository.countActiveByCategory(
 				input.userId,

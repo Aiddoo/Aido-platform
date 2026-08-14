@@ -6,7 +6,9 @@
 
 import { ErrorCode } from "@aido/errors";
 import { TODO_ITEM_LIMITS } from "@aido/validators";
+
 import { DomainException } from "@/shared/domain";
+
 import { TodoCategoryChangedEvent } from "../events/todo-category-changed.event";
 import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
@@ -14,16 +16,11 @@ import { TodoToggledEvent } from "../events/todo-toggled.event";
 import { TodoUpdatedEvent } from "../events/todo-updated.event";
 import { TodoVisibilityChangedEvent } from "../events/todo-visibility-changed.event";
 import { TodoId } from "../value-objects/todo-id.vo";
-import {
-	TodoSchedule,
-	type TodoScheduleProps,
-} from "../value-objects/todo-schedule.vo";
-import { Todo, type TodoProps } from "./todo.aggregate";
+import { TodoSchedule, type TodoScheduleProps } from "../value-objects/todo-schedule.vo";
 import { TodoItem } from "./todo-item.entity";
+import { Todo, type TodoProps } from "./todo.aggregate";
 
-function buildSchedule(
-	overrides: Partial<TodoScheduleProps> = {},
-): TodoSchedule {
+function buildSchedule(overrides: Partial<TodoScheduleProps> = {}): TodoSchedule {
 	return TodoSchedule.reconstitute({
 		startDate: new Date("2026-02-22"),
 		endDate: null,
@@ -172,9 +169,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
 		it("미완료로 전환하면 completed=false, completedAt이 null로 초기화된다", () => {
 			// Given - 완료 상태의 할 일
-			const todo = Todo.reconstitute(
-				buildProps({ completed: true, completedAt: new Date() }),
-			);
+			const todo = Todo.reconstitute(buildProps({ completed: true, completedAt: new Date() }));
 
 			// When - 미완료로 토글하면
 			const changed = todo.toggleComplete(false, "UTC");
@@ -259,9 +254,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
 		it("완료 상태인 할 일의 제목만 수정해도 이벤트 completed는 true다 (명령 에코가 아닌 사실)", () => {
 			// Given - 완료 상태의 할 일
-			const todo = Todo.reconstitute(
-				buildProps({ completed: true, completedAt: new Date() }),
-			);
+			const todo = Todo.reconstitute(buildProps({ completed: true, completedAt: new Date() }));
 
 			// When - 완료 필드 없이 제목만 수정
 			todo.updateDetails({ title: "새 제목" });
@@ -300,9 +293,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
 		it("완료→미완료 전이 시 completedAt을 null로 초기화한다", () => {
 			// Given - 완료 할 일
-			const todo = Todo.reconstitute(
-				buildProps({ completed: true, completedAt: new Date() }),
-			);
+			const todo = Todo.reconstitute(buildProps({ completed: true, completedAt: new Date() }));
 
 			// When
 			todo.updateDetails({ completed: false });
@@ -343,8 +334,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 					schedule: buildSchedule({ startDate: new Date("2026-02-22") }),
 				}),
 			);
-			const update = () =>
-				todo.updateDetails({ endDate: new Date("2026-02-20") });
+			const update = () => todo.updateDetails({ endDate: new Date("2026-02-20") });
 
 			// When & Then - 머지된 일정 불변식 위반 + 상태·이벤트 변화 없음
 			expect(update).toThrow(DomainException);
@@ -482,9 +472,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 	describe("planItemAddition", () => {
 		it("보유 항목의 최대 sortOrder + 1로 추가 계획을 반환한다", () => {
 			// Given - sortOrder 0, 3 항목 보유 (구멍이 있어도 max 기준)
-			const todo = Todo.reconstitute(
-				buildProps({ items: [buildItem(10, 0), buildItem(11, 3)] }),
-			);
+			const todo = Todo.reconstitute(buildProps({ items: [buildItem(10, 0), buildItem(11, 3)] }));
 
 			// When
 			const plan = todo.planItemAddition("새 항목");
@@ -506,9 +494,8 @@ describe("Todo — 할 일 애그리게잇", () => {
 
 		it("항목 수가 MAX_PER_TODO에 도달하면 DomainException(TODO_0821)을 상세 정보와 함께 던진다", () => {
 			// Given - 한도까지 채운 항목
-			const fullItems = Array.from(
-				{ length: TODO_ITEM_LIMITS.MAX_PER_TODO },
-				(_, index) => buildItem(index + 1, index),
+			const fullItems = Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO }, (_, index) =>
+				buildItem(index + 1, index),
 			);
 			const todo = Todo.reconstitute(buildProps({ items: fullItems }));
 			const plan = () => todo.planItemAddition("초과 항목");
@@ -533,9 +520,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 			const todo = Todo.reconstitute(buildProps());
 
 			// When & Then
-			expect(() => todo.planItemAddition("가".repeat(201))).toThrow(
-				"제목은 1~200자여야 합니다.",
-			);
+			expect(() => todo.planItemAddition("가".repeat(201))).toThrow("제목은 1~200자여야 합니다.");
 		});
 	});
 
@@ -574,9 +559,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 			const todo = Todo.reconstitute(buildProps({ items: [item] }));
 
 			// When & Then
-			expect(() => todo.updateItem(10, { title: "가".repeat(201) })).toThrow(
-				DomainException,
-			);
+			expect(() => todo.updateItem(10, { title: "가".repeat(201) })).toThrow(DomainException);
 			expect(item.getTitle()).toBe("항목 10");
 		});
 	});
@@ -584,9 +567,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 	describe("removeItem", () => {
 		it("항목을 애그리게잇에서 제거한다", () => {
 			// Given
-			const todo = Todo.reconstitute(
-				buildProps({ items: [buildItem(10, 0), buildItem(11, 1)] }),
-			);
+			const todo = Todo.reconstitute(buildProps({ items: [buildItem(10, 0), buildItem(11, 1)] }));
 
 			// When
 			todo.removeItem(10);
@@ -657,9 +638,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
 		it("모르는 항목 ID가 섞이면 DomainException(TODO_0822)을 itemId와 함께 던진다", () => {
 			// Given - 항목 [1,2] 보유인데 999 포함
-			const todo = Todo.reconstitute(
-				buildProps({ items: [buildItem(1, 0), buildItem(2, 1)] }),
-			);
+			const todo = Todo.reconstitute(buildProps({ items: [buildItem(1, 0), buildItem(2, 1)] }));
 			const validate = () => todo.validateItemsReorder([999, 1]);
 
 			// When & Then
@@ -703,9 +682,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 		it("반환된 Date를 변조해도 애그리게잇 상태는 영향받지 않는다 (방어 복사)", () => {
 			// Given
 			const completedAt = new Date("2026-01-01T00:00:00.000Z");
-			const todo = Todo.reconstitute(
-				buildProps({ completed: true, completedAt }),
-			);
+			const todo = Todo.reconstitute(buildProps({ completed: true, completedAt }));
 
 			// When - 스냅샷·getter가 반환한 Date를 임의로 변조
 			todo.toPersistence().completedAt?.setFullYear(1999);

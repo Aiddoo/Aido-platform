@@ -37,10 +37,7 @@ export class AcceptFriendRequestUseCase {
 	async execute(input: AcceptFriendRequestInput): Promise<FollowWithUser> {
 		const { userId, requesterUserId } = input;
 
-		const request = await this.followRepository.findByFollowerAndFollowing(
-			requesterUserId,
-			userId,
-		);
+		const request = await this.followRepository.findByFollowerAndFollowing(requesterUserId, userId);
 		if (!request?.isPending()) {
 			throw new ApplicationException(ErrorCode.FOLLOW_0903, {
 				targetUserId: requesterUserId,
@@ -56,21 +53,17 @@ export class AcceptFriendRequestUseCase {
 			request.accept(maxSortRequester + 1);
 			await this.followRepository.update(request.id, request.toUpdate());
 
-			const existingReverse =
-				await this.followRepository.findByFollowerAndFollowing(
-					userId,
-					requesterUserId,
-				);
+			const existingReverse = await this.followRepository.findByFollowerAndFollowing(
+				userId,
+				requesterUserId,
+			);
 
 			if (existingReverse) {
 				existingReverse.accept(maxSortUser + 1);
 			}
 
 			const createdFollow = existingReverse
-				? await this.followRepository.update(
-						existingReverse.id,
-						existingReverse.toUpdate(),
-					)
+				? await this.followRepository.update(existingReverse.id, existingReverse.toUpdate())
 				: await this.followRepository.create({
 						followerId: userId,
 						followingId: requesterUserId,
@@ -78,9 +71,7 @@ export class AcceptFriendRequestUseCase {
 						sortOrder: maxSortUser + 1,
 					});
 
-			const followWithUser = await this.followRepository.findByIdWithUser(
-				createdFollow.id,
-			);
+			const followWithUser = await this.followRepository.findByIdWithUser(createdFollow.id);
 			if (!followWithUser) {
 				throw new ApplicationException(ErrorCode.SYS_0001, {
 					detail: "Failed to retrieve created follow with user info",
@@ -90,16 +81,12 @@ export class AcceptFriendRequestUseCase {
 			return followWithUser;
 		});
 
-		this.#logger.log(
-			`Friend request accepted: ${requesterUserId} <-> ${userId}`,
-		);
+		this.#logger.log(`Friend request accepted: ${requesterUserId} <-> ${userId}`);
 
 		await this.effects.invalidateFriendshipCaches(userId, requesterUserId);
 
-		const userName =
-			myFollow.follower.profile?.name ?? myFollow.follower.userTag;
-		const requesterName =
-			myFollow.following.profile?.name ?? myFollow.following.userTag;
+		const userName = myFollow.follower.profile?.name ?? myFollow.follower.userTag;
+		const requesterName = myFollow.following.profile?.name ?? myFollow.following.userTag;
 
 		this.effects.notifyMutual({
 			userId,

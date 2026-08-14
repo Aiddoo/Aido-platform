@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type Redis from "ioredis";
-import { REDIS_COMMAND_CLIENT } from "../../redis/redis.constants";
+
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
+import { REDIS_COMMAND_CLIENT } from "../../redis/redis.constants";
 import type { IDedupProvider } from "../interfaces/dedup.interface";
 
 /**
@@ -46,11 +47,7 @@ export class RedisDedupAdapter implements IDedupProvider {
 		}
 	}
 
-	async addMembers(
-		setKey: string,
-		members: string[],
-		ttlMs: number,
-	): Promise<void> {
+	async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
 		if (members.length === 0) return;
 
 		const key = this.#key(setKey);

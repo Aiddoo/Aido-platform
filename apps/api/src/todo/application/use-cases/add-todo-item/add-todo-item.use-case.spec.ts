@@ -17,20 +17,19 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { Todo } from "../../../domain/entities/todo.aggregate";
+
 import { TodoItem } from "../../../domain/entities/todo-item.entity";
+import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
-import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { AddTodoItemUseCase } from "./add-todo-item.use-case";
 
 function buildItem(id: number, sortOrder: number): TodoItem {
@@ -68,9 +67,7 @@ function buildEntity(items: TodoItem[] = []): Todo {
 }
 
 function buildResponse(): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("user-123").withId(1).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
 }
 
 describe("AddTodoItemUseCase — 하위 항목 추가 핸들러", () => {
@@ -90,8 +87,7 @@ describe("AddTodoItemUseCase — 하위 항목 추가 핸들러", () => {
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 	});
 
 	it("한도 여유가 있으면 맨 뒤 sortOrder로 항목을 생성하고 부모를 재조회한다", async () => {
@@ -118,9 +114,8 @@ describe("AddTodoItemUseCase — 하위 항목 추가 핸들러", () => {
 
 	it("항목 한도를 초과하면 DomainException(TODO_0821)을 던진다", async () => {
 		// Given - 한도 도달 (애그리게잇이 보유 항목 수로 판단)
-		const fullItems = Array.from(
-			{ length: TODO_ITEM_LIMITS.MAX_PER_TODO },
-			(_, index) => buildItem(index + 1, index),
+		const fullItems = Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO }, (_, index) =>
+			buildItem(index + 1, index),
 		);
 		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity(fullItems));
 

@@ -8,6 +8,4 @@ const getFriendTodosQuerySchema = getTodosQuerySchema.pick({
 	endDate: true,
 });
 
-export class GetFriendTodosQueryDto extends createZodDto(
-	getFriendTodosQuerySchema,
-) {}
+export class GetFriendTodosQueryDto extends createZodDto(getFriendTodosQuerySchema) {}

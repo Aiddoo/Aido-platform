@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
+
 import { VStack } from './VStack';
 
 describe('VStack 컴포넌트', () => {

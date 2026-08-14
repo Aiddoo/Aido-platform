@@ -16,17 +16,11 @@ const BILLING_TIMEZONE = "Asia/Seoul";
  * 마지막 리셋 시각이 참조 시점과 KST 기준 다른 달(YYYY-MXX)에 속하면 새로운 달.
  * 윤년/30·31일 경계는 `toIsoMonthId`가 월 식별자로 비교하므로 자동 처리된다.
  */
-export function isNewBillingMonth(
-	lastReset: Date | null,
-	reference: Date,
-): boolean {
+export function isNewBillingMonth(lastReset: Date | null, reference: Date): boolean {
 	if (!lastReset) {
 		return true;
 	}
-	return (
-		toIsoMonthId(reference, BILLING_TIMEZONE) !==
-		toIsoMonthId(lastReset, BILLING_TIMEZONE)
-	);
+	return toIsoMonthId(reference, BILLING_TIMEZONE) !== toIsoMonthId(lastReset, BILLING_TIMEZONE);
 }
 
 /**
@@ -35,7 +29,5 @@ export function isNewBillingMonth(
  * @example KST 2026-04-18 14:00 → "2026-04-30T15:00:00.000Z" (KST 5/1 00:00)
  */
 export function nextBillingResetIso(reference: Date): string {
-	return toISOString(
-		firstOfMonthInTimezone(addMonths(1, reference), BILLING_TIMEZONE),
-	);
+	return toISOString(firstOfMonthInTimezone(addMonths(1, reference), BILLING_TIMEZONE));
 }

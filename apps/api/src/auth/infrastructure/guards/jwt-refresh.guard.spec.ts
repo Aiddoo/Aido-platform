@@ -47,16 +47,12 @@ describe("JwtRefreshGuard — 가드", () => {
 			const error = new Error("Refresh token expired");
 
 			// When & Then
-			expect(() => guard.handleRequest(error, false)).toThrow(
-				ApplicationException,
-			);
+			expect(() => guard.handleRequest(error, false)).toThrow(ApplicationException);
 		});
 
 		it("사용자가 false이면 ApplicationException을 던져야 한다", () => {
 			// Given & When & Then
-			expect(() => guard.handleRequest(null, false)).toThrow(
-				ApplicationException,
-			);
+			expect(() => guard.handleRequest(null, false)).toThrow(ApplicationException);
 		});
 
 		it("에러 발생 시 AUTH_0104 에러 코드를 반환해야 한다", () => {

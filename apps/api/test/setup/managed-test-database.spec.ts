@@ -9,24 +9,18 @@ describe("관리형 테스트 DB 수명주기", () => {
 		["win32", "pnpm.cmd"],
 		["darwin", "pnpm"],
 		["linux", "pnpm"],
-	] as const)(
-		"%s에서는 migration 실행 파일로 %s을 사용해야 한다",
-		(platform, expected) => {
-			expect(resolvePnpmCommand(platform)).toBe(expected);
-		},
-	);
+	] as const)("%s에서는 migration 실행 파일로 %s을 사용해야 한다", (platform, expected) => {
+		expect(resolvePnpmCommand(platform)).toBe(expected);
+	});
 
 	it("관리 마커가 없는 DATABASE_URL을 거부해야 한다", () => {
 		// Given - 이름만 테스트 DB처럼 보이는 비관리 URL
 		const env = {
-			DATABASE_URL:
-				"postgresql://postgres:postgres@localhost:5432/aido_test_local",
+			DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/aido_test_local",
 		};
 
 		// When & Then - 명시적인 관리 마커가 없으면 거부
-		expect(() => assertManagedTestDatabaseEnvironment(env)).toThrow(
-			"AIDO_TEST_DB_MANAGED=1",
-		);
+		expect(() => assertManagedTestDatabaseEnvironment(env)).toThrow("AIDO_TEST_DB_MANAGED=1");
 	});
 
 	it("허용된 이름이 아닌 DATABASE_URL을 거부해야 한다", () => {
@@ -37,9 +31,7 @@ describe("관리형 테스트 DB 수명주기", () => {
 		};
 
 		// When & Then - aido_test_<run-id> 규칙을 만족하지 않으면 거부
-		expect(() => assertManagedTestDatabaseEnvironment(env)).toThrow(
-			"aido_test_<run-id>",
-		);
+		expect(() => assertManagedTestDatabaseEnvironment(env)).toThrow("aido_test_<run-id>");
 	});
 
 	it("migration 실패 시 시작한 컨테이너를 중지해야 한다", async () => {
@@ -54,8 +46,7 @@ describe("관리형 테스트 DB 수명주기", () => {
 				env,
 				createRunId: () => "abc123",
 				startContainer: async () => ({
-					getConnectionUri: () =>
-						"postgresql://test:test@localhost:5432/aido_test_abc123",
+					getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_abc123",
 					stop,
 				}),
 				migrate,
@@ -72,9 +63,7 @@ describe("관리형 테스트 DB 수명주기", () => {
 		const stopError = new Error("stop failed");
 		const stop = jest.fn().mockRejectedValue(stopError);
 		const env: NodeJS.ProcessEnv = {};
-		const consoleError = jest
-			.spyOn(console, "error")
-			.mockImplementation(() => undefined);
+		const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
 
 		try {
 			// When & Then - 원래 오류를 전파하고 정리 오류는 진단 가능하게 기록
@@ -83,8 +72,7 @@ describe("관리형 테스트 DB 수명주기", () => {
 					env,
 					createRunId: () => "abc123",
 					startContainer: async () => ({
-						getConnectionUri: () =>
-							"postgresql://test:test@localhost:5432/aido_test_abc123",
+						getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_abc123",
 						stop,
 					}),
 					migrate: async () => {
@@ -115,8 +103,7 @@ describe("관리형 테스트 DB 수명주기", () => {
 			env,
 			createRunId: () => "def456",
 			startContainer: async () => ({
-				getConnectionUri: () =>
-					"postgresql://test:test@localhost:5432/aido_test_def456",
+				getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_def456",
 				stop,
 			}),
 			migrate,
@@ -124,9 +111,7 @@ describe("관리형 테스트 DB 수명주기", () => {
 
 		// Then - migration은 한 번만 실행되고 teardown에서 컨테이너 종료
 		expect(migrate).toHaveBeenCalledTimes(1);
-		expect(migrate).toHaveBeenCalledWith(
-			"postgresql://test:test@localhost:5432/aido_test_def456",
-		);
+		expect(migrate).toHaveBeenCalledWith("postgresql://test:test@localhost:5432/aido_test_def456");
 		await handle.stop();
 		expect(stop).toHaveBeenCalledTimes(1);
 	});

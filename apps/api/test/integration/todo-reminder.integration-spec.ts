@@ -23,15 +23,12 @@ import { NotificationBuilder, TodoBuilder } from "@test/builders";
 import { asJob } from "@test/mocks/bull-job.mock";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
+
 import { NotificationSender } from "@/notification";
 import { TodoReminderProcessor } from "@/scheduler";
 import { TODO_REMINDER_READER } from "@/scheduler/application/ports/todo-reminder-reader.port";
 
-function createMockJob(data: {
-	todoId: number;
-	userId: string;
-	stageLabel: string;
-}): Job {
+function createMockJob(data: { todoId: number; userId: string; stageLabel: string }): Job {
 	return asJob({ data, id: "job-1", name: "todo-reminder" });
 }
 
@@ -209,8 +206,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				await processor.process(job);
 
 				// Then - 각 스테이지별 알림이 생성되어야 함
-				const callArg =
-					mockNotificationService.createAndSend.mock.calls[0]?.[0];
+				const callArg = mockNotificationService.createAndSend.mock.calls[0]?.[0];
 				sentMessages.push({
 					title: callArg.title,
 					body: callArg.body,

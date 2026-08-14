@@ -2,6 +2,7 @@ import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { forwardRef } from 'react';
 import type { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
+
 import { TextArea } from './TextArea';
 import type { TextAreaProps } from './TextArea.types';
 

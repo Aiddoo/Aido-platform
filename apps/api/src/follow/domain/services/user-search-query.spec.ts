@@ -6,6 +6,7 @@
 import { ErrorCode } from "@aido/errors";
 
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { normalizeUserSearchQuery } from "./user-search-query";
 
 describe("normalizeUserSearchQuery — 검색어 정규화", () => {

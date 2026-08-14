@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import type { RequestMetadata } from "@/auth/application/types";
 import { assertNotDeleted } from "@/auth/application/utils/auth-validation.utils";
 import {
@@ -10,10 +11,8 @@ import {
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { maskEmail } from "@/shared/domain/utils/mask.util";
-import {
-	AUTH_PASSWORD_HASHER,
-	type AuthPasswordHasherPort,
-} from "../ports/auth-crypto.port";
+
+import { AUTH_PASSWORD_HASHER, type AuthPasswordHasherPort } from "../ports/auth-crypto.port";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_SECURITY_LOG_REPOSITORY,
@@ -45,10 +44,7 @@ export class PasswordWorkflow {
 		private readonly verificationService: VerificationService,
 	) {}
 
-	async forgotPassword(
-		email: string,
-		metadata?: RequestMetadata,
-	): Promise<{ message: string }> {
+	async forgotPassword(email: string, metadata?: RequestMetadata): Promise<{ message: string }> {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
@@ -92,10 +88,7 @@ export class PasswordWorkflow {
 		assertNotDeleted(user);
 
 		// Credential Account 조회 (소셜 전용 계정이면 비밀번호 재설정 불가)
-		const account = await this.accountRepository.findByUserIdAndProvider(
-			user.id,
-			"CREDENTIAL",
-		);
+		const account = await this.accountRepository.findByUserIdAndProvider(user.id, "CREDENTIAL");
 		if (!account) {
 			throw new ApplicationException(ErrorCode.USER_0613, { userId: user.id });
 		}
@@ -106,11 +99,7 @@ export class PasswordWorkflow {
 		// 트랜잭션으로 인증 검증 + 비밀번호 변경 + 세션 무효화 + 로그 기록
 		await this.uow.run(async () => {
 			// 인증 코드 검증 (PASSWORD_RESET 타입)
-			await this.verificationService.verifyCode(
-				user.id,
-				code,
-				"PASSWORD_RESET",
-			);
+			await this.verificationService.verifyCode(user.id, code, "PASSWORD_RESET");
 
 			// 비밀번호 업데이트
 			await this.accountRepository.updatePassword(user.id, hashedPassword);
@@ -153,19 +142,13 @@ export class PasswordWorkflow {
 		assertNotDeleted(user);
 
 		// Credential Account 조회
-		const account = await this.accountRepository.findByUserIdAndProvider(
-			userId,
-			"CREDENTIAL",
-		);
+		const account = await this.accountRepository.findByUserIdAndProvider(userId, "CREDENTIAL");
 		if (!account?.password) {
 			throw new ApplicationException(ErrorCode.USER_0613, { userId });
 		}
 
 		// 현재 비밀번호 검증
-		const isValid = await this.passwordService.verify(
-			account.password,
-			currentPassword,
-		);
+		const isValid = await this.passwordService.verify(account.password, currentPassword);
 		if (!isValid) {
 			throw new ApplicationException(ErrorCode.USER_0602);
 		}
@@ -206,19 +189,13 @@ export class PasswordWorkflow {
 		assertNotDeleted(user);
 
 		// 2. CREDENTIAL 계정 존재 여부 확인
-		const account = await this.accountRepository.findByUserIdAndProvider(
-			userId,
-			"CREDENTIAL",
-		);
+		const account = await this.accountRepository.findByUserIdAndProvider(userId, "CREDENTIAL");
 		if (account) {
 			throw new ApplicationException(ErrorCode.USER_0614, { userId });
 		}
 
 		// 3. 인증 코드 생성 및 발송
-		await this.verificationService.createAndSendPasswordSetup(
-			userId,
-			user.email,
-		);
+		await this.verificationService.createAndSendPasswordSetup(userId, user.email);
 
 		return {
 			message: "비밀번호 설정 코드가 이메일로 발송되었습니다.",
@@ -240,11 +217,10 @@ export class PasswordWorkflow {
 		assertNotDeleted(user);
 
 		// 2. CREDENTIAL 계정 존재 여부 확인
-		const existingAccount =
-			await this.accountRepository.findByUserIdAndProvider(
-				userId,
-				"CREDENTIAL",
-			);
+		const existingAccount = await this.accountRepository.findByUserIdAndProvider(
+			userId,
+			"CREDENTIAL",
+		);
 		if (existingAccount) {
 			throw new ApplicationException(ErrorCode.USER_0614, { userId });
 		}
@@ -258,10 +234,7 @@ export class PasswordWorkflow {
 			await this.verificationService.verifyCode(userId, code, "PASSWORD_SETUP");
 
 			// CREDENTIAL 계정 생성
-			await this.accountRepository.createCredentialAccount(
-				userId,
-				hashedPassword,
-			);
+			await this.accountRepository.createCredentialAccount(userId, hashedPassword);
 
 			// 보안 로그 기록
 			await this.securityLogRepository.create({

@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
@@ -8,16 +9,14 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
+
 import type { TodoVisibility } from "../../../domain/entities/todo.aggregate";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 
 /** Todo 공개 범위 변경 입력. */
 export interface UpdateTodoVisibilityInput {
@@ -60,16 +59,11 @@ export class UpdateTodoVisibilityUseCase {
 			}
 
 			todo.changeVisibility(visibility);
-			await this.todoRepository.updateVisibility(
-				id,
-				todo.toPersistence().visibility,
-			);
+			await this.todoRepository.updateVisibility(id, todo.toPersistence().visibility);
 			return todo.pullDomainEvents();
 		});
 
-		this.#logger.log(
-			`Todo visibility updated: ${id} -> ${visibility} for user: ${userId}`,
-		);
+		this.#logger.log(`Todo visibility updated: ${id} -> ${visibility} for user: ${userId}`);
 
 		// 저장(TX 커밋) 완료 후 이벤트 발행 (daily-completion 공개 캐시 무효화 트리거)
 		await this.eventPublisher.publishAll(events);
@@ -78,10 +72,7 @@ export class UpdateTodoVisibilityUseCase {
 		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 응답 재조회
-		const response = await this.todoReadRepository.findByIdAndUserId(
-			id,
-			userId,
-		);
+		const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
 		if (!response) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}

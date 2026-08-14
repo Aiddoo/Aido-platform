@@ -8,10 +8,7 @@
  */
 
 /** JWKS 함수 타입 (createRemoteJWKSet 반환값) */
-export type JWKSFunction = (
-	protectedHeader: unknown,
-	token: unknown,
-) => Promise<unknown>;
+export type JWKSFunction = (protectedHeader: unknown, token: unknown) => Promise<unknown>;
 
 /** 애플리케이션에서 조정 가능한 최소 Remote JWKS 옵션 */
 export interface RemoteJWKSetOptions {
@@ -41,15 +38,10 @@ export async function loadJose(): Promise<JoseWrapper> {
 			jwks: JWKSFunction,
 			options?: { issuer?: string; audience?: string },
 		) =>
-			jose.jwtVerify(
-				jwt,
-				jwks as Parameters<typeof jose.jwtVerify>[1],
-				options,
-			) as Promise<{
+			jose.jwtVerify(jwt, jwks as Parameters<typeof jose.jwtVerify>[1], options) as Promise<{
 				payload: T;
 			}>,
-		isJWTExpiredError: (error: unknown): boolean =>
-			error instanceof jose.errors.JWTExpired,
+		isJWTExpiredError: (error: unknown): boolean => error instanceof jose.errors.JWTExpired,
 		isJWTClaimValidationError: (error: unknown): boolean =>
 			error instanceof jose.errors.JWTClaimValidationFailed,
 	};

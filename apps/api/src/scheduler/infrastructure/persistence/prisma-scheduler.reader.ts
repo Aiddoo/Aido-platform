@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+
 import type { Prisma } from "@/generated/prisma/client";
 import { resolveTemplateLocale } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
@@ -6,6 +7,7 @@ import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type {
 	InactiveWindowParams,
 	ReEngagementReaderPort,
@@ -181,9 +183,7 @@ export class PrismaSchedulerReader
 		});
 	}
 
-	async findLunchNudgeUsers(
-		params: FixedTimeReminderParams,
-	): Promise<UserIdRow[]> {
+	async findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]> {
 		const { tz, today, tomorrow } = params;
 		return this.database.user.findMany({
 			where: {
@@ -201,9 +201,7 @@ export class PrismaSchedulerReader
 		});
 	}
 
-	async findWeeklyReportRecipients(
-		params: PeriodReportParams,
-	): Promise<UserIdRow[]> {
+	async findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]> {
 		const { tz, periodStart, periodEnd } = params;
 		return this.database.user.findMany({
 			where: {
@@ -215,9 +213,7 @@ export class PrismaSchedulerReader
 		});
 	}
 
-	async findMonthlyReportRecipients(
-		params: PeriodReportParams,
-	): Promise<UserIdRow[]> {
+	async findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]> {
 		const { tz, periodStart, periodEnd } = params;
 		return this.database.user.findMany({
 			where: {
@@ -260,9 +256,7 @@ export class PrismaSchedulerReader
 		});
 	}
 
-	async countCompletedTodosByUsers(
-		userIds: string[],
-	): Promise<UserTodoCount[]> {
+	async countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]> {
 		const counts = await this.database.todo.groupBy({
 			by: ["userId"],
 			where: { userId: { in: userIds }, completed: true },
@@ -388,9 +382,7 @@ export class PrismaSchedulerReader
 		});
 	}
 
-	async findStreakAtRiskUsers(
-		params: TodayRangeParams,
-	): Promise<UserWithTodosAndStreak[]> {
+	async findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]> {
 		const { tz, today, tomorrow } = params;
 		return this.database.user.findMany({
 			where: {
@@ -534,9 +526,7 @@ export class PrismaSchedulerReader
 	// WeeklyAchievementStatsReaderPort — 주간 달성 집계
 	// ─────────────────────────────────────────────────────────────
 
-	async groupTotalTodosByUser(
-		params: WeeklyStatsParams,
-	): Promise<UserTodoCount[]> {
+	async groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
 		const { tz, periodStart, periodEnd } = params;
 		const rows = await this.database.todo.groupBy({
 			by: ["userId"],
@@ -549,9 +539,7 @@ export class PrismaSchedulerReader
 		return rows.map((row) => ({ userId: row.userId, count: row._count.id }));
 	}
 
-	async groupCompletedTodosByUser(
-		params: WeeklyStatsParams,
-	): Promise<UserTodoCount[]> {
+	async groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
 		const { tz, periodStart, periodEnd } = params;
 		const rows = await this.database.todo.groupBy({
 			by: ["userId"],
@@ -617,9 +605,7 @@ export class PrismaSchedulerReader
 				select: { timezone: true },
 				distinct: ["timezone"],
 			});
-			return rows.flatMap((row) =>
-				normalizeIanaTimezone(row.timezone) ? [row.timezone] : [],
-			);
+			return rows.flatMap((row) => (normalizeIanaTimezone(row.timezone) ? [row.timezone] : []));
 		});
 	}
 
@@ -640,10 +626,7 @@ export class PrismaSchedulerReader
 	}
 
 	/** kill switch가 켜진 동안 최근 TREATMENT만 legacy engagement에서 제외한다. */
-	#recentTreatmentExclusion(): Pick<
-		Prisma.UserWhereInput,
-		"retentionAssignments"
-	> {
+	#recentTreatmentExclusion(): Pick<Prisma.UserWhereInput, "retentionAssignments"> {
 		if (!this.config.retentionOnboardingV2.enabled) return {};
 		return {
 			retentionAssignments: {

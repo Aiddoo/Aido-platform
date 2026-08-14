@@ -1,7 +1,4 @@
-import type {
-	WeatherConditions,
-	WeatherForecast,
-} from "./weather-provider.port";
+import type { WeatherConditions, WeatherForecast } from "./weather-provider.port";
 
 export const WEATHER_CACHE = Symbol("WEATHER_CACHE");
 
@@ -45,10 +42,7 @@ export interface WeatherCachePort {
 	): Promise<void>;
 
 	/** latest 예보 단건 조회 (프로바이더 실패 시 폴백). */
-	getLatestForecast(
-		gridX: number,
-		gridY: number,
-	): Promise<WeatherForecast | undefined>;
+	getLatestForecast(gridX: number, gridY: number): Promise<WeatherForecast | undefined>;
 
 	/** 정규 예보 배치 조회 (입력 순서 보존). */
 	getForecastBatch(
@@ -65,22 +59,13 @@ export interface WeatherCachePort {
 	): Promise<void>;
 
 	/** latest 예보 배치 조회 (입력 순서 보존). */
-	getLatestForecastBatch(
-		grids: WeatherGridRef[],
-	): Promise<(WeatherForecast | undefined)[]>;
+	getLatestForecastBatch(grids: WeatherGridRef[]): Promise<(WeatherForecast | undefined)[]>;
 
 	/** 날씨 부가정보(체감온도·자외선·일출입·미세먼지) 조회. */
-	getConditions(
-		gridX: number,
-		gridY: number,
-	): Promise<WeatherConditions | undefined>;
+	getConditions(gridX: number, gridY: number): Promise<WeatherConditions | undefined>;
 
 	/** 날씨 부가정보 저장 (1h TTL). */
-	setConditions(
-		gridX: number,
-		gridY: number,
-		conditions: WeatherConditions,
-	): Promise<void>;
+	setConditions(gridX: number, gridY: number, conditions: WeatherConditions): Promise<void>;
 
 	/** 격자 캐시 전체 무효화 (정규 예보 패턴 + latest + conditions). */
 	invalidateGrid(gridX: number, gridY: number): Promise<void>;

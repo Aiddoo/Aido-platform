@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Pressable, Text } from 'react-native';
+
 import { OverlayProvider } from './OverlayProvider';
 import { useOverlay } from './useOverlay';
 import { useOverlayState } from './useOverlayState';

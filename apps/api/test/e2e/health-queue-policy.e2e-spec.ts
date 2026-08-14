@@ -1,5 +1,7 @@
 import request from "supertest";
+
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
+
 import { FakeJobRuntime } from "../mocks/fake-job-runtime";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
@@ -10,8 +12,7 @@ describe("durable job runtime health E2E", () => {
 
 	beforeAll(async () => {
 		ctx = await createE2eApp({
-			customizeBuilder: (builder) =>
-				builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
+			customizeBuilder: (builder) => builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
 			additionalResetters: [() => health.mockClear()],
 		});
 	});
@@ -25,9 +26,7 @@ describe("durable job runtime health E2E", () => {
 	});
 
 	it("PostgreSQL backend이면 기존 200/up health 계약을 유지한다", async () => {
-		const response = await request(ctx.app.getHttpServer())
-			.get("/health")
-			.expect(200);
+		const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
 
 		expect(response.body.data.status).toBe("ok");
 		expect(response.body.data.info.queues).toMatchObject({
@@ -52,9 +51,7 @@ describe("durable job runtime health E2E", () => {
 			queues: {},
 		});
 
-		const response = await request(ctx.app.getHttpServer())
-			.get("/health")
-			.expect(200);
+		const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
 
 		expect(response.body.data.status).toBe("ok");
 		expect(response.body.data.info.queues).toMatchObject({

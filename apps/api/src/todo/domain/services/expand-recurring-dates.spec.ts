@@ -10,11 +10,7 @@ describe("expandRecurringDates — 반복 날짜 확장", () => {
 	it("범위 내에서 지정 요일의 날짜만 반환한다", () => {
 		// Given - 2026-03-01(일) ~ 2026-03-14(토), 월/수/금
 		// When
-		const dates = expandRecurringDates("2026-03-01", "2026-03-14", [
-			"MON",
-			"WED",
-			"FRI",
-		]);
+		const dates = expandRecurringDates("2026-03-01", "2026-03-14", ["MON", "WED", "FRI"]);
 
 		// Then - 2주간 월/수/금 = 6개
 		expect(dates).toEqual([

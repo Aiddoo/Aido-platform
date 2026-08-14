@@ -1,4 +1,5 @@
 import type { ErrorCodeType } from "@aido/errors";
+
 import { ErrorCodedException } from "./error-coded.exception";
 
 /**

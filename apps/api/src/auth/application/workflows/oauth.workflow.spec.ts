@@ -15,15 +15,13 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
 import { asDep, asMock, mockOf } from "@test/mocks";
+
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
 } from "@/auth/application/ports/oauth-identity-provider.port";
-import {
-	LOGIN_FAILURE_REASON,
-	SECURITY_EVENT,
-} from "@/auth/domain/constants/auth.constants";
+import { LOGIN_FAILURE_REASON, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import type { AccountProvider } from "@/auth/domain/types";
 import {
 	AppleOAuthProvider,
@@ -36,6 +34,7 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import {
 	AUTH_CACHE,
 	AUTH_REGISTRATION_NOTIFIER,
@@ -134,9 +133,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			asDep(securityLogRepo),
 			asDep(userRepo),
 		);
-		issueLogin.execute.mockImplementation((input) =>
-			realIssueLogin.execute(input),
-		);
+		issueLogin.execute.mockImplementation((input) => realIssueLogin.execute(input));
 
 		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — 소셜 신규가입
 		// 테스트가 유저·OAuth계정·프로필 생성과 기본값 시딩을 그대로 검증하도록 배선.
@@ -156,9 +153,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			seederStub,
 			retentionStub,
 		);
-		provisionUser.execute.mockImplementation((input) =>
-			realProvisionUser.execute(input),
-		);
+		provisionUser.execute.mockImplementation((input) => realProvisionUser.execute(input));
 
 		// ConfigService 기본 설정
 		setupDefaultConfigService();
@@ -178,34 +173,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		const verifier = asDep<OAuthTokenVerifierService>(tokenVerifier);
 		const realProviders = new Map<AccountProvider, OAuthIdentityProvider>([
 			["APPLE", new AppleOAuthProvider(verifier)],
-			[
-				"GOOGLE",
-				new GoogleOAuthProvider(
-					() => configService.googleOAuth,
-					verifier,
-					logger,
-				),
-			],
-			[
-				"KAKAO",
-				new KakaoOAuthProvider(
-					() => configService.kakaoOAuth,
-					verifier,
-					logger,
-				),
-			],
-			[
-				"NAVER",
-				new NaverOAuthProvider(
-					() => configService.naverOAuth,
-					verifier,
-					logger,
-				),
-			],
+			["GOOGLE", new GoogleOAuthProvider(() => configService.googleOAuth, verifier, logger)],
+			["KAKAO", new KakaoOAuthProvider(() => configService.kakaoOAuth, verifier, logger)],
+			["NAVER", new NaverOAuthProvider(() => configService.naverOAuth, verifier, logger)],
 		]);
-		const registry = unitRef.get<OAuthIdentityProviderRegistry>(
-			OAUTH_IDENTITY_PROVIDER_REGISTRY,
-		);
+		const registry = unitRef.get<OAuthIdentityProviderRegistry>(OAUTH_IDENTITY_PROVIDER_REGISTRY);
 		registry.get = jest.fn((p) => realProviders.get(p));
 	});
 
@@ -247,9 +219,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 	/**
 	 * OAuth 로그인 성공 시나리오 mock 설정 헬퍼
 	 */
-	const setupSuccessfulOAuthLogin = (
-		mockUser: ReturnType<typeof UserBuilder.prototype.build>,
-	) => {
+	const setupSuccessfulOAuthLogin = (mockUser: ReturnType<typeof UserBuilder.prototype.build>) => {
 		asMock(sessionService.createSessionWithTokens).mockResolvedValue({
 			sessionId: "session-123",
 			tokens: mockTokens,
@@ -329,14 +299,8 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 					name: "테스트유저",
 					profileImage: null,
 				});
-				expect(tokenVerifier.verifyAppleToken).toHaveBeenCalledWith(
-					"valid-id-token",
-					undefined,
-				);
-				expect(accountRepo.findByProviderAccountId).toHaveBeenCalledWith(
-					"APPLE",
-					"apple-user-123",
-				);
+				expect(tokenVerifier.verifyAppleToken).toHaveBeenCalledWith("valid-id-token", undefined);
+				expect(accountRepo.findByProviderAccountId).toHaveBeenCalledWith("APPLE", "apple-user-123");
 				expect(userRepo.create).not.toHaveBeenCalled();
 			});
 
@@ -383,10 +347,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				asMock(userRepo.createProfile).mockResolvedValue({});
 
 				// When
-				const result = await service.handleAppleMobileLogin(
-					"valid-id-token",
-					"홍길동",
-				);
+				const result = await service.handleAppleMobileLogin("valid-id-token", "홍길동");
 
 				// Then
 				expect(result.userId).toBe("user-123");
@@ -533,9 +494,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
-				await expect(
-					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(DomainException);
+				await expect(service.handleAppleMobileLogin("valid-id-token")).rejects.toThrow(
+					DomainException,
+				);
 			});
 
 			it("정지된 사용자는 로그인할 수 없다", async () => {
@@ -556,9 +517,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
-				await expect(
-					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(DomainException);
+				await expect(service.handleAppleMobileLogin("valid-id-token")).rejects.toThrow(
+					DomainException,
+				);
 			});
 
 			it("탈퇴한 사용자는 소셜 로그인할 수 없다", async () => {
@@ -582,9 +543,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then - 탈퇴 계정 복구 불변식(account-restoration-policy)이 소유
-				await expect(
-					service.handleAppleMobileLogin("valid-id-token"),
-				).rejects.toThrow(DomainException);
+				await expect(service.handleAppleMobileLogin("valid-id-token")).rejects.toThrow(
+					DomainException,
+				);
 			});
 		});
 	});
@@ -598,11 +559,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			uow.run.mockImplementation((work) => work());
 
 			// When
-			const result = await service.linkAccount(
-				"user-123",
-				"APPLE",
-				"apple-account-456",
-			);
+			const result = await service.linkAccount("user-123", "APPLE", "apple-account-456");
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
@@ -612,9 +569,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				providerAccountId: "apple-account-456",
 				refreshToken: undefined,
 			});
-			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
-				"user-123",
-			);
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith("user-123");
 		});
 
 		it("이미 연결된 계정은 메시지를 반환한다", async () => {
@@ -626,11 +581,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 
 			// When
-			const result = await service.linkAccount(
-				"user-123",
-				"APPLE",
-				"apple-account-456",
-			);
+			const result = await service.linkAccount("user-123", "APPLE", "apple-account-456");
 
 			// Then
 			expect(result).toEqual({ message: "이미 연결된 계정입니다." });
@@ -646,9 +597,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			uow.run.mockImplementation((work) => work());
 
 			// When & Then - KAKAO provider
-			await expect(
-				service.linkAccount("user-123", "KAKAO", "kakao-account-789"),
-			).rejects.toThrow(
+			await expect(service.linkAccount("user-123", "KAKAO", "kakao-account-789")).rejects.toThrow(
 				new ApplicationException(ErrorCode.KAKAO_0306, {
 					kakaoId: "kakao-account-789",
 				}),
@@ -695,27 +644,20 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			accountRepo.findByProviderAccountId.mockResolvedValue(otherUserAccount);
 
 			// When & Then
-			await expect(
-				service.linkAccount("user-123", "APPLE", "apple-account-456"),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.linkAccount("user-123", "APPLE", "apple-account-456")).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
 	describe("unlinkAccount", () => {
 		it("연결된 소셜 계정을 해제한다", async () => {
 			// Given - Builder로 계정 생성
-			const appleAccount = AccountBuilder.create("user-123")
-				.asApple("apple-account-456")
-				.build();
-			const credentialAccount = AccountBuilder.create("user-123")
-				.asCredential()
-				.build();
+			const appleAccount = AccountBuilder.create("user-123").asApple("apple-account-456").build();
+			const credentialAccount = AccountBuilder.create("user-123").asCredential().build();
 
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
-			accountRepo.findAllByUserId.mockResolvedValue([
-				appleAccount,
-				credentialAccount,
-			]);
+			accountRepo.findAllByUserId.mockResolvedValue([appleAccount, credentialAccount]);
 			asMock(accountRepo.deleteAccount).mockResolvedValue({});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
@@ -725,29 +667,17 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정 연결이 해제되었습니다." });
-			expect(accountRepo.deleteAccount).toHaveBeenCalledWith(
-				"user-123",
-				"APPLE",
-			);
-			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
-				"user-123",
-			);
+			expect(accountRepo.deleteAccount).toHaveBeenCalledWith("user-123", "APPLE");
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith("user-123");
 		});
 
 		it("SecurityLog(OAUTH_UNLINKED)를 기록한다", async () => {
 			// Given - Builder로 계정 생성
-			const appleAccount = AccountBuilder.create("user-123")
-				.asApple("apple-account-456")
-				.build();
-			const credentialAccount = AccountBuilder.create("user-123")
-				.asCredential()
-				.build();
+			const appleAccount = AccountBuilder.create("user-123").asApple("apple-account-456").build();
+			const credentialAccount = AccountBuilder.create("user-123").asCredential().build();
 
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
-			accountRepo.findAllByUserId.mockResolvedValue([
-				appleAccount,
-				credentialAccount,
-			]);
+			accountRepo.findAllByUserId.mockResolvedValue([appleAccount, credentialAccount]);
 			asMock(accountRepo.deleteAccount).mockResolvedValue({});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
@@ -779,9 +709,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 		it("마지막 로그인 수단은 해제할 수 없다", async () => {
 			// Given - Builder로 단일 계정 생성
-			const appleAccount = AccountBuilder.create("user-123")
-				.asApple("apple-account-456")
-				.build();
+			const appleAccount = AccountBuilder.create("user-123").asApple("apple-account-456").build();
 
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
 			accountRepo.findAllByUserId.mockResolvedValue([appleAccount]);
@@ -806,10 +734,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				.withCreatedAt(linkedAt)
 				.build();
 
-			accountRepo.findAllByUserId.mockResolvedValue([
-				appleAccount,
-				credentialAccount,
-			]);
+			accountRepo.findAllByUserId.mockResolvedValue([appleAccount, credentialAccount]);
 
 			// When
 			const result = await service.getLinkedAccounts("user-123");
@@ -860,9 +785,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			// Then - 4개 전부 미연결
 			expect(result.accounts).toHaveLength(4);
 			expect(result.accounts.every((a) => a.linked === false)).toBe(true);
-			expect(result.accounts.every((a) => a.providerAccountId === null)).toBe(
-				true,
-			);
+			expect(result.accounts.every((a) => a.providerAccountId === null)).toBe(true);
 			expect(result.accounts.every((a) => a.linkedAt === null)).toBe(true);
 
 			// canUnlink: CREDENTIAL 1개만 있으므로 false
@@ -881,10 +804,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				.withCreatedAt(linkedAt)
 				.build();
 
-			accountRepo.findAllByUserId.mockResolvedValue([
-				credentialAccount,
-				googleAccount,
-			]);
+			accountRepo.findAllByUserId.mockResolvedValue([credentialAccount, googleAccount]);
 
 			// When
 			const result = await service.getLinkedAccounts("user-123");
@@ -959,9 +879,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
-			expect(tokenVerifier.verifyGoogleToken).toHaveBeenCalledWith(
-				"valid-google-id-token",
-			);
+			expect(tokenVerifier.verifyGoogleToken).toHaveBeenCalledWith("valid-google-id-token");
 			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
@@ -991,9 +909,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
-			expect(tokenVerifier.verifyKakaoToken).toHaveBeenCalledWith(
-				"valid-kakao-access-token",
-			);
+			expect(tokenVerifier.verifyKakaoToken).toHaveBeenCalledWith("valid-kakao-access-token");
 			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
@@ -1023,9 +939,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
-			expect(tokenVerifier.verifyNaverToken).toHaveBeenCalledWith(
-				"valid-naver-access-token",
-			);
+			expect(tokenVerifier.verifyNaverToken).toHaveBeenCalledWith("valid-naver-access-token");
 			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
@@ -1037,9 +951,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 		it("토큰 검증 실패 시 에러를 전파한다", async () => {
 			// Given
-			tokenVerifier.verifyAppleToken.mockRejectedValue(
-				new Error("Invalid token"),
-			);
+			tokenVerifier.verifyAppleToken.mockRejectedValue(new Error("Invalid token"));
 
 			// When & Then
 			await expect(
@@ -1097,12 +1009,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"KAKAO",
-					redirectUri,
-					{ mode: undefined, initiatingUserId: undefined },
-				);
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(testState, "KAKAO", redirectUri, {
+					mode: undefined,
+					initiatingUserId: undefined,
+				});
 			});
 
 			it("https://api.aido.kr/callback을 허용한다", async () => {
@@ -1114,12 +1024,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"KAKAO",
-					redirectUri,
-					{ mode: undefined, initiatingUserId: undefined },
-				);
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(testState, "KAKAO", redirectUri, {
+					mode: undefined,
+					initiatingUserId: undefined,
+				});
 			});
 
 			it("exp:// 스킴을 거부하고 기본값으로 대체한다", async () => {
@@ -1208,12 +1116,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"KAKAO",
-					redirectUri,
-					{ mode: undefined, initiatingUserId: undefined },
-				);
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(testState, "KAKAO", redirectUri, {
+					mode: undefined,
+					initiatingUserId: undefined,
+				});
 			});
 
 			it("http://localhost:8081을 허용한다", async () => {
@@ -1225,12 +1131,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"KAKAO",
-					redirectUri,
-					{ mode: undefined, initiatingUserId: undefined },
-				);
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(testState, "KAKAO", redirectUri, {
+					mode: undefined,
+					initiatingUserId: undefined,
+				});
 			});
 
 			it("exp://192.168.1.1:8081을 허용한다", async () => {
@@ -1242,12 +1146,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"KAKAO",
-					redirectUri,
-					{ mode: undefined, initiatingUserId: undefined },
-				);
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(testState, "KAKAO", redirectUri, {
+					mode: undefined,
+					initiatingUserId: undefined,
+				});
 			});
 		});
 
@@ -1312,10 +1214,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleKakaoWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleKakaoWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 			});
 
@@ -1326,10 +1225,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleKakaoWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleKakaoWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
@@ -1396,9 +1292,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 						}),
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"test-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
 
 				// When
@@ -1427,18 +1321,12 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		describe("Apple 로그인", () => {
 			it("Apple 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				tokenVerifier.verifyAppleToken.mockRejectedValue(
-					new Error("Invalid token"),
-				);
+				tokenVerifier.verifyAppleToken.mockRejectedValue(new Error("Invalid token"));
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then
 				await expect(
-					service.handleAppleMobileLogin(
-						"invalid-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleAppleMobileLogin("invalid-token", undefined, mockMetadata),
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
@@ -1475,11 +1363,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
-				await service.handleAppleMobileLogin(
-					"valid-token",
-					undefined,
-					mockMetadata,
-				);
+				await service.handleAppleMobileLogin("valid-token", undefined, mockMetadata);
 
 				// Then
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
@@ -1497,18 +1381,12 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		describe("Google 로그인", () => {
 			it("Google 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				tokenVerifier.verifyGoogleToken.mockRejectedValue(
-					new Error("Invalid token"),
-				);
+				tokenVerifier.verifyGoogleToken.mockRejectedValue(new Error("Invalid token"));
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then
 				await expect(
-					service.handleGoogleMobileLogin(
-						"invalid-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleGoogleMobileLogin("invalid-token", undefined, mockMetadata),
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
@@ -1547,11 +1425,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
-				await service.handleGoogleMobileLogin(
-					"valid-token",
-					undefined,
-					mockMetadata,
-				);
+				await service.handleGoogleMobileLogin("valid-token", undefined, mockMetadata);
 
 				// Then
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
@@ -1569,18 +1443,12 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		describe("Kakao 로그인", () => {
 			it("Kakao 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				tokenVerifier.verifyKakaoToken.mockRejectedValue(
-					new Error("Invalid token"),
-				);
+				tokenVerifier.verifyKakaoToken.mockRejectedValue(new Error("Invalid token"));
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then
 				await expect(
-					service.handleKakaoMobileLogin(
-						"invalid-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleKakaoMobileLogin("invalid-token", undefined, mockMetadata),
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
@@ -1619,11 +1487,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
-				await service.handleKakaoMobileLogin(
-					"valid-token",
-					undefined,
-					mockMetadata,
-				);
+				await service.handleKakaoMobileLogin("valid-token", undefined, mockMetadata);
 
 				// Then
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
@@ -1641,18 +1505,12 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		describe("Naver 로그인", () => {
 			it("Naver 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				tokenVerifier.verifyNaverToken.mockRejectedValue(
-					new Error("Invalid token"),
-				);
+				tokenVerifier.verifyNaverToken.mockRejectedValue(new Error("Invalid token"));
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then
 				await expect(
-					service.handleNaverMobileLogin(
-						"invalid-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleNaverMobileLogin("invalid-token", undefined, mockMetadata),
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
@@ -1691,11 +1549,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
-				await service.handleNaverMobileLogin(
-					"valid-token",
-					undefined,
-					mockMetadata,
-				);
+				await service.handleNaverMobileLogin("valid-token", undefined, mockMetadata);
 
 				// Then
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
@@ -1713,15 +1567,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		describe("메타데이터 기본값", () => {
 			it("메타데이터가 없으면 기본값을 사용한다", async () => {
 				// Given
-				tokenVerifier.verifyAppleToken.mockRejectedValue(
-					new Error("Invalid token"),
-				);
+				tokenVerifier.verifyAppleToken.mockRejectedValue(new Error("Invalid token"));
 				asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 				// When & Then
-				await expect(
-					service.handleAppleMobileLogin("invalid-token"),
-				).rejects.toThrow();
+				await expect(service.handleAppleMobileLogin("invalid-token")).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
 					email: "apple_unknown@social.aido.kr",
@@ -1812,11 +1662,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleGoogleMobileLogin(
-						"valid-google-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleGoogleMobileLogin("valid-google-token", undefined, mockMetadata),
 				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
@@ -1915,11 +1761,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleKakaoMobileLogin(
-						"valid-kakao-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleKakaoMobileLogin("valid-kakao-token", undefined, mockMetadata),
 				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
@@ -1955,11 +1797,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleKakaoMobileLogin(
-						"valid-kakao-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleKakaoMobileLogin("valid-kakao-token", undefined, mockMetadata),
 				).rejects.toThrow(ApplicationException);
 
 				// untrusted_provider 이유로 기록
@@ -1999,11 +1837,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleNaverMobileLogin(
-						"valid-naver-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleNaverMobileLogin("valid-naver-token", undefined, mockMetadata),
 				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
@@ -2046,11 +1880,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
 				await expect(
-					service.handleGoogleMobileLogin(
-						"valid-google-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleGoogleMobileLogin("valid-google-token", undefined, mockMetadata),
 				).rejects.toThrow(DomainException);
 			});
 
@@ -2074,11 +1904,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then - 계정 상태 게이트는 도메인 불변식(account-status-policy)이 소유
 				await expect(
-					service.handleGoogleMobileLogin(
-						"valid-google-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleGoogleMobileLogin("valid-google-token", undefined, mockMetadata),
 				).rejects.toThrow(DomainException);
 			});
 
@@ -2103,11 +1929,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleGoogleMobileLogin(
-						"valid-google-token",
-						undefined,
-						mockMetadata,
-					),
+					service.handleGoogleMobileLogin("valid-google-token", undefined, mockMetadata),
 				).rejects.toThrow(ApplicationException);
 			});
 		});
@@ -2136,17 +1958,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			userRepo.findByEmail.mockResolvedValue(existingUser);
 			uow.run.mockImplementation((work) => work());
 			// 연동(OAuth 계정 생성)이 트랜잭션 내에서 실패
-			accountRepo.createOAuthAccount.mockRejectedValue(
-				new Error("createOAuthAccount failed"),
-			);
+			accountRepo.createOAuthAccount.mockRejectedValue(new Error("createOAuthAccount failed"));
 
 			// When & Then - 에러가 전파된다
 			await expect(
-				service.handleGoogleMobileLogin(
-					"valid-google-token",
-					undefined,
-					mockMetadata,
-				),
+				service.handleGoogleMobileLogin("valid-google-token", undefined, mockMetadata),
 			).rejects.toThrow("createOAuthAccount failed");
 
 			// 연동이 세션 생성과 하나의 트랜잭션으로 묶여 먼저 수행되므로,
@@ -2175,17 +1991,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			asMock(userRepo.restore).mockResolvedValue(deletedUser);
 			uow.run.mockImplementation((work) => work());
 			// 트랜잭션 내부 연동 단계가 실패
-			accountRepo.createOAuthAccount.mockRejectedValue(
-				new Error("link failed in tx"),
-			);
+			accountRepo.createOAuthAccount.mockRejectedValue(new Error("link failed in tx"));
 
 			// When & Then
 			await expect(
-				service.handleGoogleMobileLogin(
-					"valid-google-token",
-					undefined,
-					mockMetadata,
-				),
+				service.handleGoogleMobileLogin("valid-google-token", undefined, mockMetadata),
 			).rejects.toThrow("link failed in tx");
 
 			// 연동은 복구·세션과 같은 트랜잭션(커밋 전)에서 수행되므로,
@@ -2202,10 +2012,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleKakaoWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleKakaoWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 			});
 
@@ -2216,10 +2023,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleKakaoWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleKakaoWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
@@ -2293,9 +2097,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 						}),
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"test-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
 
 				// When
@@ -2320,10 +2122,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleGoogleWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleGoogleWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 			});
 
@@ -2334,10 +2133,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleGoogleWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleGoogleWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
@@ -2411,9 +2207,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 						}),
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"test-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
 
 				// When
@@ -2446,10 +2240,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleNaverWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleNaverWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 			});
 
@@ -2460,10 +2251,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 				// When & Then
 				await expect(
-					service.handleNaverWebCallbackWithExchangeCode(
-						"test-code",
-						"invalid-state",
-					),
+					service.handleNaverWebCallbackWithExchangeCode("test-code", "invalid-state"),
 				).rejects.toThrow(ApplicationException);
 
 				// fetch (토큰 교환)가 호출되지 않아야 한다
@@ -2536,9 +2324,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 						}),
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"test-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
 
 				// When
@@ -2618,9 +2404,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 					picture: "https://kakao.com/photo.jpg",
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"link-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("link-exchange-code");
 				asMock(oauthStateRepo.saveLinkingData).mockResolvedValue({});
 
 				// When
@@ -2635,14 +2419,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				expect(result.userId).toBe("kakao-123");
 
 				// saveLinkingData가 올바르게 호출됨
-				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(
-					mockOAuthState.id,
-					{
-						exchangeCode: "link-exchange-code",
-						provider: "KAKAO",
-						providerAccountId: "kakao-123",
-					},
-				);
+				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(mockOAuthState.id, {
+					exchangeCode: "link-exchange-code",
+					provider: "KAKAO",
+					providerAccountId: "kakao-123",
+				});
 
 				// 로그인 처리(handleKakaoMobileLogin)가 호출되지 않음 확인
 				// login 모드에서는 saveExchangeData가 호출되지만, link 모드에서는 saveLinkingData가 호출됨
@@ -2696,9 +2477,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 						}),
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"login-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("login-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
 
 				// When
@@ -2749,9 +2528,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 					picture: "https://google.com/photo.jpg",
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"google-link-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("google-link-exchange-code");
 				asMock(oauthStateRepo.saveLinkingData).mockResolvedValue({});
 
 				// When
@@ -2766,14 +2543,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				expect(result.userId).toBe("google-123");
 
 				// saveLinkingData가 올바르게 호출됨
-				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(
-					mockOAuthState.id,
-					{
-						exchangeCode: "google-link-exchange-code",
-						provider: "GOOGLE",
-						providerAccountId: "google-123",
-					},
-				);
+				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(mockOAuthState.id, {
+					exchangeCode: "google-link-exchange-code",
+					provider: "GOOGLE",
+					providerAccountId: "google-123",
+				});
 
 				// 로그인 처리가 호출되지 않음
 				expect(oauthStateRepo.saveExchangeData).not.toHaveBeenCalled();
@@ -2810,9 +2584,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 					picture: "https://naver.com/photo.jpg",
 				});
 
-				oauthStateRepo.generateExchangeCode.mockReturnValue(
-					"naver-link-exchange-code",
-				);
+				oauthStateRepo.generateExchangeCode.mockReturnValue("naver-link-exchange-code");
 				asMock(oauthStateRepo.saveLinkingData).mockResolvedValue({});
 
 				// When
@@ -2827,14 +2599,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				expect(result.userId).toBe("naver-123");
 
 				// saveLinkingData가 올바르게 호출됨
-				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(
-					mockOAuthState.id,
-					{
-						exchangeCode: "naver-link-exchange-code",
-						provider: "NAVER",
-						providerAccountId: "naver-123",
-					},
-				);
+				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(mockOAuthState.id, {
+					exchangeCode: "naver-link-exchange-code",
+					provider: "NAVER",
+					providerAccountId: "naver-123",
+				});
 
 				// 로그인 처리가 호출되지 않음
 				expect(oauthStateRepo.saveExchangeData).not.toHaveBeenCalled();
@@ -2884,12 +2653,8 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
-			expect(oauthStateRepo.findByExchangeCode).toHaveBeenCalledWith(
-				"valid-exchange-code",
-			);
-			expect(oauthStateRepo.markAsExchanged).toHaveBeenCalledWith(
-				mockOAuthState.id,
-			);
+			expect(oauthStateRepo.findByExchangeCode).toHaveBeenCalledWith("valid-exchange-code");
+			expect(oauthStateRepo.markAsExchanged).toHaveBeenCalledWith(mockOAuthState.id);
 			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
@@ -2905,11 +2670,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// When & Then
 			await expect(
-				service.linkAccountWithExchangeCode(
-					"user-123",
-					"non-existent-code",
-					mockMetadata,
-				),
+				service.linkAccountWithExchangeCode("user-123", "non-existent-code", mockMetadata),
 			).rejects.toThrow(ApplicationException);
 		});
 
@@ -2940,11 +2701,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// When & Then
 			await expect(
-				service.linkAccountWithExchangeCode(
-					"user-123",
-					"login-exchange-code",
-					mockMetadata,
-				),
+				service.linkAccountWithExchangeCode("user-123", "login-exchange-code", mockMetadata),
 			).rejects.toThrow(ApplicationException);
 		});
 
@@ -2971,17 +2728,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				expiresAt: new Date(Date.now() + 600000),
 				createdAt: new Date(),
 			};
-			oauthStateRepo.findByExchangeCode.mockResolvedValue(
-				stateWithoutProviderAccountId,
-			);
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(stateWithoutProviderAccountId);
 
 			// When & Then
 			await expect(
-				service.linkAccountWithExchangeCode(
-					"user-123",
-					"link-exchange-code",
-					mockMetadata,
-				),
+				service.linkAccountWithExchangeCode("user-123", "link-exchange-code", mockMetadata),
 			).rejects.toThrow(ApplicationException);
 		});
 

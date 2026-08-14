@@ -54,8 +54,6 @@ export interface AiSuggestionJobMap {
 }
 
 export type AiSuggestionJobData = AiSuggestionJobMap[keyof AiSuggestionJobMap];
-export type AiSuggestionRuntimeJob = z.infer<
-	typeof AiSuggestionRuntimeJobSchema
->;
+export type AiSuggestionRuntimeJob = z.infer<typeof AiSuggestionRuntimeJobSchema>;
 
 import { z } from "zod";

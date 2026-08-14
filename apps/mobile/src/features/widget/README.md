@@ -32,18 +32,18 @@ GET v1/todos/summary (진행률+스트릭+상위 할 일, X-Timezone 기준 "오
 
 ## 구조 (SRP)
 
-| 경로 | 책임 |
-|------|------|
-| `models/widget-snapshot.model.ts` | Zod 스냅샷 스키마 + 렌더 상태 정책 + 배지 티어 (단일 진실원) |
-| `services/widget-snapshot.mapper.ts` | 요약 → 스냅샷 순수 변환 (t/locale/now 주입) |
-| `services/widget-sync.service.ts` | 오케스트레이션 — **절대 throw하지 않음** (Sentry 관측만) |
-| `services/widget-fallback.ts` | 첫 스냅샷 이전의 정적 2개 국어 폴백 |
-| `repositories/` | Android 스냅샷 영속화 (MMKV `widget-storage` — Repository 패턴 예외) |
-| `bridge/` | `WidgetBridge` 포트 + 플랫폼 어댑터 3종 (ios/android/noop) |
-| `presentations/ios/` | 'widget' 디렉티브 레이아웃 — **모듈 스코프 참조 금지(자기완결)** |
-| `presentations/android/` | FlexWidget 트리 (라이트/다크 × data/empty/loggedOut/stale) |
-| `presentations/hooks/` | `useWidgetSnapshotSync` — 앱 트리 통합 지점 |
-| `task-handler/` | Android headless 엔트리 (읽기+렌더만) + headless 관측 도구 |
+| 경로                                 | 책임                                                                 |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| `models/widget-snapshot.model.ts`    | Zod 스냅샷 스키마 + 렌더 상태 정책 + 배지 티어 (단일 진실원)         |
+| `services/widget-snapshot.mapper.ts` | 요약 → 스냅샷 순수 변환 (t/locale/now 주입)                          |
+| `services/widget-sync.service.ts`    | 오케스트레이션 — **절대 throw하지 않음** (Sentry 관측만)             |
+| `services/widget-fallback.ts`        | 첫 스냅샷 이전의 정적 2개 국어 폴백                                  |
+| `repositories/`                      | Android 스냅샷 영속화 (MMKV `widget-storage` — Repository 패턴 예외) |
+| `bridge/`                            | `WidgetBridge` 포트 + 플랫폼 어댑터 3종 (ios/android/noop)           |
+| `presentations/ios/`                 | 'widget' 디렉티브 레이아웃 — **모듈 스코프 참조 금지(자기완결)**     |
+| `presentations/android/`             | FlexWidget 트리 (라이트/다크 × data/empty/loggedOut/stale)           |
+| `presentations/hooks/`               | `useWidgetSnapshotSync` — 앱 트리 통합 지점                          |
+| `task-handler/`                      | Android headless 엔트리 (읽기+렌더만) + headless 관측 도구           |
 
 ## 주의사항
 

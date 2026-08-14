@@ -3,6 +3,7 @@ import type { User } from '@src/features/user/models/user.model';
 import { unwrap } from '@src/shared/errors/result';
 import { t } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
+
 import { USER_QUERY_KEYS } from '../constants/user-query-keys.constant';
 
 type UserTier = 'ADMIN' | 'PREMIUM' | 'BASIC';

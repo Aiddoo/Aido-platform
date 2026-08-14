@@ -1,5 +1,6 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { useEffect, useMemo, useRef } from 'react';
+
 import { ActivationPolicy } from '../../models/activation.model';
 import { useActivationProgress } from './use-activation-progress';
 

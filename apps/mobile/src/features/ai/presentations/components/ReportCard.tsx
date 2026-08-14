@@ -6,6 +6,7 @@ import { times } from 'es-toolkit/compat';
 import { type Href, useRouter } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
+
 import type { AiReport } from '../../models/ai.model';
 
 interface ReportCardProps {

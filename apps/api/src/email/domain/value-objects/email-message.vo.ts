@@ -1,5 +1,7 @@
 import { ErrorCode } from "@aido/errors";
+
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import {
 	getInquiryHtml,
 	getInquirySubject,

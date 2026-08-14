@@ -1,10 +1,7 @@
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 
-import {
-	SWAGGER_DESCRIPTION,
-	SWAGGER_SECURITY,
-} from "../constants/swagger.constant";
+import { SWAGGER_DESCRIPTION, SWAGGER_SECURITY } from "../constants/swagger.constant";
 import { ErrorResponseSchema } from "../schemas/response.schema";
 
 /**

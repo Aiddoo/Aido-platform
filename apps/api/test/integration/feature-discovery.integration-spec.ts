@@ -3,6 +3,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
 import type { App } from "supertest/types";
+
 import { AppConfigModule } from "@/app-config";
 import { FeatureDiscoveryConfigAdapter } from "@/app-config/infrastructure/adapters/feature-discovery-config.adapter";
 
@@ -43,10 +44,7 @@ describe("Feature discovery configuration route (integration)", () => {
 			app,
 			new DocumentBuilder().setTitle("Aido API").build(),
 		);
-		const response =
-			document.paths["/v1/app-config/feature-discovery"]?.get?.responses?.[
-				"200"
-			];
+		const response = document.paths["/v1/app-config/feature-discovery"]?.get?.responses?.["200"];
 
 		// Then - the endpoint contract is raw (not the ordinary success wrapper)
 		expect(response).toMatchObject({
@@ -68,13 +66,7 @@ describe("Feature discovery configuration route (integration)", () => {
 							{
 								type: "object",
 								additionalProperties: false,
-								required: [
-									"enabled",
-									"campaignId",
-									"minAppVersion",
-									"launchedAt",
-									"autoOpen",
-								],
+								required: ["enabled", "campaignId", "minAppVersion", "launchedAt", "autoOpen"],
 								properties: {
 									enabled: { enum: [true] },
 									minAppVersion: { pattern: expect.any(String) },

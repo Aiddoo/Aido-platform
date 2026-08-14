@@ -12,9 +12,7 @@ describe("Email 값 객체", () => {
 
 		it("합성 소셜 이메일 형식(underscore 로컬파트)도 유효하다", () => {
 			// 이 경로로는 쓰이지 않지만 형식 자체는 유효함을 문서화
-			expect(Email.of("naver_1234567@social.aido.kr").value).toBe(
-				"naver_1234567@social.aido.kr",
-			);
+			expect(Email.of("naver_1234567@social.aido.kr").value).toBe("naver_1234567@social.aido.kr");
 		});
 
 		it("대소문자를 보존한다(프레젠테이션 emailSchema가 소문자화 소유)", () => {

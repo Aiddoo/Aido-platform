@@ -6,16 +6,17 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createNotificationRepositoryMock } from "@test/mocks/ports/notification.mock";
 import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+import { createNotificationRepositoryMock } from "@test/mocks/ports/notification.mock";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 import { MarkNotificationOpenedUseCase } from "./mark-notification-opened.use-case";
 
 describe("MarkNotificationOpenedUseCase", () => {
@@ -27,18 +28,14 @@ describe("MarkNotificationOpenedUseCase", () => {
 	const mockNotificationId = 42;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			MarkNotificationOpenedUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(MarkNotificationOpenedUseCase)
 			.mock<NotificationRepositoryPort>(NOTIFICATION_REPOSITORY)
 			.impl(() => createNotificationRepositoryMock())
 			.mock<NotificationCachePort>(NOTIFICATION_CACHE)
 			.impl(() => createNotificationCacheMock())
 			.compile();
 		useCase = unit;
-		repository = unitRef.get<NotificationRepositoryPort>(
-			NOTIFICATION_REPOSITORY,
-		);
+		repository = unitRef.get<NotificationRepositoryPort>(NOTIFICATION_REPOSITORY);
 		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 	});
 
@@ -48,10 +45,7 @@ describe("MarkNotificationOpenedUseCase", () => {
 		const result = await useCase.execute(mockUserId, mockNotificationId);
 
 		expect(result).toBe(true);
-		expect(repository.markAsOpened).toHaveBeenCalledWith(
-			mockNotificationId,
-			mockUserId,
-		);
+		expect(repository.markAsOpened).toHaveBeenCalledWith(mockNotificationId, mockUserId);
 		expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);
 	});
 

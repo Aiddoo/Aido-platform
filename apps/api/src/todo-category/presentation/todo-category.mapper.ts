@@ -7,6 +7,7 @@ import type {
 } from "@aido/validators";
 
 import { toISOString } from "@/shared/domain/date/utils/format";
+
 import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port";
 import type { TodoCategory } from "../domain/entities/todo-category.aggregate";
 
@@ -23,9 +24,7 @@ export abstract class TodoCategoryMapper {
 		};
 	}
 
-	static toResponseWithCount(
-		view: TodoCategoryWithCountView,
-	): TodoCategoryWithCountDto {
+	static toResponseWithCount(view: TodoCategoryWithCountView): TodoCategoryWithCountDto {
 		return {
 			id: view.id,
 			userId: view.userId,
@@ -38,9 +37,7 @@ export abstract class TodoCategoryMapper {
 		};
 	}
 
-	static toManyResponseWithCount(
-		views: TodoCategoryWithCountView[],
-	): TodoCategoryWithCountDto[] {
+	static toManyResponseWithCount(views: TodoCategoryWithCountView[]): TodoCategoryWithCountDto[] {
 		return views.map((view) => TodoCategoryMapper.toResponseWithCount(view));
 	}
 }

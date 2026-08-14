@@ -10,6 +10,7 @@
 import { TestBed } from "@suites/unit";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import type { PushPayload } from "../../application/ports/push-provider.port";
 import { ExpoPushProvider } from "./expo-push.provider";
 
@@ -22,8 +23,7 @@ jest.mock("expo-server-sdk", () => {
 	// isExpoPushToken은 실제 구현과 동일한 판정식으로 직접 제공
 	const isExpoPushToken = (token: unknown): boolean =>
 		typeof token === "string" &&
-		(token.startsWith("ExponentPushToken[") ||
-			token.startsWith("ExpoPushToken[")) &&
+		(token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[")) &&
 		token.endsWith("]");
 
 	return {
@@ -89,9 +89,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 		it("유효한 토큰으로 성공적으로 발송해야 한다", async () => {
 			// Given
 			const payload = createPayload();
-			mockSendPushNotificationsAsync.mockResolvedValue([
-				{ status: "ok", id: "ticket-123" },
-			]);
+			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-123" }]);
 
 			// When
 			const result = await provider.send(payload);
@@ -119,9 +117,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			const payload = createPayload({ token: invalidToken });
 
 			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
 			expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
 		});
 
@@ -131,22 +127,16 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			mockSendPushNotificationsAsync.mockResolvedValue([]);
 
 			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
 		});
 
 		it("Expo SDK 에러 시 pushSendFailed 에러를 던져야 한다", async () => {
 			// Given
 			const payload = createPayload();
-			mockSendPushNotificationsAsync.mockRejectedValue(
-				new Error("Network error"),
-			);
+			mockSendPushNotificationsAsync.mockRejectedValue(new Error("Network error"));
 
 			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
 		});
 
 		it("에러 티켓을 올바르게 파싱해야 한다", async () => {
@@ -179,9 +169,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			mockSendPushNotificationsAsync.mockResolvedValue([undefined]);
 
 			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
 		});
 
 		it("payload의 선택적 필드가 메시지에 반영되어야 한다", async () => {
@@ -194,9 +182,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 				priority: "normal",
 				ttl: 3600,
 			});
-			mockSendPushNotificationsAsync.mockResolvedValue([
-				{ status: "ok", id: "ticket-456" },
-			]);
+			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-456" }]);
 
 			// When
 			await provider.send(payload);
@@ -225,9 +211,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 				createPayload({ token: validToken, title: "알림 1" }),
 				createPayload({ token: validToken, title: "알림 2" }),
 			];
-			const messages = payloads.map((p) =>
-				expect.objectContaining({ to: p.token }),
-			);
+			const messages = payloads.map((p) => expect.objectContaining({ to: p.token }));
 			mockChunkPushNotifications.mockReturnValue([messages]);
 			mockSendPushNotificationsAsync.mockResolvedValue([
 				{ status: "ok", id: "ticket-1" },
@@ -262,12 +246,8 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 				createPayload({ token: invalidToken, title: "무효" }),
 			];
 			// chunkPushNotifications는 유효한 메시지만 받음
-			mockChunkPushNotifications.mockReturnValue([
-				[expect.objectContaining({ to: validToken })],
-			]);
-			mockSendPushNotificationsAsync.mockResolvedValue([
-				{ status: "ok", id: "ticket-1" },
-			]);
+			mockChunkPushNotifications.mockReturnValue([[expect.objectContaining({ to: validToken })]]);
+			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
 
 			// When
 			const result = await provider.sendBatch(payloads);
@@ -278,9 +258,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			expect(result.failureCount).toBe(1);
 			expect(result.invalidTokens).toContain(invalidToken);
 			// 무효 토큰에 대한 결과
-			const invalidResult = result.results.find(
-				(r) => r.errorCode === "NOTIFICATION_1001",
-			);
+			const invalidResult = result.results.find((r) => r.errorCode === "NOTIFICATION_1001");
 			expect(invalidResult).toBeDefined();
 			expect(invalidResult?.success).toBe(false);
 		});
@@ -312,10 +290,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 				createPayload({ token: token2, title: "실패" }),
 			];
 			mockChunkPushNotifications.mockReturnValue([
-				[
-					expect.objectContaining({ to: validToken }),
-					expect.objectContaining({ to: token2 }),
-				],
+				[expect.objectContaining({ to: validToken }), expect.objectContaining({ to: token2 })],
 			]);
 			mockSendPushNotificationsAsync.mockResolvedValue([
 				{ status: "ok", id: "ticket-1" },
@@ -355,14 +330,9 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 				createPayload({ token: validToken, title: "알림 2" }),
 			];
 			mockChunkPushNotifications.mockReturnValue([
-				[
-					expect.objectContaining({ to: validToken }),
-					expect.objectContaining({ to: validToken }),
-				],
+				[expect.objectContaining({ to: validToken }), expect.objectContaining({ to: validToken })],
 			]);
-			mockSendPushNotificationsAsync.mockRejectedValue(
-				new Error("Expo server error"),
-			);
+			mockSendPushNotificationsAsync.mockRejectedValue(new Error("Expo server error"));
 
 			// When
 			const result = await provider.sendBatch(payloads);

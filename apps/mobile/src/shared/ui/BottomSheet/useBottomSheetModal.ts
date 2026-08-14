@@ -1,6 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useRef } from 'react';
 import { Keyboard } from 'react-native';
+
 import { FAST_DISMISS } from './constants';
 
 interface UseBottomSheetModalReturn {

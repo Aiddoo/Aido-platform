@@ -13,11 +13,8 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import {
-	analyzeHabitFormation,
-	classifyHabit,
-	type HabitTrackerInput,
-} from "./habit-tracker";
+
+import { analyzeHabitFormation, classifyHabit, type HabitTrackerInput } from "./habit-tracker";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -103,11 +100,7 @@ describe("analyzeHabitFormation", () => {
 		jest.useRealTimers();
 	});
 
-	function makeTodo(
-		title: string,
-		date: string,
-		completed: boolean,
-	): HabitTrackerInput {
+	function makeTodo(title: string, date: string, completed: boolean): HabitTrackerInput {
 		return {
 			title,
 			startDate: dayjs.tz(date, TZ).toDate(),
@@ -117,19 +110,14 @@ describe("analyzeHabitFormation", () => {
 
 	it("같은 제목이 2주+ 연속이면 forming에 포함되어야 한다", () => {
 		// Given — "운동"이 2주 연속
-		const todos = [
-			makeTodo("운동", "2026-03-16", true),
-			makeTodo("운동", "2026-03-23", true),
-		];
+		const todos = [makeTodo("운동", "2026-03-16", true), makeTodo("운동", "2026-03-23", true)];
 
 		// When
 		const result = analyzeHabitFormation(todos, TZ);
 
 		// Then
 		expect(result.forming).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({ title: "운동", weekCount: 2 }),
-			]),
+			expect.arrayContaining([expect.objectContaining({ title: "운동", weekCount: 2 })]),
 		);
 	});
 

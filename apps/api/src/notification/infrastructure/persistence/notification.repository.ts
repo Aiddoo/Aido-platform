@@ -1,6 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable, Logger } from "@nestjs/common";
+
 import { Prisma } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
@@ -10,6 +11,15 @@ import {
 	isRecordNotFoundError,
 	isUniqueConstraintViolation,
 } from "@/shared/infrastructure/database/prisma-error.util";
+
+import type {
+	CreateNotificationData,
+	FindNotificationsParams,
+	FindPushTokensParams,
+	NotificationWithRelations,
+	PushTokenWithRelations,
+	RegisterPushTokenData,
+} from "../../application/ports/notification-data";
 import type {
 	CreatePushDispatchInput,
 	NotificationRepositoryPort,
@@ -23,22 +33,8 @@ import {
 	DuplicateNotificationError,
 	PushTokenNotFoundError,
 } from "../../application/ports/notification.repository.port";
-import type {
-	CreateNotificationData,
-	FindNotificationsParams,
-	FindPushTokensParams,
-	NotificationWithRelations,
-	PushTokenWithRelations,
-	RegisterPushTokenData,
-} from "../../application/ports/notification-data";
-import type {
-	PushReceiptResult,
-	PushResult,
-} from "../../application/ports/push-provider.port";
-import type {
-	NotificationRecord,
-	PushTokenRecord,
-} from "../../domain/records/notification.record";
+import type { PushReceiptResult, PushResult } from "../../application/ports/push-provider.port";
+import type { NotificationRecord, PushTokenRecord } from "../../domain/records/notification.record";
 import type { NotificationType } from "../../domain/types/notification-type";
 
 @Injectable()
@@ -46,9 +42,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	readonly #logger = new Logger(NotificationRepository.name);
 
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -59,9 +53,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 알림 생성
 	 */
-	async createNotification(
-		data: CreateNotificationData,
-	): Promise<NotificationRecord> {
+	async createNotification(data: CreateNotificationData): Promise<NotificationRecord> {
 		try {
 			return await this.client.notification.create({
 				data: {
@@ -74,8 +66,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 					nudgeId: data.nudgeId,
 					cheerId: data.cheerId,
 					// metadata가 null이면 undefined로 변환 (Prisma에서 null 직접 할당 불가)
-					metadata:
-						data.metadata != null ? toInputJson(data.metadata) : undefined,
+					metadata: data.metadata != null ? toInputJson(data.metadata) : undefined,
 					notificationDate: data.notificationDate ?? undefined,
 					actionType: data.action?.type ?? "DEEP_LINK",
 					actionUrl: data.action?.url,
@@ -95,9 +86,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 여러 알림 일괄 생성
 	 */
-	async createManyNotifications(
-		dataList: CreateNotificationData[],
-	): Promise<{ count: number }> {
+	async createManyNotifications(dataList: CreateNotificationData[]): Promise<{ count: number }> {
 		const result = await this.client.notification.createMany({
 			data: dataList.map((data) => ({
 				userId: data.userId,
@@ -109,8 +98,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 				nudgeId: data.nudgeId,
 				cheerId: data.cheerId,
 				// metadata가 null이면 undefined로 변환 (Prisma에서 null 직접 할당 불가)
-				metadata:
-					data.metadata != null ? toInputJson(data.metadata) : undefined,
+				metadata: data.metadata != null ? toInputJson(data.metadata) : undefined,
 				notificationDate: data.notificationDate ?? undefined,
 			})),
 			skipDuplicates: true,
@@ -145,8 +133,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 				friendId: data.friendId,
 				nudgeId: data.nudgeId,
 				cheerId: data.cheerId,
-				metadata:
-					data.metadata != null ? toInputJson(data.metadata) : undefined,
+				metadata: data.metadata != null ? toInputJson(data.metadata) : undefined,
 				notificationDate: data.notificationDate ?? undefined,
 				actionType: data.action?.type ?? "DEEP_LINK",
 				actionUrl: data.action?.url,
@@ -161,9 +148,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * ID로 알림 조회
 	 */
-	async findNotificationById(
-		id: number,
-	): Promise<NotificationWithRelations | null> {
+	async findNotificationById(id: number): Promise<NotificationWithRelations | null> {
 		return this.client.notification.findUnique({
 			where: { id },
 		});
@@ -261,9 +246,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 오래된 알림 일괄 삭제 (90일 이상)
 	 */
-	async deleteOldNotifications(
-		daysOld: number = 90,
-	): Promise<{ count: number }> {
+	async deleteOldNotifications(daysOld: number = 90): Promise<{ count: number }> {
 		const cutoffDate = subtractDays(daysOld);
 
 		return this.client.notification.deleteMany({
@@ -371,9 +354,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 푸시 토큰 등록 (upsert)
 	 */
-	async registerPushToken(
-		data: RegisterPushTokenData,
-	): Promise<PushTokenRecord> {
+	async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
 		// deviceId가 없으면 기본값 사용
 		const deviceId = data.deviceId ?? "default";
 		const platform = data.platform ?? "IOS";
@@ -405,9 +386,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 		});
 	}
 
-	async createPushDispatch(
-		input: CreatePushDispatchInput,
-	): Promise<{ id: number }> {
+	async createPushDispatch(input: CreatePushDispatchInput): Promise<{ id: number }> {
 		return this.client.pushDispatch.upsert({
 			where: { notificationId: input.notificationId },
 			create: { ...input, status: "PROCESSING" },
@@ -420,9 +399,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	 * 한 번의 INSERT ... ON CONFLICT로 배치 dispatch를 생성하거나 재시도 상태로 복구한다.
 	 * notificationId unique key가 멱등성을 보장하며 모든 입력 행을 반환한다.
 	 */
-	async createPushDispatches(
-		inputs: CreatePushDispatchInput[],
-	): Promise<PushDispatchRecord[]> {
+	async createPushDispatches(inputs: CreatePushDispatchInput[]): Promise<PushDispatchRecord[]> {
 		if (inputs.length === 0) return [];
 
 		const values = inputs.map(
@@ -462,10 +439,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 		`);
 	}
 
-	async markPushDispatchSkipped(
-		dispatchId: number,
-		reason: PushDispatchSkipReason,
-	): Promise<void> {
+	async markPushDispatchSkipped(dispatchId: number, reason: PushDispatchSkipReason): Promise<void> {
 		await this.client.pushDispatch.update({
 			where: { id: dispatchId },
 			data: { status: "SKIPPED", skipReason: reason },
@@ -476,9 +450,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	 * 사용자 수가 아니라 skip reason 종류 수만큼만 UPDATE를 실행한다.
 	 * reason은 닫힌 union이라 최대 호출 수도 고정된다.
 	 */
-	async markPushDispatchesSkipped(
-		updates: PushDispatchSkipUpdate[],
-	): Promise<void> {
+	async markPushDispatchesSkipped(updates: PushDispatchSkipUpdate[]): Promise<void> {
 		const dispatchIdsByReason = new Map<PushDispatchSkipReason, number[]>();
 		for (const update of updates) {
 			const dispatchIds = dispatchIdsByReason.get(update.reason) ?? [];
@@ -507,19 +479,14 @@ export class NotificationRepository implements NotificationRepositoryPort {
 		});
 	}
 
-	async recordPushDeliveryResults(
-		dispatchId: number,
-		results: PushResult[],
-	): Promise<void> {
+	async recordPushDeliveryResults(dispatchId: number, results: PushResult[]): Promise<void> {
 		await this.recordPushDeliveryResultsBatch([{ dispatchId, results }]);
 	}
 
 	/**
 	 * 모든 dispatch의 토큰 조회·attempt 생성·상태 전이를 고정된 수의 쿼리로 처리한다.
 	 */
-	async recordPushDeliveryResultsBatch(
-		inputs: PushDeliveryResultsInput[],
-	): Promise<void> {
+	async recordPushDeliveryResultsBatch(inputs: PushDeliveryResultsInput[]): Promise<void> {
 		if (inputs.length === 0) return;
 
 		const results = inputs.flatMap((input) => input.results);
@@ -530,9 +497,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 						select: { id: true, token: true },
 					})
 				: [];
-		const tokenIdByValue = new Map(
-			tokens.map((token) => [token.token, token.id]),
-		);
+		const tokenIdByValue = new Map(tokens.map((token) => [token.token, token.id]));
 		const attempts = inputs.flatMap((input) =>
 			input.results.flatMap((result) => {
 				const pushTokenId = tokenIdByValue.get(result.token);
@@ -541,9 +506,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 					{
 						dispatchId: input.dispatchId,
 						pushTokenId,
-						status: result.success
-							? ("TICKET_ACCEPTED" as const)
-							: ("FAILED" as const),
+						status: result.success ? ("TICKET_ACCEPTED" as const) : ("FAILED" as const),
 						expoTicketId: result.ticketId,
 						errorCode: result.errorCode,
 						errorMessage: result.error?.slice(0, 500),
@@ -588,9 +551,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 			select: { expoTicketId: true, pushToken: { select: { token: true } } },
 		});
 		return rows.flatMap((row) =>
-			row.expoTicketId
-				? [{ ticketId: row.expoTicketId, token: row.pushToken.token }]
-				: [],
+			row.expoTicketId ? [{ ticketId: row.expoTicketId, token: row.pushToken.token }] : [],
 		);
 	}
 
@@ -638,9 +599,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 토큰 값으로 푸시 토큰 조회
 	 */
-	async findPushTokenByToken(
-		token: string,
-	): Promise<PushTokenWithRelations | null> {
+	async findPushTokenByToken(token: string): Promise<PushTokenWithRelations | null> {
 		return this.client.pushToken.findFirst({
 			where: { token },
 		});
@@ -649,9 +608,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 사용자의 푸시 토큰 목록 조회
 	 */
-	async findPushTokensByUser(
-		params: FindPushTokensParams,
-	): Promise<PushTokenWithRelations[]> {
+	async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenWithRelations[]> {
 		const { userId, activeOnly } = params;
 
 		return this.client.pushToken.findMany({
@@ -666,9 +623,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 여러 사용자의 활성 푸시 토큰 조회
 	 */
-	async findActivePushTokensByUsers(
-		userIds: string[],
-	): Promise<PushTokenWithRelations[]> {
+	async findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenWithRelations[]> {
 		return this.client.pushToken.findMany({
 			where: {
 				userId: { in: userIds },
@@ -693,10 +648,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 사용자의 특정 디바이스 푸시 토큰 삭제
 	 */
-	async deletePushToken(
-		userId: string,
-		deviceId: string,
-	): Promise<PushTokenRecord> {
+	async deletePushToken(userId: string, deviceId: string): Promise<PushTokenRecord> {
 		try {
 			return await this.client.pushToken.delete({
 				where: {

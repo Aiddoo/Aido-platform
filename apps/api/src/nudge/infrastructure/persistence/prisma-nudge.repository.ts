@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 
 import type * as PrismaModels from "@/generated/prisma/client";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
@@ -56,9 +56,7 @@ const REMIND_NUDGE_INCLUDE = {
 @Injectable()
 export class PrismaNudgeRepository implements NudgeRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	private get client() {
@@ -77,9 +75,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		});
 	}
 
-	private static toReminderNudge(
-		row: PrismaModels.ReminderNudge,
-	): ReminderNudge {
+	private static toReminderNudge(row: PrismaModels.ReminderNudge): ReminderNudge {
 		return ReminderNudge.reconstitute({
 			id: row.id,
 			senderId: row.senderId,
@@ -89,9 +85,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		});
 	}
 
-	private static toWithRelations(
-		row: NudgeRowWithRelations,
-	): NudgeWithRelations {
+	private static toWithRelations(row: NudgeRowWithRelations): NudgeWithRelations {
 		return {
 			id: row.id,
 			senderId: row.senderId,
@@ -140,10 +134,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		return row ? PrismaNudgeRepository.toNudge(row) : null;
 	}
 
-	async findLastNudgeForTodo(
-		senderId: string,
-		todoId: number,
-	): Promise<Nudge | null> {
+	async findLastNudgeForTodo(senderId: string, todoId: number): Promise<Nudge | null> {
 		const row = await this.client.nudge.findFirst({
 			where: { senderId, todoId },
 			orderBy: { createdAt: "desc" },
@@ -151,10 +142,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		return row ? PrismaNudgeRepository.toNudge(row) : null;
 	}
 
-	async findLastNudgeToUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<Nudge | null> {
+	async findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null> {
 		const row = await this.client.nudge.findFirst({
 			where: { senderId, receiverId },
 			orderBy: { createdAt: "desc" },
@@ -162,10 +150,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		return row ? PrismaNudgeRepository.toNudge(row) : null;
 	}
 
-	async findLastRemindNudge(
-		senderId: string,
-		receiverId: string,
-	): Promise<ReminderNudge | null> {
+	async findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null> {
 		const row = await this.client.reminderNudge.findFirst({
 			where: { senderId, receiverId },
 			orderBy: { createdAt: "desc" },
@@ -201,9 +186,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		});
 	}
 
-	async findReceivedNudges(
-		params: FindNudgesParams,
-	): Promise<NudgeWithRelations[]> {
+	async findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
 		const { userId, cursor, size } = params;
 		const rows = await this.client.nudge.findMany({
 			where: { receiverId: userId },
@@ -215,9 +198,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		return rows.map((row) => PrismaNudgeRepository.toWithRelations(row));
 	}
 
-	async findSentNudges(
-		params: FindNudgesParams,
-	): Promise<NudgeWithRelations[]> {
+	async findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
 		const { userId, cursor, size } = params;
 		const rows = await this.client.nudge.findMany({
 			where: { senderId: userId },
@@ -237,11 +218,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		});
 	}
 
-	async countSentSince(
-		senderId: string,
-		since: Date,
-		untilExclusive: Date,
-	): Promise<number> {
+	async countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {
 		return this.client.nudge.count({
 			where: {
 				senderId,
@@ -290,9 +267,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		return PrismaNudgeRepository.toWithRelations(row);
 	}
 
-	async createRemindNudge(
-		input: CreateRemindNudgeInput,
-	): Promise<ReminderNudgeWithRelations> {
+	async createRemindNudge(input: CreateRemindNudgeInput): Promise<ReminderNudgeWithRelations> {
 		const row = await this.client.reminderNudge.create({
 			data: {
 				sender: { connect: { id: input.senderId } },

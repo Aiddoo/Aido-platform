@@ -7,10 +7,7 @@ import { USER_CATEGORY_READER } from "./application/ports/user-category-reader.p
 import { AiQueryUseCases } from "./application/queries";
 import { AiUsageMeter } from "./application/services/ai-usage-meter.service";
 import { AiUseCases } from "./application/use-cases";
-import {
-	AI_PROVIDER_GEMINI,
-	AiRouterAdapter,
-} from "./infrastructure/adapters/ai-router.adapter";
+import { AI_PROVIDER_GEMINI, AiRouterAdapter } from "./infrastructure/adapters/ai-router.adapter";
 import { GeminiAiAdapter } from "./infrastructure/adapters/gemini-ai.adapter";
 import { PrismaAiUsageRepository } from "./infrastructure/adapters/prisma-ai-usage.repository";
 import { TodoCategoryReaderAdapter } from "./infrastructure/adapters/todo-category-reader.adapter";

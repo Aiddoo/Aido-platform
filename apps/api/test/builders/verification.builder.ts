@@ -10,6 +10,7 @@
  */
 
 import * as crypto from "node:crypto";
+
 import type { Verification, VerificationType } from "@/generated/prisma/client";
 
 let idCounter = 1;
