@@ -63,7 +63,7 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 		expect(repository.markOutboxFailed).toHaveBeenCalledWith(
 			expect.objectContaining({
 				outboxId: "outbox-1",
-				attempts: 1,
+				hasExhaustedRetries: false,
 				error: "redis down",
 			}),
 		);

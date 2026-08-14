@@ -35,9 +35,11 @@ import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
 import { SUBSCRIPTION_REPOSITORY } from "@/subscription/application/ports/subscription.repository.port";
 import { SUBSCRIPTION_CACHE } from "@/subscription/application/ports/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "@/subscription/application/ports/subscription-event-notifier.port";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "@/subscription/application/ports/subscription-webhook-lock.port";
 import { HandleWebhookEventUseCase } from "@/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
 import { SubscriptionCacheAdapter } from "@/subscription/infrastructure/adapters/subscription-cache.adapter";
 import { SubscriptionEventNotifierAdapter } from "@/subscription/infrastructure/adapters/subscription-event-notifier.adapter";
+import { SubscriptionWebhookLockAdapter } from "@/subscription/infrastructure/adapters/subscription-webhook-lock.adapter";
 import { PrismaSubscriptionRepository } from "@/subscription/infrastructure/persistence/prisma-subscription.repository";
 
 describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
@@ -118,6 +120,10 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 				{
 					provide: SUBSCRIPTION_EVENT_NOTIFIER,
 					useClass: SubscriptionEventNotifierAdapter,
+				},
+				{
+					provide: SUBSCRIPTION_WEBHOOK_LOCK,
+					useClass: SubscriptionWebhookLockAdapter,
 				},
 				{
 					provide: UNIT_OF_WORK,

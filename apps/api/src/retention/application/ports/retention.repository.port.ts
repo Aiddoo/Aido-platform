@@ -89,7 +89,7 @@ export interface RetentionRepositoryPort {
 	deferOutbox(outboxId: string, availableAt: Date): Promise<void>;
 	markOutboxFailed(input: {
 		outboxId: string;
-		attempts: number;
+		hasExhaustedRetries: boolean;
 		error: string;
 		nextAttemptAt: Date;
 	}): Promise<void>;

@@ -19,8 +19,10 @@ import { TimezoneAwareReminderOrchestrator } from "../../application/services/ti
 import {
 	TIMEZONE_REMINDER_LEGACY_QUEUE,
 	TIMEZONE_REMINDER_QUEUE,
+	TIMEZONE_REMINDER_WORKER_POLICY,
 	type TimezoneReminderJobMap,
 	TimezoneReminderJobName,
+	TimezoneReminderRuntimeJobSchema,
 } from "./timezone-reminder-queue.constants";
 
 /**
@@ -35,6 +37,10 @@ import {
  * 판별 유니온으로 job.data를 캐스트 없이 좁힌다.
  */
 type TimezoneReminderJob = NamedJob<TimezoneReminderJobMap>;
+type TimezoneReminderJobLike = {
+	readonly name: string;
+	readonly data: JobData;
+};
 
 @Injectable()
 export class TimezoneReminderProcessor implements OnModuleInit {
@@ -52,7 +58,7 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 			async (jobs) => {
 				for (const job of jobs) await this.process(job.data);
 			},
-			{ teamSize: 1, pollingIntervalSeconds: 2 },
+			TIMEZONE_REMINDER_WORKER_POLICY,
 		);
 		await this.runtime.work<JobData>(
 			TIMEZONE_REMINDER_LEGACY_QUEUE,
@@ -60,7 +66,7 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 				for (const job of jobs)
 					await this.process(fromLegacyJob<TimezoneReminderJobMap>(job));
 			},
-			{ teamSize: 1, pollingIntervalSeconds: 2 },
+			TIMEZONE_REMINDER_WORKER_POLICY,
 		);
 	}
 
@@ -82,7 +88,15 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 		);
 	}
 
-	async process(job: TimezoneReminderJob): Promise<void> {
+	async process(untrustedJob: TimezoneReminderJobLike): Promise<void> {
+		const parsedJob = TimezoneReminderRuntimeJobSchema.safeParse(untrustedJob);
+		if (!parsedJob.success) {
+			this.#logger.warn(
+				`Invalid timezone reminder job: name=${untrustedJob.name}`,
+			);
+			return;
+		}
+		const job = parsedJob.data;
 		switch (job.name) {
 			case TimezoneReminderJobName.SWEEP_REMINDERS:
 				this.#logger.debug("Processing timezone reminder sweep...");

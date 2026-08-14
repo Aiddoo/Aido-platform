@@ -13,15 +13,10 @@ export interface IDedupProvider {
 	/**
 	 * 배치 멤버십 확인 — Set에 이미 존재하는 멤버만 반환
 	 *
-	 * @param setKey Set 키 (DedupKeys에서 생성)
+	 * @param setKey 소비 모듈이 소유한 keyspace에서 생성한 Set 키
 	 * @param members 확인할 멤버 목록
 	 * @returns Set에 존재하는 멤버들의 Set
 	 *
-	 * @example
-	 * const notified = await dedup.filterMembers(
-	 *   DedupKeys.notified('MORNING_REMINDER', today),
-	 *   [DedupKeys.SENTINEL, ...userIds],
-	 * );
 	 */
 	filterMembers(setKey: string, members: string[]): Promise<Set<string>>;
 
@@ -32,11 +27,6 @@ export interface IDedupProvider {
 	 * @param member 확인할 멤버
 	 * @returns 존재 여부
 	 *
-	 * @example
-	 * const sent = await dedup.isMember(
-	 *   DedupKeys.winbackStages(userId),
-	 *   'day7',
-	 * );
 	 */
 	isMember(setKey: string, member: string): Promise<boolean>;
 
@@ -47,12 +37,6 @@ export interface IDedupProvider {
 	 * @param members 추가할 멤버 목록
 	 * @param ttlMs TTL (밀리초) — PEXPIRE로 갱신
 	 *
-	 * @example
-	 * await dedup.addMembers(
-	 *   DedupKeys.notified('MORNING_REMINDER', today),
-	 *   [DedupKeys.SENTINEL, ...userIds],
-	 *   DedupKeys.TTL.NOTIFIED,
-	 * );
 	 */
 	addMembers(setKey: string, members: string[], ttlMs: number): Promise<void>;
 }

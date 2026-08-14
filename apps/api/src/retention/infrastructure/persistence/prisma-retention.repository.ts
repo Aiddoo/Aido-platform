@@ -320,14 +320,14 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 
 	async markOutboxFailed(input: {
 		outboxId: string;
-		attempts: number;
+		hasExhaustedRetries: boolean;
 		error: string;
 		nextAttemptAt: Date;
 	}): Promise<void> {
 		await this.client.retentionPushOutbox.updateMany({
 			where: { id: input.outboxId, status: "PROCESSING" },
 			data: {
-				status: input.attempts >= 20 ? "FAILED" : "PENDING",
+				status: input.hasExhaustedRetries ? "FAILED" : "PENDING",
 				availableAt: input.nextAttemptAt,
 				lockedAt: null,
 				lastError: input.error.slice(0, 500),

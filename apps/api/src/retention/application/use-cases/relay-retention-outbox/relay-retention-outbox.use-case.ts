@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { decideRetentionOutboxRetry } from "../../policies/retention-outbox-retry.policy";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
@@ -14,6 +15,7 @@ import {
 } from "../../ports/retention-job-enqueuer.port";
 
 const OUTBOX_RELAY_BATCH_SIZE = 25;
+const OUTBOX_PROCESSING_LEASE_MS = 2 * 60_000;
 
 @Injectable()
 export class RelayRetentionOutboxUseCase {
@@ -32,7 +34,7 @@ export class RelayRetentionOutboxUseCase {
 	async execute(): Promise<void> {
 		if (!this.config.enabled) return;
 		const now = new Date();
-		const cutoff = new Date(now.getTime() - 2 * 60 * 1000);
+		const cutoff = new Date(now.getTime() - OUTBOX_PROCESSING_LEASE_MS);
 		const claimed = await this.uow.run(async () => {
 			await this.repository.recoverStaleOutboxes(cutoff);
 			return this.repository.claimOutboxes(OUTBOX_RELAY_BATCH_SIZE, now);
@@ -46,12 +48,12 @@ export class RelayRetentionOutboxUseCase {
 				} catch (error) {
 					const normalizedError =
 						error instanceof Error ? error : new Error(String(error));
-					const delay = Math.min(15 * 60_000, 1000 * 2 ** outbox.attempts);
+					const retryDecision = decideRetentionOutboxRetry(outbox.attempts);
 					await this.repository.markOutboxFailed({
 						outboxId: outbox.id,
-						attempts: outbox.attempts,
+						hasExhaustedRetries: retryDecision.hasExhaustedRetries,
 						error: normalizedError.message,
-						nextAttemptAt: new Date(Date.now() + delay),
+						nextAttemptAt: new Date(Date.now() + retryDecision.delayMs),
 					});
 					this.#logger.error(
 						`Retention outbox publish failed: id=${outbox.id}`,

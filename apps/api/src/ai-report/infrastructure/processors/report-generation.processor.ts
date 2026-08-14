@@ -21,17 +21,11 @@ import type { ReportGenerationJob } from "../jobs/report-generation.job";
 import {
 	AI_REPORT_LEGACY_QUEUE,
 	AI_REPORT_QUEUE,
-	type AiReportGenerateData,
+	AI_REPORT_WORKER_POLICY,
 	type AiReportJobMap,
 	AiReportJobName,
+	AiReportRuntimeJobSchema,
 } from "../queue/ai-report-queue";
-
-/** GENERATE 잡 데이터 판별 (as 캐스트 없이 내로잉) */
-function isGenerateData(
-	data: AiReportJobMap[keyof AiReportJobMap],
-): data is AiReportGenerateData {
-	return "userId" in data;
-}
 
 /**
  * AI 리포트 생성 BullMQ 프로세서
@@ -44,6 +38,7 @@ function isGenerateData(
  * 알림 발송은 Scheduler Strategy (WeeklyReportStrategy / MonthlyReportStrategy)에서 담당합니다.
  */
 type AiReportJob = NamedJob<AiReportJobMap>;
+type AiReportJobLike = { readonly name: string; readonly data: JobData };
 
 @Injectable()
 export class ReportGenerationProcessor implements OnModuleInit {
@@ -67,7 +62,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 			async (jobs) => {
 				for (const job of jobs) await this.process(job.data);
 			},
-			{ teamSize: 5, pollingIntervalSeconds: 2 },
+			AI_REPORT_WORKER_POLICY,
 		);
 		await this.runtime.work<JobData>(
 			AI_REPORT_LEGACY_QUEUE,
@@ -75,7 +70,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 				for (const job of jobs)
 					await this.process(fromLegacyJob<AiReportJobMap>(job));
 			},
-			{ teamSize: 5, pollingIntervalSeconds: 2 },
+			AI_REPORT_WORKER_POLICY,
 		);
 	}
 
@@ -97,14 +92,15 @@ export class ReportGenerationProcessor implements OnModuleInit {
 		);
 	}
 
-	async process(job: AiReportJob): Promise<void> {
-		if (job.name === AiReportJobName.DISPATCH) {
-			await this.#reportJob?.dispatchReports(job.data.reportType);
+	async process(untrustedJob: AiReportJobLike): Promise<void> {
+		const parsedJob = AiReportRuntimeJobSchema.safeParse(untrustedJob);
+		if (!parsedJob.success) {
+			this.#logger.warn(`Invalid AI report job: name=${untrustedJob.name}`);
 			return;
 		}
-
-		if (job.name !== AiReportJobName.GENERATE || !isGenerateData(job.data)) {
-			this.#logger.warn(`Unknown job name: ${job.name}`);
+		const job = parsedJob.data;
+		if (job.name === AiReportJobName.DISPATCH) {
+			await this.#reportJob?.dispatchReports(job.data.reportType);
 			return;
 		}
 
