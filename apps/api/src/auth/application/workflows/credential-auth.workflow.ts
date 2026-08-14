@@ -29,6 +29,7 @@ import {
 	SECURITY_EVENT,
 	TOKEN_REUSE_GRACE_PERIOD_MS,
 } from "@/auth/domain/constants/auth.constants";
+import { AuthSession } from "@/auth/domain/entities/auth-session.aggregate";
 import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/account-restoration-policy";
 import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
 import type { UserStatus } from "@/auth/domain/types";
@@ -526,14 +527,20 @@ export class CredentialAuthWorkflow {
 
 		// 세션 조회
 		const session = await this.sessionRepository.findById(sessionId);
-		if (!session || session.userId !== userId) {
+		if (!session) {
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
+		}
+		const authSession = AuthSession.reconstitute(session);
+		if (!authSession.isOwnedBy(userId)) {
 			throw new ApplicationException(ErrorCode.SESSION_0701, {
 				sessionId: undefined,
 			});
 		}
 
 		// 이미 만료된 세션
-		if (session.revokedAt) {
+		if (authSession.isRevoked()) {
 			throw new ApplicationException(ErrorCode.SESSION_0702, {
 				sessionId: undefined,
 			});
@@ -625,14 +632,27 @@ export class CredentialAuthWorkflow {
 		if (!session) {
 			// sessionId(PK)로 조회 — O(1) PK lookup
 			const currentSession = await this.sessionRepository.findById(sessionId);
+			const currentAuthSession = currentSession
+				? AuthSession.reconstitute(currentSession)
+				: null;
 
 			// previousTokenHash가 제출된 토큰 해시와 일치 → 이전 토큰 재사용
-			if (currentSession?.previousTokenHash === refreshTokenHash) {
+			if (
+				currentSession &&
+				currentAuthSession?.wasPreviouslyIssued(refreshTokenHash)
+			) {
 				// Grace period 확인
+				const currentTime = now();
 				const timeSinceLastRotation =
-					Date.now() - new Date(currentSession.lastUsedAt).getTime();
+					currentTime.getTime() - currentSession.lastUsedAt.getTime();
 
-				if (timeSinceLastRotation <= TOKEN_REUSE_GRACE_PERIOD_MS) {
+				if (
+					currentAuthSession.isRetryWithin(
+						refreshTokenHash,
+						currentTime,
+						TOKEN_REUSE_GRACE_PERIOD_MS,
+					)
+				) {
 					// 네트워크 재시도로 판단 → 새 토큰 발급
 					this.#logger.debug(
 						`Token retry within grace period for session: ${currentSession.id} (${timeSinceLastRotation}ms)`,
@@ -649,7 +669,7 @@ export class CredentialAuthWorkflow {
 						});
 					}
 
-					const newTokenVersion = currentSession.tokenVersion + 1;
+					const newTokenVersion = currentAuthSession.tokenVersion + 1;
 					const newTokens = await this.tokenService.generateTokenPair(
 						userId,
 						email,
@@ -668,15 +688,14 @@ export class CredentialAuthWorkflow {
 
 					// Sliding window 방지: previousTokenHash를 현재 세션의 refreshTokenHash로 설정
 					// → 동일 옛 토큰으로의 재시도는 1회만 허용
+					const rotationPlan = currentAuthSession.planRotation(
+						newRefreshTokenHash,
+						currentAuthSession.refreshTokenHash,
+						newExpiresAt,
+					);
 					const rotatedSession = await this.sessionRepository.rotateToken(
 						sessionId,
-						{
-							refreshTokenHash: newRefreshTokenHash,
-							tokenVersion: newTokenVersion,
-							previousTokenHash: currentSession.refreshTokenHash, // ← 핵심: 옛 토큰이 아닌 현재 토큰
-							expectedTokenVersion: currentSession.tokenVersion,
-							expiresAt: newExpiresAt,
-						},
+						rotationPlan,
 					);
 
 					if (!rotatedSession) {
@@ -740,7 +759,8 @@ export class CredentialAuthWorkflow {
 		}
 
 		// 4. 새 토큰 쌍 발급
-		const newTokenVersion = session.tokenVersion + 1;
+		const authSession = AuthSession.reconstitute(session);
+		const newTokenVersion = authSession.tokenVersion + 1;
 		const newTokens = await this.tokenService.generateTokenPair(
 			userId,
 			email,
@@ -759,13 +779,15 @@ export class CredentialAuthWorkflow {
 			this.tokenService.getRefreshTokenExpiresInSeconds();
 		const newExpiresAt = addMilliseconds(refreshExpiresInSeconds * 1000);
 
-		const rotatedSession = await this.sessionRepository.rotateToken(sessionId, {
-			refreshTokenHash: newRefreshTokenHash,
-			tokenVersion: newTokenVersion,
-			previousTokenHash: refreshTokenHash, // 이전 토큰 해시 저장 (재사용 감지용)
-			expectedTokenVersion: session.tokenVersion, // 낙관적 잠금: 레이스 컨디션 방지
-			expiresAt: newExpiresAt,
-		});
+		const rotationPlan = authSession.planRotation(
+			newRefreshTokenHash,
+			refreshTokenHash,
+			newExpiresAt,
+		);
+		const rotatedSession = await this.sessionRepository.rotateToken(
+			sessionId,
+			rotationPlan,
+		);
 
 		// 로테이션 실패 시 (다른 요청이 먼저 로테이션함)
 		if (!rotatedSession) {
@@ -824,7 +846,13 @@ export class CredentialAuthWorkflow {
 
 		// 세션 조회
 		const session = await this.sessionRepository.findById(sessionId);
-		if (!session || session.userId !== userId) {
+		if (!session) {
+			throw new ApplicationException(ErrorCode.SESSION_0701, {
+				sessionId: undefined,
+			});
+		}
+		const authSession = AuthSession.reconstitute(session);
+		if (!authSession.isOwnedBy(userId)) {
 			throw new ApplicationException(ErrorCode.SESSION_0701, {
 				sessionId: undefined,
 			});
