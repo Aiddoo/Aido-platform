@@ -8,7 +8,10 @@ import { NotificationBatchDispatcher } from "./application/dispatchers/notificat
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
-import { NOTIFICATION_DEDUP } from "./application/ports/notification-dedup.port";
+import {
+	NOTIFICATION_DEDUP,
+	NOTIFICATION_DEDUP_LOCK,
+} from "./application/ports/notification-dedup.port";
 import {
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
@@ -36,6 +39,7 @@ import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-n
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
+import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter";
 import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
@@ -137,6 +141,10 @@ import { NotificationController } from "./presentation/notification.controller";
 		{
 			provide: NOTIFICATION_DEDUP,
 			useExisting: NotificationDedupAdapter,
+		},
+		{
+			provide: NOTIFICATION_DEDUP_LOCK,
+			useClass: NotificationDedupLockAdapter,
 		},
 		// 푸시 디스패처 (전송 메커니즘 + 발송 자격 판단)
 		{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },

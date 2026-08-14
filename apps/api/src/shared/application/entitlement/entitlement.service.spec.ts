@@ -18,9 +18,6 @@ import {
 } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-
 import {
 	EntitlementService,
 	Feature,
@@ -28,11 +25,17 @@ import {
 	Resource,
 	type ResourceEntitlement,
 } from "./entitlement.service";
+import {
+	ENTITLEMENT_CACHE,
+	ENTITLEMENT_DATABASE,
+	type EntitlementCachePort,
+	type EntitlementDatabasePort,
+} from "./entitlement-state.port";
 
 describe("EntitlementService — 권한 관리 서비스", () => {
 	let service: EntitlementService;
-	let cacheService: Mocked<CacheService>;
-	let database: Mocked<DatabaseService>;
+	let cacheService: Mocked<EntitlementCachePort>;
+	let database: Mocked<EntitlementDatabasePort>;
 
 	const userId = "user-test-123";
 
@@ -41,8 +44,8 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			await TestBed.solitary(EntitlementService).compile();
 
 		service = unit;
-		cacheService = unitRef.get(CacheService);
-		database = unitRef.get(DatabaseService);
+		cacheService = unitRef.get(ENTITLEMENT_CACHE);
+		database = unitRef.get(ENTITLEMENT_DATABASE);
 	});
 
 	describe("getFeatureLimit", () => {

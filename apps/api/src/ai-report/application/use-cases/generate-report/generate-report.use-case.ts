@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { AI_PROVIDER, type AiProvider } from "@/ai";
 import { now } from "@/shared/domain/date/utils/core";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 import {
 	buildReportPrompt,
 	getReportAiResponseSchema,

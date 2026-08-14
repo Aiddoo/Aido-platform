@@ -7,8 +7,11 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { APICallError } from "ai";
-import { AI_PROVIDER, type AiProvider } from "../../ports/ai-provider.port";
+import {
+	AI_PROVIDER,
+	type AiProvider,
+	AiProviderCallError,
+} from "../../ports/ai-provider.port";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
@@ -97,13 +100,9 @@ describe("ParseTodoUseCase — 자연어 투두 파싱 use-case", () => {
 		expect(result.data.categoryId).toBe(3);
 	});
 
-	it("API 호출 실패(APICallError) 시 사용량을 롤백하고 AI_1301을 던진다", async () => {
+	it("AI provider 호출 실패 시 사용량을 롤백하고 AI_1301을 던진다", async () => {
 		aiProvider.generateStructured.mockRejectedValue(
-			new APICallError({
-				message: "boom",
-				url: "https://ai",
-				requestBodyValues: {},
-			}),
+			new AiProviderCallError("boom", 500),
 		);
 
 		await expect(useCase.execute(input())).rejects.toMatchObject({

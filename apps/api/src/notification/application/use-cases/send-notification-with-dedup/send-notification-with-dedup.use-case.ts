@@ -1,15 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { subtractMilliseconds } from "@/shared/domain/date/utils/arithmetic";
-import { cacheKey } from "@/shared/infrastructure/cache";
-import {
-	type ILockProvider,
-	LOCK_PROVIDER,
-} from "@/shared/infrastructure/lock";
 import type { NotificationRecord } from "../../../domain/records/notification.record";
 import {
 	buildDedupContextFields,
 	buildDedupKey,
-	DEDUP_LOCK_TTL,
 	resolveDedupStrategy,
 } from "../../../domain/services/notification-dedup";
 import {
@@ -17,6 +11,10 @@ import {
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
 import type { CreateNotificationData } from "../../ports/notification-data";
+import {
+	NOTIFICATION_DEDUP_LOCK,
+	type NotificationDedupLockPort,
+} from "../../ports/notification-dedup.port";
 import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
 
 /**
@@ -33,7 +31,8 @@ export class SendNotificationWithDedupUseCase {
 
 	constructor(
 		private readonly sendNotification: SendNotificationUseCase,
-		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+		@Inject(NOTIFICATION_DEDUP_LOCK)
+		private readonly dedupLock: NotificationDedupLockPort,
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
 	) {}
@@ -48,10 +47,7 @@ export class SendNotificationWithDedupUseCase {
 		}
 
 		const dedupKey = buildDedupKey(data, strategy);
-		const release = await this.lockProvider.acquire(
-			cacheKey("notification", "lock-dedup", dedupKey),
-			DEDUP_LOCK_TTL,
-		);
+		const release = await this.dedupLock.acquire(dedupKey);
 
 		if (!release) {
 			this.#logger.debug(

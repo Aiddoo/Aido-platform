@@ -14,6 +14,20 @@ import type { PushReceiptResult, PushResult } from "./push-provider.port";
 /** 알림 저장소 포트 (DI 토큰) */
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");
 
+export class DuplicateNotificationError extends Error {
+	constructor() {
+		super("Notification already exists");
+		this.name = "DuplicateNotificationError";
+	}
+}
+
+export class PushTokenNotFoundError extends Error {
+	constructor() {
+		super("Push token not found");
+		this.name = "PushTokenNotFoundError";
+	}
+}
+
 export type PushDispatchSkipReason =
 	| "PUSH_SETTINGS_MISSING"
 	| "PUSH_DISABLED"

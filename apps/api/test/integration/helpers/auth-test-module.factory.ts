@@ -26,12 +26,14 @@ import {
 	AUTH_USER_REPOSITORY,
 	AUTH_VERIFICATION_REPOSITORY,
 } from "@/auth/application/ports";
+import { VERIFICATION_CODE_SECURITY } from "@/auth/application/ports/verification-code-security.port";
 import { SessionService } from "@/auth/application/services/session.service";
 import { VerificationService } from "@/auth/application/services/verification.service";
 import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
 import { ProvisionUserUseCase } from "@/auth/application/use-cases/provision-user/provision-user.use-case";
 import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
+import { NodeVerificationCodeSecurityAdapter } from "@/auth/infrastructure/adapters/node-verification-code-security.adapter";
 import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
@@ -75,6 +77,10 @@ export async function createAuthTestModule(
 			SessionService,
 			TokenService,
 			VerificationService,
+			{
+				provide: VERIFICATION_CODE_SECURITY,
+				useClass: NodeVerificationCodeSecurityAdapter,
+			},
 			{
 				provide: EncryptionService,
 				useValue: {

@@ -27,7 +27,6 @@ import { MemoModule } from "@/memo";
 import { NotificationModule } from "@/notification";
 import { NudgeModule } from "@/nudge";
 import { SchedulerModule } from "@/scheduler";
-import { EntitlementModule } from "@/shared/application/entitlement";
 import { PaginationModule } from "@/shared/application/pagination";
 import { CacheModule } from "@/shared/infrastructure/cache";
 import type { EnvConfig } from "@/shared/infrastructure/config";
@@ -38,6 +37,7 @@ import {
 } from "@/shared/infrastructure/database";
 import { DedupModule } from "@/shared/infrastructure/dedup";
 import { EncryptionModule } from "@/shared/infrastructure/encryption";
+import { EntitlementModule } from "@/shared/infrastructure/entitlement/entitlement.module";
 import { DomainEventsModule } from "@/shared/infrastructure/events";
 import { JobRuntimeModule } from "@/shared/infrastructure/jobs/job-runtime.module";
 import { LockModule } from "@/shared/infrastructure/lock";

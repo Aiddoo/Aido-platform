@@ -7,14 +7,14 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import {
-	type ILockProvider,
-	LOCK_PROVIDER,
-} from "@/shared/infrastructure/lock";
-import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
 import type { CreateNotificationData } from "../../ports/notification-data";
+import {
+	NOTIFICATION_DEDUP_LOCK,
+	type NotificationDedupLockPort,
+} from "../../ports/notification-dedup.port";
 import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case";
 
@@ -38,7 +38,7 @@ describe("SendNotificationWithDedupUseCase", () => {
 	let useCase: SendNotificationWithDedupUseCase;
 	let sendNotification: Mocked<SendNotificationUseCase>;
 	let repository: Mocked<NotificationRepositoryPort>;
-	let lockProvider: Mocked<ILockProvider>;
+	let dedupLock: Mocked<NotificationDedupLockPort>;
 	const release = jest.fn().mockResolvedValue(undefined);
 
 	beforeEach(async () => {
@@ -48,20 +48,20 @@ describe("SendNotificationWithDedupUseCase", () => {
 		useCase = unit;
 		sendNotification = unitRef.get(SendNotificationUseCase);
 		repository = unitRef.get(NOTIFICATION_REPOSITORY);
-		lockProvider = unitRef.get(LOCK_PROVIDER);
-		lockProvider.acquire.mockResolvedValue(release);
+		dedupLock = unitRef.get(NOTIFICATION_DEDUP_LOCK);
+		dedupLock.acquire.mockResolvedValue(release);
 		sendNotification.execute.mockResolvedValue(null);
 	});
 
 	it("전략 없는 타입이면 락 없이 바로 발송한다", async () => {
 		await useCase.execute(nudgeData);
 
-		expect(lockProvider.acquire).not.toHaveBeenCalled();
+		expect(dedupLock.acquire).not.toHaveBeenCalled();
 		expect(sendNotification.execute).toHaveBeenCalledWith(nudgeData);
 	});
 
 	it("락 경합(acquire=null) 시 null 반환하고 발송하지 않는다", async () => {
-		lockProvider.acquire.mockResolvedValue(null);
+		dedupLock.acquire.mockResolvedValue(null);
 
 		const result = await useCase.execute(followData);
 

@@ -4,7 +4,7 @@ import type {
 	ReportStats,
 	TimePatternItem,
 } from "@aido/validators";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 
 import type { AiReport } from "../../domain/entities/ai-report.entity";
 import type { ReportType } from "../../domain/types";

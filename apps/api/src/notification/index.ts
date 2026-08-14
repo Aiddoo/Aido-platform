@@ -39,12 +39,12 @@ export {
 // --- Cross-module notification capability ---
 export { NotificationSender } from "./application/senders/notification.sender";
 // --- Locale helpers (스케줄러 전략의 로케일별 메시지 조립) ---
-export {
-	createLocaleMessageCache,
-	fetchUserLocales,
-} from "./application/utils/user-locale.util";
+export { createLocaleMessageCache } from "./application/utils/user-locale.util";
 // --- Templates (메시지 빌더 + 로케일 해석) ---
-export * from "./domain/services/templates/notification-templates";
+export {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "./domain/services/templates/notification-templates";
 export type { NotificationType } from "./domain/types/notification-type";
 // Prisma repository is internal to NotificationModule.
 // Cross-module consumers use the public capability boundary above.

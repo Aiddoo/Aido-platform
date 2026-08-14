@@ -52,6 +52,18 @@ export interface GenerateStructuredResult<T> {
 	usage: TokenUsage;
 }
 
+/** AI SDK/HTTP 구현이 application 경계에 전달하는 호출 실패. */
+export class AiProviderCallError extends Error {
+	constructor(
+		message: string,
+		readonly statusCode: number | undefined,
+		options?: ErrorOptions,
+	) {
+		super(message, options);
+		this.name = AiProviderCallError.name;
+	}
+}
+
 /**
  * AI Provider 인터페이스
  *

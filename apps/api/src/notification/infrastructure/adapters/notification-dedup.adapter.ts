@@ -8,6 +8,7 @@ import type {
 	NotificationDedupPort,
 	NotificationDedupRecord,
 } from "../../application/ports/notification-dedup.port";
+import type { NotificationType } from "../../domain/types/notification-type";
 
 @Injectable()
 export class NotificationDedupAdapter implements NotificationDedupPort {
@@ -33,6 +34,31 @@ export class NotificationDedupAdapter implements NotificationDedupPort {
 					DedupKeys.TTL.NOTIFIED,
 				),
 			),
+		);
+	}
+
+	async readKnownRecipients(
+		type: NotificationType,
+		notificationDate: Date,
+		userIds: readonly string[],
+	): Promise<Set<string> | null> {
+		const notifiedUsers = await this.dedupProvider.filterMembers(
+			DedupKeys.notified(type, notificationDate),
+			[DedupKeys.SENTINEL, ...userIds],
+		);
+		if (!notifiedUsers.delete(DedupKeys.SENTINEL)) return null;
+		return notifiedUsers;
+	}
+
+	warmRecipients(
+		type: NotificationType,
+		notificationDate: Date,
+		userIds: readonly string[],
+	): Promise<void> {
+		return this.dedupProvider.addMembers(
+			DedupKeys.notified(type, notificationDate),
+			[DedupKeys.SENTINEL, ...userIds],
+			DedupKeys.TTL.NOTIFIED,
 		);
 	}
 }

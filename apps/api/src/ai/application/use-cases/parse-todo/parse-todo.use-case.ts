@@ -2,15 +2,15 @@ import { ErrorCode } from "@aido/errors";
 import type { ParsedTodoData } from "@aido/validators";
 import { parsedTodoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { APICallError } from "ai";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 import { buildParseTodoPrompt } from "../../../domain/services/prompts/parse-todo.prompt";
 import { buildParseTodoPromptEn } from "../../../domain/services/prompts/parse-todo.prompt.en";
 import {
 	AI_PROVIDER,
 	type AiProvider,
+	AiProviderCallError,
 	type TokenUsage,
 } from "../../ports/ai-provider.port";
 import {
@@ -119,7 +119,7 @@ export class ParseTodoUseCase {
 		} catch (error) {
 			await this.usageMeter.decrement(userId);
 
-			if (error instanceof APICallError) {
+			if (error instanceof AiProviderCallError) {
 				this.#logger.error(
 					`AI API 호출 실패: userId=${userId}, status=${error.statusCode}, message=${error.message}`,
 				);

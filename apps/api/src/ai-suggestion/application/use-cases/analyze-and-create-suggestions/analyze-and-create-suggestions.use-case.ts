@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { AI_PROVIDER, type AiProvider } from "@/ai";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 import type { GridInput } from "@/weather";
 
 import { resolveSuggestedCategoryId } from "../../../domain/services/category-resolver";

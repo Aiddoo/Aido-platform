@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { toDateString } from "@/shared/domain/date/utils/format";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
+import type { SupportedLocale } from "@/shared/domain/locale";
 
 import type { ReportType } from "../types";
 
