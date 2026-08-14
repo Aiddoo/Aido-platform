@@ -1,56 +1,59 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
 import {
+	USER_NOTIFICATION_SETTINGS_ACCESS,
 	type UserConsentRecord,
 	type UserConsentRecordWithId,
+	type UserNotificationSettingsAccessPort,
 	type UserPreferenceRecord,
 	type UserPreferenceRecordWithId,
-	UserSettingsFacade,
 } from "@/user-settings";
 import type { UserNotificationSettingsPort } from "../../application/ports/user-notification-settings.port";
 
 /**
- * UserNotificationSettingsPort 어댑터 — UserSettingsFacade에 위임한다.
- * notification → user-settings 단방향 의존을 파사드 배럴 경유로만 유지한다.
+ * notification의 설정 포트를 user-settings의 공개 capability에 연결한다.
  */
 @Injectable()
 export class UserNotificationSettingsAdapter
 	implements UserNotificationSettingsPort
 {
-	constructor(private readonly userSettings: UserSettingsFacade) {}
+	constructor(
+		@Inject(USER_NOTIFICATION_SETTINGS_ACCESS)
+		private readonly userSettingsAccess: UserNotificationSettingsAccessPort,
+	) {}
 
 	upsertPushTimezone(userId: string, timezone: string): Promise<void> {
-		return this.userSettings.upsertPushTimezone(userId, timezone);
+		return this.userSettingsAccess.upsertPushTimezone(userId, timezone);
 	}
 
 	upsertPushLocale(userId: string, locale: string): Promise<void> {
-		return this.userSettings.upsertPushLocale(userId, locale);
+		return this.userSettingsAccess.upsertPushLocale(userId, locale);
 	}
 
 	getPreferenceRecord(userId: string): Promise<UserPreferenceRecord | null> {
-		return this.userSettings.getPreferenceRecord(userId);
+		return this.userSettingsAccess.getPreferenceRecord(userId);
 	}
 
 	getPreferenceRecordsByUserIds(
 		userIds: string[],
 	): Promise<UserPreferenceRecordWithId[]> {
-		return this.userSettings.getPreferenceRecordsByUserIds(userIds);
+		return this.userSettingsAccess.getPreferenceRecordsByUserIds(userIds);
 	}
 
 	getConsentRecord(userId: string): Promise<UserConsentRecord | null> {
-		return this.userSettings.getConsentRecord(userId);
+		return this.userSettingsAccess.getConsentRecord(userId);
 	}
 
 	getConsentRecordsByUserIds(
 		userIds: string[],
 	): Promise<UserConsentRecordWithId[]> {
-		return this.userSettings.getConsentRecordsByUserIds(userIds);
+		return this.userSettingsAccess.getConsentRecordsByUserIds(userIds);
 	}
 
 	async updateMarketingPushConsent(
 		userId: string,
 		agreed: boolean,
 	): Promise<void> {
-		await this.userSettings.updateMarketingPushConsent(userId, agreed);
+		await this.userSettingsAccess.updateMarketingPushConsent(userId, agreed);
 	}
 }

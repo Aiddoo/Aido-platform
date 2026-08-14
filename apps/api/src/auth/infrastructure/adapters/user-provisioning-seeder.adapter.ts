@@ -1,7 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
 import { DefaultTodoCategorySeeder } from "@/todo-category";
-import { UserSettingsFacade } from "@/user-settings";
+import {
+	USER_SETTINGS_PROVISIONER,
+	type UserSettingsProvisionerPort,
+} from "@/user-settings";
 import type {
 	ProvisioningConsent,
 	UserProvisioningSeederPort,
@@ -16,7 +19,8 @@ export class UserProvisioningSeederAdapter
 	implements UserProvisioningSeederPort
 {
 	constructor(
-		private readonly userSettings: UserSettingsFacade,
+		@Inject(USER_SETTINGS_PROVISIONER)
+		private readonly userSettingsProvisioner: UserSettingsProvisionerPort,
 		private readonly defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
 	) {}
 
@@ -24,7 +28,7 @@ export class UserProvisioningSeederAdapter
 		userId: string,
 		consent: ProvisioningConsent,
 	): Promise<void> {
-		return this.userSettings.seedDefaults(userId, consent);
+		return this.userSettingsProvisioner.seedDefaults(userId, consent);
 	}
 
 	async seedDefaultCategories(userId: string): Promise<void> {
