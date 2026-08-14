@@ -25,6 +25,7 @@
     "apps/api/test/e2e/__snapshots__/**",
     "apps/api/test/e2e/fixtures/released-v1-openapi-contract.ts",
     "apps/mobile/assets/**",
+    "apps/mobile/uniwind-types.d.ts",
     "apps/mobile/.agents/**",
     "apps/mobile/.claude/skills/**",
     "**/dist/**",
