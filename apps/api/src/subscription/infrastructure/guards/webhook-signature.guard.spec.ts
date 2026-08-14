@@ -11,6 +11,7 @@
  */
 import { Test } from "@nestjs/testing";
 import { createMockExecutionContext } from "@test/mocks";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
@@ -26,14 +27,9 @@ interface GuardConfigStub {
  * TypedConfigService 부분 스텁으로 가드 인스턴스를 생성한다.
  * (useValue는 any이므로 부분 객체를 캐스트 없이 주입할 수 있다)
  */
-async function createGuard(
-	config: GuardConfigStub,
-): Promise<WebhookSignatureGuard> {
+async function createGuard(config: GuardConfigStub): Promise<WebhookSignatureGuard> {
 	const moduleRef = await Test.createTestingModule({
-		providers: [
-			WebhookSignatureGuard,
-			{ provide: TypedConfigService, useValue: config },
-		],
+		providers: [WebhookSignatureGuard, { provide: TypedConfigService, useValue: config }],
 	}).compile();
 
 	return moduleRef.get(WebhookSignatureGuard);

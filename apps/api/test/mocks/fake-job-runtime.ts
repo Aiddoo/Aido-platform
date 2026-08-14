@@ -90,11 +90,7 @@ export class FakeJobRuntime implements JobRuntimePort {
 		};
 	}
 
-	async run<T extends JobData>(
-		queue: string,
-		data: T,
-		name = queue,
-	): Promise<void> {
+	async run<T extends JobData>(queue: string, data: T, name = queue): Promise<void> {
 		const handler = this.handlers.get(queue);
 		if (!handler) {
 			throw new Error(`No fake job handler registered for ${queue}`);

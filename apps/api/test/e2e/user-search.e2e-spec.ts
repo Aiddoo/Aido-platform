@@ -17,6 +17,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("사용자 검색 E2E", () => {
@@ -43,11 +44,9 @@ describe("사용자 검색 E2E", () => {
 	});
 
 	it("이름으로 검색하면 매칭 사용자를 반환하고 본인은 제외한다", async () => {
-		const me = await ctx.helpers.createVerifiedUser(
-			"me-search@example.com",
-			password,
-			{ name: "검색하는나" },
-		);
+		const me = await ctx.helpers.createVerifiedUser("me-search@example.com", password, {
+			name: "검색하는나",
+		});
 		await ctx.helpers.createVerifiedUser("target1@example.com", password, {
 			name: "김철수",
 		});
@@ -59,9 +58,7 @@ describe("사용자 검색 E2E", () => {
 			.expect(200);
 
 		expect(response.body.success).toBe(true);
-		const names = response.body.data.items.map(
-			(u: { name: string | null }) => u.name,
-		);
+		const names = response.body.data.items.map((u: { name: string | null }) => u.name);
 		expect(names).toContain("김철수");
 		// 본인(검색하는나)은 결과에 없음
 		expect(names).not.toContain("검색하는나");
@@ -69,15 +66,10 @@ describe("사용자 검색 E2E", () => {
 	});
 
 	it("태그로 검색하면 해당 사용자를 반환한다", async () => {
-		const me = await ctx.helpers.createVerifiedUser(
-			"me-tag@example.com",
-			password,
-		);
-		const target = await ctx.helpers.createVerifiedUser(
-			"target-tag@example.com",
-			password,
-			{ name: "박영희" },
-		);
+		const me = await ctx.helpers.createVerifiedUser("me-tag@example.com", password);
+		const target = await ctx.helpers.createVerifiedUser("target-tag@example.com", password, {
+			name: "박영희",
+		});
 
 		const response = await request(ctx.app.getHttpServer())
 			.get("/v1/follows/search")
@@ -85,31 +77,18 @@ describe("사용자 검색 E2E", () => {
 			.set("Authorization", `Bearer ${me.accessToken}`)
 			.expect(200);
 
-		const tags = response.body.data.items.map(
-			(u: { userTag: string }) => u.userTag,
-		);
+		const tags = response.body.data.items.map((u: { userTag: string }) => u.userTag);
 		expect(tags).toContain(target.userTag);
 	});
 
 	it("동명이인은 모두 반환되고 userTag로 구분된다", async () => {
-		const me = await ctx.helpers.createVerifiedUser(
-			"me-dup@example.com",
-			password,
-		);
-		const a = await ctx.helpers.createVerifiedUser(
-			"dup-a@example.com",
-			password,
-			{
-				name: "홍길동",
-			},
-		);
-		const b = await ctx.helpers.createVerifiedUser(
-			"dup-b@example.com",
-			password,
-			{
-				name: "홍길동",
-			},
-		);
+		const me = await ctx.helpers.createVerifiedUser("me-dup@example.com", password);
+		const a = await ctx.helpers.createVerifiedUser("dup-a@example.com", password, {
+			name: "홍길동",
+		});
+		const b = await ctx.helpers.createVerifiedUser("dup-b@example.com", password, {
+			name: "홍길동",
+		});
 
 		const response = await request(ctx.app.getHttpServer())
 			.get("/v1/follows/search")
@@ -128,15 +107,10 @@ describe("사용자 검색 E2E", () => {
 	});
 
 	it("보낸 친구 요청은 requestPending=true로 표시된다", async () => {
-		const me = await ctx.helpers.createVerifiedUser(
-			"me-pending@example.com",
-			password,
-		);
-		const target = await ctx.helpers.createVerifiedUser(
-			"target-pending@example.com",
-			password,
-			{ name: "요청대상자" },
-		);
+		const me = await ctx.helpers.createVerifiedUser("me-pending@example.com", password);
+		const target = await ctx.helpers.createVerifiedUser("target-pending@example.com", password, {
+			name: "요청대상자",
+		});
 
 		await request(ctx.app.getHttpServer())
 			.post(`/v1/follows/${target.userTag}`)
@@ -158,15 +132,10 @@ describe("사용자 검색 E2E", () => {
 	});
 
 	it("맞팔 친구는 isFriend=true로 표시된다", async () => {
-		const me = await ctx.helpers.createVerifiedUser(
-			"me-friend@example.com",
-			password,
-		);
-		const friend = await ctx.helpers.createVerifiedUser(
-			"friend-search@example.com",
-			password,
-			{ name: "내친구야" },
-		);
+		const me = await ctx.helpers.createVerifiedUser("me-friend@example.com", password);
+		const friend = await ctx.helpers.createVerifiedUser("friend-search@example.com", password, {
+			name: "내친구야",
+		});
 
 		await ctx.helpers.createFriendship(me, friend);
 
@@ -186,10 +155,7 @@ describe("사용자 검색 E2E", () => {
 	});
 
 	it("검색어가 2자 미만이면 400을 반환한다", async () => {
-		const me = await ctx.helpers.createVerifiedUser(
-			"me-short@example.com",
-			password,
-		);
+		const me = await ctx.helpers.createVerifiedUser("me-short@example.com", password);
 
 		await request(ctx.app.getHttpServer())
 			.get("/v1/follows/search")
@@ -199,10 +165,7 @@ describe("사용자 검색 E2E", () => {
 	});
 
 	it("nextCursor로 다음 페이지를 이어서 조회한다 (중복 없음)", async () => {
-		const me = await ctx.helpers.createVerifiedUser(
-			"me-page@example.com",
-			password,
-		);
+		const me = await ctx.helpers.createVerifiedUser("me-page@example.com", password);
 		// 동일 접두어 이름 3명
 		await ctx.helpers.createVerifiedUser("page-1@example.com", password, {
 			name: "페이지유저",

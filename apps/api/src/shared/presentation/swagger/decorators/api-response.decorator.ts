@@ -7,10 +7,7 @@ import type {
 	ApiPaginatedResponseOptions,
 	ApiSuccessResponseOptions,
 } from "../interfaces/swagger.interface";
-import {
-	CursorPaginationInfoSchema,
-	PaginationInfoSchema,
-} from "../schemas/response.schema";
+import { CursorPaginationInfoSchema, PaginationInfoSchema } from "../schemas/response.schema";
 
 /**
  * 성공 응답 래퍼 스키마 생성
@@ -75,9 +72,7 @@ function createPaginatedSchema<T>(type: Type<T>) {
  * findAll() { ... }
  * ```
  */
-export function ApiSuccessResponse<T>(
-	options: ApiSuccessResponseOptions<T>,
-): MethodDecorator {
+export function ApiSuccessResponse<T>(options: ApiSuccessResponseOptions<T>): MethodDecorator {
 	const {
 		status = HttpStatus.OK,
 		description = SWAGGER_DESCRIPTION.SUCCESS_200,
@@ -105,9 +100,7 @@ export function ApiSuccessResponse<T>(
  * create(@Body() dto: CreateTodoDto) { ... }
  * ```
  */
-export function ApiCreatedResponse<T>(
-	options: ApiCreatedResponseOptions<T>,
-): MethodDecorator {
+export function ApiCreatedResponse<T>(options: ApiCreatedResponseOptions<T>): MethodDecorator {
 	const { description = SWAGGER_DESCRIPTION.CREATED_201, type } = options;
 
 	return applyDecorators(
@@ -133,9 +126,7 @@ export function ApiCreatedResponse<T>(
  * findAll(@Query() query: PaginationDto) { ... }
  * ```
  */
-export function ApiPaginatedResponse<T>(
-	options: ApiPaginatedResponseOptions<T>,
-): MethodDecorator {
+export function ApiPaginatedResponse<T>(options: ApiPaginatedResponseOptions<T>): MethodDecorator {
 	const { description = SWAGGER_DESCRIPTION.SUCCESS_200, type } = options;
 
 	return applyDecorators(

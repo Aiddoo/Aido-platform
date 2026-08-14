@@ -4,9 +4,7 @@ import type {
 } from "../../domain/weekly-achievement";
 
 /** WeeklyAchievementRepositoryPort DI 토큰 */
-export const WEEKLY_ACHIEVEMENT_REPOSITORY = Symbol(
-	"WEEKLY_ACHIEVEMENT_REPOSITORY",
-);
+export const WEEKLY_ACHIEVEMENT_REPOSITORY = Symbol("WEEKLY_ACHIEVEMENT_REPOSITORY");
 
 /**
  * 주간 달성 저장소 포트.

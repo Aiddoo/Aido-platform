@@ -1,9 +1,6 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
-import {
-	DEFAULT_LOCALE,
-	SUPPORTED_LOCALES,
-	type SupportedLocale,
-} from "@/shared/domain/locale";
+
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "@/shared/domain/locale";
 
 export {
 	DEFAULT_LOCALE,
@@ -19,9 +16,7 @@ export {
  * - 화이트리스트(ko/en) 외 언어 → "ko" 폴백
  * - "en-US,en;q=0.9" 같은 표준 형식은 첫 항목의 language 서브태그만 사용
  */
-export function parseAcceptLanguage(
-	header: unknown,
-): SupportedLocale | undefined {
+export function parseAcceptLanguage(header: unknown): SupportedLocale | undefined {
 	if (typeof header !== "string" || header.length === 0) {
 		return undefined;
 	}

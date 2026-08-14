@@ -1,4 +1,5 @@
 import type { KyInstance } from 'ky';
+
 import { KyJsonFetcher } from './ky-json-fetcher';
 
 describe('KyJsonFetcher', () => {

@@ -1,8 +1,6 @@
 import { Cheer } from "./cheer.aggregate";
 
-const make = (
-	over: Partial<{ readAt: Date | null; receiverId: string }> = {},
-) =>
+const make = (over: Partial<{ readAt: Date | null; receiverId: string }> = {}) =>
 	Cheer.reconstitute({
 		id: 1,
 		senderId: "sender",

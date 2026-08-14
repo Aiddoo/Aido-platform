@@ -1,5 +1,6 @@
 import { createMockAnalytics } from '@src/shared/__tests__/create-mock-analytics';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+
 import {
   recordFeatureDiscoveryCardCta,
   recordFeatureDiscoveryDismissed,

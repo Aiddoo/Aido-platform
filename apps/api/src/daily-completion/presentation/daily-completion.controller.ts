@@ -11,17 +11,11 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { GetDailyCompletionsUseCase } from "../application/queries/get-daily-completions/get-daily-completions.use-case";
 import { GetFriendDailyCompletionsUseCase } from "../application/queries/get-friend-daily-completions/get-friend-daily-completions.use-case";
 import type { DailyCompletionsRange } from "../domain/daily-completion";
-import {
-	DailyCompletionsRangeResponseDto,
-	GetDailyCompletionsRangeDto,
-} from "./dtos";
+import { DailyCompletionsRangeResponseDto, GetDailyCompletionsRangeDto } from "./dtos";
 
 @ApiTags(SWAGGER_TAGS.DAILY_COMPLETIONS)
 @ApiBearerAuth()
@@ -211,9 +205,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
 		return this.#mapToResponse(result);
 	}
 
-	#mapToResponse(
-		result: DailyCompletionsRange,
-	): DailyCompletionsRangeResponseDto {
+	#mapToResponse(result: DailyCompletionsRange): DailyCompletionsRangeResponseDto {
 		return {
 			completions: result.completions.map((c) => ({
 				date: c.date,

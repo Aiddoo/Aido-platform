@@ -1,15 +1,11 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
-import {
-	TODO_CREATOR,
-	type TodoCreatorPort,
-} from "../../ports/todo-creator.port";
+
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
 
 /** 단건 변환 입력 (컨트롤러가 날짜/시간을 파싱해 전달). */
 export interface ConvertMemoToTodoData {
@@ -52,9 +48,7 @@ export class ConvertMemoToTodoUseCase {
 		private readonly todoCreator: TodoCreatorPort,
 	) {}
 
-	async execute(
-		input: ConvertMemoToTodoInput,
-	): Promise<ConvertMemoToTodoResult> {
+	async execute(input: ConvertMemoToTodoInput): Promise<ConvertMemoToTodoResult> {
 		const { userId, memoId, data } = input;
 
 		// 1. 소유권 확인 (읽기 전용, TX 외부)
@@ -79,9 +73,7 @@ export class ConvertMemoToTodoUseCase {
 		// 3. 메모 삭제 (할 일 생성 커밋 후)
 		await this.repository.delete(memoId);
 
-		this.#logger.log(
-			`Memo ${memoId} converted to todo ${todo.id} for user: ${userId}`,
-		);
+		this.#logger.log(`Memo ${memoId} converted to todo ${todo.id} for user: ${userId}`);
 
 		return { message: "메모가 할 일로 변환되었습니다.", todo };
 	}

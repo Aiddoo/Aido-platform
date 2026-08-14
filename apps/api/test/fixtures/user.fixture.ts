@@ -48,8 +48,7 @@ export const UserFixture = {
 			emailVerifiedAt: overrides.emailVerifiedAt ?? now,
 			twoFactorEnabled: overrides.twoFactorEnabled ?? false,
 			twoFactorSecret: overrides.twoFactorSecret ?? null,
-			subscriptionStatus:
-				overrides.subscriptionStatus ?? ("FREE" as SubscriptionStatus),
+			subscriptionStatus: overrides.subscriptionStatus ?? ("FREE" as SubscriptionStatus),
 			subscriptionExpiresAt: overrides.subscriptionExpiresAt ?? null,
 			revenueCatUserId: overrides.revenueCatUserId ?? null,
 			aiUsageCount: overrides.aiUsageCount ?? 0,
@@ -89,10 +88,7 @@ export const UserFixture = {
 		profileOverrides: Partial<UserProfile> = {},
 		preferenceOverrides: Partial<UserPreference> = {},
 	): { user: User; profile: UserProfile; preference: UserPreference } => {
-		const { user, profile } = UserFixture.createWithProfile(
-			userOverrides,
-			profileOverrides,
-		);
+		const { user, profile } = UserFixture.createWithProfile(userOverrides, profileOverrides);
 
 		const preference: UserPreference = {
 			id: preferenceOverrides.id ?? `pref-${userCounter}`,
@@ -159,10 +155,7 @@ export const AccountFixture = {
 	/**
 	 * OAuth Account 생성
 	 */
-	createOAuth: (
-		provider: AccountProvider,
-		overrides: Partial<Account> = {},
-	): Account => {
+	createOAuth: (provider: AccountProvider, overrides: Partial<Account> = {}): Account => {
 		return AccountFixture.create({
 			provider,
 			accessToken: `${provider.toLowerCase()}-access-token`,

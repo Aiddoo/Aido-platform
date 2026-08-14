@@ -13,6 +13,7 @@ import type { CurrentUserPayload } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockExecutionContext } from "@test/mocks";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { GetAiUsageUseCase } from "../../application/queries/get-ai-usage/get-ai-usage.use-case";
@@ -61,9 +62,7 @@ describe("AiUsageGuard — AI 사용량 가드", () => {
 			const { context } = createMockExecutionContext();
 
 			// When & Then
-			await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
-				ApplicationException,
-			);
+			await expect(guard.canActivate(context)).rejects.toBeInstanceOf(ApplicationException);
 			await expect(guard.canActivate(context)).rejects.toMatchObject({
 				errorCode: "AUTH_0107",
 			});

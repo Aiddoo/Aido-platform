@@ -1,4 +1,5 @@
 import { Test } from "@nestjs/testing";
+
 import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case";
 import { AppConfigController } from "./app-config.controller";
 

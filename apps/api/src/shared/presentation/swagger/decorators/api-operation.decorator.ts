@@ -20,17 +20,9 @@ import { ErrorResponseSchema } from "../schemas/response.schema";
  * ```
  */
 export function ApiDoc(options: ApiDocOptions): MethodDecorator {
-	const {
-		summary,
-		description,
-		operationId,
-		deprecated,
-		includeCommonErrors = true,
-	} = options;
+	const { summary, description, operationId, deprecated, includeCommonErrors = true } = options;
 
-	const decorators: Array<
-		ClassDecorator | MethodDecorator | PropertyDecorator
-	> = [
+	const decorators: Array<ClassDecorator | MethodDecorator | PropertyDecorator> = [
 		ApiOperation({
 			summary,
 			description,

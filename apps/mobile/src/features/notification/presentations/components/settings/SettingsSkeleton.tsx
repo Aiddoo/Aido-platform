@@ -2,6 +2,7 @@ import { HStack, VStack } from '@src/shared/ui';
 import { times } from 'es-toolkit/compat';
 import { Separator, Skeleton, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
+
 import { SettingsCard } from './SettingsCard';
 
 export function ToggleSkeleton() {

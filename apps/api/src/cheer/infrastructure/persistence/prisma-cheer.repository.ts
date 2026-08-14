@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 
 import type { Cheer as CheerRow } from "@/generated/prisma/client";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
@@ -40,9 +40,7 @@ const CHEER_INCLUDE = {
 @Injectable()
 export class PrismaCheerRepository implements CheerRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	private get client() {
@@ -60,9 +58,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 		});
 	}
 
-	private static toWithRelations(
-		row: CheerRowWithRelations,
-	): CheerWithRelations {
+	private static toWithRelations(row: CheerRowWithRelations): CheerWithRelations {
 		return {
 			id: row.id,
 			senderId: row.senderId,
@@ -88,10 +84,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 		return row ? PrismaCheerRepository.toCheer(row) : null;
 	}
 
-	async findLastCheerToUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<Cheer | null> {
+	async findLastCheerToUser(senderId: string, receiverId: string): Promise<Cheer | null> {
 		const row = await this.client.cheer.findFirst({
 			where: { senderId, receiverId },
 			orderBy: { createdAt: "desc" },
@@ -114,9 +107,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 		return result.count;
 	}
 
-	async findReceivedCheers(
-		params: FindCheersParams,
-	): Promise<CheerWithRelations[]> {
+	async findReceivedCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
 		const { userId, cursor, size } = params;
 		const rows = await this.client.cheer.findMany({
 			where: { receiverId: userId },
@@ -128,9 +119,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 		return rows.map((row) => PrismaCheerRepository.toWithRelations(row));
 	}
 
-	async findSentCheers(
-		params: FindCheersParams,
-	): Promise<CheerWithRelations[]> {
+	async findSentCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
 		const { userId, cursor, size } = params;
 		const rows = await this.client.cheer.findMany({
 			where: { senderId: userId },
@@ -150,11 +139,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 		});
 	}
 
-	async countSentSince(
-		senderId: string,
-		since: Date,
-		untilExclusive: Date,
-	): Promise<number> {
+	async countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {
 		return this.client.cheer.count({
 			where: {
 				senderId,
@@ -177,9 +162,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 		});
 	}
 
-	async createWithRelations(
-		input: CreateCheerInput,
-	): Promise<CheerWithRelations> {
+	async createWithRelations(input: CreateCheerInput): Promise<CheerWithRelations> {
 		const row = await this.client.cheer.create({
 			data: {
 				sender: { connect: { id: input.senderId } },

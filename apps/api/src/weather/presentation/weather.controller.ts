@@ -1,26 +1,11 @@
-import {
-	Body,
-	Controller,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Put,
-	Query,
-} from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Put, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+
 import { now } from "@/shared/domain/date/utils/core";
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
-import {
-	ApiDoc,
-	ApiSuccessResponse,
-	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
-
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { GetWeatherConditionsUseCase } from "../application/queries/get-weather-conditions/get-weather-conditions.use-case";
 import { GetWeatherForecastUseCase } from "../application/queries/get-weather-forecast/get-weather-forecast.use-case";
 import { UpsertLocationUseCase } from "../application/use-cases/upsert-location/upsert-location.use-case";
@@ -64,10 +49,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 		`,
 	})
 	@ApiSuccessResponse({ type: LocationResponseDto })
-	async updateLocation(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: UpdateLocationDto,
-	) {
+	async updateLocation(@CurrentUser() user: CurrentUserPayload, @Body() dto: UpdateLocationDto) {
 		const location = await this.upsertLocationUseCase.execute({
 			userId: user.userId,
 			latitude: dto.latitude,
@@ -146,17 +128,12 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 		`,
 	})
 	@ApiSuccessResponse({ type: WeatherForecastResponseDto })
-	async getForecast(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetForecastQueryDto,
-	) {
+	async getForecast(@CurrentUser() user: CurrentUserPayload, @Query() query: GetForecastQueryDto) {
 		const date = query.date ? parseDateOnly(query.date) : now();
-		const { forecast, location } = await this.getWeatherForecastUseCase.execute(
-			{
-				userId: user.userId,
-				date,
-			},
-		);
+		const { forecast, location } = await this.getWeatherForecastUseCase.execute({
+			userId: user.userId,
+			date,
+		});
 		return {
 			latitude: location.latitude,
 			longitude: location.longitude,

@@ -3,6 +3,7 @@ import { createMockTokenStore } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import type { KyRequest, KyResponse, NormalizedOptions } from 'ky';
+
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 import type { RefreshOutcome } from './token-refresher';
 

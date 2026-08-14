@@ -38,11 +38,7 @@ describe("buildParseTodoPrompt", () => {
 
 		it("America/New_York 타임존을 올바르게 변환한다", () => {
 			const utcDate = new Date("2026-02-25T20:00:00.000Z");
-			const result = buildParseTodoPrompt(
-				"테스트",
-				"America/New_York",
-				utcDate,
-			);
+			const result = buildParseTodoPrompt("테스트", "America/New_York", utcDate);
 			expect(result.system).toContain("2026-02-25 15:00");
 		});
 
@@ -178,9 +174,7 @@ describe("buildParseTodoPromptEn — en 로케일", () => {
 		);
 
 		// Then
-		expect(system).toContain(
-			"You are an expert at converting natural language input",
-		);
+		expect(system).toContain("You are an expert at converting natural language input");
 		expect(system).not.toContain('"Health"');
 		expect(prompt).toContain('"name": "Health"');
 		expect(system).toContain("Needs review");
@@ -190,11 +184,7 @@ describe("buildParseTodoPromptEn — en 로케일", () => {
 
 	it("카테고리가 없으면 카테고리 섹션을 생략한다", () => {
 		// Given / When
-		const { system } = buildParseTodoPromptEn(
-			"buy milk",
-			"UTC",
-			new Date("2026-07-07T12:00:00Z"),
-		);
+		const { system } = buildParseTodoPromptEn("buy milk", "UTC", new Date("2026-07-07T12:00:00Z"));
 
 		// Then
 		expect(system).not.toContain("Category assignment");

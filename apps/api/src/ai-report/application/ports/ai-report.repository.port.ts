@@ -4,6 +4,7 @@ import type {
 	ReportStats,
 	TimePatternItem,
 } from "@aido/validators";
+
 import type { SupportedLocale } from "@/shared/domain/locale";
 
 import type { AiReport } from "../../domain/entities/ai-report.entity";
@@ -45,10 +46,5 @@ export interface AiReportRepositoryPort {
 	findByIdAndUserId(id: number, userId: string): Promise<AiReport | null>;
 	findLatest(userId: string, type: ReportType): Promise<AiReport | null>;
 	findMany(params: FindReportsParams): Promise<AiReport[]>;
-	exists(
-		userId: string,
-		type: ReportType,
-		year: number,
-		period: number,
-	): Promise<boolean>;
+	exists(userId: string, type: ReportType, year: number, period: number): Promise<boolean>;
 }

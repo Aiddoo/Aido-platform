@@ -33,15 +33,11 @@ describe("account-status-policy 도메인 서비스", () => {
 		});
 
 		it("ACTIVE 계정은 상태 게이트를 통과한다", () => {
-			expect(() =>
-				assertStatusAllowsLogin("ACTIVE", "user@example.com"),
-			).not.toThrow();
+			expect(() => assertStatusAllowsLogin("ACTIVE", "user@example.com")).not.toThrow();
 		});
 
 		it("PENDING_VERIFY 계정은 상태 게이트를 통과한다", () => {
-			expect(() =>
-				assertStatusAllowsLogin("PENDING_VERIFY", "user@example.com"),
-			).not.toThrow();
+			expect(() => assertStatusAllowsLogin("PENDING_VERIFY", "user@example.com")).not.toThrow();
 		});
 	});
 });

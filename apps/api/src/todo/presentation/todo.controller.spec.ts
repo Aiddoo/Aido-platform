@@ -17,6 +17,7 @@ import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import { GetTodosUseCase } from "../application/queries";
 import {
 	CreateRecurringTodosUseCase,
@@ -34,9 +35,7 @@ import type {
 import { TodoController } from "./todo.controller";
 
 /** 응답 read model(TodoResponse) 생성 헬퍼 — 행을 매핑해 계약 형태를 보장한다 */
-function buildResponse(
-	overrides: Partial<TodoWithCategory> = {},
-): TodoResponse {
+function buildResponse(overrides: Partial<TodoWithCategory> = {}): TodoResponse {
 	return TodoMapper.toResponse(
 		TodoBuilder.create("user-123")
 			.withId(overrides.id ?? 1)
@@ -46,9 +45,7 @@ function buildResponse(
 }
 
 /** 타입 지정 CreateTodoDto 팩토리 (as 캐스팅 없이 부분 오버라이드) */
-function makeCreateTodoDto(
-	overrides: Partial<CreateTodoDto> = {},
-): CreateTodoDto {
+function makeCreateTodoDto(overrides: Partial<CreateTodoDto> = {}): CreateTodoDto {
 	return {
 		title: "팀 미팅",
 		categoryId: 1,
@@ -60,16 +57,12 @@ function makeCreateTodoDto(
 }
 
 /** 타입 지정 GetTodosQueryDto 팩토리 */
-function makeGetTodosQueryDto(
-	overrides: Partial<GetTodosQueryDto> = {},
-): GetTodosQueryDto {
+function makeGetTodosQueryDto(overrides: Partial<GetTodosQueryDto> = {}): GetTodosQueryDto {
 	return { size: 20, ...overrides };
 }
 
 /** 타입 지정 CreateRecurringTodoDto 팩토리 */
-function makeRecurringDto(
-	overrides: Partial<CreateRecurringTodoDto> = {},
-): CreateRecurringTodoDto {
+function makeRecurringDto(overrides: Partial<CreateRecurringTodoDto> = {}): CreateRecurringTodoDto {
 	return {
 		title: "약 먹기",
 		categoryId: 1,

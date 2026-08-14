@@ -8,14 +8,15 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NotificationBuilder } from "@test/builders";
 import { createNotificationCacheMock } from "@test/mocks/ports";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 import { MarkAsReadUseCase } from "./mark-as-read.use-case";
 
 describe("MarkAsReadUseCase", () => {
@@ -38,10 +39,7 @@ describe("MarkAsReadUseCase", () => {
 	});
 
 	it("소유한 미읽음 알림을 읽음 처리하고 캐시를 무효화해야 한다", async () => {
-		const notification = NotificationBuilder.create(mockUserId)
-			.withId(1)
-			.asUnread()
-			.build();
+		const notification = NotificationBuilder.create(mockUserId).withId(1).asUnread().build();
 		notificationRepo.findNotificationById.mockResolvedValue(notification);
 		notificationRepo.markAsRead.mockResolvedValue(true);
 
@@ -61,9 +59,7 @@ describe("MarkAsReadUseCase", () => {
 	});
 
 	it("다른 사용자의 알림이면 NOTIFICATION_1005", async () => {
-		const notification = NotificationBuilder.create("other-user")
-			.withId(1)
-			.build();
+		const notification = NotificationBuilder.create("other-user").withId(1).build();
 		notificationRepo.findNotificationById.mockResolvedValue(notification);
 
 		await expect(useCase.execute(mockUserId, 1)).rejects.toMatchObject({
@@ -73,10 +69,7 @@ describe("MarkAsReadUseCase", () => {
 	});
 
 	it("이미 읽은 알림이면 무동작", async () => {
-		const notification = NotificationBuilder.create(mockUserId)
-			.withId(1)
-			.asRead()
-			.build();
+		const notification = NotificationBuilder.create(mockUserId).withId(1).asRead().build();
 		notificationRepo.findNotificationById.mockResolvedValue(notification);
 
 		await useCase.execute(mockUserId, 1);

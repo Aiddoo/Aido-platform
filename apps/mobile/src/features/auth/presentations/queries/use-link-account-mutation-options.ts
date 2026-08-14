@@ -6,6 +6,7 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+
 import { isAuthError, isCancelledError } from '../../models/auth.error';
 import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels.constant';

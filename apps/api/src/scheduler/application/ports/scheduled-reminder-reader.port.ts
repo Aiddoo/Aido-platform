@@ -5,11 +5,7 @@
  * (프리미엄 = 커스텀 시간, 무료 = 고정 시간 쿼리를 별도 메서드로 분리해
  *  전략이 "무료 쿼리 스킵" 조건을 그대로 제어)
  */
-import type {
-	ReminderCountUser,
-	UserIdRow,
-	UserWithTodosAndStreak,
-} from "./scheduler-read-models";
+import type { ReminderCountUser, UserIdRow, UserWithTodosAndStreak } from "./scheduler-read-models";
 
 export const SCHEDULED_REMINDER_READER = Symbol("SCHEDULED_REMINDER_READER");
 
@@ -40,14 +36,10 @@ export interface PeriodReportParams {
 
 export interface ScheduledReminderReaderPort {
 	/** 프리미엄 아침 리마인더 수신자 (커스텀 시간) */
-	findPremiumMorningReminderUsers(
-		params: CustomTimeReminderParams,
-	): Promise<ReminderCountUser[]>;
+	findPremiumMorningReminderUsers(params: CustomTimeReminderParams): Promise<ReminderCountUser[]>;
 
 	/** 무료 아침 리마인더 수신자 (고정 08:00) */
-	findFreeMorningReminderUsers(
-		params: FixedTimeReminderParams,
-	): Promise<ReminderCountUser[]>;
+	findFreeMorningReminderUsers(params: FixedTimeReminderParams): Promise<ReminderCountUser[]>;
 
 	/** 프리미엄 저녁 리마인더 수신자 (커스텀 시간, 오늘 투두 보유) */
 	findPremiumEveningReminderUsers(
@@ -55,9 +47,7 @@ export interface ScheduledReminderReaderPort {
 	): Promise<UserWithTodosAndStreak[]>;
 
 	/** 무료 저녁 리마인더 수신자 (고정 19:00, 오늘 투두 보유) */
-	findFreeEveningReminderUsers(
-		params: FixedTimeReminderParams,
-	): Promise<UserWithTodosAndStreak[]>;
+	findFreeEveningReminderUsers(params: FixedTimeReminderParams): Promise<UserWithTodosAndStreak[]>;
 
 	/** 점심 넛지 대상 (오늘 투두 있으나 완료 0개) */
 	findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]>;

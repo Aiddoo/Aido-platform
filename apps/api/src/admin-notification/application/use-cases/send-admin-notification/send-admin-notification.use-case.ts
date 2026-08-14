@@ -25,12 +25,8 @@ export class SendAdminNotificationUseCase {
 		private readonly paymentNotifier: AdminNotifier,
 	) {}
 
-	async execute(
-		channel: NotificationChannel,
-		notification: AdminNotification,
-	): Promise<void> {
-		const notifier =
-			channel === "payment" ? this.paymentNotifier : this.adminNotifier;
+	async execute(channel: NotificationChannel, notification: AdminNotification): Promise<void> {
+		const notifier = channel === "payment" ? this.paymentNotifier : this.adminNotifier;
 
 		this.#logger.debug(
 			`Processing admin notification: channel=${channel}, title=${notification.title}`,
@@ -42,8 +38,6 @@ export class SendAdminNotificationUseCase {
 			throw new Error(`Discord webhook failed: ${result.error}`);
 		}
 
-		this.#logger.log(
-			`Admin notification sent: channel=${channel}, title=${notification.title}`,
-		);
+		this.#logger.log(`Admin notification sent: channel=${channel}, title=${notification.title}`);
 	}
 }

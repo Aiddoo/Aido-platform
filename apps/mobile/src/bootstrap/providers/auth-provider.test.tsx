@@ -13,6 +13,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
+
 import { AuthProvider, useAuthStatus } from './auth-provider';
 import { StaticDIProvider } from './di-context';
 

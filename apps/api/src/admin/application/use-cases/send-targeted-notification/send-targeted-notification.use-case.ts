@@ -1,11 +1,10 @@
 import { ErrorCode } from "@aido/errors";
 import type { NotificationAction } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	type BroadcastResult,
-	buildBroadcastResult,
-} from "../../../domain/broadcast-result";
+
+import { type BroadcastResult, buildBroadcastResult } from "../../../domain/broadcast-result";
 import { BroadcastCampaign } from "../../../domain/entities/broadcast-campaign";
 import {
 	ADMIN_BROADCAST_NOTIFIER,
@@ -40,9 +39,7 @@ export class SendTargetedNotificationUseCase {
 		private readonly notifier: AdminBroadcastNotifierPort,
 	) {}
 
-	async execute(
-		input: SendTargetedNotificationInput,
-	): Promise<BroadcastResult> {
+	async execute(input: SendTargetedNotificationInput): Promise<BroadcastResult> {
 		// 타겟 발송은 필터가 없으므로 캠페인의 대상 필터는 사용하지 않는다(ALL 자리표시).
 		// 제목/본문 불변식 검증과 메시지 조립만 캠페인에 위임한다.
 		const campaign = BroadcastCampaign.create({
@@ -53,9 +50,7 @@ export class SendTargetedNotificationUseCase {
 			force: input.force,
 		});
 
-		const existingUserIds = await this.userDirectory.findExistingUserIds(
-			input.userIds,
-		);
+		const existingUserIds = await this.userDirectory.findExistingUserIds(input.userIds);
 
 		if (existingUserIds.length === 0) {
 			throw new ApplicationException(ErrorCode.ADMIN_1402, {
@@ -63,17 +58,13 @@ export class SendTargetedNotificationUseCase {
 			});
 		}
 
-		this.#logger.log(
-			`Sending targeted notification to ${existingUserIds.length} users`,
-		);
+		this.#logger.log(`Sending targeted notification to ${existingUserIds.length} users`);
 
 		const { count } = await this.notifier.sendBatch(
 			campaign.toMessages(existingUserIds, "ADMIN_TARGETED"),
 		);
 
-		this.#logger.log(
-			`Targeted notification completed: ${count} notifications sent`,
-		);
+		this.#logger.log(`Targeted notification completed: ${count} notifications sent`);
 
 		return buildBroadcastResult(existingUserIds.length, count);
 	}

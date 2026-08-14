@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { CHEER_LIMITS } from './cheer.constants';
 
 export const createCheerSchema = z.object({

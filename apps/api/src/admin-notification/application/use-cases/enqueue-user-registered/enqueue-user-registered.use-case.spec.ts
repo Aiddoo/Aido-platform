@@ -26,9 +26,7 @@ describe("EnqueueUserRegisteredUseCase", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			EnqueueUserRegisteredUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(EnqueueUserRegisteredUseCase).compile();
 		useCase = unit;
 		queue = unitRef.get(ADMIN_NOTIFICATION_QUEUE_PORT);
 	});
@@ -62,8 +60,6 @@ describe("EnqueueUserRegisteredUseCase", () => {
 	it("큐 등록 실패 시 에러를 전파한다", async () => {
 		queue.enqueueSend.mockRejectedValue(new Error("Redis connection error"));
 
-		await expect(useCase.execute(payload)).rejects.toThrow(
-			"Redis connection error",
-		);
+		await expect(useCase.execute(payload)).rejects.toThrow("Redis connection error");
 	});
 });

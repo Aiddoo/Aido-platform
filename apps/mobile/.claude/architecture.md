@@ -73,29 +73,29 @@ export interface HttpClient {
 }
 ```
 
-| Port | 구현체 | 위치 |
-|------|--------|------|
-| `HttpClient` | `KyHttpClient` | `shared/infra/http/ky-client.ts` |
-| `Storage` | `SecureStorage` | `shared/infra/storage/secure-storage.ts` |
-| `Logger` | `ConsoleLogger` / `SentryLogger`(prod, composite) | `shared/infra/logger/` |
-| `Analytics` | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev) | `shared/infra/analytics/` |
-| `ErrorReporter` | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/` |
+| Port            | 구현체                                                    | 위치                                     |
+| --------------- | --------------------------------------------------------- | ---------------------------------------- |
+| `HttpClient`    | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`         |
+| `Storage`       | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts` |
+| `Logger`        | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                   |
+| `Analytics`     | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                |
+| `ErrorReporter` | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`           |
 
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 
-| 클라이언트 | 용도 |
-|-----------|------|
-| `createPublicClient()` | 인증 전 요청 (로그인, 회원가입) |
+| 클라이언트                  | 용도                                 |
+| --------------------------- | ------------------------------------ |
+| `createPublicClient()`      | 인증 전 요청 (로그인, 회원가입)      |
 | `createAuthClient(storage)` | 인증 후 요청 (Bearer 토큰 자동 첨부) |
 
 ### 관측(Observability) 스택
 
 역할을 **분리**하되 타입 어휘를 통일한다. 상세 규칙: [observability.md](./observability.md)
 
-| 도구 | 담당 | 진입점 |
-|------|------|--------|
-| **Sentry** | 크래시·에러·검색가능 이벤트·breadcrumb (severity 판정) | `ErrorReporter` 포트 (`captureException`/`captureMessage`/`addBreadcrumb`) |
-| **Firebase Analytics** | 제품 지표(이벤트/화면/유저 속성) | `Analytics` 포트 + 타입 카탈로그 `track()`/`useTrack()` |
+| 도구                   | 담당                                                   | 진입점                                                                     |
+| ---------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
+| **Sentry**             | 크래시·에러·검색가능 이벤트·breadcrumb (severity 판정) | `ErrorReporter` 포트 (`captureException`/`captureMessage`/`addBreadcrumb`) |
+| **Firebase Analytics** | 제품 지표(이벤트/화면/유저 속성)                       | `Analytics` 포트 + 타입 카탈로그 `track()`/`useTrack()`                    |
 
 - **Crashlytics는 사용하지 않는다** (Sentry로 크래시까지 일원화, 2026-07 정리).
 - Breadcrumb 카테고리는 `BreadcrumbCategory` union(`http`·`navigation`·…)으로 고정 — 매직 문자열 금지.
@@ -107,10 +107,10 @@ export interface HttpClient {
 
 ### 예측 가능 vs 예측 불가능
 
-| 구분 | 에러 종류 | 처리 방식 |
-|------|----------|----------|
-| **예측 가능** | 서버 비즈니스 에러 (4xx), 클라이언트 검증 에러 | `Result.err()` 반환 → UI가 핸들링 |
-| **예측 불가능** | 서버 장애 (5xx), 네트워크, 타임아웃, 스키마 불일치 | `throw` → ErrorBoundary가 catch |
+| 구분            | 에러 종류                                          | 처리 방식                         |
+| --------------- | -------------------------------------------------- | --------------------------------- |
+| **예측 가능**   | 서버 비즈니스 에러 (4xx), 클라이언트 검증 에러     | `Result.err()` 반환 → UI가 핸들링 |
+| **예측 불가능** | 서버 장애 (5xx), 네트워크, 타임아웃, 스키마 불일치 | `throw` → ErrorBoundary가 catch   |
 
 ### 에러 계층
 
@@ -134,8 +134,7 @@ export interface HttpClient {
 
 ```typescript
 export type Result<T, E extends BusinessError = BusinessError> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
+  { ok: true; value: T } | { ok: false; error: E };
 
 export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
 export const err = <E extends BusinessError>(error: E): Result<never, E> => ({ ok: false, error });
@@ -196,6 +195,7 @@ export const {Feature}Policy = {
 Domain Error는 그 너머의 **비즈니스 규칙 위반** — Policy 검증 실패 시 Service가 서버 호출 전에 생성하여 불필요한 네트워크 요청을 차단한다.
 
 예시:
+
 - 자기 자신에게 친구 요청 시도 → 서버까지 갈 필요 없이 차단
 - 일일 사용 한도 초과 상태에서 요청 시도 → 클라이언트에서 즉시 차단
 - 빈 값이 아닌데 도메인 규칙에 맞지 않는 입력 (태그 형식 불일치 등) → 차단
@@ -315,11 +315,11 @@ features/{feature}/presentations/
 
 Domain 모델을 UI 표시용 데이터로 변환하는 순수 함수. Query Options의 `select`에서 호출한다.
 
-| 구분 | 역할 | 위치 |
-|------|------|------|
-| **Policy** | 비즈니스 규칙 (서버 호출 전 검증) | `models/` |
-| **ViewModel** | Domain → UI 데이터 변환 | `presentations/view-models/` |
-| **Component 상수** | UI 문구, 색상 등 | 컴포넌트 내부 |
+| 구분               | 역할                              | 위치                         |
+| ------------------ | --------------------------------- | ---------------------------- |
+| **Policy**         | 비즈니스 규칙 (서버 호출 전 검증) | `models/`                    |
+| **ViewModel**      | Domain → UI 데이터 변환           | `presentations/view-models/` |
+| **Component 상수** | UI 문구, 색상 등                  | 컴포넌트 내부                |
 
 단순 변환(필드 하나 추가, 포맷팅)은 `select` 인라인으로 처리하고, 복잡하거나(조건 분기 2개+) 재사용이 필요하면 view-model 파일로 분리한다.
 
@@ -529,24 +529,24 @@ onError: (error) => {
 
 **에러 유형별 처리 요약**
 
-| 레이어 | 에러 처리 방식 |
-|--------|--------------|
-| Service | `Result<T, E>` 반환 |
-| Presentation (queryFn/mutationFn) | `unwrap()` 사용 |
-| InfraError | ErrorBoundary가 처리 |
+| 레이어                            | 에러 처리 방식       |
+| --------------------------------- | -------------------- |
+| Service                           | `Result<T, E>` 반환  |
+| Presentation (queryFn/mutationFn) | `unwrap()` 사용      |
+| InfraError                        | ErrorBoundary가 처리 |
 
-| 에러 유형 | 타입 가드 | 처리 방식 |
-|----------|----------|----------|
-| **서버 비즈니스 에러 (4xx)** | `isApiError(error)` | 토스트 or 코드별 분기 |
-| **클라이언트 도메인 에러** | `is{Feature}Error(error)` | 토스트 or 코드별 분기 |
-| **인프라 에러 (5xx, 네트워크)** | - | ErrorBoundary가 처리 |
+| 에러 유형                       | 타입 가드                 | 처리 방식             |
+| ------------------------------- | ------------------------- | --------------------- |
+| **서버 비즈니스 에러 (4xx)**    | `isApiError(error)`       | 토스트 or 코드별 분기 |
+| **클라이언트 도메인 에러**      | `is{Feature}Error(error)` | 토스트 or 코드별 분기 |
+| **인프라 에러 (5xx, 네트워크)** | -                         | ErrorBoundary가 처리  |
 
 **ApiError 유틸리티**
 
 ```typescript
-error.hasCode('FEATURE_0001')  // 특정 에러 코드 확인
-error.isDomain('FEATURE_')     // 도메인 접두사로 확인
-error.message                  // 한국어 사용자 친화적 메시지
+error.hasCode('FEATURE_0001'); // 특정 에러 코드 확인
+error.isDomain('FEATURE_'); // 도메인 접두사로 확인
+error.message; // 한국어 사용자 친화적 메시지
 ```
 
 **Component + Loading 서브컴포넌트**
@@ -605,17 +605,21 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 ## 새 Feature 추가 체크리스트
 
 ### Step 1: Models
+
 - [ ] `features/{feature}/models/{feature}.model.ts` — Zod 스키마 + 타입 + Policy
 - [ ] `features/{feature}/models/{feature}.error.ts` — ErrorCode + Error + Factory + Guard
 
 ### Step 2: Services + Mapper
+
 - [ ] `features/{feature}/services/{feature}.mapper.ts` — DTO → Domain 순수 함수
 - [ ] `features/{feature}/services/{feature}.service.ts` — Service 클래스 (HttpClient 주입, HTTP + Zod + Mapper + Policy)
 
 ### Step 3: DI 등록
+
 - [ ] `bootstrap/providers/di-provider.tsx` — DIContainer + 인스턴스 + Hook
 
 ### Step 4: Presentations
+
 - [ ] `presentations/constants/{feature}-query-keys.constant.ts`
 - [ ] (필요 시) `presentations/view-models/{feature}.view-model.ts` — Domain → UI 데이터 변환
 - [ ] `presentations/queries/` — Query/Mutation Options (ViewModel이 있으면 `select`에서 적용)

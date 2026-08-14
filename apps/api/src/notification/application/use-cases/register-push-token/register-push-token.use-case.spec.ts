@@ -7,18 +7,16 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createNotificationCacheMock } from "@test/mocks/ports";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import {
-	PUSH_PROVIDER,
-	type PushProvider,
-} from "../../ports/push-provider.port";
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
+import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
@@ -80,10 +78,7 @@ describe("RegisterPushTokenUseCase", () => {
 			locale: "ko",
 		});
 
-		expect(userSettings.upsertPushTimezone).toHaveBeenCalledWith(
-			"user-1",
-			"Asia/Seoul",
-		);
+		expect(userSettings.upsertPushTimezone).toHaveBeenCalledWith("user-1", "Asia/Seoul");
 		expect(userSettings.upsertPushLocale).toHaveBeenCalledWith("user-1", "ko");
 		expect(cache.invalidateUserPreference).toHaveBeenCalledWith("user-1");
 	});

@@ -29,9 +29,7 @@ describe("BroadcastNotificationUseCase — 브로드캐스트", () => {
 	let notifier: Mocked<AdminBroadcastNotifierPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			BroadcastNotificationUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(BroadcastNotificationUseCase).compile();
 
 		useCase = unit;
 		userDirectory = unitRef.get(ADMIN_USER_DIRECTORY);
@@ -46,9 +44,7 @@ describe("BroadcastNotificationUseCase — 브로드캐스트", () => {
 				["u4", "u5"],
 			]),
 		);
-		notifier.sendBatch
-			.mockResolvedValueOnce({ count: 3 })
-			.mockResolvedValueOnce({ count: 2 });
+		notifier.sendBatch.mockResolvedValueOnce({ count: 3 }).mockResolvedValueOnce({ count: 2 });
 
 		// When - 브로드캐스트를 실행하면
 		const result = await useCase.execute({

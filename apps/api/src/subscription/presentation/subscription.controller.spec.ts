@@ -26,9 +26,7 @@ describe("SubscriptionController — 구독 컨트롤러 (thin delegation)", () 
 	let handleWebhookEventUseCase: Mocked<HandleWebhookEventUseCase>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SubscriptionController,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SubscriptionController).compile();
 
 		controller = unit;
 		handleWebhookEventUseCase = unitRef.get(HandleWebhookEventUseCase);
@@ -50,9 +48,7 @@ describe("SubscriptionController — 구독 컨트롤러 (thin delegation)", () 
 			const result = await controller.handleRevenueCatWebhook(request);
 
 			// Then — 파싱 없이 원시 본문을 그대로 전달 (검증은 use-case 소유)
-			expect(handleWebhookEventUseCase.execute).toHaveBeenCalledWith(
-				validPayload,
-			);
+			expect(handleWebhookEventUseCase.execute).toHaveBeenCalledWith(validPayload);
 			expect(result).toEqual({ received: true });
 		});
 
@@ -65,9 +61,7 @@ describe("SubscriptionController — 구독 컨트롤러 (thin delegation)", () 
 			handleWebhookEventUseCase.execute.mockRejectedValue(lockError);
 
 			// When & Then — try/catch 없이 GlobalExceptionFilter로 전파
-			await expect(controller.handleRevenueCatWebhook(request)).rejects.toBe(
-				lockError,
-			);
+			await expect(controller.handleRevenueCatWebhook(request)).rejects.toBe(lockError);
 		});
 	});
 });

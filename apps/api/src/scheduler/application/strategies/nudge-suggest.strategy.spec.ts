@@ -12,17 +12,16 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
 } from "../ports/re-engagement-reader.port";
-import {
-	SCHEDULER_DEDUP,
-	type SchedulerDedupPort,
-} from "../ports/scheduler-dedup.port";
+import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -55,8 +54,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
 
-		const { unit, unitRef } =
-			await TestBed.solitary(NudgeSuggestStrategy).compile();
+		const { unit, unitRef } = await TestBed.solitary(NudgeSuggestStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
@@ -110,8 +108,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.nudgeSuggest("친구1", 3, "ko", {
 			campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
 			recipientId: "user-1",
@@ -153,9 +150,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		]);
 
 		// 이번 주 이미 friend-1에게 발송 이력 (Redis)
-		schedulerDedup.findSentNudgePairs.mockResolvedValue(
-			new Set(["user-1:friend-1"]),
-		);
+		schedulerDedup.findSentNudgePairs.mockResolvedValue(new Set(["user-1:friend-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);

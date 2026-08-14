@@ -1,8 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import {
-	JOB_RUNTIME,
-	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 
 import type {
 	ReminderHourChangedJobData,
@@ -25,9 +23,7 @@ const SWEEP_JOB_DATA: SweepRemindersJobData = {};
  * {@link TimezoneReminderEnqueuerPort} 구현 — enqueue 진입점.
  */
 @Injectable()
-export class TimezoneReminderQueueService
-	implements TimezoneReminderEnqueuerPort
-{
+export class TimezoneReminderQueueService implements TimezoneReminderEnqueuerPort {
 	readonly #logger = new Logger(TimezoneReminderQueueService.name);
 
 	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
@@ -50,10 +46,7 @@ export class TimezoneReminderQueueService
 	 * 리마인더 시간 변경 catch-up 잡 등록
 	 */
 	enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void {
-		this.#enqueueAsync(
-			TimezoneReminderJobName.REMINDER_HOUR_CHANGED,
-			payload,
-		).catch((error) => {
+		this.#enqueueAsync(TimezoneReminderJobName.REMINDER_HOUR_CHANGED, payload).catch((error) => {
 			this.#logger.error(
 				`Failed to enqueue reminder-hour-changed: userId=${payload.userId}, ${error}`,
 				error instanceof Error ? error.stack : undefined,
@@ -75,9 +68,7 @@ export class TimezoneReminderQueueService
 				},
 			)
 			.then(() => {
-				this.#logger.debug(
-					`Social digest job enqueued: tz=${payload.timezone}, delay=90min`,
-				);
+				this.#logger.debug(`Social digest job enqueued: tz=${payload.timezone}, delay=90min`);
 			})
 			.catch((error) => {
 				this.#logger.error(
@@ -87,15 +78,8 @@ export class TimezoneReminderQueueService
 			});
 	}
 
-	async #enqueueAsync(
-		name: string,
-		data: ReminderHourChangedJobData,
-	): Promise<void> {
-		await this.runtime.enqueue(
-			TIMEZONE_REMINDER_QUEUE,
-			{ name, data },
-			this.#jobOptions(),
-		);
+	async #enqueueAsync(name: string, data: ReminderHourChangedJobData): Promise<void> {
+		await this.runtime.enqueue(TIMEZONE_REMINDER_QUEUE, { name, data }, this.#jobOptions());
 		this.#logger.debug(`Job enqueued: name=${name}`);
 	}
 

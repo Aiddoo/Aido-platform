@@ -7,6 +7,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("앱 컨트롤러 E2E", () => {
@@ -55,9 +56,7 @@ describe("앱 컨트롤러 E2E", () => {
 			.expect(204);
 
 		// Then - 브라우저가 실제 인증 요청을 보낼 수 있도록 명시적으로 허용한다
-		const allowedHeaders = String(
-			response.headers["access-control-allow-headers"],
-		)
+		const allowedHeaders = String(response.headers["access-control-allow-headers"])
 			.toLowerCase()
 			.split(",")
 			.map((header) => header.trim());

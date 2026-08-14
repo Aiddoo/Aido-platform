@@ -2,6 +2,7 @@ import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discov
 import { act, fireEvent, render, renderHook } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
+
 import { FEATURE_DISCOVERY_CAMPAIGN_ID } from '../../models/feature-discovery.registry';
 import { useFeatureDiscoveryHub } from './use-feature-discovery-hub';
 

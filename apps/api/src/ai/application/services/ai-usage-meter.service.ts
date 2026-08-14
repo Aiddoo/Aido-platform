@@ -7,18 +7,14 @@
  */
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import {
-	EntitlementService,
-	Feature,
-} from "@/shared/application/entitlement/entitlement.service";
+
+import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { isNewBillingMonth } from "../../domain/services/ai-usage-period";
-import {
-	AI_USAGE_REPOSITORY,
-	type AiUsageRepositoryPort,
-} from "../ports/ai-usage.repository.port";
+import { AI_USAGE_REPOSITORY, type AiUsageRepositoryPort } from "../ports/ai-usage.repository.port";
 
 @Injectable()
 export class AiUsageMeter {
@@ -34,10 +30,7 @@ export class AiUsageMeter {
 
 	/** 사용자별 월간 한도(무제한이면 null). */
 	async monthlyLimit(userId: string): Promise<number | null> {
-		const entitlement = await this.entitlementService.getFeatureLimit(
-			userId,
-			Feature.AI_PARSE,
-		);
+		const entitlement = await this.entitlementService.getFeatureLimit(userId, Feature.AI_PARSE);
 		return entitlement.dailyLimit;
 	}
 
@@ -86,10 +79,7 @@ export class AiUsageMeter {
 			await this.repository.decrement(userId);
 			this.#logger.debug(`AI usage decremented for user: ${userId}`);
 		} catch (rollbackError) {
-			this.#logger.error(
-				`Failed to rollback AI usage for ${userId}:`,
-				rollbackError,
-			);
+			this.#logger.error(`Failed to rollback AI usage for ${userId}:`, rollbackError);
 		}
 	}
 }

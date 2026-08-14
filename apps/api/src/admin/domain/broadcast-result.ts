@@ -8,10 +8,7 @@ export interface BroadcastResult {
 }
 
 /** 총 대상 수와 성공 수로부터 결과 값을 조립한다 (실패 수 = 총 - 성공) */
-export function buildBroadcastResult(
-	totalTargets: number,
-	successCount: number,
-): BroadcastResult {
+export function buildBroadcastResult(totalTargets: number, successCount: number): BroadcastResult {
 	return {
 		successCount,
 		failCount: totalTargets - successCount,

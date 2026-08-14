@@ -12,6 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -51,8 +52,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
 
-		const { unit, unitRef } =
-			await TestBed.solitary(LunchNudgeStrategy).compile();
+		const { unit, unitRef } = await TestBed.solitary(LunchNudgeStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(SCHEDULED_REMINDER_READER);
@@ -74,10 +74,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		// Given
 		const ctx = makeCtx();
 
-		reader.findLunchNudgeUsers.mockResolvedValue([
-			{ id: "user-1" },
-			{ id: "user-2" },
-		]);
+		reader.findLunchNudgeUsers.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }]);
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -86,8 +83,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		expect(result).toEqual({ sent: 2 });
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(2);
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -109,8 +105,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.lunchNudge("ko", {
 			campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
 			recipientId: "user-1",
@@ -128,22 +123,16 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		// Given
 		const ctx = makeCtx();
 
-		reader.findLunchNudgeUsers.mockResolvedValue([
-			{ id: "user-1" },
-			{ id: "user-2" },
-		]);
+		reader.findLunchNudgeUsers.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
@@ -154,9 +143,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 
 		reader.findLunchNudgeUsers.mockResolvedValue([{ id: "user-1" }]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -178,8 +165,6 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
-		expect(
-			notificationService.findAlreadyNotifiedUserIds,
-		).not.toHaveBeenCalled();
+		expect(notificationService.findAlreadyNotifiedUserIds).not.toHaveBeenCalled();
 	});
 });

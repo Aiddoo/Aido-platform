@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/errors";
+
 import type {
 	ExchangedToken,
 	GenerateAuthUrlParams,
@@ -20,10 +21,7 @@ class FakeOAuthIdentityProvider implements OAuthIdentityProvider {
 
 	constructor(
 		private readonly delegate: OAuthIdentityProvider,
-		private readonly exchange: (
-			provider: AccountProvider,
-			code: string,
-		) => Promise<ExchangedToken>,
+		private readonly exchange: (provider: AccountProvider, code: string) => Promise<ExchangedToken>,
 	) {
 		this.provider = delegate.provider;
 		this.failureEmail = delegate.failureEmail;
@@ -41,10 +39,7 @@ class FakeOAuthIdentityProvider implements OAuthIdentityProvider {
 		return this.delegate.verifyToken(token, nonce);
 	}
 
-	buildLoginOptions(
-		verifiedProfile: VerifiedProfile,
-		userName?: string,
-	): SocialLoginOptions {
+	buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
 		return this.delegate.buildLoginOptions(verifiedProfile, userName);
 	}
 }
@@ -65,11 +60,7 @@ export class FakeOAuthProviderRegistry {
 		);
 	}
 
-	setExchangeToken(
-		provider: AccountProvider,
-		code: string,
-		token: string,
-	): void {
+	setExchangeToken(provider: AccountProvider, code: string, token: string): void {
 		const key = exchangeKey(provider, code);
 		this.#exchangeFailures.delete(key);
 		this.#exchangeTokens.set(key, token);
@@ -90,10 +81,7 @@ export class FakeOAuthProviderRegistry {
 		this.#exchangeFailures.clear();
 	}
 
-	async #exchangeCode(
-		provider: AccountProvider,
-		code: string,
-	): Promise<ExchangedToken> {
+	async #exchangeCode(provider: AccountProvider, code: string): Promise<ExchangedToken> {
 		const key = exchangeKey(provider, code);
 		const failure = this.#exchangeFailures.get(key);
 		if (failure) throw failure;
@@ -103,9 +91,7 @@ export class FakeOAuthProviderRegistry {
 		}
 
 		return {
-			token:
-				this.#exchangeTokens.get(key) ??
-				`fake-${provider.toLowerCase()}-${code}`,
+			token: this.#exchangeTokens.get(key) ?? `fake-${provider.toLowerCase()}-${code}`,
 		};
 	}
 }

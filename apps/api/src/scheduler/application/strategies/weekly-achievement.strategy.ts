@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
@@ -6,10 +7,7 @@ import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
@@ -57,9 +55,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
-		const completedMap = new Map(
-			completedByUser.map((g) => [g.userId, g.count]),
-		);
+		const completedMap = new Map(completedByUser.map((g) => [g.userId, g.count]));
 
 		const records = totalByUser.map((g) => ({
 			userId: g.userId,
@@ -74,41 +70,31 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		await this.weeklyAchievementWriter.upsertMany(records);
 
 		// ─── C. 알림 발송 (completed > 0 + dedup) ────
-		const completedUserIds = records
-			.filter((r) => r.completedTodos > 0)
-			.map((r) => r.userId);
+		const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);
 
 		if (completedUserIds.length === 0) {
 			return { sent: 0 };
 		}
-		const freeRecipientIds =
-			await this.reader.findFreeRecipientIds(completedUserIds);
-		const notifiableUserIds = completedUserIds.filter((userId) =>
-			freeRecipientIds.has(userId),
-		);
+		const freeRecipientIds = await this.reader.findFreeRecipientIds(completedUserIds);
+		const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
 		if (notifiableUserIds.length === 0) return { sent: 0 };
 
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: notifiableUserIds,
-				type: "WEEKLY_ACHIEVEMENT",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: notifiableUserIds,
+			type: "WEEKLY_ACHIEVEMENT",
+			notificationDate: today,
+		});
 
 		const finalRecords = records.filter(
 			(r) =>
-				freeRecipientIds.has(r.userId) &&
-				r.completedTodos > 0 &&
-				!alreadyNotified.has(r.userId),
+				freeRecipientIds.has(r.userId) && r.completedTodos > 0 && !alreadyNotified.has(r.userId),
 		);
 
 		if (finalRecords.length === 0) {
 			return { sent: 0 };
 		}
 
-		const locales = await this.preferenceReader.findUserLocales(
-			finalRecords.map((r) => r.userId),
-		);
+		const locales = await this.preferenceReader.findUserLocales(finalRecords.map((r) => r.userId));
 		const notifications = finalRecords.map((r) => {
 			const message = NotificationMessageBuilder.weeklyAchievement(
 				r.completedTodos,

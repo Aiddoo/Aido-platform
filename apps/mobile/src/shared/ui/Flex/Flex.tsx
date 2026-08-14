@@ -1,5 +1,6 @@
 import { cn } from '@src/shared/utils/cn';
 import { View } from 'react-native';
+
 import type { FlexProps } from './Flex.types';
 import { flexVariants } from './Flex.variants';
 

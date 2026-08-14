@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import type { Severity } from '@src/core/ports/severity';
+
 import { createSentryErrorReporter } from './sentry-error-reporter';
 
 jest.mock('@sentry/react-native', () => ({

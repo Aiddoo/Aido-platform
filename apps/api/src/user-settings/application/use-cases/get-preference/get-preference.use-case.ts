@@ -1,6 +1,8 @@
 import type { PreferenceResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+
 import {
 	buildPreferenceView,
 	DEFAULT_PREFERENCE_SNAPSHOT,

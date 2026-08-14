@@ -14,6 +14,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type React from 'react';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
+
 import { SettingsTimeRow } from './SettingsTimeRow';
 
 type TimePickerProps = Omit<IOSNativeProps, 'mode' | 'display' | 'minuteInterval'>;
@@ -30,8 +31,10 @@ function TimePicker({ style, ...props }: TimePickerProps) {
   );
 }
 
-interface AndroidTimePickerProps
-  extends Omit<AndroidNativeProps, 'mode' | 'display' | 'minuteInterval' | 'onChange'> {
+interface AndroidTimePickerProps extends Omit<
+  AndroidNativeProps,
+  'mode' | 'display' | 'minuteInterval' | 'onChange'
+> {
   onConfirm: (date: Date) => void;
   onDismiss: () => void;
 }

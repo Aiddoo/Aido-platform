@@ -5,13 +5,13 @@ import { ApplicationException } from "@/shared/domain/exceptions/application.exc
 
 import { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
+import {
+	TODO_CATEGORY_REPOSITORY,
+	type TodoCategoryRepositoryPort,
+} from "../../ports/todo-category.repository.port";
 import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case";
 
 const createExistingCategory = () =>
@@ -31,9 +31,7 @@ describe("UpdateTodoCategoryUseCase", () => {
 	let cache: Mocked<TodoCategoryCachePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UpdateTodoCategoryUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(UpdateTodoCategoryUseCase).compile();
 		useCase = unit;
 		repo = unitRef.get(TODO_CATEGORY_REPOSITORY);
 		cache = unitRef.get(TODO_CATEGORY_CACHE);
@@ -57,16 +55,16 @@ describe("UpdateTodoCategoryUseCase", () => {
 
 	it("존재하지 않으면 TODO_CATEGORY_0851", async () => {
 		repo.findByIdAndUserId.mockResolvedValue(null);
-		await expect(
-			useCase.execute(1, "u1", { name: "수정" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute(1, "u1", { name: "수정" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("이름 변경 시 중복이면 TODO_CATEGORY_0853", async () => {
 		repo.existsByUserIdAndName.mockResolvedValue(true);
-		await expect(
-			useCase.execute(1, "u1", { name: "수정" }),
-		).rejects.toBeInstanceOf(ApplicationException);
+		await expect(useCase.execute(1, "u1", { name: "수정" })).rejects.toBeInstanceOf(
+			ApplicationException,
+		);
 	});
 
 	it("성공 시 갱신 + 캐시 무효화", async () => {

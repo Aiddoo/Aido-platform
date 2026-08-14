@@ -1,6 +1,7 @@
 import { createConsent } from '@src/features/auth/__tests__/auth.factories';
 import type { MarketingPushPromptState } from '@src/shared/preferences/marketing-push-prompt.preference';
 import dayjs from 'dayjs';
+
 import {
   hasCooldownElapsed,
   isNotAgreedToMarketingPush,

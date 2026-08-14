@@ -1,13 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 	PushTokenNotFoundError,
 } from "../../ports/notification.repository.port";
-import {
-	NOTIFICATION_CACHE,
-	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
 
 /**
  * 푸시 토큰 해제 유스케이스.
@@ -37,14 +38,10 @@ export class UnregisterPushTokenUseCase {
 		try {
 			await this.notificationRepository.deletePushToken(userId, deviceId);
 			await this.cache.invalidatePushTokens(userId);
-			this.#logger.log(
-				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
-			);
+			this.#logger.log(`Push token unregistered: userId=${userId}, deviceId=${deviceId}`);
 		} catch (error) {
 			if (error instanceof PushTokenNotFoundError) {
-				this.#logger.warn(
-					`Push token not found: userId=${userId}, deviceId=${deviceId}`,
-				);
+				this.#logger.warn(`Push token not found: userId=${userId}, deviceId=${deviceId}`);
 				return;
 			}
 			throw error;
@@ -52,11 +49,8 @@ export class UnregisterPushTokenUseCase {
 	}
 
 	async #unregisterAll(userId: string): Promise<void> {
-		const result =
-			await this.notificationRepository.deleteAllPushTokensByUser(userId);
+		const result = await this.notificationRepository.deleteAllPushTokensByUser(userId);
 		await this.cache.invalidatePushTokens(userId);
-		this.#logger.log(
-			`All push tokens unregistered: userId=${userId}, count=${result.count}`,
-		);
+		this.#logger.log(`All push tokens unregistered: userId=${userId}, count=${result.count}`);
 	}
 }

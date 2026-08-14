@@ -1,19 +1,11 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
-import {
-	fromLegacyJob,
-	type NamedJob,
-} from "@/shared/infrastructure/jobs/named-job";
+import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
 import { toSupportedLocale } from "@/shared/presentation/decorators";
 
 import { GenerateReportUseCase } from "../../application/use-cases/generate-report/generate-report.use-case";
@@ -67,8 +59,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 		await this.runtime.work<JobData>(
 			AI_REPORT_LEGACY_QUEUE,
 			async (jobs) => {
-				for (const job of jobs)
-					await this.process(fromLegacyJob<AiReportJobMap>(job));
+				for (const job of jobs) await this.process(fromLegacyJob<AiReportJobMap>(job));
 			},
 			AI_REPORT_WORKER_POLICY,
 		);
@@ -82,10 +73,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	) {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,

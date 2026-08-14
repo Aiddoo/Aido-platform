@@ -13,12 +13,13 @@
  */
 
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { UserConsentBuilder, UserPreferenceBuilder } from "@test/builders";
 import { TEST_CUID } from "@test/fixtures";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -61,9 +62,7 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 	const mockCacheService = {
 		wrapUserPreference: jest
 			.fn()
-			.mockImplementation((_id: string, factory: () => Promise<unknown>) =>
-				factory(),
-			),
+			.mockImplementation((_id: string, factory: () => Promise<unknown>) => factory()),
 		invalidateUserPreference: jest.fn(),
 		invalidateActiveTimezones: jest.fn(),
 	};
@@ -148,18 +147,10 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 			expect(result.pushEnabled).toBe(false);
 			expect(result.nightPushEnabled).toBe(false);
 			expect(result.timezone).toBe("UTC");
-			expect(result.morningReminderHour).toBe(
-				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
-			);
-			expect(result.morningReminderMinute).toBe(
-				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
-			);
-			expect(result.eveningReminderHour).toBe(
-				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
-			);
-			expect(result.eveningReminderMinute).toBe(
-				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
-			);
+			expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
+			expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
+			expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
+			expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
 		});
 
 		it("설정 조회 — 무료 유저는 리마인더 시간이 기본값으로 오버라이드된다", async () => {
@@ -175,18 +166,10 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
 			const result = await getPreference.execute(mockUserId);
 
-			expect(result.morningReminderHour).toBe(
-				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
-			);
-			expect(result.morningReminderMinute).toBe(
-				USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
-			);
-			expect(result.eveningReminderHour).toBe(
-				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
-			);
-			expect(result.eveningReminderMinute).toBe(
-				USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
-			);
+			expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
+			expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
+			expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
+			expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
 			expect(result.pushEnabled).toBe(mockPreference.pushEnabled);
 		});
 	});
@@ -208,12 +191,8 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
 			expect(result.morningReminderHour).toBe(7);
 			expect(result.morningReminderMinute).toBe(30);
-			expect(mockCacheService.invalidateUserPreference).toHaveBeenCalledWith(
-				mockUserId,
-			);
-			expect(
-				mockReminderEnqueuer.enqueueReminderHourChanged,
-			).toHaveBeenCalledWith(
+			expect(mockCacheService.invalidateUserPreference).toHaveBeenCalledWith(mockUserId);
+			expect(mockReminderEnqueuer.enqueueReminderHourChanged).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUserId,
 					morningReminderHour: 7,
@@ -258,19 +237,13 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 				.build();
 			mockUserConsentDb.upsert.mockResolvedValue(consentWithMarketing);
 
-			const agreedResult = await updateMarketingConsent.execute(
-				mockUserId,
-				true,
-			);
+			const agreedResult = await updateMarketingConsent.execute(mockUserId, true);
 			expect(agreedResult.marketingAgreedAt).not.toBeNull();
 
 			const consentWithout = UserConsentBuilder.create(mockUserId).build();
 			mockUserConsentDb.upsert.mockResolvedValue(consentWithout);
 
-			const revokedResult = await updateMarketingConsent.execute(
-				mockUserId,
-				false,
-			);
+			const revokedResult = await updateMarketingConsent.execute(mockUserId, false);
 			expect(revokedResult.marketingAgreedAt).toBeNull();
 		});
 	});

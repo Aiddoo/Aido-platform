@@ -1,20 +1,22 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { subtractMilliseconds } from "@/shared/domain/date/utils/arithmetic";
+
 import type { NotificationRecord } from "../../../domain/records/notification.record";
 import {
 	buildDedupContextFields,
 	buildDedupKey,
 	resolveDedupStrategy,
 } from "../../../domain/services/notification-dedup";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
 import type { CreateNotificationData } from "../../ports/notification-data";
 import {
 	NOTIFICATION_DEDUP_LOCK,
 	type NotificationDedupLockPort,
 } from "../../ports/notification-dedup.port";
+import {
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
 import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
 
 /**
@@ -37,9 +39,7 @@ export class SendNotificationWithDedupUseCase {
 		private readonly notificationRepository: NotificationRepositoryPort,
 	) {}
 
-	async execute(
-		data: CreateNotificationData,
-	): Promise<NotificationRecord | null> {
+	async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
 		const strategy = resolveDedupStrategy(data.type);
 
 		if (!strategy) {
@@ -50,9 +50,7 @@ export class SendNotificationWithDedupUseCase {
 		const release = await this.dedupLock.acquire(dedupKey);
 
 		if (!release) {
-			this.#logger.debug(
-				`Notification dedup: lock busy for ${data.type}, userId=${data.userId}`,
-			);
+			this.#logger.debug(`Notification dedup: lock busy for ${data.type}, userId=${data.userId}`);
 			return null;
 		}
 
@@ -66,12 +64,9 @@ export class SendNotificationWithDedupUseCase {
 				...contextFields,
 			};
 
-			const exists =
-				await this.notificationRepository.existsRecentNotification(params);
+			const exists = await this.notificationRepository.existsRecentNotification(params);
 			if (exists) {
-				this.#logger.debug(
-					`Notification dedup: skipped ${data.type} for userId=${data.userId}`,
-				);
+				this.#logger.debug(`Notification dedup: skipped ${data.type} for userId=${data.userId}`);
 				return null;
 			}
 

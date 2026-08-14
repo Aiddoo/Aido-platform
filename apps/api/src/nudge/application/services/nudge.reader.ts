@@ -1,9 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-	EntitlementService,
-	Feature,
-} from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { PaginationService } from "@/shared/application/pagination";
 import { now } from "@/shared/domain/date/utils/core";
@@ -53,11 +50,10 @@ export class NudgeReader {
 	async getReceivedNudges(
 		params: GetNudgesParams,
 	): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<number>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const nudges = await this.nudgeRepository.findReceivedNudges({
 			userId: params.userId,
@@ -65,24 +61,21 @@ export class NudgeReader {
 			size,
 		});
 
-		this.#logger.debug(
-			`Received nudges listed: ${nudges.length} items for user: ${params.userId}`,
-		);
+		this.#logger.debug(`Received nudges listed: ${nudges.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			NudgeWithRelations,
-			number
-		>({ items: nudges, size });
+		return this.paginationService.createCursorPaginatedResponse<NudgeWithRelations, number>({
+			items: nudges,
+			size,
+		});
 	}
 
 	async getSentNudges(
 		params: GetNudgesParams,
 	): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
-		const { cursor, size } =
-			this.paginationService.normalizeCursorPagination<number>({
-				cursor: params.cursor,
-				size: params.size,
-			});
+		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+			cursor: params.cursor,
+			size: params.size,
+		});
 
 		const nudges = await this.nudgeRepository.findSentNudges({
 			userId: params.userId,
@@ -90,26 +83,18 @@ export class NudgeReader {
 			size,
 		});
 
-		this.#logger.debug(
-			`Sent nudges listed: ${nudges.length} items for user: ${params.userId}`,
-		);
+		this.#logger.debug(`Sent nudges listed: ${nudges.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<
-			NudgeWithRelations,
-			number
-		>({ items: nudges, size });
+		return this.paginationService.createCursorPaginatedResponse<NudgeWithRelations, number>({
+			items: nudges,
+			size,
+		});
 	}
 
-	async getLimitInfo(
-		userId: string,
-		tz: string = "UTC",
-	): Promise<NudgeLimitInfo> {
+	async getLimitInfo(userId: string, tz: string = "UTC"): Promise<NudgeLimitInfo> {
 		const capturedAt = now();
 		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
-		const { dailyLimit } = await this.entitlementService.getFeatureLimit(
-			userId,
-			Feature.NUDGE,
-		);
+		const { dailyLimit } = await this.entitlementService.getFeatureLimit(userId, Feature.NUDGE);
 
 		const used = await this.nudgeRepository.countSentSince(
 			userId,
@@ -124,25 +109,13 @@ export class NudgeReader {
 		};
 	}
 
-	async getCooldownInfoForUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<NudgeCooldown> {
-		const lastNudge = await this.nudgeRepository.findLastNudgeToUser(
-			senderId,
-			receiverId,
-		);
+	async getCooldownInfoForUser(senderId: string, receiverId: string): Promise<NudgeCooldown> {
+		const lastNudge = await this.nudgeRepository.findLastNudgeToUser(senderId, receiverId);
 		return evaluateNudgeCooldown(lastNudge?.createdAt ?? null);
 	}
 
-	async getRemindCooldownInfo(
-		senderId: string,
-		receiverId: string,
-	): Promise<NudgeCooldown> {
-		const lastRemind = await this.nudgeRepository.findLastRemindNudge(
-			senderId,
-			receiverId,
-		);
+	async getRemindCooldownInfo(senderId: string, receiverId: string): Promise<NudgeCooldown> {
+		const lastRemind = await this.nudgeRepository.findLastRemindNudge(senderId, receiverId);
 		return evaluateRemindNudgeCooldown(lastRemind?.createdAt ?? null);
 	}
 

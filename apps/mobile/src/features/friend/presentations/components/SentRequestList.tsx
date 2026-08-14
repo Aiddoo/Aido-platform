@@ -3,6 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, DocsIcon, Result, Text } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
+
 import type { FriendRequest } from '../../models/friend.model';
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
 import { useGetSentRequestsQueryOptions } from '../queries/use-get-sent-requests-query-options';

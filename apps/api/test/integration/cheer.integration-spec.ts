@@ -8,16 +8,16 @@
  * 실행: pnpm --filter @aido/api test cheer.integration-spec
  */
 
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { CheerBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
-import { CHEER_REPOSITORY } from "@/cheer/application/ports/cheer.repository.port";
 import { CHEER_LIMIT_READER } from "@/cheer/application/ports/cheer-limit-reader.port";
 import { CHEER_NOTIFIER } from "@/cheer/application/ports/cheer-notifier.port";
+import { CHEER_REPOSITORY } from "@/cheer/application/ports/cheer.repository.port";
 import { CheerReader } from "@/cheer/application/services/cheer.reader";
 import { MarkCheerReadUseCase } from "@/cheer/application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
 import { MarkManyCheersReadUseCase } from "@/cheer/application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
@@ -40,17 +40,13 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	let markCheerReadUseCase: MarkCheerReadUseCase;
 	let markManyCheersReadUseCase: MarkManyCheersReadUseCase;
 	const cheerApi = {
-		sendCheer: (
-			input: Parameters<SendCheerUseCase["execute"]>[0],
-			timezone: string,
-		) => sendCheerUseCase.execute(input, timezone),
-		getReceivedCheers: (
-			input: Parameters<CheerReader["getReceivedCheers"]>[0],
-		) => reader.getReceivedCheers(input),
+		sendCheer: (input: Parameters<SendCheerUseCase["execute"]>[0], timezone: string) =>
+			sendCheerUseCase.execute(input, timezone),
+		getReceivedCheers: (input: Parameters<CheerReader["getReceivedCheers"]>[0]) =>
+			reader.getReceivedCheers(input),
 		getSentCheers: (input: Parameters<CheerReader["getSentCheers"]>[0]) =>
 			reader.getSentCheers(input),
-		getLimitInfo: (userId: string, timezone: string) =>
-			reader.getLimitInfo(userId, timezone),
+		getLimitInfo: (userId: string, timezone: string) => reader.getLimitInfo(userId, timezone),
 		getCooldownInfoForUser: (senderId: string, receiverId: string) =>
 			reader.getCooldownInfoForUser(senderId, receiverId),
 		markAsRead: (userId: string, cheerId: number) =>
@@ -170,9 +166,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			expect(reader).toBeInstanceOf(CheerReader);
 		});
 		it("CheerRepository 포트가 주입된다", () => {
-			expect(module.get(CHEER_REPOSITORY)).toBeInstanceOf(
-				PrismaCheerRepository,
-			);
+			expect(module.get(CHEER_REPOSITORY)).toBeInstanceOf(PrismaCheerRepository);
 		});
 	});
 
@@ -183,9 +177,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			mockCheerDb.findFirst.mockResolvedValue(null);
 			mockCheerDb.create.mockResolvedValue(
 				withSenderReceiver(
-					CheerBuilder.create(senderId, receiverId)
-						.withId(cheerId)
-						.withMessage("축하해요!"),
+					CheerBuilder.create(senderId, receiverId).withId(cheerId).withMessage("축하해요!"),
 				),
 			);
 
@@ -195,13 +187,10 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			);
 
 			expect(result.id).toBe(cheerId);
-			expect(mockFollowReader.isMutualFriend).toHaveBeenCalledWith(
-				senderId,
-				receiverId,
+			expect(mockFollowReader.isMutualFriend).toHaveBeenCalledWith(senderId, receiverId);
+			expect(mockNotificationQueueService.enqueueCheerSent).toHaveBeenCalledWith(
+				expect.any(Object),
 			);
-			expect(
-				mockNotificationQueueService.enqueueCheerSent,
-			).toHaveBeenCalledWith(expect.any(Object));
 		});
 
 		it("메시지 없이도 전송된다", async () => {
@@ -209,9 +198,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 			mockCheerDb.count.mockResolvedValue(0);
 			mockCheerDb.findFirst.mockResolvedValue(null);
 			mockCheerDb.create.mockResolvedValue(
-				withSenderReceiver(
-					CheerBuilder.create(senderId, receiverId).withId(cheerId),
-				),
+				withSenderReceiver(CheerBuilder.create(senderId, receiverId).withId(cheerId)),
 			);
 
 			const result = await cheerApi.sendCheer({ senderId, receiverId }, "UTC");
@@ -220,36 +207,34 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("친구가 아니면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(false);
-			await expect(
-				cheerApi.sendCheer({ senderId, receiverId }, "UTC"),
-			).rejects.toThrow(ApplicationException);
+			await expect(cheerApi.sendCheer({ senderId, receiverId }, "UTC")).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("자기 자신에게 전송하면 ApplicationException", async () => {
-			await expect(
-				cheerApi.sendCheer({ senderId, receiverId: senderId }, "UTC"),
-			).rejects.toThrow(ApplicationException);
+			await expect(cheerApi.sendCheer({ senderId, receiverId: senderId }, "UTC")).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("일일 제한 초과면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockCheerDb.count.mockResolvedValue(3);
-			await expect(
-				cheerApi.sendCheer({ senderId, receiverId }, "UTC"),
-			).rejects.toThrow(ApplicationException);
+			await expect(cheerApi.sendCheer({ senderId, receiverId }, "UTC")).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("쿨다운 중이면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
 			mockCheerDb.count.mockResolvedValue(0);
 			mockCheerDb.findFirst.mockResolvedValue(
-				CheerBuilder.create(senderId, receiverId)
-					.withCreatedAt(new Date())
-					.build(),
+				CheerBuilder.create(senderId, receiverId).withCreatedAt(new Date()).build(),
 			);
-			await expect(
-				cheerApi.sendCheer({ senderId, receiverId }, "UTC"),
-			).rejects.toThrow(ApplicationException);
+			await expect(cheerApi.sendCheer({ senderId, receiverId }, "UTC")).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -300,23 +285,15 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	describe("쿨다운 정보", () => {
 		it("기록이 없으면 비활성", async () => {
 			mockCheerDb.findFirst.mockResolvedValue(null);
-			const result = await cheerApi.getCooldownInfoForUser(
-				senderId,
-				receiverId,
-			);
+			const result = await cheerApi.getCooldownInfoForUser(senderId, receiverId);
 			expect(result.isActive).toBe(false);
 		});
 
 		it("최근 응원이 있으면 활성 + 남은 시간", async () => {
 			mockCheerDb.findFirst.mockResolvedValue(
-				CheerBuilder.create(senderId, receiverId)
-					.withCreatedAt(new Date())
-					.build(),
+				CheerBuilder.create(senderId, receiverId).withCreatedAt(new Date()).build(),
 			);
-			const result = await cheerApi.getCooldownInfoForUser(
-				senderId,
-				receiverId,
-			);
+			const result = await cheerApi.getCooldownInfoForUser(senderId, receiverId);
 			expect(result.isActive).toBe(true);
 			expect(result.remainingSeconds).toBeGreaterThan(0);
 		});
@@ -325,10 +302,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	describe("읽음 처리", () => {
 		it("응원을 읽음 처리한다", async () => {
 			mockCheerDb.findUnique.mockResolvedValue(
-				CheerBuilder.create(senderId, receiverId)
-					.withId(cheerId)
-					.asUnread()
-					.build(),
+				CheerBuilder.create(senderId, receiverId).withId(cheerId).asUnread().build(),
 			);
 			mockCheerDb.update.mockResolvedValue({});
 
@@ -340,18 +314,14 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("존재하지 않으면 ApplicationException", async () => {
 			mockCheerDb.findUnique.mockResolvedValue(null);
-			await expect(cheerApi.markAsRead(receiverId, 999)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(cheerApi.markAsRead(receiverId, 999)).rejects.toThrow(ApplicationException);
 		});
 
 		it("다른 사용자의 응원이면 ApplicationException", async () => {
 			mockCheerDb.findUnique.mockResolvedValue(
 				CheerBuilder.create(senderId, "other-user").withId(cheerId).build(),
 			);
-			await expect(cheerApi.markAsRead(receiverId, cheerId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(cheerApi.markAsRead(receiverId, cheerId)).rejects.toThrow(ApplicationException);
 		});
 
 		it("여러 응원을 읽음 처리한다", async () => {

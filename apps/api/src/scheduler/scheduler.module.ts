@@ -33,10 +33,7 @@ import {
 import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter";
 import { PrismaSchedulerReader } from "./infrastructure/persistence/prisma-scheduler.reader";
 import { TodoReminderProcessor } from "./infrastructure/processors/todo-reminder.processor";
-import {
-	TimezoneReminderQueueModule,
-	TimezoneReminderQueueService,
-} from "./infrastructure/queue";
+import { TimezoneReminderQueueModule, TimezoneReminderQueueService } from "./infrastructure/queue";
 import { TimezoneReminderProcessor } from "./infrastructure/queue/timezone-reminder-queue.processor";
 import { BullMQReminderSchedulerAdapter } from "./infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
 

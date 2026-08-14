@@ -12,11 +12,7 @@ export class FakeWeatherProvider implements WeatherProvider {
 	readonly name = "fake";
 	private _calls: Array<{ lat: number; lon: number; date: Date }> = [];
 
-	async getForecast(
-		lat: number,
-		lon: number,
-		date: Date,
-	): Promise<WeatherForecast> {
+	async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
 		this._calls.push({ lat, lon, date });
 		return {
 			date,

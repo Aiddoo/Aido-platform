@@ -16,6 +16,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types";
+
 import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "@/admin-notification";
 import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "@/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
@@ -52,23 +53,18 @@ import {
 	TODO_REMINDER_QUEUE,
 	TodoReminderProcessor,
 } from "@/scheduler";
-import {
-	DOMAIN_EVENT_PUBLISHER,
-	JOB_RUNTIME,
-} from "@/shared/application/ports";
+import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "@/shared/application/ports";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database";
 import { configureApplication } from "@/shared/infrastructure/http/configure-application";
-import {
-	REDIS_CLIENT,
-	REDIS_COMMAND_CLIENT,
-} from "@/shared/infrastructure/redis/redis.constants";
+import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 import { AIR_QUALITY_PROVIDER } from "@/weather/application/ports/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "@/weather/application/ports/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "@/weather/application/ports/sun-time-provider.port";
 import { WEATHER_PROVIDER } from "@/weather/application/ports/weather-provider.port";
+
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";
@@ -84,14 +80,8 @@ import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider";
 import { FakeWeatherProvider } from "../../mocks/fake-weather.provider";
 import { TestDatabase } from "../../setup/test-database";
 import { E2eHelpers } from "./e2e-helpers";
-import {
-	createE2eTestStateResetter,
-	type TestStateResetter,
-} from "./e2e-test-state";
-import {
-	bypassE2eThrottler,
-	restoreRealE2eThrottler,
-} from "./e2e-throttler-control";
+import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-state";
+import { bypassE2eThrottler, restoreRealE2eThrottler } from "./e2e-throttler-control";
 import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher";
 
 /* ── BullMQ 격리 대상 ─────────────────────────────────── */
@@ -155,9 +145,7 @@ export interface E2eAppOptions {
 	testDatabase?: TestDatabase;
 }
 
-export async function createE2eApp(
-	options?: E2eAppOptions,
-): Promise<E2eTestContext> {
+export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestContext> {
 	const withRealThrottler = options?.withRealThrottler === true;
 	if (withRealThrottler) {
 		restoreRealE2eThrottler();
@@ -175,9 +163,7 @@ export async function createE2eApp(
 	}
 }
 
-async function createE2eAppContext(
-	options?: E2eAppOptions,
-): Promise<E2eTestContext> {
+async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestContext> {
 	const testDatabase = options?.testDatabase ?? new TestDatabase();
 	if (!options?.testDatabase) {
 		await testDatabase.start();
@@ -226,9 +212,7 @@ async function createE2eAppContext(
 				Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
 			]);
 			errors.push(
-				...results.flatMap((result) =>
-					result.status === "rejected" ? [result.reason] : [],
-				),
+				...results.flatMap((result) => (result.status === "rejected" ? [result.reason] : [])),
 			);
 			if (errors.length > 0) {
 				throw new AggregateError(errors, "Failed to close E2E app resources");
@@ -241,10 +225,7 @@ async function createE2eAppContext(
 	};
 
 	const closeTestResources = async (): Promise<void> => {
-		const results = await Promise.allSettled([
-			closeApplicationResources(),
-			testDatabase.stop(),
-		]);
+		const results = await Promise.allSettled([closeApplicationResources(), testDatabase.stop()]);
 		const errors = results.flatMap((result) =>
 			result.status === "rejected" ? [result.reason] : [],
 		);
@@ -274,10 +255,7 @@ async function createE2eAppContext(
 		.useFactory({
 			inject: [TypedConfigService],
 			factory: (configService: TypedConfigService) => {
-				const delegates = createOAuthProviderRegistry(
-					configService,
-					fakeOAuthTokenVerifierService,
-				);
+				const delegates = createOAuthProviderRegistry(configService, fakeOAuthTokenVerifierService);
 				fakeOAuthProviderRegistry = new FakeOAuthProviderRegistry(delegates);
 				return fakeOAuthProviderRegistry.registry;
 			},
@@ -312,9 +290,7 @@ async function createE2eAppContext(
 
 	// BullMQ 격리: Queue 토큰 → mock queue
 	for (const queueName of BULL_QUEUES) {
-		builder = builder
-			.overrideProvider(getQueueToken(queueName))
-			.useValue(createMockBullQueue());
+		builder = builder.overrideProvider(getQueueToken(queueName)).useValue(createMockBullQueue());
 	}
 
 	// BullMQ 격리: Processor → no-op (Worker 생성 차단)

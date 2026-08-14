@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react-native';
+
 import { useActivationProgress } from './use-activation-progress';
 
 jest.mock('@src/bootstrap/providers/auth-provider', () => ({

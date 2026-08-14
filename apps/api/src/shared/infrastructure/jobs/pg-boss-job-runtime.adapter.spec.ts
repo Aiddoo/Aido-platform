@@ -8,10 +8,9 @@ import type {
 	StopOptions,
 	WorkOptions,
 } from "pg-boss";
-import type {
-	EnqueueJobOptions,
-	JobData,
-} from "@/shared/application/ports/job-runtime.port";
+
+import type { EnqueueJobOptions, JobData } from "@/shared/application/ports/job-runtime.port";
+
 import {
 	LazyPgBossClient,
 	type PgBossClient,
@@ -54,10 +53,7 @@ class FakePgBossClient implements PgBossClient {
 		options?: { db?: Db };
 	}> = [];
 	readonly stopCalls: StopOptions[] = [];
-	readonly handlers = new Map<
-		string,
-		(jobs: JobWithMetadata<JobData>[]) => Promise<unknown>
-	>();
+	readonly handlers = new Map<string, (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>>();
 	jobs: JobWithMetadata<JobData>[] = [];
 	queues: QueueResult[] = [];
 	findJobsError?: Error;
@@ -81,11 +77,7 @@ class FakePgBossClient implements PgBossClient {
 		this.createdQueues.push(name);
 	}
 
-	async send(
-		name: string,
-		data: object,
-		options: SendOptions,
-	): Promise<string | null> {
+	async send(name: string, data: object, options: SendOptions): Promise<string | null> {
 		this.sendCalls.push({ name, data, options });
 		return "job-1";
 	}
@@ -109,18 +101,12 @@ class FakePgBossClient implements PgBossClient {
 			throw this.findJobsError;
 		}
 		const jobs = options?.queued
-			? this.jobs.filter(
-					({ state }) => state === "created" || state === "retry",
-				)
+			? this.jobs.filter(({ state }) => state === "created" || state === "retry")
 			: this.jobs;
 		return jobs as JobWithMetadata<T>[];
 	}
 
-	async cancel(
-		name: string,
-		ids: string[],
-		options?: { db?: Db },
-	): Promise<unknown> {
+	async cancel(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
 		if (this.cancelError) {
 			throw this.cancelError;
 		}
@@ -140,10 +126,7 @@ class FakePgBossClient implements PgBossClient {
 		_options: WorkOptions & { includeMetadata: true },
 		handler: (jobs: JobWithMetadata<T>[]) => Promise<unknown>,
 	): Promise<string> {
-		this.handlers.set(
-			name,
-			handler as (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>,
-		);
+		this.handlers.set(name, handler as (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>);
 		return `worker:${name}`;
 	}
 
@@ -152,9 +135,7 @@ class FakePgBossClient implements PgBossClient {
 	}
 }
 
-function job(
-	overrides: Partial<JobWithMetadata<JobData>> = {},
-): JobWithMetadata<JobData> {
+function job(overrides: Partial<JobWithMetadata<JobData>> = {}): JobWithMetadata<JobData> {
 	return {
 		id: "job-1",
 		name: QUEUE,
@@ -184,14 +165,9 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	it("enqueue 옵션과 현재 CLS 트랜잭션을 pg-boss에 그대로 매핑한다", async () => {
 		const options = enqueueOptions();
 
-		await expect(
-			runtime.enqueue(QUEUE, { documentId: 42 }, options),
-		).resolves.toBe("job-1");
+		await expect(runtime.enqueue(QUEUE, { documentId: 42 }, options)).resolves.toBe("job-1");
 
-		expect(boss.createdQueues).toEqual([
-			"document-generation-dead-letter",
-			QUEUE,
-		]);
+		expect(boss.createdQueues).toEqual(["document-generation-dead-letter", QUEUE]);
 		expect(boss.sendCalls).toHaveLength(1);
 		expect(boss.sendCalls[0]).toMatchObject({
 			name: QUEUE,
@@ -329,9 +305,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 		boss.findJobsError = new Error("postgres unavailable");
 
 		// When & Then - 원래 인프라 오류 전파
-		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
-			"postgres unavailable",
-		);
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow("postgres unavailable");
 	});
 
 	it("cancel은 pg-boss 취소 오류를 missing으로 바꾸지 않고 전파한다", async () => {
@@ -340,9 +314,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 		boss.cancelError = new Error("cancel failed");
 
 		// When & Then - 원래 인프라 오류 전파
-		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow(
-			"cancel failed",
-		);
+		await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow("cancel failed");
 	});
 
 	it("queue 상태를 공통 health 모델로 정규화한다", async () => {
@@ -372,9 +344,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	it("종료 시 worker 완료를 최대 90초 기다린다", async () => {
 		await runtime.stop();
 
-		expect(boss.stopCalls).toEqual([
-			{ graceful: true, timeout: 90_000, close: true },
-		]);
+		expect(boss.stopCalls).toEqual([{ graceful: true, timeout: 90_000, close: true }]);
 	});
 });
 

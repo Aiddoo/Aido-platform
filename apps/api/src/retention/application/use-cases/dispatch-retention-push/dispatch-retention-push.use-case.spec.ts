@@ -1,19 +1,17 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createRetentionRepositoryMock } from "@test/mocks/ports";
+
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import {
+	RETENTION_PUSH_SENDER,
+	type RetentionPushSenderPort,
+} from "../../ports/retention-push-sender.port";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionDispatchCandidate,
 	type RetentionRepositoryPort,
 } from "../../ports/retention.repository.port";
-import {
-	RETENTION_CONFIG,
-	type RetentionConfigPort,
-} from "../../ports/retention-config.port";
-import {
-	RETENTION_PUSH_SENDER,
-	type RetentionPushSenderPort,
-} from "../../ports/retention-push-sender.port";
 import { DispatchRetentionPushUseCase } from "./dispatch-retention-push.use-case";
 
 describe("DispatchRetentionPushUseCase — 멱등 푸시 처리", () => {
@@ -71,22 +69,16 @@ describe("DispatchRetentionPushUseCase — 멱등 푸시 처리", () => {
 			.mock<RetentionConfigPort>(RETENTION_CONFIG)
 			.impl(() => ({ enabled: false, treatmentPercent: 50 }))
 			.compile();
-		const disabledRepository =
-			compiled.unitRef.get<RetentionRepositoryPort>(RETENTION_REPOSITORY);
+		const disabledRepository = compiled.unitRef.get<RetentionRepositoryPort>(RETENTION_REPOSITORY);
 
 		await compiled.unit.execute("outbox-1");
 
-		expect(disabledRepository.deferOutbox).toHaveBeenCalledWith(
-			"outbox-1",
-			expect.any(Date),
-		);
+		expect(disabledRepository.deferOutbox).toHaveBeenCalledWith("outbox-1", expect.any(Date));
 	});
 
 	it("전송 성공 결과를 dispatch attempt 저장 포트에 전달한다", async () => {
 		const claimed = candidate();
-		const results = [
-			{ token: "fake-token", success: true, ticketId: "ticket" },
-		];
+		const results = [{ token: "fake-token", success: true, ticketId: "ticket" }];
 		repository.claimDispatch.mockResolvedValue(claimed);
 		sender.canSend.mockResolvedValue(true);
 		sender.send.mockResolvedValue(results);

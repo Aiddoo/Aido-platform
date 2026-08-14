@@ -1,7 +1,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { asMock } from "@test/mocks";
+
 import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
+
 import {
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
 	AUTH_SECURITY_LOG_REPOSITORY,
@@ -11,10 +13,7 @@ import {
 	type AuthUserRepositoryPort,
 } from "../../ports/auth-persistence.port";
 import { SessionService } from "../../services/session.service";
-import {
-	type IssueLoginInput,
-	IssueLoginUseCase,
-} from "./issue-login.use-case";
+import { type IssueLoginInput, IssueLoginUseCase } from "./issue-login.use-case";
 
 describe("IssueLoginUseCase — 로그인 발급 수렴 시퀀스", () => {
 	let useCase: IssueLoginUseCase;
@@ -34,8 +33,7 @@ describe("IssueLoginUseCase — 로그인 발급 수렴 시퀀스", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(IssueLoginUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(IssueLoginUseCase).compile();
 		useCase = unit;
 		sessionService = unitRef.get(SessionService);
 		loginAttemptRepo = unitRef.get(AUTH_LOGIN_ATTEMPT_REPOSITORY);

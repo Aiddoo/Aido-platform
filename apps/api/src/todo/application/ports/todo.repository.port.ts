@@ -34,11 +34,7 @@ export interface TodoRepositoryPort {
 	createInlineItems(todoId: number, items: { title: string }[]): Promise<void>;
 
 	/** 완료 상태 등 애그리게잇 변경분 영속화 */
-	updateCompletion(
-		id: number,
-		completed: boolean,
-		completedAt: Date | null,
-	): Promise<void>;
+	updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void>;
 
 	/** 부분 수정 패치 영속화 (undefined 필드는 미변경) */
 	updateDetails(id: number, patch: TodoUpdatePatch): Promise<void>;
@@ -59,21 +55,13 @@ export interface TodoRepositoryPort {
 	 * [from, to] 범위(둘 다 포함)의 sortOrder를 delta만큼 일괄 이동.
 	 * to가 null이면 from 이상 전체.
 	 */
-	shiftSortOrders(
-		userId: string,
-		from: number,
-		to: number | null,
-		delta: number,
-	): Promise<void>;
+	shiftSortOrders(userId: string, from: number, to: number | null, delta: number): Promise<void>;
 
 	/**
 	 * 반복 그룹 일괄 생성 — 생성된 애그리게잇을 sortOrder 순으로 반환.
 	 * 다중 쓰기이므로 트랜잭션(UnitOfWork) 안에서 호출해야 합니다.
 	 */
-	createMany(
-		items: TodoCreationPlan[],
-		recurrenceGroupId: string,
-	): Promise<Todo[]>;
+	createMany(items: TodoCreationPlan[], recurrenceGroupId: string): Promise<Todo[]>;
 
 	countActiveByCategory(userId: string, categoryId: number): Promise<number>;
 
@@ -81,15 +69,9 @@ export interface TodoRepositoryPort {
 
 	// ===== 하위 항목 (체크리스트) =====
 
-	createItem(
-		todoId: number,
-		data: { title: string; sortOrder: number },
-	): Promise<void>;
+	createItem(todoId: number, data: { title: string; sortOrder: number }): Promise<void>;
 
-	updateItem(
-		itemId: number,
-		data: { title?: string; completed?: boolean },
-	): Promise<void>;
+	updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void>;
 
 	deleteItem(itemId: number): Promise<void>;
 

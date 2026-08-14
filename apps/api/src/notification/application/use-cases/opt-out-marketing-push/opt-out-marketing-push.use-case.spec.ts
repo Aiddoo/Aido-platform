@@ -10,6 +10,7 @@ import {
 	createMarketingPushOptOutTokenMock,
 	createUserNotificationSettingsMock,
 } from "@test/mocks/ports/notification.mock";
+
 import {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
@@ -33,12 +34,8 @@ describe("OptOutMarketingPushUseCase", () => {
 			.impl(() => createUserNotificationSettingsMock())
 			.compile();
 		useCase = unit;
-		tokens = unitRef.get<MarketingPushOptOutTokenPort>(
-			MARKETING_PUSH_OPT_OUT_TOKEN,
-		);
-		settings = unitRef.get<UserNotificationSettingsPort>(
-			USER_NOTIFICATION_SETTINGS,
-		);
+		tokens = unitRef.get<MarketingPushOptOutTokenPort>(MARKETING_PUSH_OPT_OUT_TOKEN);
+		settings = unitRef.get<UserNotificationSettingsPort>(USER_NOTIFICATION_SETTINGS);
 	});
 
 	it("유효한 토큰이면 마케팅 푸시 동의를 false로 갱신하고 true를 반환한다", async () => {
@@ -48,10 +45,7 @@ describe("OptOutMarketingPushUseCase", () => {
 
 		expect(result).toBe(true);
 		expect(tokens.verify).toHaveBeenCalledWith("valid-token");
-		expect(settings.updateMarketingPushConsent).toHaveBeenCalledWith(
-			"user-1",
-			false,
-		);
+		expect(settings.updateMarketingPushConsent).toHaveBeenCalledWith("user-1", false);
 	});
 
 	it("토큰 검증 실패(null)면 설정을 변경하지 않고 false를 반환한다", async () => {

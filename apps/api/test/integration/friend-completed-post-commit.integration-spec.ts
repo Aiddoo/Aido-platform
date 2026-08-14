@@ -1,15 +1,13 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { Test, type TestingModule } from "@nestjs/testing";
+
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import {
 	createNotificationRepositoryMock,
 	createPushDispatcherMock,
 } from "@test/mocks/ports/notification.mock";
-import {
-	NOTIFICATION_REPOSITORY,
-	NotificationSender,
-	PUSH_PROVIDER,
-} from "@/notification";
+
+import { NOTIFICATION_REPOSITORY, NotificationSender, PUSH_PROVIDER } from "@/notification";
 import { NotificationBatchDispatcher } from "@/notification/application/dispatchers/notification-batch.dispatcher";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import type { CreateNotificationData } from "@/notification/application/ports/notification-data";
@@ -29,8 +27,8 @@ import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases
 import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
-import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
+import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import {
 	type NotificationJobMap,
@@ -123,9 +121,7 @@ describe("friend-completed post-commit dispatch (component)", () => {
 	beforeEach(async () => {
 		const uow = new ContextAwareUnitOfWork();
 		const repository = createNotificationRepositoryMock();
-		repository.findAlreadyNotifiedUserIds = jest
-			.fn()
-			.mockResolvedValue(new Set());
+		repository.findAlreadyNotifiedUserIds = jest.fn().mockResolvedValue(new Set());
 		repository.createManyNotificationsAndReturn = jest
 			.fn()
 			.mockImplementation(async (items: CreateNotificationData[]) =>
@@ -155,10 +151,7 @@ describe("friend-completed post-commit dispatch (component)", () => {
 
 		const pushDelegate = createPushDispatcherMock();
 		pushDelegate.getUserLocale = jest.fn().mockResolvedValue("ko");
-		dispatcher = new ClosedTransactionDetectingDispatcher(
-			uow.storage,
-			pushDelegate,
-		);
+		dispatcher = new ClosedTransactionDetectingDispatcher(uow.storage, pushDelegate);
 
 		const dedupProvider: IDedupProvider = {
 			filterMembers: jest.fn().mockResolvedValue(new Set()),
@@ -195,10 +188,7 @@ describe("friend-completed post-commit dispatch (component)", () => {
 				},
 				{
 					provide: NotificationBatchDispatcher,
-					inject: [
-						PersistBatchNotificationUseCase,
-						DispatchBatchNotificationUseCase,
-					],
+					inject: [PersistBatchNotificationUseCase, DispatchBatchNotificationUseCase],
 					useFactory: (
 						persistBatch: PersistBatchNotificationUseCase,
 						dispatchBatch: DispatchBatchNotificationUseCase,

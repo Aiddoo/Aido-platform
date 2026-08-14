@@ -7,6 +7,7 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+
 import { USER_QUERY_KEYS } from '../constants/user-query-keys.constant';
 
 export const useUpdateProfileMutationOptions = () => {

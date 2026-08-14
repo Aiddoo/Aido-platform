@@ -15,25 +15,24 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoVisibilityChangedEvent } from "../../../domain/events/todo-visibility-changed.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { UpdateTodoVisibilityUseCase } from "./update-todo-visibility.use-case";
 
 function buildEntity(): Todo {
@@ -60,9 +59,7 @@ function buildEntity(): Todo {
 }
 
 function buildResponse(): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("user-123").withId(1).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
 }
 
 describe("UpdateTodoVisibilityUseCase — 할 일 공개 범위 변경 핸들러", () => {
@@ -73,9 +70,7 @@ describe("UpdateTodoVisibilityUseCase — 할 일 공개 범위 변경 핸들러
 	let eventPublisher: Mocked<DomainEventPublisherPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UpdateTodoVisibilityUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(UpdateTodoVisibilityUseCase)
 			.mock<TodoRepositoryPort>(TODO_REPOSITORY)
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
@@ -90,12 +85,9 @@ describe("UpdateTodoVisibilityUseCase — 할 일 공개 범위 변경 핸들러
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get<DomainEventPublisherPort>(
-			DOMAIN_EVENT_PUBLISHER,
-		);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 	});
 
 	it("공개 범위를 영속화하고 이벤트를 발행한 뒤 공개 캐시를 무효화한다", async () => {

@@ -11,6 +11,7 @@ import { useRef, useState } from 'react';
 import { Controller, useForm, useFormContext } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+
 import { useCooldown } from '../hooks/useCooldown';
 import { useResendVerificationMutationOptions } from '../queries/use-resend-verification-mutation-options';
 import { useVerifyEmailMutationOptions } from '../queries/use-verify-email-mutation-options';

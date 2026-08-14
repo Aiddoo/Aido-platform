@@ -8,7 +8,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createWeeklyAchievementRepositoryMock } from "@test/mocks/ports/weekly-achievement.mock";
+
 import { PaginationService } from "@/shared/application/pagination";
+
 import type { WeeklyAchievementRow } from "../../../domain/weekly-achievement";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
@@ -16,11 +18,7 @@ import {
 } from "../../ports/weekly-achievement.repository.port";
 import { GetWeeklyAchievementsUseCase } from "./get-weekly-achievements.use-case";
 
-function buildRow(
-	week: number,
-	total = 5,
-	completed = 5,
-): WeeklyAchievementRow {
+function buildRow(week: number, total = 5, completed = 5): WeeklyAchievementRow {
 	return {
 		id: week,
 		year: 2026,
@@ -37,17 +35,13 @@ describe("GetWeeklyAchievementsUseCase — 연도별 주간 달성 목록 조회
 	let paginationService: Mocked<PaginationService>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetWeeklyAchievementsUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(GetWeeklyAchievementsUseCase)
 			.mock<WeeklyAchievementRepositoryPort>(WEEKLY_ACHIEVEMENT_REPOSITORY)
 			.impl(() => createWeeklyAchievementRepositoryMock())
 			.compile();
 
 		useCase = unit;
-		repository = unitRef.get<WeeklyAchievementRepositoryPort>(
-			WEEKLY_ACHIEVEMENT_REPOSITORY,
-		);
+		repository = unitRef.get<WeeklyAchievementRepositoryPort>(WEEKLY_ACHIEVEMENT_REPOSITORY);
 		paginationService = unitRef.get(PaginationService);
 
 		paginationService.normalizeCursorPagination.mockImplementation((params) => {
@@ -58,16 +52,8 @@ describe("GetWeeklyAchievementsUseCase — 연도별 주간 달성 목록 조회
 
 	it("목록과 연도 전체 기록을 병렬 조회하고 요약과 함께 반환한다", async () => {
 		// Given - size=2 페이지, 연도 전체는 연속 3주 완벽 달성
-		repository.findByYear.mockResolvedValue([
-			buildRow(3),
-			buildRow(2),
-			buildRow(1),
-		]);
-		repository.findAllByYear.mockResolvedValue([
-			buildRow(1),
-			buildRow(2),
-			buildRow(3),
-		]);
+		repository.findByYear.mockResolvedValue([buildRow(3), buildRow(2), buildRow(1)]);
+		repository.findAllByYear.mockResolvedValue([buildRow(1), buildRow(2), buildRow(3)]);
 
 		// When
 		const result = await useCase.execute({
@@ -79,12 +65,7 @@ describe("GetWeeklyAchievementsUseCase — 연도별 주간 달성 목록 조회
 		});
 
 		// Then - 목록은 정규화된 take(size+1=3)로, 요약은 연도 전체로 조회
-		expect(repository.findByYear).toHaveBeenCalledWith(
-			"user-123",
-			2026,
-			undefined,
-			3,
-		);
+		expect(repository.findByYear).toHaveBeenCalledWith("user-123", 2026, undefined, 3);
 		expect(repository.findAllByYear).toHaveBeenCalledWith("user-123", 2026);
 
 		// 초과분(1개)을 잘라내고 hasNext=true, nextCursor=마지막 노출 주차(2)

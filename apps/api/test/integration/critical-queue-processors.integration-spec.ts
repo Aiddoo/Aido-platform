@@ -8,6 +8,7 @@ import {
 	RetentionJobName,
 } from "@/retention/infrastructure/queue/retention-queue.constants";
 import type { EnqueueJobOptions } from "@/shared/application/ports/job-runtime.port";
+
 import {
 	type CriticalQueueProcessorHarness,
 	createCriticalQueueProcessorHarness,
@@ -111,17 +112,11 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			expect(notifications.map(({ userId }) => userId).sort()).toEqual(
 				[koreanRecipient.id, englishRecipient.id].sort(),
 			);
-			expect(
-				notifications.every(
-					({ notificationDate }) => notificationDate !== null,
-				),
-			).toBe(true);
+			expect(notifications.every(({ notificationDate }) => notificationDate !== null)).toBe(true);
 			expect(dispatches).toHaveLength(2);
 			expect(dispatches.every(({ status }) => status === "SENT")).toBe(true);
 			expect(attempts).toHaveLength(2);
-			expect(attempts.every(({ status }) => status === "TICKET_ACCEPTED")).toBe(
-				true,
-			);
+			expect(attempts.every(({ status }) => status === "TICKET_ACCEPTED")).toBe(true);
 			expect(jobs[0]?.state).toBe("completed");
 		});
 		expect(
@@ -147,13 +142,12 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			variant: "TREATMENT",
 			startedAt: new Date("2026-07-01T00:00:00.000Z"),
 		});
-		const stage =
-			await harness.prisma.retentionExperimentStage.findFirstOrThrow({
-				where: {
-					assignment: { userId: recipient.id },
-					stage: "D1",
-				},
-			});
+		const stage = await harness.prisma.retentionExperimentStage.findFirstOrThrow({
+			where: {
+				assignment: { userId: recipient.id },
+				stage: "D1",
+			},
+		});
 		await harness.retentionRepository.createDelivery({
 			stageId: stage.id,
 			userId: recipient.id,
@@ -198,9 +192,9 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			expect(attempts[0]?.status).toBe("TICKET_ACCEPTED");
 			expect(jobs[0]?.state).toBe("completed");
 		});
-		expect(
-			harness.pushProvider.getSentPayloads().map(({ token }) => token),
-		).toEqual(["fake-retention-token"]);
+		expect(harness.pushProvider.getSentPayloads().map(({ token }) => token)).toEqual([
+			"fake-retention-token",
+		]);
 	});
 });
 

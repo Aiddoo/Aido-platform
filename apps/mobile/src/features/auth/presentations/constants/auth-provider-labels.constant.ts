@@ -1,4 +1,5 @@
 import { t } from '@src/shared/i18n';
+
 import type { OAuthProvider } from '../../models/oauth.model';
 
 export const OAUTH_PROVIDER_LABEL_KEYS = {

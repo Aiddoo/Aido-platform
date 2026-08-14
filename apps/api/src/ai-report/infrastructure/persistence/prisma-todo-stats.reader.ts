@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
 
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -16,9 +16,7 @@ import type { AggregateParams, AggregationInputs } from "../../domain/types";
 @Injectable()
 export class PrismaTodoStatsReader implements TodoStatsReaderPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
@@ -26,9 +24,7 @@ export class PrismaTodoStatsReader implements TodoStatsReaderPort {
 		return this.txHost.tx;
 	}
 
-	async fetchAggregationInputs(
-		params: AggregateParams,
-	): Promise<AggregationInputs> {
+	async fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs> {
 		const { userId, startDate, endDate, prevStartDate, prevEndDate } = params;
 
 		// 병렬로 모든 DB 쿼리 실행 (N+1 방지)

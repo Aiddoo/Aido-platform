@@ -14,24 +14,23 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
-import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { UpdateTodoTitleUseCase } from "./update-todo-title.use-case";
 
 function buildEntity(): Todo {
@@ -83,11 +82,8 @@ describe("UpdateTodoTitleUseCase — 할 일 제목 수정 핸들러", () => {
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-		eventPublisher = unitRef.get<DomainEventPublisherPort>(
-			DOMAIN_EVENT_PUBLISHER,
-		);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 	});
 
 	it("애그리게잇 상태로 제목을 영속화하고 TodoUpdatedEvent를 발행한 뒤 응답을 재조회한다", async () => {

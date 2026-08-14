@@ -22,9 +22,7 @@ import { OnTodoToggledUseCase } from "./on-todo-toggled.use-case";
 const userId = "user-1";
 const tz = "Asia/Seoul";
 
-const makeRecord = (
-	overrides: Partial<UserPreferenceRecord>,
-): UserPreferenceRecord =>
+const makeRecord = (overrides: Partial<UserPreferenceRecord>): UserPreferenceRecord =>
 	({
 		pushEnabled: true,
 		nightPushEnabled: true,
@@ -57,8 +55,7 @@ describe("OnTodoToggledUseCase", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date("2024-01-16T09:00:00Z"));
 
-		const { unit, unitRef } =
-			await TestBed.solitary(OnTodoToggledUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(OnTodoToggledUseCase).compile();
 		useCase = unit;
 		repo = unitRef.get(USER_PREFERENCE_REPOSITORY);
 		statsReader = unitRef.get(TODO_COMPLETION_STATS_READER);

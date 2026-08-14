@@ -49,38 +49,38 @@ Aido 모노레포 공유 Vitest 설정
 
 ```typescript
 // packages/utils/vitest.config.ts
-import { defineConfig, mergeConfig } from "vitest/config";
-import baseConfig from "@aido/vitest-config";
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from '@aido/vitest-config';
 
 export default mergeConfig(
   baseConfig,
   defineConfig({
     // 추가 설정
-  })
+  }),
 );
 ```
 
 ### 2. 루트 디렉토리 변경
 
 ```typescript
-import { defineConfig, mergeConfig } from "vitest/config";
-import baseConfig from "@aido/vitest-config";
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from '@aido/vitest-config';
 
 export default mergeConfig(
   baseConfig,
   defineConfig({
     test: {
-      root: "./src",
+      root: './src',
     },
-  })
+  }),
 );
 ```
 
 ### 3. 커버리지 임계값 추가
 
 ```typescript
-import { defineConfig, mergeConfig } from "vitest/config";
-import baseConfig from "@aido/vitest-config";
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from '@aido/vitest-config';
 
 export default mergeConfig(
   baseConfig,
@@ -95,26 +95,26 @@ export default mergeConfig(
         },
       },
     },
-  })
+  }),
 );
 ```
 
 ### 4. 별칭(alias) 설정
 
 ```typescript
-import { defineConfig, mergeConfig } from "vitest/config";
-import baseConfig from "@aido/vitest-config";
-import path from "node:path";
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from '@aido/vitest-config';
+import path from 'node:path';
 
 export default mergeConfig(
   baseConfig,
   defineConfig({
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        '@': path.resolve(__dirname, './src'),
       },
     },
-  })
+  }),
 );
 ```
 
@@ -126,11 +126,11 @@ export default mergeConfig(
 
 ```typescript
 // src/add.spec.ts
-import { describe, it, expect } from "vitest";
-import { add } from "./add";
+import { describe, it, expect } from 'vitest';
+import { add } from './add';
 
-describe("add", () => {
-  it("두 숫자를 더한다", () => {
+describe('add', () => {
+  it('두 숫자를 더한다', () => {
     expect(add(1, 2)).toBe(3);
   });
 });
@@ -139,16 +139,16 @@ describe("add", () => {
 ### Mock 사용
 
 ```typescript
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from 'vitest';
 
-describe("fetchData", () => {
-  it("API 호출을 테스트한다", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ data: "test" });
+describe('fetchData', () => {
+  it('API 호출을 테스트한다', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ data: 'test' });
 
     const result = await fetchData(mockFetch);
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    expect(result).toEqual({ data: "test" });
+    expect(result).toEqual({ data: 'test' });
   });
 });
 ```
@@ -156,10 +156,10 @@ describe("fetchData", () => {
 ### Snapshot 테스트
 
 ```typescript
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from 'vitest';
 
-describe("schema", () => {
-  it("올바른 형태를 반환한다", () => {
+describe('schema', () => {
+  it('올바른 형태를 반환한다', () => {
     const result = createSchema();
     expect(result).toMatchSnapshot();
   });
@@ -196,14 +196,14 @@ pnpm test -t "add"
 export default defineConfig({
   test: {
     globals: true,
-    environment: "node",
-    include: ["**/*.{test,spec}.ts"],
-    exclude: ["**/node_modules/**", "**/dist/**"],
+    environment: 'node',
+    include: ['**/*.{test,spec}.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**'],
     coverage: {
-      provider: "v8",
-      reporter: ["text", "lcov", "html"],
-      reportsDirectory: "./coverage",
-      exclude: ["**/*.d.ts", "**/index.ts", "**/*.spec.ts", "**/*.test.ts"],
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html'],
+      reportsDirectory: './coverage',
+      exclude: ['**/*.d.ts', '**/index.ts', '**/*.spec.ts', '**/*.test.ts'],
     },
     clearMocks: true,
     restoreMocks: true,

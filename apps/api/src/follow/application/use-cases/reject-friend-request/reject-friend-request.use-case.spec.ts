@@ -6,19 +6,13 @@ import { TestBed } from "@suites/unit";
 import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
 
 import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 import { RejectFriendRequestUseCase } from "./reject-friend-request.use-case";
 
 const ME = "u-me";
 const REQUESTER = "u-req";
 
-const friendship = (
-	id: string,
-	status: "PENDING" | "ACCEPTED" = "PENDING",
-): Friendship =>
+const friendship = (id: string, status: "PENDING" | "ACCEPTED" = "PENDING"): Friendship =>
 	Friendship.reconstitute({
 		id,
 		followerId: REQUESTER,
@@ -47,22 +41,20 @@ describe("RejectFriendRequestUseCase — 친구 요청 거절", () => {
 		repo.findByFollowerAndFollowing.mockResolvedValue(null);
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, requesterUserId: REQUESTER }),
-		).rejects.toMatchObject({ errorCode: "FOLLOW_0903" });
+		await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
+			{ errorCode: "FOLLOW_0903" },
+		);
 		expect(repo.delete).not.toHaveBeenCalled();
 	});
 
 	it("요청이 PENDING이 아니면(이미 ACCEPTED) FOLLOW_0903", async () => {
 		// Given
-		repo.findByFollowerAndFollowing.mockResolvedValue(
-			friendship("req-1", "ACCEPTED"),
-		);
+		repo.findByFollowerAndFollowing.mockResolvedValue(friendship("req-1", "ACCEPTED"));
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: ME, requesterUserId: REQUESTER }),
-		).rejects.toMatchObject({ errorCode: "FOLLOW_0903" });
+		await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
+			{ errorCode: "FOLLOW_0903" },
+		);
 		expect(repo.delete).not.toHaveBeenCalled();
 	});
 

@@ -17,9 +17,7 @@ describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
 		isTransactionActive = jest.fn(() => true);
 
 		const { unit } = await TestBed.solitary(PostgresMutationLockAdapter)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx, isTransactionActive }))
 			.compile();
 		adapter = unit;
@@ -53,9 +51,9 @@ describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
 		isTransactionActive.mockReturnValue(false);
 
 		// When / Then - autocommit xact lock을 획득한 척하지 않음
-		await expect(
-			adapter.acquire(["mutation:v1:cheer:daily:user-1:2026-07-26"]),
-		).rejects.toThrow("Mutation lock requires an active transaction");
+		await expect(adapter.acquire(["mutation:v1:cheer:daily:user-1:2026-07-26"])).rejects.toThrow(
+			"Mutation lock requires an active transaction",
+		);
 		expect(tx.$queryRaw).not.toHaveBeenCalled();
 	});
 

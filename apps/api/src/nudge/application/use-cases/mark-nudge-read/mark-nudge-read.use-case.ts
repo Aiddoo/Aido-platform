@@ -3,10 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import {
-	NUDGE_REPOSITORY,
-	type NudgeRepositoryPort,
-} from "../../ports/nudge.repository.port";
+import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port";
 
 export interface MarkNudgeReadInput {
 	userId: string;

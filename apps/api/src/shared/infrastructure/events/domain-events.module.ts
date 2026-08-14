@@ -1,5 +1,7 @@
 import { Global, Module } from "@nestjs/common";
+
 import { DOMAIN_EVENT_PUBLISHER } from "@/shared/application/ports";
+
 import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher";
 
 /**

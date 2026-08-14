@@ -1,5 +1,6 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { z } from 'zod';
+
 import type { ActivationIdentity, ActivationProgress } from '../models/activation.model';
 
 const KEY_PREFIX = 'aido_activation_v1';

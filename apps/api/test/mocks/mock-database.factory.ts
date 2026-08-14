@@ -22,8 +22,8 @@ export function createMockDatabaseService<T extends Record<string, object>>(
 		$transaction: jest.fn(),
 	} as T & { $transaction: jest.Mock };
 
-	service.$transaction.mockImplementation(
-		(callback: (tx: unknown) => Promise<unknown>) => callback(service),
+	service.$transaction.mockImplementation((callback: (tx: unknown) => Promise<unknown>) =>
+		callback(service),
 	);
 
 	return service;

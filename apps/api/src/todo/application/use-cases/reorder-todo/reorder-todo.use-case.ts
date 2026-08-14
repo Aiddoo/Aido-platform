@@ -1,22 +1,21 @@
 import { ErrorCode } from "@aido/errors";
 import type { ReorderPosition, Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
+
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
 	type ReorderPlan,
 } from "../../../domain/services/reorder-position";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 
 /** Todo 순서 변경 입력. */
 export interface ReorderTodoInput {
@@ -66,20 +65,13 @@ export class ReorderTodoUseCase {
 
 			let plan: ReorderPlan;
 			if (targetTodoId) {
-				const targetTodo = await this.todoRepository.findByIdAndUserId(
-					targetTodoId,
-					userId,
-				);
+				const targetTodo = await this.todoRepository.findByIdAndUserId(targetTodoId, userId);
 				if (!targetTodo) {
 					throw new ApplicationException(ErrorCode.TODO_0810, {
 						targetTodoId,
 					});
 				}
-				plan = planReorderRelativeTo(
-					todo.getSortOrder(),
-					targetTodo.getSortOrder(),
-					position,
-				);
+				plan = planReorderRelativeTo(todo.getSortOrder(), targetTodo.getSortOrder(), position);
 			} else {
 				const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId);
 				plan = planReorderToEdge(todo.getSortOrder(), position, maxSortOrder);
@@ -102,10 +94,7 @@ export class ReorderTodoUseCase {
 		await this.todoCache.invalidateFriendTodos(userId);
 
 		// 2. 응답 재조회
-		const response = await this.todoReadRepository.findByIdAndUserId(
-			id,
-			userId,
-		);
+		const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
 		if (!response) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}

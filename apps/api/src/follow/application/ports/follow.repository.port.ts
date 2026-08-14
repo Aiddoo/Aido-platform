@@ -89,10 +89,7 @@ export interface FollowRepositoryPort {
 	 * 유니크 제약(followerId_followingId) 위반 시 FOLLOW_0901로 번역해 던진다.
 	 */
 	create(input: CreateFollowInput): Promise<Friendship>;
-	findByFollowerAndFollowing(
-		followerId: string,
-		followingId: string,
-	): Promise<Friendship | null>;
+	findByFollowerAndFollowing(followerId: string, followingId: string): Promise<Friendship | null>;
 	findByIdWithUser(id: string): Promise<FollowWithUser | null>;
 	update(id: string, input: UpdateFollowInput): Promise<Friendship>;
 	updateByFollowerAndFollowing(
@@ -109,14 +106,9 @@ export interface FollowRepositoryPort {
 	/** 이름/태그로 전체 활성 사용자 검색 (관련도 랭킹, size+1 반환). */
 	searchUsers(params: SearchUsersParams): Promise<UserSearchResult[]>;
 	/** 검색 조건에 매칭되는 전체 사용자 수 (커서·size 무관). */
-	countSearchUsers(
-		params: Omit<SearchUsersParams, "cursor" | "size">,
-	): Promise<number>;
+	countSearchUsers(params: Omit<SearchUsersParams, "cursor" | "size">): Promise<number>;
 
-	findAcceptedByIdAndFollowerId(
-		id: string,
-		followerId: string,
-	): Promise<Friendship | null>;
+	findAcceptedByIdAndFollowerId(id: string, followerId: string): Promise<Friendship | null>;
 	getMaxSortOrderForFriends(followerId: string): Promise<number>;
 	shiftFriendSortOrders(
 		followerId: string,

@@ -5,8 +5,8 @@ import { useCallback, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import type { CalendarViewMode } from './calendar.types';
 import { useCalendarContext } from './calendar-view-mode-context';
+import type { CalendarViewMode } from './calendar.types';
 
 const CALENDAR_VIEW_MODE = [
   { value: 'week', labelKey: 'calendar.week' },

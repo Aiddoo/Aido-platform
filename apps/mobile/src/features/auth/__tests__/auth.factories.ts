@@ -12,6 +12,7 @@ import type {
   UpdateMarketingConsentResponse,
 } from '@aido/validators';
 import { ApiError } from '@src/shared/errors/api-error';
+
 import type { Consent } from '../models/auth.model';
 
 const generateAuthTokensDto = (): AuthTokensDTO => ({

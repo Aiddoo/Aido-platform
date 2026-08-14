@@ -15,11 +15,13 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 } from "@/shared/application/ports";
+
 import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoRescheduledEvent } from "../../../domain/events/todo-rescheduled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -29,13 +31,10 @@ import {
 } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
-import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { UpdateTodoScheduleUseCase } from "./update-todo-schedule.use-case";
 
 function buildEntity(): Todo {
@@ -62,9 +61,7 @@ function buildEntity(): Todo {
 }
 
 function buildResponse(): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("user-123").withId(1).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
 }
 
 const timedSchedule: TodoScheduleProps = {
@@ -101,11 +98,8 @@ describe("UpdateTodoScheduleUseCase — 할 일 일정 변경 핸들러", () => 
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-		eventPublisher = unitRef.get<DomainEventPublisherPort>(
-			DOMAIN_EVENT_PUBLISHER,
-		);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 	});
 
 	it("시간 일정으로 변경하면 영속화하고 scheduledTime을 담은 이벤트를 발행한다", async () => {
@@ -121,10 +115,7 @@ describe("UpdateTodoScheduleUseCase — 할 일 일정 변경 핸들러", () => 
 		});
 
 		// Then - 영속화 + 이벤트(리마인더 재스케줄은 이벤트 핸들러 몫)
-		expect(todoRepository.updateSchedule).toHaveBeenCalledWith(
-			1,
-			timedSchedule,
-		);
+		expect(todoRepository.updateSchedule).toHaveBeenCalledWith(1, timedSchedule);
 		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoRescheduledEvent(1, "user-123", timedSchedule.scheduledTime),
 		]);
@@ -144,10 +135,7 @@ describe("UpdateTodoScheduleUseCase — 할 일 일정 변경 핸들러", () => 
 		});
 
 		// Then
-		expect(todoRepository.updateSchedule).toHaveBeenCalledWith(
-			1,
-			allDaySchedule,
-		);
+		expect(todoRepository.updateSchedule).toHaveBeenCalledWith(1, allDaySchedule);
 		expect(eventPublisher.publishAll).toHaveBeenCalledWith([
 			new TodoRescheduledEvent(1, "user-123", null),
 		]);

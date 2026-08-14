@@ -1,6 +1,7 @@
 import { useSubscriptionService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
+
 import { SUBSCRIPTION_QUERY_KEYS } from '../constants/subscription-query-keys.constant';
 
 export const useGetOfferingsQueryOptions = () => {

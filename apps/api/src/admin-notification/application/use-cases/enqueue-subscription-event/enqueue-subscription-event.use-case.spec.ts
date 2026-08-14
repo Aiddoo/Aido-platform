@@ -21,9 +21,7 @@ describe("EnqueueSubscriptionEventUseCase", () => {
 	let queue: Mocked<AdminNotificationQueuePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			EnqueueSubscriptionEventUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(EnqueueSubscriptionEventUseCase).compile();
 		useCase = unit;
 		queue = unitRef.get(ADMIN_NOTIFICATION_QUEUE_PORT);
 	});
@@ -44,10 +42,7 @@ describe("EnqueueSubscriptionEventUseCase", () => {
 
 		await useCase.execute(payload);
 
-		expect(queue.enqueueSend).toHaveBeenCalledWith(
-			"payment",
-			expect.any(Object),
-		);
+		expect(queue.enqueueSend).toHaveBeenCalledWith("payment", expect.any(Object));
 	});
 
 	it("구매 통화 기준으로 금액을 표시한다 (KRW ₩3,900)", async () => {
@@ -64,9 +59,7 @@ describe("EnqueueSubscriptionEventUseCase", () => {
 		await useCase.execute(payload);
 
 		expect(getNotification()?.fields).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({ name: "금액", value: "₩3,900" }),
-			]),
+			expect.arrayContaining([expect.objectContaining({ name: "금액", value: "₩3,900" })]),
 		);
 	});
 
@@ -106,9 +99,7 @@ describe("EnqueueSubscriptionEventUseCase", () => {
 		const notification = getNotification();
 		expect(notification?.body).toContain("매튜");
 		expect(notification?.fields).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({ name: "이름", value: "매튜" }),
-			]),
+			expect.arrayContaining([expect.objectContaining({ name: "이름", value: "매튜" })]),
 		);
 	});
 
@@ -122,8 +113,6 @@ describe("EnqueueSubscriptionEventUseCase", () => {
 			productId: "aido_premium_monthly",
 		};
 
-		await expect(useCase.execute(payload)).rejects.toThrow(
-			"Redis connection error",
-		);
+		await expect(useCase.execute(payload)).rejects.toThrow("Redis connection error");
 	});
 });

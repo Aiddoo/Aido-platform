@@ -1,12 +1,10 @@
 import { ErrorCode } from "@aido/errors";
 import type { CurrentUserPayload } from "@aido/validators";
-import {
-	type CanActivate,
-	type ExecutionContext,
-	Injectable,
-} from "@nestjs/common";
+import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { GetAiUsageUseCase } from "../../application/queries/get-ai-usage/get-ai-usage.use-case";
 
 /** 인증 페이로드가 첨부된 Request 타입 (캐스트 없이 user 접근). */

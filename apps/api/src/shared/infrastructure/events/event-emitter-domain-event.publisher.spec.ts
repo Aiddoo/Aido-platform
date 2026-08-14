@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+
 import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher";
 
 describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () => {
@@ -26,11 +27,9 @@ describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () =
 		let settled = false;
 
 		// When - 발행 시작
-		const publishing = publisher
-			.publishAll([{ eventName: "todo.deleted" }])
-			.then(() => {
-				settled = true;
-			});
+		const publishing = publisher.publishAll([{ eventName: "todo.deleted" }]).then(() => {
+			settled = true;
+		});
 		await new Promise((resolve) => setImmediate(resolve));
 
 		// Then - listener 완료 전에는 발행도 미완료
@@ -42,8 +41,7 @@ describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () =
 
 	it("listener rejection을 문맥과 함께 한 번 기록하고 다음 이벤트를 계속 발행한다", async () => {
 		// Given - 첫 이벤트 실패, 두 번째 이벤트 정상
-		const context =
-			"Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime";
+		const context = "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime";
 		eventEmitter.on("todo.deleted", async () => {
 			throw new Error(context);
 		});
@@ -52,10 +50,7 @@ describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () =
 
 		// When & Then - post-commit 요청을 실패시키지 않고 오류를 격리
 		await expect(
-			publisher.publishAll([
-				{ eventName: "todo.deleted" },
-				{ eventName: "todo.updated" },
-			]),
+			publisher.publishAll([{ eventName: "todo.deleted" }, { eventName: "todo.updated" }]),
 		).resolves.toBeUndefined();
 		expect(nextListener).toHaveBeenCalledTimes(1);
 		expect(errorLogger).toHaveBeenCalledTimes(1);

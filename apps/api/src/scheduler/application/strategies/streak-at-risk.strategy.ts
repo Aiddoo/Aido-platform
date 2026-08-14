@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	NotificationMessageBuilder,
 	NotificationSender,
@@ -10,10 +11,7 @@ import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { computeEffectiveStreak } from "@/user-settings";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
@@ -84,12 +82,11 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: atRiskUsers.map((u) => u.id),
-				type: "STREAK_AT_RISK",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: atRiskUsers.map((u) => u.id),
+			type: "STREAK_AT_RISK",
+			notificationDate: today,
+		});
 
 		const filteredUsers = atRiskUsers.filter((u) => !alreadyNotified.has(u.id));
 
@@ -98,15 +95,11 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 		}
 
 		const notifications = filteredUsers.map((user) => {
-			const message = NotificationMessageBuilder.streakAtRisk(
-				user.effectiveStreak,
-				user.locale,
-				{
-					campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
-					recipientId: user.id,
-					occurrenceKey: toDateString(today),
-				},
-			);
+			const message = NotificationMessageBuilder.streakAtRisk(user.effectiveStreak, user.locale, {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
+				recipientId: user.id,
+				occurrenceKey: toDateString(today),
+			});
 			return {
 				userId: user.id,
 				type: "STREAK_AT_RISK" as const,

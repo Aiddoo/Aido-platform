@@ -13,9 +13,7 @@ import {
 } from "../../ports/weekly-achievement.repository.port";
 import { UpsertWeeklyAchievementsUseCase } from "./upsert-weekly-achievements.use-case";
 
-function record(
-	overrides: Partial<WeeklyAchievementUpsert> = {},
-): WeeklyAchievementUpsert {
+function record(overrides: Partial<WeeklyAchievementUpsert> = {}): WeeklyAchievementUpsert {
 	return {
 		userId: "user-1",
 		year: 2026,
@@ -32,9 +30,7 @@ describe("UpsertWeeklyAchievementsUseCase — 일괄 upsert use-case", () => {
 	let repository: Mocked<WeeklyAchievementRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			UpsertWeeklyAchievementsUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(UpsertWeeklyAchievementsUseCase).compile();
 
 		useCase = unit;
 		repository = unitRef.get(WEEKLY_ACHIEVEMENT_REPOSITORY);
@@ -67,9 +63,9 @@ describe("UpsertWeeklyAchievementsUseCase — 일괄 upsert use-case", () => {
 		const invalid = record({ totalTodos: 2, completedTodos: 5 });
 
 		// When/Then - SYS_0002 도메인 예외로 실패하고 저장소를 호출하지 않는다
-		await expect(useCase.execute({ records: [invalid] })).rejects.toMatchObject(
-			{ errorCode: "SYS_0002" },
-		);
+		await expect(useCase.execute({ records: [invalid] })).rejects.toMatchObject({
+			errorCode: "SYS_0002",
+		});
 		expect(repository.upsertMany).not.toHaveBeenCalled();
 	});
 });

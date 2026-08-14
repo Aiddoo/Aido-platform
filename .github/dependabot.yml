@@ -1,13 +1,13 @@
 version: 2
 updates:
   # npm (pnpm 모노레포 — 루트 directory가 전 워크스페이스를 커버)
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Seoul"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Seoul'
     open-pull-requests-limit: 10
     # 릴리스 당일 리그레션 회피 (예: sentry-rn 8.19.0 iOS 링크 파손이 릴리스 당일 발견됨)
     cooldown:
@@ -16,74 +16,74 @@ updates:
     groups:
       # minor/patch만 그룹으로 — 메이저는 개별 PR로 분리해 하나가 깨져도 그룹이 안 막히게
       dev-dependencies:
-        dependency-type: "development"
+        dependency-type: 'development'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
         patterns:
-          - "*"
+          - '*'
       production-dependencies:
-        dependency-type: "production"
+        dependency-type: 'production'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
         patterns:
-          - "*"
+          - '*'
     ignore:
       # ── Expo SDK 57 관리(bundledNativeModules 핀) — `npx expo install --fix`가 소유.
       #    수동/dependabot bump 시 expo-doctor·install --check 정합이 깨진다. SDK 업그레이드 때 일괄 갱신.
-      - dependency-name: "expo"
-      - dependency-name: "expo-*"
-      - dependency-name: "@expo/*"
-      - dependency-name: "jest-expo"
-      - dependency-name: "babel-preset-expo"
-      - dependency-name: "react"
-      - dependency-name: "react-dom"
-      - dependency-name: "@types/react"
-      - dependency-name: "react-native"
-      - dependency-name: "react-native-web"
-      - dependency-name: "react-native-reanimated"
-      - dependency-name: "react-native-worklets"
-      - dependency-name: "react-native-screens"
-      - dependency-name: "react-native-safe-area-context"
-      - dependency-name: "react-native-svg"
-      - dependency-name: "react-native-gesture-handler"
-      - dependency-name: "react-native-webview"
-      - dependency-name: "react-native-keyboard-controller"
-      - dependency-name: "react-native-view-shot"
+      - dependency-name: 'expo'
+      - dependency-name: 'expo-*'
+      - dependency-name: '@expo/*'
+      - dependency-name: 'jest-expo'
+      - dependency-name: 'babel-preset-expo'
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
+      - dependency-name: '@types/react'
+      - dependency-name: 'react-native'
+      - dependency-name: 'react-native-web'
+      - dependency-name: 'react-native-reanimated'
+      - dependency-name: 'react-native-worklets'
+      - dependency-name: 'react-native-screens'
+      - dependency-name: 'react-native-safe-area-context'
+      - dependency-name: 'react-native-svg'
+      - dependency-name: 'react-native-gesture-handler'
+      - dependency-name: 'react-native-webview'
+      - dependency-name: 'react-native-keyboard-controller'
+      - dependency-name: 'react-native-view-shot'
       # ── 메이저 차단 (toolchain/계약 제약 — 사유 해소 시 항목 제거)
       # typescript 7: ts-jest 29가 TS 5.x까지만 지원
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
       # jest 30: jest-expo 57이 jest 29 생태계 기반
-      - dependency-name: "jest"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/jest"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: 'jest'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/jest'
+        update-types: ['version-update:semver-major']
       # @types/node: 프로덕션 런타임 node:22-alpine 라인 유지
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
       # zod: @aido/validators 서버 계약 동결 — minor도 검증 시맨틱 변화 이력(4.4.0)
-      - dependency-name: "zod"
+      - dependency-name: 'zod'
     labels:
-      - "dependencies"
-      - "automated"
+      - 'dependencies'
+      - 'automated'
     commit-message:
-      prefix: "chore(deps)"
+      prefix: 'chore(deps)'
 
   # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Seoul"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Seoul'
     open-pull-requests-limit: 5
     # cooldown은 github-actions 생태계 미지원 (공식 옵션 레퍼런스 지원 표) — npm 블록에만 적용
     labels:
-      - "dependencies"
-      - "github-actions"
-      - "automated"
+      - 'dependencies'
+      - 'github-actions'
+      - 'automated'
     commit-message:
-      prefix: "chore(ci)"
+      prefix: 'chore(ci)'

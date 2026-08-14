@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+
 import { createActivationProgressRepository } from './activation-progress.repository';
 
 function createMemoryStorage(initial?: Record<string, string>): SyncStorage {

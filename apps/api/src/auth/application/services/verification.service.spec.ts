@@ -10,12 +10,11 @@
 import { VERIFICATION_CODE } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import type { VerificationType } from "@/auth/domain/types";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	AUTH_EMAIL_SENDER,
-	type AuthEmailSenderPort,
-} from "../ports/auth-collaboration.port";
+
+import { AUTH_EMAIL_SENDER, type AuthEmailSenderPort } from "../ports/auth-collaboration.port";
 import {
 	AUTH_VERIFICATION_REPOSITORY,
 	type AuthVerificationRepositoryPort,
@@ -34,8 +33,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } =
-			await TestBed.solitary(VerificationService).compile();
+		const { unit, unitRef } = await TestBed.solitary(VerificationService).compile();
 
 		service = unit;
 		verificationRepo = unitRef.get(AUTH_VERIFICATION_REPOSITORY);
@@ -123,9 +121,10 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await service.createAndSendPasswordReset(userId, email);
 
 			// Then
-			expect(
-				verificationRepo.invalidateAllByUserIdAndType,
-			).toHaveBeenCalledWith(userId, "PASSWORD_RESET");
+			expect(verificationRepo.invalidateAllByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				"PASSWORD_RESET",
+			);
 		});
 
 		it("재발송 쿨다운 중이면 VERIFICATION_COOLDOWN 에러를 던진다", async () => {
@@ -133,9 +132,9 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			verificationRepo.countRecentByUserIdAndType.mockResolvedValue(1);
 
 			// When & Then
-			await expect(
-				service.createAndSendPasswordReset(userId, email),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.createAndSendPasswordReset(userId, email)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -196,9 +195,9 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			verificationRepo.countRecentByUserIdAndType.mockResolvedValue(1);
 
 			// When & Then
-			await expect(
-				service.createAndSendPasswordSetup(userId, email),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.createAndSendPasswordSetup(userId, email)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("기존 미사용 코드를 무효화한다", async () => {
@@ -208,9 +207,10 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await service.createAndSendPasswordSetup(userId, email);
 
 			// Then
-			expect(
-				verificationRepo.invalidateAllByUserIdAndType,
-			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP");
+			expect(verificationRepo.invalidateAllByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				"PASSWORD_SETUP",
+			);
 		});
 
 		it("재발송 쿨다운을 확인한다", async () => {
@@ -237,9 +237,10 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				"PASSWORD_SETUP",
 				expect.any(Date),
 			);
-			expect(
-				verificationRepo.invalidateAllByUserIdAndType,
-			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP");
+			expect(verificationRepo.invalidateAllByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				"PASSWORD_SETUP",
+			);
 			expect(verificationRepo.create).toHaveBeenCalledWith(expect.any(Object));
 		});
 
@@ -265,8 +266,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 		const type: VerificationType = "EMAIL_VERIFY";
 
 		// SHA-256 hash of "123456"
-		const hashedCode =
-			"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
+		const hashedCode = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
 
 		const mockVerification = {
 			id: 1,
@@ -281,9 +281,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 		beforeEach(() => {
 			// Given - 기본 성공 시나리오 설정
-			verificationRepo.findValidByUserIdAndType.mockResolvedValue(
-				mockVerification,
-			);
+			verificationRepo.findValidByUserIdAndType.mockResolvedValue(mockVerification);
 			verificationRepo.markAsUsed.mockResolvedValue(mockVerification);
 			verificationRepo.incrementAttempts.mockResolvedValue(mockVerification);
 		});
@@ -296,9 +294,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 			// Then
 			expect(result).toBe(true);
-			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
-				mockVerification.id,
-			);
+			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(mockVerification.id);
 		});
 
 		it("유효한 인증 코드가 없으면 VERIFICATION_CODE_NOT_FOUND 에러를 던진다", async () => {
@@ -306,9 +302,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			verificationRepo.findValidByUserIdAndType.mockResolvedValue(null);
 
 			// When & Then
-			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(ApplicationException);
 		});
 
 		it("최대 시도 횟수 초과 시 VERIFICATION_MAX_ATTEMPTS 에러를 던진다", async () => {
@@ -319,9 +313,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(ApplicationException);
 		});
 
 		it("잘못된 코드면 시도 횟수를 증가시키고 INVALID_VERIFICATION_CODE 에러를 던진다", async () => {
@@ -334,9 +326,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				ApplicationException,
 			);
 
-			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(
-				mockVerification.id,
-			);
+			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(mockVerification.id);
 		});
 
 		it("인증 성공 시 코드를 사용됨으로 표시한다", async () => {
@@ -346,9 +336,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await service.verifyCode(userId, code, type);
 
 			// Then
-			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
-				mockVerification.id,
-			);
+			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(mockVerification.id);
 		});
 
 		it("리포지토리 호출은 활성 트랜잭션(CLS)에 참여한다 — tx 인자를 전달하지 않는다", async () => {
@@ -356,13 +344,8 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await service.verifyCode(userId, code, type);
 
 			// Then
-			expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(
-				userId,
-				type,
-			);
-			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
-				mockVerification.id,
-			);
+			expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(userId, type);
+			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(mockVerification.id);
 		});
 
 		it("실패 시 시도 횟수는 트랜잭션 외부에서 증가시킨다", async () => {
@@ -376,9 +359,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			);
 
 			// incrementAttempts는 트랜잭션 없이(베이스 클라이언트로) 호출됨 (롤백 방지)
-			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(
-				mockVerification.id,
-			);
+			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(mockVerification.id);
 		});
 
 		it("PASSWORD_RESET 타입도 검증한다", async () => {

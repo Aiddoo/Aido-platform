@@ -7,15 +7,10 @@
 import type { Todo } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { Memo } from "../../../domain/entities/memo.aggregate";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
-import {
-	TODO_CREATOR,
-	type TodoCreatorPort,
-} from "../../ports/todo-creator.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
 import {
 	type ConvertMemoToTodoInput,
 	ConvertMemoToTodoUseCase,

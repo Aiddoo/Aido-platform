@@ -1,5 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import { USER_STREAK_ACCESS, type UserStreakAccessPort } from "@/user-settings";
+
 import type { StreakPort } from "../../application/ports/streak.port";
 
 /**
@@ -12,11 +14,7 @@ export class StreakAdapter implements StreakPort {
 		private readonly userStreakAccess: UserStreakAccessPort,
 	) {}
 
-	async recordTodoToggle(
-		userId: string,
-		completed: boolean,
-		timezone: string,
-	): Promise<void> {
+	async recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
 		await this.userStreakAccess.recordTodoToggle(userId, completed, timezone);
 	}
 

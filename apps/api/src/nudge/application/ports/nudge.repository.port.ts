@@ -79,14 +79,8 @@ export const NUDGE_REPOSITORY = Symbol("NUDGE_REPOSITORY");
 export interface NudgeRepositoryPort {
 	findById(id: number): Promise<Nudge | null>;
 	findLastNudgeForTodo(senderId: string, todoId: number): Promise<Nudge | null>;
-	findLastNudgeToUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<Nudge | null>;
-	findLastRemindNudge(
-		senderId: string,
-		receiverId: string,
-	): Promise<ReminderNudge | null>;
+	findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null>;
+	findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null>;
 	findTargetTodo(todoId: number): Promise<TargetTodoRecord | null>;
 	markAsRead(id: number): Promise<void>;
 
@@ -94,18 +88,12 @@ export interface NudgeRepositoryPort {
 	findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
 
 	countTodayNudges(senderId: string, date: Date): Promise<number>;
-	countSentSince(
-		senderId: string,
-		since: Date,
-		untilExclusive: Date,
-	): Promise<number>;
+	countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number>;
 	countTodayTodos(userId: string, today: Date): Promise<number>;
 	countReceived(userId: string): Promise<number>;
 	countSent(userId: string): Promise<number>;
 	countUnreadReceived(userId: string): Promise<number>;
 
 	createNudge(input: CreateNudgeInput): Promise<NudgeWithRelations>;
-	createRemindNudge(
-		input: CreateRemindNudgeInput,
-	): Promise<ReminderNudgeWithRelations>;
+	createRemindNudge(input: CreateRemindNudgeInput): Promise<ReminderNudgeWithRelations>;
 }

@@ -28,27 +28,11 @@ export class SessionListDto extends createZodDto(sessionListResponseSchema) {}
 export class SessionArrayDto extends createZodDto(sessionListSchema) {}
 export class MessageResponseDto extends createZodDto(logoutResponseSchema) {}
 export class RegisterResponseDto extends createZodDto(registerResponseSchema) {}
-export class ForgotPasswordResponseDto extends createZodDto(
-	forgotPasswordResponseSchema,
-) {}
-export class ResetPasswordResponseDto extends createZodDto(
-	resetPasswordResponseSchema,
-) {}
-export class ChangePasswordResponseDto extends createZodDto(
-	changePasswordResponseSchema,
-) {}
-export class ResendVerificationResponseDto extends createZodDto(
-	resendVerificationResponseSchema,
-) {}
-export class UpdateProfileResponseDto extends createZodDto(
-	updateProfileResponseSchema,
-) {}
-export class LinkedAccountsResponseDto extends createZodDto(
-	linkedAccountsResponseSchema,
-) {}
-export class UnlinkAccountResponseDto extends createZodDto(
-	unlinkAccountResponseSchema,
-) {}
-export class DeleteAccountResponseDto extends createZodDto(
-	deleteAccountResponseSchema,
-) {}
+export class ForgotPasswordResponseDto extends createZodDto(forgotPasswordResponseSchema) {}
+export class ResetPasswordResponseDto extends createZodDto(resetPasswordResponseSchema) {}
+export class ChangePasswordResponseDto extends createZodDto(changePasswordResponseSchema) {}
+export class ResendVerificationResponseDto extends createZodDto(resendVerificationResponseSchema) {}
+export class UpdateProfileResponseDto extends createZodDto(updateProfileResponseSchema) {}
+export class LinkedAccountsResponseDto extends createZodDto(linkedAccountsResponseSchema) {}
+export class UnlinkAccountResponseDto extends createZodDto(unlinkAccountResponseSchema) {}
+export class DeleteAccountResponseDto extends createZodDto(deleteAccountResponseSchema) {}

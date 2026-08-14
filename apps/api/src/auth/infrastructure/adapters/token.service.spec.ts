@@ -13,6 +13,7 @@
 import { JwtService } from "@nestjs/jwt";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { TokenService } from "@/auth/infrastructure/adapters/token.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
@@ -114,12 +115,7 @@ describe("TokenService — 토큰 서비스", () => {
 			const role = "USER" as const;
 
 			// When
-			const result = await service.generateTokenPair(
-				userId,
-				email,
-				sessionId,
-				role,
-			);
+			const result = await service.generateTokenPair(userId, email, sessionId, role);
 
 			// Then
 			expect(result.accessToken).toBeDefined();

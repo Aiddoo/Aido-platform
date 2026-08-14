@@ -1,4 +1,5 @@
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
+
 import { getScaledFontSize, SCALED_FONT_STYLES } from './font-scale';
 
 describe('SCALED_FONT_STYLES', () => {

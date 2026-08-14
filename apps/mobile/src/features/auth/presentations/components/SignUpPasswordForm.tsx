@@ -9,6 +9,7 @@ import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Keyboard, ScrollView, type TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
+
 import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 import { PasswordInput } from './PasswordInput';
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';

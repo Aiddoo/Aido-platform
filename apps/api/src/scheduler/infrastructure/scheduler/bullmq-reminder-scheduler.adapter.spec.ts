@@ -1,8 +1,6 @@
 import { FakeJobRuntime } from "@test/mocks/fake-job-runtime";
-import {
-	REMINDER_IMMEDIATE_LABEL,
-	REMINDER_STAGES,
-} from "../../domain/services/reminder-plan";
+
+import { REMINDER_IMMEDIATE_LABEL, REMINDER_STAGES } from "../../domain/services/reminder-plan";
 import {
 	BullMQReminderSchedulerAdapter,
 	TODO_REMINDER_QUEUE,
@@ -21,11 +19,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 	});
 
 	it("2시간 뒤 마감은 60분·10분 작업을 고유 키로 등록한다", async () => {
-		await adapter.scheduleReminder(
-			1,
-			new Date(Date.now() + 2 * HOUR_MS),
-			USER_ID,
-		);
+		await adapter.scheduleReminder(1, new Date(Date.now() + 2 * HOUR_MS), USER_ID);
 
 		expect(runtime.enqueueCalls).toHaveLength(REMINDER_STAGES.length);
 		expect(runtime.enqueueCalls[0]).toMatchObject({
@@ -36,17 +30,13 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 			},
 			options: { jobKey: "reminder_1_60min" },
 		});
-		expect(
-			runtime.enqueueCalls[0]?.options.startAfter?.getTime(),
-		).toBeGreaterThan(Date.now() + 50 * 60 * 1000);
+		expect(runtime.enqueueCalls[0]?.options.startAfter?.getTime()).toBeGreaterThan(
+			Date.now() + 50 * 60 * 1000,
+		);
 	});
 
 	it("5분 뒤 마감은 즉시 알림 하나만 등록한다", async () => {
-		await adapter.scheduleReminder(
-			1,
-			new Date(Date.now() + 5 * 60 * 1000),
-			USER_ID,
-		);
+		await adapter.scheduleReminder(1, new Date(Date.now() + 5 * 60 * 1000), USER_ID);
 
 		expect(runtime.enqueueCalls).toHaveLength(1);
 		expect(runtime.enqueueCalls[0]).toMatchObject({
@@ -71,8 +61,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 		await expect(
 			adapter.scheduleReminder(42, new Date(Date.now() + 2 * HOUR_MS), USER_ID),
 		).rejects.toMatchObject({
-			message:
-				"Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime",
+			message: "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime",
 			cause: infrastructureError,
 		});
 		expect(runtime.enqueueCalls).toHaveLength(0);
@@ -95,10 +84,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 		});
 
 		expect(runtime.cancelCalls).toEqual(
-			[
-				...REMINDER_STAGES.map(({ label }) => label),
-				REMINDER_IMMEDIATE_LABEL,
-			].map((label) => ({
+			[...REMINDER_STAGES.map(({ label }) => label), REMINDER_IMMEDIATE_LABEL].map((label) => ({
 				queue: TODO_REMINDER_QUEUE,
 				jobKey: `reminder_42_${label}`,
 			})),
@@ -138,8 +124,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 
 		// Then - missing으로 변환하지 않고 안정적인 문맥과 원인을 보존
 		await expect(cancellation).rejects.toMatchObject({
-			message:
-				"Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime",
+			message: "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime",
 			cause: infrastructureError,
 		});
 	});

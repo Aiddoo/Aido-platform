@@ -31,9 +31,7 @@ describe("TestDatabase 통합 테스트 (실제 DB)", () => {
 	it("cleanup이 public 데이터와 sequence를 초기화해야 한다", async () => {
 		// Given - 독립 컨테이너에 sequence 검증용 임시 테이블 생성
 		const prisma = testDatabase.getPrisma();
-		await prisma.$executeRawUnsafe(
-			'CREATE TABLE "TestSequenceReset" ("id" SERIAL PRIMARY KEY)',
-		);
+		await prisma.$executeRawUnsafe('CREATE TABLE "TestSequenceReset" ("id" SERIAL PRIMARY KEY)');
 
 		try {
 			const first = await prisma.$queryRawUnsafe<Array<{ id: number }>>(
@@ -50,9 +48,7 @@ describe("TestDatabase 통합 테스트 (실제 DB)", () => {
 			// Then - 데이터와 sequence가 모두 초기화됨
 			expect(second[0]?.id).toBe(1);
 		} finally {
-			await prisma.$executeRawUnsafe(
-				'DROP TABLE IF EXISTS "TestSequenceReset"',
-			);
+			await prisma.$executeRawUnsafe('DROP TABLE IF EXISTS "TestSequenceReset"');
 		}
 	});
 });

@@ -21,8 +21,5 @@ export const IS_ADMIN_KEY = "isAdmin";
  * ```
  */
 export function Admin() {
-	return applyDecorators(
-		SetMetadata(IS_ADMIN_KEY, true),
-		UseGuards(AdminGuard),
-	);
+	return applyDecorators(SetMetadata(IS_ADMIN_KEY, true), UseGuards(AdminGuard));
 }

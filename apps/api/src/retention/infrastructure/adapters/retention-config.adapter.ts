@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import type { RetentionConfigPort } from "../../application/ports/retention-config.port";
 
 @Injectable()

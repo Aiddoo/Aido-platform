@@ -12,6 +12,7 @@
  */
 import type { Provider, ValueProvider } from "@nestjs/common";
 import Redis from "ioredis";
+
 import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants";
 import { type RedisLifecycleClient, RedisModule } from "./redis.module";
 
@@ -20,9 +21,7 @@ interface FakeRedisClient extends RedisLifecycleClient {
 	disconnect: jest.Mock;
 }
 
-function createFakeClient(
-	overrides: Partial<FakeRedisClient> = {},
-): FakeRedisClient {
+function createFakeClient(overrides: Partial<FakeRedisClient> = {}): FakeRedisClient {
 	return {
 		status: "ready",
 		quit: jest.fn().mockResolvedValue("OK"),
@@ -35,13 +34,9 @@ function isValueProvider(provider: Provider): provider is ValueProvider {
 	return typeof provider === "object" && "useValue" in provider;
 }
 
-function findUseValue(
-	providers: Provider[] | undefined,
-	token: symbol,
-): unknown {
-	return (providers ?? [])
-		.filter(isValueProvider)
-		.find((provider) => provider.provide === token)?.useValue;
+function findUseValue(providers: Provider[] | undefined, token: symbol): unknown {
+	return (providers ?? []).filter(isValueProvider).find((provider) => provider.provide === token)
+		?.useValue;
 }
 
 describe("RedisModule — Redis 연결 모듈", () => {
@@ -66,9 +61,7 @@ describe("RedisModule — Redis 연결 모듈", () => {
 
 			// Then
 			expect(findUseValue(dynamicModule.providers, REDIS_CLIENT)).toBe(client);
-			expect(findUseValue(dynamicModule.providers, REDIS_COMMAND_CLIENT)).toBe(
-				client,
-			);
+			expect(findUseValue(dynamicModule.providers, REDIS_COMMAND_CLIENT)).toBe(client);
 			expect(dynamicModule.exports).toEqual(
 				expect.arrayContaining([REDIS_CLIENT, REDIS_COMMAND_CLIENT]),
 			);
@@ -80,9 +73,7 @@ describe("RedisModule — Redis 연결 모듈", () => {
 
 			// Then
 			expect(findUseValue(dynamicModule.providers, REDIS_CLIENT)).toBe(client);
-			expect(findUseValue(dynamicModule.providers, REDIS_COMMAND_CLIENT)).toBe(
-				commandClient,
-			);
+			expect(findUseValue(dynamicModule.providers, REDIS_COMMAND_CLIENT)).toBe(commandClient);
 		});
 	});
 
@@ -148,10 +139,7 @@ describe("RedisModule — Redis 연결 모듈", () => {
 			const module = new RedisModule(bullClient, null);
 
 			// When — 동시 중복 호출
-			await Promise.all([
-				module.onApplicationShutdown(),
-				module.onApplicationShutdown(),
-			]);
+			await Promise.all([module.onApplicationShutdown(), module.onApplicationShutdown()]);
 
 			// Then
 			expect(bullClient.quit).toHaveBeenCalledTimes(1);

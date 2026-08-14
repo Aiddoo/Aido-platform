@@ -1,6 +1,7 @@
 import { PressableFeedback, Toast } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { View } from 'react-native';
+
 import { ToastErrorIcon, ToastSuccessIcon, ToastWarningIcon } from '../Icon/icons';
 import { Text } from '../Text/Text';
 

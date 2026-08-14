@@ -2,17 +2,14 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+
 import type { CheerWithRelations } from "../application/ports/cheer.repository.port";
 import { CheerReader } from "../application/services/cheer.reader";
 import { MarkCheerReadUseCase } from "../application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
 import { MarkManyCheersReadUseCase } from "../application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
 import { SendCheerUseCase } from "../application/use-cases/send-cheer/send-cheer.use-case";
 import { CheerController } from "./cheer.controller";
-import type {
-	GetCheersQueryDto,
-	MarkCheersReadDto,
-	SendCheerDto,
-} from "./dtos";
+import type { GetCheersQueryDto, MarkCheersReadDto, SendCheerDto } from "./dtos";
 
 const user: CurrentUserPayload = {
 	userId: "sender",

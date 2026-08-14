@@ -1,5 +1,6 @@
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/models/feature-discovery.model';
 import type { GrowthEventMap } from '@src/shared/analytics';
+
 import {
   ActivationPolicy,
   type ActivationProgress,

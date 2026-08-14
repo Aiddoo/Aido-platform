@@ -12,6 +12,7 @@
  */
 import { TestBed } from "@suites/unit";
 import { asDep, createMockExecutionContext } from "@test/mocks";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { AdminGuard } from "./admin.guard";

@@ -75,10 +75,7 @@ describe("E2E 테스트 상태 reset", () => {
 		});
 
 		await expect(reset()).rejects.toMatchObject({
-			errors: [
-				drainError,
-				expect.objectContaining({ message: "cache failed" }),
-			],
+			errors: [drainError, expect.objectContaining({ message: "cache failed" })],
 		});
 		expect(cleanupDatabase).toHaveBeenCalledTimes(1);
 		expect(resetCache).toHaveBeenCalledTimes(1);

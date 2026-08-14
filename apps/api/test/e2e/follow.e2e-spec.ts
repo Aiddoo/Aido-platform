@@ -14,12 +14,8 @@
  */
 
 import request from "supertest";
-import {
-	createE2eApp,
-	destroyE2eApp,
-	type E2eTestContext,
-	type VerifiedUser,
-} from "./helpers";
+
+import { createE2eApp, destroyE2eApp, type E2eTestContext, type VerifiedUser } from "./helpers";
 
 describe("팔로우 E2E", () => {
 	let ctx: E2eTestContext;
@@ -41,14 +37,8 @@ describe("팔로우 E2E", () => {
 
 		it("친구 요청부터 수락까지 전체 플로우", async () => {
 			// Given - 두 명의 인증된 사용자
-			const userA = await ctx.helpers.createVerifiedUser(
-				"user-a@example.com",
-				password,
-			);
-			const userB = await ctx.helpers.createVerifiedUser(
-				"user-b@example.com",
-				password,
-			);
+			const userA = await ctx.helpers.createVerifiedUser("user-a@example.com", password);
+			const userB = await ctx.helpers.createVerifiedUser("user-b@example.com", password);
 
 			// When - 친구 요청 API 호출
 			const requestResponse = await request(ctx.app.getHttpServer())
@@ -108,14 +98,8 @@ describe("팔로우 E2E", () => {
 
 		it("이미 요청을 보낸 경우 409 에러 반환", async () => {
 			// Given - 두 명의 인증된 사용자와 이미 보낸 친구 요청
-			const userA = await ctx.helpers.createVerifiedUser(
-				"user-a-dup@example.com",
-				password,
-			);
-			const userB = await ctx.helpers.createVerifiedUser(
-				"user-b-dup@example.com",
-				password,
-			);
+			const userA = await ctx.helpers.createVerifiedUser("user-a-dup@example.com", password);
+			const userB = await ctx.helpers.createVerifiedUser("user-b-dup@example.com", password);
 
 			await request(ctx.app.getHttpServer())
 				.post(`/v1/follows/${userB.userTag}`)
@@ -135,10 +119,7 @@ describe("팔로우 E2E", () => {
 
 		it("자기 자신에게 요청 시 400 에러 반환", async () => {
 			// Given - 인증된 사용자
-			const userA = await ctx.helpers.createVerifiedUser(
-				"user-a-self@example.com",
-				password,
-			);
+			const userA = await ctx.helpers.createVerifiedUser("user-a-self@example.com", password);
 
 			// When - 자기 자신에게 친구 요청 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -153,10 +134,7 @@ describe("팔로우 E2E", () => {
 
 		it("존재하지 않는 사용자에게 요청 시 404 에러 반환", async () => {
 			// Given - 인증된 사용자와 존재하지 않는 userTag
-			const userA = await ctx.helpers.createVerifiedUser(
-				"user-a-404@example.com",
-				password,
-			);
+			const userA = await ctx.helpers.createVerifiedUser("user-a-404@example.com", password);
 			const nonExistentUserTag = "ZZZZ9999";
 
 			// When - 존재하지 않는 사용자에게 친구 요청 API 호출
@@ -172,15 +150,10 @@ describe("팔로우 E2E", () => {
 
 		it("인증 없이 요청 시 401 에러 반환", async () => {
 			// Given - 인증 토큰 없음
-			const userB = await ctx.helpers.createVerifiedUser(
-				"user-b-401@example.com",
-				password,
-			);
+			const userB = await ctx.helpers.createVerifiedUser("user-b-401@example.com", password);
 
 			// When - 인증 없이 친구 요청 API 호출
-			await request(ctx.app.getHttpServer())
-				.post(`/v1/follows/${userB.userTag}`)
-				.expect(401);
+			await request(ctx.app.getHttpServer()).post(`/v1/follows/${userB.userTag}`).expect(401);
 
 			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 		});
@@ -191,14 +164,8 @@ describe("팔로우 E2E", () => {
 
 		it("친구 요청을 철회한다", async () => {
 			// Given - 두 명의 인증된 사용자, 친구 요청을 보낸 상태
-			const userC = await ctx.helpers.createVerifiedUser(
-				"user-c@example.com",
-				password,
-			);
-			const userD = await ctx.helpers.createVerifiedUser(
-				"user-d@example.com",
-				password,
-			);
+			const userC = await ctx.helpers.createVerifiedUser("user-c@example.com", password);
+			const userD = await ctx.helpers.createVerifiedUser("user-d@example.com", password);
 
 			await request(ctx.app.getHttpServer())
 				.post(`/v1/follows/${userD.userTag}`)
@@ -231,14 +198,8 @@ describe("팔로우 E2E", () => {
 
 		it("친구 요청을 거절한다", async () => {
 			// Given - E가 F에게 친구 요청을 보낸 상태
-			const userE = await ctx.helpers.createVerifiedUser(
-				"user-e@example.com",
-				password,
-			);
-			const userF = await ctx.helpers.createVerifiedUser(
-				"user-f@example.com",
-				password,
-			);
+			const userE = await ctx.helpers.createVerifiedUser("user-e@example.com", password);
+			const userF = await ctx.helpers.createVerifiedUser("user-f@example.com", password);
 
 			await request(ctx.app.getHttpServer())
 				.post(`/v1/follows/${userF.userTag}`)
@@ -271,14 +232,8 @@ describe("팔로우 E2E", () => {
 
 		it("상대방이 먼저 요청한 경우 자동으로 친구가 된다", async () => {
 			// Given - G가 H에게 친구 요청을 보낸 상태
-			const userG = await ctx.helpers.createVerifiedUser(
-				"user-g@example.com",
-				password,
-			);
-			const userH = await ctx.helpers.createVerifiedUser(
-				"user-h@example.com",
-				password,
-			);
+			const userG = await ctx.helpers.createVerifiedUser("user-g@example.com", password);
+			const userH = await ctx.helpers.createVerifiedUser("user-h@example.com", password);
 
 			await request(ctx.app.getHttpServer())
 				.post(`/v1/follows/${userH.userTag}`)
@@ -323,14 +278,8 @@ describe("팔로우 E2E", () => {
 
 		it("친구가 아니면 투두 조회 시 403 에러 반환", async () => {
 			// Given - 친구 관계가 아닌 두 사용자
-			const userI = await ctx.helpers.createVerifiedUser(
-				"user-i@example.com",
-				password,
-			);
-			const userJ = await ctx.helpers.createVerifiedUser(
-				"user-j@example.com",
-				password,
-			);
+			const userI = await ctx.helpers.createVerifiedUser("user-i@example.com", password);
+			const userJ = await ctx.helpers.createVerifiedUser("user-j@example.com", password);
 
 			// When - 친구 투두 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -345,14 +294,8 @@ describe("팔로우 E2E", () => {
 
 		it("친구가 되면 PUBLIC 투두만 조회 가능", async () => {
 			// Given - 서로 친구가 된 상태 및 J의 PUBLIC/PRIVATE 투두 생성
-			const userI = await ctx.helpers.createVerifiedUser(
-				"user-i-pub@example.com",
-				password,
-			);
-			const userJ = await ctx.helpers.createVerifiedUser(
-				"user-j-pub@example.com",
-				password,
-			);
+			const userI = await ctx.helpers.createVerifiedUser("user-i-pub@example.com", password);
+			const userJ = await ctx.helpers.createVerifiedUser("user-j-pub@example.com", password);
 
 			await request(ctx.app.getHttpServer())
 				.post(`/v1/follows/${userJ.userTag}`)
@@ -364,9 +307,7 @@ describe("팔로우 E2E", () => {
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.expect(201);
 
-			const categoryId = await ctx.helpers.getDefaultCategoryId(
-				userJ.accessToken,
-			);
+			const categoryId = await ctx.helpers.getDefaultCategoryId(userJ.accessToken);
 			const rangeStart = new Date();
 			rangeStart.setUTCDate(rangeStart.getUTCDate() - 1);
 			const rangeEnd = new Date();
@@ -418,17 +359,11 @@ describe("팔로우 E2E", () => {
 
 		it("친구 목록을 페이지네이션하여 조회하고 커서로 다음 페이지를 조회한다", async () => {
 			// Given - 메인 사용자와 5명의 친구 생성 및 맞팔
-			const mainUser = await ctx.helpers.createVerifiedUser(
-				"main-user@example.com",
-				password,
-			);
+			const mainUser = await ctx.helpers.createVerifiedUser("main-user@example.com", password);
 			const friendUsers: VerifiedUser[] = [];
 
 			for (let i = 0; i < 5; i++) {
-				const friend = await ctx.helpers.createVerifiedUser(
-					`friend-${i}@example.com`,
-					password,
-				);
+				const friend = await ctx.helpers.createVerifiedUser(`friend-${i}@example.com`, password);
 				friendUsers.push(friend);
 
 				// 상호 친구 요청 (자동 수락)
@@ -456,8 +391,7 @@ describe("팔로우 E2E", () => {
 			expect(response.body.data.hasMore).toBe(true);
 
 			// When - 커서를 사용하여 다음 페이지 조회
-			const lastFriend =
-				response.body.data.friends[response.body.data.friends.length - 1];
+			const lastFriend = response.body.data.friends[response.body.data.friends.length - 1];
 			const cursor = lastFriend.followId;
 			expect(cursor).toBeDefined();
 
@@ -479,10 +413,7 @@ describe("팔로우 E2E", () => {
 
 		it("userTag로 검색하면 해당 친구만 반환된다", async () => {
 			// Given - 메인 사용자와 친구 생성
-			const searchUser = await ctx.helpers.createVerifiedUser(
-				"search-main@example.com",
-				password,
-			);
+			const searchUser = await ctx.helpers.createVerifiedUser("search-main@example.com", password);
 			const searchFriend = await ctx.helpers.createVerifiedUser(
 				"search-friend@example.com",
 				password,

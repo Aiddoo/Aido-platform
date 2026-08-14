@@ -16,6 +16,7 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { SessionBuilder } from "@test/builders";
 import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { SessionRepository } from "./session.repository";
@@ -39,9 +40,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 		db = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(SessionRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 
@@ -134,10 +133,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 			db.session.update.mockResolvedValue(updatedSession);
 
 			// When - 리프레시 토큰 해시 업데이트 실행
-			const result = await repository.updateRefreshTokenHash(
-				"session-123",
-				newHash,
-			);
+			const result = await repository.updateRefreshTokenHash("session-123", newHash);
 
 			// Then - 업데이트된 해시값 검증
 			expect(result.refreshTokenHash).toBe(newHash);
@@ -213,9 +209,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 	describe("findActiveByUserId", () => {
 		it("사용자의 활성 세션 목록을 반환한다", async () => {
 			// Given - 여러 활성 세션 Mock 설정
-			const session2 = SessionBuilder.create("user-123")
-				.withId("session-2")
-				.build();
+			const session2 = SessionBuilder.create("user-123").withId("session-2").build();
 			const activeSessions = [mockSession, session2];
 			db.session.findMany.mockResolvedValue(activeSessions);
 
@@ -384,10 +378,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 			db.session.updateMany.mockResolvedValue({ count: 3 });
 
 			// When - 토큰 패밀리 전체 폐기 실행
-			const result = await repository.revokeByTokenFamily(
-				"family-123",
-				"token_reuse_detected",
-			);
+			const result = await repository.revokeByTokenFamily("family-123", "token_reuse_detected");
 
 			// Then - 폐기된 세션 수 검증
 			expect(result).toBe(3);
@@ -410,10 +401,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 			db.session.updateMany.mockResolvedValue({ count: 5 });
 
 			// When - 사용자의 모든 세션 폐기 실행
-			const result = await repository.revokeAllByUserId(
-				"user-123",
-				"password_changed",
-			);
+			const result = await repository.revokeAllByUserId("user-123", "password_changed");
 
 			// Then - 폐기된 세션 수 검증
 			expect(result).toBe(5);
@@ -468,10 +456,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 			expect(result).toBe(10);
 			expect(db.session.deleteMany).toHaveBeenCalledWith({
 				where: {
-					OR: [
-						{ expiresAt: { lt: expect.any(Date) } },
-						{ revokedAt: { not: null } },
-					],
+					OR: [{ expiresAt: { lt: expect.any(Date) } }, { revokedAt: { not: null } }],
 				},
 			});
 		});

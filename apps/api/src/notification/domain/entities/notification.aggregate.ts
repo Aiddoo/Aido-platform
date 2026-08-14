@@ -1,6 +1,8 @@
 import { ErrorCode } from "@aido/errors";
+
 import { AggregateRoot } from "@/shared/domain";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import type { NotificationRecord } from "../records/notification.record";
 
 /**
@@ -16,9 +18,7 @@ interface NotificationProps {
 }
 
 export class Notification extends AggregateRoot<NotificationProps> {
-	static reconstitute(
-		record: Pick<NotificationRecord, "id" | "userId" | "isRead">,
-	): Notification {
+	static reconstitute(record: Pick<NotificationRecord, "id" | "userId" | "isRead">): Notification {
 		return new Notification({ ...record });
 	}
 

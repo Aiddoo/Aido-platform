@@ -1,19 +1,11 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
-import {
-	fromLegacyJob,
-	type NamedJob,
-} from "@/shared/infrastructure/jobs/named-job";
+import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
 
 import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator";
 import {
@@ -63,8 +55,7 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 		await this.runtime.work<JobData>(
 			TIMEZONE_REMINDER_LEGACY_QUEUE,
 			async (jobs) => {
-				for (const job of jobs)
-					await this.process(fromLegacyJob<TimezoneReminderJobMap>(job));
+				for (const job of jobs) await this.process(fromLegacyJob<TimezoneReminderJobMap>(job));
 			},
 			TIMEZONE_REMINDER_WORKER_POLICY,
 		);
@@ -78,10 +69,7 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 		this.#logger.error(`Worker error: ${error.message}`, error.stack);
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	) {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
@@ -91,9 +79,7 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 	async process(untrustedJob: TimezoneReminderJobLike): Promise<void> {
 		const parsedJob = TimezoneReminderRuntimeJobSchema.safeParse(untrustedJob);
 		if (!parsedJob.success) {
-			this.#logger.warn(
-				`Invalid timezone reminder job: name=${untrustedJob.name}`,
-			);
+			this.#logger.warn(`Invalid timezone reminder job: name=${untrustedJob.name}`);
 			return;
 		}
 		const job = parsedJob.data;
@@ -103,9 +89,7 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 				await this.orchestrator.handleMinuteSweep();
 				break;
 			case TimezoneReminderJobName.REMINDER_HOUR_CHANGED:
-				this.#logger.debug(
-					`Processing reminder hour changed: userId=${job.data.userId}`,
-				);
+				this.#logger.debug(`Processing reminder hour changed: userId=${job.data.userId}`);
 				await this.orchestrator.handleReminderHourChanged(job.data);
 				break;
 			case TimezoneReminderJobName.SOCIAL_DIGEST:

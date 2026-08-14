@@ -117,10 +117,7 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.SOCIAL_0203, { provider });
 	}
 
-	static socialProviderError(
-		provider: string,
-		details?: Record<string, unknown>,
-	) {
+	static socialProviderError(provider: string, details?: Record<string, unknown>) {
 		return new BusinessException(ErrorCode.SOCIAL_0204, {
 			provider,
 			...details,
@@ -133,11 +130,7 @@ export class BusinessExceptions {
 		});
 	}
 
-	static socialAccountNotLinked(
-		provider: string,
-		providerAccountId: string,
-		email: string,
-	) {
+	static socialAccountNotLinked(provider: string, providerAccountId: string, email: string) {
 		return new BusinessException(ErrorCode.SOCIAL_0206, {
 			provider,
 			providerAccountId,
@@ -337,10 +330,7 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.USER_0610);
 	}
 
-	static userTagGenerationFailed(details?: {
-		userId?: string;
-		attempts?: number;
-	}) {
+	static userTagGenerationFailed(details?: { userId?: string; attempts?: number }) {
 		return new BusinessException(ErrorCode.USER_0611, details);
 	}
 
@@ -522,10 +512,7 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.NUDGE_1107, { receiverId });
 	}
 
-	static remindNudgeCooldownActive(
-		targetUserId: string,
-		remainingSeconds: number,
-	) {
+	static remindNudgeCooldownActive(targetUserId: string, remainingSeconds: number) {
 		return new BusinessException(ErrorCode.NUDGE_1108, {
 			targetUserId,
 			remainingSeconds,

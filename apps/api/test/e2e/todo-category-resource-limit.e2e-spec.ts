@@ -7,11 +7,9 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import {
-	SUBSCRIPTION_TODO_CATEGORY_LIMITS,
-	TODO_CATEGORY_LIMITS,
-} from "@aido/validators";
+import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/validators";
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 const FREE_LIMIT = TODO_CATEGORY_LIMITS.FREE_MAX_COUNT; // 3
@@ -36,10 +34,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 	describe("Free 유저 카테고리 제한", () => {
 		it("3번째 카테고리 생성 성공 후 4번째 생성 시 403 에러, 리소스 제한 조회 확인", async () => {
 			// Given - 기본 카테고리 2개가 자동 생성된 Free 유저
-			const user = await ctx.helpers.createVerifiedUser(
-				"cat-limit-free@test.com",
-				password,
-			);
+			const user = await ctx.helpers.createVerifiedUser("cat-limit-free@test.com", password);
 			const accessToken = user.accessToken;
 
 			// When - 3번째 카테고리 생성
@@ -78,10 +73,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 	describe("Premium 유저 무제한", () => {
 		it("Free 한도(3개)를 초과하여 카테고리 생성 성공하고 maxCount가 ACTIVE 구독 한도", async () => {
 			// Given - 기본 카테고리 2개가 있는 Premium 유저
-			const user = await ctx.helpers.createVerifiedUser(
-				"cat-limit-premium@test.com",
-				password,
-			);
+			const user = await ctx.helpers.createVerifiedUser("cat-limit-premium@test.com", password);
 			const accessToken = user.accessToken;
 
 			// 구독 상태를 ACTIVE로 변경
@@ -110,9 +102,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 				.expect(200);
 
 			// Then - maxCount가 ACTIVE 구독 한도(30)이고 카테고리 수는 5
-			expect(limitResponse.body.data.maxCount).toBe(
-				SUBSCRIPTION_TODO_CATEGORY_LIMITS.ACTIVE,
-			);
+			expect(limitResponse.body.data.maxCount).toBe(SUBSCRIPTION_TODO_CATEGORY_LIMITS.ACTIVE);
 			expect(limitResponse.body.data.categoryCount).toBe(5); // 기본 2 + 추가 3
 		});
 	});

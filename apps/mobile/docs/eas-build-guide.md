@@ -6,11 +6,11 @@
 
 ## 무료 티어 제한
 
-| 서비스 | 무료 티어 한도 | 비고 |
-|--------|---------------|------|
-| EAS Build | **월 30분** (iOS/Android 각각) | 클라우드 빌드 시간 기준 |
-| EAS Submit | **무제한** | 스토어 업로드만 수행 |
-| EAS Update | **무제한** | OTA 업데이트 |
+| 서비스     | 무료 티어 한도                 | 비고                    |
+| ---------- | ------------------------------ | ----------------------- |
+| EAS Build  | **월 30분** (iOS/Android 각각) | 클라우드 빌드 시간 기준 |
+| EAS Submit | **무제한**                     | 스토어 업로드만 수행    |
+| EAS Update | **무제한**                     | OTA 업데이트            |
 
 ---
 
@@ -23,12 +23,12 @@ eas build --platform ios --profile <profile>
 eas build --platform android --profile <profile>
 ```
 
-| 항목 | 내용 |
-|-----|------|
-| 무료 티어 차감 | ✅ **차감됨** |
+| 항목           | 내용                           |
+| -------------- | ------------------------------ |
+| 무료 티어 차감 | ✅ **차감됨**                  |
 | 예상 소요 시간 | iOS: 10-20분 / Android: 5-15분 |
-| 장점 | 로컬 환경 설정 불필요 |
-| 단점 | 무료 한도 제한, 대기열 존재 |
+| 장점           | 로컬 환경 설정 불필요          |
+| 단점           | 무료 한도 제한, 대기열 존재    |
 
 ### 2. 로컬 빌드 (내 Mac)
 
@@ -37,12 +37,12 @@ eas build --platform ios --profile <profile> --local
 eas build --platform android --profile <profile> --local
 ```
 
-| 항목 | 내용 |
-|-----|------|
-| 무료 티어 차감 | ❌ **차감 안됨** |
-| 요구사항 | Xcode, Fastlane, CocoaPods (iOS) / Android SDK (Android) |
-| 장점 | 무제한 무료, 대기열 없음 |
-| 단점 | 로컬 환경 설정 필요, Mac에서만 iOS 빌드 가능 |
+| 항목           | 내용                                                     |
+| -------------- | -------------------------------------------------------- |
+| 무료 티어 차감 | ❌ **차감 안됨**                                         |
+| 요구사항       | Xcode, Fastlane, CocoaPods (iOS) / Android SDK (Android) |
+| 장점           | 무제한 무료, 대기열 없음                                 |
+| 단점           | 로컬 환경 설정 필요, Mac에서만 iOS 빌드 가능             |
 
 #### 로컬 빌드 필수 도구 (iOS)
 
@@ -68,19 +68,19 @@ eas submit --platform ios --path ./build-xxxxx.ipa
 eas submit --platform android --path ./build-xxxxx.aab
 ```
 
-| 항목 | 내용 |
-|-----|------|
-| 무료 티어 차감 | ❌ **차감 안됨** |
-| 장점 | CLI에서 바로 실행, 자동화 용이 |
-| 비고 | Build 시간과 별개의 서비스 |
+| 항목           | 내용                           |
+| -------------- | ------------------------------ |
+| 무료 티어 차감 | ❌ **차감 안됨**               |
+| 장점           | CLI에서 바로 실행, 자동화 용이 |
+| 비고           | Build 시간과 별개의 서비스     |
 
 ### 2. Apple Transporter (iOS 전용)
 
-| 항목 | 내용 |
-|-----|------|
-| 무료 티어 차감 | ❌ **차감 안됨** (Apple 공식 앱) |
-| 설치 | Mac App Store에서 "Transporter" 검색 |
-| 사용법 | .ipa 파일 드래그 앤 드롭 → 전송 |
+| 항목           | 내용                                 |
+| -------------- | ------------------------------------ |
+| 무료 티어 차감 | ❌ **차감 안됨** (Apple 공식 앱)     |
+| 설치           | Mac App Store에서 "Transporter" 검색 |
+| 사용법         | .ipa 파일 드래그 앤 드롭 → 전송      |
 
 ```bash
 # CLI로 Transporter 설치
@@ -89,20 +89,20 @@ mas install 1450874784
 
 ### 3. Google Play Console 직접 업로드 (Android 전용)
 
-| 항목 | 내용 |
-|-----|------|
-| 무료 티어 차감 | ❌ **차감 안됨** |
-| 사용법 | [Play Console](https://play.google.com/console) → 앱 선택 → 프로덕션 → .aab 업로드 |
+| 항목           | 내용                                                                               |
+| -------------- | ---------------------------------------------------------------------------------- |
+| 무료 티어 차감 | ❌ **차감 안됨**                                                                   |
+| 사용법         | [Play Console](https://play.google.com/console) → 앱 선택 → 프로덕션 → .aab 업로드 |
 
 ---
 
 ## 빌드 프로필 (eas.json)
 
-| Profile | APP_ENV | 용도 | iOS 특징 | Android 특징 |
-|---------|---------|-----|---------|-------------|
-| `development` | development | 개발/디버깅 | 시뮬레이터용 | APK |
-| `preview` | preview | 내부 테스트 | 실기기용 (Ad Hoc) | APK |
-| `production` | production | 스토어 배포 | App Store용 | AAB |
+| Profile       | APP_ENV     | 용도        | iOS 특징          | Android 특징 |
+| ------------- | ----------- | ----------- | ----------------- | ------------ |
+| `development` | development | 개발/디버깅 | 시뮬레이터용      | APK          |
+| `preview`     | preview     | 내부 테스트 | 실기기용 (Ad Hoc) | APK          |
+| `production`  | production  | 스토어 배포 | App Store용       | AAB          |
 
 ```bash
 # 프로필 지정
@@ -154,14 +154,14 @@ eas submit --platform android --path ./build-xxxxx.aab
 
 ## 요약: 비용 차감 여부
 
-| 작업 | 명령어 | 차감 |
-|-----|-------|-----|
-| 클라우드 빌드 | `eas build` | ✅ 차감 |
-| 로컬 빌드 | `eas build --local` | ❌ 무료 |
-| EAS Submit | `eas submit` | ❌ 무료 |
-| Transporter | GUI 앱 | ❌ 무료 |
-| Play Console 업로드 | 웹 업로드 | ❌ 무료 |
-| EAS Update (OTA) | `eas update` | ❌ 무료 |
+| 작업                | 명령어              | 차감    |
+| ------------------- | ------------------- | ------- |
+| 클라우드 빌드       | `eas build`         | ✅ 차감 |
+| 로컬 빌드           | `eas build --local` | ❌ 무료 |
+| EAS Submit          | `eas submit`        | ❌ 무료 |
+| Transporter         | GUI 앱              | ❌ 무료 |
+| Play Console 업로드 | 웹 업로드           | ❌ 무료 |
+| EAS Update (OTA)    | `eas update`        | ❌ 무료 |
 
 ---
 

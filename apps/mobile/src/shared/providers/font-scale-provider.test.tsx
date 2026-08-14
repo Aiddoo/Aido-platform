@@ -1,6 +1,7 @@
 import { createMockSyncStorage } from '@src/shared/__tests__';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
+
 import { FontScaleProvider, useFontScale } from './font-scale-provider';
 
 const createWrapper =

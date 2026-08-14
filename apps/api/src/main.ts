@@ -1,19 +1,17 @@
 import "./instrument";
 import "./shared/domain/date/dayjs.setup";
-
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
 import { Logger } from "nestjs-pino";
 import { cleanupOpenApiDoc } from "nestjs-zod";
+
 import { AdminModule } from "@/admin/admin.module";
 import type { EnvConfig } from "@/shared/infrastructure/config";
 import { configureApplication } from "@/shared/infrastructure/http/configure-application";
-import {
-	SWAGGER_TAG_DESCRIPTIONS,
-	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "@/shared/presentation/swagger";
+
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -82,43 +80,22 @@ async function bootstrap() {
 				description: "JWT 토큰을 입력하세요",
 			})
 			// 핵심 기능 APIs
-			.addTag(
-				SWAGGER_TAGS.USER_AUTH,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.USER_AUTH],
-			)
+			.addTag(SWAGGER_TAGS.USER_AUTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.USER_AUTH])
 			.addTag(SWAGGER_TAGS.TODOS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODOS])
-			.addTag(
-				SWAGGER_TAGS.TODO_CATEGORIES,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_CATEGORIES],
-			)
+			.addTag(SWAGGER_TAGS.TODO_CATEGORIES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_CATEGORIES])
 			.addTag(SWAGGER_TAGS.AI, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.AI])
 			// 소셜 기능 APIs
-			.addTag(
-				SWAGGER_TAGS.FOLLOWS,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.FOLLOWS],
-			)
-			.addTag(
-				SWAGGER_TAGS.CHEERS,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.CHEERS],
-			)
-			.addTag(
-				SWAGGER_TAGS.NUDGES,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NUDGES],
-			)
-			.addTag(
-				SWAGGER_TAGS.NOTIFICATIONS,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NOTIFICATIONS],
-			)
+			.addTag(SWAGGER_TAGS.FOLLOWS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.FOLLOWS])
+			.addTag(SWAGGER_TAGS.CHEERS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.CHEERS])
+			.addTag(SWAGGER_TAGS.NUDGES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NUDGES])
+			.addTag(SWAGGER_TAGS.NOTIFICATIONS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NOTIFICATIONS])
 			// 통계 APIs
 			.addTag(
 				SWAGGER_TAGS.DAILY_COMPLETIONS,
 				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.DAILY_COMPLETIONS],
 			)
 			// 시스템 APIs
-			.addTag(
-				SWAGGER_TAGS.COMMON_HEALTH,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.COMMON_HEALTH],
-			)
+			.addTag(SWAGGER_TAGS.COMMON_HEALTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.COMMON_HEALTH])
 			.build();
 
 		// App API 문서 (일반 클라이언트용)
@@ -186,44 +163,33 @@ async function bootstrap() {
 				SWAGGER_TAGS.ADMIN_NOTIFICATIONS,
 				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_NOTIFICATIONS],
 			)
-			.addTag(
-				SWAGGER_TAGS.ADMIN_USERS,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_USERS],
-			)
-			.addTag(
-				SWAGGER_TAGS.ADMIN_SYSTEM,
-				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_SYSTEM],
-			)
+			.addTag(SWAGGER_TAGS.ADMIN_USERS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_USERS])
+			.addTag(SWAGGER_TAGS.ADMIN_SYSTEM, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_SYSTEM])
 			.build();
 
 		const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
 			include: [AdminModule],
 		});
-		SwaggerModule.setup(
-			"api/admin/docs",
-			app,
-			cleanupOpenApiDoc(adminDocument),
-			{
-				customSiteTitle: "Aido Admin API Documentation",
-				swaggerOptions: {
-					persistAuthorization: true,
-					docExpansion: "list",
-					filter: true,
-					showRequestDuration: true,
-					tryItOutEnabled: true,
-					operationsSorter: "method",
-					tagsSorter: "alpha",
-					defaultModelsExpandDepth: 1,
-					defaultModelExpandDepth: 2,
-					displayOperationId: true,
-					displayRequestDuration: true,
-					syntaxHighlight: {
-						activate: true,
-						theme: "monokai",
-					},
+		SwaggerModule.setup("api/admin/docs", app, cleanupOpenApiDoc(adminDocument), {
+			customSiteTitle: "Aido Admin API Documentation",
+			swaggerOptions: {
+				persistAuthorization: true,
+				docExpansion: "list",
+				filter: true,
+				showRequestDuration: true,
+				tryItOutEnabled: true,
+				operationsSorter: "method",
+				tagsSorter: "alpha",
+				defaultModelsExpandDepth: 1,
+				defaultModelExpandDepth: 2,
+				displayOperationId: true,
+				displayRequestDuration: true,
+				syntaxHighlight: {
+					activate: true,
+					theme: "monokai",
 				},
 			},
-		);
+		});
 	}
 
 	await app.listen(port);

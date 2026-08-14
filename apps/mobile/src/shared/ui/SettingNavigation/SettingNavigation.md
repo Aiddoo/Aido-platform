@@ -8,9 +8,12 @@
 import { SettingNavigation } from '@src/shared/ui';
 
 <SettingNavigation>
-  <SettingNavigation.Item label="알림 설정" onPress={() => router.push('/settings/notifications')} />
+  <SettingNavigation.Item
+    label="알림 설정"
+    onPress={() => router.push('/settings/notifications')}
+  />
   <SettingNavigation.Item label="화면 테마" onPress={() => router.push('/settings/theme')} />
-</SettingNavigation>
+</SettingNavigation>;
 ```
 
 ### 커스텀 right 영역
@@ -21,7 +24,9 @@ import { SettingNavigation } from '@src/shared/ui';
   onPress={() => router.push('/settings/edit-name')}
   right={
     <HStack align="center" gap={4}>
-      <Text size="b2" shade={6}>{user.name}</Text>
+      <Text size="b2" shade={6}>
+        {user.name}
+      </Text>
       <ArrowRightIcon colorClassName="text-gray-6" />
     </HStack>
   }
@@ -32,17 +37,17 @@ import { SettingNavigation } from '@src/shared/ui';
 
 ### SettingNavigation
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `children` | `ReactNode` | - | 내부 `SettingNavigation.Item` 목록 |
+| Prop       | 타입        | 기본값 | 설명                               |
+| ---------- | ----------- | ------ | ---------------------------------- |
+| `children` | `ReactNode` | -      | 내부 `SettingNavigation.Item` 목록 |
 
 ### SettingNavigation.Item
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `label` | `string` | - | 항목 텍스트 |
-| `onPress` | `() => void` | - | 클릭 핸들러 |
-| `right` | `ReactNode` | `<ArrowRightIcon />` | 우측 영역 커스텀 |
+| Prop      | 타입         | 기본값               | 설명             |
+| --------- | ------------ | -------------------- | ---------------- |
+| `label`   | `string`     | -                    | 항목 텍스트      |
+| `onPress` | `() => void` | -                    | 클릭 핸들러      |
+| `right`   | `ReactNode`  | `<ArrowRightIcon />` | 우측 영역 커스텀 |
 
 ## 파일 구조
 

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+
 import type { ConsentSeedInput } from "../../application/ports/user-consent.repository.port";
 import type {
 	UserNotificationSettingsAccessPort,
@@ -18,10 +19,7 @@ import { UpsertPushTimezoneUseCase } from "../../application/use-cases/upsert-pu
 /** 외부 컨텍스트에 공개한 좁은 capability를 내부 endpoint UseCase에 연결한다. */
 @Injectable()
 export class UserSettingsAccessAdapter
-	implements
-		UserSettingsProvisionerPort,
-		UserStreakAccessPort,
-		UserNotificationSettingsAccessPort
+	implements UserSettingsProvisionerPort, UserStreakAccessPort, UserNotificationSettingsAccessPort
 {
 	constructor(
 		private readonly seedUserSettingsUseCase: SeedUserSettingsUseCase,
@@ -39,11 +37,7 @@ export class UserSettingsAccessAdapter
 		return this.seedUserSettingsUseCase.execute(userId, consent);
 	}
 
-	recordTodoToggle(
-		userId: string,
-		completed: boolean,
-		timezone: string,
-	): Promise<void> {
+	recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
 		return this.onTodoToggledUseCase.execute(userId, completed, timezone);
 	}
 
@@ -71,10 +65,7 @@ export class UserSettingsAccessAdapter
 		return this.upsertPushLocaleUseCase.execute(userId, locale);
 	}
 
-	async updateMarketingPushConsent(
-		userId: string,
-		agreed: boolean,
-	): Promise<void> {
+	async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
 		await this.updateMarketingPushConsentUseCase.execute(userId, agreed);
 	}
 }

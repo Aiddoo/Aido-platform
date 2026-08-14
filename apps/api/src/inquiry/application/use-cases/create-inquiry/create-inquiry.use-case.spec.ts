@@ -1,18 +1,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import {
-	INQUIRY_MAILER,
-	type InquiryMailerPort,
-} from "../../ports/inquiry-mailer.port";
-import {
-	type CreateInquiryInput,
-	CreateInquiryUseCase,
-} from "./create-inquiry.use-case";
+import { INQUIRY_MAILER, type InquiryMailerPort } from "../../ports/inquiry-mailer.port";
+import { type CreateInquiryInput, CreateInquiryUseCase } from "./create-inquiry.use-case";
 
-function makeInput(
-	overrides: Partial<CreateInquiryInput> = {},
-): CreateInquiryInput {
+function makeInput(overrides: Partial<CreateInquiryInput> = {}): CreateInquiryInput {
 	return {
 		userId: overrides.userId ?? "user-123",
 		userEmail: overrides.userEmail ?? "user@example.com",
@@ -26,8 +18,7 @@ describe("CreateInquiryUseCase — 문의 접수", () => {
 	let mailer: Mocked<InquiryMailerPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(CreateInquiryUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(CreateInquiryUseCase).compile();
 
 		useCase = unit;
 		mailer = unitRef.get(INQUIRY_MAILER);

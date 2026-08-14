@@ -103,11 +103,7 @@ export function describeCacheAdapterContract(context: {
 			]);
 
 			// When
-			const result = await cache.mget<number>([
-				"contract:a",
-				"contract:missing",
-				"contract:b",
-			]);
+			const result = await cache.mget<number>(["contract:a", "contract:missing", "contract:b"]);
 
 			// Then
 			expect(result).toEqual([1, undefined, 2]);

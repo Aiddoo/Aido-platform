@@ -22,6 +22,7 @@
 ### Task 1: 해시태그 표시 규칙 중앙화
 
 **Files:**
+
 - Create: `apps/mobile/src/features/user/utils/user-hashtag.ts`
 - Create: `apps/mobile/src/features/user/utils/user-hashtag.test.ts`
 - Modify: `apps/mobile/src/features/friend/presentations/components/FriendSearchList.tsx`
@@ -34,6 +35,7 @@
 - Modify: `apps/mobile/src/shared/i18n/locales/en/validation.json`
 
 **Interfaces:**
+
 - Produces: `formatUserHashtag(userTag: string): string`
 - Consumes: API가 반환하는 접두어 없는 `userTag`
 
@@ -87,6 +89,7 @@ git commit -m "fix(mobile): 사용자 식별자 해시태그 표기 통일"
 ### Task 2: 실제 화면형 기능 미리보기
 
 **Files:**
+
 - Create: `apps/mobile/src/features/feature-discovery/presentations/components/FeatureDiscoveryPreview.tsx`
 - Modify: `apps/mobile/src/features/feature-discovery/presentations/components/FeatureDiscoverySheet.tsx`
 - Modify: `apps/mobile/src/features/feature-discovery/presentations/components/FeatureDiscoverySheet.test.tsx`
@@ -94,6 +97,7 @@ git commit -m "fix(mobile): 사용자 식별자 해시태그 표기 통일"
 - Modify: `apps/mobile/src/shared/i18n/locales/en/featureDiscovery.json`
 
 **Interfaces:**
+
 - Consumes: `FeatureDiscoveryCardId`, `formatUserHashtag`
 - Produces: `FeatureDiscoveryPreview({ cardId }: { cardId: FeatureDiscoveryCardId })`
 
@@ -143,12 +147,14 @@ git commit -m "feat(mobile): 실제 화면형 기능 가이드 미리보기 개�
 ### Task 3: 호환성 및 실기기 검증
 
 **Files:**
+
 - Verify: `apps/mobile/app.config.ts`
 - Verify: `apps/mobile/package.json`
 - Verify: `packages/validators/src/domains/follow/follow.request.ts`
 - Verify: `apps/api/prisma/schema.prisma`
 
 **Interfaces:**
+
 - Consumes: Task 1과 Task 2의 완성된 모바일 변경
 - Produces: 1.7.0 서버 계약 무변경 및 1.8.0 UI 검증 결과
 

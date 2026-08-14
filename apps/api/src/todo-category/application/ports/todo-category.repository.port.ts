@@ -39,11 +39,7 @@ export interface TodoCategoryRepositoryPort {
 	findManyByUserId(userId: string): Promise<TodoCategoryWithCountView[]>;
 
 	countByUserId(userId: string): Promise<number>;
-	existsByUserIdAndName(
-		userId: string,
-		name: string,
-		excludeId?: number,
-	): Promise<boolean>;
+	existsByUserIdAndName(userId: string, name: string, excludeId?: number): Promise<boolean>;
 	getMaxSortOrder(userId: string): Promise<number>;
 	shiftSortOrders(
 		userId: string,
@@ -53,8 +49,5 @@ export interface TodoCategoryRepositoryPort {
 	): Promise<number>;
 
 	getTodoCount(categoryId: number): Promise<number>;
-	moveTodosToCategory(
-		fromCategoryId: number,
-		toCategoryId: number,
-	): Promise<number>;
+	moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<number>;
 }

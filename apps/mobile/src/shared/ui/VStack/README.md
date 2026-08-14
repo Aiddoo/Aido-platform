@@ -23,39 +23,39 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 
 ### Flex Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `wrap` | `'wrap' \| 'nowrap' \| 'wrap-reverse'` | `'nowrap'` | flex wrap |
-| `justify` | `'start' \| 'center' \| 'end' \| 'between' \| 'around' \| 'evenly'` | `'start'` | justify-content |
-| `align` | `'start' \| 'center' \| 'end' \| 'stretch' \| 'baseline'` | `'stretch'` | align-items |
+| Prop      | 타입                                                                | 기본값      | 설명            |
+| --------- | ------------------------------------------------------------------- | ----------- | --------------- |
+| `wrap`    | `'wrap' \| 'nowrap' \| 'wrap-reverse'`                              | `'nowrap'`  | flex wrap       |
+| `justify` | `'start' \| 'center' \| 'end' \| 'between' \| 'around' \| 'evenly'` | `'start'`   | justify-content |
+| `align`   | `'start' \| 'center' \| 'end' \| 'stretch' \| 'baseline'`           | `'stretch'` | align-items     |
 
 ### Spacing Props (BoxProps 상속)
 
-| Prop | 타입 | 설명 |
-|------|------|------|
-| `flex` | `number` | flex 값 |
-| `gap` | `number` | 자식 요소 간격 (px) |
-| `p` | `number` | padding 전체 |
-| `px` | `number` | padding 좌우 |
-| `py` | `number` | padding 상하 |
-| `pt` | `number` | padding 상단 |
-| `pb` | `number` | padding 하단 |
-| `pl` | `number` | padding 좌측 |
-| `pr` | `number` | padding 우측 |
-| `m` | `number` | margin 전체 |
-| `mx` | `number` | margin 좌우 |
-| `my` | `number` | margin 상하 |
-| `mt` | `number` | margin 상단 |
-| `mb` | `number` | margin 하단 |
-| `ml` | `number` | margin 좌측 |
-| `mr` | `number` | margin 우측 |
+| Prop   | 타입     | 설명                |
+| ------ | -------- | ------------------- |
+| `flex` | `number` | flex 값             |
+| `gap`  | `number` | 자식 요소 간격 (px) |
+| `p`    | `number` | padding 전체        |
+| `px`   | `number` | padding 좌우        |
+| `py`   | `number` | padding 상하        |
+| `pt`   | `number` | padding 상단        |
+| `pb`   | `number` | padding 하단        |
+| `pl`   | `number` | padding 좌측        |
+| `pr`   | `number` | padding 우측        |
+| `m`    | `number` | margin 전체         |
+| `mx`   | `number` | margin 좌우         |
+| `my`   | `number` | margin 상하         |
+| `mt`   | `number` | margin 상단         |
+| `mb`   | `number` | margin 하단         |
+| `ml`   | `number` | margin 좌측         |
+| `mr`   | `number` | margin 우측         |
 
 ### 기타 Props
 
-| Prop | 타입 | 설명 |
-|------|------|------|
-| `className` | `string` | 추가 Tailwind 클래스 |
-| `style` | `ViewStyle` | 인라인 스타일 |
+| Prop        | 타입        | 설명                 |
+| ----------- | ----------- | -------------------- |
+| `className` | `string`    | 추가 Tailwind 클래스 |
+| `style`     | `ViewStyle` | 인라인 스타일        |
 
 ## 예시
 
@@ -73,9 +73,13 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 
 ```tsx
 <VStack gap={8} align="start" p={16}>
-  <Text weight="bold" size="t3">제목</Text>
+  <Text weight="bold" size="t3">
+    제목
+  </Text>
   <Text shade={7}>본문 내용입니다.</Text>
-  <Text shade={5} size="e1">2024년 1월 18일</Text>
+  <Text shade={5} size="e1">
+    2024년 1월 18일
+  </Text>
 </VStack>
 ```
 
@@ -97,7 +101,9 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 
 ```tsx
 <VStack flex={1} p={16} gap={24}>
-  <Text size="t1" weight="bold">환영합니다</Text>
+  <Text size="t1" weight="bold">
+    환영합니다
+  </Text>
   <VStack gap={16} flex={1}>
     {/* 메인 콘텐츠 */}
   </VStack>
@@ -110,7 +116,9 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 ```tsx
 <VStack flex={1} justify="center" align="center" gap={16}>
   <Icon name="check-circle" size={64} />
-  <Text size="t2" weight="bold">완료되었습니다</Text>
+  <Text size="t2" weight="bold">
+    완료되었습니다
+  </Text>
 </VStack>
 ```
 

@@ -6,10 +6,7 @@ import { TestBed } from "@suites/unit";
 import { createCheerRepositoryMock } from "@test/mocks/ports/cheer.mock";
 
 import { Cheer } from "../../../domain/entities/cheer.aggregate";
-import {
-	CHEER_REPOSITORY,
-	type CheerRepositoryPort,
-} from "../../ports/cheer.repository.port";
+import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../../ports/cheer.repository.port";
 import { MarkCheerReadUseCase } from "./mark-cheer-read.use-case";
 
 const RECEIVER = "u-receiver";
@@ -44,9 +41,9 @@ describe("MarkCheerReadUseCase — 응원 읽음 처리", () => {
 		repo.findById.mockResolvedValue(null);
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: RECEIVER, cheerId: CHEER_ID }),
-		).rejects.toMatchObject({ errorCode: "CHEER_1205" });
+		await expect(useCase.execute({ userId: RECEIVER, cheerId: CHEER_ID })).rejects.toMatchObject({
+			errorCode: "CHEER_1205",
+		});
 		expect(repo.markAsRead).not.toHaveBeenCalled();
 	});
 
@@ -55,9 +52,9 @@ describe("MarkCheerReadUseCase — 응원 읽음 처리", () => {
 		repo.findById.mockResolvedValue(cheer("someone-else", null));
 
 		// When / Then
-		await expect(
-			useCase.execute({ userId: RECEIVER, cheerId: CHEER_ID }),
-		).rejects.toMatchObject({ errorCode: "CHEER_1205" });
+		await expect(useCase.execute({ userId: RECEIVER, cheerId: CHEER_ID })).rejects.toMatchObject({
+			errorCode: "CHEER_1205",
+		});
 		expect(repo.markAsRead).not.toHaveBeenCalled();
 	});
 

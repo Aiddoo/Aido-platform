@@ -1,10 +1,7 @@
 import { mock } from "jest-mock-extended";
+
 import { GetCurrentUserQuery, ListActiveSessionsQuery } from "../queries";
-import {
-	CredentialAuthWorkflow,
-	OAuthWorkflow,
-	PasswordWorkflow,
-} from "../workflows";
+import { CredentialAuthWorkflow, OAuthWorkflow, PasswordWorkflow } from "../workflows";
 import { ExchangeOAuthCodeUseCase } from "./exchange-oauth-code/exchange-oauth-code.use-case";
 import { LoginWithPasswordUseCase } from "./login-with-password/login-with-password.use-case";
 import { RegisterUseCase } from "./register/register.use-case";
@@ -46,11 +43,7 @@ describe("auth endpoint use-cases", () => {
 		await currentUser.execute("user-1", "user@example.com", "session-1");
 		await sessions.execute("user-1");
 
-		expect(service.getCurrentUser).toHaveBeenCalledWith(
-			"user-1",
-			"user@example.com",
-			"session-1",
-		);
+		expect(service.getCurrentUser).toHaveBeenCalledWith("user-1", "user@example.com", "session-1");
 		expect(service.getActiveSessions).toHaveBeenCalledWith("user-1");
 	});
 
@@ -62,10 +55,7 @@ describe("auth endpoint use-cases", () => {
 		await requestReset.execute("user@example.com");
 		await setPassword.execute("user-1", "123456", "NewPassword123");
 
-		expect(service.forgotPassword).toHaveBeenCalledWith(
-			"user@example.com",
-			undefined,
-		);
+		expect(service.forgotPassword).toHaveBeenCalledWith("user@example.com", undefined);
 		expect(service.setPassword).toHaveBeenCalledWith(
 			"user-1",
 			"123456",
@@ -78,22 +68,14 @@ describe("auth endpoint use-cases", () => {
 		["GOOGLE", "generateGoogleAuthUrlWithState"],
 		["KAKAO", "generateKakaoAuthUrlWithState"],
 		["NAVER", "generateNaverAuthUrlWithState"],
-	] as const)(
-		"%s OAuth 시작을 대응하는 workflow로 위임한다",
-		async (provider, methodName) => {
-			const service = mock<OAuthWorkflow>();
-			const start = new StartOAuthAuthorizationUseCase(service);
+	] as const)("%s OAuth 시작을 대응하는 workflow로 위임한다", async (provider, methodName) => {
+		const service = mock<OAuthWorkflow>();
+		const start = new StartOAuthAuthorizationUseCase(service);
 
-			await start.execute(provider, "state");
+		await start.execute(provider, "state");
 
-			expect(service[methodName]).toHaveBeenCalledWith(
-				"state",
-				undefined,
-				undefined,
-				undefined,
-			);
-		},
-	);
+		expect(service[methodName]).toHaveBeenCalledWith("state", undefined, undefined, undefined);
+	});
 
 	it("OAuth 교환 코드를 독립 실행 단위로 위임한다", async () => {
 		const service = mock<OAuthWorkflow>();

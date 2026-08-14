@@ -1,14 +1,10 @@
-import type {
-	GrowthSummaryQuery,
-	GrowthSummaryResponse,
-} from "@aido/validators";
+import type { GrowthSummaryQuery, GrowthSummaryResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
-import {
-	toDateString,
-	toISOStringOrNull,
-} from "@/shared/domain/date/utils/format";
+import { toDateString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
+
 import {
 	ADMIN_GROWTH_METRICS,
 	type AdminGrowthMetricsPort,
@@ -36,8 +32,7 @@ export class GetGrowthSummaryQuery {
 		const defaultTo = subtractDays(1, asOf);
 		const cohortTo = input.cohortTo ?? toDateString(defaultTo);
 		const cohortFrom =
-			input.cohortFrom ??
-			toDateString(subtractDays(DEFAULT_COHORT_DAYS - 1, defaultTo));
+			input.cohortFrom ?? toDateString(subtractDays(DEFAULT_COHORT_DAYS - 1, defaultTo));
 		const summary = await this.metrics.getSummary({
 			cohortFrom,
 			cohortTo,
@@ -54,10 +49,7 @@ export class GetGrowthSummaryQuery {
 			dau: summary.dau,
 			wau: summary.wau,
 			mau: summary.mau,
-			activation24h: metric(
-				summary.activationEligible,
-				summary.activationAchieved,
-			),
+			activation24h: metric(summary.activationEligible, summary.activationAchieved),
 			d1:
 				hasMeasurement && summary.d1Eligible > 0
 					? metric(summary.d1Eligible, summary.d1Achieved)
@@ -71,9 +63,7 @@ export class GetGrowthSummaryQuery {
 					? metric(summary.d30Eligible, summary.d30Achieved)
 					: null,
 			d7RetainedActivatedUsers:
-				hasMeasurement && summary.d7Eligible > 0
-					? summary.d7RetainedActivatedUsers
-					: null,
+				hasMeasurement && summary.d7Eligible > 0 ? summary.d7RetainedActivatedUsers : null,
 		};
 	}
 }

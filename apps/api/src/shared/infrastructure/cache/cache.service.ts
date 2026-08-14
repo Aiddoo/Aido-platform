@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import {
 	AccountProvider,
 	SubscriptionStatus,
@@ -6,6 +7,7 @@ import {
 	UserRole,
 	UserStatus,
 } from "@/generated/prisma/enums";
+
 import { CacheKeys } from "./constants/cache-keys";
 import {
 	CACHE_SERVICE,
@@ -113,9 +115,7 @@ export class CacheService {
 		return this.cache.mget<T>(keys);
 	}
 
-	mset<T>(
-		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
-	): Promise<void> {
+	mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {
 		return this.cache.mset(entries);
 	}
 
@@ -148,11 +148,7 @@ export class CacheService {
 	}
 
 	async setSession(sessionId: string, session: CachedSession): Promise<void> {
-		return this.set(
-			CacheKeys.session(sessionId),
-			session,
-			CacheKeys.TTL.SESSION,
-		);
+		return this.set(CacheKeys.session(sessionId), session, CacheKeys.TTL.SESSION);
 	}
 
 	async invalidateSession(sessionId: string): Promise<void> {
@@ -166,11 +162,7 @@ export class CacheService {
 		sessionId: string,
 		factory: () => Promise<CachedSession | undefined>,
 	): Promise<CachedSession | undefined> {
-		return this.wrap(
-			CacheKeys.session(sessionId),
-			factory,
-			CacheKeys.TTL.SESSION,
-		);
+		return this.wrap(CacheKeys.session(sessionId), factory, CacheKeys.TTL.SESSION);
 	}
 
 	// === User Profile Methods ===
@@ -179,15 +171,8 @@ export class CacheService {
 		return this.get<CachedUserProfile>(CacheKeys.userProfile(userId));
 	}
 
-	async setUserProfile(
-		userId: string,
-		profile: CachedUserProfile,
-	): Promise<void> {
-		return this.set(
-			CacheKeys.userProfile(userId),
-			profile,
-			CacheKeys.TTL.USER_PROFILE,
-		);
+	async setUserProfile(userId: string, profile: CachedUserProfile): Promise<void> {
+		return this.set(CacheKeys.userProfile(userId), profile, CacheKeys.TTL.USER_PROFILE);
 	}
 
 	async invalidateUserProfile(userId: string): Promise<void> {
@@ -201,30 +186,17 @@ export class CacheService {
 		userId: string,
 		factory: () => Promise<CachedUserProfile | undefined>,
 	): Promise<CachedUserProfile | undefined> {
-		return this.wrap(
-			CacheKeys.userProfile(userId),
-			factory,
-			CacheKeys.TTL.USER_PROFILE,
-		);
+		return this.wrap(CacheKeys.userProfile(userId), factory, CacheKeys.TTL.USER_PROFILE);
 	}
 
 	// === Subscription Methods ===
 
-	async getSubscription(
-		userId: string,
-	): Promise<CachedSubscription | undefined> {
+	async getSubscription(userId: string): Promise<CachedSubscription | undefined> {
 		return this.get<CachedSubscription>(CacheKeys.subscription(userId));
 	}
 
-	async setSubscription(
-		userId: string,
-		subscription: CachedSubscription,
-	): Promise<void> {
-		return this.set(
-			CacheKeys.subscription(userId),
-			subscription,
-			CacheKeys.TTL.SUBSCRIPTION,
-		);
+	async setSubscription(userId: string, subscription: CachedSubscription): Promise<void> {
+		return this.set(CacheKeys.subscription(userId), subscription, CacheKeys.TTL.SUBSCRIPTION);
 	}
 
 	async invalidateSubscription(userId: string): Promise<void> {
@@ -238,27 +210,16 @@ export class CacheService {
 		userId: string,
 		factory: () => Promise<CachedSubscription | undefined>,
 	): Promise<CachedSubscription | undefined> {
-		return this.wrap(
-			CacheKeys.subscription(userId),
-			factory,
-			CacheKeys.TTL.SUBSCRIPTION,
-		);
+		return this.wrap(CacheKeys.subscription(userId), factory, CacheKeys.TTL.SUBSCRIPTION);
 	}
 
 	// === Friend Relation Methods ===
 
-	async getMutualFriend(
-		userId: string,
-		targetUserId: string,
-	): Promise<boolean | undefined> {
+	async getMutualFriend(userId: string, targetUserId: string): Promise<boolean | undefined> {
 		return this.get<boolean>(CacheKeys.mutualFriend(userId, targetUserId));
 	}
 
-	async setMutualFriend(
-		userId: string,
-		targetUserId: string,
-		isMutual: boolean,
-	): Promise<void> {
+	async setMutualFriend(userId: string, targetUserId: string, isMutual: boolean): Promise<void> {
 		return this.set(
 			CacheKeys.mutualFriend(userId, targetUserId),
 			isMutual,
@@ -274,10 +235,7 @@ export class CacheService {
 	 * 특정 두 사용자 간의 친구 관계 캐시 무효화
 	 * 내부적으로 ID를 정규화하여 일관된 캐시 키 생성
 	 */
-	async invalidateMutualFriend(
-		userId: string,
-		targetUserId: string,
-	): Promise<void> {
+	async invalidateMutualFriend(userId: string, targetUserId: string): Promise<void> {
 		const [smallerId, largerId] =
 			userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
 		return this.del(CacheKeys.mutualFriend(smallerId, largerId));
@@ -307,26 +265,15 @@ export class CacheService {
 	}
 
 	async setTodoCategories<T>(userId: string, categories: T[]): Promise<void> {
-		return this.set(
-			CacheKeys.todoCategories(userId),
-			categories,
-			CacheKeys.TTL.TODO_CATEGORIES,
-		);
+		return this.set(CacheKeys.todoCategories(userId), categories, CacheKeys.TTL.TODO_CATEGORIES);
 	}
 
 	async invalidateTodoCategories(userId: string): Promise<void> {
 		return this.del(CacheKeys.todoCategories(userId));
 	}
 
-	async wrapTodoCategories<T>(
-		userId: string,
-		factory: () => Promise<T[]>,
-	): Promise<T[]> {
-		return this.wrap(
-			CacheKeys.todoCategories(userId),
-			factory,
-			CacheKeys.TTL.TODO_CATEGORIES,
-		);
+	async wrapTodoCategories<T>(userId: string, factory: () => Promise<T[]>): Promise<T[]> {
+		return this.wrap(CacheKeys.todoCategories(userId), factory, CacheKeys.TTL.TODO_CATEGORIES);
 	}
 
 	// === Mutual Friend IDs Methods ===
@@ -336,26 +283,15 @@ export class CacheService {
 	}
 
 	async setMutualFriendIdsList(userId: string, ids: string[]): Promise<void> {
-		return this.set(
-			CacheKeys.mutualFriendIds(userId),
-			ids,
-			CacheKeys.TTL.MUTUAL_FRIEND_IDS,
-		);
+		return this.set(CacheKeys.mutualFriendIds(userId), ids, CacheKeys.TTL.MUTUAL_FRIEND_IDS);
 	}
 
 	async invalidateMutualFriendIds(userId: string): Promise<void> {
 		return this.del(CacheKeys.mutualFriendIds(userId));
 	}
 
-	async wrapMutualFriendIds(
-		userId: string,
-		factory: () => Promise<string[]>,
-	): Promise<string[]> {
-		return this.wrap(
-			CacheKeys.mutualFriendIds(userId),
-			factory,
-			CacheKeys.TTL.MUTUAL_FRIEND_IDS,
-		);
+	async wrapMutualFriendIds(userId: string, factory: () => Promise<string[]>): Promise<string[]> {
+		return this.wrap(CacheKeys.mutualFriendIds(userId), factory, CacheKeys.TTL.MUTUAL_FRIEND_IDS);
 	}
 
 	// === Push Token Methods ===
@@ -365,45 +301,25 @@ export class CacheService {
 	}
 
 	async setPushTokens(userId: string, tokens: string[]): Promise<void> {
-		return this.set(
-			CacheKeys.pushTokens(userId),
-			tokens,
-			CacheKeys.TTL.PUSH_TOKENS,
-		);
+		return this.set(CacheKeys.pushTokens(userId), tokens, CacheKeys.TTL.PUSH_TOKENS);
 	}
 
 	async invalidatePushTokens(userId: string): Promise<void> {
 		return this.del(CacheKeys.pushTokens(userId));
 	}
 
-	async wrapPushTokens(
-		userId: string,
-		factory: () => Promise<string[]>,
-	): Promise<string[]> {
-		return this.wrap(
-			CacheKeys.pushTokens(userId),
-			factory,
-			CacheKeys.TTL.PUSH_TOKENS,
-		);
+	async wrapPushTokens(userId: string, factory: () => Promise<string[]>): Promise<string[]> {
+		return this.wrap(CacheKeys.pushTokens(userId), factory, CacheKeys.TTL.PUSH_TOKENS);
 	}
 
 	// === User Preference Methods ===
 
-	async getUserPreference(
-		userId: string,
-	): Promise<CachedUserPreference | undefined> {
+	async getUserPreference(userId: string): Promise<CachedUserPreference | undefined> {
 		return this.get<CachedUserPreference>(CacheKeys.userPreference(userId));
 	}
 
-	async setUserPreference(
-		userId: string,
-		preference: CachedUserPreference,
-	): Promise<void> {
-		return this.set(
-			CacheKeys.userPreference(userId),
-			preference,
-			CacheKeys.TTL.USER_PREFERENCE,
-		);
+	async setUserPreference(userId: string, preference: CachedUserPreference): Promise<void> {
+		return this.set(CacheKeys.userPreference(userId), preference, CacheKeys.TTL.USER_PREFERENCE);
 	}
 
 	async invalidateUserPreference(userId: string): Promise<void> {
@@ -414,11 +330,7 @@ export class CacheService {
 		userId: string,
 		factory: () => Promise<CachedUserPreference>,
 	): Promise<CachedUserPreference> {
-		return this.wrap(
-			CacheKeys.userPreference(userId),
-			factory,
-			CacheKeys.TTL.USER_PREFERENCE,
-		);
+		return this.wrap(CacheKeys.userPreference(userId), factory, CacheKeys.TTL.USER_PREFERENCE);
 	}
 
 	// === Friend Count Methods ===
@@ -428,38 +340,21 @@ export class CacheService {
 	}
 
 	async setFriendCount(userId: string, count: number): Promise<void> {
-		return this.set(
-			CacheKeys.friendCount(userId),
-			count,
-			CacheKeys.TTL.FRIEND_COUNT,
-		);
+		return this.set(CacheKeys.friendCount(userId), count, CacheKeys.TTL.FRIEND_COUNT);
 	}
 
 	async invalidateFriendCount(userId: string): Promise<void> {
 		return this.del(CacheKeys.friendCount(userId));
 	}
 
-	async wrapFriendCount(
-		userId: string,
-		factory: () => Promise<number>,
-	): Promise<number> {
-		return this.wrap(
-			CacheKeys.friendCount(userId),
-			factory,
-			CacheKeys.TTL.FRIEND_COUNT,
-		);
+	async wrapFriendCount(userId: string, factory: () => Promise<number>): Promise<number> {
+		return this.wrap(CacheKeys.friendCount(userId), factory, CacheKeys.TTL.FRIEND_COUNT);
 	}
 
 	// === Active Timezones Methods ===
 
-	async wrapActiveTimezones(
-		factory: () => Promise<string[]>,
-	): Promise<string[]> {
-		return this.wrap(
-			CacheKeys.activeTimezones(),
-			factory,
-			CacheKeys.TTL.ACTIVE_TIMEZONES,
-		);
+	async wrapActiveTimezones(factory: () => Promise<string[]>): Promise<string[]> {
+		return this.wrap(CacheKeys.activeTimezones(), factory, CacheKeys.TTL.ACTIVE_TIMEZONES);
 	}
 
 	async invalidateActiveTimezones(): Promise<void> {
@@ -467,11 +362,7 @@ export class CacheService {
 	}
 
 	async wrapAllTimezones(factory: () => Promise<string[]>): Promise<string[]> {
-		return this.wrap(
-			CacheKeys.allTimezones(),
-			factory,
-			CacheKeys.TTL.ACTIVE_TIMEZONES,
-		);
+		return this.wrap(CacheKeys.allTimezones(), factory, CacheKeys.TTL.ACTIVE_TIMEZONES);
 	}
 
 	// === Unread Count Methods ===
@@ -480,14 +371,7 @@ export class CacheService {
 		return this.del(CacheKeys.unreadCount(userId));
 	}
 
-	async wrapUnreadCount(
-		userId: string,
-		factory: () => Promise<number>,
-	): Promise<number> {
-		return this.wrap(
-			CacheKeys.unreadCount(userId),
-			factory,
-			CacheKeys.TTL.UNREAD_COUNT,
-		);
+	async wrapUnreadCount(userId: string, factory: () => Promise<number>): Promise<number> {
+		return this.wrap(CacheKeys.unreadCount(userId), factory, CacheKeys.TTL.UNREAD_COUNT);
 	}
 }

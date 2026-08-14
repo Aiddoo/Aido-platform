@@ -9,21 +9,27 @@ import { ActionChip, ACTION_CHIP_ICON_SIZE } from '@src/shared/ui';
 import { CalendarIcon } from '@src/shared/ui';
 
 <ActionChip
-  icon={<CalendarIcon width={ACTION_CHIP_ICON_SIZE} height={ACTION_CHIP_ICON_SIZE} colorClassName="text-main" />}
+  icon={
+    <CalendarIcon
+      width={ACTION_CHIP_ICON_SIZE}
+      height={ACTION_CHIP_ICON_SIZE}
+      colorClassName="text-main"
+    />
+  }
   label="오늘"
   isActive
   onPress={() => {}}
-/>
+/>;
 ```
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `icon` | `ReactNode` | - | 좌측 아이콘 |
-| `label` | `string` | - | 칩 라벨 텍스트 |
-| `isActive` | `boolean` | `false` | 활성 상태 (브랜드 색상 적용) |
-| `onPress` | `() => void` | - | 클릭 핸들러 |
+| Prop       | 타입         | 기본값  | 설명                         |
+| ---------- | ------------ | ------- | ---------------------------- |
+| `icon`     | `ReactNode`  | -       | 좌측 아이콘                  |
+| `label`    | `string`     | -       | 칩 라벨 텍스트               |
+| `isActive` | `boolean`    | `false` | 활성 상태 (브랜드 색상 적용) |
+| `onPress`  | `() => void` | -       | 클릭 핸들러                  |
 
 ### 스타일
 

@@ -1,5 +1,6 @@
 import type { UpdateMarketingPushConsentResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { buildMarketingPushConsentView } from "../../../domain/services/consent-view";
 import {
 	USER_CONSENT_REPOSITORY,
@@ -15,17 +16,9 @@ export class UpdateMarketingPushConsentUseCase {
 		private readonly consentRepository: UserConsentRepositoryPort,
 	) {}
 
-	async execute(
-		userId: string,
-		agreed: boolean,
-	): Promise<UpdateMarketingPushConsentResponse> {
-		const updated = await this.consentRepository.upsertMarketingPushConsent(
-			userId,
-			{ agreed },
-		);
-		this.#logger.log(
-			`광고성 앱 푸시 동의 변경: userId=${userId}, agreed=${agreed}`,
-		);
+	async execute(userId: string, agreed: boolean): Promise<UpdateMarketingPushConsentResponse> {
+		const updated = await this.consentRepository.upsertMarketingPushConsent(userId, { agreed });
+		this.#logger.log(`광고성 앱 푸시 동의 변경: userId=${userId}, agreed=${agreed}`);
 		return buildMarketingPushConsentView(updated);
 	}
 }

@@ -10,12 +10,7 @@ export const pushSchema = z.object({
 		.enum(["true", "false"])
 		.default("false")
 		.transform((value) => value === "true"),
-	RETENTION_ONBOARDING_V2_TREATMENT_PERCENT: z.coerce
-		.number()
-		.int()
-		.min(0)
-		.max(100)
-		.default(50),
+	RETENTION_ONBOARDING_V2_TREATMENT_PERCENT: z.coerce.number().int().min(0).max(100).default(50),
 });
 
 export type PushConfig = z.infer<typeof pushSchema>;

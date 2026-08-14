@@ -35,39 +35,39 @@ Aido 모노레포 공유 Jest 설정
 각 패키지의 `jest.config.cjs`에서 프리셋 확장:
 
 ```javascript
-const preset = require("@aido/jest-config/jest.preset.cjs");
+const preset = require('@aido/jest-config/jest.preset.cjs');
 
 module.exports = {
   ...preset,
   // 패키지별 추가 설정
-  rootDir: ".",
-  roots: ["<rootDir>/src"],
+  rootDir: '.',
+  roots: ['<rootDir>/src'],
 };
 ```
 
 ### NestJS 프로젝트 예시
 
 ```javascript
-const preset = require("@aido/jest-config/jest.preset.cjs");
+const preset = require('@aido/jest-config/jest.preset.cjs');
 
 module.exports = {
   ...preset,
   transform: {
-    "^.+\\.ts$": [
-      "@swc/jest",
+    '^.+\\.ts$': [
+      '@swc/jest',
       {
         jsc: {
-          parser: { syntax: "typescript", decorators: true },
+          parser: { syntax: 'typescript', decorators: true },
           transform: { legacyDecorator: true, decoratorMetadata: true },
         },
       },
     ],
   },
-  rootDir: ".",
-  roots: ["<rootDir>/src", "<rootDir>/test"],
-  testRegex: ".*\\.(spec|e2e-spec)\\.ts$",
+  rootDir: '.',
+  roots: ['<rootDir>/src', '<rootDir>/test'],
+  testRegex: '.*\\.(spec|e2e-spec)\\.ts$',
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
 };
 ```

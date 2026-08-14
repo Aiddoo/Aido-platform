@@ -1,10 +1,12 @@
 import { Module } from "@nestjs/common";
+
 import { NotificationModule } from "@/notification";
-import { RETENTION_REPOSITORY } from "./application/ports/retention.repository.port";
+
 import { RETENTION_CONFIG } from "./application/ports/retention-config.port";
 import { RETENTION_ENROLLMENT } from "./application/ports/retention-enrollment.port";
 import { RETENTION_JOB_ENQUEUER } from "./application/ports/retention-job-enqueuer.port";
 import { RETENTION_PUSH_SENDER } from "./application/ports/retention-push-sender.port";
+import { RETENTION_REPOSITORY } from "./application/ports/retention.repository.port";
 import { ActivateRetentionExperimentUseCase } from "./application/use-cases/activate-retention-experiment/activate-retention-experiment.use-case";
 import { DispatchRetentionPushUseCase } from "./application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
 import { EnrollRetentionExperimentUseCase } from "./application/use-cases/enroll-retention-experiment/enroll-retention-experiment.use-case";

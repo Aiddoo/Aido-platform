@@ -28,10 +28,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
 import { CheerReader } from "../application/services/cheer.reader";
 import { MarkCheerReadUseCase } from "../application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
 import { MarkManyCheersReadUseCase } from "../application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
@@ -94,9 +91,7 @@ export class CheerController {
 		@Body() dto: SendCheerDto,
 		@Timezone() tz: string,
 	): Promise<CreateCheerResponseDto> {
-		this.#logger.debug(
-			`응원 보내기: senderId=${user.userId}, receiverId=${dto.receiverId}`,
-		);
+		this.#logger.debug(`응원 보내기: senderId=${user.userId}, receiverId=${dto.receiverId}`);
 
 		const cheer = await this.sendCheerUseCase.execute(
 			{
@@ -214,8 +209,7 @@ export class CheerController {
 	@Get("cooldown/:userId")
 	@ApiParam({
 		name: "userId",
-		description:
-			"쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		description: "쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
 		example: "clz7x5p8k0005qz0z8z8z8z8z",
 	})
 	@ApiDoc({
@@ -231,10 +225,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("userId") targetUserId: string,
 	): Promise<CheerCooldownResponseDto> {
-		const cooldownInfo = await this.cheerReader.getCooldownInfoForUser(
-			user.userId,
-			targetUserId,
-		);
+		const cooldownInfo = await this.cheerReader.getCooldownInfoForUser(user.userId, targetUserId);
 
 		return {
 			userId: targetUserId,
@@ -258,9 +249,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: CheerIdParamDto,
 	): Promise<MarkCheerReadResponseDto> {
-		this.#logger.debug(
-			`응원 읽음 처리: userId=${user.userId}, id=${params.id}`,
-		);
+		this.#logger.debug(`응원 읽음 처리: userId=${user.userId}, id=${params.id}`);
 
 		await this.markCheerReadUseCase.execute({
 			userId: user.userId,
@@ -289,9 +278,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: MarkCheersReadDto,
 	): Promise<MarkCheerReadResponseDto> {
-		this.#logger.debug(
-			`여러 응원 읽음 처리: userId=${user.userId}, count=${dto.cheerIds.length}`,
-		);
+		this.#logger.debug(`여러 응원 읽음 처리: userId=${user.userId}, count=${dto.cheerIds.length}`);
 
 		const count = await this.markManyCheersReadUseCase.execute({
 			userId: user.userId,

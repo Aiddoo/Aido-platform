@@ -8,11 +8,13 @@ import { ErrorCode } from "@aido/errors";
 import { HttpException, HttpStatus } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import { PinoLogger } from "nestjs-pino";
+
 import { Prisma } from "@/generated/prisma/client";
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
 import type { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import { GlobalExceptionFilter } from "./global-exception.filter";
 
 jest.mock("@sentry/nestjs", () => ({
@@ -71,14 +73,11 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 	describe("P2002 Prisma 에러 처리", () => {
 		it("알려진 constraint(email)를 BusinessException으로 매핑해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError(
-				"Unique constraint",
-				{
-					code: "P2002",
-					meta: { target: ["email"] },
-					clientVersion: "7.0.0",
-				},
-			);
+			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+				code: "P2002",
+				meta: { target: ["email"] },
+				clientVersion: "7.0.0",
+			});
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -91,14 +90,11 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("알려진 constraint(userId_name)를 BusinessException으로 매핑해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError(
-				"Unique constraint",
-				{
-					code: "P2002",
-					meta: { target: ["userId", "name"] },
-					clientVersion: "7.0.0",
-				},
-			);
+			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+				code: "P2002",
+				meta: { target: ["userId", "name"] },
+				clientVersion: "7.0.0",
+			});
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -111,14 +107,11 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("알려진 constraint(followerId_followingId)를 BusinessException으로 매핑해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError(
-				"Unique constraint",
-				{
-					code: "P2002",
-					meta: { target: ["followerId", "followingId"] },
-					clientVersion: "7.0.0",
-				},
-			);
+			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+				code: "P2002",
+				meta: { target: ["followerId", "followingId"] },
+				clientVersion: "7.0.0",
+			});
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -131,14 +124,11 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("알 수 없는 constraint를 SYS_0004 (409)로 폴백해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError(
-				"Unique constraint",
-				{
-					code: "P2002",
-					meta: { target: ["unknownField"] },
-					clientVersion: "7.0.0",
-				},
-			);
+			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+				code: "P2002",
+				meta: { target: ["unknownField"] },
+				clientVersion: "7.0.0",
+			});
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -154,14 +144,11 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("P2003 FK constraint violation은 400 SYS_0002로 처리해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError(
-				"Foreign key constraint",
-				{
-					code: "P2003",
-					meta: {},
-					clientVersion: "7.0.0",
-				},
-			);
+			const error = new Prisma.PrismaClientKnownRequestError("Foreign key constraint", {
+				code: "P2003",
+				meta: {},
+				clientVersion: "7.0.0",
+			});
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -174,22 +161,17 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("처리되지 않은 Prisma 에러는 500 SYS_0001로 처리해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError(
-				"Unknown Prisma error",
-				{
-					code: "P2024",
-					meta: {},
-					clientVersion: "7.0.0",
-				},
-			);
+			const error = new Prisma.PrismaClientKnownRequestError("Unknown Prisma error", {
+				code: "P2024",
+				meta: {},
+				clientVersion: "7.0.0",
+			});
 
 			// When
 			filter.catch(error, mockHost as never);
 
 			// Then
-			expect(mockResponse.status).toHaveBeenCalledWith(
-				HttpStatus.INTERNAL_SERVER_ERROR,
-			);
+			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
 			const jsonArg = mockResponse.json.mock.calls[0][0];
 			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0001);
 		});
@@ -211,10 +193,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("HttpException을 올바르게 처리해야 한다", () => {
 			// Given
-			const exception = new HttpException(
-				{ message: "Bad Request" },
-				HttpStatus.BAD_REQUEST,
-			);
+			const exception = new HttpException({ message: "Bad Request" }, HttpStatus.BAD_REQUEST);
 
 			// When
 			filter.catch(exception, mockHost as never);
@@ -233,9 +212,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			expect(mockResponse.status).toHaveBeenCalledWith(
-				HttpStatus.INTERNAL_SERVER_ERROR,
-			);
+			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
 			const jsonArg = mockResponse.json.mock.calls[0][0];
 			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0001);
 		});
@@ -256,10 +233,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("4xx 클라이언트 에러는 Sentry에 캡처하지 않아야 한다", () => {
 			// Given
-			const exception = new HttpException(
-				{ message: "Bad Request" },
-				HttpStatus.BAD_REQUEST,
-			);
+			const exception = new HttpException({ message: "Bad Request" }, HttpStatus.BAD_REQUEST);
 
 			// When
 			filter.catch(exception, mockHost as never);
@@ -382,11 +356,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("커스텀 메시지가 있는 DomainException은 메시지를 보존한다", () => {
 			// Given
-			const exception = new DomainException(
-				ErrorCode.TODO_0801,
-				undefined,
-				"커스텀 도메인 메시지",
-			);
+			const exception = new DomainException(ErrorCode.TODO_0801, undefined, "커스텀 도메인 메시지");
 
 			// When
 			filter.catch(exception, mockHost as never);

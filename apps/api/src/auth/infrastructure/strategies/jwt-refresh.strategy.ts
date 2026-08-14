@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
 import { ExtractJwt, Strategy } from "passport-jwt";
+
 import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -25,10 +26,7 @@ export interface RefreshTokenPayload {
  * Authorization: Bearer <refresh_token> 헤더 또는 요청 본문에서 토큰을 추출하여 검증합니다.
  */
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(
-	Strategy,
-	"jwt-refresh",
-) {
+export class JwtRefreshStrategy extends PassportStrategy(Strategy, "jwt-refresh") {
 	constructor(readonly configService: TypedConfigService) {
 		super({
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -41,10 +39,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
 	/**
 	 * JWT 페이로드 검증 및 Refresh Token 정보 반환
 	 */
-	async validate(
-		req: Request,
-		payload: JwtPayload,
-	): Promise<RefreshTokenPayload> {
+	async validate(req: Request, payload: JwtPayload): Promise<RefreshTokenPayload> {
 		// Refresh Token 타입 확인
 		if (payload.type !== "refresh") {
 			throw new ApplicationException(ErrorCode.AUTH_0104);

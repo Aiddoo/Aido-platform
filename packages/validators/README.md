@@ -54,16 +54,16 @@ src/
 
 ### Common
 
-| 스키마 | 설명 |
-|--------|------|
+| 스키마                  | 설명                      |
+| ----------------------- | ------------------------- |
 | `paginationQuerySchema` | 페이지네이션 (page, size) |
-| `sortQuerySchema` | 정렬 (sortBy, sortOrder) |
+| `sortQuerySchema`       | 정렬 (sortBy, sortOrder)  |
 
 ### Todo
 
-| 스키마 | 설명 |
-|--------|------|
-| `todoSchema` | Todo 엔티티 |
+| 스키마             | 설명          |
+| ------------------ | ------------- |
+| `todoSchema`       | Todo 엔티티   |
 | `todoCreateSchema` | Todo 생성 DTO |
 | `todoUpdateSchema` | Todo 수정 DTO |
 

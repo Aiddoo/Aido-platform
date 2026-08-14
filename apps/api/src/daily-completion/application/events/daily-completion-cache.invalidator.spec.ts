@@ -8,6 +8,7 @@ import { Logger } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createDailyCompletionCacheMock } from "@test/mocks/ports";
+
 import {
 	TODO_EVENTS,
 	TodoCategoryChangedEvent,
@@ -15,6 +16,7 @@ import {
 	TodoToggledEvent,
 	TodoVisibilityChangedEvent,
 } from "@/todo";
+
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
@@ -26,9 +28,7 @@ describe("DailyCompletionCacheInvalidator — 투두 쓰기 이벤트 캐시 무
 	let cache: Mocked<DailyCompletionCachePort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			DailyCompletionCacheInvalidator,
-		)
+		const { unit, unitRef } = await TestBed.solitary(DailyCompletionCacheInvalidator)
 			.mock<DailyCompletionCachePort>(DAILY_COMPLETION_CACHE)
 			.impl(() => createDailyCompletionCacheMock())
 			.compile();
@@ -110,9 +110,7 @@ describe("DailyCompletionCacheInvalidator — 투두 쓰기 이벤트 캐시 무
 
 	it("캐시 무효화 실패는 삼키고 로깅한다 (fire-and-forget)", async () => {
 		// Given - 캐시 무효화 실패
-		const errorSpy = jest
-			.spyOn(Logger.prototype, "error")
-			.mockImplementation(() => undefined);
+		const errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
 		cache.invalidate.mockRejectedValue(new Error("redis down"));
 
 		// When & Then - 예외를 전파하지 않는다

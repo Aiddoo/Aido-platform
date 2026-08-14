@@ -1,7 +1,4 @@
-import type {
-	BroadcastNotificationInput,
-	NotificationAction,
-} from "@aido/validators";
+import type { BroadcastNotificationInput, NotificationAction } from "@aido/validators";
 
 /** 브로드캐스트 대상 필터 (검증된 요청에서 파생된 도메인 개념) */
 export type BroadcastTargetFilter = BroadcastNotificationInput["targetFilter"];

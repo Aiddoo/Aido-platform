@@ -4,6 +4,7 @@ import { useTrack } from '@src/shared/analytics/use-track';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 interface ReorderFriendParams {

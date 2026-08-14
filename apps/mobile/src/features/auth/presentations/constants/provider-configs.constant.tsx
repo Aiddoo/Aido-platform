@@ -1,5 +1,6 @@
 import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui';
 import type { ReactNode } from 'react';
+
 import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
 import { OAUTH_PROVIDER_LABEL_KEYS } from './auth-provider-labels.constant';
 

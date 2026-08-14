@@ -13,7 +13,9 @@
  */
 
 import request from "supertest";
+
 import { AI_PROVIDER } from "@/ai";
+
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
@@ -59,11 +61,7 @@ describe("AI E2E", () => {
 	/**
 	 * 사용량 + 리셋 시각 명시 설정 헬퍼 (월 경계 테스트용)
 	 */
-	async function setUsageWithResetAt(
-		userId: string,
-		count: number,
-		resetAt: Date,
-	): Promise<void> {
+	async function setUsageWithResetAt(userId: string, count: number, resetAt: Date): Promise<void> {
 		const prisma = ctx.testDatabase.getPrisma();
 		await prisma.user.update({
 			where: { id: userId },
@@ -78,8 +76,7 @@ describe("AI E2E", () => {
 		fakeAiProvider = new FakeAiProvider();
 
 		ctx = await createE2eApp({
-			customizeBuilder: (builder) =>
-				builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
+			customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
 			additionalResetters: [() => fakeAiProvider.clear()],
 		});
 	}, 60000);
@@ -93,10 +90,7 @@ describe("AI E2E", () => {
 		await ctx.reset();
 
 		// 테스트 사용자 생성 및 인증
-		const user = await ctx.helpers.createVerifiedUser(
-			testUser.email,
-			testUser.password,
-		);
+		const user = await ctx.helpers.createVerifiedUser(testUser.email, testUser.password);
 		accessToken = user.accessToken;
 		testUserId = user.userId;
 	});
@@ -134,9 +128,7 @@ describe("AI E2E", () => {
 				expect(response.body.data.meta).toMatchObject({
 					model: "fake:test-model",
 				});
-				expect(response.body.data.meta.processingTimeMs).toBeGreaterThanOrEqual(
-					0,
-				);
+				expect(response.body.data.meta.processingTimeMs).toBeGreaterThanOrEqual(0);
 				expect(response.body.data.meta.tokenUsage).toEqual({
 					input: 150,
 					output: 50,
@@ -308,9 +300,7 @@ describe("AI E2E", () => {
 					// Then - 예상 결과와 일치하는 파싱 결과
 					expect(response.status).toBe(200);
 					expect(response.body.data.data.title).toBe(testCase.expected.title);
-					expect(response.body.data.data.scheduledTime).toBe(
-						testCase.expected.scheduledTime,
-					);
+					expect(response.body.data.data.scheduledTime).toBe(testCase.expected.scheduledTime);
 				}
 
 				expect(fakeAiProvider.getCallCount()).toBe(3);
@@ -332,9 +322,7 @@ describe("AI E2E", () => {
 				// Then - 429 에러와 AI_1303 코드 반환
 				expect(response.status).toBe(429);
 				expect(response.body.error.code).toBe("AI_1303");
-				expect(response.body.error.message).toContain(
-					"월간 AI 사용 횟수를 초과",
-				);
+				expect(response.body.error.message).toContain("월간 AI 사용 횟수를 초과");
 
 				// AI Provider가 호출되지 않았는지 검증
 				expect(fakeAiProvider.getCallCount()).toBe(0);
@@ -628,9 +616,7 @@ describe("AI E2E", () => {
 				// Then - ISO 8601 형식의 리셋 시간 반환
 				expect(response.status).toBe(200);
 				const resetsAt = response.body.data.data.resetsAt;
-				expect(resetsAt).toMatch(
-					/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
-				);
+				expect(resetsAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
 
 				// 리셋 시간은 미래여야 함
 				const resetDate = new Date(resetsAt);
@@ -643,9 +629,7 @@ describe("AI E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 토큰 없이 사용량 조회
-				const response = await request(ctx.app.getHttpServer()).get(
-					"/v1/ai/usage",
-				);
+				const response = await request(ctx.app.getHttpServer()).get("/v1/ai/usage");
 
 				// Then - 401 Unauthorized 반환
 				expect(response.status).toBe(401);

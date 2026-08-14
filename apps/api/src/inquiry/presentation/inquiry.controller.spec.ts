@@ -34,8 +34,7 @@ describe("InquiryController — 문의 컨트롤러", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(InquiryController).compile();
+		const { unit, unitRef } = await TestBed.solitary(InquiryController).compile();
 
 		controller = unit;
 		createInquiryUseCase = unitRef.get(CreateInquiryUseCase);

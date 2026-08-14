@@ -1,10 +1,5 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+
 import type { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import {
 	JOB_RUNTIME,
@@ -53,10 +48,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
 		});
 	}
 
-	onFailed(
-		job: { readonly id?: string; readonly name?: string } | undefined,
-		error: Error,
-	) {
+	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
 		this.#logger.error(
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,

@@ -4,12 +4,11 @@
 import { MEMO_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+
 import { Memo } from "../../../domain/entities/memo.aggregate";
-import {
-	MEMO_REPOSITORY,
-	type MemoRepositoryPort,
-} from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
 import { CreateMemoUseCase } from "./create-memo.use-case";
 
 const memoEntity = (sortOrder: number): Memo =>
@@ -29,8 +28,7 @@ describe("CreateMemoUseCase — 메모 생성", () => {
 	let repository: Mocked<MemoRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(CreateMemoUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(CreateMemoUseCase).compile();
 		useCase = unit;
 		uow = unitRef.get(UNIT_OF_WORK);
 		repository = unitRef.get(MEMO_REPOSITORY);
@@ -53,9 +51,9 @@ describe("CreateMemoUseCase — 메모 생성", () => {
 	it("한도 도달이면 MEMO_2003을 던지고 생성하지 않는다", async () => {
 		repository.countByUserId.mockResolvedValue(MEMO_LIMITS.MAX_PER_USER);
 
-		await expect(
-			useCase.execute({ userId: "user-1", content: "내용" }),
-		).rejects.toMatchObject({ errorCode: "MEMO_2003" });
+		await expect(useCase.execute({ userId: "user-1", content: "내용" })).rejects.toMatchObject({
+			errorCode: "MEMO_2003",
+		});
 		expect(repository.create).not.toHaveBeenCalled();
 	});
 });

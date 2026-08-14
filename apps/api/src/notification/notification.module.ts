@@ -4,18 +4,16 @@ import type Redis from "ioredis";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 import { UserSettingsModule } from "@/user-settings/user-settings.module";
+
 import { NotificationBatchDispatcher } from "./application/dispatchers/notification-batch.dispatcher";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
-import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
 import {
 	NOTIFICATION_DEDUP,
 	NOTIFICATION_DEDUP_LOCK,
 } from "./application/ports/notification-dedup.port";
-import {
-	PUSH_DISPATCHER,
-	type PushDispatcherPort,
-} from "./application/ports/push-dispatcher.port";
+import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
+import { PUSH_DISPATCHER, type PushDispatcherPort } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
 	type IPushRateLimiter,
@@ -34,12 +32,12 @@ import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-mark
 import { PersistBatchNotificationUseCase } from "./application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification/send-batch-notification.use-case";
-import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
+import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/notification-cache.adapter";
-import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter";
+import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
 import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
@@ -94,10 +92,7 @@ import { NotificationController } from "./presentation/notification.controller";
 		},
 		{
 			provide: NotificationBatchDispatcher,
-			inject: [
-				PersistBatchNotificationUseCase,
-				DispatchBatchNotificationUseCase,
-			],
+			inject: [PersistBatchNotificationUseCase, DispatchBatchNotificationUseCase],
 			useFactory: (
 				persistBatchNotificationUseCase: PersistBatchNotificationUseCase,
 				dispatchBatchNotificationUseCase: DispatchBatchNotificationUseCase,
@@ -156,19 +151,13 @@ import { NotificationController } from "./presentation/notification.controller";
 		// Push Rate Limiter (Strategy Pattern)
 		{
 			provide: PUSH_RATE_LIMITER,
-			useFactory: (
-				configService: TypedConfigService,
-				redis?: Redis,
-			): IPushRateLimiter => {
+			useFactory: (configService: TypedConfigService, redis?: Redis): IPushRateLimiter => {
 				if (configService.cache.type === "redis" && redis) {
 					return new RedisPushRateLimiter(redis);
 				}
 				return new InMemoryPushRateLimiter();
 			},
-			inject: [
-				TypedConfigService,
-				{ token: REDIS_COMMAND_CLIENT, optional: true },
-			],
+			inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
 		},
 		// BullMQ Queue Processor
 		NotificationQueueProcessor,

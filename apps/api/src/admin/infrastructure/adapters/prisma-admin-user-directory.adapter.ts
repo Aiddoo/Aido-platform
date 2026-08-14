@@ -1,8 +1,10 @@
 import { BROADCAST_TARGET_FILTER } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
+
 import type { Prisma } from "@/generated/prisma/client";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import type { AdminUserDirectoryPort } from "../../application/ports/admin-user-directory.port";
 import type { BroadcastTargetFilter } from "../../domain/broadcast-message";
 
@@ -18,9 +20,7 @@ const BROADCAST_BATCH_SIZE = 500;
 export class PrismaAdminUserDirectoryAdapter implements AdminUserDirectoryPort {
 	constructor(private readonly database: DatabaseService) {}
 
-	async *streamTargetUserIds(
-		filter: BroadcastTargetFilter,
-	): AsyncIterable<string[]> {
+	async *streamTargetUserIds(filter: BroadcastTargetFilter): AsyncIterable<string[]> {
 		const where = this.#buildTargetWhere(filter);
 		let cursor: string | undefined;
 

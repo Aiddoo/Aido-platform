@@ -34,7 +34,7 @@ import { PressableFeedback } from 'heroui-native';
     </Text>
   </VStack>
   <PressableFeedback.Highlight className="rounded-2xl" />
-</PressableFeedback>
+</PressableFeedback>;
 ```
 
 ### Loading 상태
@@ -49,27 +49,27 @@ import { PressableFeedback } from 'heroui-native';
 
 HeroUI `AvatarRootProps`의 모든 props를 상속한다 (`size`, `variant`, `color`, `className`, `alt` 등).
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
+| Prop         | 타입                   | 기본값      | 설명                                    |
+| ------------ | ---------------------- | ----------- | --------------------------------------- |
 | `isSelected` | `boolean \| undefined` | `undefined` | 선택 상태. `undefined`이면 선택 UI 없음 |
-| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | 아바타 크기 (HeroUI 상속) |
-| `className` | `string` | - | 추가 스타일 (HeroUI 상속) |
+| `size`       | `'sm' \| 'md' \| 'lg'` | `'md'`      | 아바타 크기 (HeroUI 상속)               |
+| `className`  | `string`               | -           | 추가 스타일 (HeroUI 상속)               |
 
 ### isSelected 동작
 
-| 값 | border | 체크 배지 | 용도 |
-|----|--------|----------|------|
-| `undefined` | 없음 | 없음 | 비선택 컨텍스트 (ProfileCard 등) |
-| `false` | gray border | 없음 | 선택 가능하지만 미선택 |
-| `true` | main border | 표시 | 선택됨 |
+| 값          | border      | 체크 배지 | 용도                             |
+| ----------- | ----------- | --------- | -------------------------------- |
+| `undefined` | 없음        | 없음      | 비선택 컨텍스트 (ProfileCard 등) |
+| `false`     | gray border | 없음      | 선택 가능하지만 미선택           |
+| `true`      | main border | 표시      | 선택됨                           |
 
 ### Sub-components
 
-| 컴포넌트 | 설명 |
-|----------|------|
-| `Avatar.Image` | HeroUI Avatar.Image 포워딩 |
+| 컴포넌트          | 설명                          |
+| ----------------- | ----------------------------- |
+| `Avatar.Image`    | HeroUI Avatar.Image 포워딩    |
 | `Avatar.Fallback` | HeroUI Avatar.Fallback 포워딩 |
-| `Avatar.Loading` | Skeleton 로딩 상태 |
+| `Avatar.Loading`  | Skeleton 로딩 상태            |
 
 ## 파일 구조
 

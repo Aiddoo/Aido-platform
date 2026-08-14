@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+
 import {
 	TODO_EVENTS,
 	type TodoCategoryChangedEvent,
@@ -10,6 +11,7 @@ import {
 	type TodoUpdatedEvent,
 	type TodoVisibilityChangedEvent,
 } from "@/todo";
+
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,

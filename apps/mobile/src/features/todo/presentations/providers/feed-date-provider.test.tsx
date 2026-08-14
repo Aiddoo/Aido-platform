@@ -5,6 +5,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
+
 import { FeedDateProvider, useFeedDateContext } from './feed-date-provider';
 
 const mockSetParams = jest.fn();

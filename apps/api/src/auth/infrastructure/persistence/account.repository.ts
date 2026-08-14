@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import { AuthPersistenceConflict } from "@/auth/application/ports/auth-persistence.port";
 import type { Account, AccountProvider } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -10,9 +11,7 @@ import { EncryptionService } from "@/shared/infrastructure/encryption";
 @Injectable()
 export class AccountRepository {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 		private readonly encryptionService: EncryptionService,
 	) {}
 
@@ -43,10 +42,7 @@ export class AccountRepository {
 		});
 	}
 
-	async createCredentialAccount(
-		userId: string,
-		hashedPassword: string,
-	): Promise<Account> {
+	async createCredentialAccount(userId: string, hashedPassword: string): Promise<Account> {
 		return this.client.account.create({
 			data: {
 				userId,
@@ -57,10 +53,7 @@ export class AccountRepository {
 		});
 	}
 
-	async updatePassword(
-		userId: string,
-		hashedPassword: string,
-	): Promise<Account> {
+	async updatePassword(userId: string, hashedPassword: string): Promise<Account> {
 		return this.client.account.update({
 			where: {
 				userId_provider: { userId, provider: "CREDENTIAL" },
@@ -127,10 +120,7 @@ export class AccountRepository {
 		});
 	}
 
-	async deleteAccount(
-		userId: string,
-		provider: AccountProvider,
-	): Promise<Account> {
+	async deleteAccount(userId: string, provider: AccountProvider): Promise<Account> {
 		return this.client.account.delete({
 			where: {
 				userId_provider: { userId, provider },

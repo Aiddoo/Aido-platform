@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+
 import type { UserSettingsCachePort } from "../../application/ports/user-settings-cache.port";
 import type { PreferenceSnapshot } from "../../domain/services/preference-view";
 

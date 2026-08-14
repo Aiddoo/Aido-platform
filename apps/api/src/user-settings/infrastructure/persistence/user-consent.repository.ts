@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable } from "@nestjs/common";
+
 import type { UserConsent } from "@/generated/prisma/client";
 import { now } from "@/shared/domain/date/utils/core";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -22,9 +23,7 @@ export interface UpdateMarketingConsentData {
 @Injectable()
 export class UserConsentRepository implements UserConsentRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -38,10 +37,7 @@ export class UserConsentRepository implements UserConsentRepositoryPort {
 		});
 	}
 
-	async create(
-		userId: string,
-		data?: Partial<CreateConsentData>,
-	): Promise<UserConsent> {
+	async create(userId: string, data?: Partial<CreateConsentData>): Promise<UserConsent> {
 		return this.client.userConsent.create({
 			data: {
 				userId,

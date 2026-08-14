@@ -17,13 +17,13 @@ import {
 	type ReorderPosition,
 } from "../../../domain/services/category-reorder";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port";
+import {
+	TODO_CATEGORY_REPOSITORY,
+	type TodoCategoryRepositoryPort,
+} from "../../ports/todo-category.repository.port";
 
 export interface ReorderTodoCategoryInput {
 	userId: string;
@@ -59,10 +59,7 @@ export class ReorderTodoCategoryUseCase {
 		const result = await this.uow.run(async () => {
 			await this.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
 
-			const category = await this.repository.findByIdAndUserId(
-				categoryId,
-				userId,
-			);
+			const category = await this.repository.findByIdAndUserId(categoryId, userId);
 			if (!category) {
 				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
 					categoryId,
@@ -75,20 +72,13 @@ export class ReorderTodoCategoryUseCase {
 
 			let plan: ReturnType<typeof planReorderRelativeTo>;
 			if (targetCategoryId !== undefined) {
-				const target = await this.repository.findByIdAndUserId(
-					targetCategoryId,
-					userId,
-				);
+				const target = await this.repository.findByIdAndUserId(targetCategoryId, userId);
 				if (!target) {
 					throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
 						categoryId: targetCategoryId,
 					});
 				}
-				plan = planReorderRelativeTo(
-					category.sortOrder,
-					target.sortOrder,
-					position,
-				);
+				plan = planReorderRelativeTo(category.sortOrder, target.sortOrder, position);
 			} else {
 				const maxSortOrder = await this.repository.getMaxSortOrder(userId);
 				plan = planReorderToEdge(category.sortOrder, position, maxSortOrder);

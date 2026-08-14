@@ -1,26 +1,16 @@
-import {
-	encodeUntrustedJson,
-	sanitizeForPrompt,
-	sanitizeMemoForPrompt,
-} from "./sanitize";
+import { encodeUntrustedJson, sanitizeForPrompt, sanitizeMemoForPrompt } from "./sanitize";
 
 describe("sanitizeForPrompt (단문 200자)", () => {
 	it("줄바꿈을 공백으로 치환해야 한다", () => {
-		expect(sanitizeForPrompt("첫째줄\n둘째줄\r\n셋째줄")).toBe(
-			"첫째줄 둘째줄 셋째줄",
-		);
+		expect(sanitizeForPrompt("첫째줄\n둘째줄\r\n셋째줄")).toBe("첫째줄 둘째줄 셋째줄");
 	});
 
 	it("사용자 의미를 이루는 기호와 인용부호를 보존해야 한다", () => {
-		expect(sanitizeForPrompt('C# 강의에서 "List<T>" 복습')).toBe(
-			'C# 강의에서 "List<T>" 복습',
-		);
+		expect(sanitizeForPrompt('C# 강의에서 "List<T>" 복습')).toBe('C# 강의에서 "List<T>" 복습');
 	});
 
 	it("리스트 불릿(- *)과 범위(~)는 보존해야 한다", () => {
-		expect(sanitizeForPrompt("- 항목 * 강조 1~5장")).toBe(
-			"- 항목 * 강조 1~5장",
-		);
+		expect(sanitizeForPrompt("- 항목 * 강조 1~5장")).toBe("- 항목 * 강조 1~5장");
 	});
 
 	it("200자를 초과하면 잘라내야 한다", () => {
@@ -70,9 +60,7 @@ describe("sanitizeMemoForPrompt (장문 1000자)", () => {
 	});
 
 	it("코드와 인용에 필요한 기호를 보존해야 한다", () => {
-		expect(sanitizeMemoForPrompt('> "C#" 경로 C:\\work')).toBe(
-			'> "C#" 경로 C:\\work',
-		);
+		expect(sanitizeMemoForPrompt('> "C#" 경로 C:\\work')).toBe('> "C#" 경로 C:\\work');
 	});
 
 	it("Unicode 전각 문자를 정규화해야 한다", () => {

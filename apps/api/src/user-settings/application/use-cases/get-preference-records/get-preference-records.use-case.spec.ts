@@ -45,16 +45,12 @@ describe("GetPreferenceRecordsUseCase", () => {
 	let repo: Mocked<UserPreferenceRepositoryPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetPreferenceRecordsUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(GetPreferenceRecordsUseCase)
 			.mock<UserPreferenceRepositoryPort>(USER_PREFERENCE_REPOSITORY)
 			.impl(() => createUserPreferenceRepositoryMock())
 			.compile();
 		useCase = unit;
-		repo = unitRef.get<UserPreferenceRepositoryPort>(
-			USER_PREFERENCE_REPOSITORY,
-		);
+		repo = unitRef.get<UserPreferenceRepositoryPort>(USER_PREFERENCE_REPOSITORY);
 	});
 
 	it("사용자 ID 배열을 그대로 위임하고 레코드 배열을 반환한다", async () => {

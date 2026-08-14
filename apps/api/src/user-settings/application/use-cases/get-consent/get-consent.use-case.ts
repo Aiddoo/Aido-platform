@@ -2,7 +2,6 @@ import type { ConsentResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { buildConsentView } from "../../../domain/services/consent-view";
-
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,

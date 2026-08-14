@@ -1,4 +1,5 @@
 import type { Request } from "express";
+
 import type { RequestMetadata } from "@/auth/application/types/auth.types";
 import { ErrorCodedException } from "@/shared/domain/exceptions/error-coded.exception";
 
@@ -18,10 +19,7 @@ export function extractMetadata(req: Request): RequestMetadata {
  * OAuth 콜백 에러를 URLSearchParams로 변환
  * 에러 코드가 있는 예외(ApplicationException/DomainException)면 코드를 포함
  */
-export function buildOAuthErrorParams(
-	error: unknown,
-	state: string,
-): URLSearchParams {
+export function buildOAuthErrorParams(error: unknown, state: string): URLSearchParams {
 	let errorCode = "authentication_failed";
 	let errorMessage = "인증 처리 중 오류가 발생했습니다.";
 

@@ -3,9 +3,9 @@ import { Module } from "@nestjs/common";
 import { FollowModule } from "@/follow/follow.module";
 import { NotificationModule } from "@/notification/notification.module";
 
-import { NUDGE_REPOSITORY } from "./application/ports/nudge.repository.port";
 import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit-reader.port";
 import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port";
+import { NUDGE_REPOSITORY } from "./application/ports/nudge.repository.port";
 import { NudgeReader } from "./application/services/nudge.reader";
 import { MarkNudgeReadUseCase } from "./application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
 import { SendNudgeUseCase } from "./application/use-cases/send-nudge/send-nudge.use-case";

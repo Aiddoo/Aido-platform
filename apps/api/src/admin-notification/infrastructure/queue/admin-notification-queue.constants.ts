@@ -3,6 +3,7 @@
  */
 
 import { z } from "zod";
+
 import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
 
 // =============================================================================
@@ -96,9 +97,6 @@ export interface AdminNotificationJobMap {
 	[AdminNotificationJobName.SEND]: AdminNotificationSendData;
 }
 
-export type AdminNotificationJobData =
-	AdminNotificationJobMap[keyof AdminNotificationJobMap];
+export type AdminNotificationJobData = AdminNotificationJobMap[keyof AdminNotificationJobMap];
 
-export type AdminNotificationRuntimeJob = z.infer<
-	typeof AdminNotificationRuntimeJobSchema
->;
+export type AdminNotificationRuntimeJob = z.infer<typeof AdminNotificationRuntimeJobSchema>;

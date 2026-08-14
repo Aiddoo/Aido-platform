@@ -6,10 +6,8 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	createStreakMock,
-	createTodoReadRepositoryMock,
-} from "@test/mocks/ports";
+import { createStreakMock, createTodoReadRepositoryMock } from "@test/mocks/ports";
+
 import { STREAK_PORT, type StreakPort } from "../../ports/streak.port";
 import {
 	TODO_READ_REPOSITORY,
@@ -18,11 +16,7 @@ import {
 } from "../../ports/todo-read.repository.port";
 import { GetTodoSummaryUseCase } from "./get-todo-summary.use-case";
 
-function buildRow(
-	id: number,
-	completed: boolean,
-	title = `할 일 ${id}`,
-): TodaySummaryTodoRow {
+function buildRow(id: number, completed: boolean, title = `할 일 ${id}`): TodaySummaryTodoRow {
 	return { id, title, completed, categoryColor: "#FFB3B3" };
 }
 
@@ -43,8 +37,7 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			.compile();
 
 		useCase = unit;
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		streakPort = unitRef.get<StreakPort>(STREAK_PORT);
 	});
 
@@ -54,10 +47,7 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 			total: 5,
 			completed: 3,
 		});
-		todoReadRepository.findTodayTopTodos.mockResolvedValue([
-			buildRow(2, false),
-			buildRow(1, true),
-		]);
+		todoReadRepository.findTodayTopTodos.mockResolvedValue([buildRow(2, false), buildRow(1, true)]);
 		streakPort.getStreakContext.mockResolvedValue({
 			currentStreak: 12,
 			lastCompletedDate: null,
@@ -108,11 +98,7 @@ describe("GetTodoSummaryUseCase — 오늘의 할 일 요약 조회 (홈 위젯�
 		await useCase.execute(baseInput);
 
 		// Then - 정렬(미완료 우선)은 저장소 쿼리가 소유한다
-		expect(todoReadRepository.findTodayTopTodos).toHaveBeenCalledWith(
-			"user-123",
-			today,
-			10,
-		);
+		expect(todoReadRepository.findTodayTopTodos).toHaveBeenCalledWith("user-123", today, 10);
 	});
 
 	it("할 일이 없는 날은 완료율 0, isComplete false다 (total=0 엣지)", async () => {

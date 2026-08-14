@@ -11,9 +11,7 @@ export function createMockBullQueue() {
 		getJob: jest.fn().mockResolvedValue(null),
 		upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
 		removeJobScheduler: jest.fn().mockResolvedValue(undefined),
-		getJobCounts: jest
-			.fn()
-			.mockResolvedValue({ active: 0, waiting: 0, failed: 0 }),
+		getJobCounts: jest.fn().mockResolvedValue({ active: 0, waiting: 0, failed: 0 }),
 		getJobSchedulers: jest.fn().mockResolvedValue([]),
 		isPaused: jest.fn().mockResolvedValue(false),
 		close: jest.fn().mockResolvedValue(undefined),

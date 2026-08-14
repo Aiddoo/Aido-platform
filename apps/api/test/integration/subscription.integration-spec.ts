@@ -20,22 +20,23 @@
  * ```
  */
 
-import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { SubscriptionEventBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { AdminEventNotifier, PAYMENT_NOTIFIER } from "@/admin-notification";
 import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
-import { SUBSCRIPTION_REPOSITORY } from "@/subscription/application/ports/subscription.repository.port";
 import { SUBSCRIPTION_CACHE } from "@/subscription/application/ports/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "@/subscription/application/ports/subscription-event-notifier.port";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "@/subscription/application/ports/subscription-webhook-lock.port";
+import { SUBSCRIPTION_REPOSITORY } from "@/subscription/application/ports/subscription.repository.port";
 import { HandleWebhookEventUseCase } from "@/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
 import { SubscriptionCacheAdapter } from "@/subscription/infrastructure/adapters/subscription-cache.adapter";
 import { SubscriptionEventNotifierAdapter } from "@/subscription/infrastructure/adapters/subscription-event-notifier.adapter";
@@ -212,12 +213,8 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 				}),
 			}),
 		);
-		expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(
-			mockUser.id,
-		);
-		expect(mockCacheService.invalidateUserProfile).toHaveBeenCalledWith(
-			mockUser.id,
-		);
+		expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(mockUser.id);
+		expect(mockCacheService.invalidateUserProfile).toHaveBeenCalledWith(mockUser.id);
 		expect(mockAdminEventNotifier.notifySubscriptionEvent).toHaveBeenCalledWith(
 			expect.objectContaining({
 				userId: mockUser.id,
@@ -367,17 +364,13 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		// Then - Subscription update 호출 없음, 캐시 무효화 + 큐 등록만 수행
 		expect(mockSubscriptionDb.update).not.toHaveBeenCalled();
 		expect(mockSubscriptionDb.create).not.toHaveBeenCalled();
-		expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(
-			mockUser.id,
-		);
+		expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(mockUser.id);
 		expect(mockAdminEventNotifier.notifySubscriptionEvent).toHaveBeenCalledWith(
 			expect.objectContaining({
 				eventType: "BILLING_ISSUE",
 			}),
 		);
-		expect(
-			mockNotificationQueueService.enqueueBillingIssue,
-		).toHaveBeenCalledWith({
+		expect(mockNotificationQueueService.enqueueBillingIssue).toHaveBeenCalledWith({
 			userId: mockUser.id,
 		});
 	});
@@ -407,23 +400,17 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		expect(mockSubscriptionDb.create).not.toHaveBeenCalled();
 		expect(mockCacheService.invalidateSubscription).not.toHaveBeenCalled();
 		expect(mockCacheService.invalidateUserProfile).not.toHaveBeenCalled();
-		expect(
-			mockAdminEventNotifier.notifySubscriptionEvent,
-		).not.toHaveBeenCalled();
+		expect(mockAdminEventNotifier.notifySubscriptionEvent).not.toHaveBeenCalled();
 	});
 
 	it("잠금 경합 — Lock 획득 실패 시 ApplicationException", async () => {
 		// Given - Lock 획득 실패 (null 반환)
 		mockLockProvider.acquire.mockResolvedValue(null);
 
-		const payload = SubscriptionEventBuilder.initialPurchase()
-			.withAppUserId("rc-user-123")
-			.build();
+		const payload = SubscriptionEventBuilder.initialPurchase().withAppUserId("rc-user-123").build();
 
 		// When & Then - ApplicationException 발생
-		await expect(useCase.execute(payload)).rejects.toThrow(
-			ApplicationException,
-		);
+		await expect(useCase.execute(payload)).rejects.toThrow(ApplicationException);
 
 		// Lock 실패 시 DB 조회도 하지 않음
 		expect(mockUserDb.findFirst).not.toHaveBeenCalled();

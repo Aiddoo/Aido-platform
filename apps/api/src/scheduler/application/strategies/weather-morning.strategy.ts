@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	NotificationMessageBuilder,
 	NotificationSender,
@@ -8,10 +9,7 @@ import { toDateString } from "@/shared/domain/date/utils/format";
 import { WeatherForecastAccess } from "@/weather";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	WEATHER_REMINDER_READER,
 	type WeatherReminderReaderPort,
@@ -57,10 +55,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 		return { sent: total };
 	}
 
-	async #sendWeatherNotifications(
-		ctx: TimezoneContext,
-		today: Date,
-	): Promise<number> {
+	async #sendWeatherNotifications(ctx: TimezoneContext, today: Date): Promise<number> {
 		const users = await this.reader.findWeatherMorningUsersWithLocation({
 			tz: ctx.tz,
 			hour: ctx.localHour,
@@ -75,15 +70,12 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 			return 0;
 		}
 
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: usersWithLocation.map((u) => u.id),
-				type: "WEATHER_MORNING",
-				notificationDate: today,
-			});
-		const filtered = usersWithLocation.filter(
-			(u) => !alreadyNotified.has(u.id),
-		);
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: usersWithLocation.map((u) => u.id),
+			type: "WEATHER_MORNING",
+			notificationDate: today,
+		});
+		const filtered = usersWithLocation.filter((u) => !alreadyNotified.has(u.id));
 		if (filtered.length === 0) {
 			return 0;
 		}
@@ -103,10 +95,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 				},
 			];
 		});
-		const forecasts = await this.weatherForecastAccess.getForecastsByGridBatch(
-			gridInputs,
-			today,
-		);
+		const forecasts = await this.weatherForecastAccess.getForecastsByGridBatch(gridInputs, today);
 
 		const notifications = filtered
 			.map((user) => {
@@ -147,10 +136,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 		return notifications.length;
 	}
 
-	async #sendFallbackNotifications(
-		ctx: TimezoneContext,
-		today: Date,
-	): Promise<number> {
+	async #sendFallbackNotifications(ctx: TimezoneContext, today: Date): Promise<number> {
 		const users = await this.reader.findWeatherMorningFallbackUsers({
 			tz: ctx.tz,
 			hour: ctx.localHour,
@@ -162,12 +148,11 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 			return 0;
 		}
 
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: users.map((u) => u.id),
-				type: "WEATHER_MORNING",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: users.map((u) => u.id),
+			type: "WEATHER_MORNING",
+			notificationDate: today,
+		});
 		const filtered = users.filter((u) => !alreadyNotified.has(u.id));
 		if (filtered.length === 0) {
 			return 0;
@@ -198,9 +183,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 		return notifications.length;
 	}
 
-	#groupByGrid(
-		users: VerifiedUserWithLocation[],
-	): Map<string, VerifiedUserWithLocation[]> {
+	#groupByGrid(users: VerifiedUserWithLocation[]): Map<string, VerifiedUserWithLocation[]> {
 		const groups = new Map<string, VerifiedUserWithLocation[]>();
 		for (const user of users) {
 			const loc = user.location;

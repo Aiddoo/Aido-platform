@@ -1,6 +1,5 @@
 /** 기상청 단기예보 API Base URL */
-export const KMA_BASE_URL =
-	"https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0";
+export const KMA_BASE_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0";
 
 /** 엔드포인트 */
 export const KMA_ENDPOINTS = {
@@ -41,20 +40,14 @@ export const KMA_CATEGORY = {
 } as const;
 
 /** 하늘상태 코드 → 도메인 타입 매핑 */
-export const SKY_CODE_MAP: Record<
-	string,
-	"CLEAR" | "PARTLY_CLOUDY" | "CLOUDY"
-> = {
+export const SKY_CODE_MAP: Record<string, "CLEAR" | "PARTLY_CLOUDY" | "CLOUDY"> = {
 	"1": "CLEAR",
 	"3": "PARTLY_CLOUDY",
 	"4": "CLOUDY",
 };
 
 /** 강수형태 코드 → 도메인 타입 매핑 */
-export const PTY_CODE_MAP: Record<
-	string,
-	"NONE" | "RAIN" | "RAIN_SNOW" | "SNOW" | "SHOWER"
-> = {
+export const PTY_CODE_MAP: Record<string, "NONE" | "RAIN" | "RAIN_SNOW" | "SNOW" | "SHOWER"> = {
 	"0": "NONE",
 	"1": "RAIN",
 	"2": "RAIN_SNOW",

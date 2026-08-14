@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+
 import { buildUserRegisteredMessage } from "../../../domain/services/admin-message.factory";
 import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload";
 import {

@@ -1,6 +1,6 @@
 {
   "recommendations": [
-    "biomejs.biome",
+    "oxc.oxc-vscode",
     "prisma.prisma",
     "apollographql.vscode-apollo",
     "expo.vscode-expo-tools",
@@ -12,5 +12,5 @@
     "christian-kohler.path-intellisense",
     "mikestead.dotenv"
   ],
-  "unwantedRecommendations": ["esbenp.prettier-vscode"]
+  "unwantedRecommendations": ["biomejs.biome", "esbenp.prettier-vscode"]
 }

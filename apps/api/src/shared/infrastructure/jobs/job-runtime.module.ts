@@ -8,6 +8,7 @@ import {
 	type OnApplicationShutdown,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+
 import type {
 	EnqueueJobOptions,
 	JobBackend,
@@ -20,15 +21,13 @@ import type {
 } from "@/shared/application/ports/job-runtime.port";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import type { EnvConfig } from "@/shared/infrastructure/config";
+
 import {
 	BullMqJobRuntimeAdapter,
 	bullMqClientFactoryProvider,
 	legacyQueueName,
 } from "./bullmq-job-runtime.adapter";
-import {
-	PgBossJobRuntimeAdapter,
-	pgBossClientProvider,
-} from "./pg-boss-job-runtime.adapter";
+import { PgBossJobRuntimeAdapter, pgBossClientProvider } from "./pg-boss-job-runtime.adapter";
 
 export const POSTGRES_JOB_RUNTIME = Symbol("POSTGRES_JOB_RUNTIME");
 export const REDIS_JOB_RUNTIME = Symbol("REDIS_JOB_RUNTIME");
@@ -117,9 +116,7 @@ export function selectJobRuntime(
 	redisDrainEnabled = false,
 ): JobRuntimePort {
 	if (backend === "redis") return redis;
-	return redisDrainEnabled
-		? new RedisDrainJobRuntime(postgres, redis)
-		: postgres;
+	return redisDrainEnabled ? new RedisDrainJobRuntime(postgres, redis) : postgres;
 }
 
 export const jobRuntimeProvider: FactoryProvider<JobRuntimePort> = {
@@ -139,9 +136,7 @@ export const jobRuntimeProvider: FactoryProvider<JobRuntimePort> = {
 };
 
 @Injectable()
-export class JobRuntimeLifecycle
-	implements OnApplicationBootstrap, OnApplicationShutdown
-{
+export class JobRuntimeLifecycle implements OnApplicationBootstrap, OnApplicationShutdown {
 	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
 	async onApplicationBootstrap(): Promise<void> {

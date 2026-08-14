@@ -8,6 +8,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -51,9 +52,7 @@ describe("GetReportStatusUseCase", () => {
 	const tz = "Asia/Seoul";
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			GetReportStatusUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(GetReportStatusUseCase).compile();
 		useCase = unit;
 		mockRepository = unitRef.get(AI_REPORT_REPOSITORY);
 		mockEntitlement = unitRef.get(EntitlementService);
@@ -64,9 +63,7 @@ describe("GetReportStatusUseCase", () => {
 	it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
 		mockEntitlement.hasPremiumAccess.mockResolvedValue(false);
 
-		await expect(useCase.execute("user-123", tz)).rejects.toBeInstanceOf(
-			ApplicationException,
-		);
+		await expect(useCase.execute("user-123", tz)).rejects.toBeInstanceOf(ApplicationException);
 		expect(mockRepository.findLatest).not.toHaveBeenCalled();
 	});
 
@@ -83,9 +80,8 @@ describe("GetReportStatusUseCase", () => {
 	});
 
 	it("최신 리포트를 반환하고 findLatest를 2회 호출해야 한다", async () => {
-		mockRepository.findLatest.mockImplementation(
-			async (_userId: string, type: ReportType) =>
-				type === "WEEKLY" ? makeReport("WEEKLY") : null,
+		mockRepository.findLatest.mockImplementation(async (_userId: string, type: ReportType) =>
+			type === "WEEKLY" ? makeReport("WEEKLY") : null,
 		);
 
 		const result = await useCase.execute("user-123", tz);

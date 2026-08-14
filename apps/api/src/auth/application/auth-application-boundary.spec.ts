@@ -12,9 +12,7 @@ const FORBIDDEN_IMPORT_PREFIXES = [
 function importPathsOf(source: string): string[] {
 	const paths: string[] = [];
 
-	for (const match of source.matchAll(
-		/(?:import|export)[^"']*?from\s*["']([^"']+)["']/g,
-	)) {
+	for (const match of source.matchAll(/(?:import|export)[^"']*?from\s*["']([^"']+)["']/g)) {
 		const path = match[1];
 		if (path !== undefined) {
 			paths.push(path);
@@ -36,9 +34,7 @@ function sourceFiles(directory: string): string[] {
 		if (entry.isDirectory()) {
 			return sourceFiles(path);
 		}
-		return entry.name.endsWith(".ts") && !entry.name.endsWith(".spec.ts")
-			? [path]
-			: [];
+		return entry.name.endsWith(".ts") && !entry.name.endsWith(".spec.ts") ? [path] : [];
 	});
 }
 

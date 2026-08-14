@@ -15,20 +15,19 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { Todo } from "../../../domain/entities/todo.aggregate";
+
 import { TodoItem } from "../../../domain/entities/todo-item.entity";
+import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
-import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { ReorderTodoItemsUseCase } from "./reorder-todo-items.use-case";
 
 function buildItem(id: number): TodoItem {
@@ -66,9 +65,7 @@ function buildEntity(items: TodoItem[]): Todo {
 }
 
 function buildResponse(): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("user-123").withId(1).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
 }
 
 describe("ReorderTodoItemsUseCase — 하위 항목 순서 변경 핸들러", () => {
@@ -88,8 +85,7 @@ describe("ReorderTodoItemsUseCase — 하위 항목 순서 변경 핸들러", ()
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 	});
 
 	it("전체 항목 ID를 새 순서로 전달하면 일괄 재정렬한다", async () => {
@@ -126,9 +122,7 @@ describe("ReorderTodoItemsUseCase — 하위 항목 순서 변경 핸들러", ()
 
 	it("다른 투두의 항목 ID가 섞이면 ApplicationException(TODO_0822)을 던진다", async () => {
 		// Given - 항목 [1,2] 보유인데 999 포함
-		todoRepository.findByIdAndUserId.mockResolvedValue(
-			buildEntity([buildItem(1), buildItem(2)]),
-		);
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity([buildItem(1), buildItem(2)]));
 
 		// When & Then
 		await expect(

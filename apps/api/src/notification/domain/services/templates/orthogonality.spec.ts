@@ -35,22 +35,8 @@ describe("직교성: timezone ⊥ 카피 언어", () => {
 	});
 
 	it("저녁 리마인더 — 언어가 달라도 분기/선택은 동일하다", () => {
-		const ko = NotificationMessageBuilder.eveningReminder(
-			2,
-			3,
-			0,
-			false,
-			"ko",
-			context,
-		);
-		const en = NotificationMessageBuilder.eveningReminder(
-			2,
-			3,
-			0,
-			false,
-			"en",
-			context,
-		);
+		const ko = NotificationMessageBuilder.eveningReminder(2, 3, 0, false, "ko", context);
+		const en = NotificationMessageBuilder.eveningReminder(2, 3, 0, false, "en", context);
 
 		expect(ko.variantId).toBe(en.variantId);
 		expect(ko.title).not.toBe(en.title);

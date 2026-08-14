@@ -1,8 +1,10 @@
 import type { INestApplication } from "@nestjs/common";
 import helmet from "helmet";
 import { ZodValidationPipe } from "nestjs-zod";
+
 import type { EnvConfig } from "@/shared/infrastructure/config";
 import { createCorsOptions } from "@/shared/infrastructure/config/utils/cors-options";
+
 import { configureRequestIdentity } from "./configure-request-identity";
 
 export interface ApplicationConfiguration {

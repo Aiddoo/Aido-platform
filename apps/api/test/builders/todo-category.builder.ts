@@ -110,8 +110,6 @@ export class TodoCategoryBuilder {
 
 	/** 여러 개 생성 */
 	static createMany(userId: string, count: number): TodoCategory[] {
-		return Array.from({ length: count }, () =>
-			TodoCategoryBuilder.create(userId).build(),
-		);
+		return Array.from({ length: count }, () => TodoCategoryBuilder.create(userId).build());
 	}
 }

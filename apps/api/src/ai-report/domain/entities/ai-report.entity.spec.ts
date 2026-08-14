@@ -22,9 +22,7 @@ function makeProps(overrides?: Partial<AiReportProps>): AiReportProps {
 			prevCompletionRate: 70,
 			streakDays: 3,
 		},
-		categoryBreakdown: [
-			{ name: "업무", color: "#FF0000", total: 5, completed: 4, rate: 80 },
-		],
+		categoryBreakdown: [{ name: "업무", color: "#FF0000", total: 5, completed: 4, rate: 80 }],
 		dayPatterns: [{ day: "MON", total: 3, completed: 2, rate: 67 }],
 		timePatterns: [{ hour: 10, count: 5 }],
 		aiSummary: "좋은 한 주였어!",
@@ -66,9 +64,7 @@ describe("AiReport.toView", () => {
 	});
 
 	it("MONTHLY 타입의 periodLabel을 올바르게 생성해야 한다", () => {
-		const report = AiReport.reconstitute(
-			makeProps({ type: "MONTHLY", year: 2026, period: 3 }),
-		);
+		const report = AiReport.reconstitute(makeProps({ type: "MONTHLY", year: 2026, period: 3 }));
 
 		const result = report.toView();
 

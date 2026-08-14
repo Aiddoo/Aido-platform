@@ -33,12 +33,12 @@ presentation ───────────────→ application ──
                                   └→ Prisma / Redis / BullMQ / vendor SDK
 ```
 
-| 레이어 | 소유 책임 | 허용 의존성 |
-|---|---|---|
-| `domain` | Aggregate, Entity, VO, Policy, domain event | 순수 TypeScript와 shared domain |
-| `application` | endpoint UseCase, orchestration, port, application error | domain, application 내부, 제한된 Nest DI/Logger |
-| `infrastructure` | Prisma/Redis/queue/vendor 구현, mapper, listener | application port, domain, 외부 기술 |
-| `presentation` | HTTP DTO, validation, Swagger, input/output mapper | application 진입점, validator |
+| 레이어           | 소유 책임                                                | 허용 의존성                                     |
+| ---------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| `domain`         | Aggregate, Entity, VO, Policy, domain event              | 순수 TypeScript와 shared domain                 |
+| `application`    | endpoint UseCase, orchestration, port, application error | domain, application 내부, 제한된 Nest DI/Logger |
+| `infrastructure` | Prisma/Redis/queue/vendor 구현, mapper, listener         | application port, domain, 외부 기술             |
+| `presentation`   | HTTP DTO, validation, Swagger, input/output mapper       | application 진입점, validator                   |
 
 금지:
 
@@ -47,7 +47,7 @@ presentation ───────────────→ application ──
 - 외부 모듈 → 다른 모듈의 내부 UseCase, concrete adapter/repository, deep path
 - public barrel → 내부 repository, queue 구현, 테스트 helper
 
-`pnpm --filter @aido/api lint:arch`가 import 경계, Aggregate 파일명, public barrel, cast를 검사한다.
+`pnpm lint`의 Oxlint `no-restricted-imports` 규칙이 domain/application import 경계를 검사한다. Aggregate 파일명, public barrel, 타입 단언 같은 의미 규칙은 컴파일러와 리뷰 체크리스트로 확인하며 전용 AST 스크립트를 추가하지 않는다.
 
 ## 3. 요청 흐름
 
@@ -71,13 +71,13 @@ Request
 
 Aggregate는 동시 변경되어야 하는 단건 상태와 불변식이 있을 때만 사용한다.
 
-| 종류 | 사용 기준 | 예시 |
-|---|---|---|
-| Aggregate Root | 상태 전이와 불변식의 일관성 경계 | `Todo`, `AuthSession`, `Friendship` |
-| Entity | Aggregate 안에서 식별되는 자식 | `TodoItem` |
-| Value Object | 값 자체에 검증·동등성·불변성이 있음 | `TodoId`, `TodoTitle`, `TodoSchedule` |
-| Policy | 여러 입력으로 순수 판단 | 완료, 재정렬, retry 계산 |
-| Read model | 조회·집계가 목적이며 상태 전이를 소유하지 않음 | daily/weekly 통계 |
+| 종류           | 사용 기준                                      | 예시                                  |
+| -------------- | ---------------------------------------------- | ------------------------------------- |
+| Aggregate Root | 상태 전이와 불변식의 일관성 경계               | `Todo`, `AuthSession`, `Friendship`   |
+| Entity         | Aggregate 안에서 식별되는 자식                 | `TodoItem`                            |
+| Value Object   | 값 자체에 검증·동등성·불변성이 있음            | `TodoId`, `TodoTitle`, `TodoSchedule` |
+| Policy         | 여러 입력으로 순수 판단                        | 완료, 재정렬, retry 계산              |
+| Read model     | 조회·집계가 목적이며 상태 전이를 소유하지 않음 | daily/weekly 통계                     |
 
 규칙:
 
@@ -177,11 +177,12 @@ commit
 
 검증 게이트:
 
-- `check-ddd-architecture.mjs`: 레이어, 명명, barrel, cast
-- `check-immutable-contracts.mjs`: OpenAPI/fingerprint/Prisma 계약
+- Oxlint: import 경계, 순환 참조, 핵심 TypeScript 안전 규칙
+- Oxfmt: 저장소 전체의 결정적 포맷과 import/package 정렬
+- TypeScript: strict 타입 검사
 - unit: Aggregate/VO/Policy와 UseCase 분기
 - integration: 실제 PostgreSQL transaction/concurrency
-- E2E: HTTP와 OpenAPI 계약
+- E2E: HTTP, 오류 응답, OpenAPI snapshot과 배포 클라이언트 fingerprint 계약
 
 ## 11. 참조 구조
 

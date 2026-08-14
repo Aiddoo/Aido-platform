@@ -4,6 +4,7 @@ import { times } from 'es-toolkit/compat';
 import type { ReactElement, ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
+
 import { UserListRow } from './UserListRow';
 
 interface UserListRefresh {

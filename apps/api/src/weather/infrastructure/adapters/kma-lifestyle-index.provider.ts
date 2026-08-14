@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
+
 import { toCompactDateHourString } from "@/shared/domain/date/utils/format";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { readJson } from "@/shared/infrastructure/http/read-json";
+
 import type {
 	LifestyleIndex,
 	LifestyleIndexProvider,
@@ -36,10 +38,7 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 		currentTemp: number,
 		windSpeed: number,
 	): Promise<LifestyleIndex> {
-		const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(
-			currentTemp,
-			windSpeed,
-		);
+		const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(currentTemp, windSpeed);
 
 		const apiKey = this.configService.dataGoKrApiKey;
 		if (!apiKey) {
@@ -66,9 +65,7 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 	): Promise<number | null> {
 		const time = toCompactDateHourString(date);
 
-		const url = new URL(
-			"https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4",
-		);
+		const url = new URL("https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4");
 		url.searchParams.set("serviceKey", apiKey);
 		url.searchParams.set("numOfRows", "10");
 		url.searchParams.set("dataType", "JSON");

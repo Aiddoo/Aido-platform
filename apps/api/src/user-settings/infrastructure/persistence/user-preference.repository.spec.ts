@@ -14,11 +14,10 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { UserPreferenceBuilder } from "@test/builders";
 import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import {
-	type UpdatePreferenceData,
-	UserPreferenceRepository,
-} from "./user-preference.repository";
+
+import { type UpdatePreferenceData, UserPreferenceRepository } from "./user-preference.repository";
 
 describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", () => {
 	let repository: UserPreferenceRepository;
@@ -36,9 +35,7 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 		db = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(UserPreferenceRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.compile();
 

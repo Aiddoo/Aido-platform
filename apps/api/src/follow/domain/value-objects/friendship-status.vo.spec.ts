@@ -1,4 +1,5 @@
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { FriendshipStatus } from "./friendship-status.vo";
 
 describe("FriendshipStatus VO", () => {
@@ -22,11 +23,7 @@ describe("FriendshipStatus VO", () => {
 	});
 
 	it("equals", () => {
-		expect(FriendshipStatus.pending().equals(FriendshipStatus.pending())).toBe(
-			true,
-		);
-		expect(FriendshipStatus.pending().equals(FriendshipStatus.accepted())).toBe(
-			false,
-		);
+		expect(FriendshipStatus.pending().equals(FriendshipStatus.pending())).toBe(true);
+		expect(FriendshipStatus.pending().equals(FriendshipStatus.accepted())).toBe(false);
 	});
 });

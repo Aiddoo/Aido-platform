@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import type { CreateNotificationData } from "../../ports/notification-data";
 import { DispatchBatchNotificationUseCase } from "../dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
@@ -11,9 +12,7 @@ describe("SendBatchNotificationUseCase", () => {
 	let dispatchBatch: Mocked<DispatchBatchNotificationUseCase>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SendBatchNotificationUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SendBatchNotificationUseCase).compile();
 		useCase = unit;
 		persistBatch = unitRef.get(PersistBatchNotificationUseCase);
 		dispatchBatch = unitRef.get(DispatchBatchNotificationUseCase);

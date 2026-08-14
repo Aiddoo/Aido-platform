@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { addDays, subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { startOfDay } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { UserPreference } from "../../../domain/entities/user-preference.aggregate";
 
+import { UserPreference } from "../../../domain/entities/user-preference.aggregate";
 import {
 	STREAK_MILESTONE_NOTIFIER,
 	type StreakMilestoneNotifierPort,
@@ -36,11 +37,7 @@ export class OnTodoToggledUseCase {
 		private readonly milestoneNotifier: StreakMilestoneNotifierPort,
 	) {}
 
-	async execute(
-		userId: string,
-		completed: boolean,
-		tz: string = "UTC",
-	): Promise<void> {
+	async execute(userId: string, completed: boolean, tz: string = "UTC"): Promise<void> {
 		try {
 			const today = todayInTimezone(tz);
 			const stats = await this.#statsForDay(userId, today);
@@ -107,13 +104,9 @@ export class OnTodoToggledUseCase {
 		const yesterday = subtractDays(1, today);
 		const yesterdayStats = await this.#statsForDay(userId, yesterday);
 		const hadYesterdayCompletion =
-			yesterdayStats.total > 0 &&
-			yesterdayStats.total === yesterdayStats.completed;
+			yesterdayStats.total > 0 && yesterdayStats.total === yesterdayStats.completed;
 
-		const nextState = preference.planTodoUncompletion(
-			today,
-			hadYesterdayCompletion,
-		);
+		const nextState = preference.planTodoUncompletion(today, hadYesterdayCompletion);
 		if (!nextState) {
 			return;
 		}

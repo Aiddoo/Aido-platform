@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
+
 import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { JwtService, TokenExpiredError } from "@nestjs/jwt";
+
 import {
 	AUTH_DEFAULTS,
 	TOKEN_VERIFY_ERROR,
@@ -51,12 +53,7 @@ export class TokenService {
 	): Promise<TokenPair> {
 		const family = tokenFamily ?? this.generateTokenFamily();
 
-		const accessToken = await this.#generateAccessToken(
-			userId,
-			email,
-			sessionId,
-			role,
-		);
+		const accessToken = await this.#generateAccessToken(userId, email, sessionId, role);
 		const refreshToken = await this.#generateRefreshToken(
 			userId,
 			email,
@@ -122,9 +119,7 @@ export class TokenService {
 		return result.success ? result.payload : null;
 	}
 
-	async verifyAccessTokenWithError(
-		token: string,
-	): Promise<TokenVerifyResult<JwtPayload>> {
+	async verifyAccessTokenWithError(token: string): Promise<TokenVerifyResult<JwtPayload>> {
 		try {
 			const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
 				secret: this.configService.jwtSecret,
@@ -145,9 +140,7 @@ export class TokenService {
 		return result.success ? result.payload : null;
 	}
 
-	async verifyRefreshTokenWithError(
-		token: string,
-	): Promise<TokenVerifyResult<JwtPayload>> {
+	async verifyRefreshTokenWithError(token: string): Promise<TokenVerifyResult<JwtPayload>> {
 		try {
 			const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
 				secret: this.configService.jwtRefreshSecret,

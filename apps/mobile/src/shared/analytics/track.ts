@@ -1,4 +1,5 @@
 import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
+
 import type { AppEventMap } from './events';
 
 /**

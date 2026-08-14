@@ -14,23 +14,23 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `children` | `ReactNode` | - | 버튼 텍스트 |
-| `size` | `'xsmall' \| 'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 버튼 크기 |
-| `variant` | `'clear' \| 'underline' \| 'arrow'` | `'clear'` | 버튼 스타일 |
-| `isDisabled` | `boolean` | `false` | 비활성화 상태 |
-| `className` | `string` | - | 추가 스타일 |
+| Prop         | 타입                                                     | 기본값     | 설명          |
+| ------------ | -------------------------------------------------------- | ---------- | ------------- |
+| `children`   | `ReactNode`                                              | -          | 버튼 텍스트   |
+| `size`       | `'xsmall' \| 'small' \| 'medium' \| 'large' \| 'xlarge'` | `'medium'` | 버튼 크기     |
+| `variant`    | `'clear' \| 'underline' \| 'arrow'`                      | `'clear'`  | 버튼 스타일   |
+| `isDisabled` | `boolean`                                                | `false`    | 비활성화 상태 |
+| `className`  | `string`                                                 | -          | 추가 스타일   |
 
 ## 크기 (size)
 
-| Size | 폰트 크기 | 아이콘 크기 (arrow) |
-|------|----------|-------------------|
-| `xsmall` | e2 | 12px |
-| `small` | e1 | 14px |
-| `medium` | b4 | 16px |
-| `large` | b3 | 18px |
-| `xlarge` | b2 | 20px |
+| Size     | 폰트 크기 | 아이콘 크기 (arrow) |
+| -------- | --------- | ------------------- |
+| `xsmall` | e2        | 12px                |
+| `small`  | e1        | 14px                |
+| `medium` | b4        | 16px                |
+| `large`  | b3        | 18px                |
+| `xlarge` | b2        | 20px                |
 
 ```tsx
 <TextButton size="xsmall">XSmall</TextButton>
@@ -43,6 +43,7 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 ## 스타일 (variant)
 
 ### clear (기본)
+
 밑줄 없는 기본 텍스트 스타일입니다.
 
 ```tsx
@@ -50,6 +51,7 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 ```
 
 ### underline
+
 밑줄이 있는 링크 스타일입니다.
 
 ```tsx
@@ -57,6 +59,7 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 ```
 
 ### arrow
+
 오른쪽 화살표 아이콘이 붙는 스타일입니다.
 
 ```tsx
@@ -66,6 +69,7 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 ## 상태
 
 ### 비활성화 상태
+
 `isDisabled`가 `true`면 버튼이 비활성화되고 투명도가 적용됩니다.
 
 ```tsx

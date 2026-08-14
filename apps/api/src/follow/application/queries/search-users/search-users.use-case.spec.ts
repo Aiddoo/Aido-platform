@@ -5,9 +5,11 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { PaginationService } from "@/shared/application/pagination";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
@@ -33,8 +35,7 @@ describe("SearchUsersUseCase", () => {
 	let pagination: Mocked<PaginationService>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(SearchUsersUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(SearchUsersUseCase).compile();
 		useCase = unit;
 		repo = unitRef.get(FOLLOW_REPOSITORY);
 		pagination = unitRef.get(PaginationService);
@@ -104,9 +105,9 @@ describe("SearchUsersUseCase", () => {
 	});
 
 	it("빈 검색어는 FOLLOW_0911(DomainException)을 던진다", async () => {
-		await expect(
-			useCase.execute({ viewerId: "me", query: "   " }),
-		).rejects.toBeInstanceOf(DomainException);
+		await expect(useCase.execute({ viewerId: "me", query: "   " })).rejects.toBeInstanceOf(
+			DomainException,
+		);
 	});
 
 	it("손상된 커서는 FOLLOW_0912(ApplicationException)를 던진다", async () => {

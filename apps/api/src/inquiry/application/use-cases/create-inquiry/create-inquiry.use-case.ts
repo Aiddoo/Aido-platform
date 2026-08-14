@@ -1,13 +1,12 @@
 import { ErrorCode } from "@aido/errors";
 import type { InquiryCategory } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import { buildInquirySubmission } from "../../../domain/services/inquiry-submission";
-import {
-	INQUIRY_MAILER,
-	type InquiryMailerPort,
-} from "../../ports/inquiry-mailer.port";
+import { INQUIRY_MAILER, type InquiryMailerPort } from "../../ports/inquiry-mailer.port";
 
 export interface CreateInquiryInput {
 	userId: string;
@@ -25,9 +24,7 @@ export interface CreateInquiryInput {
 export class CreateInquiryUseCase {
 	readonly #logger = new Logger(CreateInquiryUseCase.name);
 
-	constructor(
-		@Inject(INQUIRY_MAILER) private readonly mailer: InquiryMailerPort,
-	) {}
+	constructor(@Inject(INQUIRY_MAILER) private readonly mailer: InquiryMailerPort) {}
 
 	async execute(input: CreateInquiryInput): Promise<void> {
 		const submission = buildInquirySubmission(
@@ -48,8 +45,6 @@ export class CreateInquiryUseCase {
 			});
 		}
 
-		this.#logger.log(
-			`Inquiry submitted: userId=${input.userId}, category=${input.category}`,
-		);
+		this.#logger.log(`Inquiry submitted: userId=${input.userId}, category=${input.category}`);
 	}
 }

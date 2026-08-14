@@ -10,6 +10,7 @@
  * ```
  */
 import type { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
 import { EncryptionService } from "./encryption.service";
 
 describe("EncryptionService — 암호화 서비스", () => {
@@ -18,8 +19,7 @@ describe("EncryptionService — 암호화 서비스", () => {
 	beforeEach(() => {
 		// Given - Mock 설정 서비스
 		const mockConfigService = {
-			tokenEncryptionKey:
-				"test-encryption-key-must-be-at-least-32-characters-long",
+			tokenEncryptionKey: "test-encryption-key-must-be-at-least-32-characters-long",
 			get: jest.fn().mockReturnValue(undefined),
 		} as unknown as TypedConfigService;
 
@@ -80,9 +80,7 @@ describe("EncryptionService — 암호화 서비스", () => {
 			const invalidCiphertext = "invalid-format";
 
 			// When & Then
-			expect(() => service.decrypt(invalidCiphertext)).toThrow(
-				"Invalid ciphertext format",
-			);
+			expect(() => service.decrypt(invalidCiphertext)).toThrow("Invalid ciphertext format");
 		});
 
 		it("변조된 ciphertext는 복호화에 실패한다", () => {

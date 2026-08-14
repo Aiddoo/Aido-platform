@@ -1,7 +1,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createPushDispatcherMock } from "@test/mocks/ports/notification.mock";
 import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
+import { createPushDispatcherMock } from "@test/mocks/ports/notification.mock";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
@@ -10,10 +11,7 @@ import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
 } from "../../ports/notification-dedup.port";
-import {
-	PUSH_DISPATCHER,
-	type PushDispatcherPort,
-} from "../../ports/push-dispatcher.port";
+import { PUSH_DISPATCHER, type PushDispatcherPort } from "../../ports/push-dispatcher.port";
 import { DispatchBatchNotificationUseCase } from "./dispatch-batch-notification.use-case";
 
 describe("DispatchBatchNotificationUseCase", () => {
@@ -23,9 +21,7 @@ describe("DispatchBatchNotificationUseCase", () => {
 	let dedup: Mocked<NotificationDedupPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			DispatchBatchNotificationUseCase,
-		)
+		const { unit, unitRef } = await TestBed.solitary(DispatchBatchNotificationUseCase)
 			.mock<PushDispatcherPort>(PUSH_DISPATCHER)
 			.impl(() => createPushDispatcherMock())
 			.mock<NotificationCachePort>(NOTIFICATION_CACHE)

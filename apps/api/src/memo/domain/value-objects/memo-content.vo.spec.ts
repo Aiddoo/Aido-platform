@@ -2,7 +2,9 @@
  * MemoContent 값 객체 단위 테스트
  */
 import { MEMO_LIMITS } from "@aido/validators";
+
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { MemoContent } from "./memo-content.vo";
 
 describe("MemoContent — 메모 내용 값 객체", () => {
@@ -13,9 +15,7 @@ describe("MemoContent — 메모 내용 값 객체", () => {
 
 		it("빈 문자열은 DomainException(SYS_0002)을 던진다", () => {
 			expect(() => MemoContent.of("")).toThrow(DomainException);
-			expect(() => MemoContent.of("")).toThrow(
-				expect.objectContaining({ errorCode: "SYS_0002" }),
-			);
+			expect(() => MemoContent.of("")).toThrow(expect.objectContaining({ errorCode: "SYS_0002" }));
 		});
 
 		it("최대 길이를 초과하면 DomainException을 던진다", () => {
@@ -25,9 +25,7 @@ describe("MemoContent — 메모 내용 값 객체", () => {
 
 		it("경계값(최대 길이)은 허용한다", () => {
 			const atLimit = "a".repeat(MEMO_LIMITS.MAX_CONTENT_LENGTH);
-			expect(MemoContent.of(atLimit).value.length).toBe(
-				MEMO_LIMITS.MAX_CONTENT_LENGTH,
-			);
+			expect(MemoContent.of(atLimit).value.length).toBe(MEMO_LIMITS.MAX_CONTENT_LENGTH);
 		});
 	});
 

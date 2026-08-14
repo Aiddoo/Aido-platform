@@ -1,8 +1,4 @@
-import {
-	createCheerSchema,
-	markCheerReadSchema,
-	markCheersReadSchema,
-} from "@aido/validators";
+import { createCheerSchema, markCheerReadSchema, markCheersReadSchema } from "@aido/validators";
 import { createZodDto } from "nestjs-zod";
 
 export class SendCheerDto extends createZodDto(createCheerSchema) {}

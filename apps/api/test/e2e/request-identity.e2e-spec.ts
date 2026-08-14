@@ -1,4 +1,5 @@
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("Trusted request identity E2E (real throttler, serialized)", () => {
@@ -18,9 +19,7 @@ describe("Trusted request identity E2E (real throttler, serialized)", () => {
 		await ctx.reset();
 	});
 
-	const rejectedRegistrationFrom = async (
-		forwardedFor: string,
-	): Promise<number> => {
+	const rejectedRegistrationFrom = async (forwardedFor: string): Promise<number> => {
 		const response = await request(ctx.app.getHttpServer())
 			.post("/v1/auth/register")
 			.set("X-Forwarded-For", forwardedFor)
@@ -40,9 +39,7 @@ describe("Trusted request identity E2E (real throttler, serialized)", () => {
 		expect(secondClientStatus).toBe(400);
 
 		// When - 공격자가 leftmost 값을 삽입하되 Nginx가 붙인 canonical IP는 오른쪽
-		const spoofAttemptStatus = await rejectedRegistrationFrom(
-			"203.0.113.250, 198.51.100.10",
-		);
+		const spoofAttemptStatus = await rejectedRegistrationFrom("203.0.113.250, 198.51.100.10");
 
 		// Then - canonical client의 이미 소진된 bucket이 유지됨
 		expect(spoofAttemptStatus).toBe(429);

@@ -2,6 +2,7 @@ import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
+
 import { Text } from '../Text';
 
 const ICON_SIZE = fontScaledSize(16, 0.3);

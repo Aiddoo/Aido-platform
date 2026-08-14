@@ -1,6 +1,8 @@
 import { Logger } from "@nestjs/common";
 import type Redis from "ioredis";
+
 import { RedisErrorLogSampler } from "@/shared/infrastructure/redis/redis-error-log-sampler";
+
 import type {
 	IPushRateLimiter,
 	PushRateLimitRequest,
@@ -110,10 +112,7 @@ const BATCH_LIMIT_SCRIPT = `
   return results
 `;
 
-function isRateLimitResult(
-	value: unknown,
-	expectedLength: number,
-): value is Array<0 | 1> {
+function isRateLimitResult(value: unknown, expectedLength: number): value is Array<0 | 1> {
 	return (
 		Array.isArray(value) &&
 		value.length === expectedLength &&
@@ -162,10 +161,7 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 		}
 	}
 
-	async isEngagementRateLimited(
-		userId: string,
-		localDate: string,
-	): Promise<boolean> {
+	async isEngagementRateLimited(userId: string, localDate: string): Promise<boolean> {
 		const key = PushRateLimiterKeys.engagement(userId, localDate);
 		try {
 			const result = await this.#redis.eval(
@@ -184,24 +180,17 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 		}
 	}
 
-	async reserveBatch(
-		requests: readonly PushRateLimitRequest[],
-	): Promise<readonly boolean[]> {
+	async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
 		if (requests.length === 0) return [];
 
 		const now = Date.now();
 		const keys = requests.flatMap((request, index) => [
 			PushRateLimiterKeys.general(request.userId),
 			request.engagementLocalDate
-				? PushRateLimiterKeys.engagement(
-						request.userId,
-						request.engagementLocalDate,
-					)
+				? PushRateLimiterKeys.engagement(request.userId, request.engagementLocalDate)
 				: PushRateLimiterKeys.engagementPlaceholder(index),
 		]);
-		const engagementFlags = requests.map((request) =>
-			request.engagementLocalDate ? 1 : 0,
-		);
+		const engagementFlags = requests.map((request) => (request.engagementLocalDate ? 1 : 0));
 
 		try {
 			const result = await this.#redis.eval(

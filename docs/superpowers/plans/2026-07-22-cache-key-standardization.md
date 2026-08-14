@@ -22,17 +22,27 @@
 ### Task 1: Add the shared keyspace primitive
 
 **Files:**
+
 - Create: `apps/api/src/shared/infrastructure/cache/keyspace/cache-key.ts`
 - Create: `apps/api/src/shared/infrastructure/cache/keyspace/cache-key.spec.ts`
 - Modify: `apps/api/src/shared/infrastructure/cache/index.ts`
 
 **Interfaces:**
+
 - Produces:
 
 ```ts
-export const CACHE_KEY_PREFIX = "aido:v1";
-export function cacheKey(context: string, resource: string, ...identifiers: readonly string[]): string;
-export function cachePattern(context: string, resource: string, ...identifiers: readonly string[]): string;
+export const CACHE_KEY_PREFIX = 'aido:v1';
+export function cacheKey(
+  context: string,
+  resource: string,
+  ...identifiers: readonly string[]
+): string;
+export function cachePattern(
+  context: string,
+  resource: string,
+  ...identifiers: readonly string[]
+): string;
 ```
 
 - [ ] **Step 1: Write failing exact-string tests**
@@ -60,6 +70,7 @@ git commit -m "feat(api): define versioned cache keyspace"
 ### Task 2: Move key ownership to bounded contexts
 
 **Files:**
+
 - Create: `apps/api/src/auth/infrastructure/cache/auth-cache.keys.ts`
 - Create: `apps/api/src/follow/infrastructure/cache/follow-cache.keys.ts`
 - Create: `apps/api/src/notification/infrastructure/cache/notification-cache.keys.ts`
@@ -72,6 +83,7 @@ git commit -m "feat(api): define versioned cache keyspace"
 - Test: adjacent `*.keys.spec.ts` for every file.
 
 **Interfaces:**
+
 - Consumes: `cacheKey`, `cachePattern`.
 - Produces: named functions such as `authSessionCacheKey`, `todoFriendViewCacheKey`, `weatherForecastCacheKey` and named TTL constants.
 
@@ -100,6 +112,7 @@ git commit -m "refactor(api): move cache keys to bounded contexts"
 ### Task 3: Replace all central CacheKeys consumers
 
 **Files:**
+
 - Modify: `apps/api/src/shared/infrastructure/cache/cache.service.ts`
 - Modify: `apps/api/src/daily-completion/infrastructure/adapters/daily-completion-cache.adapter.ts`
 - Modify: `apps/api/src/notification/infrastructure/adapters/push-dispatcher.adapter.ts`
@@ -109,6 +122,7 @@ git commit -m "refactor(api): move cache keys to bounded contexts"
 - Delete: `apps/api/src/shared/infrastructure/cache/constants/cache-keys.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 builders.
 - Produces: no production reference to the deleted central registry.
 
@@ -143,12 +157,14 @@ git commit -m "refactor(api): use bounded cache key builders"
 ### Task 4: Standardize dedup, lock, throttle, and documentation
 
 **Files:**
+
 - Modify: `apps/api/src/shared/infrastructure/dedup/constants/dedup-keys.ts`
 - Modify: dedup and lock call sites found by `rg -n "dedup|lock" apps/api/src`.
 - Modify: `apps/api/.claude/architecture.md`
 - Modify: `apps/api/AGENTS.md`
 
 **Interfaces:**
+
 - Consumes: shared keyspace primitive and bounded-context builders.
 - Produces: the same `aido:v1` prefix for cache, dedup, lock, and rate-limit keys.
 

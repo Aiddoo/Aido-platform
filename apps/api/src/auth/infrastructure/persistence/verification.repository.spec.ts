@@ -20,6 +20,7 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { TestBed } from "@suites/unit";
 import { VerificationBuilder } from "@test/builders";
 import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+
 import { type Verification, VerificationType } from "@/generated/prisma/client";
 import { DatabaseService } from "@/shared/infrastructure/database";
 
@@ -30,10 +31,7 @@ describe("VerificationRepository — 인증 코드 리포지토리", () => {
 	let db: MockPrismaClient;
 	let baseDb: MockPrismaClient;
 
-	const mockVerification = VerificationBuilder.create(
-		"user-123",
-		VerificationType.EMAIL_VERIFY,
-	)
+	const mockVerification = VerificationBuilder.create("user-123", VerificationType.EMAIL_VERIFY)
 		.withId(1)
 		.withToken("hashed-token-123")
 		.withExpiresAt(new Date("2025-12-31T23:59:59Z"))
@@ -45,9 +43,7 @@ describe("VerificationRepository — 인증 코드 리포지토리", () => {
 		baseDb = createMockPrisma();
 
 		const { unit } = await TestBed.solitary(VerificationRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
-				TransactionHost,
-			)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
 			.impl(() => ({ tx: db }))
 			.mock(DatabaseService)
 			.impl(() => baseDb)
@@ -466,10 +462,7 @@ describe("VerificationRepository — 인증 코드 리포지토리", () => {
 			expect(result).toBe(10);
 			expect(baseDb.verification.deleteMany).toHaveBeenCalledWith({
 				where: {
-					OR: [
-						{ expiresAt: { lt: expect.any(Date) } },
-						{ usedAt: { not: null } },
-					],
+					OR: [{ expiresAt: { lt: expect.any(Date) } }, { usedAt: { not: null } }],
 				},
 			});
 		});

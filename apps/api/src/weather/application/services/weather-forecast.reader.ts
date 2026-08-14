@@ -1,12 +1,11 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import type { UserLocation } from "../../domain/entities/user-location.entity";
 import { getKmaBaseDateTime } from "../../domain/services/kma-base-datetime";
-import {
-	WEATHER_CACHE,
-	type WeatherCachePort,
-} from "../ports/weather-cache.port";
+import { WEATHER_CACHE, type WeatherCachePort } from "../ports/weather-cache.port";
 import {
 	WEATHER_PROVIDER,
 	type WeatherForecast,
@@ -39,18 +38,10 @@ export class WeatherForecastReader {
 	) {}
 
 	/** 단일 위치의 예보를 조회한다 (캐시 → 프로바이더 → latest 폴백 → WEATHER_1901). */
-	async fetchForLocation(
-		location: UserLocation,
-		date: Date,
-	): Promise<WeatherForecast> {
+	async fetchForLocation(location: UserLocation, date: Date): Promise<WeatherForecast> {
 		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 
-		const cached = await this.cache.getForecast(
-			location.gridX,
-			location.gridY,
-			baseDate,
-			baseTime,
-		);
+		const cached = await this.cache.getForecast(location.gridX, location.gridY, baseDate, baseTime);
 		if (cached) {
 			return cached;
 		}
@@ -63,13 +54,7 @@ export class WeatherForecastReader {
 			);
 
 			// 성공 시 정규 캐시 (3h) + latest 캐시 (24h) 모두 저장
-			await this.cache.saveForecast(
-				location.gridX,
-				location.gridY,
-				baseDate,
-				baseTime,
-				forecast,
-			);
+			await this.cache.saveForecast(location.gridX, location.gridY, baseDate, baseTime, forecast);
 
 			return forecast;
 		} catch (error) {
@@ -78,14 +63,9 @@ export class WeatherForecastReader {
 			);
 		}
 
-		const latest = await this.cache.getLatestForecast(
-			location.gridX,
-			location.gridY,
-		);
+		const latest = await this.cache.getLatestForecast(location.gridX, location.gridY);
 		if (latest) {
-			this.#logger.warn(
-				`Using latest fallback for grid ${location.gridX}:${location.gridY}`,
-			);
+			this.#logger.warn(`Using latest fallback for grid ${location.gridX}:${location.gridY}`);
 			return latest;
 		}
 
@@ -96,10 +76,7 @@ export class WeatherForecastReader {
 	 * 여러 격자의 예보를 배치 조회한다 (N+1 방지: 1회 mget → 미스만 병렬 호출 → mset).
 	 * 실패 격자는 latest 캐시로 폴백한다.
 	 */
-	async fetchBatch(
-		grids: GridInput[],
-		date: Date,
-	): Promise<Map<string, WeatherForecast>> {
+	async fetchBatch(grids: GridInput[], date: Date): Promise<Map<string, WeatherForecast>> {
 		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 		const result = new Map<string, WeatherForecast>();
 
@@ -166,9 +143,7 @@ export class WeatherForecastReader {
 
 		// 실패 항목 latest fallback 조회
 		if (latestFallbackTargets.length > 0) {
-			const fallbackCached = await this.cache.getLatestForecastBatch(
-				latestFallbackTargets,
-			);
+			const fallbackCached = await this.cache.getLatestForecastBatch(latestFallbackTargets);
 
 			for (const [j, miss] of latestFallbackTargets.entries()) {
 				const fallback = fallbackCached[j];
@@ -181,9 +156,7 @@ export class WeatherForecastReader {
 			}
 		}
 
-		this.#logger.log(
-			`Weather batch: ${grids.length} grids, ${misses.length} cache misses`,
-		);
+		this.#logger.log(`Weather batch: ${grids.length} grids, ${misses.length} cache misses`);
 
 		return result;
 	}

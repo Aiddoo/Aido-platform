@@ -10,6 +10,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 import { createTodoReadRepositoryMock } from "@test/mocks/ports";
+
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	TODO_READ_REPOSITORY,
@@ -32,8 +33,7 @@ describe("GetTodoByIdUseCase — 단일 Todo 조회", () => {
 			.compile();
 
 		useCase = unit;
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 	});
 
 	it("소유자 스코프로 조회한 read model을 그대로 반환한다", async () => {
@@ -45,10 +45,7 @@ describe("GetTodoByIdUseCase — 단일 Todo 조회", () => {
 		const result = await useCase.execute({ id: 42, userId: "user-123" });
 
 		// Then - id·userId를 그대로 저장소에 위임하고 결과를 손대지 않는다
-		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(
-			42,
-			"user-123",
-		);
+		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(42, "user-123");
 		expect(result).toBe(todo);
 	});
 
@@ -57,8 +54,8 @@ describe("GetTodoByIdUseCase — 단일 Todo 조회", () => {
 		todoReadRepository.findByIdAndUserId.mockResolvedValue(null);
 
 		// When & Then
-		await expect(
-			useCase.execute({ id: 999, userId: "user-123" }),
-		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+		await expect(useCase.execute({ id: 999, userId: "user-123" })).rejects.toMatchObject({
+			errorCode: ErrorCode.TODO_0801,
+		});
 	});
 });

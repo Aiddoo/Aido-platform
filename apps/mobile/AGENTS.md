@@ -8,21 +8,21 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ## 문서 가이드
 
-| 상황 | 읽을 문서 |
-|------|----------|
-| 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md) |
-| 테스트 작성 (DI + jest.fn() 레이어별) | [.claude/testing-guide.md](.claude/testing-guide.md) |
-| UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN) | [.claude/ui-components.md](.claude/ui-components.md) |
-| 다국어 / 문자열 추가 (i18n, ko+en 카탈로그) | [.claude/i18n-guide.md](.claude/i18n-guide.md) |
-| 인증 상태 · 토큰 · 로그인 플로우 | [docs/authentication_guide.md](docs/authentication_guide.md) |
-| OAuth · 소셜 로그인 구현 | [.claude/oauth-client-guide.md](.claude/oauth-client-guide.md) |
-| 홈 화면 위젯 (iOS WidgetKit / Android AppWidget) | [.claude/widgets.md](.claude/widgets.md) |
-| 에러 처리 (Result, ApiError, BusinessError) | [docs/error-handling.md](docs/error-handling.md) |
-| 관측 (Analytics · Sentry · Breadcrumb · Severity) | [.claude/observability.md](.claude/observability.md) |
-| 테스트 전략 (단위/통합) | [docs/testing-strategy.md](docs/testing-strategy.md) |
-| EAS 빌드 | [docs/eas-build-guide.md](docs/eas-build-guide.md) |
-| EAS Secrets 관리 | [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md) |
-| 배포 (EAS, App Store / Play) | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| 상황                                                           | 읽을 문서                                                      |
+| -------------------------------------------------------------- | -------------------------------------------------------------- |
+| 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md)             |
+| 테스트 작성 (DI + jest.fn() 레이어별)                          | [.claude/testing-guide.md](.claude/testing-guide.md)           |
+| UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN)       | [.claude/ui-components.md](.claude/ui-components.md)           |
+| 다국어 / 문자열 추가 (i18n, ko+en 카탈로그)                    | [.claude/i18n-guide.md](.claude/i18n-guide.md)                 |
+| 인증 상태 · 토큰 · 로그인 플로우                               | [docs/authentication_guide.md](docs/authentication_guide.md)   |
+| OAuth · 소셜 로그인 구현                                       | [.claude/oauth-client-guide.md](.claude/oauth-client-guide.md) |
+| 홈 화면 위젯 (iOS WidgetKit / Android AppWidget)               | [.claude/widgets.md](.claude/widgets.md)                       |
+| 에러 처리 (Result, ApiError, BusinessError)                    | [docs/error-handling.md](docs/error-handling.md)               |
+| 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)           |
+| 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)           |
+| EAS 빌드                                                       | [docs/eas-build-guide.md](docs/eas-build-guide.md)             |
+| EAS Secrets 관리                                               | [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md)                     |
+| 배포 (EAS, App Store / Play)                                   | [DEPLOYMENT.md](DEPLOYMENT.md)                                 |
 
 ---
 
@@ -96,15 +96,15 @@ features/{feature}/
 
 ## 파일 네이밍 규칙
 
-| 파일 유형 | 패턴 |
-|----------|------|
-| 모델 | `{feature}.model.ts` |
-| 에러 | `{feature}.error.ts` |
-| 서비스 | `{feature}.service.ts` |
-| 매퍼 | `{feature}.mapper.ts` (services/ 하위) |
-| Query Options | `use-{action}-query-options.ts` |
-| Mutation Options | `use-{action}-mutation-options.ts` |
-| Query Keys | `{feature}-query-keys.constant.ts` |
+| 파일 유형        | 패턴                                   |
+| ---------------- | -------------------------------------- |
+| 모델             | `{feature}.model.ts`                   |
+| 에러             | `{feature}.error.ts`                   |
+| 서비스           | `{feature}.service.ts`                 |
+| 매퍼             | `{feature}.mapper.ts` (services/ 하위) |
+| Query Options    | `use-{action}-query-options.ts`        |
+| Mutation Options | `use-{action}-mutation-options.ts`     |
+| Query Keys       | `{feature}-query-keys.constant.ts`     |
 
 ---
 

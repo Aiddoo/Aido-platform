@@ -3,9 +3,9 @@ import { Module } from "@nestjs/common";
 import { FollowModule } from "@/follow/follow.module";
 import { NotificationModule } from "@/notification/notification.module";
 
-import { CHEER_REPOSITORY } from "./application/ports/cheer.repository.port";
 import { CHEER_LIMIT_READER } from "./application/ports/cheer-limit-reader.port";
 import { CHEER_NOTIFIER } from "./application/ports/cheer-notifier.port";
+import { CHEER_REPOSITORY } from "./application/ports/cheer.repository.port";
 import { CheerReader } from "./application/services/cheer.reader";
 import { MarkCheerReadUseCase } from "./application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
 import { MarkManyCheersReadUseCase } from "./application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";

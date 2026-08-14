@@ -1,6 +1,8 @@
 import { asDep } from "@test/mocks";
+
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { PrismaRetentionRepository } from "@/retention/infrastructure/persistence/prisma-retention.repository";
+
 import { TestDatabase } from "../setup/test-database";
 
 describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
@@ -172,15 +174,13 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 		expect(invalidTimezoneCandidates).toHaveLength(4);
 		expect(
 			invalidTimezoneCandidates.every(
-				(candidate) =>
-					candidate.timezone === "UTC" && candidate.todoCount === 1,
+				(candidate) => candidate.timezone === "UTC" && candidate.todoCount === 1,
 			),
 		).toBe(true);
 		expect(aliasTimezoneCandidates).toHaveLength(4);
 		expect(
 			aliasTimezoneCandidates.every(
-				(candidate) =>
-					candidate.timezone === "US/Eastern" && candidate.todoCount === 1,
+				(candidate) => candidate.timezone === "US/Eastern" && candidate.todoCount === 1,
 			),
 		).toBe(true);
 	});
@@ -213,15 +213,14 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 		).rejects.toThrow("force rollback");
 		activeClient = prisma;
 
-		const [storedStage, notifications, dispatches, outboxes] =
-			await Promise.all([
-				prisma.retentionExperimentStage.findUniqueOrThrow({
-					where: { id: stage.id },
-				}),
-				prisma.notification.count({ where: { userId } }),
-				prisma.pushDispatch.count({ where: { userId } }),
-				prisma.retentionPushOutbox.count(),
-			]);
+		const [storedStage, notifications, dispatches, outboxes] = await Promise.all([
+			prisma.retentionExperimentStage.findUniqueOrThrow({
+				where: { id: stage.id },
+			}),
+			prisma.notification.count({ where: { userId } }),
+			prisma.pushDispatch.count({ where: { userId } }),
+			prisma.retentionPushOutbox.count(),
+		]);
 		expect(storedStage.status).toBe("SCHEDULED");
 		expect([notifications, dispatches, outboxes]).toEqual([0, 0, 0]);
 	});

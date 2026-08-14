@@ -1,5 +1,6 @@
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
+
 import { PAGINATION_DEFAULT } from "@/shared/application/pagination/constants/pagination.constant";
 
 const paginationSchema = z.object({
@@ -24,9 +25,7 @@ const stringCursorPaginationSchema = z.object({
 		.default(PAGINATION_DEFAULT.SIZE),
 });
 
-export class StringCursorPaginationDto extends createZodDto(
-	stringCursorPaginationSchema,
-) {}
+export class StringCursorPaginationDto extends createZodDto(stringCursorPaginationSchema) {}
 
 const numberCursorPaginationSchema = z.object({
 	cursor: z.coerce.number().int().min(1).optional(),
@@ -38,6 +37,4 @@ const numberCursorPaginationSchema = z.object({
 		.default(PAGINATION_DEFAULT.SIZE),
 });
 
-export class NumberCursorPaginationDto extends createZodDto(
-	numberCursorPaginationSchema,
-) {}
+export class NumberCursorPaginationDto extends createZodDto(numberCursorPaginationSchema) {}

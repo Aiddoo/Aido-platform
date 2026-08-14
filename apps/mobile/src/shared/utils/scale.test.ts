@@ -1,4 +1,5 @@
 import { PixelRatio } from 'react-native';
+
 import { fontScaledSize } from './scale';
 
 jest.mock('react-native', () => ({

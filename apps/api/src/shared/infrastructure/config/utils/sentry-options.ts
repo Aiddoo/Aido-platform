@@ -37,9 +37,7 @@ export interface SentryInstrumentOptions {
 /** process.env 호환 — 필요한 키(APP_ENV/NODE_ENV/SENTRY_*)만 읽는다 */
 type SentryEnvSource = Record<string, string | undefined>;
 
-export function resolveSentryOptions(
-	env: SentryEnvSource,
-): SentryInstrumentOptions {
+export function resolveSentryOptions(env: SentryEnvSource): SentryInstrumentOptions {
 	const environment = resolveAppEnvironment(env);
 	const isProduction = environment === "production";
 

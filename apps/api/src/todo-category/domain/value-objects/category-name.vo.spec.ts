@@ -1,4 +1,5 @@
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { CategoryName } from "./category-name.vo";
 
 describe("CategoryName", () => {

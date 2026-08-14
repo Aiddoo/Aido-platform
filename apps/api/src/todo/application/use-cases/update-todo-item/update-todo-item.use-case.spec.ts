@@ -14,20 +14,19 @@ import {
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { Todo } from "../../../domain/entities/todo.aggregate";
+
 import { TodoItem } from "../../../domain/entities/todo-item.entity";
+import { Todo } from "../../../domain/entities/todo.aggregate";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
-import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
 import { UpdateTodoItemUseCase } from "./update-todo-item.use-case";
 
 function buildItem(id: number): TodoItem {
@@ -65,9 +64,7 @@ function buildEntity(items: TodoItem[]): Todo {
 }
 
 function buildResponse(): TodoResponse {
-	return TodoMapper.toResponse(
-		TodoBuilder.create("user-123").withId(1).build(),
-	);
+	return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
 }
 
 describe("UpdateTodoItemUseCase — 하위 항목 수정 핸들러", () => {
@@ -87,15 +84,12 @@ describe("UpdateTodoItemUseCase — 하위 항목 수정 핸들러", () => {
 
 		useCase = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
-		todoReadRepository =
-			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 	});
 
 	it("항목 제목·완료 상태를 수정하고 부모를 재조회한다", async () => {
 		// Given
-		todoRepository.findByIdAndUserId.mockResolvedValue(
-			buildEntity([buildItem(10)]),
-		);
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity([buildItem(10)]));
 		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
 
 		// When
@@ -116,9 +110,7 @@ describe("UpdateTodoItemUseCase — 하위 항목 수정 핸들러", () => {
 
 	it("항목이 부모에 없으면 ApplicationException(TODO_0822)을 던진다", async () => {
 		// Given - 다른 항목만 보유
-		todoRepository.findByIdAndUserId.mockResolvedValue(
-			buildEntity([buildItem(10)]),
-		);
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity([buildItem(10)]));
 
 		// When & Then
 		await expect(

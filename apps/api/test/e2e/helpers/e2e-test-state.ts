@@ -21,12 +21,7 @@ export function createE2eTestStateResetter({
 	sharedResetters,
 	additionalResetters = [],
 }: E2eTestStateDependencies): () => Promise<void> {
-	const nonDatabaseResetters = [
-		resetCache,
-		flushRedis,
-		...sharedResetters,
-		...additionalResetters,
-	];
+	const nonDatabaseResetters = [resetCache, flushRedis, ...sharedResetters, ...additionalResetters];
 
 	return async () => {
 		const errors: Error[] = [];
@@ -42,9 +37,7 @@ export function createE2eTestStateResetter({
 		// 오염이 다음 테스트로 전파되어 실패가 연쇄된다. drain 에러는 아래
 		// AggregateError로 함께 보고되므로 은폐되지 않는다.
 		const resetters = [cleanupDatabase, ...nonDatabaseResetters];
-		const results = await Promise.allSettled(
-			resetters.map(async (resetter) => resetter()),
-		);
+		const results = await Promise.allSettled(resetters.map(async (resetter) => resetter()));
 		errors.push(
 			...results.flatMap((result) =>
 				result.status === "rejected" ? [normalizeError(result.reason)] : [],

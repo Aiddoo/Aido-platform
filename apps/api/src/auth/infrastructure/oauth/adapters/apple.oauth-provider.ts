@@ -35,10 +35,7 @@ export class AppleOAuthProvider implements OAuthIdentityProvider {
 		return this.#verifier.verifyAppleToken(idToken, nonce);
 	}
 
-	buildLoginOptions(
-		verifiedProfile: VerifiedProfile,
-		userName?: string,
-	): SocialLoginOptions {
+	buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
 		return {
 			userName,
 			emailVerified: verifiedProfile.emailVerified,

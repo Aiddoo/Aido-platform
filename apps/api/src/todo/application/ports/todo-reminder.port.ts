@@ -15,11 +15,7 @@ export interface TodoReminderPort {
 	 * 리마인더 등록 — 같은 todoId로 재호출 시 기존 예약을 대체합니다.
 	 * 기존 예약 취소나 새 작업 등록 실패는 reject됩니다.
 	 */
-	scheduleReminder(
-		todoId: number,
-		scheduledTime: Date,
-		userId: string,
-	): Promise<void>;
+	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void>;
 
 	/**
 	 * 리마인더 취소.

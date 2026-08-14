@@ -12,7 +12,9 @@
 import { ConfigService } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { z } from "zod";
+
 import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+
 import { GeminiAiAdapter } from "./gemini-ai.adapter";
 
 // Vercel AI SDK mock
@@ -43,10 +45,7 @@ const mockConfigService = {
 
 async function createProvider(): Promise<GeminiAiAdapter> {
 	const module: TestingModule = await Test.createTestingModule({
-		providers: [
-			GeminiAiAdapter,
-			{ provide: ConfigService, useValue: mockConfigService },
-		],
+		providers: [GeminiAiAdapter, { provide: ConfigService, useValue: mockConfigService }],
 	}).compile();
 
 	return module.get<GeminiAiAdapter>(GeminiAiAdapter);
@@ -141,9 +140,7 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 					maxOutputTokens: 200,
 				}),
 			);
-			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty(
-				"temperature",
-			);
+			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty("temperature");
 			expect(result.output).toEqual({
 				title: "테스트 할 일",
 				startDate: "2025-01-26",
@@ -179,9 +176,7 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 					maxOutputTokens: 150,
 				}),
 			);
-			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty(
-				"temperature",
-			);
+			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty("temperature");
 		});
 
 		it("generateObject 에러를 전파한다", async () => {
@@ -204,9 +199,7 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 		it("429 에러 시 aiRateLimitExceeded BusinessException을 던진다", async () => {
 			// Given - generateObject가 429 에러를 던짐
 			const { generateObject, APICallError } = require("ai");
-			generateObject.mockRejectedValue(
-				new APICallError("Rate limit exceeded", 429),
-			);
+			generateObject.mockRejectedValue(new APICallError("Rate limit exceeded", 429));
 
 			mockConfigService.get.mockReturnValue("test-api-key");
 			const provider = await createProvider();
@@ -223,9 +216,7 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 		it("429가 아닌 APICallError는 그대로 전파한다", async () => {
 			// Given - generateObject가 500 에러를 던짐
 			const { generateObject, APICallError } = require("ai");
-			generateObject.mockRejectedValue(
-				new APICallError("Internal server error", 500),
-			);
+			generateObject.mockRejectedValue(new APICallError("Internal server error", 500));
 
 			mockConfigService.get.mockReturnValue("test-api-key");
 			const provider = await createProvider();

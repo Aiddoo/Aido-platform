@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+
 import { WeeklyAchievementWriterAccess } from "./application/access/weekly-achievement-writer.access";
 import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "./application/ports/weekly-achievement.repository.port";
 import { WeeklyAchievementQueryUseCases } from "./application/queries";
@@ -22,9 +23,8 @@ import { WeeklyAchievementController } from "./presentation/weekly-achievement.c
 		{
 			provide: WeeklyAchievementWriterAccess,
 			inject: [UpsertWeeklyAchievementsUseCase],
-			useFactory: (
-				upsertWeeklyAchievementsUseCase: UpsertWeeklyAchievementsUseCase,
-			) => new WeeklyAchievementWriterAccess(upsertWeeklyAchievementsUseCase),
+			useFactory: (upsertWeeklyAchievementsUseCase: UpsertWeeklyAchievementsUseCase) =>
+				new WeeklyAchievementWriterAccess(upsertWeeklyAchievementsUseCase),
 		},
 		{
 			provide: WEEKLY_ACHIEVEMENT_REPOSITORY,

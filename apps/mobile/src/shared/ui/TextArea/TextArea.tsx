@@ -2,6 +2,7 @@ import { cn } from '@src/shared/utils/cn';
 import { forwardRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
+
 import { Text } from '../Text/Text';
 import { VStack } from '../VStack/VStack';
 import type { TextAreaInternalProps } from './TextArea.types';

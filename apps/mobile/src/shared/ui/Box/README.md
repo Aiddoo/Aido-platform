@@ -22,32 +22,32 @@ import { Box } from '@src/shared/ui/Box/Box';
 
 ### 기본 Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `className` | `string` | - | Tailwind 클래스 |
-| `style` | `ViewStyle` | - | 인라인 스타일 |
-| `testID` | `string` | - | 테스트용 ID |
+| Prop        | 타입        | 기본값 | 설명            |
+| ----------- | ----------- | ------ | --------------- |
+| `className` | `string`    | -      | Tailwind 클래스 |
+| `style`     | `ViewStyle` | -      | 인라인 스타일   |
+| `testID`    | `string`    | -      | 테스트용 ID     |
 
 ### Spacing Props
 
-| Prop | 타입 | 설명 |
-|------|------|------|
-| `flex` | `number` | flex 값 |
-| `gap` | `number` | 자식 요소 간격 (px) |
-| `p` | `number` | padding 전체 |
-| `px` | `number` | padding 좌우 |
-| `py` | `number` | padding 상하 |
-| `pt` | `number` | padding 상단 |
-| `pb` | `number` | padding 하단 |
-| `pl` | `number` | padding 좌측 |
-| `pr` | `number` | padding 우측 |
-| `m` | `number` | margin 전체 |
-| `mx` | `number` | margin 좌우 |
-| `my` | `number` | margin 상하 |
-| `mt` | `number` | margin 상단 |
-| `mb` | `number` | margin 하단 |
-| `ml` | `number` | margin 좌측 |
-| `mr` | `number` | margin 우측 |
+| Prop   | 타입     | 설명                |
+| ------ | -------- | ------------------- |
+| `flex` | `number` | flex 값             |
+| `gap`  | `number` | 자식 요소 간격 (px) |
+| `p`    | `number` | padding 전체        |
+| `px`   | `number` | padding 좌우        |
+| `py`   | `number` | padding 상하        |
+| `pt`   | `number` | padding 상단        |
+| `pb`   | `number` | padding 하단        |
+| `pl`   | `number` | padding 좌측        |
+| `pr`   | `number` | padding 우측        |
+| `m`    | `number` | margin 전체         |
+| `mx`   | `number` | margin 좌우         |
+| `my`   | `number` | margin 상하         |
+| `mt`   | `number` | margin 상단         |
+| `mb`   | `number` | margin 하단         |
+| `ml`   | `number` | margin 좌측         |
+| `mr`   | `number` | margin 우측         |
 
 ## 예시
 

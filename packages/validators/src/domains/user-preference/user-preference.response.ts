@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { TIME_FORMATS, USER_PREFERENCE_DEFAULTS } from './user-preference.constants';
 
 export const userPreferenceSchema = z

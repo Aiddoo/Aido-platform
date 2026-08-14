@@ -4,10 +4,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
 import { UserTag } from "../../../domain/value-objects/user-tag.vo";
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 import {
 	type SendFriendRequestResult,
 	SendFriendRequestUseCase,
@@ -30,13 +27,9 @@ export class SendFriendRequestByTagUseCase {
 		private readonly sendFriendRequest: SendFriendRequestUseCase,
 	) {}
 
-	async execute(
-		input: SendFriendRequestByTagInput,
-	): Promise<SendFriendRequestResult> {
+	async execute(input: SendFriendRequestByTagInput): Promise<SendFriendRequestResult> {
 		const targetTag = UserTag.of(input.targetUserTag);
-		const targetUser = await this.followRepository.findUserByTag(
-			targetTag.value,
-		);
+		const targetUser = await this.followRepository.findUserByTag(targetTag.value);
 		if (!targetUser) {
 			throw new ApplicationException(ErrorCode.FOLLOW_0905, {
 				userTag: input.targetUserTag,

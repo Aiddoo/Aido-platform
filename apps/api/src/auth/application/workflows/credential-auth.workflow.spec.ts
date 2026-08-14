@@ -14,13 +14,12 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder, UserBuilder } from "@test/builders";
 import { asDep, asMock, mockOf } from "@test/mocks";
-import {
-	REVOKE_REASON,
-	SECURITY_EVENT,
-} from "@/auth/domain/constants/auth.constants";
+
+import { REVOKE_REASON, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import {
 	AUTH_CACHE,
 	AUTH_REGISTRATION_NOTIFIER,
@@ -46,10 +45,7 @@ import {
 	type AuthSessionRepositoryPort,
 	type AuthUserRepositoryPort,
 } from "../ports/auth-persistence.port";
-import {
-	RETENTION_ENROLLER,
-	type RetentionEnrollerPort,
-} from "../ports/retention-enroller.port";
+import { RETENTION_ENROLLER, type RetentionEnrollerPort } from "../ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
 import { SessionService } from "../services/session.service";
 import { VerificationService } from "../services/verification.service";
@@ -82,9 +78,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 	beforeEach(async () => {
 		// Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(
-			CredentialAuthWorkflow,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(CredentialAuthWorkflow).compile();
 
 		service = unit;
 		userRepo = unitRef.get(AUTH_USER_REPOSITORY);
@@ -110,9 +104,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asDep(securityLogRepo),
 			asDep(userRepo),
 		);
-		issueLogin.execute.mockImplementation((input) =>
-			realIssueLogin.execute(input),
-		);
+		issueLogin.execute.mockImplementation((input) => realIssueLogin.execute(input));
 
 		// ProvisionUserUseCase(프로비저닝 수렴)도 실제 인스턴스로 위임 — register 테스트가
 		// 유저·계정·프로필 생성과 기본값 시딩 호출을 그대로 검증하도록 배선.
@@ -132,9 +124,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			seederStub,
 			retentionStub,
 		);
-		provisionUser.execute.mockImplementation((input) =>
-			realProvisionUser.execute(input),
-		);
+		provisionUser.execute.mockImplementation((input) => realProvisionUser.execute(input));
 	});
 
 	describe("register", () => {
@@ -188,16 +178,11 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("이미 존재하는 이메일이면 에러를 던진다", async () => {
 			// Given
-			const existingUser = UserBuilder.create()
-				.withEmail(registerInput.email)
-				.verified()
-				.build();
+			const existingUser = UserBuilder.create().withEmail(registerInput.email).verified().build();
 			userRepo.findByEmail.mockResolvedValue(existingUser);
 
 			// When & Then
-			await expect(service.register(registerInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.register(registerInput)).rejects.toThrow(ApplicationException);
 		});
 
 		it("비밀번호를 해시하여 저장한다", async () => {
@@ -279,9 +264,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("P2002 unique constraint(이메일 중복) 시 emailAlreadyRegistered를 던져야 한다", async () => {
 			// Given - 트랜잭션에서 P2002 발생 (동시 가입 race condition)
-			uow.run.mockRejectedValue(
-				new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS"),
-			);
+			uow.run.mockRejectedValue(new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS"));
 
 			// When & Then
 			await expect(service.register(registerInput)).rejects.toThrow(
@@ -297,9 +280,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			uow.run.mockRejectedValue(prismaError);
 
 			// When & Then - emailAlreadyRegistered가 아닌 원본 에러가 던져져야 함
-			await expect(service.register(registerInput)).rejects.toThrow(
-				prismaError,
-			);
+			await expect(service.register(registerInput)).rejects.toThrow(prismaError);
 		});
 
 		it("이메일 전송 실패해도 회원가입은 성공한다", async () => {
@@ -390,9 +371,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			// Then
 			expect(result.userId).toBe(mockUser.id);
 			expect(result.tokens).toEqual(mockTokens);
-			expect(retentionEnroller.activateNewUser).toHaveBeenCalledWith(
-				mockUser.id,
-			);
+			expect(retentionEnroller.activateNewUser).toHaveBeenCalledWith(mockUser.id);
 		});
 
 		it("존재하지 않는 이메일이면 에러를 던진다", async () => {
@@ -400,23 +379,16 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findByEmail.mockResolvedValue(null);
 
 			// When & Then
-			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(ApplicationException);
 		});
 
 		it("이미 인증된 사용자면 에러를 던진다", async () => {
 			// Given
-			const verifiedUser = UserBuilder.create()
-				.withEmail(verifyInput.email)
-				.verified()
-				.build();
+			const verifiedUser = UserBuilder.create().withEmail(verifyInput.email).verified().build();
 			userRepo.findByEmail.mockResolvedValue(verifiedUser);
 
 			// When & Then
-			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(ApplicationException);
 		});
 
 		it("인증 성공 시 토큰을 발급한다", async () => {
@@ -486,9 +458,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
 
 			// When & Then
-			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(ApplicationException);
 			expect(verificationService.verifyCode).not.toHaveBeenCalled();
 		});
 	});
@@ -502,9 +472,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 		/**
 		 * 로그인 성공 시나리오 mock 설정 헬퍼
 		 */
-		const setupSuccessfulLogin = (
-			mockUser: ReturnType<typeof UserBuilder.prototype.build>,
-		) => {
+		const setupSuccessfulLogin = (mockUser: ReturnType<typeof UserBuilder.prototype.build>) => {
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
@@ -555,9 +523,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 			// When & Then
-			await expect(service.login(loginInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.login(loginInput)).rejects.toThrow(ApplicationException);
 			expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({ success: false }),
 			);
@@ -565,10 +531,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("잘못된 비밀번호면 에러를 던진다", async () => {
 			// Given
-			const mockUser = UserBuilder.create()
-				.withEmail(loginInput.email)
-				.verified()
-				.build();
+			const mockUser = UserBuilder.create().withEmail(loginInput.email).verified().build();
 
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(mockUser);
@@ -581,9 +544,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asMock(loginAttemptRepo.create).mockResolvedValue({});
 
 			// When & Then
-			await expect(service.login(loginInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.login(loginInput)).rejects.toThrow(ApplicationException);
 			expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({ success: false }),
 			);
@@ -606,9 +567,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			passwordService.verify.mockResolvedValue(true);
 
 			// When & Then
-			await expect(service.login(loginInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.login(loginInput)).rejects.toThrow(ApplicationException);
 		});
 
 		it("세션을 생성하고 보안 이벤트를 기록한다", async () => {
@@ -659,14 +618,10 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("로그인 시도 횟수 초과 시 에러를 던지고 ACCOUNT_LOCKED 보안 로그를 기록한다", async () => {
 			// Given
-			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(
-				LOGIN_ATTEMPT.MAX_FAILURES,
-			);
+			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(LOGIN_ATTEMPT.MAX_FAILURES);
 
 			// When & Then
-			await expect(service.login(loginInput)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.login(loginInput)).rejects.toThrow(ApplicationException);
 			expect(securityLogRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					event: SECURITY_EVENT.ACCOUNT_LOCKED,
@@ -680,10 +635,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("계정이 잠긴 상태면 에러를 던진다", async () => {
 			// Given - Builder로 잠긴 계정 생성
-			const lockedUser = UserBuilder.create()
-				.withEmail(loginInput.email)
-				.locked()
-				.build();
+			const lockedUser = UserBuilder.create().withEmail(loginInput.email).locked().build();
 
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(lockedUser);
@@ -705,9 +657,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("현재 세션을 비활성화한다", async () => {
 			// Given - Builder로 세션 생성
-			const mockSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.build();
+			const mockSession = SessionBuilder.create(userId).withId(sessionId).build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
 			asMock(sessionRepo.revoke).mockResolvedValue({});
@@ -718,18 +668,13 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			const result = await service.logout(userId, sessionId);
 
 			// Then
-			expect(sessionRepo.revoke).toHaveBeenCalledWith(
-				sessionId,
-				REVOKE_REASON.USER_LOGOUT,
-			);
+			expect(sessionRepo.revoke).toHaveBeenCalledWith(sessionId, REVOKE_REASON.USER_LOGOUT);
 			expect(result.message).toContain("로그아웃");
 		});
 
 		it("보안 이벤트를 기록한다", async () => {
 			// Given
-			const mockSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.build();
+			const mockSession = SessionBuilder.create(userId).withId(sessionId).build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
 			asMock(sessionRepo.revoke).mockResolvedValue({});
@@ -753,38 +698,27 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			sessionRepo.findById.mockResolvedValue(null);
 
 			// When & Then
-			await expect(service.logout(userId, sessionId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.logout(userId, sessionId)).rejects.toThrow(ApplicationException);
 		});
 
 		it("이미 폐기된 세션이면 에러를 던진다", async () => {
 			// Given - Builder로 폐기된 세션 생성
-			const revokedSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.revoked()
-				.build();
+			const revokedSession = SessionBuilder.create(userId).withId(sessionId).revoked().build();
 
 			sessionRepo.findById.mockResolvedValue(revokedSession);
 
 			// When & Then
-			await expect(service.logout(userId, sessionId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.logout(userId, sessionId)).rejects.toThrow(ApplicationException);
 		});
 
 		it("다른 사용자의 세션이면 에러를 던진다", async () => {
 			// Given
-			const otherUserSession = SessionBuilder.create("other-user")
-				.withId(sessionId)
-				.build();
+			const otherUserSession = SessionBuilder.create("other-user").withId(sessionId).build();
 
 			sessionRepo.findById.mockResolvedValue(otherUserSession);
 
 			// When & Then
-			await expect(service.logout(userId, sessionId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.logout(userId, sessionId)).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -1002,9 +936,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			};
 
 			// When & Then
-			await expect(
-				service.refreshTokens(refreshToken, payloadWithoutSession),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.refreshTokens(refreshToken, payloadWithoutSession)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("토큰 재사용이 감지되면 토큰 패밀리를 폐기한다", async () => {
@@ -1027,9 +961,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When & Then
-			await expect(
-				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.refreshTokens(refreshToken, verifiedPayload)).rejects.toThrow(
+				ApplicationException,
+			);
 
 			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
 				mockSession.tokenFamily,
@@ -1110,9 +1044,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When & Then
-			await expect(
-				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.refreshTokens(refreshToken, verifiedPayload)).rejects.toThrow(
+				ApplicationException,
+			);
 			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
 				reusedSession.tokenFamily,
 				REVOKE_REASON.TOKEN_REUSE_DETECTED,
@@ -1177,9 +1111,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			});
 
 			// When & Then
-			await expect(
-				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.refreshTokens(refreshToken, verifiedPayload)).rejects.toThrow(
+				ApplicationException,
+			);
 			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
 
 			jest.useRealTimers();
@@ -1187,10 +1121,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("폐기된 세션이면 에러를 던진다", async () => {
 			// Given
-			const revokedSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.revoked()
-				.build();
+			const revokedSession = SessionBuilder.create(userId).withId(sessionId).revoked().build();
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(revokedSession);
@@ -1202,17 +1133,14 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			});
 
 			// When & Then
-			await expect(
-				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.refreshTokens(refreshToken, verifiedPayload)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("만료된 세션이면 에러를 던진다", async () => {
 			// Given
-			const expiredSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.expired()
-				.build();
+			const expiredSession = SessionBuilder.create(userId).withId(sessionId).expired().build();
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(expiredSession);
@@ -1223,9 +1151,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			});
 
 			// When & Then
-			await expect(
-				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.refreshTokens(refreshToken, verifiedPayload)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("토큰 로테이션 실패 시 에러를 던진다", async () => {
@@ -1242,9 +1170,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			sessionRepo.rotateToken.mockResolvedValue(null);
 
 			// When & Then
-			await expect(
-				service.refreshTokens(refreshToken, verifiedPayload),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.refreshTokens(refreshToken, verifiedPayload)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 	});
 
@@ -1307,9 +1235,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			]);
 
 			// When & Then
-			await expect(
-				service.deleteAccount(userId, sessionId, {}, metadata),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.deleteAccount(userId, sessionId, {}, metadata)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("CREDENTIAL 계정: 비밀번호 불일치 시 USER_0602 에러", async () => {
@@ -1328,12 +1256,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 			// When & Then
 			await expect(
-				service.deleteAccount(
-					userId,
-					sessionId,
-					{ password: "WrongPassword123" },
-					metadata,
-				),
+				service.deleteAccount(userId, sessionId, { password: "WrongPassword123" }, metadata),
 			).rejects.toThrow(ApplicationException);
 		});
 
@@ -1358,12 +1281,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
-			const result = await service.deleteAccount(
-				userId,
-				sessionId,
-				{},
-				metadata,
-			);
+			const result = await service.deleteAccount(userId, sessionId, {}, metadata);
 
 			// Then
 			expect(result.message).toContain("탈퇴 처리되었습니다");
@@ -1372,17 +1290,13 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("이미 탈퇴한 계정 시도 시 USER_0606 에러", async () => {
 			// Given
-			const user = UserBuilder.create()
-				.withId(userId)
-				.verified()
-				.deleted()
-				.build();
+			const user = UserBuilder.create().withId(userId).verified().deleted().build();
 			userRepo.findById.mockResolvedValue(user);
 
 			// When & Then
-			await expect(
-				service.deleteAccount(userId, sessionId, {}, metadata),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.deleteAccount(userId, sessionId, {}, metadata)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("존재하지 않는 사용자 시 USER_0601 에러", async () => {
@@ -1390,9 +1304,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findById.mockResolvedValue(null);
 
 			// When & Then
-			await expect(
-				service.deleteAccount(userId, sessionId, {}, metadata),
-			).rejects.toThrow(ApplicationException);
+			await expect(service.deleteAccount(userId, sessionId, {}, metadata)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("트랜잭션 내 softDelete + revokeAllByUserId + securityLog 호출 확인", async () => {
@@ -1509,9 +1423,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				}),
 			);
 			// 캐시 무효화 확인
-			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
-				deletedUser.id,
-			);
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(deletedUser.id);
 		});
 	});
 
@@ -1566,9 +1478,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("특정 세션을 폐기한다", async () => {
 			// Given
-			const mockSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.build();
+			const mockSession = SessionBuilder.create(userId).withId(sessionId).build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
 			asMock(sessionRepo.revoke).mockResolvedValue({});
@@ -1579,18 +1489,13 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			const result = await service.revokeSession(userId, sessionId);
 
 			// Then
-			expect(sessionRepo.revoke).toHaveBeenCalledWith(
-				sessionId,
-				REVOKE_REASON.USER_REVOKE,
-			);
+			expect(sessionRepo.revoke).toHaveBeenCalledWith(sessionId, REVOKE_REASON.USER_REVOKE);
 			expect(result.message).toContain("세션이 종료되었습니다");
 		});
 
 		it("보안 로그를 기록한다", async () => {
 			// Given
-			const mockSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.build();
+			const mockSession = SessionBuilder.create(userId).withId(sessionId).build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
 			asMock(sessionRepo.revoke).mockResolvedValue({});
@@ -1615,23 +1520,17 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			sessionRepo.findById.mockResolvedValue(null);
 
 			// When & Then
-			await expect(service.revokeSession(userId, sessionId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.revokeSession(userId, sessionId)).rejects.toThrow(ApplicationException);
 		});
 
 		it("다른 사용자의 세션이면 에러를 던진다", async () => {
 			// Given
-			const otherUserSession = SessionBuilder.create("other-user")
-				.withId(sessionId)
-				.build();
+			const otherUserSession = SessionBuilder.create("other-user").withId(sessionId).build();
 
 			sessionRepo.findById.mockResolvedValue(otherUserSession);
 
 			// When & Then
-			await expect(service.revokeSession(userId, sessionId)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.revokeSession(userId, sessionId)).rejects.toThrow(ApplicationException);
 		});
 	});
 
@@ -1679,17 +1578,12 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 
 		it("이미 인증된 사용자면 에러를 던진다", async () => {
 			// Given
-			const verifiedUser = UserBuilder.create()
-				.withEmail(email)
-				.verified()
-				.build();
+			const verifiedUser = UserBuilder.create().withEmail(email).verified().build();
 
 			userRepo.findByEmail.mockResolvedValue(verifiedUser);
 
 			// When & Then
-			await expect(service.resendVerification(email)).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.resendVerification(email)).rejects.toThrow(ApplicationException);
 		});
 
 		it("이메일 전송 실패해도 재전송 요청은 성공한다", async () => {
@@ -1744,11 +1638,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asMock(cacheService.wrapUserProfile).mockResolvedValue(cachedProfile);
 
 			// When
-			const result = await service.getCurrentUser(
-				mockUser.id,
-				mockUser.email,
-				"session-123",
-			);
+			const result = await service.getCurrentUser(mockUser.id, mockUser.email, "session-123");
 
 			// Then
 			expect(result.userId).toBe(mockUser.id);
@@ -1792,11 +1682,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			asMock(cacheService.wrapUserProfile).mockResolvedValue(cachedProfile);
 
 			// When
-			const result = await service.getCurrentUser(
-				mockUser.id,
-				mockUser.email,
-				"session-123",
-			);
+			const result = await service.getCurrentUser(mockUser.id, mockUser.email, "session-123");
 
 			// Then
 			expect(result.providers).toEqual(["CREDENTIAL", "GOOGLE"]);
@@ -1872,10 +1758,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			await service.updateProfile(userId, updateData);
 
 			// Then - 호출 순서 검증
-			const updateCallOrder =
-				userRepo.updateProfile.mock.invocationCallOrder[0];
-			const invalidateCallOrder =
-				cacheService.invalidateUserProfile.mock.invocationCallOrder[0];
+			const updateCallOrder = userRepo.updateProfile.mock.invocationCallOrder[0];
+			const invalidateCallOrder = cacheService.invalidateUserProfile.mock.invocationCallOrder[0];
 			expect(invalidateCallOrder).toBeGreaterThan(updateCallOrder ?? 0);
 		});
 

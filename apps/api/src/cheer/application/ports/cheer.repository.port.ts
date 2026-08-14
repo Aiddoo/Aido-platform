@@ -42,10 +42,7 @@ export const CHEER_REPOSITORY = Symbol("CHEER_REPOSITORY");
 
 export interface CheerRepositoryPort {
 	findById(id: number): Promise<Cheer | null>;
-	findLastCheerToUser(
-		senderId: string,
-		receiverId: string,
-	): Promise<Cheer | null>;
+	findLastCheerToUser(senderId: string, receiverId: string): Promise<Cheer | null>;
 	markAsRead(id: number): Promise<void>;
 	markManyAsRead(ids: number[], receiverId: string): Promise<number>;
 
@@ -53,11 +50,7 @@ export interface CheerRepositoryPort {
 	findSentCheers(params: FindCheersParams): Promise<CheerWithRelations[]>;
 
 	countTodayCheers(senderId: string, date: Date): Promise<number>;
-	countSentSince(
-		senderId: string,
-		since: Date,
-		untilExclusive: Date,
-	): Promise<number>;
+	countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number>;
 	countReceived(userId: string): Promise<number>;
 	countSent(userId: string): Promise<number>;
 	countUnreadReceived(userId: string): Promise<number>;

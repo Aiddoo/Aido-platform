@@ -1,4 +1,5 @@
 import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+
 import { UserTag } from "./user-tag.vo";
 
 describe("UserTag VO", () => {

@@ -80,11 +80,7 @@ export class NudgeBuilder {
 		};
 	}
 
-	static create(
-		senderId: string,
-		receiverId: string,
-		todoId: number,
-	): NudgeBuilder {
+	static create(senderId: string, receiverId: string, todoId: number): NudgeBuilder {
 		return new NudgeBuilder(senderId, receiverId, todoId);
 	}
 
@@ -198,13 +194,7 @@ export class NudgeBuilder {
 	}
 
 	/** 여러 개 생성 */
-	static createMany(
-		senderId: string,
-		receiverId: string,
-		todoIds: number[],
-	): Nudge[] {
-		return todoIds.map((todoId) =>
-			NudgeBuilder.create(senderId, receiverId, todoId).build(),
-		);
+	static createMany(senderId: string, receiverId: string, todoIds: number[]): Nudge[] {
+		return todoIds.map((todoId) => NudgeBuilder.create(senderId, receiverId, todoId).build());
 	}
 }

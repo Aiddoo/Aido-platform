@@ -2,6 +2,7 @@ import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import ky, { type AfterResponseHook } from 'ky';
+
 import { pathnameOf } from './error-handler';
 import type { TokenRefresher } from './token-refresher';
 

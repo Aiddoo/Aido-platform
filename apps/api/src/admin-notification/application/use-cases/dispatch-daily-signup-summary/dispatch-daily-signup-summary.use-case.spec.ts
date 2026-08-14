@@ -26,9 +26,7 @@ describe("DispatchDailySignupSummaryUseCase", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers();
 
-		const { unit, unitRef } = await TestBed.solitary(
-			DispatchDailySignupSummaryUseCase,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(DispatchDailySignupSummaryUseCase).compile();
 		useCase = unit;
 		reader = unitRef.get(SIGNUP_STATS_READER);
 		queue = unitRef.get(ADMIN_NOTIFICATION_QUEUE_PORT);
@@ -96,9 +94,7 @@ describe("DispatchDailySignupSummaryUseCase", () => {
 		const notification = getNotification();
 		expect(notification?.body).toBe("전일 신규 가입은 0명입니다.");
 		expect(notification?.fields).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({ name: "전일 신규 가입", value: "0명" }),
-			]),
+			expect.arrayContaining([expect.objectContaining({ name: "전일 신규 가입", value: "0명" })]),
 		);
 	});
 

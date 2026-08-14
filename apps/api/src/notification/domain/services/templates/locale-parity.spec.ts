@@ -137,9 +137,7 @@ describe.each(TEMPLATE_GROUPS)("%s ko/en 동등성", (group) => {
 
 describe("SKY_LABEL_MAP / WEATHER_FALLBACK 동등성", () => {
 	it("SKY_LABEL_MAP 키 집합이 동일하다", () => {
-		expect(Object.keys(EN_SKY_LABEL_MAP).sort()).toEqual(
-			Object.keys(KO_SKY_LABEL_MAP).sort(),
-		);
+		expect(Object.keys(EN_SKY_LABEL_MAP).sort()).toEqual(Object.keys(KO_SKY_LABEL_MAP).sort());
 	});
 
 	it("WEATHER_FALLBACK 구조가 동일하다", () => {
@@ -174,17 +172,12 @@ describe("푸시 카피 품질 규칙", () => {
 				const texts = [
 					template.title,
 					template.body,
-					...(template.variants ?? []).flatMap((variant) => [
-						variant.title,
-						variant.body,
-					]),
+					...(template.variants ?? []).flatMap((variant) => [variant.title, variant.body]),
 				];
 				for (const phrase of forbiddenKoreanPhrases) {
 					expect({ group, key, phrase, texts }).toEqual(
 						expect.objectContaining({
-							texts: expect.not.arrayContaining([
-								expect.stringContaining(phrase),
-							]),
+							texts: expect.not.arrayContaining([expect.stringContaining(phrase)]),
 						}),
 					);
 				}
@@ -212,9 +205,9 @@ describe("푸시 카피 품질 규칙", () => {
 						expect(
 							pair.title.match(/\p{Extended_Pictographic}/gu)?.length ?? 0,
 						).toBeLessThanOrEqual(1);
-						expect(
-							pair.body.match(/\p{Extended_Pictographic}/gu)?.length ?? 0,
-						).toBeLessThanOrEqual(1);
+						expect(pair.body.match(/\p{Extended_Pictographic}/gu)?.length ?? 0).toBeLessThanOrEqual(
+							1,
+						);
 					}
 				}
 			}

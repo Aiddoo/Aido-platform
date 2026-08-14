@@ -1,6 +1,7 @@
 import { TEST_CUID } from "@test/fixtures";
 import { flushPromises } from "@test/mocks";
 import { FakeJobRuntime } from "@test/mocks/fake-job-runtime";
+
 import {
 	type ReminderHourChangedJobData,
 	TIMEZONE_REMINDER_QUEUE,
@@ -48,9 +49,9 @@ describe("TimezoneReminderQueueService — durable runtime", () => {
 		expect(runtime.enqueueCalls[0]).toMatchObject({
 			data: { name: TimezoneReminderJobName.SOCIAL_DIGEST },
 		});
-		expect(
-			runtime.enqueueCalls[0]?.options.startAfter?.getTime(),
-		).toBeGreaterThanOrEqual(before + 90 * 60 * 1000);
+		expect(runtime.enqueueCalls[0]?.options.startAfter?.getTime()).toBeGreaterThanOrEqual(
+			before + 90 * 60 * 1000,
+		);
 	});
 
 	it("매분 sweep 스케줄을 KST로 upsert한다", async () => {

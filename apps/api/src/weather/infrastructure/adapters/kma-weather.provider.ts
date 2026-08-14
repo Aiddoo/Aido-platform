@@ -1,16 +1,18 @@
 import { Injectable, Logger } from "@nestjs/common";
+
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { readJson } from "@/shared/infrastructure/http/read-json";
+
 import type {
 	WeatherForecast,
 	WeatherProvider,
 } from "../../application/ports/weather-provider.port";
 import { getKmaBaseDateTime } from "../../domain/services/kma-base-datetime";
 import { convertToGrid } from "../../domain/services/lambert-projection";
-import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants";
 import type { KmaApiResponse } from "./kma-response-parser";
 import { parseKmaResponse } from "./kma-response-parser";
+import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants";
 
 @Injectable()
 export class KmaWeatherProvider implements WeatherProvider {
@@ -19,11 +21,7 @@ export class KmaWeatherProvider implements WeatherProvider {
 
 	constructor(private readonly configService: TypedConfigService) {}
 
-	async getForecast(
-		lat: number,
-		lon: number,
-		date: Date,
-	): Promise<WeatherForecast> {
+	async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
 		const { nx, ny } = convertToGrid(lat, lon);
 		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 
@@ -42,9 +40,7 @@ export class KmaWeatherProvider implements WeatherProvider {
 		});
 
 		if (!response.ok) {
-			this.#logger.error(
-				`KMA API error: status=${response.status}, url=${url.pathname}`,
-			);
+			this.#logger.error(`KMA API error: status=${response.status}, url=${url.pathname}`);
 			throw BusinessExceptions.weatherServiceUnavailable({
 				status: response.status,
 			});

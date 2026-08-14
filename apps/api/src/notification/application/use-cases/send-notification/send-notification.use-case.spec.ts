@@ -9,25 +9,23 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NotificationBuilder } from "@test/builders";
+import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
 import {
 	createNotificationRepositoryMock,
 	createPushDispatcherMock,
 } from "@test/mocks/ports/notification.mock";
-import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import {
-	DuplicateNotificationError,
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import type { CreateNotificationData } from "../../ports/notification-data";
 import {
-	PUSH_DISPATCHER,
-	type PushDispatcherPort,
-} from "../../ports/push-dispatcher.port";
+	DuplicateNotificationError,
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
+import { PUSH_DISPATCHER, type PushDispatcherPort } from "../../ports/push-dispatcher.port";
 import { SendNotificationUseCase } from "./send-notification.use-case";
 
 const data: CreateNotificationData = {
@@ -56,17 +54,13 @@ describe("SendNotificationUseCase", () => {
 			.impl(() => createNotificationCacheMock())
 			.compile();
 		useCase = unit;
-		repository = unitRef.get<NotificationRepositoryPort>(
-			NOTIFICATION_REPOSITORY,
-		);
+		repository = unitRef.get<NotificationRepositoryPort>(NOTIFICATION_REPOSITORY);
 		pushDispatcher = unitRef.get<PushDispatcherPort>(PUSH_DISPATCHER);
 		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 	});
 
 	it("unique 제약 위반(P2002)이면 graceful skip으로 null을 반환하고 발송 단계를 건너뛴다", async () => {
-		repository.createNotification.mockRejectedValue(
-			new DuplicateNotificationError(),
-		);
+		repository.createNotification.mockRejectedValue(new DuplicateNotificationError());
 
 		const result = await useCase.execute(data);
 
@@ -83,9 +77,7 @@ describe("SendNotificationUseCase", () => {
 	});
 
 	it("자격 판단은 디스패처에 위임하고 생성 직후 디스패치를 예약한다", async () => {
-		const notification = NotificationBuilder.create(data.userId)
-			.withId(1)
-			.build();
+		const notification = NotificationBuilder.create(data.userId).withId(1).build();
 		repository.createNotification.mockResolvedValue(notification);
 		const result = await useCase.execute(data);
 
@@ -96,9 +88,7 @@ describe("SendNotificationUseCase", () => {
 	});
 
 	it("shouldSendPush가 true면 푸시를 발송하고 미읽음 카운트를 무효화한다", async () => {
-		const notification = NotificationBuilder.create(data.userId)
-			.withId(7)
-			.build();
+		const notification = NotificationBuilder.create(data.userId).withId(7).build();
 		repository.createNotification.mockResolvedValue(notification);
 		pushDispatcher.shouldSendPush.mockResolvedValue(true);
 

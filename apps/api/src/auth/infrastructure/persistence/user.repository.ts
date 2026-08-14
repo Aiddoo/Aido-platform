@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/errors";
-import { Injectable, Logger } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { Injectable, Logger } from "@nestjs/common";
+
 import { AuthPersistenceConflict } from "@/auth/application/ports/auth-persistence.port";
 import type {
 	AccountProvider,
@@ -17,6 +18,7 @@ import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
+
 import { generateUserTag } from "./user-tag.generator";
 
 export interface UserWithAccount {
@@ -58,9 +60,7 @@ export class UserRepository {
 	private static readonly MAX_USER_TAG_RETRIES = 5;
 
 	constructor(
-		private readonly txHost: TransactionHost<
-			TransactionalAdapterPrisma<DatabaseService>
-		>,
+		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
 	) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
@@ -74,9 +74,7 @@ export class UserRepository {
 		});
 	}
 
-	async findByEmailWithCredential(
-		email: string,
-	): Promise<UserWithAccount | null> {
+	async findByEmailWithCredential(email: string): Promise<UserWithAccount | null> {
 		return this.client.user.findUnique({
 			where: { email },
 			select: {
@@ -320,8 +318,7 @@ export class UserRepository {
 		// WHERE deletedAt not null 이 보장하지만 Prisma 타입은 Date|null 이므로
 		// 타입 가드 필터로 non-null을 좁힌다(캐스트 없이 정합).
 		return rows.filter(
-			(row): row is { id: string; email: string; deletedAt: Date } =>
-				row.deletedAt !== null,
+			(row): row is { id: string; email: string; deletedAt: Date } => row.deletedAt !== null,
 		);
 	}
 

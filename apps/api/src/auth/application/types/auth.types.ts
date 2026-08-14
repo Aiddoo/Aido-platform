@@ -1,5 +1,7 @@
 import type { SubscriptionStatus, UserRole } from "@aido/validators";
+
 import type { AccountProvider, UserStatus } from "@/auth/domain/types";
+
 import type { TokenPair } from "../ports/auth-crypto.port";
 
 /**

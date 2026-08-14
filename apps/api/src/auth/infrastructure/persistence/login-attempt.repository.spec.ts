@@ -15,6 +15,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { LoginAttemptBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
+
 import { DatabaseService } from "@/shared/infrastructure/database";
 
 import { LoginAttemptRepository } from "./login-attempt.repository";
@@ -40,9 +41,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(
-			LoginAttemptRepository,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(LoginAttemptRepository).compile();
 
 		repository = unit;
 		db = unitRef.get(DatabaseService);
@@ -136,10 +135,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 			db.loginAttempt.count.mockResolvedValue(3);
 
 			// When
-			const result = await repository.countRecentFailuresByEmail(
-				"user@example.com",
-				since,
-			);
+			const result = await repository.countRecentFailuresByEmail("user@example.com", since);
 
 			// Then
 			expect(result).toBe(3);
@@ -157,10 +153,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 			db.loginAttempt.count.mockResolvedValue(0);
 
 			// When
-			const result = await repository.countRecentFailuresByEmail(
-				"clean@example.com",
-				since,
-			);
+			const result = await repository.countRecentFailuresByEmail("clean@example.com", since);
 
 			// Then
 			expect(result).toBe(0);
@@ -175,10 +168,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 			db.loginAttempt.count.mockResolvedValue(5);
 
 			// When
-			const result = await repository.countRecentFailuresByIp(
-				"192.168.1.1",
-				since,
-			);
+			const result = await repository.countRecentFailuresByIp("192.168.1.1", since);
 
 			// Then
 			expect(result).toBe(5);
@@ -196,10 +186,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 			db.loginAttempt.count.mockResolvedValue(0);
 
 			// When
-			const result = await repository.countRecentFailuresByIp(
-				"10.0.0.1",
-				since,
-			);
+			const result = await repository.countRecentFailuresByIp("10.0.0.1", since);
 
 			// Then
 			expect(result).toBe(0);
@@ -212,8 +199,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 			db.loginAttempt.findFirst.mockResolvedValue(mockSuccessfulAttempt);
 
 			// When
-			const result =
-				await repository.findLastSuccessByEmail("user@example.com");
+			const result = await repository.findLastSuccessByEmail("user@example.com");
 
 			// Then
 			expect(result).toEqual(mockSuccessfulAttempt);
@@ -244,8 +230,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 			db.loginAttempt.findFirst.mockResolvedValue(mockFailedAttempt);
 
 			// When
-			const result =
-				await repository.findLastFailureByEmail("user@example.com");
+			const result = await repository.findLastFailureByEmail("user@example.com");
 
 			// Then
 			expect(result).toEqual(mockFailedAttempt);
@@ -263,8 +248,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 			db.loginAttempt.findFirst.mockResolvedValue(null);
 
 			// When
-			const result =
-				await repository.findLastFailureByEmail("clean@example.com");
+			const result = await repository.findLastFailureByEmail("clean@example.com");
 
 			// Then
 			expect(result).toBeNull();

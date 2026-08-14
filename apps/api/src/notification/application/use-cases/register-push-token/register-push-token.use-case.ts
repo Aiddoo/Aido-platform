@@ -1,20 +1,19 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import type { RegisterPushTokenData } from "../../ports/notification-data";
 import {
-	PUSH_PROVIDER,
-	type PushProvider,
-} from "../../ports/push-provider.port";
+	NOTIFICATION_REPOSITORY,
+	type NotificationRepositoryPort,
+} from "../../ports/notification.repository.port";
+import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
@@ -63,8 +62,6 @@ export class RegisterPushTokenUseCase {
 			await this.cache.invalidateUserPreference(data.userId);
 		}
 
-		this.#logger.log(
-			`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`,
-		);
+		this.#logger.log(`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`);
 	}
 }

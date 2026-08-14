@@ -34,12 +34,9 @@ export class DispatchDailySignupSummaryUseCase {
 		this.#logger.log("Starting daily signup summary job...");
 
 		try {
-			const { startUtc, endUtc, reportDateStr } = computePreviousKstDayRange(
-				now(),
-			);
+			const { startUtc, endUtc, reportDateStr } = computePreviousKstDayRange(now());
 
-			const { signupsByProvider, totalUsers } =
-				await this.reader.getSignupStats(startUtc, endUtc);
+			const { signupsByProvider, totalUsers } = await this.reader.getSignupStats(startUtc, endUtc);
 
 			const message = buildDailySummaryMessage({
 				signupsByProvider,
@@ -51,10 +48,7 @@ export class DispatchDailySignupSummaryUseCase {
 				jobId: `signup-summary_${reportDateStr}`,
 			});
 
-			const previousDayTotal = signupsByProvider.reduce(
-				(sum, group) => sum + group.count,
-				0,
-			);
+			const previousDayTotal = signupsByProvider.reduce((sum, group) => sum + group.count, 0);
 			this.#logger.log(
 				`Daily signup summary job enqueued: ${previousDayTotal} new, ${totalUsers} total`,
 			);

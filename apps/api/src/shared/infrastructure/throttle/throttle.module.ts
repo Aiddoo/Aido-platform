@@ -1,6 +1,7 @@
 import { type DynamicModule, Module, type Provider } from "@nestjs/common";
 import type { ThrottlerStorage } from "@nestjs/throttler";
 import type Redis from "ioredis";
+
 import { TypedConfigService } from "../config/services/config.service";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
 import { RedisThrottlerStorage } from "./redis-throttler-storage";
@@ -36,10 +37,7 @@ export class ThrottleModule {
 
 				return undefined;
 			},
-			inject: [
-				TypedConfigService,
-				{ token: REDIS_COMMAND_CLIENT, optional: true },
-			],
+			inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
 		};
 
 		return {

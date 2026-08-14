@@ -43,6 +43,7 @@ eas build --profile development --platform all
 ```
 
 **특징**:
+
 - Expo Go처럼 빠른 개발 가능
 - 실제 기기에서 테스트
 - 시뮬레이터에서도 실행 가능
@@ -58,6 +59,7 @@ eas build --profile preview --platform android
 ```
 
 **특징**:
+
 - 프로덕션과 동일한 환경
 - 내부 테스터 배포용
 - API: `https://api-preview.aido.kr`
@@ -73,6 +75,7 @@ eas build --profile production --platform android
 ```
 
 **특징**:
+
 - App Store / Google Play 제출용
 - API: `https://api.aido.kr`
 - 자동 버전 증가
@@ -98,6 +101,7 @@ eas build --profile production --platform android
 **빌드 설정**: `eas.json` > `build.preview`
 
 **필수 설정**:
+
 ```bash
 # .env.preview
 APP_ENV=preview
@@ -113,6 +117,7 @@ EXPO_PUBLIC_API_URL=https://api-preview.aido.kr
 **빌드 설정**: `eas.json` > `build.production`
 
 **필수 설정**:
+
 ```bash
 # .env.production
 APP_ENV=production
@@ -135,6 +140,7 @@ EXPO_PUBLIC_API_URL=https://api.aido.kr
 #### 1. Google Cloud Console에서 OAuth 클라이언트 생성
 
 **Web** (API 서버용):
+
 - Application Type: Web application
 - Authorized redirect URIs:
   - `https://api.aido.kr/v1/auth/google/web-callback` (프로덕션)
@@ -154,6 +160,7 @@ GOOGLE_CALLBACK_URL=https://api.aido.kr/v1/auth/google/web-callback
 #### 1. Apple Developer에서 설정
 
 **Service ID 생성**:
+
 - https://developer.apple.com/account/resources/identifiers/list/serviceId
 - Identifier: `com.aido.mobile.service`
 - Return URLs:
@@ -161,6 +168,7 @@ GOOGLE_CALLBACK_URL=https://api.aido.kr/v1/auth/google/web-callback
   - `https://api-preview.aido.kr/v1/auth/apple/callback`
 
 **Key 생성**:
+
 - https://developer.apple.com/account/resources/authkeys/add
 - Enable: Sign in with Apple
 - Download .p8 파일 (한 번만 다운로드 가능!)
@@ -209,6 +217,7 @@ eas submit --platform ios --profile production
 #### 3. App Store 제출
 
 App Store Connect에서:
+
 - 앱 정보 입력 (스크린샷, 설명 등)
 - 가격 및 배포 지역 설정
 - 심사 제출
@@ -232,6 +241,7 @@ eas submit --platform android --profile production
 #### 3. 심사 제출
 
 Google Play Console에서:
+
 - 앱 콘텐츠 등록 (스크린샷, 설명 등)
 - 가격 및 배포 국가 설정
 - 프로덕션 트랙으로 출시
@@ -289,11 +299,13 @@ Google Play Console에서:
 ### 빌드 실패
 
 **EAS Secrets 확인**:
+
 ```bash
 eas secret:list
 ```
 
 **캐시 삭제 후 재빌드**:
+
 ```bash
 eas build --clear-cache --profile production --platform ios
 ```
@@ -301,25 +313,30 @@ eas build --clear-cache --profile production --platform ios
 ### OAuth 로그인 실패
 
 **1. Redirect URI 확인**:
+
 - Google Cloud Console / Apple Developer에서 정확한 URL 설정 확인
 
 **2. API URL 확인**:
+
 ```bash
 # 모바일 앱에서 실제 사용되는 API URL 확인
 console.log(ENV.API_URL);
 ```
 
 **3. API 서버 로그 확인**:
+
 - OAuth 콜백 요청이 도착하는지 확인
 - OAuth 제공자 응답 에러 확인
 
 ### 실제 기기에서 API 연결 실패
 
 **개발 환경**:
+
 - 같은 Wi-Fi 네트워크 연결 확인
 - API URL 자동 감지 로그 확인
 
 **프로덕션 환경**:
+
 - API 서버 도메인 올바른지 확인
 - HTTPS 인증서 유효한지 확인
 

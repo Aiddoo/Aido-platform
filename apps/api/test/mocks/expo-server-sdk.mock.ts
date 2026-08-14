@@ -10,8 +10,7 @@ export class Expo {
 	static isExpoPushToken(token: unknown): boolean {
 		return (
 			typeof token === "string" &&
-			(token.startsWith("ExponentPushToken[") ||
-				token.startsWith("ExpoPushToken[")) &&
+			(token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[")) &&
 			token.endsWith("]")
 		);
 	}

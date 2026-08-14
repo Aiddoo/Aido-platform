@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+
 import { Spacing } from './Spacing';
 
 describe('Spacing 컴포넌트', () => {

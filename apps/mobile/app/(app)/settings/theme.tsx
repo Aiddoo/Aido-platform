@@ -4,6 +4,7 @@ import { type ThemeMode, useTheme } from '@src/shared/providers/theme-provider';
 import { DeviceIcon, MoonIcon, StyledSafeAreaView, SunIcon } from '@src/shared/ui';
 import { RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
+
 import { IconRadioItem } from './_components/icon-radio-item';
 
 const ThemeSettingsScreen = () => {

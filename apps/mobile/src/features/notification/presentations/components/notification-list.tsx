@@ -8,6 +8,7 @@ import times from 'es-toolkit/compat/times';
 import { Separator, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
+
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/use-get-notifications-infinite-query-options';
 import { NotificationItem } from './notification-item';
 

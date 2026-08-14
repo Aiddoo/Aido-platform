@@ -1,19 +1,14 @@
 {
-  "[typescript][typescriptreact][javascript][json]": {
-    "editor.defaultFormatter": "biomejs.biome",
+  "[typescript][typescriptreact][javascript][javascriptreact][json][jsonc][css][markdown][yaml]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.fixAll.biome": "explicit",
-      "source.organizeImports.biome": "explicit",
+      "source.fixAll.oxc": "explicit",
       "source.organizeImports": "never"
     }
   },
-
-  "biome.enabled": true,
-  "biome.lsp.bin": "./node_modules/@biomejs/biome/bin/biome",
+  "oxc.enable": true,
   "eslint.enable": false,
   "prettier.enable": false,
-
-  // Monorepo 최적화
   "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

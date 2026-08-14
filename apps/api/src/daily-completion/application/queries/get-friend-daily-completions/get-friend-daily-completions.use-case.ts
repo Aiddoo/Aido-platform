@@ -1,9 +1,11 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { ApplicationException } from "@/shared/domain";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { parseDateOnly } from "@/shared/domain/date/utils/parse";
+
 import {
 	buildDailyCompletionsRange,
 	type DailyCompletionsRange,
@@ -44,15 +46,10 @@ export class GetFriendDailyCompletionsUseCase {
 		private readonly friendPort: FriendPort,
 	) {}
 
-	async execute(
-		input: GetFriendDailyCompletionsInput,
-	): Promise<DailyCompletionsRange> {
+	async execute(input: GetFriendDailyCompletionsInput): Promise<DailyCompletionsRange> {
 		const { userId, friendUserId } = input;
 
-		const isMutualFriend = await this.friendPort.isMutualFriend(
-			userId,
-			friendUserId,
-		);
+		const isMutualFriend = await this.friendPort.isMutualFriend(userId, friendUserId);
 		if (!isMutualFriend) {
 			throw new ApplicationException(ErrorCode.FOLLOW_0906, {
 				targetUserId: friendUserId,
@@ -66,11 +63,7 @@ export class GetFriendDailyCompletionsUseCase {
 		const startKey = toDateString(start);
 		const endKey = toDateString(endInclusive);
 
-		const cached = await this.cache.getPublicRange(
-			friendUserId,
-			startKey,
-			endKey,
-		);
+		const cached = await this.cache.getPublicRange(friendUserId, startKey, endKey);
 		if (cached !== undefined) {
 			return cached;
 		}

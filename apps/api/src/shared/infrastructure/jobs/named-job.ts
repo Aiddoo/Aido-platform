@@ -1,7 +1,4 @@
-import type {
-	JobData,
-	JobEnvelope,
-} from "@/shared/application/ports/job-runtime.port";
+import type { JobData, JobEnvelope } from "@/shared/application/ports/job-runtime.port";
 
 export type NamedJob<TMap extends { [K in keyof TMap]: JobData }> = {
 	[K in keyof TMap & string]: {

@@ -1,7 +1,9 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
+
 import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+
 import type { TodoCachePort } from "../../application/ports/todo-cache.port";
 import { TODO_CACHE_TTL_MS, TodoCacheKey } from "../cache/todo-cache.keyspace";
 
@@ -42,8 +44,6 @@ export class TodoCacheAdapter implements TodoCachePort {
 	}
 
 	async invalidateFriendTodos(ownerUserId: string): Promise<void> {
-		await this.cacheService.delByPattern(
-			TodoCacheKey.friendTodosPattern(ownerUserId),
-		);
+		await this.cacheService.delByPattern(TodoCacheKey.friendTodosPattern(ownerUserId));
 	}
 }

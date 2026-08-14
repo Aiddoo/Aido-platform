@@ -1,5 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import { createMockHttpClient } from '@src/shared/__tests__';
+
 import {
   createMarkReadResponseDto,
   createNotificationApiError,

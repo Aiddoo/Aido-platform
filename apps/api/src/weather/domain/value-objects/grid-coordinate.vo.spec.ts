@@ -13,21 +13,15 @@ describe("GridCoordinate — 기상청 격자 좌표 값 객체", () => {
 
 	describe("equals", () => {
 		it("동일 격자면 true", () => {
-			expect(
-				GridCoordinate.of(60, 127).equals(GridCoordinate.of(60, 127)),
-			).toBe(true);
+			expect(GridCoordinate.of(60, 127).equals(GridCoordinate.of(60, 127))).toBe(true);
 		});
 
 		it("gridX가 다르면 false", () => {
-			expect(
-				GridCoordinate.of(60, 127).equals(GridCoordinate.of(61, 127)),
-			).toBe(false);
+			expect(GridCoordinate.of(60, 127).equals(GridCoordinate.of(61, 127))).toBe(false);
 		});
 
 		it("gridY가 다르면 false", () => {
-			expect(
-				GridCoordinate.of(60, 127).equals(GridCoordinate.of(60, 128)),
-			).toBe(false);
+			expect(GridCoordinate.of(60, 127).equals(GridCoordinate.of(60, 128))).toBe(false);
 		});
 	});
 });

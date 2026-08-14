@@ -13,6 +13,7 @@
  */
 
 import request from "supertest";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("응원 E2E", () => {
@@ -36,14 +37,8 @@ describe("응원 E2E", () => {
 		describe("POST /cheers - 응원 보내기", () => {
 			it("친구에게 응원을 보내고, 쿨다운 기간 내 동일 대상에게 다시 응원 시 429 에러 반환", async () => {
 				// Given - 친구 관계인 두 사용자
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-sender@test.com",
-					password,
-				);
-				const receiver = await ctx.helpers.createVerifiedUser(
-					"cheer-receiver@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-sender@test.com", password);
+				const receiver = await ctx.helpers.createVerifiedUser("cheer-receiver@test.com", password);
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				// When - 응원 보내기 API 호출
@@ -77,14 +72,8 @@ describe("응원 E2E", () => {
 
 			it("메시지 없이도 응원을 보낼 수 있다", async () => {
 				// Given - 친구 관계인 두 사용자
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-sender2@test.com",
-					password,
-				);
-				const receiver = await ctx.helpers.createVerifiedUser(
-					"cheer-receiver2@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-sender2@test.com", password);
+				const receiver = await ctx.helpers.createVerifiedUser("cheer-receiver2@test.com", password);
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				// When - 메시지 없이 응원 보내기 API 호출
@@ -101,14 +90,8 @@ describe("응원 E2E", () => {
 
 			it("친구가 아닌 사용자에게 응원 시 403 에러 반환", async () => {
 				// Given - 친구 관계가 아닌 사용자
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-sender3@test.com",
-					password,
-				);
-				const stranger = await ctx.helpers.createVerifiedUser(
-					"cheer-stranger@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-sender3@test.com", password);
+				const stranger = await ctx.helpers.createVerifiedUser("cheer-stranger@test.com", password);
 
 				// When - 친구가 아닌 사용자에게 응원 보내기 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -124,10 +107,7 @@ describe("응원 E2E", () => {
 
 			it("자기 자신에게 응원 시 400 에러 반환", async () => {
 				// Given - 인증된 사용자
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-self@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-self@test.com", password);
 
 				// When - 자기 자신에게 응원 보내기 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -159,10 +139,7 @@ describe("응원 E2E", () => {
 		describe("GET /cheers/received - 받은 응원 목록", () => {
 			it("받은 응원 목록을 조회한다", async () => {
 				// Given - 응원을 받은 상태
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-list-sender@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-list-sender@test.com", password);
 				const receiver = await ctx.helpers.createVerifiedUser(
 					"cheer-list-receiver@test.com",
 					password,
@@ -189,14 +166,8 @@ describe("응원 E2E", () => {
 
 			it("limit 파라미터로 조회 개수를 제한한다", async () => {
 				// Given - 응원을 받은 상태
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-limit-s@test.com",
-					password,
-				);
-				const receiver = await ctx.helpers.createVerifiedUser(
-					"cheer-limit-r@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-limit-s@test.com", password);
+				const receiver = await ctx.helpers.createVerifiedUser("cheer-limit-r@test.com", password);
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				await request(ctx.app.getHttpServer())
@@ -220,9 +191,7 @@ describe("응원 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 받은 응원 목록 조회 API 호출
-				await request(ctx.app.getHttpServer())
-					.get("/v1/cheers/received")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/cheers/received").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -231,14 +200,8 @@ describe("응원 E2E", () => {
 		describe("GET /cheers/sent - 보낸 응원 목록", () => {
 			it("보낸 응원 목록을 조회한다", async () => {
 				// Given - 응원을 보낸 상태
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-sent-s@test.com",
-					password,
-				);
-				const receiver = await ctx.helpers.createVerifiedUser(
-					"cheer-sent-r@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-sent-s@test.com", password);
+				const receiver = await ctx.helpers.createVerifiedUser("cheer-sent-r@test.com", password);
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				await request(ctx.app.getHttpServer())
@@ -264,10 +227,7 @@ describe("응원 E2E", () => {
 		describe("GET /cheers/limit - 일일 제한 정보 조회", () => {
 			it("일일 제한 정보를 조회한다", async () => {
 				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"cheer-limit-user@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("cheer-limit-user@test.com", password);
 
 				// When - 일일 제한 정보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -285,9 +245,7 @@ describe("응원 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 일일 제한 정보 조회 API 호출
-				await request(ctx.app.getHttpServer())
-					.get("/v1/cheers/limit")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/cheers/limit").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -296,14 +254,8 @@ describe("응원 E2E", () => {
 		describe("GET /cheers/cooldown/:userId - 쿨다운 상태 조회", () => {
 			it("쿨다운 상태를 조회한다", async () => {
 				// Given - 친구 관계인 두 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"cheer-cd-user@test.com",
-					password,
-				);
-				const friend = await ctx.helpers.createVerifiedUser(
-					"cheer-cd-friend@test.com",
-					password,
-				);
+				const user = await ctx.helpers.createVerifiedUser("cheer-cd-user@test.com", password);
+				const friend = await ctx.helpers.createVerifiedUser("cheer-cd-friend@test.com", password);
 				await ctx.helpers.createFriendship(user, friend);
 
 				// When - 쿨다운 상태 조회 API 호출
@@ -321,9 +273,7 @@ describe("응원 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 쿨다운 상태 조회 API 호출
-				await request(ctx.app.getHttpServer())
-					.get("/v1/cheers/cooldown/some-user-id")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).get("/v1/cheers/cooldown/some-user-id").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -334,14 +284,8 @@ describe("응원 E2E", () => {
 		describe("PATCH /cheers/:id/read - 단일 응원 읽음 처리", () => {
 			it("받은 응원을 읽음 처리한다", async () => {
 				// Given - 읽지 않은 응원이 있는 상태
-				const sender = await ctx.helpers.createVerifiedUser(
-					"cheer-read-s@test.com",
-					password,
-				);
-				const receiver = await ctx.helpers.createVerifiedUser(
-					"cheer-read-r@test.com",
-					password,
-				);
+				const sender = await ctx.helpers.createVerifiedUser("cheer-read-s@test.com", password);
+				const receiver = await ctx.helpers.createVerifiedUser("cheer-read-r@test.com", password);
 				await ctx.helpers.createFriendship(sender, receiver);
 
 				const cheerResponse = await request(ctx.app.getHttpServer())
@@ -363,10 +307,7 @@ describe("응원 E2E", () => {
 
 			it("존재하지 않는 응원 읽음 처리 시 404 에러 반환", async () => {
 				// Given - 존재하지 않는 응원 ID
-				const receiver = await ctx.helpers.createVerifiedUser(
-					"cheer-read-404@test.com",
-					password,
-				);
+				const receiver = await ctx.helpers.createVerifiedUser("cheer-read-404@test.com", password);
 
 				// When - 존재하지 않는 응원 읽음 처리 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -383,9 +324,7 @@ describe("응원 E2E", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 단일 응원 읽음 처리 API 호출
-				await request(ctx.app.getHttpServer())
-					.patch("/v1/cheers/1/read")
-					.expect(401);
+				await request(ctx.app.getHttpServer()).patch("/v1/cheers/1/read").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -394,18 +333,9 @@ describe("응원 E2E", () => {
 		describe("PATCH /cheers/read - 여러 응원 읽음 처리", () => {
 			it("여러 응원을 한번에 읽음 처리한다", async () => {
 				// Given - 읽지 않은 응원들이 있는 상태
-				const sender1 = await ctx.helpers.createVerifiedUser(
-					"cheer-bulk-s1@test.com",
-					password,
-				);
-				const sender2 = await ctx.helpers.createVerifiedUser(
-					"cheer-bulk-s2@test.com",
-					password,
-				);
-				const receiver = await ctx.helpers.createVerifiedUser(
-					"cheer-bulk-r@test.com",
-					password,
-				);
+				const sender1 = await ctx.helpers.createVerifiedUser("cheer-bulk-s1@test.com", password);
+				const sender2 = await ctx.helpers.createVerifiedUser("cheer-bulk-s2@test.com", password);
+				const receiver = await ctx.helpers.createVerifiedUser("cheer-bulk-r@test.com", password);
 				await ctx.helpers.createFriendship(sender1, receiver);
 				await ctx.helpers.createFriendship(sender2, receiver);
 

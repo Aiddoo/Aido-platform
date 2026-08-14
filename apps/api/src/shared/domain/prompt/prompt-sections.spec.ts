@@ -5,16 +5,14 @@
  * 프롬프트 본문은 각 빌더 자신의 spec에서 검증하고, 여기서는 "보안/출력 규칙 주입 여부"만 봅니다.
  */
 
-import { buildParseMemoPrompt } from "@/ai/domain/services/prompts/parse-memo.prompt";
-import { buildParseTodoPrompt } from "@/ai/domain/services/prompts/parse-todo.prompt";
 import { buildReportPrompt } from "@/ai-report/domain/services/prompts/report.prompt";
 import type { AggregatedReportData } from "@/ai-report/domain/types";
 import { buildSuggestionPrompt } from "@/ai-suggestion/domain/services/prompts/detect-patterns.prompt";
 import type { SuggestionContext } from "@/ai-suggestion/domain/types";
-import {
-	PROMPT_OUTPUT_DISCIPLINE,
-	PROMPT_SECURITY_GUARD,
-} from "./prompt-sections";
+import { buildParseMemoPrompt } from "@/ai/domain/services/prompts/parse-memo.prompt";
+import { buildParseTodoPrompt } from "@/ai/domain/services/prompts/parse-todo.prompt";
+
+import { PROMPT_OUTPUT_DISCIPLINE, PROMPT_SECURITY_GUARD } from "./prompt-sections";
 
 describe("PROMPT_SECTIONS 계약", () => {
 	const now = new Date("2026-04-18T12:00:00.000Z");
@@ -26,11 +24,7 @@ describe("PROMPT_SECTIONS 계약", () => {
 	});
 
 	it("parse-memo system 프롬프트는 보안 지침과 출력 규칙을 포함해야 한다", () => {
-		const { system } = buildParseMemoPrompt(
-			"우유 사기, 청소하기",
-			"Asia/Seoul",
-			now,
-		);
+		const { system } = buildParseMemoPrompt("우유 사기, 청소하기", "Asia/Seoul", now);
 		expect(system).toContain(PROMPT_SECURITY_GUARD);
 		expect(system).toContain(PROMPT_OUTPUT_DISCIPLINE);
 	});
@@ -61,9 +55,7 @@ describe("PROMPT_SECTIONS 계약", () => {
 			totalTodos: 20,
 			completedTodos: 17,
 			streakDays: 5,
-			categoryBreakdown: [
-				{ category: "업무", total: 10, completed: 8, rate: 80 },
-			],
+			categoryBreakdown: [{ category: "업무", total: 10, completed: 8, rate: 80 }],
 			dayPatterns: [{ day: "MON", total: 3, completed: 3, rate: 100 }],
 			timePatterns: [],
 		} as unknown as AggregatedReportData;

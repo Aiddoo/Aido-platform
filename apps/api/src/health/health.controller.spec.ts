@@ -20,8 +20,7 @@ describe("HealthController — 헬스 체크 컨트롤러", () => {
 	let mockHealthCheckService: Mocked<HealthCheckService>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(HealthController).compile();
+		const { unit, unitRef } = await TestBed.solitary(HealthController).compile();
 
 		controller = unit;
 		mockHealthCheckService = unitRef.get(HealthCheckService);
@@ -42,9 +41,7 @@ describe("HealthController — 헬스 체크 컨트롤러", () => {
 			const result = await controller.check();
 
 			// Then -HealthCheckService.check가 호출되고 결과를 반환해야 한다
-			expect(mockHealthCheckService.check).toHaveBeenCalledWith(
-				expect.any(Array),
-			);
+			expect(mockHealthCheckService.check).toHaveBeenCalledWith(expect.any(Array));
 			expect(result).toMatchObject(healthResult);
 			expect(result).toHaveProperty("instanceId");
 			expect(typeof result.instanceId).toBe("string");

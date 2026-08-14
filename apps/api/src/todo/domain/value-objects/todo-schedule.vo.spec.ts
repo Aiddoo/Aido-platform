@@ -5,7 +5,9 @@
  */
 
 import { ErrorCode } from "@aido/errors";
+
 import { DomainException } from "@/shared/domain";
+
 import { TodoSchedule } from "./todo-schedule.vo";
 
 describe("TodoSchedule — 일정 값 객체", () => {
@@ -83,9 +85,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
 		// Then - 내부 값은 불변
 		expect(schedule.getStartDate()).toEqual(new Date("2026-03-01"));
 		expect(schedule.getEndDate()).toEqual(new Date("2026-03-05"));
-		expect(schedule.getScheduledTime()).toEqual(
-			new Date("2026-03-01T06:00:00.000Z"),
-		);
+		expect(schedule.getScheduledTime()).toEqual(new Date("2026-03-01T06:00:00.000Z"));
 	});
 
 	it("getValue()가 반환한 props를 변조해도 이후 조회 값은 영향받지 않는다 (방어 복사)", () => {

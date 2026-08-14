@@ -1,9 +1,10 @@
 import { Global, Module } from "@nestjs/common";
-import { EntitlementService } from "../../application/entitlement/entitlement.service";
+
 import {
 	ENTITLEMENT_CACHE,
 	ENTITLEMENT_DATABASE,
 } from "../../application/entitlement/entitlement-state.port";
+import { EntitlementService } from "../../application/entitlement/entitlement.service";
 import { CacheService } from "../cache/cache.service";
 import { DatabaseService } from "../database/database.service";
 

@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
@@ -8,21 +9,22 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
+
 import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.aggregate";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
 } from "../../ports/category-ownership.port";
-import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-	type TodoUpdatePatch,
-} from "../../ports/todo.repository.port";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import {
+	TODO_REPOSITORY,
+	type TodoRepositoryPort,
+	type TodoUpdatePatch,
+} from "../../ports/todo.repository.port";
 import type { UpdateTodoData } from "../../types";
 
 /** Todo 부분 수정 입력. */
@@ -84,9 +86,7 @@ export class UpdateTodoUseCase {
 			// 요청에 포함된 필드만 쓰되, 값은 커맨드가 아닌 애그리게잇에서 가져옴
 			const patch: TodoUpdatePatch = {};
 			const copyField = <
-				K extends keyof UpdateTodoData &
-					keyof TodoPersistenceSnapshot &
-					keyof TodoUpdatePatch,
+				K extends keyof UpdateTodoData & keyof TodoPersistenceSnapshot & keyof TodoUpdatePatch,
 			>(
 				key: K,
 			): void => {
@@ -124,10 +124,7 @@ export class UpdateTodoUseCase {
 		await this.eventPublisher.publishAll(events);
 
 		// 4. 응답 재조회
-		const response = await this.todoReadRepository.findByIdAndUserId(
-			id,
-			userId,
-		);
+		const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
 		if (!response) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}

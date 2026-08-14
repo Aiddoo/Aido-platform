@@ -33,13 +33,8 @@ export const TodoCategoryFixture = {
 	/**
 	 * 여러 카테고리 생성
 	 */
-	createMany: (
-		count: number,
-		overrides: Partial<TodoCategory> = {},
-	): TodoCategory[] => {
-		return Array.from({ length: count }, () =>
-			TodoCategoryFixture.create(overrides),
-		);
+	createMany: (count: number, overrides: Partial<TodoCategory> = {}): TodoCategory[] => {
+		return Array.from({ length: count }, () => TodoCategoryFixture.create(overrides));
 	},
 
 	/**

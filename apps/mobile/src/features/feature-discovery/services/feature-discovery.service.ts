@@ -1,6 +1,7 @@
 import { featureDiscoveryResponseSchema } from '@aido/validators';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { ParseError } from '@src/shared/errors/infra-error';
+
 import type { FeatureDiscoveryConfig } from '../models/feature-discovery.model';
 import { toFeatureDiscoveryConfig } from './feature-discovery.mapper';
 

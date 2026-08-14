@@ -18,16 +18,14 @@ import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
   title={<ConfirmDialog.Title>할 일을 삭제할까요?</ConfirmDialog.Title>}
   description={<ConfirmDialog.Description>삭제하면 되돌릴 수 없어요</ConfirmDialog.Description>}
   cancelButton={
-    <ConfirmDialog.CancelButton onPress={() => setIsOpen(false)}>
-      취소
-    </ConfirmDialog.CancelButton>
+    <ConfirmDialog.CancelButton onPress={() => setIsOpen(false)}>취소</ConfirmDialog.CancelButton>
   }
   confirmButton={
     <ConfirmDialog.ConfirmButton color="danger" onPress={handleDelete}>
       삭제
     </ConfirmDialog.ConfirmButton>
   }
-/>
+/>;
 ```
 
 ### 확인만 (오른쪽 정렬)
@@ -37,25 +35,25 @@ import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
   isOpen={isOpen}
   onOpenChange={setIsOpen}
   title={<ConfirmDialog.Title>아이콘 변경 실패</ConfirmDialog.Title>}
-  description={<ConfirmDialog.Description>실기기에서 다시 시도해 주세요.</ConfirmDialog.Description>}
+  description={
+    <ConfirmDialog.Description>실기기에서 다시 시도해 주세요.</ConfirmDialog.Description>
+  }
   confirmButton={
-    <ConfirmDialog.ConfirmButton onPress={() => setIsOpen(false)}>
-      확인
-    </ConfirmDialog.ConfirmButton>
+    <ConfirmDialog.ConfirmButton onPress={() => setIsOpen(false)}>확인</ConfirmDialog.ConfirmButton>
   }
 />
 ```
 
 ## Props
 
-| Prop | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `isOpen` | `boolean` | — | 다이얼로그 열림 상태 |
-| `onOpenChange` | `(open: boolean) => void` | — | 열림 상태 변경 콜백 |
-| `title` | `ReactNode` | — | 제목 영역 (`ConfirmDialog.Title` 권장) |
-| `description` | `ReactNode` | — | 설명 영역 (`ConfirmDialog.Description` 권장) |
-| `cancelButton` | `ReactNode` | `undefined` | 취소 버튼 (없으면 confirmButton 오른쪽 정렬) |
-| `confirmButton` | `ReactNode` | — | 확인 버튼 (`ConfirmDialog.ConfirmButton` 권장) |
+| Prop            | 타입                      | 기본값      | 설명                                           |
+| --------------- | ------------------------- | ----------- | ---------------------------------------------- |
+| `isOpen`        | `boolean`                 | —           | 다이얼로그 열림 상태                           |
+| `onOpenChange`  | `(open: boolean) => void` | —           | 열림 상태 변경 콜백                            |
+| `title`         | `ReactNode`               | —           | 제목 영역 (`ConfirmDialog.Title` 권장)         |
+| `description`   | `ReactNode`               | —           | 설명 영역 (`ConfirmDialog.Description` 권장)   |
+| `cancelButton`  | `ReactNode`               | `undefined` | 취소 버튼 (없으면 confirmButton 오른쪽 정렬)   |
+| `confirmButton` | `ReactNode`               | —           | 확인 버튼 (`ConfirmDialog.ConfirmButton` 권장) |
 
 ## 버튼 레이아웃
 
@@ -71,9 +69,9 @@ import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 
 ## 파일 구조
 
-| 파일 | 역할 |
-|------|------|
-| `ConfirmDialog.tsx` | 컴포넌트 + 서브컴포넌트 |
-| `ConfirmDialog.types.ts` | Props 인터페이스 |
-| `index.ts` | Barrel export |
-| `ConfirmDialog.md` | 이 문서 |
+| 파일                     | 역할                    |
+| ------------------------ | ----------------------- |
+| `ConfirmDialog.tsx`      | 컴포넌트 + 서브컴포넌트 |
+| `ConfirmDialog.types.ts` | Props 인터페이스        |
+| `index.ts`               | Barrel export           |
+| `ConfirmDialog.md`       | 이 문서                 |

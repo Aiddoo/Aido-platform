@@ -15,6 +15,7 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { TransactionalEmailSender } from "@/email";
 import { EmailInquiryMailerAdapter } from "@/inquiry/infrastructure/adapters/email-inquiry-mailer.adapter";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";

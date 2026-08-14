@@ -15,10 +15,7 @@ type RevenueCatEvent = RevenueCatWebhookPayload["event"];
  */
 
 /** 필수 purchased_at_ms → Date. 누락 시 SUBSCRIPTION_1604. */
-export function requirePurchasedAt(
-	event: RevenueCatEvent,
-	reason: string,
-): Date {
+export function requirePurchasedAt(event: RevenueCatEvent, reason: string): Date {
 	if (!event.purchased_at_ms) {
 		throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 			reason,

@@ -1,4 +1,5 @@
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
+
 import {
 	type CacheStats,
 	type ICacheService,
@@ -31,11 +32,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	#stats = { hits: 0, misses: 0 };
 	#cleanupInterval: NodeJS.Timeout;
 
-	constructor(config: {
-		defaultTtlMs: number;
-		maxItems: number;
-		cleanupIntervalMs?: number;
-	}) {
+	constructor(config: { defaultTtlMs: number; maxItems: number; cleanupIntervalMs?: number }) {
 		this.#defaultTtlMs = config.defaultTtlMs;
 		this.#maxItems = config.maxItems;
 
@@ -138,11 +135,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 
 	// === 새로운 메서드 (Cacheable 패턴) ===
 
-	async wrap<T>(
-		key: string,
-		factory: () => Promise<T>,
-		ttl?: TtlValue,
-	): Promise<T> {
+	async wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
 		const cached = await this.get<T>(key);
 		if (cached !== undefined) {
 			return cached;
@@ -176,12 +169,8 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 		return Promise.all(keys.map((key) => this.get<T>(key)));
 	}
 
-	async mset<T>(
-		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
-	): Promise<void> {
-		await Promise.all(
-			entries.map(({ key, value, ttl }) => this.set(key, value, ttl)),
-		);
+	async mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {
+		await Promise.all(entries.map(({ key, value, ttl }) => this.set(key, value, ttl)));
 	}
 
 	async has(key: string): Promise<boolean> {

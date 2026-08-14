@@ -6,6 +6,7 @@
  */
 
 import { ErrorCode } from "@aido/errors";
+
 import type { VerifiedProfile } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -23,10 +24,7 @@ export class FakeOAuthTokenVerifierService {
 	/**
 	 * 기본 테스트 프로필 생성
 	 */
-	private _createDefaultProfile(
-		provider: string,
-		providerAccountId: string,
-	): VerifiedProfile {
+	private _createDefaultProfile(provider: string, providerAccountId: string): VerifiedProfile {
 		return {
 			id: `${provider.toLowerCase()}-${providerAccountId}`,
 			email: `test-${provider.toLowerCase()}-${providerAccountId}@example.com`,
@@ -60,10 +58,7 @@ export class FakeOAuthTokenVerifierService {
 			return customProfile;
 		}
 
-		return this._createDefaultProfile(
-			"GOOGLE",
-			`google-${idToken.slice(0, 8)}`,
-		);
+		return this._createDefaultProfile("GOOGLE", `google-${idToken.slice(0, 8)}`);
 	}
 
 	/**
@@ -77,10 +72,7 @@ export class FakeOAuthTokenVerifierService {
 			return customProfile;
 		}
 
-		return this._createDefaultProfile(
-			"KAKAO",
-			`kakao-${accessToken.slice(0, 8)}`,
-		);
+		return this._createDefaultProfile("KAKAO", `kakao-${accessToken.slice(0, 8)}`);
 	}
 
 	/**
@@ -94,10 +86,7 @@ export class FakeOAuthTokenVerifierService {
 			return customProfile;
 		}
 
-		return this._createDefaultProfile(
-			"NAVER",
-			`naver-${accessToken.slice(0, 8)}`,
-		);
+		return this._createDefaultProfile("NAVER", `naver-${accessToken.slice(0, 8)}`);
 	}
 
 	// ===== 테스트 유틸리티 메서드 =====
@@ -154,9 +143,7 @@ export class FakeOAuthTokenVerifierService {
 	 * 실패 시뮬레이션 체크 및 에러 발생
 	 * @param provider OAuth 제공자 (APPLE, GOOGLE, KAKAO, NAVER)
 	 */
-	private _checkFailure(
-		provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
-	): void {
+	private _checkFailure(provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER"): void {
 		if (this._shouldFail) {
 			// 커스텀 에러가 설정되어 있으면 해당 에러를 던짐
 			if (this._failureError) {

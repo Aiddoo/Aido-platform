@@ -7,19 +7,14 @@ export interface PushCapability {
 }
 
 /** 기능 소개 마케팅 payload를 안전하게 해석할 수 있는 출시 클라이언트인지 판정한다. */
-export function supportsFeatureDiscoveryMarketing(
-	capability: PushCapability,
-): boolean {
+export function supportsFeatureDiscoveryMarketing(capability: PushCapability): boolean {
 	return (
 		capability.payloadVersion === 2 &&
 		isVersionAtLeast(capability.appVersion, FEATURE_DISCOVERY_MIN_APP_VERSION)
 	);
 }
 
-function isVersionAtLeast(
-	version: string | null,
-	minimumVersion: string,
-): boolean {
+function isVersionAtLeast(version: string | null, minimumVersion: string): boolean {
 	const current = parseVersion(version);
 	const minimum = parseVersion(minimumVersion);
 	if (!current || !minimum) return false;

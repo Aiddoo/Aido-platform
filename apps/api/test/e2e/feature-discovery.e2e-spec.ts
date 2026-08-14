@@ -1,6 +1,8 @@
 import { featureDiscoveryResponseSchema } from "@aido/validators";
 import request from "supertest";
+
 import { GetFeatureDiscoveryUseCase } from "@/app-config/application/queries/get-feature-discovery/get-feature-discovery.use-case";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("Feature discovery configuration (e2e)", () => {
@@ -39,9 +41,7 @@ describe("Feature discovery configuration (e2e)", () => {
 
 	it("returns an enabled wire response that the mobile Zod contract parses", async () => {
 		// Given - use the real HTTP/interceptor path with an enabled rollout result
-		const getFeatureDiscoveryUseCase = ctx.module.get(
-			GetFeatureDiscoveryUseCase,
-		);
+		const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscoveryUseCase);
 		const response = {
 			enabled: true as const,
 			campaignId: "feature-discovery-2026-08",
@@ -49,9 +49,7 @@ describe("Feature discovery configuration (e2e)", () => {
 			launchedAt: "2026-08-01T00:00:00.000Z",
 			autoOpen: true,
 		};
-		jest
-			.spyOn(getFeatureDiscoveryUseCase, "execute")
-			.mockReturnValueOnce(response);
+		jest.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(response);
 
 		// When
 		const result = await request(ctx.app.getHttpServer())

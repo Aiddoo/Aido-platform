@@ -1,19 +1,15 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	createRetentionRepositoryMock,
-	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+import { createRetentionRepositoryMock, createUnitOfWorkMock } from "@test/mocks/ports";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
+
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
 	type RetentionStageCandidate,
 } from "../../ports/retention.repository.port";
-import {
-	RETENTION_CONFIG,
-	type RetentionConfigPort,
-} from "../../ports/retention-config.port";
 import { ProcessRetentionStagesUseCase } from "./process-retention-stages.use-case";
 
 describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () => {
@@ -36,9 +32,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
 
 	afterEach(() => jest.useRealTimers());
 
-	function candidate(
-		overrides: Partial<RetentionStageCandidate> = {},
-	): RetentionStageCandidate {
+	function candidate(overrides: Partial<RetentionStageCandidate> = {}): RetentionStageCandidate {
 		return {
 			assignmentId: "assignment-1",
 			stageId: "stage-1",
@@ -97,9 +91,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
 	});
 
 	it("마케팅 동의가 없으면 Notification 없이 단계만 스킵한다", async () => {
-		repository.findScheduledStages.mockResolvedValue([
-			candidate({ marketingPushAgreedAt: null }),
-		]);
+		repository.findScheduledStages.mockResolvedValue([candidate({ marketingPushAgreedAt: null })]);
 
 		await useCase.execute();
 

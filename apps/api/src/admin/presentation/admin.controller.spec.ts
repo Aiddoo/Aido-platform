@@ -55,9 +55,7 @@ describe("AdminController — 관리자 컨트롤러", () => {
 
 		controller = unit;
 		broadcastNotificationUseCase = unitRef.get(BroadcastNotificationUseCase);
-		sendTargetedNotificationUseCase = unitRef.get(
-			SendTargetedNotificationUseCase,
-		);
+		sendTargetedNotificationUseCase = unitRef.get(SendTargetedNotificationUseCase);
 	});
 
 	describe("broadcastNotification", () => {

@@ -10,6 +10,7 @@
  * ```
  */
 import { TodoBuilder } from "@test/builders";
+
 import { TodoMapper } from "./todo-response.mapper";
 import type { TodoItemData } from "./todo-row.types";
 
@@ -75,9 +76,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
 		it("완료된 Todo를 올바르게 변환해야 한다", () => {
 			// Given - 완료된 Todo 엔티티 준비
 			const completedAt = new Date("2024-01-15T15:00:00.000Z");
-			const todo = TodoBuilder.create("user-123")
-				.completed(completedAt)
-				.build();
+			const todo = TodoBuilder.create("user-123").completed(completedAt).build();
 
 			// When - Mapper 호출
 			const result = TodoMapper.toResponse(todo);
@@ -89,10 +88,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
 
 		it("null 값들을 올바르게 처리해야 한다", () => {
 			// Given - null 값이 포함된 Todo 엔티티 준비
-			const todo = TodoBuilder.create("user-123")
-				.withEndDate(null)
-				.withScheduledTime(null)
-				.build();
+			const todo = TodoBuilder.create("user-123").withEndDate(null).withScheduledTime(null).build();
 
 			// When - Mapper 호출
 			const result = TodoMapper.toResponse(todo);
@@ -306,18 +302,9 @@ describe("TodoMapper — 할 일 매퍼", () => {
 		it("여러 Todo를 올바르게 변환해야 한다", () => {
 			// Given - 여러 Todo 엔티티 배열 준비
 			const todos = [
-				TodoBuilder.create("user-123")
-					.withId(1)
-					.withTitle("첫 번째 할 일")
-					.build(),
-				TodoBuilder.create("user-123")
-					.withId(2)
-					.withTitle("두 번째 할 일")
-					.build(),
-				TodoBuilder.create("user-123")
-					.withId(3)
-					.withTitle("세 번째 할 일")
-					.build(),
+				TodoBuilder.create("user-123").withId(1).withTitle("첫 번째 할 일").build(),
+				TodoBuilder.create("user-123").withId(2).withTitle("두 번째 할 일").build(),
+				TodoBuilder.create("user-123").withId(3).withTitle("세 번째 할 일").build(),
 			];
 
 			// When - Mapper 호출

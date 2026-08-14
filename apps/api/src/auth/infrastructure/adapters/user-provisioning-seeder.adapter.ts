@@ -1,10 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { DefaultTodoCategorySeeder } from "@/todo-category";
-import {
-	USER_SETTINGS_PROVISIONER,
-	type UserSettingsProvisionerPort,
-} from "@/user-settings";
+import { USER_SETTINGS_PROVISIONER, type UserSettingsProvisionerPort } from "@/user-settings";
+
 import type {
 	ProvisioningConsent,
 	UserProvisioningSeederPort,
@@ -15,19 +13,14 @@ import type {
  * 호출측이 연 CLS 트랜잭션에 참여하며 기본 상태만 생성한다.
  */
 @Injectable()
-export class UserProvisioningSeederAdapter
-	implements UserProvisioningSeederPort
-{
+export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort {
 	constructor(
 		@Inject(USER_SETTINGS_PROVISIONER)
 		private readonly userSettingsProvisioner: UserSettingsProvisionerPort,
 		private readonly defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
 	) {}
 
-	seedDefaultSettings(
-		userId: string,
-		consent: ProvisioningConsent,
-	): Promise<void> {
+	seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
 		return this.userSettingsProvisioner.seedDefaults(userId, consent);
 	}
 

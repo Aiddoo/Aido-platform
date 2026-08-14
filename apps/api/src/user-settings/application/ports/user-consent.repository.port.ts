@@ -21,14 +21,8 @@ export interface UserConsentRepositoryPort {
 	findByUserId(userId: string): Promise<UserConsentRecord | null>;
 	findByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]>;
 	create(userId: string, data: ConsentSeedInput): Promise<UserConsentRecord>;
-	upsertMarketingConsent(
-		userId: string,
-		data: { agreed: boolean },
-	): Promise<UserConsentRecord>;
-	upsertMarketingPushConsent(
-		userId: string,
-		data: { agreed: boolean },
-	): Promise<UserConsentRecord>;
+	upsertMarketingConsent(userId: string, data: { agreed: boolean }): Promise<UserConsentRecord>;
+	upsertMarketingPushConsent(userId: string, data: { agreed: boolean }): Promise<UserConsentRecord>;
 }
 
 export const USER_CONSENT_REPOSITORY = Symbol("USER_CONSENT_REPOSITORY");

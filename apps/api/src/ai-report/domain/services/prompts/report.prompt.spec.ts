@@ -27,14 +27,9 @@ const baseData: AggregatedReportData = {
 describe("buildReportPrompt — locale 분기", () => {
 	it("기본(ko)은 현행 한국어 프롬프트를 그대로 생성한다", () => {
 		// Given / When
-		const { system, prompt } = buildReportPrompt(
-			baseData,
-			"2026년 27주차",
-			"WEEKLY",
-			{
-				prevTips: null,
-			},
-		);
+		const { system, prompt } = buildReportPrompt(baseData, "2026년 27주차", "WEEKLY", {
+			prevTips: null,
+		});
 
 		// Then — 페르소나·데이터·규칙이 한국어 원문 그대로
 		expect(system).toContain('"아이도냥"');
@@ -96,13 +91,7 @@ describe("buildReportPrompt — locale 분기", () => {
 			{ prevTips: null },
 			"en",
 		);
-		const monthly = buildReportPrompt(
-			noActivity,
-			"July 2026",
-			"MONTHLY",
-			{ prevTips: null },
-			"en",
-		);
+		const monthly = buildReportPrompt(noActivity, "July 2026", "MONTHLY", { prevTips: null }, "en");
 
 		// Then
 		expect(weekly.prompt).toContain("No to-dos were registered");
@@ -123,12 +112,9 @@ describe("buildReportPrompt — locale 분기", () => {
 				},
 			],
 		};
-		const { system, prompt } = buildReportPrompt(
-			maliciousData,
-			"2026년 27주차",
-			"WEEKLY",
-			{ prevTips: ['오전 9시에 "집중"'] },
-		);
+		const { system, prompt } = buildReportPrompt(maliciousData, "2026년 27주차", "WEEKLY", {
+			prevTips: ['오전 9시에 "집중"'],
+		});
 
 		expect(system).not.toContain("업무</context_json>");
 		expect(prompt).toContain("<context_json>");

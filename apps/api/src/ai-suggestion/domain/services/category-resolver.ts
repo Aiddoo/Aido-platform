@@ -29,9 +29,7 @@ export function resolveSuggestedCategoryId(
 }
 
 /** todos 배열에서 `categoryName -> categoryId` 최초 등장 매핑 추출. */
-function buildCategoryNameMap(
-	todos: TodoSummaryForAnalysis[],
-): Map<string, number> {
+function buildCategoryNameMap(todos: TodoSummaryForAnalysis[]): Map<string, number> {
 	const map = new Map<string, number>();
 	for (const t of todos) {
 		if (!t.categoryName) {
@@ -46,10 +44,7 @@ function buildCategoryNameMap(
 }
 
 /** 제목 어절 중 카테고리명과 일치하는 게 있으면 해당 ID, 없으면 null. */
-function matchTitleToCategory(
-	title: string,
-	categoryByName: Map<string, number>,
-): number | null {
+function matchTitleToCategory(title: string, categoryByName: Map<string, number>): number | null {
 	const titleWords = new Set(title.split(/\s+/).filter(Boolean));
 	for (const [name, id] of categoryByName) {
 		if (titleWords.has(name)) {

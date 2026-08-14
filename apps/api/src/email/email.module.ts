@@ -1,8 +1,6 @@
 import { Module } from "@nestjs/common";
-import {
-	EMAIL_SENDER,
-	type EmailSenderPort,
-} from "./application/ports/email-sender.port";
+
+import { EMAIL_SENDER, type EmailSenderPort } from "./application/ports/email-sender.port";
 import { TransactionalEmailSender } from "./application/senders/transactional-email.sender";
 import { ResendEmailSenderAdapter } from "./infrastructure/adapters/resend-email-sender.adapter";
 
@@ -18,8 +16,7 @@ import { ResendEmailSenderAdapter } from "./infrastructure/adapters/resend-email
 		{
 			provide: TransactionalEmailSender,
 			inject: [EMAIL_SENDER],
-			useFactory: (emailSender: EmailSenderPort) =>
-				new TransactionalEmailSender(emailSender),
+			useFactory: (emailSender: EmailSenderPort) => new TransactionalEmailSender(emailSender),
 		},
 		{
 			provide: EMAIL_SENDER,

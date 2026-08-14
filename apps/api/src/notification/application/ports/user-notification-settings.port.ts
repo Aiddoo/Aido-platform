@@ -15,13 +15,9 @@ export interface UserNotificationSettingsPort {
 	upsertPushTimezone(userId: string, timezone: string): Promise<void>;
 	upsertPushLocale(userId: string, locale: string): Promise<void>;
 	getPreferenceRecord(userId: string): Promise<UserPreferenceRecord | null>;
-	getPreferenceRecordsByUserIds(
-		userIds: string[],
-	): Promise<UserPreferenceRecordWithId[]>;
+	getPreferenceRecordsByUserIds(userIds: string[]): Promise<UserPreferenceRecordWithId[]>;
 	getConsentRecord(userId: string): Promise<UserConsentRecord | null>;
-	getConsentRecordsByUserIds(
-		userIds: string[],
-	): Promise<UserConsentRecordWithId[]>;
+	getConsentRecordsByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]>;
 	updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void>;
 }
 

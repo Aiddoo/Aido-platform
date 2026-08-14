@@ -10,6 +10,7 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { now } from "@/shared/domain/date/utils/core";
 import { toISOString } from "@/shared/domain/date/utils/format";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+
 import {
 	isRefundCancellation,
 	resolveCancellationUserStatus,
@@ -22,11 +23,6 @@ import {
 } from "../../../domain/services/webhook-timestamps";
 import { TransactionId } from "../../../domain/value-objects/transaction-id.vo";
 import {
-	SUBSCRIPTION_REPOSITORY,
-	type SubscriptionRepositoryPort,
-	type SubscriptionUser,
-} from "../../ports/subscription.repository.port";
-import {
 	SUBSCRIPTION_CACHE,
 	type SubscriptionCachePort,
 } from "../../ports/subscription-cache.port";
@@ -38,6 +34,11 @@ import {
 	SUBSCRIPTION_WEBHOOK_LOCK,
 	type SubscriptionWebhookLockPort,
 } from "../../ports/subscription-webhook-lock.port";
+import {
+	SUBSCRIPTION_REPOSITORY,
+	type SubscriptionRepositoryPort,
+	type SubscriptionUser,
+} from "../../ports/subscription.repository.port";
 import type { SubscriptionEventPayload } from "../../types/subscription-event.payload";
 import { baseEventPayload } from "./subscription-event-payload.mapper";
 
@@ -64,26 +65,17 @@ export class HandleWebhookEventUseCase {
 	/** 이벤트 타입별 핸들러 맵 */
 	readonly #eventHandlers = new Map<
 		RevenueCatEventType,
-		(
-			user: SubscriptionUser,
-			event: RevenueCatEvent,
-		) => Promise<SubscriptionEventPayload | null>
+		(user: SubscriptionUser, event: RevenueCatEvent) => Promise<SubscriptionEventPayload | null>
 	>([
 		["INITIAL_PURCHASE", (u, ev) => this.#handleInitialPurchase(u, ev)],
 		["RENEWAL", (u, ev) => this.#handleRenewal(u, ev)],
 		["CANCELLATION", (u, ev) => this.#handleCancellation(u, ev)],
 		["UNCANCELLATION", (u, ev) => this.#handleUncancellation(u, ev)],
 		["EXPIRATION", (u, ev) => this.#handleExpiration(u, ev)],
-		[
-			"BILLING_ISSUE",
-			(u, ev) => Promise.resolve(this.#handleBillingIssue(u, ev)),
-		],
+		["BILLING_ISSUE", (u, ev) => Promise.resolve(this.#handleBillingIssue(u, ev))],
 		["NON_RENEWING_PURCHASE", (u, ev) => this.#handleInitialPurchase(u, ev)],
 		["PRODUCT_CHANGE", (u, ev) => this.#handleProductChange(u, ev)],
-		[
-			"SUBSCRIPTION_EXTENDED",
-			(u, ev) => this.#handleSubscriptionExtended(u, ev),
-		],
+		["SUBSCRIPTION_EXTENDED", (u, ev) => this.#handleSubscriptionExtended(u, ev)],
 		["TRANSFER", (u, ev) => this.#handleTransfer(u, ev)],
 	]);
 
@@ -110,9 +102,7 @@ export class HandleWebhookEventUseCase {
 	async execute(body: unknown): Promise<{ received: true }> {
 		const parseResult = revenueCatWebhookPayloadSchema.safeParse(body);
 		if (!parseResult.success) {
-			this.#logger.warn(
-				`Invalid webhook payload: ${JSON.stringify(parseResult.error.issues)}`,
-			);
+			this.#logger.warn(`Invalid webhook payload: ${JSON.stringify(parseResult.error.issues)}`);
 			return { received: true };
 		}
 
@@ -163,8 +153,7 @@ export class HandleWebhookEventUseCase {
 		}
 
 		try {
-			const user =
-				await this.subscriptionRepository.findUserByAppUserId(appUserId);
+			const user = await this.subscriptionRepository.findUserByAppUserId(appUserId);
 
 			if (!user) {
 				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
@@ -175,11 +164,9 @@ export class HandleWebhookEventUseCase {
 			// 2. event.id 기반 중복 체크 (event.id가 있고, 기존 구독이 있는 경우)
 			const eventId = event.id;
 			if (eventId) {
-				const transactionId =
-					event.original_transaction_id ?? event.transaction_id;
+				const transactionId = event.original_transaction_id ?? event.transaction_id;
 				if (transactionId) {
-					const existing =
-						await this.subscriptionRepository.findByRevenueCatId(transactionId);
+					const existing = await this.subscriptionRepository.findByRevenueCatId(transactionId);
 					if (existing?.wasProcessedWith(eventId)) {
 						this.#logger.log(
 							`Duplicate event detected: eventId=${eventId}, transactionId=${transactionId} — skipping`,
@@ -191,9 +178,7 @@ export class HandleWebhookEventUseCase {
 
 			// 3. 무시할 이벤트 타입 처리
 			if (this.#IGNORED_EVENTS.has(eventType)) {
-				this.#logger.log(
-					`Ignored event: ${eventType} for appUserId=${appUserId}`,
-				);
+				this.#logger.log(`Ignored event: ${eventType} for appUserId=${appUserId}`);
 				return;
 			}
 
@@ -216,9 +201,7 @@ export class HandleWebhookEventUseCase {
 					this.notifier.notifyBillingIssue(user.id);
 				}
 
-				this.#logger.log(
-					`Subscription event processed: ${eventType} for userId=${user.id}`,
-				);
+				this.#logger.log(`Subscription event processed: ${eventType} for userId=${user.id}`);
 			}
 		} finally {
 			// 6. Lock 해제
@@ -238,19 +221,12 @@ export class HandleWebhookEventUseCase {
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
-		const startedAt = requirePurchasedAt(
-			event,
-			"Missing purchased_at_ms for INITIAL_PURCHASE",
-		);
-		const expiresAt = requireExpiresAt(
-			event,
-			"Missing expiration_at_ms for INITIAL_PURCHASE",
-		);
+		const startedAt = requirePurchasedAt(event, "Missing purchased_at_ms for INITIAL_PURCHASE");
+		const expiresAt = requireExpiresAt(event, "Missing expiration_at_ms for INITIAL_PURCHASE");
 
 		const skipped = await this.uow.run(async () => {
 			// 멱등성 가드: 중복 webhook 재전송 대비
-			const existing =
-				await this.subscriptionRepository.findByRevenueCatId(transactionId);
+			const existing = await this.subscriptionRepository.findByRevenueCatId(transactionId);
 			if (existing) {
 				this.#logger.log(
 					`Subscription already exists for transactionId=${transactionId}, skipping create`,
@@ -305,15 +281,11 @@ export class HandleWebhookEventUseCase {
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
-		const expiresAt = requireExpiresAt(
-			event,
-			"Missing expiration_at_ms for RENEWAL",
-		);
+		const expiresAt = requireExpiresAt(event, "Missing expiration_at_ms for RENEWAL");
 
 		const skipped = await this.uow.run(async () => {
 			// 멱등성 가드: 동일 expiresAt으로 이미 갱신되었으면 skip
-			const existing =
-				await this.subscriptionRepository.findByRevenueCatId(transactionId);
+			const existing = await this.subscriptionRepository.findByRevenueCatId(transactionId);
 			if (!existing) {
 				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 					reason: `Subscription not found for RENEWAL: ${transactionId}`,
@@ -378,8 +350,7 @@ export class HandleWebhookEventUseCase {
 			// webhook expiresAt 없으면 DB 기존값 fallback
 			let expiresAt = webhookExpiresAt;
 			if (!expiresAt) {
-				const existing =
-					await this.subscriptionRepository.findByRevenueCatId(transactionId);
+				const existing = await this.subscriptionRepository.findByRevenueCatId(transactionId);
 				expiresAt = existing?.expiresAt ?? null;
 			}
 
@@ -392,24 +363,18 @@ export class HandleWebhookEventUseCase {
 
 			if (isRefund) {
 				// 환불: 즉시 접근 권한 회수
-				await this.subscriptionRepository.updateUserSubscriptionStatus(
-					user.id,
-					{
-						subscriptionStatus: "FREE",
-						subscriptionExpiresAt: null,
-					},
-				);
+				await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+					subscriptionStatus: "FREE",
+					subscriptionExpiresAt: null,
+				});
 			} else {
 				// 일반 취소: 만료일까지 ACTIVE 유지 (60초 grace period로 clock skew 대응)
 				const userStatus = resolveCancellationUserStatus(expiresAt);
 
-				await this.subscriptionRepository.updateUserSubscriptionStatus(
-					user.id,
-					{
-						subscriptionStatus: userStatus,
-						...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-					},
-				);
+				await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+					subscriptionStatus: userStatus,
+					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
+				});
 			}
 		});
 
@@ -450,9 +415,7 @@ export class HandleWebhookEventUseCase {
 			});
 		});
 
-		this.#logger.log(
-			`Uncancellation processed: userId=${user.id}, transactionId=${transactionId}`,
-		);
+		this.#logger.log(`Uncancellation processed: userId=${user.id}, transactionId=${transactionId}`);
 
 		return {
 			...baseEventPayload(user, event, transactionId),
@@ -484,9 +447,7 @@ export class HandleWebhookEventUseCase {
 			});
 		});
 
-		this.#logger.log(
-			`Expiration processed: userId=${user.id}, transactionId=${transactionId}`,
-		);
+		this.#logger.log(`Expiration processed: userId=${user.id}, transactionId=${transactionId}`);
 
 		return baseEventPayload(user, event, transactionId);
 	}
@@ -496,10 +457,7 @@ export class HandleWebhookEventUseCase {
 	 *
 	 * 로그만 남기고 구독은 유지합니다.
 	 */
-	#handleBillingIssue(
-		user: SubscriptionUser,
-		event: RevenueCatEvent,
-	): SubscriptionEventPayload {
+	#handleBillingIssue(user: SubscriptionUser, event: RevenueCatEvent): SubscriptionEventPayload {
 		const transactionId = this.#resolveTransactionId(event);
 		this.#logger.log(
 			`Billing issue detected: userId=${user.id}, productId=${event.product_id}, store=${event.store ?? "unknown"}`,
@@ -595,8 +553,7 @@ export class HandleWebhookEventUseCase {
 		// revenueCatUserId를 새 appUserId로 갱신
 		// subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
 		await this.uow.run(async () => {
-			const existingUser =
-				await this.subscriptionRepository.findUserByAppUserId(newAppUserId);
+			const existingUser = await this.subscriptionRepository.findUserByAppUserId(newAppUserId);
 
 			// 이미 올바른 매핑이면 skip (idempotency)
 			if (existingUser?.id === user.id) {
@@ -609,9 +566,7 @@ export class HandleWebhookEventUseCase {
 			});
 		});
 
-		this.#logger.log(
-			`Transfer: userId=${user.id}, revenueCatUserId → ${newAppUserId}`,
-		);
+		this.#logger.log(`Transfer: userId=${user.id}, revenueCatUserId → ${newAppUserId}`);
 
 		return baseEventPayload(user, event);
 	}
@@ -623,10 +578,7 @@ export class HandleWebhookEventUseCase {
 	 * 둘 다 없으면 webhook 처리 실패로 간주합니다.
 	 */
 	#resolveTransactionId(event: RevenueCatEvent): string {
-		return TransactionId.resolve(
-			event.original_transaction_id,
-			event.transaction_id,
-			event.type,
-		).value;
+		return TransactionId.resolve(event.original_transaction_id, event.transaction_id, event.type)
+			.value;
 	}
 }

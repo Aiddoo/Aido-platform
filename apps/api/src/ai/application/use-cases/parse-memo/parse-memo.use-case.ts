@@ -1,20 +1,15 @@
 import { ErrorCode } from "@aido/errors";
 import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/validators";
-import {
-	llmParsedMemoResultSchema,
-	parsedMemoDataSchema,
-} from "@aido/validators";
+import { llmParsedMemoResultSchema, parsedMemoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { now } from "@/shared/domain/date/utils/core";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "@/shared/domain/locale";
+
 import { buildParseMemoPrompt } from "../../../domain/services/prompts/parse-memo.prompt";
 import { buildParseMemoPromptEn } from "../../../domain/services/prompts/parse-memo.prompt.en";
-import {
-	AI_PROVIDER,
-	type AiProvider,
-	AiProviderCallError,
-} from "../../ports/ai-provider.port";
+import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
@@ -72,8 +67,7 @@ export class ParseMemoUseCase {
 		const userCategories = await this.categoryReader.findByUserId(userId);
 		const categoryIds = new Set(userCategories.map((c) => c.id));
 
-		const buildMemoPrompt =
-			locale === "en" ? buildParseMemoPromptEn : buildParseMemoPrompt;
+		const buildMemoPrompt = locale === "en" ? buildParseMemoPromptEn : buildParseMemoPrompt;
 		const { system, prompt } = buildMemoPrompt(
 			content,
 			timezone,
@@ -82,20 +76,16 @@ export class ParseMemoUseCase {
 		);
 
 		try {
-			const result =
-				await this.aiProvider.generateStructured<LlmParsedMemoResult>({
-					system,
-					prompt,
-					schema: llmParsedMemoResultSchema,
-					maxOutputTokens: 800,
-				});
+			const result = await this.aiProvider.generateStructured<LlmParsedMemoResult>({
+				system,
+				prompt,
+				schema: llmParsedMemoResultSchema,
+				maxOutputTokens: 800,
+			});
 
 			const processingTimeMs = Date.now() - startTime;
 			const todoCount = result.output.todos.length;
-			const itemCount = result.output.todos.reduce(
-				(sum, t) => sum + t.items.length,
-				0,
-			);
+			const itemCount = result.output.todos.reduce((sum, t) => sum + t.items.length, 0);
 
 			this.#logger.log(
 				`메모 파싱 완료: userId=${userId}, ${todoCount} todos, ${itemCount} items, ` +
@@ -105,9 +95,7 @@ export class ParseMemoUseCase {
 			const data = parsedMemoDataSchema.parse({
 				todos: result.output.todos.slice(0, 5).map((todo) => ({
 					...todo,
-					categoryId: categoryIds.has(todo.categoryId)
-						? todo.categoryId
-						: categoryId,
+					categoryId: categoryIds.has(todo.categoryId) ? todo.categoryId : categoryId,
 				})),
 			});
 

@@ -3,9 +3,7 @@ import { UpsertWeeklyAchievementsUseCase } from "../use-cases/upsert-weekly-achi
 
 /** 스케줄러가 계산한 주간 달성 기록을 영속화하는 모듈 공개 경계. */
 export class WeeklyAchievementWriterAccess {
-	constructor(
-		private readonly upsertWeeklyAchievementsUseCase: UpsertWeeklyAchievementsUseCase,
-	) {}
+	constructor(private readonly upsertWeeklyAchievementsUseCase: UpsertWeeklyAchievementsUseCase) {}
 
 	upsertMany(records: WeeklyAchievementUpsert[]): Promise<void> {
 		return this.upsertWeeklyAchievementsUseCase.execute({ records });

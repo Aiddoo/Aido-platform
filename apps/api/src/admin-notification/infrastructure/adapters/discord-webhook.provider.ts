@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
+
 import { now } from "@/shared/domain/date/utils/core";
 import { toISOString } from "@/shared/domain/date/utils/format";
+
 import type {
 	AdminNotification,
 	AdminNotifier,
@@ -32,9 +34,7 @@ export class DiscordWebhookProvider implements AdminNotifier {
 	async send(notification: AdminNotification): Promise<AdminNotifyResult> {
 		const webhookUrl = this.#webhookUrl;
 		if (!webhookUrl) {
-			this.#logger.debug(
-				"Discord webhook not configured, skipping notification",
-			);
+			this.#logger.debug("Discord webhook not configured, skipping notification");
 			return { success: false, error: "Webhook URL not configured" };
 		}
 
@@ -57,9 +57,7 @@ export class DiscordWebhookProvider implements AdminNotifier {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				this.#logger.error(
-					`Discord webhook failed: ${response.status} ${errorText}`,
-				);
+				this.#logger.error(`Discord webhook failed: ${response.status} ${errorText}`);
 				return {
 					success: false,
 					error: `HTTP ${response.status}: ${errorText}`,

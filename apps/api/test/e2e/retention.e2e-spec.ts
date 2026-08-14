@@ -1,8 +1,10 @@
 import request from "supertest";
+
 import {
 	RETENTION_CONFIG,
 	type RetentionConfigPort,
 } from "@/retention/application/ports/retention-config.port";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("신규 사용자 리텐션 V2 E2E", () => {
@@ -14,8 +16,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
 			treatmentPercent: 100,
 		};
 		ctx = await createE2eApp({
-			customizeBuilder: (builder) =>
-				builder.overrideProvider(RETENTION_CONFIG).useValue(config),
+			customizeBuilder: (builder) => builder.overrideProvider(RETENTION_CONFIG).useValue(config),
 		});
 	}, 60_000);
 
@@ -40,11 +41,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
 			})
 			.expect(201);
 
-		expect(Object.keys(response.body.data).sort()).toEqual([
-			"email",
-			"emailSent",
-			"message",
-		]);
+		expect(Object.keys(response.body.data).sort()).toEqual(["email", "emailSent", "message"]);
 		const user = await ctx.testDatabase.getPrisma().user.findUniqueOrThrow({
 			where: { email: "retention-new@example.com" },
 			include: { retentionAssignments: { include: { stages: true } } },

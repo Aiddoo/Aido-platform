@@ -24,8 +24,7 @@ describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
 	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(KasiSunTimeProvider).compile();
+		const { unit, unitRef } = await TestBed.solitary(KasiSunTimeProvider).compile();
 
 		provider = unit;
 		configService = unitRef.get(TypedConfigService);

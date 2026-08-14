@@ -130,10 +130,7 @@ function groupByTitleAndWeek(
 	todos: readonly HabitTrackerInput[],
 	timezone: string,
 ): Map<string, Map<number, { total: number; completed: number }>> {
-	const map = new Map<
-		string,
-		Map<number, { total: number; completed: number }>
-	>();
+	const map = new Map<string, Map<number, { total: number; completed: number }>>();
 
 	for (const todo of todos) {
 		const week = dayjs(todo.startDate).tz(timezone).isoWeek();
@@ -172,16 +169,8 @@ function countConsecutiveWeeks(sortedWeeks: number[]): number {
 	return count;
 }
 
-function computeCompletionRate(
-	weekMap: Map<number, { total: number; completed: number }>,
-): number {
-	const totalAll = Array.from(weekMap.values()).reduce(
-		(s, w) => s + w.total,
-		0,
-	);
-	const completedAll = Array.from(weekMap.values()).reduce(
-		(s, w) => s + w.completed,
-		0,
-	);
+function computeCompletionRate(weekMap: Map<number, { total: number; completed: number }>): number {
+	const totalAll = Array.from(weekMap.values()).reduce((s, w) => s + w.total, 0);
+	const completedAll = Array.from(weekMap.values()).reduce((s, w) => s + w.completed, 0);
 	return totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0;
 }

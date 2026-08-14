@@ -1,13 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
@@ -52,12 +51,11 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: users.map((u) => u.id),
-				type: "LUNCH_NUDGE",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: users.map((u) => u.id),
+			type: "LUNCH_NUDGE",
+			notificationDate: today,
+		});
 
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
@@ -65,18 +63,13 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
-		const locales = await this.preferenceReader.findUserLocales(
-			filteredUsers.map((u) => u.id),
-		);
+		const locales = await this.preferenceReader.findUserLocales(filteredUsers.map((u) => u.id));
 		const notifications = filteredUsers.map((user) => {
-			const message = NotificationMessageBuilder.lunchNudge(
-				locales.get(user.id) ?? "ko",
-				{
-					campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
-					recipientId: user.id,
-					occurrenceKey: toDateString(today),
-				},
-			);
+			const message = NotificationMessageBuilder.lunchNudge(locales.get(user.id) ?? "ko", {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+				recipientId: user.id,
+				occurrenceKey: toDateString(today),
+			});
 			return {
 				userId: user.id,
 				type: "LUNCH_NUDGE" as const,

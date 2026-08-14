@@ -1,6 +1,7 @@
 import { type DynamicModule, Global, Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
+
 import type { EnvConfig } from "../config";
 import { LOGGER_REDACT_PATHS } from "./constants/logger.constant";
 import type { LoggerModuleOptions } from "./interfaces/logger.interface";
@@ -68,8 +69,7 @@ export class LoggerModule {
 						autoLogging: autoLogging
 							? {
 									ignore: (req) =>
-										((req as { res?: { statusCode?: number } }).res
-											?.statusCode ?? 200) >= 400,
+										((req as { res?: { statusCode?: number } }).res?.statusCode ?? 200) >= 400,
 								}
 							: false,
 						redact: redactPaths,
@@ -80,9 +80,7 @@ export class LoggerModule {
 							responseTime: () => undefined,
 						},
 						customSuccessMessage: (req, res, responseTime) => {
-							const userId =
-								(req as { user?: { userId?: string } }).user?.userId ??
-								"anonymous";
+							const userId = (req as { user?: { userId?: string } }).user?.userId ?? "anonymous";
 							return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
 						},
 					},
@@ -113,12 +111,10 @@ export class LoggerModule {
 						const logLevelEnv = configService.get("LOG_LEVEL", {
 							infer: true,
 						});
-						const level =
-							options.level ?? logLevelEnv ?? getDefaultLogLevel(nodeEnv);
+						const level = options.level ?? logLevelEnv ?? getDefaultLogLevel(nodeEnv);
 
 						// 테스트 환경에서는 pretty print 비활성화
-						const prettyPrint =
-							options.prettyPrint ?? (nodeEnv !== "production" && !isTest);
+						const prettyPrint = options.prettyPrint ?? (nodeEnv !== "production" && !isTest);
 
 						// 테스트 환경에서는 HTTP 자동 로깅 비활성화
 						const autoLogging = options.autoLogging ?? !isTest;
@@ -140,8 +136,7 @@ export class LoggerModule {
 								autoLogging: autoLogging
 									? {
 											ignore: (req) =>
-												((req as { res?: { statusCode?: number } }).res
-													?.statusCode ?? 200) >= 400,
+												((req as { res?: { statusCode?: number } }).res?.statusCode ?? 200) >= 400,
 										}
 									: false,
 								redact: redactPaths,
@@ -153,8 +148,7 @@ export class LoggerModule {
 								},
 								customSuccessMessage: (req, res, responseTime) => {
 									const userId =
-										(req as { user?: { userId?: string } }).user?.userId ??
-										"anonymous";
+										(req as { user?: { userId?: string } }).user?.userId ?? "anonymous";
 									return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
 								},
 							},

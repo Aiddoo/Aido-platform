@@ -12,6 +12,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+
 import { NotificationSender } from "@/notification";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
@@ -53,9 +54,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
 
-		const { unit, unitRef } = await TestBed.solitary(
-			WeeklyAchievementStrategy,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(WeeklyAchievementStrategy).compile();
 
 		strategy = unit;
 		reader = unitRef.get(WEEKLY_ACHIEVEMENT_STATS_READER);
@@ -66,9 +65,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		// 기본 mock 설정
 		reader.groupTotalTodosByUser.mockResolvedValue([]);
 		reader.groupCompletedTodosByUser.mockResolvedValue([]);
-		reader.findFreeRecipientIds.mockImplementation(
-			async (userIds) => new Set(userIds),
-		);
+		reader.findFreeRecipientIds.mockImplementation(async (userIds) => new Set(userIds));
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
@@ -95,11 +92,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 				expect.objectContaining({ userId: "premium-user" }),
 			]),
 		);
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		expect(notifications?.map((notification) => notification.userId)).toEqual([
-			"free-user",
-		]);
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		expect(notifications?.map((notification) => notification.userId)).toEqual(["free-user"]);
 	});
 
 	afterEach(() => {
@@ -110,12 +104,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		// Given — 2024-01-15(월) 실행 → 이전 주: 01-08(월)~01-14(일)
 		const ctx = makeCtx();
 
-		reader.groupTotalTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 3 },
-		]);
-		reader.groupCompletedTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 2 },
-		]);
+		reader.groupTotalTodosByUser.mockResolvedValue([{ userId: "user-1", count: 3 }]);
+		reader.groupCompletedTodosByUser.mockResolvedValue([{ userId: "user-1", count: 2 }]);
 
 		// When
 		await strategy.execute(ctx);
@@ -135,12 +125,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		// Given — 2024-01-15(월) 실행 → 이전 주: ISO 2024-W02
 		const ctx = makeCtx();
 
-		reader.groupTotalTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 3 },
-		]);
-		reader.groupCompletedTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 2 },
-		]);
+		reader.groupTotalTodosByUser.mockResolvedValue([{ userId: "user-1", count: 3 }]);
+		reader.groupCompletedTodosByUser.mockResolvedValue([{ userId: "user-1", count: 2 }]);
 
 		// When
 		await strategy.execute(ctx);
@@ -159,12 +145,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		// Given
 		const ctx = makeCtx();
 
-		reader.groupTotalTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 3 },
-		]);
-		reader.groupCompletedTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 2 },
-		]);
+		reader.groupTotalTodosByUser.mockResolvedValue([{ userId: "user-1", count: 3 }]);
+		reader.groupCompletedTodosByUser.mockResolvedValue([{ userId: "user-1", count: 2 }]);
 
 		// When
 		await strategy.execute(ctx);
@@ -225,8 +207,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 
 		// Then — completedTodos > 0인 두 유저 모두 알림 발송
 		expect(result).toEqual({ sent: 2 });
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(2);
 		expect(notifications?.map((n) => n.userId)).toEqual(
 			expect.arrayContaining(["user-1", "user-2"]),
@@ -238,9 +219,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		const ctx = makeCtx();
 
 		// totalByUser에는 있지만 completedByUser에는 없음 → completedTodos=0
-		reader.groupTotalTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 5 },
-		]);
+		reader.groupTotalTodosByUser.mockResolvedValue([{ userId: "user-1", count: 5 }]);
 		reader.groupCompletedTodosByUser.mockResolvedValue([]); // completed 없음
 
 		// When
@@ -270,9 +249,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		]);
 
 		// user-1은 이미 알림 받음
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(["user-1"]),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -286,8 +263,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		);
 		// 알림은 user-2만
 		expect(result).toEqual({ sent: 1 });
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
@@ -313,9 +289,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		const ctx = makeCtx();
 
 		// completed > 0인 유저 없음 → 알림 대상 없음
-		reader.groupTotalTodosByUser.mockResolvedValue([
-			{ userId: "user-1", count: 5 },
-		]);
+		reader.groupTotalTodosByUser.mockResolvedValue([{ userId: "user-1", count: 5 }]);
 		reader.groupCompletedTodosByUser.mockResolvedValue([]); // completed 없음
 
 		// When

@@ -3,10 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
-import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-} from "../../ports/follow.repository.port";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
 
 export interface RejectFriendRequestInput {
 	userId: string;
@@ -28,10 +25,7 @@ export class RejectFriendRequestUseCase {
 	async execute(input: RejectFriendRequestInput): Promise<void> {
 		const { userId, requesterUserId } = input;
 
-		const request = await this.followRepository.findByFollowerAndFollowing(
-			requesterUserId,
-			userId,
-		);
+		const request = await this.followRepository.findByFollowerAndFollowing(requesterUserId, userId);
 		if (!request?.isPending()) {
 			throw new ApplicationException(ErrorCode.FOLLOW_0903, {
 				targetUserId: requesterUserId,
@@ -40,8 +34,6 @@ export class RejectFriendRequestUseCase {
 
 		await this.followRepository.delete(request.id);
 
-		this.#logger.log(
-			`Friend request rejected: ${requesterUserId} -> ${userId}`,
-		);
+		this.#logger.log(`Friend request rejected: ${requesterUserId} -> ${userId}`);
 	}
 }

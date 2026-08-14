@@ -11,12 +11,8 @@ import type { StreakMilestoneNotifierPort } from "../../application/ports/streak
  * heavy 배럴을 피해 ES 초기화 순환을 방지한다.
  */
 @Injectable()
-export class StreakMilestoneNotifierAdapter
-	implements StreakMilestoneNotifierPort
-{
-	constructor(
-		private readonly notificationQueueService: NotificationQueueService,
-	) {}
+export class StreakMilestoneNotifierAdapter implements StreakMilestoneNotifierPort {
+	constructor(private readonly notificationQueueService: NotificationQueueService) {}
 
 	notifyStreak3Reached(userId: string): void {
 		this.notificationQueueService.enqueueMilestoneReached({

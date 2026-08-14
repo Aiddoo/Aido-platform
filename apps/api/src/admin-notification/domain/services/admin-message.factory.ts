@@ -6,11 +6,7 @@ import {
 	AdminNotificationMessage,
 } from "../value-objects/admin-notification-message.vo";
 import { formatDate, formatPrice } from "./discord-format";
-import {
-	accountProviderLabel,
-	PROVIDER_DEVICE_LABELS,
-	PROVIDER_LABELS,
-} from "./provider-labels";
+import { accountProviderLabel, PROVIDER_DEVICE_LABELS, PROVIDER_LABELS } from "./provider-labels";
 import {
 	DEFAULT_META,
 	DEVICE_LABELS,
@@ -93,10 +89,7 @@ export function buildSubscriptionEventMessage(
 	if (payload.priceInPurchasedCurrency != null && payload.purchasedCurrency) {
 		fields.push({
 			name: "금액",
-			value: formatPrice(
-				payload.priceInPurchasedCurrency,
-				payload.purchasedCurrency,
-			),
+			value: formatPrice(payload.priceInPurchasedCurrency, payload.purchasedCurrency),
 			inline: true,
 		});
 	} else if (payload.priceUsd != null) {
@@ -140,13 +133,8 @@ export function buildSubscriptionEventMessage(
 /**
  * 일일 가입 요약 관리자 알림 메시지 조립.
  */
-export function buildDailySummaryMessage(
-	summary: DailySignupSummary,
-): AdminNotificationMessage {
-	const previousDayTotal = summary.signupsByProvider.reduce(
-		(sum, group) => sum + group.count,
-		0,
-	);
+export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNotificationMessage {
+	const previousDayTotal = summary.signupsByProvider.reduce((sum, group) => sum + group.count, 0);
 
 	const providerBreakdown = summary.signupsByProvider
 		.map((group) => {

@@ -5,8 +5,8 @@ import { ActivationService } from '@src/features/activation/services/activation.
 import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/repositories/feature-discovery-state.repository';
-import { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
 import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
+import { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
 import { FriendService } from '@src/features/friend/services/friend.service';
 import { InquiryService } from '@src/features/inquiry/services/inquiry.service';
 import { MemoService } from '@src/features/memo/services/memo.service';
@@ -21,9 +21,9 @@ import { createStoreReviewPromptRepository } from '@src/features/todo/repositori
 import { ReorderCoachmarkService } from '@src/features/todo/services/reorder-coachmark.service';
 import { StoreReviewPromptService } from '@src/features/todo/services/store-review-prompt.service';
 import { SubTodoService } from '@src/features/todo/services/sub-todo.service';
-import { TodoService } from '@src/features/todo/services/todo.service';
 import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
+import { TodoService } from '@src/features/todo/services/todo.service';
 import { UserService } from '@src/features/user/services/user.service';
 import { WeatherService } from '@src/features/weather/services/weather.service';
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
@@ -53,8 +53,8 @@ import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 import { expoStoreReviewGateway } from '@src/shared/infra/store-review/expo-store-review.gateway';
-
 import { type PropsWithChildren, useState } from 'react';
+
 import { type DIContainer, DIContext } from './di-context';
 
 export const DIProvider = ({ children }: PropsWithChildren) => {

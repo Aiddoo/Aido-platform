@@ -1,18 +1,11 @@
-import {
-	type DynamicModule,
-	Global,
-	Module,
-	type Provider,
-} from "@nestjs/common";
+import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
 import type Redis from "ioredis";
+
 import { TypedConfigService } from "../config/services/config.service";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
 import { InMemoryDedupAdapter } from "./adapters/in-memory-dedup.adapter";
 import { RedisDedupAdapter } from "./adapters/redis-dedup.adapter";
-import {
-	DEDUP_PROVIDER,
-	type IDedupProvider,
-} from "./interfaces/dedup.interface";
+import { DEDUP_PROVIDER, type IDedupProvider } from "./interfaces/dedup.interface";
 
 /**
  * 중복 방지 모듈
@@ -40,10 +33,7 @@ export class DedupModule {
 	static forRoot(): DynamicModule {
 		const dedupProvider: Provider = {
 			provide: DEDUP_PROVIDER,
-			useFactory: (
-				configService: TypedConfigService,
-				redis?: Redis,
-			): IDedupProvider => {
+			useFactory: (configService: TypedConfigService, redis?: Redis): IDedupProvider => {
 				const cacheType = configService.cache.type;
 
 				if (cacheType === "redis" && redis) {
@@ -52,10 +42,7 @@ export class DedupModule {
 
 				return new InMemoryDedupAdapter();
 			},
-			inject: [
-				TypedConfigService,
-				{ token: REDIS_COMMAND_CLIENT, optional: true },
-			],
+			inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
 		};
 
 		return {

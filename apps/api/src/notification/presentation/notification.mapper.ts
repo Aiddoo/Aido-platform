@@ -4,14 +4,10 @@
  * Prisma 엔티티를 DTO 형식으로 변환
  */
 
-import type {
-	NotificationContext,
-	Notification as NotificationDto,
-} from "@aido/validators";
-import {
-	toISOString,
-	toISOStringOrNull,
-} from "@/shared/domain/date/utils/format";
+import type { NotificationContext, Notification as NotificationDto } from "@aido/validators";
+
+import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
+
 import type { NotificationRecord } from "../domain/records/notification.record";
 
 export abstract class NotificationMapper {

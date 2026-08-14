@@ -1,14 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
@@ -46,12 +44,11 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: users.map((u) => u.id),
-				type: "WEEKLY_REPORT",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: users.map((u) => u.id),
+			type: "WEEKLY_REPORT",
+			notificationDate: today,
+		});
 
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
@@ -59,18 +56,13 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
-		const locales = await this.preferenceReader.findUserLocales(
-			filteredUsers.map((u) => u.id),
-		);
+		const locales = await this.preferenceReader.findUserLocales(filteredUsers.map((u) => u.id));
 		const notifications = filteredUsers.map((user) => {
-			const message = NotificationMessageBuilder.weeklyReport(
-				locales.get(user.id) ?? "ko",
-				{
-					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_REPORT,
-					recipientId: user.id,
-					occurrenceKey: toDateString(today),
-				},
-			);
+			const message = NotificationMessageBuilder.weeklyReport(locales.get(user.id) ?? "ko", {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_REPORT,
+				recipientId: user.id,
+				occurrenceKey: toDateString(today),
+			});
 			return {
 				userId: user.id,
 				type: "WEEKLY_REPORT" as const,

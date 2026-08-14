@@ -1,0 +1,128 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "typescript"],
+  "categories": {
+    "correctness": "off"
+  },
+  "options": {
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "ignorePatterns": [
+    "**/*.generated.*",
+    "apps/api/prisma/generated/**",
+    "apps/api/src/generated/**",
+    "apps/mobile/assets/**",
+    "apps/mobile/.agents/**",
+    "apps/mobile/.claude/skills/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**"
+  ],
+  "rules": {
+    "eslint/no-unused-vars": "error",
+    "eslint/prefer-const": "error",
+    "import/no-cycle": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["apps/api/**/*.ts"],
+      "rules": {
+        "typescript/consistent-type-imports": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.e2e-spec.ts",
+        "**/*.integration-spec.ts",
+        "apps/api/test/**/*.ts"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off"
+      }
+    },
+    {
+      "files": ["apps/mobile/index.ts"],
+      "rules": {
+        "typescript/consistent-type-imports": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/*/domain/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@nestjs/",
+                "message": "domain은 NestJS에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)generated(?:/|$)",
+                "message": "domain은 생성된 Prisma 타입에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)presentation(?:/|$)",
+                "message": "domain은 presentation에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)application/ports(?:/|$)",
+                "message": "domain은 application port에 의존할 수 없습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/api/src/*/application/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@prisma/|(?:^|/)generated(?:/|$)",
+                "message": "application은 Prisma 타입에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)infrastructure(?:/|$)",
+                "message": "application은 infrastructure 구현에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)presentation(?:/|$)",
+                "message": "application은 presentation에 의존할 수 없습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "apps/api/src/*/domain/**/*.ts",
+        "apps/api/src/*/application/**/*.ts",
+        "apps/api/src/*/infrastructure/**/*.ts"
+      ],
+      "excludeFiles": [
+        "apps/api/src/shared/application/**/*.ts",
+        "apps/api/src/shared/infrastructure/**/*.ts",
+        "**/*.spec.ts",
+        "**/*.test.ts"
+      ],
+      "rules": {
+        "typescript/no-non-null-assertion": "error"
+      }
+    }
+  ]
+}

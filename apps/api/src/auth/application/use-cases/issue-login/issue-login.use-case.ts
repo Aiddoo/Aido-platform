@@ -1,7 +1,9 @@
 import type { UserRole } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
+
 import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
 import type { AccountProvider } from "@/auth/domain/types";
+
 import type { TokenPair } from "../../ports/auth-crypto.port";
 import {
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
@@ -54,15 +56,14 @@ export class IssueLoginUseCase {
 	) {}
 
 	async execute(input: IssueLoginInput): Promise<IssueLoginOutcome> {
-		const { sessionId, tokens } =
-			await this.sessionService.createSessionWithTokens({
-				userId: input.userId,
-				email: input.email,
-				role: input.role,
-				deviceFingerprint: input.deviceFingerprint,
-				userAgent: input.userAgent,
-				ipAddress: input.ip,
-			});
+		const { sessionId, tokens } = await this.sessionService.createSessionWithTokens({
+			userId: input.userId,
+			email: input.email,
+			role: input.role,
+			deviceFingerprint: input.deviceFingerprint,
+			userAgent: input.userAgent,
+			ipAddress: input.ip,
+		});
 
 		await this.loginAttemptRepository.create({
 			email: input.email,
@@ -80,9 +81,7 @@ export class IssueLoginUseCase {
 			...(input.securityMetadata ? { metadata: input.securityMetadata } : {}),
 		});
 
-		const userWithProfile = await this.userRepository.findByIdWithProfile(
-			input.userId,
-		);
+		const userWithProfile = await this.userRepository.findByIdWithProfile(input.userId);
 
 		return {
 			sessionId,

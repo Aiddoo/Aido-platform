@@ -71,10 +71,7 @@ export const NotificationFixture = {
 	/**
 	 * 특정 타입의 Notification 생성
 	 */
-	createByType: (
-		type: NotificationType,
-		overrides: Partial<Notification> = {},
-	): Notification => {
+	createByType: (type: NotificationType, overrides: Partial<Notification> = {}): Notification => {
 		return NotificationFixture.create({
 			type,
 			...overrides,
@@ -84,13 +81,8 @@ export const NotificationFixture = {
 	/**
 	 * 여러 Notification 생성
 	 */
-	createMany: (
-		count: number,
-		overrides: Partial<Notification> = {},
-	): Notification[] => {
-		return Array.from({ length: count }, () =>
-			NotificationFixture.create(overrides),
-		);
+	createMany: (count: number, overrides: Partial<Notification> = {}): Notification[] => {
+		return Array.from({ length: count }, () => NotificationFixture.create(overrides));
 	},
 
 	/**

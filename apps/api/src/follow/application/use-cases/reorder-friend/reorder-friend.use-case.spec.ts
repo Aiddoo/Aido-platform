@@ -3,6 +3,7 @@
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 
@@ -43,8 +44,7 @@ describe("ReorderFriendUseCase", () => {
 	let uow: Mocked<{ run: (fn: () => unknown) => unknown }>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(ReorderFriendUseCase).compile();
+		const { unit, unitRef } = await TestBed.solitary(ReorderFriendUseCase).compile();
 		useCase = unit;
 		repo = unitRef.get(FOLLOW_REPOSITORY);
 		uow = unitRef.get(UNIT_OF_WORK);

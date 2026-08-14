@@ -22,10 +22,12 @@
 
 import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
+
 import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
@@ -106,10 +108,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 	 * 이메일/비밀번호 사용자 생성 헬퍼 (register + verify-email 시뮬레이션)
 	 * @returns userId
 	 */
-	async function createCredentialUser(
-		email: string,
-		password: string,
-	): Promise<string> {
+	async function createCredentialUser(email: string, password: string): Promise<string> {
 		// 회원가입
 		const registerResult = await authService.register({
 			email,
@@ -169,11 +168,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const code = getCode(email);
 
 			// When
-			const result = await passwordManagementService.resetPassword(
-				email,
-				code,
-				"NewPassword456!",
-			);
+			const result = await passwordManagementService.resetPassword(email, code, "NewPassword456!");
 
 			// Then
 			expect(result.message).toContain("비밀번호가 재설정되었습니다");
@@ -223,9 +218,9 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			await passwordManagementService.resetPassword(email, code, newPassword);
 
 			// When & Then
-			await expect(
-				authService.login({ email, password: originalPassword }),
-			).rejects.toThrow(ApplicationException);
+			await expect(authService.login({ email, password: originalPassword })).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
 		it("재설정 후 모든 세션이 무효화된다", async () => {
@@ -242,11 +237,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const code = getCode(email);
 
 			// When
-			await passwordManagementService.resetPassword(
-				email,
-				code,
-				"NewPassword456!",
-			);
+			await passwordManagementService.resetPassword(email, code, "NewPassword456!");
 
 			// Then - 모든 세션의 revokedAt이 설정됨
 			const prisma = testDb.getPrisma();
@@ -270,11 +261,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const code = getCode(email);
 
 			// When
-			await passwordManagementService.resetPassword(
-				email,
-				code,
-				"NewPassword456!",
-			);
+			await passwordManagementService.resetPassword(email, code, "NewPassword456!");
 
 			// Then
 			const prisma = testDb.getPrisma();
@@ -317,11 +304,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 
 			// When & Then
 			await expect(
-				passwordManagementService.resetPassword(
-					email,
-					"000000",
-					"NewPassword456!",
-				),
+				passwordManagementService.resetPassword(email, "000000", "NewPassword456!"),
 			).rejects.toThrow(ApplicationException);
 		});
 	});

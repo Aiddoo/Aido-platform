@@ -23,19 +23,14 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 	let dispatchDailySummary: Mocked<DispatchDailySignupSummaryUseCase>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			AdminNotificationProcessor,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(AdminNotificationProcessor).compile();
 		processor = unit;
 		sendAdminNotification = unitRef.get(SendAdminNotificationUseCase);
 		dispatchDailySummary = unitRef.get(DispatchDailySignupSummaryUseCase);
 	});
 
 	function createSendJob(data: AdminNotificationSendData) {
-		return createMockJob<AdminNotificationJobData>(
-			AdminNotificationJobName.SEND,
-			data,
-		);
+		return createMockJob<AdminNotificationJobData>(AdminNotificationJobName.SEND, data);
 	}
 
 	describe("onStalled", () => {
@@ -51,10 +46,7 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 
 			await processor.process(job);
 
-			expect(sendAdminNotification.execute).toHaveBeenCalledWith(
-				"payment",
-				notification,
-			);
+			expect(sendAdminNotification.execute).toHaveBeenCalledWith("payment", notification);
 		});
 	});
 

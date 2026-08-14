@@ -8,14 +8,8 @@ import { createZodDto } from "nestjs-zod";
 
 export class NudgeDetailDto extends createZodDto(nudgeDetailSchema) {}
 
-export class ReceivedNudgesResponseDto extends createZodDto(
-	receivedNudgesResponseSchema,
-) {}
+export class ReceivedNudgesResponseDto extends createZodDto(receivedNudgesResponseSchema) {}
 
-export class SentNudgesResponseDto extends createZodDto(
-	sentNudgesResponseSchema,
-) {}
+export class SentNudgesResponseDto extends createZodDto(sentNudgesResponseSchema) {}
 
-export class CreateRemindNudgeResponseDto extends createZodDto(
-	createRemindNudgeResponseSchema,
-) {}
+export class CreateRemindNudgeResponseDto extends createZodDto(createRemindNudgeResponseSchema) {}

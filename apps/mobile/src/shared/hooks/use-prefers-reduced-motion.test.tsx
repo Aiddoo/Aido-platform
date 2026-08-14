@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
+
 import { usePrefersReducedMotion } from './use-prefers-reduced-motion';
 
 describe('usePrefersReducedMotion', () => {

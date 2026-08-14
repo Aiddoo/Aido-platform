@@ -1,8 +1,6 @@
-import {
-	Injectable,
-	type LoggerService as NestLoggerService,
-} from "@nestjs/common";
+import { Injectable, type LoggerService as NestLoggerService } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
+
 import type { LogContext } from "../interfaces/logger.interface";
 
 /**
@@ -77,11 +75,7 @@ export class LoggerService implements NestLoggerService {
 	/**
 	 * 구조화된 로그 출력
 	 */
-	logWithData(
-		level: "info" | "warn" | "error" | "debug",
-		message: string,
-		data: LogContext,
-	): void {
+	logWithData(level: "info" | "warn" | "error" | "debug", message: string, data: LogContext): void {
 		this.pino[level](data, message);
 	}
 }

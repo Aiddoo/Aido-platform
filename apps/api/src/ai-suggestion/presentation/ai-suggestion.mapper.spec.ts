@@ -7,10 +7,7 @@
  * - 수락/거절 결과 변환 검증
  */
 
-import {
-	Suggestion,
-	type SuggestionProps,
-} from "../domain/entities/suggestion.aggregate";
+import { Suggestion, type SuggestionProps } from "../domain/entities/suggestion.aggregate";
 import { AiSuggestionMapper } from "./ai-suggestion.mapper";
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
@@ -47,9 +44,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
 			expect(result.daysOfWeek).toEqual(["MON", "WED", "FRI"]);
 			expect(result.scheduledTime).toBe("10:00");
 			expect(result.confidence).toBe(0.85);
-			expect(result.reason).toBe(
-				"매주 월/수/금에 반복되는 패턴이 감지되었습니다.",
-			);
+			expect(result.reason).toBe("매주 월/수/금에 반복되는 패턴이 감지되었습니다.");
 			expect(result.status).toBe("PENDING");
 			expect(result.expiresAt).toBe("2026-03-18T00:00:00.000Z");
 			expect(result.createdAt).toBe("2026-03-04T00:00:00.000Z");
@@ -124,9 +119,7 @@ describe("AiSuggestionMapper — AI 제안 매퍼", () => {
 			});
 
 			// Then -createdTodosCount 포함
-			expect(result.message).toBe(
-				"제안이 수락되어 반복 할 일이 생성되었습니다.",
-			);
+			expect(result.message).toBe("제안이 수락되어 반복 할 일이 생성되었습니다.");
 			expect(result.suggestion.status).toBe("ACCEPTED");
 			expect(result.createdTodosCount).toBe(12);
 		});

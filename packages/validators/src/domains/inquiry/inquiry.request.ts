@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from './inquiry.constants';
 
 export const createInquirySchema = z

@@ -15,7 +15,6 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/errors/package.json ./packages/errors/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/validators/package.json ./packages/validators/
-COPY tooling/biome/package.json ./tooling/biome/
 COPY tooling/jest/package.json ./tooling/jest/
 COPY tooling/typescript/package.json ./tooling/typescript/
 COPY tooling/vitest/package.json ./tooling/vitest/

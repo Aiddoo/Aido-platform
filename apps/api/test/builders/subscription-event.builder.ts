@@ -148,11 +148,7 @@ export class SubscriptionEventBuilder {
 		return this;
 	}
 
-	withPrice(
-		price: number,
-		currency = "KRW",
-		priceInPurchasedCurrency?: number,
-	): this {
+	withPrice(price: number, currency = "KRW", priceInPurchasedCurrency?: number): this {
 		this.event.price = price;
 		this.event.currency = currency;
 		if (priceInPurchasedCurrency != null) {

@@ -1,5 +1,6 @@
 import { ENV } from '@src/shared/config/env';
 import ky from 'ky';
+
 import type { RefreshTokensRequest } from './token-refresher';
 
 /**

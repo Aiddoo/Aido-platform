@@ -8,9 +8,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createUserSettingsCacheMock } from "@test/mocks/ports";
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record";
 
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+
+import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record";
 import {
 	REMINDER_SCHEDULE_ENQUEUER,
 	type ReminderScheduleEnqueuerPort,
@@ -71,18 +72,18 @@ describe("UpdatePreferenceUseCase", () => {
 	it("비프리미엄이 리마인더 시간 변경 시 PREFERENCE_1701, upsert 미호출", async () => {
 		entitlement.hasPremiumAccess.mockResolvedValue(false);
 
-		await expect(
-			useCase.execute(userId, { morningReminderHour: 7 }),
-		).rejects.toMatchObject({ errorCode: "PREFERENCE_1701" });
+		await expect(useCase.execute(userId, { morningReminderHour: 7 })).rejects.toMatchObject({
+			errorCode: "PREFERENCE_1701",
+		});
 		expect(repo.upsert).not.toHaveBeenCalled();
 	});
 
 	it("범위 밖 아침 리마인더는 PREFERENCE_1702", async () => {
 		entitlement.hasPremiumAccess.mockResolvedValue(true);
 
-		await expect(
-			useCase.execute(userId, { morningReminderHour: 13 }),
-		).rejects.toMatchObject({ errorCode: "PREFERENCE_1702" });
+		await expect(useCase.execute(userId, { morningReminderHour: 13 })).rejects.toMatchObject({
+			errorCode: "PREFERENCE_1702",
+		});
 	});
 
 	it("프리미엄 리마인더 변경 → upsert·캐시 무효화·즉시 반영 잡 등록", async () => {
@@ -116,16 +117,11 @@ describe("UpdatePreferenceUseCase", () => {
 	it("유효한 IANA 타임존 별칭은 정규 타임존으로 저장한다", async () => {
 		await useCase.execute(userId, { timezone: "Etc/UTC" });
 
-		expect(repo.upsert).toHaveBeenCalledWith(
-			userId,
-			expect.objectContaining({ timezone: "UTC" }),
-		);
+		expect(repo.upsert).toHaveBeenCalledWith(userId, expect.objectContaining({ timezone: "UTC" }));
 	});
 
 	it("유효하지 않은 타임존은 SYS_0002로 거부하고 저장하지 않는다", async () => {
-		await expect(
-			useCase.execute(userId, { timezone: "Invalid/Timezone" }),
-		).rejects.toMatchObject({
+		await expect(useCase.execute(userId, { timezone: "Invalid/Timezone" })).rejects.toMatchObject({
 			errorCode: "SYS_0002",
 			details: { field: "timezone" },
 		});

@@ -8,6 +8,7 @@
  */
 
 import { type DeepMockProxy, mockDeep, mockReset } from "jest-mock-extended";
+
 import type { PrismaClient } from "@/generated/prisma/client";
 
 /**
@@ -74,9 +75,7 @@ export function setupTransaction(
 	setupTx(txMock);
 
 	prisma.$transaction.mockImplementation(
-		async <T>(
-			arg: ((tx: PrismaClient) => Promise<T>) | unknown[],
-		): Promise<T> => {
+		async <T>(arg: ((tx: PrismaClient) => Promise<T>) | unknown[]): Promise<T> => {
 			if (typeof arg === "function") {
 				return arg(txMock as unknown as PrismaClient);
 			}

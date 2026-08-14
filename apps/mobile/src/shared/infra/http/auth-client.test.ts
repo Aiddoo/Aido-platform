@@ -1,6 +1,7 @@
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import ky, { type KyInstance } from 'ky';
+
 import { recordApiFailureBreadcrumb } from './error-handler';
 import { KyHttpClient } from './ky-client';
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';

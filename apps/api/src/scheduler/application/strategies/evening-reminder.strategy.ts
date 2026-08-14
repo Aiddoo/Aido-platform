@@ -1,5 +1,6 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+
 import {
 	NotificationMessageBuilder,
 	NotificationSender,
@@ -11,10 +12,7 @@ import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { computeEffectiveStreak } from "@/user-settings";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type {
-	ITimezoneStrategy,
-	TimezoneContext,
-} from "../../domain/services/timezone-context";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
@@ -52,8 +50,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		// 무료 사용자: 고정 시간(19:00)에만 발송
 		const defaultHour = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR;
 		const defaultMinute = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE;
-		const isFreeReminderTime =
-			localHour === defaultHour && localMinute === defaultMinute;
+		const isFreeReminderTime = localHour === defaultHour && localMinute === defaultMinute;
 
 		let freeUsers: UserWithTodosAndStreak[] = [];
 		if (!userId && isFreeReminderTime) {
@@ -71,12 +68,11 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: users.map((u) => u.id),
-				type: "EVENING_REMINDER",
-				notificationDate: today,
-			});
+		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+			userIds: users.map((u) => u.id),
+			type: "EVENING_REMINDER",
+			notificationDate: today,
+		});
 
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
@@ -128,9 +124,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		);
 		return {
 			sent: notifications.length,
-			recipientUserIds: notifications.map(
-				(notification) => notification.userId,
-			),
+			recipientUserIds: notifications.map((notification) => notification.userId),
 		};
 	}
 }

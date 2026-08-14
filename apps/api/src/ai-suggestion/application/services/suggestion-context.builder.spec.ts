@@ -12,11 +12,10 @@ import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+
 import { WeatherForecastAccess } from "@/weather";
-import type {
-	DayCompletionRate,
-	TodoSummaryForAnalysis,
-} from "../../domain/types";
+
+import type { DayCompletionRate, TodoSummaryForAnalysis } from "../../domain/types";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
@@ -46,9 +45,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers({ now: FIXED_NOW });
 
-		const { unit, unitRef } = await TestBed.solitary(
-			SuggestionContextBuilder,
-		).compile();
+		const { unit, unitRef } = await TestBed.solitary(SuggestionContextBuilder).compile();
 
 		builder = unit;
 		mockRepository = unitRef.get(AI_SUGGESTION_REPOSITORY);
@@ -97,12 +94,8 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 		function setupDefaultMocks(): void {
 			mockRepository.findRecentTodos.mockResolvedValue(defaultTodos);
 			mockRepository.findDayCompletionRates.mockResolvedValue(defaultDayRates);
-			mockRepository.findTimeCompletionRates.mockResolvedValue(
-				defaultTimeRates,
-			);
-			mockRepository.findCategoryCompletionRates.mockResolvedValue(
-				defaultCategoryRates,
-			);
+			mockRepository.findTimeCompletionRates.mockResolvedValue(defaultTimeRates);
+			mockRepository.findCategoryCompletionRates.mockResolvedValue(defaultCategoryRates);
 			mockRepository.findUserStreakInfo.mockResolvedValue(defaultStreakInfo);
 			mockRepository.findRecentResponded.mockResolvedValue([]);
 			mockReportReader.findLatestWeekly.mockResolvedValue(null);
@@ -153,9 +146,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 		it("WeatherForecastAccess 실패 시 weather=null로 graceful degradation", async () => {
 			// Given - weather 서비스가 에러를 던지도록 설정
 			setupDefaultMocks();
-			mockWeatherService.getForecastsByGridBatch.mockRejectedValue(
-				new Error("Redis 연결 실패"),
-			);
+			mockWeatherService.getForecastsByGridBatch.mockRejectedValue(new Error("Redis 연결 실패"));
 
 			// When - build 호출 (grid 전달했지만 서비스 에러)
 			const result = await builder.build(mockUserId, mockTimezone, mockGrid);
@@ -183,10 +174,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 		// 이번 주 월요일: 2026-03-30 (FIXED_NOW=2026-03-31 화요일 기준)
 		// 이전 주 월요일들을 기반으로 테스트 데이터 생성
 
-		function createTodo(
-			title: string,
-			startDate: string,
-		): TodoSummaryForAnalysis {
+		function createTodo(title: string, startDate: string): TodoSummaryForAnalysis {
 			return {
 				title,
 				startDate,
