@@ -1,7 +1,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import { FollowFacade } from "@/follow";
+import { FollowReader } from "@/follow";
 import {
 	MUTATION_LOCK,
 	type MutationLockPort,
@@ -43,7 +43,7 @@ describe("SendCheerUseCase", () => {
 	let repo: Mocked<CheerRepositoryPort>;
 	let notifier: Mocked<CheerNotifierPort>;
 	let limitReader: Mocked<CheerLimitReaderPort>;
-	let follow: Mocked<FollowFacade>;
+	let follow: Mocked<FollowReader>;
 	let mutationLock: Mocked<MutationLockPort>;
 	let uow: Mocked<{ run: (fn: () => unknown) => unknown }>;
 
@@ -56,7 +56,7 @@ describe("SendCheerUseCase", () => {
 		repo = unitRef.get(CHEER_REPOSITORY);
 		notifier = unitRef.get(CHEER_NOTIFIER);
 		limitReader = unitRef.get(CHEER_LIMIT_READER);
-		follow = unitRef.get(FollowFacade);
+		follow = unitRef.get(FollowReader);
 		mutationLock = unitRef.get(MUTATION_LOCK);
 		uow = unitRef.get(UNIT_OF_WORK);
 

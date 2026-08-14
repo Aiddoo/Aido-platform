@@ -1,3 +1,4 @@
+import { AggregateRoot } from "@/shared/domain";
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
@@ -25,63 +26,64 @@ export interface FriendshipProps {
  * 한 방향의 팔로우 관계를 나타내며, 상태(FriendshipStatus VO)와 정렬 순서를 소유한다.
  * 상태 판별과 재정렬 계획 계산 등 관계에 관한 규칙을 캡슐화한다. 세터는 없다(불변 조회 모델).
  */
-export class Friendship {
-	private constructor(
-		private readonly _id: string,
-		private readonly _followerId: string,
-		private readonly _followingId: string,
-		private readonly _status: FriendshipStatus,
-		private readonly _sortOrder: number,
-		private readonly _createdAt: Date,
-		private readonly _updatedAt: Date,
-	) {}
-
+export class Friendship extends AggregateRoot<
+	Omit<FriendshipProps, "status"> & { status: FriendshipStatus }
+> {
 	static reconstitute(props: FriendshipProps): Friendship {
-		return new Friendship(
-			props.id,
-			props.followerId,
-			props.followingId,
-			FriendshipStatus.of(props.status),
-			props.sortOrder,
-			props.createdAt,
-			props.updatedAt,
-		);
+		return new Friendship({
+			...props,
+			status: FriendshipStatus.of(props.status),
+			createdAt: new Date(props.createdAt),
+			updatedAt: new Date(props.updatedAt),
+		});
 	}
 
 	get id(): string {
-		return this._id;
+		return this.props.id;
 	}
 
 	get followerId(): string {
-		return this._followerId;
+		return this.props.followerId;
 	}
 
 	get followingId(): string {
-		return this._followingId;
+		return this.props.followingId;
 	}
 
 	get status(): FriendshipStatusValue {
-		return this._status.raw;
+		return this.props.status.raw;
 	}
 
 	get sortOrder(): number {
-		return this._sortOrder;
+		return this.props.sortOrder;
 	}
 
 	get createdAt(): Date {
-		return this._createdAt;
+		return new Date(this.props.createdAt);
 	}
 
 	get updatedAt(): Date {
-		return this._updatedAt;
+		return new Date(this.props.updatedAt);
 	}
 
 	isPending(): boolean {
-		return this._status.isPending();
+		return this.props.status.isPending();
 	}
 
 	isAccepted(): boolean {
-		return this._status.isAccepted();
+		return this.props.status.isAccepted();
+	}
+
+	accept(sortOrder: number): void {
+		this.props.status = this.props.status.accept();
+		this.props.sortOrder = sortOrder;
+	}
+
+	toUpdate(): { status: FriendshipStatusValue; sortOrder: number } {
+		return {
+			status: this.props.status.raw,
+			sortOrder: this.props.sortOrder,
+		};
 	}
 
 	/** 기준 대상(targetSortOrder)의 앞/뒤로 이동하는 재정렬 계획 */
@@ -89,7 +91,11 @@ export class Friendship {
 		targetSortOrder: number,
 		position: ReorderPosition,
 	): ReorderPlan {
-		return planReorderRelativeTo(this._sortOrder, targetSortOrder, position);
+		return planReorderRelativeTo(
+			this.props.sortOrder,
+			targetSortOrder,
+			position,
+		);
 	}
 
 	/** 목록의 맨 앞/뒤로 이동하는 재정렬 계획 */
@@ -97,6 +103,6 @@ export class Friendship {
 		position: ReorderPosition,
 		maxSortOrder: number,
 	): ReorderPlan {
-		return planReorderToEdge(this._sortOrder, position, maxSortOrder);
+		return planReorderToEdge(this.props.sortOrder, position, maxSortOrder);
 	}
 }

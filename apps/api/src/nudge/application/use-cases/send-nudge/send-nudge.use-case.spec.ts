@@ -1,7 +1,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import { FollowFacade } from "@/follow";
+import { FollowReader } from "@/follow";
 import {
 	MUTATION_LOCK,
 	type MutationLockPort,
@@ -58,7 +58,7 @@ describe("SendNudgeUseCase", () => {
 	let repo: Mocked<NudgeRepositoryPort>;
 	let notifier: Mocked<NudgeNotifierPort>;
 	let limitReader: Mocked<NudgeLimitReaderPort>;
-	let follow: Mocked<FollowFacade>;
+	let follow: Mocked<FollowReader>;
 	let mutationLock: Mocked<MutationLockPort>;
 	let uow: Mocked<{ run: (fn: () => unknown) => unknown }>;
 
@@ -71,7 +71,7 @@ describe("SendNudgeUseCase", () => {
 		repo = unitRef.get(NUDGE_REPOSITORY);
 		notifier = unitRef.get(NUDGE_NOTIFIER);
 		limitReader = unitRef.get(NUDGE_LIMIT_READER);
-		follow = unitRef.get(FollowFacade);
+		follow = unitRef.get(FollowReader);
 		mutationLock = unitRef.get(MUTATION_LOCK);
 		uow = unitRef.get(UNIT_OF_WORK);
 

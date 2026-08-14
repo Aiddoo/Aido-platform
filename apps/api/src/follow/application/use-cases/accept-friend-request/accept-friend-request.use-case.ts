@@ -53,10 +53,8 @@ export class AcceptFriendRequestUseCase {
 				this.followRepository.getMaxSortOrderForFriends(requesterUserId),
 			]);
 
-			await this.followRepository.update(request.id, {
-				status: "ACCEPTED",
-				sortOrder: maxSortRequester + 1,
-			});
+			request.accept(maxSortRequester + 1);
+			await this.followRepository.update(request.id, request.toUpdate());
 
 			const existingReverse =
 				await this.followRepository.findByFollowerAndFollowing(
@@ -64,11 +62,15 @@ export class AcceptFriendRequestUseCase {
 					requesterUserId,
 				);
 
+			if (existingReverse) {
+				existingReverse.accept(maxSortUser + 1);
+			}
+
 			const createdFollow = existingReverse
-				? await this.followRepository.update(existingReverse.id, {
-						status: "ACCEPTED",
-						sortOrder: maxSortUser + 1,
-					})
+				? await this.followRepository.update(
+						existingReverse.id,
+						existingReverse.toUpdate(),
+					)
 				: await this.followRepository.create({
 						followerId: userId,
 						followingId: requesterUserId,
