@@ -20,7 +20,8 @@ import {
 	CurrentUser,
 	type CurrentUserPayload,
 } from "../../auth/presentation/decorators";
-import { WeeklyAchievementFacade } from "../application/facades/weekly-achievement.facade";
+import { GetWeeklyAchievementUseCase } from "../application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
+import { GetWeeklyAchievementsUseCase } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
 
 import {
 	GetWeeklyAchievementsQueryDto,
@@ -36,7 +37,8 @@ export class WeeklyAchievementController {
 	readonly #logger = new Logger(WeeklyAchievementController.name);
 
 	constructor(
-		private readonly weeklyAchievementFacade: WeeklyAchievementFacade,
+		private readonly getWeeklyAchievementsUseCase: GetWeeklyAchievementsUseCase,
+		private readonly getWeeklyAchievementUseCase: GetWeeklyAchievementUseCase,
 	) {}
 
 	@Get()
@@ -106,13 +108,13 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 			`주간 달성 목록 조회: user=${user.userId}, year=${query.year}`,
 		);
 
-		return this.weeklyAchievementFacade.getWeeklyAchievements(
-			user.userId,
-			query.year,
-			query.cursor,
-			query.size,
-			locale ?? "ko",
-		);
+		return this.getWeeklyAchievementsUseCase.execute({
+			userId: user.userId,
+			year: query.year,
+			cursor: query.cursor,
+			size: query.size,
+			locale: locale ?? "ko",
+		});
 	}
 
 	@Get(":year/:week")
@@ -160,11 +162,11 @@ GET /weekly-achievements/2026/10
 			`주간 달성 상세 조회: user=${user.userId}, year=${params.year}, week=${params.week}`,
 		);
 
-		return this.weeklyAchievementFacade.getWeeklyAchievement(
-			user.userId,
-			params.year,
-			params.week,
-			locale ?? "ko",
-		);
+		return this.getWeeklyAchievementUseCase.execute({
+			userId: user.userId,
+			year: params.year,
+			week: params.week,
+			locale: locale ?? "ko",
+		});
 	}
 }

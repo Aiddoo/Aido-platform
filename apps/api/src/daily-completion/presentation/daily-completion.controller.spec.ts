@@ -1,7 +1,7 @@
 /**
  * DailyCompletionController 단위 테스트
  *
- * 컨트롤러는 DailyCompletionFacade에만 위임한다. 인자 전달과 응답 매핑을 검증한다.
+ * 컨트롤러의 endpoint UseCase 위임과 응답 매핑을 검증한다.
  */
 
 import type { Mocked } from "@suites/doubles.jest";
@@ -9,7 +9,7 @@ import { TestBed } from "@suites/unit";
 
 import type { CurrentUserPayload } from "@/auth/presentation/decorators";
 
-import { DailyCompletionFacade } from "../application/facades/daily-completion.facade";
+import { GetDailyCompletionsUseCase } from "../application/queries/get-daily-completions/get-daily-completions.use-case";
 import type { DailyCompletionsRange } from "../domain/daily-completion";
 import { DailyCompletionController } from "./daily-completion.controller";
 import type { GetDailyCompletionsRangeDto } from "./dtos";
@@ -22,7 +22,7 @@ function makeQuery(
 
 describe("DailyCompletionController — 일일 달성 컨트롤러", () => {
 	let controller: DailyCompletionController;
-	let mockFacade: Mocked<DailyCompletionFacade>;
+	let getDailyCompletionsUseCase: Mocked<GetDailyCompletionsUseCase>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -37,11 +37,11 @@ describe("DailyCompletionController — 일일 달성 컨트롤러", () => {
 		).compile();
 
 		controller = unit;
-		mockFacade = unitRef.get(DailyCompletionFacade);
+		getDailyCompletionsUseCase = unitRef.get(GetDailyCompletionsUseCase);
 	});
 
 	describe("getDailyCompletionsRange", () => {
-		it("조회 요청을 Facade에 위임하고 매핑된 결과를 반환해야 한다", async () => {
+		it("조회 요청을 UseCase에 위임하고 매핑된 결과를 반환해야 한다", async () => {
 			// Given - 조회 쿼리와 Facade 응답이 준비되었을 때
 			const query = makeQuery();
 			const facadeResult: DailyCompletionsRange = {
@@ -66,17 +66,17 @@ describe("DailyCompletionController — 일일 달성 컨트롤러", () => {
 				totalCompleteDays: 1,
 				dateRange: { startDate: "2026-01-01", endDate: "2026-01-31" },
 			};
-			mockFacade.getDailyCompletions.mockResolvedValue(facadeResult);
+			getDailyCompletionsUseCase.execute.mockResolvedValue(facadeResult);
 
 			// When - getDailyCompletionsRange를 호출하면
 			const result = await controller.getDailyCompletionsRange(mockUser, query);
 
 			// Then - userId/startDate/endDate를 전달하고 매핑된 결과를 반환해야 한다
-			expect(mockFacade.getDailyCompletions).toHaveBeenCalledWith(
-				mockUser.userId,
-				query.startDate,
-				query.endDate,
-			);
+			expect(getDailyCompletionsUseCase.execute).toHaveBeenCalledWith({
+				userId: mockUser.userId,
+				startDate: query.startDate,
+				endDate: query.endDate,
+			});
 			expect(result).toEqual(facadeResult);
 		});
 
@@ -91,7 +91,7 @@ describe("DailyCompletionController — 일일 달성 컨트롤러", () => {
 				totalCompleteDays: 0,
 				dateRange: { startDate: "2026-02-01", endDate: "2026-02-28" },
 			};
-			mockFacade.getDailyCompletions.mockResolvedValue(facadeResult);
+			getDailyCompletionsUseCase.execute.mockResolvedValue(facadeResult);
 
 			// When - getDailyCompletionsRange를 호출하면
 			const result = await controller.getDailyCompletionsRange(mockUser, query);

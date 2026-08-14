@@ -3,9 +3,7 @@ import type { DailyCompletionsRange } from "../../domain/daily-completion";
 import { GetDailyCompletionsUseCase } from "../queries/get-daily-completions/get-daily-completions.use-case";
 import { GetFriendDailyCompletionsUseCase } from "../queries/get-friend-daily-completions/get-friend-daily-completions.use-case";
 
-/**
- * 일일 완료 애플리케이션 서비스(Facade) — 컨트롤러와 use-case 사이의 얇은 seam.
- */
+/** @deprecated 전환 중인 통합 테스트 호환 seam. HTTP에서는 직접 UseCase를 사용한다. */
 @Injectable()
 export class DailyCompletionFacade {
 	constructor(
