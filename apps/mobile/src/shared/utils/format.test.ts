@@ -1,4 +1,4 @@
-import { formatPercent, formatPrice } from './format';
+import { COUNT_BADGE_MAX, formatCappedCount, formatPercent, formatPrice } from './format';
 
 describe('formatPercent', () => {
   test('정수면 소수점 없이 반환한다', () => {
@@ -47,5 +47,24 @@ describe('formatPrice', () => {
   test('매핑되지 않은 통화는 en-US 폴백으로 포맷한다', () => {
     const result = formatPrice(100, 'BRL');
     expect(result).toBeDefined();
+  });
+});
+
+describe('formatCappedCount', () => {
+  test('상한 이하는 숫자 그대로 보여준다', () => {
+    expect(formatCappedCount(0)).toBe('0');
+    expect(formatCappedCount(1)).toBe('1');
+    expect(formatCappedCount(COUNT_BADGE_MAX)).toBe('99');
+  });
+
+  test('상한을 넘으면 접어서 폭이 더 늘지 않는다', () => {
+    expect(formatCappedCount(COUNT_BADGE_MAX + 1)).toBe('99+');
+    expect(formatCappedCount(1234)).toBe('99+');
+    expect(formatCappedCount(1234).length).toBe(3);
+  });
+
+  test('상한은 자리마다 다르게 줄 수 있다', () => {
+    expect(formatCappedCount(15, 9)).toBe('9+');
+    expect(formatCappedCount(9, 9)).toBe('9');
   });
 });

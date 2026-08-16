@@ -6,6 +6,8 @@
  */
 import { z } from "zod";
 
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+
 import type {
 	ReminderHourChangedJobData,
 	SocialDigestJobData,
@@ -31,7 +33,7 @@ export const TimezoneReminderJobName = {
 
 export const TIMEZONE_REMINDER_WORKER_POLICY = {
 	teamSize: 1,
-	pollingIntervalSeconds: 2,
+	pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
 } as const;
 
 const ReminderHourChangedJobDataSchema = z.object({

@@ -17,6 +17,8 @@ import {
   type Todo,
   type TodoListResponse,
   type ToggleTodoCompleteInput,
+  type TodoDetailsResponse,
+  todoDetailsResponseSchema,
   todoListResponseSchema,
   todoSchema,
   todoSummaryResponseSchema,
@@ -350,5 +352,20 @@ export class TodoService {
     }
 
     return ok(toTodoItem(parsed.data.todo));
+  };
+
+  getTodoDetails = async (todoId: number): Promise<Result<TodoDetailsResponse, ApiError>> => {
+    const response = await this.#httpClient.get<unknown>(`v1/todos/${todoId}/details`);
+
+    if (!response.ok) {
+      return response;
+    }
+
+    const parsed = todoDetailsResponseSchema.safeParse(response.value);
+    if (!parsed.success) {
+      throw new ParseError(`[TodoService] Invalid todo details: ${parsed.error.message}`);
+    }
+
+    return ok(parsed.data);
   };
 }

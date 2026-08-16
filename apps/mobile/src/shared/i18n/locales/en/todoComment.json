@@ -1,0 +1,52 @@
+{
+  "list": {
+    "moreReplies_one": "View {{count}} reply",
+    "moreReplies_other": "View {{count}} replies",
+    "edited": "Edited",
+    "authorBadge": "Author",
+    "deleted": "This comment was deleted",
+    "unknownUser": "Unknown",
+    "emptyTitle": "No comments yet",
+    "emptyDescription": "Be the first to comment",
+    "loadFailed": "Couldn't load comments"
+  },
+  "sort": {
+    "popular": "Top",
+    "latest": "Newest"
+  },
+  "input": {
+    "placeholder": "Add a comment...",
+    "replyPlaceholder": "Add a reply...",
+    "commentingDisabled": "Comments are turned off for this to-do",
+    "replyingDisabled": "You can't reply to a deleted comment",
+    "editingComment": "Editing your comment",
+    "editPlaceholder": "Edit your comment",
+    "replyingTo": "Replying to {{name}}"
+  },
+  "thread": {
+    "title": "Replies",
+    "openTodo": "View original to-do",
+    "checklistProgress": "{{completed}}/{{total}} done",
+    "emptyRepliesTitle": "No replies yet",
+    "emptyRepliesDescription": "Be the first to reply",
+    "originLabel": "On this to-do",
+    "moreChecklistItems_one": "and {{count}} more",
+    "moreChecklistItems_other": "and {{count}} more"
+  },
+  "actions": {
+    "openThread": "View replies",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "reply": "Reply"
+  },
+  "composer": {
+    "commentTitle": "Comment",
+    "replyTitle": "Reply",
+    "addToChain": "Add another reply",
+    "post": "Post",
+    "editingComment": "Editing your comment",
+    "repliedTo": "Replied to {{name}}"
+  }
+}

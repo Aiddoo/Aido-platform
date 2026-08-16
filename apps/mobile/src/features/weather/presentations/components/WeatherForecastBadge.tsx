@@ -6,11 +6,12 @@ import {
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text } from '@src/shared/ui';
 import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Pressable } from 'react-native';
 
 interface WeatherForecastBadgeProps {
@@ -18,7 +19,8 @@ interface WeatherForecastBadgeProps {
 }
 
 export const WeatherForecastBadge = ({ date }: WeatherForecastBadgeProps) => {
-  const router = useRouter();
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('weather');
   const {
     data: forecast,
@@ -31,7 +33,7 @@ export const WeatherForecastBadge = ({ date }: WeatherForecastBadgeProps) => {
 
   if (isPending && !forecast) {
     return (
-      <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
+      <Pressable onPress={() => push('/weather')} hitSlop={8}>
         <WeatherClearIcon width={18} height={18} color="#FFD233" />
       </Pressable>
     );
@@ -44,7 +46,7 @@ export const WeatherForecastBadge = ({ date }: WeatherForecastBadgeProps) => {
         : t('badge.label');
 
     return (
-      <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
+      <Pressable onPress={() => push('/weather')} hitSlop={8}>
         <HStack align="center" gap={4}>
           <WeatherClearIcon width={18} height={18} color="#FFD233" />
           <Text size="b4" shade={6}>
@@ -66,7 +68,7 @@ export const WeatherForecastBadge = ({ date }: WeatherForecastBadgeProps) => {
       : '#8E8E93';
 
   return (
-    <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
+    <Pressable onPress={() => push('/weather')} hitSlop={8}>
       <HStack align="center" gap={6} px={4}>
         <ForecastIcon width={18} height={18} color={iconColor} />
         <Text size="b4" weight="semibold" shade={8}>

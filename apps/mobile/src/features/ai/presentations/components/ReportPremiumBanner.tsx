@@ -1,10 +1,12 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, Spacing, Text, VStack } from '@src/shared/ui';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Card } from 'heroui-native';
 
 export function ReportPremiumBanner() {
-  const router = useRouter();
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('ai');
 
   return (
@@ -17,7 +19,7 @@ export function ReportPremiumBanner() {
           {t('report.premiumBanner.description')}
         </Text>
         <Spacing size={4} />
-        <Button size="medium" onPress={() => router.push('/settings/subscription')}>
+        <Button size="medium" onPress={() => push('/settings/subscription')}>
           {t('report.premiumBanner.subscribe')}
         </Button>
       </VStack>

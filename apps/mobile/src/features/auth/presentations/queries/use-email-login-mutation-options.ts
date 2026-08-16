@@ -5,12 +5,15 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
 export const useEmailLoginMutationOptions = () => {
+  const push = useSingleTap(router.push);
+
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const { setStatus } = useAuth();
@@ -32,7 +35,7 @@ export const useEmailLoginMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
-        router.push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });
+        push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });
         return;
       }
 

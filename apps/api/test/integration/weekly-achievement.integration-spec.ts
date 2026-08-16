@@ -28,10 +28,9 @@ import { PaginationService } from "@/shared/application/pagination/services/pagi
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "@/weekly-achievement/application/ports/weekly-achievement.repository.port";
-import { WeeklyAchievementQueryUseCases } from "@/weekly-achievement/application/queries";
 import { GetWeeklyAchievementUseCase } from "@/weekly-achievement/application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
 import { GetWeeklyAchievementsUseCase } from "@/weekly-achievement/application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
-import { WeeklyAchievementUseCases } from "@/weekly-achievement/application/use-cases";
+import { WEEKLY_ACHIEVEMENT_PROVIDERS } from "@/weekly-achievement/application/weekly-achievement.providers";
 import { PrismaWeeklyAchievementRepository } from "@/weekly-achievement/infrastructure/adapters/prisma-weekly-achievement.repository";
 
 describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
@@ -80,8 +79,7 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(mock DB)
 		module = await Test.createTestingModule({
 			providers: [
-				...WeeklyAchievementQueryUseCases,
-				...WeeklyAchievementUseCases,
+				...WEEKLY_ACHIEVEMENT_PROVIDERS,
 				PaginationService,
 				{
 					provide: WEEKLY_ACHIEVEMENT_REPOSITORY,

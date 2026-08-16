@@ -1,6 +1,16 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
-import { BottomSheet, HStack, LockIcon, MoreIcon, Text, useOverlay } from '@src/shared/ui';
+import {
+  BottomSheet,
+  ChatBubbleIcon,
+  HStack,
+  LockIcon,
+  MoreIcon,
+  Text,
+  useOverlay,
+} from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
+import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
@@ -28,6 +38,8 @@ interface TodoItemProps {
 }
 
 export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps) {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('todo');
   const todoActions = useTodoActions(todo);
   const subTodoActions = useSubTodoActions(todo);
@@ -35,6 +47,12 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
   const [isExpanded, setIsExpanded] = useState(todo.hasSubTodos);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
   const isOptimistic = todo.optimistic;
+
+  /** 행을 누르면 하위 항목이 열리고, 그 안에서 바로 새 항목을 추가할 수 있다. */
+  const toggleChecklist = () => setIsExpanded((current) => !current);
+
+  /** 댓글은 말풍선 버튼으로만 들어간다 — 할 일을 다루는 동작과 섞지 않는다. */
+  const openComments = () => push({ pathname: '/todo/[todoId]', params: { todoId: todo.id } });
 
   const openActionsSheet = () => {
     overlay.open(({ isOpen, close, exit }) => (
@@ -252,11 +270,27 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
         ) : undefined
       }
       right={
-        <PressableFeedback onPress={isOptimistic ? undefined : openActionsSheet} hitSlop={8}>
-          <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
-        </PressableFeedback>
+        <HStack gap={8} align="center">
+          <PressableFeedback
+            onPress={openComments}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t('detail.open')}
+            className="h-10 flex-row items-center justify-center gap-1 rounded-full px-2"
+          >
+            <ChatBubbleIcon width={21} height={21} colorClassName="text-gray-6" />
+            {todo.commentCount > 0 && (
+              <Text size="e1" shade={6}>
+                {todo.commentCount}
+              </Text>
+            )}
+          </PressableFeedback>
+          <PressableFeedback onPress={isOptimistic ? undefined : openActionsSheet} hitSlop={8}>
+            <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
+          </PressableFeedback>
+        </HStack>
       }
-      onPress={isOptimistic ? undefined : () => setIsExpanded((prev) => !prev)}
+      onPress={isOptimistic ? undefined : toggleChecklist}
       onLongPress={isOptimistic || isDragDisabled ? undefined : drag}
       isActive={isActive}
       isDisabled={isOptimistic}

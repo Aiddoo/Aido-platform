@@ -24,6 +24,7 @@ const generateTodoDto = (): Todo => ({
   recurrenceGroupId: null,
   items: [],
   itemStats: { total: 0, completed: 0 },
+  commentCount: 0,
   createdAt: '2026-03-08T00:00:00.000Z',
   updatedAt: '2026-03-08T00:00:00.000Z',
 });

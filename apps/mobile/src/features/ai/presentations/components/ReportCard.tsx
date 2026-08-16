@@ -1,9 +1,10 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
-import { type Href, useRouter } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 
@@ -16,14 +17,15 @@ interface ReportCardProps {
 }
 
 export function ReportCard({ report, isSample, isLast = false }: ReportCardProps) {
-  const router = useRouter();
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('ai');
   const href = (
     isSample ? `/reports/sample-${report.type.toLowerCase()}` : `/reports/${report.id}`
   ) as Href;
 
   return (
-    <PressableFeedback onPress={() => router.push(href)} className="rounded-xl">
+    <PressableFeedback onPress={() => push(href)} className="rounded-xl">
       <PressableFeedback.Highlight className="rounded-xl" />
       <View className={cn('py-3', !report.hasActivity && 'opacity-50')}>
         <VStack gap={10}>

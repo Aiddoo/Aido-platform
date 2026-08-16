@@ -9,7 +9,7 @@ export const AiSuggestionJobName = {
 
 export const AI_SUGGESTION_WORKER_POLICY = {
 	teamSize: 5,
-	pollingIntervalSeconds: 2,
+	pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
 } as const;
 
 export const AiSuggestionRuntimeJobSchema = z.discriminatedUnion("name", [
@@ -57,3 +57,5 @@ export type AiSuggestionJobData = AiSuggestionJobMap[keyof AiSuggestionJobMap];
 export type AiSuggestionRuntimeJob = z.infer<typeof AiSuggestionRuntimeJobSchema>;
 
 import { z } from "zod";
+
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";

@@ -1,11 +1,12 @@
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useClipboard } from '@src/shared/hooks/useClipboard';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Avatar, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
 
@@ -13,11 +14,12 @@ import { formatUserHashtag } from '../../utils/user-hashtag';
 import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
 
 export function ProfileCard() {
+  const push = useSingleTap(router.push);
+
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();
   const { t } = useTranslation('user');
   const { copyToClipboard } = useClipboard();
-  const router = useRouter();
 
   const handleCopyUserTag = async () => {
     const result = await copyToClipboard(user.userTag);
@@ -28,10 +30,7 @@ export function ProfileCard() {
   };
 
   return (
-    <PressableFeedback
-      onPress={() => router.push('/settings/profile')}
-      className="rounded-2xl px-4 py-3"
-    >
+    <PressableFeedback onPress={() => push('/settings/profile')} className="rounded-2xl px-4 py-3">
       <HStack gap={12} align="center">
         <Avatar size="lg" alt={t('profile.avatarAlt', { name: user.name })}>
           <Avatar.Image source={getProfileIconSource(user.profileImage)} />

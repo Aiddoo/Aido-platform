@@ -2,6 +2,7 @@ import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileImageBottomSheet } from '@src/features/user/presentations/components/ProfileImageBottomSheet';
 import { ProfileInfoCard } from '@src/features/user/presentations/components/ProfileInfoCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -13,7 +14,7 @@ import {
   Text,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -36,8 +37,9 @@ const ProfileScreen = () => {
 export default ProfileScreen;
 
 function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('settings');
-  const router = useRouter();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const hasCredential = UserPolicy.hasCredential(user);
 
@@ -53,7 +55,7 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
       <SettingNavigation>
         <SettingNavigation.Item
           label={t('titles.editName')}
-          onPress={() => router.push('/settings/edit-name')}
+          onPress={() => push('/settings/edit-name')}
           right={
             <HStack align="center" gap={4}>
               <Text size="b2" shade={6}>
@@ -67,7 +69,7 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
         {hasCredential && (
           <SettingNavigation.Item
             label={t('titles.changePassword')}
-            onPress={() => router.push('/settings/change-password')}
+            onPress={() => push('/settings/change-password')}
           />
         )}
       </SettingNavigation>
@@ -78,7 +80,7 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
       <SettingNavigation>
         <SettingNavigation.Item
           label={t('titles.linkedAccounts')}
-          onPress={() => router.push('/settings/linked-accounts')}
+          onPress={() => push('/settings/linked-accounts')}
         />
       </SettingNavigation>
     </ScrollView>

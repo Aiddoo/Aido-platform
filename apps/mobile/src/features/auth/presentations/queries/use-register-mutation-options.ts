@@ -5,12 +5,15 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
 export const useRegisterMutationOptions = () => {
+  const replace = useSingleTap(router.replace);
+
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -31,7 +34,7 @@ export const useRegisterMutationOptions = () => {
           action: {
             label: t('auth:toasts.goToLogin'),
             onPress: () => {
-              router.replace('/(auth)/email-login');
+              replace('/(auth)/email-login');
             },
           },
         });

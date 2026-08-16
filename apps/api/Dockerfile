@@ -50,6 +50,8 @@ WORKDIR /app/apps/api
 COPY apps/api/prisma ./prisma
 COPY apps/api/prisma.config.ts ./
 COPY apps/api/scripts/migrate.sh ./scripts/migrate.sh
+# prisma.config.ts가 require하는 문지기 — 없으면 이 이미지의 모든 Prisma 명령이 죽는다.
+COPY apps/api/scripts/guard-database-url.cjs ./scripts/guard-database-url.cjs
 
 # 빈 프로젝트에 prisma CLI만 설치 (workspace/catalog 의존 회피)
 # apps/api/package.json의 prisma 버전(^7.8.0)과 함께 올릴 것 — silent major 업그레이드 방지

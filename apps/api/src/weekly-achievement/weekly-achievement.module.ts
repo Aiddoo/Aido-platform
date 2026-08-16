@@ -2,9 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { WeeklyAchievementWriterAccess } from "./application/access/weekly-achievement-writer.access";
 import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "./application/ports/weekly-achievement.repository.port";
-import { WeeklyAchievementQueryUseCases } from "./application/queries";
-import { WeeklyAchievementUseCases } from "./application/use-cases";
 import { UpsertWeeklyAchievementsUseCase } from "./application/use-cases/upsert-weekly-achievements/upsert-weekly-achievements.use-case";
+import { WEEKLY_ACHIEVEMENT_PROVIDERS } from "./application/weekly-achievement.providers";
 import { PrismaWeeklyAchievementRepository } from "./infrastructure/adapters/prisma-weekly-achievement.repository";
 import { WeeklyAchievementController } from "./presentation/weekly-achievement.controller";
 
@@ -30,8 +29,7 @@ import { WeeklyAchievementController } from "./presentation/weekly-achievement.c
 			provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
 			useClass: PrismaWeeklyAchievementRepository,
 		},
-		...WeeklyAchievementQueryUseCases,
-		...WeeklyAchievementUseCases,
+		...WEEKLY_ACHIEVEMENT_PROVIDERS,
 	],
 	exports: [WeeklyAchievementWriterAccess],
 })

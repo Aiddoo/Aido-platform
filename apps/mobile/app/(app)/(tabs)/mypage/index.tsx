@@ -9,6 +9,7 @@ import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/presenta
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -23,14 +24,15 @@ import {
   useOverlay,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 const MyPageScreen = () => {
+  const push = useSingleTap(router.push);
+
   const tabBarHeight = useTabBarHeight();
-  const router = useRouter();
   const { t } = useTranslation(['user', 'settings', 'featureDiscovery']);
   const { data: user } = useQuery(useGetMeQueryOptions());
   const { openHub } = useFeatureDiscoveryHub();
@@ -70,11 +72,11 @@ const MyPageScreen = () => {
         <SettingNavigation label={t('mypage.sections.activity')}>
           <SettingNavigation.Item
             label={t('mypage.items.friends')}
-            onPress={() => router.push('/friends')}
+            onPress={() => push('/friends')}
           />
           <SettingNavigation.Item
             label={t('mypage.items.categories')}
-            onPress={() => router.push('/settings/category-settings')}
+            onPress={() => push('/settings/category-settings')}
           />
           <SettingNavigation.Item
             label={t('featureDiscovery:entry.mypage')}
@@ -82,7 +84,7 @@ const MyPageScreen = () => {
           />
           <SettingNavigation.Item
             label={t('mypage.items.achievements')}
-            onPress={() => router.push('/achievements')}
+            onPress={() => push('/achievements')}
           />
         </SettingNavigation>
 
@@ -91,15 +93,15 @@ const MyPageScreen = () => {
         <SettingNavigation label={t('mypage.sections.subscription')}>
           <SettingNavigation.Item
             label={t('mypage.items.aiReports')}
-            onPress={() => router.push('/reports')}
+            onPress={() => push('/reports')}
           />
           <SettingNavigation.Item
             label={t('mypage.items.appIcon')}
-            onPress={() => router.push('/settings/app-icon')}
+            onPress={() => push('/settings/app-icon')}
           />
           <SettingNavigation.Item
             label={t('mypage.items.subscription')}
-            onPress={() => router.push('/settings/subscription')}
+            onPress={() => push('/settings/subscription')}
           />
         </SettingNavigation>
 
@@ -108,19 +110,19 @@ const MyPageScreen = () => {
         <SettingNavigation label={t('mypage.sections.settings')}>
           <SettingNavigation.Item
             label={t('mypage.items.notifications')}
-            onPress={() => router.push('/settings/notifications')}
+            onPress={() => push('/settings/notifications')}
           />
           <SettingNavigation.Item
             label={t('mypage.items.theme')}
-            onPress={() => router.push('/settings/theme')}
+            onPress={() => push('/settings/theme')}
           />
           <SettingNavigation.Item
             label={t('mypage.items.fontSize')}
-            onPress={() => router.push('/settings/font-size')}
+            onPress={() => push('/settings/font-size')}
           />
           <SettingNavigation.Item
             label={t('settings:titles.language')}
-            onPress={() => router.push('/settings/language')}
+            onPress={() => push('/settings/language')}
           />
         </SettingNavigation>
 
@@ -129,11 +131,11 @@ const MyPageScreen = () => {
         <SettingNavigation>
           <SettingNavigation.Item
             label={t('mypage.items.inquiry')}
-            onPress={() => router.push('/settings/inquiry')}
+            onPress={() => push('/settings/inquiry')}
           />
           <SettingNavigation.Item
             label={t('mypage.items.terms')}
-            onPress={() => router.push('/settings/terms')}
+            onPress={() => push('/settings/terms')}
           />
         </SettingNavigation>
 
@@ -152,9 +154,10 @@ const MyPageScreen = () => {
 export default MyPageScreen;
 
 function AccountActionButtons() {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation(['user', 'common']);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const router = useRouter();
   const logout = useMutation(useLogoutMutationOptions());
   const deleteAccount = useMutation(useDeleteAccountMutationOptions());
   const overlay = useOverlay();
@@ -200,7 +203,7 @@ function AccountActionButtons() {
 
   const handleWithdrawPress = () => {
     if (UserPolicy.hasCredential(user)) {
-      router.push('/settings/delete-account');
+      push('/settings/delete-account');
     } else {
       overlay.open(({ isOpen, close, exit }) => (
         <ConfirmDialog

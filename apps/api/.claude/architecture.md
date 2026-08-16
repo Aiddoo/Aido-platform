@@ -140,8 +140,16 @@ commit
 참조:
 
 - `todo/infrastructure/cache/todo-cache.keyspace.ts`
+- `todo-comment/infrastructure/cache/todo-comment-cache.keyspace.ts`
 - `weather/infrastructure/cache/weather-cache.keyspace.ts`
 - `notification/infrastructure/cache/notification-cache.keyspace.ts`
+
+### 댓글 캐시 결정
+
+- 댓글은 필터 조합 전체를 캐시하지 않는다. 기본 크기의 첫 페이지만 캐시한다.
+- `POPULAR`은 10초, `LATEST`는 30초로 제한해 쓰기 빈도가 높은 화면에서 오래된 목록이 장기 노출되지 않게 한다.
+- 사용자별 좋아요 여부는 공유 캐시에 넣지 않고 한 번의 `IN` 조회로 결합한다.
+- 댓글 쓰기 후에는 알려진 두 키를 직접 병렬 삭제한다. 제한된 키에 `SCAN` 또는 pattern invalidation을 사용하지 않는다.
 
 ## 8. Queue와 background job
 
@@ -212,3 +220,28 @@ src/todo/
 ```
 
 새 구조를 추측하지 말고 이 디렉터리와 [api-conventions.md](./api-conventions.md)의 체크리스트를 함께 따른다.
+
+## 12. Todo 댓글 참조 흐름
+
+```text
+GET /v1/todos/:todoId/details
+  → 접근 가능한 Todo 조회
+  → 비소유자 조회를 (todoId, viewerId) unique key로 멱등 기록
+  → 같은 transaction에서 최신 viewCount 반환
+
+GET /v1/todos/:todoId/comments
+  → opaque cursor 해석
+  → root + reply preview 관계 조회
+  → page 전체 comment ID의 viewer like를 단일 IN 조회
+
+comment/reply/like mutation
+  → Aggregate 권한·삭제 상태 검증
+  → counter와 상태를 transaction에서 반영
+commit
+  → 두 정렬 캐시 병렬 무효화 + 기존 NotificationSender 호출
+```
+
+- 별도 조회수 기록 endpoint는 두지 않는다. 상세 GET 재시도·prefetch는 DB unique constraint로 중복 집계되지 않는다.
+- 상위 댓글 삭제는 soft delete다. 본문과 작성자 표시는 제거하되 답글은 유지한다.
+- cursor는 클라이언트가 정렬 컬럼을 조립하지 못하도록 버전·정렬을 포함한 opaque 값으로 제공한다.
+- 댓글 알림은 구버전 앱이 이미 아는 `TODO_SHARED` 타입을 유지하고, 최신 앱만 Zod로 검증한 comment context를 해석한다.

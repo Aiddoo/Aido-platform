@@ -1,7 +1,8 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { useOverlay } from '@src/shared/ui/Overlay';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 import type { PremiumDialogProps } from './PremiumDialog.types';
 
@@ -12,13 +13,14 @@ export function PremiumDialog({
   description,
   onConfirm,
 }: PremiumDialogProps) {
-  const router = useRouter();
+  const navigate = useSingleTap(router.navigate);
+
   const { t } = useTranslation();
 
   const handleSubscribe = () => {
     onOpenChange(false);
     onConfirm?.();
-    router.navigate('/settings/subscription');
+    navigate('/settings/subscription');
   };
 
   return (

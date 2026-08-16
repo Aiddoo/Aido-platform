@@ -1,9 +1,18 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
-import { DocsIcon, HStack, PinFilledIcon, Result, Text, VStack } from '@src/shared/ui';
+import {
+  DocsIcon,
+  HStack,
+  PinFilledIcon,
+  Result,
+  Text,
+  VStack,
+  type QueryErrorFallbackProps,
+} from '@src/shared/ui';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { type Href, useRouter } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
@@ -59,10 +68,10 @@ MemoList.Item = function Item({
   isPinned: boolean;
   date: string;
 }) {
-  const router = useRouter();
+  const push = useSingleTap(router.push);
 
   return (
-    <PressableFeedback onPress={() => router.push(`/memo/${id}` as Href)}>
+    <PressableFeedback onPress={() => push(`/memo/${id}` as Href)}>
       <VStack gap={8} p={16} className="rounded-xl bg-gray-1">
         <HStack align="start">
           <Text className="flex-1" size="b3" shade={8} weight="semibold" numberOfLines={4}>
@@ -108,7 +117,7 @@ MemoList.Empty = function Empty() {
   );
 };
 
-MemoList.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
+MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['memo', 'common']);
   return (
     <Result

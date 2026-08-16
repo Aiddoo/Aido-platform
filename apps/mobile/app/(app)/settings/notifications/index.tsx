@@ -8,6 +8,7 @@ import {
   SettingsToggle,
   ToggleSkeleton,
 } from '@src/features/notification/presentations/components/settings';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { formatReminderTime } from '@src/shared/utils/time';
@@ -33,6 +34,8 @@ export default function NotificationSettingsScreen() {
 }
 
 function NotificationSettingsForm() {
+  const push = useSingleTap(router.push);
+
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const { t } = useTranslation('notification');
@@ -59,14 +62,14 @@ function NotificationSettingsForm() {
           label={t('settings.pushLabel')}
           summary={preference.pushEnabled ? t('settings.on') : t('settings.off')}
           summaryEnabled={preference.pushEnabled}
-          onPress={() => router.push('/settings/notifications/push')}
+          onPress={() => push('/settings/notifications/push')}
         />
         <Separator className="bg-gray-2" />
         <NavigationRow
           label={t('settings.weatherLabel')}
           summary={isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')}
           summaryEnabled={isWeatherEnabled(preference)}
-          onPress={() => router.push('/settings/notifications/weather')}
+          onPress={() => push('/settings/notifications/weather')}
           isDisabled={pushDisabled}
         />
         <Separator className="bg-gray-2" />
@@ -74,7 +77,7 @@ function NotificationSettingsForm() {
           label={t('settings.reminderLabel')}
           summary={`${formatReminderTime(preference.morningReminderHour, preference.morningReminderMinute, preference.timeFormat)} / ${formatReminderTime(preference.eveningReminderHour, preference.eveningReminderMinute, preference.timeFormat)}`}
           summaryEnabled={!pushDisabled}
-          onPress={() => router.push('/settings/notifications/reminder')}
+          onPress={() => push('/settings/notifications/reminder')}
           isDisabled={pushDisabled}
         />
       </SettingsCard>

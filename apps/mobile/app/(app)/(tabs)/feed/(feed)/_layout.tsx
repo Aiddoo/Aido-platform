@@ -3,6 +3,7 @@ import { CalendarProvider } from '@src/features/todo/presentations/components/Ca
 import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -14,7 +15,7 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { router, Slot, useGlobalSearchParams } from 'expo-router';
+import { Slot, router, useGlobalSearchParams } from 'expo-router';
 import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -39,6 +40,9 @@ export default function FeedGroupLayout() {
 }
 
 function AvatarList() {
+  const push = useSingleTap(router.push);
+  const replace = useSingleTap(router.replace);
+
   const { t } = useTranslation('todo');
   const { friendId, date } = useGlobalSearchParams<{ friendId?: string; date?: string }>();
   const selectedFriendId = friendId ?? null;
@@ -72,7 +76,7 @@ function AvatarList() {
         name={t('feed.me')}
         image={user.profileImage}
         isSelected={selectedFriendId === null}
-        onPress={() => router.replace({ pathname: '/feed', params: date ? { date } : undefined })}
+        onPress={() => replace({ pathname: '/feed', params: date ? { date } : undefined })}
       />
 
       {friends.map((friend) => (
@@ -82,7 +86,7 @@ function AvatarList() {
           image={friend.profileImage}
           isSelected={selectedFriendId === friend.id}
           onPress={() =>
-            router.replace({
+            replace({
               pathname: '/feed/friend/[friendId]',
               params: { friendId: friend.id, ...(date ? { date } : {}) },
             })
@@ -90,7 +94,7 @@ function AvatarList() {
         />
       ))}
 
-      <AvatarList.AddButton onPress={() => router.push('/friends/search')} />
+      <AvatarList.AddButton onPress={() => push('/friends/search')} />
     </ScrollView>
   );
 }

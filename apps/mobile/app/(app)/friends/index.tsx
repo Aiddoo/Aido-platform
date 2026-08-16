@@ -2,6 +2,7 @@ import { FriendList } from '@src/features/friend/presentations/components/Friend
 import { ReceivedRequestList } from '@src/features/friend/presentations/components/ReceivedRequestList';
 import { SentRequestList } from '@src/features/friend/presentations/components/SentRequestList';
 import { useFriendListEditMode } from '@src/features/friend/presentations/hooks/use-friend-list-edit-mode';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
 import { router, useNavigation, useRoute } from 'expo-router';
@@ -44,6 +45,8 @@ const useView = () => {
 };
 
 export default function FriendsScreen() {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation(['friend', 'common']);
   const [view, setView] = useView();
   const [isEditMode, setIsEditMode] = useFriendListEditMode();
@@ -63,7 +66,7 @@ export default function FriendsScreen() {
     navigation.setOptions({
       headerRight: () => (
         <HStack align="center" gap={4}>
-          <Pressable onPress={() => router.push('/friends/search')} hitSlop={8} className="p-2">
+          <Pressable onPress={() => push('/friends/search')} hitSlop={8} className="p-2">
             <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
           </Pressable>
           {view === TabView.friends && (

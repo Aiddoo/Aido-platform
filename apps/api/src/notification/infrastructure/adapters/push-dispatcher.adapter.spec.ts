@@ -385,6 +385,31 @@ describe("PushDispatcherAdapter", () => {
 		expect(repository.markPushDispatchSkipped).toHaveBeenCalledTimes(2);
 	});
 
+	it("정착하지 않는 발송은 시간 상한에서 끊는다 — 이 대기가 beforeEach에 있어, 매달리면 엉뚱한 다음 테스트가 죽는다", async () => {
+		userSettings.getPreferenceRecord.mockImplementation(async (userId) =>
+			makePreference(userId, "UTC"),
+		);
+		rateLimiter.isRateLimited.mockResolvedValue(false);
+		cacheService.wrapPushTokens.mockResolvedValue([]);
+		// 영원히 정착하지 않는 발송 하나. 상한이 없으면 여기서 끝나지 않는다.
+		repository.createPushDispatch.mockImplementation(() => new Promise(() => undefined));
+
+		adapter.fireAndForgetPush(
+			{ userId: "user-1", type: "NUDGE_RECEIVED", title: "stuck", body: "stuck" },
+			1,
+		);
+
+		await expect(adapter.drainPendingPushes(20)).rejects.toThrow(/exceeded 20ms/);
+	});
+
+	it("종료는 드레인이 실패해도 실패로 끝나지 않는다 — 종료가 걸리는 것보다 남기고 가는 게 낫다", async () => {
+		jest
+			.spyOn(adapter, "drainPendingPushes")
+			.mockRejectedValue(new Error("Push drain exceeded 25 rounds"));
+
+		await expect(adapter.beforeApplicationShutdown()).resolves.toBeUndefined();
+	});
+
 	it("배치 발송은 설정 필터 후 모든 사용자 제한을 한 번에 예약한다", async () => {
 		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T00:00:00.000Z"));
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([

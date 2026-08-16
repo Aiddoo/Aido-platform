@@ -30,6 +30,7 @@ export const toTodoItem = (dto: Todo): TodoItem => ({
   recurrenceGroupId: dto.recurrenceGroupId,
   subTodos: dto.items.map(toSubTodo),
   subTodoStats: dto.itemStats,
+  commentCount: dto.commentCount,
 });
 
 export const toTodoItems = (dtos: Todo[]): TodoItem[] => dtos.map(toTodoItem);

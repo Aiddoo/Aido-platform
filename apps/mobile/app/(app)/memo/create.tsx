@@ -1,11 +1,12 @@
 import { createMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, Box, CheckmarkIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
-import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native';
@@ -18,8 +19,9 @@ import type { z } from 'zod';
 type CreateMemoFormInput = z.infer<typeof createMemoSchema>;
 
 export default function MemoCreateScreen() {
+  const goBack = useSingleTap(router.back);
+
   const { t } = useTranslation('memo');
-  const router = useRouter();
   const navigation = useNavigation();
   const inputRef = useRef<TextInput>(null);
 
@@ -55,7 +57,7 @@ export default function MemoCreateScreen() {
   const createMutation = useMutation(useCreateMemoMutationOptions());
 
   const handleSave = handleSubmit((data) => {
-    createMutation.mutate({ content: data.content.trim() }, { onSuccess: () => router.back() });
+    createMutation.mutate({ content: data.content.trim() }, { onSuccess: () => goBack() });
   });
 
   const handleBack = () => {
@@ -64,12 +66,12 @@ export default function MemoCreateScreen() {
       createMutation.mutate(
         { content },
         {
-          onSuccess: () => router.back(),
+          onSuccess: () => goBack(),
         },
       );
       return;
     }
-    router.back();
+    goBack();
   };
 
   return (

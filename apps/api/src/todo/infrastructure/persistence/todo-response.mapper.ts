@@ -72,6 +72,7 @@ export abstract class TodoMapper {
 				total: items.length,
 				completed: items.filter((i) => i.completed).length,
 			},
+			commentCount: entity.commentCount,
 			createdAt: toISOString(entity.createdAt),
 			updatedAt: toISOString(entity.updatedAt),
 		};

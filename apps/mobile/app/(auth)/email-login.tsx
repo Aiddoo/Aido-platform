@@ -6,6 +6,7 @@ import {
   type EmailLoginFormData,
   emailLoginFormSchema,
 } from '@src/features/auth/presentations/schemas/email-login-form.schema';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Button, H3, HStack, Input, Spacing, TextButton } from '@src/shared/ui';
@@ -18,6 +19,8 @@ import { Image, type TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 const EmailLoginScreen = () => {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('auth');
   const passwordRef = useRef<TextInput>(null);
 
@@ -117,11 +120,11 @@ const EmailLoginScreen = () => {
         <Spacing size={24} />
 
         <HStack justify="center" align="center" gap={8}>
-          <TextButton size="medium" onPress={() => router.push('/sign-up')}>
+          <TextButton size="medium" onPress={() => push('/sign-up')}>
             {t('emailLogin.signUp')}
           </TextButton>
           <Separator orientation="vertical" className="h-3 bg-gray-6" />
-          <TextButton size="medium" onPress={() => router.push('/(auth)/forgot-password')}>
+          <TextButton size="medium" onPress={() => push('/(auth)/forgot-password')}>
             {t('emailLogin.forgotPassword')}
           </TextButton>
         </HStack>

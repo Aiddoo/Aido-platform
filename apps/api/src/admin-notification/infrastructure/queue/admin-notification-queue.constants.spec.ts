@@ -1,3 +1,5 @@
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+
 import {
 	ADMIN_NOTIFICATION_JOB_POLICY,
 	ADMIN_NOTIFICATION_QUEUE,
@@ -20,7 +22,8 @@ describe("Admin notification queue contract", () => {
 		});
 		expect(ADMIN_NOTIFICATION_WORKER_POLICY).toEqual({
 			teamSize: 3,
-			pollingIntervalSeconds: 2,
+			// 관리자 공지는 사람이 기다리지 않는다 — 폴링은 예약 작업 주기를 따른다.
+			pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
 		});
 		expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.key).toBe("daily-signup-summary-scheduler");
 		expect(DAILY_SIGNUP_SUMMARY_SCHEDULE.timezone).toBe("Asia/Seoul");

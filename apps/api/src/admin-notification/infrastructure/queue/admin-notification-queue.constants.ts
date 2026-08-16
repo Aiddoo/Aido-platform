@@ -4,6 +4,8 @@
 
 import { z } from "zod";
 
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+
 import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
 
 // =============================================================================
@@ -35,7 +37,7 @@ export const ADMIN_NOTIFICATION_JOB_POLICY = {
 
 export const ADMIN_NOTIFICATION_WORKER_POLICY = {
 	teamSize: 3,
-	pollingIntervalSeconds: 2,
+	pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
 } as const;
 
 export const DAILY_SIGNUP_SUMMARY_SCHEDULE = {

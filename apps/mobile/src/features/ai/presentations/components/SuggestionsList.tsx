@@ -1,9 +1,10 @@
 import type { AiSuggestion } from '@src/features/ai/models/ai.model';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { Button, H4, HStack, Spacing, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Spinner } from 'heroui-native';
 import { useState } from 'react';
 import { Image, View } from 'react-native';
@@ -14,9 +15,10 @@ import { ScallopedContainer } from './ScallopedContainer';
 import { SuggestionCategoryBottomSheet } from './SuggestionCategoryBottomSheet';
 
 export function SuggestionsList() {
+  const replace = useSingleTap(router.replace);
+
   const { t } = useTranslation('ai');
   const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
-  const router = useRouter();
   const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
   const [pendingSuggestionId, setPendingSuggestionId] = useState<number | null>(null);
 
@@ -94,7 +96,7 @@ export function SuggestionsList() {
           <SuggestionCard
             key={suggestion.id}
             suggestion={suggestion}
-            onAccepted={() => router.replace('/feed')}
+            onAccepted={() => replace('/feed')}
             onDismiss={() => handleDismiss(suggestion.id)}
             isPending={dismissSuggestionMutation.isPending && pendingSuggestionId === suggestion.id}
             pendingAction={dismissSuggestionMutation.isPending ? 'dismiss' : null}

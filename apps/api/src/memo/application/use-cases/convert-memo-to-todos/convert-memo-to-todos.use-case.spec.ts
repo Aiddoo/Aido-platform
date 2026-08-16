@@ -49,6 +49,7 @@ const todoView = (id: number): Todo => ({
 	category: { id: 5, name: "기본", color: "#FFB3B3", sortOrder: 0 },
 	items: [],
 	itemStats: { total: 0, completed: 0 },
+	commentCount: 0,
 	createdAt: "2026-04-06T00:00:00.000Z",
 	updatedAt: "2026-04-06T00:00:00.000Z",
 });
