@@ -16,11 +16,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
+import { ADMIN_PROVIDERS } from "@/admin/application/admin.providers";
 import { ADMIN_BROADCAST_NOTIFIER } from "@/admin/application/ports/admin-broadcast-notifier.port";
 import { ADMIN_GROWTH_METRICS } from "@/admin/application/ports/admin-growth-metrics.port";
 import { ADMIN_USER_DIRECTORY } from "@/admin/application/ports/admin-user-directory.port";
-import { AdminQueries } from "@/admin/application/queries";
-import { AdminUseCases } from "@/admin/application/use-cases";
 import { BroadcastNotificationUseCase } from "@/admin/application/use-cases/broadcast-notification/broadcast-notification.use-case";
 import { SendTargetedNotificationUseCase } from "@/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
 import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
@@ -52,8 +51,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				...AdminUseCases,
-				...AdminQueries,
+				...ADMIN_PROVIDERS,
 				{
 					provide: ADMIN_GROWTH_METRICS,
 					useValue: { getSummary: jest.fn() },

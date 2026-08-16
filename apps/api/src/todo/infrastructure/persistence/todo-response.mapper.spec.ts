@@ -68,6 +68,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
 				},
 				items: [],
 				itemStats: { total: 0, completed: 0 },
+				commentCount: 0,
 				createdAt: "2024-01-01T00:00:00.000Z",
 				updatedAt: "2024-01-02T00:00:00.000Z",
 			});

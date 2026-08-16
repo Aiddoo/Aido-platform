@@ -7,10 +7,9 @@ import { SUN_TIME_PROVIDER } from "./application/ports/sun-time-provider.port";
 import { WEATHER_CACHE } from "./application/ports/weather-cache.port";
 import { WEATHER_LOCATION_REPOSITORY } from "./application/ports/weather-location.repository.port";
 import { WEATHER_PROVIDER } from "./application/ports/weather-provider.port";
-import { WeatherQueryUseCases } from "./application/queries";
 import { GetForecastsByGridBatchUseCase } from "./application/queries/get-forecasts-by-grid-batch/get-forecasts-by-grid-batch.use-case";
 import { WeatherForecastReader } from "./application/services/weather-forecast.reader";
-import { WeatherUseCases } from "./application/use-cases";
+import { WEATHER_PROVIDERS } from "./application/weather.providers";
 import { AirkoreaProvider } from "./infrastructure/adapters/airkorea.provider";
 import { KasiSunTimeProvider } from "./infrastructure/adapters/kasi-sun-time.provider";
 import { KmaLifestyleIndexProvider } from "./infrastructure/adapters/kma-lifestyle-index.provider";
@@ -47,8 +46,7 @@ import { WeatherController } from "./presentation/weather.controller";
 		{ provide: SUN_TIME_PROVIDER, useClass: KasiSunTimeProvider },
 		// 조회 캐시 포트 (application → CacheService/CacheKeys 직접 의존 역전)
 		{ provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
-		...WeatherQueryUseCases,
-		...WeatherUseCases,
+		...WEATHER_PROVIDERS,
 	],
 	exports: [WeatherForecastAccess],
 })

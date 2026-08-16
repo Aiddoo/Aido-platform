@@ -42,6 +42,7 @@ import { THROTTLER_STORAGE, ThrottleModule } from "@/shared/infrastructure/throt
 import { SubscriptionModule } from "@/subscription";
 import { TodoModule } from "@/todo";
 import { TodoCategoryModule } from "@/todo-category";
+import { TodoCommentModule } from "@/todo-comment";
 import { TimezoneSelfHealInterceptor, UserSettingsModule } from "@/user-settings";
 import { WeatherModule } from "@/weather/weather.module";
 import { WeeklyAchievementModule } from "@/weekly-achievement";
@@ -122,6 +123,7 @@ import { AppService } from "./app.service";
 		SchedulerModule,
 		SubscriptionModule,
 		TodoModule,
+		TodoCommentModule,
 		TodoCategoryModule,
 		UserSettingsModule,
 		WeatherModule,

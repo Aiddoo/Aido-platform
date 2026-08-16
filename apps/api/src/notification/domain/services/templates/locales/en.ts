@@ -1,6 +1,8 @@
 import type { NotificationType } from "../../../types/notification-type";
 import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
 
+export const SOCIAL_SENDER_FALLBACK = "A friend";
+
 // English templates — same keys/variants as ko.ts (parity is unit-tested).
 // No josa placeholders ({name:이/가}) — plain {name} substitution only.
 
@@ -616,6 +618,36 @@ export const SOCIAL_TEMPLATES = {
 				body: "One nudge might bring them back?",
 			},
 		],
+	} satisfies NotificationTemplate,
+	TODO_COMMENT: {
+		title: "New comment",
+		body: "{senderName} commented on a todo.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_CHAIN: {
+		title: "New comment",
+		body: "{senderName} left {count} comments on a todo.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_REPLY: {
+		title: "New reply",
+		body: "{senderName} replied to your comment.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_REPLY_CHAIN: {
+		title: "New reply",
+		body: "{senderName} left {count} replies to your comment.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_LIKE: {
+		title: "Comment liked",
+		body: "{senderName} liked your comment.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
 	} satisfies NotificationTemplate,
 } as const;
 

@@ -54,6 +54,11 @@ export const todoSchema = z
       .array(todoItemResponseSchema)
       .describe('하위 항목 목록 (체크리스트, sortOrder 오름차순)'),
     itemStats: todoItemStatsSchema.describe('하위 항목 진행 통계 (카운터 뱃지/진행률 바용)'),
+    commentCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('댓글 수 (삭제된 댓글 제외 — 목록 진입점 뱃지용)'),
     createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)'),
     updatedAt: datetimeSchema.describe('수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)'),
   })
@@ -79,6 +84,7 @@ export const todoSchema = z
       },
       items: [],
       itemStats: { total: 0, completed: 0 },
+      commentCount: 0,
       createdAt: '2024-01-10T12:00:00.000Z',
       updatedAt: '2024-01-10T12:00:00.000Z',
     },

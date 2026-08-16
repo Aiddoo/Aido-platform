@@ -1,6 +1,8 @@
 import type { NotificationType } from "../../../types/notification-type";
 import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
 
+export const SOCIAL_SENDER_FALLBACK = "친구";
+
 export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER: {
 		title: "⏰ {todoTitle}, 1시간 뒤 시작!",
@@ -574,6 +576,36 @@ export const SOCIAL_TEMPLATES = {
 				body: "가볍게 안부를 보내볼까?",
 			},
 		],
+	} satisfies NotificationTemplate,
+	TODO_COMMENT: {
+		title: "새 댓글",
+		body: "{senderName:이/가} 할 일에 댓글을 남겼어요.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_CHAIN: {
+		title: "새 댓글",
+		body: "{senderName:이/가} 할 일에 댓글 {count}개를 남겼어요.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_REPLY: {
+		title: "새 답글",
+		body: "{senderName:이/가} 댓글에 답글을 남겼어요.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_REPLY_CHAIN: {
+		title: "새 답글",
+		body: "{senderName:이/가} 댓글에 답글 {count}개를 남겼어요.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
+	} satisfies NotificationTemplate,
+	TODO_COMMENT_LIKE: {
+		title: "댓글 좋아요",
+		body: "{senderName:이/가} 댓글을 좋아해요.",
+		type: "TODO_SHARED",
+		defaultRoute: "/todo/{todoId}",
 	} satisfies NotificationTemplate,
 } as const;
 

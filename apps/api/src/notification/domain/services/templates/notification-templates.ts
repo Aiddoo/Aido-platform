@@ -198,6 +198,37 @@ function fillMessage(
  * locale 미전달 호출은 기존과 완전히 동일하게 동작한다 (하위 호환).
  */
 export class NotificationMessageBuilder {
+	static todoCommentActivity(
+		kind: "COMMENT" | "REPLY" | "LIKE",
+		senderName: string | null,
+		locale: SupportedLocale = DEFAULT_LOCALE,
+		count = 1,
+	): { title: string; body: string } {
+		const templates = LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES;
+		// 한 번에 여러 개를 이어 썼으면 알림 한 건에 개수를 담아 알린다.
+		const isChain = count > 1;
+		let template: NotificationTemplate;
+
+		switch (kind) {
+			case "COMMENT":
+				template = isChain ? templates.TODO_COMMENT_CHAIN : templates.TODO_COMMENT;
+				break;
+			case "REPLY":
+				template = isChain ? templates.TODO_COMMENT_REPLY_CHAIN : templates.TODO_COMMENT_REPLY;
+				break;
+			case "LIKE":
+				template = templates.TODO_COMMENT_LIKE;
+				break;
+		}
+		const displayName = senderName?.trim() || LOCALE_TEMPLATES[locale].SOCIAL_SENDER_FALLBACK;
+		const values = { senderName: displayName, count: String(count) };
+
+		return {
+			title: fillTemplate(template.title, values),
+			body: fillTemplate(template.body, values),
+		};
+	}
+
 	/**
 	 * 팔로우 요청 알림 메시지 생성
 	 */

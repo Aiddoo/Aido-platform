@@ -26,10 +26,10 @@ import { createDailyCompletionCacheMock, createDailyCompletionFriendMock } from 
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
 
+import { DAILY_COMPLETION_PROVIDERS } from "@/daily-completion/application/daily-completion.providers";
 import { DAILY_COMPLETION_CACHE } from "@/daily-completion/application/ports/daily-completion-cache.port";
 import { FRIEND_PORT } from "@/daily-completion/application/ports/friend.port";
 import { TODO_COMPLETION_REPOSITORY } from "@/daily-completion/application/ports/todo-completion.repository.port";
-import { DailyCompletionQueryUseCases } from "@/daily-completion/application/queries";
 import { GetDailyCompletionsUseCase } from "@/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case";
 import { PrismaTodoCompletionRepository } from "@/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -56,7 +56,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(실제 DB)
 		module = await Test.createTestingModule({
 			providers: [
-				...DailyCompletionQueryUseCases,
+				...DAILY_COMPLETION_PROVIDERS,
 				{
 					provide: TODO_COMPLETION_REPOSITORY,
 					useClass: PrismaTodoCompletionRepository,

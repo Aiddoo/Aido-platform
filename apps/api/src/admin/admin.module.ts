@@ -2,11 +2,10 @@ import { Module } from "@nestjs/common";
 
 import { NotificationModule } from "@/notification/notification.module";
 
+import { ADMIN_PROVIDERS } from "./application/admin.providers";
 import { ADMIN_BROADCAST_NOTIFIER } from "./application/ports/admin-broadcast-notifier.port";
 import { ADMIN_GROWTH_METRICS } from "./application/ports/admin-growth-metrics.port";
 import { ADMIN_USER_DIRECTORY } from "./application/ports/admin-user-directory.port";
-import { AdminQueries } from "./application/queries";
-import { AdminUseCases } from "./application/use-cases";
 import { NotificationAdminBroadcastNotifierAdapter } from "./infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminGrowthMetricsAdapter } from "./infrastructure/adapters/prisma-admin-growth-metrics.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "./infrastructure/adapters/prisma-admin-user-directory.adapter";
@@ -35,8 +34,7 @@ import { AdminController } from "./presentation/admin.controller";
 			provide: ADMIN_GROWTH_METRICS,
 			useClass: PrismaAdminGrowthMetricsAdapter,
 		},
-		...AdminUseCases,
-		...AdminQueries,
+		...ADMIN_PROVIDERS,
 	],
 })
 export class AdminModule {}

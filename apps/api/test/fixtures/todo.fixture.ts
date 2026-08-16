@@ -82,6 +82,8 @@ export const TodoFixture = {
 			sortOrder: overrides.sortOrder ?? id,
 			visibility: overrides.visibility ?? "PRIVATE",
 			recurrenceGroupId: overrides.recurrenceGroupId ?? null,
+			viewCount: overrides.viewCount ?? 0,
+			commentCount: overrides.commentCount ?? 0,
 			createdAt: overrides.createdAt ?? now,
 			updatedAt: overrides.updatedAt ?? now,
 		};
