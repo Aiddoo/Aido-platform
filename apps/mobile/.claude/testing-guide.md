@@ -535,12 +535,43 @@ describe('{Feature}Service', () => {
 
 ### 4. UI 컴포넌트 테스트
 
-컴포넌트 테스트에는 TanStack Query의 `QueryClient`가 필요하다.
+#### 네이티브 경계는 전역 setup이 담당한다 — 테스트에서 다시 mock하지 않는다
+
+`react-native-worklets`·`@gorhom/bottom-sheet`·`react-native-keyboard-controller`·
+`react-native-safe-area-context`·`react-native-gesture-handler`는 import 시점에 네이티브를
+붙잡아 jest에서 그대로 터진다. 이들은 **`jest.setup.ts` 한 곳에서 각 패키지가 공식으로
+제공하는 mock으로** 대체한다. 손으로 가짜를 만들거나 테스트마다 다시 mock하지 않는다.
+
+- `moduleNameMapper`가 아니라 `jest.mock`을 쓴다 — 공식 mock 일부가 내부에서
+  `jest.requireActual`로 실물을 읽는데, mapper는 그 호출까지 가로채 실물에 닿지 못하게 한다.
+- 순서가 계약이다 — worklets를 먼저 막지 않으면 다른 mock도 같은 자리에서 죽는다.
+- `react-native-reanimated`는 목록에 없다. 자체적으로 jest를 인식해 JS 경로로 도는 설계고,
+  공식 mock으로 갈아끼우면 `useReducedMotion`처럼 heroui-native가 쓰는 API가 빠진다.
+
+**`heroui-native`나 `@src/shared/ui`를 통째로 `jest.mock`하지 않는다.** 그렇게 하면
+검증하려던 배선이 함께 사라져, 테스트는 초록인데 화면은 깨지는 상태가 된다.
+
+#### `renderUi` — 앱과 같은 문맥에서 렌더한다
+
+heroui-native 컴포넌트는 `HeroUINativeProvider` 없이는 애니메이션 설정을 읽다 죽고,
+글꼴 배율은 `FontScaleProvider`가 소유한다. 이 문맥을 테스트마다 다시 세우지 않는다.
+
+```tsx
+import { renderUi } from '@src/shared/__tests__/render-ui';
+
+// DI는 이 렌더가 실제로 쓰는 것만 넣는다 —
+// 넣지 않은 의존성에 손대면 컨테이너가 이름을 대며 즉시 실패해 누락이 드러난다.
+await renderUi(<CommentComposerSheet {...props} />, { di: { analytics } });
+```
+
+- RTL 14의 `render`·`fireEvent`는 **비동기**다. `await`하지 않으면 다음 단언이 이전 상태를 본다.
+- `renderUi`는 배럴(`@src/shared/__tests__`)에 넣지 않는다 — 그러면 이 유틸을 쓰지 않는
+  테스트까지 UI 스택 전체를 끌어온다.
 
 #### QueryClient 래핑
 
-TanStack Query를 사용하는 컴포넌트는 `QueryClientProvider`로 래핑해야 한다.
-테스트 파일 내에서 직접 설정한다.
+`renderUi`가 재시도를 끈 `QueryClient`를 이미 감싸 준다. 캐시 상태를 직접 들여다봐야 할 때만
+`queryClient`를 넘긴다. 아래는 `renderUi`를 쓰지 않고 직접 세울 때의 형태다.
 
 ```typescript
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

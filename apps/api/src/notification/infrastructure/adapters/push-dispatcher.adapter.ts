@@ -64,6 +64,23 @@ import {
 } from "../cache/notification-cache.keyspace";
 
 /**
+ * 발송을 기다리는 라운드 상한.
+ *
+ * 대기 중인 발송이 또 다른 발송을 낳을 수 있어 한 번으로는 비지 않는다.
+ * 무한히 돌면 발송 연쇄 루프가 드러나지 않는다. 도메인 이벤트 드레인과 같은 값을 쓴다.
+ */
+const MAX_DRAIN_ROUNDS = 25;
+
+/**
+ * 발송을 기다리는 시간 상한.
+ *
+ * 라운드 상한만으로는 부족하다 — 끝나지 않는 프라미스 하나면 첫 라운드에서 영원히 멈춘다.
+ * 그러면 종료가 걸리고, 테스트에서는 이 대기가 `beforeEach`에 있어 **엉뚱한 다음 테스트가**
+ * 타임아웃으로 죽는다. 여기서 시간을 끊어야 원인이 제자리에서 드러난다.
+ */
+const DRAIN_TIMEOUT_MS = 15_000;
+
+/**
  * 푸시 발송 디스패처 어댑터(PUSH_DISPATCHER 구현).
  *
  * 푸시 전송 메커니즘과 발송 자격 판단을 소유한다:
@@ -496,10 +513,18 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		};
 
 		const context: PushNotificationData["context"] = {};
-		if (data.todoId) context.todoId = data.todoId;
-		if (data.friendId) context.friendId = data.friendId;
-		if (data.nudgeId) context.nudgeId = data.nudgeId;
-		if (data.cheerId) context.cheerId = data.cheerId;
+		if (data.todoId) {
+			context.todoId = data.todoId;
+		}
+		if (data.friendId) {
+			context.friendId = data.friendId;
+		}
+		if (data.nudgeId) {
+			context.nudgeId = data.nudgeId;
+		}
+		if (data.cheerId) {
+			context.cheerId = data.cheerId;
+		}
 
 		return {
 			notificationId: notificationId ?? 0,
@@ -752,19 +777,61 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		promise.finally(() => this.#pendingPushes.delete(promise));
 	}
 
-	/** 진행 중인 fire-and-forget 발송을 모두 기다린다. */
-	async drainPendingPushes(): Promise<void> {
+	/**
+	 * 진행 중인 fire-and-forget 발송을 모두 기다린다.
+	 *
+	 * 두 가지로 스스로를 묶는다 — 라운드 상한(발송이 발송을 낳는 연쇄)과
+	 * 시간 상한(끝나지 않는 프라미스 하나). 둘 중 하나라도 걸리면 조용히
+	 * 매달리는 대신 던져서, 무엇이 남았는지 그 자리에서 드러나게 한다.
+	 *
+	 * @param timeoutMs 기다릴 시간 상한. 테스트가 짧게 좁혀 쓴다.
+	 * @throws {Error} 라운드 또는 시간 상한을 넘긴 경우
+	 */
+	async drainPendingPushes(timeoutMs: number = DRAIN_TIMEOUT_MS): Promise<void> {
 		if (this.#pendingPushes.size === 0) return;
 
 		this.#logger.log(`Waiting for ${this.#pendingPushes.size} pending push(es)...`);
-		while (this.#pendingPushes.size > 0) {
-			await Promise.allSettled([...this.#pendingPushes]);
+
+		let expire: ReturnType<typeof setTimeout> | undefined;
+		const deadline = new Promise<never>((_resolve, reject) => {
+			expire = setTimeout(() => {
+				reject(
+					new Error(
+						`Push drain exceeded ${timeoutMs}ms — ${this.#pendingPushes.size}건이 정착하지 않았다`,
+					),
+				);
+			}, timeoutMs);
+			// 이 타이머만 남아 프로세스를 붙잡지 않게 한다.
+			expire.unref?.();
+		});
+
+		try {
+			await Promise.race([this.#settlePendingPushes(), deadline]);
+			this.#logger.log("All pending pushes completed");
+		} finally {
+			clearTimeout(expire);
 		}
-		this.#logger.log("All pending pushes completed");
+	}
+
+	/** 대기 집합이 빌 때까지 라운드를 돈다. 연쇄가 끝나지 않으면 던진다. */
+	async #settlePendingPushes(): Promise<void> {
+		for (let round = 0; round < MAX_DRAIN_ROUNDS; round += 1) {
+			await Promise.allSettled([...this.#pendingPushes]);
+			if (this.#pendingPushes.size === 0) return;
+		}
+
+		throw new Error(
+			`Push drain exceeded ${MAX_DRAIN_ROUNDS} rounds — ${this.#pendingPushes.size}건이 남아 발송 연쇄 루프가 의심된다`,
+		);
 	}
 
 	async beforeApplicationShutdown(): Promise<void> {
-		await this.drainPendingPushes();
+		// 종료는 실패로 끝나면 안 되지만 매달려서도 안 된다 — 남은 발송은 기록만 남기고 넘어간다.
+		try {
+			await this.drainPendingPushes();
+		} catch (error) {
+			this.#logger.warn(`Shutting down with pending pushes unresolved: ${error}`);
+		}
 		this.rateLimiter.destroy?.();
 	}
 }

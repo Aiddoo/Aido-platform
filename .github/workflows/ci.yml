@@ -62,11 +62,15 @@ jobs:
         run: bash scripts/ci/run-with-tee.spec.sh
 
       # 각 테스트 출력을 파일로 남기고 실패 시 아티팩트 업로드 — 플레이크 재현용
+      #
+      # api는 아래 커버리지 스텝이 같은 유닛 스위트를 돌리므로 여기서 제외한다.
+      # (예전에는 양쪽에서 돌아 2600여 건이 매 CI마다 두 번 실행됐다.)
       - name: Run unit tests
-        run: scripts/ci/run-with-tee.sh /tmp/test-unit.log pnpm turbo run test ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: scripts/ci/run-with-tee.sh /tmp/test-unit.log pnpm turbo run test --filter='!@aido/api' ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
-      - name: Run API coverage
-        run: scripts/ci/run-with-tee.sh /tmp/test-coverage.log pnpm --filter @aido/api test:cov
+      # turbo를 거쳐야 캐시와 --affected 스코핑이 함께 걸린다.
+      - name: Run API unit tests with coverage
+        run: scripts/ci/run-with-tee.sh /tmp/test-coverage.log pnpm turbo run test:cov --filter=@aido/api ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
       - name: Upload unit test logs (failure only)
         if: failure()

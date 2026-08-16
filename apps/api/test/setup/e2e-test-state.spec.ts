@@ -82,4 +82,45 @@ describe("E2E 테스트 상태 reset", () => {
 		expect(flushRedis).toHaveBeenCalledTimes(1);
 		expect(clearFake).toHaveBeenCalledTimes(1);
 	});
+
+	// 이 reset은 beforeEach에서 돈다. 여기서 매달리면 jest는 그 시간을 다음 it의
+	// 예산에서 빼가고, randomize 때문에 매번 다른 테스트가 원인 없이 죽는다.
+	// 아래 두 계약이 그 연결고리를 끊는다.
+	describe("시간 상한", () => {
+		const neverSettles = () => new Promise<void>(() => undefined);
+
+		it("정착하지 않는 drain을 끊고 어느 단계였는지 말한다", async () => {
+			const cleanupDatabase = jest.fn();
+			const reset = createE2eTestStateResetter({
+				drainBackgroundWork: neverSettles,
+				cleanupDatabase,
+				resetCache: jest.fn(),
+				flushRedis: jest.fn(),
+				sharedResetters: [],
+				timeoutMs: 20,
+			});
+
+			await expect(reset()).rejects.toMatchObject({
+				errors: [
+					expect.objectContaining({ message: expect.stringMatching(/drainBackgroundWork.*20ms/) }),
+				],
+			});
+			// drain이 끊겨도 DB 정리는 여전히 수행된다 — 오염을 다음 테스트로 넘기지 않는다.
+			expect(cleanupDatabase).toHaveBeenCalledTimes(1);
+		});
+
+		it("어느 단계가 멈추든 이름과 함께 실패한다", async () => {
+			const reset = createE2eTestStateResetter({
+				cleanupDatabase: jest.fn(),
+				resetCache: neverSettles,
+				flushRedis: jest.fn(),
+				sharedResetters: [],
+				timeoutMs: 20,
+			});
+
+			await expect(reset()).rejects.toMatchObject({
+				errors: [expect.objectContaining({ message: expect.stringMatching(/resetCache.*20ms/) })],
+			});
+		});
+	});
 });
