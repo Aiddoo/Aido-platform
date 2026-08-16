@@ -17,9 +17,8 @@ export function useSubTodoActions(todo: TodoItemViewModel) {
   const reorderMutation = useMutation(useReorderSubTodosMutationOptions());
 
   return {
-    add: (title: string, callbacks?: { onSuccess?: () => void }) =>
-      addMutation.mutate({ todoId: todo.id, title, startDate: todo.startDate }, callbacks),
-    isAddPending: addMutation.isPending,
+    add: (title: string) =>
+      addMutation.mutateAsync({ todoId: todo.id, title, startDate: todo.startDate }),
 
     toggle: (subTodoId: number, completed: boolean) =>
       toggleMutation.mutate({
@@ -29,21 +28,19 @@ export function useSubTodoActions(todo: TodoItemViewModel) {
         startDate: todo.startDate,
       }),
 
-    update: (subTodoId: number, title: string, callbacks?: { onSuccess?: () => void }) =>
-      updateMutation.mutate(
-        { todoId: todo.id, subTodoId, title, startDate: todo.startDate },
-        callbacks,
-      ),
-    isUpdatePending: updateMutation.isPending,
+    update: (subTodoId: number, title: string) =>
+      updateMutation.mutateAsync({ todoId: todo.id, subTodoId, title, startDate: todo.startDate }),
 
-    remove: (subTodoId: number, callbacks?: { onSuccess?: () => void }) =>
-      deleteMutation.mutate({ todoId: todo.id, subTodoId, startDate: todo.startDate }, callbacks),
-    isRemovePending: deleteMutation.isPending,
+    remove: (subTodoId: number) =>
+      deleteMutation.mutateAsync({ todoId: todo.id, subTodoId, startDate: todo.startDate }),
 
     canAdd: SubTodoPolicy.canAddSubTodo(todo),
 
     handleDragEnd: ({ data, from, to }: DragEndParams<SubTodo>) => {
-      if (from === to || reorderMutation.isPending) return;
+      if (from === to || reorderMutation.isPending) {
+        return;
+      }
+
       reorderMutation.mutate({
         todoId: todo.id,
         subTodoIds: data.map((item) => item.id),

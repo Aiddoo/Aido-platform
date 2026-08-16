@@ -8,6 +8,9 @@ module.exports = {
     'node_modules/(?!(.pnpm/[^/]+/node_modules/)?(react-native|@react-native|expo|@expo|heroui-native|uniwind|tailwind-variants|tailwind-merge|@gorhom|react-native-reanimated|react-native-gesture-handler|react-native-svg|react-native-worklets|ky|standard-navigation))',
   ],
   moduleNameMapper: {
+    // .svg는 별칭보다 먼저 잡아야 한다 — @assets/... 규칙이 먼저 걸리면 에셋으로 새어 나간다
+    '\\.svg$': '<rootDir>/src/shared/__tests__/mocks/svg.tsx',
+
     // Path aliases
     '^@src/(.*)$': '<rootDir>/src/$1',
     '^@/(.*)$': '<rootDir>/app/$1',

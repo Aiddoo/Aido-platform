@@ -29,16 +29,14 @@ interface BaseProps {
 
 interface CreateProps extends BaseProps {
   mode: 'create';
-  onSubmit: (value: string) => void;
-  isSubmitting: boolean;
+  onSubmit: (value: string) => Promise<unknown> | void;
 }
 
 interface EditProps extends BaseProps {
   mode: 'edit';
   initialValue: string;
-  onSubmit: (value: string) => void;
-  onDelete: () => void;
-  isSubmitting: boolean;
+  onSubmit: (value: string) => Promise<unknown> | void;
+  onDelete: () => Promise<unknown> | void;
 }
 
 type AddSubTodoBottomSheetProps = CreateProps | EditProps;
@@ -54,13 +52,42 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<TextInput>(null);
 
-  const isSubmitDisabled = !value.trim() || props.isSubmitting;
+  // 보내는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
+  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const isBusy = isSubmitting || isDeleting;
 
-  const handleSubmit = () => {
+  const isSubmitDisabled = !value.trim() || isBusy;
+
+  const handleSubmit = async () => {
     const trimmed = value.trim();
-    if (!trimmed) return;
-    props.onSubmit(trimmed);
-    if (props.mode === 'create') setValue('');
+    if (!trimmed || isBusy) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await props.onSubmit(trimmed);
+      if (props.mode === 'create') {
+        setValue('');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (onDelete: () => Promise<unknown> | void) => {
+    if (isBusy) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -68,6 +95,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
       <VStack gap={12}>
         <BottomSheetInput
           ref={inputRef}
+          testID="sub-todo-input"
           autoFocus
           placeholder={tGlobal('todo:subTodo.placeholder')}
           value={value}
@@ -84,8 +112,9 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
         <HStack gap={8} align="center">
           {props.mode === 'edit' && (
             <PressableFeedback
-              onPress={props.onDelete}
-              isDisabled={props.isSubmitting}
+              testID="sub-todo-delete"
+              onPress={() => handleDelete(props.onDelete)}
+              isDisabled={isBusy}
               className="size-9 items-center justify-center rounded-full bg-error/10"
             >
               <TrashIcon
@@ -101,6 +130,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
           <SpeechTooltip />
           <SpeechButton onResult={setValue} />
           <PressableFeedback
+            testID="sub-todo-submit"
             isDisabled={isSubmitDisabled}
             onPress={handleSubmit}
             style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
@@ -109,7 +139,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
               isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
             )}
           >
-            {props.isSubmitting ? (
+            {isSubmitting ? (
               <Spinner size="sm" color="white" />
             ) : (
               <ArrowUpIcon
