@@ -8,6 +8,11 @@ services:
     container_name: aido-prod-migrate
     env_file:
       - .env.docker.prod
+    environment:
+      # 프로덕션 DB로 마이그레이션하는 것이 이 서비스의 목적이다.
+      # 문지기(apps/api/scripts/guard-database-url.cjs)는 원격을 기본 거절하므로,
+      # 의도된 유일한 경로임을 여기서 선언한다.
+      AIDO_ALLOW_REMOTE_DB: '1'
     restart: 'no'
     logging:
       driver: json-file
