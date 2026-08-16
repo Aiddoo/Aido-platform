@@ -47,8 +47,9 @@ jest.mock('@src/shared/ui', () => ({
   useOverlay: () => ({ open: mockOverlayOpen }),
 }));
 
+// mock 팩토리는 mockPush 초기화 전에 평가되므로, 호출 시점에 참조하도록 감싼다.
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  router: { push: (...args: unknown[]) => mockPush(...args) },
 }));
 
 jest.mock('../components/FeatureDiscoverySheet', () => ({

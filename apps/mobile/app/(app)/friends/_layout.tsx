@@ -1,12 +1,16 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon, SearchIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
-import { router, Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const FriendsLayout = () => {
+  const goBack = useSingleTap(router.back);
+  const push = useSingleTap(router.push);
+
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
@@ -27,7 +31,7 @@ const FriendsLayout = () => {
         headerTitleAlign: 'center',
         headerLeft: () => (
           <View className="justify-center items-center">
-            <Pressable onPress={() => router.back()} hitSlop={8} className="p-2">
+            <Pressable onPress={() => goBack()} hitSlop={8} className="p-2">
               <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
             </Pressable>
           </View>
@@ -40,7 +44,7 @@ const FriendsLayout = () => {
           title: t('screenTitle'),
           headerRight: () => (
             <View className="justify-center items-center">
-              <Pressable onPress={() => router.push('/friends/search')} hitSlop={8} className="p-2">
+              <Pressable onPress={() => push('/friends/search')} hitSlop={8} className="p-2">
                 <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
               </Pressable>
             </View>

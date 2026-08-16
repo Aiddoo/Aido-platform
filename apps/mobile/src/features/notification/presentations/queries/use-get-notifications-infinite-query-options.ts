@@ -29,6 +29,7 @@ export const useGetNotificationsInfiniteQueryOptions = (params?: NotificationQue
     queryKey: NOTIFICATION_QUERY_KEYS.list({
       category: params?.category,
       unreadOnly: params?.unreadOnly,
+      limit: params?.limit,
     }),
 
     queryFn: async ({ pageParam }) => {

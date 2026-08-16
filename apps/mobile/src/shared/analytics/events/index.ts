@@ -7,6 +7,7 @@ import type { LifecycleEventMap } from './lifecycle.events';
 import type { MemoEventMap } from './memo.events';
 import type { NotificationEventMap } from './notification.events';
 import type { SubscriptionEventMap } from './subscription.events';
+import type { TodoCommentEventMap } from './todo-comment.events';
 import type { TodoEventMap } from './todo.events';
 import type { UserEventMap } from './user.events';
 import type { WidgetEventMap } from './widget.events';
@@ -21,6 +22,7 @@ export type {
   MemoEventMap,
   NotificationEventMap,
   SubscriptionEventMap,
+  TodoCommentEventMap,
   TodoEventMap,
   UserEventMap,
   WidgetEventMap,
@@ -28,6 +30,7 @@ export type {
 
 export type AppEventMap = AuthEventMap &
   TodoEventMap &
+  TodoCommentEventMap &
   FriendEventMap &
   GrowthEventMap &
   LifecycleEventMap &

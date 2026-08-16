@@ -26,6 +26,7 @@ const generateParentTodo = (): TodoItem => ({
   recurrenceGroupId: null,
   subTodos: [],
   subTodoStats: { total: 0, completed: 0 },
+  commentCount: 0,
 });
 
 export const createParentTodo = (overrides?: Partial<TodoItem>): TodoItem => ({

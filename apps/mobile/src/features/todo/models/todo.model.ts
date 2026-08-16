@@ -28,6 +28,8 @@ export const todoItemSchema = z.object({
   recurrenceGroupId: z.string().nullable(),
   subTodos: z.array(subTodoSchema),
   subTodoStats: subTodoStatsSchema,
+  /** 댓글 수 — 목록에서 대화가 오갔는지 바로 보이게 한다. */
+  commentCount: z.number(),
 });
 export type TodoItem = z.infer<typeof todoItemSchema>;
 export type OptimisticTodoItem = TodoItem & { readonly optimistic: true };

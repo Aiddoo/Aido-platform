@@ -4,6 +4,7 @@ import { MEMO_QUERY_KEYS } from '@src/features/memo/presentations/constants/memo
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/presentations/queries/use-get-memo-resource-limit-query-options';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -14,11 +15,12 @@ import {
   QueryErrorBoundary,
   RefreshIcon,
   ScrollProgressWidget,
+  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense, useCallback, useRef } from 'react';
 import { RefreshControl } from 'react-native';
@@ -87,7 +89,8 @@ export default function MemoScreen() {
 }
 
 function Header() {
-  const router = useRouter();
+  const push = useSingleTap(router.push);
+
   const toast = useAppToast();
   const { t } = useTranslation('memo');
   const { data: resourceLimit } = useSuspenseQuery(useGetMemoResourceLimitQueryOptions());
@@ -98,7 +101,7 @@ function Header() {
       toast.error(t('toasts.limitReached'));
       return;
     }
-    router.push('/memo/create');
+    push('/memo/create');
   };
 
   return (
@@ -126,7 +129,7 @@ Header.Loading = function Loading() {
 
 // 살아있는 세션의 일시적 401 등으로 Header 쿼리가 실패해도 앱 레벨로 새지 않게 로컬에 담는다.
 // 제목은 유지하고 생성 버튼 자리를 재시도(reset)로 바꿔 레이아웃을 흔들지 않는다.
-Header.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
+Header.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('memo');
   return (
     <HStack align="center" px={16} mb={16}>

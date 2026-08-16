@@ -6,10 +6,11 @@ import { AiUsagePolicy } from '@src/features/todo/models/todo.model';
 import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/use-get-ai-usage-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, Text, VStack } from '@src/shared/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 interface AiParseConfirmDialogProps {
   isOpen: boolean;
@@ -18,12 +19,14 @@ interface AiParseConfirmDialogProps {
 }
 
 export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirmDialogProps) {
+  const push = useSingleTap(router.push);
+  const replace = useSingleTap(router.replace);
+
   const { t } = useTranslation(['memo', 'common']);
   const { data: aiUsage } = useQuery(useGetAiUsageQueryOptions());
   const { data: memo } = useQuery(useGetMemoQueryOptions(memoId));
   const { data: categoriesData } = useQuery(useGetTodoCategoriesQueryOptions());
   const queryClient = useQueryClient();
-  const router = useRouter();
   const parseMutation = useMutation(useParseMemoMutationOptions());
 
   if (!aiUsage || !memo || !categoriesData) return null;
@@ -52,7 +55,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
-          <ConfirmDialog.ConfirmButton onPress={() => router.replace('/settings/subscription')}>
+          <ConfirmDialog.ConfirmButton onPress={() => replace('/settings/subscription')}>
             {t('common:premiumDialog.subscribe')}
           </ConfirmDialog.ConfirmButton>
         }
@@ -67,7 +70,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
     const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo(memoId));
     if (cached) {
       onClose();
-      router.push(`/memo/${memoId}/ai-review`);
+      push(`/memo/${memoId}/ai-review`);
       return;
     }
 
@@ -76,12 +79,12 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
       {
         onSuccess: () => {
           onClose();
-          router.push(`/memo/${memoId}/ai-review`);
+          push(`/memo/${memoId}/ai-review`);
         },
         onError: (error) => {
           if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
             onClose();
-            router.replace('/settings/subscription');
+            replace('/settings/subscription');
           }
         },
       },

@@ -7,6 +7,7 @@ import { TodoDatePickerContent } from '@src/features/todo/presentations/componen
 import { TodoTimePickerContent } from '@src/features/todo/presentations/components/TodoTimePickerContent';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ACTION_CHIP_ICON_SIZE,
@@ -22,13 +23,14 @@ import {
   RobotPixelIcon,
   Spacing,
   Text,
-  useOverlay,
   VStack,
+  type QueryErrorFallbackProps,
+  useOverlay,
 } from '@src/shared/ui';
 import { formatDate, formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { CloseButton } from 'heroui-native';
 import { createContext, Suspense, use, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, TextInput } from 'react-native';
@@ -76,9 +78,10 @@ AiReviewScreen.Loading = function Loading() {
   );
 };
 
-AiReviewScreen.Error = function ErrorFallback({ error }: { error: unknown }) {
-  const router = useRouter();
+AiReviewScreen.Error = function ErrorFallback({ error }: Pick<QueryErrorFallbackProps, 'error'>) {
   const { t } = useTranslation(['memo', 'common']);
+  const replace = useSingleTap(router.replace);
+  const goBack = useSingleTap(router.back);
 
   if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
     return (
@@ -86,7 +89,7 @@ AiReviewScreen.Error = function ErrorFallback({ error }: { error: unknown }) {
         title={t('memo:aiReview.limitTitle')}
         description={t('memo:aiDialog.subscribeUnlimited')}
         button={
-          <Result.Button onPress={() => router.replace('/settings/subscription')}>
+          <Result.Button onPress={() => replace('/settings/subscription')}>
             {t('common:premiumDialog.subscribe')}
           </Result.Button>
         }
@@ -100,18 +103,19 @@ AiReviewScreen.Error = function ErrorFallback({ error }: { error: unknown }) {
     <Result
       title={t('memo:aiReview.parseFailed')}
       description={message}
-      button={
-        <Result.Button onPress={() => router.back()}>{t('memo:aiReview.goBack')}</Result.Button>
-      }
+      button={<Result.Button onPress={goBack}>{t('memo:aiReview.goBack')}</Result.Button>}
     />
   );
 };
 
 function AiReviewContent() {
+  const goBack = useSingleTap(router.back);
+  const dismiss = useSingleTap(router.dismiss);
+  const navigate = useSingleTap(router.navigate);
+
   const { t } = useTranslation('memo');
   const { id } = useLocalSearchParams<{ id: string }>();
   const memoId = Number(id);
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { bottom: safeBottom } = useSafeAreaInsets();
 
@@ -124,7 +128,7 @@ function AiReviewContent() {
   const convertMutation = useMutation(useConvertMemoToTodosMutationOptions());
 
   if (!parsedResult) {
-    router.back();
+    goBack();
     return null;
   }
 
@@ -160,8 +164,8 @@ function AiReviewContent() {
       },
       {
         onSuccess: () => {
-          router.dismiss();
-          router.navigate('/feed');
+          dismiss();
+          navigate('/feed');
         },
       },
     );
@@ -171,7 +175,7 @@ function AiReviewContent() {
     return (
       <Result
         title={t('aiReview.noTodosTitle')}
-        button={<Result.Button onPress={() => router.back()}>{t('aiReview.goBack')}</Result.Button>}
+        button={<Result.Button onPress={() => goBack()}>{t('aiReview.goBack')}</Result.Button>}
       />
     );
   }

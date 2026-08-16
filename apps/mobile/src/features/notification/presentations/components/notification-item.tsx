@@ -5,13 +5,11 @@ import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { HStack, ListRow, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as Linking from 'expo-linking';
-import type { Href } from 'expo-router';
-import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { type Notification, NotificationPolicy } from '../../models/notification.model';
+import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
 
 interface NotificationItemProps {
@@ -66,8 +64,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 }
 
 function useNotificationPress(notification: Notification) {
+  const navigateToDestination = useNotificationNavigation();
+
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
-  const router = useRouter();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const premiumDialog = usePremiumDialog();
@@ -93,12 +92,6 @@ function useNotificationPress(notification: Notification) {
       type: notification.type,
       destination: destination.kind,
     });
-    if (destination.kind === 'browser') {
-      void Linking.openURL(destination.url);
-    } else if (destination.kind === 'webview') {
-      router.push(`/webview/${encodeURIComponent(destination.url)}` as Href);
-    } else if (destination.kind === 'internal') {
-      router.navigate(destination.route as Href);
-    }
-  }, [notification, markAsRead, router, trackEvent, queryClient, premiumDialog]);
+    navigateToDestination(destination);
+  }, [notification, markAsRead, trackEvent, queryClient, premiumDialog, navigateToDestination]);
 }

@@ -1,0 +1,50 @@
+{
+  "list": {
+    "moreReplies": "답글 {{count}}개 보기",
+    "edited": "수정됨",
+    "authorBadge": "작성자",
+    "deleted": "삭제된 댓글이에요",
+    "unknownUser": "알 수 없음",
+    "emptyTitle": "아직 댓글이 없어요",
+    "emptyDescription": "첫 댓글을 남겨보세요",
+    "loadFailed": "댓글을 불러오지 못했어요"
+  },
+  "sort": {
+    "popular": "인기순",
+    "latest": "최신순"
+  },
+  "input": {
+    "placeholder": "댓글 달기...",
+    "replyPlaceholder": "답글 달기...",
+    "commentingDisabled": "댓글을 남길 수 없는 할 일이에요",
+    "replyingDisabled": "삭제된 댓글에는 답글을 달 수 없어요",
+    "editingComment": "댓글 수정 중",
+    "editPlaceholder": "댓글을 수정해요",
+    "replyingTo": "{{name}}님에게 답글 남기는 중"
+  },
+  "thread": {
+    "title": "답글",
+    "openTodo": "원본 할 일 보기",
+    "checklistProgress": "{{completed}}/{{total}} 완료",
+    "emptyRepliesTitle": "아직 답글이 없어요",
+    "emptyRepliesDescription": "첫 답글을 남겨보세요",
+    "originLabel": "댓글이 달린 할 일",
+    "moreChecklistItems": "외 {{count}}개"
+  },
+  "actions": {
+    "openThread": "답글 보기",
+    "edit": "수정",
+    "delete": "삭제",
+    "save": "저장",
+    "cancel": "취소",
+    "reply": "답글 달기"
+  },
+  "composer": {
+    "commentTitle": "댓글",
+    "replyTitle": "답글",
+    "addToChain": "답글 또 달기",
+    "post": "게시",
+    "editingComment": "댓글 수정 중",
+    "repliedTo": "{{name}}님에게 남긴 답글"
+  }
+}

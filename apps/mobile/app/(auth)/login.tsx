@@ -4,6 +4,7 @@ import { useOpenAppleLoginMutationOptions } from '@src/features/auth/presentatio
 import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-google-login-mutation-options';
 import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-kakao-login-mutation-options';
 import { useOpenNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-naver-login-mutation-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {
@@ -27,6 +28,8 @@ import type { ComponentProps, ReactNode } from 'react';
 import { Platform } from 'react-native';
 
 const LoginScreen = () => {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('auth');
   const exchangeCodeMutation = useMutation(useExchangeCodeMutationOptions());
 
@@ -135,13 +138,13 @@ const LoginScreen = () => {
         <Spacing size={24} />
 
         <HStack justify="center" align="center" gap={8} pb={40}>
-          <TextButton size="medium" onPress={() => router.push('/sign-up')}>
+          <TextButton size="medium" onPress={() => push('/sign-up')}>
             {t('login.signUp')}
           </TextButton>
 
           <Separator orientation="vertical" className="h-3 bg-gray-6" />
 
-          <TextButton size="medium" onPress={() => router.push('/email-login')}>
+          <TextButton size="medium" onPress={() => push('/email-login')}>
             {t('login.emailLogin')}
           </TextButton>
         </HStack>

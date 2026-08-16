@@ -4,8 +4,9 @@ import type {
   FeatureDiscoveryCardId,
 } from '@src/features/feature-discovery/models/feature-discovery.registry';
 import type { FeatureHubSource } from '@src/shared/analytics';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useOverlay } from '@src/shared/ui';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { useWindowDimensions } from 'react-native';
 
@@ -24,10 +25,11 @@ interface OpenFeatureDiscoveryHubInput {
 }
 
 export function useFeatureDiscoveryHub() {
+  const push = useSingleTap(router.push);
+
   const analytics = useAnalytics();
   const featureAttribution = useFeatureAttribution();
   const overlay = useOverlay();
-  const router = useRouter();
   const { height: viewportHeight } = useWindowDimensions();
 
   const openHub = useCallback(
@@ -69,7 +71,7 @@ export function useFeatureDiscoveryHub() {
           close();
           navigateToFeatureDiscoveryCard(
             {
-              push: (route) => router.push(route),
+              push: (route) => push(route),
             },
             cardId,
           );
@@ -87,7 +89,7 @@ export function useFeatureDiscoveryHub() {
         );
       });
     },
-    [analytics, featureAttribution, overlay, router, viewportHeight],
+    [analytics, featureAttribution, overlay, viewportHeight],
   );
 
   return { openHub };

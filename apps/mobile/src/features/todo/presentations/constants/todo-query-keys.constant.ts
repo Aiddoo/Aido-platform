@@ -39,4 +39,9 @@ export const TODO_QUERY_KEYS = {
 
   // AI 사용량
   aiUsage: () => [...TODO_QUERY_KEYS.all, 'ai-usage'] as const,
+
+  // 할 일 상세 화면 (댓글 캐시는 todo-comment feature가 자기 키로 소유한다)
+  pages: () => [...TODO_QUERY_KEYS.all, 'page'] as const,
+  page: (todoId: number) => [...TODO_QUERY_KEYS.pages(), todoId] as const,
+  details: (todoId: number) => [...TODO_QUERY_KEYS.page(todoId), 'details'] as const,
 } as const;

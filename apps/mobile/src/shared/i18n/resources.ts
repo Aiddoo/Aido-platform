@@ -13,6 +13,7 @@ import enSettings from './locales/en/settings.json';
 import enStoreReview from './locales/en/storeReview.json';
 import enSubscription from './locales/en/subscription.json';
 import enTodo from './locales/en/todo.json';
+import enTodoComment from './locales/en/todoComment.json';
 import enUser from './locales/en/user.json';
 import enValidation from './locales/en/validation.json';
 import enWeather from './locales/en/weather.json';
@@ -32,6 +33,7 @@ import koSettings from './locales/ko/settings.json';
 import koStoreReview from './locales/ko/storeReview.json';
 import koSubscription from './locales/ko/subscription.json';
 import koTodo from './locales/ko/todo.json';
+import koTodoComment from './locales/ko/todoComment.json';
 import koUser from './locales/ko/user.json';
 import koValidation from './locales/ko/validation.json';
 import koWeather from './locales/ko/weather.json';
@@ -45,6 +47,7 @@ export const resources = {
     validation: koValidation,
     settings: koSettings,
     todo: koTodo,
+    todoComment: koTodoComment,
     auth: koAuth,
     memo: koMemo,
     friend: koFriend,
@@ -66,6 +69,7 @@ export const resources = {
     validation: enValidation,
     settings: enSettings,
     todo: enTodo,
+    todoComment: enTodoComment,
     auth: enAuth,
     memo: enMemo,
     friend: enFriend,
