@@ -13,11 +13,12 @@ import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/presentations/constants/weather-query-keys.constant';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, ListRow, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, Suspense } from 'react';
 import { RefreshControl } from 'react-native';
@@ -96,15 +97,14 @@ export default function MyFeedScreen() {
 }
 
 function SuggestionEntry() {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('todo');
-  const router = useRouter();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
 
   if (!isPremium) {
-    return (
-      <InfoCard label={t('feed.routineSuggestion')} onPress={() => router.push('/suggestions')} />
-    );
+    return <InfoCard label={t('feed.routineSuggestion')} onPress={() => push('/suggestions')} />;
   }
 
   return (
@@ -119,8 +119,9 @@ interface PremiumSuggestionEntryProps {
 }
 
 function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('todo');
-  const router = useRouter();
   const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
 
   const label =
@@ -128,7 +129,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
       ? t('feed.suggestionsArrived', { name, count: suggestions.length })
       : t('feed.preparing');
 
-  return <InfoCard label={label} onPress={() => router.push('/suggestions')} />;
+  return <InfoCard label={label} onPress={() => push('/suggestions')} />;
 }
 
 interface InfoCardProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {

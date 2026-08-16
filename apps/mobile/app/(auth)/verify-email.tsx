@@ -5,6 +5,7 @@ import { useResendVerificationMutationOptions } from '@src/features/auth/present
 import { useVerifyEmailMutationOptions } from '@src/features/auth/presentations/queries/use-verify-email-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
@@ -29,6 +30,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
  * - 로그인 시 미인증 에러(EMAIL_0503) 발생 시 이동
  */
 const VerifyEmailScreen = () => {
+  const goBack = useSingleTap(router.back);
+
   const { t } = useTranslation(['auth']);
   const { email } = useLocalSearchParams<{ email: string }>();
   const toast = useAppToast();
@@ -90,7 +93,7 @@ const VerifyEmailScreen = () => {
         <Result
           title={t('auth:verifyEmail.noEmail')}
           button={
-            <Result.Button color="dark" onPress={() => router.back()}>
+            <Result.Button color="dark" onPress={() => goBack()}>
               {t('auth:verifyEmail.goBack')}
             </Result.Button>
           }
@@ -103,7 +106,7 @@ const VerifyEmailScreen = () => {
     <StyledSafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
       <HStack align="center" px={16} py={12}>
-        <PressableFeedback onPress={() => router.back()}>
+        <PressableFeedback onPress={() => goBack()}>
           <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-8" />
         </PressableFeedback>
         <Text size="b2" weight="semibold" align="center" className="flex-1">

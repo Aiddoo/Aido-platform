@@ -2,9 +2,10 @@ import { FriendPolicy } from '@src/features/friend/models/friend.model';
 import { FriendSearchList } from '@src/features/friend/presentations/components/FriendSearchList';
 import { useFriendSearchTracking } from '@src/features/friend/presentations/hooks/use-friend-search-tracking';
 import { useDebouncedValue } from '@src/shared/hooks/useDebouncedValue';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Flex, Input, QueryErrorBoundary, Result, SearchIcon } from '@src/shared/ui';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Suspense, useState } from 'react';
 import { View } from 'react-native';
 
@@ -14,8 +15,9 @@ import { View } from 'react-native';
  * 상단 검색창 + (유효 검색어면 결과 리스트, 아니면 입력 안내).
  */
 const SearchFriendScreen = () => {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('friend');
-  const router = useRouter();
 
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query);
@@ -51,7 +53,7 @@ const SearchFriendScreen = () => {
             title={t('search.empty.prompt')}
             description={t('search.empty.tagHint')}
             button={
-              <Result.Button onPress={() => router.push('/friends/add')}>
+              <Result.Button onPress={() => push('/friends/add')}>
                 {t('search.empty.addByTag')}
               </Result.Button>
             }

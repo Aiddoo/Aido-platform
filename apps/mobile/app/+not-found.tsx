@@ -1,8 +1,12 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { DocsIcon, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { router } from 'expo-router';
 
 export default function NotFoundScreen() {
+  const goBack = useSingleTap(router.back);
+  const replace = useSingleTap(router.replace);
+
   const { t } = useTranslation();
 
   return (
@@ -14,9 +18,9 @@ export default function NotFoundScreen() {
           <Result.Button
             onPress={() => {
               if (router.canGoBack()) {
-                router.back();
+                goBack();
               } else {
-                router.replace('/feed');
+                replace('/feed');
               }
             }}
           >

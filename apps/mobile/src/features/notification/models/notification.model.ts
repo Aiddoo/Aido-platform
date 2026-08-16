@@ -1,11 +1,13 @@
 import {
   NOTIFICATION_ACTION_TYPE,
   NOTIFICATION_TYPE,
-  type NotificationAction,
   type NotificationCategory,
 } from '@aido/validators';
-import { match } from 'ts-pattern';
 import { z } from 'zod';
+
+import { getCategoryKey } from './notification-category.model';
+import { resolveNotificationDestination } from './notification-destination.model';
+import { toNotificationRouting } from './notification-routing.model';
 
 // ─── Schema & Type ───
 
@@ -56,108 +58,6 @@ export interface GetNotificationsQuery {
 
 // ─── 순수 함수 (독립 테스트 가능) ───
 
-/** 알림 카테고리 키 (표시 문구는 notification:categories.* 카탈로그) */
-export type NotificationCategoryKey =
-  | 'friend'
-  | 'nudge'
-  | 'cheer'
-  | 'achievement'
-  | 'todo'
-  | 'reminder'
-  | 'ai'
-  | 'notice'
-  | 'social';
-
-/** 알림 타입 → 카테고리 키 */
-export const getCategoryKey = (type: NotificationType): NotificationCategoryKey =>
-  match<NotificationType, NotificationCategoryKey>(type)
-    .with('FOLLOW_NEW', 'FOLLOW_ACCEPTED', () => 'friend')
-    .with('NUDGE_RECEIVED', () => 'nudge')
-    .with('CHEER_RECEIVED', () => 'cheer')
-    .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => 'achievement')
-    .with(
-      'TODO_REMINDER',
-      'TODO_SHARED',
-      'WINBACK',
-      'WEATHER_MORNING',
-      'WEATHER_EVENING',
-      () => 'todo',
-    )
-    .with('MORNING_REMINDER', 'EVENING_REMINDER', 'LUNCH_NUDGE', 'STREAK_AT_RISK', () => 'reminder')
-    .with('WEEKLY_REPORT', 'MONTHLY_REPORT', 'AI_SUGGESTION', () => 'ai')
-    .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => 'notice')
-    .with('SOCIAL_DIGEST', 'NUDGE_SUGGEST', () => 'social')
-    .exhaustive();
-
-/** 알림 타입 + context → 앱 내부 라우트 */
-export const getInternalRoute = (
-  type: NotificationType,
-  context?: Notification['context'],
-): string | null =>
-  match(type)
-    .with('FOLLOW_NEW', () => '/friends?view=receiver')
-    .with('FOLLOW_ACCEPTED', () =>
-      context?.friendId ? `/feed/friend/${context.friendId}` : '/friends',
-    )
-    .with('CHEER_RECEIVED', 'FRIEND_COMPLETED', () =>
-      context?.friendId ? `/feed/friend/${context.friendId}` : null,
-    )
-    .with('NUDGE_RECEIVED', () => (context?.friendId ? `/feed/friend/${context.friendId}` : null))
-    .with(
-      'TODO_REMINDER',
-      'TODO_SHARED',
-      'DAILY_COMPLETE',
-      'MORNING_REMINDER',
-      'EVENING_REMINDER',
-      () => '/feed',
-    )
-    .with('WEEKLY_ACHIEVEMENT', () => '/achievements')
-    .with('WEEKLY_REPORT', 'MONTHLY_REPORT', () => '/reports')
-    .with('AI_SUGGESTION', () => '/suggestions')
-    .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => null)
-    .with(
-      'WINBACK',
-      'SOCIAL_DIGEST',
-      'LUNCH_NUDGE',
-      'STREAK_AT_RISK',
-      'WEATHER_MORNING',
-      'WEATHER_EVENING',
-      () => '/feed',
-    )
-    .with('NUDGE_SUGGEST', () => (context?.friendId ? `/feed/friend/${context.friendId}` : '/feed'))
-    .exhaustive();
-
-export type NotificationDestination =
-  | { kind: 'none' }
-  | { kind: 'internal'; route: string }
-  | { kind: 'browser'; url: string }
-  | { kind: 'webview'; url: string };
-
-/** 목록과 푸시 응답이 공유하는 유일한 액션 해석기. NONE은 절대 기본 라우팅하지 않는다. */
-export function resolveNotificationDestination(input: {
-  type: NotificationType;
-  context?: Notification['context'];
-  action?: NotificationAction;
-  legacyExternalUrl?: unknown;
-}): NotificationDestination {
-  const { action } = input;
-  if (action?.type === 'NONE') return { kind: 'none' };
-  if (action?.type === 'BROWSER') {
-    return action.url ? { kind: 'browser', url: action.url } : { kind: 'none' };
-  }
-  if (action?.type === 'WEBVIEW') {
-    return action.url ? { kind: 'webview', url: action.url } : { kind: 'none' };
-  }
-  if (action?.type === 'DEEP_LINK' && action.url) {
-    return { kind: 'internal', route: action.url };
-  }
-  if (!action && typeof input.legacyExternalUrl === 'string') {
-    return { kind: 'browser', url: input.legacyExternalUrl };
-  }
-  const route = getInternalRoute(input.type, input.context);
-  return route ? { kind: 'internal', route } : { kind: 'none' };
-}
-
 // ─── Policy ───
 
 const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
@@ -172,17 +72,15 @@ export const NotificationPolicy = {
     return getCategoryKey(notification.type);
   },
 
-  /** 타입+context → 내부 라우트 (기획 정의) */
-  internalRoute(notification: Notification) {
-    return getInternalRoute(notification.type, notification.context);
-  },
-
   destination(notification: Notification) {
     return resolveNotificationDestination({
       type: notification.type,
-      context: notification.context,
+      routing: toNotificationRouting({
+        type: notification.type,
+        context: notification.context,
+        extra: notification.metadata ?? undefined,
+      }),
       action: notification.action,
-      legacyExternalUrl: notification.metadata?.externalUrl,
     });
   },
 

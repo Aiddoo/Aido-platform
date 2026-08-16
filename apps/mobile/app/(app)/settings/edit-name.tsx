@@ -2,10 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type UpdateNameInput, updateNameInputSchema } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useUpdateProfileMutationOptions } from '@src/features/user/presentations/queries/use-update-profile-mutation-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { H3, Input, KeyboardAdaptiveButton, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Suspense } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
@@ -25,10 +26,11 @@ const EditNameScreen = () => {
 export default EditNameScreen;
 
 function EditNameForm() {
+  const goBack = useSingleTap(router.back);
+
   const { t } = useTranslation('user');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
-  const router = useRouter();
 
   const {
     control,
@@ -43,7 +45,7 @@ function EditNameForm() {
   const canSubmit = isValid && isDirty;
 
   const onSubmit = (data: UpdateNameInput) => {
-    updateProfileMutation.mutate({ name: data.name }, { onSuccess: () => router.back() });
+    updateProfileMutation.mutate({ name: data.name }, { onSuccess: () => goBack() });
   };
 
   return (

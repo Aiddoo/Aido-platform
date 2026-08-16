@@ -1,11 +1,15 @@
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon, SettingIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
-import { router, Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 const WeatherLayout = () => {
+  const goBack = useSingleTap(router.back);
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('weather');
   const { fontScale } = useFontScale();
   return (
@@ -23,7 +27,7 @@ const WeatherLayout = () => {
         headerTitleAlign: 'center',
         headerLeft: () => (
           <View className="justify-center items-center">
-            <Pressable onPress={() => router.back()} hitSlop={8} className="p-2">
+            <Pressable onPress={() => goBack()} hitSlop={8} className="p-2">
               <ArrowLeftIcon width={20} height={20} color="#FFFFFF" />
             </Pressable>
           </View>
@@ -31,7 +35,7 @@ const WeatherLayout = () => {
         headerRight: () => (
           <View className="justify-center items-center">
             <Pressable
-              onPress={() => router.push('/settings/notifications/weather')}
+              onPress={() => push('/settings/notifications/weather')}
               hitSlop={8}
               className="p-2"
             >

@@ -6,6 +6,7 @@ import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/presentations/
 import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/presentations/queries/use-get-weekly-achievements-query-options';
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -21,7 +22,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, View } from 'react-native';
 
@@ -52,7 +53,8 @@ interface AchievementsContentProps {
 }
 
 function AchievementsContent({ year }: AchievementsContentProps) {
-  const router = useRouter();
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('achievement');
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -104,7 +106,7 @@ function AchievementsContent({ year }: AchievementsContentProps) {
           <EmptyAchievementCard
             onPress={() => {
               trackEvent('badge_empty_cta_tapped');
-              router.push('/feed');
+              push('/feed');
             }}
           />
         </View>
@@ -195,7 +197,8 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
 }
 
 function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementViewModel }) {
-  const router = useRouter();
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
 
@@ -206,7 +209,7 @@ function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementVi
       year: achievement.year,
       week: achievement.week,
     });
-    router.push({
+    push({
       pathname: '/achievements/[year]/[week]',
       params: { year: String(achievement.year), week: String(achievement.week) },
     });

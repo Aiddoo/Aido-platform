@@ -1,7 +1,15 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  PlusIcon,
+  Text,
+  VStack,
+  type QueryErrorFallbackProps,
+  useOverlay,
+} from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -68,7 +76,7 @@ TodoList.Loading = function Loading() {
   );
 };
 
-TodoList.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
+TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
     <Box px={16} py={24} gap={8} className="items-center">

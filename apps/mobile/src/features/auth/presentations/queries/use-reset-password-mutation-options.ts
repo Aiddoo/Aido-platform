@@ -4,15 +4,17 @@ import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 
 export const useResetPasswordMutationOptions = () => {
+  const replace = useSingleTap(router.replace);
+
   const authService = useAuthService();
   const toast = useAppToast();
-  const router = useRouter();
 
   return mutationOptions({
     mutationFn: async (input: ResetPasswordInput) => {
@@ -22,7 +24,7 @@ export const useResetPasswordMutationOptions = () => {
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success(t('auth:toasts.passwordResetDone'));
-      router.replace('/(auth)/email-login');
+      replace('/(auth)/email-login');
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

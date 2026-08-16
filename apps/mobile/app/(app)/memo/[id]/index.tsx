@@ -9,6 +9,7 @@ import { useUpdateMemoMutationOptions } from '@src/features/memo/presentations/q
 import { AddTodoBottomSheet } from '@src/features/todo/presentations/components/AddTodoBottomSheet';
 import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/use-get-ai-usage-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
@@ -27,7 +28,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -48,10 +49,13 @@ import type { z } from 'zod';
 type UpdateMemoFormInput = z.infer<typeof updateMemoSchema>;
 
 export default function MemoDetailScreen() {
+  const goBack = useSingleTap(router.back);
+  const navigate = useSingleTap(router.navigate);
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation(['memo', 'common']);
   const { id } = useLocalSearchParams<{ id: string }>();
   const memoId = Number(id);
-  const router = useRouter();
 
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions(memoId));
 
@@ -114,12 +118,12 @@ export default function MemoDetailScreen() {
           input: { content },
         },
         {
-          onSuccess: () => router.back(),
+          onSuccess: () => goBack(),
         },
       );
       return;
     }
-    router.back();
+    goBack();
   };
 
   const handleTogglePin = () => {
@@ -130,7 +134,7 @@ export default function MemoDetailScreen() {
   const handleAiParse = () => {
     const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo(memoId));
     if (cached) {
-      router.push(`/memo/${memoId}/ai-review`);
+      push(`/memo/${memoId}/ai-review`);
       return;
     }
 
@@ -170,7 +174,7 @@ export default function MemoDetailScreen() {
         confirmButton={
           <ConfirmDialog.ConfirmButton
             color="danger"
-            onPress={() => deleteMemo(memoId, { onSuccess: () => router.back() })}
+            onPress={() => deleteMemo(memoId, { onSuccess: () => goBack() })}
             isLoading={isDeletePending}
           >
             {t('common:actions.delete')}
@@ -201,8 +205,8 @@ export default function MemoDetailScreen() {
           }
         }}
         onSuccess={() => {
-          router.back();
-          router.navigate('/feed');
+          goBack();
+          navigate('/feed');
         }}
       />
     ));

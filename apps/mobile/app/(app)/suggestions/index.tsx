@@ -4,6 +4,7 @@ import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -16,7 +17,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Suspense, useCallback } from 'react';
 import { Image, RefreshControl, ScrollView, View } from 'react-native';
 
@@ -74,8 +75,9 @@ function SuggestionsContent() {
 }
 
 function SuggestionsPremiumPreview() {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('ai');
-  const router = useRouter();
 
   return (
     <ScallopedContainer>
@@ -120,7 +122,7 @@ function SuggestionsPremiumPreview() {
 
         <Spacing size={16} />
 
-        <Button size="medium" onPress={() => router.push('/settings/subscription')}>
+        <Button size="medium" onPress={() => push('/settings/subscription')}>
           {t('suggestions.paywall.subscribeCta')}
         </Button>
       </View>

@@ -7,19 +7,20 @@ import { optimisticallyMarkNotificationsRead } from '@src/features/notification/
 import { useTrack } from '@src/shared/analytics';
 import { toError, unwrap } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Linking from 'expo-linking';
 import type * as Notifications from 'expo-notifications';
-import type { Href } from 'expo-router';
-import { router } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
 
-import { resolveNotificationDestination } from '../../models/notification.model';
+import { resolveNotificationDestination } from '../../models/notification-destination.model';
+import { toNotificationRouting } from '../../models/notification-routing.model';
+import { useNotificationNavigation } from './use-notification-navigation';
 
 interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
 }
 
 export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandlerOptions) => {
+  const navigateToDestination = useNotificationNavigation();
+
   const notificationService = useNotificationService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -73,20 +74,18 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
         trackEvent('badge_opened_from_notification');
       }
 
-      const destination = resolveNotificationDestination({
-        type: data.type as NotificationType,
-        context: data.context,
-        action: data.action,
-      });
-
       // 3. 화면 이동은 네트워크보다 먼저 수행한다. 기록/캐시는 독립적인 best-effort 작업이다.
-      if (destination.kind === 'browser') {
-        void Linking.openURL(destination.url);
-      } else if (destination.kind === 'webview') {
-        router.push(`/webview/${encodeURIComponent(destination.url)}` as Href);
-      } else if (destination.kind === 'internal') {
-        router.navigate(destination.route as Href);
-      }
+      navigateToDestination(
+        resolveNotificationDestination({
+          type: data.type as NotificationType,
+          routing: toNotificationRouting({
+            type: data.type as NotificationType,
+            context: data.context,
+            extra: data.routing,
+          }),
+          action: data.action,
+        }),
+      );
 
       if (isAuthenticatedRef.current && data.notificationId) {
         void optimisticallyMarkNotificationsRead(queryClient, data.notificationId).then(() => {
@@ -105,7 +104,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
           .catch((error) => logger.warn('[Notification] Failed to record open', { error }));
       }
     },
-    [trackEvent, logger, notificationService, queryClient],
+    [trackEvent, logger, notificationService, queryClient, navigateToDestination],
   );
 
   const handleForegroundNotification = useCallback(
@@ -124,7 +123,8 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
           notificationService.syncBadgeCount(),
         ];
 
-        const notificationType = notification?.request.content.data?.type as string | undefined;
+        const received = pushNotificationDataSchema.safeParse(notification?.request.content.data);
+        const notificationType = received.success ? received.data.type : undefined;
         if (notificationType === 'FOLLOW_NEW' || notificationType === 'FOLLOW_ACCEPTED') {
           invalidations.push(queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.all }));
         }

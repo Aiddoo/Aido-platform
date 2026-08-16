@@ -150,6 +150,14 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 
 ## 레이어별 규칙
 
+### 화면 조립과 서버 상태
+
+- route 화면은 주요 섹션을 JSX에서 바로 조립해 화면 구성을 파일 진입점에서 읽을 수 있게 한다.
+- 서버 상태는 `queryOptions`/`infiniteQueryOptions`/`mutationOptions` factory로 정의하고 컴포넌트가 필요한 ID를 route에서 직접 읽거나 최소 식별자만 받는다.
+- 특정 목록에만 결합된 `Loading`, `Error`, `Item`, `Input`은 `TodoComments.Loading`처럼 compound namespace로 묶는다.
+- 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.
+- 알림 route metadata는 `@aido/validators` 스키마로 검증한 뒤 순수 destination policy가 경로를 결정한다. 화면 컴포넌트가 raw metadata를 해석하지 않는다.
+
 ### 1. Models — Domain Model + Policy + Error
 
 ```

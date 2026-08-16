@@ -161,5 +161,38 @@
     "todo": "할 일을 길게 눌러 원하는 순서로 옮길 수 있어요",
     "category": "카테고리를 길게 눌러 원하는 순서로 옮길 수 있어요",
     "dismiss": "순서 변경 안내 닫기"
+  },
+  "detail": {
+    "title": "할 일",
+    "open": "댓글",
+    "pageTitle": "할 일 상세",
+    "views": "조회 {{count}}회",
+    "unknownOwner": "사용자",
+    "metrics": "조회 {{views}} · 댓글 {{comments}}"
+  },
+  "comments": {
+    "title": "댓글",
+    "popular": "인기순",
+    "latest": "최신순",
+    "empty": "첫 댓글을 남겨보세요.",
+    "placeholder": "댓글 달기...",
+    "replyPlaceholder": "답글 달기...",
+    "replyingTo": "{{name}}님에게 답글 남기는 중",
+    "more": "댓글 더 보기",
+    "viewReplies": "답글 {{count}}개 보기",
+    "moreReplies": "답글 더 보기",
+    "viewAllComments": "전체 댓글 보기",
+    "edited": "수정됨",
+    "loadRepliesError": "답글을 불러오지 못했어요. 다시 시도",
+    "reply": "답글",
+    "edit": "수정",
+    "delete": "삭제",
+    "cancel": "취소",
+    "save": "저장",
+    "deleted": "삭제된 댓글입니다.",
+    "deletedUser": "삭제된 댓글",
+    "unknownUser": "사용자",
+    "authorBadge": "작성자",
+    "loadError": "댓글을 불러오지 못했어요. 다시 시도"
   }
 }

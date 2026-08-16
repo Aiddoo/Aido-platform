@@ -1,11 +1,12 @@
 import { userTagParamSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, Input, KeyboardAdaptiveButton, Spacing, Text } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import type { z } from 'zod';
@@ -13,9 +14,10 @@ import type { z } from 'zod';
 type FormData = z.infer<typeof userTagParamSchema>;
 
 const AddFriendScreen = () => {
+  const goBack = useSingleTap(router.back);
+
   const { t } = useTranslation('friend');
   const sendRequestMutation = useMutation(useSendRequestByTagMutationOptions());
-  const router = useRouter();
 
   const {
     control,
@@ -29,7 +31,7 @@ const AddFriendScreen = () => {
 
   const onSubmit = (data: FormData) => {
     sendRequestMutation.mutate(data.userTag, {
-      onSuccess: () => router.back(),
+      onSuccess: () => goBack(),
     });
   };
 

@@ -79,6 +79,7 @@ export const useCreateTodoMutationOptions = () => {
         recurrenceGroupId: null,
         subTodos: [],
         subTodoStats: { total: 0, completed: 0 },
+        commentCount: 0,
         optimistic: true,
       };
 

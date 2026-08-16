@@ -16,6 +16,7 @@ import { NotificationService } from '@src/features/notification/services/notific
 import { PushTokenService } from '@src/features/notification/services/push-token.service';
 import { RevenueCatSdkManager } from '@src/features/subscription/services/revenuecat-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/services/subscription.service';
+import { TodoCommentService } from '@src/features/todo-comment/services/todo-comment.service';
 import { createReorderCoachmarkRepository } from '@src/features/todo/repositories/reorder-coachmark.repository';
 import { createStoreReviewPromptRepository } from '@src/features/todo/repositories/store-review-prompt.repository';
 import { ReorderCoachmarkService } from '@src/features/todo/services/reorder-coachmark.service';
@@ -133,6 +134,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // Todo
     const subTodoService = new SubTodoService(authHttpClient);
     const todoService = new TodoService(authHttpClient);
+    const todoCommentService = new TodoCommentService(authHttpClient);
 
     // Todo Category
     const todoCategoryService = new TodoCategoryService(authHttpClient);
@@ -194,6 +196,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       memoService,
       subTodoService,
       todoService,
+      todoCommentService,
       todoCategoryService,
       notificationService,
       todoNudgeService,
@@ -237,6 +240,7 @@ export {
   useSubscriptionService,
   useSubTodoService,
   useTodoCategoryService,
+  useTodoCommentService,
   useTodoNudgeService,
   useTodoService,
   useTokenRefresher,

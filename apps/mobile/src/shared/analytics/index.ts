@@ -11,5 +11,6 @@ export {
   FEATURE_ATTRIBUTION_TTL_MS,
   trackAttributedFeatureSuccess,
 } from './feature-attribution';
+export type { CommentThreadEntry } from './events/todo-comment.events';
 export { track } from './track';
 export { useTrack } from './use-track';

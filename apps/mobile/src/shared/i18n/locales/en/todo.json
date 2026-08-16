@@ -166,5 +166,38 @@
     "todo": "Press and hold a to-do to move it where you want",
     "category": "Press and hold a category to move it where you want",
     "dismiss": "Dismiss reorder tip"
+  },
+  "detail": {
+    "title": "Todo",
+    "open": "Comments",
+    "pageTitle": "Todo details",
+    "views": "{{count}} views",
+    "unknownOwner": "User",
+    "metrics": "{{views}} views · {{comments}} comments"
+  },
+  "comments": {
+    "title": "Comments",
+    "popular": "Popular",
+    "latest": "Latest",
+    "empty": "Start the conversation.",
+    "placeholder": "Add a comment...",
+    "replyPlaceholder": "Add a reply...",
+    "replyingTo": "Replying to {{name}}",
+    "more": "Load more comments",
+    "viewReplies": "View {{count}} replies",
+    "moreReplies": "Load more replies",
+    "viewAllComments": "View all comments",
+    "edited": "Edited",
+    "loadRepliesError": "Couldn't load replies. Try again",
+    "reply": "Reply",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "deleted": "This comment was deleted.",
+    "deletedUser": "Deleted comment",
+    "unknownUser": "User",
+    "authorBadge": "Author",
+    "loadError": "Couldn't load comments. Try again"
   }
 }

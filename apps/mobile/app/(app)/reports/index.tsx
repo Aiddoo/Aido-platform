@@ -7,6 +7,7 @@ import { useGetReportStatusQueryOptions } from '@src/features/ai/presentations/q
 import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/use-get-reports-query-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -18,7 +19,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback, useState } from 'react';
 import { Image, RefreshControl, ScrollView, View } from 'react-native';
@@ -151,8 +152,9 @@ function ReportTypeTabs({
 }
 
 function FreeReportPreview({ type }: { type: ReportType }) {
+  const push = useSingleTap(router.push);
+
   const { t } = useTranslation('ai');
-  const router = useRouter();
   const sampleReport = getSampleReport(`sample-${type.toLowerCase()}`);
 
   return (
@@ -161,7 +163,7 @@ function FreeReportPreview({ type }: { type: ReportType }) {
         <ReportCard report={sampleReport} isSample isLast />
       </View>
 
-      <Button size="medium" onPress={() => router.push('/settings/subscription')}>
+      <Button size="medium" onPress={() => push('/settings/subscription')}>
         {t('report.list.subscribeCta')}
       </Button>
     </VStack>
