@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import type { TodoCommentLikeResponse } from "@aido/validators";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
@@ -15,6 +15,7 @@ import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
 } from "../../ports/todo-comment.repository.port";
+import { settleAfterCommit } from "../../settle-after-commit";
 
 export interface LikeTodoCommentInput {
 	todoId: number;
@@ -24,6 +25,8 @@ export interface LikeTodoCommentInput {
 
 @Injectable()
 export class LikeTodoCommentUseCase {
+	readonly #logger = new Logger(LikeTodoCommentUseCase.name);
+
 	constructor(
 		@Inject(TODO_COMMENT_REPOSITORY)
 		private readonly repository: TodoCommentRepositoryPort,
@@ -52,22 +55,27 @@ export class LikeTodoCommentUseCase {
 			return { transition, senderName, threadRootId: comment.threadRootId.getValue() };
 		});
 
-		// 이미 한 번 알린 좋아요는 껐다 켜도 다시 알리지 않는다.
-		if (likeOutcome.transition.changed && !likeOutcome.transition.wasEverNotified) {
-			await this.repository.markLikeNotified(input.commentId, input.userId);
-			await Promise.all([
-				this.cache.invalidateTopLevelFirstPages(input.todoId),
-				this.notification.notifyCommentLiked({
-					recipientId: likeOutcome.transition.commentAuthorId,
-					senderId: input.userId,
-					senderName: likeOutcome.senderName,
-					todoId: input.todoId,
-					commentId: input.commentId,
-					threadRootId: likeOutcome.threadRootId,
-				}),
-			]);
-		} else if (likeOutcome.transition.changed) {
-			await this.cache.invalidateTopLevelFirstPages(input.todoId);
+		if (likeOutcome.transition.changed) {
+			const tasks = [
+				{
+					label: "comment first pages cache",
+					run: () => this.cache.invalidateTopLevelFirstPages(input.todoId),
+				},
+			];
+
+			// 이미 한 번 알린 좋아요는 껐다 켜도 다시 알리지 않는다.
+			if (!likeOutcome.transition.wasEverNotified) {
+				tasks.push({
+					label: "comment like notification",
+					run: () =>
+						this.#notifyLiked(input, likeOutcome.transition.commentAuthorId, {
+							senderName: likeOutcome.senderName,
+							threadRootId: likeOutcome.threadRootId,
+						}),
+				});
+			}
+
+			await settleAfterCommit(this.#logger, tasks);
 		}
 
 		return {
@@ -75,5 +83,25 @@ export class LikeTodoCommentUseCase {
 			isLiked: true,
 			likeCount: likeOutcome.transition.likeCount,
 		};
+	}
+
+	/**
+	 * 보내고 나서 표시한다 — 순서를 뒤집으면 발송이 한 번 실패했을 때 notifiedAt이 남아
+	 * 껐다 켜도 다시 시도되지 않는다. 중복 알림 한 번이 영구 유실보다 낫다.
+	 */
+	async #notifyLiked(
+		input: LikeTodoCommentInput,
+		recipientId: string,
+		context: { senderName: string | null; threadRootId: string },
+	): Promise<void> {
+		await this.notification.notifyCommentLiked({
+			recipientId,
+			senderId: input.userId,
+			senderName: context.senderName,
+			todoId: input.todoId,
+			commentId: input.commentId,
+			threadRootId: context.threadRootId,
+		});
+		await this.repository.markLikeNotified(input.commentId, input.userId);
 	}
 }
