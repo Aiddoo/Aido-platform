@@ -8,6 +8,7 @@ export {
 	type CreateRecurringTodosResult,
 	CreateRecurringTodosUseCase,
 } from "./application/use-cases/create-recurring-todos/create-recurring-todos.use-case";
+export { TodoViewCacheInvalidator } from "./application/services/todo-view-cache.invalidator";
 export { CreateTodoUseCase } from "./application/use-cases/create-todo/create-todo.use-case";
 export * from "./domain/events/todo-category-changed.event";
 export * from "./domain/events/todo-created.event";

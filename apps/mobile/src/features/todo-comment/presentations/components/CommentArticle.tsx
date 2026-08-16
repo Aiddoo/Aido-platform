@@ -1,10 +1,13 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, ICON_COUNT_BUTTON_INK_INSET, Text, VStack } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import type { ReactNode } from 'react';
 
-import { type TodoCommentPreview, mentionedAuthorName } from '../../models/todo-comment.model';
-import { ICON_COUNT_BUTTON_INK_INSET } from './IconCountButton';
+import {
+  type TodoCommentPreview,
+  TodoCommentPolicy,
+  mentionedAuthorName,
+} from '../../models/todo-comment.model';
 
 interface CommentArticleProps {
   comment: TodoCommentPreview;
@@ -28,7 +31,7 @@ export function CommentArticle({ comment, menu, footer, contentMaxLines }: Comme
       <CommentText comment={comment} maxLines={contentMaxLines} />
 
       {/* 버튼이 품고 있는 여백만큼 되돌려, 아이콘의 잉크가 위 본문의 왼쪽 선과 맞물리게 한다. */}
-      {!comment.isDeleted && footer !== undefined && (
+      {TodoCommentPolicy.canAct(comment) && footer !== undefined && (
         <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
           {footer}
         </VStack>

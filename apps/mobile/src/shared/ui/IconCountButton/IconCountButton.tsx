@@ -1,7 +1,8 @@
-import { Text } from '@src/shared/ui';
 import { formatCappedCount } from '@src/shared/utils/format';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+
+import { Text } from '../Text';
 
 /**
  * 아이콘 글리프의 크기. 하트와 말풍선이 같은 상자를 쓰므로 나란히 놓았을 때 무게가 맞는다.

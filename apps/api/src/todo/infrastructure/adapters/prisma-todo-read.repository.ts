@@ -16,6 +16,12 @@ import { TodoRowRepository } from "../persistence/todo-row.repository";
 export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 	constructor(private readonly todoRepository: TodoRowRepository) {}
 
+	async findOwnerId(id: number): Promise<string | null> {
+		const todo = await this.todoRepository.findOwner(id);
+
+		return todo?.userId ?? null;
+	}
+
 	async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
 		const row = await this.todoRepository.findByIdAndUserId(id, userId);
 		return row ? TodoMapper.toResponse(row) : null;

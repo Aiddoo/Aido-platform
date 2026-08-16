@@ -32,7 +32,11 @@ export function useCommentComposer() {
   const writeComments = useMutation(useWriteTodoCommentsMutationOptions(todoId, sort));
   const updateComment = useMutation(useUpdateTodoCommentMutationOptions(todoId));
 
-  const closeOnCancel = (close: (result: CommentComposerResult) => void, exit: () => void) => {
+  /**
+   * 시트가 닫혔음을 알려 오는 유일한 통로 — 취소든 게시 후든 여기로 온다.
+   * 게시가 이미 결과로 resolve했다면 Promise는 첫 값을 지키므로 이 호출은 무해하다.
+   */
+  const settleOnClose = (close: (result: CommentComposerResult) => void, exit: () => void) => {
     return (open: boolean) => {
       if (!open) {
         close({ written: [] });
@@ -49,14 +53,16 @@ export function useCommentComposer() {
           author={author}
           target={null}
           isOpen={isOpen}
-          isSubmitting={writeComments.isPending}
-          onOpenChange={closeOnCancel(close, exit)}
-          onSubmit={(contents) =>
-            writeComments.mutate(
-              { parentId: null, draft: { contents } },
-              { onSuccess: ({ comments }) => close({ written: comments }) },
-            )
-          }
+          onOpenChange={settleOnClose(close, exit)}
+          onSubmit={async (contents) => {
+            const result = await writeComments
+              .mutateAsync({ parentId: null, draft: { contents } })
+              .catch(() => null);
+
+            if (result) {
+              close({ written: result.comments });
+            }
+          }}
         />
       )),
 
@@ -67,14 +73,16 @@ export function useCommentComposer() {
           author={author}
           target={target}
           isOpen={isOpen}
-          isSubmitting={writeComments.isPending}
-          onOpenChange={closeOnCancel(close, exit)}
-          onSubmit={(contents) =>
-            writeComments.mutate(
-              { parentId: target.id, draft: { contents } },
-              { onSuccess: ({ comments }) => close({ written: comments }) },
-            )
-          }
+          onOpenChange={settleOnClose(close, exit)}
+          onSubmit={async (contents) => {
+            const result = await writeComments
+              .mutateAsync({ parentId: target.id, draft: { contents } })
+              .catch(() => null);
+
+            if (result) {
+              close({ written: result.comments });
+            }
+          }}
         />
       )),
 
@@ -86,14 +94,16 @@ export function useCommentComposer() {
           target={comment}
           defaultContent={comment.content ?? ''}
           isOpen={isOpen}
-          isSubmitting={updateComment.isPending}
-          onOpenChange={closeOnCancel(close, exit)}
-          onSubmit={([content]) =>
-            updateComment.mutate(
-              { commentId: comment.id, input: { content } },
-              { onSuccess: (updated) => close({ written: [updated] }) },
-            )
-          }
+          onOpenChange={settleOnClose(close, exit)}
+          onSubmit={async ([content]) => {
+            const updated = await updateComment
+              .mutateAsync({ commentId: comment.id, input: { content } })
+              .catch(() => null);
+
+            if (updated) {
+              close({ written: [updated] });
+            }
+          }}
         />
       )),
   };

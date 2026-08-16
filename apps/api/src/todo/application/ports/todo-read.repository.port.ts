@@ -21,6 +21,9 @@ export interface TodaySummaryTodoRow {
 export interface TodoReadRepositoryPort {
 	findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null>;
 
+	/** 소유자만 알면 되는 자리 — 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. */
+	findOwnerId(id: number): Promise<string | null>;
+
 	/** 반복 그룹 전체 조회 (sortOrder asc — 생성 순서와 동일) */
 	findManyByRecurrenceGroupId(userId: string, recurrenceGroupId: string): Promise<TodoResponse[]>;
 
