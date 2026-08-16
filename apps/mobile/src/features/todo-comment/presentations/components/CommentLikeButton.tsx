@@ -1,9 +1,13 @@
-import { HeartFilledIcon, HeartIcon } from '@src/shared/ui';
+import {
+  HeartFilledIcon,
+  HeartIcon,
+  ICON_COUNT_BUTTON_ICON_SIZE,
+  IconCountButton,
+} from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 
 import { type TodoCommentPreview, TodoCommentPolicy } from '../../models/todo-comment.model';
 import { useSetTodoCommentLikeMutationOptions } from '../queries/use-todo-comment-mutation-options';
-import { ICON_COUNT_BUTTON_ICON_SIZE, IconCountButton } from './IconCountButton';
 
 interface CommentLikeButtonProps {
   comment: TodoCommentPreview;

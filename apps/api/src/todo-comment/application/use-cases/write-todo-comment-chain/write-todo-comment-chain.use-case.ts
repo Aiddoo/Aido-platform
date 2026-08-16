@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import type { TodoCommentChainResponse } from "@aido/validators";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
@@ -17,6 +17,8 @@ import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
 } from "../../ports/todo-comment.repository.port";
+import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../../ports/todo-view-cache.port";
+import { settleAfterCommit } from "../../settle-after-commit";
 import { toTodoCommentResponse } from "../../types";
 
 export interface WriteTodoCommentChainInput {
@@ -36,6 +38,8 @@ export interface WriteTodoCommentChainInput {
  */
 @Injectable()
 export class WriteTodoCommentChainUseCase {
+	readonly #logger = new Logger(WriteTodoCommentChainUseCase.name);
+
 	constructor(
 		@Inject(TODO_COMMENT_REPOSITORY)
 		private readonly repository: TodoCommentRepositoryPort,
@@ -43,6 +47,8 @@ export class WriteTodoCommentChainUseCase {
 		private readonly cache: TodoCommentCachePort,
 		@Inject(TODO_COMMENT_NOTIFICATION)
 		private readonly notification: TodoCommentNotificationPort,
+		@Inject(TODO_VIEW_CACHE)
+		private readonly todoViewCache: TodoViewCachePort,
 		@Inject(UNIT_OF_WORK)
 		private readonly unitOfWork: UnitOfWorkPort,
 	) {}
@@ -88,19 +94,32 @@ export class WriteTodoCommentChainUseCase {
 			};
 		});
 
-		if (outcome.addedCount > 0 && outcome.recipientId !== undefined) {
-			await Promise.all([
-				this.cache.invalidateTopLevelFirstPages(input.todoId),
-				this.notification.notifyCommentsWritten({
-					recipientId: outcome.recipientId,
-					senderId: input.authorId,
-					senderName: outcome.written[0]?.authorName ?? null,
-					todoId: input.todoId,
-					commentId: outcome.written[0]?.id ?? "",
-					threadRootId: outcome.threadRootId ?? "",
-					isReply: input.parentId !== null,
-					count: outcome.addedCount,
-				}),
+		const { recipientId } = outcome;
+
+		if (outcome.addedCount > 0 && recipientId !== undefined) {
+			await settleAfterCommit(this.#logger, [
+				{
+					label: "comment first pages cache",
+					run: () => this.cache.invalidateTopLevelFirstPages(input.todoId),
+				},
+				{
+					label: "todo view cache",
+					run: () => this.todoViewCache.invalidateForTodo(input.todoId),
+				},
+				{
+					label: "comment notification",
+					run: () =>
+						this.notification.notifyCommentsWritten({
+							recipientId,
+							senderId: input.authorId,
+							senderName: outcome.written[0]?.authorName ?? null,
+							todoId: input.todoId,
+							commentId: outcome.written[0]?.id ?? "",
+							threadRootId: outcome.threadRootId ?? "",
+							isReply: input.parentId !== null,
+							count: outcome.addedCount,
+						}),
+				},
 			]);
 		}
 

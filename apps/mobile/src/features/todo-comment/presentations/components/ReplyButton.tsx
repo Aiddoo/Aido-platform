@@ -1,10 +1,9 @@
 import { useTranslation } from '@src/shared/i18n';
-import { ChatBubbleIcon } from '@src/shared/ui';
+import { ChatBubbleIcon, ICON_COUNT_BUTTON_ICON_SIZE, IconCountButton } from '@src/shared/ui';
 
 import { type TodoCommentPreview, TodoCommentPolicy } from '../../models/todo-comment.model';
 import { useCommentComposer } from '../hooks/use-comment-composer';
 import { useCommentRowScroll } from '../hooks/use-comment-row-scroll';
-import { ICON_COUNT_BUTTON_ICON_SIZE, IconCountButton } from './IconCountButton';
 
 interface ReplyButtonProps {
   comment: TodoCommentPreview;

@@ -8,11 +8,15 @@ import { UserSettingsModule } from "../user-settings/user-settings.module";
 import { CATEGORY_OWNERSHIP } from "./application/ports/category-ownership.port";
 import { FRIEND_PORT } from "./application/ports/friend.port";
 import { STREAK_PORT } from "./application/ports/streak.port";
-import { TODO_CACHE } from "./application/ports/todo-cache.port";
+import { TODO_CACHE, type TodoCachePort } from "./application/ports/todo-cache.port";
 import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port";
-import { TODO_READ_REPOSITORY } from "./application/ports/todo-read.repository.port";
+import {
+	TODO_READ_REPOSITORY,
+	type TodoReadRepositoryPort,
+} from "./application/ports/todo-read.repository.port";
 import { TODO_REMINDER } from "./application/ports/todo-reminder.port";
 import { TODO_REPOSITORY } from "./application/ports/todo.repository.port";
+import { TodoViewCacheInvalidator } from "./application/services/todo-view-cache.invalidator";
 import { TODO_PROVIDERS } from "./application/todo.providers";
 import { CreateRecurringTodosUseCase, CreateTodoUseCase } from "./application/use-cases";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter";
@@ -68,7 +72,14 @@ import { TodoController } from "./presentation/todo.controller";
 		{ provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
 		{ provide: TODO_REMINDER, useClass: TodoReminderAdapter },
 		...TODO_PROVIDERS,
+		// 크로스 모듈 호환 경계 — 다른 모듈은 이 capability만 본다
+		{
+			provide: TodoViewCacheInvalidator,
+			inject: [TODO_READ_REPOSITORY, TODO_CACHE],
+			useFactory: (readRepository: TodoReadRepositoryPort, cache: TodoCachePort) =>
+				new TodoViewCacheInvalidator(readRepository, cache),
+		},
 	],
-	exports: [CreateTodoUseCase, CreateRecurringTodosUseCase],
+	exports: [CreateTodoUseCase, CreateRecurringTodosUseCase, TodoViewCacheInvalidator],
 })
 export class TodoModule {}

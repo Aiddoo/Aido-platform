@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import type { DeleteTodoCommentResponse } from "@aido/validators";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
@@ -12,6 +12,8 @@ import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
 } from "../../ports/todo-comment.repository.port";
+import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../../ports/todo-view-cache.port";
+import { settleAfterCommit } from "../../settle-after-commit";
 
 export interface DeleteTodoCommentInput {
 	todoId: number;
@@ -21,11 +23,15 @@ export interface DeleteTodoCommentInput {
 
 @Injectable()
 export class DeleteTodoCommentUseCase {
+	readonly #logger = new Logger(DeleteTodoCommentUseCase.name);
+
 	constructor(
 		@Inject(TODO_COMMENT_REPOSITORY)
 		private readonly repository: TodoCommentRepositoryPort,
 		@Inject(TODO_COMMENT_CACHE)
 		private readonly cache: TodoCommentCachePort,
+		@Inject(TODO_VIEW_CACHE)
+		private readonly todoViewCache: TodoViewCachePort,
 		@Inject(UNIT_OF_WORK)
 		private readonly unitOfWork: UnitOfWorkPort,
 	) {}
@@ -53,7 +59,16 @@ export class DeleteTodoCommentUseCase {
 		});
 
 		if (wasDeleted) {
-			await this.cache.invalidateTopLevelFirstPages(input.todoId);
+			await settleAfterCommit(this.#logger, [
+				{
+					label: "comment first pages cache",
+					run: () => this.cache.invalidateTopLevelFirstPages(input.todoId),
+				},
+				{
+					label: "todo view cache",
+					run: () => this.todoViewCache.invalidateForTodo(input.todoId),
+				},
+			]);
 		}
 
 		return { commentId: input.commentId, isDeleted: true };

@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT } from '@aido/validators';
+import { TODO_COMMENT_LIMITS, TODO_COMMENT_SORT } from '@aido/validators';
 import { z } from 'zod';
 
 // ─── Schema & Type ───
@@ -123,6 +123,13 @@ const isConfirmed = (comment: TodoCommentPreview) => !isPendingComment(comment);
 /** 살아 있고 서버가 확인한 댓글에만 무엇이든 할 수 있다 — 모든 규칙의 공통 앞자락. */
 const isActionable = (comment: TodoCommentPreview) => isAlive(comment) && isConfirmed(comment);
 
+/** 같은 사람이 이어 쓴 댓글인지 — 두 행을 한 덩어리로 읽게 하는 기준. */
+const isSameAuthor = (one: TodoComment | undefined, other: TodoComment | undefined) =>
+  one?.author != null && other?.author != null && one.author.id === other.author.id;
+
+/** 답글이 달렸으면 그 아래 흐름은 답글 가지가 이어받는다. */
+const handsOverToReplies = (comment: TodoComment | undefined) => comment?.hasReplies === true;
+
 // ─── Policy ───
 
 /**
@@ -131,6 +138,8 @@ const isActionable = (comment: TodoCommentPreview) => isAlive(comment) && isConf
  * 규칙이 늘어나면 && 한 줄만 추가된다.
  */
 export const TodoCommentPolicy = {
+  /** 이 댓글에 무엇이든 걸 수 있는지 — 액션 줄을 놓을지 정하는 자리도 이걸 묻는다. */
+  canAct: (comment: TodoCommentPreview) => isActionable(comment),
   canLike: (comment: TodoCommentPreview) => isActionable(comment),
   canReply: (comment: TodoCommentPreview) => isActionable(comment) && comment.viewer.canReply,
   canEdit: (comment: TodoCommentPreview) => isActionable(comment) && comment.viewer.canEdit,
@@ -138,4 +147,32 @@ export const TodoCommentPolicy = {
   /** ⋯ 메뉴를 열 수 있는지 — 그 안에 놓일 것이 하나라도 있으면 연다. */
   canManage: (comment: TodoCommentPreview) =>
     TodoCommentPolicy.canEdit(comment) || TodoCommentPolicy.canDelete(comment),
+} as const;
+
+/**
+ * 목록에서 두 댓글이 한 흐름으로 이어지는지 — 스레드 선을 그릴지 정하는 유일한 판정.
+ *
+ * 이웃 관계만 보므로 정렬(최신순↔인기순)이 바뀌어도 옛 판정이 남지 않는다.
+ * 규칙이 늘어나면 && 한 줄만 추가된다.
+ */
+export const TodoCommentDraftPolicy = {
+  /**
+   * 칸을 하나 더 열 수 있는지. 수정은 언제나 한 글이라 이어 쓰지 않는다.
+   */
+  canAddMore: (draft: { contents: readonly string[]; isEditing: boolean }) =>
+    !draft.isEditing && draft.contents.length < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE,
+
+  /**
+   * 게시할 수 있는지 — 열려 있는 칸이 하나라도 비어 있으면 열리지 않는다.
+   *
+   * 빈 묶음을 따로 막는 이유: `every`는 빈 배열에 참이라, 칸이 하나도 없을 때
+   * 조용히 통과해 버린다.
+   */
+  canPost: (contents: readonly string[]) =>
+    contents.length > 0 && contents.every((content) => content.trim().length > 0),
+} as const;
+
+export const TodoCommentThreadPolicy = {
+  continuesInto: (one: TodoComment | undefined, other: TodoComment | undefined) =>
+    isSameAuthor(one, other) && !handsOverToReplies(one),
 } as const;

@@ -14,6 +14,7 @@ export * from "./memo.mock";
 export * from "./notification.mock";
 export * from "./notification-cache.mock";
 export * from "./retention-repository.mock";
+export * from "./todo-comment.mock";
 export * from "./todo-read-repository.mock";
 export * from "./todo-repository.mock";
 export * from "./unit-of-work.mock";

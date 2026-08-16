@@ -80,6 +80,7 @@ export {
   ToastWarningIcon,
   TrashIcon,
 } from './Icon';
+export * from './IconCountButton';
 export {
   BottomSheetInput,
   Input,
