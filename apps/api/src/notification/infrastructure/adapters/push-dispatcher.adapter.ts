@@ -52,6 +52,7 @@ import {
 	supportsFeatureDiscoveryMarketing,
 } from "../../domain/services/feature-marketing-capability";
 import { isNightTime } from "../../domain/services/night-time";
+import { toNotificationRouting } from "../../domain/services/notification-routing";
 import {
 	isAutomatedEngagementNotification,
 	isMarketingNotification,
@@ -525,6 +526,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		if (data.cheerId) {
 			context.cheerId = data.cheerId;
 		}
+		const routing = toNotificationRouting(data.metadata);
 
 		return {
 			notificationId: notificationId ?? 0,
@@ -534,6 +536,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 				...(action.url && { url: action.url }),
 			},
 			...(Object.keys(context).length > 0 && { context }),
+			...(routing && { routing }),
 			...(data.campaignKey && { campaignKey: data.campaignKey }),
 			...(data.variantId && { variantId: data.variantId }),
 			...(data.purpose && { purpose: data.purpose }),

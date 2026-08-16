@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+
 export const RETENTION_QUEUE = "retention.v1";
 export const RETENTION_LEGACY_QUEUE = "retention";
 
@@ -11,7 +13,7 @@ export const RetentionJobName = {
 
 export const RETENTION_WORKER_POLICY = {
 	teamSize: 1,
-	pollingIntervalSeconds: 2,
+	pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
 } as const;
 
 export const RetentionRuntimeJobSchema = z.discriminatedUnion("name", [

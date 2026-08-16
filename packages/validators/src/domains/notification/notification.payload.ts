@@ -40,6 +40,10 @@ export const notificationActionTypeSchema = z.enum([
  *
  * 클라이언트가 type + context 조합으로 라우트를 결정합니다.
  */
+/**
+ * 배포된 알림 목록 DTO에 그대로 박혀 있는 모양이라 필드를 늘리지 않는다.
+ * 이동에 더 필요한 값은 notificationRoutingSchema가 따로 실어 나른다.
+ */
 export const notificationContextSchema = z.object({
   todoId: z.number().optional(),
   friendId: z.string().optional(),
@@ -59,6 +63,18 @@ export type NotificationContext = z.infer<typeof notificationContextSchema>;
  * - type: 액션 타입 (DEEP_LINK, BROWSER, WEBVIEW, NONE)
  * - url: DEEP_LINK의 경우 선택적, BROWSER/WEBVIEW의 경우 필수
  */
+/**
+ * 전용 컬럼이 없어 context에 담지 못하는 이동 재료.
+ * REST에서는 metadata에, 푸시에서는 payload의 routing에 실린다 — 둘 다 구버전이 조용히 버린다.
+ */
+export const notificationRoutingSchema = z.object({
+  commentId: z.cuid().optional(),
+  threadRootId: z.cuid().optional(),
+  activityKind: z.enum(['COMMENT', 'REPLY', 'LIKE']).optional(),
+});
+
+export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
+
 export const notificationActionSchema = z.object({
   type: notificationActionTypeSchema,
   url: z.string().optional(),
@@ -82,6 +98,7 @@ export const pushNotificationDataSchema = z.object({
   type: z.enum(notificationTypes),
   action: notificationActionSchema,
   context: notificationContextSchema.optional(),
+  routing: notificationRoutingSchema.optional(),
   dispatchId: z.number().int().positive().optional(),
   campaignKey: z.string().max(100).optional(),
   variantId: z.string().max(100).optional(),

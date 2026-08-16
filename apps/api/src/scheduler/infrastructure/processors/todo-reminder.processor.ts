@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
 import {
 	JOB_RUNTIME,
 	type JobData,
@@ -48,14 +49,14 @@ export class TodoReminderProcessor implements OnModuleInit {
 			async (jobs) => {
 				for (const job of jobs) await this.process(job.data.data);
 			},
-			{ teamSize: 1, pollingIntervalSeconds: 2 },
+			{ teamSize: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
 		);
 		await this.runtime.work<JobData>(
 			TODO_REMINDER_LEGACY_QUEUE,
 			async (jobs) => {
 				for (const job of jobs) await this.process(fromLegacyJob<TodoReminderJobMap>(job).data);
 			},
-			{ teamSize: 1, pollingIntervalSeconds: 2 },
+			{ teamSize: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
 		);
 	}
 
