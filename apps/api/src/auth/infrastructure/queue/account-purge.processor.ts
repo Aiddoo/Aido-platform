@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
 import type { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
 import {
 	JOB_RUNTIME,
 	type JobData,
@@ -40,11 +41,11 @@ export class AccountPurgeProcessor implements OnModuleInit {
 		const handler = async () => this.process();
 		await this.runtime.work<JobData>(ACCOUNT_PURGE_QUEUE, handler, {
 			teamSize: 1,
-			pollingIntervalSeconds: 2,
+			pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
 		});
 		await this.runtime.work<JobData>(ACCOUNT_PURGE_LEGACY_QUEUE, handler, {
 			teamSize: 1,
-			pollingIntervalSeconds: 2,
+			pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
 		});
 	}
 

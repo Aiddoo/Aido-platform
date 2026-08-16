@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+
 /** 알림 큐의 이름·메시지 스키마·운영 정책을 소유하는 단일 계약. */
 
 // =============================================================================
@@ -37,7 +39,7 @@ export const NOTIFICATION_JOB_POLICY = {
 
 export const NOTIFICATION_WORKER_POLICY = {
 	teamSize: 5,
-	pollingIntervalSeconds: 2,
+	pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE,
 } as const;
 
 export const PUSH_RECEIPT_SCHEDULE = {

@@ -5,6 +5,8 @@
  * 딥임포트하지 않고 큐 상수만 참조하도록 한다.
  */
 
+import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+
 export const AI_REPORT_QUEUE = "ai-report-generation.v1";
 export const AI_REPORT_LEGACY_QUEUE = "ai-report-generation";
 
@@ -16,7 +18,7 @@ export const AiReportJobName = {
 
 export const AI_REPORT_WORKER_POLICY = {
 	teamSize: 5,
-	pollingIntervalSeconds: 2,
+	pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
 } as const;
 
 export const AiReportRuntimeJobSchema = z.discriminatedUnion("name", [
