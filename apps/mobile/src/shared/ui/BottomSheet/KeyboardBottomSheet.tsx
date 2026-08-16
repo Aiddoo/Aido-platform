@@ -1,7 +1,7 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
-  BottomSheetView,
+  BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import {
   type ComponentRef,
@@ -15,7 +15,6 @@ import {
   AppState,
   type AppStateStatus,
   Keyboard,
-  type LayoutChangeEvent,
   Platform,
   StyleSheet,
   useWindowDimensions,
@@ -42,6 +41,11 @@ interface KeyboardBottomSheetProps {
 
 /**
  * 키보드 연동 BottomSheet.
+ *
+ * 내용은 스크롤된다. 내용이 짧으면 시트가 그 높이에 맞춰 줄어들지만(enableDynamicSizing),
+ * 키보드가 올라온 채로 내용이 길어지면 시트만으로는 아래쪽에 손이 닿지 않기 때문이다.
+ * keyboardShouldPersistTaps가 'always'인 것도 같은 이유다 — 없으면 키보드가 떠 있을 때
+ * 첫 탭이 키보드를 내리는 데 먹혀 버튼을 두 번 눌러야 한다.
  */
 export const KeyboardBottomSheet = ({
   isOpen,
@@ -183,12 +187,12 @@ export const KeyboardBottomSheet = ({
     [],
   );
 
-  const handleContentLayout = (event: LayoutChangeEvent) => {
+  const handleContentSizeChange = (_width: number, height: number) => {
     if (!isOpen || isClosingRef.current) {
       return;
     }
 
-    const nextHeight = Math.round(event.nativeEvent.layout.height);
+    const nextHeight = Math.round(height);
     const prevHeight = lastContentHeightRef.current;
 
     if (Math.abs(nextHeight - prevHeight) < 2) {
@@ -219,12 +223,15 @@ export const KeyboardBottomSheet = ({
       onAnimate={handleAnimate}
       onChange={handleSheetChange}
     >
-      <BottomSheetView
-        onLayout={handleContentLayout}
-        style={[styles.content, { paddingBottom: (insets.bottom || 20) + 4 }]}
+      <BottomSheetScrollView
+        onContentSizeChange={handleContentSizeChange}
+        contentContainerStyle={[styles.content, { paddingBottom: (insets.bottom || 20) + 4 }]}
+        keyboardShouldPersistTaps="always"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         {children}
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </GorhomBottomSheet>
   );
 };

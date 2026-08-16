@@ -1,5 +1,3 @@
-import { uniqBy } from 'es-toolkit';
-
 import { createTodoComment, createTodoCommentReply } from '../../__tests__/todo-comment.factories';
 import type { TodoComment } from '../../models/todo-comment.model';
 import {
@@ -11,6 +9,7 @@ import {
   withReplacedComment,
 } from './todo-comment-cache.util';
 import { likeToggled } from './todo-comment-optimistic';
+import { selectCommentRows } from './use-todo-comment-query-options';
 
 const pagesOf = (...comments: TodoComment[]): CommentPages => ({
   pages: [{ comments, nextCursor: null, hasNext: false }],
@@ -163,13 +162,10 @@ describe('페이지를 가로지르는 중복', () => {
       pageParams: [undefined, 'cursor-1'],
     };
 
-    // When - 목록이 그리는 것과 같은 방식으로 펼친다
-    const comments = uniqBy(
-      pages.pages.flatMap((page) => page.comments),
-      (comment) => comment.id,
-    );
+    // When - 목록이 실제로 쓰는 select를 그대로 부른다
+    const rows = selectCommentRows(pages);
 
     // Then - 먼저 그린 쪽(맨 위)만 남아 자리가 흔들리지 않는다
-    expect(comments.map((comment) => comment.id)).toEqual(['comment-fresh', 'comment-popular']);
+    expect(rows.map((row) => row.comment.id)).toEqual(['comment-fresh', 'comment-popular']);
   });
 });

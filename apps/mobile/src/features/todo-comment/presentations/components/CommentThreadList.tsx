@@ -12,7 +12,6 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { uniqBy } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
 import { Separator, Skeleton } from 'heroui-native';
 import { type ReactNode, memo, useCallback, useEffect, useRef } from 'react';
@@ -25,7 +24,10 @@ import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys.co
 import { CommentRowScrollContext } from '../hooks/use-comment-row-scroll';
 import { useCommentSort } from '../hooks/use-comment-sort';
 import { useThreadParentId } from '../hooks/use-thread-parent-id';
-import { useTodoCommentsQueryOptions } from '../queries/use-todo-comment-query-options';
+import {
+  type CommentRow,
+  useTodoCommentsQueryOptions,
+} from '../queries/use-todo-comment-query-options';
 import { CommentActionMenu } from './CommentActionMenu';
 import { CommentArticle } from './CommentArticle';
 import { CommentAvatarColumn } from './CommentAvatarColumn';
@@ -63,20 +65,12 @@ const AVATAR_SIZE = 36;
 /** 아바타 한가운데(18px)를 지나는 1.5px 선. 좌표는 세 가지 경우가 공유한다. */
 const THREAD_LINE = 'absolute left-[17px] w-[1.5px] bg-gray-4';
 
-/** 매 렌더마다 새 함수가 생기면 FlashList가 행을 통째로 다시 그린다 — 모듈 스코프에 고정한다. */
-const keyExtractor = (comment: TodoComment) => comment.id;
-
-/** 같은 사람이 이어 쓴 댓글인지 — 두 행을 한 덩어리로 잇는 기준. */
-const isSameAuthor = (one: TodoComment | undefined, other: TodoComment | undefined) =>
-  one?.author != null && other?.author != null && one.author.id === other.author.id;
-
 /**
- * 위 댓글에서 아래 댓글로 선이 이어지는지.
- * 답글이 달린 댓글은 이미 선을 답글 가지에 넘겼으므로, 아래 댓글까지 또 잇지 않는다 —
- * 두 갈래를 함께 그리면 답글 뭉치를 건너뛴 선이 허공에서 끊겨 보인다.
+ * 매 렌더마다 새 함수가 생기면 FlashList가 행을 통째로 다시 그린다 — 모듈 스코프에 고정한다.
+ * 줄이 자기 정보를 다 들고 오므로 renderItem도 바깥 값을 읽을 일이 없다.
  */
-const continuesInto = (one: TodoComment | undefined, other: TodoComment | undefined) =>
-  isSameAuthor(one, other) && one?.hasReplies === false;
+const keyExtractor = (row: CommentRow) => row.comment.id;
+const renderComment = ({ item }: { item: CommentRow }) => <CommentThreadList.Item {...item} />;
 
 interface CommentThreadListProps {
   /** 댓글과 함께 스크롤되는 상단 영역 (할 일 본문, 조상 사슬, 정렬 바). */
@@ -95,7 +89,7 @@ export function CommentThreadList({ children }: CommentThreadListProps) {
   const [sort] = useCommentSort();
   const queryClient = useQueryClient();
   const { color: refreshTint } = useResolveClassNames('text-main');
-  const listRef = useRef<FlashListRef<TodoComment>>(null);
+  const listRef = useRef<FlashListRef<CommentRow>>(null);
 
   // 정렬을 바꾸면 줄 세우는 기준 자체가 달라진다.
   // 보던 자리를 붙잡아 두면 화면이 엉뚱한 곳으로 밀리므로, 맨 위에서 다시 읽게 한다.
@@ -106,52 +100,40 @@ export function CommentThreadList({ children }: CommentThreadListProps) {
   const commentsQuery = useSuspenseInfiniteQuery(
     useTodoCommentsQueryOptions(todoId, parentId, sort),
   );
-  // 방금 쓴 글은 정렬과 무관하게 맨 위에 꽂아두는데, 인기순에서는 좋아요가 0이라
-  // 뒷 페이지에서 제자리로 한 번 더 실려 온다 — 먼저 그린 쪽만 남긴다.
-  const comments = uniqBy(
-    commentsQuery.data.pages.flatMap((page) => page.comments),
-    (comment) => comment.id,
-  );
-
-  // 같은 사람이 이어 쓴 댓글은 구분선을 지우고 선으로 이어 한 흐름으로 읽히게 한다.
-  const renderComment = useCallback(
-    ({ item, index }: { item: TodoComment; index: number }) => (
-      <CommentThreadList.Item
-        comment={item}
-        continuesFromAbove={continuesInto(comments[index - 1], item)}
-        continuesBelow={continuesInto(item, comments[index + 1])}
-      />
-    ),
-    [comments],
-  );
+  const rows = commentsQuery.data;
 
   // 이 리스트가 화면의 스크롤 컨테이너이므로, 당겨서 새로고침은 화면 전체를 새로 받는다.
-  const [isRefreshing, refresh] = useRefresh(() =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details(todoId) }),
-      queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.all(todoId) }),
-    ]),
+  const [isRefreshing, refresh] = useRefresh(
+    useCallback(
+      () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details(todoId) }),
+          queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.all(todoId) }),
+        ]),
+      [queryClient, todoId],
+    ),
   );
 
-  const scrollRowToTop = useCallback(
-    (commentId: string) => {
-      const index = comments.findIndex((comment) => comment.id === commentId);
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
 
-      if (index >= 0) {
-        listRef.current?.scrollToIndex({ index, viewPosition: 0, animated: true });
-      }
-    },
-    [comments],
-  );
+  // 이 Context는 값이 아니라 명령을 나른다 — 참조가 바뀌면 memo를 뚫고 모든 행의
+  // ReplyButton이 다시 그려지므로, 최신 목록은 ref로 읽고 함수는 고정한다.
+  const scrollRowToTop = useCallback((commentId: string) => {
+    const index = rowsRef.current.findIndex((row) => row.comment.id === commentId);
+
+    if (index >= 0) {
+      listRef.current?.scrollToIndex({ index, viewPosition: 0, animated: true });
+    }
+  }, []);
 
   return (
     <CommentRowScrollContext value={scrollRowToTop}>
       <FlashList
         ref={listRef}
-        data={comments}
+        data={rows}
         keyExtractor={keyExtractor}
         renderItem={renderComment}
-        extraData={comments}
         ListHeaderComponent={<>{children}</>}
         ListEmptyComponent={CommentThreadList.Empty}
         ListFooterComponent={

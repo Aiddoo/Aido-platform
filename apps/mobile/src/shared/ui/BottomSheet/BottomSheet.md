@@ -24,6 +24,10 @@ import { BottomSheet } from '@src/shared/ui/BottomSheet';
 
 ### KeyboardBottomSheet
 
+내용은 스크롤된다. 짧으면 시트가 그 높이로 줄어들지만, 키보드가 올라온 채로 내용이
+길어지면 아래쪽 버튼에 손이 닿지 않기 때문이다. 그래서 시트 안에 세로 스크롤 컨테이너를
+또 두면 안 된다 (가로 스크롤은 무방하다).
+
 ```tsx
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 
