@@ -38,12 +38,11 @@ import {
 	WEATHER_PROVIDER,
 	type WeatherProvider,
 } from "@/weather/application/ports/weather-provider.port";
-import { WeatherQueryUseCases } from "@/weather/application/queries";
 import { GetWeatherConditionsUseCase } from "@/weather/application/queries/get-weather-conditions/get-weather-conditions.use-case";
 import { GetWeatherForecastUseCase } from "@/weather/application/queries/get-weather-forecast/get-weather-forecast.use-case";
 import { WeatherForecastReader } from "@/weather/application/services/weather-forecast.reader";
-import { WeatherUseCases } from "@/weather/application/use-cases";
 import { UpsertLocationUseCase } from "@/weather/application/use-cases/upsert-location/upsert-location.use-case";
+import { WEATHER_PROVIDERS } from "@/weather/application/weather.providers";
 import { WeatherCacheAdapter } from "@/weather/infrastructure/adapters/weather-cache.adapter";
 import { PrismaWeatherLocationRepository } from "@/weather/infrastructure/persistence/prisma-weather-location.repository";
 
@@ -119,8 +118,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 		module = await Test.createTestingModule({
 			providers: [
 				WeatherForecastReader,
-				...WeatherQueryUseCases,
-				...WeatherUseCases,
+				...WEATHER_PROVIDERS,
 				{
 					provide: WEATHER_LOCATION_REPOSITORY,
 					useClass: PrismaWeatherLocationRepository,

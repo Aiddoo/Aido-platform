@@ -159,6 +159,9 @@ export const ErrorCode = {
   TODO_0813: 'TODO_0813',
   TODO_0821: 'TODO_0821',
   TODO_0822: 'TODO_0822',
+  TODO_0831: 'TODO_0831',
+  TODO_0832: 'TODO_0832',
+  TODO_0833: 'TODO_0833',
 
   // =========================================================================
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
@@ -833,6 +836,24 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '하위 항목을 찾을 수 없습니다.',
     description: '해당 ID의 하위 항목이 존재하지 않거나 해당 투두에 속하지 않습니다.',
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.TODO_0831]: {
+    code: 'TODO_0831',
+    message: '댓글을 찾을 수 없습니다.',
+    description: '해당 댓글이 존재하지 않거나 현재 사용자가 접근할 수 없습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.TODO_0832]: {
+    code: 'TODO_0832',
+    message: '댓글을 변경할 권한이 없습니다.',
+    description: '댓글 작성자만 댓글을 수정하거나 삭제할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_0833]: {
+    code: 'TODO_0833',
+    message: '삭제된 댓글에는 이 작업을 할 수 없습니다.',
+    description: '삭제된 댓글은 수정하거나 답글 또는 좋아요를 추가할 수 없습니다.',
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // =========================================================================

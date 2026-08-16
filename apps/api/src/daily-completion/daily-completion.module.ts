@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 
 import { FollowModule } from "@/follow";
 
+import { DAILY_COMPLETION_PROVIDERS } from "./application/daily-completion.providers";
 import { DailyCompletionCacheInvalidator } from "./application/events/daily-completion-cache.invalidator";
 import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completion-cache.port";
 import { FRIEND_PORT } from "./application/ports/friend.port";
 import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port";
-import { DailyCompletionQueryUseCases } from "./application/queries";
 import { DailyCompletionCacheAdapter } from "./infrastructure/adapters/daily-completion-cache.adapter";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
 import { PrismaTodoCompletionRepository } from "./infrastructure/adapters/prisma-todo-completion.repository";
@@ -33,7 +33,7 @@ import { DailyCompletionController } from "./presentation/daily-completion.contr
 		},
 		{ provide: FRIEND_PORT, useClass: FriendAdapter },
 		DailyCompletionCacheInvalidator,
-		...DailyCompletionQueryUseCases,
+		...DAILY_COMPLETION_PROVIDERS,
 	],
 })
 export class DailyCompletionModule {}

@@ -82,6 +82,9 @@ model User {
   retentionAssignments RetentionExperimentAssignment[]
   weeklyAchievements   WeeklyAchievement[]
   subscriptions        Subscription[]
+  authoredTodoComments TodoComment[]                   @relation("todo_comment_author")
+  todoCommentLikes     TodoCommentLike[]
+  todoViews            TodoView[]
 
   // 관계: AI
   aiReports            AiReport[]
@@ -499,10 +502,16 @@ model Todo {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // 소셜 상호작용 카운터 (원본 행과 같은 트랜잭션에서 갱신)
+  viewCount    Int @default(0)
+  commentCount Int @default(0)
+
   // 관계
   user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   nudges Nudge[]
   items  TodoItem[]
+  comments TodoComment[]
+  views    TodoView[]
 
   @@index([userId, startDate, endDate])
   @@index([userId, completed, startDate])
@@ -510,6 +519,78 @@ model Todo {
   @@index([userId, sortOrder])
   @@index([completed, scheduledTime]) // 리마인더 대상 조회
   @@index([recurrenceGroupId])
+}
+
+/// Todo 댓글. parentId가 null이면 최상위 댓글, 값이 있으면 그 댓글의 답글입니다.
+/// 깊이 상한은 두지 않습니다 — 화면이 들여쓰기를 한 겹으로 접습니다.
+model TodoComment {
+  id       String @id @default(cuid())
+  todoId   Int
+  authorId String
+
+  /// 직계 부모. null이면 최상위 댓글
+  parentId String?
+  /// 대화의 뿌리. 최상위 댓글이면 null
+  rootId   String?
+  /// 뿌리→부모 순서의 조상 id. 조상 사슬을 한 번의 쿼리로 가져오려고 둡니다
+  path     String[] @default([])
+  /// path의 길이 (최상위는 0)
+  depth    Int      @default(0)
+
+  clientRequestId String  @db.Uuid
+  content         String? @db.VarChar(500)
+
+  likeCount Int @default(0)
+  /// 직계 자식 수 (자손 총합이 아닙니다)
+  replyCount Int @default(0)
+
+  deletedAt DateTime?
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  todo     Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  author   User @relation("todo_comment_author", fields: [authorId], references: [id], onDelete: Cascade)
+  parent   TodoComment?  @relation("todo_comment_children", fields: [parentId], references: [id], onDelete: Cascade)
+  children TodoComment[] @relation("todo_comment_children")
+  likes    TodoCommentLike[]
+
+  @@unique([authorId, clientRequestId])
+  /// 최신순 — 최상위 목록(parentId IS NULL)과 임의 댓글의 답글 목록이 같은 인덱스를 씁니다
+  @@index([todoId, parentId, createdAt, id])
+  /// 인기순 — 좋아요 → 답글 수 → 시간
+  @@index([todoId, parentId, likeCount, replyCount, createdAt, id])
+  /// 스레드 단위 집계·정리
+  @@index([todoId, rootId])
+}
+
+/// 좋아요 취소 후 재등록해도 최초 알림을 반복하지 않도록 행을 보존합니다.
+model TodoCommentLike {
+  commentId String
+  userId    String
+  isActive  Boolean  @default(true)
+  notifiedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comment TodoComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@index([userId, isActive])
+}
+
+/// 로그인 사용자별 lifetime unique Todo 조회 기록입니다.
+model TodoView {
+  todoId    Int
+  viewerId String
+  createdAt DateTime @default(now())
+
+  todo   Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  viewer User @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@id([todoId, viewerId])
+  @@index([viewerId, createdAt])
 }
 
 /// 투두 하위 항목 (체크리스트)

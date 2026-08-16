@@ -260,8 +260,13 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 		"/weekly-achievements",
 		"/weekly-achievements/{year}/{week}",
 	],
+	/**
+	 * 검토된 계약 진화 (sourceCommit 이후의 의도된 additive 변경):
+	 * - 2026-08-15 todoSchema.commentCount 응답 필드 추가 (목록 진입점 뱃지용).
+	 *   1.7.x 번들 Zod는 strip 모드라 미지 응답 키를 버린다 — 배포 클라이언트 무영향.
+	 */
 	schemasFingerprint:
-		"5708d02896371679e9c4dc97d82e1376e18c464ae7f6cfc0cecbbb4defeaac3d",
+		"7d54df326aea8812a463f4a7ea5e842fc333c6823276a14e29e58f8a8d3b992b",
 	pathsFingerprint:
 		"ea3b45b70f071294634c39a8523e2683112a02a87f17c1366f279ca7b46e6d8e",
 } as const;

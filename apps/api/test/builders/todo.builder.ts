@@ -39,6 +39,8 @@ export class TodoBuilder {
 			recurrenceGroupId: null,
 			completed: false,
 			completedAt: null,
+			viewCount: 0,
+			commentCount: 0,
 			createdAt: now,
 			updatedAt: now,
 			category: {

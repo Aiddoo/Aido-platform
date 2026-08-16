@@ -1,12 +1,11 @@
 import { Module } from "@nestjs/common";
 
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
+import { AI_PROVIDERS } from "./application/ai.providers";
 import { AI_PROVIDER } from "./application/ports/ai-provider.port";
 import { AI_USAGE_REPOSITORY } from "./application/ports/ai-usage.repository.port";
 import { USER_CATEGORY_READER } from "./application/ports/user-category-reader.port";
-import { AiQueryUseCases } from "./application/queries";
 import { AiUsageMeter } from "./application/services/ai-usage-meter.service";
-import { AiUseCases } from "./application/use-cases";
 import { AI_PROVIDER_GEMINI, AiRouterAdapter } from "./infrastructure/adapters/ai-router.adapter";
 import { GeminiAiAdapter } from "./infrastructure/adapters/gemini-ai.adapter";
 import { PrismaAiUsageRepository } from "./infrastructure/adapters/prisma-ai-usage.repository";
@@ -48,8 +47,7 @@ import { AiController } from "./presentation/ai.controller";
 		{ provide: AI_PROVIDER, useClass: AiRouterAdapter },
 		{ provide: AI_USAGE_REPOSITORY, useClass: PrismaAiUsageRepository },
 		{ provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
-		...AiUseCases,
-		...AiQueryUseCases,
+		...AI_PROVIDERS,
 	],
 	exports: [AI_PROVIDER],
 })
