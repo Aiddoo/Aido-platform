@@ -39,23 +39,21 @@ export function SuggestionCategoryBottomSheet({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       selectedCategoryId={defaultCategoryId}
-      onSelect={(categoryId) => {
+      onSelect={async (categoryId) => {
         if (suggestionId == null) {
           return;
         }
 
-        handleSuggestionMutation.mutate(
-          { suggestionId, input: { action: 'accept', categoryId } },
-          {
-            onSuccess: () => {
-              onOpenChange(false);
-              onAccepted();
-            },
-          },
-        );
+        const accepted = await handleSuggestionMutation
+          .mutateAsync({ suggestionId, input: { action: 'accept', categoryId } })
+          .catch(() => null);
+
+        if (accepted) {
+          onOpenChange(false);
+          onAccepted();
+        }
       }}
       submitLabel={t('suggestions.category.submit')}
-      isLoading={handleSuggestionMutation.isPending}
     />
   );
 }

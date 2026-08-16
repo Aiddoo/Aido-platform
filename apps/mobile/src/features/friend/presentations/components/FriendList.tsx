@@ -73,12 +73,9 @@ export function FriendList() {
         close();
         exit();
       };
-      const isProcessing = removeMutation.isPending && removeMutation.variables === id;
-
       return (
         <FriendDeleteConfirmDialog
           isOpen={isOpen}
-          isProcessing={isProcessing}
           onOpenChange={(open) => {
             if (!open) {
               closeDialog();
