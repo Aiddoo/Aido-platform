@@ -1,5 +1,6 @@
 import type { UpdateTodoCommentInput } from '@aido/validators';
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
+import type { TodosResult } from '@src/features/todo/models/todo.model';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
@@ -59,8 +60,16 @@ function restoreCommentCaches(queryClient: QueryClient, snapshot: CommentCacheSn
   snapshot.forEach(([queryKey, data]) => queryClient.setQueryData(queryKey, data));
 }
 
-/** 할 일의 댓글 수는 상세 카드가 읽는 값이라 리페치 없이 제자리에서 맞춘다. */
+/**
+ * 같은 댓글 수를 들고 있는 캐시가 셋이다 — 상세 카드, 내 목록, 친구 목록.
+ * 하나만 맞추면 뒤로 갔을 때 캘린더의 숫자가 어긋난다.
+ *
+ * 리페치하지 않는 이유는 상세와 같다 — 목록은 스크롤 위치를 지켜야 하고,
+ * 댓글 한 줄 때문에 하루치 할 일을 다시 받을 이유가 없다.
+ */
 function shiftTodoCommentCount(queryClient: QueryClient, todoId: number, delta: number) {
+  const bump = (count: number) => Math.max(0, count + delta);
+
   queryClient.setQueryData<{ metrics: { commentCount: number } }>(
     TODO_QUERY_KEYS.details(todoId),
     (detail) =>
@@ -68,12 +77,24 @@ function shiftTodoCommentCount(queryClient: QueryClient, todoId: number, delta: 
         ? detail
         : {
             ...detail,
-            metrics: {
-              ...detail.metrics,
-              commentCount: Math.max(0, detail.metrics.commentCount + delta),
-            },
+            metrics: { ...detail.metrics, commentCount: bump(detail.metrics.commentCount) },
           },
   );
+
+  // 카테고리 그룹핑은 select에서 일어나므로 캐시에는 서버 응답 그대로가 들어 있다.
+  // 내 목록과 친구 목록이 같은 모양이라 updater 하나로 둘 다 덮는다.
+  const shiftInList = (list: TodosResult | undefined) =>
+    list === undefined
+      ? list
+      : {
+          ...list,
+          todos: list.todos.map((todo) =>
+            todo.id === todoId ? { ...todo, commentCount: bump(todo.commentCount) } : todo,
+          ),
+        };
+
+  queryClient.setQueriesData<TodosResult>({ queryKey: TODO_QUERY_KEYS.lists() }, shiftInList);
+  queryClient.setQueriesData<TodosResult>({ queryKey: TODO_QUERY_KEYS.friendLists() }, shiftInList);
 }
 
 export function useSetTodoCommentLikeMutationOptions(todoId: number) {

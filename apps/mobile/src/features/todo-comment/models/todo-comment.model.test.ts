@@ -3,7 +3,12 @@ import {
   createTodoComment,
   createTodoCommentReply,
 } from '../__tests__/todo-comment.factories';
-import { TodoCommentPolicy, mentionedAuthorName } from './todo-comment.model';
+import {
+  TodoCommentDraftPolicy,
+  TodoCommentPolicy,
+  TodoCommentThreadPolicy,
+  mentionedAuthorName,
+} from './todo-comment.model';
 
 describe('mentionedAuthorName', () => {
   test('답글은 부모 작성자를 멘션한다', () => {
@@ -185,5 +190,67 @@ describe('TodoCommentPolicy', () => {
       // Then
       expect(result).toBe(false);
     });
+  });
+});
+
+describe('TodoCommentDraftPolicy', () => {
+  describe('canAddMore — 칸을 하나 더 열 수 있는가', () => {
+    test.each([
+      ['한 칸', 1, true],
+      ['상한 직전', 4, true],
+      ['상한', 5, false],
+      ['상한 초과', 6, false],
+    ])('%s(%i개)이면 %s', (_label, count, expected) => {
+      const contents = Array.from({ length: count }, () => '내용');
+
+      expect(TodoCommentDraftPolicy.canAddMore({ contents, isEditing: false })).toBe(expected);
+    });
+
+    test('수정 중에는 이어 쓰지 않는다 — 수정은 언제나 한 글이다', () => {
+      expect(TodoCommentDraftPolicy.canAddMore({ contents: ['내용'], isEditing: true })).toBe(
+        false,
+      );
+    });
+  });
+
+  describe('canPost — 게시할 수 있는가', () => {
+    test('열려 있는 칸이 모두 채워지면 열린다', () => {
+      expect(TodoCommentDraftPolicy.canPost(['첫 글', '이어지는 글'])).toBe(true);
+    });
+
+    test.each([
+      ['빈 칸이 섞이면', ['첫 글', '']],
+      ['공백만 있으면', ['첫 글', '   ']],
+      ['전부 비어 있으면', ['', '']],
+    ])('%s 열리지 않는다', (_label, contents) => {
+      expect(TodoCommentDraftPolicy.canPost(contents)).toBe(false);
+    });
+
+    test('칸이 하나도 없으면 열리지 않는다 — every는 빈 배열에 참이라 따로 막는다', () => {
+      expect(TodoCommentDraftPolicy.canPost([])).toBe(false);
+    });
+  });
+});
+
+describe('TodoCommentThreadPolicy.continuesInto', () => {
+  test('같은 사람이 이어 쓴 댓글은 한 흐름으로 잇는다', () => {
+    const one = createTodoComment();
+
+    expect(TodoCommentThreadPolicy.continuesInto(one, createTodoComment({ id: 'other' }))).toBe(
+      true,
+    );
+  });
+
+  test('답글이 달렸으면 아래로 잇지 않는다 — 선을 답글 가지에 넘겼다', () => {
+    const one = createTodoComment({ hasReplies: true });
+
+    expect(TodoCommentThreadPolicy.continuesInto(one, createTodoComment({ id: 'other' }))).toBe(
+      false,
+    );
+  });
+
+  test('이웃이 없으면 잇지 않는다', () => {
+    expect(TodoCommentThreadPolicy.continuesInto(createTodoComment(), undefined)).toBe(false);
+    expect(TodoCommentThreadPolicy.continuesInto(undefined, createTodoComment())).toBe(false);
   });
 });

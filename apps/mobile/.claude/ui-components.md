@@ -52,6 +52,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Button`                                      | 기본 버튼                                                             | `src/shared/ui/Button/Button.md`                       |
 | `KeyboardAdaptiveButton`                      | 키보드 반응 버튼                                                      | `src/shared/ui/Button/Button.md`                       |
 | `TextButton`                                  | 텍스트/링크 버튼                                                      | `src/shared/ui/TextButton/TextButton.md`               |
+| `IconCountButton`                             | 아이콘 + 개수 버튼 (좋아요·답글·댓글)                                 | `src/shared/ui/IconCountButton/IconCountButton.md`     |
 | `Input`                                       | 입력 필드                                                             | `src/shared/ui/Input/Input.md`                         |
 | `BottomSheetInput`                            | BottomSheet 내부 입력 필드                                            | `src/shared/ui/Input/Input.md`                         |
 | `Spacing`                                     | 간격 유틸리티                                                         | `src/shared/ui/Spacing/Spacing.md`                     |
@@ -286,6 +287,40 @@ Shared UI에 있는 컴포넌트를 다른 곳에서 가져오면 안 됩니다.
 // ❌ 금지 - Shared UI에 Text가 있으므로
 import { Text, View } from 'react-native';
 ```
+
+### 3. 오버레이에 진행 중 상태를 넘기지 않기 (중요!)
+
+`overlay.open(render)`는 **열 때의 클로저를 그대로 붙잡는다.** 부모가 다시 렌더돼도
+그 클로저는 갱신되지 않으므로, 부모에서 읽어 props로 넘긴 반응형 값은 **열린 순간의
+값에 얼어붙는다.** 로딩 표시가 영영 안 뜨고, 그 값으로 막던 중복 요청이 그대로 나간다.
+
+띄우는 내용이 **자기 상태를 스스로 가져야** 한다. 콜백을 `Promise`로 받아 안에서 재고,
+여는 쪽은 `mutateAsync`를 쓴다. 열 때 정해지고 변하지 않는 값(대상, 초기값)만 넘긴다.
+
+```tsx
+// ❌ 금지 - mutation.isPending이 false로 얼어붙는다
+overlay.open(({ isOpen, close }) => (
+  <SomeSheet
+    isOpen={isOpen}
+    onSubmit={(v) => mutation.mutate(v)}
+    isSubmitting={mutation.isPending}
+  />
+));
+
+// ✅ 올바름 - 시트가 보내는 동안을 스스로 안다
+overlay.open(({ isOpen, close }) => (
+  <SomeSheet
+    isOpen={isOpen}
+    onSubmit={async (v) => {
+      const saved = await mutation.mutateAsync(v).catch(() => null);
+      if (saved) close();
+    }}
+  />
+));
+```
+
+> oxlint에는 이걸 잡을 `no-restricted-syntax`가 없어 규칙으로 강제하지 못한다.
+> `useOverlay`의 JSDoc에도 같은 경고를 두었다.
 
 ---
 

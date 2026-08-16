@@ -2,22 +2,27 @@ import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/q
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { useTrack } from '@src/shared/analytics';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
+  ChatBubbleIcon,
   DocsIcon,
   Flex,
   HStack,
+  ICON_COUNT_BUTTON_ICON_SIZE,
+  IconCountButton,
   PawIcon,
   Result,
   Text,
+  VStack,
   useOverlay,
   usePremiumDialog,
-  VStack,
 } from '@src/shared/ui';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
@@ -116,6 +121,7 @@ interface FriendTodoItemProps {
 function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemProps) {
   const { t } = useTranslation('todo');
   const { trackEvent } = useTrack();
+  const push = useSingleTap(router.push);
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
   const [isExpanded, setIsExpanded] = useState(todo.hasSubTodos);
@@ -149,6 +155,9 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
     });
   };
 
+  /** 댓글은 말풍선으로만 들어간다 — 내 할 일과 같은 자리, 같은 화면이다. */
+  const openComments = () => push({ pathname: '/todo/[todoId]', params: { todoId: todo.id } });
+
   const handleNudgePress = () => {
     if (isLimitReached) {
       openLimitDialog();
@@ -174,11 +183,27 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
         ) : undefined
       }
       right={
-        canNudgeTodo ? (
-          <Pressable onPress={handleNudgePress} hitSlop={8}>
-            <PawIcon width={18} height={18} colorClassName="text-gray-6" />
-          </Pressable>
-        ) : undefined
+        // 대화는 날짜와 무관하게 열려 있다 — 콕 찌르기만 그날 할 일인지에 걸린다.
+        <HStack gap={4} align="center">
+          <IconCountButton
+            icon={
+              <ChatBubbleIcon
+                width={ICON_COUNT_BUTTON_ICON_SIZE}
+                height={ICON_COUNT_BUTTON_ICON_SIZE}
+                colorClassName="text-gray-6"
+              />
+            }
+            count={todo.commentCount}
+            onPress={openComments}
+            accessibilityRole="button"
+            accessibilityLabel={t('detail.open')}
+          />
+          {canNudgeTodo && (
+            <Pressable onPress={handleNudgePress} hitSlop={8}>
+              <PawIcon width={18} height={18} colorClassName="text-gray-6" />
+            </Pressable>
+          )}
+        </HStack>
       }
       onPress={todo.hasSubTodos ? () => setIsExpanded((prev) => !prev) : undefined}
     >

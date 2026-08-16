@@ -1,13 +1,22 @@
 /**
  * Google Gemini Provider
  *
- * Vercel AI SDK를 사용하여 Google Gemini 3.1 Flash-Lite 모델과 통신합니다.
- * (2.5-flash-lite는 2026-10-16 셧다운 — 3.1이 공식 후속 모델)
+ * Vercel AI SDK로 Gemini 3.1 Flash-Lite와 통신합니다. Stable이고 셧다운 예정이 없습니다.
  *
- * 가격 (2026년 7월 기준, Gemini Developer API Standard / text,image,video):
- * - Input: $0.25 / 1M tokens
- * - Output: $1.50 / 1M tokens
- * 출처: https://ai.google.dev/gemini-api/docs/pricing
+ * 가격 (2026-08 기준, Developer API Standard / text·image·video, per 1M tokens):
+ * | 모델                   | Input | Output |
+ * |------------------------|-------|--------|
+ * | gemini-2.5-flash-lite  | $0.10 | $0.40  |
+ * | **gemini-3.1-flash-lite (현재)** | **$0.25** | **$1.50** |
+ * | gemini-3.5-flash-lite  | $0.30 | $2.50  |
+ * | gemini-3.6/3.7-flash   | $0.75 | $3.75  |
+ *
+ * **3.6·3.7 세대에는 Flash-Lite가 없습니다** — Flash뿐이고 현재의 3배이며,
+ * 2027-01-01부터 $1.50/$7.50으로 또 오릅니다. 더 싼 것은 한 세대 아래인
+ * 2.5-flash-lite뿐이라, 파싱 품질을 세대째 내리는 대가를 치릅니다.
+ * 그래서 앞으로도 살아 있는 것 중 가장 싼 3.1-flash-lite를 유지합니다.
+ *
+ * 출처: https://ai.google.dev/gemini-api/docs/pricing, /docs/deprecations
  */
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { Injectable } from "@nestjs/common";

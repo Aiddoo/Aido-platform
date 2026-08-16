@@ -1,21 +1,16 @@
-import { TODO_COMMENT_LIMITS } from '@aido/validators';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, HStack, KeyboardBottomSheet, Text, TextButton, VStack } from '@src/shared/ui';
 import { BottomSheetTextArea } from '@src/shared/ui/TextArea/BottomSheetTextArea';
 import { PressableFeedback } from 'heroui-native';
-import type { ComponentProps, ReactNode } from 'react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import { Controller, useFieldArray, useWatch } from 'react-hook-form';
 
+import { TodoCommentDraftPolicy } from '../../models/todo-comment.model';
 import type { TodoCommentAuthor, TodoCommentPreview } from '../../models/todo-comment.model';
 import { useCommentForm } from '../hooks/use-comment-form';
 import { CommentArticle } from './CommentArticle';
 import { CommentAuthorAvatar } from './CommentAuthorAvatar';
-import {
-  THREAD_AVATAR_SIZE,
-  THREAD_COLUMN_WIDTH,
-  ThreadConnectorDown,
-  ThreadConnectorUp,
-} from './ThreadLine';
+import { THREAD_COLUMN_WIDTH, ThreadConnectorDown, ThreadConnectorUp } from './ThreadLine';
 
 /** '답글 또 달기' 줄의 작은 아바타(size-5) 지름. 위에서 내려온 선이 이 한가운데서 맺힌다. */
 const ADD_ROW_AVATAR_SIZE = 20;
@@ -36,9 +31,13 @@ interface CommentComposerSheetProps extends Omit<
   target: TodoCommentPreview | null;
   /** 고칠 글의 원문. 주면 수정이 되어 이어 쓰기가 닫힌다. */
   defaultContent?: string;
-  isSubmitting: boolean;
-  /** 위에서 아래 순서의 글 묶음. 빈 묶음은 나갈 수 없고, 수정이면 언제나 하나다. */
-  onSubmit: (contents: [string, ...string[]]) => void;
+  /**
+   * 위에서 아래 순서의 글 묶음. 빈 묶음은 나갈 수 없고, 수정이면 언제나 하나다.
+   *
+   * 보내는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
+   * 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
+   */
+  onSubmit: (contents: [string, ...string[]]) => Promise<void> | void;
 }
 
 /**
@@ -49,7 +48,6 @@ export function CommentComposerSheet({
   author,
   target,
   defaultContent,
-  isSubmitting,
   onSubmit,
   ...sheetProps
 }: CommentComposerSheetProps) {
@@ -60,14 +58,24 @@ export function CommentComposerSheet({
   const { fields, append } = useFieldArray({ control, name: 'items' });
   const items = useWatch({ control, name: 'items' });
 
-  const canAddMore = !isEditing && fields.length < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE;
-  const canPost = items.every((item) => item.content.trim().length > 0);
+  const contents = items.map((item) => item.content);
+  const canAddMore = TodoCommentDraftPolicy.canAddMore({ contents, isEditing });
+  const canPost = TodoCommentDraftPolicy.canPost(contents);
   const showsTarget = target !== null && !isEditing;
 
-  const submit = () => {
-    const [first, ...rest] = items.map((item) => item.content.trim());
-    if (first !== undefined) {
-      onSubmit([first, ...rest]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submit = async () => {
+    const [first, ...rest] = contents.map((content) => content.trim());
+    if (first === undefined) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit([first, ...rest]);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -189,24 +197,26 @@ interface ThreadRowProps {
  */
 function ThreadRow({ avatar, continuesBelow = false, endsAt, children }: ThreadRowProps) {
   return (
-    <HStack
-      gap={10}
-      pb={12}
-      align={endsAt === undefined ? 'stretch' : 'center'}
-      className="relative"
-    >
+    <HStack gap={10} pb={12} align="stretch" className="relative">
       {continuesBelow && <ThreadConnectorDown />}
       {endsAt !== undefined && <ThreadConnectorUp endsAt={endsAt} />}
 
-      <VStack
-        align="center"
-        justify="center"
-        style={{ minHeight: THREAD_AVATAR_SIZE }}
-        className={THREAD_COLUMN_WIDTH}
-      >
+      {/* 아바타는 언제나 행의 맨 위에 붙는다 — 선이 아바타 중심을 기준으로 그려지므로,
+          세로 가운데 정렬하면 글이 길어질수록(글꼴 확대 포함) 아바타가 내려가 선과 어긋난다.
+          목록의 CommentAvatarColumn과 같은 규칙이다. */}
+      <VStack align="center" className={THREAD_COLUMN_WIDTH}>
         {avatar}
       </VStack>
-      {children}
+
+      {/* 선이 맺히는 행은 글을 아바타 높이 안에서 가운데 맞춘다 — 아바타는 위에 붙어 있어야
+          하므로 행 전체를 가운데 정렬할 수는 없다. */}
+      {endsAt === undefined ? (
+        children
+      ) : (
+        <VStack flex={1} justify="center" style={{ minHeight: endsAt * 2 }}>
+          {children}
+        </VStack>
+      )}
     </HStack>
   );
 }

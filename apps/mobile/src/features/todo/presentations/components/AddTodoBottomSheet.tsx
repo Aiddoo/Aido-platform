@@ -612,7 +612,6 @@ function CategorySelectModalContent({
       selectedCategoryId={selectedCategoryId}
       onSelect={onSelect}
       submitLabel={tGlobal('todo:add.submit')}
-      isLoading={false}
     />
   );
 }

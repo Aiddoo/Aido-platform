@@ -381,7 +381,6 @@ function CategorySelectModalContent({
       selectedCategoryId={selectedCategoryId}
       onSelect={onSelect}
       submitLabel={t('aiReview.select')}
-      isLoading={false}
     />
   );
 }

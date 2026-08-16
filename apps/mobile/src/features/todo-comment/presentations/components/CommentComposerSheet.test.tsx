@@ -18,7 +18,6 @@ function renderComposer(onSubmit: jest.Mock) {
       author={author}
       target={null}
       isOpen
-      isSubmitting={false}
       onOpenChange={jest.fn()}
       onSubmit={onSubmit}
     />,

@@ -9,14 +9,14 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
+import { useState } from 'react';
 
 interface SubTodoActionsBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
   onEdit: () => void;
-  onDelete: () => void;
-  isDeleting: boolean;
+  onDelete: () => Promise<unknown> | void;
 }
 
 export const SubTodoActionsBottomSheet = ({
@@ -25,9 +25,26 @@ export const SubTodoActionsBottomSheet = ({
   onClose,
   onEdit,
   onDelete,
-  isDeleting,
 }: SubTodoActionsBottomSheetProps) => {
   const { t } = useTranslation('todo');
+
+  // 지우는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
+  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={8}>
@@ -53,7 +70,7 @@ export const SubTodoActionsBottomSheet = ({
           />
         </PressableFeedback>
 
-        <PressableFeedback onPress={onDelete} isDisabled={isDeleting}>
+        <PressableFeedback onPress={handleDelete} isDisabled={isDeleting}>
           <ListRow
             horizontalPadding="medium"
             verticalPadding="medium"

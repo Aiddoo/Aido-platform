@@ -4,6 +4,8 @@ import {
   BottomSheet,
   ChatBubbleIcon,
   HStack,
+  ICON_COUNT_BUTTON_ICON_SIZE,
+  IconCountButton,
   LockIcon,
   MoreIcon,
   Text,
@@ -170,16 +172,15 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
           }
         }}
         selectedCategoryId={todo.category.id}
-        onSelect={(categoryId) => {
-          todoActions.changeCategory(categoryId, {
-            onSuccess: () => {
-              close();
-              exit();
-            },
-          });
+        onSelect={async (categoryId) => {
+          const changed = await todoActions.changeCategory(categoryId).catch(() => null);
+
+          if (changed) {
+            close();
+            exit();
+          }
         }}
         submitLabel={t('actions.changeSubmit')}
-        isLoading={todoActions.isCategoryPending}
       />
     ));
   };
@@ -196,8 +197,13 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
             exit();
           }
         }}
-        onSubmit={(value) => subTodoActions.add(value, { onSuccess: () => close() })}
-        isSubmitting={subTodoActions.isAddPending}
+        onSubmit={async (value) => {
+          const added = await subTodoActions.add(value).catch(() => null);
+
+          if (added) {
+            close();
+          }
+        }}
       />
     ));
   };
@@ -226,16 +232,30 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
                   editExit();
                 }
               }}
-              onSubmit={(value) =>
-                subTodoActions.update(subTodoId, value, { onSuccess: () => editClose() })
-              }
-              onDelete={() => subTodoActions.remove(subTodoId, { onSuccess: () => editClose() })}
-              isSubmitting={subTodoActions.isUpdatePending}
+              onSubmit={async (value) => {
+                const updated = await subTodoActions.update(subTodoId, value).catch(() => null);
+
+                if (updated) {
+                  editClose();
+                }
+              }}
+              onDelete={async () => {
+                const removed = await subTodoActions.remove(subTodoId).catch(() => null);
+
+                if (removed) {
+                  editClose();
+                }
+              }}
             />
           ));
         }}
-        onDelete={() => subTodoActions.remove(subTodoId, { onSuccess: () => close() })}
-        isDeleting={subTodoActions.isRemovePending}
+        onDelete={async () => {
+          const removed = await subTodoActions.remove(subTodoId).catch(() => null);
+
+          if (removed) {
+            close();
+          }
+        }}
       />
     ));
   };
@@ -271,20 +291,19 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
       }
       right={
         <HStack gap={8} align="center">
-          <PressableFeedback
+          <IconCountButton
+            icon={
+              <ChatBubbleIcon
+                width={ICON_COUNT_BUTTON_ICON_SIZE}
+                height={ICON_COUNT_BUTTON_ICON_SIZE}
+                colorClassName="text-gray-6"
+              />
+            }
+            count={todo.commentCount}
             onPress={openComments}
-            hitSlop={6}
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
-            className="h-10 flex-row items-center justify-center gap-1 rounded-full px-2"
-          >
-            <ChatBubbleIcon width={21} height={21} colorClassName="text-gray-6" />
-            {todo.commentCount > 0 && (
-              <Text size="e1" shade={6}>
-                {todo.commentCount}
-              </Text>
-            )}
-          </PressableFeedback>
+          />
           <PressableFeedback onPress={isOptimistic ? undefined : openActionsSheet} hitSlop={8}>
             <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
           </PressableFeedback>

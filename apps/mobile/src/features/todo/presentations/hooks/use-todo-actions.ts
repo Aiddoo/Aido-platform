@@ -26,8 +26,7 @@ export function useTodoActions(todo: TodoItemViewModel) {
       isAllDay: boolean;
     }) => updateScheduleMutation.mutate({ todoId: todo.id, input }),
 
-    changeCategory: (categoryId: number, callbacks?: { onSuccess?: () => void }) =>
-      changeCategoryMutation.mutate({ todoId: todo.id, input: { categoryId } }, callbacks),
-    isCategoryPending: changeCategoryMutation.isPending,
+    changeCategory: (categoryId: number) =>
+      changeCategoryMutation.mutateAsync({ todoId: todo.id, input: { categoryId } }),
   };
 }

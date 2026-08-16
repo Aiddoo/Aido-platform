@@ -1,10 +1,12 @@
 import { Module } from "@nestjs/common";
 
 import { NotificationModule } from "@/notification";
+import { TodoModule } from "@/todo";
 
 import { TODO_COMMENT_CACHE } from "./application/ports/todo-comment-cache.port";
 import { TODO_COMMENT_NOTIFICATION } from "./application/ports/todo-comment-notification.port";
 import { TODO_COMMENT_REPOSITORY } from "./application/ports/todo-comment.repository.port";
+import { TODO_VIEW_CACHE } from "./application/ports/todo-view-cache.port";
 import {
 	GetTodoCommentThreadUseCase,
 	GetTodoDetailsUseCase,
@@ -19,18 +21,20 @@ import {
 	WriteTodoCommentChainUseCase,
 } from "./application/use-cases";
 import { TodoCommentNotificationAdapter } from "./infrastructure/adapters/todo-comment-notification.adapter";
+import { TodoViewCacheAdapter } from "./infrastructure/adapters/todo-view-cache.adapter";
 import { TodoCommentCacheAdapter } from "./infrastructure/cache/todo-comment-cache.adapter";
 import { PrismaTodoCommentRepository } from "./infrastructure/persistence/prisma-todo-comment.repository";
 import { TodoCommentController } from "./presentation/todo-comment.controller";
 
 @Module({
-	imports: [NotificationModule],
+	imports: [NotificationModule, TodoModule],
 	controllers: [TodoCommentController],
 	providers: [
 		PrismaTodoCommentRepository,
 		{ provide: TODO_COMMENT_REPOSITORY, useExisting: PrismaTodoCommentRepository },
 		{ provide: TODO_COMMENT_CACHE, useClass: TodoCommentCacheAdapter },
 		{ provide: TODO_COMMENT_NOTIFICATION, useClass: TodoCommentNotificationAdapter },
+		{ provide: TODO_VIEW_CACHE, useClass: TodoViewCacheAdapter },
 		GetTodoDetailsUseCase,
 		ListTodoCommentsUseCase,
 		ListTodoCommentRepliesUseCase,

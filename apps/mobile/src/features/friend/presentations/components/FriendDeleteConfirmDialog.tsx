@@ -3,7 +3,6 @@ import { ConfirmDialog } from '@src/shared/ui';
 
 interface FriendDeleteConfirmDialogProps {
   isOpen: boolean;
-  isProcessing: boolean;
   onOpenChange: (open: boolean) => void;
   onCancel: () => void;
   onConfirm: () => void;
@@ -11,7 +10,6 @@ interface FriendDeleteConfirmDialogProps {
 
 export function FriendDeleteConfirmDialog({
   isOpen,
-  isProcessing,
   onOpenChange,
   onCancel,
   onConfirm,
@@ -27,12 +25,12 @@ export function FriendDeleteConfirmDialog({
         <ConfirmDialog.Description>{t('deleteDialog.description')}</ConfirmDialog.Description>
       }
       cancelButton={
-        <ConfirmDialog.CancelButton onPress={onCancel} disabled={isProcessing}>
+        <ConfirmDialog.CancelButton onPress={onCancel}>
           {t('common:actions.cancel')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
-        <ConfirmDialog.ConfirmButton color="danger" onPress={onConfirm} isLoading={isProcessing}>
+        <ConfirmDialog.ConfirmButton color="danger" onPress={onConfirm}>
           {t('common:actions.delete')}
         </ConfirmDialog.ConfirmButton>
       }

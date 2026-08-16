@@ -97,6 +97,16 @@ export class TodoRowRepository {
 	}
 
 	/**
+	 * 소유자만 조회 — 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다.
+	 */
+	async findOwner(id: number): Promise<{ userId: string } | null> {
+		return this.client.todo.findUnique({
+			where: { id },
+			select: { userId: true },
+		});
+	}
+
+	/**
 	 * 사용자의 Todo 조회 (소유권 확인용)
 	 */
 	async findByIdAndUserId(id: number, userId: string): Promise<TodoWithCategory | null> {

@@ -10,9 +10,8 @@ interface CategorySelectBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   selectedCategoryId: number;
-  onSelect: (categoryId: number) => void;
+  onSelect: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
-  isLoading?: boolean;
 }
 
 export function CategorySelectBottomSheet({
@@ -21,7 +20,6 @@ export function CategorySelectBottomSheet({
   selectedCategoryId,
   onSelect,
   submitLabel,
-  isLoading = false,
 }: CategorySelectBottomSheetProps) {
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
@@ -33,7 +31,6 @@ export function CategorySelectBottomSheet({
           selectedCategoryId={selectedCategoryId}
           onSelect={onSelect}
           submitLabel={submitLabel}
-          isLoading={isLoading}
         />
       )}
     </BottomSheet>
@@ -43,9 +40,8 @@ export function CategorySelectBottomSheet({
 interface CategorySelectContentProps {
   categories: TodoCategory[];
   selectedCategoryId: number;
-  onSelect: (categoryId: number) => void;
+  onSelect: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
-  isLoading: boolean;
 }
 
 export function CategorySelectContent({
@@ -53,10 +49,22 @@ export function CategorySelectContent({
   selectedCategoryId,
   onSelect,
   submitLabel,
-  isLoading,
 }: CategorySelectContentProps) {
   const { t } = useTranslation('todo');
   const [localCategoryId, setLocalCategoryId] = useState(selectedCategoryId);
+
+  // 보내는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
+  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submit = async () => {
+    setIsSubmitting(true);
+    try {
+      await onSelect(localCategoryId);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <VStack gap={20}>
@@ -96,7 +104,7 @@ export function CategorySelectContent({
         })}
       </VStack>
 
-      <Button size="large" onPress={() => onSelect(localCategoryId)} isLoading={isLoading}>
+      <Button size="large" onPress={submit} isLoading={isSubmitting}>
         {submitLabel}
       </Button>
     </VStack>

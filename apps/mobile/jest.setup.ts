@@ -31,6 +31,9 @@ jest.mock('@gorhom/bottom-sheet', () => ({
   __esModule: true,
   ...require('@gorhom/bottom-sheet/mock'),
 }));
+jest.mock('expo-speech-recognition', () =>
+  require('./src/shared/__tests__/mocks/expo-speech-recognition'),
+);
 jest.mock('react-native-keyboard-controller', () =>
   require('./src/shared/__tests__/mocks/react-native-keyboard-controller'),
 );
