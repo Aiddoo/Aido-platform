@@ -52,7 +52,7 @@
 		"@sentry/nestjs": "^10.70.0",
 		"ai": "^7.0.59",
 		"argon2": "^0.45.1",
-		"bullmq": "^5.81.2",
+		"bullmq": "^6.0.5",
 		"dayjs": "catalog:",
 		"es-hangul": "^2.4.0",
 		"expo-server-sdk": "^6.1.0",
