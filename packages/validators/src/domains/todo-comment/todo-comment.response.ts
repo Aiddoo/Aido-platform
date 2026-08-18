@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 import { todoSchema } from '../todo/todo.response';
+import { TODO_COMMENT_LIMITS } from './todo-comment.constants';
 
 export const todoCommentAuthorSchema = z.object({
   id: z.cuid(),
@@ -108,7 +109,7 @@ export const todoCommentThreadResponseSchema = z.object({
  * 한 개만 썼으면 길이 1이다.
  */
 export const todoCommentChainResponseSchema = z.object({
-  comments: z.array(todoCommentSchema),
+  comments: z.array(todoCommentSchema).min(1).max(TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE),
 });
 
 /** 수정 응답. 최상위와 답글이 같은 모양이라 분기가 없다. */

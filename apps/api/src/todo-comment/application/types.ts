@@ -91,6 +91,14 @@ export interface CreateTodoCommentChainInput {
 	items: { clientRequestId: string; content: string }[];
 }
 
+/** 멱등 replay 여부를 확인할 때 쓰는 정규화된 원본 명령. */
+export interface TodoCommentChainCommand {
+	todoId: number;
+	authorId: string;
+	parentId: string | null;
+	items: { clientRequestId: string; content: string }[];
+}
+
 export interface TodoCommentChainCreationResult {
 	comments: TodoCommentRecord[];
 	/** 이번 요청으로 새로 생긴 글 수. 재시도로 전부 이미 있으면 0이다. */

@@ -5,11 +5,20 @@ import type {
 	TodoCommentChainCreationResult,
 	TodoCommentLikeTransition,
 	PaginatedTodoCommentRecords,
+	TodoCommentChainCommand,
 	TodoCommentRecord,
 	TodoDetailsRecord,
 } from "../types";
 
 export const TODO_COMMENT_REPOSITORY = Symbol("TODO_COMMENT_REPOSITORY");
+
+/** 같은 멱등 키가 원래 요청과 다른 명령에 재사용됐다. */
+export class TodoCommentIdempotencyConflict extends Error {
+	constructor() {
+		super();
+		this.name = TodoCommentIdempotencyConflict.name;
+	}
+}
 
 export interface TodoCommentRepositoryPort {
 	findAccessibleTodoDetails(todoId: number, viewerId: string): Promise<TodoDetailsRecord | null>;
@@ -22,14 +31,18 @@ export interface TodoCommentRepositoryPort {
 	findAncestors(todoId: number, path: readonly string[]): Promise<TodoCommentRecord[]>;
 	findLikedCommentIds(commentIds: readonly string[], viewerId: string): Promise<Set<string>>;
 	findUserDisplayName(userId: string): Promise<string | null>;
-	/** 사슬을 한 번에 심는다 — 글마다 왕복하지 않도록 저장소가 통째로 맡는다. */
+	/** 정확히 같은 멱등 명령이면 원래 사슬, 처음 보는 키면 null. 일부/불일치는 conflict다. */
+	findCommentChainReplay(input: TodoCommentChainCommand): Promise<TodoCommentRecord[] | null>;
+	/** replay 확인과 같은 UoW/멱등 잠금 안에서 새 사슬을 한 번에 심는다. */
 	createCommentChain(input: CreateTodoCommentChainInput): Promise<TodoCommentChainCreationResult>;
-	updateComment(comment: TodoComment): Promise<void>;
-	deleteComment(comment: TodoComment): Promise<void>;
-	/** 사슬 길이만큼 한 번에 올린다. */
+	updateComment(comment: TodoComment): Promise<boolean>;
+	deleteComment(comment: TodoComment): Promise<boolean>;
+	/** 사슬 길이만큼 댓글 수를 올린다. */
 	increaseTodoCommentCount(todoId: number, amount: number): Promise<void>;
-	decrementTodoCommentCount(todoId: number): Promise<void>;
-	incrementReplyCount(parentId: string): Promise<void>;
+	/** 댓글 수가 양수일 때만 내린다. 불변식이 깨졌으면 false. */
+	decrementTodoCommentCount(todoId: number): Promise<boolean>;
+	/** 삭제되지 않은 부모에만 답글 자리를 하나 추가한다. */
+	incrementReplyCount(parentId: string): Promise<boolean>;
 	/**
 	 * 삭제된 댓글이 목록에서 사라진 만큼 조상의 답글 수를 줄인다.
 	 * 답글이 남은 댓글은 묘비로 자리를 지키므로 사라짐이 거기서 멈춘다.

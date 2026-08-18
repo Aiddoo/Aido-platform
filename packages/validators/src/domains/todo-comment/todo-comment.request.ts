@@ -27,17 +27,34 @@ export const todoCommentContentSchema = z
  * 첫 글만 대상(할 일 또는 댓글)의 직계 자식이고, 나머지는 바로 앞 글의 답글로 이어진다.
  * 멱등 키를 글마다 받아 재시도해도 사슬이 두 번 생기지 않는다.
  */
-export const createTodoCommentChainSchema = z.object({
-  items: z
-    .array(
-      z.object({
-        clientRequestId: z.uuid(),
-        content: todoCommentContentSchema,
-      }),
-    )
-    .min(1)
-    .max(TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE),
-});
+export const createTodoCommentChainSchema = z
+  .object({
+    items: z
+      .array(
+        z.object({
+          clientRequestId: z.uuid(),
+          content: todoCommentContentSchema,
+        }),
+      )
+      .min(1)
+      .max(TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE),
+  })
+  .superRefine((value, context) => {
+    const seen = new Set<string>();
+
+    value.items.forEach((item, index) => {
+      if (seen.has(item.clientRequestId)) {
+        context.addIssue({
+          code: 'custom',
+          message: '댓글 요청 ID는 한 요청 안에서 중복될 수 없습니다.',
+          path: ['items', index, 'clientRequestId'],
+        });
+        return;
+      }
+
+      seen.add(item.clientRequestId);
+    });
+  });
 
 export const updateTodoCommentSchema = z.object({
   content: todoCommentContentSchema,

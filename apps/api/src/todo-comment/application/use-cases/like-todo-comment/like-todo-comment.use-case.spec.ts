@@ -1,4 +1,5 @@
 import {
+	createMutationLockMock,
 	createTodoCommentCacheMock,
 	createTodoCommentNotificationMock,
 	createTodoCommentRepositoryMock,
@@ -32,6 +33,7 @@ function setup(transition = createTransition()) {
 	const repository = createTodoCommentRepositoryMock();
 	const cache = createTodoCommentCacheMock();
 	const notification = createTodoCommentNotificationMock();
+	const mutationLock = createMutationLockMock();
 
 	const createdAt = new Date("2026-08-16T00:00:00.000Z");
 	jest.mocked(repository.canAccessTodo).mockResolvedValue(true);
@@ -57,6 +59,7 @@ function setup(transition = createTransition()) {
 		repository,
 		cache,
 		notification,
+		mutationLock,
 		createUnitOfWorkMock(),
 	);
 

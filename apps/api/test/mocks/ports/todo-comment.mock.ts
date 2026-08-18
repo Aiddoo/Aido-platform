@@ -1,3 +1,4 @@
+import type { MutationLockPort } from "@/shared/application/ports";
 import type { TodoCommentCachePort } from "@/todo-comment/application/ports/todo-comment-cache.port";
 import type { TodoCommentNotificationPort } from "@/todo-comment/application/ports/todo-comment-notification.port";
 import type { TodoCommentRepositoryPort } from "@/todo-comment/application/ports/todo-comment.repository.port";
@@ -18,6 +19,7 @@ export function createTodoCommentRepositoryMock(): TodoCommentRepositoryPort {
 		findAncestors: jest.fn(),
 		findLikedCommentIds: jest.fn(),
 		findUserDisplayName: jest.fn(),
+		findCommentChainReplay: jest.fn(),
 		createCommentChain: jest.fn(),
 		updateComment: jest.fn(),
 		deleteComment: jest.fn(),
@@ -32,10 +34,14 @@ export function createTodoCommentRepositoryMock(): TodoCommentRepositoryPort {
 	};
 }
 
+export function createMutationLockMock(): MutationLockPort {
+	return { acquire: jest.fn() };
+}
+
 export function createTodoCommentCacheMock(): TodoCommentCachePort {
 	return {
-		getTopLevelFirstPage: jest.fn(),
-		setTopLevelFirstPage: jest.fn(),
+		readTopLevelFirstPage: jest.fn(),
+		storeTopLevelFirstPageIfCurrent: jest.fn(),
 		invalidateTopLevelFirstPages: jest.fn(),
 	};
 }

@@ -68,16 +68,18 @@ export class GetFriendTodosUseCase {
 		const isFirstPage = cursor === undefined;
 		const startDateKey = input.startDate ? toDateString(input.startDate) : "-";
 		const endDateKey = input.endDate ? toDateString(input.endDate) : "-";
+		let cacheGeneration: string | undefined;
 
 		if (isFirstPage) {
-			const cached = await this.todoCache.getFriendTodosFirstPage(
+			const cached = await this.todoCache.readFriendTodosFirstPage(
 				friendUserId,
 				startDateKey,
 				endDateKey,
 				size,
 			);
-			if (cached) {
-				return cached;
+			cacheGeneration = cached.generation;
+			if (cached.page) {
+				return cached.page;
 			}
 		}
 
@@ -96,12 +98,13 @@ export class GetFriendTodosUseCase {
 			size,
 		});
 
-		if (isFirstPage) {
-			await this.todoCache.setFriendTodosFirstPage(
+		if (isFirstPage && cacheGeneration !== undefined) {
+			await this.todoCache.storeFriendTodosFirstPageIfCurrent(
 				friendUserId,
 				startDateKey,
 				endDateKey,
 				size,
+				cacheGeneration,
 				response,
 			);
 		}

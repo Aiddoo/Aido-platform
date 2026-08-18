@@ -1,4 +1,6 @@
+import { ErrorCode } from "@aido/errors";
 import {
+	createMutationLockMock,
 	createTodoCommentCacheMock,
 	createTodoCommentNotificationMock,
 	createTodoCommentRepositoryMock,
@@ -6,6 +8,7 @@ import {
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
 
+import { TodoCommentIdempotencyConflict } from "../../ports/todo-comment.repository.port";
 import type { TodoCommentRecord } from "../../types";
 import { WriteTodoCommentChainUseCase } from "./write-todo-comment-chain.use-case";
 
@@ -42,17 +45,22 @@ function setup() {
 	const cache = createTodoCommentCacheMock();
 	const notification = createTodoCommentNotificationMock();
 	const todoViewCache = createTodoViewCacheMock();
+	const mutationLock = createMutationLockMock();
 
 	jest.mocked(repository.canAccessTodo).mockResolvedValue(true);
+	jest.mocked(repository.findCommentChainReplay).mockResolvedValue(null);
 	jest
 		.mocked(repository.createCommentChain)
 		.mockResolvedValue({ comments: [createRecord()], createdCount: 1 });
+	jest.mocked(repository.increaseTodoCommentCount).mockResolvedValue(undefined);
+	jest.mocked(repository.incrementReplyCount).mockResolvedValue(true);
 
 	const useCase = new WriteTodoCommentChainUseCase(
 		repository,
 		cache,
 		notification,
 		todoViewCache,
+		mutationLock,
 		createUnitOfWorkMock(),
 	);
 
@@ -64,7 +72,7 @@ function setup() {
 			items: [{ clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11", content: "함께 해요" }],
 		});
 
-	return { execute, cache, notification, todoViewCache };
+	return { execute, repository, cache, notification, todoViewCache, mutationLock };
 }
 
 /**
@@ -89,5 +97,35 @@ describe("WriteTodoCommentChainUseCase 커밋 후 부수 작업", () => {
 
 		expect(cache.invalidateTopLevelFirstPages).toHaveBeenCalledWith(TODO_ID);
 		expect(notification.notifyCommentsWritten).toHaveBeenCalledTimes(1);
+	});
+
+	it("작성 멱등 키 잠금을 업무 트랜잭션 안에서 획득한다", async () => {
+		const { execute, mutationLock } = setup();
+
+		await execute();
+
+		expect(mutationLock.acquire).toHaveBeenCalledWith([
+			"mutation:v1:todo-comment-request:cm1author0000000000000001:b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11",
+		]);
+	});
+
+	it("정확한 replay는 새 사슬을 만들거나 캐시를 무효화하지 않는다", async () => {
+		const { execute, repository, cache } = setup();
+		jest.mocked(repository.findCommentChainReplay).mockResolvedValue([createRecord()]);
+
+		await expect(execute()).resolves.toMatchObject({ comments: [{ id: COMMENT_ID }] });
+
+		expect(repository.createCommentChain).not.toHaveBeenCalled();
+		expect(repository.increaseTodoCommentCount).not.toHaveBeenCalled();
+		expect(cache.invalidateTopLevelFirstPages).not.toHaveBeenCalled();
+	});
+
+	it("같은 멱등 키의 다른 명령은 공통 잘못된 파라미터 오류로 변환한다", async () => {
+		const { execute, repository } = setup();
+		jest
+			.mocked(repository.findCommentChainReplay)
+			.mockRejectedValue(new TodoCommentIdempotencyConflict());
+
+		await expect(execute()).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 	});
 });

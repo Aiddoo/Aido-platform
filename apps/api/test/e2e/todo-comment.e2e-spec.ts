@@ -330,4 +330,116 @@ describe("할 일 댓글 E2E", () => {
 
 		expect(details.body.data.metrics.commentCount).toBe(2);
 	});
+
+	it("같은 멱등 명령을 동시에 보내도 하나의 사슬만 만들고 같은 결과를 replay한다", async () => {
+		const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
+		const todoId = await createTodo(user.accessToken);
+		const items = [
+			{ clientRequestId: randomUUID(), content: "동시 하나" },
+			{ clientRequestId: randomUUID(), content: "동시 둘" },
+		];
+		const post = () =>
+			request(ctx.app.getHttpServer())
+				.post(`/v1/todos/${todoId}/comments`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.send({ items })
+				.expect(201);
+
+		const [first, second] = await Promise.all([post(), post()]);
+
+		expect(second.body.data.comments.map((comment: { id: string }) => comment.id)).toEqual(
+			first.body.data.comments.map((comment: { id: string }) => comment.id),
+		);
+
+		const details = await request(ctx.app.getHttpServer())
+			.get(`/v1/todos/${todoId}/details`)
+			.set("Authorization", `Bearer ${user.accessToken}`)
+			.expect(200);
+
+		expect(details.body.data.metrics.commentCount).toBe(2);
+	});
+
+	it("정확히 같은 답글 명령은 부모가 나중에 삭제돼도 원래 결과를 replay한다", async () => {
+		const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
+		const todoId = await createTodo(user.accessToken);
+		const parentId = await writeComment(user.accessToken, todoId, "부모 댓글");
+		const items = [{ clientRequestId: randomUUID(), content: "답글" }];
+		const path = `/v1/todos/${todoId}/comments/${parentId}/replies`;
+		const first = await request(ctx.app.getHttpServer())
+			.post(path)
+			.set("Authorization", `Bearer ${user.accessToken}`)
+			.send({ items })
+			.expect(201);
+
+		await request(ctx.app.getHttpServer())
+			.delete(`/v1/todos/${todoId}/comments/${parentId}`)
+			.set("Authorization", `Bearer ${user.accessToken}`)
+			.expect(200);
+
+		const retried = await request(ctx.app.getHttpServer())
+			.post(path)
+			.set("Authorization", `Bearer ${user.accessToken}`)
+			.send({ items })
+			.expect(201);
+
+		expect(retried.body.data.comments.map((comment: { id: string }) => comment.id)).toEqual(
+			first.body.data.comments.map((comment: { id: string }) => comment.id),
+		);
+	});
+
+	it("멱등 키는 최초 todo·parent·순서·content와 정확히 같은 명령에만 재사용한다", async () => {
+		const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
+		const todoId = await createTodo(user.accessToken);
+		const otherTodoId = await createTodo(user.accessToken);
+		const parentId = await writeComment(user.accessToken, todoId, "부모 댓글");
+		const items = [
+			{ clientRequestId: randomUUID(), content: "원본 하나" },
+			{ clientRequestId: randomUUID(), content: "원본 둘" },
+		];
+
+		await request(ctx.app.getHttpServer())
+			.post(`/v1/todos/${todoId}/comments`)
+			.set("Authorization", `Bearer ${user.accessToken}`)
+			.send({ items })
+			.expect(201);
+
+		const mismatchedCommands = [
+			{
+				path: `/v1/todos/${todoId}/comments`,
+				items: [items[0], { ...items[1], content: "바뀐 내용" }],
+			},
+			{ path: `/v1/todos/${todoId}/comments`, items: [...items].reverse() },
+			{ path: `/v1/todos/${todoId}/comments/${parentId}/replies`, items },
+			{ path: `/v1/todos/${otherTodoId}/comments`, items },
+		];
+
+		for (const command of mismatchedCommands) {
+			const response = await request(ctx.app.getHttpServer())
+				.post(command.path)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.send({ items: command.items })
+				.expect(400);
+
+			expect(response.body.error.code).toBe("SYS_0002");
+		}
+	});
+
+	it("한 요청 안의 중복 clientRequestId는 저장 전에 거부한다", async () => {
+		const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
+		const todoId = await createTodo(user.accessToken);
+		const clientRequestId = randomUUID();
+
+		const response = await request(ctx.app.getHttpServer())
+			.post(`/v1/todos/${todoId}/comments`)
+			.set("Authorization", `Bearer ${user.accessToken}`)
+			.send({
+				items: [
+					{ clientRequestId, content: "하나" },
+					{ clientRequestId, content: "둘" },
+				],
+			})
+			.expect(400);
+
+		expect(response.body.error.code).toBe("SYS_0002");
+	});
 });

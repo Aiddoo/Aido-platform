@@ -2,7 +2,13 @@ import { ErrorCode } from "@aido/errors";
 import type { TodoCommentLikeResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 
 import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
@@ -34,13 +40,16 @@ export class LikeTodoCommentUseCase {
 		private readonly cache: TodoCommentCachePort,
 		@Inject(TODO_COMMENT_NOTIFICATION)
 		private readonly notification: TodoCommentNotificationPort,
+		@Inject(MUTATION_LOCK)
+		private readonly mutationLock: MutationLockPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly unitOfWork: UnitOfWorkPort,
 	) {}
 
 	async execute(input: LikeTodoCommentInput): Promise<TodoCommentLikeResponse> {
-		await assertTodoCommentAccess(this.repository, input.todoId, input.userId);
 		const likeOutcome = await this.unitOfWork.run(async () => {
+			await this.mutationLock.acquire([MutationLockKeys.todoComment(input.commentId)]);
+			await assertTodoCommentAccess(this.repository, input.todoId, input.userId);
 			const [comment, senderName] = await Promise.all([
 				this.repository.findComment(input.todoId, input.commentId),
 				this.repository.findUserDisplayName(input.userId),

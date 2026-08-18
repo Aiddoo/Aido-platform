@@ -507,9 +507,9 @@ model Todo {
   commentCount Int @default(0)
 
   // 관계
-  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nudges Nudge[]
-  items  TodoItem[]
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nudges   Nudge[]
+  items    TodoItem[]
   comments TodoComment[]
   views    TodoView[]
 
@@ -537,10 +537,12 @@ model TodoComment {
   /// path의 길이 (최상위는 0)
   depth    Int      @default(0)
 
-  clientRequestId String  @db.Uuid
-  content         String? @db.VarChar(500)
+  clientRequestId    String  @db.Uuid
+  /// 멱등 키가 최초 명령과 같은 요청에만 replay되도록 보존하는 SHA-256 지문
+  requestFingerprint String? @db.Char(64)
+  content            String? @db.VarChar(500)
 
-  likeCount Int @default(0)
+  likeCount  Int @default(0)
   /// 직계 자식 수 (자손 총합이 아닙니다)
   replyCount Int @default(0)
 
@@ -549,10 +551,10 @@ model TodoComment {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  todo     Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
-  author   User @relation("todo_comment_author", fields: [authorId], references: [id], onDelete: Cascade)
-  parent   TodoComment?  @relation("todo_comment_children", fields: [parentId], references: [id], onDelete: Cascade)
-  children TodoComment[] @relation("todo_comment_children")
+  todo     Todo              @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  author   User              @relation("todo_comment_author", fields: [authorId], references: [id], onDelete: Cascade)
+  parent   TodoComment?      @relation("todo_comment_children", fields: [parentId], references: [id], onDelete: Cascade)
+  children TodoComment[]     @relation("todo_comment_children")
   likes    TodoCommentLike[]
 
   @@unique([authorId, clientRequestId])
@@ -566,15 +568,15 @@ model TodoComment {
 
 /// 좋아요 취소 후 재등록해도 최초 알림을 반복하지 않도록 행을 보존합니다.
 model TodoCommentLike {
-  commentId String
-  userId    String
-  isActive  Boolean  @default(true)
+  commentId  String
+  userId     String
+  isActive   Boolean   @default(true)
   notifiedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   comment TodoComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([commentId, userId])
   @@index([userId, isActive])
@@ -583,7 +585,7 @@ model TodoCommentLike {
 /// 로그인 사용자별 lifetime unique Todo 조회 기록입니다.
 model TodoView {
   todoId    Int
-  viewerId String
+  viewerId  String
   createdAt DateTime @default(now())
 
   todo   Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)

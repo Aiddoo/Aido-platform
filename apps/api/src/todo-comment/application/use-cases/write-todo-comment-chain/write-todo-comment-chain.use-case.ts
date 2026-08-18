@@ -2,7 +2,13 @@ import { ErrorCode } from "@aido/errors";
 import type { TodoCommentChainResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import {
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 
 import { ThreadPlacement } from "../../../domain/value-objects/thread-placement.vo";
@@ -15,6 +21,7 @@ import {
 } from "../../ports/todo-comment-notification.port";
 import {
 	TODO_COMMENT_REPOSITORY,
+	TodoCommentIdempotencyConflict,
 	type TodoCommentRepositoryPort,
 } from "../../ports/todo-comment.repository.port";
 import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../../ports/todo-view-cache.port";
@@ -49,55 +56,97 @@ export class WriteTodoCommentChainUseCase {
 		private readonly notification: TodoCommentNotificationPort,
 		@Inject(TODO_VIEW_CACHE)
 		private readonly todoViewCache: TodoViewCachePort,
+		@Inject(MUTATION_LOCK)
+		private readonly mutationLock: MutationLockPort,
 		@Inject(UNIT_OF_WORK)
 		private readonly unitOfWork: UnitOfWorkPort,
 	) {}
 
 	async execute(input: WriteTodoCommentChainInput): Promise<TodoCommentChainResponse> {
-		await assertTodoCommentAccess(this.repository, input.todoId, input.authorId);
 		const contents = input.items.map((item) => TodoCommentContent.create(item.content).getValue());
+		let outcome;
 
-		const outcome = await this.unitOfWork.run(async () => {
-			const parent =
-				input.parentId === null
-					? null
-					: await this.repository.findComment(input.todoId, input.parentId);
+		try {
+			outcome = await this.unitOfWork.run(async () => {
+				const lockKeys = input.items.map((item) =>
+					MutationLockKeys.todoCommentRequest(input.authorId, item.clientRequestId),
+				);
 
-			if (input.parentId !== null && parent === null) {
-				throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.parentId });
-			}
+				if (input.parentId !== null) {
+					lockKeys.push(MutationLockKeys.todoComment(input.parentId));
+				}
 
-			const chain = await this.repository.createCommentChain({
-				todoId: input.todoId,
-				authorId: input.authorId,
-				placement: parent === null ? ThreadPlacement.topLevel() : parent.placeReply(),
-				items: input.items.map((item, index) => ({
+				await this.mutationLock.acquire(lockKeys);
+				await assertTodoCommentAccess(this.repository, input.todoId, input.authorId);
+				const items = input.items.map((item, index) => ({
 					clientRequestId: item.clientRequestId,
 					content: contents[index] ?? "",
-				})),
-			});
+				}));
+				const replay = await this.repository.findCommentChainReplay({
+					todoId: input.todoId,
+					authorId: input.authorId,
+					parentId: input.parentId,
+					items,
+				});
 
-			if (chain.createdCount > 0) {
-				await this.repository.increaseTodoCommentCount(input.todoId, chain.createdCount);
-
-				// 직계 자식은 사슬의 첫 글 하나뿐이라, 부모의 답글 수는 길이와 무관하게 하나만 오른다.
-				if (parent !== null) {
-					await this.repository.incrementReplyCount(parent.id.getValue());
+				if (replay !== null) {
+					const first = replay[0];
+					return {
+						written: replay,
+						addedCount: 0,
+						recipientId: undefined,
+						threadRootId: first?.rootId ?? first?.id,
+					};
 				}
+
+				const parent =
+					input.parentId === null
+						? null
+						: await this.repository.findComment(input.todoId, input.parentId);
+
+				if (input.parentId !== null && parent === null) {
+					throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.parentId });
+				}
+
+				const chain = await this.repository.createCommentChain({
+					todoId: input.todoId,
+					authorId: input.authorId,
+					placement: parent === null ? ThreadPlacement.topLevel() : parent.placeReply(),
+					items,
+				});
+				if (chain.createdCount > 0) {
+					await this.repository.increaseTodoCommentCount(input.todoId, chain.createdCount);
+
+					// 직계 자식은 사슬의 첫 글 하나뿐이라, 부모의 답글 수는 길이와 무관하게 하나만 오른다.
+					if (
+						parent !== null &&
+						!(await this.repository.incrementReplyCount(parent.id.getValue()))
+					) {
+						throw new ApplicationException(ErrorCode.SYS_0003, {
+							commentId: parent.id.getValue(),
+						});
+					}
+				}
+
+				return {
+					written: chain.comments,
+					addedCount: chain.createdCount,
+					recipientId: parent === null ? chain.comments[0]?.todoOwnerId : parent.authorId,
+					threadRootId: parent === null ? chain.comments[0]?.id : parent.threadRootId.getValue(),
+				};
+			});
+		} catch (error) {
+			if (error instanceof TodoCommentIdempotencyConflict) {
+				throw new ApplicationException(ErrorCode.SYS_0002);
 			}
 
-			return {
-				written: chain.comments,
-				addedCount: chain.createdCount,
-				recipientId: parent === null ? chain.comments[0]?.todoOwnerId : parent.authorId,
-				threadRootId: parent === null ? chain.comments[0]?.id : parent.threadRootId.getValue(),
-			};
-		});
+			throw error;
+		}
 
 		const { recipientId } = outcome;
 
-		if (outcome.addedCount > 0 && recipientId !== undefined) {
-			await settleAfterCommit(this.#logger, [
+		if (outcome.addedCount > 0) {
+			const tasks = [
 				{
 					label: "comment first pages cache",
 					run: () => this.cache.invalidateTopLevelFirstPages(input.todoId),
@@ -106,7 +155,10 @@ export class WriteTodoCommentChainUseCase {
 					label: "todo view cache",
 					run: () => this.todoViewCache.invalidateForTodo(input.todoId),
 				},
-				{
+			];
+
+			if (recipientId !== undefined) {
+				tasks.push({
 					label: "comment notification",
 					run: () =>
 						this.notification.notifyCommentsWritten({
@@ -119,8 +171,10 @@ export class WriteTodoCommentChainUseCase {
 							isReply: input.parentId !== null,
 							count: outcome.addedCount,
 						}),
-				},
-			]);
+				});
+			}
+
+			await settleAfterCommit(this.#logger, tasks);
 		}
 
 		return {

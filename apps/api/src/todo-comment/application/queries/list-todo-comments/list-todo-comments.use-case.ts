@@ -37,11 +37,11 @@ export class ListTodoCommentsUseCase {
 
 		const isCacheable =
 			input.cursor === undefined && input.size === TODO_COMMENT_LIMITS.DEFAULT_PAGE_SIZE;
-		const cachedPage = isCacheable
-			? await this.cache.getTopLevelFirstPage(input.todoId, input.sort)
+		const cacheRead = isCacheable
+			? await this.cache.readTopLevelFirstPage(input.todoId, input.sort)
 			: undefined;
 		const page =
-			cachedPage ??
+			cacheRead?.page ??
 			(await this.repository.listComments({
 				todoId: input.todoId,
 				parentId: null,
@@ -50,8 +50,13 @@ export class ListTodoCommentsUseCase {
 				cursor: decodeTodoCommentCursor(input.cursor, input.sort),
 			}));
 
-		if (isCacheable && cachedPage === undefined) {
-			await this.cache.setTopLevelFirstPage(input.todoId, input.sort, page);
+		if (cacheRead !== undefined && cacheRead.page === undefined) {
+			await this.cache.storeTopLevelFirstPageIfCurrent(
+				input.todoId,
+				input.sort,
+				cacheRead.generation,
+				page,
+			);
 		}
 
 		// 좋아요 여부는 캐시에 담지 않고 미리보기까지 한 번의 조회로 붙인다.
