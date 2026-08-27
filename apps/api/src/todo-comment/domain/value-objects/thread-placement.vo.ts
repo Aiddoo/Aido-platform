@@ -75,7 +75,7 @@ export class ThreadPlacement extends ValueObject<ThreadPlacementProps> {
 	}
 
 	get path(): readonly string[] {
-		return this.value.path;
+		return [...this.value.path];
 	}
 
 	/** 뿌리에서 이 댓글까지의 깊이. 최상위는 0이다. */

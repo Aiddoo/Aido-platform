@@ -2,28 +2,78 @@
   "format_on_save": "on",
   "languages": {
     "TypeScript": {
-      "formatter": "language_server",
-      "language_servers": ["oxlint", "oxfmt", "vtsls", "!typescript-language-server"],
+      "formatter": { "language_server": { "name": "oxfmt" } },
+      "language_servers": [
+        "oxlint",
+        "oxfmt",
+        "vtsls",
+        "!biome",
+        "!eslint",
+        "!deno",
+        "!typescript-language-server",
+        "!typescript-ls",
+        "..."
+      ],
       "code_actions_on_format": {
         "source.fixAll.oxc": true,
         "source.organizeImports": false
       }
     },
     "TSX": {
-      "formatter": "language_server",
-      "language_servers": ["oxlint", "oxfmt", "vtsls", "!typescript-language-server"],
+      "formatter": { "language_server": { "name": "oxfmt" } },
+      "language_servers": [
+        "oxlint",
+        "oxfmt",
+        "vtsls",
+        "!biome",
+        "!eslint",
+        "!deno",
+        "!typescript-language-server",
+        "!typescript-ls",
+        "..."
+      ],
       "code_actions_on_format": {
         "source.fixAll.oxc": true,
         "source.organizeImports": false
       }
     },
     "JavaScript": {
-      "formatter": "language_server",
-      "language_servers": ["oxlint", "oxfmt"]
+      "formatter": { "language_server": { "name": "oxfmt" } },
+      "language_servers": [
+        "oxlint",
+        "oxfmt",
+        "vtsls",
+        "!biome",
+        "!eslint",
+        "!deno",
+        "!typescript-language-server",
+        "!typescript-ls",
+        "..."
+      ],
+      "code_actions_on_format": {
+        "source.fixAll.oxc": true,
+        "source.organizeImports": false
+      }
+    },
+    "JSX": {
+      "formatter": { "language_server": { "name": "oxfmt" } },
+      "language_servers": ["oxlint", "oxfmt", "!biome", "!eslint", "..."],
+      "code_actions_on_format": {
+        "source.fixAll.oxc": true,
+        "source.organizeImports": false
+      }
     },
     "JSON": {
-      "formatter": "language_server",
-      "language_servers": ["oxfmt"]
+      "formatter": { "language_server": { "name": "oxfmt" } },
+      "language_servers": ["oxfmt", "!biome", "!eslint", "..."]
+    },
+    "JSONC": {
+      "formatter": { "language_server": { "name": "oxfmt" } },
+      "language_servers": ["oxfmt", "!biome", "!eslint", "..."]
+    },
+    "CSS": {
+      "formatter": { "language_server": { "name": "oxfmt" } },
+      "language_servers": ["oxfmt", "!biome", "!eslint", "..."]
     }
   }
 }

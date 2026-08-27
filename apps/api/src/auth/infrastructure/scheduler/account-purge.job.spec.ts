@@ -22,8 +22,10 @@ import {
 	ACCOUNT_PURGE_QUEUE,
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
+import { NotificationAccountCleanup } from "@/notification";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import { TodoCommentAccountCleanup } from "@/todo-comment";
 
 import { AccountPurgeJob } from "./account-purge.job";
 
@@ -34,6 +36,8 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 	let uow: Mocked<UnitOfWorkPort>;
 	let runtime: Mocked<JobRuntimePort>;
 	let mockProcessor: Mocked<AccountPurgeProcessor>;
+	let notificationCleanup: Mocked<NotificationAccountCleanup>;
+	let todoCommentCleanup: Mocked<TodoCommentAccountCleanup>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(AccountPurgeJob)
@@ -50,6 +54,12 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		uow = unitRef.get(UNIT_OF_WORK);
 		runtime = unitRef.get(JOB_RUNTIME);
 		mockProcessor = unitRef.get(AccountPurgeProcessor);
+		notificationCleanup = unitRef.get(NotificationAccountCleanup);
+		todoCommentCleanup = unitRef.get(TodoCommentAccountCleanup);
+		notificationCleanup.cleanupInTransaction.mockResolvedValue({ affectedUserIds: [] });
+		notificationCleanup.settleAfterCommit.mockResolvedValue(undefined);
+		todoCommentCleanup.cleanupInTransaction.mockResolvedValue({ affectedTodoIds: [] });
+		todoCommentCleanup.settleAfterCommit.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -172,6 +182,44 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			}),
 		);
 		expect(userRepo.hardDelete).toHaveBeenCalledWith("user-1");
+		expect(notificationCleanup.cleanupInTransaction).toHaveBeenCalledWith("user-1");
+		expect(notificationCleanup.settleAfterCommit).toHaveBeenCalledWith({ affectedUserIds: [] });
+		expect(todoCommentCleanup.cleanupInTransaction).toHaveBeenCalledWith("user-1");
+		expect(todoCommentCleanup.settleAfterCommit).toHaveBeenCalledWith({ affectedTodoIds: [] });
+
+		const notificationCleanupOrder =
+			notificationCleanup.cleanupInTransaction.mock.invocationCallOrder[0] ?? 0;
+		const cleanupOrder = todoCommentCleanup.cleanupInTransaction.mock.invocationCallOrder[0] ?? 0;
+		const hardDeleteOrder = userRepo.hardDelete.mock.invocationCallOrder[0] ?? 0;
+		const notificationSettleOrder =
+			notificationCleanup.settleAfterCommit.mock.invocationCallOrder[0] ?? 0;
+		const cacheSettleOrder = todoCommentCleanup.settleAfterCommit.mock.invocationCallOrder[0] ?? 0;
+		expect(notificationCleanupOrder).toBeLessThan(cleanupOrder);
+		expect(cleanupOrder).toBeLessThan(hardDeleteOrder);
+		expect(hardDeleteOrder).toBeLessThan(notificationSettleOrder);
+		expect(hardDeleteOrder).toBeLessThan(cacheSettleOrder);
+	});
+
+	it("댓글 정리가 실패하면 User hard delete와 보안 로그를 실행하지 않는다", async () => {
+		// Given
+		userRepo.findSoftDeletedForPurge.mockResolvedValue([
+			{
+				id: "user-1",
+				email: "user1@example.com",
+				deletedAt: new Date("2025-01-01"),
+			},
+		]);
+		uow.run.mockImplementation((work) => work());
+		todoCommentCleanup.cleanupInTransaction.mockRejectedValue(new Error("cleanup failed"));
+
+		// When
+		await job.purgeDeletedAccounts();
+
+		// Then
+		expect(userRepo.hardDelete).not.toHaveBeenCalled();
+		expect(notificationCleanup.settleAfterCommit).not.toHaveBeenCalled();
+		expect(todoCommentCleanup.settleAfterCommit).not.toHaveBeenCalled();
+		expect(securityLogRepo.create).not.toHaveBeenCalled();
 	});
 
 	it("삭제 대상이 없으면 아무것도 하지 않는다", async () => {

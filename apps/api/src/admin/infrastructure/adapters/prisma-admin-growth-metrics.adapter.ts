@@ -55,6 +55,11 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 					app_user."createdAt"
 				FROM "User" AS app_user
 				WHERE app_user."deletedAt" IS NULL
+					AND EXISTS (
+						SELECT 1
+						FROM "Account" AS account
+						WHERE account."userId" = app_user."id"
+					)
 					AND app_user."createdAt" >=
 						${input.cohortFrom}::DATE - INTERVAL '14 hours'
 					AND app_user."createdAt" <

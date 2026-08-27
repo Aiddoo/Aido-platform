@@ -1,6 +1,6 @@
 # API Architecture
 
-> Version 6.0.0 · Updated 2026-08-14 · Owner: Aido Platform Team
+> Version 6.1.0 · Updated 2026-08-26 · Owner: Aido Platform Team
 
 이 문서는 Aido API의 구조적 결정만 설명한다. 코드 작성 형식은 [api-conventions.md](./api-conventions.md), 저장소와 트랜잭션은 [prisma.md](./prisma.md), 테스트는 [testing-guide.md](./testing-guide.md)를 따른다.
 
@@ -140,16 +140,20 @@ commit
 참조:
 
 - `todo/infrastructure/cache/todo-cache.keyspace.ts`
-- `todo-comment/infrastructure/cache/todo-comment-cache.keyspace.ts`
 - `weather/infrastructure/cache/weather-cache.keyspace.ts`
 - `notification/infrastructure/cache/notification-cache.keyspace.ts`
 
-### 댓글 캐시 결정
+### 댓글 읽기 모델 결정
 
-- 댓글은 필터 조합 전체를 캐시하지 않는다. 기본 크기의 첫 페이지만 캐시한다.
-- `POPULAR`은 10초, `LATEST`는 30초로 제한해 쓰기 빈도가 높은 화면에서 오래된 목록이 장기 노출되지 않게 한다.
-- 사용자별 좋아요 여부는 공유 캐시에 넣지 않고 한 번의 `IN` 조회로 결합한다.
-- 댓글 쓰기 후에는 알려진 두 키를 직접 병렬 삭제한다. 제한된 키에 `SCAN` 또는 pattern invalidation을 사용하지 않는다.
+- 댓글 overview와 flat conversation은 Redis에 캐시하지 않는다. root 인기 순위, 양방향 cursor,
+  focus window, viewer 좋아요가 함께 변해 공유 payload의 무효화 범위가 지나치게 넓다.
+- overview는 root keyset을 한 번 읽고 선택된 root의 preview·표시 가능한 descendant 수·참여자를
+  한 번의 재귀 집계로 읽는다. page size는 root 수이며 root별 추가 조회를 만들지 않는다.
+- `PrismaTodoCommentReader`가 root block 정렬과 parent-before-child DFS를 재귀 CTE 한 번으로
+  계산하고, 요청한 window와 앞뒤 경계 한 행만 반환한다.
+- 사용자별 좋아요 여부는 page 전체 comment ID를 한 번의 `IN` 조회로 결합한다.
+- comment mutation은 별도 comment cache invalidation을 하지 않는다. Todo의 공유 지표가 바뀐
+  경우에만 기존 Todo view cache를 커밋 뒤 best-effort로 정리한다.
 
 ## 8. Queue와 background job
 
@@ -229,19 +233,39 @@ GET /v1/todos/:todoId/details
   → 비소유자 조회를 (todoId, viewerId) unique key로 멱등 기록
   → 같은 transaction에서 최신 viewCount 반환
 
-GET /v1/todos/:todoId/comments
-  → opaque cursor 해석
-  → root + reply preview 관계 조회
-  → page 전체 comment ID의 viewer like를 단일 IN 조회
+GET /v1/todos/:todoId/comments/overview
+  → LATEST/POPULAR root keyset page 조회
+  → 선택된 root 전체의 owner 우선 direct reply preview와 descendant summary를 한 번에 집계
+  → root·preview viewer like를 단일 IN 조회
 
-comment/reply/like mutation
+GET /v1/todos/:todoId/conversation
+  → todoId·sort·commentId·threadId·scope를 묶은 opaque cursor 검증
+  → focus가 있으면 실제 thread를 resolve하고 그 root block 안에서만 parent-before-child DFS 조회
+  → recursive reader가 page 밖 sibling·cousin까지 보고 각 행을 통과하는 조상 lane depth를 계산
+  → 요청 window와 앞뒤 경계 한 행 반환
+  → presenter가 visualDepth·상하 lane·부모 branch로 완성된 connection topology와 isFocused를 계산
+  → page와 focus 조상 전체의 viewer like를 단일 IN 조회
+
+unified comment/like mutation
   → Aggregate 권한·삭제 상태 검증
   → counter와 상태를 transaction에서 반영
 commit
-  → 두 정렬 캐시 병렬 무효화 + 기존 NotificationSender 호출
+  → Todo 지표 cache 정리 + 기존 NotificationSender 호출
 ```
 
 - 별도 조회수 기록 endpoint는 두지 않는다. 상세 GET 재시도·prefetch는 DB unique constraint로 중복 집계되지 않는다.
 - 상위 댓글 삭제는 soft delete다. 본문과 작성자 표시는 제거하되 답글은 유지한다.
-- cursor는 클라이언트가 정렬 컬럼을 조립하지 못하도록 버전·정렬을 포함한 opaque 값으로 제공한다.
-- 댓글 알림은 구버전 앱이 이미 아는 `TODO_SHARED` 타입을 유지하고, 최신 앱만 Zod로 검증한 comment context를 해석한다.
+- cursor는 클라이언트가 정렬 컬럼을 조립하거나 점수 snapshot을 바꾸지 못하도록 HMAC으로 서명한다.
+  버전·종류·정렬·todo·comment·thread·조회 범위를 포함하며, focus thread에서 만든 cursor는 다음·이전 page도 다른 root로
+  넘어가지 않는다. 없는 focus와 삭제된 leaf focus는 빈 대화로 복구하고, 잘못된 before/after는 거부한다.
+- 후손 때문에 보존된 삭제 조상 focus는 같은 thread 문맥을 보여 주되 focus 표시는 하지 않는다.
+- connection의 lane 배열은 음수가 없는 중복 제거 오름차순이다. 첫 행의 부모 branch와 마지막 행에서
+  page 밖 직계 자식으로 내려가는 lane도 서버가 완성하므로 클라이언트는 인접 행이나 tree를 추론하지 않는다.
+- overview의 `totalCount`는 살아 있는 descendant와 살아 있는 후손을 가진 삭제 묘비를 센다.
+  `previewReply`는 살아 있는 direct reply 중 Todo owner를 우선하고, 없으면 createdAt·id 오름차순 첫 행이다.
+- `POPULAR`은 실시간 순위다. cursor는 경계 thread의 점수 snapshot을 이어 받아 그 thread의 중복과
+  누락을 막지만, 아직 보지 않은 다른 root가 경계를 넘어 상승하면 현재 traversal에는 나타나지 않을
+  수 있다. 새 순위는 pull refresh로 처음부터 읽는다. 완전히 반복 가능한 탐색이 필요해질 때만 별도
+  ranking snapshot/session을 도입한다.
+- 댓글 알림은 구버전 앱이 이미 아는 `TODO_SHARED` 타입을 유지한다. 서버는 모바일 내부 route를 `actionUrl`에 넣지 않고 `senderId`를 metadata에 넣어 계정 purge 시 body에 복사된 이름까지 찾아 지울 수 있게 한다. DB CHECK는 comment metadata가 있는 행의 URL 저장과 senderId 누락을 막는다. 1.8.2는 타입 기본 목적지로 안전하게 이동하고, 최신 앱만 Zod로 검증한 comment metadata를 해석한다.
+- 계정 hard purge는 알림·댓글 bounded context의 공개 cleanup capability를 같은 UoW에서 먼저 호출한다. 다른 사용자의 알림에 복사된 발신자 이름을 제거하고, 작성 댓글은 묘비로 남기고 counter와 좋아요를 정산한 뒤 개인정보가 없는 잠긴 시스템 작성자로 재귀속한다. `authorId`와 relation은 NOT NULL이라 직전 API로 롤백해도 역참조가 깨지지 않는다. 재귀속할 때 더는 replay하지 않을 멱등 키도 새 UUID로 바꿔 여러 사용자의 키가 충돌하지 않게 한다. `User` FK의 `RESTRICT`는 이 정리가 빠졌을 때 hard delete를 막는 마지막 안전망이다.

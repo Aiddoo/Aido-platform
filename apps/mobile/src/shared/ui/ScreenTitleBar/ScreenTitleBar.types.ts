@@ -9,4 +9,8 @@ export interface ScreenTitleBarProps {
   trailing?: ReactNode;
   /** 뒤로가기를 눌렀을 때. 기본은 이전 화면으로 돌아간다. */
   onBackPress?: () => void;
+  /** 뒤로가기가 현재 화면 안의 상태만 닫을 때 설명하는 접근성 이름 */
+  backAccessibilityLabel?: string;
+  /** 저장 중처럼 현재 화면을 벗어나면 안 될 때 뒤로가기를 잠근다. */
+  isBackDisabled?: boolean;
 }

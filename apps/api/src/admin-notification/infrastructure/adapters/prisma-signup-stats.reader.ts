@@ -25,7 +25,8 @@ export class PrismaSignupStatsReader implements SignupStatsReaderPort {
 			_count: true,
 		});
 
-		const totalUsers = await this.database.user.count();
+		// 플랫폼 내부 FK용 사용자는 가입자가 아니다. 실제 인증 계정이 생긴 사용자만 센다.
+		const totalUsers = await this.database.user.count({ where: { accounts: { some: {} } } });
 
 		return {
 			signupsByProvider: signupsByProvider.map((group) => ({

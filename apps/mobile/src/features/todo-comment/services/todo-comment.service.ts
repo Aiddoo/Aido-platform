@@ -1,13 +1,14 @@
 import {
   type CreateTodoCommentChainInput,
-  type GetTodoCommentsQuery,
+  type GetTodoCommentOverviewQuery,
+  type GetTodoConversationQuery,
   type UpdateTodoCommentInput,
   deleteTodoCommentResponseSchema,
-  paginatedTodoCommentsSchema,
   todoCommentChainResponseSchema,
   todoCommentLikeResponseSchema,
   todoCommentMutationResponseSchema,
-  todoCommentThreadResponseSchema,
+  todoCommentOverviewResponseSchema,
+  todoConversationResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -18,25 +19,18 @@ import type {
   TodoComment,
   TodoCommentChain,
   TodoCommentLikeResult,
-  TodoCommentPage,
-  TodoCommentThread,
+  TodoCommentOverviewPage,
+  TodoConversationPage,
 } from '../models/todo-comment.model';
 import {
   toDeletedCommentId,
   toMutatedComment,
   toTodoCommentChain,
   toTodoCommentLikeResult,
-  toTodoCommentPage,
-  toTodoCommentThread,
+  toTodoCommentOverviewPage,
+  toTodoConversationPage,
 } from './todo-comment.mapper';
 
-/** 부모가 없으면 할 일에 바로 달리고, 있으면 그 댓글의 답글이 된다. */
-const commentsPath = (todoId: number, parentId: string | null) =>
-  parentId === null
-    ? `v1/todos/${todoId}/comments`
-    : `v1/todos/${todoId}/comments/${parentId}/replies`;
-
-/** 댓글 HTTP 경계. 호출 + Zod 검증 + 도메인 변환까지가 이 레이어의 책임이다. */
 export class TodoCommentService {
   readonly #httpClient: HttpClient;
 
@@ -44,56 +38,55 @@ export class TodoCommentService {
     this.#httpClient = httpClient;
   }
 
-  /** parentId가 없으면 최상위 댓글, 있으면 그 댓글의 직계 답글. 응답 모양은 같다. */
-  getComments = async (
+  getOverview = async (
     todoId: number,
-    parentId: string | null,
-    query: GetTodoCommentsQuery,
-  ): Promise<Result<TodoCommentPage, ApiError>> => {
-    const response = await this.#httpClient.get<unknown>(commentsPath(todoId, parentId), {
+    query: GetTodoCommentOverviewQuery,
+    signal?: AbortSignal,
+  ): Promise<Result<TodoCommentOverviewPage, ApiError>> => {
+    const response = await this.#httpClient.get<unknown>(`v1/todos/${todoId}/comments/overview`, {
       params: query,
+      signal,
     });
 
     if (!response.ok) {
       return response;
     }
 
-    const parsed = paginatedTodoCommentsSchema.safeParse(response.value);
+    const parsed = todoCommentOverviewResponseSchema.safeParse(response.value);
     if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid comments: ${parsed.error.message}`);
+      throw new ParseError(`[TodoCommentService] Invalid overview: ${parsed.error.message}`);
     }
 
-    return ok(toTodoCommentPage(parsed.data));
+    return ok(toTodoCommentOverviewPage(parsed.data));
   };
 
-  /** 스레드 머리말 — 조상 사슬과 지금 보는 댓글. 정렬과 무관해 한 번 받으면 오래 산다. */
-  getThread = async (
+  getConversation = async (
     todoId: number,
-    commentId: string,
-  ): Promise<Result<TodoCommentThread, ApiError>> => {
-    const response = await this.#httpClient.get<unknown>(
-      `v1/todos/${todoId}/comments/${commentId}/thread`,
-    );
+    query: GetTodoConversationQuery,
+    signal?: AbortSignal,
+  ): Promise<Result<TodoConversationPage, ApiError>> => {
+    const response = await this.#httpClient.get<unknown>(`v1/todos/${todoId}/conversation`, {
+      params: query,
+      signal,
+    });
 
     if (!response.ok) {
       return response;
     }
 
-    const parsed = todoCommentThreadResponseSchema.safeParse(response.value);
+    const parsed = todoConversationResponseSchema.safeParse(response.value);
     if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid comment thread: ${parsed.error.message}`);
+      throw new ParseError(`[TodoCommentService] Invalid conversation: ${parsed.error.message}`);
     }
 
-    return ok(toTodoCommentThread(parsed.data));
+    return ok(toTodoConversationPage(parsed.data));
   };
 
-  /** 하나든 여럿이든 같은 계약으로 보낸다 — 여러 개면 앞 글의 답글로 이어진다. */
   writeComments = async (
     todoId: number,
-    parentId: string | null,
     input: CreateTodoCommentChainInput,
   ): Promise<Result<TodoCommentChain, ApiError>> => {
-    const response = await this.#httpClient.post<unknown>(commentsPath(todoId, parentId), input);
+    const response = await this.#httpClient.post<unknown>(`v1/todos/${todoId}/comments`, input);
 
     if (!response.ok) {
       return response;
@@ -159,7 +152,6 @@ export class TodoCommentService {
     return ok(toTodoCommentLikeResult(parsed.data));
   };
 
-  /** 작성·수정이 같은 응답 계약을 쓰므로 검증과 변환도 한 곳에 둔다. */
   #toMutatedComment = (
     response: Result<unknown, ApiError>,
     operation: string,

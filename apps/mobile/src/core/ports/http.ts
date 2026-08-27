@@ -5,6 +5,8 @@ export interface RequestConfig {
   params?: Record<string, string | number | boolean | undefined>;
   headers?: Record<string, string>;
   timeout?: number;
+  /** React Query 같은 호출자가 취소 소유권을 transport까지 전달한다. */
+  signal?: AbortSignal;
   body?: unknown;
 }
 

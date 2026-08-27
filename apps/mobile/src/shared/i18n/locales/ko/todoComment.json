@@ -1,50 +1,71 @@
 {
+  "screen": {
+    "replyTitle": "답글 달기",
+    "backToOverview": "댓글 목록으로 돌아가기",
+    "backToThread": "대화로 돌아가기",
+    "closeComposer": "댓글 작성 닫기"
+  },
   "list": {
-    "moreReplies": "답글 {{count}}개 보기",
     "edited": "수정됨",
     "authorBadge": "작성자",
     "deleted": "삭제된 댓글이에요",
     "unknownUser": "알 수 없음",
     "emptyTitle": "아직 댓글이 없어요",
     "emptyDescription": "첫 댓글을 남겨보세요",
-    "loadFailed": "댓글을 불러오지 못했어요"
+    "loadFailed": "댓글을 불러오지 못했어요",
+    "focusedAnnouncement": "선택한 댓글로 이동했어요",
+    "repliedTo": "{{name}}님에게 남긴 답글",
+    "earlierContextCount": "이 답글 앞에 댓글 {{count}}개가 더 있어요",
+    "sending": "전송 중…",
+    "sendingAnnouncement": "댓글을 전송하고 있어요",
+    "loadingEarlier": "이전 댓글을 불러오는 중",
+    "loadingMore": "다음 댓글을 불러오는 중"
+  },
+  "overview": {
+    "viewReplies": "답글 {{count}}개 보기"
   },
   "sort": {
+    "label": "댓글 정렬 기준, {{value}}",
     "popular": "인기순",
     "latest": "최신순"
   },
   "input": {
-    "placeholder": "댓글 달기...",
-    "replyPlaceholder": "답글 달기...",
+    "placeholder": "댓글 달기…",
+    "replyPlaceholder": "답글 달기…",
+    "replyUnavailable": "이 댓글에는 더 이상 답글을 남길 수 없어요",
+    "editUnavailable": "이 댓글은 수정할 수 없어요. 댓글 화면으로 돌아가 주세요",
     "commentingDisabled": "댓글을 남길 수 없는 할 일이에요",
-    "replyingDisabled": "삭제된 댓글에는 답글을 달 수 없어요",
-    "editingComment": "댓글 수정 중",
     "editPlaceholder": "댓글을 수정해요",
     "replyingTo": "{{name}}님에게 답글 남기는 중"
   },
-  "thread": {
-    "title": "답글",
-    "openTodo": "원본 할 일 보기",
-    "checklistProgress": "{{completed}}/{{total}} 완료",
-    "emptyRepliesTitle": "아직 답글이 없어요",
-    "emptyRepliesDescription": "첫 답글을 남겨보세요",
-    "originLabel": "댓글이 달린 할 일",
-    "moreChecklistItems": "외 {{count}}개"
-  },
   "actions": {
-    "openThread": "답글 보기",
     "edit": "수정",
     "delete": "삭제",
     "save": "저장",
     "cancel": "취소",
-    "reply": "답글 달기"
+    "openConversation": "댓글 대화 열기",
+    "replyWithCount": "{{name}}님에게 답글 달기, 답글 {{count}}개",
+    "likeWithCount": "좋아요, {{count}}개",
+    "unlikeWithCount": "좋아요 취소, {{count}}개",
+    "more": "댓글 작업 더 보기"
   },
   "composer": {
     "commentTitle": "댓글",
     "replyTitle": "답글",
-    "addToChain": "답글 또 달기",
+    "addToChain": "댓글 더 이어 쓰기",
+    "chainPlaceholder": "이어 쓸 댓글…",
     "post": "게시",
     "editingComment": "댓글 수정 중",
-    "repliedTo": "{{name}}님에게 남긴 답글"
+    "remove": "삭제",
+    "removeFromChain": "{{index}}번째 이어 쓸 댓글 삭제",
+    "inputLabel": "댓글 {{index}}/{{count}} 입력"
+  },
+  "toasts": {
+    "writeFailed": "댓글을 등록하지 못했어요. 다시 시도해 주세요",
+    "updateFailed": "댓글을 수정하지 못했어요. 다시 시도해 주세요",
+    "deleteFailed": "댓글을 삭제하지 못했어요. 다시 시도해 주세요",
+    "likeFailed": "좋아요를 반영하지 못했어요. 다시 시도해 주세요",
+    "openConversationFailed": "댓글 대화를 열지 못했어요. 잠시 후 다시 눌러 주세요",
+    "finishComposerFirst": "작성 중인 댓글을 게시하거나 취소한 뒤 이동해 주세요"
   }
 }

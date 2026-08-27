@@ -52,7 +52,7 @@ SubTodoList.Item = function Item({
 }: SubTodoListItemProps) {
   return (
     <TodoRow
-      left={<TodoCheckbox isChecked={isChecked} onCheckedChange={onCheckedChange} />}
+      left={<TodoCheckbox isSelected={isChecked} onSelectedChange={onCheckedChange} />}
       top={<TodoLabel isChecked={isChecked}>{label}</TodoLabel>}
       right={
         <PressableFeedback onPress={onMorePress} hitSlop={8}>

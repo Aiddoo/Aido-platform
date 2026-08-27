@@ -121,6 +121,26 @@ push(main) ─→ CI (lint / test / build / docker*)   * arm64 러너에서 이�
 | 헬스 게이트 | 90초 내 Docker HEALTHCHECK `healthy` **AND** `/health` 연속 3회 성공, 실패 시 자동 롤백                                                                                                                                     |
 | 정리        | dangling 이미지 + 캐시 6GB 초과분만 (**`-a` prune 금지** — 롤백 이미지가 삭제됨)                                                                                                                                            |
 
+댓글 cursor 형식을 바꾸는 배포는 서로 다른 API 버전을 동시에 서비스하지 않는다. 현재 단일 API
+컨테이너 교체 방식은 이 조건을 만족한다. 해당 배포를 이전 이미지로 롤백하면 이미 발급된 새 형식 cursor는
+`SYS_0002`로 거부되며, 클라이언트는 첫 페이지부터 다시 조회한다.
+
+댓글 알림 경로·개인정보 전환 migration은 `NOT VALID` 제약을 먼저 공개해 구 API가 깨진 URL이나
+senderId 없는 댓글 알림을 새로 쓰지 못하게 한 뒤 기존 행을 보정한다. COMMENT·REPLY는 댓글 작성자로
+senderId를 복구하고, 보낸 사람을 안전하게 알 수 없는 기존 LIKE와 orphan 알림은 제거한다. migration과 API 교체
+사이에는 구 API의 해당 알림 저장이 거부될 수
+있어 댓글 활동 알림이 일부 생략될 수 있지만, 댓글 쓰기 transaction과 다른 알림은 유지된다. 무손실 전환이
+필요하면 URL 없는 알림 writer를 먼저 배포하고 다음 릴리스에서 제약과 backfill을 적용하는 2단계 배포를 쓴다.
+
+계정 purge는 삭제된 댓글을 NULL 작성자로 만들지 않는다. migration이 개인정보와 로그인 수단이 없는
+LOCKED 시스템 작성자를 만들고, cleanup이 묘비 댓글을 그 작성자로 옮긴 뒤 원 계정을 삭제한다.
+`TodoComment.authorId`와 relation은 계속 NOT NULL이므로 migration 뒤 직전 API 이미지로 롤백해도
+기존 required relation 조회가 안전하다. 시스템 작성자는 deletedAt·인증 Account 없이 LOCKED 상태를
+유지해 purge·복구·검색·추천·가입 통계 대상에서 제외되고, 화면에서는 댓글의 deletedAt이 작성자와 본문을 숨긴다.
+계정 purge가 알림 전체를 반복 스캔하지 않도록 friendId와 metadata.senderId cleanup index는 각각 별도
+`CREATE INDEX CONCURRENTLY` migration으로 배포한다. 두 migration은 재시도와 쓰기 잠금 범위를 분리하려고
+파일당 statement 하나만 둔다. 알림 90일 보관 정책의 주기 실행은 계정 purge와 별도 운영 과제로 관리한다.
+
 ### 3.3 디스크·캐시 관리
 
 모든 성장 벡터에 상한을 걸어 "디스크 꽉 참" 자체를 방지한다:

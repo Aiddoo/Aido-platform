@@ -21,6 +21,7 @@ import {
 } from "./application/ports/push-rate-limiter.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
 import { NotificationSender } from "./application/senders/notification.sender";
+import { NotificationAccountCleanup } from "./application/services/notification-account-cleanup";
 import { DispatchBatchNotificationUseCase } from "./application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "./application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
@@ -120,6 +121,7 @@ import { NotificationController } from "./presentation/notification.controller";
 		// Repository (포트 바인딩)
 		NotificationRepository,
 		{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
+		NotificationAccountCleanup,
 		HmacMarketingPushOptOutTokenAdapter,
 		{
 			provide: MARKETING_PUSH_OPT_OUT_TOKEN,
@@ -164,6 +166,7 @@ import { NotificationController } from "./presentation/notification.controller";
 	],
 	exports: [
 		NotificationSender,
+		NotificationAccountCleanup,
 		NotificationQueueModule,
 		PUSH_PROVIDER,
 		PUSH_RATE_LIMITER,

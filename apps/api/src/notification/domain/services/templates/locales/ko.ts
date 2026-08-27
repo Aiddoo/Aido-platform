@@ -1,4 +1,3 @@
-import type { NotificationType } from "../../../types/notification-type";
 import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
 
 export const SOCIAL_SENDER_FALLBACK = "친구";
@@ -287,7 +286,7 @@ export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
 		title: "☀️ 오늘 {skyLabel}, {tempMin}~{tempMax}°C",
 		body: "할 일 해치우기 딱 좋은 날씨야",
-		type: "WEATHER_MORNING" as NotificationType,
+		type: "WEATHER_MORNING",
 		variants: [
 			{
 				title: "☀️ 오늘 {skyLabel}, {tempMin}~{tempMax}°C",
@@ -302,7 +301,7 @@ export const WEATHER_TEMPLATES = {
 	MORNING_RAIN: {
 		title: "☔ 오늘 비 소식, 확률 {precipProb}%",
 		body: "우산 꼭 챙기자! {tempMin}~{tempMax}°C",
-		type: "WEATHER_MORNING" as NotificationType,
+		type: "WEATHER_MORNING",
 		variants: [
 			{
 				title: "☔ 오늘 비 소식, 확률 {precipProb}%",
@@ -317,7 +316,7 @@ export const WEATHER_TEMPLATES = {
 	MORNING_SNOW: {
 		title: "❄️ 오늘 눈 소식, 확률 {precipProb}%",
 		body: "따뜻하게 입고 나가자! {tempMin}~{tempMax}°C",
-		type: "WEATHER_MORNING" as NotificationType,
+		type: "WEATHER_MORNING",
 		variants: [
 			{
 				title: "❄️ 오늘 눈 소식, 확률 {precipProb}%",
@@ -332,7 +331,7 @@ export const WEATHER_TEMPLATES = {
 	EVENING_CLEAR: {
 		title: "🌙 내일 {skyLabel}, {tempMin}~{tempMax}°C",
 		body: "내일 할 일 미리 정해두면 아침이 편해",
-		type: "WEATHER_EVENING" as NotificationType,
+		type: "WEATHER_EVENING",
 		variants: [
 			{
 				title: "🌙 내일 {skyLabel}, {tempMin}~{tempMax}°C",
@@ -347,7 +346,7 @@ export const WEATHER_TEMPLATES = {
 	EVENING_RAIN: {
 		title: "☔ 내일 비 올 확률 {precipProb}%",
 		body: "우산 미리 챙겨두자! {tempMin}~{tempMax}°C",
-		type: "WEATHER_EVENING" as NotificationType,
+		type: "WEATHER_EVENING",
 		variants: [
 			{
 				title: "☔ 내일 비 올 확률 {precipProb}%",
@@ -362,7 +361,7 @@ export const WEATHER_TEMPLATES = {
 	EVENING_SNOW: {
 		title: "❄️ 내일 눈 올 확률 {precipProb}%",
 		body: "포근하게 입고, 할 일은 실내 위주로! {tempMin}~{tempMax}°C",
-		type: "WEATHER_EVENING" as NotificationType,
+		type: "WEATHER_EVENING",
 		variants: [
 			{
 				title: "❄️ 내일 눈 올 확률 {precipProb}%",

@@ -3,16 +3,18 @@ import { Module } from "@nestjs/common";
 import { NotificationModule } from "@/notification";
 import { TodoModule } from "@/todo";
 
-import { TODO_COMMENT_CACHE } from "./application/ports/todo-comment-cache.port";
+import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "./application/ports/todo-comment-account-cleanup.store.port";
+import { TODO_COMMENT_CURSOR_CODEC } from "./application/ports/todo-comment-cursor-codec.port";
 import { TODO_COMMENT_NOTIFICATION } from "./application/ports/todo-comment-notification.port";
+import { TODO_COMMENT_READER } from "./application/ports/todo-comment.reader.port";
 import { TODO_COMMENT_REPOSITORY } from "./application/ports/todo-comment.repository.port";
 import { TODO_VIEW_CACHE } from "./application/ports/todo-view-cache.port";
 import {
-	GetTodoCommentThreadUseCase,
+	GetTodoCommentOverviewUseCase,
+	GetTodoConversationUseCase,
 	GetTodoDetailsUseCase,
-	ListTodoCommentRepliesUseCase,
-	ListTodoCommentsUseCase,
 } from "./application/queries";
+import { TodoCommentAccountCleanup } from "./application/services/todo-comment-account-cleanup";
 import {
 	DeleteTodoCommentUseCase,
 	LikeTodoCommentUseCase,
@@ -22,28 +24,39 @@ import {
 } from "./application/use-cases";
 import { TodoCommentNotificationAdapter } from "./infrastructure/adapters/todo-comment-notification.adapter";
 import { TodoViewCacheAdapter } from "./infrastructure/adapters/todo-view-cache.adapter";
-import { TodoCommentCacheAdapter } from "./infrastructure/cache/todo-comment-cache.adapter";
+import { PrismaTodoCommentAccountCleanupStore } from "./infrastructure/persistence/prisma-todo-comment-account-cleanup.store";
+import { PrismaTodoCommentReader } from "./infrastructure/persistence/prisma-todo-comment.reader";
 import { PrismaTodoCommentRepository } from "./infrastructure/persistence/prisma-todo-comment.repository";
+import { HmacTodoCommentCursorCodec } from "./infrastructure/security/hmac-todo-comment-cursor.codec";
 import { TodoCommentController } from "./presentation/todo-comment.controller";
 
 @Module({
 	imports: [NotificationModule, TodoModule],
 	controllers: [TodoCommentController],
 	providers: [
+		HmacTodoCommentCursorCodec,
+		{ provide: TODO_COMMENT_CURSOR_CODEC, useExisting: HmacTodoCommentCursorCodec },
+		PrismaTodoCommentReader,
+		{ provide: TODO_COMMENT_READER, useExisting: PrismaTodoCommentReader },
 		PrismaTodoCommentRepository,
 		{ provide: TODO_COMMENT_REPOSITORY, useExisting: PrismaTodoCommentRepository },
-		{ provide: TODO_COMMENT_CACHE, useClass: TodoCommentCacheAdapter },
+		PrismaTodoCommentAccountCleanupStore,
+		{
+			provide: TODO_COMMENT_ACCOUNT_CLEANUP_STORE,
+			useExisting: PrismaTodoCommentAccountCleanupStore,
+		},
 		{ provide: TODO_COMMENT_NOTIFICATION, useClass: TodoCommentNotificationAdapter },
 		{ provide: TODO_VIEW_CACHE, useClass: TodoViewCacheAdapter },
 		GetTodoDetailsUseCase,
-		ListTodoCommentsUseCase,
-		ListTodoCommentRepliesUseCase,
-		GetTodoCommentThreadUseCase,
+		GetTodoCommentOverviewUseCase,
+		GetTodoConversationUseCase,
+		TodoCommentAccountCleanup,
 		WriteTodoCommentChainUseCase,
 		UpdateTodoCommentUseCase,
 		DeleteTodoCommentUseCase,
 		LikeTodoCommentUseCase,
 		UnlikeTodoCommentUseCase,
 	],
+	exports: [TodoCommentAccountCleanup],
 })
 export class TodoCommentModule {}

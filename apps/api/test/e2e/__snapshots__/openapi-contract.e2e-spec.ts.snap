@@ -3142,13 +3142,16 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "type": "object",
     },
     "DeleteTodoCommentResponseDto": {
+      "description": "할 일 댓글 삭제 응답",
       "properties": {
         "commentId": {
+          "description": "삭제된 댓글 ID (CUID)",
           "format": "cuid",
           "pattern": "^[cC][^\\s-]{8,}$",
           "type": "string",
         },
         "isDeleted": {
+          "description": "댓글 삭제 여부 (항상 true)",
           "enum": [
             true,
           ],
@@ -4670,363 +4673,6 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         "usedToday",
         "remainingToday",
         "isUnlimited",
-      ],
-      "type": "object",
-    },
-    "PaginatedTodoCommentsResponseDto": {
-      "properties": {
-        "items": {
-          "items": {
-            "properties": {
-              "author": {
-                "nullable": true,
-                "properties": {
-                  "id": {
-                    "format": "cuid",
-                    "pattern": "^[cC][^\\s-]{8,}$",
-                    "type": "string",
-                  },
-                  "isTodoOwner": {
-                    "type": "boolean",
-                  },
-                  "name": {
-                    "nullable": true,
-                    "type": "string",
-                  },
-                  "profileImage": {
-                    "nullable": true,
-                    "type": "string",
-                  },
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "profileImage",
-                  "isTodoOwner",
-                ],
-                "type": "object",
-              },
-              "content": {
-                "nullable": true,
-                "type": "string",
-              },
-              "createdAt": {
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                "type": "string",
-              },
-              "depth": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "editedAt": {
-                "format": "date-time",
-                "nullable": true,
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                "type": "string",
-              },
-              "hasMoreReplies": {
-                "type": "boolean",
-              },
-              "hasReplies": {
-                "type": "boolean",
-              },
-              "id": {
-                "format": "cuid",
-                "pattern": "^[cC][^\\s-]{8,}$",
-                "type": "string",
-              },
-              "isDeleted": {
-                "type": "boolean",
-              },
-              "isEdited": {
-                "type": "boolean",
-              },
-              "likeCount": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "parentId": {
-                "format": "cuid",
-                "nullable": true,
-                "pattern": "^[cC][^\\s-]{8,}$",
-                "type": "string",
-              },
-              "replyCount": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "replyPreview": {
-                "items": {
-                  "properties": {
-                    "author": {
-                      "nullable": true,
-                      "properties": {
-                        "id": {
-                          "format": "cuid",
-                          "pattern": "^[cC][^\\s-]{8,}$",
-                          "type": "string",
-                        },
-                        "isTodoOwner": {
-                          "type": "boolean",
-                        },
-                        "name": {
-                          "nullable": true,
-                          "type": "string",
-                        },
-                        "profileImage": {
-                          "nullable": true,
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "profileImage",
-                        "isTodoOwner",
-                      ],
-                      "type": "object",
-                    },
-                    "content": {
-                      "nullable": true,
-                      "type": "string",
-                    },
-                    "createdAt": {
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "type": "string",
-                    },
-                    "depth": {
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "editedAt": {
-                      "format": "date-time",
-                      "nullable": true,
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "type": "string",
-                    },
-                    "hasMoreReplies": {
-                      "type": "boolean",
-                    },
-                    "hasReplies": {
-                      "type": "boolean",
-                    },
-                    "id": {
-                      "format": "cuid",
-                      "pattern": "^[cC][^\\s-]{8,}$",
-                      "type": "string",
-                    },
-                    "isDeleted": {
-                      "type": "boolean",
-                    },
-                    "isEdited": {
-                      "type": "boolean",
-                    },
-                    "likeCount": {
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "parentId": {
-                      "format": "cuid",
-                      "nullable": true,
-                      "pattern": "^[cC][^\\s-]{8,}$",
-                      "type": "string",
-                    },
-                    "replyCount": {
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "replyTo": {
-                      "nullable": true,
-                      "properties": {
-                        "authorName": {
-                          "nullable": true,
-                          "type": "string",
-                        },
-                        "commentId": {
-                          "format": "cuid",
-                          "pattern": "^[cC][^\\s-]{8,}$",
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "commentId",
-                        "authorName",
-                      ],
-                      "type": "object",
-                    },
-                    "rootId": {
-                      "format": "cuid",
-                      "nullable": true,
-                      "pattern": "^[cC][^\\s-]{8,}$",
-                      "type": "string",
-                    },
-                    "todoId": {
-                      "exclusiveMinimum": true,
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "viewer": {
-                      "properties": {
-                        "canDelete": {
-                          "type": "boolean",
-                        },
-                        "canEdit": {
-                          "type": "boolean",
-                        },
-                        "canReply": {
-                          "type": "boolean",
-                        },
-                        "isLiked": {
-                          "type": "boolean",
-                        },
-                      },
-                      "required": [
-                        "isLiked",
-                        "canEdit",
-                        "canDelete",
-                        "canReply",
-                      ],
-                      "type": "object",
-                    },
-                  },
-                  "required": [
-                    "id",
-                    "todoId",
-                    "parentId",
-                    "rootId",
-                    "depth",
-                    "author",
-                    "content",
-                    "isDeleted",
-                    "isEdited",
-                    "likeCount",
-                    "replyCount",
-                    "hasReplies",
-                    "hasMoreReplies",
-                    "replyTo",
-                    "viewer",
-                    "createdAt",
-                    "editedAt",
-                  ],
-                  "type": "object",
-                },
-                "type": "array",
-              },
-              "replyTo": {
-                "nullable": true,
-                "properties": {
-                  "authorName": {
-                    "nullable": true,
-                    "type": "string",
-                  },
-                  "commentId": {
-                    "format": "cuid",
-                    "pattern": "^[cC][^\\s-]{8,}$",
-                    "type": "string",
-                  },
-                },
-                "required": [
-                  "commentId",
-                  "authorName",
-                ],
-                "type": "object",
-              },
-              "rootId": {
-                "format": "cuid",
-                "nullable": true,
-                "pattern": "^[cC][^\\s-]{8,}$",
-                "type": "string",
-              },
-              "todoId": {
-                "exclusiveMinimum": true,
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "viewer": {
-                "properties": {
-                  "canDelete": {
-                    "type": "boolean",
-                  },
-                  "canEdit": {
-                    "type": "boolean",
-                  },
-                  "canReply": {
-                    "type": "boolean",
-                  },
-                  "isLiked": {
-                    "type": "boolean",
-                  },
-                },
-                "required": [
-                  "isLiked",
-                  "canEdit",
-                  "canDelete",
-                  "canReply",
-                ],
-                "type": "object",
-              },
-            },
-            "required": [
-              "id",
-              "todoId",
-              "parentId",
-              "rootId",
-              "depth",
-              "author",
-              "content",
-              "isDeleted",
-              "isEdited",
-              "likeCount",
-              "replyCount",
-              "hasReplies",
-              "hasMoreReplies",
-              "replyTo",
-              "viewer",
-              "createdAt",
-              "editedAt",
-              "replyPreview",
-            ],
-            "type": "object",
-          },
-          "type": "array",
-        },
-        "pagination": {
-          "properties": {
-            "hasNext": {
-              "type": "boolean",
-            },
-            "nextCursor": {
-              "nullable": true,
-              "type": "string",
-            },
-            "size": {
-              "exclusiveMinimum": true,
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
-            },
-          },
-          "required": [
-            "nextCursor",
-            "hasNext",
-            "size",
-          ],
-          "type": "object",
-        },
-      },
-      "required": [
-        "items",
-        "pagination",
       ],
       "type": "object",
     },
@@ -8492,26 +8138,34 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "type": "object",
     },
     "TodoCommentChainResponseDto": {
+      "description": "할 일 댓글 이어 쓰기 응답",
       "properties": {
         "comments": {
+          "description": "위에서 아래 순서로 생성되거나 재생된 댓글 사슬",
           "items": {
+            "description": "평탄한 할 일 댓글",
             "properties": {
               "author": {
+                "description": "댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)",
                 "nullable": true,
                 "properties": {
                   "id": {
+                    "description": "댓글 작성자 ID (CUID)",
                     "format": "cuid",
                     "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
                   },
                   "isTodoOwner": {
+                    "description": "할 일 작성자 여부",
                     "type": "boolean",
                   },
                   "name": {
+                    "description": "댓글 작성자 이름 (미설정 시 null)",
                     "nullable": true,
                     "type": "string",
                   },
                   "profileImage": {
+                    "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
                     "nullable": true,
                     "type": "string",
                   },
@@ -8525,228 +8179,73 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                 "type": "object",
               },
               "content": {
+                "description": "댓글 내용 (삭제된 댓글이면 null)",
                 "nullable": true,
                 "type": "string",
               },
               "createdAt": {
+                "description": "댓글 생성 시각 (ISO 8601 UTC)",
                 "format": "date-time",
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
                 "type": "string",
               },
               "depth": {
+                "description": "대화에서 댓글의 깊이 (최상위 댓글은 0)",
                 "maximum": 9007199254740991,
                 "minimum": 0,
                 "type": "integer",
               },
               "editedAt": {
+                "description": "댓글 최종 수정 시각 (수정하지 않았으면 null)",
                 "format": "date-time",
                 "nullable": true,
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
                 "type": "string",
               },
-              "hasMoreReplies": {
-                "type": "boolean",
-              },
-              "hasReplies": {
-                "type": "boolean",
-              },
               "id": {
+                "description": "댓글 ID (CUID)",
                 "format": "cuid",
                 "pattern": "^[cC][^\\s-]{8,}$",
                 "type": "string",
               },
               "isDeleted": {
+                "description": "댓글 삭제 여부",
                 "type": "boolean",
               },
               "isEdited": {
+                "description": "댓글 수정 여부",
                 "type": "boolean",
               },
               "likeCount": {
+                "description": "활성 좋아요 수",
                 "maximum": 9007199254740991,
                 "minimum": 0,
                 "type": "integer",
               },
               "parentId": {
+                "description": "직계 부모 댓글 ID (최상위 댓글이면 null)",
                 "format": "cuid",
                 "nullable": true,
                 "pattern": "^[cC][^\\s-]{8,}$",
                 "type": "string",
               },
               "replyCount": {
+                "description": "화면에 표시되는 직계 답글 수",
                 "maximum": 9007199254740991,
                 "minimum": 0,
                 "type": "integer",
               },
-              "replyPreview": {
-                "items": {
-                  "properties": {
-                    "author": {
-                      "nullable": true,
-                      "properties": {
-                        "id": {
-                          "format": "cuid",
-                          "pattern": "^[cC][^\\s-]{8,}$",
-                          "type": "string",
-                        },
-                        "isTodoOwner": {
-                          "type": "boolean",
-                        },
-                        "name": {
-                          "nullable": true,
-                          "type": "string",
-                        },
-                        "profileImage": {
-                          "nullable": true,
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "profileImage",
-                        "isTodoOwner",
-                      ],
-                      "type": "object",
-                    },
-                    "content": {
-                      "nullable": true,
-                      "type": "string",
-                    },
-                    "createdAt": {
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "type": "string",
-                    },
-                    "depth": {
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "editedAt": {
-                      "format": "date-time",
-                      "nullable": true,
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "type": "string",
-                    },
-                    "hasMoreReplies": {
-                      "type": "boolean",
-                    },
-                    "hasReplies": {
-                      "type": "boolean",
-                    },
-                    "id": {
-                      "format": "cuid",
-                      "pattern": "^[cC][^\\s-]{8,}$",
-                      "type": "string",
-                    },
-                    "isDeleted": {
-                      "type": "boolean",
-                    },
-                    "isEdited": {
-                      "type": "boolean",
-                    },
-                    "likeCount": {
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "parentId": {
-                      "format": "cuid",
-                      "nullable": true,
-                      "pattern": "^[cC][^\\s-]{8,}$",
-                      "type": "string",
-                    },
-                    "replyCount": {
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "replyTo": {
-                      "nullable": true,
-                      "properties": {
-                        "authorName": {
-                          "nullable": true,
-                          "type": "string",
-                        },
-                        "commentId": {
-                          "format": "cuid",
-                          "pattern": "^[cC][^\\s-]{8,}$",
-                          "type": "string",
-                        },
-                      },
-                      "required": [
-                        "commentId",
-                        "authorName",
-                      ],
-                      "type": "object",
-                    },
-                    "rootId": {
-                      "format": "cuid",
-                      "nullable": true,
-                      "pattern": "^[cC][^\\s-]{8,}$",
-                      "type": "string",
-                    },
-                    "todoId": {
-                      "exclusiveMinimum": true,
-                      "maximum": 9007199254740991,
-                      "minimum": 0,
-                      "type": "integer",
-                    },
-                    "viewer": {
-                      "properties": {
-                        "canDelete": {
-                          "type": "boolean",
-                        },
-                        "canEdit": {
-                          "type": "boolean",
-                        },
-                        "canReply": {
-                          "type": "boolean",
-                        },
-                        "isLiked": {
-                          "type": "boolean",
-                        },
-                      },
-                      "required": [
-                        "isLiked",
-                        "canEdit",
-                        "canDelete",
-                        "canReply",
-                      ],
-                      "type": "object",
-                    },
-                  },
-                  "required": [
-                    "id",
-                    "todoId",
-                    "parentId",
-                    "rootId",
-                    "depth",
-                    "author",
-                    "content",
-                    "isDeleted",
-                    "isEdited",
-                    "likeCount",
-                    "replyCount",
-                    "hasReplies",
-                    "hasMoreReplies",
-                    "replyTo",
-                    "viewer",
-                    "createdAt",
-                    "editedAt",
-                  ],
-                  "type": "object",
-                },
-                "type": "array",
-              },
               "replyTo": {
+                "description": "답글 대상 (최상위 댓글이면 null)",
                 "nullable": true,
                 "properties": {
                   "authorName": {
+                    "description": "답글 대상 작성자 이름 (확인할 수 없으면 null)",
                     "nullable": true,
                     "type": "string",
                   },
                   "commentId": {
+                    "description": "직계 부모 댓글 ID (CUID)",
                     "format": "cuid",
                     "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
@@ -8758,30 +8257,29 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                 ],
                 "type": "object",
               },
-              "rootId": {
+              "threadId": {
+                "description": "댓글 대화의 최상위 댓글 ID (CUID)",
                 "format": "cuid",
-                "nullable": true,
                 "pattern": "^[cC][^\\s-]{8,}$",
                 "type": "string",
               },
-              "todoId": {
-                "exclusiveMinimum": true,
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
               "viewer": {
+                "description": "현재 사용자의 댓글 권한과 상태",
                 "properties": {
                   "canDelete": {
+                    "description": "현재 사용자의 삭제 가능 여부",
                     "type": "boolean",
                   },
                   "canEdit": {
+                    "description": "현재 사용자의 수정 가능 여부",
                     "type": "boolean",
                   },
                   "canReply": {
+                    "description": "현재 사용자의 답글 작성 가능 여부",
                     "type": "boolean",
                   },
                   "isLiked": {
+                    "description": "현재 사용자의 좋아요 여부",
                     "type": "boolean",
                   },
                 },
@@ -8796,9 +8294,8 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
             },
             "required": [
               "id",
-              "todoId",
+              "threadId",
               "parentId",
-              "rootId",
               "depth",
               "author",
               "content",
@@ -8806,16 +8303,15 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
               "isEdited",
               "likeCount",
               "replyCount",
-              "hasReplies",
-              "hasMoreReplies",
               "replyTo",
               "viewer",
               "createdAt",
               "editedAt",
-              "replyPreview",
             ],
             "type": "object",
           },
+          "maxItems": 5,
+          "minItems": 1,
           "type": "array",
         },
       },
@@ -8825,16 +8321,20 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "type": "object",
     },
     "TodoCommentLikeResponseDto": {
+      "description": "할 일 댓글 좋아요 응답",
       "properties": {
         "commentId": {
+          "description": "좋아요 상태가 바뀐 댓글 ID (CUID)",
           "format": "cuid",
           "pattern": "^[cC][^\\s-]{8,}$",
           "type": "string",
         },
         "isLiked": {
+          "description": "현재 사용자의 좋아요 여부",
           "type": "boolean",
         },
         "likeCount": {
+          "description": "댓글의 활성 좋아요 수",
           "maximum": 9007199254740991,
           "minimum": 0,
           "type": "integer",
@@ -8848,25 +8348,32 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "type": "object",
     },
     "TodoCommentMutationResponseDto": {
+      "description": "할 일 댓글 수정 응답",
       "properties": {
         "comment": {
+          "description": "수정된 댓글",
           "properties": {
             "author": {
+              "description": "댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)",
               "nullable": true,
               "properties": {
                 "id": {
+                  "description": "댓글 작성자 ID (CUID)",
                   "format": "cuid",
                   "pattern": "^[cC][^\\s-]{8,}$",
                   "type": "string",
                 },
                 "isTodoOwner": {
+                  "description": "할 일 작성자 여부",
                   "type": "boolean",
                 },
                 "name": {
+                  "description": "댓글 작성자 이름 (미설정 시 null)",
                   "nullable": true,
                   "type": "string",
                 },
                 "profileImage": {
+                  "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
                   "nullable": true,
                   "type": "string",
                 },
@@ -8880,228 +8387,73 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
               "type": "object",
             },
             "content": {
+              "description": "댓글 내용 (삭제된 댓글이면 null)",
               "nullable": true,
               "type": "string",
             },
             "createdAt": {
+              "description": "댓글 생성 시각 (ISO 8601 UTC)",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
               "type": "string",
             },
             "depth": {
+              "description": "대화에서 댓글의 깊이 (최상위 댓글은 0)",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
             "editedAt": {
+              "description": "댓글 최종 수정 시각 (수정하지 않았으면 null)",
               "format": "date-time",
               "nullable": true,
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
               "type": "string",
             },
-            "hasMoreReplies": {
-              "type": "boolean",
-            },
-            "hasReplies": {
-              "type": "boolean",
-            },
             "id": {
+              "description": "댓글 ID (CUID)",
               "format": "cuid",
               "pattern": "^[cC][^\\s-]{8,}$",
               "type": "string",
             },
             "isDeleted": {
+              "description": "댓글 삭제 여부",
               "type": "boolean",
             },
             "isEdited": {
+              "description": "댓글 수정 여부",
               "type": "boolean",
             },
             "likeCount": {
+              "description": "활성 좋아요 수",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
             "parentId": {
+              "description": "직계 부모 댓글 ID (최상위 댓글이면 null)",
               "format": "cuid",
               "nullable": true,
               "pattern": "^[cC][^\\s-]{8,}$",
               "type": "string",
             },
             "replyCount": {
+              "description": "화면에 표시되는 직계 답글 수",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
-            "replyPreview": {
-              "items": {
-                "properties": {
-                  "author": {
-                    "nullable": true,
-                    "properties": {
-                      "id": {
-                        "format": "cuid",
-                        "pattern": "^[cC][^\\s-]{8,}$",
-                        "type": "string",
-                      },
-                      "isTodoOwner": {
-                        "type": "boolean",
-                      },
-                      "name": {
-                        "nullable": true,
-                        "type": "string",
-                      },
-                      "profileImage": {
-                        "nullable": true,
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "id",
-                      "name",
-                      "profileImage",
-                      "isTodoOwner",
-                    ],
-                    "type": "object",
-                  },
-                  "content": {
-                    "nullable": true,
-                    "type": "string",
-                  },
-                  "createdAt": {
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                    "type": "string",
-                  },
-                  "depth": {
-                    "maximum": 9007199254740991,
-                    "minimum": 0,
-                    "type": "integer",
-                  },
-                  "editedAt": {
-                    "format": "date-time",
-                    "nullable": true,
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                    "type": "string",
-                  },
-                  "hasMoreReplies": {
-                    "type": "boolean",
-                  },
-                  "hasReplies": {
-                    "type": "boolean",
-                  },
-                  "id": {
-                    "format": "cuid",
-                    "pattern": "^[cC][^\\s-]{8,}$",
-                    "type": "string",
-                  },
-                  "isDeleted": {
-                    "type": "boolean",
-                  },
-                  "isEdited": {
-                    "type": "boolean",
-                  },
-                  "likeCount": {
-                    "maximum": 9007199254740991,
-                    "minimum": 0,
-                    "type": "integer",
-                  },
-                  "parentId": {
-                    "format": "cuid",
-                    "nullable": true,
-                    "pattern": "^[cC][^\\s-]{8,}$",
-                    "type": "string",
-                  },
-                  "replyCount": {
-                    "maximum": 9007199254740991,
-                    "minimum": 0,
-                    "type": "integer",
-                  },
-                  "replyTo": {
-                    "nullable": true,
-                    "properties": {
-                      "authorName": {
-                        "nullable": true,
-                        "type": "string",
-                      },
-                      "commentId": {
-                        "format": "cuid",
-                        "pattern": "^[cC][^\\s-]{8,}$",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "commentId",
-                      "authorName",
-                    ],
-                    "type": "object",
-                  },
-                  "rootId": {
-                    "format": "cuid",
-                    "nullable": true,
-                    "pattern": "^[cC][^\\s-]{8,}$",
-                    "type": "string",
-                  },
-                  "todoId": {
-                    "exclusiveMinimum": true,
-                    "maximum": 9007199254740991,
-                    "minimum": 0,
-                    "type": "integer",
-                  },
-                  "viewer": {
-                    "properties": {
-                      "canDelete": {
-                        "type": "boolean",
-                      },
-                      "canEdit": {
-                        "type": "boolean",
-                      },
-                      "canReply": {
-                        "type": "boolean",
-                      },
-                      "isLiked": {
-                        "type": "boolean",
-                      },
-                    },
-                    "required": [
-                      "isLiked",
-                      "canEdit",
-                      "canDelete",
-                      "canReply",
-                    ],
-                    "type": "object",
-                  },
-                },
-                "required": [
-                  "id",
-                  "todoId",
-                  "parentId",
-                  "rootId",
-                  "depth",
-                  "author",
-                  "content",
-                  "isDeleted",
-                  "isEdited",
-                  "likeCount",
-                  "replyCount",
-                  "hasReplies",
-                  "hasMoreReplies",
-                  "replyTo",
-                  "viewer",
-                  "createdAt",
-                  "editedAt",
-                ],
-                "type": "object",
-              },
-              "type": "array",
-            },
             "replyTo": {
+              "description": "답글 대상 (최상위 댓글이면 null)",
               "nullable": true,
               "properties": {
                 "authorName": {
+                  "description": "답글 대상 작성자 이름 (확인할 수 없으면 null)",
                   "nullable": true,
                   "type": "string",
                 },
                 "commentId": {
+                  "description": "직계 부모 댓글 ID (CUID)",
                   "format": "cuid",
                   "pattern": "^[cC][^\\s-]{8,}$",
                   "type": "string",
@@ -9113,30 +8465,29 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
               ],
               "type": "object",
             },
-            "rootId": {
+            "threadId": {
+              "description": "댓글 대화의 최상위 댓글 ID (CUID)",
               "format": "cuid",
-              "nullable": true,
               "pattern": "^[cC][^\\s-]{8,}$",
               "type": "string",
             },
-            "todoId": {
-              "exclusiveMinimum": true,
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
-            },
             "viewer": {
+              "description": "현재 사용자의 댓글 권한과 상태",
               "properties": {
                 "canDelete": {
+                  "description": "현재 사용자의 삭제 가능 여부",
                   "type": "boolean",
                 },
                 "canEdit": {
+                  "description": "현재 사용자의 수정 가능 여부",
                   "type": "boolean",
                 },
                 "canReply": {
+                  "description": "현재 사용자의 답글 작성 가능 여부",
                   "type": "boolean",
                 },
                 "isLiked": {
+                  "description": "현재 사용자의 좋아요 여부",
                   "type": "boolean",
                 },
               },
@@ -9151,9 +8502,8 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           },
           "required": [
             "id",
-            "todoId",
+            "threadId",
             "parentId",
-            "rootId",
             "depth",
             "author",
             "content",
@@ -9161,13 +8511,10 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
             "isEdited",
             "likeCount",
             "replyCount",
-            "hasReplies",
-            "hasMoreReplies",
             "replyTo",
             "viewer",
             "createdAt",
             "editedAt",
-            "replyPreview",
           ],
           "type": "object",
         },
@@ -9177,272 +8524,782 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       ],
       "type": "object",
     },
-    "TodoCommentThreadResponseDto": {
+    "TodoCommentOverviewResponseDto": {
+      "description": "할 일 댓글 개요 응답",
       "properties": {
-        "ancestors": {
+        "items": {
+          "description": "최상위 댓글 개요 목록",
           "items": {
+            "description": "댓글 개요 항목",
             "properties": {
-              "author": {
-                "nullable": true,
+              "comment": {
+                "description": "최상위 댓글",
                 "properties": {
+                  "author": {
+                    "description": "댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)",
+                    "nullable": true,
+                    "properties": {
+                      "id": {
+                        "description": "댓글 작성자 ID (CUID)",
+                        "format": "cuid",
+                        "pattern": "^[cC][^\\s-]{8,}$",
+                        "type": "string",
+                      },
+                      "isTodoOwner": {
+                        "description": "할 일 작성자 여부",
+                        "type": "boolean",
+                      },
+                      "name": {
+                        "description": "댓글 작성자 이름 (미설정 시 null)",
+                        "nullable": true,
+                        "type": "string",
+                      },
+                      "profileImage": {
+                        "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
+                        "nullable": true,
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "profileImage",
+                      "isTodoOwner",
+                    ],
+                    "type": "object",
+                  },
+                  "content": {
+                    "description": "댓글 내용 (삭제된 댓글이면 null)",
+                    "nullable": true,
+                    "type": "string",
+                  },
+                  "createdAt": {
+                    "description": "댓글 생성 시각 (ISO 8601 UTC)",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "type": "string",
+                  },
+                  "depth": {
+                    "description": "대화에서 댓글의 깊이 (최상위 댓글은 0)",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "editedAt": {
+                    "description": "댓글 최종 수정 시각 (수정하지 않았으면 null)",
+                    "format": "date-time",
+                    "nullable": true,
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "type": "string",
+                  },
                   "id": {
+                    "description": "댓글 ID (CUID)",
                     "format": "cuid",
                     "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
                   },
-                  "isTodoOwner": {
+                  "isDeleted": {
+                    "description": "댓글 삭제 여부",
                     "type": "boolean",
                   },
-                  "name": {
+                  "isEdited": {
+                    "description": "댓글 수정 여부",
+                    "type": "boolean",
+                  },
+                  "likeCount": {
+                    "description": "활성 좋아요 수",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "parentId": {
+                    "description": "직계 부모 댓글 ID (최상위 댓글이면 null)",
+                    "format": "cuid",
                     "nullable": true,
+                    "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
                   },
-                  "profileImage": {
+                  "replyCount": {
+                    "description": "화면에 표시되는 직계 답글 수",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "replyTo": {
+                    "description": "답글 대상 (최상위 댓글이면 null)",
                     "nullable": true,
+                    "properties": {
+                      "authorName": {
+                        "description": "답글 대상 작성자 이름 (확인할 수 없으면 null)",
+                        "nullable": true,
+                        "type": "string",
+                      },
+                      "commentId": {
+                        "description": "직계 부모 댓글 ID (CUID)",
+                        "format": "cuid",
+                        "pattern": "^[cC][^\\s-]{8,}$",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "commentId",
+                      "authorName",
+                    ],
+                    "type": "object",
+                  },
+                  "threadId": {
+                    "description": "댓글 대화의 최상위 댓글 ID (CUID)",
+                    "format": "cuid",
+                    "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
+                  },
+                  "viewer": {
+                    "description": "현재 사용자의 댓글 권한과 상태",
+                    "properties": {
+                      "canDelete": {
+                        "description": "현재 사용자의 삭제 가능 여부",
+                        "type": "boolean",
+                      },
+                      "canEdit": {
+                        "description": "현재 사용자의 수정 가능 여부",
+                        "type": "boolean",
+                      },
+                      "canReply": {
+                        "description": "현재 사용자의 답글 작성 가능 여부",
+                        "type": "boolean",
+                      },
+                      "isLiked": {
+                        "description": "현재 사용자의 좋아요 여부",
+                        "type": "boolean",
+                      },
+                    },
+                    "required": [
+                      "isLiked",
+                      "canEdit",
+                      "canDelete",
+                      "canReply",
+                    ],
+                    "type": "object",
                   },
                 },
                 "required": [
                   "id",
-                  "name",
-                  "profileImage",
-                  "isTodoOwner",
+                  "threadId",
+                  "parentId",
+                  "depth",
+                  "author",
+                  "content",
+                  "isDeleted",
+                  "isEdited",
+                  "likeCount",
+                  "replyCount",
+                  "replyTo",
+                  "viewer",
+                  "createdAt",
+                  "editedAt",
                 ],
                 "type": "object",
               },
-              "content": {
-                "nullable": true,
-                "type": "string",
-              },
-              "createdAt": {
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                "type": "string",
-              },
-              "depth": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "editedAt": {
-                "format": "date-time",
-                "nullable": true,
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                "type": "string",
-              },
-              "hasMoreReplies": {
-                "type": "boolean",
-              },
-              "hasReplies": {
-                "type": "boolean",
-              },
-              "id": {
-                "format": "cuid",
-                "pattern": "^[cC][^\\s-]{8,}$",
-                "type": "string",
-              },
-              "isDeleted": {
-                "type": "boolean",
-              },
-              "isEdited": {
-                "type": "boolean",
-              },
-              "likeCount": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "parentId": {
-                "format": "cuid",
-                "nullable": true,
-                "pattern": "^[cC][^\\s-]{8,}$",
-                "type": "string",
-              },
-              "replyCount": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "replyTo": {
+              "previewReply": {
+                "description": "대표 직계 답글 (없으면 null)",
                 "nullable": true,
                 "properties": {
-                  "authorName": {
+                  "author": {
+                    "description": "댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)",
+                    "nullable": true,
+                    "properties": {
+                      "id": {
+                        "description": "댓글 작성자 ID (CUID)",
+                        "format": "cuid",
+                        "pattern": "^[cC][^\\s-]{8,}$",
+                        "type": "string",
+                      },
+                      "isTodoOwner": {
+                        "description": "할 일 작성자 여부",
+                        "type": "boolean",
+                      },
+                      "name": {
+                        "description": "댓글 작성자 이름 (미설정 시 null)",
+                        "nullable": true,
+                        "type": "string",
+                      },
+                      "profileImage": {
+                        "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
+                        "nullable": true,
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "profileImage",
+                      "isTodoOwner",
+                    ],
+                    "type": "object",
+                  },
+                  "content": {
+                    "description": "댓글 내용 (삭제된 댓글이면 null)",
                     "nullable": true,
                     "type": "string",
                   },
-                  "commentId": {
+                  "createdAt": {
+                    "description": "댓글 생성 시각 (ISO 8601 UTC)",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "type": "string",
+                  },
+                  "depth": {
+                    "description": "대화에서 댓글의 깊이 (최상위 댓글은 0)",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "editedAt": {
+                    "description": "댓글 최종 수정 시각 (수정하지 않았으면 null)",
+                    "format": "date-time",
+                    "nullable": true,
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "type": "string",
+                  },
+                  "id": {
+                    "description": "댓글 ID (CUID)",
                     "format": "cuid",
                     "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
                   },
+                  "isDeleted": {
+                    "description": "댓글 삭제 여부",
+                    "type": "boolean",
+                  },
+                  "isEdited": {
+                    "description": "댓글 수정 여부",
+                    "type": "boolean",
+                  },
+                  "likeCount": {
+                    "description": "활성 좋아요 수",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "parentId": {
+                    "description": "직계 부모 댓글 ID (최상위 댓글이면 null)",
+                    "format": "cuid",
+                    "nullable": true,
+                    "pattern": "^[cC][^\\s-]{8,}$",
+                    "type": "string",
+                  },
+                  "replyCount": {
+                    "description": "화면에 표시되는 직계 답글 수",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "replyTo": {
+                    "description": "답글 대상 (최상위 댓글이면 null)",
+                    "nullable": true,
+                    "properties": {
+                      "authorName": {
+                        "description": "답글 대상 작성자 이름 (확인할 수 없으면 null)",
+                        "nullable": true,
+                        "type": "string",
+                      },
+                      "commentId": {
+                        "description": "직계 부모 댓글 ID (CUID)",
+                        "format": "cuid",
+                        "pattern": "^[cC][^\\s-]{8,}$",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "commentId",
+                      "authorName",
+                    ],
+                    "type": "object",
+                  },
+                  "threadId": {
+                    "description": "댓글 대화의 최상위 댓글 ID (CUID)",
+                    "format": "cuid",
+                    "pattern": "^[cC][^\\s-]{8,}$",
+                    "type": "string",
+                  },
+                  "viewer": {
+                    "description": "현재 사용자의 댓글 권한과 상태",
+                    "properties": {
+                      "canDelete": {
+                        "description": "현재 사용자의 삭제 가능 여부",
+                        "type": "boolean",
+                      },
+                      "canEdit": {
+                        "description": "현재 사용자의 수정 가능 여부",
+                        "type": "boolean",
+                      },
+                      "canReply": {
+                        "description": "현재 사용자의 답글 작성 가능 여부",
+                        "type": "boolean",
+                      },
+                      "isLiked": {
+                        "description": "현재 사용자의 좋아요 여부",
+                        "type": "boolean",
+                      },
+                    },
+                    "required": [
+                      "isLiked",
+                      "canEdit",
+                      "canDelete",
+                      "canReply",
+                    ],
+                    "type": "object",
+                  },
                 },
                 "required": [
-                  "commentId",
-                  "authorName",
+                  "id",
+                  "threadId",
+                  "parentId",
+                  "depth",
+                  "author",
+                  "content",
+                  "isDeleted",
+                  "isEdited",
+                  "likeCount",
+                  "replyCount",
+                  "replyTo",
+                  "viewer",
+                  "createdAt",
+                  "editedAt",
                 ],
                 "type": "object",
               },
-              "rootId": {
-                "format": "cuid",
-                "nullable": true,
-                "pattern": "^[cC][^\\s-]{8,}$",
-                "type": "string",
-              },
-              "todoId": {
-                "exclusiveMinimum": true,
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer",
-              },
-              "viewer": {
+              "replySummary": {
+                "description": "댓글 답글 요약",
                 "properties": {
-                  "canDelete": {
+                  "hasMore": {
+                    "description": "개요 밖에 더 볼 댓글이 있는지 여부",
                     "type": "boolean",
                   },
-                  "canEdit": {
-                    "type": "boolean",
+                  "hiddenCount": {
+                    "description": "개요에서 아직 보여 주지 않은 댓글 수",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
                   },
-                  "canReply": {
-                    "type": "boolean",
+                  "participantAuthors": {
+                    "description": "대화 참여 작성자 미리보기 (최대 3명)",
+                    "items": {
+                      "description": "댓글 작성자",
+                      "properties": {
+                        "id": {
+                          "description": "댓글 작성자 ID (CUID)",
+                          "format": "cuid",
+                          "pattern": "^[cC][^\\s-]{8,}$",
+                          "type": "string",
+                        },
+                        "isTodoOwner": {
+                          "description": "할 일 작성자 여부",
+                          "type": "boolean",
+                        },
+                        "name": {
+                          "description": "댓글 작성자 이름 (미설정 시 null)",
+                          "nullable": true,
+                          "type": "string",
+                        },
+                        "profileImage": {
+                          "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
+                          "nullable": true,
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "profileImage",
+                        "isTodoOwner",
+                      ],
+                      "type": "object",
+                    },
+                    "maxItems": 3,
+                    "type": "array",
                   },
-                  "isLiked": {
-                    "type": "boolean",
+                  "totalCount": {
+                    "description": "표시 가능한 전체 답글과 후손 수",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
                   },
                 },
                 "required": [
-                  "isLiked",
-                  "canEdit",
-                  "canDelete",
-                  "canReply",
+                  "totalCount",
+                  "hiddenCount",
+                  "hasMore",
+                  "participantAuthors",
                 ],
                 "type": "object",
               },
             },
             "required": [
-              "id",
-              "todoId",
-              "parentId",
-              "rootId",
-              "depth",
-              "author",
-              "content",
-              "isDeleted",
-              "isEdited",
-              "likeCount",
-              "replyCount",
-              "hasReplies",
-              "hasMoreReplies",
-              "replyTo",
-              "viewer",
-              "createdAt",
-              "editedAt",
+              "comment",
+              "previewReply",
+              "replySummary",
             ],
             "type": "object",
           },
           "type": "array",
         },
-        "comment": {
+        "pagination": {
+          "description": "댓글 커서 페이지네이션",
           "properties": {
-            "author": {
-              "nullable": true,
-              "properties": {
-                "id": {
-                  "format": "cuid",
-                  "pattern": "^[cC][^\\s-]{8,}$",
-                  "type": "string",
-                },
-                "isTodoOwner": {
-                  "type": "boolean",
-                },
-                "name": {
-                  "nullable": true,
-                  "type": "string",
-                },
-                "profileImage": {
-                  "nullable": true,
-                  "type": "string",
-                },
-              },
-              "required": [
-                "id",
-                "name",
-                "profileImage",
-                "isTodoOwner",
-              ],
-              "type": "object",
+            "hasNext": {
+              "description": "다음 페이지 존재 여부",
+              "type": "boolean",
             },
-            "content": {
+            "hasPrevious": {
+              "description": "이전 페이지 존재 여부",
+              "type": "boolean",
+            },
+            "nextCursor": {
+              "description": "다음 페이지 커서 (없으면 null)",
               "nullable": true,
               "type": "string",
             },
-            "createdAt": {
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+            "previousCursor": {
+              "description": "이전 페이지 커서 (없으면 null)",
+              "nullable": true,
               "type": "string",
             },
-            "depth": {
+            "size": {
+              "description": "요청한 페이지 크기",
+              "exclusiveMinimum": true,
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
-            "editedAt": {
-              "format": "date-time",
-              "nullable": true,
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-              "type": "string",
-            },
-            "hasMoreReplies": {
-              "type": "boolean",
-            },
-            "hasReplies": {
-              "type": "boolean",
-            },
-            "id": {
+          },
+          "required": [
+            "previousCursor",
+            "nextCursor",
+            "hasPrevious",
+            "hasNext",
+            "size",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "items",
+        "pagination",
+      ],
+      "type": "object",
+    },
+    "TodoConversationResponseDto": {
+      "description": "할 일 댓글 대화 응답",
+      "properties": {
+        "focus": {
+          "description": "focus 댓글 문맥 (일반 목록이면 null)",
+          "nullable": true,
+          "properties": {
+            "commentId": {
+              "description": "focus 댓글 ID (CUID)",
               "format": "cuid",
               "pattern": "^[cC][^\\s-]{8,}$",
               "type": "string",
             },
-            "isDeleted": {
-              "type": "boolean",
-            },
-            "isEdited": {
-              "type": "boolean",
-            },
-            "likeCount": {
+            "itemIndex": {
+              "description": "현재 items에서 focus 댓글의 위치",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
-            "parentId": {
-              "format": "cuid",
-              "nullable": true,
-              "pattern": "^[cC][^\\s-]{8,}$",
-              "type": "string",
-            },
-            "replyCount": {
+            "omittedAncestorCount": {
+              "description": "응답 크기 제한으로 생략한 더 오래된 조상 수",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
-            "replyPreview": {
+            "precedingAncestors": {
+              "description": "현재 페이지 앞에서 이어지는 focus 조상 목록 (최대 20개)",
               "items": {
+                "description": "평탄한 댓글 대화 행",
+                "properties": {
+                  "comment": {
+                    "description": "평탄한 할 일 댓글",
+                    "properties": {
+                      "author": {
+                        "description": "댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)",
+                        "nullable": true,
+                        "properties": {
+                          "id": {
+                            "description": "댓글 작성자 ID (CUID)",
+                            "format": "cuid",
+                            "pattern": "^[cC][^\\s-]{8,}$",
+                            "type": "string",
+                          },
+                          "isTodoOwner": {
+                            "description": "할 일 작성자 여부",
+                            "type": "boolean",
+                          },
+                          "name": {
+                            "description": "댓글 작성자 이름 (미설정 시 null)",
+                            "nullable": true,
+                            "type": "string",
+                          },
+                          "profileImage": {
+                            "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
+                            "nullable": true,
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "profileImage",
+                          "isTodoOwner",
+                        ],
+                        "type": "object",
+                      },
+                      "content": {
+                        "description": "댓글 내용 (삭제된 댓글이면 null)",
+                        "nullable": true,
+                        "type": "string",
+                      },
+                      "createdAt": {
+                        "description": "댓글 생성 시각 (ISO 8601 UTC)",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                        "type": "string",
+                      },
+                      "depth": {
+                        "description": "대화에서 댓글의 깊이 (최상위 댓글은 0)",
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "editedAt": {
+                        "description": "댓글 최종 수정 시각 (수정하지 않았으면 null)",
+                        "format": "date-time",
+                        "nullable": true,
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                        "type": "string",
+                      },
+                      "id": {
+                        "description": "댓글 ID (CUID)",
+                        "format": "cuid",
+                        "pattern": "^[cC][^\\s-]{8,}$",
+                        "type": "string",
+                      },
+                      "isDeleted": {
+                        "description": "댓글 삭제 여부",
+                        "type": "boolean",
+                      },
+                      "isEdited": {
+                        "description": "댓글 수정 여부",
+                        "type": "boolean",
+                      },
+                      "likeCount": {
+                        "description": "활성 좋아요 수",
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "parentId": {
+                        "description": "직계 부모 댓글 ID (최상위 댓글이면 null)",
+                        "format": "cuid",
+                        "nullable": true,
+                        "pattern": "^[cC][^\\s-]{8,}$",
+                        "type": "string",
+                      },
+                      "replyCount": {
+                        "description": "화면에 표시되는 직계 답글 수",
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "replyTo": {
+                        "description": "답글 대상 (최상위 댓글이면 null)",
+                        "nullable": true,
+                        "properties": {
+                          "authorName": {
+                            "description": "답글 대상 작성자 이름 (확인할 수 없으면 null)",
+                            "nullable": true,
+                            "type": "string",
+                          },
+                          "commentId": {
+                            "description": "직계 부모 댓글 ID (CUID)",
+                            "format": "cuid",
+                            "pattern": "^[cC][^\\s-]{8,}$",
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "commentId",
+                          "authorName",
+                        ],
+                        "type": "object",
+                      },
+                      "threadId": {
+                        "description": "댓글 대화의 최상위 댓글 ID (CUID)",
+                        "format": "cuid",
+                        "pattern": "^[cC][^\\s-]{8,}$",
+                        "type": "string",
+                      },
+                      "viewer": {
+                        "description": "현재 사용자의 댓글 권한과 상태",
+                        "properties": {
+                          "canDelete": {
+                            "description": "현재 사용자의 삭제 가능 여부",
+                            "type": "boolean",
+                          },
+                          "canEdit": {
+                            "description": "현재 사용자의 수정 가능 여부",
+                            "type": "boolean",
+                          },
+                          "canReply": {
+                            "description": "현재 사용자의 답글 작성 가능 여부",
+                            "type": "boolean",
+                          },
+                          "isLiked": {
+                            "description": "현재 사용자의 좋아요 여부",
+                            "type": "boolean",
+                          },
+                        },
+                        "required": [
+                          "isLiked",
+                          "canEdit",
+                          "canDelete",
+                          "canReply",
+                        ],
+                        "type": "object",
+                      },
+                    },
+                    "required": [
+                      "id",
+                      "threadId",
+                      "parentId",
+                      "depth",
+                      "author",
+                      "content",
+                      "isDeleted",
+                      "isEdited",
+                      "likeCount",
+                      "replyCount",
+                      "replyTo",
+                      "viewer",
+                      "createdAt",
+                      "editedAt",
+                    ],
+                    "type": "object",
+                  },
+                  "connection": {
+                    "description": "클라이언트 tree 추론 없이 그리는 댓글 행 연결선 topology",
+                    "properties": {
+                      "incomingBranch": {
+                        "description": "답글이면 부모 lane에서 아바타로 이어지는 branch, root면 null",
+                        "nullable": true,
+                        "properties": {
+                          "fromDepth": {
+                            "description": "부모 연결선의 시각 depth",
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer",
+                          },
+                          "toDepth": {
+                            "description": "현재 댓글 아바타의 시각 depth",
+                            "exclusiveMinimum": true,
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "fromDepth",
+                          "toDepth",
+                        ],
+                        "type": "object",
+                      },
+                      "lowerLaneDepths": {
+                        "description": "아바타 중심에서 행 하단까지 그릴 연결선 depth (중복 없는 오름차순)",
+                        "items": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer",
+                        },
+                        "type": "array",
+                      },
+                      "upperLaneDepths": {
+                        "description": "행 상단에서 아바타 중심까지 그릴 연결선 depth (중복 없는 오름차순)",
+                        "items": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer",
+                        },
+                        "type": "array",
+                      },
+                      "visualDepth": {
+                        "description": "클라이언트가 그대로 x축에 배치할 댓글의 시각 depth",
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "visualDepth",
+                      "upperLaneDepths",
+                      "lowerLaneDepths",
+                      "incomingBranch",
+                    ],
+                    "type": "object",
+                  },
+                  "isFocused": {
+                    "description": "요청한 focus 댓글인지 여부",
+                    "type": "boolean",
+                  },
+                },
+                "required": [
+                  "comment",
+                  "connection",
+                  "isFocused",
+                ],
+                "type": "object",
+              },
+              "maxItems": 20,
+              "type": "array",
+            },
+          },
+          "required": [
+            "commentId",
+            "itemIndex",
+            "precedingAncestors",
+            "omittedAncestorCount",
+          ],
+          "type": "object",
+        },
+        "items": {
+          "description": "부모가 자식보다 먼저 오는 댓글 대화 행",
+          "items": {
+            "description": "평탄한 댓글 대화 행",
+            "properties": {
+              "comment": {
+                "description": "평탄한 할 일 댓글",
                 "properties": {
                   "author": {
+                    "description": "댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)",
                     "nullable": true,
                     "properties": {
                       "id": {
+                        "description": "댓글 작성자 ID (CUID)",
                         "format": "cuid",
                         "pattern": "^[cC][^\\s-]{8,}$",
                         "type": "string",
                       },
                       "isTodoOwner": {
+                        "description": "할 일 작성자 여부",
                         "type": "boolean",
                       },
                       "name": {
+                        "description": "댓글 작성자 이름 (미설정 시 null)",
                         "nullable": true,
                         "type": "string",
                       },
                       "profileImage": {
+                        "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
                         "nullable": true,
                         "type": "string",
                       },
@@ -9456,66 +9313,73 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                     "type": "object",
                   },
                   "content": {
+                    "description": "댓글 내용 (삭제된 댓글이면 null)",
                     "nullable": true,
                     "type": "string",
                   },
                   "createdAt": {
+                    "description": "댓글 생성 시각 (ISO 8601 UTC)",
                     "format": "date-time",
                     "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
                     "type": "string",
                   },
                   "depth": {
+                    "description": "대화에서 댓글의 깊이 (최상위 댓글은 0)",
                     "maximum": 9007199254740991,
                     "minimum": 0,
                     "type": "integer",
                   },
                   "editedAt": {
+                    "description": "댓글 최종 수정 시각 (수정하지 않았으면 null)",
                     "format": "date-time",
                     "nullable": true,
                     "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
                     "type": "string",
                   },
-                  "hasMoreReplies": {
-                    "type": "boolean",
-                  },
-                  "hasReplies": {
-                    "type": "boolean",
-                  },
                   "id": {
+                    "description": "댓글 ID (CUID)",
                     "format": "cuid",
                     "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
                   },
                   "isDeleted": {
+                    "description": "댓글 삭제 여부",
                     "type": "boolean",
                   },
                   "isEdited": {
+                    "description": "댓글 수정 여부",
                     "type": "boolean",
                   },
                   "likeCount": {
+                    "description": "활성 좋아요 수",
                     "maximum": 9007199254740991,
                     "minimum": 0,
                     "type": "integer",
                   },
                   "parentId": {
+                    "description": "직계 부모 댓글 ID (최상위 댓글이면 null)",
                     "format": "cuid",
                     "nullable": true,
                     "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
                   },
                   "replyCount": {
+                    "description": "화면에 표시되는 직계 답글 수",
                     "maximum": 9007199254740991,
                     "minimum": 0,
                     "type": "integer",
                   },
                   "replyTo": {
+                    "description": "답글 대상 (최상위 댓글이면 null)",
                     "nullable": true,
                     "properties": {
                       "authorName": {
+                        "description": "답글 대상 작성자 이름 (확인할 수 없으면 null)",
                         "nullable": true,
                         "type": "string",
                       },
                       "commentId": {
+                        "description": "직계 부모 댓글 ID (CUID)",
                         "format": "cuid",
                         "pattern": "^[cC][^\\s-]{8,}$",
                         "type": "string",
@@ -9527,30 +9391,29 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                     ],
                     "type": "object",
                   },
-                  "rootId": {
+                  "threadId": {
+                    "description": "댓글 대화의 최상위 댓글 ID (CUID)",
                     "format": "cuid",
-                    "nullable": true,
                     "pattern": "^[cC][^\\s-]{8,}$",
                     "type": "string",
                   },
-                  "todoId": {
-                    "exclusiveMinimum": true,
-                    "maximum": 9007199254740991,
-                    "minimum": 0,
-                    "type": "integer",
-                  },
                   "viewer": {
+                    "description": "현재 사용자의 댓글 권한과 상태",
                     "properties": {
                       "canDelete": {
+                        "description": "현재 사용자의 삭제 가능 여부",
                         "type": "boolean",
                       },
                       "canEdit": {
+                        "description": "현재 사용자의 수정 가능 여부",
                         "type": "boolean",
                       },
                       "canReply": {
+                        "description": "현재 사용자의 답글 작성 가능 여부",
                         "type": "boolean",
                       },
                       "isLiked": {
+                        "description": "현재 사용자의 좋아요 여부",
                         "type": "boolean",
                       },
                     },
@@ -9565,9 +9428,8 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                 },
                 "required": [
                   "id",
-                  "todoId",
+                  "threadId",
                   "parentId",
-                  "rootId",
                   "depth",
                   "author",
                   "content",
@@ -9575,8 +9437,6 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                   "isEdited",
                   "likeCount",
                   "replyCount",
-                  "hasReplies",
-                  "hasMoreReplies",
                   "replyTo",
                   "viewer",
                   "createdAt",
@@ -9584,102 +9444,140 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                 ],
                 "type": "object",
               },
-              "type": "array",
-            },
-            "replyTo": {
-              "nullable": true,
-              "properties": {
-                "authorName": {
-                  "nullable": true,
-                  "type": "string",
+              "connection": {
+                "description": "클라이언트 tree 추론 없이 그리는 댓글 행 연결선 topology",
+                "properties": {
+                  "incomingBranch": {
+                    "description": "답글이면 부모 lane에서 아바타로 이어지는 branch, root면 null",
+                    "nullable": true,
+                    "properties": {
+                      "fromDepth": {
+                        "description": "부모 연결선의 시각 depth",
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "toDepth": {
+                        "description": "현재 댓글 아바타의 시각 depth",
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "fromDepth",
+                      "toDepth",
+                    ],
+                    "type": "object",
+                  },
+                  "lowerLaneDepths": {
+                    "description": "아바타 중심에서 행 하단까지 그릴 연결선 depth (중복 없는 오름차순)",
+                    "items": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "type": "array",
+                  },
+                  "upperLaneDepths": {
+                    "description": "행 상단에서 아바타 중심까지 그릴 연결선 depth (중복 없는 오름차순)",
+                    "items": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "type": "array",
+                  },
+                  "visualDepth": {
+                    "description": "클라이언트가 그대로 x축에 배치할 댓글의 시각 depth",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
                 },
-                "commentId": {
-                  "format": "cuid",
-                  "pattern": "^[cC][^\\s-]{8,}$",
-                  "type": "string",
-                },
+                "required": [
+                  "visualDepth",
+                  "upperLaneDepths",
+                  "lowerLaneDepths",
+                  "incomingBranch",
+                ],
+                "type": "object",
               },
-              "required": [
-                "commentId",
-                "authorName",
-              ],
-              "type": "object",
+              "isFocused": {
+                "description": "요청한 focus 댓글인지 여부",
+                "type": "boolean",
+              },
             },
-            "rootId": {
-              "format": "cuid",
+            "required": [
+              "comment",
+              "connection",
+              "isFocused",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "pagination": {
+          "description": "댓글 커서 페이지네이션",
+          "properties": {
+            "hasNext": {
+              "description": "다음 페이지 존재 여부",
+              "type": "boolean",
+            },
+            "hasPrevious": {
+              "description": "이전 페이지 존재 여부",
+              "type": "boolean",
+            },
+            "nextCursor": {
+              "description": "다음 페이지 커서 (없으면 null)",
               "nullable": true,
-              "pattern": "^[cC][^\\s-]{8,}$",
               "type": "string",
             },
-            "todoId": {
+            "previousCursor": {
+              "description": "이전 페이지 커서 (없으면 null)",
+              "nullable": true,
+              "type": "string",
+            },
+            "size": {
+              "description": "요청한 페이지 크기",
               "exclusiveMinimum": true,
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
-            "viewer": {
-              "properties": {
-                "canDelete": {
-                  "type": "boolean",
-                },
-                "canEdit": {
-                  "type": "boolean",
-                },
-                "canReply": {
-                  "type": "boolean",
-                },
-                "isLiked": {
-                  "type": "boolean",
-                },
-              },
-              "required": [
-                "isLiked",
-                "canEdit",
-                "canDelete",
-                "canReply",
-              ],
-              "type": "object",
-            },
           },
           "required": [
-            "id",
-            "todoId",
-            "parentId",
-            "rootId",
-            "depth",
-            "author",
-            "content",
-            "isDeleted",
-            "isEdited",
-            "likeCount",
-            "replyCount",
-            "hasReplies",
-            "hasMoreReplies",
-            "replyTo",
-            "viewer",
-            "createdAt",
-            "editedAt",
-            "replyPreview",
+            "previousCursor",
+            "nextCursor",
+            "hasPrevious",
+            "hasNext",
+            "size",
           ],
           "type": "object",
         },
       },
       "required": [
-        "ancestors",
-        "comment",
+        "items",
+        "focus",
+        "pagination",
       ],
       "type": "object",
     },
     "TodoDetailsResponseDto": {
+      "description": "댓글 화면용 할 일 상세 응답",
       "properties": {
         "metrics": {
+          "description": "할 일 댓글 화면 지표",
           "properties": {
             "commentCount": {
+              "description": "삭제되지 않은 댓글 수",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
             },
             "viewCount": {
+              "description": "할 일의 중복 제거 조회 수",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
@@ -9692,17 +9590,21 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "type": "object",
         },
         "owner": {
+          "description": "할 일 작성자",
           "properties": {
             "id": {
+              "description": "댓글 작성자 ID (CUID)",
               "format": "cuid",
               "pattern": "^[cC][^\\s-]{8,}$",
               "type": "string",
             },
             "name": {
+              "description": "댓글 작성자 이름 (미설정 시 null)",
               "nullable": true,
               "type": "string",
             },
             "profileImage": {
+              "description": "댓글 작성자 프로필 이미지 URL (미설정 시 null)",
               "nullable": true,
               "type": "string",
             },
@@ -9715,14 +9617,18 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "type": "object",
         },
         "permissions": {
+          "description": "현재 사용자의 할 일 권한",
           "properties": {
             "canComment": {
+              "description": "현재 사용자의 댓글 작성 가능 여부",
               "type": "boolean",
             },
             "canEdit": {
+              "description": "현재 사용자의 할 일 수정 가능 여부",
               "type": "boolean",
             },
             "canNudge": {
+              "description": "현재 사용자의 콕 찌르기 가능 여부",
               "type": "boolean",
             },
           },
@@ -9734,6 +9640,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "type": "object",
         },
         "todo": {
+          "description": "댓글 화면에 표시할 할 일",
           "example": {
             "category": {
               "color": "#FFB3B3",
@@ -11165,8 +11072,10 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "type": "object",
     },
     "UpdateTodoCommentDto": {
+      "description": "할 일 댓글 수정 요청",
       "properties": {
         "content": {
+          "description": "댓글 내용 (1~500자)",
           "maxLength": 500,
           "minLength": 1,
           "type": "string",
@@ -12197,16 +12106,21 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "type": "object",
     },
     "WriteTodoCommentChainDto": {
+      "description": "할 일 댓글 이어 쓰기 요청",
       "properties": {
         "items": {
+          "description": "이어 쓸 댓글 목록 (1~5개)",
           "items": {
+            "description": "이어 쓰기 댓글 한 건",
             "properties": {
               "clientRequestId": {
+                "description": "댓글 작성 멱등 요청 ID (UUID)",
                 "format": "uuid",
                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
                 "type": "string",
               },
               "content": {
+                "description": "댓글 내용 (1~500자)",
                 "maxLength": 500,
                 "minLength": 1,
                 "type": "string",
@@ -12221,6 +12135,14 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "maxItems": 5,
           "minItems": 1,
           "type": "array",
+        },
+        "parentId": {
+          "default": null,
+          "description": "댓글 ID (CUID)",
+          "format": "cuid",
+          "nullable": true,
+          "pattern": "^[cC][^\\s-]{8,}$",
+          "type": "string",
         },
       },
       "required": [
@@ -35173,10 +35095,193 @@ Todo를 찾을 수 없습니다.",
     },
   },
   "/v1/todos/{todoId}/comments": {
-    "get": {
-      "operationId": "getTodoComments",
+    "post": {
+      "operationId": "createTodoComment",
       "parameters": [
         {
+          "description": "할 일 ID (양의 정수)",
+          "in": "path",
+          "name": "todoId",
+          "required": true,
+          "schema": {
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WriteTodoCommentChainDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoCommentChainResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "리소스가 성공적으로 생성되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_0801",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Todo를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Todo를 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "할 일 댓글 작성 (한 번에 이어 쓰기 가능)",
+      "tags": [
+        "Todos",
+      ],
+    },
+  },
+  "/v1/todos/{todoId}/comments/overview": {
+    "get": {
+      "operationId": "getTodoCommentOverview",
+      "parameters": [
+        {
+          "description": "할 일 ID (양의 정수)",
           "in": "path",
           "name": "todoId",
           "required": true,
@@ -35188,6 +35293,7 @@ Todo를 찾을 수 없습니다.",
           },
         },
         {
+          "description": "댓글 정렬 (LATEST: 최신순, POPULAR: 인기순)",
           "in": "query",
           "name": "sort",
           "required": false,
@@ -35201,8 +35307,9 @@ Todo를 찾을 수 없습니다.",
           },
         },
         {
+          "description": "댓글 페이지 위치 커서",
           "in": "query",
-          "name": "cursor",
+          "name": "before",
           "required": false,
           "schema": {
             "minLength": 1,
@@ -35210,11 +35317,22 @@ Todo를 찾을 수 없습니다.",
           },
         },
         {
+          "description": "댓글 페이지 위치 커서",
+          "in": "query",
+          "name": "after",
+          "required": false,
+          "schema": {
+            "minLength": 1,
+            "type": "string",
+          },
+        },
+        {
+          "description": "댓글 조회 개수 (기본 30, 최대 50)",
           "in": "query",
           "name": "size",
           "required": false,
           "schema": {
-            "default": 20,
+            "default": 30,
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -35228,7 +35346,7 @@ Todo를 찾을 수 없습니다.",
               "schema": {
                 "properties": {
                   "data": {
-                    "$ref": "#/components/schemas/PaginatedTodoCommentsResponseDto",
+                    "$ref": "#/components/schemas/TodoCommentOverviewResponseDto",
                   },
                   "success": {
                     "example": true,
@@ -35412,186 +35530,7 @@ Todo를 찾을 수 없습니다.",
           "bearer": [],
         },
       ],
-      "summary": "할 일 최상위 댓글 목록",
-      "tags": [
-        "Todos",
-      ],
-    },
-    "post": {
-      "operationId": "createTodoComment",
-      "parameters": [
-        {
-          "in": "path",
-          "name": "todoId",
-          "required": true,
-          "schema": {
-            "exclusiveMinimum": true,
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer",
-          },
-        },
-      ],
-      "requestBody": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/WriteTodoCommentChainDto",
-            },
-          },
-        },
-        "required": true,
-      },
-      "responses": {
-        "201": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "data": {
-                    "$ref": "#/components/schemas/TodoCommentChainResponseDto",
-                  },
-                  "success": {
-                    "example": true,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "data",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "리소스가 성공적으로 생성되었습니다",
-        },
-        "400": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 요청입니다",
-        },
-        "401": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "AUTH_0107",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "인증이 필요합니다.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "인증이 필요합니다.",
-        },
-        "404": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "TODO_0801",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "Todo를 찾을 수 없습니다.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "Todo를 찾을 수 없습니다.",
-        },
-        "500": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "서버 내부 오류가 발생했습니다",
-        },
-      },
-      "security": [
-        {
-          "bearer": [],
-        },
-      ],
-      "summary": "할 일 댓글 작성 (한 번에 이어 쓰기 가능)",
+      "summary": "할 일 댓글 개요 조회",
       "tags": [
         "Todos",
       ],
@@ -35602,6 +35541,7 @@ Todo를 찾을 수 없습니다.",
       "operationId": "deleteTodoComment",
       "parameters": [
         {
+          "description": "할 일 ID (양의 정수)",
           "in": "path",
           "name": "todoId",
           "required": true,
@@ -35782,6 +35722,7 @@ Todo를 찾을 수 없습니다.",
       "operationId": "updateTodoComment",
       "parameters": [
         {
+          "description": "할 일 ID (양의 정수)",
           "in": "path",
           "name": "todoId",
           "required": true,
@@ -35974,6 +35915,7 @@ Todo를 찾을 수 없습니다.",
       "operationId": "unlikeTodoComment",
       "parameters": [
         {
+          "description": "할 일 ID (양의 정수)",
           "in": "path",
           "name": "todoId",
           "required": true,
@@ -36107,6 +36049,7 @@ Todo를 찾을 수 없습니다.",
       "operationId": "likeTodoComment",
       "parameters": [
         {
+          "description": "할 일 ID (양의 정수)",
           "in": "path",
           "name": "todoId",
           "required": true,
@@ -36237,11 +36180,12 @@ Todo를 찾을 수 없습니다.",
       ],
     },
   },
-  "/v1/todos/{todoId}/comments/{commentId}/replies": {
+  "/v1/todos/{todoId}/conversation": {
     "get": {
-      "operationId": "getTodoCommentReplies",
+      "operationId": "getTodoConversation",
       "parameters": [
         {
+          "description": "할 일 ID (양의 정수)",
           "in": "path",
           "name": "todoId",
           "required": true,
@@ -36253,17 +36197,7 @@ Todo를 찾을 수 없습니다.",
           },
         },
         {
-          "description": "댓글 ID (CUID)",
-          "in": "path",
-          "name": "commentId",
-          "required": true,
-          "schema": {
-            "format": "cuid",
-            "pattern": "^[cC][^\\s-]{8,}$",
-            "type": "string",
-          },
-        },
-        {
+          "description": "댓글 정렬 (LATEST: 최신순, POPULAR: 인기순)",
           "in": "query",
           "name": "sort",
           "required": false,
@@ -36277,8 +36211,20 @@ Todo를 찾을 수 없습니다.",
           },
         },
         {
+          "description": "댓글 ID (CUID)",
           "in": "query",
-          "name": "cursor",
+          "name": "focusCommentId",
+          "required": false,
+          "schema": {
+            "format": "cuid",
+            "pattern": "^[cC][^\\s-]{8,}$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "댓글 페이지 위치 커서",
+          "in": "query",
+          "name": "before",
           "required": false,
           "schema": {
             "minLength": 1,
@@ -36286,11 +36232,22 @@ Todo를 찾을 수 없습니다.",
           },
         },
         {
+          "description": "댓글 페이지 위치 커서",
+          "in": "query",
+          "name": "after",
+          "required": false,
+          "schema": {
+            "minLength": 1,
+            "type": "string",
+          },
+        },
+        {
+          "description": "댓글 조회 개수 (기본 30, 최대 50)",
           "in": "query",
           "name": "size",
           "required": false,
           "schema": {
-            "default": 20,
+            "default": 30,
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -36304,7 +36261,7 @@ Todo를 찾을 수 없습니다.",
               "schema": {
                 "properties": {
                   "data": {
-                    "$ref": "#/components/schemas/PaginatedTodoCommentsResponseDto",
+                    "$ref": "#/components/schemas/TodoConversationResponseDto",
                   },
                   "success": {
                     "example": true,
@@ -36334,7 +36291,49 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.
+
+잘못된 요청입니다",
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "example": "SYS_0002",
+                    "type": "string",
+                  },
+                  "details": {
+                    "example": null,
+                    "nullable": true,
+                    "type": "object",
+                  },
+                  "message": {
+                    "example": "잘못된 파라미터입니다.",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "code",
+                  "message",
+                ],
+                "type": "object",
+              },
+              "success": {
+                "example": false,
+                "type": "boolean",
+              },
+              "timestamp": {
+                "example": 1700000000000,
+                "type": "number",
+              },
+            },
+            "required": [
+              "success",
+              "error",
+              "timestamp",
+            ],
+            "type": "object",
+          },
         },
         "401": {
           "content": {
@@ -36391,7 +36390,7 @@ Todo를 찾을 수 없습니다.",
                   "error": {
                     "properties": {
                       "code": {
-                        "example": "TODO_0831",
+                        "example": "TODO_0801",
                         "type": "string",
                       },
                       "details": {
@@ -36400,7 +36399,7 @@ Todo를 찾을 수 없습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "댓글을 찾을 수 없습니다.",
+                        "example": "Todo를 찾을 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -36428,7 +36427,7 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "댓글을 찾을 수 없습니다.",
+          "description": "Todo를 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -36446,379 +36445,7 @@ Todo를 찾을 수 없습니다.",
           "bearer": [],
         },
       ],
-      "summary": "댓글의 직계 답글 목록",
-      "tags": [
-        "Todos",
-      ],
-    },
-    "post": {
-      "operationId": "replyTodoComment",
-      "parameters": [
-        {
-          "in": "path",
-          "name": "todoId",
-          "required": true,
-          "schema": {
-            "exclusiveMinimum": true,
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer",
-          },
-        },
-        {
-          "description": "댓글 ID (CUID)",
-          "in": "path",
-          "name": "commentId",
-          "required": true,
-          "schema": {
-            "format": "cuid",
-            "pattern": "^[cC][^\\s-]{8,}$",
-            "type": "string",
-          },
-        },
-      ],
-      "requestBody": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/WriteTodoCommentChainDto",
-            },
-          },
-        },
-        "required": true,
-      },
-      "responses": {
-        "201": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "data": {
-                    "$ref": "#/components/schemas/TodoCommentChainResponseDto",
-                  },
-                  "success": {
-                    "example": true,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "data",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "리소스가 성공적으로 생성되었습니다",
-        },
-        "400": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 요청입니다",
-        },
-        "401": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "AUTH_0107",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "인증이 필요합니다.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "인증이 필요합니다.",
-        },
-        "404": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "TODO_0831",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "댓글을 찾을 수 없습니다.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "댓글을 찾을 수 없습니다.",
-        },
-        "500": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "서버 내부 오류가 발생했습니다",
-        },
-      },
-      "security": [
-        {
-          "bearer": [],
-        },
-      ],
-      "summary": "댓글에 답글 작성 (깊이 제한 없음, 한 번에 이어 쓰기 가능)",
-      "tags": [
-        "Todos",
-      ],
-    },
-  },
-  "/v1/todos/{todoId}/comments/{commentId}/thread": {
-    "get": {
-      "operationId": "getTodoCommentThread",
-      "parameters": [
-        {
-          "in": "path",
-          "name": "todoId",
-          "required": true,
-          "schema": {
-            "exclusiveMinimum": true,
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer",
-          },
-        },
-        {
-          "description": "댓글 ID (CUID)",
-          "in": "path",
-          "name": "commentId",
-          "required": true,
-          "schema": {
-            "format": "cuid",
-            "pattern": "^[cC][^\\s-]{8,}$",
-            "type": "string",
-          },
-        },
-      ],
-      "responses": {
-        "200": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "data": {
-                    "$ref": "#/components/schemas/TodoCommentThreadResponseDto",
-                  },
-                  "success": {
-                    "example": true,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "data",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "요청이 성공적으로 처리되었습니다",
-        },
-        "400": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 요청입니다",
-        },
-        "401": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "AUTH_0107",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "인증이 필요합니다.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "인증이 필요합니다.",
-        },
-        "404": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "TODO_0831",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "댓글을 찾을 수 없습니다.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "댓글을 찾을 수 없습니다.",
-        },
-        "500": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "서버 내부 오류가 발생했습니다",
-        },
-      },
-      "security": [
-        {
-          "bearer": [],
-        },
-      ],
-      "summary": "댓글 스레드 조회 (조상·본문·답글 첫 페이지)",
+      "summary": "할 일 댓글 대화 조회",
       "tags": [
         "Todos",
       ],
@@ -36829,6 +36456,7 @@ Todo를 찾을 수 없습니다.",
       "operationId": "getTodoDetails",
       "parameters": [
         {
+          "description": "할 일 ID (양의 정수)",
           "in": "path",
           "name": "todoId",
           "required": true,

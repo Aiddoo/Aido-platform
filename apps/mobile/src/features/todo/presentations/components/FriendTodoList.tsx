@@ -1,8 +1,8 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
-import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useToday } from '@src/shared/hooks/useToday';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -17,7 +17,6 @@ import {
   Text,
   VStack,
   useOverlay,
-  usePremiumDialog,
 } from '@src/shared/ui';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -25,15 +24,14 @@ import times from 'es-toolkit/compat/times';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useState } from 'react';
-import { Pressable } from 'react-native';
 
 import { useFeedDate } from '../hooks/use-feed-date';
 import { useGetFriendTodosQueryOptions } from '../queries/use-get-friend-todos-query-options';
 import { useGetRemindNudgeCooldownQueryOptions } from '../queries/use-get-remind-nudge-cooldown-query-options';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
-import { NudgeBottomSheet } from './NudgeBottomSheet';
 import { RemindNudgeBottomSheet } from './RemindNudgeBottomSheet';
+import { TodoNudgeButton } from './TodoNudgeButton';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './TodoRow';
 
 interface FriendTodoListProps {
@@ -43,6 +41,7 @@ interface FriendTodoListProps {
 export function FriendTodoList({ friend }: FriendTodoListProps) {
   const { t } = useTranslation('todo');
   const [date] = useFeedDate();
+  const today = useToday();
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const { data: categoryGroups } = useSuspenseQuery(
     useGetFriendTodosQueryOptions(friend.id, formatDate(date), preference.timeFormat),
@@ -51,7 +50,7 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   if (categoryGroups.length === 0) {
-    const isToday = isSameDay(date, new Date());
+    const isToday = isSameDay(date, today);
 
     return (
       <Result
@@ -76,6 +75,7 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
                 friend={friend}
                 isLimitReached={isLimitReached}
                 date={date}
+                today={today}
               />
             ))}
           </Box>
@@ -116,74 +116,38 @@ interface FriendTodoItemProps {
   friend: FriendUserViewModel;
   isLimitReached: boolean;
   date: Date;
+  today: Date;
 }
 
-function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemProps) {
+function FriendTodoItem({ todo, friend, isLimitReached, date, today }: FriendTodoItemProps) {
   const { t } = useTranslation('todo');
-  const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
-  const overlay = useOverlay();
-  const premiumDialog = usePremiumDialog();
   const [isExpanded, setIsExpanded] = useState(todo.hasSubTodos);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },
-    new Date(),
+    today,
   );
 
-  const openNudgeDialog = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <NudgeBottomSheet
-        friend={friend}
-        todo={todo}
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-      />
-    ));
-  };
-
-  const openLimitDialog = () => {
-    trackEvent('premium_gate_shown', { feature: 'friend_todo_view' });
-    premiumDialog.open({
-      title: t('nudge.limitTitle'),
-      description: t('nudge.subscribeUnlimited'),
-    });
-  };
-
-  /** 댓글은 말풍선으로만 들어간다 — 내 할 일과 같은 자리, 같은 화면이다. */
   const openComments = () => push({ pathname: '/todo/[todoId]', params: { todoId: todo.id } });
-
-  const handleNudgePress = () => {
-    if (isLimitReached) {
-      openLimitDialog();
-      return;
-    }
-    openNudgeDialog();
-  };
 
   return (
     <TodoRow
-      left={<TodoCheckbox isChecked={todo.completed} />}
+      left={<TodoCheckbox isSelected={todo.completed} />}
       top={<TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>}
       middle={
-        showDateTime ? (
+        showDateTime && (
           <Text size="e1" shade={6}>
             {todo.formattedTime}
           </Text>
-        ) : undefined
+        )
       }
       bottom={
-        todo.hasSubTodos ? (
+        todo.hasSubTodos && (
           <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
-        ) : undefined
+        )
       }
       right={
-        // 대화는 날짜와 무관하게 열려 있다 — 콕 찌르기만 그날 할 일인지에 걸린다.
         <HStack gap={4} align="center">
           <IconCountButton
             icon={
@@ -199,9 +163,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
             accessibilityLabel={t('detail.open')}
           />
           {canNudgeTodo && (
-            <Pressable onPress={handleNudgePress} hitSlop={8}>
-              <PawIcon width={18} height={18} colorClassName="text-gray-6" />
-            </Pressable>
+            <TodoNudgeButton receiver={friend} todo={todo} isLimitReached={isLimitReached} />
           )}
         </HStack>
       }
@@ -212,7 +174,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
           {todo.subTodos.map((subTodo) => (
             <TodoRow
               key={subTodo.id}
-              left={<TodoCheckbox isChecked={subTodo.completed} />}
+              left={<TodoCheckbox isSelected={subTodo.completed} />}
               top={<TodoLabel isChecked={subTodo.completed}>{subTodo.title}</TodoLabel>}
             />
           ))}

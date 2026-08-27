@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm --filter @aido/mobile check:conventions",
     "clean": "turbo run clean && rm -rf node_modules",
     "commit": "cz",
     "db:generate": "pnpm --filter @aido/api db:generate",

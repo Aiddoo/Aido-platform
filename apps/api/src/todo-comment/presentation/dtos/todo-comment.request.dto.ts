@@ -1,6 +1,7 @@
 import {
 	createTodoCommentChainSchema,
-	getTodoCommentsQuerySchema,
+	getTodoCommentOverviewQuerySchema,
+	getTodoConversationQuerySchema,
 	todoCommentIdParamSchema,
 	todoDetailsParamSchema,
 	updateTodoCommentSchema,
@@ -11,4 +12,7 @@ export class TodoDetailsParamDto extends createZodDto(todoDetailsParamSchema) {}
 export class TodoCommentIdParamDto extends createZodDto(todoCommentIdParamSchema) {}
 export class WriteTodoCommentChainDto extends createZodDto(createTodoCommentChainSchema) {}
 export class UpdateTodoCommentDto extends createZodDto(updateTodoCommentSchema) {}
-export class GetTodoCommentsQueryDto extends createZodDto(getTodoCommentsQuerySchema) {}
+export class GetTodoCommentOverviewQueryDto extends createZodDto(
+	getTodoCommentOverviewQuerySchema,
+) {}
+export class GetTodoConversationQueryDto extends createZodDto(getTodoConversationQuerySchema) {}

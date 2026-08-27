@@ -1,4 +1,4 @@
-import { isSameDay } from '@src/shared/utils/date';
+import { isSameDay, todoOverlapsDate } from '@src/shared/utils/date';
 import { z } from 'zod';
 
 export const nudgeLimitInfoSchema = z.object({
@@ -83,6 +83,26 @@ const canNudgeTodoOnDate = (
   return !input.isCompleted && canNudgeOnDate(input.targetDate, now);
 };
 
+/**
+ * 상세 화면의 넛지 노출 조건. 서버가 허용한 친구 관계를 전제로, 완료 여부와
+ * 오늘이 할 일의 포함 범위[startDate, endDate] 안인지까지 같은 자리에서 판정한다.
+ */
+const canNudgeTodoInRange = (
+  input: {
+    canNudge: boolean;
+    isCompleted: boolean;
+    startDate: string;
+    endDate: string | null;
+  },
+  targetDate: string,
+): boolean => {
+  return (
+    input.canNudge &&
+    !input.isCompleted &&
+    todoOverlapsDate(input.startDate, input.endDate, targetDate)
+  );
+};
+
 export const TodoNudgePolicy = {
   maxMessageLength: MAX_MESSAGE_LENGTH,
   normalizeMessage,
@@ -91,4 +111,5 @@ export const TodoNudgePolicy = {
   getBannerState,
   canNudgeOnDate,
   canNudgeTodoOnDate,
+  canNudgeTodoInRange,
 } as const;

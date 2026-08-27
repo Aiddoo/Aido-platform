@@ -1,5 +1,20 @@
 import { tv } from '@src/shared/utils/tv';
 
+import type { TextSize } from './Text.types';
+
+export const textSizeClasses = {
+  h1: 'text-h1',
+  t1: 'text-t1',
+  t2: 'text-t2',
+  t3: 'text-t3',
+  b1: 'text-b1',
+  b2: 'text-b2',
+  b3: 'text-b3',
+  b4: 'text-b4',
+  e1: 'text-e1',
+  e2: 'text-e2',
+} satisfies Record<TextSize, string>;
+
 export const textVariants = tv({
   base: 'font-normal',
 
@@ -19,18 +34,7 @@ export const textVariants = tv({
       semibold: 'font-semibold',
       bold: 'font-bold',
     },
-    size: {
-      h1: 'text-h1',
-      t1: 'text-t1',
-      t2: 'text-t2',
-      t3: 'text-t3',
-      b1: 'text-b1',
-      b2: 'text-b2',
-      b3: 'text-b3',
-      b4: 'text-b4',
-      e1: 'text-e1',
-      e2: 'text-e2',
-    },
+    size: textSizeClasses,
     align: {
       left: 'text-left',
       center: 'text-center',
