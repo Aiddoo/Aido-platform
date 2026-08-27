@@ -49,10 +49,10 @@ import { useCommentRouteState } from '../../hooks/use-comment-route-state';
 import { useTodoCommentConversationQueryOptions } from '../../queries/use-todo-comment-conversation-query-options';
 import {
   canFetchPreviousComments,
+  getCommentFocusRevealOffset,
   getConversationThreadId,
   getFocusedCommentKeyboardLiftBehavior,
   getInitialCommentIndex,
-  getKeyboardOpenCommentFocusOffset,
   getUnloadedCommentFocusOffset,
   type CommentKeyboardLiftBehavior,
 } from '../../utils/comment-conversation-position';
@@ -241,7 +241,7 @@ function TodoCommentConversationWindow({
   const hasLoadedRef = useRef(false);
   const revealedFocusRef = useRef<string | null>(null);
   const visibleCommentIdsRef = useRef<Set<string>>(new Set());
-  const keyboardAdjustedPolicyRef = useRef<string | null>(null);
+  const focusRevealPolicyRef = useRef<string | null>(null);
   const keyboardState = useKeyboardState((state) => ({
     height: state.height,
     isVisible: state.isVisible,
@@ -267,11 +267,15 @@ function TodoCommentConversationWindow({
     const wasKeyboardVisible = wasKeyboardVisibleRef.current;
     wasKeyboardVisibleRef.current = keyboardState.isVisible;
 
+    if (wasKeyboardVisible === keyboardState.isVisible) {
+      return;
+    }
+
+    focusRevealPolicyRef.current = null;
     if (!wasKeyboardVisible || keyboardState.isVisible) {
       return;
     }
 
-    keyboardAdjustedPolicyRef.current = null;
     if (policyIdentity === null) {
       return;
     }
@@ -353,24 +357,27 @@ function TodoCommentConversationWindow({
         }
 
         if (
-          keyboardState.isVisible &&
-          keyboardState.height > 0 &&
-          keyboardAdjustedPolicyRef.current !== policyIdentity
+          (!keyboardState.isVisible || keyboardState.height > 0) &&
+          focusRevealPolicyRef.current !== policyIdentity
         ) {
-          keyboardAdjustedPolicyRef.current = policyIdentity;
-          const keyboardFocusOffset = getKeyboardOpenCommentFocusOffset({
+          focusRevealPolicyRef.current = policyIdentity;
+          const focusRevealOffset = getCommentFocusRevealOffset({
             itemLayout,
             firstItemOffset,
             scrollOffset,
             viewportHeight,
-            keyboardHeight: keyboardState.height,
+            bottomInset: keyboardState.isVisible ? keyboardState.height : 0,
           });
 
-          if (keyboardFocusOffset !== null) {
+          if (focusRevealOffset !== null) {
+            const shouldAnimate =
+              hasLoadedRef.current &&
+              revealedFocusRef.current !== focusIdentity &&
+              visibleCommentIdsRef.current.has(focusIdentity);
             markFocusRevealed(focusIdentity);
             list.scrollToOffset({
-              offset: keyboardFocusOffset,
-              animated: false,
+              offset: focusRevealOffset,
+              animated: shouldAnimate,
               skipFirstItemOffset: true,
             });
             onCommitLayoutEffect?.();

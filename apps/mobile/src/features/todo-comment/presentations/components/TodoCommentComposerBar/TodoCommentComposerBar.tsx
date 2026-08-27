@@ -329,7 +329,7 @@ function ActiveReplyOrEditComposer() {
 
   return (
     <TodoCommentComposerForm
-      key={`${route.mode}:${commentId}`}
+      key={route.mode}
       author={toTodoCommentAuthor(user, detail.owner.id)}
       session={{ mode: route.mode, target }}
     />

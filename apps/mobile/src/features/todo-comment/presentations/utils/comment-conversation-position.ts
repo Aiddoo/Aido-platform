@@ -8,7 +8,7 @@ interface CommentRowLayout {
 }
 
 const FOCUSED_COMMENT_VIEW_POSITION = 0.18;
-const KEYBOARD_OPEN_FOCUS_CLEARANCE = 12;
+const FOCUSED_COMMENT_CLEARANCE = 12;
 const KEYBOARD_LIFT_RISK_POSITION = 0.55;
 
 export type CommentKeyboardLiftBehavior = 'never' | 'persistent' | 'whenAtEnd';
@@ -85,20 +85,20 @@ export function getFocusedCommentKeyboardLiftBehavior({
     : 'whenAtEnd';
 }
 
-export function getKeyboardOpenCommentFocusOffset({
+export function getCommentFocusRevealOffset({
   itemLayout,
   firstItemOffset,
   scrollOffset,
   viewportHeight,
-  keyboardHeight,
+  bottomInset,
 }: {
   itemLayout: CommentRowLayout;
   firstItemOffset: number;
   scrollOffset: number;
   viewportHeight: number;
-  keyboardHeight: number;
+  bottomInset: number;
 }): number | null {
-  if (viewportHeight <= 0 || keyboardHeight <= 0) {
+  if (viewportHeight <= 0 || bottomInset < 0) {
     return null;
   }
 
@@ -108,7 +108,14 @@ export function getKeyboardOpenCommentFocusOffset({
     return null;
   }
 
-  const safeBottom = Math.max(viewportHeight - keyboardHeight - KEYBOARD_OPEN_FOCUS_CLEARANCE, 0);
+  if (itemTopInViewport < FOCUSED_COMMENT_CLEARANCE) {
+    return Math.max(scrollOffset + itemTopInViewport - FOCUSED_COMMENT_CLEARANCE, 0);
+  }
+
+  const safeBottom = Math.max(
+    viewportHeight - bottomInset - FOCUSED_COMMENT_CLEARANCE,
+    FOCUSED_COMMENT_CLEARANCE,
+  );
   const obscuredHeight = itemBottomInViewport - safeBottom;
   if (obscuredHeight <= 0) {
     return null;

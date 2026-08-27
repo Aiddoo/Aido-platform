@@ -146,9 +146,11 @@ interface TodoConversationFocus {
 - focus query는 route의 `Suspense`가 준비를 기다린다. data와 focus index가 모두 있는 첫 mount에서
   `initialScrollIndex`를 준다. FlashList identity는 route anchor가 아니라 서버 행의 `threadId`다.
   같은 thread에서 화면에 보이는 댓글로 focus가 바뀌면 list와 위치를 그대로 유지한다.
-- 같은 thread라도 새 window에만 있는 focus는 `onCommitLayoutEffect`에서 FlashList의 공개 측정값
-  (`getLayout`, `getFirstItemOffset`, `getWindowSize`)으로 offset을 만들고 `scrollToOffset`을 무애니메이션
-  한 번만 호출한다. 내부에서 여러 offset을 거치는 `scrollToIndex`를 사후 보정으로 쓰지 않는다.
+- 같은 thread에서 새 focus가 일부 가려졌으면 `onCommitLayoutEffect`에서 FlashList의 공개 측정값
+  (`getLayout`, `getFirstItemOffset`, `getWindowSize`)으로 안전 영역까지 필요한 최소 offset만 계산한다.
+  화면에 보이던 댓글을 사용자가 고른 경우에는 한 번만 자연스럽게 이동하고, 새 window에만 있는 focus는
+  `scrollToOffset`으로 무애니메이션 이동한다. 내부에서 여러 offset을 거치는 `scrollToIndex`를 사후
+  보정으로 쓰지 않는다.
 - 최초 `onLoad` 전에는 previous page prepend를 막는다. 초기 index를 적용하는 layout과 prepend가
   동시에 행 index를 바꾸지 않게 한다.
 
@@ -199,7 +201,8 @@ function TodoDetailPage() {
   연속 탭, 취소, 뒤로가기, 키보드 닫기, 작성 mutation과 늦게 끝난 prefetch가 현재 route를 뒤집지
   못하게 한다.
 - 작성기가 열려 있으면 다른 댓글 body 이동과 정렬 전환을 막고 게시 또는 취소 안내를 보여 준다.
-  작성 중 값을 암묵적으로 버리지 않는다. 전송 중에는 뒤로가기와 작성기 닫기도 막는다.
+  답글 작성 중 다른 댓글의 답글 버튼을 누르면 키보드와 초안을 유지한 채 대상만 전환한다. 새 댓글
+  작성과 수정 중에는 대상을 바꾸지 않는다. 전송 중에는 대상 전환, 뒤로가기와 작성기 닫기도 막는다.
 - 목록의 `Loading`, `Error`, `Empty`는 본체와 같은 row 조각을 사용한다. 완료될 때 높이와 배치가
   크게 바뀌는 임의 skeleton을 만들지 않는다.
 - 댓글 query만 실패하면 할 일 상세와 정렬 문맥은 유지하고 댓글 영역만 재시도 상태로 바꾼다.
@@ -288,9 +291,10 @@ shell을 소유하고 파일 안의 지역 컴포넌트가 mode를 읽어 다음
    `extraContentPadding`에 전달한다. 전체 높이를 넣으면 이미 레이아웃이 확보한 높이가 중복된다.
 7. 키보드가 열리면 작은 하단 간격만 두고, 닫히면 safe area inset을 반영한다.
 
-같은 thread에서 안전 영역에 보이는 focus가 바뀌거나 `thread`가 `reply`나 `edit`로 바뀔 때 목록을
-다시 스크롤하지 않는다. `renderScrollComponent`는 module-level 함수와 context consumer로 identity를
-고정한다. lift 정책이 바뀌어도 FlashList가 내부 keyboard scroll component를 다시 만들지 않는다.
+같은 thread에서 안전 영역에 온전히 보이는 focus가 바뀌거나 `thread`가 `reply`나 `edit`로 바뀔 때는
+목록을 다시 스크롤하지 않는다. 일부 가린 focus만 상단과 키보드 위 하단의 12pt 안전 여백까지 최소
+거리로 드러낸다. `renderScrollComponent`는 module-level 함수와 context consumer로 identity를 고정한다.
+lift 정책이 바뀌어도 FlashList가 내부 keyboard scroll component를 다시 만들지 않는다.
 키보드와 작성 바의 일반 이동은 `KeyboardChatScrollView`, `KeyboardStickyView`,
 `extraContentPadding`의 UI thread 경로가 맡는다.
 
@@ -304,8 +308,10 @@ shell을 소유하고 파일 안의 지역 컴포넌트가 mode를 읽어 다음
 
 `TodoCommentComposerForm`은 현재 session의 `useForm`, Zod resolver, mutation command, 중복 전송 gate,
 성공 뒤 닫기 순서를 소유한다. 지역 field는 `useController`, append/submit 액션은 `useFormState`로
-필요한 상태만 구독한다. 답글일 때 누구에게 답하는지와 대상 본문을 키보드 위에 보여 준다. 폼 전체
-높이는 viewport에 맞춰 제한하고 그 안을 스크롤해 작은 화면과 큰 글꼴에서도 목록을 완전히 덮지 않는다.
+필요한 상태만 구독한다. 답글일 때 누구에게 답하는지와 대상 본문을 키보드 위에 보여 준다. 답글 대상
+ID가 바뀌어도 같은 `reply` form session을 재사용해 입력값과 focus를 보존한다. 대상 댓글과 전송
+command의 `parentId`만 최신 session을 따른다. 폼 전체 높이는 viewport에 맞춰 제한하고 그 안을
+스크롤해 작은 화면과 큰 글꼴에서도 목록을 완전히 덮지 않는다.
 댓글 입력은 공용 `TextArea`의 opt-in `growsWithContent`를 써서 실제 content size와 표면 padding만큼
 자라며, 기존 min/max 높이 안에서 멈춘다. 큰 글꼴의 두 번째 줄을 고정 높이로 자르지 않는다.
 새 댓글과 답글은 계약 상한 안에서 이어 쓰기를 지원하고, 수정은 한 글만 다룬다. 전송 중에는 입력, 취소,

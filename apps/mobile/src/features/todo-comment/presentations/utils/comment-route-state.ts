@@ -15,6 +15,7 @@ const rawCommentRouteStateSchema = z
   .catch({});
 
 export type CommentRouteMode = 'overview' | z.infer<typeof commentIntentSchema>;
+export type CommentNavigationDestination = Exclude<CommentRouteMode, 'overview' | 'create'>;
 
 export type CommentRouteState =
   | {
@@ -27,6 +28,28 @@ export type CommentRouteState =
       mode: 'thread' | 'reply' | 'edit';
       anchorCommentId: string;
     };
+
+interface CanStartCommentNavigationParams {
+  currentMode: CommentRouteMode;
+  destination: CommentNavigationDestination;
+  isComposerMutating: boolean;
+}
+
+export function canStartCommentNavigation({
+  currentMode,
+  destination,
+  isComposerMutating,
+}: CanStartCommentNavigationParams): boolean {
+  if (isComposerMutating) {
+    return false;
+  }
+
+  if (currentMode === 'create' || currentMode === 'edit') {
+    return false;
+  }
+
+  return currentMode !== 'reply' || destination === 'reply';
+}
 
 function toOverview(sort: TodoCommentSort): CommentRouteState {
   return { sort, mode: 'overview', anchorCommentId: undefined };

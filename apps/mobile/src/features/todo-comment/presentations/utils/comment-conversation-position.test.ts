@@ -1,9 +1,9 @@
 import {
   canFetchPreviousComments,
+  getCommentFocusRevealOffset,
   getConversationThreadId,
   getFocusedCommentKeyboardLiftBehavior,
   getInitialCommentIndex,
-  getKeyboardOpenCommentFocusOffset,
   getUnloadedCommentFocusOffset,
   toInitialConversationWindow,
 } from './comment-conversation-position';
@@ -104,37 +104,61 @@ describe('comment conversation position', () => {
     ).toBe('whenAtEnd');
   });
 
-  it('작성 바 성장분을 중복 차감하지 않고 열린 키보드 아래 focus만 필요한 만큼 드러낸다', () => {
+  it('키보드 아래 가린 focus는 필요한 거리만 위로 드러낸다', () => {
     expect(
-      getKeyboardOpenCommentFocusOffset({
+      getCommentFocusRevealOffset({
         itemLayout: { y: 650, height: 140 },
         firstItemOffset: 160,
         scrollOffset: 500,
         viewportHeight: 700,
-        keyboardHeight: 280,
+        bottomInset: 280,
       }),
     ).toBe(542);
   });
 
-  it('이미 키보드 위에 보이는 focus나 viewport 밖 focus는 움직이지 않는다', () => {
+  it('헤더 위로 일부 가린 focus는 필요한 거리만 아래로 드러낸다', () => {
     expect(
-      getKeyboardOpenCommentFocusOffset({
+      getCommentFocusRevealOffset({
+        itemLayout: { y: 80, height: 120 },
+        firstItemOffset: 160,
+        scrollOffset: 260,
+        viewportHeight: 700,
+        bottomInset: 280,
+      }),
+    ).toBe(228);
+  });
+
+  it('이미 안전 영역에 보이는 focus나 viewport 밖 focus는 움직이지 않는다', () => {
+    expect(
+      getCommentFocusRevealOffset({
         itemLayout: { y: 320, height: 120 },
         firstItemOffset: 160,
         scrollOffset: 240,
         viewportHeight: 700,
-        keyboardHeight: 280,
+        bottomInset: 280,
       }),
     ).toBeNull();
     expect(
-      getKeyboardOpenCommentFocusOffset({
+      getCommentFocusRevealOffset({
         itemLayout: { y: 1_400, height: 120 },
         firstItemOffset: 160,
         scrollOffset: 240,
         viewportHeight: 700,
-        keyboardHeight: 280,
+        bottomInset: 280,
       }),
     ).toBeNull();
+  });
+
+  it('키보드가 닫힌 viewport에서도 하단에 일부 가린 focus를 드러낸다', () => {
+    expect(
+      getCommentFocusRevealOffset({
+        itemLayout: { y: 680, height: 120 },
+        firstItemOffset: 160,
+        scrollOffset: 240,
+        viewportHeight: 700,
+        bottomInset: 0,
+      }),
+    ).toBe(272);
   });
 
   it('초기 focus가 그려진 뒤에만 이전 page를 받을 수 있다', () => {

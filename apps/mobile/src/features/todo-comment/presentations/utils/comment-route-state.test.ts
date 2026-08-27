@@ -1,6 +1,6 @@
 import { TODO_COMMENT_SORT } from '@aido/validators';
 
-import { parseCommentRouteState } from './comment-route-state';
+import { canStartCommentNavigation, parseCommentRouteState } from './comment-route-state';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 
@@ -51,5 +51,61 @@ describe('parseCommentRouteState', () => {
     expect(parseCommentRouteState({ sort: [TODO_COMMENT_SORT.POPULAR] }).sort).toBe(
       TODO_COMMENT_SORT.LATEST,
     );
+  });
+});
+
+describe('canStartCommentNavigation', () => {
+  test.each(['overview', 'thread'] as const)('%s에서는 댓글 이동을 허용한다', (currentMode) => {
+    expect(
+      canStartCommentNavigation({
+        currentMode,
+        destination: 'reply',
+        isComposerMutating: false,
+      }),
+    ).toBe(true);
+  });
+
+  test.each(['create', 'edit'] as const)('%s 작성 중에는 댓글 이동을 막는다', (currentMode) => {
+    expect(
+      canStartCommentNavigation({
+        currentMode,
+        destination: 'reply',
+        isComposerMutating: false,
+      }),
+    ).toBe(false);
+  });
+
+  test('답글 작성 중에는 다른 답글 대상으로만 전환할 수 있다', () => {
+    expect(
+      canStartCommentNavigation({
+        currentMode: 'reply',
+        destination: 'reply',
+        isComposerMutating: false,
+      }),
+    ).toBe(true);
+    expect(
+      canStartCommentNavigation({
+        currentMode: 'reply',
+        destination: 'thread',
+        isComposerMutating: false,
+      }),
+    ).toBe(false);
+    expect(
+      canStartCommentNavigation({
+        currentMode: 'reply',
+        destination: 'edit',
+        isComposerMutating: false,
+      }),
+    ).toBe(false);
+  });
+
+  test('전송 중에는 답글 대상 전환도 막는다', () => {
+    expect(
+      canStartCommentNavigation({
+        currentMode: 'reply',
+        destination: 'reply',
+        isComposerMutating: true,
+      }),
+    ).toBe(false);
   });
 });

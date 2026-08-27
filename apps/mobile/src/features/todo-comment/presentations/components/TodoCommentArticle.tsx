@@ -53,7 +53,7 @@ export function TodoCommentArticle({ comment, isFocused = false }: TodoCommentAr
             <CommentActionMenu
               comment={comment}
               isEditPreparing={navigation.isPreparing}
-              isNavigationBlocked={navigation.isNavigationBlocked}
+              canOpenEdit={navigation.canOpenEdit}
               onEdit={() => navigation.openEdit().catch(() => undefined)}
             />
           </Box>
@@ -67,7 +67,7 @@ export function TodoCommentArticle({ comment, isFocused = false }: TodoCommentAr
             <CommentReplyButton
               comment={comment}
               isPreparing={navigation.isPreparing}
-              isNavigationBlocked={navigation.isNavigationBlocked}
+              canOpenReply={navigation.canOpenReply}
               onPress={() => navigation.openReply().catch(() => undefined)}
             />
           </HStack>
@@ -141,14 +141,14 @@ function CommentText({ comment }: { comment: TodoComment }) {
 interface CommentActionMenuProps {
   comment: TodoComment;
   isEditPreparing: boolean;
-  isNavigationBlocked: boolean;
+  canOpenEdit: boolean;
   onEdit: () => void;
 }
 
 function CommentActionMenu({
   comment,
   isEditPreparing,
-  isNavigationBlocked,
+  canOpenEdit,
   onEdit,
 }: CommentActionMenuProps) {
   const { todoId } = useTodoScreenParams();
@@ -188,7 +188,7 @@ function CommentActionMenu({
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
           {TodoCommentPolicy.canEdit(comment) && (
-            <Menu.Item isDisabled={isEditPreparing || isNavigationBlocked} onPress={onEdit}>
+            <Menu.Item isDisabled={isEditPreparing || !canOpenEdit} onPress={onEdit}>
               <Menu.ItemTitle>{t('actions.edit')}</Menu.ItemTitle>
             </Menu.Item>
           )}
@@ -283,20 +283,20 @@ interface CommentReplyButtonProps extends Omit<
 > {
   comment: TodoComment;
   isPreparing: boolean;
-  isNavigationBlocked: boolean;
+  canOpenReply: boolean;
   onPress: () => void;
 }
 
 function CommentReplyButton({
   comment,
   isPreparing,
-  isNavigationBlocked,
+  canOpenReply,
   onPress,
   ...buttonProps
 }: CommentReplyButtonProps) {
   const { t } = useTranslation('todoComment');
   const canReply = TodoCommentPolicy.canReply(comment);
-  const isDisabled = !canReply || isPreparing || isNavigationBlocked;
+  const isDisabled = !canReply || isPreparing || !canOpenReply;
   const authorName = comment.author?.name ?? t('list.unknownUser');
 
   return (

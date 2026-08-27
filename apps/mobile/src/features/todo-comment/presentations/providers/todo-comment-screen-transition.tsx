@@ -13,8 +13,10 @@ import {
 
 import { useCommentRouteState } from '../hooks/use-comment-route-state';
 import { useIsTodoCommentComposerMutating } from '../hooks/use-is-todo-comment-composer-mutating';
-
-type CommentNavigationDestination = 'thread' | 'reply' | 'edit';
+import {
+  canStartCommentNavigation,
+  type CommentNavigationDestination,
+} from '../utils/comment-route-state';
 
 interface PendingCommentNavigation {
   requestId: number;
@@ -30,7 +32,7 @@ interface PendingScreenTransition {
 
 interface TodoCommentScreenTransition {
   pendingCommentId: string | null;
-  isNavigationBlocked: boolean;
+  canNavigateToComment: (destination: CommentNavigationDestination) => boolean;
   beginCommentNavigation: (
     commentId: string,
     destination: CommentNavigationDestination,
@@ -59,13 +61,23 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
   const isComposerMutating = useIsTodoCommentComposerMutating();
   const isComposerActive =
     route.mode === 'create' || route.mode === 'reply' || route.mode === 'edit';
-  const isNavigationBlocked = isComposerMutating || isComposerActive;
+  const isScreenTransitionBlocked = isComposerMutating || isComposerActive;
   const requestSequenceRef = useRef(0);
   const pendingNavigationRef = useRef<PendingCommentNavigation | null>(null);
   const pendingScreenTransitionRef = useRef<PendingScreenTransition | null>(null);
   const [pendingNavigation, setPendingNavigation] = useState<PendingCommentNavigation | null>(null);
   const routeIdentity = `${todoId}:${route.sort}:${route.mode}:${route.anchorCommentId ?? 'none'}`;
   const currentRouteIdentityRef = useRef(routeIdentity);
+
+  const canNavigateToComment = useCallback(
+    (destination: CommentNavigationDestination) =>
+      canStartCommentNavigation({
+        currentMode: route.mode,
+        destination,
+        isComposerMutating,
+      }),
+    [isComposerMutating, route.mode],
+  );
 
   const cancelTransition = useCallback(() => {
     requestSequenceRef.current += 1;
@@ -80,7 +92,7 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
 
   const beginCommentNavigation = useCallback(
     (commentId: string, destination: CommentNavigationDestination): number | null => {
-      if (isNavigationBlocked) {
+      if (!canNavigateToComment(destination)) {
         return null;
       }
 
@@ -101,7 +113,7 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
       setPendingNavigation(next);
       return next.requestId;
     },
-    [isNavigationBlocked],
+    [canNavigateToComment],
   );
 
   const completeCommentNavigation = useCallback((requestId: number): boolean => {
@@ -119,7 +131,7 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
   }, []);
 
   const beginSortTransition = useCallback((): number | null => {
-    if (isNavigationBlocked || pendingScreenTransitionRef.current !== null) {
+    if (isScreenTransitionBlocked || pendingScreenTransitionRef.current !== null) {
       return null;
     }
 
@@ -136,7 +148,7 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
     }
 
     return next.requestId;
-  }, [isNavigationBlocked]);
+  }, [isScreenTransitionBlocked]);
 
   const completeSortTransition = useCallback((requestId: number): boolean => {
     const pending = pendingScreenTransitionRef.current;
@@ -162,17 +174,17 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
   }, [cancelTransition, routeIdentity]);
 
   useLayoutEffect(() => {
-    if (isNavigationBlocked) {
+    if (isScreenTransitionBlocked) {
       cancelTransition();
     }
-  }, [cancelTransition, isNavigationBlocked]);
+  }, [cancelTransition, isScreenTransitionBlocked]);
 
   useEffect(() => cancelTransition, [cancelTransition]);
 
   const transition = useMemo(
     () => ({
       pendingCommentId: pendingNavigation?.commentId ?? null,
-      isNavigationBlocked,
+      canNavigateToComment,
       beginCommentNavigation,
       completeCommentNavigation,
       beginSortTransition,
@@ -182,10 +194,10 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
     [
       beginCommentNavigation,
       beginSortTransition,
+      canNavigateToComment,
       cancelTransition,
       completeCommentNavigation,
       completeSortTransition,
-      isNavigationBlocked,
       pendingNavigation?.commentId,
     ],
   );

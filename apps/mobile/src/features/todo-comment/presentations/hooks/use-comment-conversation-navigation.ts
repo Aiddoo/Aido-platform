@@ -8,10 +8,9 @@ import type { TodoComment } from '../../models/todo-comment.model';
 import { useTodoCommentScreenTransition } from '../providers/todo-comment-screen-transition';
 import { useTodoCommentConversationQueryOptions } from '../queries/use-todo-comment-conversation-query-options';
 import { toInitialConversationWindow } from '../utils/comment-conversation-position';
+import type { CommentNavigationDestination } from '../utils/comment-route-state';
 import type { ConversationPages } from '../utils/todo-comment-cache.util';
 import { useCommentRouteState } from './use-comment-route-state';
-
-type CommentConversationDestination = 'thread' | 'reply' | 'edit';
 
 export function useCommentConversationNavigation(comment: TodoComment) {
   const { todoId } = useTodoScreenParams();
@@ -26,14 +25,14 @@ export function useCommentConversationNavigation(comment: TodoComment) {
   });
   const {
     pendingCommentId,
-    isNavigationBlocked,
+    canNavigateToComment,
     beginCommentNavigation,
     completeCommentNavigation,
   } = useTodoCommentScreenTransition();
 
   const open = useCallback(
-    async (destination: CommentConversationDestination) => {
-      if (isNavigationBlocked) {
+    async (destination: CommentNavigationDestination) => {
+      if (!canNavigateToComment(destination)) {
         showWarning(t('toasts.finishComposerFirst'));
         return;
       }
@@ -110,9 +109,9 @@ export function useCommentConversationNavigation(comment: TodoComment) {
     },
     [
       beginCommentNavigation,
+      canNavigateToComment,
       comment.id,
       completeCommentNavigation,
-      isNavigationBlocked,
       queryClient,
       queryOptions,
       route,
@@ -124,7 +123,8 @@ export function useCommentConversationNavigation(comment: TodoComment) {
 
   return {
     isPreparing: pendingCommentId === comment.id,
-    isNavigationBlocked,
+    canOpenEdit: canNavigateToComment('edit'),
+    canOpenReply: canNavigateToComment('reply'),
     openThread: () => open('thread'),
     openReply: () => open('reply'),
     openEdit: () => open('edit'),
