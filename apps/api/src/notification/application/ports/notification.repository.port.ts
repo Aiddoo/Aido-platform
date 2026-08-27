@@ -82,6 +82,9 @@ export interface NotificationRepositoryPort {
 	markAllAsRead(userId: string): Promise<{ count: number }>;
 	countUnread(userId: string): Promise<number>;
 	deleteOldNotifications(daysOld?: number): Promise<{ count: number }>;
+	deleteNotificationsByActorId(
+		actorId: string,
+	): Promise<{ count: number; affectedUserIds: string[] }>;
 	existsRecentNotification(params: {
 		userId: string;
 		type: NotificationType;

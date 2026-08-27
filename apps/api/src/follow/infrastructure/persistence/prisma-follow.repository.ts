@@ -315,8 +315,8 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 	}
 
 	async userExists(userId: string): Promise<boolean> {
-		const user = await this.client.user.findUnique({
-			where: { id: userId },
+		const user = await this.client.user.findFirst({
+			where: { id: userId, status: "ACTIVE", deletedAt: null },
 			select: { id: true },
 		});
 		return user !== null;
@@ -334,8 +334,8 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 	}
 
 	async findUserByTag(userTag: string): Promise<{ id: string } | null> {
-		return this.client.user.findUnique({
-			where: { userTag },
+		return this.client.user.findFirst({
+			where: { userTag, status: "ACTIVE", deletedAt: null },
 			select: { id: true },
 		});
 	}

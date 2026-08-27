@@ -37,6 +37,10 @@ import type { PushReceiptResult, PushResult } from "../../application/ports/push
 import type { NotificationRecord, PushTokenRecord } from "../../domain/records/notification.record";
 import type { NotificationType } from "../../domain/types/notification-type";
 
+interface DeletedNotificationRecipientRow {
+	userId: string;
+}
+
 @Injectable()
 export class NotificationRepository implements NotificationRepositoryPort {
 	readonly #logger = new Logger(NotificationRepository.name);
@@ -256,6 +260,26 @@ export class NotificationRepository implements NotificationRepositoryPort {
 				},
 			},
 		});
+	}
+
+	/**
+	 * 계정 hard delete 전에 다른 사용자의 알림에 복사된 발신자 개인정보를 제거합니다.
+	 * friendId는 기존 소셜 알림, metadata.senderId는 댓글 활동 알림의 actor 식별자입니다.
+	 */
+	async deleteNotificationsByActorId(
+		actorId: string,
+	): Promise<{ count: number; affectedUserIds: string[] }> {
+		const deletedRows = await this.client.$queryRaw<DeletedNotificationRecipientRow[]>(Prisma.sql`
+			DELETE FROM "Notification"
+			WHERE "friendId" = ${actorId}
+				OR "metadata" ->> 'senderId' = ${actorId}
+			RETURNING "userId"
+		`);
+
+		return {
+			count: deletedRows.length,
+			affectedUserIds: [...new Set(deletedRows.map((row) => row.userId))],
+		};
 	}
 
 	/**

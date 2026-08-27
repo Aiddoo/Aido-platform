@@ -552,7 +552,7 @@ model TodoComment {
   updatedAt DateTime  @updatedAt
 
   todo     Todo              @relation(fields: [todoId], references: [id], onDelete: Cascade)
-  author   User              @relation("todo_comment_author", fields: [authorId], references: [id], onDelete: Cascade)
+  author   User              @relation("todo_comment_author", fields: [authorId], references: [id], onDelete: Restrict)
   parent   TodoComment?      @relation("todo_comment_children", fields: [parentId], references: [id], onDelete: Cascade)
   children TodoComment[]     @relation("todo_comment_children")
   likes    TodoCommentLike[]
@@ -576,7 +576,7 @@ model TodoCommentLike {
   updatedAt  DateTime  @updatedAt
 
   comment TodoComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@id([commentId, userId])
   @@index([userId, isActive])
@@ -806,6 +806,9 @@ model Notification {
   // - Notification_daily_dedup: (userId, type, notificationDate) WHERE friendId IS NULL
   // - Notification_friend_dedup: (userId, type, friendId, notificationDate) WHERE friendId IS NOT NULL
   // - Notification_todo_reminder_dedup: (todoId, type, metadata.stage) WHERE type = TODO_REMINDER
+  // 계정 purge용 수동 partial index (Prisma가 expression/partial index를 표현하지 못함)
+  // - Notification_friend_actor_cleanup_idx: (friendId) WHERE friendId IS NOT NULL
+  // - Notification_comment_actor_cleanup_idx: ((metadata->>'senderId')) WHERE metadata->>'senderId' IS NOT NULL
   @@index([userId, isRead, createdAt])
   @@index([userId, type])
   @@index([userId, type, notificationDate]) // 리마인더/일일완료 중복 방지 쿼리

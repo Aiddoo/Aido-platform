@@ -1,7 +1,7 @@
 import {
 	createMutationLockMock,
-	createTodoCommentCacheMock,
 	createTodoCommentNotificationMock,
+	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
@@ -31,12 +31,12 @@ function createTransition(
 
 function setup(transition = createTransition()) {
 	const repository = createTodoCommentRepositoryMock();
-	const cache = createTodoCommentCacheMock();
+	const reader = createTodoCommentReaderMock();
 	const notification = createTodoCommentNotificationMock();
 	const mutationLock = createMutationLockMock();
 
 	const createdAt = new Date("2026-08-16T00:00:00.000Z");
-	jest.mocked(repository.canAccessTodo).mockResolvedValue(true);
+	jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
 	jest.mocked(repository.findComment).mockResolvedValue(
 		TodoComment.reconstitute({
 			id: COMMENT_ID,
@@ -52,18 +52,18 @@ function setup(transition = createTransition()) {
 			updatedAt: createdAt,
 		}),
 	);
-	jest.mocked(repository.findUserDisplayName).mockResolvedValue("좋아요 누른 사람");
+	jest.mocked(reader.findUserDisplayName).mockResolvedValue("좋아요 누른 사람");
 	jest.mocked(repository.setLike).mockResolvedValue(transition);
 
 	const useCase = new LikeTodoCommentUseCase(
+		reader,
 		repository,
-		cache,
 		notification,
 		mutationLock,
 		createUnitOfWorkMock(),
 	);
 
-	return { useCase, repository, cache, notification };
+	return { useCase, repository, notification };
 }
 
 describe("LikeTodoCommentUseCase", () => {
@@ -98,18 +98,16 @@ describe("LikeTodoCommentUseCase", () => {
 	});
 
 	it("알림이 실패해도 좋아요 자체는 성공으로 돌려준다", async () => {
-		const { useCase, cache, notification } = setup();
+		const { useCase, notification } = setup();
 		jest.mocked(notification.notifyCommentLiked).mockRejectedValue(new Error("push down"));
 
 		await expect(
 			useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: LIKER_ID }),
 		).resolves.toMatchObject({ commentId: COMMENT_ID, likeCount: 1 });
-
-		expect(cache.invalidateTopLevelFirstPages).toHaveBeenCalledWith(TODO_ID);
 	});
 
 	it("이미 알린 좋아요는 껐다 켜도 다시 알리지 않는다", async () => {
-		const { useCase, repository, notification, cache } = setup(
+		const { useCase, repository, notification } = setup(
 			createTransition({ wasEverNotified: true }),
 		);
 
@@ -117,6 +115,5 @@ describe("LikeTodoCommentUseCase", () => {
 
 		expect(notification.notifyCommentLiked).not.toHaveBeenCalled();
 		expect(repository.markLikeNotified).not.toHaveBeenCalled();
-		expect(cache.invalidateTopLevelFirstPages).toHaveBeenCalledWith(TODO_ID);
 	});
 });

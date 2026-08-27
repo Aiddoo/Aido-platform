@@ -1,13 +1,9 @@
 import type { TodoComment } from "../../domain/entities/todo-comment.aggregate";
 import type {
 	CreateTodoCommentChainInput,
-	ListTodoCommentsParams,
 	TodoCommentChainCreationResult,
 	TodoCommentLikeTransition,
-	PaginatedTodoCommentRecords,
 	TodoCommentChainCommand,
-	TodoCommentRecord,
-	TodoDetailsRecord,
 } from "../types";
 
 export const TODO_COMMENT_REPOSITORY = Symbol("TODO_COMMENT_REPOSITORY");
@@ -20,19 +16,18 @@ export class TodoCommentIdempotencyConflict extends Error {
 	}
 }
 
+/** 다른 버전의 서버와 동시에 삽입해 DB 유니크 제약에서 승패가 결정됐다. */
+export class TodoCommentIdempotencyRace extends Error {
+	constructor() {
+		super();
+		this.name = TodoCommentIdempotencyRace.name;
+	}
+}
+
 export interface TodoCommentRepositoryPort {
-	findAccessibleTodoDetails(todoId: number, viewerId: string): Promise<TodoDetailsRecord | null>;
-	canAccessTodo(todoId: number, viewerId: string): Promise<boolean>;
 	findComment(todoId: number, commentId: string): Promise<TodoComment | null>;
-	findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null>;
-	/** parentId가 null이면 최상위 댓글 목록, 값이 있으면 그 댓글의 직계 답글 목록이다. */
-	listComments(params: ListTodoCommentsParams): Promise<PaginatedTodoCommentRecords>;
-	/** 뿌리 → 부모 순서의 조상. path가 비면 빈 배열을 돌려준다. */
-	findAncestors(todoId: number, path: readonly string[]): Promise<TodoCommentRecord[]>;
-	findLikedCommentIds(commentIds: readonly string[], viewerId: string): Promise<Set<string>>;
-	findUserDisplayName(userId: string): Promise<string | null>;
 	/** 정확히 같은 멱등 명령이면 원래 사슬, 처음 보는 키면 null. 일부/불일치는 conflict다. */
-	findCommentChainReplay(input: TodoCommentChainCommand): Promise<TodoCommentRecord[] | null>;
+	findCommentChainReplay(input: TodoCommentChainCommand): Promise<string[] | null>;
 	/** replay 확인과 같은 UoW/멱등 잠금 안에서 새 사슬을 한 번에 심는다. */
 	createCommentChain(input: CreateTodoCommentChainInput): Promise<TodoCommentChainCreationResult>;
 	updateComment(comment: TodoComment): Promise<boolean>;

@@ -60,6 +60,7 @@ import { VerificationRepository } from "@/auth/infrastructure/persistence/verifi
 import { AccountPurgeProcessor } from "@/auth/infrastructure/queue/account-purge.processor";
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import { TransactionalEmailSender } from "@/email";
+import { NotificationAccountCleanup } from "@/notification";
 import { NotificationQueueService } from "@/notification/queue";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
@@ -70,6 +71,7 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { EncryptionService } from "@/shared/infrastructure/encryption";
 import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
+import { TodoCommentAccountCleanup } from "@/todo-comment";
 import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 
@@ -109,6 +111,20 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				IssueLoginUseCase,
 				ProvisionUserUseCase,
 				AccountPurgeJob,
+				{
+					provide: NotificationAccountCleanup,
+					useValue: {
+						cleanupInTransaction: async () => ({ affectedUserIds: [] }),
+						settleAfterCommit: async () => {},
+					},
+				},
+				{
+					provide: TodoCommentAccountCleanup,
+					useValue: {
+						cleanupInTransaction: async () => ({ affectedTodoIds: [] }),
+						settleAfterCommit: async () => {},
+					},
+				},
 				{ provide: JOB_RUNTIME, useValue: new FakeJobRuntime() },
 				{
 					provide: AccountPurgeProcessor,

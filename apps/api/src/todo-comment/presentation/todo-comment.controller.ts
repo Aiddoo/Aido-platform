@@ -15,10 +15,9 @@ import {
 } from "@/shared/presentation/swagger";
 
 import {
-	GetTodoCommentThreadUseCase,
+	GetTodoCommentOverviewUseCase,
+	GetTodoConversationUseCase,
 	GetTodoDetailsUseCase,
-	ListTodoCommentRepliesUseCase,
-	ListTodoCommentsUseCase,
 } from "../application/queries";
 import {
 	DeleteTodoCommentUseCase,
@@ -29,13 +28,14 @@ import {
 } from "../application/use-cases";
 import {
 	DeleteTodoCommentResponseDto,
-	GetTodoCommentsQueryDto,
+	GetTodoCommentOverviewQueryDto,
+	GetTodoConversationQueryDto,
 	TodoCommentIdParamDto,
 	TodoCommentChainResponseDto,
 	TodoCommentLikeResponseDto,
 	TodoCommentMutationResponseDto,
-	PaginatedTodoCommentsResponseDto,
-	TodoCommentThreadResponseDto,
+	TodoCommentOverviewResponseDto,
+	TodoConversationResponseDto,
 	TodoDetailsParamDto,
 	TodoDetailsResponseDto,
 	UpdateTodoCommentDto,
@@ -48,9 +48,8 @@ import {
 export class TodoCommentController {
 	constructor(
 		private readonly getTodoDetailsUseCase: GetTodoDetailsUseCase,
-		private readonly listTodoCommentsUseCase: ListTodoCommentsUseCase,
-		private readonly listTodoCommentRepliesUseCase: ListTodoCommentRepliesUseCase,
-		private readonly getTodoCommentThreadUseCase: GetTodoCommentThreadUseCase,
+		private readonly getTodoCommentOverviewUseCase: GetTodoCommentOverviewUseCase,
+		private readonly getTodoConversationUseCase: GetTodoConversationUseCase,
 		private readonly writeTodoCommentChainUseCase: WriteTodoCommentChainUseCase,
 		private readonly updateTodoCommentUseCase: UpdateTodoCommentUseCase,
 		private readonly deleteTodoCommentUseCase: DeleteTodoCommentUseCase,
@@ -70,62 +69,46 @@ export class TodoCommentController {
 		return this.getTodoDetailsUseCase.execute({ todoId: params.todoId, viewerId: user.userId });
 	}
 
-	@Get("comments")
-	@ApiDoc({ summary: "할 일 최상위 댓글 목록", operationId: "getTodoComments" })
-	@ApiSuccessResponse({ type: PaginatedTodoCommentsResponseDto })
+	@Get("comments/overview")
+	@ApiDoc({ summary: "할 일 댓글 개요 조회", operationId: "getTodoCommentOverview" })
+	@ApiSuccessResponse({ type: TodoCommentOverviewResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	listComments(
+	getOverview(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoDetailsParamDto,
-		@Query() query: GetTodoCommentsQueryDto,
-	): Promise<PaginatedTodoCommentsResponseDto> {
-		return this.listTodoCommentsUseCase.execute({
+		@Query() query: GetTodoCommentOverviewQueryDto,
+	): Promise<TodoCommentOverviewResponseDto> {
+		return this.getTodoCommentOverviewUseCase.execute({
 			todoId: params.todoId,
 			viewerId: user.userId,
 			sort: query.sort,
 			size: query.size,
-			cursor: query.cursor,
+			before: query.before,
+			after: query.after,
 		});
 	}
 
-	@Get("comments/:commentId/thread")
-	@ApiDoc({
-		summary: "댓글 스레드 조회 (조상·본문·답글 첫 페이지)",
-		operationId: "getTodoCommentThread",
-	})
-	@ApiSuccessResponse({ type: TodoCommentThreadResponseDto })
+	@Get("conversation")
+	@ApiDoc({ summary: "할 일 댓글 대화 조회", operationId: "getTodoConversation" })
+	@ApiSuccessResponse({ type: TodoConversationResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0831)
-	getCommentThread(
+	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	getConversation(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCommentIdParamDto,
-	): Promise<TodoCommentThreadResponseDto> {
-		return this.getTodoCommentThreadUseCase.execute({
+		@Param() params: TodoDetailsParamDto,
+		@Query() query: GetTodoConversationQueryDto,
+	): Promise<TodoConversationResponseDto> {
+		return this.getTodoConversationUseCase.execute({
 			todoId: params.todoId,
-			commentId: params.commentId,
-			viewerId: user.userId,
-		});
-	}
-
-	@Get("comments/:commentId/replies")
-	@ApiDoc({ summary: "댓글의 직계 답글 목록", operationId: "getTodoCommentReplies" })
-	@ApiSuccessResponse({ type: PaginatedTodoCommentsResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0831)
-	listReplies(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCommentIdParamDto,
-		@Query() query: GetTodoCommentsQueryDto,
-	): Promise<PaginatedTodoCommentsResponseDto> {
-		return this.listTodoCommentRepliesUseCase.execute({
-			todoId: params.todoId,
-			commentId: params.commentId,
 			viewerId: user.userId,
 			sort: query.sort,
 			size: query.size,
-			cursor: query.cursor,
+			focusCommentId: query.focusCommentId,
+			before: query.before,
+			after: query.after,
 		});
 	}
 
@@ -142,28 +125,7 @@ export class TodoCommentController {
 		return this.writeTodoCommentChainUseCase.execute({
 			todoId: params.todoId,
 			authorId: user.userId,
-			parentId: null,
-			items: body.items,
-		});
-	}
-
-	@Post("comments/:commentId/replies")
-	@ApiDoc({
-		summary: "댓글에 답글 작성 (깊이 제한 없음, 한 번에 이어 쓰기 가능)",
-		operationId: "replyTodoComment",
-	})
-	@ApiCreatedResponse({ type: TodoCommentChainResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0831)
-	writeReplies(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCommentIdParamDto,
-		@Body() body: WriteTodoCommentChainDto,
-	): Promise<TodoCommentChainResponseDto> {
-		return this.writeTodoCommentChainUseCase.execute({
-			todoId: params.todoId,
-			authorId: user.userId,
-			parentId: params.commentId,
+			parentId: body.parentId,
 			items: body.items,
 		});
 	}

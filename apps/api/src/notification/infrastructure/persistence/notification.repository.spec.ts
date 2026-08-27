@@ -522,6 +522,24 @@ describe("NotificationRepository — 알림 리포지토리", () => {
 		});
 	});
 
+	describe("deleteNotificationsByActorId", () => {
+		it("발신자 ID가 복사된 소셜·댓글 알림을 한 쿼리로 삭제한다", async () => {
+			asMock(db.$queryRaw).mockResolvedValue([
+				{ userId: "recipient-1" },
+				{ userId: "recipient-1" },
+				{ userId: "recipient-2" },
+			]);
+
+			await expect(repository.deleteNotificationsByActorId("user-1")).resolves.toEqual({
+				count: 3,
+				affectedUserIds: ["recipient-1", "recipient-2"],
+			});
+			expect(db.$queryRaw).toHaveBeenCalledTimes(1);
+			expect(db.notification.findMany).not.toHaveBeenCalled();
+			expect(db.notification.deleteMany).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("existsNotification", () => {
 		const notificationDate = new Date("2026-02-06T00:00:00.000Z");
 

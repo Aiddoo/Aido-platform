@@ -24,6 +24,7 @@ export function createNotificationRepositoryMock(): NotificationRepositoryPort {
 		markAllAsRead: jest.fn(),
 		countUnread: jest.fn(),
 		deleteOldNotifications: jest.fn(),
+		deleteNotificationsByActorId: jest.fn(),
 		existsRecentNotification: jest.fn(),
 		findAlreadyNotifiedUserIds: jest.fn(),
 		registerPushToken: jest.fn(),

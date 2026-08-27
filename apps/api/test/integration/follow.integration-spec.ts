@@ -60,7 +60,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		updateMany: jest.fn().mockResolvedValue({ count: 0 }),
 		aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
 	};
-	const mockUserDb = { findUnique: jest.fn() };
+	const mockUserDb = { findUnique: jest.fn(), findFirst: jest.fn() };
 	const mockDatabaseService = createMockDatabaseService({
 		follow: mockFollowDb,
 		user: mockUserDb,
@@ -172,7 +172,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("친구 요청 (use-case)", () => {
 		it("친구 요청이 Repository를 통해 생성된다", async () => {
-			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
+			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.create.mockResolvedValue(
@@ -198,7 +198,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("존재하지 않는 사용자에게 요청 시 ApplicationException", async () => {
-			mockUserDb.findUnique.mockResolvedValue(null);
+			mockUserDb.findFirst.mockResolvedValue(null);
 			await expect(
 				sendUseCase.execute({
 					userId: mockUserId,
@@ -208,7 +208,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("이미 친구인 경우 ApplicationException", async () => {
-			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
+			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
 			mockFollowDb.findUnique.mockResolvedValue(
 				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).accepted().build(),
 			);
@@ -221,7 +221,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("상대방이 먼저 요청한 경우 자동 수락", async () => {
-			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
+			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.findUnique.mockResolvedValueOnce(
 				FollowBuilder.create(mockTargetUserId, mockUserId)
@@ -252,8 +252,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("친구 요청 by tag (facade)", () => {
 		it("userTag로 요청하면 Follow가 생성된다", async () => {
-			mockUserDb.findUnique.mockResolvedValueOnce({ id: mockTargetUserId });
-			mockUserDb.findUnique.mockResolvedValueOnce({ id: mockTargetUserId });
+			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			mockFollowDb.create.mockResolvedValue(
@@ -271,7 +270,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("존재하지 않는 userTag → ApplicationException", async () => {
-			mockUserDb.findUnique.mockResolvedValue(null);
+			mockUserDb.findFirst.mockResolvedValue(null);
 			await expect(
 				sendByTagUseCase.execute({
 					userId: mockUserId,

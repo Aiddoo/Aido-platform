@@ -16,7 +16,13 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { cleanupOpenApiDoc } from "nestjs-zod";
 
 import { RELEASED_V1_OPENAPI_CONTRACT } from "./fixtures/released-v1-openapi-contract";
+import { RELEASED_V1_8_2_OPENAPI_CONTRACT } from "./fixtures/released-v1.8.2-openapi-contract";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/e2e-app-factory";
+
+const RELEASED_OPENAPI_CONTRACTS = [
+	RELEASED_V1_OPENAPI_CONTRACT,
+	RELEASED_V1_8_2_OPENAPI_CONTRACT,
+] as const;
 
 const DOCUMENTATION_ONLY_FIELDS = new Set([
 	"description",
@@ -132,49 +138,44 @@ describe("OpenAPI 계약 (e2e)", () => {
 		expect(document.components).toMatchSnapshot("openapi-components");
 	});
 
-	it("스토어 배포된 1.7.x 클라이언트의 요청·응답·상태 코드 계약을 보존한다", () => {
-		// Given - 운영과 같은 /v1 prefix가 적용된 현재 OpenAPI 계약
-		const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
-		const document = cleanupOpenApiDoc(SwaggerModule.createDocument(ctx.app, config));
-		const currentSchemas = (document.components?.schemas ?? {}) as Record<string, unknown>;
-		const currentPaths = Object.fromEntries(
-			Object.entries(document.paths).map(([route, contract]) => [
-				route === "/health" ? route : route.replace(/^\/v1/, ""),
-				contract,
-			]),
-		);
+	it.each(RELEASED_OPENAPI_CONTRACTS)(
+		"스토어 배포된 $releasedClientVersion 클라이언트의 요청·응답·상태 코드 계약을 보존한다",
+		(releasedContract) => {
+			// Given - 운영과 같은 /v1 prefix가 적용된 현재 OpenAPI 계약
+			const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+			const document = cleanupOpenApiDoc(SwaggerModule.createDocument(ctx.app, config));
+			const currentSchemas = (document.components?.schemas ?? {}) as Record<string, unknown>;
+			const currentPaths = Object.fromEntries(
+				Object.entries(document.paths).map(([route, contract]) => [
+					route === "/health" ? route : route.replace(/^\/v1/, ""),
+					contract,
+				]),
+			);
 
-		// When - 배포 클라이언트가 알고 있는 surface만 선택 (새 API 추가는 허용)
-		const missingSchemas = RELEASED_V1_OPENAPI_CONTRACT.schemaNames.filter(
-			(name) => !(name in currentSchemas),
-		);
-		const missingPaths = RELEASED_V1_OPENAPI_CONTRACT.pathNames.filter(
-			(route) => !(route in currentPaths),
-		);
-		const releasedSchemas = selectReleasedContract(
-			currentSchemas,
-			RELEASED_V1_OPENAPI_CONTRACT.schemaNames,
-		);
-		const releasedPaths = selectReleasedContract(
-			currentPaths,
-			RELEASED_V1_OPENAPI_CONTRACT.pathNames,
-		);
+			// When - 배포 클라이언트가 알고 있는 surface만 선택 (새 API 추가는 허용)
+			const missingSchemas = releasedContract.schemaNames.filter(
+				(name) => !(name in currentSchemas),
+			);
+			const missingPaths = releasedContract.pathNames.filter((route) => !(route in currentPaths));
+			const releasedSchemas = selectReleasedContract(currentSchemas, releasedContract.schemaNames);
+			const releasedPaths = selectReleasedContract(currentPaths, releasedContract.pathNames);
 
-		// Then - 문구 변경은 무시하되 Zod shape/request/response/status 구조는 동일
-		expect({
-			releasedClientVersion: RELEASED_V1_OPENAPI_CONTRACT.releasedClientVersion,
-			sourceCommit: RELEASED_V1_OPENAPI_CONTRACT.sourceCommit,
-			missingSchemas,
-			missingPaths,
-			schemasFingerprint: contractFingerprint(releasedSchemas),
-			pathsFingerprint: contractFingerprint(releasedPaths),
-		}).toEqual({
-			releasedClientVersion: "1.7.x",
-			sourceCommit: "75cc0e9285958f4963b3adbd8d6a17c631136c91",
-			missingSchemas: [],
-			missingPaths: [],
-			schemasFingerprint: RELEASED_V1_OPENAPI_CONTRACT.schemasFingerprint,
-			pathsFingerprint: RELEASED_V1_OPENAPI_CONTRACT.pathsFingerprint,
-		});
-	});
+			// Then - 문구 변경은 무시하되 Zod shape/request/response/status 구조는 동일
+			expect({
+				releasedClientVersion: releasedContract.releasedClientVersion,
+				sourceCommit: releasedContract.sourceCommit,
+				missingSchemas,
+				missingPaths,
+				schemasFingerprint: contractFingerprint(releasedSchemas),
+				pathsFingerprint: contractFingerprint(releasedPaths),
+			}).toEqual({
+				releasedClientVersion: releasedContract.releasedClientVersion,
+				sourceCommit: releasedContract.sourceCommit,
+				missingSchemas: [],
+				missingPaths: [],
+				schemasFingerprint: releasedContract.schemasFingerprint,
+				pathsFingerprint: releasedContract.pathsFingerprint,
+			});
+		},
+	);
 });

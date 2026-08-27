@@ -1,6 +1,6 @@
 import {
 	createMutationLockMock,
-	createTodoCommentCacheMock,
+	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
@@ -13,12 +13,12 @@ const COMMENT_ID = "cm1todoacomment00000000001";
 const USER_ID = "cm1author0000000000000001";
 
 describe("UnlikeTodoCommentUseCase", () => {
-	it("댓글 잠금 안에서 취소하고 캐시 정리는 커밋 후 settle한다", async () => {
+	it("댓글 잠금 안에서 좋아요를 취소한다", async () => {
 		const repository = createTodoCommentRepositoryMock();
-		const cache = createTodoCommentCacheMock();
+		const reader = createTodoCommentReaderMock();
 		const mutationLock = createMutationLockMock();
 		const createdAt = new Date("2026-08-16T00:00:00.000Z");
-		jest.mocked(repository.canAccessTodo).mockResolvedValue(true);
+		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
 		jest.mocked(repository.findComment).mockResolvedValue(
 			TodoComment.reconstitute({
 				id: COMMENT_ID,
@@ -42,10 +42,9 @@ describe("UnlikeTodoCommentUseCase", () => {
 			likeCount: 0,
 			wasEverNotified: true,
 		});
-		jest.mocked(cache.invalidateTopLevelFirstPages).mockRejectedValue(new Error("cache down"));
 		const useCase = new UnlikeTodoCommentUseCase(
+			reader,
 			repository,
-			cache,
 			mutationLock,
 			createUnitOfWorkMock(),
 		);
@@ -55,6 +54,5 @@ describe("UnlikeTodoCommentUseCase", () => {
 		).resolves.toEqual({ commentId: COMMENT_ID, isLiked: false, likeCount: 0 });
 
 		expect(mutationLock.acquire).toHaveBeenCalledWith([`mutation:v1:todo-comment:${COMMENT_ID}`]);
-		expect(cache.invalidateTopLevelFirstPages).toHaveBeenCalledWith(TODO_ID);
 	});
 });

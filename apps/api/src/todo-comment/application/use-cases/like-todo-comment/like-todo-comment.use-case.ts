@@ -12,11 +12,14 @@ import {
 import { ApplicationException } from "@/shared/domain";
 
 import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
-import { TODO_COMMENT_CACHE, type TodoCommentCachePort } from "../../ports/todo-comment-cache.port";
 import {
 	TODO_COMMENT_NOTIFICATION,
 	type TodoCommentNotificationPort,
 } from "../../ports/todo-comment-notification.port";
+import {
+	TODO_COMMENT_READER,
+	type TodoCommentReaderPort,
+} from "../../ports/todo-comment.reader.port";
 import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
@@ -34,10 +37,10 @@ export class LikeTodoCommentUseCase {
 	readonly #logger = new Logger(LikeTodoCommentUseCase.name);
 
 	constructor(
+		@Inject(TODO_COMMENT_READER)
+		private readonly reader: TodoCommentReaderPort,
 		@Inject(TODO_COMMENT_REPOSITORY)
 		private readonly repository: TodoCommentRepositoryPort,
-		@Inject(TODO_COMMENT_CACHE)
-		private readonly cache: TodoCommentCachePort,
 		@Inject(TODO_COMMENT_NOTIFICATION)
 		private readonly notification: TodoCommentNotificationPort,
 		@Inject(MUTATION_LOCK)
@@ -49,42 +52,35 @@ export class LikeTodoCommentUseCase {
 	async execute(input: LikeTodoCommentInput): Promise<TodoCommentLikeResponse> {
 		const likeOutcome = await this.unitOfWork.run(async () => {
 			await this.mutationLock.acquire([MutationLockKeys.todoComment(input.commentId)]);
-			await assertTodoCommentAccess(this.repository, input.todoId, input.userId);
-			const [comment, senderName] = await Promise.all([
-				this.repository.findComment(input.todoId, input.commentId),
-				this.repository.findUserDisplayName(input.userId),
-			]);
+			await assertTodoCommentAccess(this.reader, input.todoId, input.userId);
+			const comment = await this.repository.findComment(input.todoId, input.commentId);
 
 			if (comment === null) {
 				throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
 			}
 
 			comment.assertCanReceiveInteraction();
+			const senderName = await this.reader.findUserDisplayName(input.userId);
 			const transition = await this.repository.setLike(input.todoId, input.commentId, input.userId);
 			return { transition, senderName, threadRootId: comment.threadRootId.getValue() };
 		});
 
-		if (likeOutcome.transition.changed) {
-			const tasks = [
+		const recipientId = likeOutcome.transition.commentAuthorId;
+		if (
+			likeOutcome.transition.changed &&
+			!likeOutcome.transition.wasEverNotified &&
+			recipientId !== null
+		) {
+			await settleAfterCommit(this.#logger, [
 				{
-					label: "comment first pages cache",
-					run: () => this.cache.invalidateTopLevelFirstPages(input.todoId),
-				},
-			];
-
-			// 이미 한 번 알린 좋아요는 껐다 켜도 다시 알리지 않는다.
-			if (!likeOutcome.transition.wasEverNotified) {
-				tasks.push({
-					label: "comment like notification",
+					label: "댓글 좋아요 알림",
 					run: () =>
-						this.#notifyLiked(input, likeOutcome.transition.commentAuthorId, {
+						this.#notifyLiked(input, recipientId, {
 							senderName: likeOutcome.senderName,
 							threadRootId: likeOutcome.threadRootId,
 						}),
-				});
-			}
-
-			await settleAfterCommit(this.#logger, tasks);
+				},
+			]);
 		}
 
 		return {
@@ -94,10 +90,7 @@ export class LikeTodoCommentUseCase {
 		};
 	}
 
-	/**
-	 * 보내고 나서 표시한다 — 순서를 뒤집으면 발송이 한 번 실패했을 때 notifiedAt이 남아
-	 * 껐다 켜도 다시 시도되지 않는다. 중복 알림 한 번이 영구 유실보다 낫다.
-	 */
+	/** 알림 성공 뒤에만 표시해 일시 실패를 영구 유실로 만들지 않는다. */
 	async #notifyLiked(
 		input: LikeTodoCommentInput,
 		recipientId: string,

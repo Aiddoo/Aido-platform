@@ -4,10 +4,12 @@ import { PassportModule } from "@nestjs/passport";
 
 import { AdminEventNotifier, AdminNotificationModule } from "@/admin-notification";
 import { EmailModule, TransactionalEmailSender } from "@/email";
+import { NotificationModule } from "@/notification";
 import { RetentionModule } from "@/retention";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { TodoCategoryModule } from "@/todo-category";
+import { TodoCommentModule } from "@/todo-comment";
 import { UserSettingsModule } from "@/user-settings";
 
 import {
@@ -110,11 +112,13 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 			}),
 		}),
 		AdminNotificationModule,
+		NotificationModule,
 		EmailModule,
 		// 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
 		UserSettingsModule,
 		TodoCategoryModule,
 		RetentionModule,
+		TodoCommentModule,
 	],
 	controllers: [AuthController, OAuthController, SessionController, AccountController],
 	providers: [

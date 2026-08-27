@@ -34,16 +34,11 @@ describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
 		// When - transaction-scoped lock 획득
 		await adapter.acquire(keys);
 
-		// Then - JS 숫자 해시 없이 키가 SQL parameter로 전달되고 정렬 순서가 고정됨
-		expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
-		const firstCall = tx.$queryRaw.mock.calls[0];
-		const secondCall = tx.$queryRaw.mock.calls[1];
-		expect(firstCall?.[0]).toEqual([
-			"SELECT pg_advisory_xact_lock(hashtextextended(",
-			", 0))::text",
-		]);
-		expect(firstCall?.[1]).toBe("mutation:v1:nudge:cooldown:user-1:42");
-		expect(secondCall?.[1]).toBe("mutation:v1:nudge:daily:user-1:2026-07-26");
+		// Then - JS 숫자 해시 없이 정렬·중복 제거한 키를 한 SQL 왕복으로 잠금
+		expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+		expect(tx.$queryRaw.mock.calls[0]?.[0]).toMatchObject({
+			values: ["mutation:v1:nudge:cooldown:user-1:42", "mutation:v1:nudge:daily:user-1:2026-07-26"],
+		});
 	});
 
 	it("활성 트랜잭션이 아니면 SQL 전에 내부 invariant 오류로 실패한다", async () => {

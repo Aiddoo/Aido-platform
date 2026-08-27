@@ -1,6 +1,7 @@
 import type { MutationLockPort } from "@/shared/application/ports";
-import type { TodoCommentCachePort } from "@/todo-comment/application/ports/todo-comment-cache.port";
+import type { TodoCommentCursorCodecPort } from "@/todo-comment/application/ports/todo-comment-cursor-codec.port";
 import type { TodoCommentNotificationPort } from "@/todo-comment/application/ports/todo-comment-notification.port";
+import type { TodoCommentReaderPort } from "@/todo-comment/application/ports/todo-comment.reader.port";
 import type { TodoCommentRepositoryPort } from "@/todo-comment/application/ports/todo-comment.repository.port";
 import type { TodoViewCachePort } from "@/todo-comment/application/ports/todo-view-cache.port";
 
@@ -11,14 +12,7 @@ import type { TodoViewCachePort } from "@/todo-comment/application/ports/todo-vi
  */
 export function createTodoCommentRepositoryMock(): TodoCommentRepositoryPort {
 	return {
-		findAccessibleTodoDetails: jest.fn(),
-		canAccessTodo: jest.fn(),
 		findComment: jest.fn(),
-		findCommentRecord: jest.fn(),
-		listComments: jest.fn(),
-		findAncestors: jest.fn(),
-		findLikedCommentIds: jest.fn(),
-		findUserDisplayName: jest.fn(),
 		findCommentChainReplay: jest.fn(),
 		createCommentChain: jest.fn(),
 		updateComment: jest.fn(),
@@ -34,16 +28,31 @@ export function createTodoCommentRepositoryMock(): TodoCommentRepositoryPort {
 	};
 }
 
-export function createMutationLockMock(): MutationLockPort {
-	return { acquire: jest.fn() };
+export function createTodoCommentReaderMock(): TodoCommentReaderPort {
+	return {
+		findAccessibleTodoDetails: jest.fn(),
+		canAccessTodo: jest.fn(),
+		findCommentRecord: jest.fn(),
+		findCommentRecords: jest.fn(),
+		listOverview: jest.fn(),
+		listConversation: jest.fn(),
+		findAncestors: jest.fn(),
+		findLikedCommentIds: jest.fn(),
+		findUserDisplayName: jest.fn(),
+	};
 }
 
-export function createTodoCommentCacheMock(): TodoCommentCachePort {
+export function createTodoCommentCursorCodecMock(): TodoCommentCursorCodecPort {
 	return {
-		readTopLevelFirstPage: jest.fn(),
-		storeTopLevelFirstPageIfCurrent: jest.fn(),
-		invalidateTopLevelFirstPages: jest.fn(),
+		decodeConversation: jest.fn(),
+		encodeConversation: jest.fn(),
+		decodeOverview: jest.fn(),
+		encodeOverview: jest.fn(),
 	};
+}
+
+export function createMutationLockMock(): MutationLockPort {
+	return { acquire: jest.fn() };
 }
 
 export function createTodoCommentNotificationMock(): TodoCommentNotificationPort {

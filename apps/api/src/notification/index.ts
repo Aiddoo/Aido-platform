@@ -38,6 +38,10 @@ export {
 } from "./application/ports/push-rate-limiter.port";
 // --- Cross-module notification capability ---
 export { NotificationSender } from "./application/senders/notification.sender";
+export {
+	NotificationAccountCleanup,
+	type NotificationAccountCleanupResult,
+} from "./application/services/notification-account-cleanup";
 // --- Locale helpers (스케줄러 전략의 로케일별 메시지 조립) ---
 export { createLocaleMessageCache } from "./application/utils/user-locale.util";
 // --- Templates (메시지 빌더 + 로케일 해석) ---
@@ -49,4 +53,4 @@ export type { NotificationType } from "./domain/types/notification-type";
 // Prisma repository is internal to NotificationModule.
 // Cross-module consumers use the public capability boundary above.
 // --- Module wiring ---
-export * from "./notification.module";
+export { NotificationModule } from "./notification.module";

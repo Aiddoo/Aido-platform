@@ -13,7 +13,10 @@ import { ApplicationException } from "@/shared/domain";
 import { now } from "@/shared/domain/date/utils/core";
 
 import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
-import { TODO_COMMENT_CACHE, type TodoCommentCachePort } from "../../ports/todo-comment-cache.port";
+import {
+	TODO_COMMENT_READER,
+	type TodoCommentReaderPort,
+} from "../../ports/todo-comment.reader.port";
 import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
@@ -32,10 +35,10 @@ export class DeleteTodoCommentUseCase {
 	readonly #logger = new Logger(DeleteTodoCommentUseCase.name);
 
 	constructor(
+		@Inject(TODO_COMMENT_READER)
+		private readonly reader: TodoCommentReaderPort,
 		@Inject(TODO_COMMENT_REPOSITORY)
 		private readonly repository: TodoCommentRepositoryPort,
-		@Inject(TODO_COMMENT_CACHE)
-		private readonly cache: TodoCommentCachePort,
 		@Inject(TODO_VIEW_CACHE)
 		private readonly todoViewCache: TodoViewCachePort,
 		@Inject(MUTATION_LOCK)
@@ -46,7 +49,7 @@ export class DeleteTodoCommentUseCase {
 
 	async execute(input: DeleteTodoCommentInput): Promise<DeleteTodoCommentResponse> {
 		const outcome = await this.unitOfWork.run(async () => {
-			await assertTodoCommentAccess(this.repository, input.todoId, input.userId);
+			await assertTodoCommentAccess(this.reader, input.todoId, input.userId);
 			const snapshot = await this.repository.findComment(input.todoId, input.commentId);
 
 			if (snapshot === null) {
@@ -83,11 +86,7 @@ export class DeleteTodoCommentUseCase {
 		if (outcome) {
 			await settleAfterCommit(this.#logger, [
 				{
-					label: "comment first pages cache",
-					run: () => this.cache.invalidateTopLevelFirstPages(input.todoId),
-				},
-				{
-					label: "todo view cache",
+					label: "할 일 화면 캐시 무효화",
 					run: () => this.todoViewCache.invalidateForTodo(input.todoId),
 				},
 			]);

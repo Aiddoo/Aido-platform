@@ -1,6 +1,6 @@
 import {
 	createMutationLockMock,
-	createTodoCommentCacheMock,
+	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createTodoViewCacheMock,
 	createUnitOfWorkMock,
@@ -35,16 +35,16 @@ function createComment(): TodoComment {
 describe("DeleteTodoCommentUseCase", () => {
 	it("댓글과 정산 대상 조상을 함께 잠그고 조건부 삭제한다", async () => {
 		const repository = createTodoCommentRepositoryMock();
-		const cache = createTodoCommentCacheMock();
+		const reader = createTodoCommentReaderMock();
 		const todoViewCache = createTodoViewCacheMock();
 		const mutationLock = createMutationLockMock();
-		jest.mocked(repository.canAccessTodo).mockResolvedValue(true);
+		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
 		jest.mocked(repository.findComment).mockResolvedValue(createComment());
 		jest.mocked(repository.decrementTodoCommentCount).mockResolvedValue(true);
 		jest.mocked(repository.deleteComment).mockResolvedValue(true);
 		const useCase = new DeleteTodoCommentUseCase(
+			reader,
 			repository,
-			cache,
 			todoViewCache,
 			mutationLock,
 			createUnitOfWorkMock(),
@@ -60,7 +60,6 @@ describe("DeleteTodoCommentUseCase", () => {
 			`mutation:v1:todo-comment:${PARENT_ID}`,
 		]);
 		expect(repository.findComment).toHaveBeenCalledTimes(2);
-		expect(cache.invalidateTopLevelFirstPages).toHaveBeenCalledWith(TODO_ID);
 		expect(todoViewCache.invalidateForTodo).toHaveBeenCalledWith(TODO_ID);
 	});
 });

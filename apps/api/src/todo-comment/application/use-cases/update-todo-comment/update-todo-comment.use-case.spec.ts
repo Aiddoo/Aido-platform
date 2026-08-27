@@ -1,6 +1,6 @@
 import {
 	createMutationLockMock,
-	createTodoCommentCacheMock,
+	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createUnitOfWorkMock,
 } from "@test/mocks/ports";
@@ -49,23 +49,22 @@ function createRecord(): TodoCommentRecord {
 		deletedAt: null,
 		editedAt: "2026-08-16T00:01:00.000Z",
 		createdAt: "2026-08-16T00:00:00.000Z",
-		children: [],
 	};
 }
 
 describe("UpdateTodoCommentUseCase", () => {
-	it("댓글 잠금과 조건부 갱신 뒤 첫 페이지 캐시를 정리한다", async () => {
+	it("댓글 잠금 안에서 수정하고 reader projection을 반환한다", async () => {
 		const repository = createTodoCommentRepositoryMock();
-		const cache = createTodoCommentCacheMock();
+		const reader = createTodoCommentReaderMock();
 		const mutationLock = createMutationLockMock();
-		jest.mocked(repository.canAccessTodo).mockResolvedValue(true);
+		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
 		jest.mocked(repository.findComment).mockResolvedValue(createComment());
 		jest.mocked(repository.updateComment).mockResolvedValue(true);
-		jest.mocked(repository.findCommentRecord).mockResolvedValue(createRecord());
-		jest.mocked(repository.findLikedCommentIds).mockResolvedValue(new Set());
+		jest.mocked(reader.findCommentRecord).mockResolvedValue(createRecord());
+		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new UpdateTodoCommentUseCase(
+			reader,
 			repository,
-			cache,
 			mutationLock,
 			createUnitOfWorkMock(),
 		);
@@ -80,6 +79,6 @@ describe("UpdateTodoCommentUseCase", () => {
 		).resolves.toMatchObject({ comment: { id: COMMENT_ID, content: "수정 후" } });
 
 		expect(mutationLock.acquire).toHaveBeenCalledWith([`mutation:v1:todo-comment:${COMMENT_ID}`]);
-		expect(cache.invalidateTopLevelFirstPages).toHaveBeenCalledWith(TODO_ID);
+		expect(reader.findCommentRecord).toHaveBeenCalledWith(TODO_ID, COMMENT_ID);
 	});
 });
