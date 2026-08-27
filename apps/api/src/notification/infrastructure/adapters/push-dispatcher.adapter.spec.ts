@@ -54,7 +54,7 @@ const LEGACY_V1_0_NOTIFICATION_TYPES = [
 	"STREAK_AT_RISK",
 ] as const;
 
-/** v1.2.0~v1.4.x에서 위 enum에 추가된 날씨 알림 타입. */
+/** v1.2.0~v1.8.2에서 위 enum에 추가된 날씨 알림 타입. */
 const LEGACY_V1_2_NOTIFICATION_TYPES = [
 	...LEGACY_V1_0_NOTIFICATION_TYPES,
 	"WEATHER_MORNING",
@@ -82,7 +82,7 @@ function legacyPushDataSchema(notificationTypes: readonly [string, ...string[]])
 
 const LEGACY_PUSH_DATA_SCHEMAS = {
 	V1_0_TO_V1_1: legacyPushDataSchema(LEGACY_V1_0_NOTIFICATION_TYPES),
-	V1_2_TO_V1_4: legacyPushDataSchema(LEGACY_V1_2_NOTIFICATION_TYPES),
+	V1_2_TO_V1_8_2: legacyPushDataSchema(LEGACY_V1_2_NOTIFICATION_TYPES),
 } as const;
 
 /** 2026-07-16 12:00 KST — 마케팅 야간 게이트 밖의 결정적인 테스트 시각. */
@@ -984,7 +984,7 @@ describe("PushDispatcherAdapter", () => {
 		expect(pushProvider.sendBatch).toHaveBeenCalledTimes(1);
 	});
 
-	it("추가 분석 필드가 있어도 v1.0~v1.4와 현재 클라이언트 payload 계약을 모두 만족한다", async () => {
+	it("댓글 routing을 추가해도 v1.8.2와 현재 payload 계약을 모두 만족한다", async () => {
 		const token = "ExponentPushToken[legacy-compatible]";
 		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
@@ -1000,8 +1000,8 @@ describe("PushDispatcherAdapter", () => {
 				createdAt: tokenDate,
 				updatedAt: tokenDate,
 				lastUsedAt: tokenDate,
-				payloadVersion: 1,
-				appVersion: "1.0.0",
+				payloadVersion: 2,
+				appVersion: "1.8.2",
 			},
 		]);
 		repository.createPushDispatch.mockResolvedValue({ id: 77 });
@@ -1017,10 +1017,15 @@ describe("PushDispatcherAdapter", () => {
 		adapter.fireAndForgetPush(
 			{
 				userId: "user-1",
-				type: "TODO_REMINDER",
-				title: "할 일 시간이야",
-				body: "가볍게 시작해보자",
+				type: "TODO_SHARED",
+				title: "새 댓글",
+				body: "할 일에 댓글이 달렸어요",
 				todoId: 42,
+				metadata: {
+					commentId: "cmt92zn3n000b7voxx9quc2th",
+					threadRootId: "cmt92zn3n000b7voxx9quc2th",
+					activityKind: "COMMENT",
+				},
 				campaignKey: "todo_reminder_v2",
 				variantId: "todo_reminder_v2.60min.v2",
 			},
@@ -1030,13 +1035,23 @@ describe("PushDispatcherAdapter", () => {
 
 		const data = pushProvider.sendBatch.mock.calls[0]?.[0]?.[0]?.data;
 		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_0_TO_V1_1.safeParse(data).success).toBe(true);
-		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_2_TO_V1_4.safeParse(data).success).toBe(true);
+		const version182Payload = LEGACY_PUSH_DATA_SCHEMAS.V1_2_TO_V1_8_2.safeParse(data);
+		expect(version182Payload.success).toBe(true);
 		expect(pushNotificationDataSchema.safeParse(data).success).toBe(true);
+		if (!version182Payload.success) {
+			throw version182Payload.error;
+		}
+		expect(version182Payload.data).not.toHaveProperty("routing");
 		expect(data).toMatchObject({
 			notificationId: 101,
-			type: "TODO_REMINDER",
+			type: "TODO_SHARED",
 			action: { type: "DEEP_LINK" },
 			context: { todoId: 42 },
+			routing: {
+				commentId: "cmt92zn3n000b7voxx9quc2th",
+				threadRootId: "cmt92zn3n000b7voxx9quc2th",
+				activityKind: "COMMENT",
+			},
 			dispatchId: 77,
 			campaignKey: "todo_reminder_v2",
 			variantId: "todo_reminder_v2.60min.v2",

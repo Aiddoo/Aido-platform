@@ -1,5 +1,6 @@
 import type { TodoComment, TodoCommentAuthor } from "@aido/validators";
 
+import { getTodoCommentViewerPermissions } from "../../domain/services/todo-comment-permission";
 import type { TodoCommentParticipantAuthorRecord, TodoCommentRecord } from "../types";
 
 export function toTodoCommentResponse(
@@ -9,7 +10,12 @@ export function toTodoCommentResponse(
 ): TodoComment {
 	const isDeleted = record.deletedAt !== null;
 	const authorId = record.authorId;
-	const canEdit = !isDeleted && authorId === viewerId;
+	const viewer = getTodoCommentViewerPermissions({
+		isDeleted,
+		isLiked: likedCommentIds.has(record.id),
+		authorId,
+		viewerId,
+	});
 
 	return {
 		id: record.id,
@@ -33,12 +39,7 @@ export function toTodoCommentResponse(
 			record.parentId === null
 				? null
 				: { commentId: record.parentId, authorName: record.parentAuthorName },
-		viewer: {
-			isLiked: !isDeleted && likedCommentIds.has(record.id),
-			canEdit,
-			canDelete: canEdit,
-			canReply: !isDeleted,
-		},
+		viewer,
 		createdAt: record.createdAt,
 		editedAt: record.editedAt,
 	};

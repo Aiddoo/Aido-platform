@@ -1,19 +1,15 @@
-/**
- * Notification Mapper
- *
- * Prisma 엔티티를 DTO 형식으로 변환
- */
-
-import { type NotificationContext, type Notification as NotificationDto } from "@aido/validators";
+import {
+	type NotificationContext,
+	type Notification as NotificationDto,
+	type NotificationMetadata,
+	notificationMetadataSchema,
+} from "@aido/validators";
 
 import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
 
 import type { NotificationRecord } from "../domain/records/notification.record";
 
 export abstract class NotificationMapper {
-	/**
-	 * Notification 레코드 → Response DTO 형식
-	 */
 	static toDto(notification: NotificationRecord): NotificationDto {
 		const context: NotificationContext = {};
 		if (notification.todoId != null) {
@@ -37,7 +33,7 @@ export abstract class NotificationMapper {
 			title: notification.title,
 			body: notification.body,
 			isRead: notification.isRead,
-			metadata: notification.metadata as Record<string, unknown> | null,
+			metadata: toNotificationMetadata(notification.metadata),
 			...(hasContext && { context }),
 			action: {
 				type: notification.actionType,
@@ -48,10 +44,13 @@ export abstract class NotificationMapper {
 		};
 	}
 
-	/**
-	 * Notification 레코드 배열 → Response DTO 배열
-	 */
 	static toDtoList(notifications: NotificationRecord[]): NotificationDto[] {
 		return notifications.map((notification) => this.toDto(notification));
 	}
+}
+
+function toNotificationMetadata(metadata: unknown): NotificationMetadata {
+	const result = notificationMetadataSchema.safeParse(metadata);
+
+	return result.success ? result.data : null;
 }

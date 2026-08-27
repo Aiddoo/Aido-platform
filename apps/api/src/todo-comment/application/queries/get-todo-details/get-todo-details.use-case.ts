@@ -5,6 +5,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 
+import { getTodoDetailsPermissions } from "../../../domain/services/todo-comment-permission";
 import {
 	TODO_COMMENT_READER,
 	type TodoCommentReaderPort,
@@ -48,11 +49,7 @@ export class GetTodoDetailsUseCase {
 			return {
 				todo: todoDetails.todo,
 				owner: todoDetails.owner,
-				permissions: {
-					canEdit: todoDetails.isOwner,
-					canComment: true,
-					canNudge: !todoDetails.isOwner,
-				},
+				permissions: getTodoDetailsPermissions(todoDetails.isOwner),
 				metrics: {
 					viewCount,
 					commentCount: todoDetails.commentCount,
