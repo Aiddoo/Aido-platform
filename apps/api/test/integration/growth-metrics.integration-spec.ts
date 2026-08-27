@@ -3,7 +3,8 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 
 import { PrismaAdminGrowthMetricsAdapter } from "@/admin/infrastructure/adapters/prisma-admin-growth-metrics.adapter";
 import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import type { PrismaClient } from "@/generated/prisma/client";
+import { type PrismaClient, UserStatus } from "@/generated/prisma/client";
+import { DELETED_COMMENT_AUTHOR } from "@/shared/domain/system-user";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { TestDatabase } from "../setup/test-database";
@@ -291,7 +292,21 @@ async function seedGrowthScenario(prisma: PrismaClient): Promise<void> {
 		},
 	];
 	await prisma.user.createMany({
-		data: users.map((user) => ({ ...user, status: "ACTIVE" })),
+		data: [
+			...users.map((user) => ({ ...user, status: UserStatus.ACTIVE })),
+			{
+				...DELETED_COMMENT_AUTHOR,
+				status: UserStatus.LOCKED,
+				createdAt: new Date("2026-06-05T00:00:00.000Z"),
+			},
+		],
+	});
+	await prisma.account.createMany({
+		data: users.map((user) => ({
+			userId: user.id,
+			provider: "CREDENTIAL",
+			providerAccountId: `growth-${user.id}`,
+		})),
 	});
 	await prisma.userActivityDay.createMany({
 		data: [
@@ -371,6 +386,13 @@ async function seedDeletedGrowthUser(prisma: PrismaClient): Promise<void> {
 			status: "ACTIVE",
 			createdAt: signupAt,
 			deletedAt: new Date("2026-07-31T00:00:00.000Z"),
+		},
+	});
+	await prisma.account.create({
+		data: {
+			userId: "deleted-growth-user",
+			provider: "CREDENTIAL",
+			providerAccountId: "growth-deleted-growth-user",
 		},
 	});
 	const category = await prisma.todoCategory.create({

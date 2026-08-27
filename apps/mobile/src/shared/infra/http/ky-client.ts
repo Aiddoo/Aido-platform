@@ -143,6 +143,10 @@ export class KyHttpClient implements HttpClient {
       options.timeout = config.timeout;
     }
 
+    if (config.signal) {
+      options.signal = config.signal;
+    }
+
     if (config.params) {
       options.searchParams = Object.fromEntries(
         Object.entries(config.params)

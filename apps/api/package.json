@@ -16,6 +16,7 @@
 		"dev": "nest start --watch",
 		"format": "oxfmt src test",
 		"format:check": "oxfmt --check src test",
+		"fixture:todo-comments": "NODE_ENV=development DATABASE_URL=postgresql://postgres:postgres@localhost:5433/aido API_BASE_URL=http://localhost:8080 TS_NODE_PROJECT=test/dev-fixtures/tsconfig.json node --env-file=../../.env.docker.dev -r ts-node/register -r tsconfig-paths/register test/dev-fixtures/todo-comment-development-fixture.ts",
 		"lint": "oxlint src test",
 		"lint:fix": "oxlint src test --fix",
 		"start": "nest start",

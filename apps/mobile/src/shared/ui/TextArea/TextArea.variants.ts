@@ -18,6 +18,7 @@ export const textAreaContainerVariants = tv({
     variant: {
       filled: 'min-h-[120px] bg-gray-1 rounded-xl border border-gray-2 px-4 py-3',
       line: 'min-h-[120px] bg-transparent border-b border-gray-3 rounded-none px-4 py-3',
+      plain: 'min-h-14 bg-transparent px-0 py-1',
     },
     isFocused: {
       true: '',
@@ -41,5 +42,15 @@ export const textAreaContainerVariants = tv({
 });
 
 export const textAreaTextVariants = tv({
-  base: 'flex-1 text-gray-8 text-input-lg placeholder:text-gray-5',
+  base: 'flex-1 text-gray-8 placeholder:text-gray-5',
+  variants: {
+    variant: {
+      filled: 'text-input-lg',
+      line: 'text-input-lg',
+      plain: 'text-b3',
+    },
+  },
+  defaultVariants: {
+    variant: 'filled',
+  },
 });

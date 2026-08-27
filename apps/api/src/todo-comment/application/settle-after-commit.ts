@@ -21,7 +21,7 @@ export async function settleAfterCommit(
 	settled.forEach((result, index) => {
 		if (result.status === "rejected") {
 			logger.warn(
-				`After-commit task failed: ${tasks[index]?.label ?? "unknown"} — ${result.reason}`,
+				`커밋 후 작업을 마치지 못했습니다: ${tasks[index]?.label ?? "알 수 없는 작업"}. ${result.reason}`,
 				result.reason instanceof Error ? result.reason.stack : undefined,
 			);
 		}

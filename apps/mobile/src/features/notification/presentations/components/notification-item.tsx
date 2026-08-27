@@ -10,6 +10,7 @@ import { Pressable, View } from 'react-native';
 
 import { type Notification, NotificationPolicy } from '../../models/notification.model';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
+import { resolveNotificationDestination } from '../navigation/notification-destination';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
 
 interface NotificationItemProps {
@@ -87,7 +88,12 @@ function useNotificationPress(notification: Notification) {
       }
     }
 
-    const destination = NotificationPolicy.destination(notification);
+    const destination = resolveNotificationDestination({
+      type: notification.type,
+      context: notification.context,
+      routing: notification.metadata ?? undefined,
+      action: notification.action,
+    });
     trackEvent('notification_center_opened', {
       type: notification.type,
       destination: destination.kind,

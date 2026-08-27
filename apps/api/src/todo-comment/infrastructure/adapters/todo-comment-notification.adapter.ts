@@ -55,9 +55,9 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
 			todoId: input.todoId,
 			action: {
 				type: NOTIFICATION_ACTION_TYPE.DEEP_LINK,
-				url: `/todo/${input.todoId}/comment/${input.commentId}`,
 			},
 			metadata: {
+				senderId: input.senderId,
 				commentId: input.commentId,
 				threadRootId: input.threadRootId,
 				activityKind: kind,

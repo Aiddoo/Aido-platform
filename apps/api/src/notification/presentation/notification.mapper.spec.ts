@@ -87,6 +87,33 @@ describe("NotificationMapper — 알림 매퍼", () => {
 			// Then
 			expect(result.context).toBeUndefined();
 		});
+
+		it("객체가 아닌 legacy metadata는 null로 정규화한다", () => {
+			// Given
+			const notification = NotificationBuilder.create("user-1").build();
+			notification.metadata = "legacy-value";
+
+			// When
+			const result = NotificationMapper.toDto(notification);
+
+			// Then
+			expect(result.metadata).toBeNull();
+		});
+
+		it("action URL이 있으면 action에 포함한다", () => {
+			// Given
+			const notification = NotificationBuilder.create("user-1").build();
+			notification.actionUrl = "https://aido.app/notice";
+
+			// When
+			const result = NotificationMapper.toDto(notification);
+
+			// Then
+			expect(result.action).toEqual({
+				type: notification.actionType,
+				url: notification.actionUrl,
+			});
+		});
 	});
 
 	describe("toDtoList", () => {

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const NOTIFICATION_TYPE = {
   FOLLOW_NEW: 'FOLLOW_NEW',
   FOLLOW_ACCEPTED: 'FOLLOW_ACCEPTED',
@@ -31,7 +33,9 @@ export const NOTIFICATION_TYPE = {
   WEATHER_EVENING: 'WEATHER_EVENING',
 } as const;
 
-export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
+export const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
+
+export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
 export const NOTIFICATION_LIMITS = {
   MAX_FETCH_LIMIT: 50,

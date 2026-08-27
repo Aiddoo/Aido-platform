@@ -14,7 +14,7 @@ import { CheerReader } from "@/cheer/application/services/cheer.reader";
 import { SendCheerUseCase } from "@/cheer/application/use-cases/send-cheer/send-cheer.use-case";
 import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
 import { FollowReader } from "@/follow";
-import { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { NudgeLimitReaderPort } from "@/nudge/application/ports/nudge-limit-reader.port";
 import type { NudgeNotifierPort } from "@/nudge/application/ports/nudge-notifier.port";
 import { NudgeReader } from "@/nudge/application/services/nudge.reader";
@@ -502,6 +502,40 @@ function createTransactionHarness(prisma: PrismaClient): {
 	};
 }
 
+interface AdvisoryLockAttempt {
+	key: string;
+	acquired: boolean;
+}
+
+async function tryAcquireAdvisoryLocks(
+	prisma: PrismaClient,
+	keys: readonly string[],
+): Promise<AdvisoryLockAttempt[]> {
+	return prisma.$transaction((tx) =>
+		tx.$queryRaw<AdvisoryLockAttempt[]>(Prisma.sql`
+			SELECT
+				requested."key",
+				pg_try_advisory_xact_lock(hashtextextended(requested."key", 0)) AS acquired
+			FROM unnest(ARRAY[${Prisma.join(keys)}]::TEXT[]) AS requested("key")
+			ORDER BY requested."key"
+		`),
+	);
+}
+
+async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | undefined;
+	const deadline = new Promise<never>((_resolve, reject) => {
+		timeout = setTimeout(() => {
+			reject(new Error(`동시성 검증이 ${timeoutMs}ms 안에 끝나지 않았습니다.`));
+		}, timeoutMs);
+	});
+	try {
+		return await Promise.race([promise, deadline]);
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
 function createFollowReader(): FollowReader {
 	return {
 		isMutualFriend: async () => true,
@@ -695,6 +729,62 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 
 		// When / Then - timeout을 성공으로 취급하지 않는다
 		await expect(barrier.arrive("pid-1")).rejects.toThrow("arrivals=1/2");
+	});
+
+	it("배치 lock은 한 트랜잭션이 보유한 두 키를 모두 막고 commit 후 해제한다", async () => {
+		const keys = ["mutation:v1:comment:batch:b", "mutation:v1:comment:batch:a"];
+		const held = createDeferred();
+		const release = createDeferred();
+		const { txHost, uow } = createTransactionHarness(prisma);
+		const holding = uow.run(async () => {
+			await new PostgresMutationLockAdapter(txHost).acquire(keys);
+			held.resolve();
+			await release.promise;
+		});
+
+		await held.promise;
+		try {
+			const blocked = await tryAcquireAdvisoryLocks(prisma, keys);
+			expect(blocked).toEqual([
+				{ key: "mutation:v1:comment:batch:a", acquired: false },
+				{ key: "mutation:v1:comment:batch:b", acquired: false },
+			]);
+		} finally {
+			release.resolve();
+			await holding;
+		}
+
+		const available = await tryAcquireAdvisoryLocks(prisma, keys);
+		expect(available).toEqual([
+			{ key: "mutation:v1:comment:batch:a", acquired: true },
+			{ key: "mutation:v1:comment:batch:b", acquired: true },
+		]);
+	});
+
+	it("서로 반대 순서의 배치도 DB 내부 정렬 순서로 잠겨 교착 없이 완료한다", async () => {
+		const barrier = new RequiredParticipantBarrier(2);
+		const first = createTransactionHarness(prisma);
+		const second = createTransactionHarness(prisma);
+
+		const acquire = (
+			participant: string,
+			keys: readonly string[],
+			txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
+			uow: UnitOfWorkPort,
+		) =>
+			uow.run(async () => {
+				await barrier.arrive(participant);
+				await new PostgresMutationLockAdapter(txHost).acquire(keys);
+			});
+
+		await completeWithin(
+			Promise.all([
+				acquire("ascending", ["batch:a", "batch:b"], first.txHost, first.uow),
+				acquire("descending", ["batch:b", "batch:a"], second.txHost, second.uow),
+			]),
+			3_000,
+		);
+		expect(barrier.participantsSeen.toSorted()).toEqual(["ascending", "descending"]);
 	});
 
 	it("20개 Cheer 일일 한도 경쟁에서 3개만 저장하고 나머지는 CHEER_1201이어야 한다", async () => {

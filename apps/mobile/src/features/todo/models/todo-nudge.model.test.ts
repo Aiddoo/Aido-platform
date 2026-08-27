@@ -86,6 +86,62 @@ describe('TodoNudgePolicy', () => {
     });
   });
 
+  describe('canNudgeTodoInRange', () => {
+    const createInput = (
+      overrides?: Partial<Parameters<typeof TodoNudgePolicy.canNudgeTodoInRange>[0]>,
+    ): Parameters<typeof TodoNudgePolicy.canNudgeTodoInRange>[0] => ({
+      canNudge: true,
+      isCompleted: false,
+      startDate: '2026-08-17',
+      endDate: null,
+      ...overrides,
+    });
+
+    test('오늘이 친구의 미완료 할 일 범위 안이면 true를 반환한다', () => {
+      // Given — 시작일보다 늦어도 종료일 전이면 서버의 기간 할 일 정책과 같다.
+      const input = createInput({ startDate: '2026-08-16', endDate: '2026-08-18' });
+
+      // When
+      const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    test('서버 권한이 없으면 오늘의 미완료 할 일도 false를 반환한다', () => {
+      // Given — 자기 할 일은 details.permissions.canNudge가 false다.
+      const input = createInput({ canNudge: false });
+
+      // When
+      const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    test('완료한 할 일은 오늘 범위 안이어도 false를 반환한다', () => {
+      // Given
+      const input = createInput({ isCompleted: true });
+
+      // When
+      const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    test('지난 단일 날짜 할 일은 false를 반환한다', () => {
+      // Given — 8월 17일에 첨부 화면의 8월 16일 할 일을 보는 경우다.
+      const input = createInput({ startDate: '2026-08-16', endDate: null });
+
+      // When
+      const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+
+      // Then
+      expect(result).toBe(false);
+    });
+  });
+
   describe('normalizeMessage', () => {
     test('null이면 undefined를 반환한다', () => {
       // Given & When

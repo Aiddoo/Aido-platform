@@ -1,24 +1,40 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
-import type { TodoItem } from '@src/features/todo/models/todo.model';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetTextArea, Button, H4, KeyboardBottomSheet, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import type { ComponentProps } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Image, View } from 'react-native';
 
 import { useSendTodoNudgeMutationOptions } from '../queries/use-send-todo-nudge-mutation-options';
 import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
 
-interface NudgeBottomSheetProps {
-  friend: FriendUserViewModel;
-  todo: TodoItem;
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
+export interface NudgeReceiver {
+  id: string;
+  displayName: string;
 }
 
-export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBottomSheetProps) {
+export interface NudgeTargetTodo {
+  id: number;
+  title: string;
+}
+
+interface NudgeBottomSheetProps extends Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children'
+> {
+  receiver: NudgeReceiver;
+  todo: NudgeTargetTodo;
+}
+
+export function NudgeBottomSheet({
+  receiver,
+  todo,
+  isOpen,
+  onOpenChange,
+  ...bottomSheetProps
+}: NudgeBottomSheetProps) {
   const { t } = useTranslation('todo');
   const sendNudgeMutation = useMutation(useSendTodoNudgeMutationOptions());
 
@@ -43,7 +59,7 @@ export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBo
   const onSubmit = (data: NudgeFormInput) => {
     sendNudgeMutation.mutate(
       {
-        receiverId: friend.id,
+        receiverId: receiver.id,
         todoId: todo.id,
         message: data.message,
       },
@@ -54,7 +70,7 @@ export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBo
   };
 
   return (
-    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={handleOpenChange}>
+    <KeyboardBottomSheet {...bottomSheetProps} isOpen={isOpen} onOpenChange={handleOpenChange}>
       <VStack gap={16} pb={16}>
         <VStack gap={4}>
           <VStack gap={2}>
@@ -76,7 +92,7 @@ export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBo
             name="message"
             render={({ field: { onChange, value } }) => (
               <BottomSheetTextArea
-                label={`to. ${friend.displayName}`}
+                label={`to. ${receiver.displayName}`}
                 isInvalid={!!errors.message}
                 placeholder={t('nudge.placeholder')}
                 value={value}

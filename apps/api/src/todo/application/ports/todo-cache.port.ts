@@ -4,6 +4,15 @@ import type { CursorPaginatedResponse } from "@/shared/application/pagination";
 
 export const TODO_CACHE = Symbol("TODO_CACHE");
 
+export interface FriendTodosFirstPageCacheRead {
+	/**
+	 * 조회와 저장 사이에 무효화가 있었는지 판별하는 불투명 토큰.
+	 * application은 값을 해석하지 않고 저장 시 그대로 돌려준다.
+	 */
+	readonly generation: string;
+	readonly page: CursorPaginatedResponse<TodoResponse, number> | undefined;
+}
+
 /**
  * Todo 관련 캐시 포트 (cache 인프라 경계)
  *
@@ -20,22 +29,23 @@ export interface TodoCachePort {
 	 * 친구 공개 투두 첫 페이지 조회.
 	 * 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정).
 	 */
-	getFriendTodosFirstPage(
+	readFriendTodosFirstPage(
 		ownerUserId: string,
 		startDate: string,
 		endDate: string,
 		size: number,
-	): Promise<CursorPaginatedResponse<TodoResponse, number> | undefined>;
+	): Promise<FriendTodosFirstPageCacheRead>;
 
 	/**
 	 * 친구 공개 투두 첫 페이지 저장.
 	 * 캐시 값은 소유자의 PUBLIC 첫 페이지(뷰어 무관 공유).
 	 */
-	setFriendTodosFirstPage(
+	storeFriendTodosFirstPageIfCurrent(
 		ownerUserId: string,
 		startDate: string,
 		endDate: string,
 		size: number,
+		generation: string,
 		page: CursorPaginatedResponse<TodoResponse, number>,
 	): Promise<void>;
 

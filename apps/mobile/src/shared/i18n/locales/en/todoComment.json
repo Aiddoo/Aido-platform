@@ -1,52 +1,73 @@
 {
+  "screen": {
+    "replyTitle": "Reply",
+    "backToOverview": "Back to comments",
+    "backToThread": "Back to conversation",
+    "closeComposer": "Close comment composer"
+  },
   "list": {
-    "moreReplies_one": "View {{count}} reply",
-    "moreReplies_other": "View {{count}} replies",
     "edited": "Edited",
     "authorBadge": "Author",
     "deleted": "This comment was deleted",
     "unknownUser": "Unknown",
     "emptyTitle": "No comments yet",
     "emptyDescription": "Be the first to comment",
-    "loadFailed": "Couldn't load comments"
+    "loadFailed": "Couldn't load comments",
+    "focusedAnnouncement": "Moved to the selected comment",
+    "repliedTo": "Reply to {{name}}",
+    "earlierContextCount_one": "There is {{count}} earlier comment before this reply",
+    "earlierContextCount_other": "There are {{count}} earlier comments before this reply",
+    "sending": "Sending...",
+    "sendingAnnouncement": "Sending your comment",
+    "loadingEarlier": "Loading earlier comments",
+    "loadingMore": "Loading more comments"
+  },
+  "overview": {
+    "viewReplies_one": "View {{count}} reply",
+    "viewReplies_other": "View {{count}} replies"
   },
   "sort": {
+    "label": "Comment sort order, {{value}}",
     "popular": "Top",
     "latest": "Newest"
   },
   "input": {
     "placeholder": "Add a comment...",
     "replyPlaceholder": "Add a reply...",
+    "replyUnavailable": "Replies are no longer available for this comment",
+    "editUnavailable": "This comment cannot be edited. Return to the conversation",
     "commentingDisabled": "Comments are turned off for this to-do",
-    "replyingDisabled": "You can't reply to a deleted comment",
-    "editingComment": "Editing your comment",
     "editPlaceholder": "Edit your comment",
     "replyingTo": "Replying to {{name}}"
   },
-  "thread": {
-    "title": "Replies",
-    "openTodo": "View original to-do",
-    "checklistProgress": "{{completed}}/{{total}} done",
-    "emptyRepliesTitle": "No replies yet",
-    "emptyRepliesDescription": "Be the first to reply",
-    "originLabel": "On this to-do",
-    "moreChecklistItems_one": "and {{count}} more",
-    "moreChecklistItems_other": "and {{count}} more"
-  },
   "actions": {
-    "openThread": "View replies",
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save",
     "cancel": "Cancel",
-    "reply": "Reply"
+    "openConversation": "Open comment conversation",
+    "replyWithCount": "Reply to {{name}}, {{count}} replies",
+    "likeWithCount": "Like, {{count}} likes",
+    "unlikeWithCount": "Unlike, {{count}} likes",
+    "more": "More comment actions"
   },
   "composer": {
     "commentTitle": "Comment",
     "replyTitle": "Reply",
-    "addToChain": "Add another reply",
+    "addToChain": "Add another comment",
+    "chainPlaceholder": "Continue the thread...",
     "post": "Post",
     "editingComment": "Editing your comment",
-    "repliedTo": "Replied to {{name}}"
+    "remove": "Remove",
+    "removeFromChain": "Remove chained comment {{index}}",
+    "inputLabel": "Comment input {{index}} of {{count}}"
+  },
+  "toasts": {
+    "writeFailed": "Couldn't post your comment. Please try again",
+    "updateFailed": "Couldn't update your comment. Please try again",
+    "deleteFailed": "Couldn't delete your comment. Please try again",
+    "likeFailed": "Couldn't update the like. Please try again",
+    "openConversationFailed": "Couldn't open this conversation. Please tap it again in a moment",
+    "finishComposerFirst": "Post or cancel the comment you're writing before moving"
   }
 }

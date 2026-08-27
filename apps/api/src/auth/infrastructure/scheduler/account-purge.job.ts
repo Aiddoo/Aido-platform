@@ -9,9 +9,11 @@ import {
 	ACCOUNT_PURGE_QUEUE,
 	AccountPurgeProcessor,
 } from "@/auth/infrastructure/queue/account-purge.processor";
+import { NotificationAccountCleanup } from "@/notification";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
+import { TodoCommentAccountCleanup } from "@/todo-comment";
 
 /**
  * 계정 정리 스케줄러
@@ -29,6 +31,8 @@ export class AccountPurgeJob implements OnModuleInit {
 		private readonly securityLogRepository: SecurityLogRepository,
 		@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
 		private readonly processor: AccountPurgeProcessor,
+		private readonly notificationCleanup: NotificationAccountCleanup,
+		private readonly todoCommentCleanup: TodoCommentAccountCleanup,
 	) {}
 
 	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
@@ -101,10 +105,18 @@ export class AccountPurgeJob implements OnModuleInit {
 
 		for (const user of users) {
 			try {
-				// Hard delete (cascade로 관련 데이터 정리)
-				await this.uow.run(async () => {
+				// 댓글 모듈의 정리와 User 삭제는 하나의 원자적 경계다. 댓글 정리가 빠지면
+				// RESTRICT FK가 hard delete를 막아 대화 사슬과 counter를 지킨다.
+				const cleanupResult = await this.uow.run(async () => {
+					const notification = await this.notificationCleanup.cleanupInTransaction(user.id);
+					const todoComment = await this.todoCommentCleanup.cleanupInTransaction(user.id);
 					await this.userRepository.hardDelete(user.id);
+					return { notification, todoComment };
 				});
+				await Promise.all([
+					this.notificationCleanup.settleAfterCommit(cleanupResult.notification),
+					this.todoCommentCleanup.settleAfterCommit(cleanupResult.todoComment),
+				]);
 
 				// 트랜잭션 커밋 후 보안 로그 기록
 				// NOTE: onDelete: SetNull에 의해 트랜잭션 내에서 생성하면 userId가 null이 되므로

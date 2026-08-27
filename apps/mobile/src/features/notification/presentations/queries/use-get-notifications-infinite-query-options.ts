@@ -22,6 +22,12 @@ interface NotificationQueryParams {
   limit?: number;
 }
 
+interface NotificationPageParam {
+  cursor?: number;
+}
+
+const INITIAL_NOTIFICATION_PAGE_PARAM: NotificationPageParam = {};
+
 export const useGetNotificationsInfiniteQueryOptions = (params?: NotificationQueryParams) => {
   const notificationService = useNotificationService();
 
@@ -34,7 +40,7 @@ export const useGetNotificationsInfiniteQueryOptions = (params?: NotificationQue
 
     queryFn: async ({ pageParam }) => {
       const result = await notificationService.getNotifications({
-        cursor: pageParam,
+        cursor: pageParam.cursor,
         limit: params?.limit ?? 20,
         category: params?.category,
         unreadOnly: params?.unreadOnly,
@@ -42,16 +48,17 @@ export const useGetNotificationsInfiniteQueryOptions = (params?: NotificationQue
       return unwrap(result);
     },
 
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: INITIAL_NOTIFICATION_PAGE_PARAM,
 
     getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
+      lastPage.hasMore && lastPage.nextCursor !== null
+        ? { cursor: lastPage.nextCursor }
+        : undefined,
 
     select: selectSectionedList,
   });
 };
 
-// 참조 안정화로 불필요한 재갱신 방지를 위한, 별도 추출
 const selectSectionedList = (
   data: InfiniteData<NotificationListResult>,
 ): NotificationListItem[] => {

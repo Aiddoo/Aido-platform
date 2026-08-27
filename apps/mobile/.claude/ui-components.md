@@ -29,9 +29,7 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 Shared UI에 없는 컴포넌트는 **HeroUI Native**를 우선 사용합니다. (Button 등 기본 컴포넌트는 Shared UI 버전을 사용하세요)
 
 ```tsx
-import { Button } from '@heroui/react-native';
-import { TextField } from '@heroui/react-native';
-import { Card } from '@heroui/react-native';
+import { Button, Card, TextField } from 'heroui-native';
 ```
 
 ### 3순위: React Native 기본 컴포넌트 (최후의 수단)
@@ -73,6 +71,28 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `ScreenTitleBar`                              | 화면 상단 제목 바 (뒤로가기 · 제목 · 액션, 실시간 값은 subtitle)      | `src/shared/ui/ScreenTitleBar/ScreenTitleBar.md`       |
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
+
+## Wrapper Props 계약
+
+- Shared UI나 HeroUI Native 컴포넌트를 확장할 때는 `ComponentProps<typeof Original>`을 기준으로 한다.
+- wrapper가 직접 구현하는 prop만 `Omit`한다. `className`, `style`, `testID`, 접근성 prop,
+  `hitSlop` 같은 원본 확장 지점을 임의로 제거하지 않는다.
+- 제어형 prop 이름은 원본을 유지한다. React Native 입력은 `value/onChangeText`, HeroUI Checkbox는
+  `isSelected/onSelectedChange`, overlay는 `isOpen/onOpenChange`를 사용한다.
+- `Input`과 `TextArea`의 `className`은 바깥 표면, React Native `style`은 실제 `TextInput`에 전달한다.
+- `condition ? <Node /> : undefined`는 condition이 boolean인 JSX 노드에서
+  `condition && <Node />`로 쓸 수 있다. 숫자·문자열 조건과 함수 prop에서는 `false` 노출이나 타입
+  확장을 피하기 위해 삼항식을 유지한다.
+
+## 파일 응집도와 이름
+
+- 공개 컴포넌트 이름은 도메인과 기반 UI를 함께 드러낸다. Card를 확장하면 `{Domain}Card.tsx`처럼 짓는다.
+- `Item`, `Loading`, `Error`, `Empty`가 본체 없이는 의미가 없으면 본체 파일의 지역 컴포넌트 또는
+  compound member로 둔다.
+- 반복 UI는 의미 있는 작은 지역 컴포넌트로 조합한다. 필드가 독립적으로 달라질 수 있으면 짧다는
+  이유만으로 배열과 `map`으로 합치지 않는다.
+- 이미 존재하는 shared layout, 입력, 버튼, 날짜 유틸을 먼저 찾는다. 같은 역할의 wrapper나 util을
+  다시 만들지 않는다.
 
 ---
 

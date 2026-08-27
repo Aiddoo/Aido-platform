@@ -32,4 +32,10 @@ export const MutationLockKeys = {
 	todoCategory(userId: string): string {
 		return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
 	},
+	todoComment(commentId: string): string {
+		return `${MUTATION_KEY_PREFIX}:todo-comment:${commentId}`;
+	},
+	todoCommentRequest(authorId: string, clientRequestId: string): string {
+		return `${MUTATION_KEY_PREFIX}:todo-comment-request:${authorId}:${clientRequestId}`;
+	},
 };

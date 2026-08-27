@@ -1,4 +1,3 @@
-import type { NotificationType } from "../../../types/notification-type";
 import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
 
 export const SOCIAL_SENDER_FALLBACK = "A friend";
@@ -329,7 +328,7 @@ export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
 		title: "☀️ {skyLabel} today, {tempMin}–{tempMax}°C",
 		body: "Perfect weather for crushing your to-dos",
-		type: "WEATHER_MORNING" as NotificationType,
+		type: "WEATHER_MORNING",
 		variants: [
 			{
 				title: "☀️ {skyLabel} today, {tempMin}–{tempMax}°C",
@@ -344,7 +343,7 @@ export const WEATHER_TEMPLATES = {
 	MORNING_RAIN: {
 		title: "☔ Rain expected today, {precipProb}% chance",
 		body: "Don't forget your umbrella! {tempMin}–{tempMax}°C",
-		type: "WEATHER_MORNING" as NotificationType,
+		type: "WEATHER_MORNING",
 		variants: [
 			{
 				title: "☔ Rain expected today, {precipProb}% chance",
@@ -359,7 +358,7 @@ export const WEATHER_TEMPLATES = {
 	MORNING_SNOW: {
 		title: "❄️ Snow expected today, {precipProb}% chance",
 		body: "Bundle up before heading out! {tempMin}–{tempMax}°C",
-		type: "WEATHER_MORNING" as NotificationType,
+		type: "WEATHER_MORNING",
 		variants: [
 			{
 				title: "❄️ Snow expected today, {precipProb}% chance",
@@ -374,7 +373,7 @@ export const WEATHER_TEMPLATES = {
 	EVENING_CLEAR: {
 		title: "🌙 Tomorrow: {skyLabel}, {tempMin}–{tempMax}°C",
 		body: "Plan tomorrow's to-dos now for an easier morning",
-		type: "WEATHER_EVENING" as NotificationType,
+		type: "WEATHER_EVENING",
 		variants: [
 			{
 				title: "🌙 Tomorrow: {skyLabel}, {tempMin}–{tempMax}°C",
@@ -389,7 +388,7 @@ export const WEATHER_TEMPLATES = {
 	EVENING_RAIN: {
 		title: "☔ {precipProb}% chance of rain tomorrow",
 		body: "Get your umbrella ready! {tempMin}–{tempMax}°C",
-		type: "WEATHER_EVENING" as NotificationType,
+		type: "WEATHER_EVENING",
 		variants: [
 			{
 				title: "☔ {precipProb}% chance of rain tomorrow",
@@ -404,7 +403,7 @@ export const WEATHER_TEMPLATES = {
 	EVENING_SNOW: {
 		title: "❄️ {precipProb}% chance of snow tomorrow",
 		body: "Dress warm and keep to-dos indoors! {tempMin}–{tempMax}°C",
-		type: "WEATHER_EVENING" as NotificationType,
+		type: "WEATHER_EVENING",
 		variants: [
 			{
 				title: "❄️ {precipProb}% chance of snow tomorrow",

@@ -5,6 +5,11 @@ import { Inject, Injectable } from "@nestjs/common";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { ApplicationException } from "@/shared/domain";
 
+import { getTodoDetailsPermissions } from "../../../domain/services/todo-comment-permission";
+import {
+	TODO_COMMENT_READER,
+	type TodoCommentReaderPort,
+} from "../../ports/todo-comment.reader.port";
 import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
@@ -18,6 +23,8 @@ export interface GetTodoDetailsInput {
 @Injectable()
 export class GetTodoDetailsUseCase {
 	constructor(
+		@Inject(TODO_COMMENT_READER)
+		private readonly todoCommentReader: TodoCommentReaderPort,
 		@Inject(TODO_COMMENT_REPOSITORY)
 		private readonly todoCommentRepository: TodoCommentRepositoryPort,
 		@Inject(UNIT_OF_WORK)
@@ -26,7 +33,7 @@ export class GetTodoDetailsUseCase {
 
 	async execute(input: GetTodoDetailsInput): Promise<TodoDetailsResponse> {
 		return this.unitOfWork.run(async () => {
-			const todoDetails = await this.todoCommentRepository.findAccessibleTodoDetails(
+			const todoDetails = await this.todoCommentReader.findAccessibleTodoDetails(
 				input.todoId,
 				input.viewerId,
 			);
@@ -42,11 +49,7 @@ export class GetTodoDetailsUseCase {
 			return {
 				todo: todoDetails.todo,
 				owner: todoDetails.owner,
-				permissions: {
-					canEdit: todoDetails.isOwner,
-					canComment: true,
-					canNudge: !todoDetails.isOwner,
-				},
+				permissions: getTodoDetailsPermissions(todoDetails.isOwner),
 				metrics: {
 					viewCount,
 					commentCount: todoDetails.commentCount,

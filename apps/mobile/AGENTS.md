@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-07-14 · **Owner**: Aido Mobile Team
+> **Version**: 1.2.0 · **Last Updated**: 2026-08-26 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -11,7 +11,8 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 상황                                                           | 읽을 문서                                                      |
 | -------------------------------------------------------------- | -------------------------------------------------------------- |
 | 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md)             |
-| 테스트 작성 (DI + jest.fn() 레이어별)                          | [.claude/testing-guide.md](.claude/testing-guide.md)           |
+| Todo 댓글 화면·대화·작성 시트                                  | [.claude/todo-comments.md](.claude/todo-comments.md)           |
+| 테스트 작성 (Model · Service · 순수 util 중심)                 | [.claude/testing-guide.md](.claude/testing-guide.md)           |
 | UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN)       | [.claude/ui-components.md](.claude/ui-components.md)           |
 | 다국어 / 문자열 추가 (i18n, ko+en 카탈로그)                    | [.claude/i18n-guide.md](.claude/i18n-guide.md)                 |
 | 인증 상태 · 토큰 · 로그인 플로우                               | [docs/authentication_guide.md](docs/authentication_guide.md)   |
@@ -88,7 +89,7 @@ features/{feature}/
 3. **DI 등록** — `bootstrap/providers/di-provider.tsx`에 Service 인스턴스 + `use{Feature}Service` 훅
 4. **Presentations** — Query Keys, Query/Mutation Options, 컴포넌트
 5. **라우트** — `app/` 하위에 화면 추가
-6. **테스트** — 레이어별 단위 테스트 (DI + `jest.fn()`)
+6. **테스트** — Model/Policy, Service/Mapper, 자체 로직이 있는 순수 util/view-model만 선별
 
 상세: [.claude/architecture.md#새-feature-추가-체크리스트](.claude/architecture.md)
 

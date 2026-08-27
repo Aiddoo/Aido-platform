@@ -2,6 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
+import { Prisma } from "@/generated/prisma/client";
 import type { MutationLockPort } from "@/shared/application/ports";
 
 import type { DatabaseService } from "./database.service";
@@ -25,9 +26,21 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
 		}
 
 		const orderedKeys = [...new Set(keys)].sort();
-		for (const key of orderedKeys) {
-			await this.txHost.tx
-				.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))::text`;
+		if (orderedKeys.length === 0) {
+			return;
 		}
+
+		// key 수와 무관하게 한 번 왕복합니다. 내부 정렬 subquery가 모든 호출자에게 같은
+		// 잠금 순서를 주므로 여러 댓글을 정리해도 교착 회피 규칙은 유지됩니다.
+		await this.txHost.tx.$queryRaw(Prisma.sql`
+			WITH ordered AS MATERIALIZED (
+				SELECT requested."key"
+				FROM unnest(ARRAY[${Prisma.join(orderedKeys)}]::TEXT[]) AS requested("key")
+				ORDER BY requested."key"
+			)
+			SELECT pg_advisory_xact_lock(hashtextextended(ordered."key", 0))::TEXT
+			FROM ordered
+			ORDER BY ordered."key"
+		`);
 	}
 }
