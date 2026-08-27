@@ -1,34 +1,36 @@
-import { useTodoScreenParams } from '@src/features/todo/presentations/hooks/use-todo-screen-params';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useTranslation } from '@src/shared/i18n';
-import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import type { TodoComment } from '../../models/todo-comment.model';
 import { useTodoCommentScreenTransition } from '../providers/todo-comment-screen-transition';
-import { useTodoCommentConversationQueryOptions } from '../queries/use-todo-comment-conversation-query-options';
-import { toInitialConversationWindow } from '../utils/comment-conversation-position';
 import type { CommentNavigationDestination } from '../utils/comment-route-state';
-import type { ConversationPages } from '../utils/todo-comment-cache.util';
 import { useCommentRouteState } from './use-comment-route-state';
+import { usePrepareTodoCommentConversation } from './use-prepare-todo-comment-conversation';
 
 export function useCommentConversationNavigation(comment: TodoComment) {
-  const { todoId } = useTodoScreenParams();
-  const route = useCommentRouteState();
-  const queryClient = useQueryClient();
+  const { anchorCommentId, openComment } = useCommentRouteState();
   const { error: showError, warning: showWarning } = useAppToast();
   const { t } = useTranslation('todoComment');
-  const queryOptions = useTodoCommentConversationQueryOptions({
-    todoId,
-    sort: route.sort,
-    focusCommentId: comment.id,
-  });
+  const prepareConversation = usePrepareTodoCommentConversation(comment.id);
   const {
     pendingCommentId,
     canNavigateToComment,
     beginCommentNavigation,
     completeCommentNavigation,
   } = useTodoCommentScreenTransition();
+
+  const commitNavigation = useCallback(
+    (requestId: number, destination: CommentNavigationDestination) => {
+      if (!completeCommentNavigation(requestId)) {
+        return false;
+      }
+
+      openComment(comment.id, destination);
+      return true;
+    },
+    [comment.id, completeCommentNavigation, openComment],
+  );
 
   const open = useCallback(
     async (destination: CommentNavigationDestination) => {
@@ -42,48 +44,13 @@ export function useCommentConversationNavigation(comment: TodoComment) {
         return;
       }
 
-      if (route.anchorCommentId === comment.id) {
-        if (!completeCommentNavigation(requestId)) {
-          return;
-        }
-
-        if (destination === 'thread') {
-          route.showThread(comment.id);
-          return;
-        }
-
-        if (destination === 'reply') {
-          route.startReply(comment.id);
-          return;
-        }
-
-        route.startEdit(comment.id);
+      if (anchorCommentId === comment.id) {
+        commitNavigation(requestId, destination);
         return;
       }
 
       try {
-        const cachedData = queryClient.getQueryData<ConversationPages>(queryOptions.queryKey);
-        const cachedState = queryClient.getQueryState<ConversationPages>(queryOptions.queryKey);
-        const initialWindow =
-          cachedData === undefined ? undefined : toInitialConversationWindow(cachedData);
-
-        if (initialWindow === null) {
-          queryClient.removeQueries({ queryKey: queryOptions.queryKey, exact: true });
-        } else if (initialWindow !== undefined && initialWindow !== cachedData) {
-          queryClient.setQueryData<ConversationPages>(queryOptions.queryKey, initialWindow, {
-            updatedAt: cachedState?.dataUpdatedAt,
-          });
-          await queryClient.invalidateQueries({
-            queryKey: queryOptions.queryKey,
-            exact: true,
-            refetchType: 'none',
-          });
-        }
-
-        await queryClient.fetchInfiniteQuery({
-          ...queryOptions,
-          pages: 1,
-        });
+        await prepareConversation();
       } catch {
         if (completeCommentNavigation(requestId)) {
           showError(undefined, { fallback: t('toasts.openConversationFailed') });
@@ -91,30 +58,16 @@ export function useCommentConversationNavigation(comment: TodoComment) {
         return;
       }
 
-      if (!completeCommentNavigation(requestId)) {
-        return;
-      }
-
-      if (destination === 'thread') {
-        route.showThread(comment.id);
-        return;
-      }
-
-      if (destination === 'reply') {
-        route.startReply(comment.id);
-        return;
-      }
-
-      route.startEdit(comment.id);
+      commitNavigation(requestId, destination);
     },
     [
       beginCommentNavigation,
       canNavigateToComment,
+      anchorCommentId,
       comment.id,
+      commitNavigation,
       completeCommentNavigation,
-      queryClient,
-      queryOptions,
-      route,
+      prepareConversation,
       showError,
       showWarning,
       t,

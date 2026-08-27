@@ -88,10 +88,7 @@ export function TodoCommentComposerForm({
   });
   const { focusedFieldIndex, trackFocusedField, focusFieldAfterLayout, removeFieldAndFocusNext } =
     useCommentComposerFieldFocus({ remove, setFocus });
-  const showsAppendAction = TodoCommentDraftPolicy.canAddMore({
-    itemCount: fields.length,
-    isEditing,
-  });
+  const showsAppendAction = !isEditing && TodoCommentDraftPolicy.hasCapacity(fields.length);
   const composerMaxHeight = getCommentComposerMaxHeight(viewportHeight);
 
   const handleFormSubmit = handleSubmit(({ items }) =>

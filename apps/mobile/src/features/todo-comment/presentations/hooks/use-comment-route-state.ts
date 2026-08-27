@@ -2,7 +2,10 @@ import type { TodoCommentSort } from '@aido/validators';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 
-import { parseCommentRouteState } from '../utils/comment-route-state';
+import {
+  type CommentNavigationDestination,
+  parseCommentRouteState,
+} from '../utils/comment-route-state';
 
 export function useCommentRouteState() {
   const state = parseCommentRouteState(useLocalSearchParams());
@@ -10,15 +13,12 @@ export function useCommentRouteState() {
   const setSort = useCallback((nextSort: TodoCommentSort) => {
     router.setParams({ sort: nextSort });
   }, []);
-  const showThread = useCallback((commentId: string) => {
-    router.setParams({ comment: commentId, intent: 'thread' });
-  }, []);
-  const startReply = useCallback((commentId: string) => {
-    router.setParams({ comment: commentId, intent: 'reply' });
-  }, []);
-  const startEdit = useCallback((commentId: string) => {
-    router.setParams({ comment: commentId, intent: 'edit' });
-  }, []);
+  const openComment = useCallback(
+    (commentId: string, destination: CommentNavigationDestination) => {
+      router.setParams({ comment: commentId, intent: destination });
+    },
+    [],
+  );
   const startCreate = useCallback(() => {
     router.setParams({ comment: undefined, intent: 'create' });
   }, []);
@@ -39,9 +39,7 @@ export function useCommentRouteState() {
   return {
     ...state,
     setSort,
-    showThread,
-    startReply,
-    startEdit,
+    openComment,
     startCreate,
     closeComposer,
     clearThread,

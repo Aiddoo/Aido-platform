@@ -333,6 +333,9 @@ query option 객체를 인라인으로 정의하지 않는다.
 - 댓글 대화 진입은 target query의 최초 window를 먼저 확정한다. prepend와 append 이력이 있는 캐시는
   `direction: initial` page만 남기고, stale하거나 캐시가 없으면 첫 page를 foreground에서 확인한다.
   준비가 끝난 뒤에만 URL을 바꾸므로 mount 뒤 index가 다시 바뀌지 않는다.
+- `usePrepareTodoCommentConversation`은 위 cache 정규화와 fetch만 소유한다.
+  `useCommentConversationNavigation`은 작성 권한, 진행 중 요청과 route commit만 소유하며 준비 hook을
+  조합한다.
 - 작성과 삭제는 구조와 집계를 바꾼다. 클라이언트가 root 위치, 대표 답글, 숨은 수, 참여자,
   연결선을 예측해서 넣지 않는다.
 - 작성 성공 후 `settleTodoCommentMutation`이 활성 overview와 conversation, 할 일 상세와 목록 집계를
@@ -414,6 +417,7 @@ src/features/todo-comment/
       TodoCommentComposerBar.tsx
       TodoCommentComposerForm.tsx
   presentations/hooks/use-comment-route-state.ts
+  presentations/hooks/use-prepare-todo-comment-conversation.ts
   presentations/hooks/use-comment-conversation-navigation.ts
   presentations/hooks/use-comment-sort-transition.ts
   presentations/hooks/use-comment-screen-back-handler.ts

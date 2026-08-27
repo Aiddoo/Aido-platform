@@ -230,7 +230,7 @@ function SelectedCommentReplyTrigger() {
         canReply
           ? () => {
               cancelTransition();
-              route.startReply(target.id);
+              route.openComment(target.id, 'reply');
             }
           : undefined
       }

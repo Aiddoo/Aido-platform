@@ -58,21 +58,18 @@ export interface TodoCommentChain {
 
 export type TodoCommentLikeResult = TodoCommentLikeResponse;
 
-const isAlive = (comment: TodoComment) => !comment.isDeleted;
-
-const isActionable = (comment: TodoComment) => isAlive(comment);
+const isActive = (comment: TodoComment) => !comment.isDeleted;
 
 export const TodoCommentPolicy = {
-  canAct: (comment: TodoComment) => isActionable(comment),
-  canLike: (comment: TodoComment) => isActionable(comment),
-  canReply: (comment: TodoComment) => isActionable(comment) && comment.viewer.canReply,
-  canEdit: (comment: TodoComment) => isActionable(comment) && comment.viewer.canEdit,
-  canDelete: (comment: TodoComment) => isActionable(comment) && comment.viewer.canDelete,
+  isActive,
+  canLike: (comment: TodoComment) => isActive(comment),
+  canReply: (comment: TodoComment) => isActive(comment) && comment.viewer.canReply,
+  canEdit: (comment: TodoComment) => isActive(comment) && comment.viewer.canEdit,
+  canDelete: (comment: TodoComment) => isActive(comment) && comment.viewer.canDelete,
   canManage: (comment: TodoComment) =>
     TodoCommentPolicy.canEdit(comment) || TodoCommentPolicy.canDelete(comment),
 } as const;
 
 export const TodoCommentDraftPolicy = {
-  canAddMore: ({ itemCount, isEditing }: { itemCount: number; isEditing: boolean }) =>
-    !isEditing && itemCount < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE,
+  hasCapacity: (itemCount: number) => itemCount < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE,
 } as const;

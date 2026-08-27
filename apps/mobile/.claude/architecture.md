@@ -181,7 +181,9 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 - 미디어 업로드는 실제 API 계약이 있을 때만 도입한다. Expo 호환성과 유지 상태가 검증된 라이브러리를
   우선하고, 없다면 선택·검증·전송을 각각 작은 hook/service로 분리한다. API가 없는 기능을 미리 만들지 않는다.
 - 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.
-- 알림 route metadata는 `@aido/validators` 스키마로 검증한 뒤 순수 destination policy가 경로를 결정한다. 화면 컴포넌트가 raw metadata를 해석하지 않는다.
+- 알림 wire payload는 `@aido/validators`를 단일 원본으로 사용한다. 내부 화면 경로는
+  `presentations/navigation`의 순수 resolver가 검증된 route 재료로 결정한다. domain Policy와 화면
+  컴포넌트는 Expo Router나 raw metadata를 알지 않는다.
 
 ### 1. Models — Domain Model + Policy + Error
 

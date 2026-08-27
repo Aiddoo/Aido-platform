@@ -3,7 +3,15 @@ import { useNotificationHandler } from '@src/features/notification/presentations
 import { toError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import * as Notifications from 'expo-notifications';
-import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
+import {
+  createContext,
+  type PropsWithChildren,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
@@ -15,7 +23,6 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
-// 포그라운드 알림 동작 설정 (웹 제외)
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -27,146 +34,183 @@ if (Platform.OS !== 'web') {
   });
 }
 
-// Native 전용 Provider 구현
-const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
+function NativeNotificationProvider({ children }: PropsWithChildren) {
   const { status } = useAuth();
-  const notificationService = useNotificationService();
-  const logger = useLogger();
   const isAuthenticated = status === 'authenticated';
   const canRegisterPushAutomatically = useAutomaticPushRegistration();
-
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
-  const receivedListener = useRef<Notifications.EventSubscription | null>(null);
-  const lastResponseHandled = useRef<string | null>(null);
-  const pendingColdStartResponse = useRef<Notifications.NotificationResponse | null>(null);
-
-  const isAuthResolved = status !== 'loading';
-
   const { handleNotificationResponse, handleForegroundNotification } = useNotificationHandler({
     isAuthenticated,
   });
-
+  const processResponse = useNotificationResponseProcessor(handleNotificationResponse);
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
-  // Cold start 및 일반 알림 통합 처리
+  useColdStartNotificationResponse({
+    response: lastNotificationResponse,
+    isAuthResolved: status !== 'loading',
+    processResponse,
+  });
+  useNativeNotificationListeners({
+    processResponse,
+    handleForegroundNotification,
+  });
+  useMarketingNotificationCategory();
+  usePushLocaleSync({
+    isAuthenticated,
+    canRegisterPushAutomatically,
+  });
+  useNotificationBadgeSync(isAuthenticated);
+
+  const value = useMemo(() => ({ handleNotificationResponse }), [handleNotificationResponse]);
+
+  return <NotificationContext value={value}>{children}</NotificationContext>;
+}
+
+function useNotificationResponseProcessor(
+  handleNotificationResponse: NotificationContextValue['handleNotificationResponse'],
+) {
+  const logger = useLogger();
+  const handledResponseIdRef = useRef<string | null>(null);
+
+  return useCallback(
+    (response: Notifications.NotificationResponse) => {
+      const responseId = response.notification.request.identifier;
+      if (handledResponseIdRef.current === responseId) {
+        return;
+      }
+
+      handledResponseIdRef.current = responseId;
+      void Notifications.clearLastNotificationResponseAsync();
+      handleNotificationResponse(response).catch((error) =>
+        logger.error('[Notification] Response handling failed', toError(error)),
+      );
+    },
+    [handleNotificationResponse, logger],
+  );
+}
+
+function useColdStartNotificationResponse({
+  response,
+  isAuthResolved,
+  processResponse,
+}: {
+  response: Notifications.NotificationResponse | null | undefined;
+  isAuthResolved: boolean;
+  processResponse: (response: Notifications.NotificationResponse) => void;
+}) {
+  const pendingResponseRef = useRef<Notifications.NotificationResponse | null>(null);
+
   useEffect(() => {
-    const responseToProcess = pendingColdStartResponse.current ?? lastNotificationResponse;
+    const responseToProcess = pendingResponseRef.current ?? response;
     if (!responseToProcess) {
       return;
     }
-
-    const responseId = responseToProcess.notification.request.identifier;
-
-    if (isAuthResolved) {
-      if (lastResponseHandled.current !== responseId) {
-        lastResponseHandled.current = responseId;
-        pendingColdStartResponse.current = null;
-        void Notifications.clearLastNotificationResponseAsync();
-        handleNotificationResponse(responseToProcess).catch((e) =>
-          logger.error('[Notification] Response handling failed', toError(e)),
-        );
-      }
-    } else if (
-      lastNotificationResponse &&
-      lastResponseHandled.current !== lastNotificationResponse.notification.request.identifier
-    ) {
-      // 인증 미완료: 최신 응답을 큐잉
-      pendingColdStartResponse.current = lastNotificationResponse;
+    if (!isAuthResolved) {
+      pendingResponseRef.current = responseToProcess;
+      return;
     }
-  }, [lastNotificationResponse, isAuthResolved, handleNotificationResponse, logger]);
 
-  // Effect 1: 알림 리스너 등록
+    pendingResponseRef.current = null;
+    processResponse(responseToProcess);
+  }, [isAuthResolved, processResponse, response]);
+}
+
+function useNativeNotificationListeners({
+  processResponse,
+  handleForegroundNotification,
+}: {
+  processResponse: (response: Notifications.NotificationResponse) => void;
+  handleForegroundNotification: (notification?: Notifications.Notification) => void;
+}) {
+  const logger = useLogger();
+
   useEffect(() => {
-    void Notifications.setNotificationCategoryAsync('MARKETING', [
-      {
-        identifier: 'MARKETING_OPT_OUT',
-        buttonTitle: i18n.t('notification:actions.marketingOptOut'),
-        // 종료 상태에서도 응답 listener가 확실히 실행되도록 앱을 열어 처리한다.
-        options: { opensAppToForeground: true },
-      },
-    ]);
-
-    receivedListener.current = Notifications.addNotificationReceivedListener((notification) => {
+    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
       logger.info('[Notification] Received in foreground', {
         title: notification.request.content.title,
       });
       handleForegroundNotification(notification);
     });
-
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      const responseId = response.notification.request.identifier;
-      if (lastResponseHandled.current === responseId) return;
-      lastResponseHandled.current = responseId;
-      void Notifications.clearLastNotificationResponseAsync();
-      handleNotificationResponse(response).catch((e) =>
-        logger.error('[Notification] Response handling failed', toError(e)),
-      );
-    });
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener(processResponse);
 
     return () => {
-      receivedListener.current?.remove();
-      responseListener.current?.remove();
+      receivedSubscription.remove();
+      responseSubscription.remove();
     };
-  }, [handleForegroundNotification, handleNotificationResponse, logger]);
+  }, [handleForegroundNotification, logger, processResponse]);
+}
 
-  // 언어 변경 시 토큰 재등록 — 재등록 요청의 Accept-Language 헤더를
-  // 서버가 UserPreference.locale로 upsert해 푸시 알림 언어가 즉시 동기화된다
+function useMarketingNotificationCategory() {
+  useEffect(() => {
+    void Notifications.setNotificationCategoryAsync('MARKETING', [
+      {
+        identifier: 'MARKETING_OPT_OUT',
+        buttonTitle: i18n.t('notification:actions.marketingOptOut'),
+        options: { opensAppToForeground: true },
+      },
+    ]);
+  }, []);
+}
+
+function usePushLocaleSync({
+  isAuthenticated,
+  canRegisterPushAutomatically,
+}: {
+  isAuthenticated: boolean;
+  canRegisterPushAutomatically: boolean;
+}) {
+  const notificationService = useNotificationService();
+  const logger = useLogger();
+
   useEffect(() => {
     if (!isAuthenticated || !canRegisterPushAutomatically) {
       return;
     }
 
     const handleLanguageChanged = () => {
-      notificationService.setupPushNotifications().catch((error) => {
-        logger.warn('[Notification] Push token re-registration skipped', { error });
-      });
+      notificationService
+        .setupPushNotifications()
+        .catch((error) =>
+          logger.warn('[Notification] Push token re-registration skipped', { error }),
+        );
     };
 
     i18n.on('languageChanged', handleLanguageChanged);
-    return () => {
-      i18n.off('languageChanged', handleLanguageChanged);
-    };
-  }, [canRegisterPushAutomatically, isAuthenticated, notificationService, logger]);
+    return () => i18n.off('languageChanged', handleLanguageChanged);
+  }, [canRegisterPushAutomatically, isAuthenticated, logger, notificationService]);
+}
 
-  // Effect 3: 배지 동기화
+function useNotificationBadgeSync(isAuthenticated: boolean) {
+  const notificationService = useNotificationService();
+  const logger = useLogger();
+
   useEffect(() => {
-    if (isAuthenticated) {
-      notificationService
-        .syncBadgeCount()
-        .catch((e) => logger.error('[Notification] Badge sync failed', toError(e)));
-    } else {
-      notificationService
-        .clearBadge()
-        .catch((e) => logger.error('[Notification] Badge clear failed', toError(e)));
-    }
-  }, [isAuthenticated, notificationService, logger]);
+    const task = isAuthenticated
+      ? notificationService.syncBadgeCount()
+      : notificationService.clearBadge();
+    task.catch((error) =>
+      logger.error(
+        isAuthenticated ? '[Notification] Badge sync failed' : '[Notification] Badge clear failed',
+        toError(error),
+      ),
+    );
+  }, [isAuthenticated, logger, notificationService]);
+}
 
+function WebNotificationProvider({ children }: PropsWithChildren) {
+  const { status } = useAuth();
+  const { handleNotificationResponse } = useNotificationHandler({
+    isAuthenticated: status === 'authenticated',
+  });
   const value = useMemo(() => ({ handleNotificationResponse }), [handleNotificationResponse]);
 
-  return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
-};
+  return <NotificationContext value={value}>{children}</NotificationContext>;
+}
 
-// Web 전용 간단한 Provider
-const WebNotificationProvider = ({ children }: PropsWithChildren) => {
-  const { status } = useAuth();
-  const isAuthenticated = status === 'authenticated';
-
-  const { handleNotificationResponse } = useNotificationHandler({
-    isAuthenticated,
-  });
-
-  const value: NotificationContextValue = {
-    handleNotificationResponse,
-  };
-
-  return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
-};
-
-// Platform에 따라 적절한 Provider 선택
 export const NotificationProvider =
   Platform.OS === 'web' ? WebNotificationProvider : NativeNotificationProvider;
 
-export const useNotificationContext = (): NotificationContextValue => {
+export function useNotificationContext(): NotificationContextValue {
   const context = use(NotificationContext);
 
   if (!context) {
@@ -174,4 +218,4 @@ export const useNotificationContext = (): NotificationContextValue => {
   }
 
   return context;
-};
+}

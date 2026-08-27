@@ -109,20 +109,14 @@ describe('TodoCommentPolicy', () => {
 });
 
 describe('TodoCommentDraftPolicy', () => {
-  describe('canAddMore — 칸을 하나 더 열 수 있는가', () => {
+  describe('hasCapacity', () => {
     test.each([
       ['한 칸', 1, true],
       ['상한 직전', 4, true],
       ['상한', 5, false],
       ['상한 초과', 6, false],
     ])('%s(%i개)이면 %s', (_label, count, expected) => {
-      expect(TodoCommentDraftPolicy.canAddMore({ itemCount: count, isEditing: false })).toBe(
-        expected,
-      );
-    });
-
-    test('수정 중에는 이어 쓰지 않는다 — 수정은 언제나 한 글이다', () => {
-      expect(TodoCommentDraftPolicy.canAddMore({ itemCount: 1, isEditing: true })).toBe(false);
+      expect(TodoCommentDraftPolicy.hasCapacity(count)).toBe(expected);
     });
   });
 });

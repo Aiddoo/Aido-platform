@@ -30,7 +30,7 @@ interface TodoCommentArticleProps {
 
 export function TodoCommentArticle({ comment, isFocused = false }: TodoCommentArticleProps) {
   const navigation = useCommentConversationNavigation(comment);
-  const canAct = TodoCommentPolicy.canAct(comment);
+  const isActive = TodoCommentPolicy.isActive(comment);
   const { t } = useTranslation('todoComment');
 
   return (
@@ -48,7 +48,7 @@ export function TodoCommentArticle({ comment, isFocused = false }: TodoCommentAr
             <CommentText comment={comment} />
           </VStack>
         </PressableFeedback>
-        {canAct && (
+        {isActive && (
           <Box className="shrink-0">
             <CommentActionMenu
               comment={comment}
@@ -60,7 +60,7 @@ export function TodoCommentArticle({ comment, isFocused = false }: TodoCommentAr
         )}
       </HStack>
 
-      {canAct && (
+      {isActive && (
         <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
           <HStack align="center">
             <CommentLikeButton comment={comment} />

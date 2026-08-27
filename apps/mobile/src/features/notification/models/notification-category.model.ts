@@ -1,8 +1,6 @@
+import type { NotificationType } from '@aido/validators';
 import { match } from 'ts-pattern';
 
-import type { NotificationType } from './notification.model';
-
-/** 알림 카테고리 키 (표시 문구는 notification:categories.* 카탈로그) */
 export type NotificationCategoryKey =
   | 'friend'
   | 'nudge'
@@ -14,7 +12,6 @@ export type NotificationCategoryKey =
   | 'notice'
   | 'social';
 
-/** 알림 타입 → 카테고리 키 */
 export const getCategoryKey = (type: NotificationType): NotificationCategoryKey =>
   match<NotificationType, NotificationCategoryKey>(type)
     .with('FOLLOW_NEW', 'FOLLOW_ACCEPTED', () => 'friend')
