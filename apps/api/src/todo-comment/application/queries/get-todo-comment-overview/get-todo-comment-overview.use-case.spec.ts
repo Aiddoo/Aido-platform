@@ -105,6 +105,60 @@ describe("GetTodoCommentOverviewUseCase", () => {
 		expect(reader.findLikedCommentIds).toHaveBeenCalledWith([ROOT_ID, REPLY_ID], VIEWER_ID);
 	});
 
+	it("답글이 없으면 preview와 숨은 수를 비운다", async () => {
+		// Given
+		const reader = createTodoCommentReaderMock();
+		const cursorCodec = createTodoCommentCursorCodecMock();
+		const item = createOverviewItem();
+		item.previewReply = null;
+		item.totalCount = 0;
+		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		jest.mocked(reader.listOverview).mockResolvedValue({
+			items: [item],
+			previousRecord: null,
+			nextRecord: null,
+			hasPrevious: false,
+			hasNext: false,
+		});
+		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
+
+		// When
+		const response = await useCase.execute({
+			todoId: TODO_ID,
+			viewerId: VIEWER_ID,
+			sort: TODO_COMMENT_SORT.LATEST,
+			size: 10,
+		});
+
+		// Then
+		expect(response.items[0]).toMatchObject({
+			previewReply: null,
+			replySummary: { totalCount: 0, hiddenCount: 0, hasMore: false },
+		});
+		expect(reader.findLikedCommentIds).toHaveBeenCalledWith([ROOT_ID], VIEWER_ID);
+	});
+
+	it("접근할 수 없는 할 일은 목록 조회 전에 거부한다", async () => {
+		// Given
+		const reader = createTodoCommentReaderMock();
+		const cursorCodec = createTodoCommentCursorCodecMock();
+		jest.mocked(reader.canAccessTodo).mockResolvedValue(false);
+		const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
+
+		// When
+		const result = useCase.execute({
+			todoId: TODO_ID,
+			viewerId: VIEWER_ID,
+			sort: TODO_COMMENT_SORT.LATEST,
+			size: 10,
+		});
+
+		// Then
+		await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+		expect(reader.listOverview).not.toHaveBeenCalled();
+	});
+
 	it("POPULAR cursor rank snapshot을 overview reader 경계에 그대로 전달한다", async () => {
 		const reader = createTodoCommentReaderMock();
 		const cursorCodec = createTodoCommentCursorCodecMock();

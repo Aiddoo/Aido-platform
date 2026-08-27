@@ -77,4 +77,47 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
 			}),
 		);
 	});
+
+	it("답글은 REPLY activity로 구분한다", async () => {
+		// Given
+		const input = {
+			recipientId: "cmrecip000000000000000001",
+			senderId: "cmsender00000000000000001",
+			senderName: "보낸 사람",
+			todoId: 42,
+			commentId: "cmcomment0000000000000001",
+			threadRootId: "cmroot000000000000000001",
+			isReply: true,
+			count: 2,
+		};
+
+		// When
+		await adapter.notifyCommentsWritten(input);
+
+		// Then
+		expect(notificationSender.createAndSend).toHaveBeenCalledWith(
+			expect.objectContaining({
+				metadata: expect.objectContaining({ activityKind: "REPLY" }),
+			}),
+		);
+	});
+
+	it("자기 활동은 알림으로 보내지 않는다", async () => {
+		// Given
+		const userId = "cmuser0000000000000000001";
+
+		// When
+		await adapter.notifyCommentLiked({
+			recipientId: userId,
+			senderId: userId,
+			senderName: "작성자",
+			todoId: 42,
+			commentId: "cmcomment0000000000000001",
+			threadRootId: "cmroot000000000000000001",
+		});
+
+		// Then
+		expect(notificationSender.getUserLocale).not.toHaveBeenCalled();
+		expect(notificationSender.createAndSend).not.toHaveBeenCalled();
+	});
 });

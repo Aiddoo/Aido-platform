@@ -99,6 +99,21 @@ describe("NotificationMapper — 알림 매퍼", () => {
 			// Then
 			expect(result.metadata).toBeNull();
 		});
+
+		it("action URL이 있으면 action에 포함한다", () => {
+			// Given
+			const notification = NotificationBuilder.create("user-1").build();
+			notification.actionUrl = "https://aido.app/notice";
+
+			// When
+			const result = NotificationMapper.toDto(notification);
+
+			// Then
+			expect(result.action).toEqual({
+				type: notification.actionType,
+				url: notification.actionUrl,
+			});
+		});
 	});
 
 	describe("toDtoList", () => {
