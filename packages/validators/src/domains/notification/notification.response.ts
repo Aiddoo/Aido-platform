@@ -1,35 +1,12 @@
 import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { NOTIFICATION_TYPE } from './notification.constants';
+import { notificationTypeSchema } from './notification.constants';
 import { notificationActionSchema, notificationContextSchema } from './notification.payload';
 
-export const notificationTypeSchema = z.enum([
-  NOTIFICATION_TYPE.FOLLOW_NEW,
-  NOTIFICATION_TYPE.FOLLOW_ACCEPTED,
-  NOTIFICATION_TYPE.NUDGE_RECEIVED,
-  NOTIFICATION_TYPE.CHEER_RECEIVED,
-  NOTIFICATION_TYPE.DAILY_COMPLETE,
-  NOTIFICATION_TYPE.FRIEND_COMPLETED,
-  NOTIFICATION_TYPE.TODO_REMINDER,
-  NOTIFICATION_TYPE.TODO_SHARED,
-  NOTIFICATION_TYPE.MORNING_REMINDER,
-  NOTIFICATION_TYPE.EVENING_REMINDER,
-  NOTIFICATION_TYPE.WEEKLY_ACHIEVEMENT,
-  NOTIFICATION_TYPE.WEEKLY_REPORT,
-  NOTIFICATION_TYPE.MONTHLY_REPORT,
-  NOTIFICATION_TYPE.AI_SUGGESTION,
-  NOTIFICATION_TYPE.SYSTEM_NOTICE,
-  NOTIFICATION_TYPE.ADMIN_BROADCAST,
-  NOTIFICATION_TYPE.ADMIN_TARGETED,
-  NOTIFICATION_TYPE.WINBACK,
-  NOTIFICATION_TYPE.SOCIAL_DIGEST,
-  NOTIFICATION_TYPE.NUDGE_SUGGEST,
-  NOTIFICATION_TYPE.LUNCH_NUDGE,
-  NOTIFICATION_TYPE.STREAK_AT_RISK,
-  NOTIFICATION_TYPE.WEATHER_MORNING,
-  NOTIFICATION_TYPE.WEATHER_EVENING,
-]);
+export const notificationMetadataSchema = z.record(z.string(), z.unknown()).nullable();
+
+export type NotificationMetadata = z.infer<typeof notificationMetadataSchema>;
 
 export const notificationSchema = z
   .object({
@@ -41,10 +18,7 @@ export const notificationSchema = z
     title: z.string().max(200).describe('알림 제목 (최대 200자)'),
     body: z.string().max(500).describe('알림 본문 (최대 500자)'),
     isRead: z.boolean().describe('읽음 여부'),
-    metadata: z
-      .record(z.string(), z.unknown())
-      .nullable()
-      .describe('추가 메타데이터 (미설정 시 null)'),
+    metadata: notificationMetadataSchema.describe('추가 메타데이터 (미설정 시 null)'),
     context: notificationContextSchema.optional(),
     action: notificationActionSchema.optional(),
     createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)'),

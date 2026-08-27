@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { NOTIFICATION_TYPE } from './notification.constants';
+import { notificationTypeSchema } from './notification.constants';
 
 // =============================================================================
 // Action Type
@@ -86,8 +86,6 @@ export type NotificationAction = z.infer<typeof notificationActionSchema>;
 // Push Payload (FCM/APNs data 필드)
 // =============================================================================
 
-const notificationTypes = Object.values(NOTIFICATION_TYPE) as [string, ...string[]];
-
 /**
  * 푸시 알림 페이로드 스키마 (FCM/APNs data 필드)
  *
@@ -95,7 +93,7 @@ const notificationTypes = Object.values(NOTIFICATION_TYPE) as [string, ...string
  */
 export const pushNotificationDataSchema = z.object({
   notificationId: z.number().int().nonnegative(),
-  type: z.enum(notificationTypes),
+  type: notificationTypeSchema,
   action: notificationActionSchema,
   context: notificationContextSchema.optional(),
   routing: notificationRoutingSchema.optional(),
