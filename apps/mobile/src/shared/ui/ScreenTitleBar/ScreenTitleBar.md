@@ -28,7 +28,7 @@ import { ScreenTitleBar } from '@src/shared/ui';
 
 // 데이터를 기다리는 동안
 <Suspense fallback={<ScreenTitleBar.Loading hasSubtitle />}>
-  <TodoDetailTitleBar />
+  <TodoCommentTitleBar />
 </Suspense>
 ```
 

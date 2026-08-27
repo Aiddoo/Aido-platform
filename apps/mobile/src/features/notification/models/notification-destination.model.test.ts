@@ -1,25 +1,27 @@
 import { resolveNotificationDestination } from './notification-destination.model';
 import { toNotificationRouting } from './notification-routing.model';
 
+const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
+
 const routingFor = (type: Parameters<typeof toNotificationRouting>[0]['type'], extra = {}) =>
   toNotificationRouting({ type, context: extra });
 
 describe('resolveNotificationDestination', () => {
-  test('댓글을 지목한 알림은 그 댓글의 스레드로, params가 타입으로 보장된다', () => {
+  test('댓글을 지목한 알림은 할 일 대화 화면의 focus로 한 번 진입한다', () => {
     const destination = resolveNotificationDestination({
       type: 'TODO_SHARED',
       routing: toNotificationRouting({
         type: 'TODO_SHARED',
         context: { todoId: 42 },
-        extra: { commentId: 'cm123' },
+        extra: { commentId: COMMENT_ID },
       }),
     });
 
     expect(destination).toEqual({
       kind: 'route',
       href: {
-        pathname: '/todo/[todoId]/comment/[commentId]',
-        params: { todoId: 42, commentId: 'cm123' },
+        pathname: '/todo/[todoId]',
+        params: { todoId: 42, comment: COMMENT_ID },
       },
     });
   });

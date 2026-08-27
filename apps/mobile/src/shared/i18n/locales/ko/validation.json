@@ -23,5 +23,9 @@
   "inquiryContent": {
     "tooShort": "내용은 최소 10자 이상이어야 합니다",
     "tooLong": "내용은 최대 2000자 이하여야 합니다"
+  },
+  "comment": {
+    "required": "댓글 내용을 입력해주세요",
+    "tooLong": "댓글은 500자 이내로 입력해주세요"
   }
 }

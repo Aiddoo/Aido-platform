@@ -264,8 +264,8 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
     <TodoRow
       left={
         <TodoCheckbox
-          isChecked={todo.completed}
-          onCheckedChange={todoActions.toggle}
+          isSelected={todo.completed}
+          onSelectedChange={todoActions.toggle}
           isDisabled={todoActions.isTogglePending || isOptimistic}
         />
       }

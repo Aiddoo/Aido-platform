@@ -1,4 +1,4 @@
-import { NOTIFICATION_TYPE, type NotificationType } from '@aido/validators';
+import { NOTIFICATION_TYPE, type NotificationType, todoCommentIdSchema } from '@aido/validators';
 import { z } from 'zod';
 
 /**
@@ -11,7 +11,7 @@ const notificationRoutingSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal(NOTIFICATION_TYPE.TODO_SHARED),
     todoId: z.number(),
-    commentId: z.string().optional(),
+    commentId: todoCommentIdSchema.optional(),
   }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.FOLLOW_NEW) }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.FOLLOW_ACCEPTED), friendId: z.string() }),

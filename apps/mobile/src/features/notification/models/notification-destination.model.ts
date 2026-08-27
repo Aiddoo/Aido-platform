@@ -51,8 +51,8 @@ function toRoute(routing: NotificationRouting): NotificationDestination {
     .with({ type: 'TODO_SHARED', commentId: P.string }, ({ todoId, commentId }) => ({
       kind: 'route' as const,
       href: {
-        pathname: '/todo/[todoId]/comment/[commentId]' as const,
-        params: { todoId, commentId },
+        pathname: '/todo/[todoId]' as const,
+        params: { todoId, comment: commentId },
       },
     }))
     .with({ type: 'TODO_SHARED' }, ({ todoId }) => ({

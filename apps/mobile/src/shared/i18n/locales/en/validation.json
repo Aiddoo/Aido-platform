@@ -23,5 +23,9 @@
   "inquiryContent": {
     "tooShort": "Please enter at least 10 characters",
     "tooLong": "Content must be 2,000 characters or fewer"
+  },
+  "comment": {
+    "required": "Please enter a comment",
+    "tooLong": "Comments must be 500 characters or fewer"
   }
 }

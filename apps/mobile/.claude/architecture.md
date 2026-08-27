@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 1.1.0 · **Last Updated**: 2026-07-06 · **Owner**: Aido Mobile Team
+**Version**: 1.1.0 · **Last Updated**: 2026-08-26 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture 기반 React Native/Expo 앱입니다.
 새 기능 추가 시 이 문서의 패턴을 **반드시** 따릅니다.
@@ -153,8 +153,33 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 ### 화면 조립과 서버 상태
 
 - route 화면은 주요 섹션을 JSX에서 바로 조립해 화면 구성을 파일 진입점에서 읽을 수 있게 한다.
-- 서버 상태는 `queryOptions`/`infiniteQueryOptions`/`mutationOptions` factory로 정의하고 컴포넌트가 필요한 ID를 route에서 직접 읽거나 최소 식별자만 받는다.
-- 특정 목록에만 결합된 `Loading`, `Error`, `Item`, `Input`은 `TodoComments.Loading`처럼 compound namespace로 묶는다.
+- route의 `todoId`, search param, 현재 mode 같은 화면 식별자를 여러 단계의 props로 배포하지 않는다.
+  feature block이 검증된 Expo Router hook에서 직접 읽고, 이미 조회된 row 데이터나 순수 layout 값만 props로
+  받는다.
+- 서버 상태는 `queryOptions`/`infiniteQueryOptions`/`mutationOptions` factory로 정의한다. component는
+  식별자를 읽어 factory를 호출하되 query key, queryFn, cache 정책을 인라인으로 만들지 않는다.
+- 옵션 팩토리의 인자는 `{ todoId, sort, focusCommentId }`처럼 이름 있는 객체로 받고, query key에도
+  같은 직렬화 가능한 객체를 넣는다. 이 저장소는 Expo Router + TanStack Query + Ky를 사용하므로
+  TanStack Router의 `loaderDeps`나 oRPC 패턴을 억지로 추가하지 않는다. 전환 전 데이터가 필요하면
+  기존 query options로 prefetch한 뒤 URL search state를 바꾼다.
+- 특정 목록에만 결합된 `Loading`, `Error`, `Empty`, `Item`은 `TodoComments.Loading`처럼 compound
+  namespace로 묶는다. 독립적으로 재사용되지 않는 상태 UI를 전역 이름으로 흩뜨리지 않는다.
+- 한 화면 block에서만 의미가 있는 작은 조립 조각은 소유 파일의 지역 컴포넌트로 둔다. 둘 이상의
+  화면 surface가 공유할 때만 독립 파일로 승격하고, 함께 바뀌는 목록·행·작성기 family는 같은 하위
+  폴더에 모은다. 폴더 `index.ts` re-export는 만들지 않고 정의 파일에서 직접 import한다.
+- form과 wire schema는 가능한 한 `@aido/validators`를 단일 원본으로 사용한다. 모바일 전용 Date,
+  policy, 화면 view-model만 model/mapper에서 별도로 표현한다.
+- 페이지 단위 폼은 가장 가까운 session 부모가 `useForm`, Zod resolver, submit mutation을 소유하고
+  지역 `FormProvider`로 field에 전달한다. field는 `useController`, 액션은 `useFormState`/`useWatch`의
+  좁은 구독을 사용한다. 폼 값을 전역 Context나 별도 전역 상태에 복제하지 않는다.
+- hook은 라우트 읽기, 전환 조정, mutation 상태, field focus처럼 하나의 변화 이유만 갖는다. 계산은
+  순수 함수/Policy로 빼고 화면 hook은 작은 계약을 조합한다. 한 컴포넌트에서만 쓰는 작은 hook은
+  소유 파일에 둘 수 있다.
+- 날짜 표시는 `shared/utils/date`의 로케일 포맷을 재사용하고 오늘 기준은 `useToday`/`useTodayKey`로
+  읽는다. render 중 `new Date()`를 기준 상태로 만들지 않는다. Expo static web output을 요청 단위
+  SSR로 가정해 별도 `Intl` 계층을 중복 구현하지 않는다.
+- 미디어 업로드는 실제 API 계약이 있을 때만 도입한다. Expo 호환성과 유지 상태가 검증된 라이브러리를
+  우선하고, 없다면 선택·검증·전송을 각각 작은 hook/service로 분리한다. API가 없는 기능을 미리 만들지 않는다.
 - 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.
 - 알림 route metadata는 `@aido/validators` 스키마로 검증한 뒤 순수 destination policy가 경로를 결정한다. 화면 컴포넌트가 raw metadata를 해석하지 않는다.
 

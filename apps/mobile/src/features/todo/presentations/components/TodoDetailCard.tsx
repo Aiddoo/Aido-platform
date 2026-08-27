@@ -1,15 +1,19 @@
 import type { TodoDetailsResponse } from '@aido/validators';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
+import { useTodayKey } from '@src/shared/hooks/useToday';
 import { useTranslation } from '@src/shared/i18n';
 import { Avatar, ChatBubbleIcon, EyeIcon, HStack, Text, VStack } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { formatFullDate } from '@src/shared/utils/date';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
+import { TodoNudgePolicy } from '../../models/todo-nudge.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
 import { useTodoDetailsQueryOptions } from '../queries/use-todo-page-query-options';
+import { TodoNudgeButton } from './TodoNudgeButton';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './TodoRow';
 
-/** 댓글 목록 위에 함께 스크롤되는 할 일 본문. 바깥 여백은 이 카드를 놓는 화면이 정한다. */
 export function TodoDetailCard() {
   const { todoId } = useTodoScreenParams();
   const { data: detail } = useSuspenseQuery(useTodoDetailsQueryOptions(todoId));
@@ -25,7 +29,6 @@ export function TodoDetailCard() {
 
 type TodoDetailSectionProps = { detail: TodoDetailsResponse };
 
-/** 누가 적은 할 일인지 — 아바타와 이름. */
 function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
   const { t } = useTranslation('todo');
   const ownerName = detail.owner.name ?? t('detail.unknownOwner');
@@ -35,34 +38,30 @@ function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
       <Avatar alt={ownerName} className="size-11">
         <Avatar.Image source={getProfileIconSource(detail.owner.profileImage)} />
       </Avatar>
-      <VStack gap={2}>
+      <VStack flex={1} gap={2} className="min-w-0">
         <Text size="b3" weight="semibold">
           {ownerName}
         </Text>
         <Text size="e1" shade={5}>
-          {detail.todo.startDate}
+          {formatFullDate(detail.todo.startDate)}
         </Text>
       </VStack>
     </HStack>
   );
 }
 
-/**
- * 할 일 본문. 목록에서 보던 그 행을 그대로 쓴다 — 체크박스·라벨·진행도가 같은 프리미티브다.
- * 상위와 하위는 목록과 똑같이 들여쓰기와 세로선으로 갈린다. 여기서는 읽기만 하므로 아무것도 눌리지 않는다.
- */
 function TodoBody({ detail }: TodoDetailSectionProps) {
   const { todo } = detail;
 
   return (
     <VStack>
       <TodoRow
-        left={<TodoCheckbox isChecked={todo.completed} />}
+        left={<TodoCheckbox isSelected={todo.completed} />}
         top={<TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>}
         middle={
-          todo.items.length > 0 ? (
+          todo.items.length > 0 && (
             <TodoProgress value={todo.itemStats.completed} total={todo.itemStats.total} />
-          ) : undefined
+          )
         }
       />
 
@@ -71,7 +70,7 @@ function TodoBody({ detail }: TodoDetailSectionProps) {
           {todo.items.map((item) => (
             <TodoRow
               key={item.id}
-              left={<TodoCheckbox isChecked={item.completed} />}
+              left={<TodoCheckbox isSelected={item.completed} />}
               top={<TodoLabel isChecked={item.completed}>{item.title}</TodoLabel>}
             />
           ))}
@@ -81,8 +80,18 @@ function TodoBody({ detail }: TodoDetailSectionProps) {
   );
 }
 
-/** 조회수와 댓글 수. 누르는 곳이 아니라 읽는 줄이다. */
 function TodoMetricLine({ detail }: TodoDetailSectionProps) {
+  const todayKey = useTodayKey();
+  const canNudge = TodoNudgePolicy.canNudgeTodoInRange(
+    {
+      canNudge: detail.permissions.canNudge,
+      isCompleted: detail.todo.completed,
+      startDate: detail.todo.startDate,
+      endDate: detail.todo.endDate,
+    },
+    todayKey,
+  );
+
   return (
     <HStack gap={16} align="center">
       <MetricItem
@@ -93,7 +102,25 @@ function TodoMetricLine({ detail }: TodoDetailSectionProps) {
         icon={<ChatBubbleIcon width={16} height={16} colorClassName="text-gray-5" />}
         count={detail.metrics.commentCount}
       />
+      {canNudge && <TodoDetailNudgeAction detail={detail} />}
     </HStack>
+  );
+}
+
+function TodoDetailNudgeAction({ detail }: TodoDetailSectionProps) {
+  const { t } = useTranslation('todo');
+  const limitQuery = useQuery(useGetTodoNudgeLimitQueryOptions());
+
+  return (
+    <TodoNudgeButton
+      receiver={{
+        id: detail.owner.id,
+        displayName: detail.owner.name ?? t('detail.unknownOwner'),
+      }}
+      todo={detail.todo}
+      isLimitReached={limitQuery.data ? TodoNudgePolicy.isLimitReached(limitQuery.data) : false}
+      isDisabled={limitQuery.isPending}
+    />
   );
 }
 
