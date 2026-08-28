@@ -4,6 +4,7 @@ import {
 	createEveningReminderNotificationMessage,
 	createMorningReminderNotificationMessage,
 	createNudgeReceivedNotificationMessage,
+	createOnboardingNotificationMessage,
 	createTodoCommentNotificationMessage,
 	createTodoReminderNotificationMessage,
 	createWeatherMorningNotificationMessage,
@@ -27,6 +28,33 @@ const COMMENT_ACTIVITY_CASES: readonly [
 	["REPLY", 1, "답글"],
 	["REPLY", 3, "3"],
 ];
+
+const EVENING_REMINDER_CASES: readonly [
+	templateKey: string,
+	input: {
+		readonly completed: number;
+		readonly total: number;
+		readonly streak?: number;
+		readonly isStreakAtRisk?: boolean;
+	},
+][] = [
+	["evening.streak_30", { completed: 3, total: 3, streak: 30 }],
+	["evening.streak_14", { completed: 3, total: 3, streak: 14 }],
+	["evening.streak_7", { completed: 3, total: 3, streak: 7 }],
+	["evening.streak", { completed: 3, total: 3, streak: 2 }],
+	["evening.complete", { completed: 3, total: 3 }],
+	["evening.streak_risk_partial", { completed: 1, total: 3, streak: 4, isStreakAtRisk: true }],
+	["evening.partial", { completed: 1, total: 3 }],
+	["evening.streak_risk_none", { completed: 0, total: 3, streak: 4, isStreakAtRisk: true }],
+	["evening.none", { completed: 0, total: 3 }],
+];
+
+const ONBOARDING_CASES = [
+	["onboarding.day_1", { day: 1 }],
+	["onboarding.day_2", { day: 2 }],
+	["onboarding.day_3", { day: 3 }],
+	["onboarding.day_7", { day: 7, completedCount: 4 }],
+] as const;
 
 function graphemeCount(value: string): number {
 	return Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value))
@@ -228,24 +256,27 @@ describe("notification copy factories", () => {
 		});
 	});
 
-	it("저녁 완료 상태별 template namespace가 겹치지 않는다", () => {
-		const complete = createEveningReminderNotificationMessage({
-			completed: 3,
-			total: 3,
-			variantContext: VARIANT_CONTEXT,
-		});
-		const partial = createEveningReminderNotificationMessage({
-			completed: 1,
-			total: 3,
-			variantContext: VARIANT_CONTEXT,
-		});
-		const none = createEveningReminderNotificationMessage({
-			completed: 0,
-			total: 3,
+	it.each(EVENING_REMINDER_CASES)(
+		"저녁 알림 상태를 %s template으로 분류한다",
+		(templateKey, input) => {
+			const message = createEveningReminderNotificationMessage({
+				...input,
+				variantContext: VARIANT_CONTEXT,
+			});
+
+			expect(message.variantId).toMatch(
+				new RegExp(`^copy_test_v1\\.${templateKey}\\.(?:v[1-5]|default)$`),
+			);
+		},
+	);
+
+	it.each(ONBOARDING_CASES)("%s 온보딩 알림을 지원한다", (templateKey, input) => {
+		const message = createOnboardingNotificationMessage({
+			...input,
 			variantContext: VARIANT_CONTEXT,
 		});
 
-		expect(new Set([complete.variantId, partial.variantId, none.variantId]).size).toBe(3);
+		expect(message.variantId).toBe(`copy_test_v1.${templateKey}.default`);
 	});
 
 	it("완료율에 맞는 주간 성취 copy를 선택한다", () => {
