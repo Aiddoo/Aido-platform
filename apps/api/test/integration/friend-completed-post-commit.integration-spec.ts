@@ -3,8 +3,11 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import {
+	createNotificationHistoryReaderMock,
 	createNotificationRepositoryMock,
 	createPushDispatcherMock,
+	createPushReceiptRepositoryMock,
+	createPushTokenRepositoryMock,
 } from "@test/mocks/ports/notification.mock";
 
 import { NOTIFICATION_REPOSITORY, NotificationSender, PUSH_PROVIDER } from "@/notification";
@@ -12,10 +15,13 @@ import { NotificationBatchDispatcher } from "@/notification/application/dispatch
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import type { CreateNotificationData } from "@/notification/application/ports/notification-data";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
+import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
 import {
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
 } from "@/notification/application/ports/push-dispatcher.port";
+import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
+import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
@@ -121,7 +127,8 @@ describe("friend-completed post-commit dispatch (component)", () => {
 	beforeEach(async () => {
 		const uow = new ContextAwareUnitOfWork();
 		const repository = createNotificationRepositoryMock();
-		repository.findAlreadyNotifiedUserIds = jest.fn().mockResolvedValue(new Set());
+		const historyReader = createNotificationHistoryReaderMock();
+		historyReader.findAlreadyNotifiedUserIds = jest.fn().mockResolvedValue(new Set());
 		repository.createManyNotificationsAndReturn = jest
 			.fn()
 			.mockImplementation(async (items: CreateNotificationData[]) =>
@@ -210,6 +217,9 @@ describe("friend-completed post-commit dispatch (component)", () => {
 				{ provide: SendNotificationWithDedupUseCase, useValue: unusedUseCase },
 				{ provide: UNIT_OF_WORK, useValue: uow },
 				{ provide: NOTIFICATION_REPOSITORY, useValue: repository },
+				{ provide: NOTIFICATION_HISTORY_READER, useValue: historyReader },
+				{ provide: PUSH_RECEIPT_REPOSITORY, useValue: createPushReceiptRepositoryMock() },
+				{ provide: PUSH_TOKEN_REPOSITORY, useValue: createPushTokenRepositoryMock() },
 				{ provide: PUSH_DISPATCHER, useValue: dispatcher },
 				{
 					provide: NOTIFICATION_CACHE,

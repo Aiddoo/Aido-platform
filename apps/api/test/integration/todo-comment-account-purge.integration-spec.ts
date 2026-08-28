@@ -14,7 +14,7 @@ import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "@/notification/application/ports/notification-cache.port";
-import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
+import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "@/shared/domain/system-user";
@@ -220,8 +220,8 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 					useExisting: PrismaTodoCommentAccountCleanupStore,
 				},
 				TodoCommentAccountCleanup,
-				NotificationRepository,
-				{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
+				PrismaNotificationRepository,
+				{ provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
 				NotificationAccountCleanup,
 				{ provide: NOTIFICATION_CACHE, useValue: notificationCache },
 				{ provide: TODO_VIEW_CACHE, useValue: todoViewCache },

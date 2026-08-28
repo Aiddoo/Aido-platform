@@ -18,7 +18,12 @@ import {
 import { NotificationBatchDispatcher } from "@/notification/application/dispatchers/notification-batch.dispatcher";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
+import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
+import { NOTIFICATION_INBOX_READER } from "@/notification/application/ports/notification-inbox.reader.port";
+import { PUSH_DISPATCH_REPOSITORY } from "@/notification/application/ports/push-dispatch.repository.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
+import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
+import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
@@ -41,7 +46,10 @@ import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupAdapter } from "@/notification/infrastructure/adapters/notification-dedup.adapter";
 import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
-import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
+import { PrismaNotificationReader } from "@/notification/infrastructure/persistence/prisma-notification.reader";
+import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
+import { PrismaPushDeliveryRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery.repository";
+import { PrismaPushTokenRepository } from "@/notification/infrastructure/persistence/prisma-push-token.repository";
 import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
 import { InMemoryPushRateLimiter } from "@/notification/infrastructure/rate-limiter/in-memory-push-rate-limiter";
 import {
@@ -242,8 +250,16 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 		{ provide: SendNotificationUseCase, useValue: unexpectedUseCase },
 		{ provide: SendNotificationWithDedupUseCase, useValue: unexpectedUseCase },
 		{ provide: SendBatchNotificationUseCase, useValue: unexpectedUseCase },
-		NotificationRepository,
-		{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
+		PrismaNotificationRepository,
+		{ provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
+		PrismaNotificationReader,
+		{ provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
+		{ provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
+		PrismaPushTokenRepository,
+		{ provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
+		PrismaPushDeliveryRepository,
+		{ provide: PUSH_DISPATCH_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
+		{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
 		{ provide: PUSH_PROVIDER, useValue: pushProvider },
 		{ provide: PUSH_RATE_LIMITER, useClass: InMemoryPushRateLimiter },
 		{

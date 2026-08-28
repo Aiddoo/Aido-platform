@@ -5,10 +5,10 @@ import {
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
+	PUSH_TOKEN_REPOSITORY,
 	PushTokenNotFoundError,
-} from "../../ports/notification.repository.port";
+	type PushTokenRepositoryPort,
+} from "../../ports/push-token.repository.port";
 
 /**
  * 푸시 토큰 해제 유스케이스.
@@ -20,8 +20,8 @@ export class UnregisterPushTokenUseCase {
 	readonly #logger = new Logger(UnregisterPushTokenUseCase.name);
 
 	constructor(
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(PUSH_TOKEN_REPOSITORY)
+		private readonly pushTokenRepository: PushTokenRepositoryPort,
 		@Inject(NOTIFICATION_CACHE)
 		private readonly cache: NotificationCachePort,
 	) {}
@@ -36,7 +36,7 @@ export class UnregisterPushTokenUseCase {
 
 	async #unregisterOne(userId: string, deviceId: string): Promise<void> {
 		try {
-			await this.notificationRepository.deletePushToken(userId, deviceId);
+			await this.pushTokenRepository.deletePushToken(userId, deviceId);
 			await this.cache.invalidatePushTokens(userId);
 			this.#logger.log(`Push token unregistered: userId=${userId}, deviceId=${deviceId}`);
 		} catch (error) {
@@ -49,7 +49,7 @@ export class UnregisterPushTokenUseCase {
 	}
 
 	async #unregisterAll(userId: string): Promise<void> {
-		const result = await this.notificationRepository.deleteAllPushTokensByUser(userId);
+		const result = await this.pushTokenRepository.deleteAllPushTokensByUser(userId);
 		await this.cache.invalidatePushTokens(userId);
 		this.#logger.log(`All push tokens unregistered: userId=${userId}, count=${result.count}`);
 	}

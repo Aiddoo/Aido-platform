@@ -1,6 +1,11 @@
 import type { MarketingPushOptOutTokenPort } from "@/notification/application/ports/marketing-push-opt-out-token.port";
+import type { NotificationHistoryReaderPort } from "@/notification/application/ports/notification-history.reader.port";
+import type { NotificationInboxReaderPort } from "@/notification/application/ports/notification-inbox.reader.port";
 import type { NotificationRepositoryPort } from "@/notification/application/ports/notification.repository.port";
+import type { PushDispatchRepositoryPort } from "@/notification/application/ports/push-dispatch.repository.port";
 import type { PushDispatcherPort } from "@/notification/application/ports/push-dispatcher.port";
+import type { PushReceiptRepositoryPort } from "@/notification/application/ports/push-receipt.repository.port";
+import type { PushTokenRepositoryPort } from "@/notification/application/ports/push-token.repository.port";
 import type { UserNotificationSettingsPort } from "@/notification/application/ports/user-notification-settings.port";
 
 /**
@@ -15,24 +20,42 @@ import type { UserNotificationSettingsPort } from "@/notification/application/po
 export function createNotificationRepositoryMock(): NotificationRepositoryPort {
 	return {
 		createNotification: jest.fn(),
-		createManyNotifications: jest.fn(),
 		createManyNotificationsAndReturn: jest.fn(),
-		findNotificationById: jest.fn(),
-		findNotificationsByUser: jest.fn(),
 		markAsRead: jest.fn(),
 		markAsOpened: jest.fn(),
 		markAllAsRead: jest.fn(),
-		countUnread: jest.fn(),
-		deleteOldNotifications: jest.fn(),
 		deleteNotificationsByActorId: jest.fn(),
+	};
+}
+
+export function createNotificationInboxReaderMock(): NotificationInboxReaderPort {
+	return {
+		findNotificationById: jest.fn(),
+		findNotificationsByUser: jest.fn(),
+		countUnread: jest.fn(),
+	};
+}
+
+export function createNotificationHistoryReaderMock(): NotificationHistoryReaderPort {
+	return {
 		existsRecentNotification: jest.fn(),
 		findAlreadyNotifiedUserIds: jest.fn(),
+	};
+}
+
+export function createPushTokenRepositoryMock(): PushTokenRepositoryPort {
+	return {
 		registerPushToken: jest.fn(),
 		findPushTokensByUser: jest.fn(),
 		findActivePushTokensByUsers: jest.fn(),
 		deletePushToken: jest.fn(),
 		deleteAllPushTokensByUser: jest.fn(),
 		deactivateInvalidTokens: jest.fn(),
+	};
+}
+
+export function createPushDispatchRepositoryMock(): PushDispatchRepositoryPort {
+	return {
 		createPushDispatch: jest.fn(),
 		createPushDispatches: jest.fn(),
 		markPushDispatchSkipped: jest.fn(),
@@ -40,6 +63,11 @@ export function createNotificationRepositoryMock(): NotificationRepositoryPort {
 		markPushDispatchFailed: jest.fn(),
 		recordPushDeliveryResults: jest.fn(),
 		recordPushDeliveryResultsBatch: jest.fn(),
+	};
+}
+
+export function createPushReceiptRepositoryMock(): PushReceiptRepositoryPort {
+	return {
 		findPendingPushReceipts: jest.fn(),
 		recordPushReceipts: jest.fn(),
 	};

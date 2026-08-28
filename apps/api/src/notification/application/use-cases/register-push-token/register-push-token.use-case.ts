@@ -9,11 +9,11 @@ import {
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import type { RegisterPushTokenData } from "../../ports/notification-data";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
 import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
+import {
+	PUSH_TOKEN_REPOSITORY,
+	type PushTokenRepositoryPort,
+} from "../../ports/push-token.repository.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
@@ -30,8 +30,8 @@ export class RegisterPushTokenUseCase {
 	readonly #logger = new Logger(RegisterPushTokenUseCase.name);
 
 	constructor(
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(PUSH_TOKEN_REPOSITORY)
+		private readonly pushTokenRepository: PushTokenRepositoryPort,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
 		@Inject(USER_NOTIFICATION_SETTINGS)
 		private readonly userSettings: UserNotificationSettingsPort,
@@ -47,7 +47,7 @@ export class RegisterPushTokenUseCase {
 		}
 
 		const timezone = normalizeIanaTimezone(data.timezone) ?? undefined;
-		await this.notificationRepository.registerPushToken({ ...data, timezone });
+		await this.pushTokenRepository.registerPushToken({ ...data, timezone });
 		await this.cache.invalidatePushTokens(data.userId);
 
 		if (timezone) {

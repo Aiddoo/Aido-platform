@@ -38,10 +38,15 @@ import {
 	NOTIFICATION_DEDUP,
 	NOTIFICATION_DEDUP_LOCK,
 } from "@/notification/application/ports/notification-dedup.port";
+import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
+import { NOTIFICATION_INBOX_READER } from "@/notification/application/ports/notification-inbox.reader.port";
+import { PUSH_DISPATCH_REPOSITORY } from "@/notification/application/ports/push-dispatch.repository.port";
 import {
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
 } from "@/notification/application/ports/push-dispatcher.port";
+import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
+import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
@@ -61,7 +66,10 @@ import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupLockAdapter } from "@/notification/infrastructure/adapters/notification-dedup-lock.adapter";
 import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
-import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
+import { PrismaNotificationReader } from "@/notification/infrastructure/persistence/prisma-notification.reader";
+import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
+import { PrismaPushDeliveryRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery.repository";
+import { PrismaPushTokenRepository } from "@/notification/infrastructure/persistence/prisma-push-token.repository";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -105,7 +113,7 @@ function buildNotificationTestApi(module: TestingModule) {
 describe("Notification 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let facade: ReturnType<typeof buildNotificationTestApi>;
-	let repository: NotificationRepository;
+	let repository: PrismaNotificationRepository;
 	let pushDispatcher: PushDispatcherAdapter;
 
 	// Mock 데이터베이스 서비스
@@ -198,11 +206,19 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 		module = await Test.createTestingModule({
 			providers: [
-				NotificationRepository,
+				PrismaNotificationRepository,
 				{
 					provide: NOTIFICATION_REPOSITORY,
-					useExisting: NotificationRepository,
+					useExisting: PrismaNotificationRepository,
 				},
+				PrismaNotificationReader,
+				{ provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
+				{ provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
+				PrismaPushTokenRepository,
+				{ provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
+				PrismaPushDeliveryRepository,
+				{ provide: PUSH_DISPATCH_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
+				{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
 				{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
 				// application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
 				{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
@@ -334,7 +350,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		}).compile();
 
 		facade = buildNotificationTestApi(module);
-		repository = module.get<NotificationRepository>(NotificationRepository);
+		repository = module.get(PrismaNotificationRepository);
 		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
 	});
 
@@ -383,14 +399,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			expect(facade.getNotifications).toBeInstanceOf(Function);
 		});
 
-		it("NotificationRepository가 정상적으로 주입되어야 함", () => {
+		it("PrismaNotificationRepository가 정상적으로 주입되어야 함", () => {
 			// Given - DI 컨테이너가 구성됨
 
 			// When - 레포지토리 인스턴스 확인
 
 			// Then - 레포지토리가 정의되어 있어야 함
 			expect(repository).toBeDefined();
-			expect(repository).toBeInstanceOf(NotificationRepository);
+			expect(repository).toBeInstanceOf(PrismaNotificationRepository);
 		});
 	});
 

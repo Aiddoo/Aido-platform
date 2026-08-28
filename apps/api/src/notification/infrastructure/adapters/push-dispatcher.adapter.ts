@@ -18,10 +18,10 @@ import {
 } from "../../application/ports/marketing-push-opt-out-token.port";
 import type { CreateNotificationData } from "../../application/ports/notification-data";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
+	PUSH_DISPATCH_REPOSITORY,
+	type PushDispatchRepositoryPort,
 	type PushDispatchSkipReason,
-} from "../../application/ports/notification.repository.port";
+} from "../../application/ports/push-dispatch.repository.port";
 import type {
 	BatchPushDispatchItem,
 	PushDispatcherPort,
@@ -38,6 +38,10 @@ import {
 	type PushRateLimitRequest,
 	type PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port";
+import {
+	PUSH_TOKEN_REPOSITORY,
+	type PushTokenRepositoryPort,
+} from "../../application/ports/push-token.repository.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
@@ -90,8 +94,10 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 	readonly #pendingPushes = new Set<Promise<void>>();
 
 	constructor(
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(PUSH_DISPATCH_REPOSITORY)
+		private readonly pushDispatchRepository: PushDispatchRepositoryPort,
+		@Inject(PUSH_TOKEN_REPOSITORY)
+		private readonly pushTokenRepository: PushTokenRepositoryPort,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
 		@Inject(USER_NOTIFICATION_SETTINGS)
 		private readonly userSettings: UserNotificationSettingsPort,
@@ -121,7 +127,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		// 미상(UTC) 유저는 한국 우선 서비스 기준 KST로 폴백해 배송 시각·집계를 판정
 		const timezone = resolveDeliveryTimezone(preference.timezone);
 		const localDate = new Date(`${this.#localDate(timezone)}T00:00:00.000Z`);
-		const dispatch = await this.notificationRepository.createPushDispatch({
+		const dispatch = await this.pushDispatchRepository.createPushDispatch({
 			notificationId,
 			userId: data.userId,
 			purpose: data.purpose ?? "TRANSACTIONAL",
@@ -133,13 +139,13 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		try {
 			const skipReason = await this.#singleEligibilitySkipReason(data, preference);
 			if (skipReason) {
-				await this.notificationRepository.markPushDispatchSkipped(dispatch.id, skipReason);
+				await this.pushDispatchRepository.markPushDispatchSkipped(dispatch.id, skipReason);
 				return;
 			}
 
 			const tokenResolution = await this.#resolveTokensForData(data);
 			if (tokenResolution.skipReason) {
-				await this.notificationRepository.markPushDispatchSkipped(
+				await this.pushDispatchRepository.markPushDispatchSkipped(
 					dispatch.id,
 					tokenResolution.skipReason,
 				);
@@ -157,7 +163,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 					categoryId: "MARKETING",
 				}),
 			});
-			await this.notificationRepository.recordPushDeliveryResults(dispatch.id, result.results);
+			await this.pushDispatchRepository.recordPushDeliveryResults(dispatch.id, result.results);
 		} catch (error) {
 			await this.#markUnexpectedDispatchFailure([dispatch.id], error);
 			throw error;
@@ -190,7 +196,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 
 		let createdDispatchIds: number[] = [];
 		try {
-			const dispatchRecords = await this.notificationRepository.createPushDispatches(
+			const dispatchRecords = await this.pushDispatchRepository.createPushDispatches(
 				items.map((item) => {
 					const preference = prefMap.get(item.data.userId);
 					const timezone = resolveDeliveryTimezone(preference?.timezone);
@@ -255,7 +261,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 			}
 
 			if (settingsEligibleItems.length === 0) {
-				await this.notificationRepository.markPushDispatchesSkipped(skippedDispatches);
+				await this.pushDispatchRepository.markPushDispatchesSkipped(skippedDispatches);
 				return;
 			}
 
@@ -278,7 +284,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 					eligibleItems.push(item);
 				}
 			}
-			await this.notificationRepository.markPushDispatchesSkipped(skippedDispatches);
+			await this.pushDispatchRepository.markPushDispatchesSkipped(skippedDispatches);
 
 			if (eligibleItems.length === 0) return;
 
@@ -298,7 +304,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 					}),
 				})),
 			);
-			await this.notificationRepository.recordPushDeliveryResultsBatch(
+			await this.pushDispatchRepository.recordPushDeliveryResultsBatch(
 				[...attemptedDispatchIds].map((dispatchId) => ({
 					dispatchId,
 					results: resultsByDispatch.get(dispatchId) ?? [],
@@ -555,7 +561,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		const result = await this.pushProvider.sendBatch(payloads);
 
 		if (result.invalidTokens.length > 0) {
-			await this.notificationRepository.deactivateInvalidTokens(result.invalidTokens);
+			await this.pushTokenRepository.deactivateInvalidTokens(result.invalidTokens);
 			await this.cacheService.invalidatePushTokens(userId);
 			this.#logger.warn(`Deactivated invalid tokens: ${result.invalidTokens.length}`);
 		}
@@ -571,7 +577,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		skipReason: PushDispatchSkipReason | null;
 	}> {
 		if (data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY) {
-			const records = await this.notificationRepository.findPushTokensByUser({
+			const records = await this.pushTokenRepository.findPushTokensByUser({
 				userId: data.userId,
 				activeOnly: true,
 			});
@@ -587,7 +593,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		}
 
 		const tokens = await this.cacheService.wrapPushTokens(data.userId, async () => {
-			const records = await this.notificationRepository.findPushTokensByUser({
+			const records = await this.pushTokenRepository.findPushTokensByUser({
 				userId: data.userId,
 				activeOnly: true,
 			});
@@ -622,7 +628,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		const featureTokenRecords =
 			featureUserIds.length === 0
 				? []
-				: await this.notificationRepository.findActivePushTokensByUsers(featureUserIds);
+				: await this.pushTokenRepository.findActivePushTokensByUsers(featureUserIds);
 		const featureTokensByUser = this.#groupTokenRecords(featureTokenRecords);
 
 		const pushPayloads: PushPayload[] = [];
@@ -635,7 +641,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 				? featureRecords.length
 				: activeTokenStrings.length;
 			if (activeTokenCount === 0) {
-				await this.notificationRepository.markPushDispatchSkipped(
+				await this.pushDispatchRepository.markPushDispatchSkipped(
 					payload.dispatchId,
 					"NO_ACTIVE_TOKEN",
 				);
@@ -645,7 +651,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 				? featureRecords.filter(supportsFeatureDiscoveryMarketing).map((record) => record.token)
 				: activeTokenStrings;
 			if (userTokenStrings.length === 0) {
-				await this.notificationRepository.markPushDispatchSkipped(
+				await this.pushDispatchRepository.markPushDispatchSkipped(
 					payload.dispatchId,
 					"UNSUPPORTED_APP_CAPABILITY",
 				);
@@ -673,7 +679,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		const result = await this.pushProvider.sendBatch(pushPayloads);
 
 		if (result.invalidTokens.length > 0) {
-			await this.notificationRepository.deactivateInvalidTokens(result.invalidTokens);
+			await this.pushTokenRepository.deactivateInvalidTokens(result.invalidTokens);
 			await Promise.all(userIds.map((uid) => this.cacheService.invalidatePushTokens(uid)));
 			this.#logger.warn(`Deactivated invalid tokens: ${result.invalidTokens.length}`);
 		}
@@ -719,7 +725,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		}
 
 		if (missedUserIds.length > 0) {
-			const dbTokens = await this.notificationRepository.findActivePushTokensByUsers(missedUserIds);
+			const dbTokens = await this.pushTokenRepository.findActivePushTokensByUsers(missedUserIds);
 
 			const dbTokensByUser = new Map<string, string[]>();
 			for (const t of dbTokens) {
@@ -760,7 +766,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 	): Promise<void> {
 		if (dispatchIds.length === 0) return;
 		try {
-			await this.notificationRepository.markPushDispatchFailed(
+			await this.pushDispatchRepository.markPushDispatchFailed(
 				dispatchIds,
 				"UNEXPECTED_DISPATCH_ERROR",
 			);

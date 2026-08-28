@@ -16,11 +16,15 @@ import type { DatabaseService } from "@/shared/infrastructure/database/database.
 import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
 
 import { NotificationBatchDispatcher } from "../../application/dispatchers/notification-batch.dispatcher";
-import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../application/ports/notification.repository.port";
 import { PUSH_PROVIDER, type PushProvider } from "../../application/ports/push-provider.port";
+import {
+	PUSH_RECEIPT_REPOSITORY,
+	type PushReceiptRepositoryPort,
+} from "../../application/ports/push-receipt.repository.port";
+import {
+	PUSH_TOKEN_REPOSITORY,
+	type PushTokenRepositoryPort,
+} from "../../application/ports/push-token.repository.port";
 import { NotificationSender } from "../../application/senders/notification.sender";
 import {
 	createBillingIssueNotificationMessage,
@@ -67,8 +71,10 @@ export class NotificationQueueProcessor implements OnModuleInit {
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(PUSH_RECEIPT_REPOSITORY)
+		private readonly pushReceiptRepository: PushReceiptRepositoryPort,
+		@Inject(PUSH_TOKEN_REPOSITORY)
+		private readonly pushTokenRepository: PushTokenRepositoryPort,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
 		@Optional()
 		@Inject(JOB_RUNTIME)
@@ -153,14 +159,14 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	}
 
 	async #handlePushReceipts(): Promise<void> {
-		const pending = await this.notificationRepository.findPendingPushReceipts(900);
+		const pending = await this.pushReceiptRepository.findPendingPushReceipts(900);
 		if (pending.length === 0) return;
 		const receipts = await this.pushProvider.getReceipts(
 			pending.map((attempt) => attempt.ticketId),
 		);
-		const invalidTokens = await this.notificationRepository.recordPushReceipts(receipts);
+		const invalidTokens = await this.pushReceiptRepository.recordPushReceipts(receipts);
 		if (invalidTokens.length > 0) {
-			await this.notificationRepository.deactivateInvalidTokens(invalidTokens);
+			await this.pushTokenRepository.deactivateInvalidTokens(invalidTokens);
 		}
 		this.#logger.log(
 			`Expo receipts processed: requested=${pending.length}, received=${receipts.length}, invalidTokens=${invalidTokens.length}`,

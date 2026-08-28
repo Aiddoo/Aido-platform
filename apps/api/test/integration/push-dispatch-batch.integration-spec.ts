@@ -2,7 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 
 import type { PrismaClient } from "@/generated/prisma/client";
-import { NotificationRepository } from "@/notification/infrastructure/persistence/notification.repository";
+import { PrismaPushDeliveryRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery.repository";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { TestDatabase } from "../setup/test-database";
@@ -10,7 +10,7 @@ import { TestDatabase } from "../setup/test-database";
 describe("푸시 dispatch 배치 저장 통합 테스트 (실제 DB)", () => {
 	let testDb: TestDatabase;
 	let prisma: PrismaClient;
-	let repository: NotificationRepository;
+	let repository: PrismaPushDeliveryRepository;
 
 	beforeAll(async () => {
 		testDb = new TestDatabase();
@@ -18,7 +18,7 @@ describe("푸시 dispatch 배치 저장 통합 테스트 (실제 DB)", () => {
 		const txHost = {
 			tx: prisma,
 		} as unknown as TransactionHost<TransactionalAdapterPrisma<DatabaseService>>;
-		repository = new NotificationRepository(txHost);
+		repository = new PrismaPushDeliveryRepository(txHost);
 	}, 60_000);
 
 	beforeEach(async () => {

@@ -7,9 +7,9 @@ import { PaginationService } from "@/shared/application/pagination";
 import type { NotificationRecord } from "../../../domain/records/notification.record";
 import type { NotificationType } from "../../../domain/types/notification-type";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+	NOTIFICATION_INBOX_READER,
+	type NotificationInboxReaderPort,
+} from "../../ports/notification-inbox.reader.port";
 
 export interface GetNotificationsInput {
 	userId: string;
@@ -29,8 +29,8 @@ export class GetNotificationsUseCase {
 	readonly #logger = new Logger(GetNotificationsUseCase.name);
 
 	constructor(
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(NOTIFICATION_INBOX_READER)
+		private readonly notificationInboxReader: NotificationInboxReaderPort,
 		private readonly paginationService: PaginationService,
 	) {}
 
@@ -47,7 +47,7 @@ export class GetNotificationsUseCase {
 				? [...CATEGORY_TYPE_MAP[input.category]]
 				: undefined;
 
-		const notifications = await this.notificationRepository.findNotificationsByUser({
+		const notifications = await this.notificationInboxReader.findNotificationsByUser({
 			userId: input.userId,
 			cursor,
 			size,
