@@ -34,6 +34,7 @@ describe("FindAlreadyNotifiedUsersUseCase", () => {
 		useCase = unit;
 		notificationDedup = unitRef.get(NOTIFICATION_DEDUP);
 		repository = unitRef.get(NOTIFICATION_HISTORY_READER);
+		notificationDedup.warmRecipients.mockResolvedValue(undefined);
 	});
 
 	it("warm(센티넬 존재): Redis 결과에서 센티넬 제거 후 반환, DB 미조회", async () => {

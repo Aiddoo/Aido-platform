@@ -40,6 +40,7 @@ export function createNotificationHistoryReaderMock(): NotificationHistoryReader
 	return {
 		existsRecentNotification: jest.fn(),
 		findAlreadyNotifiedUserIds: jest.fn(),
+		hasMilestoneNotification: jest.fn(),
 	};
 }
 

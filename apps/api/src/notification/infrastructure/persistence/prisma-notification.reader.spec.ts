@@ -158,4 +158,16 @@ describe("PrismaNotificationReader", () => {
 			distinct: ["userId"],
 		});
 	});
+
+	it("마일스톤 metadata 존재 여부를 조회한다", async () => {
+		asMock(db.notification.count).mockResolvedValue(1);
+
+		await expect(reader.hasMilestoneNotification("user-1", "COUNT_10")).resolves.toBe(true);
+		expect(db.notification.count).toHaveBeenCalledWith({
+			where: {
+				userId: "user-1",
+				metadata: { path: ["milestone"], equals: "COUNT_10" },
+			},
+		});
+	});
 });

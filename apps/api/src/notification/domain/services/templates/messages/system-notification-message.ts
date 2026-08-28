@@ -1,5 +1,6 @@
 import { DEFAULT_LOCALE, type SupportedLocale } from "@/shared/domain/locale";
 
+import type { NotificationMilestone } from "../../../types/notification-milestone";
 import * as en from "../locales/en";
 import * as ko from "../locales/ko";
 import { renderLocalizedNotification } from "../notification-copy.renderer";
@@ -25,14 +26,6 @@ type OnboardingNotificationInput =
 			readonly day: 5 | 7;
 			readonly completedCount: number;
 	  });
-
-export type NotificationMilestone =
-	| "FIRST_COMPLETE"
-	| "COUNT_10"
-	| "COUNT_50"
-	| "COUNT_100"
-	| "STREAK_3"
-	| "FIRST_FRIEND";
 
 export interface MilestoneNotificationInput {
 	readonly milestone: NotificationMilestone;

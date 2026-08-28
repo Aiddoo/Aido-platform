@@ -63,26 +63,33 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
 	): Promise<NotificationRecord[]> {
 		if (dataList.length === 0) return [];
 
-		return this.client.notification.createManyAndReturn({
-			data: dataList.map((data) => ({
-				userId: data.userId,
-				type: data.type,
-				title: data.title,
-				body: data.body,
-				todoId: data.todoId,
-				friendId: data.friendId,
-				nudgeId: data.nudgeId,
-				cheerId: data.cheerId,
-				metadata: data.metadata != null ? toInputJson(data.metadata) : undefined,
-				notificationDate: data.notificationDate ?? undefined,
-				actionType: data.action?.type ?? "DEEP_LINK",
-				actionUrl: data.action?.url,
-				campaignKey: data.campaignKey,
-				variantId: data.variantId,
-				purpose: data.purpose ?? "TRANSACTIONAL",
-			})),
-			skipDuplicates: true,
-		});
+		try {
+			return await this.client.notification.createManyAndReturn({
+				data: dataList.map((data) => ({
+					userId: data.userId,
+					type: data.type,
+					title: data.title,
+					body: data.body,
+					todoId: data.todoId,
+					friendId: data.friendId,
+					nudgeId: data.nudgeId,
+					cheerId: data.cheerId,
+					metadata: data.metadata != null ? toInputJson(data.metadata) : undefined,
+					notificationDate: data.notificationDate ?? undefined,
+					actionType: data.action?.type ?? "DEEP_LINK",
+					actionUrl: data.action?.url,
+					campaignKey: data.campaignKey,
+					variantId: data.variantId,
+					purpose: data.purpose ?? "TRANSACTIONAL",
+				})),
+				skipDuplicates: true,
+			});
+		} catch (error) {
+			if (isUniqueConstraintViolation(error)) {
+				throw new DuplicateNotificationError();
+			}
+			throw error;
+		}
 	}
 
 	async markAsRead(id: number, userId: string): Promise<boolean> {
