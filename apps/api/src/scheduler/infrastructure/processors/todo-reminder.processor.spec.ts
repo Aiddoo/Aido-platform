@@ -83,7 +83,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 					userId: USER_ID,
 					type: "TODO_REMINDER",
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
-					variantId: expect.stringMatching(/^todo_reminder_v2\.60min\.v[1-4]$/),
+					variantId: expect.stringMatching(/^todo_reminder_v3\.60min\.v[1-3]$/),
 					todoId: 1,
 					metadata: { stage: "60min" },
 				}),
@@ -130,10 +130,10 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			// When
 			await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
 
-			// Then — DB의 최신 제목이 알림에 사용되고 플레이스홀더는 남지 않음
+			// Then — DB의 최신 제목은 잠금 화면 길이를 보호하는 본문 preview에 사용됨
 			const payload = notification.createAndSend.mock.calls[0]?.[0];
-			expect(payload?.title).toContain("밥먹고 약먹기");
-			expect(payload?.title).not.toContain("{todoTitle}");
+			expect(payload?.body).toContain("밥먹고 약먹기");
+			expect(`${payload?.title}${payload?.body}`).not.toContain("{todoTitle}");
 		});
 	});
 

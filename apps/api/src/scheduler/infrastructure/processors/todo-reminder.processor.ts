@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createTodoReminderNotificationMessage, NotificationSender } from "@/notification";
 import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
 import {
 	JOB_RUNTIME,
@@ -107,10 +107,16 @@ export class TodoReminderProcessor implements OnModuleInit {
 		// 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
 		// 언어는 UserPreference 캐시 경유 (발송 여부 판정과 같은 캐시 엔트리 공유)
 		const locale = await this.notification.getUserLocale(userId);
-		const message = NotificationMessageBuilder.todoReminder(todo.title, stageLabel, locale, {
-			campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
-			recipientId: userId,
-			occurrenceKey: `${todoId}:${stageLabel}`,
+		const stage = resolveReminderStage(stageLabel);
+		const message = createTodoReminderNotificationMessage({
+			todoTitle: todo.title,
+			stage,
+			locale,
+			variantContext: {
+				campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
+				recipientId: userId,
+				occurrenceKey: `${todoId}:${stageLabel}`,
+			},
 		});
 
 		await this.notification.createAndSend({
@@ -127,4 +133,12 @@ export class TodoReminderProcessor implements OnModuleInit {
 
 		this.#logger.log(`Reminder sent: todoId=${todoId}, stage=${stageLabel}, userId=${userId}`);
 	}
+}
+
+/** 레거시 queue 문자열을 현재 reminder 단계로 안전하게 좁힌다. */
+function resolveReminderStage(stage: string): "60min" | "10min" | "immediate" {
+	if (stage === "10min" || stage === "immediate") {
+		return stage;
+	}
+	return "60min";
 }

@@ -1,6 +1,5 @@
 import type { NotificationActionType } from "@aido/validators";
 
-import type { NotificationRecord, PushTokenRecord } from "../../domain/records/notification.record";
 import type { NotificationType } from "../../domain/types/notification-type";
 
 /** 알림 메타데이터 입력 (DB Json 컬럼에 저장, 어댑터가 Prisma Json으로 변환) */
@@ -78,8 +77,8 @@ export interface NotificationAction {
  * {
  *   userId: "user-123",
  *   type: "FOLLOW_NEW",
- *   title: "새 친구 요청",
- *   body: "홍길동님이 친구 요청을 보냈어요",
+ *   title: "홍길동이 친구 문을 두드렸어",
+ *   body: "서로의 하루에 작은 응원을 나누고 싶대 🐾",
  *   friendId: "friend-456",  // context로 전달
  * }
  *
@@ -235,13 +234,3 @@ export interface RegisterPushTokenData {
 	payloadVersion?: number;
 	appVersion?: string;
 }
-
-/**
- * 알림 with 관계 타입
- */
-export type NotificationWithRelations = NotificationRecord;
-
-/**
- * 푸시 토큰 with 관계 타입
- */
-export type PushTokenWithRelations = PushTokenRecord;

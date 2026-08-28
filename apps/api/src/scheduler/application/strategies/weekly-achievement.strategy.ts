@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createWeeklyAchievementNotificationMessage, NotificationSender } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -96,16 +97,16 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 
 		const locales = await this.preferenceReader.findUserLocales(finalRecords.map((r) => r.userId));
 		const notifications = finalRecords.map((r) => {
-			const message = NotificationMessageBuilder.weeklyAchievement(
-				r.completedTodos,
-				r.totalTodos,
-				locales.get(r.userId) ?? "ko",
-				{
+			const message = createWeeklyAchievementNotificationMessage({
+				completedCount: r.completedTodos,
+				totalCount: r.totalTodos,
+				locale: locales.get(r.userId) ?? DEFAULT_LOCALE,
+				variantContext: {
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
 					recipientId: r.userId,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 			return {
 				userId: r.userId,
 				type: "WEEKLY_ACHIEVEMENT" as const,

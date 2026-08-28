@@ -1,14 +1,11 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-	NotificationMessageBuilder,
-	NotificationSender,
-	resolveTemplateLocale,
-} from "@/notification";
+import { createEveningReminderNotificationMessage, NotificationSender } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { toSupportedLocale } from "@/shared/domain/locale";
 import { computeEffectiveStreak } from "@/user-settings";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -93,18 +90,18 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 				today,
 			});
 
-			const message = NotificationMessageBuilder.eveningReminder(
+			const message = createEveningReminderNotificationMessage({
 				completed,
 				total,
 				streak,
 				isStreakAtRisk,
-				resolveTemplateLocale(user.preference?.locale),
-				{
+				locale: toSupportedLocale(user.preference?.locale),
+				variantContext: {
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
 					recipientId: user.id,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 
 			return {
 				userId: user.id,

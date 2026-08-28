@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createOnboardingNotificationMessage, NotificationSender } from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
@@ -86,7 +86,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.onboarding(0);
+		const expected = createOnboardingNotificationMessage({ day: 0 });
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "SYSTEM_NOTICE",
@@ -114,7 +114,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.onboarding(5, 3);
+		const expected = createOnboardingNotificationMessage({ day: 5, completedCount: 3 });
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "SYSTEM_NOTICE",

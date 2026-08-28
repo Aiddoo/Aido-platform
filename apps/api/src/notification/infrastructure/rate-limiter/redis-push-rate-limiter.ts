@@ -4,8 +4,8 @@ import type Redis from "ioredis";
 import { RedisErrorLogSampler } from "@/shared/infrastructure/redis/redis-error-log-sampler";
 
 import type {
-	IPushRateLimiter,
 	PushRateLimitRequest,
+	PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port";
 import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy";
 import { PushRateLimiterKeys } from "./push-rate-limiter.keys";
@@ -128,7 +128,7 @@ function isRateLimitResult(value: unknown, expectedLength: number): value is Arr
  * - 멀티 인스턴스 환경에서 rate limit 공유
  * - Redis 장애 시 fail-open (발송 허용)
  */
-export class RedisPushRateLimiter implements IPushRateLimiter {
+export class RedisPushRateLimiter implements PushRateLimiterPort {
 	readonly #logger = new Logger(RedisPushRateLimiter.name);
 	readonly #redis: Redis;
 	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);

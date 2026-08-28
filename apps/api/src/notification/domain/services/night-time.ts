@@ -14,10 +14,3 @@ export function isNightTime(tz: string = "UTC", date: Date = new Date()): boolea
 	const localHour = dayjs(date).tz(resolveTimezone(tz)).hour();
 	return localHour >= NIGHT_TIME_CONFIG.START_HOUR || localHour < NIGHT_TIME_CONFIG.END_HOUR;
 }
-
-/**
- * 야간 시간대가 아닌지 확인 (편의 함수)
- */
-export function isDayTime(tz: string = "UTC", date: Date = new Date()): boolean {
-	return !isNightTime(tz, date);
-}

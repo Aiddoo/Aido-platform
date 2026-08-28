@@ -1,981 +1,590 @@
-import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
+import { josa } from "es-hangul";
+
+import type {
+	NotificationCopy,
+	NotificationCopyFactory,
+	RetentionNotificationCopyCatalog,
+	SchedulerNotificationCopyCatalog,
+	SocialNotificationCopyCatalog,
+	SystemNotificationCopyCatalog,
+	WeatherFallbackCopyCatalog,
+	WeatherNotificationCopyCatalog,
+} from "../notification-copy.types";
 
 export const SOCIAL_SENDER_FALLBACK = "친구";
 
+const staticCopy =
+	(title: string, body: string): NotificationCopyFactory<undefined> =>
+	() => ({
+		title,
+		body,
+	});
+
+const copy = (title: string, body: string): NotificationCopy => ({ title, body });
+
+type JosaParticle = Parameters<typeof josa>[1];
+
+/** 영문·emoji 닉네임에서도 알림 생성을 실패시키지 않는 조사 부착 경계. */
+function attachJosa(value: string, particle: JosaParticle): string {
+	try {
+		return josa(value, particle);
+	} catch {
+		return value;
+	}
+}
+
 export const SCHEDULER_TEMPLATES = {
-	TODO_REMINDER: {
-		title: "⏰ {todoTitle}, 1시간 뒤 시작!",
-		body: "미리 해두면 마음이 편해져",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
-		variants: [
-			{
-				title: "⏰ {todoTitle}, 1시간 뒤 시작!",
-				body: "미리 해두면 마음이 편해져",
-			},
-			{ title: "{todoTitle}까지 1시간 ⏳", body: "슬슬 몸 풀어볼까?" },
-			{
-				title: "1시간 뒤에 {todoTitle} 있어 👀",
-				body: "지금 시작하면 여유롭게 끝나",
-			},
-		],
-	} satisfies NotificationTemplate,
 	TODO_REMINDER_60MIN: {
-		title: "⏰ {todoTitle}, 1시간 뒤 시작!",
-		body: "미리 해두면 마음이 편해져",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
 		variants: [
-			{
-				title: "⏰ {todoTitle}, 1시간 뒤 시작!",
-				body: "미리 해두면 마음이 편해져",
-			},
-			{ title: "{todoTitle}까지 1시간 ⏳", body: "슬슬 몸 풀어볼까?" },
-			{
-				title: "1시간 뒤에 {todoTitle} 있어 👀",
-				body: "지금 시작하면 여유롭게 끝나",
-			},
+			({ todoTitle }) => copy("한 시간 뒤, 출발 준비 ⏰", `‘${todoTitle}’ 차례가 다가오고 있어`),
+			({ todoTitle }) => copy("할 일 시계가 한 칸 움직였어", `‘${todoTitle}’까지 한 시간 남았어`),
+			({ todoTitle }) => copy("한 시간 전 알림이 톡", `‘${todoTitle}’ 준비를 슬쩍 시작해볼까?`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	TODO_REMINDER_10MIN: {
-		title: "⏰ {todoTitle}, 10분 전!",
-		body: "딱 좋은 타이밍이야, 가보자",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
 		variants: [
-			{ title: "⏰ {todoTitle}, 10분 전!", body: "딱 좋은 타이밍이야, 가보자" },
-			{ title: "{todoTitle}까지 10분 🔥", body: "준비됐지?" },
-			{ title: "10분 뒤 {todoTitle} 시작이야", body: "지금이 골든타임 ✨" },
+			({ todoTitle }) => copy("이제 10분 남았어 ⏰", `‘${todoTitle}’ 준비할 시간이야`),
+			({ todoTitle }) => copy("할 일이 준비 운동 중이야", `‘${todoTitle}’까지 10분 남았어`),
+			({ todoTitle }) => copy("10분 뒤에 만날 할 일", `‘${todoTitle}’ 차례가 곧 와`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	TODO_REMINDER_IMMEDIATE: {
-		title: "🚀 {todoTitle}, 지금 시작!",
-		body: "시작이 반이야",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
 		variants: [
-			{ title: "🚀 {todoTitle}, 지금 시작!", body: "시작이 반이야" },
-			{ title: "{todoTitle} 할 시간이야 ⏰", body: "바로 가보자!" },
-			{
-				title: "딱 지금이야, {todoTitle} ✨",
-				body: "5분만 해봐, 몸이 풀릴 거야",
-			},
+			({ todoTitle }) => copy("지금 시작할 시간이야 🚀", `‘${todoTitle}’ 차례가 왔어`),
+			({ todoTitle }) => copy("할 일이 문 앞에 도착했어", `‘${todoTitle}’ 지금 시작해볼까?`),
+			({ todoTitle }) => copy("출발 신호가 켜졌어", `‘${todoTitle}’ 첫 단추만 끼워보자`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_REMINDER: {
-		title: "☀️ 오늘 할 일 {count}개",
-		body: "가장 쉬운 것부터 하나씩 가보자",
-		type: "MORNING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "☀️ 오늘 할 일 {count}개",
-				body: "가장 쉬운 것부터 하나씩 가보자",
-			},
-			{ title: "오늘의 미션 {count}개 🎯", body: "하나만 끝내도 흐름 탄다" },
-			{
-				title: "{count}개가 널 기다리고 있어 👋",
-				body: "아침에 해치우면 저녁이 한가해져",
-			},
-			{
-				title: "좋은 아침! 오늘은 {count}개야 ☀️",
-				body: "커피 한 잔 하고 바로 시작해볼까?",
-			},
-			{
-				title: "할 일 {count}개 도착 📬",
-				body: "순서대로 하나씩 접수해 주세요~",
-			},
+			({ count }) => copy(`오늘 할 일 ${count}개 ☀️`, "가장 만만한 것부터 골라보자"),
+			({ count }) => copy(`오늘의 계획은 ${count}개`, "고양이는 이미 목록 옆에 앉았어"),
+			({ count }) => copy(`${count}개의 할 일이 기상했어`, "첫 번째 체크를 기다리는 중이야"),
+			({ count }) => copy(`좋은 아침, 오늘은 ${count}개`, "한 발자국이면 충분히 좋은 출발이야"),
+			({ count }) => copy(`할 일 ${count}개가 줄을 섰어`, "순서는 네가 정하면 돼 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_COMPLETE: {
-		title: "🎉 올클리어!",
-		body: "오늘 너 진짜 멋있었어",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
 		variants: [
-			{ title: "🎉 올클리어!", body: "오늘 너 진짜 멋있었어" },
-			{ title: "오늘 할 일 전부 완료 ✅", body: "깔끔하게 마무리했네" },
-			{ title: "오늘 계획 완료 😎", body: "수고했어, 이제 편하게 쉬자" },
-			{ title: "완료 도장 꾹! 🏆", body: "오늘도 차근차근 잘 해냈어" },
-			{ title: "기분 좋은 올클리어 ✨", body: "내일도 부담 없이 이어가보자" },
+			staticCopy("오늘 계획, 전부 완료 🎉", "고양이가 조용히 기립 박수 중이야"),
+			staticCopy("오늘 목록이 깨끗해졌어", "빈 체크박스가 한 개도 없어"),
+			staticCopy("오늘 할 일은 모두 퇴근", "이제 너도 편하게 쉬어도 돼"),
+			staticCopy("완료 도장, 아주 반듯해", "오늘의 네가 꽤 근사했어 🏆"),
+			staticCopy("올클리어가 살포시 도착", "오늘도 한 발자국 앞으로 갔어"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_PARTIAL: {
-		title: "올클리어까지 {remaining}개 🔥",
-		body: "여유가 있다면 하나 더 해볼까?",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "올클리어까지 {remaining}개 🔥",
-				body: "여유가 있다면 하나 더 해볼까?",
-			},
-			{ title: "{remaining}개 남았어 💪", body: "가벼운 것부터 마무리해보자" },
-			{
-				title: "오늘 잘했어, {remaining}개 남았어 👀",
-				body: "할 수 있는 만큼만 마무리해보자",
-			},
-			{
-				title: "딱 {remaining}개 남았다 ✨",
-				body: "짧은 것 하나부터 시작해볼까?",
-			},
+			({ remaining }) =>
+				copy(`${remaining}개가 아직 자리를 지키는 중`, "여유가 있으면 하나만 더 만나볼까?"),
+			({ remaining }) => copy(`남은 할 일은 ${remaining}개`, "오늘 한 만큼도 분명히 기록됐어"),
+			({ remaining }) =>
+				copy(`${remaining}개의 체크박스가 깜빡`, "가장 작은 것부터 골라도 좋아 🐾"),
+			({ remaining }) =>
+				copy(`오늘 목록에 ${remaining}개 남았어`, "할 수 있는 만큼만 차분히 마무리하자"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_NONE: {
-		title: "오늘은 아직 시작 전이야 🌙",
-		body: "작은 것 하나만 해도 충분해",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "오늘은 아직 시작 전이야 🌙",
-				body: "작은 것 하나만 해도 충분해",
-			},
-			{
-				title: "오늘 많이 바빴지? 💦",
-				body: "5분이면 되는 것부터 해보자",
-			},
-			{
-				title: "지금부터 시작해도 괜찮아 🌱",
-				body: "가장 쉬운 것부터 골라보자",
-			},
-			{ title: "하루가 가기 전에 🌙", body: "짧은 것 하나만 해볼까?" },
+			staticCopy("오늘 목록은 아직 고요해 🌙", "쉬는 날이어도 괜찮아, 필요하면 하나만 골라봐"),
+			staticCopy("체크박스들이 낮잠을 잤나 봐", "짧은 일 하나로 깨워도 좋아"),
+			staticCopy("오늘은 시작 전 화면 그대로", "지금 시작해도 전혀 늦지 않았어"),
+			staticCopy("고요한 목록도 하루의 기록이야", "힘이 남았다면 작은 일 하나만 만나보자"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_NO_TODO: {
-		title: "오늘 할 일이 텅 비었어 📭",
-		body: "하나만 적어도 하루가 달라져",
-		type: "MORNING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "오늘 할 일이 텅 비었어 📭",
-				body: "하나만 적어도 하루가 달라져",
-			},
-			{ title: "오늘은 백지 상태 📝", body: "제일 하고 싶은 것부터 적어볼까?" },
-			{
-				title: "오늘 계획을 채워볼까? 👀",
-				body: "기억해둘 일 하나만 적어보자",
-			},
+			staticCopy("오늘 목록이 아주 넓어 📭", "하고 싶은 일 하나를 먼저 놓아볼까?"),
+			staticCopy("빈 목록이 꼬리를 흔드는 중", "가장 작은 계획 하나면 충분해"),
+			staticCopy("오늘 계획 자리가 비어 있어", "떠오르는 일을 하나만 적어두자"),
 		],
-	} satisfies NotificationTemplate,
-	// 스트릭 축하 (전체 완료 + 스트릭 2일+)
+	},
 	EVENING_STREAK: {
-		title: "🔥 {streak}일 연속 올클리어!",
-		body: "내일이면 {next}일째야",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
 		variants: [
-			{
-				title: "🔥 {streak}일 연속 올클리어!",
-				body: "내일이면 {next}일째야",
-			},
-			{
-				title: "{streak}일째 달리는 중 🏃",
-				body: "이대로 {next}일 찍으러 가보자",
-			},
-			{
-				title: "{streak}일 연속, 정말 대단해 🔥",
-				body: "이 흐름 그대로 이어가보자",
-			},
+			({ streak, next }) => copy(`${streak}일 연속 올클리어 🔥`, `내일이면 ${next}일째 기록이야`),
+			({ streak, next }) => copy(`${streak}일째 차곡차곡`, `다음 칸은 ${next}일, 천천히 이어가자`),
+			({ streak }) =>
+				copy(`${streak}일 기록이 제법 길어졌어`, "꾸준함이 꼬리처럼 따라오고 있어 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_STREAK_7: {
-		title: "🎉 7일 연속! 일주일 올클리어",
-		body: "일주일을 꾸준히 채웠어",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("7일 연속, 한 주 완성 🎉", "일주일을 차근차근 채웠어"),
+	},
 	EVENING_STREAK_14: {
-		title: "🏆 2주 연속 달성!",
-		body: "꾸준히 이어온 게 정말 멋져",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("14일 연속 기록 완성 🏆", "두 주 동안 이어온 발자국이 선명해"),
+	},
 	EVENING_STREAK_30: {
-		title: "👑 {streak}일째 이어가는 중",
-		body: "꾸준함이 제대로 자리 잡았어",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
-	} satisfies NotificationTemplate,
-	// 스트릭 위기 (일부 완료 + 스트릭 2일+)
+		copy: ({ streak }) => copy(`${streak}일째 이어지는 기록 👑`, "꾸준함이 이제 제법 익숙해졌어"),
+	},
 	EVENING_STREAK_RISK_PARTIAL: {
-		title: "🚨 {streak}일 기록이 위험해",
-		body: "{remaining}개만 끝내면 지킬 수 있어!",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "🚨 {streak}일 기록이 위험해",
-				body: "{remaining}개만 끝내면 지킬 수 있어!",
-			},
-			{
-				title: "{streak}일 기록, 오늘도 이어가볼까? ⏳",
-				body: "딱 {remaining}개 남았어",
-			},
-			{ title: "아직 기회 있어 ⏳", body: "{remaining}개만 하면 기록 세이브!" },
+			({ streak, remaining }) =>
+				copy(`${streak}일 기록에 ${remaining}개 남았어`, "이어가고 싶다면 작은 것부터 골라봐"),
+			({ streak, remaining }) =>
+				copy(`${streak}일째 불꽃이 기다리는 중`, `${remaining}개를 마치면 오늘도 이어져 🔥`),
+			({ remaining }) => copy(`기록까지 남은 할 일 ${remaining}개`, "가능한 만큼만 차분히 해보자"),
 		],
-	} satisfies NotificationTemplate,
-	// 스트릭 위기 (하나도 안 함 + 스트릭 2일+)
+	},
 	EVENING_STREAK_RISK_NONE: {
-		title: "🚨 {streak}일 기록, 아직 살릴 수 있어",
-		body: "하나만 끝내면 세이브 성공",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "🚨 {streak}일 기록, 아직 살릴 수 있어",
-				body: "하나만 끝내면 세이브 성공",
-			},
-			{
-				title: "{streak}일 불꽃이 꺼지기 직전이야 🕯️",
-				body: "오늘 하나면 다시 활활 타올라",
-			},
-			{
-				title: "{streak}일 기록을 이어볼까? 🌱",
-				body: "하나만 해도 기록은 이어져",
-			},
+			({ streak }) =>
+				copy(`${streak}일 기록이 오늘을 기다려`, "이어가고 싶다면 할 일 하나면 충분해"),
+			({ streak }) => copy(`${streak}일 불꽃이 잠깐 졸고 있어`, "하나를 마치면 다시 반짝여 🔥"),
+			({ streak }) => copy(`${streak}일째 발자국 앞에 빈칸 하나`, "오늘 한 걸음으로 채울 수 있어"),
 		],
-	} satisfies NotificationTemplate,
-	// 점심 넛지 (12:30, 오늘 완료 0개)
+	},
 	LUNCH_NUDGE: {
-		title: "🍚 밥 먹었으면 하나 해볼까?",
-		body: "오후의 시작은 할 일 하나부터",
-		type: "LUNCH_NUDGE",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "🍚 밥 먹었으면 하나 해볼까?",
-				body: "오후의 시작은 할 일 하나부터",
-			},
-			{
-				title: "오후 첫 완료를 기다리는 중 👀",
-				body: "가장 쉬운 것부터 시작해보자",
-			},
-			{ title: "오후 출발! 🏃", body: "하나만 끝내면 탄력 붙는다" },
-			{
-				title: "점심 먹고 가볍게 시작 💡",
-				body: "제일 쉬운 것부터 골라보자",
-			},
+			staticCopy("점심 먹고, 할 일도 한입 🍚", "가장 작은 것부터 가볍게 시작해보자"),
+			staticCopy("오후 첫 체크가 기다리는 중", "고양이는 쉬운 것부터 고르는 편이야"),
+			staticCopy("오후가 슬쩍 문을 열었어", "할 일 하나와 같이 들어가볼까?"),
+			staticCopy("점심 뒤의 작은 출발", "첫 완료 하나면 흐름이 생겨 🐾"),
 		],
-	} satisfies NotificationTemplate,
-	// 스트릭 위기 전용 알림 (20:15, 스트릭 3일+ & 미완료)
+	},
 	STREAK_AT_RISK: {
-		title: "🚨 {streak}일 기록이 오늘에 달렸어",
-		body: "하나만 끝내면 계속 달릴 수 있어",
-		type: "STREAK_AT_RISK",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "🚨 {streak}일 기록이 오늘에 달렸어",
-				body: "하나만 끝내면 계속 달릴 수 있어",
-			},
-			{
-				title: "{streak}일 기록, 오늘도 이어볼까? ⏳",
-				body: "하나만 완료해도 기록은 이어져",
-			},
-			{
-				title: "{streak}일 불꽃 꺼지기 직전 🔥",
-				body: "지금 하나 끝내면 세이브 완료",
-			},
+			({ streak }) => copy(`${streak}일 기록이 오늘을 기다려`, "이어가고 싶다면 하나만 완료해봐"),
+			({ streak }) => copy(`${streak}일 불꽃이 잠깐 졸고 있어`, "작은 완료 하나면 다시 반짝여 🔥"),
+			({ streak }) => copy(`${streak}번째 발자국 다음에 빈칸`, "오늘 한 걸음으로 이어갈 수 있어"),
 		],
-	} satisfies NotificationTemplate,
-} as const;
+	},
+} satisfies SchedulerNotificationCopyCatalog;
 
 export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
-		title: "☀️ 오늘 {skyLabel}, {tempMin}~{tempMax}°C",
-		body: "할 일 해치우기 딱 좋은 날씨야",
-		type: "WEATHER_MORNING",
 		variants: [
-			{
-				title: "☀️ 오늘 {skyLabel}, {tempMin}~{tempMax}°C",
-				body: "할 일 해치우기 딱 좋은 날씨야",
-			},
-			{
-				title: "오늘 {skyLabel} {tempMin}~{tempMax}°C 🌤️",
-				body: "밖에서 할 일 있으면 오늘이 기회!",
-			},
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(`오늘 ${skyLabel}, ${tempMin}~${tempMax}°C ☀️`, "하늘도 오늘 계획을 확인한 모양이야"),
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(
+					`아침 하늘은 ${skyLabel}, ${tempMin}~${tempMax}°C`,
+					"바깥 할 일이 있다면 날씨와 상의해봐",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_RAIN: {
-		title: "☔ 오늘 비 소식, 확률 {precipProb}%",
-		body: "우산 꼭 챙기자! {tempMin}~{tempMax}°C",
-		type: "WEATHER_MORNING",
 		variants: [
-			{
-				title: "☔ 오늘 비 소식, 확률 {precipProb}%",
-				body: "우산 꼭 챙기자! {tempMin}~{tempMax}°C",
-			},
-			{
-				title: "🌧️ 오늘 비 올 확률 {precipProb}%",
-				body: "실내 할 일부터 해치우기 좋은 날이야 ({tempMin}~{tempMax}°C)",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`오늘 비 확률 ${precipProb}% ☔`, `우산 챙기기, ${tempMin}~${tempMax}°C`),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`비 소식이 톡, ${precipProb}%`, `고양이는 실내파야. ${tempMin}~${tempMax}°C 🌧️`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_SNOW: {
-		title: "❄️ 오늘 눈 소식, 확률 {precipProb}%",
-		body: "따뜻하게 입고 나가자! {tempMin}~{tempMax}°C",
-		type: "WEATHER_MORNING",
 		variants: [
-			{
-				title: "❄️ 오늘 눈 소식, 확률 {precipProb}%",
-				body: "따뜻하게 입고 나가자! {tempMin}~{tempMax}°C",
-			},
-			{
-				title: "☃️ 오늘 눈 올지도 몰라 ({precipProb}%)",
-				body: "길 미끄러우니 여유 있게 움직이자 {tempMin}~{tempMax}°C",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`오늘 눈 확률 ${precipProb}% ❄️`, `따뜻하게 입기, ${tempMin}~${tempMax}°C`),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`눈 소식이 살포시, ${precipProb}%`, `길은 천천히, ${tempMin}~${tempMax}°C ☃️`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_CLEAR: {
-		title: "🌙 내일 {skyLabel}, {tempMin}~{tempMax}°C",
-		body: "내일 할 일 미리 정해두면 아침이 편해",
-		type: "WEATHER_EVENING",
 		variants: [
-			{
-				title: "🌙 내일 {skyLabel}, {tempMin}~{tempMax}°C",
-				body: "내일 할 일 미리 정해두면 아침이 편해",
-			},
-			{
-				title: "내일 날씨 {skyLabel} {tempMin}~{tempMax}°C ✨",
-				body: "지금 계획 세워두면 내일의 내가 고마워할걸",
-			},
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(
+					`내일 ${skyLabel}, ${tempMin}~${tempMax}°C 🌙`,
+					"내일 계획도 날씨에 맞춰 가볍게 놓아두자",
+				),
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(`내일은 ${skyLabel}, ${tempMin}~${tempMax}°C`, "날씨가 내일 일정표를 먼저 들여다봤어"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_RAIN: {
-		title: "☔ 내일 비 올 확률 {precipProb}%",
-		body: "우산 미리 챙겨두자! {tempMin}~{tempMax}°C",
-		type: "WEATHER_EVENING",
 		variants: [
-			{
-				title: "☔ 내일 비 올 확률 {precipProb}%",
-				body: "우산 미리 챙겨두자! {tempMin}~{tempMax}°C",
-			},
-			{
-				title: "🌧️ 내일 비 소식이야 ({precipProb}%)",
-				body: "실내 할 일 몰아서 하기 좋은 날! {tempMin}~{tempMax}°C",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`내일 비 확률 ${precipProb}% ☔`, `우산을 문 앞에, ${tempMin}~${tempMax}°C`),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`내일 비 소식, ${precipProb}%`, `실내 계획과 잘 맞겠어. ${tempMin}~${tempMax}°C`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_SNOW: {
-		title: "❄️ 내일 눈 올 확률 {precipProb}%",
-		body: "포근하게 입고, 할 일은 실내 위주로! {tempMin}~{tempMax}°C",
-		type: "WEATHER_EVENING",
 		variants: [
-			{
-				title: "❄️ 내일 눈 올 확률 {precipProb}%",
-				body: "포근하게 입고, 할 일은 실내 위주로! {tempMin}~{tempMax}°C",
-			},
-			{
-				title: "☃️ 내일 눈 소식이야 ({precipProb}%)",
-				body: "미리 계획 세워두면 걱정 없어 {tempMin}~{tempMax}°C",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`내일 눈 확률 ${precipProb}% ❄️`, `따뜻한 옷 준비, ${tempMin}~${tempMax}°C`),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(
+					`내일 눈이 올지도 몰라, ${precipProb}%`,
+					`조금 일찍 움직여봐. ${tempMin}~${tempMax}°C`,
+				),
 		],
-	} satisfies NotificationTemplate,
-} as const;
+	},
+} satisfies WeatherNotificationCopyCatalog;
 
 export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
-		title: "👋 {senderName}의 친구 신청",
-		body: "수락하면 서로의 할 일을 응원할 수 있어",
-		type: "FOLLOW_NEW",
-		defaultRoute: "/friends/requests",
 		variants: [
-			{
-				title: "👋 {senderName}의 친구 신청",
-				body: "수락하면 서로의 할 일을 응원할 수 있어",
-			},
-			{
-				title: "{senderName:이/가} 같이 하재! 🤝",
-				body: "친구랑 하면 진짜 더 잘하게 돼",
-			},
-			{
-				title: "새 친구 신청 도착 💌",
-				body: "{senderName:이/가} 기다리고 있어",
-			},
+			({ senderName }) => copy(`${senderName}의 친구 신청 👋`, "함께 하루를 나눠보고 싶대"),
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 친구 문을 두드렸어`,
+					"수락하면 서로의 하루를 응원할 수 있어",
+				),
+			({ senderName }) =>
+				copy(
+					"새 친구 신청이 도착했어",
+					`${attachJosa(senderName, "이/가")} 문 앞에서 얌전히 기다리는 중 🐾`,
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	FOLLOW_ACCEPTED: {
-		title: "🎉 {senderName}, 이제 친구!",
-		body: "이제 서로의 할 일을 응원할 수 있어",
-		type: "FOLLOW_ACCEPTED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "🎉 {senderName}, 이제 친구!",
-				body: "이제 서로의 할 일을 응원할 수 있어",
-			},
-			{
-				title: "{senderName:와/과} 연결 완료 🤝",
-				body: "이제부터 같이 달리는 거야",
-			},
-			{
-				title: "{senderName:이/가} 수락했어! ✅",
-				body: "서로 응원하면서 가보자",
-			},
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "와/과")} 이제 친구야 🎉`,
+					"서로의 하루에 작은 응원을 보낼 수 있어",
+				),
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "와/과")} 친구가 됐어`,
+					"고양이가 연결선을 반듯하게 그어뒀어",
+				),
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 친구 신청을 수락했어`,
+					"이제 함께 한 발자국씩 가보자 🐾",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	NUDGE_RECEIVED: {
-		title: "👉 {senderName:이/가} '{todoTitle}' 콕!",
-		body: "가볍게 시작하라는 응원이야 🙌",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "👉 {senderName:이/가} '{todoTitle}' 콕!",
-				body: "가볍게 시작하라는 응원이야 🙌",
-			},
-			{
-				title: "{senderName:이/가} '{todoTitle}' 찔렀어 👀",
-				body: "할 일이 생각나서 보냈대",
-			},
-			{
-				title: "콕콕! {senderName:이/가} '{todoTitle}' 재촉 중",
-				body: "가볍게 시작해보자",
-			},
+			({ senderName, todoTitle }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 콕 건드렸어`,
+					todoTitle ? `‘${todoTitle}’ 생각나서 왔대 🐾` : "할 일 하나가 살짝 흔들렸어 🐾",
+				),
+			({ senderName, todoTitle }) =>
+				copy(
+					`${senderName}의 콕이 도착했어`,
+					todoTitle ? `‘${todoTitle}’에 작은 발자국을 남겼어` : "가벼운 응원을 두고 갔어",
+				),
+			({ senderName, todoTitle }) =>
+				copy(
+					"할 일이 방금 움찔했어",
+					todoTitle
+						? `${senderName}의 콕이 ‘${todoTitle}’에 닿았어`
+						: `${attachJosa(senderName, "이/가")} 콕 눌렀어`,
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	NUDGE_RECEIVED_WITH_MESSAGE: {
-		title: "👉 {senderName:이/가} '{todoTitle}' 콕!",
-		body: "💬 '{message}'",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
-	} satisfies NotificationTemplate,
+		copy: ({ senderName, todoTitle, message }) =>
+			copy(
+				`${attachJosa(senderName, "이/가")} 콕과 한마디를 보냈어`,
+				todoTitle ? `‘${todoTitle}’ · ${message}` : message,
+			),
+	},
 	REMIND_NUDGE_RECEIVED: {
-		title: "👉 {senderName:이/가} 콕 찔렀어!",
-		body: "할 일 좀 만들라는데? 😆",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "👉 {senderName:이/가} 콕 찔렀어!",
-				body: "할 일 좀 만들라는데? 😆",
-			},
-			{
-				title: "{senderName:이/가} 널 찾고 있어 👀",
-				body: "뭐라도 하나 적어볼까?",
-			},
-			{
-				title: "콕! {senderName:이/가} 안부 물었어 💌",
-				body: "오늘 뭐 할지 하나만 적어보자",
-			},
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 콕 건드렸어`,
+					"오늘 계획 자리가 비어 있다고 알려줬어 🐾",
+				),
+			({ senderName }) =>
+				copy(`${senderName}의 작은 알림`, "떠오르는 할 일을 하나 적어보는 건 어때?"),
+			({ senderName }) =>
+				copy(
+					"빈 목록에 콕이 도착했어",
+					`${attachJosa(senderName, "이/가")} 계획 하나를 기다리는 중이래`,
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
-		title: "👉 {senderName:이/가} 콕 찔렀어!",
-		body: "💬 '{message}'",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed",
-	} satisfies NotificationTemplate,
+		copy: ({ senderName, message }) =>
+			copy(`${attachJosa(senderName, "이/가")} 콕과 한마디를 보냈어`, message),
+	},
 	CHEER_RECEIVED: {
-		title: "💌 {senderName}의 한마디",
-		body: "{message}",
-		type: "CHEER_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
-	} satisfies NotificationTemplate,
+		copy: ({ senderName, message }) => copy(`${senderName}의 응원이 도착했어`, message),
+	},
 	CHEER_RECEIVED_NO_MESSAGE: {
-		title: "📣 {senderName:이/가} 응원 보냈어",
-		body: "잘하고 있는 거 다 알고 있대",
-		type: "CHEER_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "📣 {senderName:이/가} 응원 보냈어",
-				body: "잘하고 있는 거 다 알고 있대",
-			},
-			{
-				title: "{senderName:이/가} 널 응원해 💪",
-				body: "힘내, 오늘도 할 수 있어",
-			},
-			{
-				title: "{senderName}의 응원 도착 💌",
-				body: "너라면 충분히 할 수 있어",
-			},
+			({ senderName }) =>
+				copy(`${attachJosa(senderName, "이/가")} 응원을 보냈어 📣`, "작은 힘 하나를 두고 갔어"),
+			({ senderName }) => copy(`${senderName}의 응원이 톡`, "고양이가 소중히 받아뒀어"),
+			({ senderName }) =>
+				copy("응원 한 봉지가 도착했어", `보낸 사람은 ${senderName}, 무게는 아주 가벼워 🐾`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	FRIEND_COMPLETED: {
-		title: "✅ {friendName:이/가} 오늘 다 끝냈대",
-		body: "친구의 좋은 흐름을 확인해봐 👀",
-		type: "FRIEND_COMPLETED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "✅ {friendName:이/가} 오늘 다 끝냈대",
-				body: "친구의 좋은 흐름을 확인해봐 👀",
-			},
-			{
-				title: "{friendName:이/가} 올클리어! 🎉",
-				body: "응원 한마디를 보내볼까?",
-			},
-			{
-				title: "{friendName:이/가} 오늘 할 일을 마쳤어 🔥",
-				body: "친구의 기록을 확인해봐",
-			},
+			({ friendName }) => copy(`${friendName}의 오늘이 반짝였어 ✨`, "작은 응원을 보내도 좋아"),
+			({ friendName }) =>
+				copy(`${friendName}의 하루가 살짝 반짝였어`, "안부 한마디가 잘 어울리는 날이야 🐾"),
+			({ friendName }) =>
+				copy(`${friendName}의 하루가 기분 좋게 빛났어`, "친구에게 가볍게 인사해봐"),
 		],
-	} satisfies NotificationTemplate,
-	// 친구 활동 요약 (Social Digest)
+	},
 	SOCIAL_DIGEST_MULTI: {
-		title: "🔥 친구 {completedFriendCount}명이 오늘 다 끝냈어",
-		body: "친구들의 기록을 확인하고 응원해봐",
-		type: "SOCIAL_DIGEST",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "🔥 친구 {completedFriendCount}명이 오늘 다 끝냈어",
-				body: "친구들의 기록을 확인하고 응원해봐",
-			},
-			{
-				title: "{completedFriendCount}명이나 올클리어! 👀",
-				body: "좋은 흐름을 함께 이어가보자",
-			},
-			{
-				title: "친구들이 오늘 기록을 채웠어 🙌",
-				body: "응원 한마디를 보내볼까?",
-			},
+			({ completedFriendCount }) =>
+				copy(
+					`친구 ${completedFriendCount}명의 오늘이 반짝였어 ✨`,
+					"친구들에게 작은 응원을 보내도 좋아",
+				),
+			({ completedFriendCount }) =>
+				copy(
+					`친구 ${completedFriendCount}명의 하루가 살짝 반짝였어`,
+					"가벼운 안부 한마디가 잘 어울려 🐾",
+				),
+			({ completedFriendCount }) =>
+				copy(
+					`친구 ${completedFriendCount}명의 하루가 기분 좋게 빛났어`,
+					"응원 한마디를 건네도 좋아",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	SOCIAL_DIGEST_SINGLE: {
-		title: "✅ {friendName:은/는} 오늘 다 끝냈대",
-		body: "응원 한마디를 보내볼까?",
-		type: "SOCIAL_DIGEST",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "✅ {friendName:은/는} 오늘 다 끝냈대",
-				body: "응원 한마디를 보내볼까?",
-			},
-			{
-				title: "{friendName:이/가} 올클리어 했대! 🎉",
-				body: "친구의 기록을 확인해봐",
-			},
-			{
-				title: "{friendName:은/는} 오늘 할 일을 마쳤어 👀",
-				body: "좋은 흐름을 같이 이어가보자",
-			},
+			({ friendName }) => copy(`${friendName}의 오늘이 반짝였어 ✨`, "작은 응원을 보내도 좋아"),
+			({ friendName }) =>
+				copy(`${friendName}의 하루가 살짝 반짝였어`, "안부 한마디가 잘 어울리는 날이야 🐾"),
+			({ friendName }) =>
+				copy(`${friendName}의 하루가 기분 좋게 빛났어`, "작은 응원을 건네도 좋아"),
 		],
-	} satisfies NotificationTemplate,
-	// 콕 찌르기 유도 (Nudge Suggest)
+	},
 	NUDGE_SUGGEST: {
-		title: "👀 {friendName:이/가} {days}일째 조용해",
-		body: "콕 찔러서 깨워볼까?",
-		type: "NUDGE_SUGGEST",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "👀 {friendName:이/가} {days}일째 조용해",
-				body: "콕 찔러서 깨워볼까?",
-			},
-			{
-				title: "{friendName:이/가} {days}일째 안 보여 🫥",
-				body: "안부 한 번 물어보자",
-			},
-			{
-				title: "{friendName:이/가} 요즘 조용하네 👀",
-				body: "가볍게 안부를 보내볼까?",
-			},
+			({ friendName }) =>
+				copy(`${friendName}에게 안부를 건네볼까?`, "부담 없는 콕 하나면 충분해 🐾"),
+			({ friendName }) => copy(`${friendName}에게 작은 인사 어때?`, "가벼운 안부를 보내도 좋아"),
+			({ friendName }) => copy(`${friendName}에게 콕 하나 준비됐어`, "고양이가 살포시 건네줄게 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	TODO_COMMENT: {
-		title: "새 댓글",
-		body: "{senderName:이/가} 할 일에 댓글을 남겼어요.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName }) =>
+				copy(`${attachJosa(senderName, "이/가")} 댓글을 남겼어`, "새 이야기가 살포시 도착했어 🐾"),
+			({ senderName }) => copy(`${senderName}의 댓글이 도착했어`, "할 일에 대화 한 줄이 생겼어"),
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 이야기를 보탰어`,
+					"댓글이 앱 안에서 얌전히 기다리는 중",
+				),
+		],
+	},
 	TODO_COMMENT_CHAIN: {
-		title: "새 댓글",
-		body: "{senderName:이/가} 할 일에 댓글 {count}개를 남겼어요.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName, count }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 댓글 ${count}개를 남겼어`,
+					"대화가 꼬리를 물고 이어졌어 🐾",
+				),
+			({ senderName, count }) =>
+				copy(`${senderName}의 댓글 ${count}개가 도착했어`, "할 일 아래가 조금 북적여졌어"),
+			({ senderName, count }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 이야기 ${count}개를 보탰어`,
+					"새 댓글들이 앱 안에서 기다리는 중",
+				),
+		],
+	},
 	TODO_COMMENT_REPLY: {
-		title: "새 답글",
-		body: "{senderName:이/가} 댓글에 답글을 남겼어요.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName }) =>
+				copy(`${attachJosa(senderName, "이/가")} 답글을 남겼어`, "대화가 한 칸 더 자랐어 🐾"),
+			({ senderName }) => copy(`${senderName}의 답글이 도착했어`, "댓글의 꼬리가 조금 길어졌어"),
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 대화를 이어갔어`,
+					"새 답글이 앱 안에서 기다리는 중",
+				),
+		],
+	},
 	TODO_COMMENT_REPLY_CHAIN: {
-		title: "새 답글",
-		body: "{senderName:이/가} 댓글에 답글 {count}개를 남겼어요.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName, count }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 답글 ${count}개를 이어 썼어`,
+					"대화가 제법 길게 자랐어 🐾",
+				),
+			({ senderName, count }) =>
+				copy(`${senderName}의 답글 ${count}개가 도착했어`, "댓글의 꼬리가 조금 더 길어졌어"),
+			({ senderName, count }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 대화 ${count}칸을 보탰어`,
+					"새 답글들이 앱 안에서 기다리는 중",
+				),
+		],
+	},
 	TODO_COMMENT_LIKE: {
-		title: "댓글 좋아요",
-		body: "{senderName:이/가} 댓글을 좋아해요.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
-} as const;
+		variants: [
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 네 댓글을 좋아해`,
+					"댓글에 작은 하트가 도착했어 ❤️",
+				),
+			({ senderName }) =>
+				copy(`${senderName}의 하트가 도착했어`, "네 댓글이 아무렇지 않은 척 뿌듯해하는 중"),
+			({ senderName }) =>
+				copy(
+					`${attachJosa(senderName, "이/가")} 댓글에 마음을 남겼어`,
+					"하트 하나가 조용히 자리를 잡았어",
+				),
+		],
+	},
+} satisfies SocialNotificationCopyCatalog;
 
 export const SYSTEM_TEMPLATES = {
-	// Win-back (비활성 유저 재방문 유도)
 	WINBACK_DAY3: {
-		title: "👀 3일째 안 보여서 와봤어",
-		body: "할 일들이 기다리고 있대",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{ title: "👀 3일째 안 보여서 와봤어", body: "할 일들이 기다리고 있대" },
-			{ title: "3일 만이야!", body: "가볍게 하나만 해볼까?" },
-			{
-				title: "오랜만에 들러볼래? 👋",
-				body: "오늘 할 일 하나만 같이 정해보자",
-			},
+			staticCopy("할 일들이 잠깐 낮잠 중이야 💤", "돌아오면 목록이 모른 척 반겨줄 거야"),
+			staticCopy("목록에 조용한 바람이 불었어", "오늘 필요한 일 하나만 놓아봐"),
+			staticCopy("Aido 고양이가 자리를 데워뒀어", "언제든 한 발자국부터 다시 시작해 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY7: {
-		title: "일주일 만이야 🥲",
-		body: "딱 한 개만, 그걸로 충분해",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{ title: "일주일 만이야 🥲", body: "딱 한 개만, 그걸로 충분해" },
-			{ title: "7일째 조용하네 👀", body: "다시 시작해도 하나도 안 늦었어" },
-			{ title: "일주일 만이야 💌", body: "할 일 하나만 만들어볼까?" },
+			staticCopy("목록이 일주일째 아주 얌전해", "새 계획 하나면 다시 움직이기 시작해 🐾"),
+			staticCopy("고양이가 달력 한 장을 넘겼어", "오늘 필요한 것부터 천천히 적어봐"),
+			staticCopy("쉬고 돌아온 자리도 네 자리야", "가장 작은 할 일 하나로 시작해도 좋아"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY14: {
-		title: "2주 만이야, 반갑다! 👋",
-		body: "오늘이 새로운 Day 1이야",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{ title: "2주 만이야, 반갑다! 👋", body: "오늘이 새로운 Day 1이야" },
-			{ title: "다시 만나서 반가워 🌱", body: "오늘부터 천천히 시작해도 돼" },
-			{ title: "오래 쉬었네 🌱", body: "언제든 돌아올 수 있어, 지금처럼" },
+			staticCopy("목록에 보름달이 두 번쯤 떴어 🌕", "오늘을 새로운 첫날로 정해도 좋아"),
+			staticCopy("오래 쉰 계획표가 기지개 중", "지금 필요한 일 하나만 새로 적어봐"),
+			staticCopy("다시 시작 버튼은 늘 여기 있어", "부담 없는 한 걸음부터 만나자 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY21: {
-		title: "3주 만이야! 🎈",
-		body: "작은 것부터 다시 시작해보자",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{ title: "3주 만이야! 🎈", body: "작은 것부터 다시 시작해보자" },
-			{ title: "천천히 다시 시작해볼까? 🌱", body: "할 일 하나면 충분해" },
-			{
-				title: "오늘부터 다시 시작 ✨",
-				body: "작은 계획 하나만 세워보자",
-			},
+			staticCopy("달력이 세 장쯤 지나갔어", "돌아오는 데 필요한 건 계획 하나뿐이야 🐾"),
+			staticCopy("목록이 새 출발을 준비했어", "오늘 할 수 있는 만큼만 적어봐"),
+			staticCopy("고양이는 아직 네 자리를 기억해", "작은 일 하나부터 다시 시작해도 좋아"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY30: {
-		title: "한 달 만이야, 다시 시작해볼까? 🌱",
-		body: "언제든 다시 시작할 수 있어",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "한 달 만이야, 다시 시작해볼까? 🌱",
-				body: "언제든 다시 시작할 수 있어",
-			},
-			{
-				title: "다시 시작하기 좋은 날이야 🌱",
-				body: "오늘 할 일 하나만 적어볼까?",
-			},
-			{ title: "오랜만이야! 👋", body: "하나만 해보자, 처음처럼" },
+			staticCopy("달력이 한 바퀴 돌아왔어 🗓️", "새로운 오늘은 할 일 하나면 충분해"),
+			staticCopy("목록이 먼지를 톡 털었어", "지금 필요한 계획 하나만 놓아봐"),
+			staticCopy("다시 만난 첫날로 정해볼까?", "고양이는 늘 한 발자국부터 시작해 🐾"),
 		],
-	} satisfies NotificationTemplate,
-	// 주간 달성 배지
+	},
 	WEEKLY_ACHIEVEMENT: {
-		title: "📊 이번 주 {completedCount}개 클리어",
-		body: "꾸준함이 곧 실력이야",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
 		variants: [
-			{
-				title: "📊 이번 주 {completedCount}개 클리어",
-				body: "꾸준함이 곧 실력이야",
-			},
-			{
-				title: "이번 주 {completedCount}개 완료! ✅",
-				body: "다음 주엔 더 갈 수 있겠는데?",
-			},
-			{
-				title: "한 주 동안 {completedCount}개 해냈어 💪",
-				body: "조금씩 계속 늘고 있어",
-			},
+			({ completedCount }) =>
+				copy(`이번 주 ${completedCount}개 완료 📊`, "작은 체크들이 제법 근사하게 모였어"),
+			({ completedCount }) =>
+				copy(`한 주 동안 ${completedCount}개를 해냈어`, "고양이가 숫자를 두 번 세어봤어"),
+			({ completedCount }) =>
+				copy(`완료 ${completedCount}개가 나란히`, "이번 주의 발자국이 선명해 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WEEKLY_ACHIEVEMENT_PERFECT: {
-		title: "🏆 이번 주 100% 올클리어!",
-		body: "완벽한 한 주였어",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
 		variants: [
-			{ title: "🏆 이번 주 100% 올클리어!", body: "완벽한 한 주였어" },
-			{
-				title: "이번 주 전부 다 해냈어 🎉",
-				body: "꾸준히 해낸 게 정말 멋져",
-			},
-			{ title: "퍼펙트 위크 달성 ✨", body: "진짜 대단해, 박수!" },
+			staticCopy("이번 주 100% 완료 🏆", "빈 체크박스를 찾았지만 하나도 없었어"),
+			staticCopy("한 주 계획을 전부 해냈어", "아주 반듯한 완료 기록이야"),
+			staticCopy("퍼펙트 위크가 도착했어", "고양이도 잠깐 자세를 고쳐 앉았어 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WEEKLY_ACHIEVEMENT_ALMOST: {
-		title: "이번 주 완료율 {rate}% 🔥",
-		body: "아깝다! 다음 주엔 100% 가보자",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
 		variants: [
-			{
-				title: "이번 주 완료율 {rate}% 🔥",
-				body: "아깝다! 다음 주엔 100% 가보자",
-			},
-			{ title: "{rate}% 달성! 💪", body: "거의 다 왔어, 마지막 한 조각만" },
-			{ title: "이번 주 {rate}%! ✨", body: "충분히 잘했어, 다음 주가 기대돼" },
+			({ rate }) => copy(`이번 주 완료율 ${rate}% 📊`, "해낸 만큼 또렷하게 기록됐어"),
+			({ rate }) => copy(`${rate}%의 계획을 마쳤어`, "거의 가득 찬 한 주였어"),
+			({ rate }) => copy(`한 주 기록이 ${rate}%까지 찼어`, "고양이는 충분히 뿌듯한 표정이야 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WEEKLY_REPORT: {
-		title: "📊 주간 리포트 도착!",
-		body: "이번 주 어땠는지 같이 볼까?",
-		type: "WEEKLY_REPORT",
-		defaultRoute: "/reports",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("주간 리포트가 도착했어 📊", "이번 주에 남긴 발자국을 살펴봐"),
+	},
 	MONTHLY_REPORT: {
-		title: "📈 월간 리포트 도착!",
-		body: "한 달 동안 얼마나 해냈는지 확인해봐",
-		type: "MONTHLY_REPORT",
-		defaultRoute: "/reports",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("월간 리포트가 도착했어 📈", "한 달 동안 쌓인 기록을 살펴봐"),
+	},
 	AI_SUGGESTION: {
-		title: "✨ 반복 패턴 발견!",
-		body: "매번 만들기 귀찮지? 자동으로 만들어줄게",
-		type: "AI_SUGGESTION",
-		defaultRoute: "/suggestions",
-	} satisfies NotificationTemplate,
-	SYSTEM_NOTICE: {
-		title: "Aido",
-		body: "{message}",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
+		copy: staticCopy("반복되는 패턴을 찾았어 ✨", "자주 만드는 일을 더 간단히 준비해볼 수 있어"),
+	},
 	BILLING_ISSUE: {
-		title: "💳 결제에 문제가 생겼어",
-		body: "결제 수단을 확인해줘. 이대로면 구독이 멈출 수 있어",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
-	// 온보딩 시퀀스 (신규 유저 7일)
+		copy: staticCopy(
+			"결제 수단을 확인해 주세요",
+			"구독이 중단되지 않도록 결제 정보를 확인해 주세요.",
+		),
+	},
 	ONBOARDING_DAY0: {
-		title: "🌱 첫 할 일을 만들어볼까?",
-		body: "작은 거 하나면 충분해",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: "/create-todo",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("첫 할 일 자리가 준비됐어 🌱", "지금 떠오르는 작은 일 하나를 적어봐"),
+	},
 	ONBOARDING_DAY1: {
-		title: "어제 만든 할 일 기억나? ✅",
-		body: "오늘 할 수 있는 만큼 이어가보자",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
+		copy: staticCopy("오늘의 체크박스도 준비 완료", "할 수 있는 만큼만 천천히 이어가자 🐾"),
+	},
 	ONBOARDING_DAY2: {
-		title: "혼자보다 같이하면 더 즐거워 🤝",
-		body: "친구 추가하고 서로 응원해보자",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: "/friends",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("친구와 나눌 자리도 있어 🤝", "서로의 하루에 작은 응원을 보낼 수 있어"),
+	},
 	ONBOARDING_DAY3: {
-		title: "⏰ 알림 시간 맞춰놨어?",
-		body: "원하는 시간에 딱 맞춰 알려줄게",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: "/settings",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("알림 시계가 기다리는 중 ⏰", "원하는 시간에 맞춰 소식을 받을 수 있어"),
+	},
 	ONBOARDING_DAY5: {
-		title: "벌써 {completedCount}개 완료! 🔥",
-		body: "이 속도면 금방 습관 된다",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
+		copy: ({ completedCount }) =>
+			copy(`벌써 ${completedCount}개 완료했어`, "고양이가 숫자를 꼼꼼히 세어뒀어 🐾"),
+	},
 	ONBOARDING_DAY7: {
-		title: "🎉 첫 주 완주!",
-		body: "{completedCount}개나 해냈어. 다음 주도 가보자",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
-	// 마일스톤 축하
+		copy: ({ completedCount }) =>
+			copy("첫 주 기록이 완성됐어 🎉", `${completedCount}개의 완료가 차곡차곡 모였어`),
+	},
 	MILESTONE_FIRST_COMPLETE: {
-		title: "🎉 첫 번째 완료!",
-		body: "시작이 반이야, 벌써 반 왔네",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
-	MILESTONE_10: {
-		title: "벌써 10개 달성! ✨",
-		body: "꾸준함이 쌓이는 중",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
-	MILESTONE_50: {
-		title: "🔥 50개 돌파!",
-		body: "이쯤 되면 프로 인정",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
-	MILESTONE_100: {
-		title: "👑 100개 달성!",
-		body: "세 자릿수라니, 진짜 대단해",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("첫 번째 완료가 반짝였어 ✨", "첫 발자국을 아주 잘 놓았어"),
+	},
+	MILESTONE_10: { copy: staticCopy("완료 10개가 모였어 🎉", "두 자릿수 발자국이 제법 든든해") },
+	MILESTONE_50: { copy: staticCopy("완료 50개를 지나왔어 🐾", "차곡차곡 쌓인 기록이 꽤 묵직해") },
+	MILESTONE_100: { copy: staticCopy("완료 100개 달성 👑", "고양이가 세다가 발가락이 모자랐어") },
 	MILESTONE_STREAK_3: {
-		title: "🔥 3일 연속!",
-		body: "습관은 이렇게 시작되는 거야",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("3일 연속 발자국 완성 🔥", "꾸준함이 작은 꼬리를 만들기 시작했어"),
+	},
 	MILESTONE_FIRST_FRIEND: {
-		title: "🎉 첫 친구가 생겼어!",
-		body: "같이 하면 두 배로 잘 돼",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/friends",
-	} satisfies NotificationTemplate,
-} as const;
+		copy: staticCopy("첫 친구가 생겼어 🎉", "이제 서로의 하루에 응원을 보낼 수 있어"),
+	},
+} satisfies SystemNotificationCopyCatalog;
 
-export const SKY_LABEL_MAP: Record<string, string> = {
-	CLEAR: "맑음",
-	PARTLY_CLOUDY: "구름많음",
-	CLOUDY: "흐림",
-};
+export const SKY_LABEL_MAP = { CLEAR: "맑음", PARTLY_CLOUDY: "구름 많음", CLOUDY: "흐림" };
 
-/** 위치 미설정 유저용 날씨 폴백 메시지 */
-export const WEATHER_FALLBACK: WeatherFallbackTemplates = {
+export const WEATHER_FALLBACK = {
 	MORNING: {
-		title: "오늘 날씨 궁금하지 않아? ☀️",
-		body: "위치만 설정하면 매일 아침 날씨도 같이 알려줄게",
+		copy: staticCopy("오늘 날씨도 같이 볼까? ☀️", "위치를 설정하면 아침 날씨를 알려줄게"),
 	},
 	EVENING: {
-		title: "내일 날씨 미리 알려줄까? 🌙",
-		body: "위치 설정하면 내일 계획 세우기 훨씬 편해져",
+		copy: staticCopy("내일 날씨 자리가 비어 있어 🌙", "위치를 설정하면 내일 날씨를 미리 알려줄게"),
 	},
-};
+} satisfies WeatherFallbackCopyCatalog;
 
-/**
- * 신규 유저 리텐션(D0/D1/D3/D7) 카피.
- *
- * 키는 `${stage}:${variantId}` 형식이며, 값은 결정적으로 선택되는 3개 variant 풀이다.
- * `NotificationMessageBuilder.retention(stage, variantId, locale, context)`가 사용한다.
- * (기존 retention-message.ts의 단일-원본을 이관 — 두 번째 카탈로그 제거)
- */
-export const RETENTION_TEMPLATES: Record<string, NotificationTemplate> = {
+export const RETENTION_TEMPLATES = {
 	"D0:d0_no_todo": {
-		title: "첫 할 일을 시작해볼까? 🌱",
-		body: "지금 떠오르는 한 가지만 적어봐",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "첫 할 일을 시작해볼까? 🌱",
-				body: "지금 떠오르는 한 가지만 적어봐",
-			},
-			{
-				title: "오늘의 첫 계획을 적어봐 ✍️",
-				body: "작은 할 일 하나면 시작하기 충분해",
-			},
-			{
-				title: "가볍게 하나부터 시작하자 ☀️",
-				body: "오늘 꼭 하고 싶은 일을 적어봐",
-			},
+			staticCopy("첫 할 일 자리가 준비됐어 🌱", "지금 떠오르는 한 가지만 적어봐"),
+			staticCopy("빈 목록이 꼬리를 흔드는 중", "작은 계획 하나면 시작하기 충분해 🐾"),
+			staticCopy("오늘의 첫 계획을 놓아볼까?", "가장 쉬운 일 하나부터 적어봐"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D1:d1_no_todo": {
-		title: "오늘 할 일 하나만 정해볼까? 📝",
-		body: "작은 계획 하나가 하루의 흐름을 만들어줘",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "오늘 할 일 하나만 정해볼까? 📝",
-				body: "작은 계획 하나가 하루의 흐름을 만들어줘",
-			},
-			{
-				title: "오늘은 무엇부터 해볼까? ☀️",
-				body: "가장 쉬운 일 하나를 먼저 적어봐",
-			},
-			{
-				title: "빈 목록에 첫 할 일을 더해봐 🌱",
-				body: "하나만 정해도 오늘이 훨씬 선명해져",
-			},
+			staticCopy("오늘 목록이 아주 넓어 📝", "하고 싶은 일 하나를 먼저 놓아봐"),
+			staticCopy("계획 한 칸이 비어 있어", "가장 작은 할 일 하나면 충분해"),
+			staticCopy("고양이가 빈 목록 옆에 앉았어", "떠오르는 일을 하나 적어줄래? 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D1:d1_has_todo_no_completion": {
-		title: "적어둔 일, 하나부터 시작하자 ✅",
-		body: "가장 쉬운 할 일을 골라 완료해봐",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "적어둔 일, 하나부터 시작하자 ✅",
-				body: "가장 쉬운 할 일을 골라 완료해봐",
-			},
-			{
-				title: "첫 완료를 만들어볼까? 🌱",
-				body: "5분이면 되는 일부터 가볍게 시작해봐",
-			},
-			{
-				title: "오늘의 첫 체크를 기다리는 중 👀",
-				body: "작은 일 하나를 끝내면 흐름이 생겨",
-			},
+			staticCopy("첫 체크가 자리를 기다리는 중 ✅", "가장 만만한 할 일부터 골라봐"),
+			staticCopy("적어둔 계획이 살짝 기지개", "5분짜리 일 하나로 시작해도 좋아"),
+			staticCopy("목록은 준비를 마쳤어", "첫 발자국만 놓으면 나머지는 천천히 따라와 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D3:d3_restart": {
-		title: "오늘부터 다시 시작해도 돼 🌱",
-		body: "지금 필요한 일 하나만 새로 적어봐",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "오늘부터 다시 시작해도 돼 🌱",
-				body: "지금 필요한 일 하나만 새로 적어봐",
-			},
-			{
-				title: "계획은 언제든 다시 세울 수 있어 ✨",
-				body: "오늘 할 수 있는 만큼만 시작하자",
-			},
-			{
-				title: "가볍게 흐름을 다시 만들어보자 ☀️",
-				body: "가장 쉬운 할 일 하나면 충분해",
-			},
+			staticCopy("오늘을 새 첫날로 정해도 돼 🌱", "지금 필요한 일 하나만 적어봐"),
+			staticCopy("계획표가 새 페이지를 펼쳤어", "할 수 있는 만큼만 가볍게 시작하자"),
+			staticCopy("고양이가 다시 출발선에 앉았어", "가장 쉬운 한 걸음이면 충분해 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D7:d7_has_progress": {
-		title: "첫 주의 기록이 쌓였어 🎉",
-		body: "이번 주에 만든 변화를 확인해봐",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "첫 주의 기록이 쌓였어 🎉",
-				body: "이번 주에 만든 변화를 확인해봐",
-			},
-			{
-				title: "일주일 동안 만든 흐름이 보여 📊",
-				body: "지금까지의 완료 기록을 살펴봐",
-			},
-			{
-				title: "첫 주를 함께 달렸어 ✨",
-				body: "네가 해낸 일들을 한눈에 확인해봐",
-			},
+			staticCopy("첫 주의 발자국이 모였어 🎉", "이번 주에 만든 변화를 살펴봐"),
+			staticCopy("일주일 기록이 한 장 완성됐어", "지금까지의 완료를 차근차근 확인해봐"),
+			staticCopy("첫 주를 함께 걸었어", "네가 해낸 일들이 한눈에 보여 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D7:d7_restart": {
-		title: "이번 주, 하나부터 다시 시작하자 🌱",
-		body: "지금 필요한 할 일 하나만 적어봐",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "이번 주, 하나부터 다시 시작하자 🌱",
-				body: "지금 필요한 할 일 하나만 적어봐",
-			},
-			{
-				title: "새로운 한 주를 가볍게 열어봐 ☀️",
-				body: "오늘 할 수 있는 일 하나면 충분해",
-			},
-			{
-				title: "다시 시작하기 좋은 날이야 ✨",
-				body: "부담 없이 작은 계획부터 세워보자",
-			},
+			staticCopy("새로운 한 주 자리가 열렸어 🌱", "지금 필요한 할 일 하나만 적어봐"),
+			staticCopy("목록이 월요일 같은 표정을 지었어", "오늘 할 수 있는 일 하나면 충분해"),
+			staticCopy("다시 시작 버튼은 여전히 여기 있어", "부담 없는 작은 계획부터 만나자 🐾"),
 		],
-	} satisfies NotificationTemplate,
-};
+	},
+} satisfies RetentionNotificationCopyCatalog;

@@ -22,7 +22,14 @@ import type { DatabaseService } from "@/shared/infrastructure/database/database.
 
 import { NotificationBatchDispatcher } from "../../application/dispatchers/notification-batch.dispatcher";
 import { NotificationSender } from "../../application/senders/notification.sender";
-import { NotificationMessageBuilder } from "../../domain/services/templates/notification-templates";
+import {
+	createBillingIssueNotificationMessage,
+	createCheerReceivedNotificationMessage,
+	createFollowAcceptedNotificationMessage,
+	createFollowRequestNotificationMessage,
+	createNudgeReceivedNotificationMessage,
+} from "../../domain/services/templates/notification-templates";
+import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/services/transactional-notification-campaign";
 import {
 	type BillingIssueJobData,
 	type CheerSentJobData,
@@ -43,8 +50,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 	let db: MockPrismaClient;
 
 	beforeEach(async () => {
-		jest.spyOn(Math, "random").mockReturnValue(0);
-
 		// UNIT_OF_WORK — run이 콜백을 즉시 실행하는 passthrough mock
 		uow = createUnitOfWorkMock();
 		// CLS 트랜잭션 스텁 — tx가 항상 Prisma mock을 반환
@@ -82,7 +87,16 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				followerName: "테스트 유저",
 			};
 			const job = createMockJob(NotificationJobName.FOLLOW_NEW, data);
-			const message = NotificationMessageBuilder.followNew("테스트 유저");
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_REQUEST,
+				recipientId: data.followingId,
+				occurrenceKey: `${data.followerId}:${data.followingId}`,
+			};
+			const message = createFollowRequestNotificationMessage({
+				senderName: data.followerName,
+				locale: "ko",
+				variantContext,
+			});
 
 			// When
 			await processor.process(job);
@@ -94,7 +108,31 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				title: message.title,
 				body: message.body,
 				friendId: "user-1",
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
+		});
+
+		it("같은 친구 요청 잡을 재시도하면 같은 variant를 사용한다", async () => {
+			// Given
+			const data: FollowNewJobData = {
+				followerId: "user-1",
+				followingId: "user-2",
+				followerName: "테스트 유저",
+			};
+			const job = createMockJob(NotificationJobName.FOLLOW_NEW, data);
+
+			// When
+			await processor.process(job);
+			await processor.process(job);
+
+			// Then
+			const first = notification.createAndSendWithDedup.mock.calls[0]?.[0];
+			const retried = notification.createAndSendWithDedup.mock.calls[1]?.[0];
+			expect(first?.variantId).toBeDefined();
+			expect(retried?.variantId).toBe(first?.variantId);
+			expect(retried?.title).toBe(first?.title);
+			expect(retried?.body).toBe(first?.body);
 		});
 
 		it("실패 시 에러를 재전파해 BullMQ 재시도를 유도한다", async () => {
@@ -121,7 +159,16 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				friendName: "친구 유저",
 			};
 			const job = createMockJob(NotificationJobName.FOLLOW_MUTUAL, data);
-			const message = NotificationMessageBuilder.followAccepted("친구 유저");
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_ACCEPTED,
+				recipientId: data.userId,
+				occurrenceKey: `${data.friendId}:${data.userId}`,
+			};
+			const message = createFollowAcceptedNotificationMessage({
+				senderName: data.friendName,
+				locale: "ko",
+				variantContext,
+			});
 
 			// When
 			await processor.process(job);
@@ -133,6 +180,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				title: message.title,
 				body: message.body,
 				friendId: "user-2",
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 		});
 
@@ -163,7 +212,17 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				todoTitle: "밥먹기",
 			};
 			const job = createMockJob(NotificationJobName.NUDGE_SENT, data);
-			const message = NotificationMessageBuilder.nudgeReceived("보낸 유저", "밥먹기", undefined);
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.NUDGE_RECEIVED,
+				recipientId: data.receiverId,
+				occurrenceKey: String(data.nudgeId),
+			};
+			const message = createNudgeReceivedNotificationMessage({
+				senderName: data.senderName,
+				todoTitle: data.todoTitle,
+				locale: "ko",
+				variantContext,
+			});
 
 			// When
 			await processor.process(job);
@@ -178,6 +237,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				friendId: "user-1",
 				todoId: 10,
 				metadata: undefined,
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 		});
 
@@ -200,6 +261,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			expect(notification.createAndSendWithDedup).toHaveBeenCalledWith(
 				expect.objectContaining({
 					metadata: { message: "빨리 해!" },
+					campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.NUDGE_RECEIVED,
+					variantId: expect.stringMatching(/^nudge_received_v1\./),
 				}),
 			);
 		});
@@ -231,7 +294,17 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				message: "화이팅!",
 			};
 			const job = createMockJob(NotificationJobName.CHEER_SENT, data);
-			const message = NotificationMessageBuilder.cheerReceived("응원 유저", "화이팅!");
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
+				recipientId: data.receiverId,
+				occurrenceKey: String(data.cheerId),
+			};
+			const message = createCheerReceivedNotificationMessage({
+				senderName: data.senderName,
+				message: data.message,
+				locale: "ko",
+				variantContext,
+			});
 
 			// When
 			await processor.process(job);
@@ -245,6 +318,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				cheerId: 1,
 				friendId: "user-1",
 				metadata: { message: "화이팅!" },
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 		});
 
@@ -257,7 +332,16 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				senderName: "응원 유저",
 			};
 			const job = createMockJob(NotificationJobName.CHEER_SENT, data);
-			const message = NotificationMessageBuilder.cheerReceived("응원 유저", undefined);
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
+				recipientId: data.receiverId,
+				occurrenceKey: String(data.cheerId),
+			};
+			const message = createCheerReceivedNotificationMessage({
+				senderName: data.senderName,
+				locale: "ko",
+				variantContext,
+			});
 
 			// When
 			await processor.process(job);
@@ -271,6 +355,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 				cheerId: 2,
 				friendId: "user-1",
 				metadata: undefined,
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 		});
 
@@ -295,7 +381,7 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			// Given
 			const data: BillingIssueJobData = { userId: "user-1" };
 			const job = createMockJob(NotificationJobName.BILLING_ISSUE, data);
-			const message = NotificationMessageBuilder.billingIssue();
+			const message = createBillingIssueNotificationMessage({});
 
 			// When
 			await processor.process(job);
@@ -332,7 +418,6 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 			// Given
 			const job = createMockJob(NotificationJobName.FRIEND_COMPLETED, friendCompletedData);
 			notification.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-			const message = NotificationMessageBuilder.friendCompleted("완료 친구");
 
 			// When
 			await processor.process(job);
@@ -350,13 +435,15 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 					expect.objectContaining({
 						userId: "user-1",
 						type: "FRIEND_COMPLETED",
-						title: message.title,
-						body: message.body,
 						friendId: "friend-1",
+						campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FRIEND_COMPLETED,
+						variantId: expect.stringMatching(/^friend_completed_v1\./),
 					}),
 					expect.objectContaining({
 						userId: "user-2",
 						type: "FRIEND_COMPLETED",
+						campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FRIEND_COMPLETED,
+						variantId: expect.stringMatching(/^friend_completed_v1\./),
 					}),
 				]),
 			);

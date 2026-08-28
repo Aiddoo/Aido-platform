@@ -16,8 +16,6 @@ import type {
 	CreateNotificationData,
 	FindNotificationsParams,
 	FindPushTokensParams,
-	NotificationWithRelations,
-	PushTokenWithRelations,
 	RegisterPushTokenData,
 } from "../../application/ports/notification-data";
 import type {
@@ -152,7 +150,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * ID로 알림 조회
 	 */
-	async findNotificationById(id: number): Promise<NotificationWithRelations | null> {
+	async findNotificationById(id: number): Promise<NotificationRecord | null> {
 		return this.client.notification.findUnique({
 			where: { id },
 		});
@@ -161,9 +159,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 사용자의 알림 목록 조회 (커서 기반 페이지네이션)
 	 */
-	async findNotificationsByUser(
-		params: FindNotificationsParams,
-	): Promise<NotificationWithRelations[]> {
+	async findNotificationsByUser(params: FindNotificationsParams): Promise<NotificationRecord[]> {
 		const { userId, cursor, size, unreadOnly, types } = params;
 
 		return this.client.notification.findMany({
@@ -623,7 +619,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 토큰 값으로 푸시 토큰 조회
 	 */
-	async findPushTokenByToken(token: string): Promise<PushTokenWithRelations | null> {
+	async findPushTokenByToken(token: string): Promise<PushTokenRecord | null> {
 		return this.client.pushToken.findFirst({
 			where: { token },
 		});
@@ -632,7 +628,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 사용자의 푸시 토큰 목록 조회
 	 */
-	async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenWithRelations[]> {
+	async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
 		const { userId, activeOnly } = params;
 
 		return this.client.pushToken.findMany({
@@ -647,7 +643,7 @@ export class NotificationRepository implements NotificationRepositoryPort {
 	/**
 	 * 여러 사용자의 활성 푸시 토큰 조회
 	 */
-	async findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenWithRelations[]> {
+	async findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenRecord[]> {
 		return this.client.pushToken.findMany({
 			where: {
 				userId: { in: userIds },

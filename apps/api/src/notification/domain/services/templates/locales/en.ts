@@ -1,1054 +1,599 @@
-import type { NotificationTemplate, WeatherFallbackTemplates } from "../template.types";
+import type {
+	NotificationCopy,
+	NotificationCopyFactory,
+	RetentionNotificationCopyCatalog,
+	SchedulerNotificationCopyCatalog,
+	SocialNotificationCopyCatalog,
+	SystemNotificationCopyCatalog,
+	WeatherFallbackCopyCatalog,
+	WeatherNotificationCopyCatalog,
+} from "../notification-copy.types";
 
 export const SOCIAL_SENDER_FALLBACK = "A friend";
 
-// English templates — same keys/variants as ko.ts (parity is unit-tested).
-// No josa placeholders ({name:이/가}) — plain {name} substitution only.
+const staticCopy =
+	(title: string, body: string): NotificationCopyFactory<undefined> =>
+	() => ({
+		title,
+		body,
+	});
+
+const copy = (title: string, body: string): NotificationCopy => ({ title, body });
 
 export const SCHEDULER_TEMPLATES = {
-	TODO_REMINDER: {
-		title: "⏰ {todoTitle} starts in 1 hour!",
-		body: "Getting it done early feels so much better",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
-		variants: [
-			{
-				title: "⏰ {todoTitle} starts in 1 hour!",
-				body: "Getting it done early feels so much better",
-			},
-			{ title: "1 hour until {todoTitle} ⏳", body: "Time to warm up?" },
-			{
-				title: "{todoTitle} is coming up in an hour 👀",
-				body: "Start now and finish with time to spare",
-			},
-		],
-	} satisfies NotificationTemplate,
 	TODO_REMINDER_60MIN: {
-		title: "⏰ {todoTitle} starts in 1 hour!",
-		body: "Getting it done early feels so much better",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
 		variants: [
-			{
-				title: "⏰ {todoTitle} starts in 1 hour!",
-				body: "Getting it done early feels so much better",
-			},
-			{ title: "1 hour until {todoTitle} ⏳", body: "Time to warm up?" },
-			{
-				title: "{todoTitle} is coming up in an hour 👀",
-				body: "Start now and finish with time to spare",
-			},
+			({ todoTitle }) => copy("One hour until go time ⏰", `“${todoTitle}” is warming up`),
+			({ todoTitle }) => copy("The to-do clock just moved", `${todoTitle} in one hour`),
+			({ todoTitle }) => copy("A tiny one-hour heads-up", `Warm up for “${todoTitle}”`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	TODO_REMINDER_10MIN: {
-		title: "⏰ {todoTitle}, 10 minutes to go!",
-		body: "Perfect timing — let's do this",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
 		variants: [
-			{
-				title: "⏰ {todoTitle}, 10 minutes to go!",
-				body: "Perfect timing — let's do this",
-			},
-			{ title: "10 minutes until {todoTitle} 🔥", body: "Ready?" },
-			{
-				title: "{todoTitle} starts in 10 minutes",
-				body: "This is the golden hour ✨",
-			},
+			({ todoTitle }) => copy("Ten minutes to go ⏰", `“${todoTitle}” in ten minutes`),
+			({ todoTitle }) => copy("Your to-do is warming up", `Ten minutes until “${todoTitle}”`),
+			({ todoTitle }) => copy("A to-do is almost at the door", `“${todoTitle}” starts in ten`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	TODO_REMINDER_IMMEDIATE: {
-		title: "🚀 {todoTitle} — starting now!",
-		body: "Starting is half the battle",
-		type: "TODO_REMINDER",
-		defaultRoute: "/todos/{todoId}",
 		variants: [
-			{
-				title: "🚀 {todoTitle} — starting now!",
-				body: "Starting is half the battle",
-			},
-			{ title: "It's time for {todoTitle} ⏰", body: "Let's go!" },
-			{
-				title: "Right now is the moment, {todoTitle} ✨",
-				body: "Just 5 minutes — you'll hit your stride",
-			},
+			({ todoTitle }) => copy("It’s time to begin 🚀", `“${todoTitle}” starts now`),
+			({ todoTitle }) => copy("A to-do just reached the door", `Start “${todoTitle}”?`),
+			({ todoTitle }) => copy("The starting light is on", `One small step into “${todoTitle}”`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_REMINDER: {
-		title: "☀️ {count} to-dos today",
-		body: "Start with the easiest one",
-		type: "MORNING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "☀️ {count} to-dos today",
-				body: "Start with the easiest one",
-			},
-			{
-				title: "Today's missions: {count} 🎯",
-				body: "Finish just one and you're rolling",
-			},
-			{
-				title: "{count} to-dos are waiting for you 👋",
-				body: "Knock them out this morning, relax tonight",
-			},
-			{
-				title: "Good morning! {count} on deck today ☀️",
-				body: "Grab a coffee and dive in?",
-			},
-			{
-				title: "{count} to-dos just arrived 📬",
-				body: "One at a time — you've got this",
-			},
+			({ count }) => copy(`${count} to-dos today ☀️`, "Pick the friendliest one first"),
+			({ count }) => copy(`${count} plans for today`, "The cat is already sitting beside the list"),
+			({ count }) => copy(`${count} to-dos just woke up`, "The first check is waiting politely"),
+			({ count }) =>
+				copy(`Good morning — ${count} plans today`, "One paw-step is a perfectly good start"),
+			({ count }) => copy(`${count} to-dos formed a line`, "You still get to choose the order 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_COMPLETE: {
-		title: "🎉 All clear!",
-		body: "You were amazing today",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
 		variants: [
-			{ title: "🎉 All clear!", body: "You were amazing today" },
-			{
-				title: "Everything done for today ✅",
-				body: "Days like this add up to a whole new life",
-			},
-			{
-				title: "Wait, you finished everything? 😎",
-				body: "Round of applause for today's you",
-			},
-			{
-				title: "Stamped: complete! 🏆",
-				body: "Now go rest — you've more than earned it",
-			},
-			{
-				title: "A perfect day ✨",
-				body: "May tomorrow's you be just like today's",
-			},
+			staticCopy("Every plan is done today 🎉", "The cat is applauding very quietly"),
+			staticCopy("Today’s list is sparkling", "Not an empty checkbox in sight"),
+			staticCopy("All today’s to-dos clocked out", "You can clock out too"),
+			staticCopy("Completion stamp: very tidy", "You did excellent work today 🏆"),
+			staticCopy("All clear has arrived", "That is one more paw-step forward"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_PARTIAL: {
-		title: "{remaining} left until all clear 🔥",
-		body: "You're so close — finish it here",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "{remaining} left until all clear 🔥",
-				body: "You're so close — finish it here",
-			},
-			{
-				title: "Just {remaining} more! 💪",
-				body: "Clear them before bed and sleep like a baby",
-			},
-			{
-				title: "Great job today, but {remaining} are still waiting 👀",
-				body: "One last push?",
-			},
-			{
-				title: "Only {remaining} to go ✨",
-				body: "Finishing first hits different",
-			},
+			({ remaining }) =>
+				copy(`${remaining} still holding their spots`, "If there’s room, meet one more"),
+			({ remaining }) =>
+				copy(`${remaining} to-dos remain`, "Everything you did finish is safely recorded"),
+			({ remaining }) =>
+				copy(`${remaining} checkboxes are blinking`, "Choosing the tiniest one is allowed 🐾"),
+			({ remaining }) =>
+				copy(`${remaining} left on today’s list`, "Wrap up only what fits tonight"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_NONE: {
-		title: "Still 0 done today 🥲",
-		body: "Just do one — that's all it takes",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "Still 0 done today 🥲",
-				body: "Just do one — that's all it takes",
-			},
-			{
-				title: "Your to-dos got tired of waiting 😢",
-				body: "Complete just one before bed",
-			},
-			{
-				title: "Busy day, huh 💦",
-				body: "One small thing is tomorrow's head start",
-			},
-			{
-				title: "Going to bed like this? 🌙",
-				body: "How about one quick 5-minute task?",
-			},
+			staticCopy("Today’s list is still quiet 🌙", "Rest is fine. Pick one only if it helps"),
+			staticCopy("The checkboxes may have napped", "A tiny task can wake one up"),
+			staticCopy("Still on the starting screen", "Starting now is still starting"),
+			staticCopy("A quiet list still counts", "If you have room, meet one small task"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_NO_TODO: {
-		title: "Your to-do list is empty today 📭",
-		body: "Writing down just one changes the whole day",
-		type: "MORNING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "Your to-do list is empty today 📭",
-				body: "Writing down just one changes the whole day",
-			},
-			{
-				title: "A blank slate today 📝",
-				body: "Start with what you want to do most?",
-			},
-			{
-				title: "0 to-dos, really? 👀",
-				body: "Taking it easy, or putting it off?",
-			},
+			staticCopy("Plenty of room today 📭", "Place one thing you want to remember"),
+			staticCopy("The empty list wagged its tail", "One tiny plan is plenty"),
+			staticCopy("Today has one open spot", "Add the first thing on your mind"),
 		],
-	} satisfies NotificationTemplate,
-	// 스트릭 축하 (전체 완료 + 스트릭 2일+)
+	},
 	EVENING_STREAK: {
-		title: "🔥 {streak}-day all-clear streak!",
-		body: "Tomorrow makes {next} — don't let this flame die",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
 		variants: [
-			{
-				title: "🔥 {streak}-day all-clear streak!",
-				body: "Tomorrow makes {next} — don't let this flame die",
-			},
-			{
-				title: "{streak} days and counting 🏃",
-				body: "Let's go grab day {next}",
-			},
-			{
-				title: "{streak} days in a row?! Insane 🔥",
-				body: "Keep this momentum going",
-			},
+			({ streak, next }) =>
+				copy(`${streak} all-clear days in a row 🔥`, `Tomorrow can make it ${next}`),
+			({ streak, next }) =>
+				copy(`${streak} days, stacked neatly`, `Day ${next} can join when it arrives`),
+			({ streak }) =>
+				copy(
+					`That ${streak}-day trail is getting long`,
+					"Consistency is following like a little tail 🐾",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_STREAK_7: {
-		title: "🎉 7 days straight! A full week all clear",
-		body: "Is this real? Seriously impressive",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
-	} satisfies NotificationTemplate,
-	EVENING_STREAK_14: {
-		title: "🏆 2 weeks straight!",
-		body: "At this point it's just a habit",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Seven days, one full week 🎉", "You filled the week one day at a time"),
+	},
+	EVENING_STREAK_14: { copy: staticCopy("A 14-day trail 🏆", "Two weeks of steady paw prints") },
 	EVENING_STREAK_30: {
-		title: "👑 Day {streak} — becoming a legend",
-		body: "Stopping now would be against the rules",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/",
-	} satisfies NotificationTemplate,
-	// 스트릭 위기 (일부 완료 + 스트릭 2일+)
+		copy: ({ streak }) =>
+			copy(`${streak} days and still growing 👑`, "Consistency looks at home here now"),
+	},
 	EVENING_STREAK_RISK_PARTIAL: {
-		title: "🚨 Your {streak}-day streak is in danger",
-		body: "Finish just {remaining} and it's saved!",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "🚨 Your {streak}-day streak is in danger",
-				body: "Finish just {remaining} and it's saved!",
-			},
-			{
-				title: "{streak} days in — losing it now would hurt 😱",
-				body: "Only {remaining} left",
-			},
-			{
-				title: "There's still time ⏳",
-				body: "Just {remaining} more and the streak is saved!",
-			},
+			({ streak, remaining }) =>
+				copy(
+					`${remaining} left on a ${streak}-day trail`,
+					"Choose a small one if you want to continue it",
+				),
+			({ streak, remaining }) =>
+				copy(
+					`Your ${streak}-day spark is waiting`,
+					`${remaining} more can carry it through today 🔥`,
+				),
+			({ remaining }) =>
+				copy(`${remaining} to-dos between here and the streak`, "Do only what fits"),
 		],
-	} satisfies NotificationTemplate,
-	// 스트릭 위기 (하나도 안 함 + 스트릭 2일+)
+	},
 	EVENING_STREAK_RISK_NONE: {
-		title: "🚨 Your {streak}-day streak can still be saved",
-		body: "Finish one and it survives",
-		type: "EVENING_REMINDER",
-		defaultRoute: "/todos",
 		variants: [
-			{
-				title: "🚨 Your {streak}-day streak can still be saved",
-				body: "Finish one and it survives",
-			},
-			{
-				title: "Your {streak}-day flame is about to go out 🕯️",
-				body: "One task today and it burns bright again",
-			},
-			{
-				title: "You built up {streak} days 😢",
-				body: "Just one keeps the record alive",
-			},
+			({ streak }) =>
+				copy(`Your ${streak}-day trail is waiting`, "One completed to-do can continue it"),
+			({ streak }) =>
+				copy(`The ${streak}-day spark took a nap`, "One small finish can wake it up 🔥"),
+			({ streak }) =>
+				copy(`One blank after ${streak} paw prints`, "A single step can fill today’s spot"),
 		],
-	} satisfies NotificationTemplate,
-	// 점심 넛지 (12:30, 오늘 완료 0개)
+	},
 	LUNCH_NUDGE: {
-		title: "🍚 Done with lunch? How about one to-do?",
-		body: "Afternoons start best with one thing done",
-		type: "LUNCH_NUDGE",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "🍚 Done with lunch? How about one to-do?",
-				body: "Afternoons start best with one thing done",
-			},
-			{
-				title: "Still at 0 👀",
-				body: "You paid for lunch — now earn your to-do keep",
-			},
-			{
-				title: "Afternoon, go! 🏃",
-				body: "Finish one and the momentum kicks in",
-			},
-			{
-				title: "The cure for a food coma? Checking things off 💊",
-				body: "Start with the easiest one",
-			},
+			staticCopy("A tiny task after lunch? 🍚", "Start with the smallest one"),
+			staticCopy("Your first afternoon check", "The cat usually chooses the easy one"),
+			staticCopy("The afternoon opened the door", "Bring one little to-do inside"),
+			staticCopy("A tiny post-lunch start", "One finish can get things rolling 🐾"),
 		],
-	} satisfies NotificationTemplate,
-	// 스트릭 위기 전용 알림 (20:15, 스트릭 3일+ & 미완료)
+	},
 	STREAK_AT_RISK: {
-		title: "🚨 Your {streak}-day streak comes down to today",
-		body: "Finish one and keep the run going",
-		type: "STREAK_AT_RISK",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "🚨 Your {streak}-day streak comes down to today",
-				body: "Finish one and keep the run going",
-			},
-			{
-				title: "{streak} days in — stopping here? 😱",
-				body: "Just one!",
-			},
-			{
-				title: "Your {streak}-day flame is flickering 🔥",
-				body: "Finish one now and it's saved",
-			},
+			({ streak }) =>
+				copy(`Your ${streak}-day trail is waiting`, "One completed to-do can continue it"),
+			({ streak }) =>
+				copy(`The ${streak}-day spark took a nap`, "One small finish can wake it up 🔥"),
+			({ streak }) =>
+				copy(`One blank after ${streak} paw prints`, "A single step can fill today’s spot"),
 		],
-	} satisfies NotificationTemplate,
-} as const;
+	},
+} satisfies SchedulerNotificationCopyCatalog;
 
 export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
-		title: "☀️ {skyLabel} today, {tempMin}–{tempMax}°C",
-		body: "Perfect weather for crushing your to-dos",
-		type: "WEATHER_MORNING",
 		variants: [
-			{
-				title: "☀️ {skyLabel} today, {tempMin}–{tempMax}°C",
-				body: "Perfect weather for crushing your to-dos",
-			},
-			{
-				title: "{skyLabel} today, {tempMin}–{tempMax}°C 🌤️",
-				body: "Got outdoor to-dos? Today's your chance!",
-			},
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(
+					`${skyLabel} today, ${tempMin}–${tempMax}°C ☀️`,
+					"The sky appears to have checked your plans",
+				),
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(
+					`A ${skyLabel.toLowerCase()} morning, ${tempMin}–${tempMax}°C`,
+					"Outdoor to-dos may consult the weather",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_RAIN: {
-		title: "☔ Rain expected today, {precipProb}% chance",
-		body: "Don't forget your umbrella! {tempMin}–{tempMax}°C",
-		type: "WEATHER_MORNING",
 		variants: [
-			{
-				title: "☔ Rain expected today, {precipProb}% chance",
-				body: "Don't forget your umbrella! {tempMin}–{tempMax}°C",
-			},
-			{
-				title: "🌧️ {precipProb}% chance of rain today",
-				body: "Great day to knock out indoor to-dos ({tempMin}–{tempMax}°C)",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(
+					`${precipProb}% chance of rain today ☔`,
+					`Bring an umbrella, ${tempMin}–${tempMax}°C`,
+				),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(
+					`Rain checked in: ${precipProb}%`,
+					`The cat votes indoors. ${tempMin}–${tempMax}°C 🌧️`,
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	MORNING_SNOW: {
-		title: "❄️ Snow expected today, {precipProb}% chance",
-		body: "Bundle up before heading out! {tempMin}–{tempMax}°C",
-		type: "WEATHER_MORNING",
 		variants: [
-			{
-				title: "❄️ Snow expected today, {precipProb}% chance",
-				body: "Bundle up before heading out! {tempMin}–{tempMax}°C",
-			},
-			{
-				title: "☃️ It might snow today ({precipProb}%)",
-				body: "Roads may be slippery — take it slow {tempMin}–{tempMax}°C",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`${precipProb}% chance of snow today ❄️`, `Bundle up, ${tempMin}–${tempMax}°C`),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(`Snow may visit: ${precipProb}%`, `Take it slow, ${tempMin}–${tempMax}°C ☃️`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_CLEAR: {
-		title: "🌙 Tomorrow: {skyLabel}, {tempMin}–{tempMax}°C",
-		body: "Plan tomorrow's to-dos now for an easier morning",
-		type: "WEATHER_EVENING",
 		variants: [
-			{
-				title: "🌙 Tomorrow: {skyLabel}, {tempMin}–{tempMax}°C",
-				body: "Plan tomorrow's to-dos now for an easier morning",
-			},
-			{
-				title: "Tomorrow's weather: {skyLabel} {tempMin}–{tempMax}°C ✨",
-				body: "Plan now and tomorrow's you will say thanks",
-			},
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(
+					`${skyLabel} tomorrow, ${tempMin}–${tempMax}°C 🌙`,
+					"Set tomorrow’s plans down beside the forecast",
+				),
+			({ skyLabel, tempMin, tempMax }) =>
+				copy(
+					`Tomorrow looks ${skyLabel.toLowerCase()}, ${tempMin}–${tempMax}°C`,
+					"The weather peeked at tomorrow’s list first",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_RAIN: {
-		title: "☔ {precipProb}% chance of rain tomorrow",
-		body: "Get your umbrella ready! {tempMin}–{tempMax}°C",
-		type: "WEATHER_EVENING",
 		variants: [
-			{
-				title: "☔ {precipProb}% chance of rain tomorrow",
-				body: "Get your umbrella ready! {tempMin}–{tempMax}°C",
-			},
-			{
-				title: "🌧️ Rain is coming tomorrow ({precipProb}%)",
-				body: "Great day to batch indoor to-dos! {tempMin}–{tempMax}°C",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(
+					`${precipProb}% chance of rain tomorrow ☔`,
+					`Umbrella by the door, ${tempMin}–${tempMax}°C`,
+				),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(
+					`Rain tomorrow: ${precipProb}%`,
+					`Indoor plans should fit nicely. ${tempMin}–${tempMax}°C`,
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	EVENING_SNOW: {
-		title: "❄️ {precipProb}% chance of snow tomorrow",
-		body: "Dress warm and keep to-dos indoors! {tempMin}–{tempMax}°C",
-		type: "WEATHER_EVENING",
 		variants: [
-			{
-				title: "❄️ {precipProb}% chance of snow tomorrow",
-				body: "Dress warm and keep to-dos indoors! {tempMin}–{tempMax}°C",
-			},
-			{
-				title: "☃️ Snow is coming tomorrow ({precipProb}%)",
-				body: "Plan ahead and there's nothing to worry about {tempMin}–{tempMax}°C",
-			},
+			({ precipProb, tempMin, tempMax }) =>
+				copy(
+					`${precipProb}% chance of snow tomorrow ❄️`,
+					`Warm clothes ready, ${tempMin}–${tempMax}°C`,
+				),
+			({ precipProb, tempMin, tempMax }) =>
+				copy(
+					`Snow may visit tomorrow: ${precipProb}%`,
+					`Leave a little early. ${tempMin}–${tempMax}°C`,
+				),
 		],
-	} satisfies NotificationTemplate,
-} as const;
+	},
+} satisfies WeatherNotificationCopyCatalog;
 
 export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
-		title: "👋 Friend request from {senderName}",
-		body: "Accept and you'll see each other's to-dos. Brace yourself",
-		type: "FOLLOW_NEW",
-		defaultRoute: "/friends/requests",
 		variants: [
-			{
-				title: "👋 Friend request from {senderName}",
-				body: "Accept and you'll see each other's to-dos. Brace yourself",
-			},
-			{
-				title: "{senderName} wants to do this together! 🤝",
-				body: "Everything's easier with a friend",
-			},
-			{
-				title: "New friend request 💌",
-				body: "{senderName} is waiting for you",
-			},
+			({ senderName }) =>
+				copy(`Friend request from ${senderName} 👋`, "They’d like to share a little encouragement"),
+			({ senderName }) =>
+				copy(`${senderName} knocked on the friend door`, "Accept to cheer on each other’s days"),
+			({ senderName }) =>
+				copy("A friend request just arrived", `${senderName} is waiting very politely outside 🐾`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	FOLLOW_ACCEPTED: {
-		title: "🎉 {senderName} is now your friend!",
-		body: "You can see all of each other's to-dos. Brace yourself",
-		type: "FOLLOW_ACCEPTED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "🎉 {senderName} is now your friend!",
-				body: "You can see all of each other's to-dos. Brace yourself",
-			},
-			{
-				title: "Connected with {senderName} 🤝",
-				body: "From now on, you run together",
-			},
-			{
-				title: "{senderName} accepted! ✅",
-				body: "Cheer each other on and go",
-			},
+			({ senderName }) =>
+				copy(`${senderName} is your friend now 🎉`, "You can send little cheers across your days"),
+			({ senderName }) =>
+				copy(
+					`You and ${senderName} are connected`,
+					"The cat drew a very straight line between you",
+				),
+			({ senderName }) => copy(`${senderName} accepted`, "Take the next paw-step together 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	NUDGE_RECEIVED: {
-		title: "👉 {senderName} nudged you about '{todoTitle}'!",
-		body: "Still haven't done it? 😏",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "👉 {senderName} nudged you about '{todoTitle}'!",
-				body: "Still haven't done it? 😏",
-			},
-			{
-				title: "{senderName} poked you about '{todoTitle}' 👀",
-				body: "That means hurry up",
-			},
-			{
-				title: "Poke poke! {senderName} is rushing '{todoTitle}'",
-				body: "They're waiting, you know",
-			},
+			({ senderName, todoTitle }) =>
+				copy(
+					`${senderName} nudged you`,
+					todoTitle ? `“${todoTitle}” got a tiny tap 🐾` : "One to-do just wiggled 🐾",
+				),
+			({ senderName, todoTitle }) =>
+				copy(
+					`A nudge from ${senderName}`,
+					todoTitle
+						? `They left a paw print on “${todoTitle}”`
+						: "They left a little encouragement",
+				),
+			({ senderName, todoTitle }) =>
+				copy(
+					"A to-do just wiggled",
+					todoTitle ? `${senderName} tapped “${todoTitle}”` : `${senderName} tapped the list`,
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	NUDGE_RECEIVED_WITH_MESSAGE: {
-		title: "👉 {senderName} nudged you about '{todoTitle}'!",
-		body: "💬 '{message}'",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
-	} satisfies NotificationTemplate,
+		copy: ({ senderName, todoTitle, message }) =>
+			copy(`${senderName} nudged you`, todoTitle ? `“${todoTitle}” · ${message}` : message),
+	},
 	REMIND_NUDGE_RECEIVED: {
-		title: "👉 {senderName} nudged you!",
-		body: "They're saying make some to-dos 😆",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "👉 {senderName} nudged you!",
-				body: "They're saying make some to-dos 😆",
-			},
-			{
-				title: "{senderName} is looking for you 👀",
-				body: "How about writing down just one thing?",
-			},
-			{
-				title: "Poke! {senderName} checked in on you 💌",
-				body: "Jot down one thing you'll do today",
-			},
+			({ senderName }) => copy(`${senderName} nudged you`, "A tiny plan would fit nicely today 🐾"),
+			({ senderName }) =>
+				copy(`A tiny reminder from ${senderName}`, "Maybe set down one thing you want to remember"),
+			({ senderName }) =>
+				copy("A nudge landed on the empty list", `${senderName} says one plan would fit nicely`),
 		],
-	} satisfies NotificationTemplate,
+	},
 	REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
-		title: "👉 {senderName} nudged you!",
-		body: "💬 '{message}'",
-		type: "NUDGE_RECEIVED",
-		defaultRoute: "/feed",
-	} satisfies NotificationTemplate,
+		copy: ({ senderName, message }) => copy(`${senderName} nudged you`, message),
+	},
 	CHEER_RECEIVED: {
-		title: "💌 A note from {senderName}",
-		body: "{message}",
-		type: "CHEER_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
-	} satisfies NotificationTemplate,
+		copy: ({ senderName, message }) => copy(`A cheer from ${senderName}`, message),
+	},
 	CHEER_RECEIVED_NO_MESSAGE: {
-		title: "📣 {senderName} sent you a cheer",
-		body: "They know you're doing great",
-		type: "CHEER_RECEIVED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "📣 {senderName} sent you a cheer",
-				body: "They know you're doing great",
-			},
-			{
-				title: "{senderName} is rooting for you 💪",
-				body: "Keep going — you've got this today",
-			},
-			{
-				title: "A cheer from {senderName} just landed 💌",
-				body: "You can absolutely do this",
-			},
+			({ senderName }) =>
+				copy(`${senderName} cheered you on 📣`, "A little extra strength has arrived"),
+			({ senderName }) => copy(`A cheer from ${senderName}`, "The cat put it somewhere safe"),
+			({ senderName }) =>
+				copy(
+					"One bag of encouragement arrived",
+					`Sender: ${senderName}. Weight: delightfully light 🐾`,
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	FRIEND_COMPLETED: {
-		title: "✅ {friendName} finished everything today",
-		body: "And you? 👀",
-		type: "FRIEND_COMPLETED",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "✅ {friendName} finished everything today",
-				body: "And you? 👀",
-			},
-			{
-				title: "{friendName} got the all clear! 🎉",
-				body: "You can't lose like this",
-			},
-			{
-				title: "{friendName} is already done 🔥",
-				body: "Let's go too",
-			},
+			({ friendName }) =>
+				copy(`${friendName}’s day just sparkled ✨`, "A small cheer would fit nicely"),
+			({ friendName }) =>
+				copy(`${friendName}’s day had a little glow`, "A tiny hello suits the moment 🐾"),
+			({ friendName }) =>
+				copy(`${friendName} had a bright Aido day`, "Send a light little check-in"),
 		],
-	} satisfies NotificationTemplate,
-	// 친구 활동 요약 (Social Digest)
+	},
 	SOCIAL_DIGEST_MULTI: {
-		title: "🔥 {completedFriendCount} friends finished everything today",
-		body: "You're the only one left",
-		type: "SOCIAL_DIGEST",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "🔥 {completedFriendCount} friends finished everything today",
-				body: "You're the only one left",
-			},
-			{
-				title: "{completedFriendCount} friends got the all clear! 👀",
-				body: "Everyone but me?",
-			},
-			{
-				title: "Your friends are pulling ahead 🏃",
-				body: "Starting now isn't too late",
-			},
+			({ completedFriendCount }) =>
+				copy(
+					`${completedFriendCount} friends had sparkling days ✨`,
+					"A few small cheers would fit nicely",
+				),
+			({ completedFriendCount }) =>
+				copy(
+					`Bright-day notes from ${completedFriendCount} friends`,
+					"A tiny hello suits the moment 🐾",
+				),
+			({ completedFriendCount }) =>
+				copy(
+					`${completedFriendCount} friends had a bright moment`,
+					"A small cheer would fit nicely",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	SOCIAL_DIGEST_SINGLE: {
-		title: "✅ {friendName} finished everything today",
-		body: "You can do it too",
-		type: "SOCIAL_DIGEST",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "✅ {friendName} finished everything today",
-				body: "You can do it too",
-			},
-			{
-				title: "{friendName} got the all clear! 🎉",
-				body: "Just going to watch?",
-			},
-			{
-				title: "{friendName} is already done 👀",
-				body: "Now it's your turn",
-			},
+			({ friendName }) =>
+				copy(`${friendName}’s day just sparkled ✨`, "A small cheer would fit nicely"),
+			({ friendName }) =>
+				copy(`${friendName}’s day had a little glow`, "A tiny hello suits the moment 🐾"),
+			({ friendName }) =>
+				copy(`${friendName} had a bright Aido day`, "A small cheer would fit nicely"),
 		],
-	} satisfies NotificationTemplate,
-	// 콕 찌르기 유도 (Nudge Suggest)
+	},
 	NUDGE_SUGGEST: {
-		title: "👀 {friendName} has been quiet for {days} days",
-		body: "Nudge them awake?",
-		type: "NUDGE_SUGGEST",
-		defaultRoute: "/feed/friend/{friendId}",
 		variants: [
-			{
-				title: "👀 {friendName} has been quiet for {days} days",
-				body: "Nudge them awake?",
-			},
-			{
-				title: "{friendName} hasn't shown up in {days} days 🫥",
-				body: "Check in on them",
-			},
-			{
-				title: "{friendName} has gone off the radar 🤿",
-				body: "One nudge might bring them back?",
-			},
+			({ friendName }) =>
+				copy(`A tiny nudge for ${friendName}?`, "A no-pressure nudge is ready 🐾"),
+			({ friendName }) =>
+				copy(`A tiny hello for ${friendName}?`, "Send a light check-in if you like"),
+			({ friendName }) => copy(`Want to nudge ${friendName}?`, "The cat can carry it over 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	TODO_COMMENT: {
-		title: "New comment",
-		body: "{senderName} commented on a todo.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName }) => copy(`${senderName} commented`, "A new thought just padded in 🐾"),
+			({ senderName }) =>
+				copy(
+					`A comment from ${senderName} arrived`,
+					"Your to-do has one more line of conversation",
+				),
+			({ senderName }) =>
+				copy(`${senderName} added to the conversation`, "The comment is waiting politely inside"),
+		],
+	},
 	TODO_COMMENT_CHAIN: {
-		title: "New comment",
-		body: "{senderName} left {count} comments on a todo.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName, count }) =>
+				copy(`${senderName} left ${count} comments`, "The conversation grew a little tail 🐾"),
+			({ senderName, count }) =>
+				copy(
+					`${count} comments from ${senderName} arrived`,
+					"Things got pleasantly busy below your to-do",
+				),
+			({ senderName, count }) =>
+				copy(`${senderName} added ${count} thoughts`, "The new comments are waiting inside"),
+		],
+	},
 	TODO_COMMENT_REPLY: {
-		title: "New reply",
-		body: "{senderName} replied to your comment.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName }) => copy(`${senderName} replied`, "The conversation grew by one paw-step 🐾"),
+			({ senderName }) =>
+				copy(`A reply from ${senderName} arrived`, "The comment thread grew a tiny tail"),
+			({ senderName }) =>
+				copy(`${senderName} kept the conversation going`, "A new reply is waiting inside"),
+		],
+	},
 	TODO_COMMENT_REPLY_CHAIN: {
-		title: "New reply",
-		body: "{senderName} left {count} replies to your comment.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
+		variants: [
+			({ senderName, count }) =>
+				copy(`${senderName} added ${count} replies`, "The conversation grew a proper tail 🐾"),
+			({ senderName, count }) =>
+				copy(
+					`${count} replies from ${senderName} arrived`,
+					"The comment thread got a little longer",
+				),
+			({ senderName, count }) =>
+				copy(
+					`${senderName} extended the conversation ${count} times`,
+					"The new replies are waiting inside",
+				),
+		],
+	},
 	TODO_COMMENT_LIKE: {
-		title: "Comment liked",
-		body: "{senderName} liked your comment.",
-		type: "TODO_SHARED",
-		defaultRoute: "/todo/{todoId}",
-	} satisfies NotificationTemplate,
-} as const;
+		variants: [
+			({ senderName }) => copy(`${senderName} liked your comment`, "A small heart just arrived ❤️"),
+			({ senderName }) =>
+				copy(`A heart from ${senderName} arrived`, "Your comment is acting very casual about it"),
+			({ senderName }) => copy(`${senderName} added a heart`, "It landed on your comment"),
+		],
+	},
+} satisfies SocialNotificationCopyCatalog;
 
 export const SYSTEM_TEMPLATES = {
-	// Win-back (비활성 유저 재방문 유도)
 	WINBACK_DAY3: {
-		title: "👀 Haven't seen you in 3 days, so I came by",
-		body: "Your to-dos say they're waiting",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "👀 Haven't seen you in 3 days, so I came by",
-				body: "Your to-dos say they're waiting",
-			},
-			{ title: "It's been 3 days!", body: "How about one easy one?" },
-			{
-				title: "Where'd you go? 🥺",
-				body: "Let's do just one together today",
-			},
+			staticCopy("The to-dos took a nap 💤", "Your list saved you a quiet seat"),
+			staticCopy("A breeze crossed your list", "Set down one thing you need today"),
+			staticCopy("The Aido cat saved your spot", "One paw-step whenever you’re ready 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY7: {
-		title: "It's been a week 🥲",
-		body: "Just one — that's enough",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{ title: "It's been a week 🥲", body: "Just one — that's enough" },
-			{
-				title: "7 quiet days 👀",
-				body: "It's never too late to start again",
-			},
-			{
-				title: "Missed you all week 💌",
-				body: "How about creating just one to-do?",
-			},
+			staticCopy("The list stayed quiet all week", "One new plan will get it moving again 🐾"),
+			staticCopy("The cat turned a calendar page", "Write down whatever matters today"),
+			staticCopy("Your spot is still here", "One tiny to-do is a fine return"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY14: {
-		title: "Two weeks! Good to see you 👋",
-		body: "Today is your new Day 1",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "Two weeks! Good to see you 👋",
-				body: "Today is your new Day 1",
-			},
-			{
-				title: "You almost got forgotten 🥲",
-				body: "It's okay to start over",
-			},
-			{
-				title: "That was a long break 🌱",
-				body: "You can always come back — like right now",
-			},
+			staticCopy("The list saw a couple moons 🌕", "Today can be a brand-new day one"),
+			staticCopy("A rested plan is stretching", "Set down the one thing you need now"),
+			staticCopy("Restart is always right here", "Come back with one easy paw-step 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY21: {
-		title: "Three weeks! 🎈",
-		body: "Let's restart with something small",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{ title: "Three weeks! 🎈", body: "Let's restart with something small" },
-			{
-				title: "I kept waiting 🥺",
-				body: "One to-do and you're back in the game",
-			},
-			{
-				title: "About time you came back 😎",
-				body: "Today's a perfect day for a fresh start",
-			},
+			staticCopy("A few calendar pages passed", "One plan is enough to come back 🐾"),
+			staticCopy("A fresh starting line appeared", "Write only what fits today"),
+			staticCopy("The cat remembers your spot", "Begin again with one small thing"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WINBACK_DAY30: {
-		title: "A whole month — missed you 💌",
-		body: "You can always start again",
-		type: "WINBACK",
-		defaultRoute: "/feed",
 		variants: [
-			{
-				title: "A whole month — missed you 💌",
-				body: "You can always start again",
-			},
-			{
-				title: "I believed you'd come back 🌱",
-				body: "Today is your new Day 1",
-			},
-			{
-				title: "Long time no see! 👋",
-				body: "Let's do one, like the first time",
-			},
+			staticCopy("The calendar made a full lap 🗓️", "A new today only needs one to-do"),
+			staticCopy("The list dusted itself off", "Place one plan you need right now"),
+			staticCopy("Call today a new first day?", "One paw-step is enough 🐾"),
 		],
-	} satisfies NotificationTemplate,
-	// 주간 달성 배지
+	},
 	WEEKLY_ACHIEVEMENT: {
-		title: "📊 {completedCount} cleared this week",
-		body: "Consistency is skill",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
 		variants: [
-			{
-				title: "📊 {completedCount} cleared this week",
-				body: "Consistency is skill",
-			},
-			{
-				title: "{completedCount} done this week! ✅",
-				body: "Bet you can go even further next week",
-			},
-			{
-				title: "You knocked out {completedCount} this week 💪",
-				body: "You keep getting better, bit by bit",
-			},
+			({ completedCount }) =>
+				copy(
+					`${completedCount} completed this week 📊`,
+					"Those little checks look excellent together",
+				),
+			({ completedCount }) =>
+				copy(`You finished ${completedCount} this week`, "The cat counted twice, professionally"),
+			({ completedCount }) =>
+				copy(
+					`${completedCount} completions, all in a row`,
+					"This week’s paw prints are easy to see 🐾",
+				),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WEEKLY_ACHIEVEMENT_PERFECT: {
-		title: "🏆 100% all clear this week!",
-		body: "A perfect week",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
 		variants: [
-			{ title: "🏆 100% all clear this week!", body: "A perfect week" },
-			{
-				title: "You finished everything this week 🎉",
-				body: "Weeks like this make legends",
-			},
-			{
-				title: "Perfect week achieved ✨",
-				body: "Seriously amazing — applause!",
-			},
+			staticCopy("A 100% week 🏆", "No empty checkboxes found"),
+			staticCopy("Every plan is complete", "That is one beautifully tidy record"),
+			staticCopy("Perfect week delivered", "The cat briefly sat up straighter 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WEEKLY_ACHIEVEMENT_ALMOST: {
-		title: "{rate}% completion this week 🔥",
-		body: "So close! Let's hit 100% next week",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
 		variants: [
-			{
-				title: "{rate}% completion this week 🔥",
-				body: "So close! Let's hit 100% next week",
-			},
-			{
-				title: "{rate}% achieved! 💪",
-				body: "Almost there — one last piece",
-			},
-			{
-				title: "{rate}% this week! ✨",
-				body: "You did great — can't wait for next week",
-			},
+			({ rate }) =>
+				copy(`${rate}% complete this week 📊`, "Everything you did is clearly recorded"),
+			({ rate }) => copy(`You finished ${rate}% of the plan`, "That was a very full week"),
+			({ rate }) =>
+				copy(`This week filled up to ${rate}%`, "The cat looks appropriately pleased 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	WEEKLY_REPORT: {
-		title: "📊 Your weekly report is here!",
-		body: "Want to see how this week went?",
-		type: "WEEKLY_REPORT",
-		defaultRoute: "/reports",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Your weekly report is here 📊", "See the paw prints you left this week"),
+	},
 	MONTHLY_REPORT: {
-		title: "📈 Your monthly report is here!",
-		body: "See how much you got done this month",
-		type: "MONTHLY_REPORT",
-		defaultRoute: "/reports",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Your monthly report is here 📈", "See what gathered over the month"),
+	},
 	AI_SUGGESTION: {
-		title: "✨ Recurring pattern spotted!",
-		body: "Tired of creating it every time? I'll automate it",
-		type: "AI_SUGGESTION",
-		defaultRoute: "/suggestions",
-	} satisfies NotificationTemplate,
-	SYSTEM_NOTICE: {
-		title: "Aido",
-		body: "{message}",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
+		copy: staticCopy("A repeating pattern appeared ✨", "Aido can make that routine easier"),
+	},
 	BILLING_ISSUE: {
-		title: "💳 There's a problem with your payment",
-		body: "Please check your payment method, or your subscription may pause",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
-	// 온보딩 시퀀스 (신규 유저 7일)
+		copy: staticCopy("Check your payment method", "Update it to keep your plan active."),
+	},
 	ONBOARDING_DAY0: {
-		title: "🌱 Ready to create your first to-do?",
-		body: "One small thing is all it takes",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: "/create-todo",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Your first to-do is ready 🌱", "Write down one small thing on your mind"),
+	},
 	ONBOARDING_DAY1: {
-		title: "That to-do from yesterday — did you try it? ✅",
-		body: "One checkmark and you'll feel great",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Today’s checkboxes are ready", "Continue with only what fits today 🐾"),
+	},
 	ONBOARDING_DAY2: {
-		title: "Together beats alone 🤝",
-		body: "Add a friend and cheer each other on",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: "/friends",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("There’s room for a friend 🤝", "Share small cheers across your days"),
+	},
 	ONBOARDING_DAY3: {
-		title: "⏰ Set your reminder time yet?",
-		body: "I'll ping you right on schedule",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: "/settings",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Your reminder clock is ready ⏰", "Choose when you want Aido to check in"),
+	},
 	ONBOARDING_DAY5: {
-		title: "Already {completedCount} done! 🔥",
-		body: "At this pace it'll be a habit in no time",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
+		copy: ({ completedCount }) =>
+			copy(`${completedCount} completed already`, "The cat counted very carefully 🐾"),
+	},
 	ONBOARDING_DAY7: {
-		title: "🎉 First week complete!",
-		body: "You finished {completedCount}. On to next week",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
-	} satisfies NotificationTemplate,
-	// 마일스톤 축하
+		copy: ({ completedCount }) =>
+			copy(
+				"Your first-week record is ready 🎉",
+				`${completedCount} completions gathered along the way`,
+			),
+	},
 	MILESTONE_FIRST_COMPLETE: {
-		title: "🎉 First one done!",
-		body: "Starting is half the battle — you're halfway there",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Your first completion glowed ✨", "That first paw-step landed beautifully"),
+	},
 	MILESTONE_10: {
-		title: "Already 10 done! ✨",
-		body: "Consistency is stacking up",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Ten completions gathered 🎉", "Double-digit paw prints. Very official."),
+	},
 	MILESTONE_50: {
-		title: "🔥 Passed 50!",
-		body: "That's pro level, officially",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("You passed 50 completions 🐾", "That record has some pleasant weight now"),
+	},
 	MILESTONE_100: {
-		title: "👑 100 done!",
-		body: "Triple digits — truly amazing",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("100 completions reached 👑", "The cat ran out of toes while counting"),
+	},
 	MILESTONE_STREAK_3: {
-		title: "🔥 3 days in a row!",
-		body: "This is how habits are born",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/stats",
-	} satisfies NotificationTemplate,
+		copy: staticCopy("Three days of paw prints 🔥", "Consistency is growing a tiny tail"),
+	},
 	MILESTONE_FIRST_FRIEND: {
-		title: "🎉 You made your first friend!",
-		body: "Together, you'll do twice as well",
-		type: "WEEKLY_ACHIEVEMENT",
-		defaultRoute: "/friends",
-	} satisfies NotificationTemplate,
-} as const;
+		copy: staticCopy("Your first friend is here 🎉", "Tiny cheers can cross the day"),
+	},
+} satisfies SystemNotificationCopyCatalog;
 
-export const SKY_LABEL_MAP: Record<string, string> = {
-	CLEAR: "clear",
-	PARTLY_CLOUDY: "partly cloudy",
-	CLOUDY: "cloudy",
-};
+export const SKY_LABEL_MAP = { CLEAR: "Clear", PARTLY_CLOUDY: "Partly cloudy", CLOUDY: "Cloudy" };
 
-/** 위치 미설정 유저용 날씨 폴백 메시지 */
-export const WEATHER_FALLBACK: WeatherFallbackTemplates = {
+export const WEATHER_FALLBACK = {
 	MORNING: {
-		title: "Curious about today's weather? ☀️",
-		body: "Set your location and I'll include the weather every morning",
+		copy: staticCopy("Want today’s weather too? ☀️", "Set your location for a morning forecast"),
 	},
 	EVENING: {
-		title: "Want tomorrow's weather in advance? 🌙",
-		body: "Set your location and planning tomorrow gets way easier",
+		copy: staticCopy("Tomorrow’s weather awaits 🌙", "Set your location for tomorrow’s weather"),
 	},
-};
+} satisfies WeatherFallbackCopyCatalog;
 
-/**
- * 신규 유저 리텐션(D0/D1/D3/D7) 카피 (en).
- *
- * 키·variant 수·type·route는 ko와 반드시 동일해야 한다(locale-parity.spec).
- */
-export const RETENTION_TEMPLATES: Record<string, NotificationTemplate> = {
+export const RETENTION_TEMPLATES = {
 	"D0:d0_no_todo": {
-		title: "Ready for your first task? 🌱",
-		body: "Write down one thing on your mind",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "Ready for your first task? 🌱",
-				body: "Write down one thing on your mind",
-			},
-			{
-				title: "Add your first plan ✍️",
-				body: "One small task is enough to begin",
-			},
-			{
-				title: "Start with one small thing ☀️",
-				body: "Add what matters most today",
-			},
+			staticCopy("Your first to-do is ready 🌱", "Write down one thing on your mind"),
+			staticCopy("The empty list wagged its tail", "One tiny plan is enough to begin 🐾"),
+			staticCopy("Set down today’s first plan", "Start with the easiest thing"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D1:d1_no_todo": {
-		title: "Pick one task for today 📝",
-		body: "A small plan can shape your whole day",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "Pick one task for today 📝",
-				body: "A small plan can shape your whole day",
-			},
-			{
-				title: "What will you start with? ☀️",
-				body: "Add the easiest thing on your mind",
-			},
-			{
-				title: "Add the first task to your list 🌱",
-				body: "One plan can make today feel clearer",
-			},
+			staticCopy("Plenty of room today 📝", "Place one thing you want to do"),
+			staticCopy("One plan-shaped spot is open", "The smallest to-do is enough"),
+			staticCopy("The cat joined the empty list", "Give it one thing to remember 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D1:d1_has_todo_no_completion": {
-		title: "Start with one task ✅",
-		body: "Choose the easiest one and check it off",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "Start with one task ✅",
-				body: "Choose the easiest one and check it off",
-			},
-			{
-				title: "Ready for your first check? 🌱",
-				body: "Start with something that takes five minutes",
-			},
-			{
-				title: "Your first check is waiting 👀",
-				body: "Finishing one small thing builds momentum",
-			},
+			staticCopy("Your first check is waiting ✅", "Choose the friendliest to-do"),
+			staticCopy("Your plans are stretching", "A five-minute task is a fine start"),
+			staticCopy("The list is ready when you are", "One paw-step is enough to begin 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D3:d3_restart": {
-		title: "You can restart today 🌱",
-		body: "Add one thing that matters right now",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "You can restart today 🌱",
-				body: "Add one thing that matters right now",
-			},
-			{
-				title: "Plans can always change ✨",
-				body: "Start with what you can do today",
-			},
-			{
-				title: "Build your rhythm again ☀️",
-				body: "One easy task is enough to begin",
-			},
+			staticCopy("Today can be a new day one 🌱", "Write down the one thing you need now"),
+			staticCopy("A fresh planner page opened", "Begin with only what fits today"),
+			staticCopy("The cat found the start line", "One easy paw-step is plenty 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D7:d7_has_progress": {
-		title: "Your first week is taking shape 🎉",
-		body: "See the progress you made this week",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "Your first week is taking shape 🎉",
-				body: "See the progress you made this week",
-			},
-			{
-				title: "Your weekly rhythm is visible 📊",
-				body: "Review everything you checked off",
-			},
-			{
-				title: "You made it through week one ✨",
-				body: "See what you accomplished at a glance",
-			},
+			staticCopy("Week one left paw prints 🎉", "See the changes you made this week"),
+			staticCopy("Your first weekly recap", "Look through the things you completed"),
+			staticCopy("We walked through week one", "Your finished tasks are all here 🐾"),
 		],
-	} satisfies NotificationTemplate,
+	},
 	"D7:d7_restart": {
-		title: "Restart this week with one thing 🌱",
-		body: "Add the task you need most right now",
-		type: "SYSTEM_NOTICE",
-		defaultRoute: null,
 		variants: [
-			{
-				title: "Restart this week with one thing 🌱",
-				body: "Add the task you need most right now",
-			},
-			{
-				title: "Open the week with a small plan ☀️",
-				body: "One doable task is enough",
-			},
-			{
-				title: "Today is a good day to restart ✨",
-				body: "Begin with a plan that feels light",
-			},
+			staticCopy("A fresh week has room 🌱", "Write down the one thing you need now"),
+			staticCopy("The list made a Monday face", "One doable plan is enough for today"),
+			staticCopy("Restart is still right here", "Come back with one easy paw-step 🐾"),
 		],
-	} satisfies NotificationTemplate,
-};
+	},
+} satisfies RetentionNotificationCopyCatalog;

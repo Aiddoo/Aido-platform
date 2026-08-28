@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 import { notificationTypeSchema } from './notification.constants';
+import { notificationBodySchema, notificationTitleSchema } from './notification.content';
 import { notificationActionSchema, notificationContextSchema } from './notification.payload';
 
 export const notificationMetadataSchema = z.record(z.string(), z.unknown()).nullable();
@@ -15,8 +16,8 @@ export const notificationSchema = z
     type: notificationTypeSchema.describe(
       '알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등)',
     ),
-    title: z.string().max(200).describe('알림 제목 (최대 200자)'),
-    body: z.string().max(500).describe('알림 본문 (최대 500자)'),
+    title: notificationTitleSchema,
+    body: notificationBodySchema,
     isRead: z.boolean().describe('읽음 여부'),
     metadata: notificationMetadataSchema.describe('추가 메타데이터 (미설정 시 null)'),
     context: notificationContextSchema.optional(),
@@ -31,8 +32,8 @@ export const notificationSchema = z
       id: 1,
       userId: 'clz7x5p8k0001qz0z8z8z8z8z',
       type: 'NUDGE_RECEIVED',
-      title: '친구의 응원이 도착했어요!',
-      body: '존님이 당신의 할일을 응원하고 있어요 💪',
+      title: '존이 콕 건드렸어',
+      body: '할 일 하나가 살짝 흔들렸어 🐾',
       isRead: false,
       metadata: { senderId: 'clz7x5p8k0005qz0z8z8z8z8z' },
       createdAt: '2026-01-17T10:00:00.000Z',
@@ -61,8 +62,8 @@ export const notificationListResponseSchema = z
           id: 1,
           userId: 'clz7x5p8k0001qz0z8z8z8z8z',
           type: 'NUDGE_RECEIVED',
-          title: '친구의 응원이 도착했어요!',
-          body: '존님이 당신의 할일을 응원하고 있어요 💪',
+          title: '존이 콕 건드렸어',
+          body: '할 일 하나가 살짝 흔들렸어 🐾',
           isRead: false,
           metadata: { senderId: 'clz7x5p8k0005qz0z8z8z8z8z' },
           createdAt: '2026-01-17T10:00:00.000Z',

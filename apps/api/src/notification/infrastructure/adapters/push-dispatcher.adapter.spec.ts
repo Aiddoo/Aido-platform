@@ -19,8 +19,8 @@ import {
 } from "../../application/ports/notification.repository.port";
 import { PUSH_PROVIDER, type PushProvider } from "../../application/ports/push-provider.port";
 import {
-	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
+	type PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
@@ -138,7 +138,7 @@ function createDeferred<T>(): {
 describe("PushDispatcherAdapter", () => {
 	let adapter: PushDispatcherAdapter;
 	let userSettings: Mocked<UserNotificationSettingsPort>;
-	let rateLimiter: Mocked<IPushRateLimiter>;
+	let rateLimiter: Mocked<PushRateLimiterPort>;
 	let cacheService: Mocked<CacheService>;
 	let repository: Mocked<NotificationRepositoryPort>;
 	let pushProvider: Mocked<PushProvider>;

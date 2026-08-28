@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { FollowModule } from "@/follow/follow.module";
-import { NotificationModule } from "@/notification/notification.module";
+import { NotificationModule } from "@/notification";
 
 import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit-reader.port";
 import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port";

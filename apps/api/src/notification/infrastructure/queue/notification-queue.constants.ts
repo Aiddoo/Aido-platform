@@ -181,7 +181,4 @@ export interface NotificationJobMap {
 	[NotificationJobName.PUSH_RECEIPTS]: Record<string, never>;
 }
 
-/** 모든 잡 데이터 유니온 타입 */
-export type NotificationJobData = NotificationJobMap[keyof NotificationJobMap];
-
 export type NotificationRuntimeJob = z.infer<typeof NotificationRuntimeJobSchema>;

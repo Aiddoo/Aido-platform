@@ -14,6 +14,7 @@ import { type JobConfig, jobSchema } from "./job.schema";
 import { type JwtConfig, jwtSchema } from "./jwt.schema";
 import { type OAuthConfig, oauthSchema, validateOAuthForProduction } from "./oauth.schema";
 import { type PushConfig, pushSchema } from "./push.schema";
+import { type RetentionConfig, retentionSchema } from "./retention.schema";
 import { type SecurityConfig, securitySchema } from "./security.schema";
 import { type WebhookConfig, webhookSchema } from "./webhook.schema";
 
@@ -28,6 +29,7 @@ export * from "./job.schema";
 export * from "./jwt.schema";
 export * from "./oauth.schema";
 export * from "./push.schema";
+export * from "./retention.schema";
 export * from "./security.schema";
 export * from "./webhook.schema";
 
@@ -45,6 +47,7 @@ export const envSchema = z
 	.merge(oauthSchema)
 	.merge(securitySchema)
 	.merge(pushSchema)
+	.merge(retentionSchema)
 	.merge(externalSchema)
 	.merge(webhookSchema)
 	.merge(featureDiscoverySchema)
@@ -62,6 +65,7 @@ export type EnvConfig = AppConfig &
 	OAuthConfig &
 	SecurityConfig &
 	PushConfig &
+	RetentionConfig &
 	ExternalConfig &
 	WebhookConfig &
 	FeatureDiscoveryConfig;

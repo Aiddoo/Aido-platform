@@ -1,8 +1,8 @@
 import type { OnModuleDestroy } from "@nestjs/common";
 
 import type {
-	IPushRateLimiter,
 	PushRateLimitRequest,
+	PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port";
 import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy";
 
@@ -15,7 +15,7 @@ const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
  * - Map 기반 슬라이딩 윈도우
  * - RATE_LIMIT_WINDOW_MS 주기로 zombie 엔트리 자동 정리
  */
-export class InMemoryPushRateLimiter implements IPushRateLimiter, OnModuleDestroy {
+export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDestroy {
 	private readonly pushTimestamps = new Map<string, number[]>();
 	private readonly engagementTimestamps = new Map<string, number[]>();
 	readonly #cleanupInterval: NodeJS.Timeout;

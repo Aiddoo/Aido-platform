@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createMonthlyReportNotificationMessage, NotificationSender } from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
@@ -88,7 +88,7 @@ describe("MonthlyReportStrategy — 월간 리포트 전략", () => {
 		);
 
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.monthlyReport();
+		const expected = createMonthlyReportNotificationMessage();
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			type: "MONTHLY_REPORT",

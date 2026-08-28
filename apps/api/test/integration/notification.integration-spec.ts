@@ -25,8 +25,9 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
 import {
+	createMorningNoTodoNotificationMessage,
+	createMorningReminderNotificationMessage,
 	NOTIFICATION_REPOSITORY,
-	NotificationMessageBuilder,
 	NotificationSender,
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
@@ -783,7 +784,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		it("MORNING_REMINDER createAndSendBatch 시 title에 {count}가 치환된 값이 저장되어야 함", async () => {
 			// Given - morningReminder 템플릿으로 치환된 메시지 준비
 			const todoCount = 3;
-			const message = NotificationMessageBuilder.morningReminder(todoCount);
+			const message = createMorningReminderNotificationMessage({ count: todoCount });
 
 			const dataList = [
 				{
@@ -826,7 +827,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 		it("할일 없는 사용자에게 MORNING_NO_TODO 메시지로 알림이 정상 생성되어야 함", async () => {
 			// Given - morningNoTodo 템플릿 메시지 준비
-			const message = NotificationMessageBuilder.morningNoTodo();
+			const message = createMorningNoTodoNotificationMessage();
 			const mockNotification = NotificationBuilder.create(mockUserId)
 				.withId(10)
 				.withType("MORNING_REMINDER")
@@ -879,8 +880,8 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			const userWithTodos = "user-with-todos";
 			const userWithoutTodos = "user-without-todos";
 
-			const messageWithTodos = NotificationMessageBuilder.morningReminder(5);
-			const messageNoTodos = NotificationMessageBuilder.morningNoTodo();
+			const messageWithTodos = createMorningReminderNotificationMessage({ count: 5 });
+			const messageNoTodos = createMorningNoTodoNotificationMessage();
 
 			const dataList = [
 				{

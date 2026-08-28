@@ -10,25 +10,33 @@
 import { TestBed } from "@suites/unit";
 
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 import type { PushPayload } from "../../application/ports/push-provider.port";
+import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message";
 import { ExpoPushProvider } from "./expo-push.provider";
 
 // expo-server-sdk 모듈 mock — #expo 필드에 직접 접근 불가하므로 모듈 레벨 mock 사용
 const mockSendPushNotificationsAsync = jest.fn();
 const mockChunkPushNotifications = jest.fn();
+const mockExpoConstructor = jest.fn();
 
 jest.mock("expo-server-sdk", () => {
 	// v6부터 ESM-only라 jest 29(CJS)에서 requireActual 불가 —
 	// isExpoPushToken은 실제 구현과 동일한 판정식으로 직접 제공
 	const isExpoPushToken = (token: unknown): boolean =>
 		typeof token === "string" &&
-		(token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[")) &&
-		token.endsWith("]");
+		(((token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[")) &&
+			token.endsWith("]")) ||
+			/^[a-z\d]{8}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{12}$/i.test(token));
 
 	return {
 		__esModule: true,
 		default: class MockExpo {
+			constructor(options?: unknown) {
+				mockExpoConstructor(options);
+			}
+
 			sendPushNotificationsAsync = mockSendPushNotificationsAsync;
 			chunkPushNotifications = mockChunkPushNotifications;
 			static isExpoPushToken = isExpoPushToken;
@@ -50,7 +58,10 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 	});
 
 	beforeEach(async () => {
-		const { unit } = await TestBed.solitary(ExpoPushProvider).compile();
+		const { unit } = await TestBed.solitary(ExpoPushProvider)
+			.mock(TypedConfigService)
+			.impl(() => ({ expoAccessToken: "test-expo-access-token" }))
+			.compile();
 		provider = unit;
 	});
 
@@ -59,18 +70,21 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			// When / Then
 			expect(provider.name).toBe("expo");
 		});
+
+		it("설정된 Expo access token을 SDK 생성자에 전달한다", () => {
+			expect(mockExpoConstructor).toHaveBeenCalledWith({
+				accessToken: "test-expo-access-token",
+			});
+		});
 	});
 
 	describe("validateToken", () => {
-		it("유효한 Expo 토큰은 true를 반환해야 한다", () => {
-			// Given
-			const token = validToken;
-
-			// When
-			const result = provider.validateToken(token);
-
-			// Then
-			expect(result).toBe(true);
+		it.each([
+			validToken,
+			"ExpoPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+			"12345678-1234-1234-1234-123456789012",
+		])("유효한 Expo 토큰 %s은 true를 반환해야 한다", (token) => {
+			expect(provider.validateToken(token)).toBe(true);
 		});
 
 		it("유효하지 않은 토큰은 false를 반환해야 한다", () => {
@@ -201,6 +215,22 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 					ttl: 3600,
 				}),
 			]);
+		});
+
+		it("Expo 한도를 넘는 payload는 SDK로 보내지 않고 MessageTooBig을 반환한다", async () => {
+			// Given
+			const payload = createPayload({ body: "🐾".repeat(EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH) });
+
+			// When
+			const result = await provider.send(payload);
+
+			// Then
+			expect(result).toMatchObject({
+				token: validToken,
+				success: false,
+				errorCode: "MessageTooBig",
+			});
+			expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
 		});
 	});
 
@@ -349,6 +379,30 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			}
 		});
 
+		it("Expo가 일부 티켓만 반환해도 모든 입력에 순서대로 결과를 만든다", async () => {
+			const secondToken = "ExponentPushToken[second-token]";
+			const payloads = [createPayload(), createPayload({ token: secondToken })];
+			mockChunkPushNotifications.mockImplementation((messages) => [messages]);
+			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
+
+			const result = await provider.sendBatch(payloads);
+
+			expect(result).toMatchObject({
+				total: 2,
+				successCount: 1,
+				failureCount: 1,
+			});
+			expect(result.results).toEqual([
+				{ token: validToken, success: true, ticketId: "ticket-1" },
+				{
+					token: secondToken,
+					success: false,
+					error: "No ticket or payload",
+					errorCode: "NOTIFICATION_1003",
+				},
+			]);
+		});
+
 		it("빈 페이로드 배열은 전체 실패(0건)를 반환해야 한다", async () => {
 			// Given
 			const payloads: PushPayload[] = [];
@@ -362,6 +416,44 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			expect(result.failureCount).toBe(0);
 			expect(result.results).toEqual([]);
 			expect(result.invalidTokens).toEqual([]);
+		});
+
+		it("한도를 넘는 항목만 거부하고 다른 항목은 순서대로 발송한다", async () => {
+			// Given
+			const sendableToken = "ExponentPushToken[sendable-token]";
+			const payloads = [
+				createPayload({ body: "한".repeat(EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH) }),
+				createPayload({ token: sendableToken, title: "전송 가능" }),
+			];
+			mockChunkPushNotifications.mockImplementation((messages) => [messages]);
+			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-sendable" }]);
+
+			// When
+			const result = await provider.sendBatch(payloads);
+
+			// Then
+			expect(result).toMatchObject({
+				total: 2,
+				successCount: 1,
+				failureCount: 1,
+				invalidTokens: [],
+			});
+			expect(result.results).toEqual([
+				expect.objectContaining({
+					token: validToken,
+					success: false,
+					errorCode: "MessageTooBig",
+				}),
+				{
+					token: sendableToken,
+					success: true,
+					ticketId: "ticket-sendable",
+				},
+			]);
+			expect(mockSendPushNotificationsAsync).toHaveBeenCalledTimes(1);
+			expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
+				expect.objectContaining({ to: sendableToken }),
+			]);
 		});
 	});
 });

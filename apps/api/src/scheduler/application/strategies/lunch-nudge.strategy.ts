@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createLunchNudgeNotificationMessage, NotificationSender } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -65,10 +66,13 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 
 		const locales = await this.preferenceReader.findUserLocales(filteredUsers.map((u) => u.id));
 		const notifications = filteredUsers.map((user) => {
-			const message = NotificationMessageBuilder.lunchNudge(locales.get(user.id) ?? "ko", {
-				campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
-				recipientId: user.id,
-				occurrenceKey: toDateString(today),
+			const message = createLunchNudgeNotificationMessage({
+				locale: locales.get(user.id) ?? DEFAULT_LOCALE,
+				variantContext: {
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			});
 			return {
 				userId: user.id,

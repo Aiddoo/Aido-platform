@@ -1,216 +1,302 @@
-/**
- * 푸시 템플릿 ko/en 로케일 동등성 테스트
- *
- * ko(원문)와 en 템플릿의 구조(그룹·키·variants 수·플레이스홀더 변수 집합)가
- * 항상 일치하도록 강제한다. 새 템플릿을 한쪽에만 추가하면 여기서 실패한다.
- */
+import { notificationContentSchema } from "@aido/validators";
 
-import {
-	RETENTION_TEMPLATES as EN_RETENTION_TEMPLATES,
-	SCHEDULER_TEMPLATES as EN_SCHEDULER_TEMPLATES,
-	SKY_LABEL_MAP as EN_SKY_LABEL_MAP,
-	SOCIAL_TEMPLATES as EN_SOCIAL_TEMPLATES,
-	SYSTEM_TEMPLATES as EN_SYSTEM_TEMPLATES,
-	WEATHER_FALLBACK as EN_WEATHER_FALLBACK,
-	WEATHER_TEMPLATES as EN_WEATHER_TEMPLATES,
-} from "./locales/en";
-import {
-	RETENTION_TEMPLATES as KO_RETENTION_TEMPLATES,
-	SCHEDULER_TEMPLATES as KO_SCHEDULER_TEMPLATES,
-	SKY_LABEL_MAP as KO_SKY_LABEL_MAP,
-	SOCIAL_TEMPLATES as KO_SOCIAL_TEMPLATES,
-	SYSTEM_TEMPLATES as KO_SYSTEM_TEMPLATES,
-	WEATHER_FALLBACK as KO_WEATHER_FALLBACK,
-	WEATHER_TEMPLATES as KO_WEATHER_TEMPLATES,
-} from "./locales/ko";
-import type { NotificationTemplate } from "./template.types";
+import * as en from "./locales/en";
+import * as ko from "./locales/ko";
+import type {
+	LocalizedNotificationTemplate,
+	NotificationCopy,
+	RetentionNotificationCopyCatalog,
+	SchedulerNotificationCopyCatalog,
+	SocialNotificationCopyCatalog,
+	SystemNotificationCopyCatalog,
+	WeatherFallbackCopyCatalog,
+	WeatherNotificationCopyCatalog,
+} from "./notification-copy.types";
 
-const TEMPLATE_GROUPS = [
+interface LocaleCatalog {
+	readonly SCHEDULER_TEMPLATES: SchedulerNotificationCopyCatalog;
+	readonly WEATHER_TEMPLATES: WeatherNotificationCopyCatalog;
+	readonly SOCIAL_TEMPLATES: SocialNotificationCopyCatalog;
+	readonly SYSTEM_TEMPLATES: SystemNotificationCopyCatalog;
+	readonly RETENTION_TEMPLATES: RetentionNotificationCopyCatalog;
+	readonly WEATHER_FALLBACK: WeatherFallbackCopyCatalog;
+}
+
+const KO_CATALOG: LocaleCatalog = ko;
+const EN_CATALOG: LocaleCatalog = en;
+const CATALOG_GROUPS: readonly (keyof LocaleCatalog)[] = [
 	"SCHEDULER_TEMPLATES",
 	"WEATHER_TEMPLATES",
 	"SOCIAL_TEMPLATES",
 	"SYSTEM_TEMPLATES",
 	"RETENTION_TEMPLATES",
-] as const;
+	"WEATHER_FALLBACK",
+];
 
-const KO_CATALOG = {
-	SCHEDULER_TEMPLATES: KO_SCHEDULER_TEMPLATES,
-	WEATHER_TEMPLATES: KO_WEATHER_TEMPLATES,
-	SOCIAL_TEMPLATES: KO_SOCIAL_TEMPLATES,
-	SYSTEM_TEMPLATES: KO_SYSTEM_TEMPLATES,
-	RETENTION_TEMPLATES: KO_RETENTION_TEMPLATES,
-};
-
-const EN_CATALOG = {
-	SCHEDULER_TEMPLATES: EN_SCHEDULER_TEMPLATES,
-	WEATHER_TEMPLATES: EN_WEATHER_TEMPLATES,
-	SOCIAL_TEMPLATES: EN_SOCIAL_TEMPLATES,
-	SYSTEM_TEMPLATES: EN_SYSTEM_TEMPLATES,
-	RETENTION_TEMPLATES: EN_RETENTION_TEMPLATES,
-};
-
-/** 플레이스홀더 변수 추출 — 조사 접미사({name:이/가})는 base 변수로 정규화 */
-function extractVariables(text: string): string[] {
-	const variables = new Set<string>();
-	for (const match of text.matchAll(/\{(\w+)(?::[^}]+)?\}/g)) {
-		const name = match[1];
-		if (name) {
-			variables.add(name);
-		}
+function render<TVariables>(
+	template: LocalizedNotificationTemplate<TVariables>,
+	variables: Readonly<TVariables>,
+): NotificationCopy[] {
+	if (template.variants) {
+		return template.variants.map((factory) => factory(variables));
 	}
-	return [...variables].sort();
+	return [template.copy(variables)];
 }
 
-function templateVariables(template: NotificationTemplate): string[] {
-	const texts = [
-		template.title,
-		template.body,
-		...(template.variants ?? []).flatMap((v) => [v.title, v.body]),
+function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
+	const scheduler = catalog.SCHEDULER_TEMPLATES;
+	const weather = catalog.WEATHER_TEMPLATES;
+	const social = catalog.SOCIAL_TEMPLATES;
+	const system = catalog.SYSTEM_TEMPLATES;
+	const retention = catalog.RETENTION_TEMPLATES;
+	const fallback = catalog.WEATHER_FALLBACK;
+	const longName = "가".repeat(20);
+	const todoTitle = "할".repeat(24);
+	const userMessage = "메".repeat(200);
+
+	return [
+		...render(scheduler.TODO_REMINDER_60MIN, { todoTitle }),
+		...render(scheduler.TODO_REMINDER_10MIN, { todoTitle }),
+		...render(scheduler.TODO_REMINDER_IMMEDIATE, { todoTitle }),
+		...render(scheduler.MORNING_REMINDER, { count: 999 }),
+		...render(scheduler.EVENING_COMPLETE, undefined),
+		...render(scheduler.EVENING_PARTIAL, { remaining: 999 }),
+		...render(scheduler.EVENING_NONE, undefined),
+		...render(scheduler.MORNING_NO_TODO, undefined),
+		...render(scheduler.EVENING_STREAK, { streak: 999, next: 1000 }),
+		...render(scheduler.EVENING_STREAK_7, undefined),
+		...render(scheduler.EVENING_STREAK_14, undefined),
+		...render(scheduler.EVENING_STREAK_30, { streak: 999 }),
+		...render(scheduler.EVENING_STREAK_RISK_PARTIAL, { streak: 999, remaining: 999 }),
+		...render(scheduler.EVENING_STREAK_RISK_NONE, { streak: 999 }),
+		...render(scheduler.LUNCH_NUDGE, undefined),
+		...render(scheduler.STREAK_AT_RISK, { streak: 999 }),
+		...render(weather.MORNING_CLEAR, { skyLabel: "Partly cloudy", tempMin: -99, tempMax: 99 }),
+		...render(weather.MORNING_RAIN, { precipProb: 100, tempMin: -99, tempMax: 99 }),
+		...render(weather.MORNING_SNOW, { precipProb: 100, tempMin: -99, tempMax: 99 }),
+		...render(weather.EVENING_CLEAR, { skyLabel: "Partly cloudy", tempMin: -99, tempMax: 99 }),
+		...render(weather.EVENING_RAIN, { precipProb: 100, tempMin: -99, tempMax: 99 }),
+		...render(weather.EVENING_SNOW, { precipProb: 100, tempMin: -99, tempMax: 99 }),
+		...render(social.FOLLOW_NEW, { senderName: longName }),
+		...render(social.FOLLOW_ACCEPTED, { senderName: longName }),
+		...render(social.NUDGE_RECEIVED, { senderName: longName, todoTitle }),
+		...render(social.NUDGE_RECEIVED_WITH_MESSAGE, {
+			senderName: longName,
+			todoTitle,
+			message: userMessage,
+		}),
+		...render(social.REMIND_NUDGE_RECEIVED, { senderName: longName }),
+		...render(social.REMIND_NUDGE_RECEIVED_WITH_MESSAGE, {
+			senderName: longName,
+			message: userMessage,
+		}),
+		...render(social.CHEER_RECEIVED, { senderName: longName, message: userMessage }),
+		...render(social.CHEER_RECEIVED_NO_MESSAGE, { senderName: longName }),
+		...render(social.FRIEND_COMPLETED, { friendName: longName }),
+		...render(social.SOCIAL_DIGEST_MULTI, { completedFriendCount: 999 }),
+		...render(social.SOCIAL_DIGEST_SINGLE, { friendName: longName }),
+		...render(social.NUDGE_SUGGEST, { friendName: longName }),
+		...render(social.TODO_COMMENT, { senderName: longName }),
+		...render(social.TODO_COMMENT_CHAIN, { senderName: longName, count: 999 }),
+		...render(social.TODO_COMMENT_REPLY, { senderName: longName }),
+		...render(social.TODO_COMMENT_REPLY_CHAIN, { senderName: longName, count: 999 }),
+		...render(social.TODO_COMMENT_LIKE, { senderName: longName }),
+		...render(system.WINBACK_DAY3, undefined),
+		...render(system.WINBACK_DAY7, undefined),
+		...render(system.WINBACK_DAY14, undefined),
+		...render(system.WINBACK_DAY21, undefined),
+		...render(system.WINBACK_DAY30, undefined),
+		...render(system.WEEKLY_ACHIEVEMENT, { completedCount: 99999 }),
+		...render(system.WEEKLY_ACHIEVEMENT_PERFECT, undefined),
+		...render(system.WEEKLY_ACHIEVEMENT_ALMOST, { rate: 99 }),
+		...render(system.WEEKLY_REPORT, undefined),
+		...render(system.MONTHLY_REPORT, undefined),
+		...render(system.AI_SUGGESTION, undefined),
+		...render(system.BILLING_ISSUE, undefined),
+		...render(system.ONBOARDING_DAY0, undefined),
+		...render(system.ONBOARDING_DAY1, undefined),
+		...render(system.ONBOARDING_DAY2, undefined),
+		...render(system.ONBOARDING_DAY3, undefined),
+		...render(system.ONBOARDING_DAY5, { completedCount: 99999 }),
+		...render(system.ONBOARDING_DAY7, { completedCount: 99999 }),
+		...render(system.MILESTONE_FIRST_COMPLETE, undefined),
+		...render(system.MILESTONE_10, undefined),
+		...render(system.MILESTONE_50, undefined),
+		...render(system.MILESTONE_100, undefined),
+		...render(system.MILESTONE_STREAK_3, undefined),
+		...render(system.MILESTONE_FIRST_FRIEND, undefined),
+		...render(retention["D0:d0_no_todo"], undefined),
+		...render(retention["D1:d1_no_todo"], undefined),
+		...render(retention["D1:d1_has_todo_no_completion"], undefined),
+		...render(retention["D3:d3_restart"], undefined),
+		...render(retention["D7:d7_has_progress"], undefined),
+		...render(retention["D7:d7_restart"], undefined),
+		...render(fallback.MORNING, undefined),
+		...render(fallback.EVENING, undefined),
 	];
-	return [...new Set(texts.flatMap(extractVariables))].sort();
 }
 
-describe.each(TEMPLATE_GROUPS)("%s ko/en 동등성", (group) => {
-	const koGroup: Record<string, NotificationTemplate> = KO_CATALOG[group];
-	const enGroup: Record<string, NotificationTemplate> = EN_CATALOG[group];
+function hasVariants(value: unknown): value is { readonly variants: readonly unknown[] } {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"variants" in value &&
+		Array.isArray(value.variants)
+	);
+}
 
-	it("키 집합이 동일하다", () => {
-		expect(Object.keys(enGroup).sort()).toEqual(Object.keys(koGroup).sort());
-	});
+function variantCounts(group: object): [key: string, variantCount: number][] {
+	return Object.entries(group).map(([key, template]) => [
+		key,
+		hasVariants(template) ? template.variants.length : 0,
+	]);
+}
 
-	it("각 템플릿의 variants 수·type·defaultRoute가 동일하다", () => {
-		for (const [key, koTemplate] of Object.entries(koGroup)) {
-			const enTemplate = enGroup[key];
-			expect({ key, exists: enTemplate !== undefined }).toEqual({
-				key,
-				exists: true,
-			});
-			if (!enTemplate) {
-				continue;
-			}
+function renderNoVariableCatalog(catalog: LocaleCatalog): NotificationCopy[] {
+	const scheduler = catalog.SCHEDULER_TEMPLATES;
+	const system = catalog.SYSTEM_TEMPLATES;
+	const retention = catalog.RETENTION_TEMPLATES;
+	return [
+		...render(scheduler.EVENING_COMPLETE, undefined),
+		...render(scheduler.EVENING_NONE, undefined),
+		...render(scheduler.MORNING_NO_TODO, undefined),
+		...render(scheduler.EVENING_STREAK_7, undefined),
+		...render(scheduler.EVENING_STREAK_14, undefined),
+		...render(scheduler.LUNCH_NUDGE, undefined),
+		...render(system.WINBACK_DAY3, undefined),
+		...render(system.WINBACK_DAY7, undefined),
+		...render(system.WINBACK_DAY14, undefined),
+		...render(system.WINBACK_DAY21, undefined),
+		...render(system.WINBACK_DAY30, undefined),
+		...render(system.WEEKLY_ACHIEVEMENT_PERFECT, undefined),
+		...render(system.WEEKLY_REPORT, undefined),
+		...render(system.MONTHLY_REPORT, undefined),
+		...render(system.AI_SUGGESTION, undefined),
+		...render(system.BILLING_ISSUE, undefined),
+		...render(system.ONBOARDING_DAY0, undefined),
+		...render(system.ONBOARDING_DAY1, undefined),
+		...render(system.ONBOARDING_DAY2, undefined),
+		...render(system.ONBOARDING_DAY3, undefined),
+		...render(system.MILESTONE_FIRST_COMPLETE, undefined),
+		...render(system.MILESTONE_10, undefined),
+		...render(system.MILESTONE_50, undefined),
+		...render(system.MILESTONE_100, undefined),
+		...render(system.MILESTONE_STREAK_3, undefined),
+		...render(system.MILESTONE_FIRST_FRIEND, undefined),
+		...render(retention["D0:d0_no_todo"], undefined),
+		...render(retention["D1:d1_no_todo"], undefined),
+		...render(retention["D1:d1_has_todo_no_completion"], undefined),
+		...render(retention["D3:d3_restart"], undefined),
+		...render(retention["D7:d7_has_progress"], undefined),
+		...render(retention["D7:d7_restart"], undefined),
+		...render(catalog.WEATHER_FALLBACK.MORNING, undefined),
+		...render(catalog.WEATHER_FALLBACK.EVENING, undefined),
+	];
+}
 
-			expect({ key, count: enTemplate.variants?.length ?? 0 }).toEqual({
-				key,
-				count: koTemplate.variants?.length ?? 0,
-			});
-			expect({ key, type: enTemplate.type }).toEqual({
-				key,
-				type: koTemplate.type,
-			});
-			expect({ key, route: enTemplate.defaultRoute ?? null }).toEqual({
-				key,
-				route: koTemplate.defaultRoute ?? null,
-			});
+function graphemeCount(value: string): number {
+	return Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value))
+		.length;
+}
+
+describe("푸시 카탈로그 locale 계약", () => {
+	it("ko/en의 그룹 key와 variant 수가 동일하다", () => {
+		for (const group of CATALOG_GROUPS) {
+			expect(Object.keys(EN_CATALOG[group]).sort()).toEqual(Object.keys(KO_CATALOG[group]).sort());
+			expect(variantCounts(EN_CATALOG[group])).toEqual(variantCounts(KO_CATALOG[group]));
 		}
+
+		expect(renderCatalog(EN_CATALOG)).toHaveLength(renderCatalog(KO_CATALOG).length);
 	});
 
-	it("각 템플릿의 플레이스홀더 변수 집합이 동일하다", () => {
-		for (const [key, koTemplate] of Object.entries(koGroup)) {
-			const enTemplate = enGroup[key];
-			if (!enTemplate) {
-				continue;
+	const localeCatalogCases: readonly [locale: string, catalog: LocaleCatalog][] = [
+		["ko", KO_CATALOG],
+		["en", EN_CATALOG],
+	];
+
+	it.each(localeCatalogCases)(
+		"%s의 모든 factory가 최대 대표 입력으로 유효한 copy를 렌더링한다",
+		(_locale, catalog) => {
+			for (const notification of renderCatalog(catalog)) {
+				expect(() => notificationContentSchema.parse(notification)).not.toThrow();
+				expect(`${notification.title}${notification.body}`).not.toMatch(/[{}]/);
 			}
-
-			expect({ key, variables: templateVariables(enTemplate) }).toEqual({
-				key,
-				variables: templateVariables(koTemplate),
-			});
-		}
-	});
-
-	it("en 템플릿은 조사 패턴({name:이/가})을 사용하지 않는다", () => {
-		for (const [key, enTemplate] of Object.entries(enGroup)) {
-			const texts = [
-				enTemplate.title,
-				enTemplate.body,
-				...(enTemplate.variants ?? []).flatMap((v) => [v.title, v.body]),
-			];
-			for (const text of texts) {
-				expect({ key, hasJosa: /\{\w+:[^}]+\}/.test(text) }).toEqual({
-					key,
-					hasJosa: false,
-				});
-			}
-		}
-	});
+		},
+	);
 });
 
-describe("SKY_LABEL_MAP / WEATHER_FALLBACK 동등성", () => {
-	it("SKY_LABEL_MAP 키 집합이 동일하다", () => {
-		expect(Object.keys(EN_SKY_LABEL_MAP).sort()).toEqual(Object.keys(KO_SKY_LABEL_MAP).sort());
-	});
-
-	it("WEATHER_FALLBACK 구조가 동일하다", () => {
-		expect(Object.keys(EN_WEATHER_FALLBACK).sort()).toEqual(
-			Object.keys(KO_WEATHER_FALLBACK).sort(),
-		);
-	});
-});
-
-describe("푸시 카피 품질 규칙", () => {
+describe("푸시 카피 품질 계약", () => {
 	const forbiddenKoreanPhrases = [
-		"할일값",
-		"이제 너만 남았다",
-		"나만 빼고",
-		"이대로 질 순",
-		"각오해",
-		"미쳤다",
-		"아직도 안 했어?",
-		"여기서 멈출 거야?",
+		"아직도 안 했어",
+		"너만 남았어",
+		"이대로 잘 거야",
+		"어디 갔어",
 		"잊혀질 뻔",
 		"기다리다 지쳤",
-		"미루는 거야?",
-		"여기서 멈추면",
-		"슬슬 돌아올 때",
-		"앞서가는 중",
+		"미루는 거야",
+		"각오해",
+		"미쳤다",
 	];
+	const forbiddenEnglishPhrases = [
+		"Brace yourself",
+		"Still haven't",
+		"only one left",
+		"going to bed like this",
+		"where'd you go",
+		"almost got forgotten",
+	];
+	const forbiddenPhraseCases: readonly [
+		locale: string,
+		notifications: readonly NotificationCopy[],
+		phrases: readonly string[],
+	][] = [
+		["ko", renderCatalog(KO_CATALOG), forbiddenKoreanPhrases],
+		["en", renderCatalog(EN_CATALOG), forbiddenEnglishPhrases],
+	];
+	const renderedCatalogCases: readonly [
+		locale: string,
+		notifications: readonly NotificationCopy[],
+	][] = [
+		["ko", renderCatalog(KO_CATALOG)],
+		["en", renderCatalog(EN_CATALOG)],
+	];
+	const fixedCatalogCases: readonly [locale: string, notifications: readonly NotificationCopy[]][] =
+		[
+			["ko", renderNoVariableCatalog(KO_CATALOG)],
+			["en", renderNoVariableCatalog(EN_CATALOG)],
+		];
 
-	it("한국어 카피에 죄책감·조롱·과한 유행어를 사용하지 않는다", () => {
-		for (const group of TEMPLATE_GROUPS) {
-			const templates: Record<string, NotificationTemplate> = KO_CATALOG[group];
-			for (const [key, template] of Object.entries(templates)) {
-				const texts = [
-					template.title,
-					template.body,
-					...(template.variants ?? []).flatMap((variant) => [variant.title, variant.body]),
-				];
-				for (const phrase of forbiddenKoreanPhrases) {
-					expect({ group, key, phrase, texts }).toEqual(
-						expect.objectContaining({
-							texts: expect.not.arrayContaining([expect.stringContaining(phrase)]),
-						}),
-					);
+	it.each(forbiddenPhraseCases)(
+		"%s 카피에는 죄책감·조롱 문구가 없다",
+		(_locale, notifications, phrases) => {
+			for (const notification of notifications) {
+				const text = `${notification.title} ${notification.body}`.toLowerCase();
+				for (const phrase of phrases) {
+					expect(text).not.toContain(phrase.toLowerCase());
 				}
 			}
-		}
-	});
+		},
+	);
 
-	it("제목과 본문은 짧고 한 줄당 이모지를 하나 이하로 쓴다", () => {
-		for (const locale of [KO_CATALOG, EN_CATALOG]) {
-			for (const group of TEMPLATE_GROUPS) {
-				const templates: Record<string, NotificationTemplate> = locale[group];
-				for (const [key, template] of Object.entries(templates)) {
-					const pairs = [
-						{ title: template.title, body: template.body },
-						...(template.variants ?? []),
-					];
-					for (const pair of pairs) {
-						expect({ group, key, title: pair.title.length }).toEqual({
-							group,
-							key,
-							title: expect.any(Number),
-						});
-						expect(pair.title.length).toBeLessThanOrEqual(60);
-						expect(pair.body.length).toBeLessThanOrEqual(120);
-						expect(
-							pair.title.match(/\p{Extended_Pictographic}/gu)?.length ?? 0,
-						).toBeLessThanOrEqual(1);
-						expect(pair.body.match(/\p{Extended_Pictographic}/gu)?.length ?? 0).toBeLessThanOrEqual(
-							1,
-						);
-					}
-				}
+	it.each(renderedCatalogCases)(
+		"%s 고정 알림 하나에는 emoji를 최대 하나만 쓴다",
+		(_locale, notifications) => {
+			for (const notification of notifications) {
+				const emojiCount = `${notification.title}${notification.body}`.match(
+					/\p{Extended_Pictographic}/gu,
+				)?.length;
+				expect(emojiCount ?? 0).toBeLessThanOrEqual(1);
 			}
-		}
-	});
+		},
+	);
+
+	it.each(fixedCatalogCases)(
+		"%s 고정 카피는 잠금 화면 길이 예산을 지킨다",
+		(_locale, notifications) => {
+			for (const notification of notifications) {
+				expect(graphemeCount(notification.title)).toBeLessThanOrEqual(30);
+				expect(graphemeCount(notification.body)).toBeLessThanOrEqual(40);
+			}
+		},
+	);
 });

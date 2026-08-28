@@ -12,7 +12,7 @@ export interface PushRateLimitRequest {
 	readonly engagementLocalDate?: string;
 }
 
-export interface IPushRateLimiter {
+export interface PushRateLimiterPort {
 	/**
 	 * 사용자의 푸시 발송 빈도가 제한을 초과했는지 확인
 	 *

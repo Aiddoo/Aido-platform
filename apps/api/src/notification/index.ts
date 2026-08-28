@@ -13,16 +13,7 @@ export {
 	type NotificationRepositoryPort,
 } from "./application/ports/notification.repository.port";
 // --- Data contracts ---
-export type {
-	CreateNotificationData,
-	FindNotificationsParams,
-	FindPushTokensParams,
-	NotificationAction,
-	NotificationMetadataInput,
-	NotificationWithRelations,
-	PushTokenWithRelations,
-	RegisterPushTokenData,
-} from "./application/ports/notification-data";
+export type { CreateNotificationData } from "./application/ports/notification-data";
 // --- Ports (푸시 프로바이더/rate limiter 추상화) ---
 export {
 	type BatchPushResult,
@@ -33,23 +24,37 @@ export {
 	type PushResult,
 } from "./application/ports/push-provider.port";
 export {
-	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
+	type PushRateLimiterPort,
 } from "./application/ports/push-rate-limiter.port";
 // --- Cross-module notification capability ---
 export { NotificationSender } from "./application/senders/notification.sender";
+export { NotificationAccountCleanup } from "./application/services/notification-account-cleanup";
+export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./domain/services/transactional-notification-campaign";
+// --- Type-safe notification copy factories consumed across feature boundaries ---
 export {
-	NotificationAccountCleanup,
-	type NotificationAccountCleanupResult,
-} from "./application/services/notification-account-cleanup";
-// --- Locale helpers (스케줄러 전략의 로케일별 메시지 조립) ---
-export { createLocaleMessageCache } from "./application/utils/user-locale.util";
-// --- Templates (메시지 빌더 + 로케일 해석) ---
-export {
-	NotificationMessageBuilder,
-	resolveTemplateLocale,
+	createAiSuggestionNotificationMessage,
+	createEveningReminderNotificationMessage,
+	createLunchNudgeNotificationMessage,
+	createMonthlyReportNotificationMessage,
+	createMorningNoTodoNotificationMessage,
+	createMorningReminderNotificationMessage,
+	createNudgeSuggestionNotificationMessage,
+	createOnboardingNotificationMessage,
+	createRetentionNotificationMessage,
+	createSocialDigestNotificationMessage,
+	createStreakAtRiskNotificationMessage,
+	createTodoCommentNotificationMessage,
+	createTodoReminderNotificationMessage,
+	createWeatherEveningFallbackNotificationMessage,
+	createWeatherEveningNotificationMessage,
+	createWeatherMorningFallbackNotificationMessage,
+	createWeatherMorningNotificationMessage,
+	createWeeklyAchievementNotificationMessage,
+	createWeeklyReportNotificationMessage,
+	createWinbackNotificationMessage,
 } from "./domain/services/templates/notification-templates";
-export type { NotificationType } from "./domain/types/notification-type";
+export type { RetentionNotificationCopySelection } from "./domain/services/templates/notification-copy.types";
 // Prisma repository is internal to NotificationModule.
 // Cross-module consumers use the public capability boundary above.
 // --- Module wiring ---

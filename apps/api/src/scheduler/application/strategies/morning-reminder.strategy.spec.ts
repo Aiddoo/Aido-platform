@@ -14,7 +14,11 @@ import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import {
+	createMorningNoTodoNotificationMessage,
+	createMorningReminderNotificationMessage,
+	NotificationSender,
+} from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -157,7 +161,11 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 
 		// Then
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.morningReminder(5, "ko", VARIANT_CONTEXT);
+		const expected = createMorningReminderNotificationMessage({
+			count: 5,
+			locale: "ko",
+			variantContext: VARIANT_CONTEXT,
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -177,7 +185,10 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 
 		// Then
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.morningNoTodo("ko", VARIANT_CONTEXT);
+		const expected = createMorningNoTodoNotificationMessage({
+			locale: "ko",
+			variantContext: VARIANT_CONTEXT,
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,

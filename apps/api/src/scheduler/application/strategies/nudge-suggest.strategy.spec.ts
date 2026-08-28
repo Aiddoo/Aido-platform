@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createNudgeSuggestionNotificationMessage, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -109,10 +109,14 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.nudgeSuggest("친구1", 3, "ko", {
-			campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
-			recipientId: "user-1",
-			occurrenceKey: "2024-01-16",
+		const expected = createNudgeSuggestionNotificationMessage({
+			friendName: "친구1",
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+				recipientId: "user-1",
+				occurrenceKey: "2024-01-16",
+			},
 		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",

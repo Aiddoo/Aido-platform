@@ -6,15 +6,11 @@ import {
 import { type BeforeApplicationShutdown, Inject, Injectable, Logger } from "@nestjs/common";
 
 import { resolveDeliveryTimezone, resolveTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "@/shared/domain/locale";
 import {
 	type CachedUserPreference,
 	CacheService,
 } from "@/shared/infrastructure/cache/cache.service";
-import {
-	DEFAULT_LOCALE,
-	type SupportedLocale,
-	toSupportedLocale,
-} from "@/shared/presentation/decorators";
 
 import {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
@@ -38,9 +34,9 @@ import {
 	type PushResult,
 } from "../../application/ports/push-provider.port";
 import {
-	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
 	type PushRateLimitRequest,
+	type PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
@@ -100,7 +96,7 @@ export class PushDispatcherAdapter implements PushDispatcherPort, BeforeApplicat
 		@Inject(USER_NOTIFICATION_SETTINGS)
 		private readonly userSettings: UserNotificationSettingsPort,
 		@Inject(PUSH_RATE_LIMITER)
-		private readonly rateLimiter: IPushRateLimiter,
+		private readonly rateLimiter: PushRateLimiterPort,
 		private readonly cacheService: CacheService,
 		@Inject(MARKETING_PUSH_OPT_OUT_TOKEN)
 		private readonly marketingOptOutTokens: MarketingPushOptOutTokenPort,

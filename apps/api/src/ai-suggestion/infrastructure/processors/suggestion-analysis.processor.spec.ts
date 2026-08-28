@@ -80,6 +80,8 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 				expect.objectContaining({
 					userId: "user-123",
 					type: "AI_SUGGESTION",
+					campaignKey: "ai_suggestion_v2",
+					variantId: "default",
 				}),
 			);
 		});
