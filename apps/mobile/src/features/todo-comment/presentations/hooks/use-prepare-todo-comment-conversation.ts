@@ -4,16 +4,16 @@ import { useCallback } from 'react';
 
 import { useTodoCommentConversationQueryOptions } from '../queries/use-todo-comment-conversation-query-options';
 import { toInitialConversationWindow } from '../utils/comment-conversation-position';
-import type { ConversationPages } from '../utils/todo-comment-cache.util';
-import { useCommentRouteState } from './use-comment-route-state';
+import type { ConversationPages } from '../utils/todo-comment-cache-pages';
+import { useTodoCommentRoute } from './use-todo-comment-route';
 
 export function usePrepareTodoCommentConversation(commentId: string) {
   const { todoId } = useTodoScreenParams();
-  const { sort } = useCommentRouteState();
+  const [commentRoute] = useTodoCommentRoute();
   const queryClient = useQueryClient();
   const queryOptions = useTodoCommentConversationQueryOptions({
     todoId,
-    sort,
+    sort: commentRoute.sort,
     focusCommentId: commentId,
   });
 

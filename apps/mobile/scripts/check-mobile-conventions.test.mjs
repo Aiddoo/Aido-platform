@@ -180,8 +180,8 @@ test('TodoCheckbox는 HeroUI의 원본 controlled prop 이름을 유지한다', 
 test('댓글 feature의 re-export를 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/hooks/use-comment-composer.ts': `
-        export { useTodoCommentComposer as useCommentComposer } from '../providers/todo-comment-composer-provider';
+      'apps/mobile/src/features/todo-comment/presentations/hooks/use-comment-form.ts': `
+        export { useTodoCommentForm as useCommentForm } from '../providers/todo-comment-form-provider';
       `,
     },
     (errors) => {
@@ -235,18 +235,20 @@ test('댓글 컴포넌트와 hook의 테스트 파일을 거부한다', () => {
     },
     (errors) => {
       assert.equal(errors.length, 2);
-      assert.match(errors.join('\n'), /model, service\/mapper, pure util\/view-model/u);
+      assert.match(errors.join('\n'), /model, service\/mapper, pure navigation\/util\/view-model/u);
     },
   );
 });
 
-test('댓글 model, service, pure util과 view-model 테스트는 허용한다', () => {
+test('댓글 model, service, pure navigation, util과 view-model 테스트는 허용한다', () => {
   withFixture(
     {
       'apps/mobile/src/features/todo-comment/models/todo-comment.model.test.ts':
         "test('policy를 계산한다', () => {});",
       'apps/mobile/src/features/todo-comment/services/todo-comment.service.test.ts':
         "test('계약을 검증한다', () => {});",
+      'apps/mobile/src/features/todo-comment/presentations/navigation/todo-comment-route.test.ts':
+        "test('URL 상태를 정규화한다', () => {});",
       'apps/mobile/src/features/todo-comment/presentations/utils/comment-position.test.ts':
         "test('위치를 계산한다', () => {});",
       'apps/mobile/src/features/todo-comment/presentations/view-models/comment.view-model.test.ts':

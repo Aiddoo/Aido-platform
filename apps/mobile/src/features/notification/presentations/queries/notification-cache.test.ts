@@ -17,7 +17,6 @@ const makePage = (id: number): NotificationListResult => ({
       title: 'title',
       body: 'body',
       isRead: false,
-      metadata: null,
       createdAt: new Date('2026-07-14T00:00:00.000Z'),
       readAt: null,
     },

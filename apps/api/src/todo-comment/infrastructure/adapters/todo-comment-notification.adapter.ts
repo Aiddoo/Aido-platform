@@ -1,4 +1,4 @@
-import { NOTIFICATION_ACTION_TYPE } from "@aido/validators";
+import { type NotificationActivityKind, NOTIFICATION_ACTION_TYPE } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
 import { NotificationMessageBuilder, NotificationSender } from "@/notification";
@@ -7,8 +7,6 @@ import type {
 	TodoCommentNotificationPort,
 	TodoCommentWrittenInput,
 } from "../../application/ports/todo-comment-notification.port";
-
-type TodoCommentNotificationKind = "COMMENT" | "REPLY" | "LIKE";
 
 interface LikedInput {
 	recipientId: string;
@@ -35,7 +33,7 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
 	 * 알림 타입은 TODO_SHARED 그대로 둔다 — 새 타입을 늘리면 구버전 앱의 목록 파싱이 통째로 깨진다.
 	 * 무엇에 달렸는지는 문구와 activityKind가 말한다.
 	 */
-	async #send(input: LikedInput, kind: TodoCommentNotificationKind, count: number): Promise<void> {
+	async #send(input: LikedInput, kind: NotificationActivityKind, count: number): Promise<void> {
 		if (input.recipientId === input.senderId) {
 			return;
 		}

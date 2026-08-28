@@ -1,11 +1,15 @@
-import type {
-  NotificationListResponse,
-  Notification as ServerNotification,
+import {
+  type NotificationListResponse,
+  type Notification as ServerNotification,
+  type NotificationRouting,
+  notificationRoutingSchema,
 } from '@aido/validators';
 
 import type { Notification, NotificationListResult } from '../models/notification.model';
 
 export function toNotification(server: ServerNotification): Notification {
+  const routing = toNotificationRouting(server.metadata);
+
   return {
     id: server.id,
     userId: server.userId,
@@ -13,12 +17,22 @@ export function toNotification(server: ServerNotification): Notification {
     title: server.title,
     body: server.body,
     isRead: server.isRead,
-    metadata: server.metadata,
+    ...(routing && { routing }),
     context: server.context,
     action: server.action,
     createdAt: new Date(server.createdAt),
     readAt: server.readAt ? new Date(server.readAt) : null,
   };
+}
+
+function toNotificationRouting(metadata: unknown): NotificationRouting | undefined {
+  const parsed = notificationRoutingSchema.safeParse(metadata);
+  if (!parsed.success) {
+    return undefined;
+  }
+
+  const hasRoutingValue = Object.values(parsed.data).some((value) => value !== undefined);
+  return hasRoutingValue ? parsed.data : undefined;
 }
 
 export const toNotificationListResult = (

@@ -1,3 +1,4 @@
+import type { NotificationActivityKind } from "@aido/validators";
 import { josa } from "es-hangul";
 
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "@/shared/domain/locale";
@@ -199,7 +200,7 @@ function fillMessage(
  */
 export class NotificationMessageBuilder {
 	static todoCommentActivity(
-		kind: "COMMENT" | "REPLY" | "LIKE",
+		kind: NotificationActivityKind,
 		senderName: string | null,
 		locale: SupportedLocale = DEFAULT_LOCALE,
 		count = 1,

@@ -292,6 +292,7 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
       right={
         <HStack gap={8} align="center">
           <IconCountButton
+            className="min-h-0"
             icon={
               <ChatBubbleIcon
                 width={ICON_COUNT_BUTTON_ICON_SIZE}

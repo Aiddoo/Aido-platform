@@ -2,49 +2,62 @@ import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { useTodoCommentMutationError } from '../hooks/use-todo-comment-mutation-error';
-import { findCommentInCache, patchCommentEverywhere } from '../utils/todo-comment-cache.util';
-import { likeSettled, likeToggled } from '../utils/todo-comment-optimistic';
+import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
+import {
+  withOptimisticTodoCommentLike,
+  withTodoCommentLikeResult,
+} from '../utils/todo-comment-cache-transforms';
+import {
+  optimisticallyUpdateTodoCommentCaches,
+  restoreTodoCommentCaches,
+  updateTodoCommentCaches,
+} from './todo-comment-cache';
 import {
   cancelTodoCommentQueries,
-  settleTodoCommentMutation,
-} from './todo-comment-mutation-lifecycle';
+  invalidateTodoCommentQueries,
+} from './todo-comment-query-invalidation';
 
-interface SetTodoCommentLikeVariables {
+interface SetTodoCommentLikeMutationParams {
   commentId: string;
   isLiked: boolean;
 }
 
-export function useSetTodoCommentLikeMutationOptions(todoId: number) {
+export function useSetTodoCommentLikeMutationOptions({ todoId }: { todoId: number }) {
   const service = useTodoCommentService();
   const queryClient = useQueryClient();
-  const showMutationError = useTodoCommentMutationError(todoId);
+  const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
 
   return mutationOptions({
-    mutationFn: async ({ commentId, isLiked }: SetTodoCommentLikeVariables) =>
+    mutationFn: async ({ commentId, isLiked }: SetTodoCommentLikeMutationParams) =>
       unwrap(await service.setCommentLike(todoId, commentId, isLiked)),
     onMutate: async ({ commentId, isLiked }) => {
-      await cancelTodoCommentQueries(queryClient, todoId);
-      const previous = findCommentInCache(queryClient, todoId, commentId);
-      patchCommentEverywhere(queryClient, todoId, commentId, (comment) =>
-        comment.viewer.isLiked === isLiked ? comment : likeToggled(comment, isLiked),
-      );
-      return { previous };
+      await cancelTodoCommentQueries({ queryClient, todoId });
+      const snapshot = optimisticallyUpdateTodoCommentCaches({
+        queryClient,
+        todoId,
+        commentId,
+        transform: (comment) =>
+          comment.viewer.isLiked === isLiked
+            ? comment
+            : withOptimisticTodoCommentLike(comment, isLiked),
+      });
+
+      return { snapshot };
     },
-    onError: (error, { commentId }, context) => {
-      const previous = context?.previous;
-      if (previous !== undefined) {
-        patchCommentEverywhere(queryClient, todoId, commentId, () => previous);
+    onError: (error, _params, context) => {
+      if (context !== undefined) {
+        restoreTodoCommentCaches({ queryClient, snapshot: context.snapshot });
       }
-      showMutationError(error, 'like');
+      handleMutationError(error, 'like');
     },
     onSuccess: (result) => {
-      patchCommentEverywhere(queryClient, todoId, result.commentId, (comment) =>
-        likeSettled(comment, result),
-      );
+      updateTodoCommentCaches({
+        queryClient,
+        todoId,
+        commentId: result.commentId,
+        transform: (comment) => withTodoCommentLikeResult(comment, result),
+      });
     },
-    onSettled: () => {
-      settleTodoCommentMutation(queryClient, todoId).catch(() => undefined);
-    },
+    onSettled: () => invalidateTodoCommentQueries({ queryClient, todoId }),
   });
 }
