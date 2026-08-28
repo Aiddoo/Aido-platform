@@ -74,7 +74,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 					timezone: "Asia/Seoul",
 				},
 			},
-			{ ...JOB_OPTIONS, jobKey: `friend-completed:${friend.id}` },
+			{ ...JOB_OPTIONS, idempotencyKey: `friend-completed:${friend.id}` },
 		);
 
 		// Then
@@ -160,16 +160,19 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 		const outbox = await harness.prisma.retentionPushOutbox.findUniqueOrThrow({
 			where: { stageId: stage.id },
 		});
+		const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
+		expect(publication).toEqual({ id: outbox.id, attempts: 1 });
 
 		// When
 		const jobId = await harness.runtime.enqueue(
 			RETENTION_QUEUE,
 			{
 				name: RetentionJobName.DISPATCH,
-				data: { outboxId: outbox.id },
+				data: { outboxId: outbox.id, publishAttempt: publication?.attempts },
 			},
-			{ ...JOB_OPTIONS, jobKey: `retention-dispatch:${outbox.id}` },
+			{ ...JOB_OPTIONS, idempotencyKey: `retention-dispatch:${outbox.id}` },
 		);
+		if (publication) await harness.retentionRepository.markOutboxPublished(publication);
 
 		// Then
 		expect(jobId).not.toBeNull();
@@ -196,7 +199,170 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			"fake-retention-token",
 		]);
 	});
+
+	it("retention lease는 같은 runtime job의 높은 attempt만 reclaim하고 stale worker finalize를 거부한다", async () => {
+		const { outbox, publication } = await createRetentionPublication(harness, "LEASE001");
+		const first = await harness.retentionRepository.claimDispatch({
+			outboxId: outbox.id,
+			publishAttempt: publication.attempts,
+			processingJobId: "retention-lease-job",
+			processingJobAttempt: 1,
+			startedAt: new Date(),
+		});
+		expect(first).not.toBeNull();
+
+		await expect(
+			harness.retentionRepository.claimDispatch({
+				outboxId: outbox.id,
+				publishAttempt: publication.attempts,
+				processingJobId: "different-job",
+				processingJobAttempt: 2,
+				startedAt: new Date(),
+			}),
+		).resolves.toBeNull();
+		const retry = await harness.retentionRepository.claimDispatch({
+			outboxId: outbox.id,
+			publishAttempt: publication.attempts,
+			processingJobId: "retention-lease-job",
+			processingJobAttempt: 2,
+			startedAt: new Date(),
+		});
+		expect(retry?.fence.deliveryAttemptCount).toBe((first?.fence.deliveryAttemptCount ?? 0) + 1);
+		await expect(
+			harness.retentionRepository.markDispatchSkipped(first?.fence ?? retry!.fence, "STALE"),
+		).resolves.toBe(false);
+		await expect(
+			harness.retentionRepository.markDispatchSkipped(retry!.fence, "CURRENT"),
+		).resolves.toBe(true);
+	});
+
+	it("stale retention PROCESSING lease는 일반 outbox와 섞지 않고 dispatch+retention outbox를 함께 reopen한다", async () => {
+		const { outbox, publication } = await createRetentionPublication(harness, "STALE001");
+		await harness.retentionRepository.claimDispatch({
+			outboxId: outbox.id,
+			publishAttempt: publication.attempts,
+			processingJobId: "stale-retention-job",
+			processingJobAttempt: 1,
+			startedAt: new Date("2026-08-01T00:00:00.000Z"),
+		});
+
+		await expect(
+			harness.retentionRepository.recoverStaleDispatches(new Date("2026-08-01T00:15:01.000Z")),
+		).resolves.toBe(1);
+		await expect(
+			harness.prisma.pushDispatch.findUniqueOrThrow({ where: { id: outbox.dispatchId } }),
+		).resolves.toMatchObject({ status: "PENDING", processingJobId: null });
+		await expect(
+			harness.prisma.retentionPushOutbox.findUniqueOrThrow({ where: { id: outbox.id } }),
+		).resolves.toMatchObject({ status: "PENDING", publishedAt: null });
+		await expect(
+			harness.prisma.pushDispatchOutbox.count({ where: { dispatchId: outbox.dispatchId } }),
+		).resolves.toBe(0);
+	});
+
+	it("enqueue 성공 뒤 publish mark가 늦어져도 active retention worker lease를 reopen하지 않는다", async () => {
+		const { outbox, publication } = await createRetentionPublication(harness, "ACTIVE01");
+		const startedAt = new Date();
+		await harness.retentionRepository.claimDispatch({
+			outboxId: outbox.id,
+			publishAttempt: publication.attempts,
+			processingJobId: "active-retention-job",
+			processingJobAttempt: 1,
+			startedAt,
+		});
+		await harness.prisma.retentionPushOutbox.update({
+			where: { id: outbox.id },
+			data: {
+				status: "PROCESSING",
+				publishedAt: null,
+				lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
+			},
+		});
+
+		await expect(
+			harness.retentionRepository.recoverStaleOutboxes(new Date(startedAt.getTime() - 15 * 60_000)),
+		).resolves.toBe(0);
+		await expect(
+			harness.prisma.retentionPushOutbox.findUniqueOrThrow({ where: { id: outbox.id } }),
+		).resolves.toMatchObject({ status: "PROCESSING" });
+	});
+
+	it("retention rate marker는 새 publication generation에 남고 stale generation DLQ는 reopen하지 못한다", async () => {
+		const { outbox, publication } = await createRetentionPublication(harness, "RATE0001");
+		const claimed = await harness.retentionRepository.claimDispatch({
+			outboxId: outbox.id,
+			publishAttempt: publication.attempts,
+			processingJobId: "rate-reservation-job",
+			processingJobAttempt: 1,
+			startedAt: new Date(),
+		});
+		expect(claimed).not.toBeNull();
+		await expect(
+			harness.retentionRepository.markRateLimitReserved(claimed!.fence, new Date()),
+		).resolves.toBe(true);
+		await expect(
+			harness.retentionRepository.releaseDispatchForRetry({
+				fence: claimed!.fence,
+				reason: "provider unavailable",
+				availableAt: new Date(),
+				hasExhaustedRetries: false,
+			}),
+		).resolves.toBe(true);
+		const [nextPublication] = await harness.retentionRepository.claimOutboxes(1, new Date());
+		expect(nextPublication?.attempts).toBe(2);
+		await expect(
+			harness.retentionRepository.reopenUnclaimedDispatch({
+				outboxId: outbox.id,
+				publishAttempt: publication.attempts,
+				availableAt: new Date(),
+				reason: "stale DLQ",
+			}),
+		).resolves.toBe(false);
+		const retry = await harness.retentionRepository.claimDispatch({
+			outboxId: outbox.id,
+			publishAttempt: nextPublication?.attempts,
+			processingJobId: "rate-reservation-job-2",
+			processingJobAttempt: 1,
+			startedAt: new Date(),
+		});
+		expect(retry?.rateLimitReserved).toBe(true);
+	});
 });
+
+async function createRetentionPublication(harness: CriticalQueueProcessorHarness, userTag: string) {
+	const user = await createPushReadyUser(harness.prisma, {
+		email: `${userTag.toLowerCase()}@example.com`,
+		userTag,
+		name: "Retention fixture",
+		locale: "ko",
+		token: `fake-${userTag.toLowerCase()}-token`,
+		timezone: harness.daytimeTimezone,
+	});
+	await harness.retentionRepository.enroll({
+		userId: user.id,
+		variant: "TREATMENT",
+		startedAt: new Date("2026-07-01T00:00:00.000Z"),
+	});
+	const stage = await harness.prisma.retentionExperimentStage.findFirstOrThrow({
+		where: { assignment: { userId: user.id }, stage: "D1" },
+	});
+	await harness.retentionRepository.createDelivery({
+		stageId: stage.id,
+		userId: user.id,
+		timezone: harness.daytimeTimezone,
+		title: "title",
+		body: "body",
+		route: "/feed",
+		variantId: "d1_return",
+	});
+	const outbox = await harness.prisma.retentionPushOutbox.findUniqueOrThrow({
+		where: { stageId: stage.id },
+	});
+	const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
+	if (!publication) throw new Error("Retention publication was not claimed");
+	await harness.retentionRepository.markOutboxPublished(publication);
+	return { outbox, publication };
+}
 
 async function createPushReadyUser(
 	prisma: PrismaClient,

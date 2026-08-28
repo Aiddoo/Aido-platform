@@ -11,6 +11,7 @@ import { ActivateRetentionExperimentUseCase } from "./application/use-cases/acti
 import { DispatchRetentionPushUseCase } from "./application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
 import { EnrollRetentionExperimentUseCase } from "./application/use-cases/enroll-retention-experiment/enroll-retention-experiment.use-case";
 import { ProcessRetentionStagesUseCase } from "./application/use-cases/process-retention-stages/process-retention-stages.use-case";
+import { RecoverFailedRetentionDeliveryUseCase } from "./application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case";
 import { RelayRetentionOutboxUseCase } from "./application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case";
 import { ExpoRetentionPushSenderAdapter } from "./infrastructure/adapters/expo-retention-push-sender.adapter";
 import { RetentionConfigAdapter } from "./infrastructure/adapters/retention-config.adapter";
@@ -28,6 +29,7 @@ import { RetentionQueueService } from "./infrastructure/queue/retention-queue.se
 		ProcessRetentionStagesUseCase,
 		RelayRetentionOutboxUseCase,
 		DispatchRetentionPushUseCase,
+		RecoverFailedRetentionDeliveryUseCase,
 		PrismaRetentionRepository,
 		RetentionConfigAdapter,
 		ExpoRetentionPushSenderAdapter,

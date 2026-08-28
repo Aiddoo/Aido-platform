@@ -57,7 +57,7 @@ describe("SuggestionAnalysisJob — durable dispatcher", () => {
 		expect(runtime.enqueue).toHaveBeenCalledWith(
 			AI_SUGGESTION_QUEUE,
 			{ name: "dispatch-analysis", data: {} },
-			expect.objectContaining({ jobKey: "dispatch_suggestion_2026-03-09" }),
+			expect.objectContaining({ idempotencyKey: "dispatch_suggestion_2026-03-09" }),
 		);
 	});
 

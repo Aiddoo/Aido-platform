@@ -45,6 +45,10 @@ describe("BullHealthIndicator — durable job runtime health", () => {
 			"ai-report-generation.v1",
 			"admin-notification.v1",
 			"todo-reminder.v1",
+			"push-delivery.v1",
+			"push-delivery-dead-letter.v1",
+			"retention.v1",
+			"retention-dead-letter.v1",
 		]);
 	});
 

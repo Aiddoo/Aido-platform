@@ -56,7 +56,7 @@ describe("BullmqAdminNotificationQueueAdapter", () => {
 		expect(opts).toEqual(
 			expect.objectContaining({
 				retryLimit: 2,
-				jobKey: "signup-summary_2026-02-10",
+				idempotencyKey: "signup-summary_2026-02-10",
 			}),
 		);
 	});

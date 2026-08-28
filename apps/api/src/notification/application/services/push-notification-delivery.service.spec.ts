@@ -12,7 +12,11 @@ import {
 	type ActivePushTokenReaderPort,
 } from "../ports/active-push-token.reader.port";
 import { NOTIFICATION_CACHE, type NotificationCachePort } from "../ports/notification-cache.port";
-import { PUSH_PROVIDER, type PushProvider } from "../ports/push-provider.port";
+import {
+	PUSH_PROVIDER,
+	type PushProvider,
+	RetryablePushProviderTransportError,
+} from "../ports/push-provider.port";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
@@ -248,5 +252,32 @@ describe("PushNotificationDeliveryService", () => {
 		expect(notificationCache.invalidatePushTokens).toHaveBeenCalledTimes(2);
 		expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-2");
+	});
+
+	it("배치 provider transport 오류는 token 상태를 변경하지 않고 같은 오류를 재전파한다", async () => {
+		// Given
+		activeTokenReader.findByUserIds.mockResolvedValue(
+			new Map([["user-1", ["ExponentPushToken[user-1]"]]]),
+		);
+		const prepared = await service.prepareBatchDelivery([
+			batchPayload({ userId: "user-1", dispatchId: 1 }),
+		]);
+		if (prepared.status !== "ready") throw new Error("Expected a prepared batch delivery");
+		const transportError = new RetryablePushProviderTransportError(
+			{
+				providerName: "expo",
+				resolvedPayloadCountBeforeFailure: 0,
+				acceptedTicketCountBeforeFailure: 0,
+				unconfirmedPayloadCount: 1,
+				unattemptedPayloadCount: 0,
+			},
+			{ cause: new Error("network unavailable") },
+		);
+		pushProvider.sendBatch.mockRejectedValue(transportError);
+
+		// When / Then
+		await expect(service.sendPreparedBatch(prepared)).rejects.toBe(transportError);
+		expect(tokenRepository.deactivateInvalidTokens).not.toHaveBeenCalled();
+		expect(notificationCache.invalidatePushTokens).not.toHaveBeenCalled();
 	});
 });

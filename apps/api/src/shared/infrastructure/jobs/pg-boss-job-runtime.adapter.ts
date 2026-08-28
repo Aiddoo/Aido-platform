@@ -8,9 +8,11 @@ import type {
 	JobWithMetadata,
 	PrismaTransactionLike,
 	QueueResult,
+	QueueOptions,
 	ScheduleOptions,
 	SendOptions,
 	StopOptions,
+	UpdateQueueOptions,
 	WorkOptions,
 } from "pg-boss";
 
@@ -20,7 +22,13 @@ import type {
 	JobData,
 	JobRuntimeHealth,
 	JobRuntimePort,
+	JobRetryPolicy,
 	WorkJobOptions,
+} from "@/shared/application/ports/job-runtime.port";
+import {
+	resolveDeadLetterJobPolicy,
+	resolveDeadLetterQueue,
+	resolveJobIdempotencyKey,
 } from "@/shared/application/ports/job-runtime.port";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
@@ -30,7 +38,8 @@ export interface PgBossClient {
 	start(): Promise<unknown>;
 	stop(options?: StopOptions): Promise<void>;
 	on(event: "error", listener: (error: Error) => void): unknown;
-	createQueue(name: string): Promise<void>;
+	createQueue(name: string, options?: QueueOptions): Promise<void>;
+	updateQueue(name: string, options: UpdateQueueOptions): Promise<void>;
 	send(name: string, data: object, options: SendOptions): Promise<string | null>;
 	schedule(name: string, cron: string, data: object, options: ScheduleOptions): Promise<void>;
 	unschedule(name: string, key?: string): Promise<void>;
@@ -71,8 +80,12 @@ export class LazyPgBossClient implements PgBossClient {
 		return this;
 	}
 
-	async createQueue(name: string): Promise<void> {
-		await (await this.ensureStarted()).createQueue(name);
+	async createQueue(name: string, options?: QueueOptions): Promise<void> {
+		await (await this.ensureStarted()).createQueue(name, options);
+	}
+
+	async updateQueue(name: string, options: UpdateQueueOptions): Promise<void> {
+		await (await this.ensureStarted()).updateQueue(name, options);
 	}
 
 	async send(name: string, data: object, options: SendOptions): Promise<string | null> {
@@ -172,6 +185,7 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
 export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 	private readonly logger = new Logger(PgBossJobRuntimeAdapter.name);
 	private readonly queueCreations = new Map<string, Promise<void>>();
+	private readonly queuePolicyApplications = new Map<string, Promise<void>>();
 
 	constructor(
 		@Inject(PG_BOSS_CLIENT) private readonly boss: PgBossClient,
@@ -203,15 +217,18 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		data: T,
 		options: EnqueueJobOptions,
 	): Promise<string | null> {
-		if (options.deadLetter) {
-			await this.ensureQueue(options.deadLetter);
+		const deadLetterQueue = resolveDeadLetterQueue(options.deadLetter);
+		const deadLetterJobPolicy = resolveDeadLetterJobPolicy(options.deadLetter);
+		if (deadLetterQueue) {
+			await this.ensureQueue(deadLetterQueue, deadLetterJobPolicy);
 		}
 		await this.ensureQueue(queue);
+		const idempotencyKey = resolveJobIdempotencyKey(options);
 		const pgBossOptions = this.toPgBossOptions(options, this.transactionDatabase());
 		return this.boss.send(queue, data, {
 			...pgBossOptions,
-			...(options.jobKey && {
-				id: deterministicJobId(queue, options.jobKey),
+			...(idempotencyKey && {
+				id: deterministicJobId(queue, idempotencyKey),
 			}),
 		});
 	}
@@ -223,14 +240,17 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		data: T,
 		options: EnqueueJobOptions,
 	): Promise<void> {
-		if (options.deadLetter) {
-			await this.ensureQueue(options.deadLetter);
+		const deadLetterQueue = resolveDeadLetterQueue(options.deadLetter);
+		const deadLetterJobPolicy = resolveDeadLetterJobPolicy(options.deadLetter);
+		if (deadLetterQueue) {
+			await this.ensureQueue(deadLetterQueue, deadLetterJobPolicy);
 		}
 		await this.ensureQueue(queue);
-		const { db: _transactionDb, ...persistedOptions } = this.toPgBossOptions(
-			options,
-			this.transactionDatabase(),
-		);
+		const {
+			db: _transactionDb,
+			singletonKey: _idempotencyKey,
+			...persistedOptions
+		} = this.toPgBossOptions(options, this.transactionDatabase());
 		await this.boss.schedule(queue, cron, data, {
 			...persistedOptions,
 			key: scheduleKey,
@@ -242,10 +262,10 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		await this.boss.unschedule(queue, scheduleKey);
 	}
 
-	async cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
+	async cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult> {
 		const db = this.transactionDatabase();
 		const jobs = await this.boss.findJobs(queue, {
-			key: jobKey,
+			key: idempotencyKey,
 			queued: true,
 			db,
 		});
@@ -276,7 +296,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		) => Promise<void>,
 		options: WorkJobOptions,
 	): Promise<void> {
-		await this.ensureQueue(queue);
+		await this.ensureQueue(queue, options.queuePolicy);
 		await this.boss.work<T>(
 			queue,
 			{
@@ -355,7 +375,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 	private toPgBossOptions(options: EnqueueJobOptions, db: Db): SendOptions {
 		return {
 			db,
-			singletonKey: options.jobKey,
+			singletonKey: resolveJobIdempotencyKey(options),
 			startAfter: options.startAfter,
 			retryLimit: options.retryLimit,
 			retryDelay: options.retryDelaySeconds,
@@ -363,25 +383,62 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 			expireInSeconds: options.expireInSeconds,
 			retentionSeconds: options.retentionSeconds,
 			deleteAfterSeconds: options.deleteAfterSeconds,
-			deadLetter: options.deadLetter,
+			deadLetter: resolveDeadLetterQueue(options.deadLetter),
 		};
 	}
 
-	private async ensureQueue(queue: string): Promise<void> {
+	private async ensureQueue(queue: string, queuePolicy?: JobRetryPolicy): Promise<void> {
 		const existing = this.queueCreations.get(queue);
+		if (existing) {
+			await existing;
+		} else {
+			const creation = this.boss.createQueue(
+				queue,
+				queuePolicy ? this.toPgBossQueueOptions(queuePolicy) : undefined,
+			);
+			this.queueCreations.set(queue, creation);
+			try {
+				await creation;
+			} catch (error) {
+				this.queueCreations.delete(queue);
+				throw error;
+			}
+		}
+
+		if (queuePolicy) {
+			await this.applyQueuePolicy(queue, queuePolicy);
+		}
+	}
+
+	private async applyQueuePolicy(queue: string, policy: JobRetryPolicy): Promise<void> {
+		const policyKey = `${queue}:${JSON.stringify(policy)}`;
+		const existing = this.queuePolicyApplications.get(policyKey);
 		if (existing) {
 			await existing;
 			return;
 		}
 
-		const creation = this.boss.createQueue(queue);
-		this.queueCreations.set(queue, creation);
+		// createQueue는 기존 queue의 정책을 갱신하지 않는다. updateQueue를 함께 호출해
+		// worker-first rolling 배포에서 이미 생성된 DLQ도 동일한 정책으로 수렴시킨다.
+		const application = this.boss.updateQueue(queue, this.toPgBossQueueOptions(policy));
+		this.queuePolicyApplications.set(policyKey, application);
 		try {
-			await creation;
+			await application;
 		} catch (error) {
-			this.queueCreations.delete(queue);
+			this.queuePolicyApplications.delete(policyKey);
 			throw error;
 		}
+	}
+
+	private toPgBossQueueOptions(policy: JobRetryPolicy): QueueOptions {
+		return {
+			retryLimit: policy.retryLimit,
+			retryDelay: policy.retryDelaySeconds,
+			retryBackoff: policy.retryBackoff,
+			expireInSeconds: policy.expireInSeconds,
+			retentionSeconds: policy.retentionSeconds,
+			deleteAfterSeconds: policy.deleteAfterSeconds,
+		};
 	}
 }
 
@@ -394,9 +451,9 @@ function hasAffectedCount(result: unknown): result is { readonly affected: numbe
 	);
 }
 
-export function deterministicJobId(queue: string, jobKey: string): string {
+export function deterministicJobId(queue: string, idempotencyKey: string): string {
 	const bytes = Buffer.from(
-		createHash("sha256").update(`${queue}:${jobKey}`).digest().subarray(0, 16),
+		createHash("sha256").update(`${queue}:${idempotencyKey}`).digest().subarray(0, 16),
 	);
 	// 결정적 해시를 UUID version/variant 비트로 정규화해 pg-boss PK와 호환한다.
 	bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;

@@ -12,8 +12,8 @@ import {
 	type UserNotificationSettingsPort,
 } from "../../ports/user-notification-settings.port";
 import { NotificationSender } from "../../senders/notification.sender";
-import type { PersistedBatchNotificationDispatch } from "../../types/push-delivery.types";
-import { DispatchBatchNotificationUseCase } from "../dispatch-batch-notification/dispatch-batch-notification.use-case";
+import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types";
+import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
 
 export interface SendFriendCompletionNotificationsInput {
@@ -30,7 +30,7 @@ export class SendFriendCompletionNotificationsUseCase {
 	constructor(
 		private readonly notificationSender: NotificationSender,
 		private readonly persistBatch: PersistBatchNotificationUseCase,
-		private readonly dispatchBatch: DispatchBatchNotificationUseCase,
+		private readonly finalizeBatch: FinalizeBatchNotificationUseCase,
 		@Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWorkPort,
 		@Inject(USER_NOTIFICATION_SETTINGS)
 		private readonly userNotificationSettings: UserNotificationSettingsPort,
@@ -86,7 +86,7 @@ export class SendFriendCompletionNotificationsUseCase {
 				variantId: message.variantId,
 			};
 		});
-		let persistedBatch: PersistedBatchNotificationDispatch;
+		let persistedBatch: PersistedBatchNotificationResult;
 		try {
 			persistedBatch = await this.unitOfWork.run(() => this.persistBatch.execute(notifications));
 		} catch (error) {
@@ -100,9 +100,9 @@ export class SendFriendCompletionNotificationsUseCase {
 		this.#logger.log(
 			`Friend completion notifications persisted: friendId=${input.friendId}, count=${persistedBatch.count}`,
 		);
-		await this.dispatchBatch.execute(persistedBatch);
+		await this.finalizeBatch.execute(persistedBatch);
 		this.#logger.debug(
-			`Friend completion push delivery scheduled: friendId=${input.friendId}, count=${persistedBatch.count}`,
+			`Friend completion post-commit effects finalized: friendId=${input.friendId}, count=${persistedBatch.count}`,
 		);
 	}
 }

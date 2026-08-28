@@ -16,6 +16,7 @@ import { PushDeliveryEligibilityService } from "./push-delivery-eligibility.serv
 
 const DAYTIME = new Date("2026-07-16T03:00:00.000Z");
 const KST_NIGHT = new Date("2026-07-16T14:00:00.000Z");
+const RATE_LIMIT_DISPATCH_ID = 101;
 
 function preference(
 	overrides: Partial<NotificationDeliveryPreference> = {},
@@ -70,8 +71,8 @@ describe("PushDeliveryEligibilityService", () => {
 		rateLimiter = unitRef.get(PUSH_RATE_LIMITER);
 		preferenceReader = unitRef.get(NOTIFICATION_RECIPIENT_PREFERENCE_READER);
 		preferenceReader.getPreference.mockResolvedValue(preference());
-		rateLimiter.isRateLimited.mockResolvedValue(false);
-		rateLimiter.isEngagementRateLimited.mockResolvedValue(false);
+		rateLimiter.reserveGeneral.mockResolvedValue(false);
+		rateLimiter.reserveEngagement.mockResolvedValue(false);
 	});
 
 	afterEach(() => jest.useRealTimers());
@@ -92,31 +93,37 @@ describe("PushDeliveryEligibilityService", () => {
 			preference: preference({ pushEnabled: false }),
 		};
 
-		await expect(service.evaluateSingle(transactional, recipient)).resolves.toEqual({
+		await expect(
+			service.evaluateSingle(transactional, recipient, RATE_LIMIT_DISPATCH_ID, false),
+		).resolves.toEqual({
 			status: "skipped",
 			candidate: transactional,
 			reason: "PUSH_DISABLED",
 		});
-		expect(rateLimiter.isRateLimited).not.toHaveBeenCalled();
+		expect(rateLimiter.reserveGeneral).not.toHaveBeenCalled();
 	});
 
 	it("단건은 일반 rate 제한을 야간·마케팅 동의 조회보다 먼저 판정한다", async () => {
-		rateLimiter.isRateLimited.mockResolvedValue(true);
+		rateLimiter.reserveGeneral.mockResolvedValue(true);
 		const recipient = await service.loadSingleRecipient("user-1");
 
-		await expect(service.evaluateSingle(engagement, recipient)).resolves.toMatchObject({
+		await expect(
+			service.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, false),
+		).resolves.toMatchObject({
 			status: "skipped",
 			reason: "RATE_LIMITED",
 		});
 		expect(settings.getConsentRecord).not.toHaveBeenCalled();
-		expect(rateLimiter.isEngagementRateLimited).not.toHaveBeenCalled();
+		expect(rateLimiter.reserveEngagement).not.toHaveBeenCalled();
 	});
 
 	it("단건 마케팅은 야간 quiet-hours를 동의 조회보다 앞서 적용한다", async () => {
 		jest.setSystemTime(KST_NIGHT);
 		const recipient = await service.loadSingleRecipient("user-1");
 
-		await expect(service.evaluateSingle(engagement, recipient)).resolves.toMatchObject({
+		await expect(
+			service.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, false),
+		).resolves.toMatchObject({
 			status: "skipped",
 			reason: "MARKETING_QUIET_HOURS",
 		});
@@ -125,14 +132,55 @@ describe("PushDeliveryEligibilityService", () => {
 
 	it("단건 참여 유도는 동의 후 현지 날짜 engagement 제한을 별도로 판정한다", async () => {
 		settings.getConsentRecord.mockResolvedValue({ marketingPushAgreedAt: DAYTIME });
-		rateLimiter.isEngagementRateLimited.mockResolvedValue(true);
+		rateLimiter.reserveEngagement.mockResolvedValue(true);
 		const recipient = await service.loadSingleRecipient("user-1");
 
-		await expect(service.evaluateSingle(engagement, recipient)).resolves.toMatchObject({
+		await expect(
+			service.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, false),
+		).resolves.toMatchObject({
 			status: "skipped",
 			reason: "ENGAGEMENT_RATE_LIMITED",
 		});
-		expect(rateLimiter.isEngagementRateLimited).toHaveBeenCalledWith("user-1", "2026-07-16");
+		expect(rateLimiter.reserveEngagement).toHaveBeenCalledWith({
+			dispatchId: RATE_LIMIT_DISPATCH_ID,
+			userId: "user-1",
+			localDate: "2026-07-16",
+		});
+	});
+
+	it("재시도는 저장된 rate 예약을 재사용해도 현재 push 비활성 설정을 즉시 반영한다", async () => {
+		const recipient = {
+			...(await service.loadSingleRecipient("user-1")),
+			preference: preference({ pushEnabled: false }),
+		};
+
+		await expect(
+			service.evaluateSingle(transactional, recipient, RATE_LIMIT_DISPATCH_ID, true),
+		).resolves.toMatchObject({ status: "skipped", reason: "PUSH_DISABLED" });
+		expect(rateLimiter.reserveGeneral).not.toHaveBeenCalled();
+		expect(rateLimiter.reserveEngagement).not.toHaveBeenCalled();
+	});
+
+	it("재시도는 rate counter를 다시 쓰지 않고 철회된 marketing consent를 반영한다", async () => {
+		settings.getConsentRecord.mockResolvedValue({ marketingPushAgreedAt: null });
+		const recipient = await service.loadSingleRecipient("user-1");
+
+		await expect(
+			service.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, true),
+		).resolves.toMatchObject({ status: "skipped", reason: "MARKETING_CONSENT_REQUIRED" });
+		expect(rateLimiter.reserveGeneral).not.toHaveBeenCalled();
+		expect(rateLimiter.reserveEngagement).not.toHaveBeenCalled();
+	});
+
+	it("재시도 시 quiet-hours로 전환되면 저장된 rate 예약과 무관하게 마케팅을 중단한다", async () => {
+		jest.setSystemTime(KST_NIGHT);
+		const recipient = await service.loadSingleRecipient("user-1");
+
+		await expect(
+			service.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, true),
+		).resolves.toMatchObject({ status: "skipped", reason: "MARKETING_QUIET_HOURS" });
+		expect(rateLimiter.reserveGeneral).not.toHaveBeenCalled();
+		expect(rateLimiter.reserveEngagement).not.toHaveBeenCalled();
 	});
 
 	it("배치는 설정·동의를 한 번씩 bulk 조회하고 설정 행 부재를 명시적으로 보존한다", async () => {
@@ -159,9 +207,16 @@ describe("PushDeliveryEligibilityService", () => {
 		const recipients = await service.loadBatchRecipients(["forced", "missing", "marketing"]);
 		const forced = {
 			data: { ...transactional, userId: "forced", type: "ADMIN_BROADCAST" as const, force: true },
+			rateLimitDispatchId: 1,
 		};
-		const missing = { data: { ...transactional, userId: "missing" } };
-		const marketing = { data: { ...engagement, userId: "marketing" } };
+		const missing = {
+			data: { ...transactional, userId: "missing" },
+			rateLimitDispatchId: 2,
+		};
+		const marketing = {
+			data: { ...engagement, userId: "marketing" },
+			rateLimitDispatchId: 3,
+		};
 
 		expect(service.evaluateBatchSettings([forced, missing, marketing], recipients)).toEqual([
 			{ status: "eligible", candidate: forced },
@@ -182,16 +237,27 @@ describe("PushDeliveryEligibilityService", () => {
 		settings.getConsentRecordsByUserIds.mockResolvedValue([]);
 		rateLimiter.reserveBatch.mockResolvedValue([false, true]);
 		const recipients = await service.loadBatchRecipients(["user-1", "user-2"]);
-		const first = { data: engagement };
-		const second = { data: { ...engagement, userId: "user-2" } };
+		const first = { data: engagement, rateLimitDispatchId: 1 };
+		const second = {
+			data: { ...engagement, userId: "user-2" },
+			rateLimitDispatchId: 2,
+		};
 
 		await expect(service.reserveBatch([first, second], recipients)).resolves.toEqual([
 			{ status: "eligible", candidate: first },
 			{ status: "skipped", candidate: second, reason: "RATE_LIMITED" },
 		]);
 		expect(rateLimiter.reserveBatch).toHaveBeenCalledWith([
-			{ userId: "user-1", engagementLocalDate: "2026-07-16" },
-			{ userId: "user-2", engagementLocalDate: "2026-07-15" },
+			{
+				dispatchId: 1,
+				userId: "user-1",
+				engagementLocalDate: "2026-07-16",
+			},
+			{
+				dispatchId: 2,
+				userId: "user-2",
+				engagementLocalDate: "2026-07-15",
+			},
 		]);
 	});
 });

@@ -38,6 +38,7 @@ export interface ClaimedOutbox {
 }
 
 export interface RetentionDispatchCandidate {
+	readonly fence: RetentionDispatchFence;
 	readonly outboxId: string;
 	readonly dispatchId: number;
 	readonly notificationId: number;
@@ -51,10 +52,19 @@ export interface RetentionDispatchCandidate {
 	readonly pushEnabled: boolean;
 	readonly nightPushEnabled: boolean;
 	readonly marketingPushAgreedAt: Date | null;
+	readonly rateLimitReserved: boolean;
 	readonly tokens: ReadonlyArray<{
 		readonly id: number;
 		readonly token: string;
 	}>;
+}
+
+export interface RetentionDispatchFence {
+	readonly outboxId: string;
+	readonly dispatchId: number;
+	readonly publishAttempt: number;
+	readonly processingJobId: string;
+	readonly deliveryAttemptCount: number;
 }
 
 export interface RetentionDeliveryResult {
@@ -81,17 +91,47 @@ export interface RetentionRepositoryPort {
 		todoActionWithinD7: boolean;
 	}): Promise<void>;
 	recoverStaleOutboxes(cutoff: Date): Promise<number>;
+	recoverStaleDispatches(cutoff: Date): Promise<number>;
 	claimOutboxes(limit: number, now: Date): Promise<ClaimedOutbox[]>;
-	markOutboxPublished(outboxId: string): Promise<void>;
-	deferOutbox(outboxId: string, availableAt: Date): Promise<void>;
+	markOutboxPublished(outbox: ClaimedOutbox): Promise<void>;
+	/** Generation lock 뒤 최신 dispatch 상태를 재검사하므로 UNIT_OF_WORK 안에서 호출한다. */
+	deferOutbox(input: {
+		readonly outboxId: string;
+		readonly publishAttempt?: number;
+		readonly availableAt: Date;
+	}): Promise<void>;
 	markOutboxFailed(input: {
 		outboxId: string;
+		publishAttempt: number;
 		hasExhaustedRetries: boolean;
 		error: string;
 		nextAttemptAt: Date;
 	}): Promise<void>;
-	claimDispatch(outboxId: string): Promise<RetentionDispatchCandidate | null>;
-	releaseDispatch(dispatchId: number, reason: string): Promise<void>;
-	markDispatchSkipped(dispatchId: number, reason: string): Promise<void>;
-	recordDeliveryResults(dispatchId: number, results: RetentionDeliveryResult[]): Promise<void>;
+	/** Outbox ownership과 dispatch lease를 함께 rollback할 수 있도록 UNIT_OF_WORK 안에서 호출한다. */
+	claimDispatch(input: {
+		readonly outboxId: string;
+		readonly publishAttempt?: number;
+		readonly processingJobId: string;
+		readonly processingJobAttempt: number;
+		readonly startedAt: Date;
+	}): Promise<RetentionDispatchCandidate | null>;
+	releaseDispatchForRetry(input: {
+		readonly fence: RetentionDispatchFence;
+		readonly reason: string;
+		readonly availableAt: Date;
+		readonly hasExhaustedRetries: boolean;
+	}): Promise<boolean>;
+	/** Generation lock 뒤 최신 dispatch 상태를 재검사하므로 UNIT_OF_WORK 안에서 호출한다. */
+	reopenUnclaimedDispatch(input: {
+		readonly outboxId: string;
+		readonly publishAttempt?: number;
+		readonly availableAt: Date;
+		readonly reason: string;
+	}): Promise<boolean>;
+	markRateLimitReserved(fence: RetentionDispatchFence, reservedAt: Date): Promise<boolean>;
+	markDispatchSkipped(fence: RetentionDispatchFence, reason: string): Promise<boolean>;
+	recordDeliveryResults(
+		fence: RetentionDispatchFence,
+		results: RetentionDeliveryResult[],
+	): Promise<boolean>;
 }

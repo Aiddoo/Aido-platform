@@ -39,8 +39,6 @@ import {
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import { TransactionalEmailSender } from "@/email";
 import { PUSH_PROVIDER } from "@/notification";
-import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
-import { InProcessPushDispatcherAdapter } from "@/notification/infrastructure/adapters/in-process-push-dispatcher.adapter";
 import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
 import { NOTIFICATION_QUEUE } from "@/notification/queue";
 import { RETENTION_QUEUE } from "@/retention/infrastructure/queue/retention-queue.constants";
@@ -188,7 +186,6 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 		cleanupIntervalMs: 30000,
 	});
 	let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
-	let pushDispatcher: InProcessPushDispatcherAdapter | undefined;
 	let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
 	let module: TestingModule | undefined;
 	let app: INestApplication<App> | undefined;
@@ -316,7 +313,6 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 			enableShutdownHooks: false,
 		});
 		await app.init();
-		pushDispatcher = module.get<InProcessPushDispatcherAdapter>(PUSH_DISPATCHER);
 
 		if (!fakeOAuthProviderRegistry) {
 			throw new Error("Fake OAuth provider registry was not initialized");
@@ -325,9 +321,8 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 		const helpers = new E2eHelpers(app, fakeEmailService);
 		const reset = createE2eTestStateResetter({
 			drainBackgroundWork: async () => {
-				// 이벤트 리스너(DB 쓰기 부수효과) → 푸시 순으로 drain 후에야 TRUNCATE
+				// commit 뒤 이벤트 작업이 정착한 후 DB를 정리한다. Push는 durable queue가 소유한다.
 				await trackingEventPublisher?.drainPendingEvents();
-				await pushDispatcher?.drainPendingPushes();
 			},
 			cleanupDatabase: () => testDatabase.cleanup(),
 			resetCache: () => cacheAdapter.reset(),

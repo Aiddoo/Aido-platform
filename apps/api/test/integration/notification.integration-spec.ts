@@ -46,16 +46,15 @@ import {
 	type NotificationRecipientLocaleReaderPort,
 } from "@/notification/application/ports/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "@/notification/application/ports/notification-recipient-preference.reader.port";
-import { PUSH_DISPATCH_REPOSITORY } from "@/notification/application/ports/push-dispatch.repository.port";
-import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
+import {
+	PUSH_DISPATCH_STAGING,
+	type PushDispatchStagingRepositoryPort,
+} from "@/notification/application/ports/push-dispatch-staging.repository.port";
 import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
-import { PushDeliveryEligibilityService } from "@/notification/application/services/push-delivery-eligibility.service";
-import { PushNotificationDeliveryService } from "@/notification/application/services/push-notification-delivery.service";
-import { PushNotificationPayloadFactory } from "@/notification/application/services/push-notification-payload.factory";
-import { DeliverPushNotificationsUseCase } from "@/notification/application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case";
-import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
+import { PushDeliveryAfterCommitPublisher } from "@/notification/application/services/push-delivery-after-commit.publisher";
+import { FinalizeBatchNotificationUseCase } from "@/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
@@ -72,14 +71,19 @@ import { SendNotificationUseCase } from "@/notification/application/use-cases/se
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { CachedActivePushTokenReaderAdapter } from "@/notification/infrastructure/adapters/cached-active-push-token-reader.adapter";
 import { CachedNotificationRecipientPreferenceAdapter } from "@/notification/infrastructure/adapters/cached-notification-recipient-preference.adapter";
-import { InProcessPushDispatcherAdapter } from "@/notification/infrastructure/adapters/in-process-push-dispatcher.adapter";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupLockAdapter } from "@/notification/infrastructure/adapters/notification-dedup-lock.adapter";
 import { PrismaNotificationReader } from "@/notification/infrastructure/persistence/prisma-notification.reader";
 import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
-import { PrismaPushDeliveryRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery.repository";
+import { PrismaPushReceiptRepository } from "@/notification/infrastructure/persistence/prisma-push-receipt.repository";
 import { PrismaPushTokenRepository } from "@/notification/infrastructure/persistence/prisma-push-token.repository";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
+import {
+	AFTER_COMMIT_TASK_REGISTRY,
+	type AfterCommitTaskRegistryPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -123,7 +127,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let facade: ReturnType<typeof buildNotificationTestApi>;
 	let repository: PrismaNotificationRepository;
-	let pushDispatcher: InProcessPushDispatcherAdapter;
 
 	// Mock 데이터베이스 서비스
 	const mockNotificationDb = {
@@ -204,6 +207,19 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		issue: jest.fn((userId: string) => `opt-out:${userId}`),
 		verify: jest.fn((token: string) => token.replace(/^opt-out:/, "") || null),
 	};
+	const mockPushDispatchStaging = {
+		stage: jest.fn().mockImplementation(async (input: { notificationId: number }) => ({
+			dispatchId: input.notificationId,
+			notificationId: input.notificationId,
+		})),
+		stageMany: jest.fn().mockImplementation(async (inputs: readonly { notificationId: number }[]) =>
+			inputs.map((input) => ({
+				dispatchId: input.notificationId,
+				notificationId: input.notificationId,
+			})),
+		),
+	} satisfies PushDispatchStagingRepositoryPort;
+	const mockAfterCommitPublisher = { register: jest.fn() };
 
 	// 테스트 데이터
 	const mockUserId = "user-notification-123";
@@ -225,9 +241,28 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{ provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
 				PrismaPushTokenRepository,
 				{ provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
-				PrismaPushDeliveryRepository,
-				{ provide: PUSH_DISPATCH_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
-				{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
+				PrismaPushReceiptRepository,
+				{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
+				{
+					provide: PUSH_DISPATCH_STAGING,
+					useValue: mockPushDispatchStaging,
+				},
+				{
+					provide: UNIT_OF_WORK,
+					useValue: { run: (work) => work() } satisfies UnitOfWorkPort,
+				},
+				{
+					provide: AFTER_COMMIT_TASK_REGISTRY,
+					useValue: {
+						register: (task) => {
+							task().catch(() => undefined);
+						},
+					} satisfies AfterCommitTaskRegistryPort,
+				},
+				{
+					provide: PushDeliveryAfterCommitPublisher,
+					useValue: mockAfterCommitPublisher,
+				},
 				CachedActivePushTokenReaderAdapter,
 				{
 					provide: ACTIVE_PUSH_TOKEN_READER,
@@ -242,12 +277,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 					provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
 					useExisting: CachedNotificationRecipientPreferenceAdapter,
 				},
-				PushDeliveryEligibilityService,
-				PushNotificationDeliveryService,
-				PushNotificationPayloadFactory,
-				DeliverPushNotificationsUseCase,
-				InProcessPushDispatcherAdapter,
-				{ provide: PUSH_DISPATCHER, useExisting: InProcessPushDispatcherAdapter },
 				// application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
 				{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
 				{
@@ -272,7 +301,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				SendNotificationUseCase,
 				SendNotificationWithDedupUseCase,
 				PersistBatchNotificationUseCase,
-				DispatchBatchNotificationUseCase,
+				FinalizeBatchNotificationUseCase,
 				SendBatchNotificationUseCase,
 				FindAlreadyNotifiedUsersUseCase,
 				{
@@ -380,7 +409,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 		facade = buildNotificationTestApi(module);
 		repository = module.get(PrismaNotificationRepository);
-		pushDispatcher = module.get<InProcessPushDispatcherAdapter>(PUSH_DISPATCHER);
 	});
 
 	afterAll(async () => {
@@ -767,7 +795,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("알림 생성 및 발송 통합 테스트", () => {
-		it("알림을 생성하고 푸시를 발송해야 함", async () => {
+		it("알림과 SINGLE delivery outbox를 같은 흐름에서 준비해야 함", async () => {
 			// Given - 알림 및 푸시 토큰 준비
 			const mockNotification = NotificationBuilder.create(mockUserId)
 				.withId(mockNotificationId)
@@ -795,12 +823,20 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				title: "테스트 알림",
 				body: "테스트 알림 내용입니다",
 			});
-			await pushDispatcher.beforeApplicationShutdown();
 
-			// Then - 알림 생성 및 푸시 발송 검증
+			// Then - 알림 생성과 durable delivery staging 검증
 			expect(result).toEqual(mockNotification);
 			expect(mockNotificationDb.create).toHaveBeenCalled();
-			expect(mockPushTokenDb.findMany).toHaveBeenCalled();
+			expect(mockPushDispatchStaging.stage).toHaveBeenCalledWith({
+				notificationId: mockNotification.id,
+				userId: mockUserId,
+				purpose: "TRANSACTIONAL",
+				campaignKey: undefined,
+				variantId: undefined,
+				deliveryMode: "SINGLE",
+				force: false,
+			});
+			expect(mockAfterCommitPublisher.register).toHaveBeenCalledWith([mockNotification.id]);
 		});
 
 		it("푸시 토큰이 없어도 알림을 생성해야 함", async () => {
@@ -857,7 +893,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 			// When - 배치 알림 생성 및 발송
 			const result = await facade.createAndSendBatch(dataList);
-			await pushDispatcher.beforeApplicationShutdown();
 
 			// Then - title이 치환된 값이어야 하며, {count}가 포함되지 않아야 함
 			expect(result.count).toBe(1);
@@ -965,7 +1000,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 			// When - 배치 알림 생성 및 발송
 			const result = await facade.createAndSendBatch(dataList);
-			await pushDispatcher.beforeApplicationShutdown();
 
 			// Then - 두 사용자 모두 알림이 생성되어야 함
 			expect(result.count).toBe(2);
@@ -979,7 +1013,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			expect(createManyCall.data[1].body).toBe(messageNoTodos.body);
 		});
 
-		it("force 항목은 pushEnabled=false여도 푸시가 발송되어야 함", async () => {
+		it("force 항목은 BATCH delivery outbox에 손실 없이 저장되어야 함", async () => {
 			// Given - 푸시를 꺼둔 사용자와 force 지정된 관리자 브로드캐스트
 			const dataList = [
 				{
@@ -1012,22 +1046,19 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 			// When - 배치 알림 생성 및 발송 (재조립 경로 포함 end-to-end)
 			const result = await facade.createAndSendBatch(dataList);
-			await pushDispatcher.beforeApplicationShutdown();
 
-			// Then - 설정 게이트를 우회해 실제 푸시까지 발송되어야 함
+			// Then - crash 뒤 worker가 같은 정책을 재현할 수 있도록 force가 staging됨
 			expect(result.count).toBe(1);
-			expect(mockPushProvider.sendBatch).toHaveBeenCalledTimes(1);
-
-			const payloadData = mockPushProvider.sendBatch.mock.calls[0]?.[0]?.[0]?.data;
-			expect(payloadData).toMatchObject({
-				type: "ADMIN_BROADCAST",
-				action: { type: "BROWSER", url: "https://aido.kr/ko/patch-notes" },
-			});
-			// force는 서버 발송 정책일 뿐 클라이언트 payload 계약에 포함되지 않는다
-			expect(payloadData).not.toHaveProperty("force");
+			expect(mockPushDispatchStaging.stageMany).toHaveBeenCalledWith([
+				expect.objectContaining({
+					userId: mockUserId,
+					deliveryMode: "BATCH",
+					force: true,
+				}),
+			]);
 		});
 
-		it("같은 배치에 섞인 같은 사용자의 비-force 알림은 force로 오염되지 않아야 함", async () => {
+		it("같은 사용자 배치에서도 각 outbox의 force 값을 독립적으로 보존해야 함", async () => {
 			// Given - 푸시를 꺼둔 사용자에게 force 알림과 일반 알림이 한 배치로 들어올 때
 			const dataList = [
 				{
@@ -1062,15 +1093,21 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 			// When - 배치 알림 생성 및 발송
 			const result = await facade.createAndSendBatch(dataList);
-			await pushDispatcher.beforeApplicationShutdown();
 
-			// Then - force 지정된 알림만 발송되고 일반 알림은 수신 설정에 막혀야 함
+			// Then - worker가 각 dispatch 정책을 독립적으로 적용할 수 있음
 			expect(result.count).toBe(2);
-			expect(mockPushProvider.sendBatch).toHaveBeenCalledTimes(1);
-
-			const payloads = mockPushProvider.sendBatch.mock.calls[0]?.[0];
-			expect(payloads).toHaveLength(1);
-			expect(payloads?.[0]?.data).toMatchObject({ type: "ADMIN_TARGETED" });
+			expect(mockPushDispatchStaging.stageMany).toHaveBeenCalledWith([
+				expect.objectContaining({
+					userId: mockUserId,
+					deliveryMode: "BATCH",
+					force: true,
+				}),
+				expect.objectContaining({
+					userId: mockUserId,
+					deliveryMode: "BATCH",
+					force: false,
+				}),
+			]);
 		});
 	});
 });

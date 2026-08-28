@@ -6,7 +6,7 @@ import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-pr
 import { type DynamicModule, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { ClsModule } from "nestjs-cls";
+import { ClsModule, ClsService } from "nestjs-cls";
 
 import { type CheerLimitReaderPort } from "@/cheer/application/ports/cheer-limit-reader.port";
 import type { CheerNotifierPort } from "@/cheer/application/ports/cheer-notifier.port";
@@ -482,6 +482,7 @@ function createTransactionHarness(prisma: PrismaClient): {
 	uow: UnitOfWorkPort;
 } {
 	const storage = new AsyncLocalStorage<TransactionClient>();
+	const cls = new ClsService(new AsyncLocalStorage());
 	const txHost = {
 		get tx(): TransactionClient {
 			return storage.getStore() ?? prisma;
@@ -490,7 +491,12 @@ function createTransactionHarness(prisma: PrismaClient): {
 			return storage.getStore() !== undefined;
 		},
 		withTransaction<T>(work: () => Promise<T>): Promise<T> {
-			return prisma.$transaction((tx) => storage.run(tx, work));
+			if (storage.getStore()) {
+				return cls.run({ ifNested: "inherit" }, work);
+			}
+			return prisma.$transaction((tx) =>
+				storage.run(tx, () => cls.run({ ifNested: "inherit" }, work)),
+			);
 		},
 	};
 	const typedTxHost = txHost as unknown as TransactionHost<
@@ -498,7 +504,7 @@ function createTransactionHarness(prisma: PrismaClient): {
 	>;
 	return {
 		txHost: typedTxHost,
-		uow: new ClsUnitOfWork(typedTxHost),
+		uow: new ClsUnitOfWork(typedTxHost, cls),
 	};
 }
 

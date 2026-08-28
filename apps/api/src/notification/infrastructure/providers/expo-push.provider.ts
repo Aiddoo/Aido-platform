@@ -12,6 +12,7 @@ import type {
 	PushReceiptResult,
 	PushResult,
 } from "../../application/ports/push-provider.port";
+import { RetryablePushProviderTransportError } from "../../application/ports/push-provider.port";
 import { buildExpoPushMessage, type ExpoPushMessageBuildResult } from "./expo-push-message";
 
 const EXPO_MESSAGE_TOO_BIG_ERROR_CODE = "MessageTooBig";
@@ -111,8 +112,10 @@ export class ExpoPushProvider implements PushProvider {
 	 * Expo는 한 번에 최대 100개의 알림을 발송할 수 있습니다.
 	 * 이 메서드는 내부적으로 청크를 나누어 처리합니다.
 	 *
-	 * 배치 발송에서는 개별 실패를 result로 반환하고 예외를 던지지 않음
-	 * (부분 성공 허용)
+	 * Expo error ticket처럼 payload 단위로 확정된 실패는 result로 반환한다. SDK/HTTP
+	 * transport가 청크 단위로 실패하면 수락 여부를 확인할 수 없으므로 typed retryable
+	 * error를 던진다. 이전 청크의 성공 ticket은 이미 수락되었을 수 있어 호출자가 전체
+	 * 논리 배치를 재시도할 때 at-least-once 중복 전달이 가능하다.
 	 */
 	async sendBatch(payloads: PushPayload[]): Promise<BatchPushResult> {
 		const orderedResults: Array<PushResult | undefined> = Array(payloads.length);
@@ -164,49 +167,57 @@ export class ExpoPushProvider implements PushProvider {
 		// Expo는 내부적으로 청크를 나눠서 처리
 		const chunks = this.#expo.chunkPushNotifications(messages);
 
-		let processedIndex = 0;
+		let nextSendableEntryIndex = 0;
+		let acceptedTicketCount = 0;
 		for (const chunk of chunks) {
+			let tickets: ExpoPushTicket[];
 			try {
-				const tickets = await this.#expo.sendPushNotificationsAsync(chunk);
-
-				for (let i = 0; i < chunk.length; i++) {
-					const ticket = tickets[i];
-					const entry = sendableEntries[processedIndex];
-					processedIndex++;
-
-					if (!ticket || !entry) {
-						if (entry)
-							orderedResults[entry.originalIndex] = {
-								token: entry.payload.token,
-								success: false,
-								error: "No ticket or payload",
-								errorCode: "NOTIFICATION_1003",
-							};
-						continue;
-					}
-
-					const result = this.#parseTicket(ticket, entry.payload.token);
-
-					if (!result.success && result.errorCode === "DeviceNotRegistered") {
-						invalidTokens.push(entry.payload.token);
-					}
-
-					orderedResults[entry.originalIndex] = result;
-				}
+				tickets = await this.#expo.sendPushNotificationsAsync(chunk);
 			} catch (error) {
-				this.#logger.error(`Failed to send batch notifications: ${error}`);
-				// 청크 전체 실패 처리
-				for (let i = 0; i < chunk.length; i++) {
-					const entry = sendableEntries[processedIndex];
-					processedIndex++;
+				const transportError = new RetryablePushProviderTransportError(
+					{
+						providerName: this.name,
+						resolvedPayloadCountBeforeFailure: nextSendableEntryIndex,
+						acceptedTicketCountBeforeFailure: acceptedTicketCount,
+						unconfirmedPayloadCount: chunk.length,
+						unattemptedPayloadCount: Math.max(
+							sendableEntries.length - nextSendableEntryIndex - chunk.length,
+							0,
+						),
+					},
+					{ cause: error },
+				);
+				this.#logger.error(
+					transportError.message,
+					error instanceof Error ? error.stack : undefined,
+				);
+				throw transportError;
+			}
+
+			for (let i = 0; i < chunk.length; i++) {
+				const ticket = tickets[i];
+				const entry = sendableEntries[nextSendableEntryIndex];
+				nextSendableEntryIndex++;
+
+				if (!ticket || !entry) {
 					if (entry)
 						orderedResults[entry.originalIndex] = {
 							token: entry.payload.token,
 							success: false,
-							error: error instanceof Error ? error.message : "Unknown error",
+							error: "No ticket or payload",
 							errorCode: "NOTIFICATION_1003",
 						};
+					continue;
 				}
+
+				const result = this.#parseTicket(ticket, entry.payload.token);
+				if (result.success) acceptedTicketCount++;
+
+				if (!result.success && result.errorCode === "DeviceNotRegistered") {
+					invalidTokens.push(entry.payload.token);
+				}
+
+				orderedResults[entry.originalIndex] = result;
 			}
 		}
 

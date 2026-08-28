@@ -41,8 +41,11 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 
 		await useCase.execute();
 
-		expect(enqueuer.enqueueDispatch).toHaveBeenCalledWith("outbox-1");
-		expect(repository.markOutboxPublished).toHaveBeenCalledWith("outbox-1");
+		expect(enqueuer.enqueueDispatch).toHaveBeenCalledWith({ id: "outbox-1", attempts: 1 });
+		expect(repository.markOutboxPublished).toHaveBeenCalledWith({
+			id: "outbox-1",
+			attempts: 1,
+		});
 	});
 
 	it("큐 장애 시 PUBLISHED로 만들지 않고 재시도 시각을 저장한다", async () => {
@@ -61,14 +64,24 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 		);
 	});
 
+	it("enqueue 성공 후 PUBLISHED write 실패는 generation을 되돌리지 않고 전파한다", async () => {
+		repository.claimOutboxes.mockResolvedValue([{ id: "outbox-1", attempts: 20 }]);
+		repository.markOutboxPublished.mockRejectedValue(new Error("postgres unavailable"));
+
+		await expect(useCase.execute()).rejects.toThrow("postgres unavailable");
+
+		expect(enqueuer.enqueueDispatch).toHaveBeenCalledTimes(1);
+		expect(repository.markOutboxFailed).not.toHaveBeenCalled();
+	});
+
 	it("독립적인 outbox publish를 병렬로 시작한다", async () => {
 		repository.claimOutboxes.mockResolvedValue([
 			{ id: "outbox-1", attempts: 1 },
 			{ id: "outbox-2", attempts: 1 },
 		]);
 		let firstCompleted = false;
-		enqueuer.enqueueDispatch.mockImplementation(async (outboxId) => {
-			if (outboxId === "outbox-1") {
+		enqueuer.enqueueDispatch.mockImplementation(async (outbox) => {
+			if (outbox.id === "outbox-1") {
 				await new Promise((resolve) => setTimeout(resolve, 10));
 				firstCompleted = true;
 				return;

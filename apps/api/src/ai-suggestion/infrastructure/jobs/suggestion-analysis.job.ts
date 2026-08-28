@@ -131,7 +131,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 							},
 							{
 								...this.#jobOptions(),
-								jobKey: `suggestion_${user.id}_${periodId}`,
+								idempotencyKey: `suggestion_${user.id}_${periodId}`,
 							},
 						),
 					),
@@ -159,7 +159,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 				{ name: AiSuggestionJobName.DISPATCH, data: {} },
 				{
 					...this.#jobOptions(),
-					jobKey: `dispatch_suggestion_${kstNow.format("YYYY-MM-DD")}`,
+					idempotencyKey: `dispatch_suggestion_${kstNow.format("YYYY-MM-DD")}`,
 				},
 			);
 		}

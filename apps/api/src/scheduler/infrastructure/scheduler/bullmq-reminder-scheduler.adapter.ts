@@ -70,7 +70,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 					data: { todoId, userId, stageLabel: job.label },
 				},
 				{
-					jobKey: `reminder_${todoId}_${job.label}`,
+					idempotencyKey: `reminder_${todoId}_${job.label}`,
 					startAfter: new Date(Date.now() + job.delay),
 					retryLimit: 2,
 					retryDelaySeconds: 5,
