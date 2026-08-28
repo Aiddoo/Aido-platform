@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import type { CreateNotificationData } from "../../ports/notification-data";
-import { DispatchBatchNotificationUseCase } from "../dispatch-batch-notification/dispatch-batch-notification.use-case";
+import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
 
 /**
@@ -14,11 +14,11 @@ import { PersistBatchNotificationUseCase } from "../persist-batch-notification/p
 export class SendBatchNotificationUseCase {
 	constructor(
 		private readonly persistBatch: PersistBatchNotificationUseCase,
-		private readonly dispatchBatch: DispatchBatchNotificationUseCase,
+		private readonly finalizeBatch: FinalizeBatchNotificationUseCase,
 	) {}
 
 	async execute(dataList: CreateNotificationData[]): Promise<{ count: number }> {
 		const persisted = await this.persistBatch.execute(dataList);
-		return this.dispatchBatch.execute(persisted);
+		return this.finalizeBatch.execute(persisted);
 	}
 }

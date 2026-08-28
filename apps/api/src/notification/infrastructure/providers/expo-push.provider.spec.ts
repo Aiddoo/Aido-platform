@@ -12,7 +12,10 @@ import { TestBed } from "@suites/unit";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
-import type { PushPayload } from "../../application/ports/push-provider.port";
+import {
+	type PushPayload,
+	RetryablePushProviderTransportError,
+} from "../../application/ports/push-provider.port";
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message";
 import { ExpoPushProvider } from "./expo-push.provider";
 
@@ -353,7 +356,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			expect(result.invalidTokens).toContain(token2);
 		});
 
-		it("청크 전체 실패 시 해당 청크의 모든 결과를 실패로 처리해야 한다", async () => {
+		it("청크 transport 실패는 provider 재시도 오류로 원인과 진행 상태를 보존한다", async () => {
 			// Given
 			const payloads = [
 				createPayload({ token: validToken, title: "알림 1" }),
@@ -362,21 +365,57 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			mockChunkPushNotifications.mockReturnValue([
 				[expect.objectContaining({ to: validToken }), expect.objectContaining({ to: validToken })],
 			]);
-			mockSendPushNotificationsAsync.mockRejectedValue(new Error("Expo server error"));
+			const transportFailure = new Error("Expo server error");
+			mockSendPushNotificationsAsync.mockRejectedValue(transportFailure);
 
-			// When
-			const result = await provider.sendBatch(payloads);
+			// When / Then
+			const delivery = provider.sendBatch(payloads);
+			await expect(delivery).rejects.toBeInstanceOf(RetryablePushProviderTransportError);
+			await expect(delivery).rejects.toMatchObject({
+				name: RetryablePushProviderTransportError.name,
+				cause: transportFailure,
+				metadata: {
+					providerName: "expo",
+					resolvedPayloadCountBeforeFailure: 0,
+					acceptedTicketCountBeforeFailure: 0,
+					unconfirmedPayloadCount: 2,
+					unattemptedPayloadCount: 0,
+				},
+			});
+		});
 
-			// Then
-			expect(result.total).toBe(2);
-			expect(result.successCount).toBe(0);
-			expect(result.failureCount).toBe(2);
-			expect(result.results).toHaveLength(2);
-			for (const r of result.results) {
-				expect(r.success).toBe(false);
-				expect(r.error).toBe("Expo server error");
-				expect(r.errorCode).toBe("NOTIFICATION_1003");
-			}
+		it("앞선 청크가 수락된 뒤 transport가 실패하면 중복 가능성을 metadata로 드러낸다", async () => {
+			// Given
+			const secondToken = "ExponentPushToken[second-token]";
+			const thirdToken = "ExponentPushToken[third-token]";
+			const payloads = [
+				createPayload({ token: validToken }),
+				createPayload({ token: secondToken }),
+				createPayload({ token: thirdToken }),
+			];
+			mockChunkPushNotifications.mockReturnValue([
+				[expect.objectContaining({ to: validToken })],
+				[expect.objectContaining({ to: secondToken })],
+				[expect.objectContaining({ to: thirdToken })],
+			]);
+			mockSendPushNotificationsAsync
+				.mockResolvedValueOnce([{ status: "ok", id: "accepted-ticket" }])
+				.mockRejectedValueOnce(new Error("connection reset"));
+
+			// When / Then
+			const delivery = provider.sendBatch(payloads);
+			await expect(delivery).rejects.toBeInstanceOf(RetryablePushProviderTransportError);
+			await expect(delivery).rejects.toMatchObject({
+				name: RetryablePushProviderTransportError.name,
+				metadata: {
+					providerName: "expo",
+					resolvedPayloadCountBeforeFailure: 1,
+					acceptedTicketCountBeforeFailure: 1,
+					unconfirmedPayloadCount: 1,
+					unattemptedPayloadCount: 1,
+				},
+			});
+			expect(mockSendPushNotificationsAsync).toHaveBeenCalledTimes(2);
 		});
 
 		it("Expo가 일부 티켓만 반환해도 모든 입력에 순서대로 결과를 만든다", async () => {

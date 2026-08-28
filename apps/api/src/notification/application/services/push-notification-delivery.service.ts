@@ -11,7 +11,6 @@ import {
 } from "../ports/active-push-token.reader.port";
 import { NOTIFICATION_CACHE, type NotificationCachePort } from "../ports/notification-cache.port";
 import type { CreateNotificationData } from "../ports/notification-data";
-import type { PushDispatchSkipReason } from "../ports/push-dispatch.repository.port";
 import {
 	PUSH_PROVIDER,
 	type PushPayload,
@@ -22,6 +21,7 @@ import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
 } from "../ports/push-token.repository.port";
+import type { PushDispatchSkipReason } from "../types/push-delivery.types";
 import type { BatchPushNotificationPayload } from "./push-notification-payload.factory";
 
 export type SinglePushNotificationDeliveryResult =

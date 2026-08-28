@@ -2,12 +2,14 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
+import { Prisma } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import type {
 	ClaimedOutbox,
 	CreateRetentionDeliveryInput,
 	RetentionDeliveryResult,
+	RetentionDispatchFence,
 	RetentionDispatchCandidate,
 	RetentionRepositoryPort,
 	RetentionStageCandidate,
@@ -36,6 +38,13 @@ interface RetentionStageRow {
 	readonly todoCount: number;
 	readonly completedCount: number;
 	readonly todoActionWithinWindow: boolean;
+}
+
+interface ClaimedRetentionDispatchRow {
+	readonly dispatchId: number | null;
+	readonly deliveryAttemptCount: number | null;
+	readonly publishAttempt: number | null;
+	readonly ownedOutboxCount: number;
 }
 
 @Injectable()
@@ -265,11 +274,79 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 	}
 
 	async recoverStaleOutboxes(cutoff: Date): Promise<number> {
-		const result = await this.client.retentionPushOutbox.updateMany({
-			where: { status: "PROCESSING", lockedAt: { lt: cutoff } },
-			data: { status: "PENDING", lockedAt: null },
-		});
-		return result.count;
+		return this.client.$executeRaw`
+			WITH locked_outboxes AS MATERIALIZED (
+				SELECT outbox."id"
+				FROM "RetentionPushOutbox" AS outbox
+				INNER JOIN "PushDispatch" AS dispatch
+					ON dispatch."id" = outbox."dispatchId"
+				WHERE outbox."status" = 'PROCESSING'::"RetentionOutboxStatus"
+					AND outbox."lockedAt" < ${cutoff}
+					AND dispatch."status" <> 'PROCESSING'::"PushDispatchStatus"
+				ORDER BY outbox."id" ASC
+				FOR UPDATE OF outbox SKIP LOCKED
+			)
+			UPDATE "RetentionPushOutbox" AS outbox
+			SET
+				"status" = 'PENDING'::"RetentionOutboxStatus",
+				"lockedAt" = NULL,
+				"updatedAt" = CURRENT_TIMESTAMP
+			FROM locked_outboxes
+			WHERE outbox."id" = locked_outboxes."id"
+				AND outbox."status" = 'PROCESSING'::"RetentionOutboxStatus"
+		`;
+	}
+
+	recoverStaleDispatches(cutoff: Date): Promise<number> {
+		return this.client.$executeRaw`
+			WITH locked_outboxes AS MATERIALIZED (
+				SELECT outbox."id", outbox."dispatchId"
+				FROM "RetentionPushOutbox" AS outbox
+				INNER JOIN "PushDispatch" AS dispatch
+					ON dispatch."id" = outbox."dispatchId"
+				WHERE dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+					AND dispatch."processingStartedAt" < ${cutoff}
+					AND NOT EXISTS (
+						SELECT 1 FROM "PushDispatchOutbox" AS general
+						WHERE general."dispatchId" = dispatch."id"
+					)
+				ORDER BY outbox."id" ASC
+				FOR UPDATE OF outbox SKIP LOCKED
+			),
+			recovered AS (
+				UPDATE "PushDispatch" AS dispatch
+				SET
+					"status" = 'PENDING'::"PushDispatchStatus",
+					"processingJobId" = NULL,
+					"processingJobAttempt" = NULL,
+					"processingStartedAt" = NULL,
+					"lastError" = 'STALE_RETENTION_PROCESSING_LEASE',
+					"updatedAt" = CURRENT_TIMESTAMP
+				FROM locked_outboxes
+				WHERE dispatch."id" = locked_outboxes."dispatchId"
+					AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+					AND dispatch."processingStartedAt" < ${cutoff}
+					AND NOT EXISTS (
+						SELECT 1 FROM "PushDispatchOutbox" AS general
+						WHERE general."dispatchId" = dispatch."id"
+					)
+				RETURNING dispatch."id"
+			)
+			UPDATE "RetentionPushOutbox" AS outbox
+			SET
+				"status" = 'PENDING'::"RetentionOutboxStatus",
+				"availableAt" = CURRENT_TIMESTAMP,
+				"lockedAt" = NULL,
+				"publishedAt" = NULL,
+				"lastError" = 'STALE_RETENTION_PROCESSING_LEASE',
+				"updatedAt" = CURRENT_TIMESTAMP
+			FROM recovered
+			WHERE outbox."dispatchId" = recovered."id"
+				AND outbox."status" IN (
+					'PROCESSING'::"RetentionOutboxStatus",
+					'PUBLISHED'::"RetentionOutboxStatus"
+				)
+		`;
 	}
 
 	async claimOutboxes(limit: number, now: Date): Promise<ClaimedOutbox[]> {
@@ -285,7 +362,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 				FROM "RetentionPushOutbox" AS candidate
 				WHERE candidate."status" = 'PENDING'
 					AND candidate."availableAt" <= ${now}
-				ORDER BY candidate."createdAt" ASC
+				ORDER BY candidate."availableAt" ASC, candidate."id" ASC
 				LIMIT ${limit}
 				FOR UPDATE SKIP LOCKED
 			)
@@ -293,33 +370,55 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 		`;
 	}
 
-	async markOutboxPublished(outboxId: string): Promise<void> {
+	async markOutboxPublished(outbox: ClaimedOutbox): Promise<void> {
 		await this.client.retentionPushOutbox.updateMany({
-			where: { id: outboxId, status: "PROCESSING" },
+			where: { id: outbox.id, attempts: outbox.attempts, status: "PROCESSING" },
 			data: { status: "PUBLISHED", publishedAt: new Date(), lockedAt: null },
 		});
 	}
 
-	async deferOutbox(outboxId: string, availableAt: Date): Promise<void> {
-		await this.client.retentionPushOutbox.updateMany({
-			where: { id: outboxId, status: { in: ["PUBLISHED", "PROCESSING"] } },
-			data: {
-				status: "PENDING",
-				availableAt,
-				publishedAt: null,
-				lockedAt: null,
-			},
-		});
+	async deferOutbox(input: {
+		readonly outboxId: string;
+		readonly publishAttempt?: number;
+		readonly availableAt: Date;
+	}): Promise<void> {
+		await this.#lockOutboxGeneration(input.outboxId, input.publishAttempt);
+		await this.client.$executeRaw`
+			UPDATE "RetentionPushOutbox" AS outbox
+			SET
+				"status" = 'PENDING'::"RetentionOutboxStatus",
+				"availableAt" = ${input.availableAt},
+				"publishedAt" = NULL,
+				"lockedAt" = NULL,
+				"updatedAt" = CURRENT_TIMESTAMP
+			WHERE outbox."id" = ${input.outboxId}
+				AND (${input.publishAttempt ?? null}::INTEGER IS NULL OR outbox."attempts" = ${input.publishAttempt ?? null})
+				AND outbox."status" IN (
+					'PUBLISHED'::"RetentionOutboxStatus",
+					'PROCESSING'::"RetentionOutboxStatus"
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM "PushDispatch" AS dispatch
+					WHERE dispatch."id" = outbox."dispatchId"
+						AND dispatch."status" = 'PENDING'::"PushDispatchStatus"
+				)
+		`;
 	}
 
 	async markOutboxFailed(input: {
 		outboxId: string;
+		publishAttempt: number;
 		hasExhaustedRetries: boolean;
 		error: string;
 		nextAttemptAt: Date;
 	}): Promise<void> {
 		await this.client.retentionPushOutbox.updateMany({
-			where: { id: input.outboxId, status: "PROCESSING" },
+			where: {
+				id: input.outboxId,
+				attempts: input.publishAttempt,
+				status: "PROCESSING",
+			},
 			data: {
 				status: input.hasExhaustedRetries ? "FAILED" : "PENDING",
 				availableAt: input.nextAttemptAt,
@@ -329,26 +428,118 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 		});
 	}
 
-	async claimDispatch(outboxId: string): Promise<RetentionDispatchCandidate | null> {
-		const outbox = await this.client.retentionPushOutbox.findUnique({
-			where: { id: outboxId },
-			select: { dispatchId: true },
-		});
-		if (!outbox) return null;
-		const claimed = await this.client.pushDispatch.updateMany({
-			where: { id: outbox.dispatchId, status: "PENDING" },
-			data: { status: "PROCESSING", skipReason: null },
-		});
-		if (claimed.count !== 1) return null;
+	async claimDispatch(input: {
+		readonly outboxId: string;
+		readonly publishAttempt?: number;
+		readonly processingJobId: string;
+		readonly processingJobAttempt: number;
+		readonly startedAt: Date;
+	}): Promise<RetentionDispatchCandidate | null> {
+		await this.#lockOutboxGeneration(input.outboxId, input.publishAttempt);
+		const ownershipRows = await this.client.$queryRaw<ClaimedRetentionDispatchRow[]>`
+			WITH locked_outbox AS MATERIALIZED (
+				UPDATE "RetentionPushOutbox" AS outbox
+				SET
+					"status" = 'PUBLISHED'::"RetentionOutboxStatus",
+					"lockedAt" = NULL,
+					"publishedAt" = COALESCE(outbox."publishedAt", CURRENT_TIMESTAMP),
+					"lastError" = NULL,
+					"updatedAt" = CURRENT_TIMESTAMP
+				WHERE outbox."id" = ${input.outboxId}
+					AND outbox."status" IN (
+						'PROCESSING'::"RetentionOutboxStatus",
+						'PUBLISHED'::"RetentionOutboxStatus"
+					)
+					AND (${input.publishAttempt ?? null}::INTEGER IS NULL OR outbox."attempts" = ${input.publishAttempt ?? null})
+					AND EXISTS (
+						SELECT 1
+						FROM "PushDispatch" AS dispatch
+						WHERE dispatch."id" = outbox."dispatchId"
+							AND (
+								dispatch."status" = 'PENDING'::"PushDispatchStatus"
+								OR (
+									dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+									AND dispatch."processingJobId" = ${input.processingJobId}
+									AND COALESCE(dispatch."processingJobAttempt", 0) < ${input.processingJobAttempt}
+								)
+							)
+					)
+				RETURNING outbox."id", outbox."dispatchId", outbox."attempts" AS "publishAttempt"
+			),
+			claimed_dispatch AS MATERIALIZED (
+				UPDATE "PushDispatch" AS dispatch
+				SET
+					"status" = 'PROCESSING'::"PushDispatchStatus",
+					"skipReason" = NULL,
+					"processingJobId" = ${input.processingJobId},
+					"processingJobAttempt" = ${input.processingJobAttempt},
+					"processingStartedAt" = ${input.startedAt},
+					"deliveryAttemptCount" = dispatch."deliveryAttemptCount" + 1,
+					"lastError" = NULL,
+					"updatedAt" = CURRENT_TIMESTAMP
+				FROM locked_outbox AS outbox
+				WHERE outbox."dispatchId" = dispatch."id"
+					AND (
+						dispatch."status" = 'PENDING'::"PushDispatchStatus"
+						OR (
+							dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+							AND dispatch."processingJobId" = ${input.processingJobId}
+							AND COALESCE(dispatch."processingJobAttempt", 0) < ${input.processingJobAttempt}
+						)
+					)
+				RETURNING
+					dispatch."id" AS "dispatchId",
+					dispatch."deliveryAttemptCount",
+					outbox."publishAttempt"
+			),
+			ownership AS (
+				SELECT COUNT(*)::INTEGER AS "ownedOutboxCount"
+				FROM locked_outbox
+			)
+			SELECT
+				claimed."dispatchId",
+				claimed."deliveryAttemptCount",
+				claimed."publishAttempt",
+				ownership."ownedOutboxCount"
+			FROM claimed_dispatch AS claimed
+			CROSS JOIN ownership
+			UNION ALL
+			SELECT NULL, NULL, NULL, ownership."ownedOutboxCount"
+			FROM ownership
+			WHERE ownership."ownedOutboxCount" > 0
+				AND NOT EXISTS (SELECT 1 FROM claimed_dispatch)
+		`;
+		const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
+		const claim = ownershipRows.find(
+			(row) =>
+				row.dispatchId !== null && row.deliveryAttemptCount !== null && row.publishAttempt !== null,
+		);
+		const claimedDispatchCount = claim ? 1 : 0;
+		if (claimedDispatchCount !== ownedOutboxCount) {
+			throw new Error(
+				`Retention delivery claim ownership fence mismatch: owned=${ownedOutboxCount}, claimed=${claimedDispatchCount}`,
+			);
+		}
+		if (!claim) return null;
+		if (
+			claim.dispatchId === null ||
+			claim.deliveryAttemptCount === null ||
+			claim.publishAttempt === null
+		) {
+			throw new Error("Retention delivery claim returned an incomplete fence");
+		}
 		const dispatch = await this.client.pushDispatch.findUnique({
-			where: { id: outbox.dispatchId },
+			where: { id: claim.dispatchId },
 			select: {
 				id: true,
+				processingJobId: true,
+				deliveryAttemptCount: true,
 				notificationId: true,
 				userId: true,
 				timezone: true,
 				campaignKey: true,
 				variantId: true,
+				rateLimitReservedAt: true,
 				notification: {
 					select: { title: true, body: true, actionUrl: true },
 				},
@@ -366,9 +557,22 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 				},
 			},
 		});
-		if (!dispatch) return null;
+		if (
+			!dispatch ||
+			dispatch.processingJobId !== input.processingJobId ||
+			dispatch.deliveryAttemptCount !== claim.deliveryAttemptCount
+		) {
+			throw new Error("Retention delivery claim hydration fence mismatch");
+		}
 		return {
-			outboxId,
+			fence: {
+				outboxId: input.outboxId,
+				dispatchId: dispatch.id,
+				publishAttempt: claim.publishAttempt,
+				processingJobId: input.processingJobId,
+				deliveryAttemptCount: claim.deliveryAttemptCount,
+			},
+			outboxId: input.outboxId,
 			dispatchId: dispatch.id,
 			notificationId: dispatch.notificationId,
 			userId: dispatch.userId,
@@ -381,61 +585,256 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 			pushEnabled: dispatch.user.preference?.pushEnabled ?? false,
 			nightPushEnabled: dispatch.user.preference?.nightPushEnabled ?? false,
 			marketingPushAgreedAt: dispatch.user.consent?.marketingPushAgreedAt ?? null,
+			rateLimitReserved: dispatch.rateLimitReservedAt !== null,
 			tokens: dispatch.user.pushTokens,
 		};
 	}
 
-	async releaseDispatch(dispatchId: number, reason: string): Promise<void> {
-		await this.client.pushDispatch.updateMany({
-			where: { id: dispatchId, status: "PROCESSING" },
-			data: { status: "PENDING", skipReason: reason.slice(0, 100) },
-		});
+	async releaseDispatchForRetry(input: {
+		readonly fence: RetentionDispatchFence;
+		readonly reason: string;
+		readonly availableAt: Date;
+		readonly hasExhaustedRetries: boolean;
+	}): Promise<boolean> {
+		const released = await this.client.$executeRaw`
+			WITH locked_outbox AS MATERIALIZED (
+				SELECT outbox."id", outbox."dispatchId"
+				FROM "RetentionPushOutbox" AS outbox
+				WHERE outbox."id" = ${input.fence.outboxId}
+					AND outbox."dispatchId" = ${input.fence.dispatchId}
+					AND outbox."status" IN (
+						'PROCESSING'::"RetentionOutboxStatus",
+						'PUBLISHED'::"RetentionOutboxStatus"
+					)
+					AND outbox."attempts" = ${input.fence.publishAttempt}
+				FOR UPDATE OF outbox
+			),
+			released AS (
+				UPDATE "PushDispatch" AS dispatch
+				SET
+					"status" = ${input.hasExhaustedRetries ? "FAILED" : "PENDING"}::"PushDispatchStatus",
+					"skipReason" = ${input.reason.slice(0, 100)},
+					"processingJobId" = NULL,
+					"processingJobAttempt" = NULL,
+					"processingStartedAt" = NULL,
+					"lastError" = ${input.reason.slice(0, 500)},
+					"updatedAt" = CURRENT_TIMESTAMP
+				FROM locked_outbox AS outbox
+				WHERE dispatch."id" = ${input.fence.dispatchId}
+					AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+					AND dispatch."processingJobId" = ${input.fence.processingJobId}
+					AND dispatch."deliveryAttemptCount" = ${input.fence.deliveryAttemptCount}
+					AND outbox."dispatchId" = dispatch."id"
+				RETURNING dispatch."id", outbox."id" AS "outboxId"
+			)
+			UPDATE "RetentionPushOutbox" AS outbox
+			SET
+				"status" = ${input.hasExhaustedRetries ? "FAILED" : "PENDING"}::"RetentionOutboxStatus",
+				"availableAt" = ${input.availableAt},
+				"lockedAt" = NULL,
+				"publishedAt" = NULL,
+				"lastError" = ${input.reason.slice(0, 500)},
+				"updatedAt" = CURRENT_TIMESTAMP
+			FROM released
+			WHERE outbox."id" = released."outboxId"
+		`;
+		return released === 1;
 	}
 
-	async markDispatchSkipped(dispatchId: number, reason: string): Promise<void> {
-		await this.client.pushDispatch.updateMany({
-			where: { id: dispatchId, status: "PROCESSING" },
-			data: { status: "SKIPPED", skipReason: reason.slice(0, 100) },
-		});
+	async reopenUnclaimedDispatch(input: {
+		readonly outboxId: string;
+		readonly publishAttempt?: number;
+		readonly availableAt: Date;
+		readonly reason: string;
+	}): Promise<boolean> {
+		await this.#lockOutboxGeneration(input.outboxId, input.publishAttempt);
+		const reopened = await this.client.$executeRaw`
+			UPDATE "RetentionPushOutbox" AS outbox
+			SET
+				"status" = 'PENDING'::"RetentionOutboxStatus",
+				"availableAt" = ${input.availableAt},
+				"lockedAt" = NULL,
+				"publishedAt" = NULL,
+				"lastError" = ${input.reason.slice(0, 500)},
+				"updatedAt" = CURRENT_TIMESTAMP
+			WHERE outbox."id" = ${input.outboxId}
+				AND (${input.publishAttempt ?? null}::INTEGER IS NULL OR outbox."attempts" = ${input.publishAttempt ?? null})
+				AND outbox."status" IN (
+					'PROCESSING'::"RetentionOutboxStatus",
+					'PUBLISHED'::"RetentionOutboxStatus"
+				)
+				AND EXISTS (
+					SELECT 1 FROM "PushDispatch" AS dispatch
+					WHERE dispatch."id" = outbox."dispatchId"
+						AND dispatch."status" = 'PENDING'::"PushDispatchStatus"
+				)
+		`;
+		return reopened === 1;
+	}
+
+	async #lockOutboxGeneration(outboxId: string, publishAttempt?: number): Promise<void> {
+		await this.client.$queryRaw`
+			SELECT outbox."id"
+			FROM "RetentionPushOutbox" AS outbox
+			WHERE outbox."id" = ${outboxId}
+				AND (${publishAttempt ?? null}::INTEGER IS NULL OR outbox."attempts" = ${publishAttempt ?? null})
+				AND outbox."status" IN (
+					'PROCESSING'::"RetentionOutboxStatus",
+					'PUBLISHED'::"RetentionOutboxStatus"
+				)
+			FOR UPDATE OF outbox
+		`;
+	}
+
+	async markRateLimitReserved(fence: RetentionDispatchFence, reservedAt: Date): Promise<boolean> {
+		const reserved = await this.client.$executeRaw`
+			UPDATE "PushDispatch" AS dispatch
+			SET "rateLimitReservedAt" = ${reservedAt}, "updatedAt" = CURRENT_TIMESTAMP
+			WHERE dispatch."id" = ${fence.dispatchId}
+				AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+				AND dispatch."processingJobId" = ${fence.processingJobId}
+				AND dispatch."deliveryAttemptCount" = ${fence.deliveryAttemptCount}
+				AND dispatch."rateLimitReservedAt" IS NULL
+				AND EXISTS (
+					SELECT 1 FROM "RetentionPushOutbox" AS outbox
+					WHERE outbox."id" = ${fence.outboxId}
+						AND outbox."dispatchId" = dispatch."id"
+						AND outbox."attempts" = ${fence.publishAttempt}
+						AND outbox."status" IN (
+							'PROCESSING'::"RetentionOutboxStatus",
+							'PUBLISHED'::"RetentionOutboxStatus"
+						)
+				)
+		`;
+		return reserved === 1;
+	}
+
+	async markDispatchSkipped(fence: RetentionDispatchFence, reason: string): Promise<boolean> {
+		const finalized = await this.client.$executeRaw`
+			WITH locked_outbox AS MATERIALIZED (
+				SELECT outbox."id", outbox."dispatchId"
+				FROM "RetentionPushOutbox" AS outbox
+				WHERE outbox."id" = ${fence.outboxId}
+					AND outbox."dispatchId" = ${fence.dispatchId}
+					AND outbox."attempts" = ${fence.publishAttempt}
+					AND outbox."status" IN (
+						'PROCESSING'::"RetentionOutboxStatus",
+						'PUBLISHED'::"RetentionOutboxStatus"
+					)
+				FOR UPDATE OF outbox
+			),
+			finalized AS (
+				UPDATE "PushDispatch" AS dispatch
+				SET
+					"status" = 'SKIPPED'::"PushDispatchStatus",
+					"skipReason" = ${reason.slice(0, 100)},
+					"processingJobId" = NULL,
+					"processingJobAttempt" = NULL,
+					"processingStartedAt" = NULL,
+					"lastError" = NULL,
+					"updatedAt" = CURRENT_TIMESTAMP
+				FROM locked_outbox AS outbox
+				WHERE dispatch."id" = ${fence.dispatchId}
+					AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+					AND dispatch."processingJobId" = ${fence.processingJobId}
+					AND dispatch."deliveryAttemptCount" = ${fence.deliveryAttemptCount}
+					AND outbox."dispatchId" = dispatch."id"
+				RETURNING dispatch."id"
+			)
+			UPDATE "RetentionPushOutbox" AS outbox
+			SET "status" = 'PUBLISHED'::"RetentionOutboxStatus", "lockedAt" = NULL
+			FROM finalized
+			WHERE outbox."id" = ${fence.outboxId}
+				AND outbox."dispatchId" = finalized."id"
+				AND outbox."attempts" = ${fence.publishAttempt}
+		`;
+		return finalized === 1;
 	}
 
 	async recordDeliveryResults(
-		dispatchId: number,
+		fence: RetentionDispatchFence,
 		results: RetentionDeliveryResult[],
-	): Promise<void> {
+	): Promise<boolean> {
 		const tokens = await this.client.pushToken.findMany({
 			where: { token: { in: results.map((result) => result.token) } },
 			select: { id: true, token: true },
 		});
 		const ids = new Map(tokens.map((token) => [token.token, token.id]));
+		const sent = results.some((result) => result.success);
+		const finalized = await this.client.$queryRaw<Array<{ dispatchId: number }>>`
+			WITH locked_outbox AS MATERIALIZED (
+				SELECT outbox."id", outbox."dispatchId"
+				FROM "RetentionPushOutbox" AS outbox
+				WHERE outbox."id" = ${fence.outboxId}
+					AND outbox."dispatchId" = ${fence.dispatchId}
+					AND outbox."attempts" = ${fence.publishAttempt}
+					AND outbox."status" IN (
+						'PROCESSING'::"RetentionOutboxStatus",
+						'PUBLISHED'::"RetentionOutboxStatus"
+					)
+				FOR UPDATE OF outbox
+			)
+			UPDATE "PushDispatch" AS dispatch
+			SET
+				"status" = ${sent ? "SENT" : "FAILED"}::"PushDispatchStatus",
+				"sentAt" = ${sent ? new Date() : null},
+				"processingJobId" = NULL,
+				"processingJobAttempt" = NULL,
+				"processingStartedAt" = NULL,
+				"lastError" = NULL,
+				"updatedAt" = CURRENT_TIMESTAMP
+			FROM locked_outbox AS outbox
+			WHERE dispatch."id" = ${fence.dispatchId}
+				AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
+				AND dispatch."processingJobId" = ${fence.processingJobId}
+				AND dispatch."deliveryAttemptCount" = ${fence.deliveryAttemptCount}
+				AND outbox."dispatchId" = dispatch."id"
+			RETURNING dispatch."id" AS "dispatchId"
+		`;
+		if (finalized.length !== 1) return false;
 		const attempts = results.flatMap((result) => {
 			const pushTokenId = ids.get(result.token);
 			if (!pushTokenId) return [];
 			return [
-				{
-					dispatchId,
-					pushTokenId,
-					status: result.success ? ("TICKET_ACCEPTED" as const) : ("FAILED" as const),
-					expoTicketId: result.ticketId,
-					errorCode: result.errorCode,
-					errorMessage: result.error?.slice(0, 500),
-				},
+				Prisma.sql`(
+						${fence.dispatchId}::INTEGER,
+						${pushTokenId}::INTEGER,
+						${result.success ? "TICKET_ACCEPTED" : "FAILED"}::"PushDeliveryStatus",
+						${result.ticketId ?? null},
+						${result.errorCode ?? null},
+						${result.error?.slice(0, 500) ?? null},
+						CURRENT_TIMESTAMP
+					)`,
 			];
 		});
 		if (attempts.length > 0) {
-			await this.client.pushDeliveryAttempt.createMany({
-				data: attempts,
-				skipDuplicates: true,
-			});
+			await this.client.$executeRaw(Prisma.sql`
+				INSERT INTO "PushDeliveryAttempt" (
+					"dispatchId", "pushTokenId", "status", "expoTicketId",
+					"errorCode", "errorMessage", "updatedAt"
+				)
+				VALUES ${Prisma.join(attempts)}
+				ON CONFLICT ("dispatchId", "pushTokenId") DO UPDATE SET
+					"status" = EXCLUDED."status",
+					"expoTicketId" = EXCLUDED."expoTicketId",
+					"errorCode" = EXCLUDED."errorCode",
+					"errorMessage" = EXCLUDED."errorMessage",
+					"receiptCheckedAt" = NULL,
+					"updatedAt" = CURRENT_TIMESTAMP
+			`);
 		}
-		const sent = results.some((result) => result.success);
-		await this.client.pushDispatch.update({
-			where: { id: dispatchId },
-			data: {
-				status: sent ? "SENT" : "FAILED",
-				sentAt: sent ? new Date() : null,
+		const terminalOutbox = await this.client.retentionPushOutbox.updateMany({
+			where: {
+				id: fence.outboxId,
+				dispatchId: fence.dispatchId,
+				attempts: fence.publishAttempt,
+				status: { in: ["PROCESSING", "PUBLISHED"] },
 			},
+			data: { status: "PUBLISHED", lockedAt: null },
 		});
+		if (terminalOutbox.count !== 1) {
+			throw new Error(`Retention outbox terminal fence lost: outboxId=${fence.outboxId}`);
+		}
 		const invalidTokens = results
 			.filter((result) => result.errorCode === "DeviceNotRegistered")
 			.map((result) => result.token);
@@ -445,5 +844,6 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 				data: { isActive: false },
 			});
 		}
+		return true;
 	}
 }

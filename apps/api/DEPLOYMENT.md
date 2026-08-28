@@ -85,7 +85,7 @@ pnpm docker:prod:down
 
 ## 3. 프로덕션 배포 (GitHub Actions → EC2)
 
-> 실제 운영 파이프라인. ECS/ECR을 사용하지 않는다 — EC2 한 대(t4g.small)에서 `docker compose`로 빌드·기동하며, DB(RDS)/Redis(ElastiCache)는 외부 관리형 서비스다.
+> 실제 운영 파이프라인. ECS/ECR을 사용하지 않는다 — EC2 한 대(t4g.small)에서 `docker compose`로 빌드·기동하며, PostgreSQL(RDS)과 pg-boss를 사용한다. Redis/Valkey는 선택적 확장 경로다.
 > 공개 요청 경로는 **client → host-local Nginx → `127.0.0.1:${PORT}` Docker API**다.
 > Compose가 API host port를 loopback에만 bind하고 Express는 이 Nginx 한 홉만 신뢰한다.
 
@@ -273,6 +273,8 @@ git push origin develop
 | `NAVER_CLIENT_ID`                           | Prod* | -             | Naver OAuth                                                                                                                           |
 | `RESEND_API_KEY`                            | Prod  | -             | Resend 이메일 API 키                                                                                                                  |
 | `EXPO_ACCESS_TOKEN`                         | -     | -             | 푸시 알림                                                                                                                             |
+| `PUSH_RATE_LIMIT_BACKEND`                   | -     | postgres      | 푸시 빈도 제한 저장소 (`postgres`/`redis`/`memory`). 운영은 postgres, Redis/Valkey 도입 시 redis 선택                                 |
+| `JOB_BACKEND`                               | -     | postgres      | durable job runtime (`postgres`=pg-boss, `redis`=BullMQ)                                                                              |
 | `RETENTION_ONBOARDING_V2_ENABLED`           | -     | false         | 신규 가입자 리텐션 V2 실험 활성화                                                                                                     |
 | `RETENTION_ONBOARDING_V2_TREATMENT_PERCENT` | -     | 50            | 리텐션 V2 treatment 배정 비율(0~100)                                                                                                  |
 | `GOOGLE_GENERATIVE_AI_API_KEY`              | -     | -             | AI 기능                                                                                                                               |

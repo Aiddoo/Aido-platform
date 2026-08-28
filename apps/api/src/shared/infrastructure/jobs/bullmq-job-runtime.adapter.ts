@@ -8,7 +8,13 @@ import type {
 	JobData,
 	JobRuntimeHealth,
 	JobRuntimePort,
+	JobRetryPolicy,
 	WorkJobOptions,
+} from "@/shared/application/ports/job-runtime.port";
+import {
+	resolveDeadLetterJobPolicy,
+	resolveDeadLetterQueue,
+	resolveJobIdempotencyKey,
 } from "@/shared/application/ports/job-runtime.port";
 import { withTimeout } from "@/shared/application/utils/with-timeout.util";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
@@ -80,6 +86,10 @@ interface RuntimePayload {
 	readonly __aidoJobRuntime: 1;
 	readonly data: JobData;
 	readonly deadLetter?: string;
+	readonly deadLetterJobPolicy?: JobRetryPolicy;
+	readonly retryLimit: number;
+	readonly retryDelaySeconds: number;
+	readonly retryBackoff: boolean;
 	readonly retentionSeconds: number;
 	readonly deleteAfterSeconds: number;
 }
@@ -268,8 +278,12 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 		await this.queue(queueName).removeJobScheduler(scheduleKey);
 	}
 
-	async cancel(queueName: string, jobKey: string): Promise<JobCancellationResult> {
-		const job = await this.queue(queueName).getJob(jobKey);
+	async cancel(queueName: string, idempotencyKey: string): Promise<JobCancellationResult> {
+		const queue = this.queue(queueName);
+		const jobId = toBullMqJobId(idempotencyKey);
+		const job =
+			(await queue.getJob(jobId)) ??
+			(jobId === idempotencyKey ? undefined : await queue.getJob(idempotencyKey));
 		if (!job) {
 			return { status: "missing" };
 		}
@@ -389,8 +403,9 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 	}
 
 	private jobOptions(options: EnqueueJobOptions): JobsOptions {
+		const idempotencyKey = resolveJobIdempotencyKey(options);
 		return {
-			jobId: options.jobKey,
+			jobId: idempotencyKey ? toBullMqJobId(idempotencyKey) : undefined,
 			delay: options.startAfter
 				? Math.max(0, options.startAfter.getTime() - Date.now())
 				: undefined,
@@ -408,7 +423,11 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 		return {
 			__aidoJobRuntime: 1,
 			data,
-			deadLetter: options.deadLetter,
+			deadLetter: resolveDeadLetterQueue(options.deadLetter),
+			deadLetterJobPolicy: resolveDeadLetterJobPolicy(options.deadLetter),
+			retryLimit: options.retryLimit,
+			retryDelaySeconds: options.retryDelaySeconds,
+			retryBackoff: options.retryBackoff,
 			retentionSeconds: options.retentionSeconds,
 			deleteAfterSeconds: options.deleteAfterSeconds,
 		};
@@ -427,6 +446,20 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 				data: data.data,
 				deadLetter:
 					"deadLetter" in data && typeof data.deadLetter === "string" ? data.deadLetter : undefined,
+				deadLetterJobPolicy:
+					"deadLetterJobPolicy" in data && isJobRetryPolicy(data.deadLetterJobPolicy)
+						? data.deadLetterJobPolicy
+						: undefined,
+				retryLimit:
+					"retryLimit" in data && typeof data.retryLimit === "number" ? data.retryLimit : 0,
+				retryDelaySeconds:
+					"retryDelaySeconds" in data && typeof data.retryDelaySeconds === "number"
+						? data.retryDelaySeconds
+						: 0,
+				retryBackoff:
+					"retryBackoff" in data && typeof data.retryBackoff === "boolean"
+						? data.retryBackoff
+						: false,
 				retentionSeconds:
 					"retentionSeconds" in data && typeof data.retentionSeconds === "number"
 						? data.retentionSeconds
@@ -441,6 +474,9 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 		return {
 			__aidoJobRuntime: 1,
 			data,
+			retryLimit: 0,
+			retryDelaySeconds: 0,
+			retryBackoff: false,
 			retentionSeconds: 14 * 24 * 60 * 60,
 			deleteAfterSeconds: 7 * 24 * 60 * 60,
 		};
@@ -456,13 +492,50 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 			return;
 		}
 
+		const deadLetterJobPolicy = payload.deadLetterJobPolicy ?? {
+			retryLimit: payload.retryLimit,
+			retryDelaySeconds: payload.retryDelaySeconds,
+			retryBackoff: payload.retryBackoff,
+			expireInSeconds: 15 * 60,
+			retentionSeconds: payload.retentionSeconds,
+			deleteAfterSeconds: payload.deleteAfterSeconds,
+		};
 		await this.queue(payload.deadLetter).add(payload.deadLetter, payload.data, {
-			jobId: `${job.id ?? "unknown"}:dead-letter`,
-			attempts: 1,
-			removeOnComplete: { age: payload.deleteAfterSeconds },
-			removeOnFail: { age: payload.retentionSeconds },
+			jobId: toBullMqJobId(`${job.id ?? "unknown"}:dead-letter`),
+			attempts: deadLetterJobPolicy.retryLimit + 1,
+			backoff: {
+				type: deadLetterJobPolicy.retryBackoff ? "exponential" : "fixed",
+				delay: deadLetterJobPolicy.retryDelaySeconds * 1000,
+			},
+			removeOnComplete: { age: deadLetterJobPolicy.deleteAfterSeconds },
+			removeOnFail: { age: deadLetterJobPolicy.retentionSeconds },
 		});
 	}
+}
+
+function isJobRetryPolicy(value: unknown): value is JobRetryPolicy {
+	if (typeof value !== "object" || value === null) return false;
+	return (
+		"retryLimit" in value &&
+		typeof value.retryLimit === "number" &&
+		"retryDelaySeconds" in value &&
+		typeof value.retryDelaySeconds === "number" &&
+		"retryBackoff" in value &&
+		typeof value.retryBackoff === "boolean" &&
+		"expireInSeconds" in value &&
+		typeof value.expireInSeconds === "number" &&
+		"retentionSeconds" in value &&
+		typeof value.retentionSeconds === "number" &&
+		"deleteAfterSeconds" in value &&
+		typeof value.deleteAfterSeconds === "number"
+	);
+}
+
+/** BullMQ가 내부 key 구분자로 쓰는 colon을 충돌 없이 제거합니다. */
+export function toBullMqJobId(idempotencyKey: string): string {
+	return idempotencyKey.includes(":")
+		? `aido_${Buffer.from(idempotencyKey, "utf8").toString("base64url")}`
+		: idempotencyKey;
 }
 
 function isCancellableBullJobState(state: JobState | "unknown"): boolean {

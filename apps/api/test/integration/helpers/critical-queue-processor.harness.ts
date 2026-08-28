@@ -25,8 +25,10 @@ import {
 	type NotificationRecipientLocaleReaderPort,
 } from "@/notification/application/ports/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "@/notification/application/ports/notification-recipient-preference.reader.port";
-import { PUSH_DISPATCH_REPOSITORY } from "@/notification/application/ports/push-dispatch.repository.port";
-import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
+import { PUSH_DELIVERY_JOB_ENQUEUER } from "@/notification/application/ports/push-delivery-job-enqueuer.port";
+import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "@/notification/application/ports/push-delivery-lifecycle.repository.port";
+import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "@/notification/application/ports/push-delivery-outbox.repository.port";
+import { PUSH_DISPATCH_STAGING } from "@/notification/application/ports/push-dispatch-staging.repository.port";
 import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
 import {
@@ -34,11 +36,12 @@ import {
 	type UserNotificationSettingsPort,
 } from "@/notification/application/ports/user-notification-settings.port";
 import { NotificationSender } from "@/notification/application/senders/notification.sender";
+import { PushDeliveryAfterCommitPublisher } from "@/notification/application/services/push-delivery-after-commit.publisher";
 import { PushDeliveryEligibilityService } from "@/notification/application/services/push-delivery-eligibility.service";
 import { PushNotificationDeliveryService } from "@/notification/application/services/push-notification-delivery.service";
 import { PushNotificationPayloadFactory } from "@/notification/application/services/push-notification-payload.factory";
 import { DeliverPushNotificationsUseCase } from "@/notification/application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case";
-import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
+import { FinalizeBatchNotificationUseCase } from "@/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
 import { GetUnreadCountUseCase } from "@/notification/application/use-cases/get-unread-count/get-unread-count.use-case";
@@ -47,8 +50,11 @@ import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-
 import { MarkNotificationOpenedUseCase } from "@/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+import { PublishPushDeliveryOutboxUseCase } from "@/notification/application/use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
 import { ReconcilePushReceiptsUseCase } from "@/notification/application/use-cases/reconcile-push-receipts/reconcile-push-receipts.use-case";
+import { RecoverFailedPushDeliveriesUseCase } from "@/notification/application/use-cases/recover-failed-push-deliveries/recover-failed-push-deliveries.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
+import { RelayPushDeliveryOutboxUseCase } from "@/notification/application/use-cases/relay-push-delivery-outbox/relay-push-delivery-outbox.use-case";
 import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
 import { SendBillingIssueNotificationUseCase } from "@/notification/application/use-cases/send-billing-issue-notification/send-billing-issue-notification.use-case";
 import { SendCheerNotificationUseCase } from "@/notification/application/use-cases/send-cheer-notification/send-cheer-notification.use-case";
@@ -62,14 +68,18 @@ import { SendNudgeNotificationUseCase } from "@/notification/application/use-cas
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { CachedActivePushTokenReaderAdapter } from "@/notification/infrastructure/adapters/cached-active-push-token-reader.adapter";
 import { CachedNotificationRecipientPreferenceAdapter } from "@/notification/infrastructure/adapters/cached-notification-recipient-preference.adapter";
-import { InProcessPushDispatcherAdapter } from "@/notification/infrastructure/adapters/in-process-push-dispatcher.adapter";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupAdapter } from "@/notification/infrastructure/adapters/notification-dedup.adapter";
 import { PrismaNotificationReader } from "@/notification/infrastructure/persistence/prisma-notification.reader";
 import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
-import { PrismaPushDeliveryRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery.repository";
+import { PrismaPushDeliveryLifecycleRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery-lifecycle.repository";
+import { PrismaPushDeliveryOutboxRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery-outbox.repository";
+import { PrismaPushDispatchStagingRepository } from "@/notification/infrastructure/persistence/prisma-push-dispatch-staging.repository";
+import { PrismaPushReceiptRepository } from "@/notification/infrastructure/persistence/prisma-push-receipt.repository";
 import { PrismaPushTokenRepository } from "@/notification/infrastructure/persistence/prisma-push-token.repository";
 import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
+import { PushDeliveryQueueProcessor } from "@/notification/infrastructure/queue/push-delivery-queue.processor";
+import { PushDeliveryQueueService } from "@/notification/infrastructure/queue/push-delivery-queue.service";
 import { InMemoryPushRateLimiter } from "@/notification/infrastructure/rate-limiter/in-memory-push-rate-limiter";
 import {
 	RETENTION_CONFIG,
@@ -79,11 +89,17 @@ import { RETENTION_PUSH_SENDER } from "@/retention/application/ports/retention-p
 import { RETENTION_REPOSITORY } from "@/retention/application/ports/retention.repository.port";
 import { DispatchRetentionPushUseCase } from "@/retention/application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
 import { ProcessRetentionStagesUseCase } from "@/retention/application/use-cases/process-retention-stages/process-retention-stages.use-case";
+import { RecoverFailedRetentionDeliveryUseCase } from "@/retention/application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case";
 import { RelayRetentionOutboxUseCase } from "@/retention/application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case";
 import { ExpoRetentionPushSenderAdapter } from "@/retention/infrastructure/adapters/expo-retention-push-sender.adapter";
 import { PrismaRetentionRepository } from "@/retention/infrastructure/persistence/prisma-retention.repository";
 import { RetentionQueueProcessor } from "@/retention/infrastructure/queue/retention-queue.processor";
-import { JOB_RUNTIME, type JobRuntimePort, UNIT_OF_WORK } from "@/shared/application/ports";
+import {
+	AFTER_COMMIT_TASK_REGISTRY,
+	JOB_RUNTIME,
+	type JobRuntimePort,
+	UNIT_OF_WORK,
+} from "@/shared/application/ports";
 import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
@@ -177,6 +193,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
 		providers: [
 			ClsUnitOfWork,
 			{ provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
+			{ provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
 			{
 				provide: JOB_RUNTIME,
 				inject: [TransactionHost],
@@ -253,7 +270,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 				),
 		},
 		PersistBatchNotificationUseCase,
-		DispatchBatchNotificationUseCase,
+		FinalizeBatchNotificationUseCase,
 		FindAlreadyNotifiedUsersUseCase,
 		{
 			provide: GetNotificationsUseCase,
@@ -276,9 +293,20 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 		{ provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
 		PrismaPushTokenRepository,
 		{ provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
-		PrismaPushDeliveryRepository,
-		{ provide: PUSH_DISPATCH_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
-		{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
+		PrismaPushReceiptRepository,
+		{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
+		PrismaPushDispatchStagingRepository,
+		{ provide: PUSH_DISPATCH_STAGING, useExisting: PrismaPushDispatchStagingRepository },
+		PrismaPushDeliveryOutboxRepository,
+		{
+			provide: PUSH_DELIVERY_OUTBOX_REPOSITORY,
+			useExisting: PrismaPushDeliveryOutboxRepository,
+		},
+		PrismaPushDeliveryLifecycleRepository,
+		{
+			provide: PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
+			useExisting: PrismaPushDeliveryLifecycleRepository,
+		},
 		{ provide: PUSH_PROVIDER, useValue: pushProvider },
 		{ provide: PUSH_RATE_LIMITER, useClass: InMemoryPushRateLimiter },
 		{
@@ -322,11 +350,16 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 			useExisting: CachedNotificationRecipientPreferenceAdapter,
 		},
 		PushDeliveryEligibilityService,
+		PushDeliveryAfterCommitPublisher,
 		PushNotificationDeliveryService,
 		PushNotificationPayloadFactory,
 		DeliverPushNotificationsUseCase,
-		InProcessPushDispatcherAdapter,
-		{ provide: PUSH_DISPATCHER, useExisting: InProcessPushDispatcherAdapter },
+		PublishPushDeliveryOutboxUseCase,
+		RecoverFailedPushDeliveriesUseCase,
+		RelayPushDeliveryOutboxUseCase,
+		PushDeliveryQueueService,
+		{ provide: PUSH_DELIVERY_JOB_ENQUEUER, useExisting: PushDeliveryQueueService },
+		PushDeliveryQueueProcessor,
 	];
 }
 
@@ -338,6 +371,7 @@ function retentionProviders(): Provider[] {
 	return [
 		RetentionQueueProcessor,
 		DispatchRetentionPushUseCase,
+		RecoverFailedRetentionDeliveryUseCase,
 		{
 			provide: ProcessRetentionStagesUseCase,
 			useValue: unexpectedUseCase,

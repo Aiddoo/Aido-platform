@@ -79,12 +79,12 @@ export class RedisDrainJobRuntime implements JobRuntimePort {
 		]);
 	}
 
-	async cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
+	async cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult> {
 		const legacyQueue = legacyQueueName(queue);
 		const cancellations = [
-			this.primary.cancel(queue, jobKey),
-			this.redis.cancel(queue, jobKey),
-			...(legacyQueue ? [this.redis.cancel(legacyQueue, jobKey)] : []),
+			this.primary.cancel(queue, idempotencyKey),
+			this.redis.cancel(queue, idempotencyKey),
+			...(legacyQueue ? [this.redis.cancel(legacyQueue, idempotencyKey)] : []),
 		];
 		const results = await Promise.all(cancellations);
 

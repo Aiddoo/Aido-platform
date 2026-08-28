@@ -28,7 +28,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 				name: "send-reminder",
 				data: { todoId: 1, userId: USER_ID, stageLabel: "60min" },
 			},
-			options: { jobKey: "reminder_1_60min" },
+			options: { idempotencyKey: "reminder_1_60min" },
 		});
 		expect(runtime.enqueueCalls[0]?.options.startAfter?.getTime()).toBeGreaterThan(
 			Date.now() + 50 * 60 * 1000,
@@ -41,7 +41,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 		expect(runtime.enqueueCalls).toHaveLength(1);
 		expect(runtime.enqueueCalls[0]).toMatchObject({
 			data: { data: { stageLabel: REMINDER_IMMEDIATE_LABEL } },
-			options: { jobKey: `reminder_1_${REMINDER_IMMEDIATE_LABEL}` },
+			options: { idempotencyKey: `reminder_1_${REMINDER_IMMEDIATE_LABEL}` },
 		});
 	});
 
@@ -86,7 +86,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 		expect(runtime.cancelCalls).toEqual(
 			[...REMINDER_STAGES.map(({ label }) => label), REMINDER_IMMEDIATE_LABEL].map((label) => ({
 				queue: TODO_REMINDER_QUEUE,
-				jobKey: `reminder_42_${label}`,
+				idempotencyKey: `reminder_42_${label}`,
 			})),
 		);
 	});

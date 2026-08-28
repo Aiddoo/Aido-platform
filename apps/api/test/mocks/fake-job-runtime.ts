@@ -25,7 +25,7 @@ export class FakeJobRuntime implements JobRuntimePort {
 	readonly enqueueCalls: FakeEnqueueCall[] = [];
 	readonly scheduleCalls: FakeScheduleCall[] = [];
 	readonly unscheduleCalls: Array<{ scheduleKey: string; queue: string }> = [];
-	readonly cancelCalls: Array<{ queue: string; jobKey: string }> = [];
+	readonly cancelCalls: Array<{ queue: string; idempotencyKey: string }> = [];
 	readonly workCalls: Array<{ queue: string; options: WorkJobOptions }> = [];
 	private readonly handlers = new Map<string, StoredHandler>();
 	private sequence = 0;
@@ -58,8 +58,8 @@ export class FakeJobRuntime implements JobRuntimePort {
 		this.unscheduleCalls.push({ scheduleKey, queue });
 	}
 
-	async cancel(queue: string, jobKey: string): Promise<JobCancellationResult> {
-		this.cancelCalls.push({ queue, jobKey });
+	async cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult> {
+		this.cancelCalls.push({ queue, idempotencyKey });
 		return { status: "cancelled" };
 	}
 

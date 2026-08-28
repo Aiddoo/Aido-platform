@@ -1,7 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import { createPushDispatcherMock } from "@test/mocks/ports/notification.mock";
 
 import {
 	NOTIFICATION_CACHE,
@@ -11,19 +10,15 @@ import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
 } from "../../ports/notification-dedup.port";
-import { PUSH_DISPATCHER, type PushDispatcherPort } from "../../ports/push-dispatcher.port";
-import { DispatchBatchNotificationUseCase } from "./dispatch-batch-notification.use-case";
+import { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case";
 
-describe("DispatchBatchNotificationUseCase", () => {
-	let useCase: DispatchBatchNotificationUseCase;
-	let pushDispatcher: Mocked<PushDispatcherPort>;
+describe("FinalizeBatchNotificationUseCase", () => {
+	let useCase: FinalizeBatchNotificationUseCase;
 	let cache: Mocked<NotificationCachePort>;
 	let dedup: Mocked<NotificationDedupPort>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(DispatchBatchNotificationUseCase)
-			.mock<PushDispatcherPort>(PUSH_DISPATCHER)
-			.impl(() => createPushDispatcherMock())
+		const { unit, unitRef } = await TestBed.solitary(FinalizeBatchNotificationUseCase)
 			.mock<NotificationCachePort>(NOTIFICATION_CACHE)
 			.impl(() => createNotificationCacheMock())
 			.mock<NotificationDedupPort>(NOTIFICATION_DEDUP)
@@ -32,12 +27,11 @@ describe("DispatchBatchNotificationUseCase", () => {
 			}))
 			.compile();
 		useCase = unit;
-		pushDispatcher = unitRef.get(PUSH_DISPATCHER);
 		cache = unitRef.get(NOTIFICATION_CACHE);
 		dedup = unitRef.get(NOTIFICATION_DEDUP);
 	});
 
-	it("푸시·미읽음 캐시·날짜 dedup 부수효과를 관찰한다", async () => {
+	it("미읽음 캐시·날짜 dedup 부수효과를 관찰한다", async () => {
 		const date = new Date("2026-03-09T00:00:00.000Z");
 		const items = [
 			{
@@ -64,10 +58,9 @@ describe("DispatchBatchNotificationUseCase", () => {
 			notificationDate: date,
 		}));
 
-		const result = await useCase.execute({ count: 2, items, sourceData });
+		const result = await useCase.execute({ count: 2, sourceData });
 
 		expect(result).toEqual({ count: 2 });
-		expect(pushDispatcher.fireAndForgetBatchPush).toHaveBeenCalledWith(items);
 		expect(cache.invalidateUnreadCount).toHaveBeenCalledTimes(2);
 		expect(dedup.recordNotifiedUsers).toHaveBeenCalledWith([
 			{
@@ -90,7 +83,6 @@ describe("DispatchBatchNotificationUseCase", () => {
 		await expect(
 			useCase.execute({
 				count: 1,
-				items: [],
 				sourceData: [{ userId: "u1", type: "FOLLOW_NEW", title: "t", body: "b" }],
 			}),
 		).resolves.toEqual({ count: 1 });

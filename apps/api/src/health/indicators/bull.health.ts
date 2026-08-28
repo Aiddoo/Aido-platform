@@ -4,6 +4,8 @@ import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/term
 import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue";
 import { AI_REPORT_QUEUE } from "@/ai-report";
 import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
+import { PUSH_DELIVERY_DEAD_LETTER_QUEUE, PUSH_DELIVERY_QUEUE } from "@/notification/queue";
+import { RETENTION_DEAD_LETTER_QUEUE, RETENTION_QUEUE } from "@/retention/queue";
 import { TODO_REMINDER_QUEUE } from "@/scheduler";
 import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
 import { withTimeout } from "@/shared/application/utils/with-timeout.util";
@@ -14,6 +16,10 @@ const MONITORED_QUEUES = [
 	AI_REPORT_QUEUE,
 	ADMIN_NOTIFICATION_QUEUE,
 	TODO_REMINDER_QUEUE,
+	PUSH_DELIVERY_QUEUE,
+	PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+	RETENTION_QUEUE,
+	RETENTION_DEAD_LETTER_QUEUE,
 ] as const;
 
 /**

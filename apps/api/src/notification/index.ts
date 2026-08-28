@@ -22,6 +22,8 @@ export {
 	type PushProvider,
 	type PushReceiptResult,
 	type PushResult,
+	RetryablePushProviderTransportError,
+	type RetryablePushProviderTransportErrorMetadata,
 } from "./application/ports/push-provider.port";
 export {
 	PUSH_RATE_LIMITER,

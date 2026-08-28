@@ -27,7 +27,9 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
 	let module: TestingModule;
 	let publisher: DomainEventPublisherPort;
 	let runtime: FakeJobRuntime;
-	let cancel: jest.SpiedFunction<(queue: string, jobKey: string) => Promise<JobCancellationResult>>;
+	let cancel: jest.SpiedFunction<
+		(queue: string, idempotencyKey: string) => Promise<JobCancellationResult>
+	>;
 
 	beforeAll(async () => {
 		suppressLogger();

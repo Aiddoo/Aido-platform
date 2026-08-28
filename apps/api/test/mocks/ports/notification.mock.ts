@@ -3,8 +3,6 @@ import type { MarketingPushOptOutTokenPort } from "@/notification/application/po
 import type { NotificationHistoryReaderPort } from "@/notification/application/ports/notification-history.reader.port";
 import type { NotificationInboxReaderPort } from "@/notification/application/ports/notification-inbox.reader.port";
 import type { NotificationRepositoryPort } from "@/notification/application/ports/notification.repository.port";
-import type { PushDispatchRepositoryPort } from "@/notification/application/ports/push-dispatch.repository.port";
-import type { PushDispatcherPort } from "@/notification/application/ports/push-dispatcher.port";
 import type { PushReceiptRepositoryPort } from "@/notification/application/ports/push-receipt.repository.port";
 import type { PushTokenRepositoryPort } from "@/notification/application/ports/push-token.repository.port";
 import type { UserNotificationSettingsPort } from "@/notification/application/ports/user-notification-settings.port";
@@ -71,30 +69,10 @@ export function createNotificationRecipientLocaleReaderMock(): NotificationRecip
 	return { getLocale: jest.fn() };
 }
 
-export function createPushDispatchRepositoryMock(): PushDispatchRepositoryPort {
-	return {
-		createPushDispatch: jest.fn(),
-		createPushDispatches: jest.fn(),
-		markPushDispatchSkipped: jest.fn(),
-		markPushDispatchesSkipped: jest.fn(),
-		markPushDispatchFailed: jest.fn(),
-		recordPushDeliveryResults: jest.fn(),
-		recordPushDeliveryResultsBatch: jest.fn(),
-	};
-}
-
 export function createPushReceiptRepositoryMock(): PushReceiptRepositoryPort {
 	return {
 		findPendingPushReceipts: jest.fn(),
 		recordPushReceipts: jest.fn(),
-	};
-}
-
-/** PushDispatcherPort mock 팩토리. */
-export function createPushDispatcherMock(): PushDispatcherPort {
-	return {
-		fireAndForgetPush: jest.fn(),
-		fireAndForgetBatchPush: jest.fn(),
 	};
 }
 

@@ -13,7 +13,6 @@ import {
 	NOTIFICATION_RECIPIENT_PREFERENCE_READER,
 	type NotificationRecipientPreferenceReaderPort,
 } from "../ports/notification-recipient-preference.reader.port";
-import type { PushDispatchSkipReason } from "../ports/push-dispatch.repository.port";
 import {
 	PUSH_RATE_LIMITER,
 	type PushRateLimitRequest,
@@ -25,6 +24,7 @@ import {
 	type NotificationMarketingConsent,
 	type UserNotificationSettingsPort,
 } from "../ports/user-notification-settings.port";
+import type { PushDispatchSkipReason } from "../types/push-delivery.types";
 
 export interface SinglePushDeliveryRecipient {
 	readonly userId: string;
@@ -54,6 +54,7 @@ export type PushDeliveryEligibilityDecision<TCandidate> =
 
 interface PushDeliveryCandidate {
 	readonly data: CreateNotificationData;
+	readonly rateLimitDispatchId: number;
 }
 
 /** 푸시 수신 설정·동의·야간 시간·빈도 제한 판단을 한곳에서 수행한다. */
@@ -113,6 +114,8 @@ export class PushDeliveryEligibilityService {
 	async evaluateSingle(
 		data: CreateNotificationData,
 		recipient: SinglePushDeliveryRecipient,
+		rateLimitDispatchId: number,
+		hasReservedRateLimit: boolean,
 	): Promise<PushDeliveryEligibilityDecision<CreateNotificationData>> {
 		const { preference } = recipient;
 		if (!preference.pushEnabled) {
@@ -120,7 +123,13 @@ export class PushDeliveryEligibilityService {
 		}
 
 		// 단건 경로는 기존 계약대로 일반 rate counter를 설정·야간·동의보다 먼저 예약한다.
-		if (await this.rateLimiter.isRateLimited(data.userId)) {
+		if (
+			!hasReservedRateLimit &&
+			(await this.rateLimiter.reserveGeneral({
+				dispatchId: rateLimitDispatchId,
+				userId: data.userId,
+			}))
+		) {
 			return this.#skipped(data, "RATE_LIMITED");
 		}
 
@@ -148,8 +157,13 @@ export class PushDeliveryEligibilityService {
 		}
 
 		if (
+			!hasReservedRateLimit &&
 			isEngagement &&
-			(await this.rateLimiter.isEngagementRateLimited(data.userId, recipient.localDate))
+			(await this.rateLimiter.reserveEngagement({
+				dispatchId: rateLimitDispatchId,
+				userId: data.userId,
+				localDate: recipient.localDate,
+			}))
 		) {
 			return this.#skipped(data, "ENGAGEMENT_RATE_LIMITED");
 		}
@@ -179,7 +193,11 @@ export class PushDeliveryEligibilityService {
 		recipients: ReadonlyMap<string, BatchPushDeliveryRecipient>,
 	): Promise<readonly PushDeliveryEligibilityDecision<TCandidate>[]> {
 		const requests = candidates.map((candidate) =>
-			this.#createRateLimitRequest(candidate.data, recipients.get(candidate.data.userId)),
+			this.#createRateLimitRequest(
+				candidate.data,
+				candidate.rateLimitDispatchId,
+				recipients.get(candidate.data.userId),
+			),
 		);
 		const limited = await this.rateLimiter.reserveBatch(requests);
 
@@ -214,11 +232,13 @@ export class PushDeliveryEligibilityService {
 
 	#createRateLimitRequest(
 		data: CreateNotificationData,
+		dispatchId: number,
 		recipient: BatchPushDeliveryRecipient | undefined,
 	): PushRateLimitRequest {
 		const isEngagement =
 			data.purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(data.type);
 		return {
+			dispatchId,
 			userId: data.userId,
 			...(isEngagement && {
 				engagementLocalDate:

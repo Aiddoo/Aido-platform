@@ -61,7 +61,7 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 			AI_REPORT_QUEUE,
 			{ name: "dispatch-reports", data: { reportType: "WEEKLY" } },
 			expect.objectContaining({
-				jobKey: expect.stringContaining("dispatch_WEEKLY_"),
+				idempotencyKey: expect.stringContaining("dispatch_WEEKLY_"),
 			}),
 		);
 	});

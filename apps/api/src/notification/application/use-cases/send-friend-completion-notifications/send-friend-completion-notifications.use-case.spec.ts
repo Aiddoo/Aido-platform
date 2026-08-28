@@ -9,7 +9,7 @@ import {
 	type UserNotificationSettingsPort,
 } from "../../ports/user-notification-settings.port";
 import { NotificationSender } from "../../senders/notification.sender";
-import { DispatchBatchNotificationUseCase } from "../dispatch-batch-notification/dispatch-batch-notification.use-case";
+import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
 import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case";
 
@@ -24,7 +24,7 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 	let useCase: SendFriendCompletionNotificationsUseCase;
 	let notificationSender: Mocked<NotificationSender>;
 	let persistBatch: Mocked<PersistBatchNotificationUseCase>;
-	let dispatchBatch: Mocked<DispatchBatchNotificationUseCase>;
+	let finalizeBatch: Mocked<FinalizeBatchNotificationUseCase>;
 	let unitOfWork: Mocked<UnitOfWorkPort>;
 	let userSettings: Mocked<UserNotificationSettingsPort>;
 
@@ -35,17 +35,17 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 		useCase = unit;
 		notificationSender = unitRef.get(NotificationSender);
 		persistBatch = unitRef.get(PersistBatchNotificationUseCase);
-		dispatchBatch = unitRef.get(DispatchBatchNotificationUseCase);
+		finalizeBatch = unitRef.get(FinalizeBatchNotificationUseCase);
 		unitOfWork = unitRef.get(UNIT_OF_WORK);
 		userSettings = unitRef.get(USER_NOTIFICATION_SETTINGS);
 		notificationSender.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([]);
 		unitOfWork.run.mockImplementation((work) => work());
-		persistBatch.execute.mockResolvedValue({ count: 2, items: [], sourceData: [] });
-		dispatchBatch.execute.mockResolvedValue({ count: 2 });
+		persistBatch.execute.mockResolvedValue({ count: 2, sourceData: [] });
+		finalizeBatch.execute.mockResolvedValue({ count: 2 });
 	});
 
-	it("performs external reads before the UoW and dispatches only after persistence", async () => {
+	it("performs external reads before the UoW and finalizes effects only after persistence", async () => {
 		const events: string[] = [];
 		notificationSender.findAlreadyNotifiedUserIds.mockImplementation(async () => {
 			events.push("dedup-read");
@@ -63,10 +63,10 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 		});
 		persistBatch.execute.mockImplementation(async (notifications) => {
 			events.push("persist");
-			return { count: notifications.length, items: [], sourceData: notifications };
+			return { count: notifications.length, sourceData: notifications };
 		});
-		dispatchBatch.execute.mockImplementation(async () => {
-			events.push("dispatch");
+		finalizeBatch.execute.mockImplementation(async () => {
+			events.push("finalize-post-commit");
 			return { count: 2 };
 		});
 
@@ -78,7 +78,7 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 			"uow-start",
 			"persist",
 			"uow-end",
-			"dispatch",
+			"finalize-post-commit",
 		]);
 		expect(persistBatch.execute).toHaveBeenCalledWith(
 			expect.arrayContaining([
@@ -101,6 +101,6 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 		unitOfWork.run.mockRejectedValue(new DuplicateNotificationError());
 
 		await expect(useCase.execute(input)).resolves.toBeUndefined();
-		expect(dispatchBatch.execute).not.toHaveBeenCalled();
+		expect(finalizeBatch.execute).not.toHaveBeenCalled();
 	});
 });

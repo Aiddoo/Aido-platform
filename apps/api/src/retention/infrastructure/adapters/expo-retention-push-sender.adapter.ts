@@ -25,23 +25,23 @@ export class ExpoRetentionPushSenderAdapter implements RetentionPushSenderPort {
 		private readonly optOutTokens: MarketingPushOptOutTokenPort,
 	) {}
 
-	async canSend(candidate: RetentionDispatchCandidate, now: Date): Promise<boolean> {
-		if (
-			retentionPushSkipReason({
-				pushEnabled: candidate.pushEnabled,
-				marketingPushAgreedAt: candidate.marketingPushAgreedAt,
-				activeTokenCount: candidate.tokens.length,
-				timezone: candidate.timezone,
-				now,
-			})
-		) {
-			return false;
-		}
-		if (await this.rateLimiter.isRateLimited(candidate.userId)) return false;
-		return !(await this.rateLimiter.isEngagementRateLimited(
-			candidate.userId,
-			this.#localDate(now, candidate.timezone),
-		));
+	isEligible(candidate: RetentionDispatchCandidate, now: Date): boolean {
+		return !retentionPushSkipReason({
+			pushEnabled: candidate.pushEnabled,
+			marketingPushAgreedAt: candidate.marketingPushAgreedAt,
+			activeTokenCount: candidate.tokens.length,
+			timezone: candidate.timezone,
+			now,
+		});
+	}
+
+	async reserveRateLimit(candidate: RetentionDispatchCandidate, now: Date): Promise<boolean> {
+		const reservation = { dispatchId: candidate.dispatchId, userId: candidate.userId };
+		if (await this.rateLimiter.reserveGeneral(reservation)) return false;
+		return !(await this.rateLimiter.reserveEngagement({
+			...reservation,
+			localDate: this.#localDate(now, candidate.timezone),
+		}));
 	}
 
 	async send(candidate: RetentionDispatchCandidate): Promise<RetentionDeliveryResult[]> {

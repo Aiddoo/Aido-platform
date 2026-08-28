@@ -4,7 +4,13 @@ import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job
 import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
 
 import type { RetentionJobEnqueuerPort } from "../../application/ports/retention-job-enqueuer.port";
-import { RETENTION_QUEUE, RetentionJobName } from "./retention-queue.constants";
+import type { ClaimedOutbox } from "../../application/ports/retention.repository.port";
+import {
+	RETENTION_DISPATCH_JOB_POLICY,
+	RETENTION_JOB_POLICY,
+	RETENTION_QUEUE,
+	RetentionJobName,
+} from "./retention-queue.constants";
 
 @Injectable()
 export class RetentionQueueService implements RetentionJobEnqueuerPort, OnModuleInit {
@@ -23,38 +29,30 @@ export class RetentionQueueService implements RetentionJobEnqueuerPort, OnModule
 					"0 * * * * *",
 					RETENTION_QUEUE,
 					{ name: RetentionJobName.STAGE_SWEEP, data: {} },
-					this.#jobOptions(),
+					RETENTION_JOB_POLICY,
 				);
 				await this.runtime.schedule(
 					"retention-outbox-relay-scheduler",
-					"*/5 * * * * *",
+					"* * * * *",
 					RETENTION_QUEUE,
 					{ name: RetentionJobName.OUTBOX_RELAY, data: {} },
-					this.#jobOptions(),
+					RETENTION_JOB_POLICY,
 				);
 			},
 		);
 	}
 
-	async enqueueDispatch(outboxId: string): Promise<void> {
+	async enqueueDispatch(outbox: ClaimedOutbox): Promise<void> {
 		await this.runtime.enqueue(
 			RETENTION_QUEUE,
-			{ name: RetentionJobName.DISPATCH, data: { outboxId } },
 			{
-				...this.#jobOptions(),
-				jobKey: `retention-push-${outboxId}`,
+				name: RetentionJobName.DISPATCH,
+				data: { outboxId: outbox.id, publishAttempt: outbox.attempts },
+			},
+			{
+				...RETENTION_DISPATCH_JOB_POLICY,
+				idempotencyKey: `retention-push-${outbox.id}-${outbox.attempts}`,
 			},
 		);
-	}
-
-	#jobOptions() {
-		return {
-			retryLimit: 4,
-			retryDelaySeconds: 1,
-			retryBackoff: true,
-			expireInSeconds: 5 * 60,
-			retentionSeconds: 7 * 24 * 60 * 60,
-			deleteAfterSeconds: 24 * 60 * 60,
-		};
 	}
 }

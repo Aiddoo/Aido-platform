@@ -9,13 +9,18 @@ import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named
 
 import { DispatchRetentionPushUseCase } from "../../application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
 import { ProcessRetentionStagesUseCase } from "../../application/use-cases/process-retention-stages/process-retention-stages.use-case";
+import { RecoverFailedRetentionDeliveryUseCase } from "../../application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case";
 import { RelayRetentionOutboxUseCase } from "../../application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case";
 import {
 	RETENTION_LEGACY_QUEUE,
+	RETENTION_DEAD_LETTER_QUEUE,
+	RETENTION_DEAD_LETTER_WORKER_POLICY,
+	RETENTION_JOB_POLICY,
 	RETENTION_QUEUE,
 	RETENTION_WORKER_POLICY,
 	type RetentionJobMap,
 	RetentionJobName,
+	RetentionDeadLetterJobSchema,
 	RetentionRuntimeJobSchema,
 } from "./retention-queue.constants";
 
@@ -30,6 +35,7 @@ export class RetentionQueueProcessor implements OnModuleInit {
 		private readonly processStages: ProcessRetentionStagesUseCase,
 		private readonly relayOutbox: RelayRetentionOutboxUseCase,
 		private readonly dispatchPush: DispatchRetentionPushUseCase,
+		private readonly recoverFailedDelivery: RecoverFailedRetentionDeliveryUseCase,
 		@Optional()
 		@Inject(JOB_RUNTIME)
 		private readonly runtime?: JobRuntimePort,
@@ -40,7 +46,7 @@ export class RetentionQueueProcessor implements OnModuleInit {
 		await this.runtime.work<RetentionJob>(
 			RETENTION_QUEUE,
 			async (jobs) => {
-				for (const job of jobs) await this.process(job.data);
+				for (const job of jobs) await this.process(job.id, job.attempt, job.data);
 			},
 			RETENTION_WORKER_POLICY,
 		);
@@ -48,14 +54,29 @@ export class RetentionQueueProcessor implements OnModuleInit {
 			RETENTION_LEGACY_QUEUE,
 			async (jobs) => {
 				for (const job of jobs) {
-					await this.process(fromLegacyJob<RetentionJobMap>(job));
+					const legacy = fromLegacyJob<RetentionJobMap>(job);
+					await this.process(job.id, job.attempt, legacy);
 				}
 			},
 			RETENTION_WORKER_POLICY,
 		);
+		await this.runtime.work<JobData>(
+			RETENTION_DEAD_LETTER_QUEUE,
+			async (jobs) => {
+				for (const job of jobs) {
+					const failed = RetentionDeadLetterJobSchema.parse(job.data);
+					await this.recoverFailedDelivery.execute(failed.data);
+				}
+			},
+			RETENTION_DEAD_LETTER_WORKER_POLICY,
+		);
 	}
 
-	async process(untrustedJob: RetentionJobLike): Promise<void> {
+	async process(
+		processingJobId: string,
+		processingJobAttempt: number,
+		untrustedJob: RetentionJobLike,
+	): Promise<void> {
 		const parsedJob = RetentionRuntimeJobSchema.safeParse(untrustedJob);
 		if (!parsedJob.success) {
 			this.#logger.warn(`Invalid retention job: name=${untrustedJob.name}`);
@@ -70,7 +91,12 @@ export class RetentionQueueProcessor implements OnModuleInit {
 				await this.relayOutbox.execute();
 				break;
 			case RetentionJobName.DISPATCH:
-				await this.dispatchPush.execute(job.data.outboxId);
+				await this.dispatchPush.execute({
+					...job.data,
+					processingJobId,
+					processingJobAttempt,
+					isFinalAttempt: processingJobAttempt > RETENTION_JOB_POLICY.retryLimit,
+				});
 				break;
 			default: {
 				const exhaustive: never = job;

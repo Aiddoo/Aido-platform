@@ -125,7 +125,7 @@ export class ReportGenerationJob implements OnModuleInit {
 							},
 							{
 								...this.#jobOptions(),
-								jobKey: `report_${type}_${user.id}_${periodId}`,
+								idempotencyKey: `report_${type}_${user.id}_${periodId}`,
 							},
 						),
 					),
@@ -158,7 +158,7 @@ export class ReportGenerationJob implements OnModuleInit {
 			await this.runtime.enqueue(
 				AI_REPORT_QUEUE,
 				{ name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
-				{ ...this.#jobOptions(), jobKey: `dispatch_WEEKLY_${weekId}` },
+				{ ...this.#jobOptions(), idempotencyKey: `dispatch_WEEKLY_${weekId}` },
 			);
 		}
 
@@ -169,7 +169,7 @@ export class ReportGenerationJob implements OnModuleInit {
 			await this.runtime.enqueue(
 				AI_REPORT_QUEUE,
 				{ name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
-				{ ...this.#jobOptions(), jobKey: `dispatch_MONTHLY_${monthId}` },
+				{ ...this.#jobOptions(), idempotencyKey: `dispatch_MONTHLY_${monthId}` },
 			);
 		}
 	}

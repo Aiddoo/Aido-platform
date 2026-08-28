@@ -66,4 +66,125 @@ describe("RedisPushRateLimiter batch policy", () => {
 		).resolves.toEqual([true]);
 		expect(await redis.zcard(`push-rate:${TEST_CUID.USER_1}`)).toBe(0);
 	});
+
+	it("같은 dispatch 예약은 재시도와 새 publication generation에서도 quota를 한 번만 소비한다", async () => {
+		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
+		const redis = new RedisMock();
+		await redis.flushall();
+		const limiter = new RedisPushRateLimiter(redis);
+		const request = {
+			userId: TEST_CUID.USER_1,
+			engagementLocalDate: "2026-07-16",
+			reservationId: "push-delivery-501",
+		} as const;
+
+		await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
+		await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
+		await expect(
+			limiter.reserveBatch([{ ...request, reservationId: "push-delivery-502" }]),
+		).resolves.toEqual([true]);
+
+		expect(await redis.zcard(`push-rate:${TEST_CUID.USER_1}`)).toBe(1);
+		expect(
+			Number(await redis.hget(`push-engagement:${TEST_CUID.USER_1}:2026-07-16`, "count")),
+		).toBe(1);
+	});
+
+	it("단건 일반·engagement 단계도 같은 dispatch 예약을 각각 재사용한다", async () => {
+		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
+		const redis = new RedisMock();
+		await redis.flushall();
+		const limiter = new RedisPushRateLimiter(redis);
+		const reservationId = "push-delivery-601";
+
+		await expect(limiter.isRateLimited(TEST_CUID.USER_1, reservationId)).resolves.toBe(false);
+		await expect(
+			limiter.isEngagementRateLimited(TEST_CUID.USER_1, "2026-07-16", reservationId),
+		).resolves.toBe(false);
+		await expect(limiter.isRateLimited(TEST_CUID.USER_1, reservationId)).resolves.toBe(false);
+		await expect(
+			limiter.isEngagementRateLimited(TEST_CUID.USER_1, "2026-07-16", reservationId),
+		).resolves.toBe(false);
+
+		expect(await redis.zcard(`push-rate:${TEST_CUID.USER_1}`)).toBe(1);
+		expect(
+			Number(await redis.hget(`push-engagement:${TEST_CUID.USER_1}:2026-07-16`, "count")),
+		).toBe(1);
+	});
+
+	it("batch 예약 marker는 general key 만료와 현지 날짜 변경 뒤에도 같은 dispatch를 재사용한다", async () => {
+		jest.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
+		const redis = new RedisMock();
+		await redis.flushall();
+		const limiter = new RedisPushRateLimiter(redis);
+		const original = {
+			userId: TEST_CUID.USER_1,
+			engagementLocalDate: "2026-07-15",
+			reservationId: "push-delivery-midnight",
+		} as const;
+
+		await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
+		jest.advanceTimersByTime(5 * 60 * 60 * 1000);
+		await expect(
+			limiter.reserveBatch([
+				{
+					...original,
+					engagementLocalDate: "2026-07-16",
+					reservationId: "push-delivery-next-day-1",
+				},
+			]),
+		).resolves.toEqual([false]);
+		jest.advanceTimersByTime(4 * 60 * 60 * 1000);
+		await expect(
+			limiter.reserveBatch([
+				{
+					...original,
+					engagementLocalDate: "2026-07-16",
+					reservationId: "push-delivery-next-day-2",
+				},
+			]),
+		).resolves.toEqual([false]);
+
+		await expect(
+			limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16" }]),
+		).resolves.toEqual([false]);
+		await expect(
+			limiter.reserveBatch([
+				{
+					...original,
+					engagementLocalDate: "2026-07-16",
+					reservationId: "push-delivery-next-day-blocked",
+				},
+			]),
+		).resolves.toEqual([true]);
+		expect(
+			await redis.exists(
+				`push-rate-reservation:general:${TEST_CUID.USER_1}:push-delivery-midnight`,
+			),
+		).toBe(1);
+		expect(
+			await redis.exists(
+				`push-rate-reservation:engagement:${TEST_CUID.USER_1}:push-delivery-midnight`,
+			),
+		).toBe(1);
+	});
+
+	it("단건 general 예약 직후 crash한 재시도는 key 만료 뒤에도 quota를 다시 쓰지 않는다", async () => {
+		jest.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
+		const redis = new RedisMock();
+		await redis.flushall();
+		const limiter = new RedisPushRateLimiter(redis);
+		const reservationId = "push-delivery-general-phase";
+		await expect(limiter.isRateLimited(TEST_CUID.USER_1, reservationId)).resolves.toBe(false);
+
+		jest.advanceTimersByTime(2 * 60 * 60 * 1000);
+		for (let index = 0; index < 15; index += 1) {
+			await expect(limiter.isRateLimited(TEST_CUID.USER_1)).resolves.toBe(false);
+		}
+		await expect(limiter.isRateLimited(TEST_CUID.USER_1)).resolves.toBe(true);
+		await expect(limiter.isRateLimited(TEST_CUID.USER_1, reservationId)).resolves.toBe(false);
+		await expect(
+			limiter.isEngagementRateLimited(TEST_CUID.USER_1, "2026-07-16", reservationId),
+		).resolves.toBe(false);
+	});
 });

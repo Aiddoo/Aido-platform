@@ -132,7 +132,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			expect(runtime.enqueue).toHaveBeenCalledWith(
 				ACCOUNT_PURGE_QUEUE,
 				{ name: "purge-accounts", data: {} },
-				expect.objectContaining({ jobKey: "purge_2026-03-09" }),
+				expect.objectContaining({ idempotencyKey: "purge_2026-03-09" }),
 			);
 		});
 

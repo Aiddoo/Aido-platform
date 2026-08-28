@@ -8,29 +8,24 @@ import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
 } from "../../ports/notification-dedup.port";
-import { PUSH_DISPATCHER, type PushDispatcherPort } from "../../ports/push-dispatcher.port";
-import type { PersistedBatchNotificationDispatch } from "../../types/push-delivery.types";
+import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types";
 
-/** 커밋된 배치 알림의 비동기 푸시·캐시·dedup 부수효과를 예약한다. */
+/** 커밋된 배치 알림의 cache와 날짜 dedup 후처리를 관찰 가능한 방식으로 정리한다. */
 @Injectable()
-export class DispatchBatchNotificationUseCase {
-	readonly #logger = new Logger(DispatchBatchNotificationUseCase.name);
+export class FinalizeBatchNotificationUseCase {
+	readonly #logger = new Logger(FinalizeBatchNotificationUseCase.name);
 
 	constructor(
-		@Inject(PUSH_DISPATCHER)
-		private readonly pushDispatcher: PushDispatcherPort,
 		@Inject(NOTIFICATION_CACHE)
 		private readonly cache: NotificationCachePort,
 		@Inject(NOTIFICATION_DEDUP)
 		private readonly notificationDedup: NotificationDedupPort,
 	) {}
 
-	async execute(input: PersistedBatchNotificationDispatch): Promise<{ count: number }> {
+	async execute(input: PersistedBatchNotificationResult): Promise<{ count: number }> {
 		if (input.count === 0) {
 			return { count: 0 };
 		}
-
-		this.pushDispatcher.fireAndForgetBatchPush(input.items);
 
 		const uniqueUserIds = [...new Set(input.sourceData.map((data) => data.userId))];
 		const sideEffects: Array<{ name: string; promise: Promise<unknown> }> = uniqueUserIds.map(

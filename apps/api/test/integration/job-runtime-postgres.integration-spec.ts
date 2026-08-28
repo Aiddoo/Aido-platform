@@ -83,7 +83,11 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 
 	it("enqueue한 작업을 처리하고 완료 상태로 보존한다", async () => {
 		const queue = "integration-complete";
-		const id = await runtime.enqueue(queue, { documentId: 1 }, options({ jobKey: "complete:1" }));
+		const id = await runtime.enqueue(
+			queue,
+			{ documentId: 1 },
+			options({ idempotencyKey: "complete:1" }),
+		);
 		const handled = jest.fn().mockResolvedValue(undefined);
 
 		await runtime.work(queue, handled, {
@@ -105,7 +109,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 			queue,
 			{ documentId: 2 },
 			options({
-				jobKey: "delayed:2",
+				idempotencyKey: "delayed:2",
 				startAfter: new Date(Date.now() + 1_200),
 			}),
 		);
@@ -121,17 +125,17 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 		});
 	});
 
-	it("동일 jobKey의 중복 작업을 원자적으로 거부한다", async () => {
+	it("동일 idempotencyKey의 중복 작업을 원자적으로 거부한다", async () => {
 		const queue = "integration-deduplicate";
 		const first = await runtime.enqueue(
 			queue,
 			{ documentId: 3 },
-			options({ jobKey: "deduplicate:3" }),
+			options({ idempotencyKey: "deduplicate:3" }),
 		);
 		const duplicate = await runtime.enqueue(
 			queue,
 			{ documentId: 3 },
-			options({ jobKey: "deduplicate:3" }),
+			options({ idempotencyKey: "deduplicate:3" }),
 		);
 
 		expect(first).not.toBeNull();
@@ -141,8 +145,31 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 	it("재시도 소진 작업을 dead-letter queue에 보존한다", async () => {
 		const queue = "integration-retry";
 		const deadLetter = "integration-retry-dead-letter";
+		const deadLetterJobPolicy = {
+			retryLimit: 1,
+			retryDelaySeconds: 1,
+			retryBackoff: false,
+			expireInSeconds: 30,
+			retentionSeconds: 14 * 24 * 60 * 60,
+			deleteAfterSeconds: 7 * 24 * 60 * 60,
+		} as const;
 		const handled = jest.fn().mockRejectedValue(new Error("expected failure"));
-		await runtime.enqueue(queue, { documentId: 4 }, options({ jobKey: "retry:4", deadLetter }));
+		const deadLetterHandled = jest.fn().mockRejectedValue(new Error("database still unavailable"));
+		// 이전 버전이 기본 정책으로 먼저 만든 queue도 typed worker 등록으로 수렴해야 한다.
+		await boss.createQueue(deadLetter);
+		await runtime.work(deadLetter, deadLetterHandled, {
+			teamSize: 1,
+			pollingIntervalSeconds: 1,
+			queuePolicy: deadLetterJobPolicy,
+		});
+		await runtime.enqueue(
+			queue,
+			{ documentId: 4 },
+			options({
+				idempotencyKey: "retry:4",
+				deadLetter: { queue: deadLetter, jobPolicy: deadLetterJobPolicy },
+			}),
+		);
 		await runtime.work(queue, handled, {
 			teamSize: 1,
 			pollingIntervalSeconds: 1,
@@ -152,7 +179,14 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 			expect(handled).toHaveBeenCalledTimes(2);
 			const deadJobs = await boss.findJobs(deadLetter);
 			expect(deadJobs).toHaveLength(1);
-			expect(deadJobs[0]?.sourceName).toBe(queue);
+			expect(deadJobs[0]?.data).toEqual({ documentId: 4 });
+			expect(deadLetterHandled).toHaveBeenCalledTimes(2);
+			expect(deadJobs[0]?.state).toBe("failed");
+			await expect(boss.getQueue(deadLetter)).resolves.toMatchObject({
+				retryLimit: 1,
+				retryDelay: 1,
+				retryBackoff: false,
+			});
 		}, 20_000);
 	});
 
@@ -173,7 +207,11 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 
 	it("API runtime 재시작 중에도 대기 작업이 유실되지 않는다", async () => {
 		const queue = "integration-restart";
-		const id = await runtime.enqueue(queue, { documentId: 5 }, options({ jobKey: "restart:5" }));
+		const id = await runtime.enqueue(
+			queue,
+			{ documentId: 5 },
+			options({ idempotencyKey: "restart:5" }),
+		);
 		await runtime.stop();
 
 		boss = new PgBoss({
@@ -213,7 +251,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 						"INSERT INTO public.job_runtime_probe (id) VALUES ($1)",
 						probeId,
 					);
-					await runtime.enqueue(queue, { probeId }, options({ jobKey: probeId }));
+					await runtime.enqueue(queue, { probeId }, options({ idempotencyKey: probeId }));
 					throw new Error("force rollback");
 				} finally {
 					transactionSource.tx = prisma;
