@@ -836,7 +836,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 						fence: retry.fence,
 						error: "runtime retries exhausted",
 						reopenOutbox: true,
-						availableAt: new Date(),
+						// 이 테스트는 backoff 계산이 아니라 다음 publication generation의
+						// 재사용을 검증한다. DB clock과 app clock의 sub-ms 차이에 의존하지
+						// 않도록 명시적으로 이미 due인 시각을 사용한다.
+						availableAt: new Date(0),
 					},
 				]),
 			),
