@@ -12,9 +12,9 @@ import {
 	type NotificationDedupPort,
 } from "../../ports/notification-dedup.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+	NOTIFICATION_HISTORY_READER,
+	type NotificationHistoryReaderPort,
+} from "../../ports/notification-history.reader.port";
 import { FindAlreadyNotifiedUsersUseCase } from "./find-already-notified-users.use-case";
 
 const params = {
@@ -27,13 +27,14 @@ const params = {
 describe("FindAlreadyNotifiedUsersUseCase", () => {
 	let useCase: FindAlreadyNotifiedUsersUseCase;
 	let notificationDedup: Mocked<NotificationDedupPort>;
-	let repository: Mocked<NotificationRepositoryPort>;
+	let repository: Mocked<NotificationHistoryReaderPort>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(FindAlreadyNotifiedUsersUseCase).compile();
 		useCase = unit;
 		notificationDedup = unitRef.get(NOTIFICATION_DEDUP);
-		repository = unitRef.get(NOTIFICATION_REPOSITORY);
+		repository = unitRef.get(NOTIFICATION_HISTORY_READER);
+		notificationDedup.warmRecipients.mockResolvedValue(undefined);
 	});
 
 	it("warm(센티넬 존재): Redis 결과에서 센티넬 제거 후 반환, DB 미조회", async () => {

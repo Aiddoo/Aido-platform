@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
 
-import { NotificationSender } from "@/notification";
+import { NotificationPublisher, NotificationRecipientLocaleReader } from "@/notification";
 
 import {
 	TODO_REMINDER_READER,
@@ -36,15 +36,17 @@ const makeJob = (data: Partial<ReminderJobData> = {}) =>
 describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 	let processor: TodoReminderProcessor;
 	let reader: Mocked<TodoReminderReaderPort>;
-	let notification: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let recipientLocaleReader: Mocked<NotificationRecipientLocaleReader>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(TodoReminderProcessor).compile();
 
 		processor = unit;
 		reader = unitRef.get(TODO_REMINDER_READER);
-		notification = unitRef.get(NotificationSender);
-		notification.getUserLocale.mockResolvedValue("ko");
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		recipientLocaleReader = unitRef.get(NotificationRecipientLocaleReader);
+		recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
 	});
 
 	/** 리더 mock 설정 헬퍼 */
@@ -71,19 +73,19 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("유효한 투두에 대해 알림을 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notification.createAndSend.mockResolvedValue(null);
+			notificationPublisher.publish.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
 
 			// Then
-			expect(notification.createAndSend).toHaveBeenCalledTimes(1);
-			expect(notification.createAndSend).toHaveBeenCalledWith(
+			expect(notificationPublisher.publish).toHaveBeenCalledTimes(1);
+			expect(notificationPublisher.publish).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: USER_ID,
 					type: "TODO_REMINDER",
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
-					variantId: expect.stringMatching(/^todo_reminder_v2\.60min\.v[1-4]$/),
+					variantId: expect.stringMatching(/^todo_reminder_v3\.60min\.v[1-3]$/),
 					todoId: 1,
 					metadata: { stage: "60min" },
 				}),
@@ -93,13 +95,13 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("10min 단계 알림을 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notification.createAndSend.mockResolvedValue(null);
+			notificationPublisher.publish.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ stageLabel: "10min" }));
 
 			// Then
-			expect(notification.createAndSend).toHaveBeenCalledWith(
+			expect(notificationPublisher.publish).toHaveBeenCalledWith(
 				expect.objectContaining({ metadata: { stage: "10min" } }),
 			);
 		});
@@ -107,13 +109,13 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("immediate 단계 알림을 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notification.createAndSend.mockResolvedValue(null);
+			notificationPublisher.publish.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ stageLabel: "immediate" }));
 
 			// Then
-			expect(notification.createAndSend).toHaveBeenCalledWith(
+			expect(notificationPublisher.publish).toHaveBeenCalledWith(
 				expect.objectContaining({ metadata: { stage: "immediate" } }),
 			);
 		});
@@ -125,15 +127,15 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 				notificationExists: false,
 				todoTitle: "밥먹고 약먹기",
 			});
-			notification.createAndSend.mockResolvedValue(null);
+			notificationPublisher.publish.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
 
-			// Then — DB의 최신 제목이 알림에 사용되고 플레이스홀더는 남지 않음
-			const payload = notification.createAndSend.mock.calls[0]?.[0];
-			expect(payload?.title).toContain("밥먹고 약먹기");
-			expect(payload?.title).not.toContain("{todoTitle}");
+			// Then — DB의 최신 제목은 잠금 화면 길이를 보호하는 본문 preview에 사용됨
+			const payload = notificationPublisher.publish.mock.calls[0]?.[0];
+			expect(payload?.body).toContain("밥먹고 약먹기");
+			expect(`${payload?.title}${payload?.body}`).not.toContain("{todoTitle}");
 		});
 	});
 
@@ -146,7 +148,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			await processor.process(makeJob());
 
 			// Then
-			expect(notification.createAndSend).not.toHaveBeenCalled();
+			expect(notificationPublisher.publish).not.toHaveBeenCalled();
 		});
 
 		it("투두가 삭제되었으면 알림을 발송하지 않는다", async () => {
@@ -157,7 +159,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			await processor.process(makeJob());
 
 			// Then
-			expect(notification.createAndSend).not.toHaveBeenCalled();
+			expect(notificationPublisher.publish).not.toHaveBeenCalled();
 		});
 	});
 
@@ -170,19 +172,19 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			await processor.process(makeJob());
 
 			// Then
-			expect(notification.createAndSend).not.toHaveBeenCalled();
+			expect(notificationPublisher.publish).not.toHaveBeenCalled();
 		});
 
 		it("동일 알림이 없으면 정상 발송한다", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notification.createAndSend.mockResolvedValue(null);
+			notificationPublisher.publish.mockResolvedValue(null);
 
 			// When
 			await processor.process(makeJob());
 
 			// Then
-			expect(notification.createAndSend).toHaveBeenCalledTimes(1);
+			expect(notificationPublisher.publish).toHaveBeenCalledTimes(1);
 		});
 	});
 
@@ -190,7 +192,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		it("알림 발송 실패 시 에러가 전파된다 (BullMQ 재시도)", async () => {
 			// Given
 			setupMocks({ todoExists: true, notificationExists: false });
-			notification.createAndSend.mockRejectedValue(new Error("Push failed"));
+			notificationPublisher.publish.mockRejectedValue(new Error("Push failed"));
 
 			// When & Then — BullMQ가 재시도하도록 에러 전파
 			await expect(processor.process(makeJob())).rejects.toThrow("Push failed");

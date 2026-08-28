@@ -1,10 +1,15 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import {
+	createSocialDigestNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -26,7 +31,8 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		private readonly reader: ReEngagementReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(
@@ -57,12 +63,12 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 
 		// 중복 방지
 		const [alreadyNotified, streakAtRiskNotified] = await Promise.all([
-			this.notificationService.findAlreadyNotifiedUserIds({
+			this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 				userIds: incompleteUsers.map((u) => u.id),
 				type: "SOCIAL_DIGEST",
 				notificationDate: today,
 			}),
-			this.notificationService.findAlreadyNotifiedUserIds({
+			this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 				userIds: incompleteUsers.map((u) => u.id),
 				type: "STREAK_AT_RISK",
 				notificationDate: today,
@@ -137,21 +143,27 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 				continue;
 			}
 
-			const locale = locales.get(user.id) ?? "ko";
+			const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
 			const fallbackName = locale === "en" ? "Your friend" : "친구";
-			const friendName =
-				completedFriends.length === 1 ? (completedFriends[0]?.name ?? fallbackName) : undefined;
-
-			const message = NotificationMessageBuilder.socialDigest(
-				completedFriends.length,
-				friendName,
-				locale,
-				{
-					campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-					recipientId: user.id,
-					occurrenceKey: toDateString(today),
-				},
-			);
+			const variantContext = {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				recipientId: user.id,
+				occurrenceKey: toDateString(today),
+			};
+			const message =
+				completedFriends.length === 1
+					? createSocialDigestNotificationMessage({
+							kind: "single",
+							friendName: completedFriends[0]?.name ?? fallbackName,
+							locale,
+							variantContext,
+						})
+					: createSocialDigestNotificationMessage({
+							kind: "multiple",
+							completedFriendCount: completedFriends.length,
+							locale,
+							variantContext,
+						});
 
 			notifications.push({
 				userId: user.id,
@@ -166,7 +178,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		}
 
 		if (notifications.length > 0) {
-			await this.notificationService.createAndSendBatch(notifications);
+			await this.notificationPublisher.publishBatch(notifications);
 			this.#logger.log(`Social digest: tz=${tz}, count=${notifications.length}`);
 		}
 		return { sent: notifications.length };

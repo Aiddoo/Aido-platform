@@ -14,7 +14,11 @@ import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import {
+	createSocialDigestNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -32,7 +36,8 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	let strategy: SocialDigestStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 
 	const TZ = "Asia/Seoul";
 
@@ -58,15 +63,16 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationSender);
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 
 		// 기본 mock 설정
 		reader.findSocialDigestCandidates.mockResolvedValue([]);
 		reader.findAcceptedFollows.mockResolvedValue([]);
 		reader.findFriendsWithTodayTodos.mockResolvedValue([]);
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 	});
 
 	afterEach(() => {
@@ -108,11 +114,16 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 			expect.objectContaining({ recipientUserIds: [TEST_CUID.USER_1] }),
 		);
 
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.socialDigest(1, "친구1", "ko", {
-			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-			recipientId: TEST_CUID.USER_1,
-			occurrenceKey: "2024-01-16",
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
+		const expected = createSocialDigestNotificationMessage({
+			kind: "single",
+			friendName: "친구1",
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				recipientId: TEST_CUID.USER_1,
+				occurrenceKey: "2024-01-16",
+			},
 		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: TEST_CUID.USER_1,
@@ -159,11 +170,16 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.socialDigest(2, undefined, "ko", {
-			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-			recipientId: TEST_CUID.USER_1,
-			occurrenceKey: "2024-01-16",
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
+		const expected = createSocialDigestNotificationMessage({
+			kind: "multiple",
+			completedFriendCount: 2,
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				recipientId: TEST_CUID.USER_1,
+				occurrenceKey: "2024-01-16",
+			},
 		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
@@ -184,7 +200,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
 	it("친구가 없으면 발송하지 않는다", async () => {
@@ -209,7 +225,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
 	it("이미 알림 받은 사용자를 제외한다", async () => {
@@ -223,14 +239,16 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 			},
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set([TEST_CUID.USER_1]));
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(
+			new Set([TEST_CUID.USER_1]),
+		);
 
 		// When
 		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
 	it("같은 날 스트릭 위기 알림을 받은 사용자는 소셜 다이제스트에서 제외한다", async () => {
@@ -238,17 +256,17 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		reader.findSocialDigestCandidates.mockResolvedValue([
 			{ id: TEST_CUID.USER_1, todos: [{ completed: false }] },
 		]);
-		notificationService.findAlreadyNotifiedUserIds
+		notificationHistoryReader.findAlreadyNotifiedUserIds
 			.mockResolvedValueOnce(new Set())
 			.mockResolvedValueOnce(new Set([TEST_CUID.USER_1]));
 
 		const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
 
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.findAlreadyNotifiedUserIds).toHaveBeenNthCalledWith(
+		expect(notificationHistoryReader.findAlreadyNotifiedUserIds).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({ type: "STREAK_AT_RISK" }),
 		);
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 });

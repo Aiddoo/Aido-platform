@@ -11,6 +11,10 @@
  * 끌어오지 않으므로, 알림 큐만 필요한 모듈(user-settings 등)은 이 경로를
  * 임포트한다 (forwardRef 불필요).
  */
-export * from "./infrastructure/queue/notification-queue.constants";
+export { NOTIFICATION_QUEUE } from "./infrastructure/queue/notification-queue.constants";
+export {
+	PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+	PUSH_DELIVERY_QUEUE,
+} from "./infrastructure/queue/push-delivery-queue.constants";
 export { NotificationQueueModule } from "./infrastructure/queue/notification-queue.module";
 export { NotificationQueueService } from "./infrastructure/queue/notification-queue.service";

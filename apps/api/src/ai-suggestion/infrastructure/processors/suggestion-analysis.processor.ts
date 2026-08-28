@@ -1,15 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import {
-	NotificationMessageBuilder,
-	NotificationSender,
-	resolveTemplateLocale,
-} from "@/notification";
+import { createAiSuggestionNotificationMessage, NotificationPublisher } from "@/notification";
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
 } from "@/shared/application/ports/job-runtime.port";
+import { toSupportedLocale } from "@/shared/domain/locale";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
 
@@ -38,6 +35,9 @@ type AiSuggestionJobLike = {
 	readonly data: JobData;
 };
 
+/** AI 제안 푸시의 카피 성과를 이전 문구와 분리한다. */
+const AI_SUGGESTION_NOTIFICATION_CAMPAIGN_KEY = "ai_suggestion_v2";
+
 @Injectable()
 export class SuggestionAnalysisProcessor implements OnModuleInit {
 	readonly #logger = new Logger(SuggestionAnalysisProcessor.name);
@@ -50,7 +50,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 
 	constructor(
 		private readonly analyzeAndCreateSuggestionsUseCase: AnalyzeAndCreateSuggestionsUseCase,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationService: NotificationPublisher,
 		private readonly database: DatabaseService,
 		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
 	) {}
@@ -109,7 +109,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 			where: { userId },
 			select: { locale: true },
 		});
-		const locale = resolveTemplateLocale(preference?.locale);
+		const locale = toSupportedLocale(preference?.locale);
 
 		const createdCount = await this.analyzeAndCreateSuggestionsUseCase.execute(
 			userId,
@@ -123,12 +123,13 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 			return;
 		}
 
-		const message = NotificationMessageBuilder.aiSuggestion(locale);
-		await this.notificationService.createAndSend({
+		const message = createAiSuggestionNotificationMessage({ locale });
+		await this.notificationService.publish({
 			userId,
 			type: "AI_SUGGESTION",
 			purpose: "ENGAGEMENT",
-			campaignKey: "ai_suggestion_v1",
+			campaignKey: AI_SUGGESTION_NOTIFICATION_CAMPAIGN_KEY,
+			variantId: message.variantId,
 			title: message.title,
 			body: message.body,
 		});

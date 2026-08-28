@@ -13,15 +13,15 @@ import {
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
+	PUSH_TOKEN_REPOSITORY,
 	PushTokenNotFoundError,
-} from "../../ports/notification.repository.port";
+	type PushTokenRepositoryPort,
+} from "../../ports/push-token.repository.port";
 import { UnregisterPushTokenUseCase } from "./unregister-push-token.use-case";
 
 describe("UnregisterPushTokenUseCase", () => {
 	let useCase: UnregisterPushTokenUseCase;
-	let repository: Mocked<NotificationRepositoryPort>;
+	let repository: Mocked<PushTokenRepositoryPort>;
 	let cache: Mocked<NotificationCachePort>;
 
 	beforeEach(async () => {
@@ -30,7 +30,7 @@ describe("UnregisterPushTokenUseCase", () => {
 			.impl(() => createNotificationCacheMock())
 			.compile();
 		useCase = unit;
-		repository = unitRef.get(NOTIFICATION_REPOSITORY);
+		repository = unitRef.get(PUSH_TOKEN_REPOSITORY);
 		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 	});
 

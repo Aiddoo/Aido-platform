@@ -41,6 +41,8 @@ export const NOTIFICATION_LIMITS = {
   MAX_FETCH_LIMIT: 50,
   DEFAULT_FETCH_LIMIT: 20,
   MAX_PUSH_TOKEN_LENGTH: 200,
+  MAX_TITLE_LENGTH: 200,
+  MAX_BODY_LENGTH: 500,
 } as const;
 
 export const EXPO_PUSH_TOKEN_REGEX = /^ExponentPushToken\[.+\]$/;

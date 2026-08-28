@@ -10,7 +10,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockJob } from "@test/mocks";
 
-import { NotificationSender } from "@/notification";
+import { NotificationPublisher } from "@/notification";
 
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
 import { type AiSuggestionJobData, AiSuggestionJobName } from "../queue/ai-suggestion-queue";
@@ -19,14 +19,14 @@ import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor";
 describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
 	let processor: SuggestionAnalysisProcessor;
 	let analyzeAndCreateSuggestionsUseCase: Mocked<AnalyzeAndCreateSuggestionsUseCase>;
-	let mockNotificationService: Mocked<NotificationSender>;
+	let mockNotificationService: Mocked<NotificationPublisher>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(SuggestionAnalysisProcessor).compile();
 
 		processor = unit;
 		analyzeAndCreateSuggestionsUseCase = unitRef.get(AnalyzeAndCreateSuggestionsUseCase);
-		mockNotificationService = unitRef.get(NotificationSender);
+		mockNotificationService = unitRef.get(NotificationPublisher);
 	});
 
 	describe("onStalled", () => {
@@ -64,7 +64,7 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 		it("패턴 감지 시 알림을 발송해야 한다", async () => {
 			// Given -제안이 3개 생성된 상황
 			analyzeAndCreateSuggestionsUseCase.execute.mockResolvedValue(3);
-			mockNotificationService.createAndSend.mockResolvedValue(null);
+			mockNotificationService.publish.mockResolvedValue(null);
 
 			// When -process를 호출하면
 			await processor.process(
@@ -76,10 +76,12 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 			);
 
 			// Then -알림이 발송되어야 한다
-			expect(mockNotificationService.createAndSend).toHaveBeenCalledWith(
+			expect(mockNotificationService.publish).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					type: "AI_SUGGESTION",
+					campaignKey: "ai_suggestion_v2",
+					variantId: "default",
 				}),
 			);
 		});
@@ -98,7 +100,7 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 			);
 
 			// Then -알림이 발송되지 않아야 한다
-			expect(mockNotificationService.createAndSend).not.toHaveBeenCalled();
+			expect(mockNotificationService.publish).not.toHaveBeenCalled();
 		});
 	});
 });

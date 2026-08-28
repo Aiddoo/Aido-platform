@@ -24,7 +24,7 @@ import { asJob } from "@test/mocks/bull-job.mock";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
 
-import { NotificationSender } from "@/notification";
+import { NotificationPublisher, NotificationRecipientLocaleReader } from "@/notification";
 import { TodoReminderProcessor } from "@/scheduler";
 import { TODO_REMINDER_READER } from "@/scheduler/application/ports/todo-reminder-reader.port";
 
@@ -42,12 +42,8 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 		existsRecentReminderNotification: jest.fn(),
 	};
 
-	// Mock NotificationSender (발송 + 로케일 조회)
-	// 발송 시점 로케일은 UserPreference 캐시 경유 (getUserLocale)
-	const mockNotificationService = {
-		createAndSend: jest.fn(),
-		getUserLocale: jest.fn().mockResolvedValue("ko"),
-	};
+	const mockNotificationPublisher = { publish: jest.fn() };
+	const mockRecipientLocaleReader = { getRecipientLocale: jest.fn().mockResolvedValue("ko") };
 
 	// 테스트 데이터
 	const mockUserId = "user-reminder-123";
@@ -64,8 +60,12 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 					useValue: mockReader,
 				},
 				{
-					provide: NotificationSender,
-					useValue: mockNotificationService,
+					provide: NotificationPublisher,
+					useValue: mockNotificationPublisher,
+				},
+				{
+					provide: NotificationRecipientLocaleReader,
+					useValue: mockRecipientLocaleReader,
 				},
 			],
 		}).compile();
@@ -93,7 +93,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				.build();
 			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
 			mockReader.existsRecentReminderNotification.mockResolvedValue(false);
-			mockNotificationService.createAndSend.mockResolvedValue(
+			mockNotificationPublisher.publish.mockResolvedValue(
 				NotificationBuilder.create(mockUserId).withId(1).build(),
 			);
 
@@ -107,7 +107,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 			await processor.process(job);
 
 			// Then - 알림이 생성되어야 함
-			expect(mockNotificationService.createAndSend).toHaveBeenCalledWith(
+			expect(mockNotificationPublisher.publish).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUserId,
 					type: "TODO_REMINDER",
@@ -131,7 +131,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 			await processor.process(job);
 
 			// Then - 알림이 생성되지 않아야 함
-			expect(mockNotificationService.createAndSend).not.toHaveBeenCalled();
+			expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
 		});
 
 		it("삭제된 todo — 알림이 생성되지 않는다", async () => {
@@ -148,7 +148,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 			await processor.process(job);
 
 			// Then - 알림이 생성되지 않아야 함
-			expect(mockNotificationService.createAndSend).not.toHaveBeenCalled();
+			expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
 		});
 
 		it("24시간 내 동일 스테이지 알림 존재 — 중복 알림이 생성되지 않는다", async () => {
@@ -170,7 +170,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 			await processor.process(job);
 
 			// Then - 중복 알림이 생성되지 않아야 함
-			expect(mockNotificationService.createAndSend).not.toHaveBeenCalled();
+			expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
 		});
 
 		it("다단계 리마인더 — 각 스테이지별 알림 메시지가 다르다", async () => {
@@ -181,7 +181,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				.build();
 			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
 			mockReader.existsRecentReminderNotification.mockResolvedValue(false);
-			mockNotificationService.createAndSend.mockResolvedValue(
+			mockNotificationPublisher.publish.mockResolvedValue(
 				NotificationBuilder.create(mockUserId).withId(1).build(),
 			);
 
@@ -192,7 +192,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				jest.clearAllMocks();
 				mockReader.findActiveTodo.mockResolvedValue(mockTodo);
 				mockReader.existsRecentReminderNotification.mockResolvedValue(false);
-				mockNotificationService.createAndSend.mockResolvedValue(
+				mockNotificationPublisher.publish.mockResolvedValue(
 					NotificationBuilder.create(mockUserId).withId(1).build(),
 				);
 
@@ -206,7 +206,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				await processor.process(job);
 
 				// Then - 각 스테이지별 알림이 생성되어야 함
-				const callArg = mockNotificationService.createAndSend.mock.calls[0]?.[0];
+				const callArg = mockNotificationPublisher.publish.mock.calls[0]?.[0];
 				sentMessages.push({
 					title: callArg.title,
 					body: callArg.body,

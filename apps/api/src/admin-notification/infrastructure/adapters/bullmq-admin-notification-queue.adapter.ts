@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import {
+	type EnqueueJobOptions,
+	JOB_RUNTIME,
+	type JobRuntimePort,
+} from "@/shared/application/ports/job-runtime.port";
 
 import type {
 	AdminNotificationQueuePort,
@@ -29,13 +33,17 @@ export class BullmqAdminNotificationQueueAdapter implements AdminNotificationQue
 		notification: AdminNotification,
 		options?: EnqueueSendOptions,
 	): Promise<void> {
+		const jobOptions: EnqueueJobOptions =
+			options?.jobId === undefined
+				? ADMIN_NOTIFICATION_JOB_POLICY
+				: { ...ADMIN_NOTIFICATION_JOB_POLICY, idempotencyKey: options.jobId };
 		await this.runtime.enqueue(
 			ADMIN_NOTIFICATION_QUEUE,
 			{
 				name: AdminNotificationJobName.SEND,
 				data: { channel, notification } satisfies AdminNotificationSendData,
 			},
-			{ ...ADMIN_NOTIFICATION_JOB_POLICY, jobKey: options?.jobId },
+			jobOptions,
 		);
 	}
 }

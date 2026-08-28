@@ -13,9 +13,9 @@ import {
 	type NotificationDedupLockPort,
 } from "../../ports/notification-dedup.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+	NOTIFICATION_HISTORY_READER,
+	type NotificationHistoryReaderPort,
+} from "../../ports/notification-history.reader.port";
 import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case";
 
@@ -38,7 +38,7 @@ const nudgeData: CreateNotificationData = {
 describe("SendNotificationWithDedupUseCase", () => {
 	let useCase: SendNotificationWithDedupUseCase;
 	let sendNotification: Mocked<SendNotificationUseCase>;
-	let repository: Mocked<NotificationRepositoryPort>;
+	let repository: Mocked<NotificationHistoryReaderPort>;
 	let dedupLock: Mocked<NotificationDedupLockPort>;
 	const release = jest.fn().mockResolvedValue(undefined);
 
@@ -46,7 +46,7 @@ describe("SendNotificationWithDedupUseCase", () => {
 		const { unit, unitRef } = await TestBed.solitary(SendNotificationWithDedupUseCase).compile();
 		useCase = unit;
 		sendNotification = unitRef.get(SendNotificationUseCase);
-		repository = unitRef.get(NOTIFICATION_REPOSITORY);
+		repository = unitRef.get(NOTIFICATION_HISTORY_READER);
 		dedupLock = unitRef.get(NOTIFICATION_DEDUP_LOCK);
 		dedupLock.acquire.mockResolvedValue(release);
 		sendNotification.execute.mockResolvedValue(null);

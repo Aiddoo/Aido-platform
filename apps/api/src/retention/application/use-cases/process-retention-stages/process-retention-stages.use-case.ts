@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { NotificationMessageBuilder } from "@/notification";
+import {
+	createRetentionNotificationMessage,
+	type RetentionNotificationCopySelection,
+} from "@/notification";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 
 import { RETENTION_CAMPAIGN_KEY } from "../../../domain/retention.constants";
@@ -100,15 +103,14 @@ export class ProcessRetentionStagesUseCase {
 				return;
 			}
 
-			const message = NotificationMessageBuilder.retention(
-				candidate.stage,
-				decision.variantId,
-				candidate.locale,
-				{
+			const message = createRetentionNotificationMessage({
+				...resolveRetentionNotificationSelection(candidate.stage, decision.variantId),
+				locale: candidate.locale,
+				selectionContext: {
 					recipientId: candidate.userId,
 					occurrenceKey: localDateString(now, candidate.timezone),
 				},
-			);
+			});
 			await this.repository.createDelivery({
 				stageId: candidate.stageId,
 				userId: candidate.userId,
@@ -124,4 +126,24 @@ export class ProcessRetentionStagesUseCase {
 			`Retention stage processed: campaign=${RETENTION_CAMPAIGN_KEY}, stage=${candidate.stage}, userId=${candidate.userId}`,
 		);
 	}
+}
+
+function resolveRetentionNotificationSelection(
+	stage: RetentionStageCandidate["stage"],
+	variantId: string,
+): RetentionNotificationCopySelection {
+	if (stage === "D0" && variantId === "d0_no_todo") {
+		return { stage, copyKey: variantId };
+	}
+	if (stage === "D1" && (variantId === "d1_no_todo" || variantId === "d1_has_todo_no_completion")) {
+		return { stage, copyKey: variantId };
+	}
+	if (stage === "D3" && variantId === "d3_restart") {
+		return { stage, copyKey: variantId };
+	}
+	if (stage === "D7" && (variantId === "d7_has_progress" || variantId === "d7_restart")) {
+		return { stage, copyKey: variantId };
+	}
+
+	throw new Error(`Invalid retention notification selection: ${stage}:${variantId}`);
 }

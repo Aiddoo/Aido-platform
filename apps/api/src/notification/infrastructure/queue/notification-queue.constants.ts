@@ -59,7 +59,6 @@ const FollowNewJobDataSchema = z.object({
 	followingId: z.string().min(1),
 	followerName: z.string(),
 });
-export type FollowNewJobData = z.infer<typeof FollowNewJobDataSchema>;
 
 /**
  * 맞팔로우 성립 잡 데이터
@@ -69,7 +68,6 @@ const FollowMutualJobDataSchema = z.object({
 	friendId: z.string().min(1),
 	friendName: z.string(),
 });
-export type FollowMutualJobData = z.infer<typeof FollowMutualJobDataSchema>;
 
 /**
  * Nudge 발송 잡 데이터
@@ -83,7 +81,6 @@ const NudgeSentJobDataSchema = z.object({
 	todoTitle: z.string().optional(),
 	message: z.string().optional(),
 });
-export type NudgeSentJobData = z.infer<typeof NudgeSentJobDataSchema>;
 
 /**
  * Cheer 발송 잡 데이터
@@ -95,13 +92,11 @@ const CheerSentJobDataSchema = z.object({
 	senderName: z.string(),
 	message: z.string().optional(),
 });
-export type CheerSentJobData = z.infer<typeof CheerSentJobDataSchema>;
 
 /**
  * 결제 문제 잡 데이터
  */
 const BillingIssueJobDataSchema = z.object({ userId: z.string().min(1) });
-export type BillingIssueJobData = z.infer<typeof BillingIssueJobDataSchema>;
 
 /**
  * 친구 할일 전체 완료 잡 데이터
@@ -112,7 +107,6 @@ const FriendCompletedJobDataSchema = z.object({
 	notifyUserIds: z.array(z.string().min(1)),
 	timezone: z.string().min(1),
 });
-export type FriendCompletedJobData = z.infer<typeof FriendCompletedJobDataSchema>;
 
 /**
  * 마일스톤 달성 잡 데이터
@@ -128,7 +122,6 @@ const MilestoneReachedJobDataSchema = z.object({
 		"FIRST_FRIEND",
 	]),
 });
-export type MilestoneReachedJobData = z.infer<typeof MilestoneReachedJobDataSchema>;
 
 export const NotificationRuntimeJobSchema = z.discriminatedUnion("name", [
 	z.object({
@@ -166,22 +159,27 @@ export const NotificationRuntimeJobSchema = z.discriminatedUnion("name", [
 ]);
 
 // =============================================================================
-// Job Data Union & Map
+// Schema-derived public types
 // =============================================================================
 
-/** 잡 이름 → 데이터 타입 매핑 */
-export interface NotificationJobMap {
-	[NotificationJobName.FOLLOW_NEW]: FollowNewJobData;
-	[NotificationJobName.FOLLOW_MUTUAL]: FollowMutualJobData;
-	[NotificationJobName.NUDGE_SENT]: NudgeSentJobData;
-	[NotificationJobName.CHEER_SENT]: CheerSentJobData;
-	[NotificationJobName.BILLING_ISSUE]: BillingIssueJobData;
-	[NotificationJobName.FRIEND_COMPLETED]: FriendCompletedJobData;
-	[NotificationJobName.MILESTONE_REACHED]: MilestoneReachedJobData;
-	[NotificationJobName.PUSH_RECEIPTS]: Record<string, never>;
-}
+/** 런타임 검증 스키마가 큐 타입 계약의 단일 원본이다. */
+export type NotificationRuntimeJob = z.output<typeof NotificationRuntimeJobSchema>;
+export type NotificationJobNameValue = NotificationRuntimeJob["name"];
+export type NotificationJobOf<Name extends NotificationJobNameValue> = Extract<
+	NotificationRuntimeJob,
+	{ name: Name }
+>;
+export type NotificationJobData<Name extends NotificationJobNameValue> =
+	NotificationJobOf<Name>["data"];
 
-/** 모든 잡 데이터 유니온 타입 */
-export type NotificationJobData = NotificationJobMap[keyof NotificationJobMap];
-
-export type NotificationRuntimeJob = z.infer<typeof NotificationRuntimeJobSchema>;
+export type FollowNewJobData = NotificationJobData<typeof NotificationJobName.FOLLOW_NEW>;
+export type FollowMutualJobData = NotificationJobData<typeof NotificationJobName.FOLLOW_MUTUAL>;
+export type NudgeSentJobData = NotificationJobData<typeof NotificationJobName.NUDGE_SENT>;
+export type CheerSentJobData = NotificationJobData<typeof NotificationJobName.CHEER_SENT>;
+export type BillingIssueJobData = NotificationJobData<typeof NotificationJobName.BILLING_ISSUE>;
+export type FriendCompletedJobData = NotificationJobData<
+	typeof NotificationJobName.FRIEND_COMPLETED
+>;
+export type MilestoneReachedJobData = NotificationJobData<
+	typeof NotificationJobName.MILESTONE_REACHED
+>;

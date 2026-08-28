@@ -1,9 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import {
+	createWeeklyAchievementNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -26,7 +31,8 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		private readonly reader: WeeklyAchievementStatsReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 		private readonly weeklyAchievementWriter: WeeklyAchievementWriterAccess,
 	) {}
 
@@ -79,7 +85,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
 		if (notifiableUserIds.length === 0) return { sent: 0 };
 
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: notifiableUserIds,
 			type: "WEEKLY_ACHIEVEMENT",
 			notificationDate: today,
@@ -96,16 +102,16 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 
 		const locales = await this.preferenceReader.findUserLocales(finalRecords.map((r) => r.userId));
 		const notifications = finalRecords.map((r) => {
-			const message = NotificationMessageBuilder.weeklyAchievement(
-				r.completedTodos,
-				r.totalTodos,
-				locales.get(r.userId) ?? "ko",
-				{
+			const message = createWeeklyAchievementNotificationMessage({
+				completedCount: r.completedTodos,
+				totalCount: r.totalTodos,
+				locale: locales.get(r.userId) ?? DEFAULT_LOCALE,
+				variantContext: {
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
 					recipientId: r.userId,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 			return {
 				userId: r.userId,
 				type: "WEEKLY_ACHIEVEMENT" as const,
@@ -118,7 +124,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 
 		this.#logger.log(
 			`Weekly achievement: tz=${tz}, records=${records.length}, sent=${notifications.length}`,

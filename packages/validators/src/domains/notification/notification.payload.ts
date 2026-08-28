@@ -72,11 +72,22 @@ export const notificationActivityKindSchema = z.enum(['COMMENT', 'REPLY', 'LIKE'
 
 export type NotificationActivityKind = z.infer<typeof notificationActivityKindSchema>;
 
-export const notificationRoutingSchema = z.object({
-  commentId: todoCommentIdSchema.optional(),
-  threadRootId: todoCommentIdSchema.optional(),
-  activityKind: notificationActivityKindSchema.optional(),
-});
+/** 신규 댓글 알림이 생성할 때 보장해야 하는 라우팅 계약. */
+export const todoCommentNotificationRoutingSchema = z
+  .object({
+    commentId: todoCommentIdSchema,
+    threadRootId: todoCommentIdSchema,
+    activityKind: notificationActivityKindSchema,
+  })
+  .describe('댓글 알림 라우팅');
+
+export type TodoCommentNotificationRouting = z.infer<typeof todoCommentNotificationRoutingSchema>;
+
+/**
+ * 기존 알림과 구버전 클라이언트를 위한 읽기 계약.
+ * 예전 payload는 필드 일부만 가질 수 있으므로 optional shape을 유지한다.
+ */
+export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.partial();
 
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 

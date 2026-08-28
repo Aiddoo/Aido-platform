@@ -3,9 +3,11 @@ import type {
 	FindJobsOptions,
 	JobWithMetadata,
 	QueueResult,
+	QueueOptions,
 	ScheduleOptions,
 	SendOptions,
 	StopOptions,
+	UpdateQueueOptions,
 	WorkOptions,
 } from "pg-boss";
 
@@ -18,10 +20,35 @@ import {
 } from "./pg-boss-job-runtime.adapter";
 
 const QUEUE = "document-generation";
+const DEAD_LETTER_QUEUE = "document-generation-dead-letter";
 
-function enqueueOptions(): EnqueueJobOptions {
+const DEAD_LETTER_JOB_POLICY = {
+	retryLimit: 2,
+	retryDelaySeconds: 5,
+	retryBackoff: true,
+	expireInSeconds: 600,
+	retentionSeconds: 14 * 24 * 60 * 60,
+	deleteAfterSeconds: 7 * 24 * 60 * 60,
+} as const;
+
+function enqueueOptions(idempotencyKey = "document:42"): EnqueueJobOptions {
 	return {
-		jobKey: "document:42",
+		idempotencyKey,
+		startAfter: new Date("2026-07-22T12:00:00.000Z"),
+		retryLimit: 2,
+		retryDelaySeconds: 5,
+		retryBackoff: true,
+		expireInSeconds: 600,
+		retentionSeconds: 14 * 24 * 60 * 60,
+		deleteAfterSeconds: 7 * 24 * 60 * 60,
+		deadLetter: { queue: DEAD_LETTER_QUEUE, jobPolicy: DEAD_LETTER_JOB_POLICY },
+		timezone: "Asia/Seoul",
+	};
+}
+
+function legacyEnqueueOptions(): EnqueueJobOptions {
+	return {
+		jobKey: "document_42",
 		startAfter: new Date("2026-07-22T12:00:00.000Z"),
 		retryLimit: 2,
 		retryDelaySeconds: 5,
@@ -36,6 +63,11 @@ function enqueueOptions(): EnqueueJobOptions {
 
 class FakePgBossClient implements PgBossClient {
 	readonly createdQueues: string[] = [];
+	readonly createQueueCalls: Array<{ readonly name: string; readonly options?: QueueOptions }> = [];
+	readonly updateQueueCalls: Array<{
+		readonly name: string;
+		readonly options: UpdateQueueOptions;
+	}> = [];
 	readonly sendCalls: Array<{
 		name: string;
 		data: object;
@@ -73,8 +105,13 @@ class FakePgBossClient implements PgBossClient {
 		return this;
 	}
 
-	async createQueue(name: string): Promise<void> {
+	async createQueue(name: string, options?: QueueOptions): Promise<void> {
 		this.createdQueues.push(name);
+		this.createQueueCalls.push({ name, options });
+	}
+
+	async updateQueue(name: string, options: UpdateQueueOptions): Promise<void> {
+		this.updateQueueCalls.push({ name, options });
 	}
 
 	async send(name: string, data: object, options: SendOptions): Promise<string | null> {
@@ -168,6 +205,30 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 		await expect(runtime.enqueue(QUEUE, { documentId: 42 }, options)).resolves.toBe("job-1");
 
 		expect(boss.createdQueues).toEqual(["document-generation-dead-letter", QUEUE]);
+		expect(boss.createQueueCalls[0]).toEqual({
+			name: DEAD_LETTER_QUEUE,
+			options: {
+				retryLimit: 2,
+				retryDelay: 5,
+				retryBackoff: true,
+				expireInSeconds: 600,
+				retentionSeconds: 1_209_600,
+				deleteAfterSeconds: 604_800,
+			},
+		});
+		expect(boss.updateQueueCalls).toEqual([
+			{
+				name: DEAD_LETTER_QUEUE,
+				options: {
+					retryLimit: 2,
+					retryDelay: 5,
+					retryBackoff: true,
+					expireInSeconds: 600,
+					retentionSeconds: 1_209_600,
+					deleteAfterSeconds: 604_800,
+				},
+			},
+		]);
 		expect(boss.sendCalls).toHaveLength(1);
 		expect(boss.sendCalls[0]).toMatchObject({
 			name: QUEUE,
@@ -190,6 +251,44 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 		expect(queryRawUnsafe).toHaveBeenCalledWith("SELECT $1", 42);
 	});
 
+	it("DLQ worker가 enqueue보다 먼저 등록돼도 typed retry policy로 수렴한다", async () => {
+		await runtime.work(DEAD_LETTER_QUEUE, jest.fn().mockResolvedValue(undefined), {
+			teamSize: 1,
+			pollingIntervalSeconds: 2,
+			queuePolicy: DEAD_LETTER_JOB_POLICY,
+		});
+		await runtime.enqueue(QUEUE, { documentId: 42 }, enqueueOptions());
+
+		expect(boss.createQueueCalls.filter(({ name }) => name === DEAD_LETTER_QUEUE)).toEqual([
+			{
+				name: DEAD_LETTER_QUEUE,
+				options: {
+					retryLimit: 2,
+					retryDelay: 5,
+					retryBackoff: true,
+					expireInSeconds: 600,
+					retentionSeconds: 1_209_600,
+					deleteAfterSeconds: 604_800,
+				},
+			},
+		]);
+		expect(boss.updateQueueCalls.filter(({ name }) => name === DEAD_LETTER_QUEUE)).toHaveLength(1);
+	});
+
+	it("신규·deprecated identity 이름을 같은 pg-boss identity로 매핑한다", async () => {
+		await runtime.enqueue(QUEUE, { documentId: 42 }, enqueueOptions("document_42"));
+		await runtime.enqueue(QUEUE, { documentId: 42 }, legacyEnqueueOptions());
+
+		expect(boss.sendCalls[0]?.options).toMatchObject({
+			id: "01d4ac50-5c6a-5317-bd4e-b1cf809b8f59",
+			singletonKey: "document_42",
+		});
+		expect(boss.sendCalls[1]?.options).toMatchObject({
+			id: "01d4ac50-5c6a-5317-bd4e-b1cf809b8f59",
+			singletonKey: "document_42",
+		});
+	});
+
 	it("동일한 scheduleKey로 스케줄을 upsert한다", async () => {
 		await runtime.schedule(
 			"weekly-document",
@@ -206,11 +305,11 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 			data: { reportType: "WEEKLY" },
 			options: {
 				key: "weekly-document",
-				singletonKey: "document:42",
 				tz: "Asia/Seoul",
 			},
 		});
 		expect(boss.scheduleCalls[0]?.options).not.toHaveProperty("db");
+		expect(boss.scheduleCalls[0]?.options).not.toHaveProperty("singletonKey");
 	});
 
 	it("worker batch를 vendor-neutral envelope로 변환한다", async () => {
@@ -237,7 +336,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	it.each(["created", "retry"] as const)(
 		"cancel은 queued 상태인 %s 작업을 취소하고 cancelled를 반환한다",
 		async (state) => {
-			// Given - 동일 jobKey의 취소 가능한 작업 존재
+			// Given - 동일 idempotencyKey의 취소 가능한 작업 존재
 			boss.jobs = [job({ state })];
 
 			// When & Then - 실제 affected row가 있어 cancelled
@@ -290,7 +389,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	});
 
 	it("cancel은 찾은 작업이 없으면 missing을 반환한다", async () => {
-		// Given - 동일 jobKey의 작업 없음
+		// Given - 동일 idempotencyKey의 작업 없음
 		boss.jobs = [];
 
 		// When & Then - 명시적 missing 결과

@@ -846,30 +846,87 @@ enum PushDeliveryStatus {
   UNKNOWN
 }
 
+enum PushDispatchOutboxStatus {
+  PENDING
+  PROCESSING
+  PUBLISHED
+}
+
+enum PushDeliveryMode {
+  SINGLE
+  BATCH
+}
+
+enum PushRateLimitPhase {
+  GENERAL
+  ENGAGEMENT
+}
+
 model PushDispatch {
-  id             Int                 @id @default(autoincrement())
-  notificationId Int                 @unique
-  userId         String
-  purpose        NotificationPurpose
-  campaignKey    String?             @db.VarChar(100)
-  variantId      String?             @db.VarChar(100)
-  timezone       String              @default("UTC") @db.VarChar(50)
-  localDate      DateTime?           @db.Date
-  status         PushDispatchStatus  @default(PENDING)
-  skipReason     String?             @db.VarChar(100)
-  scheduledAt    DateTime            @default(now())
-  sentAt         DateTime?
-  openedAt       DateTime?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id                   Int                 @id @default(autoincrement())
+  notificationId       Int                 @unique
+  userId               String
+  purpose              NotificationPurpose
+  campaignKey          String?             @db.VarChar(100)
+  variantId            String?             @db.VarChar(100)
+  timezone             String              @default("UTC") @db.VarChar(50)
+  localDate            DateTime?           @db.Date
+  status               PushDispatchStatus  @default(PENDING)
+  skipReason           String?             @db.VarChar(100)
+  scheduledAt          DateTime            @default(now())
+  sentAt               DateTime?
+  openedAt             DateTime?
+  processingJobId      String?             @db.VarChar(255)
+  processingJobAttempt Int?
+  processingStartedAt  DateTime?
+  deliveryAttemptCount Int                 @default(0)
+  rateLimitReservedAt  DateTime?
+  lastError            String?             @db.VarChar(500)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
   notification Notification          @relation(fields: [notificationId], references: [id], onDelete: Cascade)
   user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   attempts     PushDeliveryAttempt[]
+  outbox       PushDispatchOutbox?
+  rateLimitReservations PushRateLimitReservation[]
 
   @@index([status, scheduledAt])
   @@index([userId, localDate, purpose])
   @@index([campaignKey, status, createdAt])
+}
+
+model PushRateLimitReservation {
+  dispatchId Int
+  phase      PushRateLimitPhase
+  userId     String
+  localDate  DateTime?          @db.Date
+  reservedAt DateTime           @default(now())
+
+  dispatch PushDispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+
+  @@id([dispatchId, phase])
+  @@index([phase, userId, reservedAt])
+  @@index([phase, userId, localDate, reservedAt])
+}
+
+model PushDispatchOutbox {
+  dispatchId      Int                      @id
+  deliveryMode    PushDeliveryMode
+  force           Boolean                  @default(false)
+  status          PushDispatchOutboxStatus @default(PENDING)
+  publishAttempts Int                      @default(0)
+  availableAt     DateTime                 @default(now())
+  lockedAt        DateTime?
+  publishedAt     DateTime?
+  lastError       String?                  @db.VarChar(500)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  dispatch PushDispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt, dispatchId])
+  @@index([status, lockedAt])
 }
 
 model PushDeliveryAttempt {
@@ -1000,7 +1057,7 @@ model RetentionPushOutbox {
 
   stage RetentionExperimentStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
-  @@index([status, availableAt])
+  @@index([status, availableAt, id])
   @@index([status, lockedAt])
 }
 

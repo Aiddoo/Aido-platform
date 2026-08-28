@@ -14,7 +14,7 @@ import {
 } from "../../ports/retention.repository.port";
 
 const OUTBOX_RELAY_BATCH_SIZE = 25;
-const OUTBOX_PROCESSING_LEASE_MS = 2 * 60_000;
+const OUTBOX_PROCESSING_LEASE_MS = 15 * 60_000;
 
 @Injectable()
 export class RelayRetentionOutboxUseCase {
@@ -35,6 +35,7 @@ export class RelayRetentionOutboxUseCase {
 		const now = new Date();
 		const cutoff = new Date(now.getTime() - OUTBOX_PROCESSING_LEASE_MS);
 		const claimed = await this.uow.run(async () => {
+			await this.repository.recoverStaleDispatches(cutoff);
 			await this.repository.recoverStaleOutboxes(cutoff);
 			return this.repository.claimOutboxes(OUTBOX_RELAY_BATCH_SIZE, now);
 		});
@@ -42,13 +43,13 @@ export class RelayRetentionOutboxUseCase {
 		await Promise.all(
 			claimed.map(async (outbox) => {
 				try {
-					await this.enqueuer.enqueueDispatch(outbox.id);
-					await this.repository.markOutboxPublished(outbox.id);
+					await this.enqueuer.enqueueDispatch(outbox);
 				} catch (error) {
 					const normalizedError = error instanceof Error ? error : new Error(String(error));
 					const retryDecision = decideRetentionOutboxRetry(outbox.attempts);
 					await this.repository.markOutboxFailed({
 						outboxId: outbox.id,
+						publishAttempt: outbox.attempts,
 						hasExhaustedRetries: retryDecision.hasExhaustedRetries,
 						error: normalizedError.message,
 						nextAttemptAt: new Date(Date.now() + retryDecision.delayMs),
@@ -57,6 +58,20 @@ export class RelayRetentionOutboxUseCase {
 						`Retention outbox publish failed: id=${outbox.id}`,
 						normalizedError.stack,
 					);
+					return;
+				}
+
+				try {
+					await this.repository.markOutboxPublished(outbox);
+				} catch (error) {
+					const normalizedError = error instanceof Error ? error : new Error(String(error));
+					// enqueue 결과가 unknown이 아니므로 generation을 되돌리지 않는다. 이미 시작된
+					// worker 또는 stale PROCESSING lease recovery가 같은 publication을 이어받는다.
+					this.#logger.error(
+						`Retention outbox published-state write failed: id=${outbox.id}`,
+						normalizedError.stack,
+					);
+					throw normalizedError;
 				}
 			}),
 		);

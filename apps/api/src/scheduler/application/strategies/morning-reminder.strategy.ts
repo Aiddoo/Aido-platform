@@ -2,13 +2,15 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	NotificationMessageBuilder,
-	NotificationSender,
-	resolveTemplateLocale,
+	createMorningNoTodoNotificationMessage,
+	createMorningReminderNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { toSupportedLocale } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -25,7 +27,8 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 	constructor(
 		@Inject(SCHEDULED_REMINDER_READER)
 		private readonly reader: ScheduledReminderReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -64,7 +67,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지: 이미 오늘 아침 리마인더를 받은 사용자 제외
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: users.map((u) => u.id),
 			type: "MORNING_REMINDER",
 			notificationDate: today,
@@ -78,7 +81,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 
 		const notifications = filteredUsers.map((user) => {
 			const count = user._count.todos;
-			const locale = resolveTemplateLocale(user.preference?.locale);
+			const locale = toSupportedLocale(user.preference?.locale);
 			const variantContext = {
 				campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
 				recipientId: user.id,
@@ -86,8 +89,8 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 			};
 			const message =
 				count > 0
-					? NotificationMessageBuilder.morningReminder(count, locale, variantContext)
-					: NotificationMessageBuilder.morningNoTodo(locale, variantContext);
+					? createMorningReminderNotificationMessage({ count, locale, variantContext })
+					: createMorningNoTodoNotificationMessage({ locale, variantContext });
 
 			return {
 				userId: user.id,
@@ -101,7 +104,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 		this.#logger.log(
 			`Morning reminder: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, count=${notifications.length}`,
 		);

@@ -1,11 +1,16 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import {
+	createNudgeSuggestionNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString, toIsoWeekId } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -28,7 +33,8 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		private readonly reader: ReEngagementReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 		@Inject(SCHEDULER_DEDUP)
 		private readonly schedulerDedup: SchedulerDedupPort,
 	) {}
@@ -47,7 +53,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		}
 
 		// 이미 오늘 NUDGE_SUGGEST 받은 유저 제외
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: activeUsers.map((u) => u.id),
 			type: "NUDGE_SUGGEST",
 			notificationDate: today,
@@ -126,18 +132,16 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 				continue;
 			}
 
-			const days = diffInDays(today, target.lastActiveAt);
-			const locale = locales.get(user.id) ?? "ko";
-			const message = NotificationMessageBuilder.nudgeSuggest(
-				target.name ?? (locale === "en" ? "Your friend" : "친구"),
-				days,
+			const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
+			const message = createNudgeSuggestionNotificationMessage({
+				friendName: target.name ?? (locale === "en" ? "Your friend" : "친구"),
 				locale,
-				{
+				variantContext: {
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
 					recipientId: user.id,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 
 			notifications.push({
 				userId: user.id,
@@ -154,7 +158,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 
 		// DB 성공 후 Redis 기록 (순서 보장)
 		if (notifications.length > 0) {
-			await this.notificationService.createAndSendBatch(notifications);
+			await this.notificationPublisher.publishBatch(notifications);
 
 			const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
 			void this.schedulerDedup.recordNudgePairs(weekId, members);

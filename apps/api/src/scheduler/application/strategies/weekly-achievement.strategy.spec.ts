@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { NotificationSender } from "@/notification";
+import { NotificationHistoryReader, NotificationPublisher } from "@/notification";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
 
@@ -32,7 +32,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 	let strategy: WeeklyAchievementStrategy;
 	let reader: Mocked<WeeklyAchievementStatsReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 	let weeklyAchievementWriter: Mocked<WeeklyAchievementWriterAccess>;
 
 	const TZ = "Asia/Seoul";
@@ -59,7 +60,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(WEEKLY_ACHIEVEMENT_STATS_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationSender);
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 		weeklyAchievementWriter = unitRef.get(WeeklyAchievementWriterAccess);
 
 		// 기본 mock 설정
@@ -67,8 +69,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		reader.groupCompletedTodosByUser.mockResolvedValue([]);
 		reader.findFreeRecipientIds.mockImplementation(async (userIds) => new Set(userIds));
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 		weeklyAchievementWriter.upsertMany.mockResolvedValue(undefined);
 	});
 
@@ -92,7 +94,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 				expect.objectContaining({ userId: "premium-user" }),
 			]),
 		);
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications?.map((notification) => notification.userId)).toEqual(["free-user"]);
 	});
 
@@ -207,7 +209,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 
 		// Then — completedTodos > 0인 두 유저 모두 알림 발송
 		expect(result).toEqual({ sent: 2 });
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(2);
 		expect(notifications?.map((n) => n.userId)).toEqual(
 			expect.arrayContaining(["user-1", "user-2"]),
@@ -249,7 +251,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		]);
 
 		// user-1은 이미 알림 받음
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
@@ -263,7 +265,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		);
 		// 알림은 user-2만
 		expect(result).toEqual({ sent: 1 });
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
@@ -281,7 +283,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(weeklyAchievementWriter.upsertMany).not.toHaveBeenCalled();
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
 	it("알림 대상이 없어도 기록은 저장한다", async () => {
@@ -298,6 +300,6 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		// Then — 기록 저장됨 + 알림 미발송
 		expect(weeklyAchievementWriter.upsertMany).toHaveBeenCalledTimes(1);
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 });

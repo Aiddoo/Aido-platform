@@ -10,14 +10,14 @@ import {
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+	NOTIFICATION_INBOX_READER,
+	type NotificationInboxReaderPort,
+} from "../../ports/notification-inbox.reader.port";
 import { GetUnreadCountUseCase } from "./get-unread-count.use-case";
 
 describe("GetUnreadCountUseCase", () => {
 	let useCase: GetUnreadCountUseCase;
-	let notificationRepo: Mocked<NotificationRepositoryPort>;
+	let notificationRepo: Mocked<NotificationInboxReaderPort>;
 	let cache: Mocked<NotificationCachePort>;
 
 	const mockUserId = "user-1";
@@ -28,7 +28,7 @@ describe("GetUnreadCountUseCase", () => {
 			.impl(() => createNotificationCacheMock())
 			.compile();
 		useCase = unit;
-		notificationRepo = unitRef.get(NOTIFICATION_REPOSITORY);
+		notificationRepo = unitRef.get(NOTIFICATION_INBOX_READER);
 		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 
 		cache.wrapUnreadCount.mockImplementation((_userId, factory) => factory());

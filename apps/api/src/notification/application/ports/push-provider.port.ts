@@ -72,6 +72,39 @@ export interface PushReceiptResult {
 }
 
 /**
+ * Provider transport가 중단된 시점의 배치 진행 상태.
+ *
+ * `acceptedTicketCountBeforeFailure`가 1 이상이면 이전 청크의 일부 알림은 이미
+ * provider에 수락되었다. 호출자는 전체 논리 배치를 재시도하므로 해당 알림은
+ * at-least-once 의미에 따라 중복 전달될 수 있다.
+ */
+export interface RetryablePushProviderTransportErrorMetadata {
+	readonly providerName: string;
+	/** 실패 전에 SDK 응답까지 처리한 payload 수 (성공·영구 실패 포함). */
+	readonly resolvedPayloadCountBeforeFailure: number;
+	/** 처리한 payload 중 provider가 성공 ticket을 반환한 수. */
+	readonly acceptedTicketCountBeforeFailure: number;
+	/** 전송 요청은 했지만 provider 수락 여부를 확인하지 못한 실패 청크의 payload 수. */
+	readonly unconfirmedPayloadCount: number;
+	/** 실패 청크 뒤에 남아 provider에 요청하지 않은 payload 수. */
+	readonly unattemptedPayloadCount: number;
+}
+
+/** 일시적인 SDK/HTTP transport 실패를 queue retry 경계까지 보존하는 provider 오류. */
+export class RetryablePushProviderTransportError extends Error {
+	constructor(
+		readonly metadata: RetryablePushProviderTransportErrorMetadata,
+		options?: ErrorOptions,
+	) {
+		super(
+			`Retryable push provider transport failure: provider=${metadata.providerName}, resolved=${metadata.resolvedPayloadCountBeforeFailure}, accepted=${metadata.acceptedTicketCountBeforeFailure}, unconfirmed=${metadata.unconfirmedPayloadCount}, unattempted=${metadata.unattemptedPayloadCount}`,
+			options,
+		);
+		this.name = RetryablePushProviderTransportError.name;
+	}
+}
+
+/**
  * Push Provider Interface
  *
  * 모든 푸시 알림 제공자는 이 인터페이스를 구현해야 합니다.
@@ -90,6 +123,8 @@ export interface PushProvider {
 	/**
 	 * 배치 푸시 알림 발송
 	 * @param payloads 최대 100개 권장
+	 * @throws {RetryablePushProviderTransportError} SDK/HTTP transport 실패. 앞선 청크가
+	 * 이미 수락되었을 수 있으므로 호출자는 at-least-once 재시도를 전제로 해야 한다.
 	 */
 	sendBatch(payloads: PushPayload[]): Promise<BatchPushResult>;
 

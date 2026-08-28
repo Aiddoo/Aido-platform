@@ -6,9 +6,20 @@ import {
 	BullMqJobRuntimeAdapter,
 	type BullQueueClient,
 	type BullWorkerClient,
+	toBullMqJobId,
 } from "./bullmq-job-runtime.adapter";
 
 const QUEUE = "document-generation.v1";
+const DEAD_LETTER_QUEUE = "document-generation-dead-letter";
+
+const DEAD_LETTER_JOB_POLICY = {
+	retryLimit: 4,
+	retryDelaySeconds: 7,
+	retryBackoff: false,
+	expireInSeconds: 300,
+	retentionSeconds: 86_400,
+	deleteAfterSeconds: 3_600,
+} as const;
 
 type FakeBullJobState =
 	| "active"
@@ -20,18 +31,35 @@ type FakeBullJobState =
 	| "waiting"
 	| "waiting-children";
 
-function options(overrides: Partial<EnqueueJobOptions> = {}): EnqueueJobOptions {
+interface JobOptionOverrides {
+	readonly idempotencyKey?: string;
+	readonly startAfter?: Date;
+}
+
+function options(overrides: JobOptionOverrides = {}): EnqueueJobOptions {
 	return {
-		jobKey: "document:42",
+		idempotencyKey: "document:42",
 		retryLimit: 2,
 		retryDelaySeconds: 5,
 		retryBackoff: true,
 		expireInSeconds: 600,
 		retentionSeconds: 14 * 24 * 60 * 60,
 		deleteAfterSeconds: 7 * 24 * 60 * 60,
-		deadLetter: "document-generation-dead-letter",
+		deadLetter: { queue: DEAD_LETTER_QUEUE, jobPolicy: DEAD_LETTER_JOB_POLICY },
 		timezone: "Asia/Seoul",
 		...overrides,
+	};
+}
+
+function legacyOptions(): EnqueueJobOptions {
+	return {
+		jobKey: "document_42",
+		retryLimit: 2,
+		retryDelaySeconds: 5,
+		retryBackoff: true,
+		expireInSeconds: 600,
+		retentionSeconds: 14 * 24 * 60 * 60,
+		deleteAfterSeconds: 7 * 24 * 60 * 60,
 	};
 }
 
@@ -45,8 +73,10 @@ class FakeQueue implements BullQueueClient {
 	counts = { wait: 0, delayed: 0, active: 0, failed: 0 };
 	oldestTimestamp: number | null = null;
 	removedJobIds: string[] = [];
+	requestedJobIds: string[] = [];
 	removedScheduleKeys: string[] = [];
 	jobExists = true;
+	readonly missingJobIds = new Set<string>();
 	jobState: FakeBullJobState = "waiting";
 	getStateError?: Error;
 	removeError?: Error;
@@ -84,7 +114,8 @@ class FakeQueue implements BullQueueClient {
 		  }
 		| undefined
 	> {
-		if (!this.jobExists) {
+		this.requestedJobIds.push(id);
+		if (!this.jobExists || this.missingJobIds.has(id)) {
 			return undefined;
 		}
 		return {
@@ -194,12 +225,16 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 				data: {
 					__aidoJobRuntime: 1,
 					data: { documentId: 42 },
-					deadLetter: "document-generation-dead-letter",
+					deadLetter: DEAD_LETTER_QUEUE,
+					deadLetterJobPolicy: DEAD_LETTER_JOB_POLICY,
 					deleteAfterSeconds: 604_800,
+					retryBackoff: true,
+					retryDelaySeconds: 5,
+					retryLimit: 2,
 					retentionSeconds: 1_209_600,
 				},
 				options: {
-					jobId: "document:42",
+					jobId: "aido_ZG9jdW1lbnQ6NDI",
 					delay: 10_000,
 					attempts: 3,
 					backoff: { type: "exponential", delay: 5_000 },
@@ -211,13 +246,22 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		jest.useRealTimers();
 	});
 
+	it("신규·deprecated identity 이름을 같은 BullMQ jobId로 매핑한다", async () => {
+		await runtime.enqueue(QUEUE, { documentId: 42 }, options({ idempotencyKey: "document_42" }));
+		await runtime.enqueue(QUEUE, { documentId: 42 }, legacyOptions());
+
+		const added = factory.queues.get(QUEUE)?.added;
+		expect(added?.[0]?.options).toMatchObject({ jobId: "document_42" });
+		expect(added?.[1]?.options).toMatchObject({ jobId: "document_42" });
+	});
+
 	it("scheduleKey와 timezone을 BullMQ scheduler에 보존한다", async () => {
 		await runtime.schedule(
 			"weekly-document",
 			"0 1 * * 1",
 			QUEUE,
 			{ reportType: "WEEKLY" },
-			options({ jobKey: undefined }),
+			options({ startAfter: new Date("2026-07-22T12:00:10.000Z") }),
 		);
 
 		expect(factory.queues.get(QUEUE)?.schedules).toEqual([
@@ -235,6 +279,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		expect(factory.queues.get("document-generation")?.removedScheduleKeys).toEqual([
 			"weekly-document",
 		]);
+		const schedulerOptions = factory.queues.get(QUEUE)?.schedules[0]?.template.opts;
+		expect(schedulerOptions).not.toHaveProperty("jobId");
+		expect(schedulerOptions).not.toHaveProperty("delay");
 	});
 
 	it("worker가 신규 wrapper와 기존 raw payload를 같은 envelope로 전달한다", async () => {
@@ -298,7 +345,11 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 				__aidoJobRuntime: 1,
 				data: { documentId: 42 },
 				deadLetter: "document-generation-dead-letter",
+				deadLetterJobPolicy: DEAD_LETTER_JOB_POLICY,
 				deleteAfterSeconds: 604_800,
+				retryBackoff: true,
+				retryDelaySeconds: 5,
+				retryLimit: 2,
 				retentionSeconds: 1_209_600,
 			},
 			attemptsMade: 3,
@@ -306,15 +357,16 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 			timestamp: Date.now(),
 		});
 
-		expect(factory.queues.get("document-generation-dead-letter")?.added).toEqual([
+		expect(factory.queues.get(DEAD_LETTER_QUEUE)?.added).toEqual([
 			{
-				name: "document-generation-dead-letter",
+				name: DEAD_LETTER_QUEUE,
 				data: { documentId: 42 },
 				options: {
-					jobId: "failed-job:dead-letter",
-					attempts: 1,
-					removeOnComplete: { age: 604_800 },
-					removeOnFail: { age: 1_209_600 },
+					jobId: "aido_ZmFpbGVkLWpvYjpkZWFkLWxldHRlcg",
+					attempts: 5,
+					backoff: { type: "fixed", delay: 7_000 },
+					removeOnComplete: { age: 3_600 },
+					removeOnFail: { age: 86_400 },
 				},
 			},
 		]);
@@ -332,9 +384,23 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 			await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
 				status: "cancelled",
 			});
-			expect(queue.removedJobIds).toEqual(["document:42"]);
+			expect(queue.removedJobIds).toEqual(["aido_ZG9jdW1lbnQ6NDI"]);
 		},
 	);
+
+	it("cancel은 safe ID가 없으면 rolling 배포 이전 raw ID를 확인한다", async () => {
+		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
+		const queue = factory.queues.get(QUEUE);
+		expect(queue).toBeDefined();
+		if (!queue) return;
+		queue.missingJobIds.add(toBullMqJobId("document:42"));
+
+		await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
+			status: "cancelled",
+		});
+		expect(queue.requestedJobIds).toEqual(["aido_ZG9jdW1lbnQ6NDI", "document:42"]);
+		expect(queue.removedJobIds).toEqual(["document:42"]);
+	});
 
 	it.each(["active", "completed", "failed", "unknown"] as const)(
 		"cancel은 존재하더라도 %s 작업이면 missing을 반환한다",
@@ -352,7 +418,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 		},
 	);
 
-	it("cancel은 jobKey가 없으면 missing을 반환한다", async () => {
+	it("cancel은 idempotencyKey가 없으면 missing을 반환한다", async () => {
 		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
 		const queue = factory.queues.get(QUEUE);
 		expect(queue).toBeDefined();

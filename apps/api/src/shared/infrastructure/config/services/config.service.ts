@@ -193,6 +193,10 @@ export class TypedConfigService {
 		return this.get("EXPO_ACCESS_TOKEN");
 	}
 
+	get pushRateLimitBackend(): "postgres" | "redis" | "memory" {
+		return this.get("PUSH_RATE_LIMIT_BACKEND");
+	}
+
 	get retentionOnboardingV2() {
 		return {
 			enabled: this.get("RETENTION_ONBOARDING_V2_ENABLED"),

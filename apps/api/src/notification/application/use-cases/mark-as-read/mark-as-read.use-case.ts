@@ -9,6 +9,10 @@ import {
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import {
+	NOTIFICATION_INBOX_READER,
+	type NotificationInboxReaderPort,
+} from "../../ports/notification-inbox.reader.port";
+import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
@@ -24,6 +28,8 @@ export class MarkAsReadUseCase {
 	readonly #logger = new Logger(MarkAsReadUseCase.name);
 
 	constructor(
+		@Inject(NOTIFICATION_INBOX_READER)
+		private readonly notificationInboxReader: NotificationInboxReaderPort,
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
 		@Inject(NOTIFICATION_CACHE)
@@ -31,7 +37,7 @@ export class MarkAsReadUseCase {
 	) {}
 
 	async execute(userId: string, notificationId: number): Promise<void> {
-		const record = await this.notificationRepository.findNotificationById(notificationId);
+		const record = await this.notificationInboxReader.findNotificationById(notificationId);
 
 		if (!record) {
 			throw new ApplicationException(ErrorCode.NOTIFICATION_1004, {

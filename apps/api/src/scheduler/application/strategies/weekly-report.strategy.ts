@@ -1,9 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import {
+	createWeeklyReportNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -25,7 +30,8 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 		private readonly reader: ScheduledReminderReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -44,7 +50,7 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: users.map((u) => u.id),
 			type: "WEEKLY_REPORT",
 			notificationDate: today,
@@ -58,10 +64,13 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 
 		const locales = await this.preferenceReader.findUserLocales(filteredUsers.map((u) => u.id));
 		const notifications = filteredUsers.map((user) => {
-			const message = NotificationMessageBuilder.weeklyReport(locales.get(user.id) ?? "ko", {
-				campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_REPORT,
-				recipientId: user.id,
-				occurrenceKey: toDateString(today),
+			const message = createWeeklyReportNotificationMessage({
+				locale: locales.get(user.id) ?? DEFAULT_LOCALE,
+				variantContext: {
+					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_REPORT,
+					recipientId: user.id,
+					occurrenceKey: toDateString(today),
+				},
 			});
 			return {
 				userId: user.id,
@@ -75,7 +84,7 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 		this.#logger.log(`Weekly report: tz=${tz}, count=${notifications.length}`);
 		return { sent: notifications.length };
 	}

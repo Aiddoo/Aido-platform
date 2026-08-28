@@ -14,9 +14,9 @@ import {
 	type NotificationDedupLockPort,
 } from "../../ports/notification-dedup.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+	NOTIFICATION_HISTORY_READER,
+	type NotificationHistoryReaderPort,
+} from "../../ports/notification-history.reader.port";
 import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
 
 /**
@@ -35,8 +35,8 @@ export class SendNotificationWithDedupUseCase {
 		private readonly sendNotification: SendNotificationUseCase,
 		@Inject(NOTIFICATION_DEDUP_LOCK)
 		private readonly dedupLock: NotificationDedupLockPort,
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(NOTIFICATION_HISTORY_READER)
+		private readonly notificationHistoryReader: NotificationHistoryReaderPort,
 	) {}
 
 	async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
@@ -64,7 +64,7 @@ export class SendNotificationWithDedupUseCase {
 				...contextFields,
 			};
 
-			const exists = await this.notificationRepository.existsRecentNotification(params);
+			const exists = await this.notificationHistoryReader.existsRecentNotification(params);
 			if (exists) {
 				this.#logger.debug(`Notification dedup: skipped ${data.type} for userId=${data.userId}`);
 				return null;

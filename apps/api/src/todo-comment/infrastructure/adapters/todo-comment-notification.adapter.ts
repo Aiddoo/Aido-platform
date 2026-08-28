@@ -1,51 +1,72 @@
-import { type NotificationActivityKind, NOTIFICATION_ACTION_TYPE } from "@aido/validators";
+import { todoCommentNotificationRoutingSchema, NOTIFICATION_ACTION_TYPE } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import {
+	createTodoCommentNotificationMessage,
+	NotificationPublisher,
+	NotificationRecipientLocaleReader,
+	TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
+} from "@/notification";
 
 import type {
+	TodoCommentActivityNotificationInput,
 	TodoCommentNotificationPort,
 	TodoCommentWrittenInput,
 } from "../../application/ports/todo-comment-notification.port";
 
-interface LikedInput {
-	recipientId: string;
-	senderId: string;
-	senderName: string | null;
-	todoId: number;
-	commentId: string;
-	threadRootId: string;
-}
+type TodoCommentNotificationActivity =
+	| { readonly activityKind: "COMMENT" | "REPLY"; readonly commentCount: number }
+	| { readonly activityKind: "LIKE" };
 
 @Injectable()
 export class TodoCommentNotificationAdapter implements TodoCommentNotificationPort {
-	constructor(private readonly notificationSender: NotificationSender) {}
+	constructor(
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+	) {}
 
 	notifyCommentsWritten(input: TodoCommentWrittenInput): Promise<void> {
-		return this.#send(input, input.isReply ? "REPLY" : "COMMENT", input.count);
+		return this.#sendActivityNotification(input, {
+			activityKind: input.isReply ? "REPLY" : "COMMENT",
+			commentCount: input.commentCount,
+		});
 	}
 
-	notifyCommentLiked(input: LikedInput): Promise<void> {
-		return this.#send(input, "LIKE", 1);
+	notifyCommentLiked(input: TodoCommentActivityNotificationInput): Promise<void> {
+		return this.#sendActivityNotification(input, { activityKind: "LIKE" });
 	}
 
 	/**
 	 * 알림 타입은 TODO_SHARED 그대로 둔다 — 새 타입을 늘리면 구버전 앱의 목록 파싱이 통째로 깨진다.
 	 * 무엇에 달렸는지는 문구와 activityKind가 말한다.
 	 */
-	async #send(input: LikedInput, kind: NotificationActivityKind, count: number): Promise<void> {
+	async #sendActivityNotification(
+		input: TodoCommentActivityNotificationInput,
+		activity: TodoCommentNotificationActivity,
+	): Promise<void> {
 		if (input.recipientId === input.senderId) {
 			return;
 		}
 
-		const locale = await this.notificationSender.getUserLocale(input.recipientId);
-		const copy = NotificationMessageBuilder.todoCommentActivity(
-			kind,
-			input.senderName,
+		const locale = await this.recipientLocaleReader.getRecipientLocale(input.recipientId);
+		const variantContext = {
+			campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.TODO_COMMENT_ACTIVITY,
+			recipientId: input.recipientId,
+			occurrenceKey:
+				activity.activityKind === "LIKE" ? `${input.commentId}:${input.senderId}` : input.commentId,
+		};
+		const copy = createTodoCommentNotificationMessage({
+			...activity,
+			senderName: input.senderName,
 			locale,
-			count,
-		);
-		await this.notificationSender.createAndSend({
+			variantContext,
+		});
+		const routing = todoCommentNotificationRoutingSchema.parse({
+			commentId: input.commentId,
+			threadRootId: input.threadRootId,
+			activityKind: activity.activityKind,
+		});
+		await this.notificationPublisher.publish({
 			userId: input.recipientId,
 			type: "TODO_SHARED",
 			title: copy.title,
@@ -56,10 +77,10 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
 			},
 			metadata: {
 				senderId: input.senderId,
-				commentId: input.commentId,
-				threadRootId: input.threadRootId,
-				activityKind: kind,
+				...routing,
 			},
+			campaignKey: variantContext.campaignKey,
+			variantId: copy.variantId,
 		});
 	}
 }

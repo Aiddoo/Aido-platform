@@ -9,22 +9,71 @@ export interface JobEnvelope<T extends JobData = JobData> {
 	readonly attempt: number;
 }
 
-export interface EnqueueJobOptions {
-	readonly jobKey?: string;
-	readonly startAfter?: Date;
+export interface JobRetryPolicy {
 	readonly retryLimit: number;
 	readonly retryDelaySeconds: number;
 	readonly retryBackoff: boolean;
 	readonly expireInSeconds: number;
 	readonly retentionSeconds: number;
 	readonly deleteAfterSeconds: number;
-	readonly deadLetter?: string;
+}
+
+export interface DeadLetterQueuePolicy {
+	readonly queue: string;
+	readonly jobPolicy: JobRetryPolicy;
+}
+
+export type DeadLetterQueue = string | DeadLetterQueuePolicy;
+
+interface BaseEnqueueJobOptions extends JobRetryPolicy {
+	readonly startAfter?: Date;
+	/**
+	 * 문자열은 rolling 배포 중 기존 호출부와 payload를 위한 호환 계약입니다.
+	 * 신규 durable queue는 DLQ 자체의 재시도 정책까지 명시해야 합니다.
+	 */
+	readonly deadLetter?: DeadLetterQueue;
 	readonly timezone?: string;
+}
+
+type JobIdempotencyOptions =
+	| {
+			readonly idempotencyKey: string;
+			readonly jobKey?: never;
+	  }
+	| {
+			readonly idempotencyKey?: never;
+			/** @deprecated `idempotencyKey`를 사용하세요. */
+			readonly jobKey: string;
+	  }
+	| {
+			readonly idempotencyKey?: undefined;
+			readonly jobKey?: undefined;
+	  };
+
+export type EnqueueJobOptions = BaseEnqueueJobOptions & JobIdempotencyOptions;
+
+/** rolling 배포 중 신규·레거시 이름을 하나의 런타임 값으로 정규화합니다. */
+export function resolveJobIdempotencyKey(options: EnqueueJobOptions): string | undefined {
+	return options.idempotencyKey ?? options.jobKey;
+}
+
+export function resolveDeadLetterQueue(
+	deadLetter: DeadLetterQueue | undefined,
+): string | undefined {
+	return typeof deadLetter === "string" ? deadLetter : deadLetter?.queue;
+}
+
+export function resolveDeadLetterJobPolicy(
+	deadLetter: DeadLetterQueue | undefined,
+): JobRetryPolicy | undefined {
+	return typeof deadLetter === "object" ? deadLetter.jobPolicy : undefined;
 }
 
 export interface WorkJobOptions {
 	readonly teamSize: number;
 	readonly pollingIntervalSeconds: number;
+	/** pg-boss가 worker 등록 중 queue를 먼저 만들더라도 정책을 잃지 않게 합니다. */
+	readonly queuePolicy?: JobRetryPolicy;
 }
 
 export interface JobQueueHealth {
@@ -61,7 +110,7 @@ export interface JobRuntimePort {
 		options: EnqueueJobOptions,
 	): Promise<void>;
 	unschedule(scheduleKey: string, queue: string): Promise<void>;
-	cancel(queue: string, jobKey: string): Promise<JobCancellationResult>;
+	cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult>;
 	work<T extends JobData>(
 		queue: string,
 		handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>,

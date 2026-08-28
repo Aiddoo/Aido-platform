@@ -102,6 +102,23 @@ describe("WriteTodoCommentChainUseCase", () => {
 		expect(notification.notifyCommentsWritten).toHaveBeenCalledTimes(1);
 	});
 
+	it("알림 경계에는 댓글 원문을 넘기지 않는다", async () => {
+		const { execute, notification } = setup();
+
+		await execute();
+
+		expect(notification.notifyCommentsWritten).toHaveBeenCalledWith({
+			recipientId: OWNER_ID,
+			senderId: AUTHOR_ID,
+			senderName: "쓴 사람",
+			todoId: TODO_ID,
+			commentId: COMMENT_ID,
+			threadRootId: COMMENT_ID,
+			isReply: false,
+			commentCount: 1,
+		});
+	});
+
 	it("작성 멱등 키 잠금을 업무 트랜잭션 안에서 획득한다", async () => {
 		const { execute, mutationLock } = setup();
 

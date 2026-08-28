@@ -11,14 +11,14 @@ import { NotificationBuilder } from "@test/builders";
 import { PaginationService } from "@/shared/application/pagination";
 
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+	NOTIFICATION_INBOX_READER,
+	type NotificationInboxReaderPort,
+} from "../../ports/notification-inbox.reader.port";
 import { GetNotificationsUseCase } from "./get-notifications.use-case";
 
 describe("GetNotificationsUseCase", () => {
 	let useCase: GetNotificationsUseCase;
-	let notificationRepo: Mocked<NotificationRepositoryPort>;
+	let notificationRepo: Mocked<NotificationInboxReaderPort>;
 	let paginationService: Mocked<PaginationService>;
 
 	const mockUserId = "user-1";
@@ -28,7 +28,7 @@ describe("GetNotificationsUseCase", () => {
 
 		const { unit, unitRef } = await TestBed.solitary(GetNotificationsUseCase).compile();
 		useCase = unit;
-		notificationRepo = unitRef.get(NOTIFICATION_REPOSITORY);
+		notificationRepo = unitRef.get(NOTIFICATION_INBOX_READER);
 		paginationService = unitRef.get(PaginationService);
 
 		paginationService.normalizeCursorPagination.mockReturnValue({

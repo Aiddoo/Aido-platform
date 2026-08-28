@@ -1,6 +1,5 @@
 import type { NotificationActionType } from "@aido/validators";
 
-import type { NotificationRecord, PushTokenRecord } from "../../domain/records/notification.record";
 import type { NotificationType } from "../../domain/types/notification-type";
 
 /** 알림 메타데이터 입력 (DB Json 컬럼에 저장, 어댑터가 Prisma Json으로 변환) */
@@ -78,8 +77,8 @@ export interface NotificationAction {
  * {
  *   userId: "user-123",
  *   type: "FOLLOW_NEW",
- *   title: "새 친구 요청",
- *   body: "홍길동님이 친구 요청을 보냈어요",
+ *   title: "홍길동이 친구 문을 두드렸어",
+ *   body: "서로의 하루에 작은 응원을 나누고 싶대 🐾",
  *   friendId: "friend-456",  // context로 전달
  * }
  *
@@ -159,7 +158,7 @@ export interface CreateNotificationData {
 	 * 사용자 푸시 수신 설정(pushEnabled·야간·설정 행 부재)을 무시하는 강제 발송.
 	 *
 	 * 관리자 공지(ADMIN_BROADCAST/ADMIN_TARGETED) 전용 발송 정책 필드로,
-	 * 배치 경로(createAndSendBatch)에서만 적용되며 DB에는 저장되지 않는다.
+	 * 배치 경로(publishBatch)에서만 적용되며 DB에는 저장되지 않는다.
 	 * 마케팅성 알림(ENGAGEMENT purpose·마케팅 타입)과 rate limit·푸시 토큰 부재는
 	 * 우회하지 않는다.
 	 */
@@ -235,13 +234,3 @@ export interface RegisterPushTokenData {
 	payloadVersion?: number;
 	appVersion?: string;
 }
-
-/**
- * 알림 with 관계 타입
- */
-export type NotificationWithRelations = NotificationRecord;
-
-/**
- * 푸시 토큰 with 관계 타입
- */
-export type PushTokenWithRelations = PushTokenRecord;

@@ -79,7 +79,7 @@ export class AccountPurgeJob implements OnModuleInit {
 			await this.runtime.enqueue(
 				ACCOUNT_PURGE_QUEUE,
 				{ name: ACCOUNT_PURGE_JOB_NAME, data: {} },
-				{ ...this.#jobOptions(), jobKey: `purge_${today}` },
+				{ ...this.#jobOptions(), idempotencyKey: `purge_${today}` },
 			);
 		}
 	}

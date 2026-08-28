@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationModule } from "@/notification/notification.module";
+import { NotificationModule } from "@/notification";
 
 import { FOLLOW_CACHE } from "./application/ports/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "./application/ports/follow-notifier.port";

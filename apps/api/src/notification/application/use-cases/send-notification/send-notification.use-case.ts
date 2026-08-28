@@ -1,5 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import {
+	AFTER_COMMIT_TASK_REGISTRY,
+	type AfterCommitTaskRegistryPort,
+	UNIT_OF_WORK,
+	type UnitOfWorkPort,
+} from "@/shared/application/ports";
+
 import type { NotificationRecord } from "../../../domain/records/notification.record";
 import {
 	NOTIFICATION_CACHE,
@@ -11,14 +18,13 @@ import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
-import { PUSH_DISPATCHER, type PushDispatcherPort } from "../../ports/push-dispatcher.port";
+import {
+	PUSH_DISPATCH_STAGING,
+	type PushDispatchStagingRepositoryPort,
+} from "../../ports/push-dispatch-staging.repository.port";
+import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher";
 
-/**
- * 알림 생성 및 푸시 발송 유스케이스.
- *
- * 1. DB에 알림 레코드 생성 (P2002 unique violation 시 graceful skip → null 반환)
- * 2. 푸시 디스패치 예약 (자격 판단·SKIPPED 기록은 디스패처가 담당)
- */
+/** 알림과 일반 push outbox를 한 transaction으로 만들고 부수효과는 commit 뒤 시작한다. */
 @Injectable()
 export class SendNotificationUseCase {
 	readonly #logger = new Logger(SendNotificationUseCase.name);
@@ -26,16 +32,33 @@ export class SendNotificationUseCase {
 	constructor(
 		@Inject(NOTIFICATION_REPOSITORY)
 		private readonly notificationRepository: NotificationRepositoryPort,
-		@Inject(PUSH_DISPATCHER)
-		private readonly pushDispatcher: PushDispatcherPort,
+		@Inject(PUSH_DISPATCH_STAGING)
+		private readonly pushDispatchStaging: PushDispatchStagingRepositoryPort,
 		@Inject(NOTIFICATION_CACHE)
 		private readonly cache: NotificationCachePort,
+		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
+		@Inject(AFTER_COMMIT_TASK_REGISTRY)
+		private readonly afterCommit: AfterCommitTaskRegistryPort,
+		private readonly afterCommitPublisher: PushDeliveryAfterCommitPublisher,
 	) {}
 
 	async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
-		let notification: NotificationRecord;
 		try {
-			notification = await this.notificationRepository.createNotification(data);
+			return await this.uow.run(async () => {
+				const notification = await this.notificationRepository.createNotification(data);
+				const staged = await this.pushDispatchStaging.stage({
+					notificationId: notification.id,
+					userId: data.userId,
+					purpose: data.purpose ?? "TRANSACTIONAL",
+					campaignKey: data.campaignKey,
+					variantId: data.variantId,
+					deliveryMode: "SINGLE",
+					force: false,
+				});
+				this.#registerUnreadCountInvalidation(data.userId);
+				this.afterCommitPublisher.register([staged.dispatchId]);
+				return notification;
+			});
 		} catch (error) {
 			if (error instanceof DuplicateNotificationError) {
 				this.#logger.debug(
@@ -45,10 +68,16 @@ export class SendNotificationUseCase {
 			}
 			throw error;
 		}
+	}
 
-		this.pushDispatcher.fireAndForgetPush(data, notification.id);
-		void this.cache.invalidateUnreadCount(data.userId);
-
-		return notification;
+	#registerUnreadCountInvalidation(userId: string): void {
+		this.afterCommit.register(() => {
+			this.cache.invalidateUnreadCount(userId).catch((error: unknown) => {
+				this.#logger.warn(
+					`Failed to invalidate unread notification count: userId=${userId}, ${error}`,
+				);
+			});
+			return Promise.resolve();
+		});
 	}
 }
