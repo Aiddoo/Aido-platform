@@ -3,8 +3,7 @@
  *
  * - unique 위반(P2002): graceful skip → null 반환, 이후 단계 미수행
  * - 그 외 에러: 재전파
- * - shouldSendPush 게이트: false면 발송/무효화 없이 알림 반환
- * - shouldSendPush=true: 푸시 발송(fire-and-forget) + 미읽음 카운트 무효화
+ * - 생성 성공: 푸시 전달 예약(fire-and-forget) + 미읽음 카운트 무효화
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -66,7 +65,6 @@ describe("SendNotificationUseCase", () => {
 		const result = await useCase.execute(data);
 
 		expect(result).toBeNull();
-		expect(pushDispatcher.shouldSendPush).not.toHaveBeenCalled();
 		expect(pushDispatcher.fireAndForgetPush).not.toHaveBeenCalled();
 	});
 
@@ -74,7 +72,7 @@ describe("SendNotificationUseCase", () => {
 		repository.createNotification.mockRejectedValue(new Error("db down"));
 
 		await expect(useCase.execute(data)).rejects.toThrow("db down");
-		expect(pushDispatcher.shouldSendPush).not.toHaveBeenCalled();
+		expect(pushDispatcher.fireAndForgetPush).not.toHaveBeenCalled();
 	});
 
 	it("자격 판단은 디스패처에 위임하고 생성 직후 디스패치를 예약한다", async () => {
@@ -83,20 +81,7 @@ describe("SendNotificationUseCase", () => {
 		const result = await useCase.execute(data);
 
 		expect(result).toBe(notification);
-		expect(pushDispatcher.shouldSendPush).not.toHaveBeenCalled();
 		expect(pushDispatcher.fireAndForgetPush).toHaveBeenCalledWith(data, 1);
-		expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(data.userId);
-	});
-
-	it("shouldSendPush가 true면 푸시를 발송하고 미읽음 카운트를 무효화한다", async () => {
-		const notification = NotificationBuilder.create(data.userId).withId(7).build();
-		repository.createNotification.mockResolvedValue(notification);
-		pushDispatcher.shouldSendPush.mockResolvedValue(true);
-
-		const result = await useCase.execute(data);
-
-		expect(result).toBe(notification);
-		expect(pushDispatcher.fireAndForgetPush).toHaveBeenCalledWith(data, 7);
 		expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(data.userId);
 	});
 });

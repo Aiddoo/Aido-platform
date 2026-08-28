@@ -5,7 +5,7 @@ import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
-import type { PersistedBatchNotificationDispatch } from "../../ports/push-dispatcher.port";
+import type { PersistedBatchNotificationDispatch } from "../../types/push-delivery.types";
 
 /**
  * 배치 알림을 영속화하고 커밋 후 사용할 디스패치 입력을 반환한다.

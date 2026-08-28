@@ -1,36 +1,46 @@
-/**
- * PushDispatcherAdapter 단위 테스트 (자격 판단 경로)
- *
- * 발송 자격 판단은 preference 캐시(cache-aside)를 경유한다. 여기서는 결정적인
- * 기본값 경로(설정 미존재 → USER_PREFERENCE_DEFAULTS)를 검증한다.
- * 실제 푸시 전송·happy path는 notification.integration-spec이 end-to-end로 커버한다.
- */
+/** 기존 단건·배치 전달의 eligibility, 상태 기록, payload 계약 골든 테스트. */
 import { pushNotificationDataSchema } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
+import {
+	createActivePushTokenReaderMock,
+	createNotificationRecipientPreferenceReaderMock,
+} from "@test/mocks/ports/notification.mock";
 import { z } from "zod";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import type { UserConsentRecordWithId, UserPreferenceRecordWithId } from "@/user-settings";
 
 import {
+	ACTIVE_PUSH_TOKEN_READER,
+	type ActivePushTokenReaderPort,
+} from "../../ports/active-push-token.reader.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../../ports/notification-cache.port";
+import {
+	NOTIFICATION_RECIPIENT_PREFERENCE_READER,
+	type NotificationRecipientPreferenceReaderPort,
+} from "../../ports/notification-recipient-preference.reader.port";
+import {
 	PUSH_DISPATCH_REPOSITORY,
 	type PushDispatchRepositoryPort,
-} from "../../application/ports/push-dispatch.repository.port";
-import { PUSH_PROVIDER, type PushProvider } from "../../application/ports/push-provider.port";
-import {
-	PUSH_RATE_LIMITER,
-	type PushRateLimiterPort,
-} from "../../application/ports/push-rate-limiter.port";
+} from "../../ports/push-dispatch.repository.port";
+import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
+import { PUSH_RATE_LIMITER, type PushRateLimiterPort } from "../../ports/push-rate-limiter.port";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../../application/ports/push-token.repository.port";
+} from "../../ports/push-token.repository.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
-} from "../../application/ports/user-notification-settings.port";
-import { PushDispatcherAdapter } from "./push-dispatcher.adapter";
+} from "../../ports/user-notification-settings.port";
+import { PushDeliveryEligibilityService } from "../../services/push-delivery-eligibility.service";
+import { PushNotificationDeliveryService } from "../../services/push-notification-delivery.service";
+import { PushNotificationPayloadFactory } from "../../services/push-notification-payload.factory";
+import { DeliverPushNotificationsUseCase } from "./deliver-push-notifications.use-case";
 
 /** v1.0.0~v1.1.x 릴리스의 실제 NOTIFICATION_TYPE enum. */
 const LEGACY_V1_0_NOTIFICATION_TYPES = [
@@ -128,38 +138,54 @@ function makeConsent(userId: string): UserConsentRecordWithId {
 	};
 }
 
-function createDeferred<T>(): {
-	promise: Promise<T>;
-	resolve: (value: T | PromiseLike<T>) => void;
-} {
-	let resolve: (value: T | PromiseLike<T>) => void = () => undefined;
-	const promise = new Promise<T>((resolver) => {
-		resolve = resolver;
-	});
-	return { promise, resolve };
-}
-
-describe("PushDispatcherAdapter", () => {
-	let adapter: PushDispatcherAdapter;
+describe("DeliverPushNotificationsUseCase", () => {
+	let useCase: DeliverPushNotificationsUseCase;
 	let userSettings: Mocked<UserNotificationSettingsPort>;
 	let rateLimiter: Mocked<PushRateLimiterPort>;
-	let cacheService: Mocked<CacheService>;
+	let activePushTokenReader: Mocked<ActivePushTokenReaderPort>;
+	let recipientPreferenceReader: Mocked<NotificationRecipientPreferenceReaderPort>;
+	let notificationCache: Mocked<NotificationCachePort>;
 	let repository: Mocked<PushDispatchRepositoryPort>;
 	let tokenRepository: Mocked<PushTokenRepositoryPort>;
 	let pushProvider: Mocked<PushProvider>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(PushDispatcherAdapter).compile();
-		adapter = unit;
-		userSettings = unitRef.get(USER_NOTIFICATION_SETTINGS);
-		rateLimiter = unitRef.get(PUSH_RATE_LIMITER);
-		cacheService = unitRef.get(CacheService);
+		const { unit: eligibility, unitRef: eligibilityRef } = await TestBed.solitary(
+			PushDeliveryEligibilityService,
+		)
+			.mock<NotificationRecipientPreferenceReaderPort>(NOTIFICATION_RECIPIENT_PREFERENCE_READER)
+			.impl(() => createNotificationRecipientPreferenceReaderMock())
+			.compile();
+		const { unit: payloadFactory } = await TestBed.solitary(
+			PushNotificationPayloadFactory,
+		).compile();
+		const { unit: delivery, unitRef: deliveryRef } = await TestBed.solitary(
+			PushNotificationDeliveryService,
+		)
+			.mock<ActivePushTokenReaderPort>(ACTIVE_PUSH_TOKEN_READER)
+			.impl(() => createActivePushTokenReaderMock())
+			.mock<NotificationCachePort>(NOTIFICATION_CACHE)
+			.impl(() => createNotificationCacheMock())
+			.compile();
+		const { unitRef } = await TestBed.solitary(DeliverPushNotificationsUseCase).compile();
+		userSettings = eligibilityRef.get(USER_NOTIFICATION_SETTINGS);
+		rateLimiter = eligibilityRef.get(PUSH_RATE_LIMITER);
+		activePushTokenReader = deliveryRef.get(ACTIVE_PUSH_TOKEN_READER);
+		recipientPreferenceReader = eligibilityRef.get(NOTIFICATION_RECIPIENT_PREFERENCE_READER);
+		notificationCache = deliveryRef.get(NOTIFICATION_CACHE);
 		repository = unitRef.get(PUSH_DISPATCH_REPOSITORY);
-		tokenRepository = unitRef.get(PUSH_TOKEN_REPOSITORY);
-		pushProvider = unitRef.get(PUSH_PROVIDER);
+		tokenRepository = deliveryRef.get(PUSH_TOKEN_REPOSITORY);
+		pushProvider = deliveryRef.get(PUSH_PROVIDER);
+		useCase = new DeliverPushNotificationsUseCase(
+			repository,
+			eligibility,
+			payloadFactory,
+			delivery,
+		);
 
-		// cache-aside: 캐시 미스 시 콜백을 실행하도록 passthrough
-		cacheService.wrapUserPreference.mockImplementation((_userId, fn) => fn());
+		notificationCache.invalidatePushTokens.mockResolvedValue(undefined);
+		activePushTokenReader.findByUserId.mockResolvedValue([]);
+		activePushTokenReader.findByUserIds.mockResolvedValue(new Map());
 		repository.createPushDispatches.mockImplementation((inputs) =>
 			Promise.all(
 				inputs.map(async (input) => {
@@ -192,29 +218,44 @@ describe("PushDispatcherAdapter", () => {
 
 		it("미상(UTC 저장) 유저는 KST 야간이면 야간 게이트로 차단된다", async () => {
 			jest.useFakeTimers().setSystemTime(KST_NIGHT_UTC_DAY);
-			userSettings.getPreferenceRecord.mockResolvedValue({
+			recipientPreferenceReader.getPreference.mockResolvedValue({
 				...makePreference("user-1", "UTC"),
 				nightPushEnabled: false,
 			});
 			rateLimiter.isRateLimited.mockResolvedValue(false);
+			repository.createPushDispatch.mockResolvedValue({ id: 1 });
 
-			const result = await adapter.shouldSendPush("user-1", "FOLLOW_NEW");
+			await useCase.execute({
+				mode: "single",
+				item: {
+					notificationId: 1,
+					data: { userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" },
+				},
+			});
 
-			expect(result).toBe(false);
+			expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(1, "NIGHT_PUSH_DISABLED");
 		});
 
 		it("실제 해외 타임존 유저는 자기 로컬 시간 기준으로 판정되어 KST로 오분류되지 않는다", async () => {
 			jest.useFakeTimers().setSystemTime(KST_NIGHT_UTC_DAY);
-			userSettings.getPreferenceRecord.mockResolvedValue({
+			recipientPreferenceReader.getPreference.mockResolvedValue({
 				...makePreference("user-1", "America/New_York"),
 				nightPushEnabled: false,
 			});
 			rateLimiter.isRateLimited.mockResolvedValue(false);
 			rateLimiter.isEngagementRateLimited.mockResolvedValue(false);
+			activePushTokenReader.findByUserId.mockResolvedValue([]);
+			repository.createPushDispatch.mockResolvedValue({ id: 1 });
 
-			const result = await adapter.shouldSendPush("user-1", "FOLLOW_NEW");
+			await useCase.execute({
+				mode: "single",
+				item: {
+					notificationId: 1,
+					data: { userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" },
+				},
+			});
 
-			expect(result).toBe(true);
+			expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(1, "NO_ACTIVE_TOKEN");
 		});
 
 		it("직교성: locale만 다른 두 유저(한국 tz)의 발송 자격은 동일하다 — 언어는 법적 게이트에 영향 없음", async () => {
@@ -222,71 +263,84 @@ describe("PushDispatcherAdapter", () => {
 			jest.useFakeTimers().setSystemTime(KST_NIGHT_UTC_DAY); // KST 23:00
 			rateLimiter.isRateLimited.mockResolvedValue(false);
 
-			userSettings.getPreferenceRecord.mockResolvedValueOnce({
+			recipientPreferenceReader.getPreference.mockResolvedValueOnce({
 				...makePreference("u-ko", "Asia/Seoul"),
 				locale: "ko",
 				nightPushEnabled: false,
 			});
-			const ko = await adapter.shouldSendPush("u-ko", "FOLLOW_NEW");
-
-			userSettings.getPreferenceRecord.mockResolvedValueOnce({
+			recipientPreferenceReader.getPreference.mockResolvedValueOnce({
 				...makePreference("u-en", "Asia/Seoul"),
 				locale: "en",
 				nightPushEnabled: false,
 			});
-			const en = await adapter.shouldSendPush("u-en", "FOLLOW_NEW");
+			repository.createPushDispatch
+				.mockResolvedValueOnce({ id: 1 })
+				.mockResolvedValueOnce({ id: 2 });
 
-			expect(ko).toBe(en);
-			expect(ko).toBe(false); // KST 야간이므로 언어와 무관하게 둘 다 차단
+			await useCase.execute({
+				mode: "single",
+				item: {
+					notificationId: 1,
+					data: { userId: "u-ko", type: "FOLLOW_NEW", title: "t", body: "b" },
+				},
+			});
+			await useCase.execute({
+				mode: "single",
+				item: {
+					notificationId: 2,
+					data: { userId: "u-en", type: "FOLLOW_NEW", title: "t", body: "b" },
+				},
+			});
+
+			expect(repository.markPushDispatchSkipped).toHaveBeenNthCalledWith(
+				1,
+				1,
+				"NIGHT_PUSH_DISABLED",
+			);
+			expect(repository.markPushDispatchSkipped).toHaveBeenNthCalledWith(
+				2,
+				2,
+				"NIGHT_PUSH_DISABLED",
+			);
 		});
-	});
-
-	it("설정 미존재(기본값 pushEnabled=false)면 발송하지 않고 rate limit도 조회하지 않는다", async () => {
-		userSettings.getPreferenceRecord.mockResolvedValue(null);
-
-		const result = await adapter.shouldSendPush("user-1", "NUDGE_RECEIVED");
-
-		expect(result).toBe(false);
-		// pushEnabled 게이트가 먼저이므로 rate limit 조회 없음
-		expect(rateLimiter.isRateLimited).not.toHaveBeenCalled();
-	});
-
-	it("설정 미존재면 기본 로케일(ko)을 반환한다", async () => {
-		userSettings.getPreferenceRecord.mockResolvedValue(null);
-
-		const locale = await adapter.getUserLocale("user-1");
-
-		expect(locale).toBe("ko");
 	});
 
 	it("활성 토큰이 없으면 fireAndForgetPush는 조용히 종료한다", async () => {
-		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
+		recipientPreferenceReader.getPreference.mockResolvedValue(
+			makePreference("user-1", "Asia/Seoul"),
+		);
 		rateLimiter.isRateLimited.mockResolvedValue(false);
-		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
-		tokenRepository.findPushTokensByUser.mockResolvedValue([]);
+		activePushTokenReader.findByUserId.mockResolvedValue([]);
 		repository.createPushDispatch.mockResolvedValue({ id: 1 });
 
-		adapter.fireAndForgetPush(
-			{ userId: "user-1", type: "NUDGE_RECEIVED", title: "t", body: "b" },
-			1,
-		);
-		await adapter.beforeApplicationShutdown();
-
-		expect(tokenRepository.findPushTokensByUser).toHaveBeenCalledWith({
-			userId: "user-1",
-			activeOnly: true,
+		await useCase.execute({
+			mode: "single",
+			item: {
+				data: { userId: "user-1", type: "NUDGE_RECEIVED", title: "t", body: "b" },
+				notificationId: 1,
+			},
 		});
+
+		expect(activePushTokenReader.findByUserId).toHaveBeenCalledWith("user-1");
 	});
 
 	it("단일 dispatch 생성 후 예상하지 못한 토큰 조회 오류는 FAILED로 전이한다", async () => {
-		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
+		recipientPreferenceReader.getPreference.mockResolvedValue(
+			makePreference("user-1", "Asia/Seoul"),
+		);
 		rateLimiter.isRateLimited.mockResolvedValue(false);
-		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
 		repository.createPushDispatch.mockResolvedValue({ id: 101 });
-		tokenRepository.findPushTokensByUser.mockRejectedValue(new Error("token storage unavailable"));
+		activePushTokenReader.findByUserId.mockRejectedValue(new Error("token storage unavailable"));
 
-		adapter.fireAndForgetPush({ userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" }, 1);
-		await adapter.beforeApplicationShutdown();
+		await expect(
+			useCase.execute({
+				mode: "single",
+				item: {
+					data: { userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" },
+					notificationId: 1,
+				},
+			}),
+		).rejects.toThrow("token storage unavailable");
 
 		expect(repository.markPushDispatchFailed).toHaveBeenCalledWith(
 			[101],
@@ -297,7 +351,9 @@ describe("PushDispatcherAdapter", () => {
 	it("단일 feature-discovery 발송도 지원 토큰이 없으면 capability skip으로 기록한다", async () => {
 		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T03:00:00.000Z"));
 		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
-		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
+		recipientPreferenceReader.getPreference.mockResolvedValue(
+			makePreference("user-1", "Asia/Seoul"),
+		);
 		userSettings.getConsentRecord.mockResolvedValue(makeConsent("user-1"));
 		rateLimiter.isRateLimited.mockResolvedValue(false);
 		rateLimiter.isEngagementRateLimited.mockResolvedValue(false);
@@ -318,102 +374,26 @@ describe("PushDispatcherAdapter", () => {
 			},
 		]);
 
-		adapter.fireAndForgetPush(
-			{
-				userId: "user-1",
-				type: "SYSTEM_NOTICE",
-				purpose: "ENGAGEMENT",
-				campaignKey: "feature-discovery-2026-08",
-				title: "새 기능",
-				body: "본문",
+		await useCase.execute({
+			mode: "single",
+			item: {
+				data: {
+					userId: "user-1",
+					type: "SYSTEM_NOTICE",
+					purpose: "ENGAGEMENT",
+					campaignKey: "feature-discovery-2026-08",
+					title: "새 기능",
+					body: "본문",
+				},
+				notificationId: 2,
 			},
-			2,
-		);
-		await adapter.beforeApplicationShutdown();
+		});
 
 		expect(repository.markPushDispatchSkipped).toHaveBeenCalledWith(
 			2,
 			"UNSUPPORTED_APP_CAPABILITY",
 		);
 		expect(pushProvider.sendBatch).not.toHaveBeenCalled();
-	});
-
-	it("drain 도중 추가된 push까지 모두 완료될 때까지 기다린다", async () => {
-		const releaseSecondPush = createDeferred<void>();
-		const secondPushStarted = createDeferred<void>();
-		userSettings.getPreferenceRecord.mockImplementation(async (userId) =>
-			makePreference(userId, "UTC"),
-		);
-		rateLimiter.isRateLimited.mockResolvedValue(false);
-		cacheService.wrapPushTokens.mockResolvedValue([]);
-		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
-		repository.createPushDispatch.mockImplementation(async ({ userId }) => {
-			if (userId === "user-1") {
-				adapter.fireAndForgetPush(
-					{
-						userId: "user-2",
-						type: "NUDGE_RECEIVED",
-						title: "second",
-						body: "second",
-					},
-					2,
-				);
-				return { id: 1 };
-			}
-
-			secondPushStarted.resolve(undefined);
-			await releaseSecondPush.promise;
-			return { id: 2 };
-		});
-
-		adapter.fireAndForgetPush(
-			{
-				userId: "user-1",
-				type: "NUDGE_RECEIVED",
-				title: "first",
-				body: "first",
-			},
-			1,
-		);
-		const draining = adapter.drainPendingPushes();
-		await secondPushStarted.promise;
-
-		const drainState = await Promise.race([
-			draining.then(() => "completed" as const),
-			new Promise<"pending">((resolve) => {
-				setImmediate(() => resolve("pending"));
-			}),
-		]);
-		expect(drainState).toBe("pending");
-
-		releaseSecondPush.resolve(undefined);
-		await draining;
-		expect(repository.markPushDispatchSkipped).toHaveBeenCalledTimes(2);
-	});
-
-	it("정착하지 않는 발송은 시간 상한에서 끊는다 — 이 대기가 beforeEach에 있어, 매달리면 엉뚱한 다음 테스트가 죽는다", async () => {
-		userSettings.getPreferenceRecord.mockImplementation(async (userId) =>
-			makePreference(userId, "UTC"),
-		);
-		rateLimiter.isRateLimited.mockResolvedValue(false);
-		cacheService.wrapPushTokens.mockResolvedValue([]);
-		// 영원히 정착하지 않는 발송 하나. 상한이 없으면 여기서 끝나지 않는다.
-		repository.createPushDispatch.mockImplementation(() => new Promise(() => undefined));
-
-		adapter.fireAndForgetPush(
-			{ userId: "user-1", type: "NUDGE_RECEIVED", title: "stuck", body: "stuck" },
-			1,
-		);
-
-		await expect(adapter.drainPendingPushes(20)).rejects.toThrow(/exceeded 20ms/);
-	});
-
-	it("종료는 드레인이 실패해도 실패로 끝나지 않는다 — 종료가 걸리는 것보다 남기고 가는 게 낫다", async () => {
-		jest
-			.spyOn(adapter, "drainPendingPushes")
-			.mockRejectedValue(new Error("Push drain exceeded 25 rounds"));
-
-		await expect(adapter.beforeApplicationShutdown()).resolves.toBeUndefined();
 	});
 
 	it("배치 발송은 설정 필터 후 모든 사용자 제한을 한 번에 예약한다", async () => {
@@ -429,29 +409,31 @@ describe("PushDispatcherAdapter", () => {
 		rateLimiter.reserveBatch.mockResolvedValue([true, true]);
 		repository.createPushDispatch.mockResolvedValueOnce({ id: 1 }).mockResolvedValueOnce({ id: 2 });
 
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "LUNCH_NUDGE",
-					purpose: "ENGAGEMENT",
-					title: "제목 1",
-					body: "본문 1",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "LUNCH_NUDGE",
+						purpose: "ENGAGEMENT",
+						title: "제목 1",
+						body: "본문 1",
+					},
+					notificationId: 1,
 				},
-				notificationId: 1,
-			},
-			{
-				data: {
-					userId: "user-2",
-					type: "LUNCH_NUDGE",
-					purpose: "ENGAGEMENT",
-					title: "제목 2",
-					body: "본문 2",
+				{
+					data: {
+						userId: "user-2",
+						type: "LUNCH_NUDGE",
+						purpose: "ENGAGEMENT",
+						title: "제목 2",
+						body: "본문 2",
+					},
+					notificationId: 2,
 				},
-				notificationId: 2,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		expect(rateLimiter.reserveBatch).toHaveBeenCalledTimes(1);
 		expect(rateLimiter.reserveBatch).toHaveBeenCalledWith([
@@ -489,27 +471,29 @@ describe("PushDispatcherAdapter", () => {
 			.mockResolvedValueOnce({ id: 102 });
 
 		// When
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "FOLLOW_NEW",
-					title: "제목 1",
-					body: "본문 1",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "FOLLOW_NEW",
+						title: "제목 1",
+						body: "본문 1",
+					},
+					notificationId: 1,
 				},
-				notificationId: 1,
-			},
-			{
-				data: {
-					userId: "user-2",
-					type: "FOLLOW_NEW",
-					title: "제목 2",
-					body: "본문 2",
+				{
+					data: {
+						userId: "user-2",
+						type: "FOLLOW_NEW",
+						title: "제목 2",
+						body: "본문 2",
+					},
+					notificationId: 2,
 				},
-				notificationId: 2,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		// Then
 		expect(createPushDispatches).toHaveBeenCalledTimes(1);
@@ -521,9 +505,53 @@ describe("PushDispatcherAdapter", () => {
 		expect(repository.markPushDispatchSkipped).not.toHaveBeenCalled();
 	});
 
+	it("배치 저장소가 일부 dispatch만 반환하면 생성된 ID를 FAILED로 전이한다", async () => {
+		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
+			makePreference("user-1", "Asia/Seoul"),
+			makePreference("user-2", "Asia/Seoul"),
+		]);
+		userSettings.getConsentRecordsByUserIds.mockResolvedValue([
+			makeConsent("user-1"),
+			makeConsent("user-2"),
+		]);
+		repository.createPushDispatches.mockResolvedValue([{ id: 101, notificationId: 1 }]);
+		repository.markPushDispatchFailed.mockResolvedValue(undefined);
+
+		await expect(
+			useCase.execute({
+				mode: "batch",
+				items: [
+					{
+						data: {
+							userId: "user-1",
+							type: "FOLLOW_NEW",
+							title: "제목 1",
+							body: "본문 1",
+						},
+						notificationId: 1,
+					},
+					{
+						data: {
+							userId: "user-2",
+							type: "FOLLOW_NEW",
+							title: "제목 2",
+							body: "본문 2",
+						},
+						notificationId: 2,
+					},
+				],
+			}),
+		).rejects.toThrow("Push dispatch batch result missing: notificationId=2");
+
+		expect(repository.markPushDispatchFailed).toHaveBeenCalledWith(
+			[101],
+			"UNEXPECTED_DISPATCH_ERROR",
+		);
+		expect(rateLimiter.reserveBatch).not.toHaveBeenCalled();
+	});
+
 	it("배치 발송 결과는 모든 dispatch를 한 번의 저장소 호출로 기록한다", async () => {
 		// Given
-		const createdAt = new Date("2026-07-01T00:00:00.000Z");
 		const createPushDispatches = jest.fn().mockResolvedValue([
 			{ id: 201, notificationId: 11 },
 			{ id: 202, notificationId: 12 },
@@ -547,36 +575,12 @@ describe("PushDispatcherAdapter", () => {
 		repository.createPushDispatch
 			.mockResolvedValueOnce({ id: 201 })
 			.mockResolvedValueOnce({ id: 202 });
-		cacheService.mget.mockResolvedValue([undefined, undefined]);
-		cacheService.mset.mockResolvedValue(undefined);
-		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
-			{
-				id: 1,
-				userId: "user-1",
-				token: "ExponentPushToken[user-1]",
-				deviceId: "device-1",
-				platform: "IOS",
-				isActive: true,
-				createdAt,
-				updatedAt: createdAt,
-				lastUsedAt: createdAt,
-				payloadVersion: 2,
-				appVersion: "1.8.0",
-			},
-			{
-				id: 2,
-				userId: "user-2",
-				token: "ExponentPushToken[user-2]",
-				deviceId: "device-2",
-				platform: "ANDROID",
-				isActive: true,
-				createdAt,
-				updatedAt: createdAt,
-				lastUsedAt: createdAt,
-				payloadVersion: 2,
-				appVersion: "1.8.0",
-			},
-		]);
+		activePushTokenReader.findByUserIds.mockResolvedValue(
+			new Map([
+				["user-1", ["ExponentPushToken[user-1]"]],
+				["user-2", ["ExponentPushToken[user-2]"]],
+			]),
+		);
 		pushProvider.sendBatch.mockResolvedValue({
 			total: 2,
 			successCount: 2,
@@ -598,27 +602,29 @@ describe("PushDispatcherAdapter", () => {
 		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
 
 		// When
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "FOLLOW_NEW",
-					title: "제목 1",
-					body: "본문 1",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "FOLLOW_NEW",
+						title: "제목 1",
+						body: "본문 1",
+					},
+					notificationId: 11,
 				},
-				notificationId: 11,
-			},
-			{
-				data: {
-					userId: "user-2",
-					type: "FOLLOW_NEW",
-					title: "제목 2",
-					body: "본문 2",
+				{
+					data: {
+						userId: "user-2",
+						type: "FOLLOW_NEW",
+						title: "제목 2",
+						body: "본문 2",
+					},
+					notificationId: 12,
 				},
-				notificationId: 12,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		// Then
 		expect(recordPushDeliveryResultsBatch).toHaveBeenCalledTimes(1);
@@ -659,27 +665,31 @@ describe("PushDispatcherAdapter", () => {
 			.mockResolvedValueOnce({ id: 202 });
 		rateLimiter.reserveBatch.mockRejectedValue(new Error("rate limiter unavailable"));
 
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "FOLLOW_NEW",
-					title: "t1",
-					body: "b1",
-				},
-				notificationId: 1,
-			},
-			{
-				data: {
-					userId: "user-2",
-					type: "FOLLOW_NEW",
-					title: "t2",
-					body: "b2",
-				},
-				notificationId: 2,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+		await expect(
+			useCase.execute({
+				mode: "batch",
+				items: [
+					{
+						data: {
+							userId: "user-1",
+							type: "FOLLOW_NEW",
+							title: "t1",
+							body: "b1",
+						},
+						notificationId: 1,
+					},
+					{
+						data: {
+							userId: "user-2",
+							type: "FOLLOW_NEW",
+							title: "t2",
+							body: "b2",
+						},
+						notificationId: 2,
+					},
+				],
+			}),
+		).rejects.toThrow("rate limiter unavailable");
 
 		expect(repository.markPushDispatchFailed).toHaveBeenCalledWith(
 			[201, 202],
@@ -698,18 +708,20 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		repository.createPushDispatch.mockResolvedValue({ id: 41 });
 
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "FOLLOW_NEW",
-					title: "제목",
-					body: "본문",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "FOLLOW_NEW",
+						title: "제목",
+						body: "본문",
+					},
+					notificationId: 1,
 				},
-				notificationId: 1,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		expect(repository.createPushDispatch).toHaveBeenCalledTimes(1);
 		expect(markPushDispatchSkipped).toHaveBeenCalledWith(41, "PUSH_DISABLED");
@@ -728,19 +740,21 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getConsentRecordsByUserIds.mockResolvedValue([]);
 		repository.createPushDispatch.mockResolvedValue({ id: 42 });
 
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "LUNCH_NUDGE",
-					purpose: "ENGAGEMENT",
-					title: "제목",
-					body: "본문",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "LUNCH_NUDGE",
+						purpose: "ENGAGEMENT",
+						title: "제목",
+						body: "본문",
+					},
+					notificationId: 2,
 				},
-				notificationId: 2,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		expect(markPushDispatchSkipped).toHaveBeenCalledWith(42, "MARKETING_CONSENT_REQUIRED");
 		expect(pushProvider.sendBatch).not.toHaveBeenCalled();
@@ -757,22 +771,20 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		rateLimiter.reserveBatch.mockResolvedValue([false]);
 		repository.createPushDispatch.mockResolvedValue({ id: 43 });
-		cacheService.mget.mockResolvedValue([undefined]);
-		cacheService.mset.mockResolvedValue(undefined);
-		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([]);
-
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "FOLLOW_NEW",
-					title: "제목",
-					body: "본문",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "FOLLOW_NEW",
+						title: "제목",
+						body: "본문",
+					},
+					notificationId: 3,
 				},
-				notificationId: 3,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		expect(markPushDispatchSkipped).toHaveBeenCalledWith(43, "NO_ACTIVE_TOKEN");
 		expect(repository.recordPushDeliveryResults).not.toHaveBeenCalled();
@@ -791,8 +803,6 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		rateLimiter.reserveBatch.mockResolvedValue([false]);
 		repository.createPushDispatch.mockResolvedValue({ id: 44 });
-		cacheService.mget.mockResolvedValue([undefined]);
-		cacheService.mset.mockResolvedValue(undefined);
 		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
 			{
 				id: 1,
@@ -849,20 +859,22 @@ describe("PushDispatcherAdapter", () => {
 		});
 		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
 
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "SYSTEM_NOTICE",
-					purpose: "ENGAGEMENT",
-					campaignKey: "feature-discovery-2026-08",
-					title: "새 기능",
-					body: "새 기능을 확인해보세요",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "SYSTEM_NOTICE",
+						purpose: "ENGAGEMENT",
+						campaignKey: "feature-discovery-2026-08",
+						title: "새 기능",
+						body: "새 기능을 확인해보세요",
+					},
+					notificationId: 4,
 				},
-				notificationId: 4,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		expect(pushProvider.sendBatch).toHaveBeenCalledWith([
 			expect.objectContaining({ token: "ExponentPushToken[capable]" }),
@@ -883,8 +895,6 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getConsentRecordsByUserIds.mockResolvedValue([makeConsent("user-1")]);
 		rateLimiter.reserveBatch.mockResolvedValue([false]);
 		repository.createPushDispatch.mockResolvedValue({ id: 45 });
-		cacheService.mget.mockResolvedValue([undefined]);
-		cacheService.mset.mockResolvedValue(undefined);
 		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
 			{
 				id: 1,
@@ -901,20 +911,22 @@ describe("PushDispatcherAdapter", () => {
 			},
 		]);
 
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "SYSTEM_NOTICE",
-					purpose: "ENGAGEMENT",
-					campaignKey: "feature-discovery-2026-08",
-					title: "새 기능",
-					body: "새 기능을 확인해보세요",
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "SYSTEM_NOTICE",
+						purpose: "ENGAGEMENT",
+						campaignKey: "feature-discovery-2026-08",
+						title: "새 기능",
+						body: "새 기능을 확인해보세요",
+					},
+					notificationId: 5,
 				},
-				notificationId: 5,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		expect(markPushDispatchSkipped).toHaveBeenCalledWith(45, "UNSUPPORTED_APP_CAPABILITY");
 		expect(pushProvider.sendBatch).not.toHaveBeenCalled();
@@ -923,7 +935,6 @@ describe("PushDispatcherAdapter", () => {
 	it("force 항목은 설정 행이 없어도 발송 자격을 얻고, 일반 항목은 기존대로 차단된다", async () => {
 		// Given - 두 사용자 모두 preference 행이 없을 때(기본 거부), user-1만 force
 		const token = "ExponentPushToken[force-user]";
-		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([]);
 		userSettings.getConsentRecordsByUserIds.mockResolvedValue([]);
 		rateLimiter.reserveBatch.mockResolvedValue([false]);
@@ -931,23 +942,7 @@ describe("PushDispatcherAdapter", () => {
 			.mockResolvedValueOnce({ id: 9 })
 			.mockResolvedValueOnce({ id: 10 });
 		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
-		cacheService.mget.mockResolvedValue([undefined]);
-		cacheService.mset.mockResolvedValue(undefined);
-		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
-			{
-				id: 1,
-				userId: "user-1",
-				token,
-				deviceId: "force-device",
-				platform: "IOS",
-				isActive: true,
-				createdAt: tokenDate,
-				updatedAt: tokenDate,
-				lastUsedAt: tokenDate,
-				payloadVersion: 2,
-				appVersion: "1.6.0",
-			},
-		]);
+		activePushTokenReader.findByUserIds.mockResolvedValue(new Map([["user-1", [token]]]));
 		pushProvider.sendBatch.mockResolvedValue({
 			total: 1,
 			successCount: 1,
@@ -957,28 +952,30 @@ describe("PushDispatcherAdapter", () => {
 		});
 
 		// When - force 항목과 일반 항목을 함께 배치 발송하면
-		adapter.fireAndForgetBatchPush([
-			{
-				data: {
-					userId: "user-1",
-					type: "ADMIN_BROADCAST",
-					title: "중요 공지",
-					body: "강제 발송 본문",
-					force: true,
+		await useCase.execute({
+			mode: "batch",
+			items: [
+				{
+					data: {
+						userId: "user-1",
+						type: "ADMIN_BROADCAST",
+						title: "중요 공지",
+						body: "강제 발송 본문",
+						force: true,
+					},
+					notificationId: 11,
 				},
-				notificationId: 11,
-			},
-			{
-				data: {
-					userId: "user-2",
-					type: "ADMIN_BROADCAST",
-					title: "중요 공지",
-					body: "강제 발송 본문",
+				{
+					data: {
+						userId: "user-2",
+						type: "ADMIN_BROADCAST",
+						title: "중요 공지",
+						body: "강제 발송 본문",
+					},
+					notificationId: 12,
 				},
-				notificationId: 12,
-			},
-		]);
-		await adapter.beforeApplicationShutdown();
+			],
+		});
 
 		// Then - force 항목만 설정 게이트를 우회해 rate limit 예약과 실제 발송에 도달한다
 		expect(rateLimiter.reserveBatch).toHaveBeenCalledWith([{ userId: "user-1" }]);
@@ -992,24 +989,10 @@ describe("PushDispatcherAdapter", () => {
 
 	it("댓글 routing을 추가해도 v1.8.2와 현재 payload 계약을 모두 만족한다", async () => {
 		const token = "ExponentPushToken[legacy-compatible]";
-		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
-		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
-		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
-		tokenRepository.findPushTokensByUser.mockResolvedValue([
-			{
-				id: 1,
-				userId: "user-1",
-				token,
-				deviceId: "legacy-device",
-				platform: "IOS",
-				isActive: true,
-				createdAt: tokenDate,
-				updatedAt: tokenDate,
-				lastUsedAt: tokenDate,
-				payloadVersion: 2,
-				appVersion: "1.8.2",
-			},
-		]);
+		recipientPreferenceReader.getPreference.mockResolvedValue(
+			makePreference("user-1", "Asia/Seoul"),
+		);
+		activePushTokenReader.findByUserId.mockResolvedValue([token]);
 		repository.createPushDispatch.mockResolvedValue({ id: 77 });
 		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
 		pushProvider.sendBatch.mockResolvedValue({
@@ -1020,24 +1003,26 @@ describe("PushDispatcherAdapter", () => {
 			invalidTokens: [],
 		});
 
-		adapter.fireAndForgetPush(
-			{
-				userId: "user-1",
-				type: "TODO_SHARED",
-				title: "새 댓글",
-				body: "할 일에 댓글이 달렸어요",
-				todoId: 42,
-				metadata: {
-					commentId: "cmt92zn3n000b7voxx9quc2th",
-					threadRootId: "cmt92zn3n000b7voxx9quc2th",
-					activityKind: "COMMENT",
+		await useCase.execute({
+			mode: "single",
+			item: {
+				data: {
+					userId: "user-1",
+					type: "TODO_SHARED",
+					title: "새 댓글",
+					body: "할 일에 댓글이 달렸어요",
+					todoId: 42,
+					metadata: {
+						commentId: "cmt92zn3n000b7voxx9quc2th",
+						threadRootId: "cmt92zn3n000b7voxx9quc2th",
+						activityKind: "COMMENT",
+					},
+					campaignKey: "todo_reminder_v2",
+					variantId: "todo_reminder_v2.60min.v2",
 				},
-				campaignKey: "todo_reminder_v2",
-				variantId: "todo_reminder_v2.60min.v2",
+				notificationId: 101,
 			},
-			101,
-		);
-		await adapter.beforeApplicationShutdown();
+		});
 
 		const data = pushProvider.sendBatch.mock.calls[0]?.[0]?.[0]?.data;
 		expect(LEGACY_PUSH_DATA_SCHEMAS.V1_0_TO_V1_1.safeParse(data).success).toBe(true);

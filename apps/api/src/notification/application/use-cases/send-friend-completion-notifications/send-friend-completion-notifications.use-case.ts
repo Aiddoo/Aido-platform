@@ -7,12 +7,12 @@ import { DEFAULT_LOCALE, toSupportedLocale } from "@/shared/domain/locale";
 import { createFriendCompletedNotificationMessage } from "../../../domain/services/templates/notification-templates";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
 import { DuplicateNotificationError } from "../../ports/notification.repository.port";
-import type { PersistedBatchNotificationDispatch } from "../../ports/push-dispatcher.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "../../ports/user-notification-settings.port";
 import { NotificationSender } from "../../senders/notification.sender";
+import type { PersistedBatchNotificationDispatch } from "../../types/push-delivery.types";
 import { DispatchBatchNotificationUseCase } from "../dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
 

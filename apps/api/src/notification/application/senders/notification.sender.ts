@@ -1,7 +1,7 @@
 import type { NotificationRecord } from "../../domain/records/notification.record";
 import type { NotificationType } from "../../domain/types/notification-type";
 import type { CreateNotificationData } from "../ports/notification-data";
-import type { PushDispatcherPort } from "../ports/push-dispatcher.port";
+import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port";
 import type { FindAlreadyNotifiedUsersUseCase } from "../use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import type { SendBatchNotificationUseCase } from "../use-cases/send-batch-notification/send-batch-notification.use-case";
 import type { SendNotificationWithDedupUseCase } from "../use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
@@ -14,7 +14,7 @@ export class NotificationSender {
 		private readonly sendNotificationWithDedupUseCase: SendNotificationWithDedupUseCase,
 		private readonly sendBatchNotificationUseCase: SendBatchNotificationUseCase,
 		private readonly findAlreadyNotifiedUsersUseCase: FindAlreadyNotifiedUsersUseCase,
-		private readonly pushDispatcher: PushDispatcherPort,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReaderPort,
 	) {}
 
 	createAndSend(data: CreateNotificationData): Promise<NotificationRecord | null> {
@@ -38,7 +38,7 @@ export class NotificationSender {
 		return this.findAlreadyNotifiedUsersUseCase.execute(params);
 	}
 
-	getUserLocale(userId: string): ReturnType<PushDispatcherPort["getUserLocale"]> {
-		return this.pushDispatcher.getUserLocale(userId);
+	getUserLocale(userId: string): ReturnType<NotificationRecipientLocaleReaderPort["getLocale"]> {
+		return this.recipientLocaleReader.getLocale(userId);
 	}
 }

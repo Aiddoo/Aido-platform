@@ -15,10 +15,16 @@ import {
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
+import { ACTIVE_PUSH_TOKEN_READER } from "@/notification/application/ports/active-push-token.reader.port";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
 import { NOTIFICATION_INBOX_READER } from "@/notification/application/ports/notification-inbox.reader.port";
+import {
+	NOTIFICATION_RECIPIENT_LOCALE_READER,
+	type NotificationRecipientLocaleReaderPort,
+} from "@/notification/application/ports/notification-recipient-locale.reader.port";
+import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "@/notification/application/ports/notification-recipient-preference.reader.port";
 import { PUSH_DISPATCH_REPOSITORY } from "@/notification/application/ports/push-dispatch.repository.port";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
@@ -28,6 +34,10 @@ import {
 	type UserNotificationSettingsPort,
 } from "@/notification/application/ports/user-notification-settings.port";
 import { NotificationSender } from "@/notification/application/senders/notification.sender";
+import { PushDeliveryEligibilityService } from "@/notification/application/services/push-delivery-eligibility.service";
+import { PushNotificationDeliveryService } from "@/notification/application/services/push-notification-delivery.service";
+import { PushNotificationPayloadFactory } from "@/notification/application/services/push-notification-payload.factory";
+import { DeliverPushNotificationsUseCase } from "@/notification/application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
@@ -50,9 +60,11 @@ import { SendNotificationWithDedupUseCase } from "@/notification/application/use
 import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
 import { SendNudgeNotificationUseCase } from "@/notification/application/use-cases/send-nudge-notification/send-nudge-notification.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { CachedActivePushTokenReaderAdapter } from "@/notification/infrastructure/adapters/cached-active-push-token-reader.adapter";
+import { CachedNotificationRecipientPreferenceAdapter } from "@/notification/infrastructure/adapters/cached-notification-recipient-preference.adapter";
+import { InProcessPushDispatcherAdapter } from "@/notification/infrastructure/adapters/in-process-push-dispatcher.adapter";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupAdapter } from "@/notification/infrastructure/adapters/notification-dedup.adapter";
-import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
 import { PrismaNotificationReader } from "@/notification/infrastructure/persistence/prisma-notification.reader";
 import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
 import { PrismaPushDeliveryRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery.repository";
@@ -223,21 +235,21 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 				SendNotificationWithDedupUseCase,
 				SendBatchNotificationUseCase,
 				FindAlreadyNotifiedUsersUseCase,
-				PUSH_DISPATCHER,
+				NOTIFICATION_RECIPIENT_LOCALE_READER,
 			],
 			useFactory: (
 				sendNotification: SendNotificationUseCase,
 				sendWithDedup: SendNotificationWithDedupUseCase,
 				sendBatch: SendBatchNotificationUseCase,
 				findAlreadyNotified: FindAlreadyNotifiedUsersUseCase,
-				pushDispatcher: PushDispatcherAdapter,
+				recipientLocaleReader: NotificationRecipientLocaleReaderPort,
 			) =>
 				new NotificationSender(
 					sendNotification,
 					sendWithDedup,
 					sendBatch,
 					findAlreadyNotified,
-					pushDispatcher,
+					recipientLocaleReader,
 				),
 		},
 		PersistBatchNotificationUseCase,
@@ -292,14 +304,29 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 		{ provide: DEDUP_PROVIDER, useExisting: InMemoryDedupAdapter },
 		NotificationDedupAdapter,
 		{ provide: NOTIFICATION_DEDUP, useExisting: NotificationDedupAdapter },
-		PushDispatcherAdapter,
-		{ provide: PUSH_DISPATCHER, useExisting: PushDispatcherAdapter },
 		{
 			provide: USER_NOTIFICATION_SETTINGS,
 			inject: [DatabaseService],
 			useFactory: (database: DatabaseService): UserNotificationSettingsPort =>
 				createDatabaseBackedSettingsPort(database),
 		},
+		CachedActivePushTokenReaderAdapter,
+		{ provide: ACTIVE_PUSH_TOKEN_READER, useExisting: CachedActivePushTokenReaderAdapter },
+		CachedNotificationRecipientPreferenceAdapter,
+		{
+			provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,
+			useExisting: CachedNotificationRecipientPreferenceAdapter,
+		},
+		{
+			provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
+			useExisting: CachedNotificationRecipientPreferenceAdapter,
+		},
+		PushDeliveryEligibilityService,
+		PushNotificationDeliveryService,
+		PushNotificationPayloadFactory,
+		DeliverPushNotificationsUseCase,
+		InProcessPushDispatcherAdapter,
+		{ provide: PUSH_DISPATCHER, useExisting: InProcessPushDispatcherAdapter },
 	];
 }
 

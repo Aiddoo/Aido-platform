@@ -40,7 +40,7 @@ import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.j
 import { TransactionalEmailSender } from "@/email";
 import { PUSH_PROVIDER } from "@/notification";
 import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
-import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
+import { InProcessPushDispatcherAdapter } from "@/notification/infrastructure/adapters/in-process-push-dispatcher.adapter";
 import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
 import { NOTIFICATION_QUEUE } from "@/notification/queue";
 import { RETENTION_QUEUE } from "@/retention/infrastructure/queue/retention-queue.constants";
@@ -188,7 +188,7 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 		cleanupIntervalMs: 30000,
 	});
 	let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
-	let pushDispatcher: PushDispatcherAdapter | undefined;
+	let pushDispatcher: InProcessPushDispatcherAdapter | undefined;
 	let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
 	let module: TestingModule | undefined;
 	let app: INestApplication<App> | undefined;
@@ -316,7 +316,7 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 			enableShutdownHooks: false,
 		});
 		await app.init();
-		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
+		pushDispatcher = module.get<InProcessPushDispatcherAdapter>(PUSH_DISPATCHER);
 
 		if (!fakeOAuthProviderRegistry) {
 			throw new Error("Fake OAuth provider registry was not initialized");
