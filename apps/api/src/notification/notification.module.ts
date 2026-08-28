@@ -33,7 +33,9 @@ import {
 import { PUSH_RECEIPT_REPOSITORY } from "./application/ports/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "./application/ports/push-token.repository.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
-import { NotificationSender } from "./application/senders/notification.sender";
+import { NotificationPublisher } from "./application/publishers/notification.publisher";
+import { NotificationHistoryReader } from "./application/readers/notification-history.reader";
+import { NotificationRecipientLocaleReader } from "./application/readers/notification-recipient-locale.reader";
 import { NotificationAccountCleanup } from "./application/services/notification-account-cleanup";
 import { PushDeliveryAfterCommitPublisher } from "./application/services/push-delivery-after-commit.publisher";
 import { PushDeliveryEligibilityService } from "./application/services/push-delivery-eligibility.service";
@@ -105,28 +107,34 @@ import { NotificationController } from "./presentation/notification.controller";
 	providers: [
 		// 크로스 모듈 호환 경계 + endpoint UseCase
 		{
-			provide: NotificationSender,
+			provide: NotificationPublisher,
 			inject: [
 				SendNotificationUseCase,
 				SendNotificationWithDedupUseCase,
 				SendBatchNotificationUseCase,
-				FindAlreadyNotifiedUsersUseCase,
-				NOTIFICATION_RECIPIENT_LOCALE_READER,
 			],
 			useFactory: (
-				sendNotificationUseCase: SendNotificationUseCase,
-				sendNotificationWithDedupUseCase: SendNotificationWithDedupUseCase,
-				sendBatchNotificationUseCase: SendBatchNotificationUseCase,
-				findAlreadyNotifiedUsersUseCase: FindAlreadyNotifiedUsersUseCase,
-				recipientLocaleReader: NotificationRecipientLocaleReaderPort,
+				sendNotification: SendNotificationUseCase,
+				sendNotificationWithDeduplication: SendNotificationWithDedupUseCase,
+				sendBatchNotification: SendBatchNotificationUseCase,
 			) =>
-				new NotificationSender(
-					sendNotificationUseCase,
-					sendNotificationWithDedupUseCase,
-					sendBatchNotificationUseCase,
-					findAlreadyNotifiedUsersUseCase,
-					recipientLocaleReader,
+				new NotificationPublisher(
+					sendNotification,
+					sendNotificationWithDeduplication,
+					sendBatchNotification,
 				),
+		},
+		{
+			provide: NotificationHistoryReader,
+			inject: [FindAlreadyNotifiedUsersUseCase],
+			useFactory: (findAlreadyNotifiedUsers: FindAlreadyNotifiedUsersUseCase) =>
+				new NotificationHistoryReader(findAlreadyNotifiedUsers),
+		},
+		{
+			provide: NotificationRecipientLocaleReader,
+			inject: [NOTIFICATION_RECIPIENT_LOCALE_READER],
+			useFactory: (localeReader: NotificationRecipientLocaleReaderPort) =>
+				new NotificationRecipientLocaleReader(localeReader),
 		},
 		GetNotificationsUseCase,
 		GetUnreadCountUseCase,
@@ -251,7 +259,9 @@ import { NotificationController } from "./presentation/notification.controller";
 		NotificationQueueProcessor,
 	],
 	exports: [
-		NotificationSender,
+		NotificationPublisher,
+		NotificationHistoryReader,
+		NotificationRecipientLocaleReader,
 		NotificationAccountCleanup,
 		NotificationQueueModule,
 		PUSH_PROVIDER,

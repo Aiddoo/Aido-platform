@@ -1,7 +1,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { createWinbackNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createWinbackNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString } from "@/shared/domain/date/utils/format";
@@ -30,7 +34,8 @@ export class WinbackStrategy implements ITimezoneStrategy {
 		private readonly reader: ReEngagementReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 		@Inject(SCHEDULER_DEDUP)
 		private readonly schedulerDedup: SchedulerDedupPort,
 	) {}
@@ -53,7 +58,7 @@ export class WinbackStrategy implements ITimezoneStrategy {
 		}
 
 		// 오늘 WINBACK 중복 방지
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: users.map((u) => u.id),
 			type: "WINBACK",
 			notificationDate: today,
@@ -111,7 +116,7 @@ export class WinbackStrategy implements ITimezoneStrategy {
 
 		// DB 성공 후 Redis 기록 (순서 보장)
 		if (notifications.length > 0) {
-			await this.notificationService.createAndSendBatch(notifications);
+			await this.notificationPublisher.publishBatch(notifications);
 
 			void this.schedulerDedup.recordWinbackStages(
 				activeChecks.map((check) => ({

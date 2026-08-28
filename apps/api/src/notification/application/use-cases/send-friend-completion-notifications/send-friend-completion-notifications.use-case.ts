@@ -4,14 +4,14 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, toSupportedLocale } from "@/shared/domain/locale";
 
-import { createFriendCompletedNotificationMessage } from "../../../domain/services/templates/notification-templates";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
+import { createFriendCompletedNotificationMessage } from "../../messages/notification-messages";
 import { DuplicateNotificationError } from "../../ports/notification.repository.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "../../ports/user-notification-settings.port";
-import { NotificationSender } from "../../senders/notification.sender";
+import { NotificationHistoryReader } from "../../readers/notification-history.reader";
 import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types";
 import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
@@ -28,7 +28,7 @@ export class SendFriendCompletionNotificationsUseCase {
 	readonly #logger = new Logger(SendFriendCompletionNotificationsUseCase.name);
 
 	constructor(
-		private readonly notificationSender: NotificationSender,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 		private readonly persistBatch: PersistBatchNotificationUseCase,
 		private readonly finalizeBatch: FinalizeBatchNotificationUseCase,
 		@Inject(UNIT_OF_WORK) private readonly unitOfWork: UnitOfWorkPort,
@@ -44,7 +44,7 @@ export class SendFriendCompletionNotificationsUseCase {
 
 		const notificationDate = todayInTimezone(input.timezone);
 		const localDate = notificationDate.toISOString().slice(0, 10);
-		const alreadyNotifiedUserIds = await this.notificationSender.findAlreadyNotifiedUserIds({
+		const alreadyNotifiedUserIds = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: input.notifyUserIds,
 			type: "FRIEND_COMPLETED",
 			notificationDate,

@@ -13,7 +13,11 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { createStreakAtRiskNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createStreakAtRiskNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -27,7 +31,8 @@ import { StreakAtRiskStrategy } from "./streak-at-risk.strategy";
 describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 	let strategy: StreakAtRiskStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
-	let notificationService: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 
 	const TZ = "Asia/Seoul";
 
@@ -67,12 +72,13 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
-		notificationService = unitRef.get(NotificationSender);
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 
 		// 기본 mock 설정
 		reader.findStreakAtRiskUsers.mockResolvedValue([]);
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 	});
 
 	afterEach(() => {
@@ -91,9 +97,9 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+		expect(notificationPublisher.publishBatch).toHaveBeenCalledTimes(1);
 
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -111,7 +117,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then — computeEffectiveStreak가 반환한 streak(7)이 메시지에 사용됨
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		const expected = createStreakAtRiskNotificationMessage({
 			streak: 7,
 			locale: "ko",
@@ -138,7 +144,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		// computeEffectiveStreak는 currentStreak(10)을 그대로 반환 (미완료 시)
 		const expected = createStreakAtRiskNotificationMessage({
 			streak: 10,
@@ -176,7 +182,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
 	it("StreakService에서 isAtRisk가 false인 유저는 제외한다", async () => {
@@ -201,7 +207,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
 	it("이미 알림 받은 사용자를 제외한다", async () => {
@@ -213,19 +219,19 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 			makeAtRiskUser("user-2"),
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
 
-	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+	it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
 		// Given — beforeEach 기본 설정
 		const ctx = makeCtx();
 
@@ -236,7 +242,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
-		expect(notificationService.findAlreadyNotifiedUserIds).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+		expect(notificationHistoryReader.findAlreadyNotifiedUserIds).not.toHaveBeenCalled();
 	});
 });

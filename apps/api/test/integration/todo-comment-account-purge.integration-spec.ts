@@ -9,11 +9,12 @@ import { UserRepository } from "@/auth/infrastructure/persistence/user.repositor
 import { AccountPurgeProcessor } from "@/auth/infrastructure/queue/account-purge.processor";
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { NOTIFICATION_REPOSITORY, NotificationAccountCleanup } from "@/notification";
+import { NotificationAccountCleanup } from "@/notification";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "@/notification/application/ports/notification-cache.port";
+import { NOTIFICATION_REPOSITORY } from "@/notification/application/ports/notification.repository.port";
 import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
 import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";

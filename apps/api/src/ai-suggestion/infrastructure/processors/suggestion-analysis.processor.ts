@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { createAiSuggestionNotificationMessage, NotificationSender } from "@/notification";
+import { createAiSuggestionNotificationMessage, NotificationPublisher } from "@/notification";
 import {
 	JOB_RUNTIME,
 	type JobData,
@@ -50,7 +50,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 
 	constructor(
 		private readonly analyzeAndCreateSuggestionsUseCase: AnalyzeAndCreateSuggestionsUseCase,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationService: NotificationPublisher,
 		private readonly database: DatabaseService,
 		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
 	) {}
@@ -124,7 +124,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 		}
 
 		const message = createAiSuggestionNotificationMessage({ locale });
-		await this.notificationService.createAndSend({
+		await this.notificationService.publish({
 			userId,
 			type: "AI_SUGGESTION",
 			purpose: "ENGAGEMENT",

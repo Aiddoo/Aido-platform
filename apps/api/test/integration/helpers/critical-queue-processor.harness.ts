@@ -9,12 +9,7 @@ import { ClsModule } from "nestjs-cls";
 import { PgBoss } from "pg-boss";
 
 import type { PrismaClient } from "@/generated/prisma/client";
-import {
-	MARKETING_PUSH_OPT_OUT_TOKEN,
-	NOTIFICATION_REPOSITORY,
-	PUSH_PROVIDER,
-	PUSH_RATE_LIMITER,
-} from "@/notification";
+import { MARKETING_PUSH_OPT_OUT_TOKEN, PUSH_PROVIDER, PUSH_RATE_LIMITER } from "@/notification";
 import { ACTIVE_PUSH_TOKEN_READER } from "@/notification/application/ports/active-push-token.reader.port";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
@@ -25,6 +20,7 @@ import {
 	type NotificationRecipientLocaleReaderPort,
 } from "@/notification/application/ports/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "@/notification/application/ports/notification-recipient-preference.reader.port";
+import { NOTIFICATION_REPOSITORY } from "@/notification/application/ports/notification.repository.port";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "@/notification/application/ports/push-delivery-job-enqueuer.port";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "@/notification/application/ports/push-delivery-lifecycle.repository.port";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "@/notification/application/ports/push-delivery-outbox.repository.port";
@@ -35,7 +31,9 @@ import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "@/notification/application/ports/user-notification-settings.port";
-import { NotificationSender } from "@/notification/application/senders/notification.sender";
+import { NotificationPublisher } from "@/notification/application/publishers/notification.publisher";
+import { NotificationHistoryReader } from "@/notification/application/readers/notification-history.reader";
+import { NotificationRecipientLocaleReader } from "@/notification/application/readers/notification-recipient-locale.reader";
 import { PushDeliveryAfterCommitPublisher } from "@/notification/application/services/push-delivery-after-commit.publisher";
 import { PushDeliveryEligibilityService } from "@/notification/application/services/push-delivery-eligibility.service";
 import { PushNotificationDeliveryService } from "@/notification/application/services/push-notification-delivery.service";
@@ -246,28 +244,29 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 		{ provide: SendMilestoneNotificationUseCase, useValue: unexpectedUseCase },
 		{ provide: ReconcilePushReceiptsUseCase, useValue: unexpectedUseCase },
 		{
-			provide: NotificationSender,
+			provide: NotificationPublisher,
 			inject: [
 				SendNotificationUseCase,
 				SendNotificationWithDedupUseCase,
 				SendBatchNotificationUseCase,
-				FindAlreadyNotifiedUsersUseCase,
-				NOTIFICATION_RECIPIENT_LOCALE_READER,
 			],
 			useFactory: (
 				sendNotification: SendNotificationUseCase,
 				sendWithDedup: SendNotificationWithDedupUseCase,
 				sendBatch: SendBatchNotificationUseCase,
-				findAlreadyNotified: FindAlreadyNotifiedUsersUseCase,
-				recipientLocaleReader: NotificationRecipientLocaleReaderPort,
-			) =>
-				new NotificationSender(
-					sendNotification,
-					sendWithDedup,
-					sendBatch,
-					findAlreadyNotified,
-					recipientLocaleReader,
-				),
+			) => new NotificationPublisher(sendNotification, sendWithDedup, sendBatch),
+		},
+		{
+			provide: NotificationHistoryReader,
+			inject: [FindAlreadyNotifiedUsersUseCase],
+			useFactory: (findAlreadyNotified: FindAlreadyNotifiedUsersUseCase) =>
+				new NotificationHistoryReader(findAlreadyNotified),
+		},
+		{
+			provide: NotificationRecipientLocaleReader,
+			inject: [NOTIFICATION_RECIPIENT_LOCALE_READER],
+			useFactory: (localeReader: NotificationRecipientLocaleReaderPort) =>
+				new NotificationRecipientLocaleReader(localeReader),
 		},
 		PersistBatchNotificationUseCase,
 		FinalizeBatchNotificationUseCase,

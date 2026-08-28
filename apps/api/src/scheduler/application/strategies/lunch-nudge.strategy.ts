@@ -1,6 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { createLunchNudgeNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createLunchNudgeNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
@@ -32,7 +36,8 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 		private readonly reader: ScheduledReminderReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -52,7 +57,7 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: users.map((u) => u.id),
 			type: "LUNCH_NUDGE",
 			notificationDate: today,
@@ -86,7 +91,7 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 		this.#logger.log(`Lunch nudge: tz=${tz}, count=${notifications.length}`);
 		return { sent: notifications.length };
 	}

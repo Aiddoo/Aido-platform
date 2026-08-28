@@ -8,10 +8,6 @@ export {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
 } from "./application/ports/marketing-push-opt-out-token.port";
-export {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "./application/ports/notification.repository.port";
 // --- Data contracts ---
 export type { CreateNotificationData } from "./application/ports/notification-data";
 // --- Ports (푸시 프로바이더/rate limiter 추상화) ---
@@ -30,7 +26,12 @@ export {
 	type PushRateLimiterPort,
 } from "./application/ports/push-rate-limiter.port";
 // --- Cross-module notification capability ---
-export { NotificationSender } from "./application/senders/notification.sender";
+export { NotificationPublisher } from "./application/publishers/notification.publisher";
+export {
+	type FindAlreadyNotifiedRecipientsQuery,
+	NotificationHistoryReader,
+} from "./application/readers/notification-history.reader";
+export { NotificationRecipientLocaleReader } from "./application/readers/notification-recipient-locale.reader";
 export { NotificationAccountCleanup } from "./application/services/notification-account-cleanup";
 export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./domain/services/transactional-notification-campaign";
 // --- Type-safe notification copy factories consumed across feature boundaries ---
@@ -55,8 +56,8 @@ export {
 	createWeeklyAchievementNotificationMessage,
 	createWeeklyReportNotificationMessage,
 	createWinbackNotificationMessage,
-} from "./domain/services/templates/notification-templates";
-export type { RetentionNotificationCopySelection } from "./domain/services/templates/notification-copy.types";
+} from "./application/messages/notification-messages";
+export type { RetentionNotificationCopySelection } from "./application/messages/notification-copy.types";
 // Prisma repository is internal to NotificationModule.
 // Cross-module consumers use the public capability boundary above.
 // --- Module wiring ---

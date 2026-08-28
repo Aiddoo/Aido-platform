@@ -3,13 +3,13 @@ import { notificationContentSchema } from "@aido/validators";
 import { DEFAULT_LOCALE, type SupportedLocale } from "@/shared/domain/locale";
 import { deterministicIndex } from "@/shared/domain/services/deterministic-variant";
 
-import * as en from "../locales/en";
-import * as ko from "../locales/ko";
+import * as en from "./locales/en";
+import * as ko from "./locales/ko";
 import type {
 	NotificationMessage,
 	RetentionNotificationCopySelection,
 	RetentionTemplateKey,
-} from "../notification-copy.types";
+} from "./notification-copy.types";
 
 const LOCALE_TEMPLATES = { ko, en };
 

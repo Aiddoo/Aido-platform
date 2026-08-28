@@ -17,7 +17,8 @@ import dayjs from "dayjs";
 import {
 	createMorningNoTodoNotificationMessage,
 	createMorningReminderNotificationMessage,
-	NotificationSender,
+	NotificationHistoryReader,
+	NotificationPublisher,
 } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -31,7 +32,8 @@ import { MorningReminderStrategy } from "./morning-reminder.strategy";
 describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 	let strategy: MorningReminderStrategy;
 	let reader: Mocked<ScheduledReminderReaderPort>;
-	let notificationService: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 
 	const TZ = "Asia/Seoul";
 	const VARIANT_CONTEXT = {
@@ -62,13 +64,14 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 
 		strategy = unit;
 		reader = unitRef.get(SCHEDULED_REMINDER_READER);
-		notificationService = unitRef.get(NotificationSender);
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 
 		// 기본 mock 설정
 		reader.findPremiumMorningReminderUsers.mockResolvedValue([]);
 		reader.findFreeMorningReminderUsers.mockResolvedValue([]);
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 	});
 
 	afterEach(() => {
@@ -89,9 +92,9 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+		expect(notificationPublisher.publishBatch).toHaveBeenCalledTimes(1);
 
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]).toMatchObject({
 			userId: TEST_CUID.USER_1,
@@ -160,7 +163,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		const expected = createMorningReminderNotificationMessage({
 			count: 5,
 			locale: "ko",
@@ -184,7 +187,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		const expected = createMorningNoTodoNotificationMessage({
 			locale: "ko",
 			variantContext: VARIANT_CONTEXT,
@@ -204,19 +207,21 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 			{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } },
 		]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set([TEST_CUID.USER_1]));
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(
+			new Set([TEST_CUID.USER_1]),
+		);
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe(TEST_CUID.USER_2);
 	});
 
-	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+	it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
 		// Given
 		const ctx = makeCtx();
 
@@ -225,6 +230,6 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 });

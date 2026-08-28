@@ -14,7 +14,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { NotificationSender } from "@/notification";
+import { NotificationHistoryReader, NotificationPublisher } from "@/notification";
 import type { WeatherForecast } from "@/weather";
 import { WeatherForecastAccess } from "@/weather";
 
@@ -54,7 +54,8 @@ const makeForecast = (overrides?: Partial<WeatherForecast>): WeatherForecast => 
 describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 	let strategy: WeatherEveningStrategy;
 	let reader: Mocked<WeatherReminderReaderPort>;
-	let notificationService: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 	let weatherForecastAccess: Mocked<WeatherForecastAccess>;
 
 	beforeEach(async () => {
@@ -64,13 +65,14 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 
 		strategy = unit;
 		reader = unitRef.get(WEATHER_REMINDER_READER);
-		notificationService = unitRef.get(NotificationSender);
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 		weatherForecastAccess = unitRef.get(WeatherForecastAccess);
 
 		reader.findWeatherEveningUsersWithLocation.mockResolvedValue([]);
 		reader.findWeatherEveningFallbackUsers.mockResolvedValue([]);
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 	});
 
 	afterEach(() => {
@@ -109,7 +111,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 			expect.any(Array),
 			makeCtx().tomorrow,
 		);
-		expect(notificationService.createAndSendBatch).toHaveBeenCalledWith(
+		expect(notificationPublisher.publishBatch).toHaveBeenCalledWith(
 			expect.arrayContaining([
 				expect.objectContaining({
 					userId: "user-1",

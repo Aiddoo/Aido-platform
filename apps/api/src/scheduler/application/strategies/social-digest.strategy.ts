@@ -1,7 +1,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { createSocialDigestNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createSocialDigestNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
@@ -27,7 +31,8 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		private readonly reader: ReEngagementReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(
@@ -58,12 +63,12 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 
 		// 중복 방지
 		const [alreadyNotified, streakAtRiskNotified] = await Promise.all([
-			this.notificationService.findAlreadyNotifiedUserIds({
+			this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 				userIds: incompleteUsers.map((u) => u.id),
 				type: "SOCIAL_DIGEST",
 				notificationDate: today,
 			}),
-			this.notificationService.findAlreadyNotifiedUserIds({
+			this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 				userIds: incompleteUsers.map((u) => u.id),
 				type: "STREAK_AT_RISK",
 				notificationDate: today,
@@ -173,7 +178,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		}
 
 		if (notifications.length > 0) {
-			await this.notificationService.createAndSendBatch(notifications);
+			await this.notificationPublisher.publishBatch(notifications);
 			this.#logger.log(`Social digest: tz=${tz}, count=${notifications.length}`);
 		}
 		return { sent: notifications.length };

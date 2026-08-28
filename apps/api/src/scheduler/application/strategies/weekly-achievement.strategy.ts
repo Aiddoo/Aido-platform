@@ -1,6 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { createWeeklyAchievementNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createWeeklyAchievementNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
@@ -27,7 +31,8 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		private readonly reader: WeeklyAchievementStatsReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 		private readonly weeklyAchievementWriter: WeeklyAchievementWriterAccess,
 	) {}
 
@@ -80,7 +85,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
 		if (notifiableUserIds.length === 0) return { sent: 0 };
 
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: notifiableUserIds,
 			type: "WEEKLY_ACHIEVEMENT",
 			notificationDate: today,
@@ -119,7 +124,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 
 		this.#logger.log(
 			`Weekly achievement: tz=${tz}, records=${records.length}, sent=${notifications.length}`,

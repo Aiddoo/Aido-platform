@@ -4,7 +4,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	createMorningNoTodoNotificationMessage,
 	createMorningReminderNotificationMessage,
-	NotificationSender,
+	NotificationHistoryReader,
+	NotificationPublisher,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
@@ -26,7 +27,8 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 	constructor(
 		@Inject(SCHEDULED_REMINDER_READER)
 		private readonly reader: ScheduledReminderReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -65,7 +67,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지: 이미 오늘 아침 리마인더를 받은 사용자 제외
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: users.map((u) => u.id),
 			type: "MORNING_REMINDER",
 			notificationDate: today,
@@ -102,7 +104,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 		this.#logger.log(
 			`Morning reminder: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, count=${notifications.length}`,
 		);

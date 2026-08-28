@@ -27,8 +27,7 @@ import { suppressLogger } from "@test/setup/suppress-logger";
 import {
 	createMorningNoTodoNotificationMessage,
 	createMorningReminderNotificationMessage,
-	NOTIFICATION_REPOSITORY,
-	NotificationSender,
+	NotificationPublisher,
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
@@ -41,11 +40,9 @@ import {
 } from "@/notification/application/ports/notification-dedup.port";
 import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
 import { NOTIFICATION_INBOX_READER } from "@/notification/application/ports/notification-inbox.reader.port";
-import {
-	NOTIFICATION_RECIPIENT_LOCALE_READER,
-	type NotificationRecipientLocaleReaderPort,
-} from "@/notification/application/ports/notification-recipient-locale.reader.port";
+import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "@/notification/application/ports/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "@/notification/application/ports/notification-recipient-preference.reader.port";
+import { NOTIFICATION_REPOSITORY } from "@/notification/application/ports/notification.repository.port";
 import {
 	PUSH_DISPATCH_STAGING,
 	type PushDispatchStagingRepositoryPort,
@@ -93,12 +90,10 @@ import { UserConsentRepository } from "@/user-settings/infrastructure/persistenc
 import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
 
 function buildNotificationTestApi(module: TestingModule) {
-	const sender = new NotificationSender(
+	const publisher = new NotificationPublisher(
 		module.get(SendNotificationUseCase),
 		module.get(SendNotificationWithDedupUseCase),
 		module.get(SendBatchNotificationUseCase),
-		module.get(FindAlreadyNotifiedUsersUseCase),
-		module.get<NotificationRecipientLocaleReaderPort>(NOTIFICATION_RECIPIENT_LOCALE_READER),
 	);
 	const getNotificationsUseCase = module.get(GetNotificationsUseCase);
 	const getUnreadCountUseCase = module.get(GetUnreadCountUseCase);
@@ -109,10 +104,9 @@ function buildNotificationTestApi(module: TestingModule) {
 	const optOutMarketingPushUseCase = module.get(OptOutMarketingPushUseCase);
 
 	return {
-		...sender,
-		createAndSend: sender.createAndSend.bind(sender),
-		createAndSendWithDedup: sender.createAndSendWithDedup.bind(sender),
-		createAndSendBatch: sender.createAndSendBatch.bind(sender),
+		publish: publisher.publish.bind(publisher),
+		publishWithDeduplication: publisher.publishWithDeduplication.bind(publisher),
+		publishBatch: publisher.publishBatch.bind(publisher),
 		registerPushToken: registerPushTokenUseCase.execute.bind(registerPushTokenUseCase),
 		getNotifications: getNotificationsUseCase.execute.bind(getNotificationsUseCase),
 		getUnreadCount: getUnreadCountUseCase.execute.bind(getUnreadCountUseCase),
@@ -452,7 +446,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 			// Then - 테스트 수직 경계가 정의되어 있어야 함
 			expect(facade).toBeDefined();
-			expect(facade.createAndSend).toBeInstanceOf(Function);
+			expect(facade.publish).toBeInstanceOf(Function);
 			expect(facade.getNotifications).toBeInstanceOf(Function);
 		});
 
@@ -817,7 +811,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 알림 생성 및 발송
-			const result = await facade.createAndSend({
+			const result = await facade.publish({
 				userId: mockUserId,
 				type: "NUDGE_RECEIVED",
 				title: "테스트 알림",
@@ -850,7 +844,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			mockPushTokenDb.findMany.mockResolvedValue([]);
 
 			// When - 알림 생성 (푸시 토큰 없음)
-			const result = await facade.createAndSend({
+			const result = await facade.publish({
 				userId: mockUserId,
 				type: "NUDGE_RECEIVED",
 				title: "테스트 알림",
@@ -862,7 +856,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			expect(mockPushProvider.sendBatch).not.toHaveBeenCalled();
 		});
 
-		it("MORNING_REMINDER createAndSendBatch 시 title에 {count}가 치환된 값이 저장되어야 함", async () => {
+		it("MORNING_REMINDER publishBatch 시 title에 {count}가 치환된 값이 저장되어야 함", async () => {
 			// Given - morningReminder 템플릿으로 치환된 메시지 준비
 			const todoCount = 3;
 			const message = createMorningReminderNotificationMessage({ count: todoCount });
@@ -892,7 +886,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 배치 알림 생성 및 발송
-			const result = await facade.createAndSendBatch(dataList);
+			const result = await facade.publishBatch(dataList);
 
 			// Then - title이 치환된 값이어야 하며, {count}가 포함되지 않아야 함
 			expect(result.count).toBe(1);
@@ -931,7 +925,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 할일 없는 사용자용 알림 생성
-			const result = await facade.createAndSend({
+			const result = await facade.publish({
 				userId: mockUserId,
 				type: "MORNING_REMINDER",
 				title: message.title,
@@ -955,7 +949,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			);
 		});
 
-		it("createAndSendBatch에서 할일 있는 사용자와 없는 사용자 알림이 함께 저장되어야 함", async () => {
+		it("publishBatch에서 할일 있는 사용자와 없는 사용자 알림이 함께 저장되어야 함", async () => {
 			// Given - 할일 있는 사용자와 없는 사용자 메시지 준비
 			const userWithTodos = "user-with-todos";
 			const userWithoutTodos = "user-without-todos";
@@ -999,7 +993,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 배치 알림 생성 및 발송
-			const result = await facade.createAndSendBatch(dataList);
+			const result = await facade.publishBatch(dataList);
 
 			// Then - 두 사용자 모두 알림이 생성되어야 함
 			expect(result.count).toBe(2);
@@ -1045,7 +1039,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 배치 알림 생성 및 발송 (재조립 경로 포함 end-to-end)
-			const result = await facade.createAndSendBatch(dataList);
+			const result = await facade.publishBatch(dataList);
 
 			// Then - crash 뒤 worker가 같은 정책을 재현할 수 있도록 force가 staging됨
 			expect(result.count).toBe(1);
@@ -1092,7 +1086,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 배치 알림 생성 및 발송
-			const result = await facade.createAndSendBatch(dataList);
+			const result = await facade.publishBatch(dataList);
 
 			// Then - worker가 각 dispatch 정책을 독립적으로 적용할 수 있음
 			expect(result.count).toBe(2);

@@ -3,7 +3,8 @@ import { Injectable } from "@nestjs/common";
 
 import {
 	createTodoCommentNotificationMessage,
-	NotificationSender,
+	NotificationPublisher,
+	NotificationRecipientLocaleReader,
 	TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "@/notification";
 
@@ -19,7 +20,10 @@ type TodoCommentNotificationActivity =
 
 @Injectable()
 export class TodoCommentNotificationAdapter implements TodoCommentNotificationPort {
-	constructor(private readonly notificationSender: NotificationSender) {}
+	constructor(
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+	) {}
 
 	notifyCommentsWritten(input: TodoCommentWrittenInput): Promise<void> {
 		return this.#sendActivityNotification(input, {
@@ -44,7 +48,7 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
 			return;
 		}
 
-		const locale = await this.notificationSender.getUserLocale(input.recipientId);
+		const locale = await this.recipientLocaleReader.getRecipientLocale(input.recipientId);
 		const variantContext = {
 			campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.TODO_COMMENT_ACTIVITY,
 			recipientId: input.recipientId,
@@ -62,7 +66,7 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
 			threadRootId: input.threadRootId,
 			activityKind: activity.activityKind,
 		});
-		await this.notificationSender.createAndSend({
+		await this.notificationPublisher.publish({
 			userId: input.recipientId,
 			type: "TODO_SHARED",
 			title: copy.title,

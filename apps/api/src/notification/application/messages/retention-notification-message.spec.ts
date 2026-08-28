@@ -1,7 +1,7 @@
 import {
 	createRetentionNotificationMessage,
 	type RetentionNotificationInput,
-} from "./messages/retention-notification-message";
+} from "./retention-notification-message";
 
 const context = (user: number) => ({
 	recipientId: `user-${user}`,

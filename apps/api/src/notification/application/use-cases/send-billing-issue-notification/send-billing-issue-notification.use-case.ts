@@ -1,7 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { createBillingIssueNotificationMessage } from "../../../domain/services/templates/notification-templates";
-import { NotificationSender } from "../../senders/notification.sender";
+import { createBillingIssueNotificationMessage } from "../../messages/notification-messages";
+import { NotificationPublisher } from "../../publishers/notification.publisher";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
 
 export interface SendBillingIssueNotificationInput {
 	readonly userId: string;
@@ -11,12 +12,15 @@ export interface SendBillingIssueNotificationInput {
 export class SendBillingIssueNotificationUseCase {
 	readonly #logger = new Logger(SendBillingIssueNotificationUseCase.name);
 
-	constructor(private readonly notificationSender: NotificationSender) {}
+	constructor(
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+	) {}
 
 	async execute(input: SendBillingIssueNotificationInput): Promise<void> {
-		const locale = await this.notificationSender.getUserLocale(input.userId);
+		const locale = await this.recipientLocaleReader.getRecipientLocale(input.userId);
 		const message = createBillingIssueNotificationMessage({ locale });
-		await this.notificationSender.createAndSend({
+		await this.notificationPublisher.publish({
 			userId: input.userId,
 			type: "SYSTEM_NOTICE",
 			title: message.title,
