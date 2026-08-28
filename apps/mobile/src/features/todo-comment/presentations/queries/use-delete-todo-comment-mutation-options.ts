@@ -2,27 +2,25 @@ import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import type { TodoComment } from '../../models/todo-comment.model';
-import { useTodoCommentMutationError } from '../hooks/use-todo-comment-mutation-error';
-import { settleTodoCommentMutation } from './todo-comment-mutation-lifecycle';
+import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
+import { invalidateTodoCommentQueries } from './todo-comment-query-invalidation';
 
-interface DeleteTodoCommentVariables {
-  comment: TodoComment;
+interface DeleteTodoCommentMutationParams {
+  commentId: string;
 }
 
-export function useDeleteTodoCommentMutationOptions(todoId: number) {
+export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number }) {
   const service = useTodoCommentService();
   const queryClient = useQueryClient();
-  const showMutationError = useTodoCommentMutationError(todoId);
+  const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
 
   return mutationOptions({
-    mutationFn: async ({ comment }: DeleteTodoCommentVariables) =>
-      unwrap(await service.deleteComment(todoId, comment.id)),
-    onSuccess: async () => {
-      await settleTodoCommentMutation(queryClient, todoId, true);
-    },
+    mutationFn: async ({ commentId }: DeleteTodoCommentMutationParams) =>
+      unwrap(await service.deleteComment(todoId, commentId)),
     onError: (error) => {
-      showMutationError(error, 'delete');
+      handleMutationError(error, 'delete');
     },
+    onSettled: () =>
+      invalidateTodoCommentQueries({ queryClient, todoId, invalidatesTodoCount: true }),
   });
 }

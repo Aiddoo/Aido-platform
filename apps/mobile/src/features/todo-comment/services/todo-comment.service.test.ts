@@ -209,7 +209,7 @@ describe('TodoCommentService', () => {
     });
 
     // When
-    await service.writeComments(42, input);
+    await service.createCommentChain(42, input);
 
     // Then
     expect(httpClient.post).toHaveBeenCalledWith('v1/todos/42/comments', input);

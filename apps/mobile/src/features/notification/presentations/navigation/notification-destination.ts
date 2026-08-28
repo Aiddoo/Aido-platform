@@ -2,6 +2,7 @@ import {
   NOTIFICATION_TYPE,
   type NotificationAction,
   type NotificationContext,
+  type NotificationRouting,
   type NotificationType,
   todoCommentIdSchema,
 } from '@aido/validators';
@@ -18,7 +19,7 @@ export type NotificationDestination =
 export interface NotificationDestinationSource {
   type: NotificationType;
   context?: NotificationContext;
-  routing?: Record<string, unknown>;
+  routing?: NotificationRouting;
   action?: NotificationAction;
 }
 
@@ -41,7 +42,7 @@ const routingSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('FEED') }),
 ]);
 
-type NotificationRouting = z.infer<typeof routingSchema>;
+type ResolvedNotificationRoute = z.infer<typeof routingSchema>;
 
 const FEED_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
   NOTIFICATION_TYPE.TODO_REMINDER,
@@ -77,11 +78,12 @@ export function resolveNotificationDestination(
 
 function parseNotificationRouting(
   source: NotificationDestinationSource,
-): NotificationRouting | null {
+): ResolvedNotificationRoute | null {
   const candidate = {
     type: FEED_NOTIFICATION_TYPES.has(source.type) ? 'FEED' : source.type,
-    ...source.context,
-    ...source.routing,
+    todoId: source.context?.todoId,
+    friendId: source.context?.friendId,
+    commentId: source.routing?.commentId,
   };
   const result = routingSchema.safeParse(candidate);
 
@@ -92,7 +94,7 @@ function toExternalDestination(kind: 'browser' | 'webview', url?: string): Notif
   return url !== undefined && /^https?:\/\//.test(url) ? { kind, url } : NO_DESTINATION;
 }
 
-function toRouteDestination(routing: NotificationRouting): NotificationDestination {
+function toRouteDestination(routing: ResolvedNotificationRoute): NotificationDestination {
   return match(routing)
     .with({ type: 'TODO_SHARED', commentId: P.string }, ({ todoId, commentId }) => ({
       kind: 'route' as const,

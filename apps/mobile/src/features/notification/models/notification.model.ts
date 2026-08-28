@@ -2,14 +2,16 @@ import {
   type NotificationCategory,
   type NotificationListResponse,
   type Notification as NotificationDTO,
+  type NotificationRouting,
   type NotificationType,
 } from '@aido/validators';
 
 import { getCategoryKey } from './notification-category.model';
 
-export type Notification = Omit<NotificationDTO, 'createdAt' | 'readAt'> & {
+export type Notification = Omit<NotificationDTO, 'createdAt' | 'metadata' | 'readAt'> & {
   createdAt: Date;
   readAt: Date | null;
+  routing?: NotificationRouting;
 };
 
 export type NotificationListResult = Omit<NotificationListResponse, 'notifications'> & {

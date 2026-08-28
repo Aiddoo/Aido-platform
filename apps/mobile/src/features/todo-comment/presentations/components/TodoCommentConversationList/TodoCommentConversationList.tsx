@@ -1,6 +1,7 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTodoScreenParams } from '@src/features/todo/presentations/hooks/use-todo-screen-params';
+import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -45,7 +46,7 @@ import type {
   TodoConversationConnection,
 } from '../../../models/todo-comment.model';
 import { TODO_COMMENT_QUERY_KEYS } from '../../constants/todo-comment-query-keys.constant';
-import { useCommentRouteState } from '../../hooks/use-comment-route-state';
+import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { useTodoCommentConversationQueryOptions } from '../../queries/use-todo-comment-conversation-query-options';
 import {
   canFetchPreviousComments,
@@ -66,18 +67,18 @@ import type {
   TodoCommentConversationRowViewModel,
   TodoCommentConversationViewModel,
 } from '../../view-models/todo-comment-conversation.view-model';
-import { TodoCommentArticle } from '../TodoCommentArticle';
 import {
   TODO_COMMENT_AUTHOR_AVATAR_SIZE,
   type TodoCommentAuthorAvatarSize,
   TodoCommentAuthorAvatar,
 } from '../TodoCommentAuthorAvatar';
 import { TodoCommentKeyboardScrollView } from '../TodoCommentKeyboardScrollView';
+import { TodoCommentMessage } from '../TodoCommentMessage';
 
 const maintainVisibleContentPosition = { disabled: false } as const;
 const keyExtractor = (row: TodoCommentConversationRowViewModel) => row.comment.id;
 const renderRow = ({ item }: { item: TodoCommentConversationRowViewModel }) => (
-  <TodoCommentConversationRow row={item} />
+  <ConversationRow row={item} />
 );
 
 type ConversationFlashListProps = ComponentProps<
@@ -128,9 +129,17 @@ interface TodoCommentConversationWindowProps extends TodoCommentConversationList
 }
 
 interface FocusKeyboardLiftPolicy {
-  policyIdentity: string;
+  focusCommentId: string;
+  interactionMode: TodoCommentInteractionMode;
   behavior: CommentKeyboardLiftBehavior;
 }
+
+interface FocusViewportIdentity {
+  focusCommentId: string;
+  interactionMode: TodoCommentInteractionMode;
+}
+
+type TodoCommentInteractionMode = 'reading' | 'reply' | 'edit';
 
 interface ConversationKeyboardScrollContextValue {
   extraContentPadding: SharedValue<number>;
@@ -171,22 +180,267 @@ function toListHeaderElement(header: ConversationFlashListProps['ListHeaderCompo
   return isValidElement(header) ? header : createElement(header);
 }
 
+function isSameFocusViewport(
+  left: FocusViewportIdentity | null,
+  right: FocusViewportIdentity | null,
+): boolean {
+  return (
+    left?.focusCommentId === right?.focusCommentId &&
+    left?.interactionMode === right?.interactionMode
+  );
+}
+
+interface FocusedCommentViewportOptions {
+  rows: TodoCommentConversationRowViewModel[];
+  focusCommentId: string | null;
+  interactionMode: TodoCommentInteractionMode;
+  onViewableItemsChanged: ConversationFlashListProps['onViewableItemsChanged'];
+  onCommitLayoutEffect: ConversationFlashListProps['onCommitLayoutEffect'];
+}
+
+function useFocusedCommentViewport({
+  rows,
+  focusCommentId,
+  interactionMode,
+  onViewableItemsChanged,
+  onCommitLayoutEffect,
+}: FocusedCommentViewportOptions) {
+  const { t } = useTranslation('todoComment');
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const listRef = useRef<FlashListRef<TodoCommentConversationRowViewModel>>(null);
+  const hasLoadedRef = useRef(false);
+  const announcedFocusCommentIdRef = useRef<string | null>(null);
+  const visibleCommentIdsRef = useRef<Set<string>>(new Set());
+  const adjustedFocusViewportRef = useRef<FocusViewportIdentity | null>(null);
+  const keyboardState = useKeyboardState((state) => ({
+    height: state.height,
+    isVisible: state.isVisible,
+  }));
+  const wasKeyboardVisibleRef = useRef(keyboardState.isVisible);
+  const [keyboardLiftPolicy, setKeyboardLiftPolicy] = useState<FocusKeyboardLiftPolicy | null>(
+    null,
+  );
+  const focusViewport = useMemo(
+    () => (focusCommentId === null ? null : { focusCommentId, interactionMode }),
+    [focusCommentId, interactionMode],
+  );
+  const keyboardLiftBehavior =
+    keyboardLiftPolicy?.focusCommentId === focusCommentId &&
+    keyboardLiftPolicy.interactionMode === interactionMode
+      ? keyboardLiftPolicy.behavior
+      : 'whenAtEnd';
+  const initialScrollIndex = getInitialCommentIndex(rows, focusCommentId);
+
+  useLayoutEffect(() => {
+    const wasKeyboardVisible = wasKeyboardVisibleRef.current;
+    wasKeyboardVisibleRef.current = keyboardState.isVisible;
+
+    if (wasKeyboardVisible === keyboardState.isVisible) {
+      return;
+    }
+
+    adjustedFocusViewportRef.current = null;
+    if (!wasKeyboardVisible || keyboardState.isVisible || focusViewport === null) {
+      return;
+    }
+
+    setKeyboardLiftPolicy((currentPolicy) => {
+      if (
+        currentPolicy?.focusCommentId !== focusViewport.focusCommentId ||
+        currentPolicy.interactionMode !== focusViewport.interactionMode ||
+        currentPolicy.behavior !== 'persistent'
+      ) {
+        return currentPolicy;
+      }
+
+      return { ...focusViewport, behavior: 'never' };
+    });
+  }, [focusViewport, keyboardState.isVisible]);
+
+  const announceFocusedComment = useCallback(() => {
+    AccessibilityInfo.announceForAccessibilityWithOptions(t('list.focusedAnnouncement'), {
+      queue: true,
+      priority: 'low',
+    });
+  }, [t]);
+
+  const markFocusAsAnnounced = useCallback(
+    (commentId: string) => {
+      announcedFocusCommentIdRef.current = commentId;
+      announceFocusedComment();
+    },
+    [announceFocusedComment],
+  );
+
+  const handleListLoad = useCallback(() => {
+    hasLoadedRef.current = true;
+
+    if (focusCommentId === null || announcedFocusCommentIdRef.current === focusCommentId) {
+      return;
+    }
+
+    markFocusAsAnnounced(focusCommentId);
+  }, [focusCommentId, markFocusAsAnnounced]);
+
+  const handleViewableItemsChanged = useCallback<
+    NonNullable<ConversationFlashListProps['onViewableItemsChanged']>
+  >(
+    (info) => {
+      visibleCommentIdsRef.current = new Set(
+        info.viewableItems.filter((item) => item.isViewable).map((item) => item.item.comment.id),
+      );
+      onViewableItemsChanged?.(info);
+    },
+    [onViewableItemsChanged],
+  );
+
+  const handleCommitLayout = useCallback(() => {
+    const list = listRef.current;
+    const focusIndex = getInitialCommentIndex(rows, focusCommentId);
+
+    if (
+      focusCommentId !== null &&
+      focusViewport !== null &&
+      list !== null &&
+      focusIndex !== undefined
+    ) {
+      const itemLayout = list.getLayout(focusIndex);
+      if (itemLayout !== undefined) {
+        const firstItemOffset = list.getFirstItemOffset();
+        const scrollOffset = list.getAbsoluteLastScrollOffset();
+        const viewportHeight = list.getWindowSize().height;
+        if (
+          keyboardLiftPolicy?.focusCommentId !== focusViewport.focusCommentId ||
+          keyboardLiftPolicy.interactionMode !== focusViewport.interactionMode
+        ) {
+          setKeyboardLiftPolicy({
+            ...focusViewport,
+            behavior: getFocusedCommentKeyboardLiftBehavior({
+              itemLayout,
+              firstItemOffset,
+              scrollOffset,
+              viewportHeight,
+            }),
+          });
+        }
+
+        if (
+          (!keyboardState.isVisible || keyboardState.height > 0) &&
+          !isSameFocusViewport(adjustedFocusViewportRef.current, focusViewport)
+        ) {
+          adjustedFocusViewportRef.current = focusViewport;
+          const focusRevealOffset = getCommentFocusRevealOffset({
+            itemLayout,
+            firstItemOffset,
+            scrollOffset,
+            viewportHeight,
+            bottomInset: keyboardState.isVisible ? keyboardState.height : 0,
+          });
+
+          if (focusRevealOffset !== null) {
+            const shouldAnimate =
+              hasLoadedRef.current &&
+              announcedFocusCommentIdRef.current !== focusCommentId &&
+              visibleCommentIdsRef.current.has(focusCommentId) &&
+              !prefersReducedMotion;
+            markFocusAsAnnounced(focusCommentId);
+            list.scrollToOffset({
+              offset: focusRevealOffset,
+              animated: shouldAnimate,
+              skipFirstItemOffset: true,
+            });
+            onCommitLayoutEffect?.();
+            return;
+          }
+        }
+      }
+    }
+
+    if (!hasLoadedRef.current) {
+      onCommitLayoutEffect?.();
+      return;
+    }
+
+    if (focusCommentId === null || announcedFocusCommentIdRef.current === focusCommentId) {
+      onCommitLayoutEffect?.();
+      return;
+    }
+
+    if (visibleCommentIdsRef.current.has(focusCommentId)) {
+      markFocusAsAnnounced(focusCommentId);
+      onCommitLayoutEffect?.();
+      return;
+    }
+
+    if (list === null || focusIndex === undefined) {
+      onCommitLayoutEffect?.();
+      return;
+    }
+
+    const itemLayout = list.getLayout(focusIndex);
+    if (itemLayout === undefined) {
+      onCommitLayoutEffect?.();
+      return;
+    }
+
+    const offset = getUnloadedCommentFocusOffset({
+      itemLayout,
+      firstItemOffset: list.getFirstItemOffset(),
+      viewportHeight: list.getWindowSize().height,
+    });
+    markFocusAsAnnounced(focusCommentId);
+    list.scrollToOffset({ offset, animated: false, skipFirstItemOffset: true });
+    onCommitLayoutEffect?.();
+  }, [
+    focusCommentId,
+    focusViewport,
+    keyboardLiftPolicy?.focusCommentId,
+    keyboardLiftPolicy?.interactionMode,
+    keyboardState.height,
+    keyboardState.isVisible,
+    markFocusAsAnnounced,
+    onCommitLayoutEffect,
+    prefersReducedMotion,
+    rows,
+  ]);
+
+  const shouldLoadPreviousComments = useCallback(
+    () => canFetchPreviousComments(focusCommentId, announcedFocusCommentIdRef.current),
+    [focusCommentId],
+  );
+
+  return {
+    listRef,
+    keyboardLiftBehavior,
+    initialScrollIndex,
+    handleListLoad,
+    handleViewableItemsChanged,
+    handleCommitLayout,
+    shouldLoadPreviousComments,
+  };
+}
+
 export function TodoCommentConversationList({
   extraContentPadding,
   ListHeaderComponent,
   ...flashListProps
 }: TodoCommentConversationListProps) {
   const { todoId } = useTodoScreenParams();
-  const { sort, anchorCommentId } = useCommentRouteState();
+  const [commentRoute] = useTodoCommentRoute();
+  const focusCommentId = commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
   const queryClient = useQueryClient();
   const query = useSuspenseInfiniteQuery(
-    useTodoCommentConversationQueryOptions({ todoId, sort, focusCommentId: anchorCommentId }),
+    useTodoCommentConversationQueryOptions({
+      todoId,
+      sort: commentRoute.sort,
+      focusCommentId,
+    }),
   );
   const { color: refreshTint } = useResolveClassNames('text-main');
   const rows = query.data?.rows ?? [];
   const focus = query.data?.focus ?? null;
   const threadId = getConversationThreadId(rows, focus?.commentId ?? null);
-  const listIdentity = `${todoId}:${sort}:${threadId ?? anchorCommentId ?? 'empty'}`;
+  const listIdentity = `${todoId}:${commentRoute.sort}:${threadId ?? focusCommentId ?? 'empty'}`;
 
   const [isRefreshing, refresh] = useRefresh(
     useCallback(
@@ -236,202 +490,30 @@ function TodoCommentConversationWindow({
   ...flashListProps
 }: TodoCommentConversationWindowProps) {
   const { t } = useTranslation('todoComment');
-  const { mode } = useCommentRouteState();
-  const listRef = useRef<FlashListRef<TodoCommentConversationRowViewModel>>(null);
-  const hasLoadedRef = useRef(false);
-  const revealedFocusRef = useRef<string | null>(null);
-  const visibleCommentIdsRef = useRef<Set<string>>(new Set());
-  const focusRevealPolicyRef = useRef<string | null>(null);
-  const keyboardState = useKeyboardState((state) => ({
-    height: state.height,
-    isVisible: state.isVisible,
-  }));
-  const wasKeyboardVisibleRef = useRef(keyboardState.isVisible);
-  const [focusKeyboardLiftPolicy, setFocusKeyboardLiftPolicy] =
-    useState<FocusKeyboardLiftPolicy | null>(null);
+  const [commentRoute] = useTodoCommentRoute();
   const { rows, focus } = conversation;
   const focusIdentity = focus === null ? null : focus.commentId;
-  const policyIdentity = focusIdentity === null ? null : `${mode}:${focusIdentity}`;
-  const keyboardLiftBehavior =
-    focusKeyboardLiftPolicy?.policyIdentity === policyIdentity
-      ? focusKeyboardLiftPolicy.behavior
-      : 'whenAtEnd';
+  const {
+    listRef,
+    keyboardLiftBehavior,
+    initialScrollIndex,
+    handleListLoad,
+    handleViewableItemsChanged,
+    handleCommitLayout,
+    shouldLoadPreviousComments,
+  } = useFocusedCommentViewport({
+    rows,
+    focusCommentId: focusIdentity,
+    interactionMode:
+      commentRoute.view === 'conversation' ? (commentRoute.form?.type ?? 'reading') : 'reading',
+    onViewableItemsChanged,
+    onCommitLayoutEffect,
+  });
   const keyboardScrollContext = useMemo(
     () => ({ extraContentPadding, keyboardLiftBehavior }),
     [extraContentPadding, keyboardLiftBehavior],
   );
   const listHeaderElement = toListHeaderElement(ListHeaderComponent);
-  const initialScrollIndex = getInitialCommentIndex(rows, focusIdentity);
-
-  useLayoutEffect(() => {
-    const wasKeyboardVisible = wasKeyboardVisibleRef.current;
-    wasKeyboardVisibleRef.current = keyboardState.isVisible;
-
-    if (wasKeyboardVisible === keyboardState.isVisible) {
-      return;
-    }
-
-    focusRevealPolicyRef.current = null;
-    if (!wasKeyboardVisible || keyboardState.isVisible) {
-      return;
-    }
-
-    if (policyIdentity === null) {
-      return;
-    }
-
-    setFocusKeyboardLiftPolicy((currentPolicy) => {
-      if (
-        currentPolicy?.policyIdentity !== policyIdentity ||
-        currentPolicy.behavior !== 'persistent'
-      ) {
-        return currentPolicy;
-      }
-
-      return { policyIdentity, behavior: 'never' };
-    });
-  }, [keyboardState.isVisible, policyIdentity]);
-
-  const announceFocusedComment = useCallback(() => {
-    AccessibilityInfo.announceForAccessibilityWithOptions(t('list.focusedAnnouncement'), {
-      queue: true,
-      priority: 'low',
-    });
-  }, [t]);
-
-  const markFocusRevealed = useCallback(
-    (identity: string) => {
-      revealedFocusRef.current = identity;
-      announceFocusedComment();
-    },
-    [announceFocusedComment],
-  );
-
-  const handleListLoad = useCallback(() => {
-    hasLoadedRef.current = true;
-
-    if (focusIdentity === null || revealedFocusRef.current === focusIdentity) {
-      return;
-    }
-
-    markFocusRevealed(focusIdentity);
-  }, [focusIdentity, markFocusRevealed]);
-
-  const handleViewableItemsChanged = useCallback<
-    NonNullable<ConversationFlashListProps['onViewableItemsChanged']>
-  >(
-    (info) => {
-      visibleCommentIdsRef.current = new Set(
-        info.viewableItems.filter((item) => item.isViewable).map((item) => item.item.comment.id),
-      );
-      onViewableItemsChanged?.(info);
-    },
-    [onViewableItemsChanged],
-  );
-
-  const handleCommitLayout = useCallback(() => {
-    const list = listRef.current;
-    const focusIndex = getInitialCommentIndex(rows, focusIdentity);
-
-    if (
-      focusIdentity !== null &&
-      policyIdentity !== null &&
-      list !== null &&
-      focusIndex !== undefined
-    ) {
-      const itemLayout = list.getLayout(focusIndex);
-      if (itemLayout !== undefined) {
-        const firstItemOffset = list.getFirstItemOffset();
-        const scrollOffset = list.getAbsoluteLastScrollOffset();
-        const viewportHeight = list.getWindowSize().height;
-        if (focusKeyboardLiftPolicy?.policyIdentity !== policyIdentity) {
-          setFocusKeyboardLiftPolicy({
-            policyIdentity,
-            behavior: getFocusedCommentKeyboardLiftBehavior({
-              itemLayout,
-              firstItemOffset,
-              scrollOffset,
-              viewportHeight,
-            }),
-          });
-        }
-
-        if (
-          (!keyboardState.isVisible || keyboardState.height > 0) &&
-          focusRevealPolicyRef.current !== policyIdentity
-        ) {
-          focusRevealPolicyRef.current = policyIdentity;
-          const focusRevealOffset = getCommentFocusRevealOffset({
-            itemLayout,
-            firstItemOffset,
-            scrollOffset,
-            viewportHeight,
-            bottomInset: keyboardState.isVisible ? keyboardState.height : 0,
-          });
-
-          if (focusRevealOffset !== null) {
-            const shouldAnimate =
-              hasLoadedRef.current &&
-              revealedFocusRef.current !== focusIdentity &&
-              visibleCommentIdsRef.current.has(focusIdentity);
-            markFocusRevealed(focusIdentity);
-            list.scrollToOffset({
-              offset: focusRevealOffset,
-              animated: shouldAnimate,
-              skipFirstItemOffset: true,
-            });
-            onCommitLayoutEffect?.();
-            return;
-          }
-        }
-      }
-    }
-
-    if (!hasLoadedRef.current) {
-      onCommitLayoutEffect?.();
-      return;
-    }
-
-    if (focusIdentity === null || revealedFocusRef.current === focusIdentity) {
-      onCommitLayoutEffect?.();
-      return;
-    }
-
-    if (visibleCommentIdsRef.current.has(focusIdentity)) {
-      markFocusRevealed(focusIdentity);
-      onCommitLayoutEffect?.();
-      return;
-    }
-
-    if (list === null || focusIndex === undefined) {
-      onCommitLayoutEffect?.();
-      return;
-    }
-
-    const itemLayout = list.getLayout(focusIndex);
-    if (itemLayout === undefined) {
-      onCommitLayoutEffect?.();
-      return;
-    }
-
-    const offset = getUnloadedCommentFocusOffset({
-      itemLayout,
-      firstItemOffset: list.getFirstItemOffset(),
-      viewportHeight: list.getWindowSize().height,
-    });
-    markFocusRevealed(focusIdentity);
-    list.scrollToOffset({ offset, animated: false, skipFirstItemOffset: true });
-    onCommitLayoutEffect?.();
-  }, [
-    focusIdentity,
-    focusKeyboardLiftPolicy?.policyIdentity,
-    keyboardState.height,
-    keyboardState.isVisible,
-    markFocusRevealed,
-    onCommitLayoutEffect,
-    policyIdentity,
-    rows,
-  ]);
 
   return (
     <ConversationKeyboardScrollContext value={keyboardScrollContext}>
@@ -466,7 +548,7 @@ function TodoCommentConversationWindow({
         }
         maintainVisibleContentPosition={maintainVisibleContentPosition}
         onStartReached={() => {
-          if (!canFetchPreviousComments(focusIdentity, revealedFocusRef.current)) {
+          if (!shouldLoadPreviousComments()) {
             return;
           }
 
@@ -512,7 +594,7 @@ TodoCommentConversationList.Loading = function Loading({ rows = 4 }: { rows?: nu
   return (
     <VStack>
       {times(rows, (index) => (
-        <TodoCommentConversationRow.Loading key={index} />
+        <ConversationRowSkeleton key={index} />
       ))}
     </VStack>
   );
@@ -528,19 +610,15 @@ TodoCommentConversationList.Error = function ErrorFallback({ reset }: QueryError
   );
 };
 const ROW_HORIZONTAL_PADDING = 16;
-const ARTICLE_GAP = 12;
+const MESSAGE_GAP = 12;
 
-interface TodoCommentConversationRowProps extends Omit<ComponentProps<typeof Box>, 'children'> {
+interface ConversationRowProps {
   row: TodoCommentConversationRowViewModel;
 }
 
-function TodoCommentConversationRowContent({
-  row,
-  className,
-  ...boxProps
-}: TodoCommentConversationRowProps) {
+const ConversationRow = memo(function ConversationRow({ row }: ConversationRowProps) {
   return (
-    <Box {...boxProps} className={className}>
+    <Box>
       {row.focusContext !== null && <ConversationContextRow context={row.focusContext} />}
 
       <ConversationCommentRow
@@ -550,11 +628,11 @@ function TodoCommentConversationRowContent({
       />
     </Box>
   );
-}
+});
 
 function ConversationContextRow({ context }: { context: TodoCommentConversationFocusContext }) {
   return (
-    <HStack px={ROW_HORIZONTAL_PADDING} gap={ARTICLE_GAP} align="stretch">
+    <HStack px={ROW_HORIZONTAL_PADDING} gap={MESSAGE_GAP} align="stretch">
       <ConversationThreadRail
         author={context.parent.author}
         avatarSize="sm"
@@ -577,14 +655,14 @@ function ConversationCommentRow({ comment, connection, isFocused }: Conversation
   return (
     <HStack
       px={ROW_HORIZONTAL_PADDING}
-      gap={ARTICLE_GAP}
+      gap={MESSAGE_GAP}
       align="stretch"
       className={isFocused ? 'bg-main/10' : undefined}
       accessibilityState={{ selected: isFocused }}
     >
       <ConversationThreadRail author={comment.author} avatarSize="md" connection={connection} />
       <Box flex={1} py={TODO_COMMENT_CONNECTION_GEOMETRY.rowVerticalPadding} className="min-w-0">
-        <TodoCommentArticle comment={comment} isFocused={isFocused} />
+        <TodoCommentMessage comment={comment} isFocused={isFocused} />
       </Box>
     </HStack>
   );
@@ -681,17 +759,11 @@ function FocusedTodoCommentParentContext({ context }: FocusedTodoCommentParentCo
   );
 }
 
-const MemoizedTodoCommentConversationRow = memo(TodoCommentConversationRowContent);
-
-export function TodoCommentConversationRow(props: TodoCommentConversationRowProps) {
-  return <MemoizedTodoCommentConversationRow {...props} />;
-}
-
-TodoCommentConversationRow.Loading = function Loading() {
+function ConversationRowSkeleton() {
   return (
     <HStack
       px={ROW_HORIZONTAL_PADDING}
-      gap={ARTICLE_GAP}
+      gap={MESSAGE_GAP}
       align="start"
       py={TODO_COMMENT_CONNECTION_GEOMETRY.rowVerticalPadding}
     >
@@ -711,4 +783,4 @@ TodoCommentConversationRow.Loading = function Loading() {
       </VStack>
     </HStack>
   );
-};
+}

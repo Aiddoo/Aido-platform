@@ -82,7 +82,7 @@ export class TodoCommentService {
     return ok(toTodoConversationPage(parsed.data));
   };
 
-  writeComments = async (
+  createCommentChain = async (
     todoId: number,
     input: CreateTodoCommentChainInput,
   ): Promise<Result<TodoCommentChain, ApiError>> => {

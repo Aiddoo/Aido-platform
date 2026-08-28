@@ -91,7 +91,7 @@ function useNotificationPress(notification: Notification) {
     const destination = resolveNotificationDestination({
       type: notification.type,
       context: notification.context,
-      routing: notification.metadata ?? undefined,
+      routing: notification.routing,
       action: notification.action,
     });
     trackEvent('notification_center_opened', {

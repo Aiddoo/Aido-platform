@@ -1,3 +1,5 @@
+import { createNotificationListResponseDto } from '../../__tests__/notification.factories';
+import { toNotification } from '../../services/notification.mapper';
 import { resolveNotificationDestination } from './notification-destination';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
@@ -12,6 +14,45 @@ describe('resolveNotificationDestination', () => {
         action: { type: 'DEEP_LINK' },
       }),
     ).toEqual({
+      kind: 'route',
+      href: {
+        pathname: '/todo/[todoId]',
+        params: { todoId: 42, comment: COMMENT_ID },
+      },
+    });
+  });
+
+  test('알림 목록 metadata와 푸시 routing은 같은 댓글 목적지로 해석한다', () => {
+    const server = createNotificationListResponseDto().notifications[0];
+    if (!server) {
+      throw new Error('Expected notification DTO');
+    }
+    const notification = toNotification({
+      ...server,
+      type: 'TODO_SHARED',
+      context: { todoId: 42 },
+      metadata: {
+        commentId: COMMENT_ID,
+        type: 'FOLLOW_ACCEPTED',
+        todoId: 999,
+      },
+    });
+
+    const fromNotificationList = resolveNotificationDestination({
+      type: notification.type,
+      context: notification.context,
+      routing: notification.routing,
+      action: notification.action,
+    });
+    const fromPush = resolveNotificationDestination({
+      type: 'TODO_SHARED',
+      context: { todoId: 42 },
+      routing: { commentId: COMMENT_ID },
+      action: { type: 'DEEP_LINK' },
+    });
+
+    expect(fromNotificationList).toEqual(fromPush);
+    expect(fromNotificationList).toEqual({
       kind: 'route',
       href: {
         pathname: '/todo/[todoId]',

@@ -13,6 +13,7 @@ const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/presentations/componen
 const TODO_COMMENT_TEST_ROOTS = [
   `${TODO_COMMENT_ROOT}/models/`,
   `${TODO_COMMENT_ROOT}/services/`,
+  `${TODO_COMMENT_ROOT}/presentations/navigation/`,
   `${TODO_COMMENT_ROOT}/presentations/utils/`,
   `${TODO_COMMENT_ROOT}/presentations/view-models/`,
 ];
@@ -261,7 +262,7 @@ function checkTodoCommentTestLocation(file, repositoryRoot, errors) {
   }
 
   errors.push(
-    `${relativePath} 댓글 클라이언트 테스트는 model, service/mapper, pure util/view-model에만 둡니다. 컴포넌트, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.`,
+    `${relativePath} 댓글 클라이언트 테스트는 model, service/mapper, pure navigation/util/view-model에만 둡니다. 컴포넌트, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.`,
   );
 }
 

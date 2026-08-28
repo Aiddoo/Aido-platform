@@ -4,48 +4,57 @@ import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_COMMENT_MUTATION_KEYS } from '../constants/todo-comment-mutation-keys.constant';
-import { useTodoCommentMutationError } from '../hooks/use-todo-comment-mutation-error';
-import { findCommentInCache, patchCommentEverywhere } from '../utils/todo-comment-cache.util';
-import { contentEdited } from '../utils/todo-comment-optimistic';
+import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
+import { withEditedTodoCommentContent } from '../utils/todo-comment-cache-transforms';
+import {
+  optimisticallyUpdateTodoCommentCaches,
+  restoreTodoCommentCaches,
+  updateTodoCommentCaches,
+} from './todo-comment-cache';
 import {
   cancelTodoCommentQueries,
-  settleTodoCommentMutation,
-} from './todo-comment-mutation-lifecycle';
+  invalidateTodoCommentQueries,
+} from './todo-comment-query-invalidation';
 
-interface UpdateTodoCommentVariables {
+interface UpdateTodoCommentMutationParams {
   commentId: string;
   input: UpdateTodoCommentInput;
 }
 
-export function useUpdateTodoCommentMutationOptions(todoId: number) {
+export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number }) {
   const service = useTodoCommentService();
   const queryClient = useQueryClient();
-  const showMutationError = useTodoCommentMutationError(todoId);
+  const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
 
   return mutationOptions({
-    mutationKey: TODO_COMMENT_MUTATION_KEYS.update(todoId),
-    mutationFn: async ({ commentId, input }: UpdateTodoCommentVariables) =>
+    mutationKey: TODO_COMMENT_MUTATION_KEYS.updateComment({ todoId }),
+    mutationFn: async ({ commentId, input }: UpdateTodoCommentMutationParams) =>
       unwrap(await service.updateComment(todoId, commentId, input)),
     onMutate: async ({ commentId, input }) => {
-      await cancelTodoCommentQueries(queryClient, todoId);
-      const previous = findCommentInCache(queryClient, todoId, commentId);
-      patchCommentEverywhere(queryClient, todoId, commentId, (comment) =>
-        contentEdited(comment, input.content),
-      );
-      return { previous };
+      await cancelTodoCommentQueries({ queryClient, todoId });
+      const snapshot = optimisticallyUpdateTodoCommentCaches({
+        queryClient,
+        todoId,
+        commentId,
+        transform: (comment) => withEditedTodoCommentContent(comment, input.content),
+      });
+
+      return { snapshot };
     },
-    onError: (error, { commentId }, context) => {
-      const previous = context?.previous;
-      if (previous !== undefined) {
-        patchCommentEverywhere(queryClient, todoId, commentId, () => previous);
+    onError: (error, _params, context) => {
+      if (context !== undefined) {
+        restoreTodoCommentCaches({ queryClient, snapshot: context.snapshot });
       }
-      showMutationError(error, 'update');
+      handleMutationError(error, 'update');
     },
     onSuccess: (comment) => {
-      patchCommentEverywhere(queryClient, todoId, comment.id, () => comment);
+      updateTodoCommentCaches({
+        queryClient,
+        todoId,
+        commentId: comment.id,
+        transform: () => comment,
+      });
     },
-    onSettled: () => {
-      settleTodoCommentMutation(queryClient, todoId).catch(() => undefined);
-    },
+    onSettled: () => invalidateTodoCommentQueries({ queryClient, todoId }),
   });
 }

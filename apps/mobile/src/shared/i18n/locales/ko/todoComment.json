@@ -3,7 +3,7 @@
     "replyTitle": "답글 달기",
     "backToOverview": "댓글 목록으로 돌아가기",
     "backToThread": "대화로 돌아가기",
-    "closeComposer": "댓글 작성 닫기"
+    "closeForm": "댓글 작성 닫기"
   },
   "list": {
     "edited": "수정됨",
@@ -49,7 +49,7 @@
     "unlikeWithCount": "좋아요 취소, {{count}}개",
     "more": "댓글 작업 더 보기"
   },
-  "composer": {
+  "form": {
     "commentTitle": "댓글",
     "replyTitle": "답글",
     "addToChain": "댓글 더 이어 쓰기",
@@ -66,6 +66,6 @@
     "deleteFailed": "댓글을 삭제하지 못했어요. 다시 시도해 주세요",
     "likeFailed": "좋아요를 반영하지 못했어요. 다시 시도해 주세요",
     "openConversationFailed": "댓글 대화를 열지 못했어요. 잠시 후 다시 눌러 주세요",
-    "finishComposerFirst": "작성 중인 댓글을 게시하거나 취소한 뒤 이동해 주세요"
+    "finishFormFirst": "작성 중인 댓글을 게시하거나 취소한 뒤 이동해 주세요"
   }
 }

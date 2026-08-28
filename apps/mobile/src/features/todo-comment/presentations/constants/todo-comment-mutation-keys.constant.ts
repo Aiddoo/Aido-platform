@@ -1,5 +1,7 @@
 export const TODO_COMMENT_MUTATION_KEYS = {
-  composer: (todoId: number) => ['todo-comment', todoId, 'composer-mutation'] as const,
-  write: (todoId: number) => [...TODO_COMMENT_MUTATION_KEYS.composer(todoId), 'write'] as const,
-  update: (todoId: number) => [...TODO_COMMENT_MUTATION_KEYS.composer(todoId), 'update'] as const,
+  submissions: ({ todoId }: { todoId: number }) => ['todo-comment', todoId, 'submission'] as const,
+  createCommentChain: ({ todoId }: { todoId: number }) =>
+    [...TODO_COMMENT_MUTATION_KEYS.submissions({ todoId }), 'create-comment-chain'] as const,
+  updateComment: ({ todoId }: { todoId: number }) =>
+    [...TODO_COMMENT_MUTATION_KEYS.submissions({ todoId }), 'update-comment'] as const,
 } as const;
