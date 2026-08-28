@@ -1,5 +1,6 @@
 import { useAutomaticPushRegistration } from '@src/features/activation/presentations/hooks/use-automatic-push-registration';
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
+import { getNotificationResponseDisposition } from '@src/features/notification/presentations/navigation/notification-response-disposition';
 import { toError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import * as Notifications from 'expo-notifications';
@@ -41,12 +42,14 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   const { handleNotificationResponse, handleForegroundNotification } = useNotificationHandler({
     isAuthenticated,
   });
-  const processResponse = useNotificationResponseProcessor(handleNotificationResponse);
+  const processResponse = useNotificationResponseProcessor({
+    authStatus: status,
+    handleNotificationResponse,
+  });
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
   useColdStartNotificationResponse({
     response: lastNotificationResponse,
-    isAuthResolved: status !== 'loading',
     processResponse,
   });
   useNativeNotificationListeners({
@@ -65,53 +68,79 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   return <NotificationContext value={value}>{children}</NotificationContext>;
 }
 
-function useNotificationResponseProcessor(
-  handleNotificationResponse: NotificationContextValue['handleNotificationResponse'],
-) {
+function useNotificationResponseProcessor({
+  authStatus,
+  handleNotificationResponse,
+}: {
+  authStatus: 'loading' | 'locked' | 'authenticated' | 'unauthenticated';
+  handleNotificationResponse: NotificationContextValue['handleNotificationResponse'];
+}) {
   const logger = useLogger();
-  const handledResponseIdRef = useRef<string | null>(null);
+  const pendingResponsesRef = useRef(new Map<string, Notifications.NotificationResponse>());
+  const handledResponseIdsRef = useRef(new Set<string>());
 
-  return useCallback(
+  const processResponse = useCallback(
     (response: Notifications.NotificationResponse) => {
       const responseId = response.notification.request.identifier;
-      if (handledResponseIdRef.current === responseId) {
+      if (handledResponseIdsRef.current.has(responseId)) {
         return;
       }
 
-      handledResponseIdRef.current = responseId;
-      void Notifications.clearLastNotificationResponseAsync();
+      const disposition = getNotificationResponseDisposition({
+        authStatus,
+        actionIdentifier: response.actionIdentifier,
+      });
+      if (disposition.status === 'defer') {
+        pendingResponsesRef.current.set(responseId, response);
+        return;
+      }
+
+      handledResponseIdsRef.current.add(responseId);
+      pendingResponsesRef.current.delete(responseId);
+      try {
+        Notifications.clearLastNotificationResponse();
+      } catch (error) {
+        logger.warn('[Notification] Failed to clear the last response', {
+          error: toError(error),
+        });
+      }
+
+      if (disposition.status === 'discard') {
+        logger.info('[Notification] Protected response discarded without authentication');
+        return;
+      }
+
       handleNotificationResponse(response).catch((error) =>
         logger.error('[Notification] Response handling failed', toError(error)),
       );
     },
-    [handleNotificationResponse, logger],
+    [authStatus, handleNotificationResponse, logger],
   );
+
+  useEffect(() => {
+    const pendingResponses = [...pendingResponsesRef.current.values()];
+    for (const pendingResponse of pendingResponses) {
+      processResponse(pendingResponse);
+    }
+  }, [processResponse]);
+
+  return processResponse;
 }
 
 function useColdStartNotificationResponse({
   response,
-  isAuthResolved,
   processResponse,
 }: {
   response: Notifications.NotificationResponse | null | undefined;
-  isAuthResolved: boolean;
   processResponse: (response: Notifications.NotificationResponse) => void;
 }) {
-  const pendingResponseRef = useRef<Notifications.NotificationResponse | null>(null);
-
   useEffect(() => {
-    const responseToProcess = pendingResponseRef.current ?? response;
-    if (!responseToProcess) {
-      return;
-    }
-    if (!isAuthResolved) {
-      pendingResponseRef.current = responseToProcess;
+    if (!response) {
       return;
     }
 
-    pendingResponseRef.current = null;
-    processResponse(responseToProcess);
-  }, [isAuthResolved, processResponse, response]);
+    processResponse(response);
+  }, [processResponse, response]);
 }
 
 function useNativeNotificationListeners({
@@ -141,15 +170,19 @@ function useNativeNotificationListeners({
 }
 
 function useMarketingNotificationCategory() {
+  const logger = useLogger();
+
   useEffect(() => {
-    void Notifications.setNotificationCategoryAsync('MARKETING', [
+    Notifications.setNotificationCategoryAsync('MARKETING', [
       {
         identifier: 'MARKETING_OPT_OUT',
         buttonTitle: i18n.t('notification:actions.marketingOptOut'),
         options: { opensAppToForeground: true },
       },
-    ]);
-  }, []);
+    ]).catch((error) =>
+      logger.warn('[Notification] Marketing category registration failed', { error }),
+    );
+  }, [logger]);
 }
 
 function usePushLocaleSync({

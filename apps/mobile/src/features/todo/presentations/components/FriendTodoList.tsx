@@ -34,6 +34,8 @@ import { RemindNudgeBottomSheet } from './RemindNudgeBottomSheet';
 import { TodoNudgeButton } from './TodoNudgeButton';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './TodoRow';
 
+const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
+
 interface FriendTodoListProps {
   friend: FriendUserViewModel;
 }
@@ -150,6 +152,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date, today }: FriendTod
       right={
         <HStack gap={4} align="center">
           <IconCountButton
+            className="min-h-0"
             icon={
               <ChatBubbleIcon
                 width={ICON_COUNT_BUTTON_ICON_SIZE}
@@ -163,7 +166,13 @@ function FriendTodoItem({ todo, friend, isLimitReached, date, today }: FriendTod
             accessibilityLabel={t('detail.open')}
           />
           {canNudgeTodo && (
-            <TodoNudgeButton receiver={friend} todo={todo} isLimitReached={isLimitReached} />
+            <TodoNudgeButton
+              receiver={friend}
+              todo={todo}
+              isLimitReached={isLimitReached}
+              className="min-h-0 py-1.5"
+              hitSlop={COMPACT_ACTION_HIT_SLOP}
+            />
           )}
         </HStack>
       }

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { todoCommentIdSchema } from '../todo-comment/todo-comment.request';
 import { notificationTypeSchema } from './notification.constants';
 
 // =============================================================================
@@ -67,10 +68,14 @@ export type NotificationContext = z.infer<typeof notificationContextSchema>;
  * 전용 컬럼이 없어 context에 담지 못하는 이동 재료.
  * REST에서는 metadata에, 푸시에서는 payload의 routing에 실린다 — 둘 다 구버전이 조용히 버린다.
  */
+export const notificationActivityKindSchema = z.enum(['COMMENT', 'REPLY', 'LIKE']);
+
+export type NotificationActivityKind = z.infer<typeof notificationActivityKindSchema>;
+
 export const notificationRoutingSchema = z.object({
-  commentId: z.cuid().optional(),
-  threadRootId: z.cuid().optional(),
-  activityKind: z.enum(['COMMENT', 'REPLY', 'LIKE']).optional(),
+  commentId: todoCommentIdSchema.optional(),
+  threadRootId: todoCommentIdSchema.optional(),
+  activityKind: notificationActivityKindSchema.optional(),
 });
 
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;

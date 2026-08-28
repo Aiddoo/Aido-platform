@@ -43,7 +43,7 @@ export function useNotificationResponseHandler({
       const data = result.data;
 
       if (response.actionIdentifier === 'MARKETING_OPT_OUT' && data.marketingOptOutToken) {
-        void notificationService
+        notificationService
           .optOutMarketingPush(data.marketingOptOutToken)
           .then(unwrap)
           .then(() => trackEvent('marketing_push_opted_out', { source: 'push_action' }))
@@ -92,7 +92,7 @@ function useNotificationOpenRecorder(isAuthenticated: boolean) {
         return;
       }
 
-      void optimisticallyMarkNotificationsRead(queryClient, notificationId)
+      optimisticallyMarkNotificationsRead(queryClient, notificationId)
         .then(() => {
           const unreadCount =
             queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount()) ?? 0;
@@ -100,7 +100,7 @@ function useNotificationOpenRecorder(isAuthenticated: boolean) {
         })
         .catch((error) => logger.warn('[Notification] Failed to update local open', { error }));
 
-      void notificationService
+      notificationService
         .markOpened(notificationId)
         .then(unwrap)
         .then(() => queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }))

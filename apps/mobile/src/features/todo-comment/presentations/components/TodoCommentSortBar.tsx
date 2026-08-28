@@ -4,11 +4,11 @@ import { ArrowRightIcon, HStack, Text } from '@src/shared/ui';
 import { Menu, type MenuKey, PressableFeedback, Spinner } from 'heroui-native';
 import { useState } from 'react';
 
-import { useCommentSortTransition } from '../hooks/use-comment-sort-transition';
+import { useTodoCommentSort } from '../hooks/use-todo-comment-sort';
 
 export function TodoCommentSortBar() {
   const { t } = useTranslation('todoComment');
-  const { sort, isSwitching, switchSort } = useCommentSortTransition();
+  const { sort, isChangingSort, changeSort } = useTodoCommentSort();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const currentSortLabel =
     sort === TODO_COMMENT_SORT.POPULAR ? t('sort.popular') : t('sort.latest');
@@ -17,7 +17,7 @@ export function TodoCommentSortBar() {
     const [selected] = selectedKeys;
 
     if (selected === TODO_COMMENT_SORT.POPULAR || selected === TODO_COMMENT_SORT.LATEST) {
-      switchSort(selected).catch(() => undefined);
+      changeSort(selected);
     }
   };
 
@@ -26,19 +26,19 @@ export function TodoCommentSortBar() {
       <Menu.Trigger asChild>
         <PressableFeedback
           className="min-h-11 flex-row items-center gap-1 py-1 pr-3"
-          isDisabled={isSwitching}
+          isDisabled={isChangingSort}
           accessibilityRole="button"
           accessibilityLabel={t('sort.label', { value: currentSortLabel })}
           accessibilityState={{
             expanded: isMenuOpen,
-            busy: isSwitching,
-            disabled: isSwitching,
+            busy: isChangingSort,
+            disabled: isChangingSort,
           }}
         >
           <Text size="b2" weight="bold">
             {currentSortLabel}
           </Text>
-          {isSwitching ? (
+          {isChangingSort ? (
             <Spinner size="sm" />
           ) : (
             <HStack className="rotate-90">

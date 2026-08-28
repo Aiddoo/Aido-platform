@@ -34,7 +34,8 @@ import { ICON_COUNT_BUTTON_ICON_SIZE, IconCountButton } from '@src/shared/ui';
 
 ### Props
 
-`PressableFeedback`의 props를 그대로 받습니다(`children`·`className`·`hitSlop` 제외 — 이 셋은 컴포넌트가 소유합니다).
+`PressableFeedback`의 props를 그대로 받습니다(`children` 제외). `className`과 `hitSlop`으로
+화면 밀도에 맞게 터치 상자를 조정할 수 있습니다.
 
 | Prop    | Type        | Description                                                     |
 | ------- | ----------- | --------------------------------------------------------------- |
@@ -50,6 +51,7 @@ import { ICON_COUNT_BUTTON_ICON_SIZE, IconCountButton } from '@src/shared/ui';
 
 ## 설계 노트
 
-- **폭은 내용만큼만 차지합니다.** 최소 폭을 주면 숫자 자릿수에 따라 남는 자리가 달라져 옆 아이콘과의 간격이 매번 달라 보입니다. 숫자는 `99+`에서 멈추므로 옆 아이콘이 밀리는 폭은 세 글자를 넘지 않습니다.
+- 기본 크기는 최소 44×44pt입니다. 숫자가 있으면 내용에 맞게 가로로 늘어나고, 0이면 아이콘만 가운데에 남습니다.
+- 조밀한 목록에서는 `className="min-h-0"`으로 시각 높이만 줄입니다. 기본 `py-1.5`와 세로 `hitSlop`이 약 46pt의 터치 영역을 유지합니다.
 - **버튼끼리는 붙여 놓습니다.** 사이는 각 버튼이 품은 가로 여백이 벌리므로, 눌리는 영역에 빈틈도 겹침도 생기지 않습니다.
 - `hitSlop`은 세로로만 넓힙니다. 가로는 여백이 이미 벌려 두어 옆 버튼의 영역을 침범하지 않습니다.
