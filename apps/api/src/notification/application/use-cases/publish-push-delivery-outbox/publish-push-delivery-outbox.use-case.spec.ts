@@ -53,6 +53,25 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
 		jest.useRealTimers();
 	});
 
+	it("available relay는 한 job의 최대 100건만 claim하고 발행 완료 수를 반환한다", async () => {
+		const publications = [{ dispatchId: 31, publishAttempt: 1 }];
+		outbox.claimAvailable.mockResolvedValue(publications);
+		outbox.markPublished.mockResolvedValue(1);
+
+		await expect(useCase.execute({ kind: "available", limit: 500 })).resolves.toBe(1);
+
+		expect(outbox.claimAvailable).toHaveBeenCalledWith({ limit: 100, lockedAt: expect.any(Date) });
+		expect(enqueuer.enqueueDeliveries).toHaveBeenCalledWith(publications);
+		expect(outbox.markPublished).toHaveBeenCalledWith(publications, expect.any(Date));
+	});
+
+	it("지정 dispatch가 비어 있으면 DB와 queue를 호출하지 않는다", async () => {
+		await expect(useCase.execute({ kind: "dispatches", dispatchIds: [] })).resolves.toBe(0);
+
+		expect(outbox.claimByDispatchIds).not.toHaveBeenCalled();
+		expect(enqueuer.enqueueDeliveries).not.toHaveBeenCalled();
+	});
+
 	it("enqueue가 거부되면 같은 generation을 backoff 시점까지 defer한다", async () => {
 		// Given - claim 성공 후 queue backend가 enqueue를 거부
 		const now = new Date("2026-08-29T00:00:00.000Z");
@@ -77,6 +96,19 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
 		});
 		expect(outbox.markPublished).not.toHaveBeenCalled();
 		expect(publishedCount).toBe(0);
+	});
+
+	it("queue가 문자열 오류를 반환해도 안전한 메시지로 정규화해 defer한다", async () => {
+		jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+		const publications = [{ dispatchId: 42, publishAttempt: 1 }];
+		outbox.claimByDispatchIds.mockResolvedValue(publications);
+		enqueuer.enqueueDeliveries.mockRejectedValue("queue unavailable");
+
+		await useCase.execute({ kind: "dispatches", dispatchIds: [42] });
+
+		expect(outbox.defer).toHaveBeenCalledWith(
+			expect.objectContaining({ publications, error: "queue unavailable" }),
+		);
 	});
 
 	it("enqueue 성공 뒤 publish mark가 실패하면 generation을 defer하지 않는다", async () => {
