@@ -13,6 +13,7 @@ import type {
 import type { ExistsRecentNotificationQuery } from "../../application/ports/notification-history.reader.port";
 import type { NotificationInboxReaderPort } from "../../application/ports/notification-inbox.reader.port";
 import type { NotificationRecord } from "../../domain/records/notification.record";
+import type { NotificationMilestone } from "../../domain/types/notification-milestone";
 
 @Injectable()
 export class PrismaNotificationReader
@@ -76,5 +77,18 @@ export class PrismaNotificationReader
 			distinct: ["userId"],
 		});
 		return new Set(rows.map((row) => row.userId));
+	}
+
+	async hasMilestoneNotification(
+		userId: string,
+		milestone: NotificationMilestone,
+	): Promise<boolean> {
+		const count = await this.client.notification.count({
+			where: {
+				userId,
+				metadata: { path: ["milestone"], equals: milestone },
+			},
+		});
+		return count > 0;
 	}
 }

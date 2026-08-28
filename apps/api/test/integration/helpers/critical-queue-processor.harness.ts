@@ -15,7 +15,6 @@ import {
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
-import { NotificationBatchDispatcher } from "@/notification/application/dispatchers/notification-batch.dispatcher";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
@@ -38,10 +37,18 @@ import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-
 import { MarkNotificationOpenedUseCase } from "@/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+import { ReconcilePushReceiptsUseCase } from "@/notification/application/use-cases/reconcile-push-receipts/reconcile-push-receipts.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
+import { SendBillingIssueNotificationUseCase } from "@/notification/application/use-cases/send-billing-issue-notification/send-billing-issue-notification.use-case";
+import { SendCheerNotificationUseCase } from "@/notification/application/use-cases/send-cheer-notification/send-cheer-notification.use-case";
+import { SendFollowAcceptedNotificationUseCase } from "@/notification/application/use-cases/send-follow-accepted-notification/send-follow-accepted-notification.use-case";
+import { SendFollowRequestNotificationUseCase } from "@/notification/application/use-cases/send-follow-request-notification/send-follow-request-notification.use-case";
+import { SendFriendCompletionNotificationsUseCase } from "@/notification/application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
+import { SendMilestoneNotificationUseCase } from "@/notification/application/use-cases/send-milestone-notification/send-milestone-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
+import { SendNudgeNotificationUseCase } from "@/notification/application/use-cases/send-nudge-notification/send-nudge-notification.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupAdapter } from "@/notification/infrastructure/adapters/notification-dedup.adapter";
@@ -201,6 +208,14 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
 function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 	return [
 		NotificationQueueProcessor,
+		SendFriendCompletionNotificationsUseCase,
+		{ provide: SendFollowRequestNotificationUseCase, useValue: unexpectedUseCase },
+		{ provide: SendFollowAcceptedNotificationUseCase, useValue: unexpectedUseCase },
+		{ provide: SendNudgeNotificationUseCase, useValue: unexpectedUseCase },
+		{ provide: SendCheerNotificationUseCase, useValue: unexpectedUseCase },
+		{ provide: SendBillingIssueNotificationUseCase, useValue: unexpectedUseCase },
+		{ provide: SendMilestoneNotificationUseCase, useValue: unexpectedUseCase },
+		{ provide: ReconcilePushReceiptsUseCase, useValue: unexpectedUseCase },
 		{
 			provide: NotificationSender,
 			inject: [
@@ -224,14 +239,6 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
 					findAlreadyNotified,
 					pushDispatcher,
 				),
-		},
-		{
-			provide: NotificationBatchDispatcher,
-			inject: [PersistBatchNotificationUseCase, DispatchBatchNotificationUseCase],
-			useFactory: (
-				persistBatch: PersistBatchNotificationUseCase,
-				dispatchBatch: DispatchBatchNotificationUseCase,
-			) => new NotificationBatchDispatcher(persistBatch, dispatchBatch),
 		},
 		PersistBatchNotificationUseCase,
 		DispatchBatchNotificationUseCase,

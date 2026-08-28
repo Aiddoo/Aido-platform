@@ -11,7 +11,6 @@ import {
 } from "@test/mocks/ports/notification.mock";
 
 import { NOTIFICATION_REPOSITORY, NotificationSender, PUSH_PROVIDER } from "@/notification";
-import { NotificationBatchDispatcher } from "@/notification/application/dispatchers/notification-batch.dispatcher";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import type { CreateNotificationData } from "@/notification/application/ports/notification-data";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
@@ -22,6 +21,7 @@ import {
 } from "@/notification/application/ports/push-dispatcher.port";
 import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
+import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
@@ -31,14 +31,22 @@ import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-
 import { MarkNotificationOpenedUseCase } from "@/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+import { ReconcilePushReceiptsUseCase } from "@/notification/application/use-cases/reconcile-push-receipts/reconcile-push-receipts.use-case";
 import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
+import { SendBillingIssueNotificationUseCase } from "@/notification/application/use-cases/send-billing-issue-notification/send-billing-issue-notification.use-case";
+import { SendCheerNotificationUseCase } from "@/notification/application/use-cases/send-cheer-notification/send-cheer-notification.use-case";
+import { SendFollowAcceptedNotificationUseCase } from "@/notification/application/use-cases/send-follow-accepted-notification/send-follow-accepted-notification.use-case";
+import { SendFollowRequestNotificationUseCase } from "@/notification/application/use-cases/send-follow-request-notification/send-follow-request-notification.use-case";
+import { SendFriendCompletionNotificationsUseCase } from "@/notification/application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
+import { SendMilestoneNotificationUseCase } from "@/notification/application/use-cases/send-milestone-notification/send-milestone-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
+import { SendNudgeNotificationUseCase } from "@/notification/application/use-cases/send-nudge-notification/send-nudge-notification.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import {
-	type NotificationJobMap,
 	NotificationJobName,
+	type NotificationRuntimeJob,
 } from "@/notification/infrastructure/queue/notification-queue.constants";
 import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
@@ -46,7 +54,6 @@ import {
 	DEDUP_PROVIDER,
 	type IDedupProvider,
 } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
-import type { NamedJob } from "@/shared/infrastructure/jobs/named-job";
 
 interface TransactionContext {
 	closed: boolean;
@@ -169,6 +176,14 @@ describe("friend-completed post-commit dispatch (component)", () => {
 		module = await Test.createTestingModule({
 			providers: [
 				NotificationQueueProcessor,
+				SendFriendCompletionNotificationsUseCase,
+				{ provide: SendFollowRequestNotificationUseCase, useValue: unusedUseCase },
+				{ provide: SendFollowAcceptedNotificationUseCase, useValue: unusedUseCase },
+				{ provide: SendNudgeNotificationUseCase, useValue: unusedUseCase },
+				{ provide: SendCheerNotificationUseCase, useValue: unusedUseCase },
+				{ provide: SendBillingIssueNotificationUseCase, useValue: unusedUseCase },
+				{ provide: SendMilestoneNotificationUseCase, useValue: unusedUseCase },
+				{ provide: ReconcilePushReceiptsUseCase, useValue: unusedUseCase },
 				{
 					provide: NotificationSender,
 					inject: [
@@ -193,14 +208,6 @@ describe("friend-completed post-commit dispatch (component)", () => {
 							pushDispatcher,
 						),
 				},
-				{
-					provide: NotificationBatchDispatcher,
-					inject: [PersistBatchNotificationUseCase, DispatchBatchNotificationUseCase],
-					useFactory: (
-						persistBatch: PersistBatchNotificationUseCase,
-						dispatchBatch: DispatchBatchNotificationUseCase,
-					) => new NotificationBatchDispatcher(persistBatch, dispatchBatch),
-				},
 				PersistBatchNotificationUseCase,
 				DispatchBatchNotificationUseCase,
 				SendBatchNotificationUseCase,
@@ -216,6 +223,10 @@ describe("friend-completed post-commit dispatch (component)", () => {
 				{ provide: SendNotificationUseCase, useValue: unusedUseCase },
 				{ provide: SendNotificationWithDedupUseCase, useValue: unusedUseCase },
 				{ provide: UNIT_OF_WORK, useValue: uow },
+				{
+					provide: USER_NOTIFICATION_SETTINGS,
+					useValue: { getPreferenceRecordsByUserIds: jest.fn().mockResolvedValue([]) },
+				},
 				{ provide: NOTIFICATION_REPOSITORY, useValue: repository },
 				{ provide: NOTIFICATION_HISTORY_READER, useValue: historyReader },
 				{ provide: PUSH_RECEIPT_REPOSITORY, useValue: createPushReceiptRepositoryMock() },
@@ -270,7 +281,7 @@ describe("friend-completed post-commit dispatch (component)", () => {
 	});
 
 	it("schedules delivery without inheriting the completed persistence transaction", async () => {
-		const job: NamedJob<NotificationJobMap> = {
+		const job: NotificationRuntimeJob = {
 			name: NotificationJobName.FRIEND_COMPLETED,
 			data: {
 				friendId: "friend-1",

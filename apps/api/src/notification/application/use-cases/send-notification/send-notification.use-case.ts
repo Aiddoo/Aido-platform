@@ -47,7 +47,11 @@ export class SendNotificationUseCase {
 		}
 
 		this.pushDispatcher.fireAndForgetPush(data, notification.id);
-		void this.cache.invalidateUnreadCount(data.userId);
+		this.cache.invalidateUnreadCount(data.userId).catch((error: unknown) => {
+			this.#logger.warn(
+				`Failed to invalidate unread notification count: userId=${data.userId}, ${error}`,
+			);
+		});
 
 		return notification;
 	}

@@ -37,7 +37,7 @@ describe("DispatchBatchNotificationUseCase", () => {
 		dedup = unitRef.get(NOTIFICATION_DEDUP);
 	});
 
-	it("푸시·미읽음 캐시·날짜 dedup 부수효과를 예약한다", () => {
+	it("푸시·미읽음 캐시·날짜 dedup 부수효과를 관찰한다", async () => {
 		const date = new Date("2026-03-09T00:00:00.000Z");
 		const items = [
 			{
@@ -64,7 +64,7 @@ describe("DispatchBatchNotificationUseCase", () => {
 			notificationDate: date,
 		}));
 
-		const result = useCase.execute({ count: 2, items, sourceData });
+		const result = await useCase.execute({ count: 2, items, sourceData });
 
 		expect(result).toEqual({ count: 2 });
 		expect(pushDispatcher.fireAndForgetBatchPush).toHaveBeenCalledWith(items);
@@ -81,5 +81,18 @@ describe("DispatchBatchNotificationUseCase", () => {
 				notificationDate: date,
 			},
 		]);
+	});
+
+	it("커밋 후 캐시·dedup 실패를 흡수하여 저장된 알림을 재시도하지 않는다", async () => {
+		cache.invalidateUnreadCount.mockRejectedValue(new Error("cache unavailable"));
+		dedup.recordNotifiedUsers.mockRejectedValue(new Error("dedup unavailable"));
+
+		await expect(
+			useCase.execute({
+				count: 1,
+				items: [],
+				sourceData: [{ userId: "u1", type: "FOLLOW_NEW", title: "t", body: "b" }],
+			}),
+		).resolves.toEqual({ count: 1 });
 	});
 });

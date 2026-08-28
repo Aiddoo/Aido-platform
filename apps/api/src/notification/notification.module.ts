@@ -5,7 +5,6 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 import { UserSettingsModule } from "@/user-settings/user-settings.module";
 
-import { NotificationBatchDispatcher } from "./application/dispatchers/notification-batch.dispatcher";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
 import {
@@ -36,10 +35,18 @@ import { MarkAsReadUseCase } from "./application/use-cases/mark-as-read/mark-as-
 import { MarkNotificationOpenedUseCase } from "./application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
 import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
 import { PersistBatchNotificationUseCase } from "./application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+import { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts/reconcile-push-receipts.use-case";
 import { RegisterPushTokenUseCase } from "./application/use-cases/register-push-token/register-push-token.use-case";
 import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification/send-batch-notification.use-case";
+import { SendBillingIssueNotificationUseCase } from "./application/use-cases/send-billing-issue-notification/send-billing-issue-notification.use-case";
+import { SendCheerNotificationUseCase } from "./application/use-cases/send-cheer-notification/send-cheer-notification.use-case";
+import { SendFollowAcceptedNotificationUseCase } from "./application/use-cases/send-follow-accepted-notification/send-follow-accepted-notification.use-case";
+import { SendFollowRequestNotificationUseCase } from "./application/use-cases/send-follow-request-notification/send-follow-request-notification.use-case";
+import { SendFriendCompletionNotificationsUseCase } from "./application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
+import { SendMilestoneNotificationUseCase } from "./application/use-cases/send-milestone-notification/send-milestone-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
+import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification/send-nudge-notification.use-case";
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter";
@@ -99,18 +106,6 @@ import { NotificationController } from "./presentation/notification.controller";
 					pushDispatcher,
 				),
 		},
-		{
-			provide: NotificationBatchDispatcher,
-			inject: [PersistBatchNotificationUseCase, DispatchBatchNotificationUseCase],
-			useFactory: (
-				persistBatchNotificationUseCase: PersistBatchNotificationUseCase,
-				dispatchBatchNotificationUseCase: DispatchBatchNotificationUseCase,
-			) =>
-				new NotificationBatchDispatcher(
-					persistBatchNotificationUseCase,
-					dispatchBatchNotificationUseCase,
-				),
-		},
 		GetNotificationsUseCase,
 		GetUnreadCountUseCase,
 		MarkAsReadUseCase,
@@ -126,6 +121,14 @@ import { NotificationController } from "./presentation/notification.controller";
 		DispatchBatchNotificationUseCase,
 		SendBatchNotificationUseCase,
 		FindAlreadyNotifiedUsersUseCase,
+		SendFollowRequestNotificationUseCase,
+		SendFollowAcceptedNotificationUseCase,
+		SendNudgeNotificationUseCase,
+		SendCheerNotificationUseCase,
+		SendBillingIssueNotificationUseCase,
+		SendFriendCompletionNotificationsUseCase,
+		SendMilestoneNotificationUseCase,
+		ReconcilePushReceiptsUseCase,
 		// 책임별 persistence 포트 바인딩
 		PrismaNotificationRepository,
 		{ provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },

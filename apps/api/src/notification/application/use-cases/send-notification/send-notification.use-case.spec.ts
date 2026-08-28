@@ -57,6 +57,7 @@ describe("SendNotificationUseCase", () => {
 		repository = unitRef.get<NotificationRepositoryPort>(NOTIFICATION_REPOSITORY);
 		pushDispatcher = unitRef.get<PushDispatcherPort>(PUSH_DISPATCHER);
 		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
+		cache.invalidateUnreadCount.mockResolvedValue(undefined);
 	});
 
 	it("unique 제약 위반(P2002)이면 graceful skip으로 null을 반환하고 발송 단계를 건너뛴다", async () => {

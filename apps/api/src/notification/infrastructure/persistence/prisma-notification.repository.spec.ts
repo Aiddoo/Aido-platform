@@ -4,9 +4,11 @@ import { TestBed } from "@suites/unit";
 import { NotificationBuilder } from "@test/builders";
 import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
+import { Prisma } from "@/generated/prisma/client";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import type { CreateNotificationData } from "../../application/ports/notification-data";
+import { DuplicateNotificationError } from "../../application/ports/notification.repository.port";
 import { PrismaNotificationRepository } from "./prisma-notification.repository";
 
 describe("PrismaNotificationRepository", () => {
@@ -86,6 +88,21 @@ describe("PrismaNotificationRepository", () => {
 	it("빈 배치는 DB를 호출하지 않는다", async () => {
 		await expect(repository.createManyNotificationsAndReturn([])).resolves.toEqual([]);
 		expect(db.notification.createManyAndReturn).not.toHaveBeenCalled();
+	});
+
+	it("배치 unique violation을 application duplicate error로 변환한다", async () => {
+		asMock(db.notification.createManyAndReturn).mockRejectedValue(
+			new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+				code: "P2002",
+				clientVersion: "test",
+			}),
+		);
+
+		await expect(
+			repository.createManyNotificationsAndReturn([
+				{ userId: "u1", type: "FRIEND_COMPLETED", title: "t", body: "b" },
+			]),
+		).rejects.toBeInstanceOf(DuplicateNotificationError);
 	});
 
 	it("소유한 미읽음 알림만 읽음으로 전이한다", async () => {

@@ -1,3 +1,4 @@
+import type { NotificationMilestone } from "../../domain/types/notification-milestone";
 import type { NotificationType } from "../../domain/types/notification-type";
 
 export const NOTIFICATION_HISTORY_READER = Symbol("NOTIFICATION_HISTORY_READER");
@@ -23,4 +24,5 @@ export interface FindAlreadyNotifiedUserIdsQuery {
 export interface NotificationHistoryReaderPort {
 	existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean>;
 	findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>>;
+	hasMilestoneNotification(userId: string, milestone: NotificationMilestone): Promise<boolean>;
 }

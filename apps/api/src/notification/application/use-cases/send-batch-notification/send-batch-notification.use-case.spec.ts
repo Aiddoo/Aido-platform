@@ -24,7 +24,7 @@ describe("SendBatchNotificationUseCase", () => {
 		];
 		const persisted = { count: 1, items: [], sourceData: dataList };
 		persistBatch.execute.mockResolvedValue(persisted);
-		dispatchBatch.execute.mockReturnValue({ count: 1 });
+		dispatchBatch.execute.mockResolvedValue({ count: 1 });
 
 		const result = await useCase.execute(dataList);
 

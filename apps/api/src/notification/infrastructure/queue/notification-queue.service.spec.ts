@@ -259,4 +259,27 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 			await expect(flushPromises()).resolves.not.toThrow();
 		});
 	});
+
+	describe("enqueueMilestoneReached", () => {
+		it("milestone-reached 잡을 기존 payload와 정책으로 등록한다", async () => {
+			const payload = { userId: "user-1", milestone: "COUNT_10" as const };
+
+			service.enqueueMilestoneReached(payload);
+			await flushPromises();
+
+			expect(runtime.enqueue).toHaveBeenCalledWith(
+				NOTIFICATION_QUEUE,
+				{ name: NotificationJobName.MILESTONE_REACHED, data: payload },
+				expect.objectContaining({ retryLimit: 2 }),
+			);
+		});
+
+		it("큐 등록 실패를 외부 void 호환 경계에서 관찰한다", async () => {
+			runtime.enqueue.mockRejectedValue(new Error("runtime unavailable"));
+
+			service.enqueueMilestoneReached({ userId: "user-1", milestone: "COUNT_10" });
+
+			await expect(flushPromises()).resolves.toBeUndefined();
+		});
+	});
 });
