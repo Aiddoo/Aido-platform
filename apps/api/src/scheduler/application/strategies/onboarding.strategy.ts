@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createOnboardingNotificationMessage, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import {
@@ -51,12 +52,10 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		}
 
 		// 발송 대상 day에 해당하는 유저만 필터
-		const eligibleUsers = users
-			.map((user) => ({
-				user,
-				day: diffInDays(today, user.createdAt),
-			}))
-			.filter(({ day }) => isOnboardingDay(day));
+		const eligibleUsers = users.flatMap((user) => {
+			const day = diffInDays(today, user.createdAt);
+			return isOnboardingDay(day) ? [{ user, day }] : [];
+		});
 
 		if (eligibleUsers.length === 0) {
 			return { sent: 0 };
@@ -96,18 +95,17 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		const notifications: CreateNotificationData[] = [];
 		for (const { user, day } of filteredUsers) {
 			const completedCount = completedCountMap.get(user.id) ?? 0;
-			const message = NotificationMessageBuilder.onboarding(
-				day,
-				completedCount,
-				locales.get(user.id) ?? "ko",
-				{
+			const notificationContext = {
+				locale: locales.get(user.id) ?? DEFAULT_LOCALE,
+				variantContext: {
 					campaignKey: `${SCHEDULER_CAMPAIGN_KEY.ONBOARDING}.day_${day}`,
 					recipientId: user.id,
 					occurrenceKey: toDateString(today),
 				},
-			);
-
-			if (!message) continue;
+			};
+			const message = requiresCompletedCount(day)
+				? createOnboardingNotificationMessage({ day, completedCount, ...notificationContext })
+				: createOnboardingNotificationMessage({ day, ...notificationContext });
 
 			notifications.push({
 				userId: user.id,

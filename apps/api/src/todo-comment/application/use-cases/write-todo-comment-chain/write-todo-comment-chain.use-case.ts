@@ -122,7 +122,7 @@ export class WriteTodoCommentChainUseCase {
 							commentId: first.id,
 							threadRootId: outcome.threadRootId,
 							isReply: input.parentId !== null,
-							count: outcome.addedCount,
+							commentCount: outcome.addedCount,
 						}),
 				},
 			]);

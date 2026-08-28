@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createNudgeSuggestionNotificationMessage, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString, toIsoWeekId } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -126,18 +127,16 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 				continue;
 			}
 
-			const days = diffInDays(today, target.lastActiveAt);
-			const locale = locales.get(user.id) ?? "ko";
-			const message = NotificationMessageBuilder.nudgeSuggest(
-				target.name ?? (locale === "en" ? "Your friend" : "친구"),
-				days,
+			const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
+			const message = createNudgeSuggestionNotificationMessage({
+				friendName: target.name ?? (locale === "en" ? "Your friend" : "친구"),
 				locale,
-				{
+				variantContext: {
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
 					recipientId: user.id,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 
 			notifications.push({
 				userId: user.id,

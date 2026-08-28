@@ -13,7 +13,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createLunchNudgeNotificationMessage, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -95,7 +95,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 		});
 	});
 
-	it("NotificationMessageBuilder.lunchNudge() 메시지를 사용한다", async () => {
+	it("createLunchNudgeNotificationMessage() 메시지를 사용한다", async () => {
 		// Given
 		const ctx = makeCtx();
 
@@ -106,10 +106,13 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 
 		// Then
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.lunchNudge("ko", {
-			campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
-			recipientId: "user-1",
-			occurrenceKey: "2024-01-16",
+		const expected = createLunchNudgeNotificationMessage({
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+				recipientId: "user-1",
+				occurrenceKey: "2024-01-16",
+			},
 		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,

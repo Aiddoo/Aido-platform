@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	NotificationMessageBuilder,
+	createWeatherMorningFallbackNotificationMessage,
+	createWeatherMorningNotificationMessage,
 	NotificationSender,
-	resolveTemplateLocale,
 } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
+import { toSupportedLocale } from "@/shared/domain/locale";
 import { WeatherForecastAccess } from "@/weather";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -106,15 +107,15 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 					return null;
 				}
 
-				const message = NotificationMessageBuilder.weatherMorning(
+				const message = createWeatherMorningNotificationMessage({
 					forecast,
-					resolveTemplateLocale(user.preference?.locale),
-					{
+					locale: toSupportedLocale(user.preference?.locale),
+					variantContext: {
 						campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_MORNING,
 						recipientId: user.id,
 						occurrenceKey: toDateString(today),
 					},
-				);
+				});
 				return {
 					userId: user.id,
 					type: "WEATHER_MORNING" as const,
@@ -159,14 +160,14 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 		}
 
 		const notifications = filtered.map((user) => {
-			const message = NotificationMessageBuilder.weatherMorningFallback(
-				resolveTemplateLocale(user.preference?.locale),
-				{
+			const message = createWeatherMorningFallbackNotificationMessage({
+				locale: toSupportedLocale(user.preference?.locale),
+				variantContext: {
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_MORNING,
 					recipientId: user.id,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 			return {
 				userId: user.id,
 				type: "WEATHER_MORNING" as const,

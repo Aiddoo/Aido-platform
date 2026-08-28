@@ -8,8 +8,12 @@
  *
  * 이 스펙이 깨지면 누군가 카피 선택을 언어/타임존에 결합시킨 것이다.
  */
-import type { NotificationVariantContext } from "./notification-templates";
-import { NotificationMessageBuilder } from "./notification-templates";
+import type { NotificationVariantContext } from "./notification-copy.types";
+import {
+	createEveningReminderNotificationMessage,
+	createMorningReminderNotificationMessage,
+	createWinbackNotificationMessage,
+} from "./notification-templates";
 
 const context: NotificationVariantContext = {
 	campaignKey: "orthogonality-test",
@@ -19,24 +23,50 @@ const context: NotificationVariantContext = {
 
 describe("직교성: timezone ⊥ 카피 언어", () => {
 	it("아침 리마인더 — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
-		const ko = NotificationMessageBuilder.morningReminder(3, "ko", context);
-		const en = NotificationMessageBuilder.morningReminder(3, "en", context);
+		const ko = createMorningReminderNotificationMessage({
+			count: 3,
+			locale: "ko",
+			variantContext: context,
+		});
+		const en = createMorningReminderNotificationMessage({
+			count: 3,
+			locale: "en",
+			variantContext: context,
+		});
 
 		expect(ko.variantId).toBe(en.variantId);
 		expect(ko.title).not.toBe(en.title);
 	});
 
 	it("Win-back — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
-		const ko = NotificationMessageBuilder.winback(7, "ko", context);
-		const en = NotificationMessageBuilder.winback(7, "en", context);
+		const ko = createWinbackNotificationMessage({
+			inactiveDays: 7,
+			locale: "ko",
+			variantContext: context,
+		});
+		const en = createWinbackNotificationMessage({
+			inactiveDays: 7,
+			locale: "en",
+			variantContext: context,
+		});
 
 		expect(ko.variantId).toBe(en.variantId);
 		expect(ko.title).not.toBe(en.title);
 	});
 
 	it("저녁 리마인더 — 언어가 달라도 분기/선택은 동일하다", () => {
-		const ko = NotificationMessageBuilder.eveningReminder(2, 3, 0, false, "ko", context);
-		const en = NotificationMessageBuilder.eveningReminder(2, 3, 0, false, "en", context);
+		const ko = createEveningReminderNotificationMessage({
+			completed: 2,
+			total: 3,
+			locale: "ko",
+			variantContext: context,
+		});
+		const en = createEveningReminderNotificationMessage({
+			completed: 2,
+			total: 3,
+			locale: "en",
+			variantContext: context,
+		});
 
 		expect(ko.variantId).toBe(en.variantId);
 		expect(ko.title).not.toBe(en.title);

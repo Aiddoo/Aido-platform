@@ -1,10 +1,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createSocialDigestNotificationMessage, NotificationSender } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -137,21 +138,27 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 				continue;
 			}
 
-			const locale = locales.get(user.id) ?? "ko";
+			const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
 			const fallbackName = locale === "en" ? "Your friend" : "친구";
-			const friendName =
-				completedFriends.length === 1 ? (completedFriends[0]?.name ?? fallbackName) : undefined;
-
-			const message = NotificationMessageBuilder.socialDigest(
-				completedFriends.length,
-				friendName,
-				locale,
-				{
-					campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-					recipientId: user.id,
-					occurrenceKey: toDateString(today),
-				},
-			);
+			const variantContext = {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				recipientId: user.id,
+				occurrenceKey: toDateString(today),
+			};
+			const message =
+				completedFriends.length === 1
+					? createSocialDigestNotificationMessage({
+							kind: "single",
+							friendName: completedFriends[0]?.name ?? fallbackName,
+							locale,
+							variantContext,
+						})
+					: createSocialDigestNotificationMessage({
+							kind: "multiple",
+							completedFriendCount: completedFriends.length,
+							locale,
+							variantContext,
+						});
 
 			notifications.push({
 				userId: user.id,

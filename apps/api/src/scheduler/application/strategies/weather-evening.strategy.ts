@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	NotificationMessageBuilder,
+	createWeatherEveningFallbackNotificationMessage,
+	createWeatherEveningNotificationMessage,
 	NotificationSender,
-	resolveTemplateLocale,
 } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
+import { toSupportedLocale } from "@/shared/domain/locale";
 import { WeatherForecastAccess } from "@/weather";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
@@ -109,15 +110,15 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 					return null;
 				}
 
-				const message = NotificationMessageBuilder.weatherEvening(
-					forecast,
-					resolveTemplateLocale(user.preference?.locale),
-					{
+				const message = createWeatherEveningNotificationMessage({
+					tomorrowForecast: forecast,
+					locale: toSupportedLocale(user.preference?.locale),
+					variantContext: {
 						campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
 						recipientId: user.id,
 						occurrenceKey: toDateString(today),
 					},
-				);
+				});
 				return {
 					userId: user.id,
 					type: "WEATHER_EVENING" as const,
@@ -162,14 +163,14 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 		}
 
 		const notifications = filtered.map((user) => {
-			const message = NotificationMessageBuilder.weatherEveningFallback(
-				resolveTemplateLocale(user.preference?.locale),
-				{
+			const message = createWeatherEveningFallbackNotificationMessage({
+				locale: toSupportedLocale(user.preference?.locale),
+				variantContext: {
 					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
 					recipientId: user.id,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 			return {
 				userId: user.id,
 				type: "WEATHER_EVENING" as const,

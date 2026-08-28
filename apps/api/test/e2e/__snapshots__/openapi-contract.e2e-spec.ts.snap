@@ -4402,7 +4402,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         "nextCursor": 2,
         "notifications": [
           {
-            "body": "존님이 당신의 할일을 응원하고 있어요 💪",
+            "body": "할 일 하나가 살짝 흔들렸어 🐾",
             "createdAt": "2026-01-17T10:00:00.000Z",
             "id": 1,
             "isRead": false,
@@ -4410,7 +4410,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
               "senderId": "clz7x5p8k0005qz0z8z8z8z8z",
             },
             "readAt": null,
-            "title": "친구의 응원이 도착했어요!",
+            "title": "존이 콕 건드렸어",
             "type": "NUDGE_RECEIVED",
             "userId": "clz7x5p8k0001qz0z8z8z8z8z",
           },
@@ -4433,7 +4433,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
           "description": "알림 목록",
           "items": {
             "example": {
-              "body": "존님이 당신의 할일을 응원하고 있어요 💪",
+              "body": "할 일 하나가 살짝 흔들렸어 🐾",
               "createdAt": "2026-01-17T10:00:00.000Z",
               "id": 1,
               "isRead": false,
@@ -4441,7 +4441,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
                 "senderId": "clz7x5p8k0005qz0z8z8z8z8z",
               },
               "readAt": null,
-              "title": "친구의 응원이 도착했어요!",
+              "title": "존이 콕 건드렸어",
               "type": "NUDGE_RECEIVED",
               "userId": "clz7x5p8k0001qz0z8z8z8z8z",
             },

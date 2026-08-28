@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AdminNotificationModule } from "@/admin-notification/admin-notification.module";
-import { NotificationModule } from "@/notification/notification.module";
+import { NotificationModule } from "@/notification";
 
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscription-event-notifier.port";

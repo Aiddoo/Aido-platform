@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createWinbackNotificationMessage, NotificationSender } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -86,15 +87,15 @@ export class WinbackStrategy implements ITimezoneStrategy {
 
 		const notifications: CreateNotificationData[] = [];
 		for (const check of activeChecks) {
-			const message = NotificationMessageBuilder.winback(
-				check.inactiveDays,
-				locales.get(check.user.id) ?? "ko",
-				{
+			const message = createWinbackNotificationMessage({
+				inactiveDays: check.inactiveDays,
+				locale: locales.get(check.user.id) ?? DEFAULT_LOCALE,
+				variantContext: {
 					campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${check.stage}`,
 					recipientId: check.user.id,
 					occurrenceKey: toDateString(today),
 				},
-			);
+			});
 			notifications.push({
 				userId: check.user.id,
 				type: "WINBACK",

@@ -14,7 +14,7 @@ import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createSocialDigestNotificationMessage, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -109,10 +109,15 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		);
 
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.socialDigest(1, "친구1", "ko", {
-			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-			recipientId: TEST_CUID.USER_1,
-			occurrenceKey: "2024-01-16",
+		const expected = createSocialDigestNotificationMessage({
+			kind: "single",
+			friendName: "친구1",
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				recipientId: TEST_CUID.USER_1,
+				occurrenceKey: "2024-01-16",
+			},
 		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: TEST_CUID.USER_1,
@@ -160,10 +165,15 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.socialDigest(2, undefined, "ko", {
-			campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
-			recipientId: TEST_CUID.USER_1,
-			occurrenceKey: "2024-01-16",
+		const expected = createSocialDigestNotificationMessage({
+			kind: "multiple",
+			completedFriendCount: 2,
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
+				recipientId: TEST_CUID.USER_1,
+				occurrenceKey: "2024-01-16",
+			},
 		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,

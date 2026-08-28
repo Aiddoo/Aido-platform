@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { FollowModule } from "@/follow/follow.module";
-import { NotificationModule } from "@/notification/notification.module";
+import { NotificationModule } from "@/notification";
 
 import { CHEER_LIMIT_READER } from "./application/ports/cheer-limit-reader.port";
 import { CHEER_NOTIFIER } from "./application/ports/cheer-notifier.port";

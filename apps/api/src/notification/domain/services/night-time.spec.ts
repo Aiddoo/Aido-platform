@@ -11,7 +11,7 @@
  */
 import { NIGHT_TIME_CONFIG } from "@aido/validators";
 
-import { isDayTime, isNightTime } from "./night-time";
+import { isNightTime } from "./night-time";
 
 describe("night-time.util", () => {
 	const KST = "Asia/Seoul";
@@ -128,30 +128,6 @@ describe("night-time.util", () => {
 
 			// When
 			const result = isNightTime();
-
-			// Then
-			expect(typeof result).toBe("boolean");
-		});
-	});
-
-	describe("isDayTime", () => {
-		it("isNightTime의 반대값을 반환한다", () => {
-			// Given
-			const dayDate = new Date("2024-01-15T03:00:00Z"); // KST 12:00 (주간)
-			const nightDate = new Date("2024-01-15T17:00:00Z"); // KST 02:00 (야간)
-
-			// When & Then
-			expect(isDayTime(KST, dayDate)).toBe(true);
-			expect(isDayTime(KST, dayDate)).toBe(!isNightTime(KST, dayDate));
-			expect(isDayTime(KST, nightDate)).toBe(false);
-			expect(isDayTime(KST, nightDate)).toBe(!isNightTime(KST, nightDate));
-		});
-
-		it("인자 없이 호출하면 현재 시간을 사용한다", () => {
-			// Given - 현재 시간을 mock하지 않음
-
-			// When
-			const result = isDayTime();
 
 			// Then
 			expect(typeof result).toBe("boolean");

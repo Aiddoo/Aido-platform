@@ -79,6 +79,21 @@ describe("LikeTodoCommentUseCase", () => {
 		);
 	});
 
+	it("좋아요 알림 경계에는 댓글 원문을 넘기지 않는다", async () => {
+		const { useCase, notification } = setup();
+
+		await useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: LIKER_ID });
+
+		expect(notification.notifyCommentLiked).toHaveBeenCalledWith({
+			recipientId: AUTHOR_ID,
+			senderId: LIKER_ID,
+			senderName: "좋아요 누른 사람",
+			todoId: TODO_ID,
+			commentId: COMMENT_ID,
+			threadRootId: COMMENT_ID,
+		});
+	});
+
 	/**
 	 * 표시가 남으면 껐다 켜도 다시 시도되지 않아 그 좋아요는 영영 알려지지 않는다.
 	 * 이 use-case가 지켜야 할 가장 중요한 불변식이다.

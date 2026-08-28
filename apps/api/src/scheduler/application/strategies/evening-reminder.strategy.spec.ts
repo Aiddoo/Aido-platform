@@ -14,7 +14,7 @@ import { TestBed } from "@suites/unit";
 import { TEST_CUID } from "@test/fixtures";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createEveningReminderNotificationMessage, NotificationSender } from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -176,10 +176,17 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		// Then
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.eveningReminder(2, 2, 1, false, "ko", {
-			campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
-			recipientId: TEST_CUID.USER_1,
-			occurrenceKey: "2024-01-16",
+		const expected = createEveningReminderNotificationMessage({
+			completed: 2,
+			total: 2,
+			streak: 1,
+			isStreakAtRisk: false,
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+				recipientId: TEST_CUID.USER_1,
+				occurrenceKey: "2024-01-16",
+			},
 		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
@@ -210,14 +217,12 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		// Then
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.eveningReminder(
-			1,
-			3,
-			0,
-			false,
-			"ko",
-			VARIANT_CONTEXT,
-		);
+		const expected = createEveningReminderNotificationMessage({
+			completed: 1,
+			total: 3,
+			locale: "ko",
+			variantContext: VARIANT_CONTEXT,
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,
@@ -245,14 +250,12 @@ describe("EveningReminderStrategy — 저녁 리마인더 전략", () => {
 
 		// Then
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.eveningReminder(
-			0,
-			2,
-			0,
-			false,
-			"ko",
-			VARIANT_CONTEXT,
-		);
+		const expected = createEveningReminderNotificationMessage({
+			completed: 0,
+			total: 2,
+			locale: "ko",
+			variantContext: VARIANT_CONTEXT,
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,

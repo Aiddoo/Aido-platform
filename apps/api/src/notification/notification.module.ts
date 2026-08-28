@@ -16,8 +16,8 @@ import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.reposi
 import { PUSH_DISPATCHER, type PushDispatcherPort } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
-	type IPushRateLimiter,
 	PUSH_RATE_LIMITER,
+	type PushRateLimiterPort,
 } from "./application/ports/push-rate-limiter.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
 import { NotificationSender } from "./application/senders/notification.sender";
@@ -55,7 +55,7 @@ import { NotificationController } from "./presentation/notification.controller";
  *
  * - presentation: NotificationController → endpoint UseCase
  * - application: 조회·읽음·토큰·발송 UseCase
- * - infrastructure: Prisma 저장소·Expo 푸시 프로바이더·PushDispatcher·rate limiter·BullMQ 프로세서
+ * - infrastructure: Prisma 저장소·Expo 푸시 프로바이더·PushDispatcher·rate limiter·큐 프로세서
  *
  * Provider 추상화(PUSH_PROVIDER 포트)로 Expo → FCM/APNs 교체를 어댑터 추가만으로 대비.
  */
@@ -127,7 +127,7 @@ import { NotificationController } from "./presentation/notification.controller";
 			provide: MARKETING_PUSH_OPT_OUT_TOKEN,
 			useExisting: HmacMarketingPushOptOutTokenAdapter,
 		},
-		// 사용자 설정 접근 (UserSettingsFacade 위임 어댑터)
+		// user-settings의 공개 알림 설정 capability에 연결하는 ACL 어댑터
 		{
 			provide: USER_NOTIFICATION_SETTINGS,
 			useClass: UserNotificationSettingsAdapter,
@@ -153,7 +153,7 @@ import { NotificationController } from "./presentation/notification.controller";
 		// Push Rate Limiter (Strategy Pattern)
 		{
 			provide: PUSH_RATE_LIMITER,
-			useFactory: (configService: TypedConfigService, redis?: Redis): IPushRateLimiter => {
+			useFactory: (configService: TypedConfigService, redis?: Redis): PushRateLimiterPort => {
 				if (configService.cache.type === "redis" && redis) {
 					return new RedisPushRateLimiter(redis);
 				}
@@ -161,7 +161,7 @@ import { NotificationController } from "./presentation/notification.controller";
 			},
 			inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
 		},
-		// BullMQ Queue Processor
+		// 알림 큐 프로세서
 		NotificationQueueProcessor,
 	],
 	exports: [

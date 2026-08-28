@@ -11,9 +11,9 @@ import {
 	type UnitOfWorkPort,
 } from "@/shared/application/ports";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "@/shared/domain/locale";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
-import type { SupportedLocale } from "@/shared/presentation/decorators";
 
 import { NotificationBatchDispatcher } from "../../application/dispatchers/notification-batch.dispatcher";
 import {
@@ -23,9 +23,16 @@ import {
 import { PUSH_PROVIDER, type PushProvider } from "../../application/ports/push-provider.port";
 import { NotificationSender } from "../../application/senders/notification.sender";
 import {
-	NotificationMessageBuilder,
-	resolveTemplateLocale,
+	createBillingIssueNotificationMessage,
+	createCheerReceivedNotificationMessage,
+	createFollowAcceptedNotificationMessage,
+	createFollowRequestNotificationMessage,
+	createFriendCompletedNotificationMessage,
+	createNudgeReceivedNotificationMessage,
+	createTodoCreationNudgeNotificationMessage,
+	createMilestoneNotificationMessage,
 } from "../../domain/services/templates/notification-templates";
+import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/services/transactional-notification-campaign";
 import {
 	type BillingIssueJobData,
 	type CheerSentJobData,
@@ -45,8 +52,8 @@ import {
 /**
  * job.name을 판별자로 갖는 알림 잡 (discriminated union).
  *
- * BullMQ `Job`의 name 제네릭을 잡 이름 리터럴로 고정하여, `switch (job.name)`이
- * `job.data`를 해당 잡 데이터 타입으로 자동 내로잉하도록 한다 (캐스트·가드 불필요).
+ * name 리터럴을 유지하여 `switch (job.name)`이 `job.data`를 해당 잡 데이터
+ * 타입으로 자동 내로잉하도록 한다 (캐스트·가드 불필요).
  */
 type NotificationJob = NamedJob<NotificationJobMap>;
 
@@ -163,7 +170,16 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	async #handleFollowNew(data: FollowNewJobData): Promise<void> {
 		try {
 			const locale = await this.#getLocale(data.followingId);
-			const message = NotificationMessageBuilder.followNew(data.followerName, locale);
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_REQUEST,
+				recipientId: data.followingId,
+				occurrenceKey: `${data.followerId}:${data.followingId}`,
+			};
+			const message = createFollowRequestNotificationMessage({
+				senderName: data.followerName,
+				locale,
+				variantContext,
+			});
 
 			await this.notification.createAndSendWithDedup({
 				userId: data.followingId,
@@ -171,6 +187,8 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				title: message.title,
 				body: message.body,
 				friendId: data.followerId,
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 
 			this.#logger.log(`Follow request notification sent to user: ${data.followingId}`);
@@ -186,7 +204,16 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	async #handleFollowMutual(data: FollowMutualJobData): Promise<void> {
 		try {
 			const locale = await this.#getLocale(data.userId);
-			const message = NotificationMessageBuilder.followAccepted(data.friendName, locale);
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_ACCEPTED,
+				recipientId: data.userId,
+				occurrenceKey: `${data.friendId}:${data.userId}`,
+			};
+			const message = createFollowAcceptedNotificationMessage({
+				senderName: data.friendName,
+				locale,
+				variantContext,
+			});
 
 			await this.notification.createAndSendWithDedup({
 				userId: data.userId,
@@ -194,6 +221,8 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				title: message.title,
 				body: message.body,
 				friendId: data.friendId,
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 
 			this.#logger.log(`Mutual follow notification sent to user: ${data.userId}`);
@@ -209,14 +238,25 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	async #handleNudgeSent(data: NudgeSentJobData): Promise<void> {
 		try {
 			const locale = await this.#getLocale(data.receiverId);
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.NUDGE_RECEIVED,
+				recipientId: data.receiverId,
+				occurrenceKey: String(data.nudgeId),
+			};
 			const message = data.todoId
-				? NotificationMessageBuilder.nudgeReceived(
-						data.senderName,
-						data.todoTitle,
-						data.message,
+				? createNudgeReceivedNotificationMessage({
+						senderName: data.senderName,
+						todoTitle: data.todoTitle,
+						message: data.message,
 						locale,
-					)
-				: NotificationMessageBuilder.remindNudgeReceived(data.senderName, data.message, locale);
+						variantContext,
+					})
+				: createTodoCreationNudgeNotificationMessage({
+						senderName: data.senderName,
+						message: data.message,
+						locale,
+						variantContext,
+					});
 
 			await this.notification.createAndSendWithDedup({
 				userId: data.receiverId,
@@ -227,6 +267,8 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				friendId: data.senderId,
 				todoId: data.todoId,
 				metadata: data.message ? { message: data.message } : undefined,
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 
 			this.#logger.log(`Nudge notification sent: from=${data.senderId}, to=${data.receiverId}`);
@@ -242,11 +284,17 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	async #handleCheerSent(data: CheerSentJobData): Promise<void> {
 		try {
 			const locale = await this.#getLocale(data.receiverId);
-			const message = NotificationMessageBuilder.cheerReceived(
-				data.senderName,
-				data.message,
+			const variantContext = {
+				campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
+				recipientId: data.receiverId,
+				occurrenceKey: String(data.cheerId),
+			};
+			const message = createCheerReceivedNotificationMessage({
+				senderName: data.senderName,
+				message: data.message,
 				locale,
-			);
+				variantContext,
+			});
 
 			await this.notification.createAndSendWithDedup({
 				userId: data.receiverId,
@@ -256,6 +304,8 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				cheerId: data.cheerId,
 				friendId: data.senderId,
 				metadata: data.message ? { message: data.message } : undefined,
+				campaignKey: variantContext.campaignKey,
+				variantId: message.variantId,
 			});
 
 			this.#logger.log(`Cheer notification sent: from=${data.senderId}, to=${data.receiverId}`);
@@ -271,7 +321,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 	async #handleBillingIssue(data: BillingIssueJobData): Promise<void> {
 		try {
 			const locale = await this.#getLocale(data.userId);
-			const message = NotificationMessageBuilder.billingIssue(locale);
+			const message = createBillingIssueNotificationMessage({ locale });
 
 			await this.notification.createAndSend({
 				userId: data.userId,
@@ -286,7 +336,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 				`Failed to send billing issue notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
-			// 결제 알림은 재시도 대상 — BullMQ retry 활용
+			// 결제 알림은 큐 런타임의 재시도 정책을 따른다.
 			throw error;
 		}
 	}
@@ -299,6 +349,7 @@ export class NotificationQueueProcessor implements OnModuleInit {
 
 		try {
 			const today = todayInTimezone(data.timezone);
+			const localDate = today.toISOString().slice(0, 10);
 
 			const persisted = await this.uow.run(async () => {
 				const alreadyNotified = await this.notification.findAlreadyNotifiedUserIds({
@@ -315,23 +366,26 @@ export class NotificationQueueProcessor implements OnModuleInit {
 					return null;
 				}
 
-				// 수신자별 푸시 언어로 메시지 생성 (로케일별 1회 조립)
+				// 수신자의 언어와 이벤트 ID를 함께 사용해 재시도에도 같은 카피를 고른다.
 				const preferences = await this.txHost.tx.userPreference.findMany({
 					where: { userId: { in: newUserIds } },
 					select: { userId: true, locale: true },
 				});
 				const localeByUserId = new Map(
-					preferences.map((p) => [p.userId, resolveTemplateLocale(p.locale)]),
+					preferences.map((p) => [p.userId, toSupportedLocale(p.locale)]),
 				);
-				const messageByLocale = new Map<SupportedLocale, { title: string; body: string }>();
-
 				const notifications = newUserIds.map((userId) => {
-					const locale = localeByUserId.get(userId) ?? "ko";
-					let message = messageByLocale.get(locale);
-					if (!message) {
-						message = NotificationMessageBuilder.friendCompleted(data.friendName, locale);
-						messageByLocale.set(locale, message);
-					}
+					const locale = localeByUserId.get(userId) ?? DEFAULT_LOCALE;
+					const variantContext = {
+						campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FRIEND_COMPLETED,
+						recipientId: userId,
+						occurrenceKey: `${data.friendId}:${localDate}`,
+					};
+					const message = createFriendCompletedNotificationMessage({
+						friendName: data.friendName,
+						locale,
+						variantContext,
+					});
 					return {
 						userId,
 						type: "FRIEND_COMPLETED" as const,
@@ -339,6 +393,8 @@ export class NotificationQueueProcessor implements OnModuleInit {
 						body: message.body,
 						friendId: data.friendId,
 						notificationDate: today,
+						campaignKey: variantContext.campaignKey,
+						variantId: message.variantId,
 					};
 				});
 
@@ -386,7 +442,10 @@ export class NotificationQueueProcessor implements OnModuleInit {
 			}
 
 			const locale = await this.#getLocale(data.userId);
-			const message = NotificationMessageBuilder.milestone(data.milestone, locale);
+			const message = createMilestoneNotificationMessage({
+				milestone: data.milestone,
+				locale,
+			});
 
 			await this.notification.createAndSend({
 				userId: data.userId,

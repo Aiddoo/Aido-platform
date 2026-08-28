@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationModule } from "@/notification/notification.module";
+import { NotificationModule } from "@/notification";
 
 import { ADMIN_PROVIDERS } from "./application/admin.providers";
 import { ADMIN_BROADCAST_NOTIFIER } from "./application/ports/admin-broadcast-notifier.port";

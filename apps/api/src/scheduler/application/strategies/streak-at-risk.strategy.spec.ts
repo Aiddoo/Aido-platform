@@ -13,8 +13,9 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { NotificationMessageBuilder, NotificationSender } from "@/notification";
+import { createStreakAtRiskNotificationMessage, NotificationSender } from "@/notification";
 
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
 	RE_ENGAGEMENT_READER,
@@ -111,7 +112,15 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 
 		// Then — computeEffectiveStreak가 반환한 streak(7)이 메시지에 사용됨
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.streakAtRisk(7);
+		const expected = createStreakAtRiskNotificationMessage({
+			streak: 7,
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
+				recipientId: "user-1",
+				occurrenceKey: "2024-01-16",
+			},
+		});
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
 			title: expected.title,
@@ -131,7 +140,15 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 		// Then
 		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		// computeEffectiveStreak는 currentStreak(10)을 그대로 반환 (미완료 시)
-		const expected = NotificationMessageBuilder.streakAtRisk(10);
+		const expected = createStreakAtRiskNotificationMessage({
+			streak: 10,
+			locale: "ko",
+			variantContext: {
+				campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
+				recipientId: "user-1",
+				occurrenceKey: "2024-01-16",
+			},
+		});
 		expect(notifications?.[0]).toMatchObject({
 			title: expected.title,
 			body: expected.body,

@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { resolveTemplateLocale } from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
+import { toSupportedLocale } from "@/shared/domain/locale";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
@@ -618,10 +618,7 @@ export class PrismaSchedulerReader
 			select: { userId: true, locale: true },
 		});
 		return new Map(
-			preferences.map((preference) => [
-				preference.userId,
-				resolveTemplateLocale(preference.locale),
-			]),
+			preferences.map((preference) => [preference.userId, toSupportedLocale(preference.locale)]),
 		);
 	}
 

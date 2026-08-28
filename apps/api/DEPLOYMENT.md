@@ -253,28 +253,30 @@ git push origin develop
 
 ## 4. 환경변수 레퍼런스
 
-| 변수                           | 필수  | 기본값        | 설명                                                                                                                                  |
-| ------------------------------ | ----- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`                     | -     | development   | 런타임 모드 (빌드 최적화 기준)                                                                                                        |
-| `APP_ENV`                      | -     | NODE_ENV 폴백 | 배포 환경 (`development`/`staging`/`production`). **Sentry는 `production`에서만 발송** — 개발서버는 반드시 `APP_ENV=development` 설정 |
-| `PORT`                         | -     | 8080          | API 포트                                                                                                                              |
-| `DATABASE_URL`                 | Y     | -             | PostgreSQL 연결 URL                                                                                                                   |
-| `JWT_SECRET`                   | Y     | -             | JWT 서명 키 (min 32자)                                                                                                                |
-| `JWT_REFRESH_SECRET`           | Y     | -             | Refresh 토큰 키 (min 32자)                                                                                                            |
-| `JWT_EXPIRES_IN`               | -     | 15m           | Access 토큰 만료                                                                                                                      |
-| `JWT_REFRESH_EXPIRES_IN`       | -     | 7d            | Refresh 토큰 만료                                                                                                                     |
-| `TOKEN_ENCRYPTION_KEY`         | Y     | -             | AES-256-GCM 키 (min 32자)                                                                                                             |
-| `CORS_ORIGINS`                 | -     | localhost     | 허용 오리진 (쉼표 구분)                                                                                                               |
-| `THROTTLE_TTL`                 | -     | 60000         | Rate limit 윈도우 (ms)                                                                                                                |
-| `THROTTLE_LIMIT`               | -     | 100           | Rate limit 횟수                                                                                                                       |
-| `GOOGLE_CLIENT_ID`             | Prod* | -             | Google OAuth                                                                                                                          |
-| `GOOGLE_CLIENT_SECRET`         | Prod* | -             | Google OAuth                                                                                                                          |
-| `KAKAO_CLIENT_ID`              | Prod* | -             | Kakao OAuth                                                                                                                           |
-| `NAVER_CLIENT_ID`              | Prod* | -             | Naver OAuth                                                                                                                           |
-| `RESEND_API_KEY`               | Prod  | -             | Resend 이메일 API 키                                                                                                                  |
-| `EXPO_ACCESS_TOKEN`            | -     | -             | 푸시 알림                                                                                                                             |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | -     | -             | AI 기능                                                                                                                               |
-| `DISCORD_SIGNUP_WEBHOOK_URL`   | -     | -             | 가입 알림 웹훅                                                                                                                        |
+| 변수                                        | 필수  | 기본값        | 설명                                                                                                                                  |
+| ------------------------------------------- | ----- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                                  | -     | development   | 런타임 모드 (빌드 최적화 기준)                                                                                                        |
+| `APP_ENV`                                   | -     | NODE_ENV 폴백 | 배포 환경 (`development`/`staging`/`production`). **Sentry는 `production`에서만 발송** — 개발서버는 반드시 `APP_ENV=development` 설정 |
+| `PORT`                                      | -     | 8080          | API 포트                                                                                                                              |
+| `DATABASE_URL`                              | Y     | -             | PostgreSQL 연결 URL                                                                                                                   |
+| `JWT_SECRET`                                | Y     | -             | JWT 서명 키 (min 32자)                                                                                                                |
+| `JWT_REFRESH_SECRET`                        | Y     | -             | Refresh 토큰 키 (min 32자)                                                                                                            |
+| `JWT_EXPIRES_IN`                            | -     | 15m           | Access 토큰 만료                                                                                                                      |
+| `JWT_REFRESH_EXPIRES_IN`                    | -     | 7d            | Refresh 토큰 만료                                                                                                                     |
+| `TOKEN_ENCRYPTION_KEY`                      | Y     | -             | AES-256-GCM 키 (min 32자)                                                                                                             |
+| `CORS_ORIGINS`                              | -     | localhost     | 허용 오리진 (쉼표 구분)                                                                                                               |
+| `THROTTLE_TTL`                              | -     | 60000         | Rate limit 윈도우 (ms)                                                                                                                |
+| `THROTTLE_LIMIT`                            | -     | 100           | Rate limit 횟수                                                                                                                       |
+| `GOOGLE_CLIENT_ID`                          | Prod* | -             | Google OAuth                                                                                                                          |
+| `GOOGLE_CLIENT_SECRET`                      | Prod* | -             | Google OAuth                                                                                                                          |
+| `KAKAO_CLIENT_ID`                           | Prod* | -             | Kakao OAuth                                                                                                                           |
+| `NAVER_CLIENT_ID`                           | Prod* | -             | Naver OAuth                                                                                                                           |
+| `RESEND_API_KEY`                            | Prod  | -             | Resend 이메일 API 키                                                                                                                  |
+| `EXPO_ACCESS_TOKEN`                         | -     | -             | 푸시 알림                                                                                                                             |
+| `RETENTION_ONBOARDING_V2_ENABLED`           | -     | false         | 신규 가입자 리텐션 V2 실험 활성화                                                                                                     |
+| `RETENTION_ONBOARDING_V2_TREATMENT_PERCENT` | -     | 50            | 리텐션 V2 treatment 배정 비율(0~100)                                                                                                  |
+| `GOOGLE_GENERATIVE_AI_API_KEY`              | -     | -             | AI 기능                                                                                                                               |
+| `DISCORD_SIGNUP_WEBHOOK_URL`                | -     | -             | 가입 알림 웹훅                                                                                                                        |
 
 > *Prod: 프로덕션에서 OAuth 최소 1개 필수
 

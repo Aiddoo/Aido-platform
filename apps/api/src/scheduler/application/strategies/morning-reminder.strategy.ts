@@ -2,13 +2,14 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	NotificationMessageBuilder,
+	createMorningNoTodoNotificationMessage,
+	createMorningReminderNotificationMessage,
 	NotificationSender,
-	resolveTemplateLocale,
 } from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { toSupportedLocale } from "@/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
@@ -78,7 +79,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 
 		const notifications = filteredUsers.map((user) => {
 			const count = user._count.todos;
-			const locale = resolveTemplateLocale(user.preference?.locale);
+			const locale = toSupportedLocale(user.preference?.locale);
 			const variantContext = {
 				campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
 				recipientId: user.id,
@@ -86,8 +87,8 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 			};
 			const message =
 				count > 0
-					? NotificationMessageBuilder.morningReminder(count, locale, variantContext)
-					: NotificationMessageBuilder.morningNoTodo(locale, variantContext);
+					? createMorningReminderNotificationMessage({ count, locale, variantContext })
+					: createMorningNoTodoNotificationMessage({ locale, variantContext });
 
 			return {
 				userId: user.id,
