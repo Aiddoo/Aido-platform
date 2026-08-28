@@ -6,9 +6,9 @@ import {
 	type NotificationDedupPort,
 } from "../../ports/notification-dedup.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+	NOTIFICATION_HISTORY_READER,
+	type NotificationHistoryReaderPort,
+} from "../../ports/notification-history.reader.port";
 
 /**
  * 이미 알림을 받은 사용자 ID 목록 조회 유스케이스 (배치)
@@ -23,8 +23,8 @@ export class FindAlreadyNotifiedUsersUseCase {
 	constructor(
 		@Inject(NOTIFICATION_DEDUP)
 		private readonly notificationDedup: NotificationDedupPort,
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
+		@Inject(NOTIFICATION_HISTORY_READER)
+		private readonly notificationHistoryReader: NotificationHistoryReaderPort,
 	) {}
 
 	async execute(params: {
@@ -43,7 +43,7 @@ export class FindAlreadyNotifiedUsersUseCase {
 		}
 
 		// Cold start: DB fallback + Redis warm-up
-		const fromDb = await this.notificationRepository.findAlreadyNotifiedUserIds(params);
+		const fromDb = await this.notificationHistoryReader.findAlreadyNotifiedUserIds(params);
 
 		void this.notificationDedup.warmRecipients(params.type, params.notificationDate, [...fromDb]);
 

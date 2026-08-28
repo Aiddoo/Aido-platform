@@ -14,14 +14,18 @@ import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import type { UserConsentRecordWithId, UserPreferenceRecordWithId } from "@/user-settings";
 
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "../../application/ports/notification.repository.port";
+	PUSH_DISPATCH_REPOSITORY,
+	type PushDispatchRepositoryPort,
+} from "../../application/ports/push-dispatch.repository.port";
 import { PUSH_PROVIDER, type PushProvider } from "../../application/ports/push-provider.port";
 import {
 	PUSH_RATE_LIMITER,
 	type PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port";
+import {
+	PUSH_TOKEN_REPOSITORY,
+	type PushTokenRepositoryPort,
+} from "../../application/ports/push-token.repository.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
@@ -140,7 +144,8 @@ describe("PushDispatcherAdapter", () => {
 	let userSettings: Mocked<UserNotificationSettingsPort>;
 	let rateLimiter: Mocked<PushRateLimiterPort>;
 	let cacheService: Mocked<CacheService>;
-	let repository: Mocked<NotificationRepositoryPort>;
+	let repository: Mocked<PushDispatchRepositoryPort>;
+	let tokenRepository: Mocked<PushTokenRepositoryPort>;
 	let pushProvider: Mocked<PushProvider>;
 
 	beforeEach(async () => {
@@ -149,7 +154,8 @@ describe("PushDispatcherAdapter", () => {
 		userSettings = unitRef.get(USER_NOTIFICATION_SETTINGS);
 		rateLimiter = unitRef.get(PUSH_RATE_LIMITER);
 		cacheService = unitRef.get(CacheService);
-		repository = unitRef.get(NOTIFICATION_REPOSITORY);
+		repository = unitRef.get(PUSH_DISPATCH_REPOSITORY);
+		tokenRepository = unitRef.get(PUSH_TOKEN_REPOSITORY);
 		pushProvider = unitRef.get(PUSH_PROVIDER);
 
 		// cache-aside: 캐시 미스 시 콜백을 실행하도록 passthrough
@@ -257,7 +263,7 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
 		rateLimiter.isRateLimited.mockResolvedValue(false);
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
-		repository.findPushTokensByUser.mockResolvedValue([]);
+		tokenRepository.findPushTokensByUser.mockResolvedValue([]);
 		repository.createPushDispatch.mockResolvedValue({ id: 1 });
 
 		adapter.fireAndForgetPush(
@@ -266,7 +272,7 @@ describe("PushDispatcherAdapter", () => {
 		);
 		await adapter.beforeApplicationShutdown();
 
-		expect(repository.findPushTokensByUser).toHaveBeenCalledWith({
+		expect(tokenRepository.findPushTokensByUser).toHaveBeenCalledWith({
 			userId: "user-1",
 			activeOnly: true,
 		});
@@ -277,7 +283,7 @@ describe("PushDispatcherAdapter", () => {
 		rateLimiter.isRateLimited.mockResolvedValue(false);
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
 		repository.createPushDispatch.mockResolvedValue({ id: 101 });
-		repository.findPushTokensByUser.mockRejectedValue(new Error("token storage unavailable"));
+		tokenRepository.findPushTokensByUser.mockRejectedValue(new Error("token storage unavailable"));
 
 		adapter.fireAndForgetPush({ userId: "user-1", type: "FOLLOW_NEW", title: "t", body: "b" }, 1);
 		await adapter.beforeApplicationShutdown();
@@ -296,7 +302,7 @@ describe("PushDispatcherAdapter", () => {
 		rateLimiter.isRateLimited.mockResolvedValue(false);
 		rateLimiter.isEngagementRateLimited.mockResolvedValue(false);
 		repository.createPushDispatch.mockResolvedValue({ id: 2 });
-		repository.findPushTokensByUser.mockResolvedValue([
+		tokenRepository.findPushTokensByUser.mockResolvedValue([
 			{
 				id: 1,
 				userId: "user-1",
@@ -543,7 +549,7 @@ describe("PushDispatcherAdapter", () => {
 			.mockResolvedValueOnce({ id: 202 });
 		cacheService.mget.mockResolvedValue([undefined, undefined]);
 		cacheService.mset.mockResolvedValue(undefined);
-		repository.findActivePushTokensByUsers.mockResolvedValue([
+		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
 			{
 				id: 1,
 				userId: "user-1",
@@ -753,7 +759,7 @@ describe("PushDispatcherAdapter", () => {
 		repository.createPushDispatch.mockResolvedValue({ id: 43 });
 		cacheService.mget.mockResolvedValue([undefined]);
 		cacheService.mset.mockResolvedValue(undefined);
-		repository.findActivePushTokensByUsers.mockResolvedValue([]);
+		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([]);
 
 		adapter.fireAndForgetBatchPush([
 			{
@@ -787,7 +793,7 @@ describe("PushDispatcherAdapter", () => {
 		repository.createPushDispatch.mockResolvedValue({ id: 44 });
 		cacheService.mget.mockResolvedValue([undefined]);
 		cacheService.mset.mockResolvedValue(undefined);
-		repository.findActivePushTokensByUsers.mockResolvedValue([
+		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
 			{
 				id: 1,
 				userId: "user-1",
@@ -879,7 +885,7 @@ describe("PushDispatcherAdapter", () => {
 		repository.createPushDispatch.mockResolvedValue({ id: 45 });
 		cacheService.mget.mockResolvedValue([undefined]);
 		cacheService.mset.mockResolvedValue(undefined);
-		repository.findActivePushTokensByUsers.mockResolvedValue([
+		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
 			{
 				id: 1,
 				userId: "user-1",
@@ -927,7 +933,7 @@ describe("PushDispatcherAdapter", () => {
 		repository.recordPushDeliveryResults.mockResolvedValue(undefined);
 		cacheService.mget.mockResolvedValue([undefined]);
 		cacheService.mset.mockResolvedValue(undefined);
-		repository.findActivePushTokensByUsers.mockResolvedValue([
+		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
 			{
 				id: 1,
 				userId: "user-1",
@@ -989,7 +995,7 @@ describe("PushDispatcherAdapter", () => {
 		userSettings.getPreferenceRecord.mockResolvedValue(makePreference("user-1", "Asia/Seoul"));
 		cacheService.wrapPushTokens.mockImplementation((_userId, fn) => fn());
 		const tokenDate = new Date("2026-07-01T00:00:00.000Z");
-		repository.findPushTokensByUser.mockResolvedValue([
+		tokenRepository.findPushTokensByUser.mockResolvedValue([
 			{
 				id: 1,
 				userId: "user-1",

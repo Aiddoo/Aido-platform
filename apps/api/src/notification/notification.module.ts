@@ -12,13 +12,18 @@ import {
 	NOTIFICATION_DEDUP,
 	NOTIFICATION_DEDUP_LOCK,
 } from "./application/ports/notification-dedup.port";
+import { NOTIFICATION_HISTORY_READER } from "./application/ports/notification-history.reader.port";
+import { NOTIFICATION_INBOX_READER } from "./application/ports/notification-inbox.reader.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
+import { PUSH_DISPATCH_REPOSITORY } from "./application/ports/push-dispatch.repository.port";
 import { PUSH_DISPATCHER, type PushDispatcherPort } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
 	PUSH_RATE_LIMITER,
 	type PushRateLimiterPort,
 } from "./application/ports/push-rate-limiter.port";
+import { PUSH_RECEIPT_REPOSITORY } from "./application/ports/push-receipt.repository.port";
+import { PUSH_TOKEN_REPOSITORY } from "./application/ports/push-token.repository.port";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
 import { NotificationSender } from "./application/senders/notification.sender";
 import { NotificationAccountCleanup } from "./application/services/notification-account-cleanup";
@@ -41,7 +46,10 @@ import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notifica
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
 import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
-import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
+import { PrismaNotificationReader } from "./infrastructure/persistence/prisma-notification.reader";
+import { PrismaNotificationRepository } from "./infrastructure/persistence/prisma-notification.repository";
+import { PrismaPushDeliveryRepository } from "./infrastructure/persistence/prisma-push-delivery.repository";
+import { PrismaPushTokenRepository } from "./infrastructure/persistence/prisma-push-token.repository";
 import { ExpoPushProvider } from "./infrastructure/providers/expo-push.provider";
 import { NotificationQueueModule } from "./infrastructure/queue/notification-queue.module";
 import { NotificationQueueProcessor } from "./infrastructure/queue/notification-queue.processor";
@@ -118,9 +126,17 @@ import { NotificationController } from "./presentation/notification.controller";
 		DispatchBatchNotificationUseCase,
 		SendBatchNotificationUseCase,
 		FindAlreadyNotifiedUsersUseCase,
-		// Repository (포트 바인딩)
-		NotificationRepository,
-		{ provide: NOTIFICATION_REPOSITORY, useExisting: NotificationRepository },
+		// 책임별 persistence 포트 바인딩
+		PrismaNotificationRepository,
+		{ provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
+		PrismaNotificationReader,
+		{ provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
+		{ provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
+		PrismaPushTokenRepository,
+		{ provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
+		PrismaPushDeliveryRepository,
+		{ provide: PUSH_DISPATCH_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
+		{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
 		NotificationAccountCleanup,
 		HmacMarketingPushOptOutTokenAdapter,
 		{

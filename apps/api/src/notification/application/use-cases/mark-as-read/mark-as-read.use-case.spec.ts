@@ -14,6 +14,10 @@ import {
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port";
 import {
+	NOTIFICATION_INBOX_READER,
+	type NotificationInboxReaderPort,
+} from "../../ports/notification-inbox.reader.port";
+import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port";
@@ -21,6 +25,7 @@ import { MarkAsReadUseCase } from "./mark-as-read.use-case";
 
 describe("MarkAsReadUseCase", () => {
 	let useCase: MarkAsReadUseCase;
+	let notificationReader: Mocked<NotificationInboxReaderPort>;
 	let notificationRepo: Mocked<NotificationRepositoryPort>;
 	let cache: Mocked<NotificationCachePort>;
 
@@ -34,13 +39,14 @@ describe("MarkAsReadUseCase", () => {
 			.impl(() => createNotificationCacheMock())
 			.compile();
 		useCase = unit;
+		notificationReader = unitRef.get(NOTIFICATION_INBOX_READER);
 		notificationRepo = unitRef.get(NOTIFICATION_REPOSITORY);
 		cache = unitRef.get<NotificationCachePort>(NOTIFICATION_CACHE);
 	});
 
 	it("소유한 미읽음 알림을 읽음 처리하고 캐시를 무효화해야 한다", async () => {
 		const notification = NotificationBuilder.create(mockUserId).withId(1).asUnread().build();
-		notificationRepo.findNotificationById.mockResolvedValue(notification);
+		notificationReader.findNotificationById.mockResolvedValue(notification);
 		notificationRepo.markAsRead.mockResolvedValue(true);
 
 		await useCase.execute(mockUserId, 1);
@@ -50,7 +56,7 @@ describe("MarkAsReadUseCase", () => {
 	});
 
 	it("알림이 없으면 NOTIFICATION_1004", async () => {
-		notificationRepo.findNotificationById.mockResolvedValue(null);
+		notificationReader.findNotificationById.mockResolvedValue(null);
 
 		await expect(useCase.execute(mockUserId, 999)).rejects.toMatchObject({
 			errorCode: "NOTIFICATION_1004",
@@ -60,7 +66,7 @@ describe("MarkAsReadUseCase", () => {
 
 	it("다른 사용자의 알림이면 NOTIFICATION_1005", async () => {
 		const notification = NotificationBuilder.create("other-user").withId(1).build();
-		notificationRepo.findNotificationById.mockResolvedValue(notification);
+		notificationReader.findNotificationById.mockResolvedValue(notification);
 
 		await expect(useCase.execute(mockUserId, 1)).rejects.toMatchObject({
 			errorCode: "NOTIFICATION_1005",
@@ -70,7 +76,7 @@ describe("MarkAsReadUseCase", () => {
 
 	it("이미 읽은 알림이면 무동작", async () => {
 		const notification = NotificationBuilder.create(mockUserId).withId(1).asRead().build();
-		notificationRepo.findNotificationById.mockResolvedValue(notification);
+		notificationReader.findNotificationById.mockResolvedValue(notification);
 
 		await useCase.execute(mockUserId, 1);
 
