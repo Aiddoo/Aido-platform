@@ -13,7 +13,11 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { createWeeklyReportNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createWeeklyReportNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 
 import type { TimezoneContext } from "../../domain/services/timezone-context";
 import {
@@ -30,7 +34,8 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 	let strategy: WeeklyReportStrategy;
 	let reader: Mocked<ScheduledReminderReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 
 	const TZ = "Asia/Seoul";
 
@@ -56,13 +61,14 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(SCHEDULED_REMINDER_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationSender);
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 
 		// 기본 mock 설정
 		reader.findWeeklyReportRecipients.mockResolvedValue([]);
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 	});
 
 	afterEach(() => {
@@ -87,7 +93,7 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 			expect.objectContaining({ tz: TZ }),
 		);
 
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		const expected = createWeeklyReportNotificationMessage();
 		expect(notifications?.[0]).toMatchObject({
 			userId: "user-1",
@@ -103,19 +109,19 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 
 		reader.findWeeklyReportRecipients.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }]);
 
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
 
 		// When
 		const result = await strategy.execute(ctx);
 
 		// Then
 		expect(result).toEqual({ sent: 1 });
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
 
-	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+	it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
 		// Given — beforeEach 기본 설정
 		const ctx = makeCtx();
 
@@ -126,6 +132,6 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 });

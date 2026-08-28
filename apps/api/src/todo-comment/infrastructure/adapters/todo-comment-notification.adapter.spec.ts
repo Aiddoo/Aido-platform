@@ -3,7 +3,8 @@ import { TestBed } from "@suites/unit";
 
 import {
 	createTodoCommentNotificationMessage,
-	NotificationSender,
+	NotificationPublisher,
+	NotificationRecipientLocaleReader,
 	TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "@/notification";
 
@@ -11,14 +12,16 @@ import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adap
 
 describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", () => {
 	let adapter: TodoCommentNotificationAdapter;
-	let notificationSender: Mocked<NotificationSender>;
+	let notificationSender: Mocked<NotificationPublisher>;
+	let recipientLocaleReader: Mocked<NotificationRecipientLocaleReader>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(TodoCommentNotificationAdapter).compile();
 		adapter = unit;
-		notificationSender = unitRef.get(NotificationSender);
-		notificationSender.getUserLocale.mockResolvedValue("ko");
-		notificationSender.createAndSend.mockResolvedValue(null);
+		notificationSender = unitRef.get(NotificationPublisher);
+		recipientLocaleReader = unitRef.get(NotificationRecipientLocaleReader);
+		recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
+		notificationSender.publish.mockResolvedValue(null);
 	});
 
 	it("댓글 알림은 서버 내부 경로 대신 의미 기반 이동 재료만 보내야 한다", async () => {
@@ -50,7 +53,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
 		await adapter.notifyCommentsWritten(input);
 
 		// Then - v1.8은 TODO_SHARED 기본 화면으로, 최신 앱은 metadata로 이동할 수 있다
-		expect(notificationSender.createAndSend).toHaveBeenCalledWith({
+		expect(notificationSender.publish).toHaveBeenCalledWith({
 			userId: input.recipientId,
 			type: "TODO_SHARED",
 			title: message.title,
@@ -83,7 +86,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
 		await adapter.notifyCommentLiked(input);
 
 		// Then - 공유 알림 레코드에 특정 모바일 route를 고정하지 않는다
-		expect(notificationSender.createAndSend).toHaveBeenCalledWith(
+		expect(notificationSender.publish).toHaveBeenCalledWith(
 			expect.objectContaining({
 				action: { type: "DEEP_LINK" },
 				metadata: {
@@ -113,7 +116,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
 		await adapter.notifyCommentsWritten(input);
 
 		// Then
-		expect(notificationSender.createAndSend).toHaveBeenCalledWith(
+		expect(notificationSender.publish).toHaveBeenCalledWith(
 			expect.objectContaining({
 				metadata: expect.objectContaining({ activityKind: "REPLY" }),
 			}),
@@ -138,8 +141,8 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
 		await adapter.notifyCommentsWritten(input);
 
 		// Then
-		const first = notificationSender.createAndSend.mock.calls[0]?.[0];
-		const retried = notificationSender.createAndSend.mock.calls[1]?.[0];
+		const first = notificationSender.publish.mock.calls[0]?.[0];
+		const retried = notificationSender.publish.mock.calls[1]?.[0];
 		expect(first?.variantId).toBeDefined();
 		expect(retried?.variantId).toBe(first?.variantId);
 		expect(retried?.title).toBe(first?.title);
@@ -161,7 +164,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
 		});
 
 		// Then
-		expect(notificationSender.getUserLocale).not.toHaveBeenCalled();
-		expect(notificationSender.createAndSend).not.toHaveBeenCalled();
+		expect(recipientLocaleReader.getRecipientLocale).not.toHaveBeenCalled();
+		expect(notificationSender.publish).not.toHaveBeenCalled();
 	});
 });

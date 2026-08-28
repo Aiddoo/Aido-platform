@@ -19,6 +19,7 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 	let useCase: RelayRetentionOutboxUseCase;
 	let repository: Mocked<RetentionRepositoryPort>;
 	let enqueuer: Mocked<RetentionJobEnqueuerPort>;
+	let config: RetentionConfigPort;
 
 	beforeEach(async () => {
 		const compiled = await TestBed.solitary(RelayRetentionOutboxUseCase)
@@ -34,6 +35,17 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 		useCase = compiled.unit;
 		repository = compiled.unitRef.get(RETENTION_REPOSITORY);
 		enqueuer = compiled.unitRef.get(RETENTION_JOB_ENQUEUER);
+		config = compiled.unitRef.get(RETENTION_CONFIG);
+	});
+
+	it("retention이 비활성화된 환경에서는 DB와 queue를 건드리지 않는다", async () => {
+		Object.assign(config, { enabled: false });
+
+		await useCase.execute();
+
+		expect(repository.recoverStaleDispatches).not.toHaveBeenCalled();
+		expect(repository.claimOutboxes).not.toHaveBeenCalled();
+		expect(enqueuer.enqueueDispatch).not.toHaveBeenCalled();
 	});
 
 	it("claim한 outbox를 큐에 등록한 뒤에만 PUBLISHED 처리한다", async () => {
@@ -60,6 +72,22 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 				outboxId: "outbox-1",
 				hasExhaustedRetries: false,
 				error: "redis down",
+			}),
+		);
+	});
+
+	it("마지막 publish 시도도 실패하면 원본 Error와 함께 outbox를 FAILED 처리한다", async () => {
+		repository.claimOutboxes.mockResolvedValue([{ id: "outbox-20", attempts: 20 }]);
+		enqueuer.enqueueDispatch.mockRejectedValue(new Error("pg-boss unavailable"));
+
+		await useCase.execute();
+
+		expect(repository.markOutboxFailed).toHaveBeenCalledWith(
+			expect.objectContaining({
+				outboxId: "outbox-20",
+				publishAttempt: 20,
+				hasExhaustedRetries: true,
+				error: "pg-boss unavailable",
 			}),
 		);
 	});

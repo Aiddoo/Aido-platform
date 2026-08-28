@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { createCheerReceivedNotificationMessage } from "../../../domain/services/templates/notification-templates";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
-import { NotificationSender } from "../../senders/notification.sender";
+import { createCheerReceivedNotificationMessage } from "../../messages/notification-messages";
+import { NotificationPublisher } from "../../publishers/notification.publisher";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
 
 export interface SendCheerNotificationInput {
 	readonly cheerId: number;
@@ -16,10 +17,13 @@ export interface SendCheerNotificationInput {
 export class SendCheerNotificationUseCase {
 	readonly #logger = new Logger(SendCheerNotificationUseCase.name);
 
-	constructor(private readonly notificationSender: NotificationSender) {}
+	constructor(
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+	) {}
 
 	async execute(input: SendCheerNotificationInput): Promise<void> {
-		const locale = await this.notificationSender.getUserLocale(input.receiverId);
+		const locale = await this.recipientLocaleReader.getRecipientLocale(input.receiverId);
 		const variantContext = {
 			campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
 			recipientId: input.receiverId,
@@ -32,7 +36,7 @@ export class SendCheerNotificationUseCase {
 			variantContext,
 		});
 
-		await this.notificationSender.createAndSendWithDedup({
+		await this.notificationPublisher.publishWithDeduplication({
 			userId: input.receiverId,
 			type: "CHEER_RECEIVED",
 			title: message.title,

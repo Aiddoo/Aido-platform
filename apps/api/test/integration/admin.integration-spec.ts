@@ -3,7 +3,7 @@
  *
  * @description
  * endpoint use-case → 포트 어댑터(Prisma/Notification)까지의
- * 배선을 검증합니다. DatabaseService·NotificationSender는
+ * 배선을 검증합니다. DatabaseService·NotificationPublisher는
  * mock으로 대체해 실제 DB/발송 없이 대상 필터링·배치 발송·예외를 확인합니다.
  *
  * 실행 명령:
@@ -24,7 +24,7 @@ import { BroadcastNotificationUseCase } from "@/admin/application/use-cases/broa
 import { SendTargetedNotificationUseCase } from "@/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
 import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "@/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
-import { NotificationSender } from "@/notification";
+import { NotificationPublisher } from "@/notification";
 import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
@@ -42,8 +42,8 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 		user: mockUserDb,
 	});
 
-	const mockNotificationService = {
-		createAndSendBatch: jest.fn().mockResolvedValue({ count: 0 }),
+	const mockNotificationPublisher = {
+		publishBatch: jest.fn().mockResolvedValue({ count: 0 }),
 	};
 
 	beforeAll(async () => {
@@ -65,7 +65,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 					useClass: NotificationAdminBroadcastNotifierAdapter,
 				},
 				{ provide: DatabaseService, useValue: mockDatabaseService },
-				{ provide: NotificationSender, useValue: mockNotificationService },
+				{ provide: NotificationPublisher, useValue: mockNotificationPublisher },
 			],
 		}).compile();
 
@@ -81,14 +81,14 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		mockNotificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		mockNotificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 	});
 
 	describe("브로드캐스트", () => {
 		it("ALL — 모든 사용자에게 알림이 발송된다", async () => {
 			// Given - 3명의 활성 사용자 (배치 크기 미만이라 1회 조회로 종료)
 			mockUserDb.findMany.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }, { id: "user-3" }]);
-			mockNotificationService.createAndSendBatch.mockResolvedValue({
+			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 3,
 			});
 
@@ -104,13 +104,13 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 			// Then - 모든 사용자에게 발송되어야 함
 			expect(result.totalTargets).toBe(3);
 			expect(result.successCount).toBe(3);
-			expect(mockNotificationService.createAndSendBatch).toHaveBeenCalled();
+			expect(mockNotificationPublisher.publishBatch).toHaveBeenCalled();
 		});
 
 		it("WITH_PUSH_TOKEN — 푸시 토큰 조건이 where 절에 반영된다", async () => {
 			// Given - 푸시 토큰이 있는 사용자 2명
 			mockUserDb.findMany.mockResolvedValue([{ id: "user-push-1" }, { id: "user-push-2" }]);
-			mockNotificationService.createAndSendBatch.mockResolvedValue({
+			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 2,
 			});
 
@@ -154,7 +154,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 		it("지정된 userId 목록에 ADMIN_TARGETED 알림이 발송된다", async () => {
 			// Given - 존재하는 사용자 2명
 			mockUserDb.findMany.mockResolvedValue([{ id: "target-user-1" }, { id: "target-user-2" }]);
-			mockNotificationService.createAndSendBatch.mockResolvedValue({
+			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 2,
 			});
 
@@ -170,7 +170,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 			// Then - 지정 사용자에게 ADMIN_TARGETED로 발송되어야 함
 			expect(result.totalTargets).toBe(2);
 			expect(result.successCount).toBe(2);
-			expect(mockNotificationService.createAndSendBatch).toHaveBeenCalledWith(
+			expect(mockNotificationPublisher.publishBatch).toHaveBeenCalledWith(
 				expect.arrayContaining([
 					expect.objectContaining({
 						userId: "target-user-1",
@@ -189,7 +189,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 		it("존재하지 않는 userId는 필터링된다", async () => {
 			// Given - 3개 userId 중 2개만 존재
 			mockUserDb.findMany.mockResolvedValue([{ id: "existing-1" }, { id: "existing-2" }]);
-			mockNotificationService.createAndSendBatch.mockResolvedValue({
+			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 2,
 			});
 
@@ -204,7 +204,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
 			// Then - 존재하는 사용자에게만 발송되어야 함
 			expect(result.totalTargets).toBe(2);
-			expect(mockNotificationService.createAndSendBatch).toHaveBeenCalledWith(
+			expect(mockNotificationPublisher.publishBatch).toHaveBeenCalledWith(
 				expect.not.arrayContaining([expect.objectContaining({ userId: "non-existing" })]),
 			);
 		});

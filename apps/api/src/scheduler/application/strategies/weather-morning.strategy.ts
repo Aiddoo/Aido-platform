@@ -3,7 +3,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	createWeatherMorningFallbackNotificationMessage,
 	createWeatherMorningNotificationMessage,
-	NotificationSender,
+	NotificationHistoryReader,
+	NotificationPublisher,
 } from "@/notification";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { toSupportedLocale } from "@/shared/domain/locale";
@@ -34,7 +35,8 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 	constructor(
 		@Inject(WEATHER_REMINDER_READER)
 		private readonly reader: WeatherReminderReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 		private readonly weatherForecastAccess: WeatherForecastAccess,
 	) {}
 
@@ -71,7 +73,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 			return 0;
 		}
 
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: usersWithLocation.map((u) => u.id),
 			type: "WEATHER_MORNING",
 			notificationDate: today,
@@ -133,7 +135,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 			return 0;
 		}
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 		return notifications.length;
 	}
 
@@ -149,7 +151,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 			return 0;
 		}
 
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: users.map((u) => u.id),
 			type: "WEATHER_MORNING",
 			notificationDate: today,
@@ -180,7 +182,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 		return notifications.length;
 	}
 

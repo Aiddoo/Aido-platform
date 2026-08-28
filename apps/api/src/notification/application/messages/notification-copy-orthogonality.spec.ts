@@ -13,7 +13,7 @@ import {
 	createEveningReminderNotificationMessage,
 	createMorningReminderNotificationMessage,
 	createWinbackNotificationMessage,
-} from "./notification-templates";
+} from "./notification-messages";
 
 const context: NotificationVariantContext = {
 	campaignKey: "orthogonality-test",

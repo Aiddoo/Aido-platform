@@ -10,7 +10,7 @@ import {
 	createWeatherMorningNotificationMessage,
 	createWeeklyAchievementNotificationMessage,
 	createWinbackNotificationMessage,
-} from "./notification-templates";
+} from "./notification-messages";
 
 const VARIANT_CONTEXT = {
 	campaignKey: "copy_test_v1",

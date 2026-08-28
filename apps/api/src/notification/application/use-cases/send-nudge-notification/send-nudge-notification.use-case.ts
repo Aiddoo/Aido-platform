@@ -1,11 +1,12 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
 import {
 	createNudgeReceivedNotificationMessage,
 	createTodoCreationNudgeNotificationMessage,
-} from "../../../domain/services/templates/notification-templates";
-import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
-import { NotificationSender } from "../../senders/notification.sender";
+} from "../../messages/notification-messages";
+import { NotificationPublisher } from "../../publishers/notification.publisher";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
 
 export interface SendNudgeNotificationInput {
 	readonly nudgeId: number;
@@ -21,10 +22,13 @@ export interface SendNudgeNotificationInput {
 export class SendNudgeNotificationUseCase {
 	readonly #logger = new Logger(SendNudgeNotificationUseCase.name);
 
-	constructor(private readonly notificationSender: NotificationSender) {}
+	constructor(
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+	) {}
 
 	async execute(input: SendNudgeNotificationInput): Promise<void> {
-		const locale = await this.notificationSender.getUserLocale(input.receiverId);
+		const locale = await this.recipientLocaleReader.getRecipientLocale(input.receiverId);
 		const variantContext = {
 			campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.NUDGE_RECEIVED,
 			recipientId: input.receiverId,
@@ -45,7 +49,7 @@ export class SendNudgeNotificationUseCase {
 					variantContext,
 				});
 
-		await this.notificationSender.createAndSendWithDedup({
+		await this.notificationPublisher.publishWithDeduplication({
 			userId: input.receiverId,
 			type: "NUDGE_RECEIVED",
 			title: message.title,

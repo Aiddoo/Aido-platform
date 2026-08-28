@@ -26,7 +26,7 @@ import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "@/notification/application/ports/user-notification-settings.port";
-import { NotificationSender } from "@/notification/application/senders/notification.sender";
+import { NotificationHistoryReader } from "@/notification/application/readers/notification-history.reader";
 import { PushDeliveryAfterCommitPublisher } from "@/notification/application/services/push-delivery-after-commit.publisher";
 import { FinalizeBatchNotificationUseCase } from "@/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
@@ -169,7 +169,7 @@ describe("friend-completed durable post-commit publication (component)", () => {
 			getConsentRecordsByUserIds: jest.fn(),
 			updateMarketingPushConsent: jest.fn(),
 		};
-		const notificationSender = {
+		const notificationHistoryReader = {
 			findAlreadyNotifiedUserIds: jest.fn().mockResolvedValue(new Set<string>()),
 		};
 		executePublish = jest.fn(async (input) => {
@@ -184,7 +184,7 @@ describe("friend-completed durable post-commit publication (component)", () => {
 				PersistBatchNotificationUseCase,
 				FinalizeBatchNotificationUseCase,
 				PushDeliveryAfterCommitPublisher,
-				{ provide: NotificationSender, useValue: notificationSender },
+				{ provide: NotificationHistoryReader, useValue: notificationHistoryReader },
 				{ provide: NOTIFICATION_REPOSITORY, useValue: repository },
 				{ provide: PUSH_DISPATCH_STAGING, useValue: staging },
 				{ provide: NOTIFICATION_CACHE, useValue: cache },

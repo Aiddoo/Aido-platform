@@ -13,7 +13,11 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import { createNudgeSuggestionNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createNudgeSuggestionNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
 import type { TimezoneContext } from "../../domain/services/timezone-context";
@@ -32,7 +36,8 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 	let strategy: NudgeSuggestStrategy;
 	let reader: Mocked<ReEngagementReaderPort>;
 	let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-	let notificationService: Mocked<NotificationSender>;
+	let notificationPublisher: Mocked<NotificationPublisher>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 	let schedulerDedup: Mocked<SchedulerDedupPort>;
 
 	const TZ = "Asia/Seoul";
@@ -59,15 +64,16 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		strategy = unit;
 		reader = unitRef.get(RE_ENGAGEMENT_READER);
 		preferenceReader = unitRef.get(SCHEDULER_PREFERENCE_READER);
-		notificationService = unitRef.get(NotificationSender);
+		notificationPublisher = unitRef.get(NotificationPublisher);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 		schedulerDedup = unitRef.get(SCHEDULER_DEDUP);
 
 		// 기본 mock 설정
 		reader.findActiveUsersInTimezone.mockResolvedValue([]);
 		reader.findNudgeSuggestFollows.mockResolvedValue([]);
 		preferenceReader.findUserLocales.mockResolvedValue(new Map());
-		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-		notificationService.createAndSendBatch.mockResolvedValue({ count: 0 });
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 		schedulerDedup.findSentNudgePairs.mockResolvedValue(new Set());
 		schedulerDedup.recordNudgePairs.mockResolvedValue(undefined);
 	});
@@ -108,7 +114,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 
-		const notifications = notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const notifications = notificationPublisher.publishBatch.mock.calls[0]?.[0];
 		const expected = createNudgeSuggestionNotificationMessage({
 			friendName: "친구1",
 			locale: "ko",
@@ -161,7 +167,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
 	it("친구가 없으면 Nudge Suggest를 발송하지 않는다", async () => {
@@ -178,10 +184,10 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 
-	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+	it("대상이 없으면 publishBatch를 호출하지 않는다", async () => {
 		// Given — beforeEach 기본 설정
 		const ctx = makeCtx();
 
@@ -192,6 +198,6 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
 	});
 });

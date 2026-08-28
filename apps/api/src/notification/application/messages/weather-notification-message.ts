@@ -1,14 +1,14 @@
 import { DEFAULT_LOCALE, type SupportedLocale } from "@/shared/domain/locale";
 
-import * as en from "../locales/en";
-import * as ko from "../locales/ko";
-import { renderLocalizedNotification } from "../notification-copy.renderer";
+import * as en from "./locales/en";
+import * as ko from "./locales/ko";
+import { renderLocalizedNotification } from "./notification-copy.renderer";
 import type {
 	LocalizedNotificationTemplate,
 	NotificationMessage,
 	NotificationVariantContext,
 	WeatherCopyVariablesByKey,
-} from "../notification-copy.types";
+} from "./notification-copy.types";
 
 const LOCALE_TEMPLATES = { ko, en };
 

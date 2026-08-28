@@ -1,7 +1,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CreateNotificationData } from "@/notification";
-import { createOnboardingNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createOnboardingNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "@/shared/domain/date/utils/compare";
 import { toDateString } from "@/shared/domain/date/utils/format";
@@ -33,7 +37,8 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		private readonly reader: ReEngagementReaderPort,
 		@Inject(SCHEDULER_PREFERENCE_READER)
 		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -62,7 +67,7 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		}
 
 		// 오늘 SYSTEM_NOTICE 중복 방지
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: eligibleUsers.map(({ user }) => user.id),
 			type: "SYSTEM_NOTICE",
 			notificationDate: today,
@@ -121,7 +126,7 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		}
 
 		if (notifications.length > 0) {
-			await this.notificationService.createAndSendBatch(notifications);
+			await this.notificationPublisher.publishBatch(notifications);
 			this.#logger.log(`Onboarding: tz=${tz}, count=${notifications.length}`);
 		}
 

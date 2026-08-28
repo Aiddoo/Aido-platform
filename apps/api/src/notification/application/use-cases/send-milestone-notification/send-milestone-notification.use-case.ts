@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { createMilestoneNotificationMessage } from "../../../domain/services/templates/notification-templates";
 import type { NotificationMilestone } from "../../../domain/types/notification-milestone";
+import { createMilestoneNotificationMessage } from "../../messages/notification-messages";
 import {
 	NOTIFICATION_DEDUP_LOCK,
 	type NotificationDedupLockPort,
@@ -10,7 +10,8 @@ import {
 	NOTIFICATION_HISTORY_READER,
 	type NotificationHistoryReaderPort,
 } from "../../ports/notification-history.reader.port";
-import { NotificationSender } from "../../senders/notification.sender";
+import { NotificationPublisher } from "../../publishers/notification.publisher";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
 
 export interface SendMilestoneNotificationInput {
 	readonly userId: string;
@@ -22,7 +23,8 @@ export class SendMilestoneNotificationUseCase {
 	readonly #logger = new Logger(SendMilestoneNotificationUseCase.name);
 
 	constructor(
-		private readonly notificationSender: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
 		@Inject(NOTIFICATION_HISTORY_READER)
 		private readonly notificationHistoryReader: NotificationHistoryReaderPort,
 		@Inject(NOTIFICATION_DEDUP_LOCK)
@@ -52,12 +54,12 @@ export class SendMilestoneNotificationUseCase {
 				return;
 			}
 
-			const locale = await this.notificationSender.getUserLocale(input.userId);
+			const locale = await this.recipientLocaleReader.getRecipientLocale(input.userId);
 			const message = createMilestoneNotificationMessage({
 				milestone: input.milestone,
 				locale,
 			});
-			await this.notificationSender.createAndSend({
+			await this.notificationPublisher.publish({
 				userId: input.userId,
 				type: "WEEKLY_ACHIEVEMENT",
 				title: message.title,

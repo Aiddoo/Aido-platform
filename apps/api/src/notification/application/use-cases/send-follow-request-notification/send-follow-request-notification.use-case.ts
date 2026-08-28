@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { createFollowRequestNotificationMessage } from "../../../domain/services/templates/notification-templates";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
-import { NotificationSender } from "../../senders/notification.sender";
+import { createFollowRequestNotificationMessage } from "../../messages/notification-messages";
+import { NotificationPublisher } from "../../publishers/notification.publisher";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
 
 export interface SendFollowRequestNotificationInput {
 	readonly followerId: string;
@@ -14,10 +15,13 @@ export interface SendFollowRequestNotificationInput {
 export class SendFollowRequestNotificationUseCase {
 	readonly #logger = new Logger(SendFollowRequestNotificationUseCase.name);
 
-	constructor(private readonly notificationSender: NotificationSender) {}
+	constructor(
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+	) {}
 
 	async execute(input: SendFollowRequestNotificationInput): Promise<void> {
-		const locale = await this.notificationSender.getUserLocale(input.followingId);
+		const locale = await this.recipientLocaleReader.getRecipientLocale(input.followingId);
 		const variantContext = {
 			campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_REQUEST,
 			recipientId: input.followingId,
@@ -29,7 +33,7 @@ export class SendFollowRequestNotificationUseCase {
 			variantContext,
 		});
 
-		await this.notificationSender.createAndSendWithDedup({
+		await this.notificationPublisher.publishWithDeduplication({
 			userId: input.followingId,
 			type: "FOLLOW_NEW",
 			title: message.title,

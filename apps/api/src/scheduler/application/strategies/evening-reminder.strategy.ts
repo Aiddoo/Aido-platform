@@ -1,7 +1,11 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { createEveningReminderNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createEveningReminderNotificationMessage,
+	NotificationHistoryReader,
+	NotificationPublisher,
+} from "@/notification";
 import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
@@ -23,7 +27,8 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 	constructor(
 		@Inject(SCHEDULED_REMINDER_READER)
 		private readonly reader: ScheduledReminderReaderPort,
-		private readonly notificationService: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationHistoryReader: NotificationHistoryReader,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{
@@ -65,7 +70,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 		}
 
 		// 중복 방지
-		const alreadyNotified = await this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
 			userIds: users.map((u) => u.id),
 			type: "EVENING_REMINDER",
 			notificationDate: today,
@@ -115,7 +120,7 @@ export class EveningReminderStrategy implements ITimezoneStrategy {
 			};
 		});
 
-		await this.notificationService.createAndSendBatch(notifications);
+		await this.notificationPublisher.publishBatch(notifications);
 		this.#logger.log(
 			`Evening reminder: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, count=${notifications.length}`,
 		);

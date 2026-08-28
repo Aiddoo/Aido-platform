@@ -1,6 +1,10 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { createTodoReminderNotificationMessage, NotificationSender } from "@/notification";
+import {
+	createTodoReminderNotificationMessage,
+	NotificationPublisher,
+	NotificationRecipientLocaleReader,
+} from "@/notification";
 import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
 import {
 	JOB_RUNTIME,
@@ -27,7 +31,7 @@ import {
  *
  * - 잡 실행 시 투두 유효성 확인 (완료/삭제 여부)
  * - 24시간 내 동일 알림 dedup
- * - 알림 발송 (NotificationSender)
+ * - 알림 발행 (NotificationPublisher)
  */
 type TodoReminderJob = NamedJob<TodoReminderJobMap>;
 
@@ -38,7 +42,8 @@ export class TodoReminderProcessor implements OnModuleInit {
 	constructor(
 		@Inject(TODO_REMINDER_READER)
 		private readonly reader: TodoReminderReaderPort,
-		private readonly notification: NotificationSender,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
 		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
 	) {}
 
@@ -106,7 +111,7 @@ export class TodoReminderProcessor implements OnModuleInit {
 
 		// 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
 		// 언어는 UserPreference 캐시 경유 (발송 여부 판정과 같은 캐시 엔트리 공유)
-		const locale = await this.notification.getUserLocale(userId);
+		const locale = await this.recipientLocaleReader.getRecipientLocale(userId);
 		const stage = resolveReminderStage(stageLabel);
 		const message = createTodoReminderNotificationMessage({
 			todoTitle: todo.title,
@@ -119,7 +124,7 @@ export class TodoReminderProcessor implements OnModuleInit {
 			},
 		});
 
-		await this.notification.createAndSend({
+		await this.notificationPublisher.publish({
 			userId,
 			type: "TODO_REMINDER",
 			purpose: "SCHEDULED_SERVICE",

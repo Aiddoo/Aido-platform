@@ -8,7 +8,7 @@ import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
 } from "../../ports/user-notification-settings.port";
-import { NotificationSender } from "../../senders/notification.sender";
+import { NotificationHistoryReader } from "../../readers/notification-history.reader";
 import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
 import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case";
@@ -22,7 +22,7 @@ const input = {
 
 describe("SendFriendCompletionNotificationsUseCase", () => {
 	let useCase: SendFriendCompletionNotificationsUseCase;
-	let notificationSender: Mocked<NotificationSender>;
+	let notificationHistoryReader: Mocked<NotificationHistoryReader>;
 	let persistBatch: Mocked<PersistBatchNotificationUseCase>;
 	let finalizeBatch: Mocked<FinalizeBatchNotificationUseCase>;
 	let unitOfWork: Mocked<UnitOfWorkPort>;
@@ -33,12 +33,12 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 			SendFriendCompletionNotificationsUseCase,
 		).compile();
 		useCase = unit;
-		notificationSender = unitRef.get(NotificationSender);
+		notificationHistoryReader = unitRef.get(NotificationHistoryReader);
 		persistBatch = unitRef.get(PersistBatchNotificationUseCase);
 		finalizeBatch = unitRef.get(FinalizeBatchNotificationUseCase);
 		unitOfWork = unitRef.get(UNIT_OF_WORK);
 		userSettings = unitRef.get(USER_NOTIFICATION_SETTINGS);
-		notificationSender.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([]);
 		unitOfWork.run.mockImplementation((work) => work());
 		persistBatch.execute.mockResolvedValue({ count: 2, sourceData: [] });
@@ -47,7 +47,7 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 
 	it("performs external reads before the UoW and finalizes effects only after persistence", async () => {
 		const events: string[] = [];
-		notificationSender.findAlreadyNotifiedUserIds.mockImplementation(async () => {
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockImplementation(async () => {
 			events.push("dedup-read");
 			return new Set();
 		});
@@ -89,7 +89,9 @@ describe("SendFriendCompletionNotificationsUseCase", () => {
 	});
 
 	it("filters recipients already notified and skips when none remain", async () => {
-		notificationSender.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1", "user-2"]));
+		notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(
+			new Set(["user-1", "user-2"]),
+		);
 
 		await useCase.execute(input);
 
