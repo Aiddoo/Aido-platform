@@ -5,6 +5,7 @@ import { TypedConfigService } from "@/shared/infrastructure/config/services/conf
 import { REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
 import { UserSettingsModule } from "@/user-settings/user-settings.module";
 
+import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/active-push-token.reader.port";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port";
 import {
@@ -13,9 +14,14 @@ import {
 } from "./application/ports/notification-dedup.port";
 import { NOTIFICATION_HISTORY_READER } from "./application/ports/notification-history.reader.port";
 import { NOTIFICATION_INBOX_READER } from "./application/ports/notification-inbox.reader.port";
+import {
+	NOTIFICATION_RECIPIENT_LOCALE_READER,
+	type NotificationRecipientLocaleReaderPort,
+} from "./application/ports/notification-recipient-locale.reader.port";
+import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/notification-recipient-preference.reader.port";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port";
 import { PUSH_DISPATCH_REPOSITORY } from "./application/ports/push-dispatch.repository.port";
-import { PUSH_DISPATCHER, type PushDispatcherPort } from "./application/ports/push-dispatcher.port";
+import { PUSH_DISPATCHER } from "./application/ports/push-dispatcher.port";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port";
 import {
 	PUSH_RATE_LIMITER,
@@ -26,6 +32,10 @@ import { PUSH_TOKEN_REPOSITORY } from "./application/ports/push-token.repository
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/user-notification-settings.port";
 import { NotificationSender } from "./application/senders/notification.sender";
 import { NotificationAccountCleanup } from "./application/services/notification-account-cleanup";
+import { PushDeliveryEligibilityService } from "./application/services/push-delivery-eligibility.service";
+import { PushNotificationDeliveryService } from "./application/services/push-notification-delivery.service";
+import { PushNotificationPayloadFactory } from "./application/services/push-notification-payload.factory";
+import { DeliverPushNotificationsUseCase } from "./application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case";
 import { DispatchBatchNotificationUseCase } from "./application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 import { FindAlreadyNotifiedUsersUseCase } from "./application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
 import { GetNotificationsUseCase } from "./application/use-cases/get-notifications/get-notifications.use-case";
@@ -48,10 +58,12 @@ import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-n
 import { SendNotificationUseCase } from "./application/use-cases/send-notification/send-notification.use-case";
 import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification/send-nudge-notification.use-case";
 import { UnregisterPushTokenUseCase } from "./application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/cached-active-push-token-reader.adapter";
+import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter";
+import { InProcessPushDispatcherAdapter } from "./infrastructure/adapters/in-process-push-dispatcher.adapter";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter";
-import { PushDispatcherAdapter } from "./infrastructure/adapters/push-dispatcher.adapter";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter";
 import { PrismaNotificationReader } from "./infrastructure/persistence/prisma-notification.reader";
 import { PrismaNotificationRepository } from "./infrastructure/persistence/prisma-notification.repository";
@@ -89,21 +101,21 @@ import { NotificationController } from "./presentation/notification.controller";
 				SendNotificationWithDedupUseCase,
 				SendBatchNotificationUseCase,
 				FindAlreadyNotifiedUsersUseCase,
-				PUSH_DISPATCHER,
+				NOTIFICATION_RECIPIENT_LOCALE_READER,
 			],
 			useFactory: (
 				sendNotificationUseCase: SendNotificationUseCase,
 				sendNotificationWithDedupUseCase: SendNotificationWithDedupUseCase,
 				sendBatchNotificationUseCase: SendBatchNotificationUseCase,
 				findAlreadyNotifiedUsersUseCase: FindAlreadyNotifiedUsersUseCase,
-				pushDispatcher: PushDispatcherPort,
+				recipientLocaleReader: NotificationRecipientLocaleReaderPort,
 			) =>
 				new NotificationSender(
 					sendNotificationUseCase,
 					sendNotificationWithDedupUseCase,
 					sendBatchNotificationUseCase,
 					findAlreadyNotifiedUsersUseCase,
-					pushDispatcher,
+					recipientLocaleReader,
 				),
 		},
 		GetNotificationsUseCase,
@@ -162,8 +174,28 @@ import { NotificationController } from "./presentation/notification.controller";
 			provide: NOTIFICATION_DEDUP_LOCK,
 			useClass: NotificationDedupLockAdapter,
 		},
-		// 푸시 디스패처 (전송 메커니즘 + 발송 자격 판단)
-		{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
+		// 캐시를 포함한 수신자 조회 capability
+		CachedActivePushTokenReaderAdapter,
+		{
+			provide: ACTIVE_PUSH_TOKEN_READER,
+			useExisting: CachedActivePushTokenReaderAdapter,
+		},
+		CachedNotificationRecipientPreferenceAdapter,
+		{
+			provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,
+			useExisting: CachedNotificationRecipientPreferenceAdapter,
+		},
+		{
+			provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
+			useExisting: CachedNotificationRecipientPreferenceAdapter,
+		},
+		// application 전달 정책 + 기존 fire-and-forget 호출부 호환 경계
+		PushDeliveryEligibilityService,
+		PushNotificationDeliveryService,
+		PushNotificationPayloadFactory,
+		DeliverPushNotificationsUseCase,
+		InProcessPushDispatcherAdapter,
+		{ provide: PUSH_DISPATCHER, useExisting: InProcessPushDispatcherAdapter },
 		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)
 		{
 			provide: PUSH_PROVIDER,

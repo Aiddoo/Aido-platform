@@ -32,6 +32,7 @@ import {
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
 } from "@/notification";
+import { ACTIVE_PUSH_TOKEN_READER } from "@/notification/application/ports/active-push-token.reader.port";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
 import {
@@ -40,14 +41,20 @@ import {
 } from "@/notification/application/ports/notification-dedup.port";
 import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
 import { NOTIFICATION_INBOX_READER } from "@/notification/application/ports/notification-inbox.reader.port";
-import { PUSH_DISPATCH_REPOSITORY } from "@/notification/application/ports/push-dispatch.repository.port";
 import {
-	PUSH_DISPATCHER,
-	type PushDispatcherPort,
-} from "@/notification/application/ports/push-dispatcher.port";
+	NOTIFICATION_RECIPIENT_LOCALE_READER,
+	type NotificationRecipientLocaleReaderPort,
+} from "@/notification/application/ports/notification-recipient-locale.reader.port";
+import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "@/notification/application/ports/notification-recipient-preference.reader.port";
+import { PUSH_DISPATCH_REPOSITORY } from "@/notification/application/ports/push-dispatch.repository.port";
+import { PUSH_DISPATCHER } from "@/notification/application/ports/push-dispatcher.port";
 import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
 import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
+import { PushDeliveryEligibilityService } from "@/notification/application/services/push-delivery-eligibility.service";
+import { PushNotificationDeliveryService } from "@/notification/application/services/push-notification-delivery.service";
+import { PushNotificationPayloadFactory } from "@/notification/application/services/push-notification-payload.factory";
+import { DeliverPushNotificationsUseCase } from "@/notification/application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case";
 import { DispatchBatchNotificationUseCase } from "@/notification/application/use-cases/dispatch-batch-notification/dispatch-batch-notification.use-case";
 // use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
 import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
@@ -63,9 +70,11 @@ import { SendBatchNotificationUseCase } from "@/notification/application/use-cas
 import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
 import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
 import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import { CachedActivePushTokenReaderAdapter } from "@/notification/infrastructure/adapters/cached-active-push-token-reader.adapter";
+import { CachedNotificationRecipientPreferenceAdapter } from "@/notification/infrastructure/adapters/cached-notification-recipient-preference.adapter";
+import { InProcessPushDispatcherAdapter } from "@/notification/infrastructure/adapters/in-process-push-dispatcher.adapter";
 import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
 import { NotificationDedupLockAdapter } from "@/notification/infrastructure/adapters/notification-dedup-lock.adapter";
-import { PushDispatcherAdapter } from "@/notification/infrastructure/adapters/push-dispatcher.adapter";
 import { PrismaNotificationReader } from "@/notification/infrastructure/persistence/prisma-notification.reader";
 import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
 import { PrismaPushDeliveryRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery.repository";
@@ -85,7 +94,7 @@ function buildNotificationTestApi(module: TestingModule) {
 		module.get(SendNotificationWithDedupUseCase),
 		module.get(SendBatchNotificationUseCase),
 		module.get(FindAlreadyNotifiedUsersUseCase),
-		module.get<PushDispatcherPort>(PUSH_DISPATCHER),
+		module.get<NotificationRecipientLocaleReaderPort>(NOTIFICATION_RECIPIENT_LOCALE_READER),
 	);
 	const getNotificationsUseCase = module.get(GetNotificationsUseCase);
 	const getUnreadCountUseCase = module.get(GetUnreadCountUseCase);
@@ -114,7 +123,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let facade: ReturnType<typeof buildNotificationTestApi>;
 	let repository: PrismaNotificationRepository;
-	let pushDispatcher: PushDispatcherAdapter;
+	let pushDispatcher: InProcessPushDispatcherAdapter;
 
 	// Mock 데이터베이스 서비스
 	const mockNotificationDb = {
@@ -219,7 +228,26 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				PrismaPushDeliveryRepository,
 				{ provide: PUSH_DISPATCH_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
 				{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushDeliveryRepository },
-				{ provide: PUSH_DISPATCHER, useClass: PushDispatcherAdapter },
+				CachedActivePushTokenReaderAdapter,
+				{
+					provide: ACTIVE_PUSH_TOKEN_READER,
+					useExisting: CachedActivePushTokenReaderAdapter,
+				},
+				CachedNotificationRecipientPreferenceAdapter,
+				{
+					provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,
+					useExisting: CachedNotificationRecipientPreferenceAdapter,
+				},
+				{
+					provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
+					useExisting: CachedNotificationRecipientPreferenceAdapter,
+				},
+				PushDeliveryEligibilityService,
+				PushNotificationDeliveryService,
+				PushNotificationPayloadFactory,
+				DeliverPushNotificationsUseCase,
+				InProcessPushDispatcherAdapter,
+				{ provide: PUSH_DISPATCHER, useExisting: InProcessPushDispatcherAdapter },
 				// application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
 				{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
 				{
@@ -340,6 +368,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 					provide: PUSH_RATE_LIMITER,
 					useValue: {
 						isRateLimited: jest.fn().mockResolvedValue(false),
+						isEngagementRateLimited: jest.fn().mockResolvedValue(false),
 						reserveBatch: jest
 							.fn()
 							.mockImplementation(async (requests: unknown[]) => requests.map(() => false)),
@@ -351,7 +380,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 		facade = buildNotificationTestApi(module);
 		repository = module.get(PrismaNotificationRepository);
-		pushDispatcher = module.get<PushDispatcherAdapter>(PUSH_DISPATCHER);
+		pushDispatcher = module.get<InProcessPushDispatcherAdapter>(PUSH_DISPATCHER);
 	});
 
 	afterAll(async () => {

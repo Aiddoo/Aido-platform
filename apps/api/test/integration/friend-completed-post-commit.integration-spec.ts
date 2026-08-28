@@ -4,6 +4,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import {
 	createNotificationHistoryReaderMock,
+	createNotificationRecipientLocaleReaderMock,
 	createNotificationRepositoryMock,
 	createPushDispatcherMock,
 	createPushReceiptRepositoryMock,
@@ -15,6 +16,10 @@ import { NOTIFICATION_CACHE } from "@/notification/application/ports/notificatio
 import type { CreateNotificationData } from "@/notification/application/ports/notification-data";
 import { NOTIFICATION_DEDUP } from "@/notification/application/ports/notification-dedup.port";
 import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
+import {
+	NOTIFICATION_RECIPIENT_LOCALE_READER,
+	type NotificationRecipientLocaleReaderPort,
+} from "@/notification/application/ports/notification-recipient-locale.reader.port";
 import {
 	PUSH_DISPATCHER,
 	type PushDispatcherPort,
@@ -82,18 +87,6 @@ class ClosedTransactionDetectingDispatcher implements PushDispatcherPort {
 		private readonly storage: AsyncLocalStorage<TransactionContext>,
 		private readonly delegate: PushDispatcherPort,
 	) {}
-
-	shouldSendPush(
-		...args: Parameters<PushDispatcherPort["shouldSendPush"]>
-	): ReturnType<PushDispatcherPort["shouldSendPush"]> {
-		return this.delegate.shouldSendPush(...args);
-	}
-
-	getUserLocale(
-		...args: Parameters<PushDispatcherPort["getUserLocale"]>
-	): ReturnType<PushDispatcherPort["getUserLocale"]> {
-		return this.delegate.getUserLocale(...args);
-	}
 
 	fireAndForgetPush(
 		...args: Parameters<PushDispatcherPort["fireAndForgetPush"]>
@@ -164,7 +157,8 @@ describe("friend-completed post-commit dispatch (component)", () => {
 			);
 
 		const pushDelegate = createPushDispatcherMock();
-		pushDelegate.getUserLocale = jest.fn().mockResolvedValue("ko");
+		const localeReader = createNotificationRecipientLocaleReaderMock();
+		localeReader.getLocale = jest.fn().mockResolvedValue("ko");
 		dispatcher = new ClosedTransactionDetectingDispatcher(uow.storage, pushDelegate);
 
 		const dedupProvider: IDedupProvider = {
@@ -191,21 +185,21 @@ describe("friend-completed post-commit dispatch (component)", () => {
 						SendNotificationWithDedupUseCase,
 						SendBatchNotificationUseCase,
 						FindAlreadyNotifiedUsersUseCase,
-						PUSH_DISPATCHER,
+						NOTIFICATION_RECIPIENT_LOCALE_READER,
 					],
 					useFactory: (
 						sendNotification: SendNotificationUseCase,
 						sendWithDedup: SendNotificationWithDedupUseCase,
 						sendBatch: SendBatchNotificationUseCase,
 						findAlreadyNotified: FindAlreadyNotifiedUsersUseCase,
-						pushDispatcher: PushDispatcherPort,
+						recipientLocaleReader: NotificationRecipientLocaleReaderPort,
 					) =>
 						new NotificationSender(
 							sendNotification,
 							sendWithDedup,
 							sendBatch,
 							findAlreadyNotified,
-							pushDispatcher,
+							recipientLocaleReader,
 						),
 				},
 				PersistBatchNotificationUseCase,
@@ -232,6 +226,7 @@ describe("friend-completed post-commit dispatch (component)", () => {
 				{ provide: PUSH_RECEIPT_REPOSITORY, useValue: createPushReceiptRepositoryMock() },
 				{ provide: PUSH_TOKEN_REPOSITORY, useValue: createPushTokenRepositoryMock() },
 				{ provide: PUSH_DISPATCHER, useValue: dispatcher },
+				{ provide: NOTIFICATION_RECIPIENT_LOCALE_READER, useValue: localeReader },
 				{
 					provide: NOTIFICATION_CACHE,
 					useValue: {

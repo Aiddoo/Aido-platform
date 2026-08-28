@@ -8,11 +8,8 @@ import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
 } from "../../ports/notification-dedup.port";
-import {
-	type PersistedBatchNotificationDispatch,
-	PUSH_DISPATCHER,
-	type PushDispatcherPort,
-} from "../../ports/push-dispatcher.port";
+import { PUSH_DISPATCHER, type PushDispatcherPort } from "../../ports/push-dispatcher.port";
+import type { PersistedBatchNotificationDispatch } from "../../types/push-delivery.types";
 
 /** 커밋된 배치 알림의 비동기 푸시·캐시·dedup 부수효과를 예약한다. */
 @Injectable()

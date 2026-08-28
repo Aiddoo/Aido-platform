@@ -1,3 +1,4 @@
+import type { ActivePushTokenReaderPort } from "@/notification/application/ports/active-push-token.reader.port";
 import type { MarketingPushOptOutTokenPort } from "@/notification/application/ports/marketing-push-opt-out-token.port";
 import type { NotificationHistoryReaderPort } from "@/notification/application/ports/notification-history.reader.port";
 import type { NotificationInboxReaderPort } from "@/notification/application/ports/notification-inbox.reader.port";
@@ -55,6 +56,21 @@ export function createPushTokenRepositoryMock(): PushTokenRepositoryPort {
 	};
 }
 
+export function createActivePushTokenReaderMock(): ActivePushTokenReaderPort {
+	return {
+		findByUserId: jest.fn(),
+		findByUserIds: jest.fn(),
+	};
+}
+
+export function createNotificationRecipientPreferenceReaderMock(): NotificationRecipientPreferenceReaderPort {
+	return { getPreference: jest.fn() };
+}
+
+export function createNotificationRecipientLocaleReaderMock(): NotificationRecipientLocaleReaderPort {
+	return { getLocale: jest.fn() };
+}
+
 export function createPushDispatchRepositoryMock(): PushDispatchRepositoryPort {
 	return {
 		createPushDispatch: jest.fn(),
@@ -77,8 +93,6 @@ export function createPushReceiptRepositoryMock(): PushReceiptRepositoryPort {
 /** PushDispatcherPort mock 팩토리. */
 export function createPushDispatcherMock(): PushDispatcherPort {
 	return {
-		shouldSendPush: jest.fn(),
-		getUserLocale: jest.fn(),
 		fireAndForgetPush: jest.fn(),
 		fireAndForgetBatchPush: jest.fn(),
 	};
@@ -104,3 +118,5 @@ export function createUserNotificationSettingsMock(): UserNotificationSettingsPo
 		updateMarketingPushConsent: jest.fn(),
 	};
 }
+import type { NotificationRecipientLocaleReaderPort } from "@/notification/application/ports/notification-recipient-locale.reader.port";
+import type { NotificationRecipientPreferenceReaderPort } from "@/notification/application/ports/notification-recipient-preference.reader.port";
