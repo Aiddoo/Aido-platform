@@ -1,6 +1,5 @@
 import {
   getAnalytics,
-  logEvent,
   resetAnalyticsData,
   setUserId,
   setUserProperty,
@@ -11,19 +10,20 @@ import { createFirebaseAnalytics } from './firebase-analytics';
 
 jest.mock('@react-native-firebase/analytics', () => ({
   getAnalytics: jest.fn(),
-  logEvent: jest.fn(),
   resetAnalyticsData: jest.fn(),
   setUserId: jest.fn(),
   setUserProperty: jest.fn(),
 }));
 
 const mockGetAnalytics = getAnalytics as jest.MockedFunction<typeof getAnalytics>;
-const mockLogEvent = logEvent as jest.MockedFunction<typeof logEvent>;
 const mockResetAnalyticsData = resetAnalyticsData as jest.MockedFunction<typeof resetAnalyticsData>;
 const mockSetUserId = setUserId as jest.MockedFunction<typeof setUserId>;
 const mockSetUserProperty = setUserProperty as jest.MockedFunction<typeof setUserProperty>;
 
-const firebaseAnalytics = {} as ReturnType<typeof getAnalytics>;
+const mockAnalyticsLogEvent = jest.fn<Promise<void>, [string, Record<string, unknown>?]>();
+const firebaseAnalytics = {
+  logEvent: mockAnalyticsLogEvent,
+} as unknown as ReturnType<typeof getAnalytics>;
 
 const createLogger = (): jest.Mocked<Logger> => ({
   debug: jest.fn(),
@@ -35,23 +35,23 @@ const createLogger = (): jest.Mocked<Logger> => ({
 describe('createFirebaseAnalytics', () => {
   beforeEach(() => {
     mockGetAnalytics.mockReturnValue(firebaseAnalytics);
-    mockLogEvent.mockImplementation(() => undefined);
+    mockAnalyticsLogEvent.mockResolvedValue(undefined);
     mockSetUserId.mockResolvedValue(undefined);
     mockSetUserProperty.mockResolvedValue(undefined);
     mockResetAnalyticsData.mockResolvedValue(undefined);
   });
 
-  it('이벤트와 화면 조회를 modular logEvent로 기록한다', () => {
+  it('이벤트와 화면 조회를 Promise가 보존되는 Analytics instance로 기록한다', () => {
     const analytics = createFirebaseAnalytics(createLogger());
 
     analytics.trackEvent('todo_created', { source: 'quick_add' });
     analytics.trackScreenView('TodoDetail', { todo_id: 'todo-1' });
 
     expect(mockGetAnalytics).toHaveBeenCalledTimes(1);
-    expect(mockLogEvent).toHaveBeenNthCalledWith(1, firebaseAnalytics, 'todo_created', {
+    expect(mockAnalyticsLogEvent).toHaveBeenNthCalledWith(1, 'todo_created', {
       source: 'quick_add',
     });
-    expect(mockLogEvent).toHaveBeenNthCalledWith(2, firebaseAnalytics, 'screen_view', {
+    expect(mockAnalyticsLogEvent).toHaveBeenNthCalledWith(2, 'screen_view', {
       screen_name: 'TodoDetail',
       screen_class: 'TodoDetail',
       todo_id: 'todo-1',
@@ -61,7 +61,7 @@ describe('createFirebaseAnalytics', () => {
   it('동기 logEvent 예외를 포트 밖으로 전파하지 않고 맥락과 함께 로깅한다', () => {
     const logger = createLogger();
     const analytics = createFirebaseAnalytics(logger);
-    mockLogEvent.mockImplementation(() => {
+    mockAnalyticsLogEvent.mockImplementation(() => {
       throw new Error('invalid event');
     });
 
@@ -73,10 +73,24 @@ describe('createFirebaseAnalytics', () => {
     });
   });
 
+  it('이벤트 전송 Promise rejection을 fire-and-forget 포트 밖으로 전파하지 않는다', async () => {
+    const logger = createLogger();
+    const analytics = createFirebaseAnalytics(logger);
+    mockAnalyticsLogEvent.mockRejectedValueOnce(new Error('native event rejected'));
+
+    expect(() => analytics.trackEvent('todo_created')).not.toThrow();
+    await Promise.resolve();
+
+    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] trackEvent failed', {
+      eventName: 'todo_created',
+      error: 'native event rejected',
+    });
+  });
+
   it('화면 조회의 동기 예외를 화면 맥락과 함께 로깅한다', () => {
     const logger = createLogger();
     const analytics = createFirebaseAnalytics(logger);
-    mockLogEvent.mockImplementation(() => {
+    mockAnalyticsLogEvent.mockImplementation(() => {
       throw new Error('invalid screen');
     });
 
