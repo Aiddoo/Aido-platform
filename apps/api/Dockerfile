@@ -1,5 +1,5 @@
 # Stage 1: base - Node + pnpm
-FROM node:22-alpine AS base
+FROM node:24.20.0-alpine3.24 AS base
 RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 WORKDIR /app
 
@@ -42,7 +42,7 @@ RUN pnpm --filter @aido/api deploy --legacy --prod /app/production
 
 
 # Stage 4: migrate - Prisma 마이그레이션 (경량화)
-FROM node:22-alpine AS migrate
+FROM node:24.20.0-alpine3.24 AS migrate
 RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 WORKDIR /app/apps/api
 
@@ -86,7 +86,7 @@ EXPOSE 8080
 CMD ["pnpm", "dev"]
 
 # Stage 6: production - 최종 런타임
-FROM node:22-alpine AS production
+FROM node:24.20.0-alpine3.24 AS production
 
 WORKDIR /app
 

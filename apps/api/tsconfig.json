@@ -8,7 +8,7 @@
 		}
 	},
 	"compilerOptions": {
-		// node16 → nodenext: Node 22.12+의 require(esm)을 타입 레벨에서도 허용
+		// node16 → nodenext: 운영 Node 24의 require(esm)을 타입 레벨에서도 허용
 		// (expo-server-sdk v6, ai v7 등 ESM-only 의존성을 CJS 빌드에서 사용)
 		"module": "nodenext",
 		"moduleResolution": "nodenext",

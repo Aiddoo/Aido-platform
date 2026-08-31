@@ -184,7 +184,7 @@ jobs:
           target: production
           platforms: linux/arm64
           push: true
-          pull: true # base 이미지(node:22-alpine) 최신 digest 확인 — 보안 패치 자동 수급
+          pull: true # node:24.20.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
           cache-from: type=gha
@@ -198,7 +198,7 @@ jobs:
           target: migrate
           platforms: linux/arm64
           push: true
-          pull: true # base 이미지(node:22-alpine) 최신 digest 확인 — 보안 패치 자동 수급
+          pull: true # node:24.20.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
           cache-from: type=gha

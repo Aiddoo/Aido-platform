@@ -5,13 +5,16 @@
   },
   "build": {
     "development": {
+      "node": "24.20.0",
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
+      "node": "24.20.0",
       "distribution": "internal"
     },
     "production": {
+      "node": "24.20.0",
       "autoIncrement": true
     }
   },
