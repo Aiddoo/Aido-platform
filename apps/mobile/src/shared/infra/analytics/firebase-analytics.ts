@@ -1,6 +1,5 @@
 import {
   getAnalytics,
-  logEvent,
   resetAnalyticsData,
   setUserId,
   setUserProperty,
@@ -11,8 +10,9 @@ import type { Logger } from '@src/core/ports/logger';
 /**
  * Firebase Analytics 어댑터.
  *
- * `Analytics` 포트는 fire-and-forget `: void` 계약이다. RNFirebase v26의 `logEvent`는
- * 동기 `void`라 즉시 예외를 잡고, 사용자 식별 API는 Promise rejection까지 로깅한다.
+ * `Analytics` 포트는 fire-and-forget `: void` 계약이다. RNFirebase v26의 modular
+ * `logEvent`는 내부 native Promise를 반환하지 않으므로, 이벤트만 instance method로
+ * 호출해 동기 검증 예외와 native Promise rejection을 모두 포트 안에서 격리한다.
  */
 export const createFirebaseAnalytics = (logger: Logger): Analytics => {
   const firebaseAnalytics = getAnalytics();
@@ -22,18 +22,6 @@ export const createFirebaseAnalytics = (logger: Logger): Analytics => {
       ...extra,
       error: error instanceof Error ? error.message : String(error),
     });
-  };
-
-  const invokeSync = (
-    label: string,
-    operation: () => void,
-    extra?: Record<string, unknown>,
-  ): void => {
-    try {
-      operation();
-    } catch (error) {
-      warn(label, error, extra);
-    }
   };
 
   const invokeAsync = (
@@ -53,13 +41,13 @@ export const createFirebaseAnalytics = (logger: Logger): Analytics => {
 
   return {
     trackEvent(eventName: string, params?: AnalyticsEventParams): void {
-      invokeSync('trackEvent', () => logEvent(firebaseAnalytics, eventName, params), { eventName });
+      invokeAsync('trackEvent', () => firebaseAnalytics.logEvent(eventName, params), { eventName });
     },
     trackScreenView(screenName: string, params?: AnalyticsEventParams): void {
-      invokeSync(
+      invokeAsync(
         'trackScreenView',
         () =>
-          logEvent(firebaseAnalytics, 'screen_view', {
+          firebaseAnalytics.logEvent('screen_view', {
             screen_name: screenName,
             screen_class: screenName,
             ...params,
