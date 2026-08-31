@@ -28,7 +28,7 @@
 | Validation   | Zod 4.3, nestjs-zod                    |
 | Testing      | Jest 29, Vitest 4, Testcontainers      |
 | Code Quality | Oxlint 1.78, Oxfmt 0.63                |
-| Runtime      | Node.js 22.23.2                        |
+| Runtime      | Node.js 24.20.0 LTS                    |
 
 ## 구조
 
