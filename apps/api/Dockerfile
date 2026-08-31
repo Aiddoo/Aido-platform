@@ -1,5 +1,5 @@
 # Stage 1: base - Node + pnpm
-FROM node:22-alpine AS base
+FROM node:24.20.0-alpine3.24 AS base
 RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 WORKDIR /app
 
@@ -42,7 +42,7 @@ RUN pnpm --filter @aido/api deploy --legacy --prod /app/production
 
 
 # Stage 4: migrate - Prisma 마이그레이션 (경량화)
-FROM node:22-alpine AS migrate
+FROM node:24.20.0-alpine3.24 AS migrate
 RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 WORKDIR /app/apps/api
 
@@ -53,9 +53,9 @@ COPY apps/api/scripts/migrate.sh ./scripts/migrate.sh
 # prisma.config.ts가 require하는 문지기 — 없으면 이 이미지의 모든 Prisma 명령이 죽는다.
 COPY apps/api/scripts/guard-database-url.cjs ./scripts/guard-database-url.cjs
 
-# 빈 프로젝트에 prisma CLI만 설치 (workspace/catalog 의존 회피)
-# apps/api/package.json의 prisma 버전(^7.8.0)과 함께 올릴 것 — silent major 업그레이드 방지
-RUN pnpm init && pnpm add prisma@7.8.0 pg-boss@12.26.2 && chmod 0755 ./scripts/migrate.sh
+# 빈 프로젝트에 migration CLI만 설치 (workspace/catalog 의존 회피)
+# 정본은 apps/api/package.json이다. 런타임 버전 변경 시 이 exact pin도 같은 PR에서 맞춘다.
+RUN pnpm init && pnpm add prisma@7.10.0 pg-boss@12.27.0 && chmod 0755 ./scripts/migrate.sh
 
 # RDS CA 인증서
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
@@ -86,7 +86,7 @@ EXPOSE 8080
 CMD ["pnpm", "dev"]
 
 # Stage 6: production - 최종 런타임
-FROM node:22-alpine AS production
+FROM node:24.20.0-alpine3.24 AS production
 
 WORKDIR /app
 

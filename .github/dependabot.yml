@@ -60,7 +60,7 @@ updates:
         update-types: ['version-update:semver-major']
       - dependency-name: '@types/jest'
         update-types: ['version-update:semver-major']
-      # @types/node: 프로덕션 런타임 node:22-alpine 라인 유지
+      # @types/node: 프로덕션 런타임 Node 24 라인의 타입 surface 유지
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
       # zod: @aido/validators 서버 계약 동결 — minor도 검증 시맨틱 변화 이력(4.4.0)

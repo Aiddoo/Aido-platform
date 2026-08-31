@@ -242,7 +242,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           allowDynamicLocaleChangesAndroid: true,
         },
       ],
-      '@react-native-firebase/app',
+      [
+        '@react-native-firebase/app',
+        {
+          ios: {
+            disableSPM: true,
+          },
+        },
+      ],
       '@react-native-community/datetimepicker',
       [
         '@sentry/react-native/expo',

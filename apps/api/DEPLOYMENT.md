@@ -14,7 +14,7 @@
 ## Prerequisites
 
 - Docker 24+ / Docker Compose V2
-- Node.js 22.x / pnpm 10.29+
+- Node.js 24.20.0 / pnpm 10.29+
 
 ---
 
@@ -318,4 +318,4 @@ docker exec aido-prod-api wget -qO- http://localhost:8080/health
 docker images aido-platform-api
 ```
 
-Production 이미지는 `node:22-alpine` + production deps만 포함하여 경량화됩니다.
+Production 이미지는 `node:24.20.0-alpine3.24` + production deps만 포함하여 경량화됩니다.
