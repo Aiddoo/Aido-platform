@@ -183,10 +183,19 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				picture: payload.picture,
 			};
 		} catch (error) {
-			this.#logger.error(`Google token verification failed: ${error}`);
+			const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+			const isExpired =
+				errorMessage.includes("expired") || errorMessage.includes("token used too late");
+			const errorType = error instanceof Error ? error.name : "UnknownError";
 
-			// Google Auth Library는 만료된 토큰에 대해 일반 에러를 던짐
-			if (error instanceof Error && error.message.includes("expired")) {
+			// Google v11 오류 문자열에는 decoded payload가 포함될 수 있어 원문을 로그하지 않는다.
+			this.#logger.error(
+				`Google token verification failed (${isExpired ? "expired" : "invalid"}): ${errorType}`,
+			);
+
+			// Google Auth Library는 전용 만료 오류 타입 없이 일반 Error를 사용한다.
+			// 실제 서명 검증 경로의 메시지는 "Token used too late"이므로 기존 expired 표현과 함께 처리한다.
+			if (isExpired) {
 				throw new ApplicationException(ErrorCode.SOCIAL_0203, {
 					provider: "GOOGLE",
 				});
