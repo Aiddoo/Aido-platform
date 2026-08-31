@@ -17,6 +17,25 @@ export function isRecordNotFoundError(error: unknown): boolean {
 	return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 }
 
+/** Serializable 트랜잭션 write conflict/deadlock 재시도 가능 여부 */
+export function isTransactionWriteConflict(error: unknown): boolean {
+	if (error instanceof Prisma.PrismaClientKnownRequestError) {
+		return error.code === "P2034";
+	}
+
+	if (!(error instanceof Error) || error.name !== "DriverAdapterError") {
+		return false;
+	}
+
+	const cause = error.cause;
+	return (
+		typeof cause === "object" &&
+		cause !== null &&
+		"kind" in cause &&
+		cause.kind === "TransactionWriteConflict"
+	);
+}
+
 /**
  * 유니크 위반(P2002)의 대상 필드 목록.
  *
