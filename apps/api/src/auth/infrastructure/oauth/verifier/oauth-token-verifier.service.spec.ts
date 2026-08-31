@@ -127,19 +127,36 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.verifyGoogleToken("invalid-token")).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyGoogleToken("invalid-token")).rejects.toMatchObject({
+				errorCode: ErrorCode.SOCIAL_0202,
+				details: { provider: "GOOGLE" },
+			});
 		});
 
 		it("만료된 토큰은 socialTokenExpired 에러를 발생시킨다", async () => {
 			// Given
-			mockGoogleVerifyIdToken.mockRejectedValue(new Error("Token used too late, expired"));
+			mockGoogleVerifyIdToken.mockRejectedValue(
+				new Error('Token used too late, 100 > 90: {"sub":"google-user-123"}'),
+			);
 
 			// When & Then
-			await expect(service.verifyGoogleToken("expired-token")).rejects.toThrow(
-				ApplicationException,
+			await expect(service.verifyGoogleToken("expired-token")).rejects.toMatchObject({
+				errorCode: ErrorCode.SOCIAL_0203,
+				details: { provider: "GOOGLE" },
+			});
+		});
+
+		it("audience가 다른 토큰은 socialTokenInvalid 에러를 발생시킨다", async () => {
+			// Given
+			mockGoogleVerifyIdToken.mockRejectedValue(
+				new Error("Wrong recipient, payload audience != requiredAudience"),
 			);
+
+			// When & Then
+			await expect(service.verifyGoogleToken("wrong-audience-token")).rejects.toMatchObject({
+				errorCode: ErrorCode.SOCIAL_0202,
+				details: { provider: "GOOGLE" },
+			});
 		});
 
 		it("잘못된 토큰은 socialTokenInvalid 에러를 발생시킨다", async () => {
@@ -147,9 +164,10 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			mockGoogleVerifyIdToken.mockRejectedValue(new Error("Invalid signature"));
 
 			// When & Then
-			await expect(service.verifyGoogleToken("malformed-token")).rejects.toThrow(
-				ApplicationException,
-			);
+			await expect(service.verifyGoogleToken("malformed-token")).rejects.toMatchObject({
+				errorCode: ErrorCode.SOCIAL_0202,
+				details: { provider: "GOOGLE" },
+			});
 		});
 	});
 
