@@ -27,6 +27,9 @@ export interface RedisConnectionSettings {
 export function buildBullRedisOptions(settings: RedisConnectionSettings): RedisOptions {
 	return {
 		...baseHostOptions(settings),
+		// ioredis 6은 RESP3가 기본이지만 기존 Redis/BullMQ wire contract를
+		// 유지해 rolling deployment 중 protocol 차이를 만들지 않는다.
+		protocol: 2,
 		maxRetriesPerRequest: null,
 		enableReadyCheck: true,
 		connectionName: "aido-main",
@@ -48,6 +51,8 @@ export function buildBullRedisOptions(settings: RedisConnectionSettings): RedisO
 export function buildCommandRedisOptions(settings: RedisConnectionSettings): RedisOptions {
 	return {
 		...baseHostOptions(settings),
+		// 캐시·락·스로틀의 응답 shape를 v5와 동일하게 유지한다.
+		protocol: 2,
 		maxRetriesPerRequest: 1,
 		enableOfflineQueue: false,
 		commandTimeout: settings.commandTimeoutMs,

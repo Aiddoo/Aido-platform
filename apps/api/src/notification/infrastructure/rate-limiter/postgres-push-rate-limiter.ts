@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma, type PushRateLimitPhase } from "@/generated/prisma/client";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { isTransactionWriteConflict } from "@/shared/infrastructure/database/prisma-error.util";
 
 import type {
 	EngagementPushRateLimitRequest,
@@ -106,7 +107,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
 					{ isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
 				);
 			} catch (error) {
-				if (this.#isRetryableConflict(error) && attempt < MAX_TRANSACTION_RETRIES) continue;
+				if (isTransactionWriteConflict(error) && attempt < MAX_TRANSACTION_RETRIES) continue;
 				throw error;
 			}
 		}
@@ -214,10 +215,6 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
 
 	#toDate(localDate: string): Date {
 		return new Date(`${localDate}T00:00:00.000Z`);
-	}
-
-	#isRetryableConflict(error: unknown): boolean {
-		return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
 	}
 
 	#requiredDecision(value: boolean | undefined, dispatchId: number): boolean {
