@@ -9,7 +9,6 @@
  * - PinoLogger 억제
  */
 
-import { getQueueToken } from "@nestjs/bullmq";
 import type { INestApplication } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
@@ -20,35 +19,25 @@ import type { App } from "supertest/types";
 import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "@/admin-notification";
 import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "@/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
-import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue";
 import { AI_PROVIDER } from "@/ai";
-import { AI_REPORT_QUEUE } from "@/ai-report";
 import { ReportGenerationJob } from "@/ai-report/infrastructure/jobs/report-generation.job";
 import { ReportGenerationProcessor } from "@/ai-report/infrastructure/processors/report-generation.processor";
-import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
 import { SuggestionAnalysisJob } from "@/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
 import { SuggestionAnalysisProcessor } from "@/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
 import { AppModule } from "@/app.module";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "@/auth/application/ports/oauth-identity-provider.port";
 import { createOAuthProviderRegistry } from "@/auth/infrastructure/oauth/adapters";
 import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import {
-	ACCOUNT_PURGE_QUEUE,
-	AccountPurgeProcessor,
-} from "@/auth/infrastructure/queue/account-purge.processor";
+import { AccountPurgeProcessor } from "@/auth/infrastructure/queue/account-purge.processor";
 import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
 import { TransactionalEmailSender } from "@/email";
 import { PUSH_PROVIDER } from "@/notification";
 import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
-import { NOTIFICATION_QUEUE } from "@/notification/queue";
-import { RETENTION_QUEUE } from "@/retention/infrastructure/queue/retention-queue.constants";
 import { RetentionQueueProcessor } from "@/retention/infrastructure/queue/retention-queue.processor";
 import { RetentionQueueService } from "@/retention/infrastructure/queue/retention-queue.service";
 import {
-	TIMEZONE_REMINDER_QUEUE,
 	TimezoneAwareReminderOrchestrator,
 	TimezoneReminderProcessor,
-	TODO_REMINDER_QUEUE,
 	TodoReminderProcessor,
 } from "@/scheduler";
 import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "@/shared/application/ports";
@@ -66,7 +55,6 @@ import { WEATHER_PROVIDER } from "@/weather/application/ports/weather-provider.p
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";
-import { createMockBullQueue } from "../../mocks/fake-bull-queue";
 import { FakeEmailService } from "../../mocks/fake-email.service";
 import { FakeJobRuntime } from "../../mocks/fake-job-runtime";
 import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider";
@@ -82,20 +70,9 @@ import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-s
 import { bypassE2eThrottler, restoreRealE2eThrottler } from "./e2e-throttler-control";
 import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher";
 
-/* ── BullMQ 격리 대상 ─────────────────────────────────── */
+/* ── 백그라운드 작업 격리 대상 ────────────────────────── */
 
-const BULL_QUEUES = [
-	ADMIN_NOTIFICATION_QUEUE,
-	TIMEZONE_REMINDER_QUEUE,
-	TODO_REMINDER_QUEUE,
-	AI_SUGGESTION_QUEUE,
-	AI_REPORT_QUEUE,
-	ACCOUNT_PURGE_QUEUE,
-	NOTIFICATION_QUEUE,
-	RETENTION_QUEUE,
-];
-
-const BULL_PROCESSORS = [
+const BACKGROUND_PROCESSORS = [
 	AdminNotificationProcessor,
 	TimezoneReminderProcessor,
 	TodoReminderProcessor,
@@ -106,7 +83,7 @@ const BULL_PROCESSORS = [
 	RetentionQueueProcessor,
 ];
 
-const BULL_JOBS = [
+const BACKGROUND_JOBS = [
 	DailySignupSummaryScheduler,
 	TimezoneAwareReminderOrchestrator,
 	SuggestionAnalysisJob,
@@ -285,18 +262,13 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 			},
 		});
 
-	// BullMQ 격리: Queue 토큰 → mock queue
-	for (const queueName of BULL_QUEUES) {
-		builder = builder.overrideProvider(getQueueToken(queueName)).useValue(createMockBullQueue());
-	}
-
-	// BullMQ 격리: Processor → no-op (Worker 생성 차단)
-	for (const processor of BULL_PROCESSORS) {
+	// Processor → no-op (E2E 앱에서 실제 worker 실행 차단)
+	for (const processor of BACKGROUND_PROCESSORS) {
 		builder = builder.overrideProvider(processor).useValue({});
 	}
 
-	// BullMQ 격리: Job/Scheduler → no-op (onModuleInit 차단)
-	for (const job of BULL_JOBS) {
+	// Job/Scheduler → no-op (E2E 앱에서 onModuleInit 실행 차단)
+	for (const job of BACKGROUND_JOBS) {
 		builder = builder.overrideProvider(job).useValue({});
 	}
 

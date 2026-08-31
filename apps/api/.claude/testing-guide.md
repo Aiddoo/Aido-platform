@@ -126,7 +126,6 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 | `fake-admin-notifier.ts`               | Discord 관리자 알림 |
 | `fake-ai.provider.ts`                  | Gemini AI           |
 | `fake-push.provider.ts`                | Expo 푸시 알림      |
-| `fake-bull-queue.ts`                   | BullMQ 큐           |
 | `fake-logger.service.ts`               | Pino Logger         |
 
 ### 4.3 Builder vs Fixture 선택 기준
