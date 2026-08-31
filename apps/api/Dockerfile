@@ -55,7 +55,7 @@ COPY apps/api/scripts/guard-database-url.cjs ./scripts/guard-database-url.cjs
 
 # 빈 프로젝트에 migration CLI만 설치 (workspace/catalog 의존 회피)
 # 정본은 apps/api/package.json이다. 런타임 버전 변경 시 이 exact pin도 같은 PR에서 맞춘다.
-RUN pnpm init && pnpm add prisma@7.9.1 pg-boss@12.27.0 && chmod 0755 ./scripts/migrate.sh
+RUN pnpm init && pnpm add prisma@7.10.0 pg-boss@12.27.0 && chmod 0755 ./scripts/migrate.sh
 
 # RDS CA 인증서
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
