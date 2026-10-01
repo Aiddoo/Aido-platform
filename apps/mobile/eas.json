@@ -43,7 +43,16 @@
         "gradleCommand": ":app:assembleRelease"
       }
     },
+    "production-device": {
+      "extends": "production",
+      "distribution": "internal",
+      "autoIncrement": false,
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
+      "environment": "production",
       "node": "24.21.0",
       "autoIncrement": true,
       "channel": "production",
@@ -65,9 +74,7 @@
         "track": "internal"
       },
       "ios": {
-        "appleId": "$APPLE_ID",
-        "ascAppId": "$ASC_APP_ID",
-        "appleTeamId": "$APPLE_TEAM_ID"
+        "ascAppId": "6757722325"
       }
     }
   }

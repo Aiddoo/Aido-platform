@@ -258,6 +258,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         },
       ],
+      './plugins/withFirebaseInitialization',
       '@react-native-community/datetimepicker',
       [
         '@sentry/react-native/expo',
@@ -271,6 +272,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-build-properties',
         {
           ios: {
+            // 1.10.0: precompiled ExpoFileSystem referenced a missing ExpoModulesJSI Swift symbol.
+            // Compile Expo modules together until their precompiled ABI is compatible.
+            usePrecompiledModules: false,
             useFrameworks: 'static',
             forceStaticLinking: ['RNFBApp', 'RNFBAnalytics'],
           },
