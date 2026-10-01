@@ -16,7 +16,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.9.0';
+const VERSION = '1.9.1';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -153,6 +153,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // iOS
     ios: {
+      appStoreUrl: 'https://apps.apple.com/app/id6757722325',
       requireFullScreen: true,
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
@@ -194,6 +195,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // Android
     android: {
+      playStoreUrl: 'https://play.google.com/store/apps/details?id=com.aido.mobile',
       package: envConfig.packageName,
       adaptiveIcon: {
         foregroundImage: ADAPTIVE_ICON,

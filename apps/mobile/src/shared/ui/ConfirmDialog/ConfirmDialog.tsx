@@ -1,12 +1,16 @@
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Button, type ButtonProps } from '@src/shared/ui/Button';
 import { HStack } from '@src/shared/ui/HStack';
 import { H4, Text } from '@src/shared/ui/Text';
 import { VStack } from '@src/shared/ui/VStack';
 import { Dialog } from 'heroui-native';
-import type { ReactNode } from 'react';
+import { cloneElement, isValidElement, type ReactNode } from 'react';
 import { View } from 'react-native';
 
 import type { ConfirmDialogProps } from './ConfirmDialog.types';
+
+const asFullWidthAction = (action: ReactNode): ReactNode =>
+  isValidElement<ButtonProps>(action) ? cloneElement(action, { display: 'full' }) : action;
 
 export function ConfirmDialog({
   isOpen,
@@ -16,6 +20,8 @@ export function ConfirmDialog({
   cancelButton,
   confirmButton,
 }: ConfirmDialogProps) {
+  const { fontScale } = useFontScale();
+  const stackActions = fontScale === 'xlarge' && Boolean(cancelButton);
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -26,7 +32,12 @@ export function ConfirmDialog({
               {title}
               {description}
             </VStack>
-            {cancelButton ? (
+            {cancelButton && stackActions ? (
+              <VStack gap={8} className="w-full">
+                <View className="w-full">{asFullWidthAction(confirmButton)}</View>
+                <View className="w-full">{asFullWidthAction(cancelButton)}</View>
+              </VStack>
+            ) : cancelButton ? (
               <HStack gap={8} className="w-full">
                 <View className="flex-1">{cancelButton}</View>
                 <View className="flex-1">{confirmButton}</View>

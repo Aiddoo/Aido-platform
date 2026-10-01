@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+	type AppVersionConfig,
+	appVersionSchema,
+	validateAppVersionConfig,
+} from "./app-version.schema";
 import { type AppConfig, appSchema } from "./app.schema";
 import { type CacheEnvConfig, cacheSchema } from "./cache.schema";
 import { type DatabaseConfig, databaseSchema } from "./database.schema";
@@ -20,6 +25,7 @@ import { type WebhookConfig, webhookSchema } from "./webhook.schema";
 
 // 스키마 재export
 export * from "./app.schema";
+export * from "./app-version.schema";
 export * from "./cache.schema";
 export * from "./database.schema";
 export * from "./email.schema";
@@ -39,6 +45,7 @@ export * from "./webhook.schema";
 export const envSchema = z
 	.object({})
 	.merge(appSchema)
+	.merge(appVersionSchema)
 	.merge(cacheSchema)
 	.merge(databaseSchema)
 	.merge(emailSchema)
@@ -51,12 +58,14 @@ export const envSchema = z
 	.merge(externalSchema)
 	.merge(webhookSchema)
 	.merge(featureDiscoverySchema)
-	.superRefine(validateFeatureDiscoveryConfig);
+	.superRefine(validateFeatureDiscoveryConfig)
+	.superRefine(validateAppVersionConfig);
 
 /**
  * 환경변수 전체 타입
  */
 export type EnvConfig = AppConfig &
+	AppVersionConfig &
 	CacheEnvConfig &
 	DatabaseConfig &
 	EmailConfig &

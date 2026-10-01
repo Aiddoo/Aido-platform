@@ -214,6 +214,14 @@ export class TypedConfigService {
 		};
 	}
 
+	get appVersion() {
+		return {
+			enabled: this.get("APP_VERSION_CHECK_ENABLED"),
+			iosLatestVersion: this.get("APP_VERSION_CHECK_IOS_LATEST_VERSION"),
+			androidLatestVersion: this.get("APP_VERSION_CHECK_ANDROID_LATEST_VERSION"),
+		};
+	}
+
 	get revenuecat() {
 		return {
 			secretApiKey: this.get("REVENUECAT_SECRET_API_KEY"),

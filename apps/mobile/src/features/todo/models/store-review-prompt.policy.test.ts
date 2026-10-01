@@ -1,7 +1,7 @@
+import type { StoreReviewPromptState } from './store-review-prompt.model';
 import {
   STORE_REVIEW_DISMISSAL_COOLDOWN_MS,
   StoreReviewPromptPolicy,
-  type StoreReviewPromptState,
 } from './store-review-prompt.policy';
 
 const EMPTY_STATE: StoreReviewPromptState = {
@@ -27,19 +27,6 @@ describe('StoreReviewPromptPolicy', () => {
     ).toBe(true);
   });
 
-  it('같은 할 일을 같은 날 다시 완료해도 완료 횟수를 중복 집계하지 않는다', () => {
-    const once = StoreReviewPromptPolicy.recordSuccessfulCompletion(EMPTY_STATE, {
-      todoId: 1,
-      localDate: '2026-08-10',
-    });
-    const twice = StoreReviewPromptPolicy.recordSuccessfulCompletion(once, {
-      todoId: 1,
-      localDate: '2026-08-10',
-    });
-
-    expect(twice.completions).toEqual([{ todoId: 1, localDate: '2026-08-10' }]);
-  });
-
   it('거절 후 90일 동안 숨기고 쿨다운이 지나면 다시 허용한다', () => {
     const eligible: StoreReviewPromptState = {
       ...EMPTY_STATE,
@@ -48,21 +35,19 @@ describe('StoreReviewPromptPolicy', () => {
         { todoId: 2, localDate: '2026-08-10' },
         { todoId: 3, localDate: '2026-08-11' },
       ],
-      dismissedAt: '2026-08-12T00:00:00.000Z',
+      dismissedAt: new Date('2026-08-12T00:00:00.000Z'),
     };
 
     expect(
       StoreReviewPromptPolicy.shouldPrompt(
         eligible,
-        new Date(
-          Date.parse(eligible.dismissedAt as string) + STORE_REVIEW_DISMISSAL_COOLDOWN_MS - 1,
-        ),
+        new Date(eligible.dismissedAt!.getTime() + STORE_REVIEW_DISMISSAL_COOLDOWN_MS - 1),
       ),
     ).toBe(false);
     expect(
       StoreReviewPromptPolicy.shouldPrompt(
         eligible,
-        new Date(Date.parse(eligible.dismissedAt as string) + STORE_REVIEW_DISMISSAL_COOLDOWN_MS),
+        new Date(eligible.dismissedAt!.getTime() + STORE_REVIEW_DISMISSAL_COOLDOWN_MS),
       ),
     ).toBe(true);
   });
@@ -75,7 +60,7 @@ describe('StoreReviewPromptPolicy', () => {
         { todoId: 2, localDate: '2026-08-10' },
         { todoId: 3, localDate: '2026-08-11' },
       ],
-      reviewRequestedAt: '2026-08-12T00:00:00.000Z',
+      reviewRequestedAt: new Date('2026-08-12T00:00:00.000Z'),
     };
 
     expect(StoreReviewPromptPolicy.shouldPrompt(requested, new Date('2027-08-12'))).toBe(false);

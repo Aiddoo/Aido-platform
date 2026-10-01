@@ -1,0 +1,9 @@
+{
+  "section": "App Info",
+  "item": "Version",
+  "latestTitle": "App Version",
+  "latestDescription": "You're using the latest version.",
+  "confirm": "OK",
+  "checkFailed": "We couldn't check the app version. Please try again shortly.",
+  "storeOpenFailed": "We couldn't open the app store. Please try again shortly."
+}

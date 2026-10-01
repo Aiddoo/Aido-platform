@@ -50,10 +50,6 @@ packageExtensions:
   '@react-native-firebase/app@*':
     dependencies:
       '@expo/config-plugins': 57.0.9
-  'uniwind@*':
-    dependencies:
-      metro: 0.83.7
-      metro-cache: 0.83.7
 
 catalog:
   '@types/jest': ^29.5.14

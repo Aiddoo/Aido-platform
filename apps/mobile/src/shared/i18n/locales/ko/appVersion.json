@@ -1,0 +1,9 @@
+{
+  "section": "앱 정보",
+  "item": "버전 정보",
+  "latestTitle": "앱 버전 정보",
+  "latestDescription": "현재 최신 버전을 사용하고 있어요.",
+  "confirm": "확인",
+  "checkFailed": "버전 정보를 확인하지 못했어요. 잠시 후 다시 시도해주세요.",
+  "storeOpenFailed": "앱 스토어를 열지 못했어요. 잠시 후 다시 시도해주세요."
+}

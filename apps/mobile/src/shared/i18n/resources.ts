@@ -1,6 +1,7 @@
 import enAchievement from './locales/en/achievement.json';
 import enAi from './locales/en/ai.json';
 import enAppIcon from './locales/en/appIcon.json';
+import enAppVersion from './locales/en/appVersion.json';
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enErrors from './locales/en/errors.json';
@@ -21,6 +22,7 @@ import enWidget from './locales/en/widget.json';
 import koAchievement from './locales/ko/achievement.json';
 import koAi from './locales/ko/ai.json';
 import koAppIcon from './locales/ko/appIcon.json';
+import koAppVersion from './locales/ko/appVersion.json';
 import koAuth from './locales/ko/auth.json';
 import koCommon from './locales/ko/common.json';
 import koErrors from './locales/ko/errors.json';
@@ -59,6 +61,7 @@ export const resources = {
     inquiry: koInquiry,
     weather: koWeather,
     appIcon: koAppIcon,
+    appVersion: koAppVersion,
     widget: koWidget,
     featureDiscovery: koFeatureDiscovery,
     storeReview: koStoreReview,
@@ -81,6 +84,7 @@ export const resources = {
     inquiry: enInquiry,
     weather: enWeather,
     appIcon: enAppIcon,
+    appVersion: enAppVersion,
     widget: enWidget,
     featureDiscovery: enFeatureDiscovery,
     storeReview: enStoreReview,

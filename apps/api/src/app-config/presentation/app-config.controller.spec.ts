@@ -1,5 +1,6 @@
 import { Test } from "@nestjs/testing";
 
+import { GetAppVersionUseCase } from "../application/queries/get-app-version/get-app-version.use-case";
 import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case";
 import { AppConfigController } from "./app-config.controller";
 
@@ -9,6 +10,7 @@ describe("AppConfigController — feature discovery endpoint", () => {
 		const module = await Test.createTestingModule({
 			controllers: [AppConfigController],
 			providers: [
+				{ provide: GetAppVersionUseCase, useValue: { execute: () => ({ enabled: false }) } },
 				{
 					provide: GetFeatureDiscoveryUseCase,
 					useValue: {
@@ -24,6 +26,31 @@ describe("AppConfigController — feature discovery endpoint", () => {
 
 		// Then
 		expect(result).toEqual({ enabled: false });
+		await module.close();
+	});
+
+	it("returns the published app version configuration", async () => {
+		const module = await Test.createTestingModule({
+			controllers: [AppConfigController],
+			providers: [
+				{ provide: GetFeatureDiscoveryUseCase, useValue: { execute: () => ({ enabled: false }) } },
+				{
+					provide: GetAppVersionUseCase,
+					useValue: {
+						execute: () => ({
+							enabled: true,
+							ios: { latestVersion: "1.9.1" },
+							android: { latestVersion: "1.9.1" },
+						}),
+					},
+				},
+			],
+		}).compile();
+		expect(module.get(AppConfigController).getAppVersion()).toEqual({
+			enabled: true,
+			ios: { latestVersion: "1.9.1" },
+			android: { latestVersion: "1.9.1" },
+		});
 		await module.close();
 	});
 });

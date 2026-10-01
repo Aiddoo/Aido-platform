@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryResponse } from "@aido/validators";
+import type { AppVersionResponse, FeatureDiscoveryResponse } from "@aido/validators";
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
@@ -6,17 +6,39 @@ import { Public } from "@/auth/presentation/decorators";
 import { RawResponse } from "@/shared/presentation/decorators";
 import { ApiDoc } from "@/shared/presentation/swagger";
 
+import { GetAppVersionUseCase } from "../application/queries/get-app-version/get-app-version.use-case";
 import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case";
 import {
+	AppVersionDisabledResponseDto,
+	AppVersionEnabledResponseDto,
 	FeatureDiscoveryDisabledResponseDto,
 	FeatureDiscoveryEnabledResponseDto,
+	appVersionResponseOpenApiSchema,
 	featureDiscoveryResponseOpenApiSchema,
 } from "./dtos";
 
 @ApiTags("App Config")
 @Controller("app-config")
 export class AppConfigController {
-	constructor(private readonly getFeatureDiscoveryUseCase: GetFeatureDiscoveryUseCase) {}
+	constructor(
+		private readonly getFeatureDiscoveryUseCase: GetFeatureDiscoveryUseCase,
+		private readonly getAppVersionUseCase: GetAppVersionUseCase,
+	) {}
+
+	@Get("app-version")
+	@Public()
+	@RawResponse()
+	@Header("Cache-Control", "private, no-store")
+	@ApiDoc({ summary: "Published app versions", operationId: "getAppVersionConfig" })
+	@ApiExtraModels(AppVersionDisabledResponseDto, AppVersionEnabledResponseDto)
+	@ApiResponse({
+		status: 200,
+		description: "App version configuration",
+		schema: appVersionResponseOpenApiSchema,
+	})
+	getAppVersion(): AppVersionResponse {
+		return this.getAppVersionUseCase.execute();
+	}
 
 	@Get("feature-discovery")
 	@Public()
