@@ -211,6 +211,23 @@ fingerprint 정책을 유지하며 모바일 스토어 제출은 서버 main 배
 현재 설정은 서버 시작 시 읽으므로 운영 `.env.docker.prod` 변경은 다음 정상 배포/재기동부터 반영된다.
 앱 출시 버전은 package.json, 빌드 번호는 EAS, 스토어 공개 버전은 서버 운영 설정이 각각 소유한다.
 
+버전 설정만 변경할 때는 기존 환경변수를 출력하지 않는 스크립트를 사용한다. 지정한 세 키만
+변경하며, 나머지 파일 내용과 권한은 보존한다. 변경 전 원본은 지정한 새 디렉터리에
+디렉터리 `0700` / 파일 `0600` 권한으로 백업한다. 중복 키나 잘못된 버전은 쓰기 전에 거절한다.
+개발·예제 파일은 버전값을 준비해도 `false`를 유지하며, 운영 활성화는 두 스토어 공개 확인 후
+`--enabled true --published`로 명시한다. 비공개 env와 백업 파일은 커밋하지 않는다.
+
+```bash
+python3 scripts/update-app-version-env.py \
+  --ios 1.10.0 --android 1.10.0 --enabled true --published \
+  --backup-dir .secrets/app-version-before-1.10.0 .env .env.docker.prod
+```
+
+운영 env 변경은 배포 락을 잡고 진행한다. 코드·DB 변경이 없는 설정 반영은 실행 중 이미지와
+`latest` 이미지가 같은지 확인한 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로
+재생성할 수 있다. 헬스체크와 `/v1/app-config/app-version` 응답을 확인하고, 실패하면 env 백업을
+복구한 뒤 같은 이미지로 API를 재생성한다. 단순 `docker restart`는 env 파일 변경을 반영하지 않는다.
+
 기능 PR과 릴리스 PR의 merge 방식을 구분한다.
 
 | PR 방향             | merge 방식                     | 이유                                                                     |
