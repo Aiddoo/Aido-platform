@@ -16,6 +16,8 @@
     "build:production": "eas build --profile production --platform all",
     "build:production:android": "eas build --profile production --platform android",
     "build:production:ios": "eas build --profile production --platform ios",
+    "build:production:local:android": "eas build --local --platform android --profile production",
+    "build:production:local:ios": "eas build --local --platform ios --profile production",
     "check": "pnpm lint && pnpm format:check && pnpm check:conventions",
     "check:conventions": "node scripts/check-mobile-conventions.mjs",
     "check:release-assets": "node scripts/check-growth-release-assets.mjs",

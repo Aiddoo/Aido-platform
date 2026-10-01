@@ -38,6 +38,11 @@ const NOTIFICATION_ICON = './assets/images/notification-icon.png';
 // Environment
 
 const PROJECT_ROOT = __dirname;
+// A relative plugin path avoids EAS runtime fallback and location-dependent fingerprints.
+const WEB_BROWSER_PLUGIN_PATH = path.relative(
+  PROJECT_ROOT,
+  path.join(path.dirname(require.resolve('expo-web-browser/package.json')), 'app.plugin.js'),
+);
 
 const restoreBase64File = ({
   envVar,
@@ -344,7 +349,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-secure-store',
       'expo-sharing',
       'expo-system-ui',
-      'expo-web-browser',
+      WEB_BROWSER_PLUGIN_PATH,
 
       [
         'expo-speech-recognition',
