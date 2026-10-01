@@ -118,6 +118,8 @@ eas build --local --platform ios --profile production
 
 SDK 58의 `expo-web-browser`는 `app.plugin.js`를 package exports에 공개하지 않는다. EAS resolver가 이를 앱 런타임 모듈로 오인하지 않도록 `app.config.ts`에서 설치된 package의 실제 plugin 파일을 프로젝트 상대 경로로 지정한다. 절대 경로가 fingerprint에 포함되어 원본과 임시 빌드 디렉터리의 runtime이 달라지지 않게 한다. `Expo.fx` Node module 오류를 고치기 위해 앱 런타임이나 Expo 소스를 변경하지 않는다.
 
+위젯 layout registry의 import 경로는 실제 파일 경로로 정규화한다. macOS에서 `/tmp`와 `/private/tmp`처럼 같은 임시 폴더를 가리키는 경로가 Metro에서 다르게 처리되어 iOS archive가 실패하지 않도록 기존 `expo-widgets` 패치에 반영한다.
+
 ---
 
 ## 환경별 설정
