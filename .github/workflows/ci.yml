@@ -75,6 +75,9 @@ jobs:
       - name: Type Check
         run: pnpm turbo run typecheck ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
+      - name: Mobile conventions
+        run: pnpm --filter @aido/mobile check:conventions
+
   test-unit:
     name: Test - Unit & Coverage
     needs: gate

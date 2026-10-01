@@ -458,7 +458,7 @@
     "Android full UI alternative input method",
     "old iOS binary QA",
     "live vendor sandbox QA",
-    "stack PR publication and CI"
+    "final stack tip GitHub CI"
   ],
   "mobile": {
     "suites": 155,
@@ -616,5 +616,27 @@
     "typecheck": "pass",
     "mobileConventions": "pass",
     "turboSeconds": 9.933
-  }
+  },
+  "stackPullRequests": [
+    {
+      "number": 821,
+      "url": "https://github.com/Aiddoo/Aido-platform/pull/821"
+    },
+    {
+      "number": 822,
+      "url": "https://github.com/Aiddoo/Aido-platform/pull/822"
+    },
+    {
+      "number": 823,
+      "url": "https://github.com/Aiddoo/Aido-platform/pull/823"
+    },
+    {
+      "number": 824,
+      "url": "https://github.com/Aiddoo/Aido-platform/pull/824"
+    },
+    {
+      "number": 825,
+      "url": "https://github.com/Aiddoo/Aido-platform/pull/825"
+    }
+  ]
 }
