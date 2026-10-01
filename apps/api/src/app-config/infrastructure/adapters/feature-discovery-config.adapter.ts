@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import type {
 	FeatureDiscoveryConfig,
 	FeatureDiscoveryConfigPort,
-} from "../../application/ports/feature-discovery-config.port";
+} from "../../application/ports/feature-discovery-config.port.js";
 
 /**
  * Environment-backed rollout config. It fails closed even if a future config

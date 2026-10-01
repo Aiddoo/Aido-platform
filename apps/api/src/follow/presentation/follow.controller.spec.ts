@@ -1,27 +1,27 @@
+import { TestBed } from "@suites/unit";
 /**
  * FollowController 단위 테스트 (Suites + GWT).
  * 컨트롤러가 endpoint UseCase에 위임하고, FollowMapper로 응답을 구성하는지 검증한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import type { FollowWithUser } from "../application/ports/follow.repository.port";
-import { FollowReader } from "../application/services/follow.reader";
-import { AcceptFriendRequestUseCase } from "../application/use-cases/accept-friend-request/accept-friend-request.use-case";
-import { RejectFriendRequestUseCase } from "../application/use-cases/reject-friend-request/reject-friend-request.use-case";
-import { RemoveFriendUseCase } from "../application/use-cases/remove-friend/remove-friend.use-case";
-import { ReorderFriendUseCase } from "../application/use-cases/reorder-friend/reorder-friend.use-case";
-import { SendFriendRequestByTagUseCase } from "../application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
-import { Friendship } from "../domain/entities/friendship.aggregate";
+import type { FollowWithUser } from "../application/ports/follow.repository.port.js";
+import { FollowReader } from "../application/services/follow.reader.js";
+import { AcceptFriendRequestUseCase } from "../application/use-cases/accept-friend-request/accept-friend-request.use-case.js";
+import { RejectFriendRequestUseCase } from "../application/use-cases/reject-friend-request/reject-friend-request.use-case.js";
+import { RemoveFriendUseCase } from "../application/use-cases/remove-friend/remove-friend.use-case.js";
+import { ReorderFriendUseCase } from "../application/use-cases/reorder-friend/reorder-friend.use-case.js";
+import { SendFriendRequestByTagUseCase } from "../application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case.js";
+import { Friendship } from "../domain/entities/friendship.aggregate.js";
 import type {
 	GetFollowsQueryDto,
 	GetFriendsQueryDto,
 	ReorderFriendDto,
 	UserTagParamDto,
-} from "./dtos";
-import { FollowController } from "./follow.controller";
+} from "./dtos/index.js";
+import { FollowController } from "./follow.controller.js";
 
 const user: CurrentUserPayload = {
 	userId: "user-123",

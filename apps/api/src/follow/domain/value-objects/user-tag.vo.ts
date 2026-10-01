@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /** 사용자 태그 형식: 8자리 영문 대문자/숫자 (@aido/validators userTagParamSchema와 동일) */
 const USER_TAG_PATTERN = /^[A-Z0-9]{8}$/;

@@ -1,6 +1,7 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { mockOf } from "@test/mocks";
+import type { Mocked } from "vitest";
+
+import { mockOf } from "#test/mocks/index";
 
 import {
 	AUTH_ACCOUNT_REPOSITORY,
@@ -8,16 +9,16 @@ import {
 	type AuthAccountRepositoryPort,
 	type AuthUserRecord,
 	type AuthUserRepositoryPort,
-} from "../../ports/auth-persistence.port";
+} from "../../ports/auth-persistence.port.js";
 import {
 	RETENTION_ENROLLER,
 	type RetentionEnrollerPort,
-} from "../../ports/retention-enroller.port";
+} from "../../ports/retention-enroller.port.js";
 import {
 	USER_PROVISIONING_SEEDER,
 	type UserProvisioningSeederPort,
-} from "../../ports/user-provisioning-seeder.port";
-import { type ProvisionUserInput, ProvisionUserUseCase } from "./provision-user.use-case";
+} from "../../ports/user-provisioning-seeder.port.js";
+import { type ProvisionUserInput, ProvisionUserUseCase } from "./provision-user.use-case.js";
 
 describe("ProvisionUserUseCase — 신규 사용자 프로비저닝 수렴 시퀀스", () => {
 	let useCase: ProvisionUserUseCase;

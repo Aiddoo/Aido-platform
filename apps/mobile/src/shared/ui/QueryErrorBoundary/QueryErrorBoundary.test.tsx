@@ -2,10 +2,13 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createMockDIContainer } from '@src/shared/__tests__';
 import { ApiError, ServerError } from '@src/shared/errors';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
-import { Text } from 'react-native';
+import { useErrorBoundary } from 'react-error-boundary';
+import { Pressable, Text } from 'react-native';
 
+import { OverlayProvider } from '../Overlay/OverlayProvider';
+import { useOverlay } from '../Overlay/useOverlay';
 import { QueryErrorBoundary } from './QueryErrorBoundary';
 
 jest.mock('heroui-native', () => {
@@ -35,6 +38,29 @@ const MaybeThrower = ({ shouldThrow }: { shouldThrow: boolean }) => {
     throw new ServerError(503);
   }
   return <Text testID="healthy-content">정상 화면</Text>;
+};
+
+const AsyncErrorScreen = ({ error }: { error: Error }) => {
+  const { showBoundary } = useErrorBoundary();
+  return (
+    <Pressable onPress={() => showBoundary(error)} testID="submit-error">
+      <Text>Submit</Text>
+    </Pressable>
+  );
+};
+
+const OverlayErrorScreen = ({ error }: { error: Error }) => {
+  const overlay = useOverlay();
+  return (
+    <Pressable
+      testID="open-error-overlay"
+      onPress={() => {
+        void overlay.open(() => <AsyncErrorScreen error={error} />);
+      }}
+    >
+      <Text>Open</Text>
+    </Pressable>
+  );
 };
 
 describe('QueryErrorBoundary 관측', () => {
@@ -109,5 +135,49 @@ describe('QueryErrorBoundary 관측', () => {
     );
 
     expect(screen.getByTestId('healthy-content')).toBeTruthy();
+  });
+
+  it('화면의 useErrorBoundary에 context를 제공하고 제출 오류를 기존 fallback에서 처리한다', async () => {
+    const error = new ServerError(503);
+    const screen = await render(
+      <StaticDIProvider container={createMockDIContainer({ errorReporter })}>
+        <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
+          <AsyncErrorScreen error={error} />
+        </QueryErrorBoundary>
+      </StaticDIProvider>,
+    );
+
+    await fireEvent.press(screen.getByTestId('submit-error'));
+
+    expect(screen.getByTestId('submit-fallback')).toBeTruthy();
+    expect(errorReporter.captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({ feature: 'error_boundary' }),
+    );
+  });
+
+  it('OverlayProvider가 별도로 마운트한 overlay에도 오류 context를 전달한다', async () => {
+    const error = new ServerError(503);
+    const screen = await render(
+      <StaticDIProvider container={createMockDIContainer({ errorReporter })}>
+        <QueryErrorBoundary fallback={() => <Text testID="overlay-fallback">Retry</Text>}>
+          <OverlayProvider>
+            <OverlayErrorScreen error={error} />
+          </OverlayProvider>
+        </QueryErrorBoundary>
+      </StaticDIProvider>,
+    );
+
+    await fireEvent.press(screen.getByTestId('open-error-overlay'));
+    expect(screen.getByTestId('submit-error')).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId('submit-error'));
+
+    expect(screen.getByTestId('overlay-fallback')).toBeTruthy();
+    expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
+    expect(errorReporter.captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({ feature: 'error_boundary' }),
+    );
   });
 });

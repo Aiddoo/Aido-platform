@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * UserRepository 단위 테스트
  *
@@ -10,24 +11,23 @@
  * pnpm --filter @aido/api test user.repository.spec.ts
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { UserBuilder } from "@test/builders";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { vi } from "vitest";
 
-import { AuthPersistenceConflict } from "@/auth/application/ports";
+import { AuthPersistenceConflict } from "#api/auth/application/ports/index";
 import type {
 	AccountProvider,
 	SubscriptionStatus,
 	UserRole,
 	UserStatus,
-} from "@/generated/prisma/client";
-import { Prisma } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+} from "#api/generated/prisma/client";
+import { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { UserBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { UserRepository } from "./user.repository";
+import { UserRepository } from "./user.repository.js";
 
 /**
  * findByEmailWithCredential의 select 결과 타입
@@ -506,8 +506,8 @@ describe("UserRepository — 사용자 리포지토리", () => {
 	describe("updateLastActiveAt", () => {
 		it("사용자 현지 날짜의 활동 행과 lastActiveAt을 한 트랜잭션에서 기록한다", async () => {
 			// Given - UTC 기준 다음 현지 날짜가 되는 서울 요청 시각
-			jest.useFakeTimers();
-			jest.setSystemTime(new Date("2026-07-26T15:30:00.000Z"));
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date("2026-07-26T15:30:00.000Z"));
 
 			try {
 				// When - 인증 사용자 활동을 기록하면
@@ -527,7 +527,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
 					new Date("2026-07-26T15:30:00.000Z"),
 				]);
 			} finally {
-				jest.useRealTimers();
+				vi.useRealTimers();
 			}
 		});
 	});

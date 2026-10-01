@@ -1,6 +1,6 @@
-import { DomainException } from "@/shared/domain";
+import { DomainException } from "#api/shared/domain/index";
 
-import { TodoCommentContent } from "./todo-comment-content.vo";
+import { TodoCommentContent } from "./todo-comment-content.vo.js";
 
 describe("TodoCommentContent", () => {
 	it("앞뒤 공백을 제거한 댓글 내용을 보관한다", () => {

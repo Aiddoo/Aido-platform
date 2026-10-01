@@ -1,10 +1,13 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { NOTIFICATION_CACHE, type NotificationCachePort } from "../ports/notification-cache.port";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../ports/notification.repository.port";
+} from "../ports/notification.repository.port.js";
 
 /** auth purge가 소비하는 알림 bounded context의 개인정보 정리 capability입니다. */
 export interface NotificationAccountCleanupResult {

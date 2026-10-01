@@ -1,3 +1,5 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * NotificationQueueService 모듈 단위 테스트
  *
@@ -9,14 +11,13 @@
  * pnpm --filter @aido/api test notification-queue.service
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { flushPromises } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { flushPromises } from "#test/mocks/index";
 
-import { NOTIFICATION_QUEUE, NotificationJobName } from "./notification-queue.constants";
-import { NotificationQueueService } from "./notification-queue.service";
+import { NOTIFICATION_QUEUE, NotificationJobName } from "./notification-queue.constants.js";
+import { NotificationQueueService } from "./notification-queue.service.js";
 
 describe("NotificationQueueService — 알림 큐 서비스", () => {
 	let service: NotificationQueueService;
@@ -24,13 +25,13 @@ describe("NotificationQueueService — 알림 큐 서비스", () => {
 
 	beforeEach(async () => {
 		const mockRuntime = {
-			start: jest.fn(),
-			stop: jest.fn(),
-			enqueue: jest.fn().mockResolvedValue("job-1"),
-			schedule: jest.fn(),
-			cancel: jest.fn(),
-			work: jest.fn(),
-			health: jest.fn(),
+			start: vi.fn(),
+			stop: vi.fn(),
+			enqueue: vi.fn().mockResolvedValue("job-1"),
+			schedule: vi.fn(),
+			cancel: vi.fn(),
+			work: vi.fn(),
+			health: vi.fn(),
 		};
 
 		const { unit, unitRef } = await TestBed.solitary(NotificationQueueService)

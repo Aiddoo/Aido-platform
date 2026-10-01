@@ -1,7 +1,7 @@
 import type {
 	Subscription,
 	SubscriptionStatusValue,
-} from "../../domain/entities/subscription.aggregate";
+} from "../../domain/entities/subscription.aggregate.js";
 
 export const SUBSCRIPTION_REPOSITORY = Symbol("SUBSCRIPTION_REPOSITORY");
 

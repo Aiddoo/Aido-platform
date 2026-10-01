@@ -1,31 +1,31 @@
+import { ErrorCode } from "@aido/errors";
 /**
  * DeleteTodoUseCase 단위 테스트
  *
  * Suites + 포트 mock 팩토리 + GWT 패턴
  */
-
-import { ErrorCode } from "@aido/errors";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import {
-	createTodoCacheMock,
-	createTodoRepositoryMock,
-	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	DOMAIN_EVENT_PUBLISHER,
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
+import {
+	createTodoCacheMock,
+	createTodoRepositoryMock,
+	createUnitOfWorkMock,
+} from "#test/mocks/ports/index";
 
-import { Todo } from "../../../domain/entities/todo.aggregate";
-import { TodoDeletedEvent } from "../../../domain/events/todo-deleted.event";
-import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
-import { DeleteTodoUseCase } from "./delete-todo.use-case";
+import { Todo } from "../../../domain/entities/todo.aggregate.js";
+import { TodoDeletedEvent } from "../../../domain/events/todo-deleted.event.js";
+import { TodoId } from "../../../domain/value-objects/todo-id.vo.js";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
+import { DeleteTodoUseCase } from "./delete-todo.use-case.js";
 
 function buildEntity(): Todo {
 	return Todo.reconstitute({
@@ -65,7 +65,7 @@ describe("DeleteTodoUseCase — 할 일 삭제 핸들러", () => {
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
+			.impl(() => ({ publishAll: vi.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;

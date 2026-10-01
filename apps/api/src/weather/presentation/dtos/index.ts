@@ -1,3 +1,3 @@
-export * from "./get-forecast-query.request.dto";
-export * from "./update-location.request.dto";
-export * from "./weather-forecast-response.dto";
+export * from "./get-forecast-query.request.dto.js";
+export * from "./update-location.request.dto.js";
+export * from "./weather-forecast-response.dto.js";

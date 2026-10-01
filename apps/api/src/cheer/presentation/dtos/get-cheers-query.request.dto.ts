@@ -1,4 +1,8 @@
 import { getCheersQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetCheersQueryDto extends createZodDto(getCheersQuerySchema) {}
+export const GetCheersQueryDto = getCheersQuerySchema.meta({
+	id: "GetCheersQueryDto",
+	apiParameter: true,
+});
+export type GetCheersQueryDto = z.infer<typeof GetCheersQueryDto>;

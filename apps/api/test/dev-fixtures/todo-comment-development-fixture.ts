@@ -27,9 +27,9 @@ import {
 } from "@aido/validators";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "#api/generated/prisma/client";
 
-import { assertTodoCommentDevelopmentFixtureTarget } from "../setup/todo-comment-development-fixture-target.guard";
+import { assertTodoCommentDevelopmentFixtureTarget } from "../setup/todo-comment-development-fixture-target.guard.js";
 
 const FIXTURE_VERSION = "v1";
 const FIXTURE_EMAIL_SUFFIX = "@todo-comment-fixture.aido.dev";

@@ -1,22 +1,25 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetDailyCompletionsUseCase 단위 테스트
  *
  * Suites + 포트 mock + GWT 패턴 — 집계→도메인 조립과 cache-aside(히트/미스) 검증
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-
-import type { DailyCompletionsRange, TodoAggregateByDate } from "../../../domain/daily-completion";
+import type {
+	DailyCompletionsRange,
+	TodoAggregateByDate,
+} from "../../../domain/daily-completion.js";
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
-} from "../../ports/daily-completion-cache.port";
+} from "../../ports/daily-completion-cache.port.js";
 import {
 	TODO_COMPLETION_REPOSITORY,
 	type TodoCompletionRepositoryPort,
-} from "../../ports/todo-completion.repository.port";
-import { GetDailyCompletionsUseCase } from "./get-daily-completions.use-case";
+} from "../../ports/todo-completion.repository.port.js";
+import { GetDailyCompletionsUseCase } from "./get-daily-completions.use-case.js";
 
 function buildAggregates(): TodoAggregateByDate[] {
 	return [
@@ -49,12 +52,12 @@ describe("GetDailyCompletionsUseCase — 기간별 완료 현황 조회", () => 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(GetDailyCompletionsUseCase)
 			.mock<TodoCompletionRepositoryPort>(TODO_COMPLETION_REPOSITORY)
-			.impl(() => ({ aggregateByDateRange: jest.fn().mockResolvedValue([]) }))
+			.impl(() => ({ aggregateByDateRange: vi.fn().mockResolvedValue([]) }))
 			.mock<DailyCompletionCachePort>(DAILY_COMPLETION_CACHE)
 			.impl(() => ({
-				getRange: jest.fn().mockResolvedValue(undefined),
-				setRange: jest.fn().mockResolvedValue(undefined),
-				invalidate: jest.fn().mockResolvedValue(undefined),
+				getRange: vi.fn().mockResolvedValue(undefined),
+				setRange: vi.fn().mockResolvedValue(undefined),
+				invalidate: vi.fn().mockResolvedValue(undefined),
 			}))
 			.compile();
 

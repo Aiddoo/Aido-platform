@@ -19,9 +19,9 @@ import type {
 	RegisterResult,
 	UpdateProfileResult,
 	VerifyEmailResult,
-} from "@/auth/application/types/auth.types";
+} from "#api/auth/application/types/auth.types";
 
-import { AuthMapper } from "./auth.mapper";
+import { AuthMapper } from "./auth.mapper.js";
 
 describe("AuthMapper — 인증 매퍼", () => {
 	describe("toRegisterResponse", () => {

@@ -3,19 +3,19 @@ import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/validators";
 import { llmParsedMemoResultSchema, parsedMemoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { now } from "@/shared/domain/date/utils/core";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { SupportedLocale } from "@/shared/domain/locale";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { buildParseMemoPrompt } from "../../../domain/services/prompts/parse-memo.prompt";
-import { buildParseMemoPromptEn } from "../../../domain/services/prompts/parse-memo.prompt.en";
-import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port";
+import { buildParseMemoPromptEn } from "../../../domain/services/prompts/parse-memo.prompt.en.js";
+import { buildParseMemoPrompt } from "../../../domain/services/prompts/parse-memo.prompt.js";
+import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port.js";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
-} from "../../ports/user-category-reader.port";
-import { AiUsageMeter } from "../../services/ai-usage-meter.service";
-import type { ParseTodoMeta } from "../parse-todo/parse-todo.use-case";
+} from "../../ports/user-category-reader.port.js";
+import { AiUsageMeter } from "../../services/ai-usage-meter.service.js";
+import type { ParseTodoMeta } from "../parse-todo/parse-todo.use-case.js";
 
 /** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
 export interface ParseMemoResult {

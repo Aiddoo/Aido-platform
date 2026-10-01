@@ -1,4 +1,4 @@
-import type { DomainEvent } from "@/shared/domain/aggregate-root";
+import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 
 export const DOMAIN_EVENT_PUBLISHER = Symbol("DOMAIN_EVENT_PUBLISHER");
 

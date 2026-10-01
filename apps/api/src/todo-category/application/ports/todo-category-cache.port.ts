@@ -1,4 +1,4 @@
-import type { TodoCategoryWithCountView } from "./todo-category.repository.port";
+import type { TodoCategoryWithCountView } from "./todo-category.repository.port.js";
 
 /**
  * TodoCategoryCachePort — 카테고리 목록 캐시 포트.

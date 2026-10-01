@@ -5,7 +5,12 @@ import type { TextSize } from '../Text/Text.types';
 
 export type TextAreaVariant = 'filled' | 'line' | 'plain';
 
-export interface TextAreaProps extends TextInputProps {
+export interface TextAreaProps extends Omit<
+  TextInputProps,
+  'value' | 'defaultValue' | 'onChange' | 'onChangeText'
+> {
+  value: string;
+  onChange: (value: string) => void;
   variant?: TextAreaVariant;
   label?: string;
   isDisabled?: boolean;

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { DATE_FORMAT } from "../constants/date.constant";
+import { DATE_FORMAT } from "../constants/date.constant.js";
 
 /**
  * Date → ISO 8601 문자열

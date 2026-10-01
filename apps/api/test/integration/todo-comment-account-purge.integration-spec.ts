@@ -3,35 +3,36 @@ import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-pr
 import { type DynamicModule, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
+import { vi } from "vitest";
 
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { AccountPurgeProcessor } from "@/auth/infrastructure/queue/account-purge.processor";
-import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
-import type { PrismaClient } from "@/generated/prisma/client";
-import { NotificationAccountCleanup } from "@/notification";
+import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
+import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
+import { AccountPurgeProcessor } from "#api/auth/infrastructure/queue/account-purge.processor";
+import { AccountPurgeJob } from "#api/auth/infrastructure/scheduler/account-purge.job";
+import type { PrismaClient } from "#api/generated/prisma/client";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "@/notification/application/ports/notification-cache.port";
-import { NOTIFICATION_REPOSITORY } from "@/notification/application/ports/notification.repository.port";
-import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
-import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
-import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "@/shared/domain/system-user";
-import { ClsUnitOfWork } from "@/shared/infrastructure/database/cls-unit-of-work";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { PostgresMutationLockAdapter } from "@/shared/infrastructure/database/postgres-mutation-lock.adapter";
-import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "@/todo-comment/application/ports/todo-comment-account-cleanup.store.port";
+} from "#api/notification/application/ports/notification-cache.port";
+import { NOTIFICATION_REPOSITORY } from "#api/notification/application/ports/notification.repository.port";
+import { NotificationAccountCleanup } from "#api/notification/index";
+import { PrismaNotificationRepository } from "#api/notification/infrastructure/persistence/prisma-notification.repository";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
+import { ClsUnitOfWork } from "#api/shared/infrastructure/database/cls-unit-of-work";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { PostgresMutationLockAdapter } from "#api/shared/infrastructure/database/postgres-mutation-lock.adapter";
+import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "#api/todo-comment/application/ports/todo-comment-account-cleanup.store.port";
 import {
 	TODO_VIEW_CACHE,
 	type TodoViewCachePort,
-} from "@/todo-comment/application/ports/todo-view-cache.port";
-import { TodoCommentAccountCleanup } from "@/todo-comment/application/services/todo-comment-account-cleanup";
-import { PrismaTodoCommentAccountCleanupStore } from "@/todo-comment/infrastructure/persistence/prisma-todo-comment-account-cleanup.store";
+} from "#api/todo-comment/application/ports/todo-view-cache.port";
+import { TodoCommentAccountCleanup } from "#api/todo-comment/application/services/todo-comment-account-cleanup";
+import { PrismaTodoCommentAccountCleanupStore } from "#api/todo-comment/infrastructure/persistence/prisma-todo-comment-account-cleanup.store";
 
-import { FakeJobRuntime } from "../mocks/fake-job-runtime";
-import { TestDatabase } from "../setup/test-database";
+import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
+import { TestDatabase } from "../setup/test-database.js";
 
 const NOW = new Date("2026-08-26T00:00:00.000Z");
 const PURGE_ELIGIBLE_AT = new Date("2026-07-01T00:00:00.000Z");
@@ -188,12 +189,12 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 		testDatabase = new TestDatabase();
 		prisma = await testDatabase.start();
 		notificationCache = {
-			wrapUnreadCount: jest.fn(),
-			invalidateUnreadCount: jest.fn(),
-			invalidatePushTokens: jest.fn(),
-			invalidateUserPreference: jest.fn(),
+			wrapUnreadCount: vi.fn(),
+			invalidateUnreadCount: vi.fn(),
+			invalidatePushTokens: vi.fn(),
+			invalidateUserPreference: vi.fn(),
 		};
-		todoViewCache = { invalidateForTodo: jest.fn() };
+		todoViewCache = { invalidateForTodo: vi.fn() };
 		const databaseModule = AccountPurgeDatabaseTestModule.register(prisma);
 		module = await Test.createTestingModule({
 			imports: [
@@ -232,7 +233,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 				{ provide: JOB_RUNTIME, useValue: new FakeJobRuntime() },
 				{
 					provide: AccountPurgeProcessor,
-					useValue: { setPurgeJob: jest.fn() },
+					useValue: { setPurgeJob: vi.fn() },
 				},
 			],
 		}).compile();
@@ -241,7 +242,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 	}, 60_000);
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		await testDatabase.cleanup();
 		await prisma.user.create({
 			data: {
@@ -307,7 +308,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 		await expect(
 			prisma.notification.findUnique({ where: { id: notification.id } }),
 		).resolves.not.toBeNull();
-		expect(jest.mocked(notificationCache.invalidateUnreadCount)).not.toHaveBeenCalled();
+		expect(vi.mocked(notificationCache.invalidateUnreadCount)).not.toHaveBeenCalled();
 	});
 
 	it("서로 다른 사용자의 같은 멱등 키는 sentinel 재귀속 전에 다시 키워 충돌하지 않는다", async () => {
@@ -495,14 +496,14 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 				},
 			}),
 		).resolves.toMatchObject({ isActive: false });
-		expect(jest.mocked(todoViewCache.invalidateForTodo)).toHaveBeenCalledWith(fixture.todoId);
+		expect(vi.mocked(todoViewCache.invalidateForTodo)).toHaveBeenCalledWith(fixture.todoId);
 		await expect(
 			prisma.notification.findMany({ where: { userId: fixture.otherUserId } }),
 		).resolves.toEqual([
 			expect.objectContaining({ type: "SYSTEM_NOTICE", body: "계정과 관계없는 내용" }),
 		]);
-		expect(jest.mocked(notificationCache.invalidateUnreadCount)).toHaveBeenCalledTimes(1);
-		expect(jest.mocked(notificationCache.invalidateUnreadCount)).toHaveBeenCalledWith(
+		expect(vi.mocked(notificationCache.invalidateUnreadCount)).toHaveBeenCalledTimes(1);
+		expect(vi.mocked(notificationCache.invalidateUnreadCount)).toHaveBeenCalledWith(
 			fixture.otherUserId,
 		);
 

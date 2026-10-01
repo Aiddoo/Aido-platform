@@ -2,20 +2,20 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { Cheer as CheerRow } from "@/generated/prisma/client";
-import { addDays } from "@/shared/domain/date/utils/arithmetic";
-import { now } from "@/shared/domain/date/utils/core";
-import { startOfDay } from "@/shared/domain/date/utils/range";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { USER_BRIEF_SELECT } from "@/shared/infrastructure/database/selects";
+import type { Cheer as CheerRow } from "#api/generated/prisma/client";
+import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
+import { startOfDay } from "#api/shared/domain/date/utils/range";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { USER_BRIEF_SELECT } from "#api/shared/infrastructure/database/selects";
 
 import type {
 	CheerRepositoryPort,
 	CheerWithRelations,
 	CreateCheerInput,
 	FindCheersParams,
-} from "../../application/ports/cheer.repository.port";
-import { Cheer } from "../../domain/entities/cheer.aggregate";
+} from "../../application/ports/cheer.repository.port.js";
+import { Cheer } from "../../domain/entities/cheer.aggregate.js";
 
 type UserBriefRow = {
 	id: string;

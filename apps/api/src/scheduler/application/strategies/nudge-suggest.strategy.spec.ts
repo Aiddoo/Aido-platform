@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * NudgeSuggestStrategy 전략 단위 테스트
  *
@@ -9,28 +12,26 @@
  * pnpm --filter @aido/api test nudge-suggest.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createNudgeSuggestionNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
-} from "../ports/re-engagement-reader.port";
-import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port";
+} from "../ports/re-engagement-reader.port.js";
+import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
-import { NudgeSuggestStrategy } from "./nudge-suggest.strategy";
+} from "../ports/scheduler-preference-reader.port.js";
+import { NudgeSuggestStrategy } from "./nudge-suggest.strategy.js";
 
 describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 	let strategy: NudgeSuggestStrategy;
@@ -56,8 +57,8 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
 
 		const { unit, unitRef } = await TestBed.solitary(NudgeSuggestStrategy).compile();
 
@@ -79,7 +80,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("비활성 친구가 있으면 Nudge Suggest를 발송한다", async () => {

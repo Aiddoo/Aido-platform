@@ -4,10 +4,14 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 const KEY = 'aido_theme_mode';
 
+export function isThemeMode(value: unknown): value is ThemeMode {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
 export function readThemeMode(storage: SyncStorage): ThemeMode {
   const saved = storage.getString(KEY);
 
-  if (saved === 'light' || saved === 'dark' || saved === 'system') {
+  if (isThemeMode(saved)) {
     return saved;
   }
 

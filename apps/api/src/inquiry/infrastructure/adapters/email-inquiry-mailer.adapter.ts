@@ -1,13 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
-import { TransactionalEmailSender } from "@/email";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TransactionalEmailSender } from "#api/email/index";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import type {
 	InquiryDeliveryResult,
 	InquiryMailerPort,
-} from "../../application/ports/inquiry-mailer.port";
-import type { InquirySubmission } from "../../domain/services/inquiry-submission";
+} from "../../application/ports/inquiry-mailer.port.js";
+import type { InquirySubmission } from "../../domain/services/inquiry-submission.js";
 
 /**
  * InquiryMailerPort의 이메일(Resend) 어댑터.

@@ -3,11 +3,11 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
-} from "../../ports/marketing-push-opt-out-token.port";
+} from "../../ports/marketing-push-opt-out-token.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
-} from "../../ports/user-notification-settings.port";
+} from "../../ports/user-notification-settings.port.js";
 
 @Injectable()
 export class OptOutMarketingPushUseCase {

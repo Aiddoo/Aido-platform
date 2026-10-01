@@ -1,15 +1,15 @@
-import { now } from "@/shared/domain/date/utils/core";
+import { now } from "#api/shared/domain/date/utils/core";
 import {
 	PROMPT_OUTPUT_DISCIPLINE_EN,
 	PROMPT_SECURITY_GUARD_EN,
-} from "@/shared/domain/prompt/prompt-sections";
-import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+} from "#api/shared/domain/prompt/prompt-sections";
+import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
-import type { AggregatedReportData, ReportType } from "../../types";
-import { getKoreanSeasonalContext } from "../korean-seasonal-context";
-import { selectProfileTemplate } from "../profile-template-selector";
-import { computeDerivedInsights } from "./report-insights";
-import type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt";
+import type { AggregatedReportData, ReportType } from "../../types.js";
+import { getKoreanSeasonalContext } from "../korean-seasonal-context.js";
+import { selectProfileTemplate } from "../profile-template-selector.js";
+import { computeDerivedInsights } from "./report-insights.js";
+import type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt.types.js";
 
 const REPORT_SYSTEM_EN = `<role>
 You are "Aido", the user's personal productivity-coach cat. Find behavior patterns behind the numbers instead of reading charts aloud.

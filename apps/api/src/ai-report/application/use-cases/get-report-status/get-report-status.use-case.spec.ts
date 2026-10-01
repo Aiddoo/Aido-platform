@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetReportStatusUseCase 단위 테스트
  *
@@ -5,20 +6,19 @@
  * - daysUntil은 캘린더(날짜) 기준 계산
  * - 최신 리포트 반환
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-
-import { AiReport } from "../../../domain/entities/ai-report.entity";
-import type { ReportType } from "../../../domain/types";
+import { AiReport } from "../../../domain/entities/ai-report.entity.js";
+import type { ReportType } from "../../../domain/types.js";
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
-} from "../../ports/ai-report.repository.port";
-import { GetReportStatusUseCase } from "./get-report-status.use-case";
+} from "../../ports/ai-report.repository.port.js";
+import { GetReportStatusUseCase } from "./get-report-status.use-case.js";
 
 const makeReport = (type: ReportType): AiReport =>
 	AiReport.reconstitute({
@@ -69,14 +69,14 @@ describe("GetReportStatusUseCase", () => {
 
 	it("daysUntil은 시간이 아닌 날짜(calendar day) 기준으로 계산해야 한다", async () => {
 		// 일요일 23:00 KST (= 14:00 UTC) → 다음 월요일까지 D-1
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date("2026-03-08T14:00:00Z"));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-03-08T14:00:00Z"));
 
 		const result = await useCase.execute("user-123", tz);
 
 		expect(result.daysUntilWeekly).toBe(1);
 
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("최신 리포트를 반환하고 findLatest를 2회 호출해야 한다", async () => {

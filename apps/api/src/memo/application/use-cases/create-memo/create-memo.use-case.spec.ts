@@ -2,14 +2,14 @@
  * CreateMemoUseCase 단위 테스트
  */
 import { MEMO_LIMITS } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { CreateMemoUseCase } from "./create-memo.use-case";
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { CreateMemoUseCase } from "./create-memo.use-case.js";
 
 const memoEntity = (sortOrder: number): Memo =>
 	Memo.reconstitute({

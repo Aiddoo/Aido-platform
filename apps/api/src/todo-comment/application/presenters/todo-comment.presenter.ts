@@ -1,7 +1,7 @@
 import type { TodoComment, TodoCommentAuthor } from "@aido/validators";
 
-import { getTodoCommentViewerPermissions } from "../../domain/services/todo-comment-permission";
-import type { TodoCommentParticipantAuthorRecord, TodoCommentRecord } from "../types";
+import { getTodoCommentViewerPermissions } from "../../domain/services/todo-comment-permission.js";
+import type { TodoCommentParticipantAuthorRecord, TodoCommentRecord } from "../types.js";
 
 export function toTodoCommentResponse(
 	record: TodoCommentRecord,

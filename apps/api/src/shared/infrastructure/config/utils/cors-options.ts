@@ -1,6 +1,6 @@
 import type { CorsOptions } from "@nestjs/common/interfaces/external/cors-options.interface";
 
-import type { EnvConfig } from "../schemas";
+import type { EnvConfig } from "../schemas/index.js";
 
 const DEVELOPMENT_ORIGINS = [
 	"http://localhost:3000",

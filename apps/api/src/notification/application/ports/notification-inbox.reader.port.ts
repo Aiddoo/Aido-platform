@@ -1,5 +1,5 @@
-import type { NotificationRecord } from "../../domain/records/notification.record";
-import type { FindNotificationsParams } from "./notification-data";
+import type { NotificationRecord } from "../../domain/records/notification.record.js";
+import type { FindNotificationsParams } from "./notification-data.js";
 
 export const NOTIFICATION_INBOX_READER = Symbol("NOTIFICATION_INBOX_READER");
 

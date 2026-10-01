@@ -10,12 +10,12 @@ import {
 	type TodoToggledEvent,
 	type TodoUpdatedEvent,
 	type TodoVisibilityChangedEvent,
-} from "@/todo";
+} from "#api/todo/index";
 
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
-} from "../ports/daily-completion-cache.port";
+} from "../ports/daily-completion-cache.port.js";
 
 /** 일별 완료 캐시를 무효화해야 하는 투두 쓰기 이벤트의 합집합 */
 type TodoWriteEvent =

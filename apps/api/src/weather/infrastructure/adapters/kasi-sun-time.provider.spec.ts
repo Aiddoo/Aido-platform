@@ -1,3 +1,5 @@
+import { TestBed } from "@suites/unit";
+import type { MockInstance } from "vitest";
 /**
  * KasiSunTimeProvider 단위 테스트
  *
@@ -10,18 +12,17 @@
  * pnpm --filter @aido/api test kasi-sun-time.provider.spec
  * ```
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-
-import { KasiSunTimeProvider } from "./kasi-sun-time.provider";
+import { KasiSunTimeProvider } from "./kasi-sun-time.provider.js";
 
 describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
 	let provider: KasiSunTimeProvider;
 	let configService: Mocked<TypedConfigService>;
-	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
+	let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(KasiSunTimeProvider).compile();
@@ -29,11 +30,11 @@ describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
 		provider = unit;
 		configService = unitRef.get(TypedConfigService);
 
-		fetchSpy = jest.spyOn(globalThis, "fetch");
+		fetchSpy = vi.spyOn(globalThis, "fetch");
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	describe("getSunTime", () => {

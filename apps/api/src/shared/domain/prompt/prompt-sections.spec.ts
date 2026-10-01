@@ -5,14 +5,14 @@
  * 프롬프트 본문은 각 빌더 자신의 spec에서 검증하고, 여기서는 "보안/출력 규칙 주입 여부"만 봅니다.
  */
 
-import { buildReportPrompt } from "@/ai-report/domain/services/prompts/report.prompt";
-import type { AggregatedReportData } from "@/ai-report/domain/types";
-import { buildSuggestionPrompt } from "@/ai-suggestion/domain/services/prompts/detect-patterns.prompt";
-import type { SuggestionContext } from "@/ai-suggestion/domain/types";
-import { buildParseMemoPrompt } from "@/ai/domain/services/prompts/parse-memo.prompt";
-import { buildParseTodoPrompt } from "@/ai/domain/services/prompts/parse-todo.prompt";
+import { buildReportPrompt } from "#api/ai-report/domain/services/prompts/report.prompt";
+import type { AggregatedReportData } from "#api/ai-report/domain/types";
+import { buildSuggestionPrompt } from "#api/ai-suggestion/domain/services/prompts/detect-patterns.prompt";
+import type { SuggestionContext } from "#api/ai-suggestion/domain/types";
+import { buildParseMemoPrompt } from "#api/ai/domain/services/prompts/parse-memo.prompt";
+import { buildParseTodoPrompt } from "#api/ai/domain/services/prompts/parse-todo.prompt";
 
-import { PROMPT_OUTPUT_DISCIPLINE, PROMPT_SECURITY_GUARD } from "./prompt-sections";
+import { PROMPT_OUTPUT_DISCIPLINE, PROMPT_SECURITY_GUARD } from "./prompt-sections.js";
 
 describe("PROMPT_SECTIONS 계약", () => {
 	const now = new Date("2026-04-18T12:00:00.000Z");

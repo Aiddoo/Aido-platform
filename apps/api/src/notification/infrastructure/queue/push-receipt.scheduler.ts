@@ -1,13 +1,13 @@
 import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
 import {
 	NOTIFICATION_JOB_POLICY,
 	NOTIFICATION_QUEUE,
 	NotificationJobName,
 	PUSH_RECEIPT_SCHEDULE,
-} from "./notification-queue.constants";
+} from "./notification-queue.constants.js";
 
 /** Owns the recurring receipt-reconciliation schedule, independently of event publishing. */
 @Injectable()

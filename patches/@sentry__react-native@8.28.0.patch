@@ -1,0 +1,22 @@
+--- a/dist/js/tracing/expoRouterStore.js
++++ b/dist/js/tracing/expoRouterStore.js
+@@ -12,16 +12,10 @@
+  * not installed or the build does not expose the expected module path.
+  */
+ export function tryGetExpoRouterStore() {
+-    var _a;
+-    try {
+-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+-        const mod = require('expo-router/build/global-state/router-store');
+-        return (_a = mod === null || mod === void 0 ? void 0 : mod.store) !== null && _a !== void 0 ? _a : null;
+-    }
+-    catch (_b) {
+-        return null;
+-    }
++    // Expo Router 58 removed this private store; preserve the unsupported-router fallback.
++    return null;
+ }
++
+ /**
+  * Builds a templated pathname from Expo Router's `segments`. Grouping segments
+  * (e.g. `(tabs)`, `(auth)`) are stripped because they do not appear in the URL.

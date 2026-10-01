@@ -1,4 +1,4 @@
-import type { CreateNotificationData } from "../ports/notification-data";
+import type { CreateNotificationData } from "../ports/notification-data.js";
 
 export interface PushDeliveryPublication {
 	readonly dispatchId: number;

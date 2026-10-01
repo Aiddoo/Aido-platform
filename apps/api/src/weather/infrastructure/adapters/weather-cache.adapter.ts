@@ -1,17 +1,17 @@
 import { Injectable } from "@nestjs/common";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 
 import type {
 	WeatherCachePort,
 	WeatherForecastEntry,
 	WeatherGridRef,
-} from "../../application/ports/weather-cache.port";
+} from "../../application/ports/weather-cache.port.js";
 import type {
 	WeatherConditions,
 	WeatherForecast,
-} from "../../application/ports/weather-provider.port";
-import { WEATHER_CACHE_TTL_MS, WeatherCacheKey } from "../cache/weather-cache.keyspace";
+} from "../../application/ports/weather-provider.port.js";
+import { WEATHER_CACHE_TTL_MS, WeatherCacheKey } from "../cache/weather-cache.keyspace.js";
 
 /**
  * WeatherCachePort의 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임한다.

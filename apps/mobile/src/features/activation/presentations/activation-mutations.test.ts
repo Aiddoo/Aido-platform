@@ -1,8 +1,9 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/models/feature-discovery.model';
 import { FEATURE_DISCOVERY_QUERY_KEYS } from '@src/features/feature-discovery/presentations/constants/feature-discovery-query-keys.constant';
-import type { User } from '@src/features/user/models/user.model';
+import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
+import { toUser } from '@src/features/user/services/user.mapper';
 import { QueryClient } from '@tanstack/react-query';
 
 import { createActivationProgressRepository } from '../repositories/activation-progress.repository';
@@ -32,15 +33,20 @@ const config: FeatureDiscoveryConfig = {
   autoOpen: true,
 };
 
-const user = {
-  id: 'new-user',
-  createdAt: new Date('2026-08-01T00:00:00.000Z'),
-} as User;
+const user = toUser(
+  createCurrentUserDto({ userId: 'new-user', createdAt: '2026-08-01T00:00:00.000Z' }),
+);
 
 describe('activation mutation bridge', () => {
+  let queryClient: QueryClient;
+  beforeEach(() => {
+    queryClient = new QueryClient();
+  });
+  afterEach(() => {
+    queryClient.clear();
+  });
   it('생성 진행 상태를 공용 Query 캐시에 반영한다', () => {
     // Given
-    const queryClient = new QueryClient();
     queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
     const service = createService();
@@ -66,7 +72,6 @@ describe('activation mutation bridge', () => {
 
   it('완료 성공에서 이벤트를 한 번 반환하고 활성 상태를 캐시에 반영한다', () => {
     // Given
-    const queryClient = new QueryClient();
     queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
     const service = createService();
@@ -109,7 +114,6 @@ describe('activation mutation bridge', () => {
 
   it('설정의 명시적 푸시 동작을 진행 상태와 공용 캐시에 기록한다', () => {
     // Given
-    const queryClient = new QueryClient();
     queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
     const service = createService();
@@ -136,7 +140,6 @@ describe('activation mutation bridge', () => {
 
   it('기존 사용자는 신규 코호트 게이트 해제 대상이 아님을 반환한다', () => {
     // Given
-    const queryClient = new QueryClient();
     queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
     queryClient.setQueryData(USER_QUERY_KEYS.me(), {
       ...user,

@@ -1,16 +1,16 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { PushTokenBuilder } from "@test/builders";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { PushTokenBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
 import type {
 	FindPushTokensParams,
 	RegisterPushTokenData,
-} from "../../application/ports/notification-data";
-import { PrismaPushTokenRepository } from "./prisma-push-token.repository";
+} from "../../application/ports/notification-data.js";
+import { PrismaPushTokenRepository } from "./prisma-push-token.repository.js";
 
 describe("PrismaPushTokenRepository", () => {
 	let repository: PrismaPushTokenRepository;

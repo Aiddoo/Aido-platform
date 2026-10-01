@@ -1,23 +1,24 @@
+import { TestBed } from "@suites/unit";
 /**
  * MarkNotificationOpenedUseCase 단위 테스트
  *
  * - 멱등 기록 성공 시 미읽음 카운트 캐시 무효화 + true 반환
  * - 기록 실패(이미 열림/타 사용자/부재) 시 캐시 무효화 없이 false 반환
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import { createNotificationRepositoryMock } from "@test/mocks/ports/notification.mock";
+import type { Mocked } from "vitest";
+
+import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
+import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
-import { MarkNotificationOpenedUseCase } from "./mark-notification-opened.use-case";
+} from "../../ports/notification.repository.port.js";
+import { MarkNotificationOpenedUseCase } from "./mark-notification-opened.use-case.js";
 
 describe("MarkNotificationOpenedUseCase", () => {
 	let useCase: MarkNotificationOpenedUseCase;

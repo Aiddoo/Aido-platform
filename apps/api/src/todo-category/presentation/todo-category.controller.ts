@@ -24,14 +24,14 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { TodoCategoryReader } from "../application/services/todo-category.reader";
-import { CreateTodoCategoryUseCase } from "../application/use-cases/create-todo-category/create-todo-category.use-case";
-import { DeleteTodoCategoryUseCase } from "../application/use-cases/delete-todo-category/delete-todo-category.use-case";
-import { ReorderTodoCategoryUseCase } from "../application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
-import { UpdateTodoCategoryUseCase } from "../application/use-cases/update-todo-category/update-todo-category.use-case";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { TodoCategoryReader } from "../application/services/todo-category.reader.js";
+import { CreateTodoCategoryUseCase } from "../application/use-cases/create-todo-category/create-todo-category.use-case.js";
+import { DeleteTodoCategoryUseCase } from "../application/use-cases/delete-todo-category/delete-todo-category.use-case.js";
+import { ReorderTodoCategoryUseCase } from "../application/use-cases/reorder-todo-category/reorder-todo-category.use-case.js";
+import { UpdateTodoCategoryUseCase } from "../application/use-cases/update-todo-category/update-todo-category.use-case.js";
 import {
 	CreateTodoCategoryDto,
 	CreateTodoCategoryResponseDto,
@@ -45,8 +45,8 @@ import {
 	TodoCategoryResponseDto,
 	UpdateTodoCategoryDto,
 	UpdateTodoCategoryResponseDto,
-} from "./dtos";
-import { TodoCategoryMapper } from "./todo-category.mapper";
+} from "./dtos/index.js";
+import { TodoCategoryMapper } from "./todo-category.mapper.js";
 
 @ApiTags(SWAGGER_TAGS.TODO_CATEGORIES)
 @ApiBearerAuth()
@@ -103,7 +103,7 @@ export class TodoCategoryController {
 	@ApiForbiddenError(ErrorCode.TODO_CATEGORY_0857)
 	async create(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: CreateTodoCategoryDto,
+		@Body({ schema: CreateTodoCategoryDto }) dto: CreateTodoCategoryDto,
 	): Promise<CreateTodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 생성: user=${user.userId}, name=${dto.name}`);
 
@@ -163,7 +163,7 @@ export class TodoCategoryController {
 	@ApiForbiddenError(ErrorCode.TODO_CATEGORY_0852)
 	async findOne(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCategoryIdParamDto,
+		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
 	): Promise<TodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
 
@@ -196,8 +196,8 @@ export class TodoCategoryController {
 	@ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
 	async update(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCategoryIdParamDto,
-		@Body() dto: UpdateTodoCategoryDto,
+		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+		@Body({ schema: UpdateTodoCategoryDto }) dto: UpdateTodoCategoryDto,
 	): Promise<UpdateTodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
 
@@ -250,8 +250,8 @@ export class TodoCategoryController {
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	async reorder(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCategoryIdParamDto,
-		@Body() dto: ReorderTodoCategoryDto,
+		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+		@Body({ schema: ReorderTodoCategoryDto }) dto: ReorderTodoCategoryDto,
 	): Promise<ReorderTodoCategoryResponseDto> {
 		this.#logger.debug(
 			`카테고리 순서 변경: id=${params.id}, target=${dto.targetCategoryId}, position=${dto.position}`,
@@ -311,8 +311,8 @@ DELETE /todo-categories/3?moveToCategoryId=1
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async delete(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCategoryIdParamDto,
-		@Query() query: DeleteTodoCategoryQueryDto,
+		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+		@Query({ schema: DeleteTodoCategoryQueryDto }) query: DeleteTodoCategoryQueryDto,
 	): Promise<DeleteTodoCategoryResponseDto> {
 		this.#logger.debug(`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`);
 

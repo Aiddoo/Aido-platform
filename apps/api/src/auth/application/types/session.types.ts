@@ -1,6 +1,6 @@
 import type { SessionInfo } from "@aido/validators";
 
-import type { DeviceFingerprint } from "@/auth/domain/constants/auth.constants";
+import type { DeviceFingerprint } from "#api/auth/domain/constants/auth.constants";
 
 /**
  * @aido/validators에서 re-export (하위 호환성 유지)

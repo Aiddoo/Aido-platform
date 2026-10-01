@@ -1,37 +1,43 @@
 import { z } from "zod";
 
-import { type AppConfig, appSchema } from "./app.schema";
-import { type CacheEnvConfig, cacheSchema } from "./cache.schema";
-import { type DatabaseConfig, databaseSchema } from "./database.schema";
-import { type EmailConfig, emailSchema, validateEmailForProduction } from "./email.schema";
-import { type ExternalConfig, externalSchema } from "./external.schema";
+import {
+	type AppVersionConfig,
+	appVersionSchema,
+	validateAppVersionConfig,
+} from "./app-version.schema.js";
+import { type AppConfig, appSchema } from "./app.schema.js";
+import { type CacheEnvConfig, cacheSchema } from "./cache.schema.js";
+import { type DatabaseConfig, databaseSchema } from "./database.schema.js";
+import { type EmailConfig, emailSchema, validateEmailForProduction } from "./email.schema.js";
+import { type ExternalConfig, externalSchema } from "./external.schema.js";
 import {
 	type FeatureDiscoveryConfig,
 	featureDiscoverySchema,
 	validateFeatureDiscoveryConfig,
-} from "./feature-discovery.schema";
-import { type JobConfig, jobSchema } from "./job.schema";
-import { type JwtConfig, jwtSchema } from "./jwt.schema";
-import { type OAuthConfig, oauthSchema, validateOAuthForProduction } from "./oauth.schema";
-import { type PushConfig, pushSchema } from "./push.schema";
-import { type RetentionConfig, retentionSchema } from "./retention.schema";
-import { type SecurityConfig, securitySchema } from "./security.schema";
-import { type WebhookConfig, webhookSchema } from "./webhook.schema";
+} from "./feature-discovery.schema.js";
+import { type JobConfig, jobSchema } from "./job.schema.js";
+import { type JwtConfig, jwtSchema } from "./jwt.schema.js";
+import { type OAuthConfig, oauthSchema, validateOAuthForProduction } from "./oauth.schema.js";
+import { type PushConfig, pushSchema } from "./push.schema.js";
+import { type RetentionConfig, retentionSchema } from "./retention.schema.js";
+import { type SecurityConfig, securitySchema } from "./security.schema.js";
+import { type WebhookConfig, webhookSchema } from "./webhook.schema.js";
 
 // 스키마 재export
-export * from "./app.schema";
-export * from "./cache.schema";
-export * from "./database.schema";
-export * from "./email.schema";
-export * from "./external.schema";
-export * from "./feature-discovery.schema";
-export * from "./job.schema";
-export * from "./jwt.schema";
-export * from "./oauth.schema";
-export * from "./push.schema";
-export * from "./retention.schema";
-export * from "./security.schema";
-export * from "./webhook.schema";
+export * from "./app.schema.js";
+export * from "./app-version.schema.js";
+export * from "./cache.schema.js";
+export * from "./database.schema.js";
+export * from "./email.schema.js";
+export * from "./external.schema.js";
+export * from "./feature-discovery.schema.js";
+export * from "./job.schema.js";
+export * from "./jwt.schema.js";
+export * from "./oauth.schema.js";
+export * from "./push.schema.js";
+export * from "./retention.schema.js";
+export * from "./security.schema.js";
+export * from "./webhook.schema.js";
 
 /**
  * 통합 환경변수 스키마
@@ -39,6 +45,7 @@ export * from "./webhook.schema";
 export const envSchema = z
 	.object({})
 	.merge(appSchema)
+	.merge(appVersionSchema)
 	.merge(cacheSchema)
 	.merge(databaseSchema)
 	.merge(emailSchema)
@@ -51,12 +58,14 @@ export const envSchema = z
 	.merge(externalSchema)
 	.merge(webhookSchema)
 	.merge(featureDiscoverySchema)
-	.superRefine(validateFeatureDiscoveryConfig);
+	.superRefine(validateFeatureDiscoveryConfig)
+	.superRefine(validateAppVersionConfig);
 
 /**
  * 환경변수 전체 타입
  */
 export type EnvConfig = AppConfig &
+	AppVersionConfig &
 	CacheEnvConfig &
 	DatabaseConfig &
 	EmailConfig &

@@ -1,16 +1,16 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
 	type ReorderPlan,
-} from "../../../domain/services/memo-reorder";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import type { MemoMutationResult } from "../create-memo/create-memo.use-case";
+} from "../../../domain/services/memo-reorder.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import type { MemoMutationResult } from "../create-memo/create-memo.use-case.js";
 
 /**
  * 메모 순서 변경 입력.

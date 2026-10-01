@@ -8,5 +8,6 @@ export class KyJsonFetcher implements JsonFetcher {
     this.#client = client;
   }
 
-  get = async (url: string): Promise<unknown> => this.#client.get(url).json<unknown>();
+  get = async (url: string, signal?: AbortSignal): Promise<unknown> =>
+    this.#client.get(url, { signal }).json<unknown>();
 }

@@ -3,33 +3,36 @@
   "version": "1.0.0",
   "private": true,
   "description": "FAANG-style numeric error codes for Aido",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build tsconfig.build.json",
     "clean": "rm -rf dist *.tsbuildinfo",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "test:coverage": "pnpm test:cov",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "test:cov": "vitest run --coverage"
   },
   "devDependencies": {
-    "@aido/jest-config": "workspace:*",
-    "@types/jest": "catalog:",
-    "jest": "catalog:",
-    "ts-jest": "catalog:",
-    "typescript": "catalog:"
+    "@aido/vitest-config": "workspace:*",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

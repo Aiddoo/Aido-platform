@@ -1,3 +1,4 @@
+import type { INestApplication } from "@nestjs/common";
 /**
  * 캐시 무효화 통합 테스트
  *
@@ -5,16 +6,15 @@
  * 캐시 무효화 시나리오를 실제 환경과 유사하게 테스트합니다.
  * 캐시 모듈의 전체 라이프사이클과 무효화 동작을 검증합니다.
  */
-
-import type { INestApplication } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { vi } from "vitest";
 
-import { CacheModule } from "@/shared/infrastructure/cache/cache.module";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
+import { CacheModule } from "#api/shared/infrastructure/cache/cache.module";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { CacheKeys } from "#api/shared/infrastructure/cache/constants/cache-keys";
 
-import { createMockUserProfile } from "../mocks/cache-test-utils";
+import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 
 describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 	let app: INestApplication;
@@ -79,7 +79,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 		it("세션 TTL 만료 시 자동으로 삭제된다", async () => {
 			// Given - 짧은 TTL로 새 캐시 모듈 생성
 			const baseTime = Date.now();
-			const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
+			const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
 			const shortTtlModule = await Test.createTestingModule({
 				imports: [
 					ConfigModule.forRoot({

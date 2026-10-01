@@ -1,11 +1,11 @@
-import { toCompactDateString } from "@/shared/domain/date/utils/format";
+import { toCompactDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
 	DailyForecast,
 	HourlyForecast,
 	WeatherForecast,
-} from "../../application/ports/weather-provider.port";
-import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants";
+} from "../../application/ports/weather-provider.port.js";
+import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
 
 export interface KmaResponseItem {
 	category: string;

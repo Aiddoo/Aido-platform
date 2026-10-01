@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 
 /** 푸시 토큰 등록 시 로케일 upsert (notification). */
 @Injectable()

@@ -1,4 +1,4 @@
-import type { NotificationType } from "../../domain/types/notification-type";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 
 export const NOTIFICATION_DEDUP = Symbol("NOTIFICATION_DEDUP");
 export const NOTIFICATION_DEDUP_LOCK = Symbol("NOTIFICATION_DEDUP_LOCK");

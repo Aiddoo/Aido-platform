@@ -4,25 +4,26 @@ import { z } from "@aido/validators";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Test } from "@nestjs/testing";
+import { vi } from "vitest";
 
-import { Prisma, type PrismaClient } from "@/generated/prisma/client";
-import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "@/shared/domain/system-user";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { TodoCommentCursorCodecPort } from "@/todo-comment/application/ports/todo-comment-cursor-codec.port";
+import { Prisma, type PrismaClient } from "#api/generated/prisma/client";
+import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { TodoCommentCursorCodecPort } from "#api/todo-comment/application/ports/todo-comment-cursor-codec.port";
 import {
 	TodoCommentIdempotencyConflict,
 	TodoCommentIdempotencyRace,
-} from "@/todo-comment/application/ports/todo-comment.repository.port";
-import { GetTodoCommentOverviewUseCase } from "@/todo-comment/application/queries/get-todo-comment-overview/get-todo-comment-overview.use-case";
-import { GetTodoConversationUseCase } from "@/todo-comment/application/queries/get-todo-conversation/get-todo-conversation.use-case";
-import { ThreadPlacement } from "@/todo-comment/domain/value-objects/thread-placement.vo";
-import { PrismaTodoCommentReader } from "@/todo-comment/infrastructure/persistence/prisma-todo-comment.reader";
-import { PrismaTodoCommentRepository } from "@/todo-comment/infrastructure/persistence/prisma-todo-comment.repository";
-import { buildTodoConversationTreeCtes } from "@/todo-comment/infrastructure/persistence/todo-conversation-tree.sql";
-import { HmacTodoCommentCursorCodec } from "@/todo-comment/infrastructure/security/hmac-todo-comment-cursor.codec";
+} from "#api/todo-comment/application/ports/todo-comment.repository.port";
+import { GetTodoCommentOverviewUseCase } from "#api/todo-comment/application/queries/get-todo-comment-overview/get-todo-comment-overview.use-case";
+import { GetTodoConversationUseCase } from "#api/todo-comment/application/queries/get-todo-conversation/get-todo-conversation.use-case";
+import { ThreadPlacement } from "#api/todo-comment/domain/value-objects/thread-placement.vo";
+import { PrismaTodoCommentReader } from "#api/todo-comment/infrastructure/persistence/prisma-todo-comment.reader";
+import { PrismaTodoCommentRepository } from "#api/todo-comment/infrastructure/persistence/prisma-todo-comment.repository";
+import { buildTodoConversationTreeCtes } from "#api/todo-comment/infrastructure/persistence/todo-conversation-tree.sql";
+import { HmacTodoCommentCursorCodec } from "#api/todo-comment/infrastructure/security/hmac-todo-comment-cursor.codec";
 
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 const ROOT_A = "cm1conversationroota00000001";
 const ROOT_B = "cm1conversationrootb00000001";
@@ -207,7 +208,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 	});
 
 	it("root 최신순과 parent-before-child DFS, id tie-break를 한 쿼리에서 지킨다", async () => {
-		const querySpy = jest.spyOn(prisma, "$queryRaw");
+		const querySpy = vi.spyOn(prisma, "$queryRaw");
 
 		const window = await reader.listConversation({
 			todoId,
@@ -296,7 +297,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 				deletedAt: new Date("2026-08-26T03:30:00.000Z"),
 			},
 		});
-		const querySpy = jest.spyOn(prisma, "$queryRaw");
+		const querySpy = vi.spyOn(prisma, "$queryRaw");
 
 		const window = await reader.listOverview({
 			todoId,

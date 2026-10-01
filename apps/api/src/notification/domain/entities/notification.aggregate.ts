@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 
-import { AggregateRoot } from "@/shared/domain";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { AggregateRoot } from "#api/shared/domain/index";
 
-import type { NotificationRecord } from "../records/notification.record";
+import type { NotificationRecord } from "../records/notification.record.js";
 
 /**
  * 알림 애그리게잇.

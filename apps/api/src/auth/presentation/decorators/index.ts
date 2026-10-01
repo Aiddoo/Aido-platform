@@ -1,3 +1,3 @@
-export * from "./admin.decorator";
-export * from "./current-user.decorator";
-export * from "./public.decorator";
+export * from "./admin.decorator.js";
+export * from "./current-user.decorator.js";
+export * from "./public.decorator.js";

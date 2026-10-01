@@ -4,27 +4,27 @@ import {
 	createTodoReminderNotificationMessage,
 	NotificationPublisher,
 	NotificationRecipientLocaleReader,
-} from "@/notification";
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+} from "#api/notification/index";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
+} from "#api/shared/application/ports/job-runtime.port";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
 
 import {
 	TODO_REMINDER_READER,
 	type TodoReminderReaderPort,
-} from "../../application/ports/todo-reminder-reader.port";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
+} from "../../application/ports/todo-reminder-reader.port.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
 import {
 	type ReminderJobData,
 	TODO_REMINDER_LEGACY_QUEUE,
 	TODO_REMINDER_QUEUE,
 	type TodoReminderJobMap,
-} from "../scheduler/bullmq-reminder-scheduler.adapter";
+} from "../scheduler/bullmq-reminder-scheduler.adapter.js";
 
 /**
  * BullMQ 리마인더 잡 프로세서 (진입 어댑터).

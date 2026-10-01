@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * LoginAttemptRepository 단위 테스트
  *
@@ -10,15 +11,14 @@
  * pnpm --filter @aido/api test login-attempt.repository.spec.ts
  * ```
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { LoginAttemptBuilder } from "@test/builders";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
+import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import { LoginAttemptBuilder } from "#test/builders/index";
+import { asTxClient, createMockTxClient } from "#test/mocks/transaction.mock";
 
-import { DatabaseService } from "@/shared/infrastructure/database";
-
-import { LoginAttemptRepository } from "./login-attempt.repository";
+import { LoginAttemptRepository } from "./login-attempt.repository.js";
 
 describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	let repository: LoginAttemptRepository;
@@ -57,7 +57,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 				userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
 				success: true,
 			};
-			db.loginAttempt.create.mockResolvedValue(mockSuccessfulAttempt);
+			vi.mocked(db.loginAttempt.create).mockResolvedValue(mockSuccessfulAttempt);
 
 			// When
 			const result = await repository.create(createData);
@@ -86,7 +86,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 				success: false,
 				failureReason: "INVALID_PASSWORD",
 			};
-			db.loginAttempt.create.mockResolvedValue(mockFailedAttempt);
+			vi.mocked(db.loginAttempt.create).mockResolvedValue(mockFailedAttempt);
 
 			// When
 			const result = await repository.create(createData);
@@ -132,7 +132,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("이메일 기준 최근 실패 횟수를 카운트한다", async () => {
 			// Given
-			db.loginAttempt.count.mockResolvedValue(3);
+			vi.mocked(db.loginAttempt.count).mockResolvedValue(3);
 
 			// When
 			const result = await repository.countRecentFailuresByEmail("user@example.com", since);
@@ -150,7 +150,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("실패 기록이 없으면 0을 반환한다", async () => {
 			// Given
-			db.loginAttempt.count.mockResolvedValue(0);
+			vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
 
 			// When
 			const result = await repository.countRecentFailuresByEmail("clean@example.com", since);
@@ -165,7 +165,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("IP 기준 최근 실패 횟수를 카운트한다", async () => {
 			// Given
-			db.loginAttempt.count.mockResolvedValue(5);
+			vi.mocked(db.loginAttempt.count).mockResolvedValue(5);
 
 			// When
 			const result = await repository.countRecentFailuresByIp("192.168.1.1", since);
@@ -183,7 +183,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("실패 기록이 없으면 0을 반환한다", async () => {
 			// Given
-			db.loginAttempt.count.mockResolvedValue(0);
+			vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
 
 			// When
 			const result = await repository.countRecentFailuresByIp("10.0.0.1", since);
@@ -196,7 +196,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	describe("findLastSuccessByEmail", () => {
 		it("이메일의 마지막 성공 기록을 반환한다", async () => {
 			// Given
-			db.loginAttempt.findFirst.mockResolvedValue(mockSuccessfulAttempt);
+			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(mockSuccessfulAttempt);
 
 			// When
 			const result = await repository.findLastSuccessByEmail("user@example.com");
@@ -214,7 +214,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("성공 기록이 없으면 null을 반환한다", async () => {
 			// Given
-			db.loginAttempt.findFirst.mockResolvedValue(null);
+			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findLastSuccessByEmail("new@example.com");
@@ -227,7 +227,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	describe("findLastFailureByEmail", () => {
 		it("이메일의 마지막 실패 기록을 반환한다", async () => {
 			// Given
-			db.loginAttempt.findFirst.mockResolvedValue(mockFailedAttempt);
+			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(mockFailedAttempt);
 
 			// When
 			const result = await repository.findLastFailureByEmail("user@example.com");
@@ -245,7 +245,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("실패 기록이 없으면 null을 반환한다", async () => {
 			// Given
-			db.loginAttempt.findFirst.mockResolvedValue(null);
+			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findLastFailureByEmail("clean@example.com");
@@ -272,7 +272,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	describe("deleteOld", () => {
 		it("기본 30일 이전 기록을 삭제한다", async () => {
 			// Given
-			db.loginAttempt.deleteMany.mockResolvedValue({ count: 100 });
+			vi.mocked(db.loginAttempt.deleteMany).mockResolvedValue({ count: 100 });
 
 			// When
 			const result = await repository.deleteOld();
@@ -288,7 +288,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("지정된 보관 기간으로 삭제한다", async () => {
 			// Given
-			db.loginAttempt.deleteMany.mockResolvedValue({ count: 50 });
+			vi.mocked(db.loginAttempt.deleteMany).mockResolvedValue({ count: 50 });
 
 			// When
 			const result = await repository.deleteOld(7);
@@ -304,7 +304,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("삭제할 기록이 없으면 0을 반환한다", async () => {
 			// Given
-			db.loginAttempt.deleteMany.mockResolvedValue({ count: 0 });
+			vi.mocked(db.loginAttempt.deleteMany).mockResolvedValue({ count: 0 });
 
 			// When
 			const result = await repository.deleteOld();

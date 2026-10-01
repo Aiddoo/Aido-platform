@@ -1,14 +1,17 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { UserTag } from "../../../domain/value-objects/user-tag.vo";
-import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
+import { UserTag } from "../../../domain/value-objects/user-tag.vo.js";
+import {
+	FOLLOW_REPOSITORY,
+	type FollowRepositoryPort,
+} from "../../ports/follow.repository.port.js";
 import {
 	type SendFriendRequestResult,
 	SendFriendRequestUseCase,
-} from "../send-friend-request/send-friend-request.use-case";
+} from "../send-friend-request/send-friend-request.use-case.js";
 
 export interface SendFriendRequestByTagInput {
 	userId: string;

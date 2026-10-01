@@ -1,4 +1,4 @@
-import { decideRetentionOutboxRetry } from "./retention-outbox-retry.policy";
+import { decideRetentionOutboxRetry } from "./retention-outbox-retry.policy.js";
 
 describe("decideRetentionOutboxRetry", () => {
 	it("지수 백오프를 15분으로 제한한다", () => {

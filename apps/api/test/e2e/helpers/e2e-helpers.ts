@@ -9,7 +9,7 @@
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 
-import type { FakeEmailService } from "../../mocks/fake-email.service";
+import type { FakeEmailService } from "../../mocks/fake-email.service.js";
 
 export interface VerifiedUser {
 	accessToken: string;

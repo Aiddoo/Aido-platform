@@ -4,12 +4,12 @@ import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
-import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
-import { toSupportedLocale } from "@/shared/presentation/decorators";
+} from "#api/shared/application/ports/job-runtime.port";
+import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
+import { toSupportedLocale } from "#api/shared/presentation/decorators/index";
 
-import { GenerateReportUseCase } from "../../application/use-cases/generate-report/generate-report.use-case";
-import type { ReportGenerationJob } from "../jobs/report-generation.job";
+import { GenerateReportUseCase } from "../../application/use-cases/generate-report/generate-report.use-case.js";
+import type { ReportDispatcher } from "../queue/ai-report-queue.js";
 import {
 	AI_REPORT_LEGACY_QUEUE,
 	AI_REPORT_QUEUE,
@@ -17,7 +17,7 @@ import {
 	type AiReportJobMap,
 	AiReportJobName,
 	AiReportRuntimeJobSchema,
-} from "../queue/ai-report-queue";
+} from "../queue/ai-report-queue.js";
 
 /**
  * AI 리포트 생성 BullMQ 프로세서
@@ -36,9 +36,8 @@ type AiReportJobLike = { readonly name: string; readonly data: JobData };
 export class ReportGenerationProcessor implements OnModuleInit {
 	readonly #logger = new Logger(ReportGenerationProcessor.name);
 
-	/** @see ReportGenerationJob — 순환 참조 방지를 위해 setter injection */
-	#reportJob?: ReportGenerationJob;
-	setReportJob(job: ReportGenerationJob) {
+	#reportJob?: ReportDispatcher;
+	setReportJob(job: ReportDispatcher) {
 		this.#reportJob = job;
 	}
 

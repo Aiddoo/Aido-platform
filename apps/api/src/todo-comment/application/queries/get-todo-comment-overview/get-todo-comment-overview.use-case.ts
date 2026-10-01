@@ -2,23 +2,26 @@ import { ErrorCode } from "@aido/errors";
 import type { TodoCommentOverviewResponse, TodoCommentSort } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
+import { assertTodoCommentAccess } from "../../assert-todo-comment-access.js";
 import {
 	TODO_COMMENT_CURSOR_CODEC,
 	type TodoCommentCursorCodecPort,
-} from "../../ports/todo-comment-cursor-codec.port";
+} from "../../ports/todo-comment-cursor-codec.port.js";
 import {
 	TODO_COMMENT_READER,
 	type TodoCommentReaderPort,
-} from "../../ports/todo-comment.reader.port";
-import { toTodoCommentCursorPagination, toTodoCommentOverviewItem } from "../../presenters";
+} from "../../ports/todo-comment.reader.port.js";
+import {
+	toTodoCommentCursorPagination,
+	toTodoCommentOverviewItem,
+} from "../../presenters/index.js";
 import type {
 	OverviewPageMode,
 	TodoCommentOverviewCursor,
 	TodoCommentRootPosition,
-} from "../../types";
+} from "../../types.js";
 
 export interface GetTodoCommentOverviewInput {
 	todoId: number;

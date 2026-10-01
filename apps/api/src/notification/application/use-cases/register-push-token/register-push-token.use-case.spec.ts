@@ -1,27 +1,28 @@
+import { TestBed } from "@suites/unit";
 /**
  * RegisterPushTokenUseCase 단위 테스트
  *
  * - 토큰 형식 오류 → NOTIFICATION_1001 (저장 미수행)
  * - 정상: upsert + 캐시 무효화, timezone/locale 있을 때만 preference upsert + 무효화
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
-import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
+} from "../../ports/notification-cache.port.js";
+import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../../ports/push-token.repository.port";
+} from "../../ports/push-token.repository.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
-} from "../../ports/user-notification-settings.port";
-import { RegisterPushTokenUseCase } from "./register-push-token.use-case";
+} from "../../ports/user-notification-settings.port.js";
+import { RegisterPushTokenUseCase } from "./register-push-token.use-case.js";
 
 describe("RegisterPushTokenUseCase", () => {
 	let useCase: RegisterPushTokenUseCase;

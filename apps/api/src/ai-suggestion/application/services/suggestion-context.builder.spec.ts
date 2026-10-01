@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * SuggestionContextBuilder 단위 테스트
  *
@@ -6,25 +7,24 @@
  *
  * @execute pnpm --filter @aido/api test -- suggestion-context.builder.spec
  */
-
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { WeatherForecastAccess } from "@/weather";
+import { WeatherForecastAccess } from "#api/weather/index";
 
-import type { DayCompletionRate, TodoSummaryForAnalysis } from "../../domain/types";
+import type { DayCompletionRate, TodoSummaryForAnalysis } from "../../domain/types.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../ports/ai-suggestion.repository.port";
+} from "../ports/ai-suggestion.repository.port.js";
 import {
 	WEEKLY_REPORT_READER,
 	type WeeklyReportReaderPort,
-} from "../ports/weekly-report-reader.port";
-import { SuggestionContextBuilder } from "./suggestion-context.builder";
+} from "../ports/weekly-report-reader.port.js";
+import { SuggestionContextBuilder } from "./suggestion-context.builder.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -43,7 +43,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 	const mockTimezone = "Asia/Seoul";
 
 	beforeEach(async () => {
-		jest.useFakeTimers({ now: FIXED_NOW });
+		vi.useFakeTimers({ now: FIXED_NOW });
 
 		const { unit, unitRef } = await TestBed.solitary(SuggestionContextBuilder).compile();
 
@@ -54,7 +54,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	describe("build", () => {

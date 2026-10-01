@@ -15,6 +15,9 @@
     "placeholder": "Write down your ideas freely..."
   },
   "detail": {
+    "pin": "Pin memo",
+    "unpin": "Unpin memo",
+    "convertToTodo": "Convert to to-do",
     "deleteConfirmTitle": "Delete this memo?",
     "deleteConfirmDescription": "Deleted memos can't be recovered"
   },

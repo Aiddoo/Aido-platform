@@ -1,14 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { computeEffectiveStreak } from "@/user-settings";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { computeEffectiveStreak } from "#api/user-settings/index";
 
-import { summarizeCompletion } from "../../../domain/services/completion-policy";
-import { STREAK_PORT, type StreakPort } from "../../ports/streak.port";
+import { summarizeCompletion } from "../../../domain/services/completion-policy.js";
+import { STREAK_PORT, type StreakPort } from "../../ports/streak.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
+} from "../../ports/todo-read.repository.port.js";
 
 /** 홈 위젯 요약에 노출되는 할 일 최대 개수 (large 위젯 리스트 기준) */
 const TOP_TODOS_LIMIT = 10;

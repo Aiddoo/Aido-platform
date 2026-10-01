@@ -1,13 +1,14 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { vi } from "vitest";
 
-import { PrismaAdminGrowthMetricsAdapter } from "@/admin/infrastructure/adapters/prisma-admin-growth-metrics.adapter";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { type PrismaClient, UserStatus } from "@/generated/prisma/client";
-import { DELETED_COMMENT_AUTHOR } from "@/shared/domain/system-user";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { PrismaAdminGrowthMetricsAdapter } from "#api/admin/infrastructure/adapters/prisma-admin-growth-metrics.adapter";
+import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
+import { type PrismaClient, UserStatus } from "#api/generated/prisma/client";
+import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 describe("성장 지표 통합 테스트 (실제 DB)", () => {
 	let testDb: TestDatabase;
@@ -109,18 +110,18 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 		const otherWriter = createActivityWriter(prisma);
 		const earlier = new Date("2026-07-26T15:10:00.000Z");
 		const later = new Date("2026-07-26T15:30:00.000Z");
-		jest.useFakeTimers({
-			doNotFake: ["nextTick", "setImmediate", "setInterval", "setTimeout"],
+		vi.useFakeTimers({
+			toNotFake: ["nextTick", "setImmediate", "setInterval", "setTimeout"],
 		});
 
 		try {
 			// When - 최신 활동이 먼저 커밋되고 과거 시각의 writer가 나중에 커밋되면
-			jest.setSystemTime(later);
+			vi.setSystemTime(later);
 			await activityWriter.updateLastActiveAt("out-of-order-user", "Asia/Seoul");
-			jest.setSystemTime(earlier);
+			vi.setSystemTime(earlier);
 			await otherWriter.updateLastActiveAt("out-of-order-user", "Asia/Seoul");
 		} finally {
-			jest.useRealTimers();
+			vi.useRealTimers();
 		}
 
 		// Then - first는 최솟값, last와 사용자 활동은 최댓값을 유지한다
@@ -148,19 +149,19 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 		const otherWriter = createActivityWriter(prisma);
 		const earlier = new Date("2026-07-26T16:10:00.000Z");
 		const later = new Date("2026-07-26T16:30:00.000Z");
-		jest.useFakeTimers({
-			doNotFake: ["nextTick", "setImmediate", "setInterval", "setTimeout"],
+		vi.useFakeTimers({
+			toNotFake: ["nextTick", "setImmediate", "setInterval", "setTimeout"],
 		});
 
 		try {
 			// When - 같은 현지 날짜의 서로 다른 시각을 병렬 기록하면
-			jest.setSystemTime(earlier);
+			vi.setSystemTime(earlier);
 			const earlierWrite = activityWriter.updateLastActiveAt("parallel-insert-user", "Asia/Seoul");
-			jest.setSystemTime(later);
+			vi.setSystemTime(later);
 			const laterWrite = otherWriter.updateLastActiveAt("parallel-insert-user", "Asia/Seoul");
 			await Promise.all([earlierWrite, laterWrite]);
 		} finally {
-			jest.useRealTimers();
+			vi.useRealTimers();
 		}
 
 		// Then - unique 충돌 순서와 무관하게 양 끝 시각이 보존된다

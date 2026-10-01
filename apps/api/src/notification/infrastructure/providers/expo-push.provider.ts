@@ -2,8 +2,8 @@ import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger } from "@nestjs/common";
 import Expo, { type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import type {
 	BatchPushResult,
@@ -11,9 +11,9 @@ import type {
 	PushProvider,
 	PushReceiptResult,
 	PushResult,
-} from "../../application/ports/push-provider.port";
-import { RetryablePushProviderTransportError } from "../../application/ports/push-provider.port";
-import { buildExpoPushMessage, type ExpoPushMessageBuildResult } from "./expo-push-message";
+} from "../../application/ports/push-provider.port.js";
+import { RetryablePushProviderTransportError } from "../../application/ports/push-provider.port.js";
+import { buildExpoPushMessage, type ExpoPushMessageBuildResult } from "./expo-push-message.js";
 
 const EXPO_MESSAGE_TOO_BIG_ERROR_CODE = "MessageTooBig";
 

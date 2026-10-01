@@ -1,4 +1,8 @@
 import { todoCategoryIdParamSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class TodoCategoryIdParamDto extends createZodDto(todoCategoryIdParamSchema) {}
+export const TodoCategoryIdParamDto = todoCategoryIdParamSchema.meta({
+	id: "TodoCategoryIdParamDto",
+	apiParameter: true,
+});
+export type TodoCategoryIdParamDto = z.infer<typeof TodoCategoryIdParamDto>;

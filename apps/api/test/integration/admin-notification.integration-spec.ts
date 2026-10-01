@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * AdminNotificationProcessor 통합 테스트
  *
@@ -17,17 +18,16 @@
  * pnpm --filter @aido/api test admin-notification.integration-spec
  * ```
  */
-
-import { Test, type TestingModule } from "@nestjs/testing";
-import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
+import { vi } from "vitest";
 
-import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "@/admin-notification";
-import { ADMIN_NOTIFICATION_QUEUE_PORT } from "@/admin-notification/application/ports/admin-notification-queue.port";
-import { SIGNUP_STATS_READER } from "@/admin-notification/application/ports/signup-stats.reader.port";
-import { DispatchDailySignupSummaryUseCase } from "@/admin-notification/application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
-import { SendAdminNotificationUseCase } from "@/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case";
-import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
+import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/admin-notification/application/ports/admin-notification-queue.port";
+import { SIGNUP_STATS_READER } from "#api/admin-notification/application/ports/signup-stats.reader.port";
+import { DispatchDailySignupSummaryUseCase } from "#api/admin-notification/application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
+import { SendAdminNotificationUseCase } from "#api/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case";
+import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "#api/admin-notification/index";
+import { AdminNotificationProcessor } from "#api/admin-notification/infrastructure/queue/admin-notification-queue.processor";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 function createMockJob(name: string, data: Record<string, unknown>): Job {
 	return { name, data, id: `job-${name}` } as unknown as Job;
@@ -40,26 +40,26 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 	// Mock Notifiers
 	const mockAdminNotifier = {
 		name: "admin-discord",
-		send: jest.fn().mockResolvedValue({ success: true }),
-		isConfigured: jest.fn().mockReturnValue(true),
+		send: vi.fn().mockResolvedValue({ success: true }),
+		isConfigured: vi.fn().mockReturnValue(true),
 	};
 
 	const mockPaymentNotifier = {
 		name: "payment-discord",
-		send: jest.fn().mockResolvedValue({ success: true }),
-		isConfigured: jest.fn().mockReturnValue(true),
+		send: vi.fn().mockResolvedValue({ success: true }),
+		isConfigured: vi.fn().mockReturnValue(true),
 	};
 
 	// Mock ports (dispatch summary)
 	const mockSignupStatsReader = {
-		getSignupStats: jest.fn().mockResolvedValue({
+		getSignupStats: vi.fn().mockResolvedValue({
 			signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
 			totalUsers: 100,
 		}),
 	};
 
 	const mockQueuePort = {
-		enqueueSend: jest.fn().mockResolvedValue(undefined),
+		enqueueSend: vi.fn().mockResolvedValue(undefined),
 	};
 
 	beforeAll(async () => {
@@ -94,11 +94,11 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.resetAllMocks();
+		vi.resetAllMocks();
 		mockAdminNotifier.send.mockResolvedValue({ success: true });
 		mockAdminNotifier.isConfigured.mockReturnValue(true);
 		mockPaymentNotifier.send.mockResolvedValue({ success: true });

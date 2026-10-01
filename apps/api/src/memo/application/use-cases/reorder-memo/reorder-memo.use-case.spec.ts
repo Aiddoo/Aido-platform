@@ -1,16 +1,16 @@
+import { TestBed } from "@suites/unit";
 /**
  * ReorderMemoUseCase 단위 테스트
  *
  * 도메인 계획을 저장소 시프트/갱신 호출로 적용하는지 검증한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { ReorderMemoUseCase } from "./reorder-memo.use-case";
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { ReorderMemoUseCase } from "./reorder-memo.use-case.js";
 
 const memoAt = (id: number, sortOrder: number): Memo =>
 	Memo.reconstitute({

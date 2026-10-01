@@ -1,27 +1,28 @@
+import { TestBed } from "@suites/unit";
 /**
  * MarkAsReadUseCase 단위 테스트
  *
  * - 소유 알림 읽음 처리 + 캐시 무효화
  * - 부재(NOTIFICATION_1004) / 타 사용자(NOTIFICATION_1005) / 이미 읽음(무동작)
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { NotificationBuilder } from "@test/builders";
-import { createNotificationCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { NotificationBuilder } from "#test/builders/index";
+import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_INBOX_READER,
 	type NotificationInboxReaderPort,
-} from "../../ports/notification-inbox.reader.port";
+} from "../../ports/notification-inbox.reader.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
-import { MarkAsReadUseCase } from "./mark-as-read.use-case";
+} from "../../ports/notification.repository.port.js";
+import { MarkAsReadUseCase } from "./mark-as-read.use-case.js";
 
 describe("MarkAsReadUseCase", () => {
 	let useCase: MarkAsReadUseCase;

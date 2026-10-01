@@ -1,11 +1,11 @@
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter";
-import { PostgresPushRateLimiter } from "./postgres-push-rate-limiter";
-import { createPushRateLimiter } from "./push-rate-limiter.factory";
-import { RedisPushRateLimiter } from "./redis-push-rate-limiter";
+import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter.js";
+import { PostgresPushRateLimiter } from "./postgres-push-rate-limiter.js";
+import { createPushRateLimiter } from "./push-rate-limiter.factory.js";
+import { RedisPushRateLimiter } from "./redis-push-rate-limiter.js";
 
 describe("createPushRateLimiter", () => {
 	const database = {} as DatabaseService;

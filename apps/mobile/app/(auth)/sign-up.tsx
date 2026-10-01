@@ -2,10 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { SignUpPasswordForm } from '@src/features/auth/presentations/components/SignUpPasswordForm';
 import { SignUpUserInfoForm } from '@src/features/auth/presentations/components/SignUpUserInfoForm';
 import { SignUpVerificationForm } from '@src/features/auth/presentations/components/SignUpVerificationForm';
-import {
-  type SignUpFormData,
-  signUpFormSchema,
-} from '@src/features/auth/presentations/schemas/sign-up-form.schema';
+import { signUpFormSchema } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';
 import { Stack } from 'expo-router';
@@ -26,7 +23,7 @@ const SignUpScreen = () => {
   const { t } = useTranslation(['auth']);
   const { step, setStep } = useStepper<typeof SIGN_UP_STEPS>(SIGN_UP_STEPS);
 
-  const form = useForm<SignUpFormData>({
+  const form = useForm({
     resolver: zodResolver(signUpFormSchema),
     defaultValues: {
       email: '',

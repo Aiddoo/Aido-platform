@@ -1,1 +1,1 @@
-export * from "./upsert-weekly-achievements/upsert-weekly-achievements.use-case";
+export * from "./upsert-weekly-achievements/upsert-weekly-achievements.use-case.js";

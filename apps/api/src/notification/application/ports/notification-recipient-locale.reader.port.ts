@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@/shared/domain/locale";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 export const NOTIFICATION_RECIPIENT_LOCALE_READER = Symbol("NOTIFICATION_RECIPIENT_LOCALE_READER");
 

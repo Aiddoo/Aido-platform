@@ -1,4 +1,4 @@
-import { jobSchema } from "./job.schema";
+import { jobSchema } from "./job.schema.js";
 
 describe("jobSchema — 작업 런타임 설정", () => {
 	it("미설정 시 현재 운영 인프라인 PostgreSQL backend를 선택한다", () => {

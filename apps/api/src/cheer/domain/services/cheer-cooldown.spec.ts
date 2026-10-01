@@ -1,4 +1,4 @@
-import { evaluateCheerCooldown } from "./cheer-cooldown";
+import { evaluateCheerCooldown } from "./cheer-cooldown.js";
 
 describe("cheer-cooldown 도메인 서비스", () => {
 	it("마지막 응원이 없으면 비활성", () => {

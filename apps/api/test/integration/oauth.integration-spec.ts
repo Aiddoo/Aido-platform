@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * OAuth 통합 테스트 (Testcontainers)
  *
@@ -19,15 +20,13 @@
  * pnpm --filter @aido/api test oauth.integration-spec
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { AdminEventNotifier } from "@/admin-notification";
+import { AdminEventNotifier } from "#api/admin-notification/index";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_CACHE,
@@ -39,48 +38,49 @@ import {
 	AUTH_SESSION_REPOSITORY,
 	AUTH_TOKEN_ISSUER,
 	AUTH_USER_REPOSITORY,
-} from "@/auth/application/ports";
+} from "#api/auth/application/ports/index";
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
-} from "@/auth/application/ports/oauth-identity-provider.port";
-import { SessionService } from "@/auth/application/services/session.service";
-import { IssueLoginUseCase } from "@/auth/application/use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "@/auth/application/use-cases/provision-user/provision-user.use-case";
-import { OAuthWorkflow } from "@/auth/application/workflows/oauth.workflow";
-import { TokenService } from "@/auth/infrastructure/adapters/token.service";
+} from "#api/auth/application/ports/oauth-identity-provider.port";
+import { SessionService } from "#api/auth/application/services/session.service";
+import { IssueLoginUseCase } from "#api/auth/application/use-cases/issue-login/issue-login.use-case";
+import { ProvisionUserUseCase } from "#api/auth/application/use-cases/provision-user/provision-user.use-case";
+import { OAuthWorkflow } from "#api/auth/application/workflows/oauth.workflow";
+import { TokenService } from "#api/auth/infrastructure/adapters/token.service";
 import {
 	AppleOAuthProvider,
 	GoogleOAuthProvider,
 	KakaoOAuthProvider,
 	NaverOAuthProvider,
-} from "@/auth/infrastructure/oauth/adapters";
-import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { AccountRepository } from "@/auth/infrastructure/persistence/account.repository";
-import { LoginAttemptRepository } from "@/auth/infrastructure/persistence/login-attempt.repository";
-import { OAuthStateRepository } from "@/auth/infrastructure/persistence/oauth-state.repository";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import type { AccountProvider } from "@/generated/prisma/client";
-import { NotificationQueueService } from "@/notification/queue";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { EncryptionService } from "@/shared/infrastructure/encryption";
-import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
-import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
+} from "#api/auth/infrastructure/oauth/adapters/index";
+import { OAuthTokenVerifierService } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+import { AccountRepository } from "#api/auth/infrastructure/persistence/account.repository";
+import { LoginAttemptRepository } from "#api/auth/infrastructure/persistence/login-attempt.repository";
+import { OAuthStateRepository } from "#api/auth/infrastructure/persistence/oauth-state.repository";
+import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
+import { SessionRepository } from "#api/auth/infrastructure/persistence/session.repository";
+import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
+import type { AccountProvider } from "#api/generated/prisma/client";
+import { NotificationQueueService } from "#api/notification/queue";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { CACHE_SERVICE } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
+import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
+import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
-import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider";
-import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider";
+import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service.js";
+import { TestDatabase } from "../setup/test-database.js";
+import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
+import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider.js";
 
 describe("OAuth 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -281,7 +281,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 	// 각 테스트 전 데이터 초기화
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		await testDb.cleanup();
 		fakeTokenVerifier.clear();
 	});

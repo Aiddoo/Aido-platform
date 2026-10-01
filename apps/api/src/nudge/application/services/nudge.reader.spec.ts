@@ -1,10 +1,11 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
 
-import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../ports/nudge.repository.port";
-import { NudgeReader } from "./nudge.reader";
+import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
+import { NudgeReader } from "./nudge.reader.js";
 
 describe("NudgeReader — 사용자 로컬 일일 한도", () => {
 	let reader: NudgeReader;
@@ -27,13 +28,13 @@ describe("NudgeReader — 사용자 로컬 일일 한도", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("Asia/Seoul 현재 일자의 실제 UTC 자정 범위로 used와 remaining을 계산한다", async () => {
 		// Given - 7/26 KST는 7/25 15:00Z부터 7/26 15:00Z 직전까지
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date("2026-07-26T00:30:00.000Z"));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-26T00:30:00.000Z"));
 		repository.countSentSince.mockResolvedValue(1);
 
 		// When

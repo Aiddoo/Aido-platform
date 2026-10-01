@@ -1,4 +1,8 @@
 import { todoResourceLimitQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class TodoResourceLimitQueryDto extends createZodDto(todoResourceLimitQuerySchema) {}
+export const TodoResourceLimitQueryDto = todoResourceLimitQuerySchema.meta({
+	id: "TodoResourceLimitQueryDto",
+	apiParameter: true,
+});
+export type TodoResourceLimitQueryDto = z.infer<typeof TodoResourceLimitQueryDto>;

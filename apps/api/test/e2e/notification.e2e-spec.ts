@@ -17,9 +17,9 @@ import request from "supertest";
 import {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
-} from "@/notification/application/ports/marketing-push-opt-out-token.port";
+} from "#api/notification/application/ports/marketing-push-opt-out-token.port";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("알림 E2E", () => {
 	let ctx: E2eTestContext;

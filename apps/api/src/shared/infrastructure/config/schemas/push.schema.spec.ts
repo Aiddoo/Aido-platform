@@ -1,4 +1,4 @@
-import { pushSchema } from "./push.schema";
+import { pushSchema } from "./push.schema.js";
 
 describe("pushSchema", () => {
 	it("미설정 시 PostgreSQL rate limiter를 선택한다", () => {

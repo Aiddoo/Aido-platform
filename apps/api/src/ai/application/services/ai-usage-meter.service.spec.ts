@@ -1,17 +1,20 @@
+import { TestBed } from "@suites/unit";
 /**
  * AiUsageMeter 단위 테스트
  *
  * UoW·사용량 저장소·엔타이틀먼트를 스텁으로 대체해 한도 확인/원자적 증가/보상
  * 감소 로직만 검증한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { AI_USAGE_REPOSITORY, type AiUsageRepositoryPort } from "../ports/ai-usage.repository.port";
-import { AiUsageMeter } from "./ai-usage-meter.service";
+import {
+	AI_USAGE_REPOSITORY,
+	type AiUsageRepositoryPort,
+} from "../ports/ai-usage.repository.port.js";
+import { AiUsageMeter } from "./ai-usage-meter.service.js";
 
 describe("AiUsageMeter — AI 사용량 미터", () => {
 	let meter: AiUsageMeter;

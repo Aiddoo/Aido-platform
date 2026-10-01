@@ -5,7 +5,7 @@ import {
 	NotificationJobName,
 	NotificationRuntimeJobSchema,
 	PUSH_RECEIPT_SCHEDULE,
-} from "./notification-queue.constants";
+} from "./notification-queue.constants.js";
 
 describe("Notification queue contract", () => {
 	it("queue 이름과 운영 정책을 기존 계약으로 유지한다", () => {

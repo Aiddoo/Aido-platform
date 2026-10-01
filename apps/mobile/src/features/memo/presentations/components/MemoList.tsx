@@ -12,11 +12,11 @@ import {
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { router, type Href } from 'expo-router';
+import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
-import { useGetMemosQueryOptions } from '../queries/use-get-memos-query-options';
+import { useGetMemosQueryOptions } from '../queries/get-memos-query-options';
 
 export function MemoList() {
   const { data } = useSuspenseInfiniteQuery(useGetMemosQueryOptions());
@@ -32,7 +32,7 @@ export function MemoList() {
   ];
 
   return (
-    <HStack px={12} gap={12} align="start">
+    <HStack gap={12} align="start">
       {columns.map((column, colIndex) => (
         <VStack key={column.key} flex={1} gap={12}>
           {column.items.map((item, rowIndex) => (
@@ -71,7 +71,7 @@ MemoList.Item = function Item({
   const push = useSingleTap(router.push);
 
   return (
-    <PressableFeedback onPress={() => push(`/memo/${id}` as Href)}>
+    <PressableFeedback onPress={() => push({ pathname: '/memo/[id]', params: { id } })}>
       <VStack gap={8} p={16} className="rounded-xl bg-gray-1">
         <HStack align="start">
           <Text className="flex-1" size="b3" shade={8} weight="semibold" numberOfLines={4}>
@@ -90,7 +90,7 @@ MemoList.Item = function Item({
 
 MemoList.Loading = function Loading() {
   return (
-    <HStack px={12} gap={12} className="flex-wrap">
+    <HStack gap={12} className="flex-wrap">
       {times(4, (i) => (
         <VStack
           key={`memo-skeleton-${i}`}

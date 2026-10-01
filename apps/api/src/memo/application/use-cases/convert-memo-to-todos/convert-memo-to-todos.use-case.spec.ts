@@ -8,18 +8,19 @@
  */
 
 import type { Todo } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMemoRepositoryMock, createTodoCreatorMock } from "@test/mocks/ports/memo.mock";
+import type { Mocked } from "vitest";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
+import { createMemoRepositoryMock, createTodoCreatorMock } from "#test/mocks/ports/memo.mock";
+
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port.js";
 import {
 	type ConvertMemoToSingleTodoData,
 	type ConvertMemoToTodosInput,
 	ConvertMemoToTodosUseCase,
-} from "./convert-memo-to-todos.use-case";
+} from "./convert-memo-to-todos.use-case.js";
 
 // 도메인 애그리게잇 복원 헬퍼 (모듈 컨벤션: MemoBuilder는 Prisma 행이므로 reconstitute 사용)
 const memoEntity = (): Memo =>
@@ -143,6 +144,7 @@ describe("ConvertMemoToTodosUseCase — 메모→다중 할 일 일괄 변환", 
 				singleTodo({
 					title: "운동",
 					isRecurring: true,
+					items: [{ title: "운동복 준비" }, { title: "스트레칭" }],
 					recurrence: {
 						daysOfWeek: ["MON", "WED"],
 						endDate: new Date("2026-04-30"),
@@ -160,6 +162,7 @@ describe("ConvertMemoToTodosUseCase — 메모→다중 할 일 일괄 변환", 
 				startDate: "2026-04-06",
 				endDate: "2026-04-30",
 				daysOfWeek: ["MON", "WED"],
+				items: [{ title: "운동복 준비" }, { title: "스트레칭" }],
 			}),
 			"Asia/Seoul",
 		);

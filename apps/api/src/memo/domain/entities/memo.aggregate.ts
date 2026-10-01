@@ -1,9 +1,9 @@
 import type { Memo as MemoResponse } from "@aido/validators";
 
-import { AggregateRoot } from "@/shared/domain";
-import { toISOString } from "@/shared/domain/date/utils/format";
+import { toISOString } from "#api/shared/domain/date/utils/format";
+import { AggregateRoot } from "#api/shared/domain/index";
 
-import { MemoContent } from "../value-objects/memo-content.vo";
+import { MemoContent } from "../value-objects/memo-content.vo.js";
 
 /**
  * 메모 애그리게잇.

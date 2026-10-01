@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const FriendUserSchema = z.object({
+export const friendUserSchema = z.object({
   id: z.string(),
   userTag: z.string(),
   name: z.string().nullable(),
@@ -8,19 +8,18 @@ export const FriendUserSchema = z.object({
   followId: z.string(),
   friendsSince: z.date(),
 });
-export type FriendUser = z.infer<typeof FriendUserSchema>;
+export type FriendUser = z.infer<typeof friendUserSchema>;
 
-export const FriendRequestSchema = z.object({
+export const friendRequestSchema = z.object({
   id: z.string(),
   userTag: z.string(),
   name: z.string().nullable(),
   profileImage: z.string().nullable(),
   requestedAt: z.date(),
 });
-export type FriendRequest = z.infer<typeof FriendRequestSchema>;
+export type FriendRequest = z.infer<typeof friendRequestSchema>;
 
-/** 사용자 검색 결과 (이름/태그 검색, 뷰어 기준 관계 상태 포함) */
-export const SearchedUserSchema = z.object({
+export const searchedUserSchema = z.object({
   id: z.string(),
   userTag: z.string(),
   name: z.string().nullable(),
@@ -30,7 +29,7 @@ export const SearchedUserSchema = z.object({
   isFriend: z.boolean(),
   requestPending: z.boolean(),
 });
-export type SearchedUser = z.infer<typeof SearchedUserSchema>;
+export type SearchedUser = z.infer<typeof searchedUserSchema>;
 
 export interface SendRequestResult {
   autoAccepted: boolean;
@@ -45,12 +44,15 @@ export interface PaginationParams {
 export const SEARCH_MIN_QUERY_LENGTH = 2;
 
 /** userTag: 8자리 영문 대문자·숫자만 허용 (@aido/validators userTagParamSchema와 동일) */
+export function isValidTag(tag: string): boolean {
+  return /^[A-Z0-9]{8}$/.test(tag.trim());
+}
+
+export function isValidSearchQuery(query: string): boolean {
+  return query.trim().length >= SEARCH_MIN_QUERY_LENGTH;
+}
+
 export const FriendPolicy = {
-  isValidTag(tag: string): boolean {
-    return /^[A-Z0-9]{8}$/.test(tag.trim());
-  },
-  /** 검색어가 유효한 최소 길이(2자) 이상인지 (trim 후 판정) */
-  isValidSearchQuery(query: string): boolean {
-    return query.trim().length >= SEARCH_MIN_QUERY_LENGTH;
-  },
+  isValidTag,
+  isValidSearchQuery,
 } as const;

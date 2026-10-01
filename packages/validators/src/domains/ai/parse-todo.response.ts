@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { dateSchema, nullableDateSchema } from '../../common/datetime';
-import { dayOfWeekSchema } from '../todo/todo.common';
-import { tokenUsageSchema } from './ai-usage.response';
+import { dateSchema, nullableDateSchema } from '../../common/datetime.js';
+import { dayOfWeekSchema } from '../todo/todo.common.js';
+import { tokenUsageSchema } from './ai-usage.response.js';
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 

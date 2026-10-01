@@ -1,40 +1,20 @@
-import type { CurrentUserPayload } from "@aido/validators";
-import { ExecutionContext } from "@nestjs/common";
+import type { ExecutionContext } from "@nestjs/common";
+import { mockDeep } from "vitest-mock-extended";
 
-interface MockExecutionContextResult {
-	context: ExecutionContext;
-	request: Record<string, unknown>;
-}
-
-/**
- * Guard 테스트용 ExecutionContext mock 팩토리
- *
- * @example
- * // user 없이 (jwt-auth.guard)
- * const { context } = createMockExecutionContext();
- *
- * // user 포함 (admin.guard, ai-usage.guard)
- * const { context, request } = createMockExecutionContext({ user: mockUser });
- *
- * // headers 포함 (webhook-signature.guard)
- * const { context } = createMockExecutionContext({ headers: { authorization: "Bearer x" } });
- */
 export function createMockExecutionContext(options?: {
-	user?: CurrentUserPayload;
+	user?: unknown;
 	headers?: Record<string, string>;
-}): MockExecutionContextResult {
+}) {
 	const request: Record<string, unknown> = { user: options?.user };
 	if (options?.headers !== undefined) {
 		request.headers = options.headers;
 	}
 
-	const context = {
-		switchToHttp: () => ({
-			getRequest: () => request,
-		}),
-		getHandler: () => ({}),
-		getClass: () => ({}),
-	} as unknown as ExecutionContext;
-
+	const context = mockDeep<ExecutionContext>();
+	const http = mockDeep<ReturnType<ExecutionContext["switchToHttp"]>>();
+	http.getRequest.mockReturnValue(request);
+	context.switchToHttp.mockReturnValue(http);
+	context.getHandler.mockReturnValue(() => undefined);
+	context.getClass.mockReturnValue(class TestController {});
 	return { context, request };
 }

@@ -1,5 +1,5 @@
-import { buildParseMemoPrompt } from "./parse-memo.prompt";
-import { buildParseMemoPromptEn } from "./parse-memo.prompt.en";
+import { buildParseMemoPromptEn } from "./parse-memo.prompt.en.js";
+import { buildParseMemoPrompt } from "./parse-memo.prompt.js";
 
 describe("buildParseMemoPrompt — Gemini 구조화 프롬프트", () => {
 	const now = new Date("2026-08-08T12:00:00.000Z");

@@ -3,14 +3,14 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
 
-import type { VerifiedProfile } from "@/auth/application/ports/oauth-identity-provider.port";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { readJson } from "@/shared/infrastructure/http/read-json";
+import type { VerifiedProfile } from "#api/auth/application/ports/oauth-identity-provider.port";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { readJson } from "#api/shared/infrastructure/http/read-json";
 import {
 	type JoseWrapper,
 	type JWKSFunction,
 	loadJose,
-} from "@/shared/infrastructure/jose/jose-wrapper";
+} from "#api/shared/infrastructure/jose/jose-wrapper";
 
 export type { VerifiedProfile };
 

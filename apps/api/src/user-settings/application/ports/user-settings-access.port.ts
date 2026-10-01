@@ -1,7 +1,7 @@
-import type { UserConsentRecord } from "../../domain/records/user-consent.record";
-import type { UserPreferenceRecord } from "../../domain/records/user-preference.record";
-import type { ConsentSeedInput, UserConsentRecordWithId } from "./user-consent.repository.port";
-import type { UserPreferenceRecordWithId } from "./user-preference.repository.port";
+import type { UserConsentRecord } from "../../domain/records/user-consent.record.js";
+import type { UserPreferenceRecord } from "../../domain/records/user-preference.record.js";
+import type { ConsentSeedInput, UserConsentRecordWithId } from "./user-consent.repository.port.js";
+import type { UserPreferenceRecordWithId } from "./user-preference.repository.port.js";
 
 export const USER_SETTINGS_PROVISIONER = Symbol("USER_SETTINGS_PROVISIONER");
 export const USER_STREAK_ACCESS = Symbol("USER_STREAK_ACCESS");

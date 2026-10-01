@@ -15,7 +15,7 @@
  *   .build();
  * ```
  */
-import type { Notification, NotificationType } from "@/generated/prisma/client";
+import type { Notification, NotificationType } from "#api/generated/prisma/client";
 
 export class NotificationBuilder {
 	private data: Notification;

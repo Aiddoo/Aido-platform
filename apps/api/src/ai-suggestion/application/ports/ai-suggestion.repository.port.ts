@@ -1,6 +1,6 @@
 import type { DayOfWeek } from "@aido/validators";
 
-import type { Suggestion, SuggestionStatus } from "../../domain/entities/suggestion.aggregate";
+import type { Suggestion, SuggestionStatus } from "../../domain/entities/suggestion.aggregate.js";
 import type {
 	CategoryCompletionRate,
 	DayCompletionRate,
@@ -8,7 +8,7 @@ import type {
 	TimeCompletionRate,
 	TodoSummaryForAnalysis,
 	UserStreakInfo,
-} from "../../domain/types";
+} from "../../domain/types.js";
 
 export const AI_SUGGESTION_REPOSITORY = Symbol("AI_SUGGESTION_REPOSITORY");
 

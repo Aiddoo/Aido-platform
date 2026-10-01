@@ -3,7 +3,7 @@
  *
  * 타입 안전한 Session 및 인증 관련 엔티티 테스트 데이터 생성
  */
-import type { Session, Verification, VerificationType } from "@/generated/prisma/client";
+import type { Session, Verification, VerificationType } from "#api/generated/prisma/client";
 
 let sessionCounter = 0;
 let verificationCounter = 0;

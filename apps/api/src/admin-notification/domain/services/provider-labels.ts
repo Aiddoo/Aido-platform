@@ -1,4 +1,4 @@
-import type { UserRegisteredEventPayload } from "../types/user-registered.payload";
+import type { UserRegisteredEventPayload } from "../types/user-registered.payload.js";
 
 /** 회원가입 방식 (소셜/자격증명) */
 export type Provider = UserRegisteredEventPayload["provider"];

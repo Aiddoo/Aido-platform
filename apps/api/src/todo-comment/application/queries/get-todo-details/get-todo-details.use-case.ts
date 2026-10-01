@@ -2,18 +2,18 @@ import { ErrorCode } from "@aido/errors";
 import type { TodoDetailsResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { getTodoDetailsPermissions } from "../../../domain/services/todo-comment-permission";
+import { getTodoDetailsPermissions } from "../../../domain/services/todo-comment-permission.js";
 import {
 	TODO_COMMENT_READER,
 	type TodoCommentReaderPort,
-} from "../../ports/todo-comment.reader.port";
+} from "../../ports/todo-comment.reader.port.js";
 import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
-} from "../../ports/todo-comment.repository.port";
+} from "../../ports/todo-comment.repository.port.js";
 
 export interface GetTodoDetailsInput {
 	todoId: number;

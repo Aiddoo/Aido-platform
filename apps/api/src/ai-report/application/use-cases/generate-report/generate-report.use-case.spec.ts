@@ -7,19 +7,19 @@
  * - 프리미엄 게이트 없음(크론 경로)
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { AI_PROVIDER, type AiProvider } from "@/ai";
+import { AI_PROVIDER, type AiProvider } from "#api/ai/index";
 
-import { AiReport } from "../../../domain/entities/ai-report.entity";
-import type { AggregationInputs } from "../../../domain/types";
+import { AiReport } from "../../../domain/entities/ai-report.entity.js";
+import type { AggregationInputs } from "../../../domain/types.js";
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
-} from "../../ports/ai-report.repository.port";
-import { TODO_STATS_READER, type TodoStatsReaderPort } from "../../ports/todo-stats.reader.port";
-import { GenerateReportUseCase } from "./generate-report.use-case";
+} from "../../ports/ai-report.repository.port.js";
+import { TODO_STATS_READER, type TodoStatsReaderPort } from "../../ports/todo-stats.reader.port.js";
+import { GenerateReportUseCase } from "./generate-report.use-case.js";
 
 const mockUserId = "user-123";
 const mockTimezone = "Asia/Seoul";

@@ -1,21 +1,21 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { Notification } from "../../../domain/entities/notification.aggregate";
+import { Notification } from "../../../domain/entities/notification.aggregate.js";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_INBOX_READER,
 	type NotificationInboxReaderPort,
-} from "../../ports/notification-inbox.reader.port";
+} from "../../ports/notification-inbox.reader.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+} from "../../ports/notification.repository.port.js";
 
 /**
  * 단일 알림 읽음 처리 유스케이스.

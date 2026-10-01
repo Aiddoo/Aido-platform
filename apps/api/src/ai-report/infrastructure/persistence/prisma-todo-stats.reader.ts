@@ -2,10 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port";
-import type { AggregateParams, AggregationInputs } from "../../domain/types";
+import type { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port.js";
+import type { AggregateParams, AggregationInputs } from "../../domain/types.js";
 
 /**
  * 할 일 통계 읽기 Prisma 어댑터.

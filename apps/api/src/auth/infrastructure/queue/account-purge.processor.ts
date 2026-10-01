@@ -1,12 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import type { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import type { AccountPurgeJob } from "#api/auth/infrastructure/scheduler/account-purge.job";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+} from "#api/shared/application/ports/job-runtime.port";
 
 export const ACCOUNT_PURGE_QUEUE = "account-purge.v1";
 export const ACCOUNT_PURGE_LEGACY_QUEUE = "account-purge";

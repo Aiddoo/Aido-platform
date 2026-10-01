@@ -1,7 +1,7 @@
 /**
  * ReminderTime 불변식 단위 테스트
  */
-import { ReminderTime } from "./reminder-time.vo";
+import { ReminderTime } from "./reminder-time.vo.js";
 
 describe("ReminderTime.assertValidRanges", () => {
 	it("아침 리마인더가 12시 이상이면 PREFERENCE_1702", () => {

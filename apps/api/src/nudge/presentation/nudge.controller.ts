@@ -13,8 +13,8 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
 
-import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
-import { Timezone } from "@/shared/presentation/decorators";
+import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { Timezone } from "#api/shared/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiConflictError,
@@ -26,13 +26,13 @@ import {
 	ApiTooManyRequestsError,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { NudgeReader } from "../application/services/nudge.reader";
-import { MarkNudgeReadUseCase } from "../application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
-import { SendNudgeUseCase } from "../application/use-cases/send-nudge/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "../application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { NudgeReader } from "../application/services/nudge.reader.js";
+import { MarkNudgeReadUseCase } from "../application/use-cases/mark-nudge-read/mark-nudge-read.use-case.js";
+import { SendNudgeUseCase } from "../application/use-cases/send-nudge/send-nudge.use-case.js";
+import { SendRemindNudgeUseCase } from "../application/use-cases/send-remind-nudge/send-remind-nudge.use-case.js";
 import {
 	CreateNudgeResponseDto,
 	CreateRemindNudgeResponseDto,
@@ -45,8 +45,8 @@ import {
 	SendNudgeDto,
 	SendRemindNudgeDto,
 	SentNudgesResponseDto,
-} from "./dtos";
-import { NudgeMapper } from "./nudge.mapper";
+} from "./dtos/index.js";
+import { NudgeMapper } from "./nudge.mapper.js";
 
 @ApiTags(SWAGGER_TAGS.NUDGES)
 @ApiBearerAuth()
@@ -93,7 +93,7 @@ export class NudgeController {
 	@ApiTooManyRequestsError(ErrorCode.NUDGE_1102)
 	async sendNudge(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: SendNudgeDto,
+		@Body({ schema: SendNudgeDto }) dto: SendNudgeDto,
 		@Timezone() tz: string,
 	): Promise<CreateNudgeResponseDto> {
 		this.#logger.debug(
@@ -134,7 +134,7 @@ export class NudgeController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getReceivedNudges(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetNudgesQueryDto,
+		@Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
 	): Promise<ReceivedNudgesResponseDto> {
 		this.#logger.debug(`받은 콕 찌름 목록 조회: userId=${user.userId}`);
 
@@ -170,7 +170,7 @@ export class NudgeController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSentNudges(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetNudgesQueryDto,
+		@Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
 	): Promise<SentNudgesResponseDto> {
 		this.#logger.debug(`보낸 콕 찌름 목록 조회: userId=${user.userId}`);
 
@@ -273,7 +273,7 @@ export class NudgeController {
 	@ApiTooManyRequestsError(ErrorCode.NUDGE_1108)
 	async sendRemindNudge(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: SendRemindNudgeDto,
+		@Body({ schema: SendRemindNudgeDto }) dto: SendRemindNudgeDto,
 		@Timezone() tz: string,
 	): Promise<CreateRemindNudgeResponseDto> {
 		this.#logger.debug(`리마인드 콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}`);
@@ -337,7 +337,7 @@ export class NudgeController {
 	@ApiNotFoundError(ErrorCode.NUDGE_1105)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: NudgeIdParamDto,
+		@Param({ schema: NudgeIdParamDto }) params: NudgeIdParamDto,
 	): Promise<MarkNudgeReadResponseDto> {
 		this.#logger.debug(`콕 찌름 읽음 처리: userId=${user.userId}, id=${params.id}`);
 

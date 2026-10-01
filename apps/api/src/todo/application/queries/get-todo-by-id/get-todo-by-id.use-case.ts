@@ -2,12 +2,12 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain";
+import { ApplicationException } from "#api/shared/domain/index";
 
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
+} from "../../ports/todo-read.repository.port.js";
 
 /** 단일 Todo 조회 입력. */
 export interface GetTodoByIdInput {

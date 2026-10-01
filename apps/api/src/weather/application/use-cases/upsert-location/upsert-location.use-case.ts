@@ -1,12 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UserLocation } from "../../../domain/entities/user-location.entity";
-import { Coordinate } from "../../../domain/value-objects/coordinate.vo";
-import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
+import { UserLocation } from "../../../domain/entities/user-location.entity.js";
+import { Coordinate } from "../../../domain/value-objects/coordinate.vo.js";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port.js";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
-} from "../../ports/weather-location.repository.port";
+} from "../../ports/weather-location.repository.port.js";
 
 /**
  * 사용자 위치 등록/수정 입력. 좌표로부터 격자를 파생해 저장하고, 격자가 바뀌면

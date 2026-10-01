@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { FOLLOW_CACHE, type FollowCachePort } from "../ports/follow-cache.port";
-import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../ports/follow-notifier.port";
-import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../ports/follow.repository.port";
+import { FOLLOW_CACHE, type FollowCachePort } from "../ports/follow-cache.port.js";
+import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../ports/follow-notifier.port.js";
+import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../ports/follow.repository.port.js";
 
 /**
  * FriendshipEffects — 친구 관계 성립/해제에 수반되는 부수효과 캡슐화.

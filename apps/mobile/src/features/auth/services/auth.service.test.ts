@@ -267,7 +267,7 @@ describe('AuthService', () => {
       const result = await service.getPreference();
 
       // Then
-      expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/preference');
+      expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/preference', { signal: undefined });
       expect(result).toEqual({
         ok: true,
         value: {
@@ -381,7 +381,7 @@ describe('AuthService', () => {
       const result = await service.getConsent();
 
       // Then
-      expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/consent');
+      expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/consent', { signal: undefined });
       expect(result).toEqual({
         ok: true,
         value: {
@@ -611,7 +611,9 @@ describe('AuthService', () => {
       const result = await service.getLinkedAccounts();
 
       // Then
-      expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/linked-accounts');
+      expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/linked-accounts', {
+        signal: undefined,
+      });
       expect(result).toEqual({
         ok: true,
         value: {
@@ -691,7 +693,7 @@ describe('AuthService', () => {
   describe('unlinkAccount', () => {
     test('성공 → 결과 반환', async () => {
       // Given
-      const response = { message: '계정 연동이 해제되었습니다.' };
+      const response = { message: '계정 연동이 해제되었습니다.', provider: 'GOOGLE' as const };
       authHttpClient.delete.mockResolvedValue({ ok: true, value: response });
 
       // When

@@ -1,16 +1,19 @@
+import type { Mocked } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
+
 import {
 	AccountProvider,
 	SubscriptionStatus,
 	UserRole,
 	UserStatus,
-} from "@/generated/prisma/enums";
-import type { CachedUserProfile } from "@/shared/infrastructure/cache/cache.service";
+} from "#api/generated/prisma/enums";
+import type { CachedUserProfile } from "#api/shared/infrastructure/cache/cache.service";
 import {
 	type CacheStats,
 	type ICacheService,
 	parseTtl,
 	type TtlValue,
-} from "@/shared/infrastructure/cache/interfaces/cache.interface";
+} from "#api/shared/infrastructure/cache/interfaces/cache.interface";
 
 /**
  * 테스트용 Mock 캐시 어댑터
@@ -135,23 +138,12 @@ export class MockCacheAdapter implements ICacheService {
 }
 
 /**
- * 캐시 테스트 헬퍼: Jest Mock 생성
+ * 캐시 테스트 헬퍼: Vitest Mock 생성
  */
-export function createMockCacheService(): jest.Mocked<ICacheService> {
-	return {
-		get: jest.fn(),
-		set: jest.fn(),
-		del: jest.fn(),
-		delByPattern: jest.fn(),
-		reset: jest.fn(),
-		getStats: jest.fn().mockReturnValue({ hits: 0, misses: 0, keys: 0 }),
-		wrap: jest.fn(),
-		mget: jest.fn(),
-		mset: jest.fn(),
-		has: jest.fn(),
-		ttl: jest.fn(),
-		touch: jest.fn(),
-	};
+export function createMockCacheService(): Mocked<ICacheService> {
+	const cache = mockDeep<ICacheService>();
+	cache.getStats.mockReturnValue({ hits: 0, misses: 0, keys: 0 });
+	return cache;
 }
 
 /**

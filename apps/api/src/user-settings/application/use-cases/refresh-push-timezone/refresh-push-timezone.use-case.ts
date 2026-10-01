@@ -3,11 +3,11 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
+} from "../../ports/user-settings-cache.port.js";
 
 /**
  * 타임존 자가치유 (인증 요청의 X-Timezone 헤더 기반, 핫패스).

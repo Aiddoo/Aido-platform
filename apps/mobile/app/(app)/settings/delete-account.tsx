@@ -99,7 +99,7 @@ function DeleteAccountForm() {
             label={t('deleteAccount.currentPasswordLabel')}
             placeholder={t('deleteAccount.passwordPlaceholder')}
             value={password}
-            onChangeText={setPassword}
+            onChange={setPassword}
             autoFocus
             submitBehavior="submit"
             returnKeyType="done"

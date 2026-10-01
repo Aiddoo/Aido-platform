@@ -1,11 +1,11 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { Nudge } from "../../../domain/entities/nudge.aggregate";
-import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port";
-import { MarkNudgeReadUseCase } from "./mark-nudge-read.use-case";
+import { Nudge } from "../../../domain/entities/nudge.aggregate.js";
+import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port.js";
+import { MarkNudgeReadUseCase } from "./mark-nudge-read.use-case.js";
 
 const buildNudge = (receiverId: string, readAt: Date | null) =>
 	Nudge.reconstitute({

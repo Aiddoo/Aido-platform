@@ -1,17 +1,20 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { createAiSuggestionNotificationMessage, NotificationPublisher } from "@/notification";
+import {
+	createAiSuggestionNotificationMessage,
+	NotificationPublisher,
+} from "#api/notification/index";
 import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
-import { toSupportedLocale } from "@/shared/domain/locale";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
+} from "#api/shared/application/ports/job-runtime.port";
+import { toSupportedLocale } from "#api/shared/domain/locale";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
 
-import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
-import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
+import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.js";
+import type { SuggestionDispatcher } from "../queue/ai-suggestion-queue.js";
 import {
 	AI_SUGGESTION_LEGACY_QUEUE,
 	AI_SUGGESTION_QUEUE,
@@ -19,7 +22,7 @@ import {
 	type AiSuggestionJobMap,
 	AiSuggestionJobName,
 	AiSuggestionRuntimeJobSchema,
-} from "../queue/ai-suggestion-queue";
+} from "../queue/ai-suggestion-queue.js";
 
 /**
  * AI 반복 제안 분석 BullMQ 프로세서
@@ -42,9 +45,8 @@ const AI_SUGGESTION_NOTIFICATION_CAMPAIGN_KEY = "ai_suggestion_v2";
 export class SuggestionAnalysisProcessor implements OnModuleInit {
 	readonly #logger = new Logger(SuggestionAnalysisProcessor.name);
 
-	/** @see SuggestionAnalysisJob — 순환 참조 방지를 위해 setter injection */
-	#suggestionJob?: SuggestionAnalysisJob;
-	setSuggestionJob(job: SuggestionAnalysisJob) {
+	#suggestionJob?: SuggestionDispatcher;
+	setSuggestionJob(job: SuggestionDispatcher) {
 		this.#suggestionJob = job;
 	}
 

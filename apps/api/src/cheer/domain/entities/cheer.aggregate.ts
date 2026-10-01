@@ -55,4 +55,4 @@ export class Cheer extends AggregateRoot<CheerProps> {
 	}
 }
 
-import { AggregateRoot } from "@/shared/domain";
+import { AggregateRoot } from "#api/shared/domain/index";

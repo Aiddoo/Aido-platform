@@ -1,12 +1,12 @@
 import type { Todo } from "@aido/validators";
 
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "#api/generated/prisma/client";
 import {
 	toDateString,
 	toDateStringOrNull,
 	toISOString,
 	toISOStringOrNull,
-} from "@/shared/domain/date/utils/format";
+} from "#api/shared/domain/date/utils/format";
 
 export const TODO_DETAILS_INCLUDE = {
 	category: true,

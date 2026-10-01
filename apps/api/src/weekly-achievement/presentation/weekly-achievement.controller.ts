@@ -2,23 +2,23 @@ import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
-import { Locale } from "@/shared/presentation/decorators";
+import { Locale } from "#api/shared/presentation/decorators/index";
 import {
 	ApiDoc,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { GetWeeklyAchievementUseCase } from "../application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
-import { GetWeeklyAchievementsUseCase } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { GetWeeklyAchievementUseCase } from "../application/queries/get-weekly-achievement/get-weekly-achievement.use-case.js";
+import { GetWeeklyAchievementsUseCase } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case.js";
 import {
 	GetWeeklyAchievementsQueryDto,
 	WeeklyAchievementDetailResponseDto,
 	WeeklyAchievementListResponseDto,
 	WeeklyAchievementParamDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.WEEKLY_ACHIEVEMENTS)
 @ApiBearerAuth()
@@ -90,7 +90,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 	})
 	async getWeeklyAchievements(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetWeeklyAchievementsQueryDto,
+		@Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
 		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<WeeklyAchievementListResponseDto> {
 		this.#logger.debug(`주간 달성 목록 조회: user=${user.userId}, year=${query.year}`);
@@ -142,7 +142,7 @@ GET /weekly-achievements/2026/10
 	})
 	async getWeeklyAchievement(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: WeeklyAchievementParamDto,
+		@Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
 		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<WeeklyAchievementDetailResponseDto> {
 		this.#logger.debug(

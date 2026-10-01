@@ -1,15 +1,15 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { UserLocation } from "../../../domain/entities/user-location.entity";
+import type { UserLocation } from "../../../domain/entities/user-location.entity.js";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
-} from "../../ports/weather-location.repository.port";
-import type { WeatherForecast } from "../../ports/weather-provider.port";
-import { WeatherForecastReader } from "../../services/weather-forecast.reader";
+} from "../../ports/weather-location.repository.port.js";
+import type { WeatherForecast } from "../../ports/weather-provider.port.js";
+import { WeatherForecastReader } from "../../services/weather-forecast.reader.js";
 
 /** 예보 + 위치 (컨트롤러가 좌표를 응답에 병합하기 위해 위치도 반환) */
 export interface WeatherForecastWithLocation {

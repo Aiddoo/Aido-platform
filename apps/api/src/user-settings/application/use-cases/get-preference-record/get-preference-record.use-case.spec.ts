@@ -1,18 +1,19 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetPreferenceRecordUseCase 단위 테스트
  *
  * 푸시 발송 판단용 단건 설정 원본 레코드 조회(프리미엄 게이팅/뷰 매핑 없음).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUserPreferenceRepositoryMock } from "@test/mocks/ports/user-settings.mock";
+import type { Mocked } from "vitest";
+
+import { createUserPreferenceRepositoryMock } from "#test/mocks/ports/user-settings.mock";
 
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRecord,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
-import { GetPreferenceRecordUseCase } from "./get-preference-record.use-case";
+} from "../../ports/user-preference.repository.port.js";
+import { GetPreferenceRecordUseCase } from "./get-preference-record.use-case.js";
 
 const userId = "user-1";
 

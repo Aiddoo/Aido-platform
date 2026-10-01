@@ -1,6 +1,6 @@
 import { useTodoScreenParams } from '@src/features/todo/presentations/hooks/use-todo-screen-params';
-import { useTodoDetailsQueryOptions } from '@src/features/todo/presentations/queries/use-todo-page-query-options';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useTodoDetailsQueryOptions } from '@src/features/todo/presentations/queries/get-todo-details-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useTranslation } from '@src/shared/i18n';
@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type TodoCommentAuthor, TodoCommentPolicy } from '../../../models/todo-comment.model';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { useCancelTodoCommentScreenTransition } from '../../providers/todo-comment-screen-transition-provider';
-import { useTodoCommentConversationQueryOptions } from '../../queries/use-todo-comment-conversation-query-options';
+import { useTodoCommentConversationQueryOptions } from '../../queries/todo-comment-conversation-query-options';
 import { toTodoCommentAuthor } from '../../view-models/todo-comment-form.view-model';
 import { TodoCommentAuthorAvatar } from '../TodoCommentAuthorAvatar';
 import { TodoCommentForm } from './TodoCommentForm';

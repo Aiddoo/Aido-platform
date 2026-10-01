@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { SubTodoActionsBottomSheet } from './SubTodoActionsBottomSheet';
 
@@ -33,7 +33,9 @@ describe('SubTodoActionsBottomSheet', () => {
     });
     expect(onDelete).toHaveBeenCalledTimes(1);
 
-    settle();
-    await pressing;
+    await act(async () => {
+      settle();
+      await pressing;
+    });
   });
 });

@@ -4,16 +4,22 @@ import {
 	weeklyAchievementSchema,
 	weeklyAchievementSummarySchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class WeeklyAchievementDto extends createZodDto(weeklyAchievementSchema) {}
+export const WeeklyAchievementDto = weeklyAchievementSchema.meta({ id: "WeeklyAchievementDto" });
+export type WeeklyAchievementDto = z.infer<typeof WeeklyAchievementDto>;
 
-export class WeeklyAchievementSummaryDto extends createZodDto(weeklyAchievementSummarySchema) {}
+export const WeeklyAchievementSummaryDto = weeklyAchievementSummarySchema.meta({
+	id: "WeeklyAchievementSummaryDto",
+});
+export type WeeklyAchievementSummaryDto = z.infer<typeof WeeklyAchievementSummaryDto>;
 
-export class WeeklyAchievementListResponseDto extends createZodDto(
-	weeklyAchievementListResponseSchema,
-) {}
+export const WeeklyAchievementListResponseDto = weeklyAchievementListResponseSchema.meta({
+	id: "WeeklyAchievementListResponseDto",
+});
+export type WeeklyAchievementListResponseDto = z.infer<typeof WeeklyAchievementListResponseDto>;
 
-export class WeeklyAchievementDetailResponseDto extends createZodDto(
-	weeklyAchievementDetailResponseSchema,
-) {}
+export const WeeklyAchievementDetailResponseDto = weeklyAchievementDetailResponseSchema.meta({
+	id: "WeeklyAchievementDetailResponseDto",
+});
+export type WeeklyAchievementDetailResponseDto = z.infer<typeof WeeklyAchievementDetailResponseDto>;

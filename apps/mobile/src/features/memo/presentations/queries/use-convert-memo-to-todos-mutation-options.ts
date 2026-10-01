@@ -17,6 +17,7 @@ import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys.constant';
 interface ConvertMemoToTodosMutationParams {
   memoId: number;
   input: ConvertMemoToTodosInput;
+  source?: 'manual' | 'ai';
 }
 
 export const useConvertMemoToTodosMutationOptions = () => {
@@ -31,8 +32,13 @@ export const useConvertMemoToTodosMutationOptions = () => {
       const result = await service.convertToTodos(memoId, input);
       return unwrap(result);
     },
-    onSuccess: (_data, { memoId, input }) => {
+    onSuccess: (_data, { memoId, input, source = 'ai' }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
+      if (source === 'manual') {
+        toast.success(t('memo:toasts.convertedOne'));
+        trackEvent('memo_converted_to_todo', { memo_id: memoId });
+        return;
+      }
       toast.success(t('memo:toasts.convertedMany', { count: input.todos.length }));
       trackEvent('memo_converted_to_todos', {
         memo_id: memoId,

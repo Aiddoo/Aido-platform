@@ -18,7 +18,7 @@
  *   .build();
  * ```
  */
-import type { Account, AccountProvider } from "@/generated/prisma/client";
+import type { Account, AccountProvider } from "#api/generated/prisma/client";
 
 export class AccountBuilder {
 	private data: Account;

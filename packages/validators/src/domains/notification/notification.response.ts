@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { notificationTypeSchema } from './notification.constants';
-import { notificationBodySchema, notificationTitleSchema } from './notification.content';
-import { notificationActionSchema, notificationContextSchema } from './notification.payload';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime.js';
+import { notificationTypeSchema } from './notification.constants.js';
+import { notificationBodySchema, notificationTitleSchema } from './notification.content.js';
+import { notificationActionSchema, notificationContextSchema } from './notification.payload.js';
 
 export const notificationMetadataSchema = z.record(z.string(), z.unknown()).nullable();
 

@@ -1,15 +1,15 @@
-import { AggregateRoot } from "@/shared/domain";
+import { AggregateRoot } from "#api/shared/domain/index";
 
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
 	type ReorderPlan,
 	type ReorderPosition,
-} from "../services/friend-reorder";
+} from "../services/friend-reorder.js";
 import {
 	FriendshipStatus,
 	type FriendshipStatusValue,
-} from "../value-objects/friendship-status.vo";
+} from "../value-objects/friendship-status.vo.js";
 
 export interface FriendshipProps {
 	id: string;

@@ -6,7 +6,7 @@
  * pnpm --filter @aido/api test error-message.util
  * ```
  */
-import { toErrorMessage } from "./error-message.util";
+import { toErrorMessage } from "./error-message.util.js";
 
 describe("toErrorMessage — 에러 메시지 정규화", () => {
 	it("Error 인스턴스는 message를 반환한다", () => {

@@ -1,10 +1,10 @@
 import type { Memo as MemoResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
 
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
 
 /** 메모 목록 조회 입력 (커서 기반 페이지네이션). */
 export interface GetMemosInput {

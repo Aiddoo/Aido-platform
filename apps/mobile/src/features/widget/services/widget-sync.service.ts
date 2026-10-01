@@ -1,6 +1,7 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
+import type { WidgetSnapshot } from '../models/widget-snapshot.model';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,
@@ -8,52 +9,66 @@ import {
   type WidgetSummaryInput,
 } from './widget-snapshot.mapper';
 
-/**
- * 위젯 동기화 오케스트레이션 — 요약을 스냅샷으로 변환해 플랫폼 브리지에 기록한다.
- *
- * 절대 throw하지 않는다: 위젯은 부가 기능이므로 실패는 관측(Sentry)만 하고
- * 앱 흐름에 어떤 영향도 주지 않는다.
- */
 export class WidgetSyncService {
   readonly #bridge: WidgetBridge;
   readonly #errorReporter: ErrorReporter;
+  #pendingWrite: Promise<void> = Promise.resolve();
+  #generation = 0;
+  #lastSnapshotKey: string | null = null;
 
   constructor(bridge: WidgetBridge, errorReporter: ErrorReporter) {
     this.#bridge = bridge;
     this.#errorReporter = errorReporter;
   }
 
-  async syncSummary(summary: WidgetSummaryInput, context: WidgetSnapshotContext): Promise<void> {
-    try {
-      await this.#bridge.writeSnapshot(toWidgetSnapshot(summary, context));
-      // 이벤트가 아닌 행적만 남긴다 — 동기화는 빈번하므로 breadcrumb로 노이즈 없이 추적
-      this.#errorReporter.addBreadcrumb({
-        category: 'widget',
-        message: 'widget snapshot synced',
-        data: { date: summary.date, total: summary.totalTodos, completed: summary.completedTodos },
-      });
-    } catch (error) {
-      this.#report(error, 'syncSummary');
-    }
+  syncSummary(summary: WidgetSummaryInput, context: WidgetSnapshotContext): Promise<void> {
+    return this.#scheduleWrite(() => toWidgetSnapshot(summary, context), 'syncSummary');
   }
 
-  async syncLoggedOut(localDate: string, context: WidgetSnapshotContext): Promise<void> {
-    try {
-      await this.#bridge.writeSnapshot(toLoggedOutWidgetSnapshot(localDate, context));
-      this.#errorReporter.addBreadcrumb({
-        category: 'widget',
-        message: 'widget snapshot cleared to logged-out',
-        data: { date: localDate },
-      });
-    } catch (error) {
-      this.#report(error, 'syncLoggedOut');
-    }
+  syncLoggedOut(localDate: string, context: WidgetSnapshotContext): Promise<void> {
+    return this.#scheduleWrite(
+      () => toLoggedOutWidgetSnapshot(localDate, context),
+      'syncLoggedOut',
+    );
+  }
+
+  #scheduleWrite(createSnapshot: () => WidgetSnapshot, method: string): Promise<void> {
+    const generation = ++this.#generation;
+
+    // Native writes are serialized so an in-flight account snapshot cannot overwrite logout.
+    this.#pendingWrite = this.#pendingWrite.then(async () => {
+      if (generation !== this.#generation) {
+        return;
+      }
+
+      try {
+        const snapshot = createSnapshot();
+        const snapshotKey = JSON.stringify({ ...snapshot, updatedAtIso: '' });
+        if (snapshotKey === this.#lastSnapshotKey) return;
+
+        await this.#bridge.writeSnapshot(snapshot);
+        this.#lastSnapshotKey = snapshotKey;
+        this.#errorReporter.addBreadcrumb({
+          category: 'widget',
+          message: 'widget snapshot synced',
+          data: { date: snapshot.date, state: snapshot.state, total: snapshot.totalTodos },
+        });
+      } catch (error) {
+        this.#report(error, method);
+      }
+    });
+
+    return this.#pendingWrite;
   }
 
   #report(error: unknown, method: string): void {
-    this.#errorReporter.captureException(
-      error instanceof Error ? error : new Error(String(error)),
-      { feature: 'widget', method },
-    );
+    try {
+      this.#errorReporter.captureException(
+        error instanceof Error ? error : new Error(String(error)),
+        { feature: 'widget', method },
+      );
+    } catch {
+      // Widget and observability failures must not reject the app's auth lifecycle.
+    }
   }
 }

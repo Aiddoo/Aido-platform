@@ -1,6 +1,6 @@
 import type { Logger } from "@nestjs/common";
 
-import { toErrorMessage } from "@/shared/application/utils/error-message.util";
+import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
 
 /**
  * 부팅을 블로킹하지 않는 초기화 실행 (fire-and-forget)

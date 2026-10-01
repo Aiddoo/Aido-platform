@@ -7,7 +7,7 @@
  * ```
  */
 
-import { getRegionCode } from "./region-code";
+import { getRegionCode } from "./region-code.js";
 
 describe("getRegionCode", () => {
 	it.each([

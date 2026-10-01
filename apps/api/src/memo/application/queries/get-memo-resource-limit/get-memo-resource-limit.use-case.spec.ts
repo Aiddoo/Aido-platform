@@ -5,12 +5,13 @@
  */
 
 import { MEMO_LIMITS } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+import type { Mocked } from "vitest";
 
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { GetMemoResourceLimitUseCase } from "./get-memo-resource-limit.use-case";
+import { createMemoRepositoryMock } from "#test/mocks/ports/memo.mock";
+
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { GetMemoResourceLimitUseCase } from "./get-memo-resource-limit.use-case.js";
 
 describe("GetMemoResourceLimitUseCase — 메모 리소스 제한 조회", () => {
 	let useCase: GetMemoResourceLimitUseCase;

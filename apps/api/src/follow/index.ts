@@ -1,2 +1,2 @@
-export { FollowReader } from "./application/services/follow.reader";
-export { FollowModule } from "./follow.module";
+export { FollowReader } from "./application/services/follow.reader.js";
+export { FollowModule } from "./follow.module.js";

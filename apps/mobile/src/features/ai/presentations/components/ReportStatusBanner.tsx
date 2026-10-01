@@ -4,7 +4,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 
-import { useGetReportStatusQueryOptions } from '../queries/use-get-report-status-query-options';
+import { useGetReportStatusQueryOptions } from '../queries/get-report-status-query-options';
 import { formatDday } from '../utils/format-report';
 
 export function ReportStatusBanner() {

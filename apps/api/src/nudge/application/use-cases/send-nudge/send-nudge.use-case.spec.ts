@@ -1,21 +1,29 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { FollowReader } from "@/follow";
-import { MUTATION_LOCK, type MutationLockPort, UNIT_OF_WORK } from "@/shared/application/ports";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { FollowReader } from "#api/follow/index";
+import {
+	MUTATION_LOCK,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { Nudge } from "../../../domain/entities/nudge.aggregate";
-import { NUDGE_LIMIT_READER, type NudgeLimitReaderPort } from "../../ports/nudge-limit-reader.port";
-import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port";
+import { Nudge } from "../../../domain/entities/nudge.aggregate.js";
+import {
+	NUDGE_LIMIT_READER,
+	type NudgeLimitReaderPort,
+} from "../../ports/nudge-limit-reader.port.js";
+import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port.js";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type NudgeWithRelations,
 	type TargetTodoRecord,
-} from "../../ports/nudge.repository.port";
-import { SendNudgeUseCase } from "./send-nudge.use-case";
+} from "../../ports/nudge.repository.port.js";
+import { SendNudgeUseCase } from "./send-nudge.use-case.js";
 
 const today = todayInTimezone("UTC");
 
@@ -55,7 +63,7 @@ describe("SendNudgeUseCase", () => {
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(SendNudgeUseCase)
 			.mock<MutationLockPort>(MUTATION_LOCK)
-			.impl(() => ({ acquire: jest.fn() }))
+			.impl(() => ({ acquire: vi.fn() }))
 			.compile();
 		useCase = unit;
 		repo = unitRef.get(NUDGE_REPOSITORY);
@@ -168,12 +176,12 @@ describe("SendNudgeUseCase", () => {
 
 	it("같은 시각 기준의 일일·Todo 쿨다운 키를 모든 guarded read 전에 UoW 안에서 잠근다", async () => {
 		// Given - KST 자정 직전 시작하고 lock 대기 중 다음 날로 넘어가는 상황
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
 		const events: string[] = [];
 		mutationLock.acquire.mockImplementation(async () => {
 			events.push("lock");
-			jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+			vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
 		});
 		repo.findTargetTodo.mockImplementation(async () => {
 			events.push("target-read");
@@ -213,6 +221,6 @@ describe("SendNudgeUseCase", () => {
 			}),
 		);
 		expect(events).toEqual(["lock", "target-read", "limit", "daily-count", "cooldown-read"]);
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 });

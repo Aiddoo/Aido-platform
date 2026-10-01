@@ -1,14 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
+import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port.js";
 import {
 	PUSH_RECEIPT_REPOSITORY,
 	type PushReceiptRepositoryPort,
-} from "../../ports/push-receipt.repository.port";
+} from "../../ports/push-receipt.repository.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../../ports/push-token.repository.port";
+} from "../../ports/push-token.repository.port.js";
 
 const PUSH_RECEIPT_BATCH_SIZE = 900;
 

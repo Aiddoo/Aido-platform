@@ -1,18 +1,17 @@
-import "./instrument";
-import "./shared/domain/date/dayjs.setup";
+import "./shared/domain/date/dayjs.setup.js";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
 import { Logger } from "nestjs-pino";
-import { cleanupOpenApiDoc } from "nestjs-zod";
 
-import { AdminModule } from "@/admin/admin.module";
-import type { EnvConfig } from "@/shared/infrastructure/config";
-import { configureApplication } from "@/shared/infrastructure/http/configure-application";
-import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "@/shared/presentation/swagger";
+import { AdminModule } from "#api/admin/admin.module";
+import type { EnvConfig } from "#api/shared/infrastructure/config/index";
+import { configureApplication } from "#api/shared/infrastructure/http/configure-application";
+import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/shared/presentation/swagger/index";
 
-import { AppModule } from "./app.module";
+import { AppModule } from "./app.module.js";
+import { convertStandardSchema } from "./shared/presentation/swagger/standard-schema.converter.js";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -27,6 +26,7 @@ async function bootstrap() {
 	configureApplication(app, {
 		nodeEnv,
 		corsOrigins,
+		enableShutdownHooks: false,
 	});
 
 	if (nodeEnv === "development") {
@@ -43,7 +43,7 @@ async function bootstrap() {
 {
   "success": true,
   "data": { ... },
-  "timestamp": "2024-01-15T09:00:00.000Z"
+  "timestamp": 1705309200000
 }
 \`\`\`
 
@@ -55,7 +55,7 @@ async function bootstrap() {
     "code": "ERROR_CODE",
     "message": "에러 메시지"
   },
-  "timestamp": "2024-01-15T09:00:00.000Z"
+  "timestamp": 1705309200000
 }
 \`\`\`
 
@@ -99,8 +99,10 @@ async function bootstrap() {
 			.build();
 
 		// App API 문서 (일반 클라이언트용)
-		const appDocument = SwaggerModule.createDocument(app, config);
-		SwaggerModule.setup("api/docs", app, cleanupOpenApiDoc(appDocument), {
+		const appDocument = SwaggerModule.createDocument(app, config, {
+			standardSchemaConverter: convertStandardSchema,
+		});
+		SwaggerModule.setup("api/docs", app, appDocument, {
 			customSiteTitle: "Aido API Documentation",
 			swaggerOptions: {
 				persistAuthorization: true,
@@ -169,8 +171,9 @@ async function bootstrap() {
 
 		const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
 			include: [AdminModule],
+			standardSchemaConverter: convertStandardSchema,
 		});
-		SwaggerModule.setup("api/admin/docs", app, cleanupOpenApiDoc(adminDocument), {
+		SwaggerModule.setup("api/admin/docs", app, adminDocument, {
 			customSiteTitle: "Aido Admin API Documentation",
 			swaggerOptions: {
 				persistAuthorization: true,
@@ -201,14 +204,27 @@ async function bootstrap() {
 	logger.log(`💊 Health Check: http://localhost:${port}/health`);
 
 	// Graceful shutdown: NestJS 모듈 종료 (BullMQ Worker 포함) → Sentry flush
+	let shutdownStarted = false;
 	const shutdown = async (signal: string) => {
+		if (shutdownStarted) return;
+		shutdownStarted = true;
 		logger.log(`Received ${signal}, shutting down gracefully...`);
-		await app.close();
-		await Sentry.close(2000);
-		process.exit(0);
+		try {
+			await app.close();
+			process.exitCode = 0;
+		} catch (error) {
+			logger.error(error, "Graceful shutdown failed");
+			process.exitCode = 1;
+		} finally {
+			await Sentry.close(2000);
+		}
 	};
-	process.on("SIGTERM", () => shutdown("SIGTERM"));
-	process.on("SIGINT", () => shutdown("SIGINT"));
+	process.once("SIGTERM", () => {
+		void shutdown("SIGTERM");
+	});
+	process.once("SIGINT", () => {
+		void shutdown("SIGINT");
+	});
 }
 
-bootstrap();
+await bootstrap();

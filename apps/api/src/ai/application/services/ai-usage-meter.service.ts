@@ -8,13 +8,19 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { now } from "@/shared/domain/date/utils/core";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	EntitlementService,
+	Feature,
+} from "#api/shared/application/entitlement/entitlement.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { isNewBillingMonth } from "../../domain/services/ai-usage-period";
-import { AI_USAGE_REPOSITORY, type AiUsageRepositoryPort } from "../ports/ai-usage.repository.port";
+import { isNewBillingMonth } from "../../domain/services/ai-usage-period.js";
+import {
+	AI_USAGE_REPOSITORY,
+	type AiUsageRepositoryPort,
+} from "../ports/ai-usage.repository.port.js";
 
 @Injectable()
 export class AiUsageMeter {

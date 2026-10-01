@@ -1,16 +1,18 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
+
+import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
-} from "../../ports/notification-dedup.port";
-import { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case";
+} from "../../ports/notification-dedup.port.js";
+import { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 
 describe("FinalizeBatchNotificationUseCase", () => {
 	let useCase: FinalizeBatchNotificationUseCase;
@@ -23,7 +25,7 @@ describe("FinalizeBatchNotificationUseCase", () => {
 			.impl(() => createNotificationCacheMock())
 			.mock<NotificationDedupPort>(NOTIFICATION_DEDUP)
 			.impl(() => ({
-				recordNotifiedUsers: jest.fn(),
+				recordNotifiedUsers: vi.fn(),
 			}))
 			.compile();
 		useCase = unit;

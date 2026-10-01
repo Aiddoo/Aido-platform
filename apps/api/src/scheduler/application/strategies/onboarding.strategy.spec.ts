@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * OnboardingStrategy 전략 단위 테스트
  *
@@ -9,26 +12,24 @@
  * pnpm --filter @aido/api test onboarding.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createOnboardingNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
 
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
-} from "../ports/re-engagement-reader.port";
+} from "../ports/re-engagement-reader.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
-import { OnboardingStrategy } from "./onboarding.strategy";
+} from "../ports/scheduler-preference-reader.port.js";
+import { OnboardingStrategy } from "./onboarding.strategy.js";
 
 describe("OnboardingStrategy — 온보딩 전략", () => {
 	let strategy: OnboardingStrategy;
@@ -55,8 +56,8 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
 
 		const { unit, unitRef } = await TestBed.solitary(OnboardingStrategy).compile();
 
@@ -75,7 +76,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("Day 0 가입 유저에게 온보딩 알림을 발송한다", async () => {

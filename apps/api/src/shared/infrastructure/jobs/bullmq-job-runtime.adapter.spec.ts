@@ -1,4 +1,6 @@
-import type { EnqueueJobOptions } from "@/shared/application/ports/job-runtime.port";
+import { vi } from "vitest";
+
+import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 
 import {
 	type BullJobClient,
@@ -7,7 +9,7 @@ import {
 	type BullQueueClient,
 	type BullWorkerClient,
 	toBullMqJobId,
-} from "./bullmq-job-runtime.adapter";
+} from "./bullmq-job-runtime.adapter.js";
 
 const QUEUE = "document-generation.v1";
 const DEAD_LETTER_QUEUE = "document-generation-dead-letter";
@@ -212,7 +214,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 	});
 
 	it("enqueue 옵션을 기존 BullMQ 의미로 매핑한다", async () => {
-		jest.useFakeTimers({ now: new Date("2026-07-22T12:00:00.000Z") });
+		vi.useFakeTimers({ now: new Date("2026-07-22T12:00:00.000Z") });
 		const startAfter = new Date(Date.now() + 10_000);
 
 		await expect(runtime.enqueue(QUEUE, { documentId: 42 }, options({ startAfter }))).resolves.toBe(
@@ -243,7 +245,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 				},
 			},
 		]);
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("신규·deprecated identity 이름을 같은 BullMQ jobId로 매핑한다", async () => {
@@ -285,7 +287,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 	});
 
 	it("worker가 신규 wrapper와 기존 raw payload를 같은 envelope로 전달한다", async () => {
-		const handler = jest.fn().mockResolvedValue(undefined);
+		const handler = vi.fn().mockResolvedValue(undefined);
 		await runtime.work(QUEUE, handler, {
 			teamSize: 2,
 			pollingIntervalSeconds: 2,
@@ -332,7 +334,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 	});
 
 	it("최종 실패 작업을 payload 노출 없이 dead-letter queue로 이동한다", async () => {
-		await runtime.work(QUEUE, jest.fn().mockResolvedValue(undefined), {
+		await runtime.work(QUEUE, vi.fn().mockResolvedValue(undefined), {
 			teamSize: 1,
 			pollingIntervalSeconds: 2,
 		});
@@ -453,7 +455,7 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 	});
 
 	it("health를 공통 모델로 정규화한다", async () => {
-		jest.useFakeTimers({ now: new Date("2026-07-22T12:00:10.000Z") });
+		vi.useFakeTimers({ now: new Date("2026-07-22T12:00:10.000Z") });
 		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
 		const queue = factory.queues.get(QUEUE);
 		expect(queue).toBeDefined();
@@ -473,12 +475,12 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
 				},
 			},
 		});
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("종료 시 worker를 먼저 기다린 뒤 queue를 닫는다", async () => {
 		await runtime.enqueue(QUEUE, { documentId: 42 }, options());
-		await runtime.work(QUEUE, jest.fn().mockResolvedValue(undefined), {
+		await runtime.work(QUEUE, vi.fn().mockResolvedValue(undefined), {
 			teamSize: 1,
 			pollingIntervalSeconds: 2,
 		});

@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * NotificationService 통합 테스트
  *
@@ -17,77 +18,76 @@
  * pnpm --filter @aido/api test notification.integration-spec
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
+import { ACTIVE_PUSH_TOKEN_READER } from "#api/notification/application/ports/active-push-token.reader.port";
+import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/notification/application/ports/marketing-push-opt-out-token.port";
+import { NOTIFICATION_CACHE } from "#api/notification/application/ports/notification-cache.port";
+import {
+	NOTIFICATION_DEDUP,
+	NOTIFICATION_DEDUP_LOCK,
+} from "#api/notification/application/ports/notification-dedup.port";
+import { NOTIFICATION_HISTORY_READER } from "#api/notification/application/ports/notification-history.reader.port";
+import { NOTIFICATION_INBOX_READER } from "#api/notification/application/ports/notification-inbox.reader.port";
+import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/notification/application/ports/notification-recipient-locale.reader.port";
+import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/notification/application/ports/notification-recipient-preference.reader.port";
+import { NOTIFICATION_REPOSITORY } from "#api/notification/application/ports/notification.repository.port";
+import {
+	PUSH_DISPATCH_STAGING,
+	type PushDispatchStagingRepositoryPort,
+} from "#api/notification/application/ports/push-dispatch-staging.repository.port";
+import { PUSH_RECEIPT_REPOSITORY } from "#api/notification/application/ports/push-receipt.repository.port";
+import { PUSH_TOKEN_REPOSITORY } from "#api/notification/application/ports/push-token.repository.port";
+import { USER_NOTIFICATION_SETTINGS } from "#api/notification/application/ports/user-notification-settings.port";
+import { PushDeliveryAfterCommitPublisher } from "#api/notification/application/services/push-delivery-after-commit.publisher";
+import { FinalizeBatchNotificationUseCase } from "#api/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
+// use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
+import { FindAlreadyNotifiedUsersUseCase } from "#api/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
+import { GetNotificationsUseCase } from "#api/notification/application/use-cases/get-notifications/get-notifications.use-case";
+import { GetUnreadCountUseCase } from "#api/notification/application/use-cases/get-unread-count/get-unread-count.use-case";
+import { MarkAllAsReadUseCase } from "#api/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
+import { MarkAsReadUseCase } from "#api/notification/application/use-cases/mark-as-read/mark-as-read.use-case";
+import { MarkNotificationOpenedUseCase } from "#api/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
+import { OptOutMarketingPushUseCase } from "#api/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
+import { PersistBatchNotificationUseCase } from "#api/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+import { RegisterPushTokenUseCase } from "#api/notification/application/use-cases/register-push-token/register-push-token.use-case";
+import { SendBatchNotificationUseCase } from "#api/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
+import { SendNotificationWithDedupUseCase } from "#api/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
+import { SendNotificationUseCase } from "#api/notification/application/use-cases/send-notification/send-notification.use-case";
+import { UnregisterPushTokenUseCase } from "#api/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
 import {
 	createMorningNoTodoNotificationMessage,
 	createMorningReminderNotificationMessage,
 	NotificationPublisher,
 	PUSH_PROVIDER,
 	PUSH_RATE_LIMITER,
-} from "@/notification";
-import { ACTIVE_PUSH_TOKEN_READER } from "@/notification/application/ports/active-push-token.reader.port";
-import { MARKETING_PUSH_OPT_OUT_TOKEN } from "@/notification/application/ports/marketing-push-opt-out-token.port";
-import { NOTIFICATION_CACHE } from "@/notification/application/ports/notification-cache.port";
-import {
-	NOTIFICATION_DEDUP,
-	NOTIFICATION_DEDUP_LOCK,
-} from "@/notification/application/ports/notification-dedup.port";
-import { NOTIFICATION_HISTORY_READER } from "@/notification/application/ports/notification-history.reader.port";
-import { NOTIFICATION_INBOX_READER } from "@/notification/application/ports/notification-inbox.reader.port";
-import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "@/notification/application/ports/notification-recipient-locale.reader.port";
-import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "@/notification/application/ports/notification-recipient-preference.reader.port";
-import { NOTIFICATION_REPOSITORY } from "@/notification/application/ports/notification.repository.port";
-import {
-	PUSH_DISPATCH_STAGING,
-	type PushDispatchStagingRepositoryPort,
-} from "@/notification/application/ports/push-dispatch-staging.repository.port";
-import { PUSH_RECEIPT_REPOSITORY } from "@/notification/application/ports/push-receipt.repository.port";
-import { PUSH_TOKEN_REPOSITORY } from "@/notification/application/ports/push-token.repository.port";
-import { USER_NOTIFICATION_SETTINGS } from "@/notification/application/ports/user-notification-settings.port";
-import { PushDeliveryAfterCommitPublisher } from "@/notification/application/services/push-delivery-after-commit.publisher";
-import { FinalizeBatchNotificationUseCase } from "@/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
-// use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
-import { FindAlreadyNotifiedUsersUseCase } from "@/notification/application/use-cases/find-already-notified-users/find-already-notified-users.use-case";
-import { GetNotificationsUseCase } from "@/notification/application/use-cases/get-notifications/get-notifications.use-case";
-import { GetUnreadCountUseCase } from "@/notification/application/use-cases/get-unread-count/get-unread-count.use-case";
-import { MarkAllAsReadUseCase } from "@/notification/application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
-import { MarkAsReadUseCase } from "@/notification/application/use-cases/mark-as-read/mark-as-read.use-case";
-import { MarkNotificationOpenedUseCase } from "@/notification/application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
-import { OptOutMarketingPushUseCase } from "@/notification/application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
-import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
-import { RegisterPushTokenUseCase } from "@/notification/application/use-cases/register-push-token/register-push-token.use-case";
-import { SendBatchNotificationUseCase } from "@/notification/application/use-cases/send-batch-notification/send-batch-notification.use-case";
-import { SendNotificationWithDedupUseCase } from "@/notification/application/use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
-import { SendNotificationUseCase } from "@/notification/application/use-cases/send-notification/send-notification.use-case";
-import { UnregisterPushTokenUseCase } from "@/notification/application/use-cases/unregister-push-token/unregister-push-token.use-case";
-import { CachedActivePushTokenReaderAdapter } from "@/notification/infrastructure/adapters/cached-active-push-token-reader.adapter";
-import { CachedNotificationRecipientPreferenceAdapter } from "@/notification/infrastructure/adapters/cached-notification-recipient-preference.adapter";
-import { NotificationCacheAdapter } from "@/notification/infrastructure/adapters/notification-cache.adapter";
-import { NotificationDedupLockAdapter } from "@/notification/infrastructure/adapters/notification-dedup-lock.adapter";
-import { PrismaNotificationReader } from "@/notification/infrastructure/persistence/prisma-notification.reader";
-import { PrismaNotificationRepository } from "@/notification/infrastructure/persistence/prisma-notification.repository";
-import { PrismaPushReceiptRepository } from "@/notification/infrastructure/persistence/prisma-push-receipt.repository";
-import { PrismaPushTokenRepository } from "@/notification/infrastructure/persistence/prisma-push-token.repository";
-import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
+} from "#api/notification/index";
+import { CachedActivePushTokenReaderAdapter } from "#api/notification/infrastructure/adapters/cached-active-push-token-reader.adapter";
+import { CachedNotificationRecipientPreferenceAdapter } from "#api/notification/infrastructure/adapters/cached-notification-recipient-preference.adapter";
+import { NotificationCacheAdapter } from "#api/notification/infrastructure/adapters/notification-cache.adapter";
+import { NotificationDedupLockAdapter } from "#api/notification/infrastructure/adapters/notification-dedup-lock.adapter";
+import { PrismaNotificationReader } from "#api/notification/infrastructure/persistence/prisma-notification.reader";
+import { PrismaNotificationRepository } from "#api/notification/infrastructure/persistence/prisma-notification.repository";
+import { PrismaPushReceiptRepository } from "#api/notification/infrastructure/persistence/prisma-push-receipt.repository";
+import { PrismaPushTokenRepository } from "#api/notification/infrastructure/persistence/prisma-push-token.repository";
+import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
 import {
 	AFTER_COMMIT_TASK_REGISTRY,
 	type AfterCommitTaskRegistryPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { DEDUP_PROVIDER } from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
-import { LOCK_PROVIDER } from "@/shared/infrastructure/lock/interfaces/lock.interface";
-import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
+} from "#api/shared/application/ports/index";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { DEDUP_PROVIDER } from "#api/shared/infrastructure/dedup/interfaces/dedup.interface";
+import { LOCK_PROVIDER } from "#api/shared/infrastructure/lock/interfaces/lock.interface";
+import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import { NotificationBuilder, PushTokenBuilder } from "#test/builders/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 function buildNotificationTestApi(module: TestingModule) {
 	const publisher = new NotificationPublisher(
@@ -124,57 +124,57 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 	// Mock 데이터베이스 서비스
 	const mockNotificationDb = {
-		create: jest.fn(),
-		createMany: jest.fn(),
-		createManyAndReturn: jest.fn(),
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		update: jest.fn(),
-		updateMany: jest.fn(),
-		delete: jest.fn(),
-		deleteMany: jest.fn(),
-		count: jest.fn(),
+		create: vi.fn(),
+		createMany: vi.fn(),
+		createManyAndReturn: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		update: vi.fn(),
+		updateMany: vi.fn(),
+		delete: vi.fn(),
+		deleteMany: vi.fn(),
+		count: vi.fn(),
 	};
 
 	const mockPushDispatchDb = {
-		upsert: jest.fn(),
-		update: jest.fn(),
-		updateMany: jest.fn(),
+		upsert: vi.fn(),
+		update: vi.fn(),
+		updateMany: vi.fn(),
 	};
 
 	const mockPushDeliveryAttemptDb = {
-		createMany: jest.fn(),
-		findMany: jest.fn(),
-		updateMany: jest.fn(),
+		createMany: vi.fn(),
+		findMany: vi.fn(),
+		updateMany: vi.fn(),
 	};
 
 	const mockPushTokenDb = {
-		create: jest.fn(),
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		upsert: jest.fn(),
-		delete: jest.fn(),
-		deleteMany: jest.fn(),
+		create: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		upsert: vi.fn(),
+		delete: vi.fn(),
+		deleteMany: vi.fn(),
 	};
 
 	const mockUserPreferenceDb = {
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		create: jest.fn(),
-		update: jest.fn(),
-		upsert: jest.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		create: vi.fn(),
+		update: vi.fn(),
+		upsert: vi.fn(),
 	};
 
 	const mockUserConsentDb = {
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		create: jest.fn(),
-		update: jest.fn(),
-		upsert: jest.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		create: vi.fn(),
+		update: vi.fn(),
+		upsert: vi.fn(),
 	};
 
 	const mockDatabaseService = {
@@ -186,34 +186,34 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			userPreference: mockUserPreferenceDb,
 			userConsent: mockUserConsentDb,
 		}),
-		$queryRaw: jest.fn(),
+		$queryRaw: vi.fn(),
 	};
 
 	// Mock Push Provider
 	const mockPushProvider = {
-		send: jest.fn(),
-		sendBatch: jest.fn(),
-		getReceipts: jest.fn(),
-		validateToken: jest.fn(),
+		send: vi.fn(),
+		sendBatch: vi.fn(),
+		getReceipts: vi.fn(),
+		validateToken: vi.fn(),
 	};
 
 	const mockMarketingPushOptOutToken = {
-		issue: jest.fn((userId: string) => `opt-out:${userId}`),
-		verify: jest.fn((token: string) => token.replace(/^opt-out:/, "") || null),
+		issue: vi.fn((userId: string) => `opt-out:${userId}`),
+		verify: vi.fn((token: string) => token.replace(/^opt-out:/, "") || null),
 	};
 	const mockPushDispatchStaging = {
-		stage: jest.fn().mockImplementation(async (input: { notificationId: number }) => ({
+		stage: vi.fn().mockImplementation(async (input: { notificationId: number }) => ({
 			dispatchId: input.notificationId,
 			notificationId: input.notificationId,
 		})),
-		stageMany: jest.fn().mockImplementation(async (inputs: readonly { notificationId: number }[]) =>
+		stageMany: vi.fn().mockImplementation(async (inputs: readonly { notificationId: number }[]) =>
 			inputs.map((input) => ({
 				dispatchId: input.notificationId,
 				notificationId: input.notificationId,
 			})),
 		),
 	} satisfies PushDispatchStagingRepositoryPort;
-	const mockAfterCommitPublisher = { register: jest.fn() };
+	const mockAfterCommitPublisher = { register: vi.fn() };
 
 	// 테스트 데이터
 	const mockUserId = "user-notification-123";
@@ -276,7 +276,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{
 					provide: NOTIFICATION_DEDUP,
 					useValue: {
-						recordNotifiedUsers: jest.fn().mockResolvedValue(undefined),
+						recordNotifiedUsers: vi.fn().mockResolvedValue(undefined),
 					},
 				},
 				NotificationDedupLockAdapter,
@@ -342,7 +342,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{
 					provide: TypedConfigService,
 					useValue: {
-						get: jest.fn().mockReturnValue(20),
+						get: vi.fn().mockReturnValue(20),
 					},
 				},
 				{
@@ -352,22 +352,22 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{
 					provide: CacheService,
 					useValue: {
-						get: jest.fn().mockResolvedValue(null),
-						set: jest.fn().mockResolvedValue(undefined),
-						del: jest.fn().mockResolvedValue(undefined),
+						get: vi.fn().mockResolvedValue(null),
+						set: vi.fn().mockResolvedValue(undefined),
+						del: vi.fn().mockResolvedValue(undefined),
 						// CacheService.mget 계약: miss는 undefined (null 아님)
-						mget: jest.fn().mockImplementation(async (keys: string[]) => keys.map(() => undefined)),
-						mset: jest.fn().mockResolvedValue(undefined),
-						invalidatePushTokens: jest.fn().mockResolvedValue(undefined),
-						invalidateUnreadCount: jest.fn().mockResolvedValue(undefined),
-						invalidateUserPreference: jest.fn().mockResolvedValue(undefined),
-						wrapUnreadCount: jest
+						mget: vi.fn().mockImplementation(async (keys: string[]) => keys.map(() => undefined)),
+						mset: vi.fn().mockResolvedValue(undefined),
+						invalidatePushTokens: vi.fn().mockResolvedValue(undefined),
+						invalidateUnreadCount: vi.fn().mockResolvedValue(undefined),
+						invalidateUserPreference: vi.fn().mockResolvedValue(undefined),
+						wrapUnreadCount: vi
 							.fn()
 							.mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn()),
-						wrapUserPreference: jest
+						wrapUserPreference: vi
 							.fn()
 							.mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn()),
-						wrapPushTokens: jest
+						wrapPushTokens: vi
 							.fn()
 							.mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn()),
 					},
@@ -375,27 +375,27 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{
 					provide: LOCK_PROVIDER,
 					useValue: {
-						acquire: jest.fn().mockResolvedValue(jest.fn().mockResolvedValue(undefined)),
-						isLocked: jest.fn().mockResolvedValue(false),
+						acquire: vi.fn().mockResolvedValue(vi.fn().mockResolvedValue(undefined)),
+						isLocked: vi.fn().mockResolvedValue(false),
 					},
 				},
 				{
 					provide: DEDUP_PROVIDER,
 					useValue: {
-						filterMembers: jest.fn().mockResolvedValue(new Set()),
-						isMember: jest.fn().mockResolvedValue(false),
-						addMembers: jest.fn().mockResolvedValue(undefined),
+						filterMembers: vi.fn().mockResolvedValue(new Set()),
+						isMember: vi.fn().mockResolvedValue(false),
+						addMembers: vi.fn().mockResolvedValue(undefined),
 					},
 				},
 				{
 					provide: PUSH_RATE_LIMITER,
 					useValue: {
-						isRateLimited: jest.fn().mockResolvedValue(false),
-						isEngagementRateLimited: jest.fn().mockResolvedValue(false),
-						reserveBatch: jest
+						isRateLimited: vi.fn().mockResolvedValue(false),
+						isEngagementRateLimited: vi.fn().mockResolvedValue(false),
+						reserveBatch: vi
 							.fn()
 							.mockImplementation(async (requests: unknown[]) => requests.map(() => false)),
-						destroy: jest.fn(),
+						destroy: vi.fn(),
 					},
 				},
 			],
@@ -407,11 +407,11 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		NotificationBuilder.resetIdCounter();
 		PushTokenBuilder.resetIdCounter();
 		mockPushDispatchDb.upsert.mockResolvedValue({ id: 1 });

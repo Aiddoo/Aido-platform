@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -19,55 +19,59 @@ interface ReportDetailContentProps {
 
 export function ReportDetailContent({ report }: ReportDetailContentProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const sections: React.ReactNode[] = [];
-
-  sections.push(<StatsOverview key="stats" report={report} />);
-
-  if (report.categoryBreakdown.length > 0) {
-    sections.push(<CategoryBreakdown key="category" items={report.categoryBreakdown} />);
-  }
-
-  if (report.dayPatterns.length > 0) {
-    sections.push(<DayPatternChart key="day" items={report.dayPatterns} />);
-  }
-
-  if (report.timePatterns.length > 0) {
-    sections.push(
-      <TimePatternSummary
-        key="time"
-        items={report.timePatterns}
-        timeFormat={preference.timeFormat}
-      />,
-    );
-  }
-
-  if (report.aiSummary) {
-    sections.push(<AiSummarySection key="summary" summary={report.aiSummary} />);
-  }
-
-  if (report.aiTips.length > 0) {
-    sections.push(<AiTipsSection key="tips" tips={report.aiTips} />);
-  }
-
   return (
     <ScallopedContainer>
       <View className="px-5 pt-4 pb-2">
         <ReportHeader report={report} />
       </View>
-
-      <View className="px-5 pb-4">
-        {sections.map((section, index) => (
-          <View key={(section as React.ReactElement).key}>
-            <View className="py-4">{section}</View>
-            {index < sections.length - 1 && (
-              <View className="border-b border-dashed border-gray-3" />
-            )}
-          </View>
-        ))}
-      </View>
+      <VStack className="px-5 pb-4">
+        <ReportDetailContent.Section>
+          <StatsOverview report={report} />
+        </ReportDetailContent.Section>
+        {report.categoryBreakdown.length > 0 && (
+          <ReportDetailContent.Section hasDivider>
+            <CategoryBreakdown items={report.categoryBreakdown} />
+          </ReportDetailContent.Section>
+        )}
+        {report.dayPatterns.length > 0 && (
+          <ReportDetailContent.Section hasDivider>
+            <DayPatternChart items={report.dayPatterns} />
+          </ReportDetailContent.Section>
+        )}
+        {report.timePatterns.length > 0 && (
+          <ReportDetailContent.Section hasDivider>
+            <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
+          </ReportDetailContent.Section>
+        )}
+        {report.aiSummary && (
+          <ReportDetailContent.Section hasDivider>
+            <AiSummarySection summary={report.aiSummary} />
+          </ReportDetailContent.Section>
+        )}
+        {report.aiTips.length > 0 && (
+          <ReportDetailContent.Section hasDivider>
+            <AiTipsSection tips={report.aiTips} />
+          </ReportDetailContent.Section>
+        )}
+      </VStack>
     </ScallopedContainer>
   );
 }
+
+ReportDetailContent.Section = function Section({
+  children,
+  hasDivider = false,
+}: {
+  children: React.ReactNode;
+  hasDivider?: boolean;
+}) {
+  return (
+    <VStack>
+      {hasDivider && <View className="border-b border-dashed border-gray-3" />}
+      <View className="py-4">{children}</View>
+    </VStack>
+  );
+};
 
 function ReportHeader({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');

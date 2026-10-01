@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime.js';
 
 export const nudgeSchema = z
   .object({

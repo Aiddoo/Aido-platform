@@ -2,24 +2,24 @@ import { ErrorCode } from "@aido/errors";
 import type { UpdatePreferenceInput, UpdatePreferenceResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { buildUpdatedPreferenceView } from "../../../domain/services/preference-view";
-import { ReminderTime } from "../../../domain/value-objects/reminder-time.vo";
+import { buildUpdatedPreferenceView } from "../../../domain/services/preference-view.js";
+import { ReminderTime } from "../../../domain/value-objects/reminder-time.vo.js";
 import {
 	REMINDER_SCHEDULE_ENQUEUER,
 	type ReminderScheduleEnqueuerPort,
-} from "../../ports/reminder-schedule.enqueuer.port";
+} from "../../ports/reminder-schedule.enqueuer.port.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
+} from "../../ports/user-settings-cache.port.js";
 
 /**
  * 사용자 설정 수정 유스케이스.

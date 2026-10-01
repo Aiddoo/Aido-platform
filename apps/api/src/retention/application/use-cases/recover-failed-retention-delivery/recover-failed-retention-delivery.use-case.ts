@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
+} from "../../ports/retention.repository.port.js";
 
 @Injectable()
 export class RecoverFailedRetentionDeliveryUseCase {

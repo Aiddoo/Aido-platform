@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { datetimeSchema } from '../../common/datetime';
+import { datetimeSchema } from '../../common/datetime.js';
 
 export const aiUsageDataSchema = z.object({
   used: z.number().int().nonnegative().describe('현재까지 사용한 AI 요청 횟수 (0 이상)'),

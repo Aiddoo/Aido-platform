@@ -1,11 +1,14 @@
-import type { INestApplication } from "@nestjs/common";
+import {
+	BadRequestException,
+	type INestApplication,
+	StandardSchemaValidationPipe,
+} from "@nestjs/common";
 import helmet from "helmet";
-import { ZodValidationPipe } from "nestjs-zod";
 
-import type { EnvConfig } from "@/shared/infrastructure/config";
-import { createCorsOptions } from "@/shared/infrastructure/config/utils/cors-options";
+import type { EnvConfig } from "#api/shared/infrastructure/config/index";
+import { createCorsOptions } from "#api/shared/infrastructure/config/utils/cors-options";
 
-import { configureRequestIdentity } from "./configure-request-identity";
+import { configureRequestIdentity } from "./configure-request-identity.js";
 
 export interface ApplicationConfiguration {
 	nodeEnv: EnvConfig["NODE_ENV"];
@@ -26,7 +29,16 @@ export function configureApplication(
 	configureRequestIdentity(app);
 	app.use(helmet());
 	app.enableCors(createCorsOptions(config.nodeEnv, config.corsOrigins));
-	app.useGlobalPipes(new ZodValidationPipe());
+	app.useGlobalPipes(
+		new StandardSchemaValidationPipe({
+			exceptionFactory: (issues) =>
+				new BadRequestException({
+					statusCode: 400,
+					message: "Validation failed",
+					errors: issues,
+				}),
+		}),
+	);
 	app.setGlobalPrefix("v1", { exclude: ["health"] });
 
 	if (config.enableShutdownHooks !== false) {

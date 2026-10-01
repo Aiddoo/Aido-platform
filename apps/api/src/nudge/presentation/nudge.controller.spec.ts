@@ -1,18 +1,18 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
 import type {
 	NudgeWithRelations,
 	ReminderNudgeWithRelations,
-} from "../application/ports/nudge.repository.port";
-import { NudgeReader } from "../application/services/nudge.reader";
-import { MarkNudgeReadUseCase } from "../application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
-import { SendNudgeUseCase } from "../application/use-cases/send-nudge/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "../application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
-import type { GetNudgesQueryDto, SendNudgeDto, SendRemindNudgeDto } from "./dtos";
-import { NudgeController } from "./nudge.controller";
+} from "../application/ports/nudge.repository.port.js";
+import { NudgeReader } from "../application/services/nudge.reader.js";
+import { MarkNudgeReadUseCase } from "../application/use-cases/mark-nudge-read/mark-nudge-read.use-case.js";
+import { SendNudgeUseCase } from "../application/use-cases/send-nudge/send-nudge.use-case.js";
+import { SendRemindNudgeUseCase } from "../application/use-cases/send-remind-nudge/send-remind-nudge.use-case.js";
+import type { GetNudgesQueryDto, SendNudgeDto, SendRemindNudgeDto } from "./dtos/index.js";
+import { NudgeController } from "./nudge.controller.js";
 
 const user: CurrentUserPayload = {
 	userId: "sender",

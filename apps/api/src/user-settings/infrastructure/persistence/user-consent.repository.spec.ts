@@ -12,13 +12,14 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { UserConsentBuilder } from "@test/builders";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { vi } from "vitest";
 
-import type { UserConsent } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { UserConsent } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { UserConsentBuilder } from "#test/builders/index";
+import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { UserConsentRepository } from "./user-consent.repository";
+import { UserConsentRepository } from "./user-consent.repository.js";
 
 describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 	let repository: UserConsentRepository;
@@ -38,8 +39,8 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 	mockConsent.marketingAgreedAt = new Date("2024-01-01T00:00:00Z");
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(now);
+		vi.useFakeTimers();
+		vi.setSystemTime(now);
 
 		// Given - Suites가 모든 의존성을 자동으로 mock
 		db = createMockPrisma();
@@ -53,7 +54,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	describe("findByUserId", () => {

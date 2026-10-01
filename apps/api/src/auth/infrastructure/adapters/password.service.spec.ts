@@ -13,7 +13,7 @@
 
 import { TestBed } from "@suites/unit";
 
-import { PasswordService } from "@/auth/infrastructure/adapters/password.service";
+import { PasswordService } from "#api/auth/infrastructure/adapters/password.service";
 
 describe("PasswordService — 비밀번호 서비스", () => {
 	let service: PasswordService;

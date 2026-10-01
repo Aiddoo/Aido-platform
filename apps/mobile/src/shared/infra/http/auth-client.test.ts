@@ -110,7 +110,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     );
 
     // When
-    const result = await http.get<{ id: string }>('todos');
+    const result = await http.get('todos');
 
     // Then — 강제 재시도의 beforeRequest가 회전된 새 토큰을 주입한다
     expect(result).toEqual({ ok: true, value: { id: 'todo-1' } });
@@ -265,7 +265,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     );
 
     // When (2차) / Then — 자동 복구
-    const result = await http.get<{ id: string }>('todos');
+    const result = await http.get('todos');
     expect(result).toEqual({ ok: true, value: { id: 'todo-1' } });
     expect(endSession).not.toHaveBeenCalled();
   });

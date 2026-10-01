@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * TodoReminderProcessor 잡/프로세서 단위 테스트
  *
@@ -9,19 +10,18 @@
  * pnpm --filter @aido/api test todo-reminder.processor
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createMockJob } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { NotificationPublisher, NotificationRecipientLocaleReader } from "@/notification";
+import { NotificationPublisher, NotificationRecipientLocaleReader } from "#api/notification/index";
+import { createMockJob } from "#test/mocks/index";
 
 import {
 	TODO_REMINDER_READER,
 	type TodoReminderReaderPort,
-} from "../../application/ports/todo-reminder-reader.port";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { ReminderJobData } from "../scheduler/bullmq-reminder-scheduler.adapter";
-import { TodoReminderProcessor } from "./todo-reminder.processor";
+} from "../../application/ports/todo-reminder-reader.port.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { ReminderJobData } from "../scheduler/bullmq-reminder-scheduler.adapter.js";
+import { TodoReminderProcessor } from "./todo-reminder.processor.js";
 
 const USER_ID = "user-1";
 const TODO_TITLE = "Test Todo";

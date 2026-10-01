@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { useGetDailyCompletionsQueryOptions } from '../../queries/use-get-daily-completions-query-options';
+import { useGetDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
 import { Calendar } from './Calendar';
 import { useCalendarRange } from './use-calendar-range';
 

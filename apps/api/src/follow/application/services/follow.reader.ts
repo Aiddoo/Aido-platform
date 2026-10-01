@@ -1,15 +1,18 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { EntitlementService, Resource } from "@/shared/application/entitlement/entitlement.service";
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
+import {
+	EntitlementService,
+	Resource,
+} from "#api/shared/application/entitlement/entitlement.service";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
 
-import { FOLLOW_CACHE, type FollowCachePort } from "../ports/follow-cache.port";
+import { FOLLOW_CACHE, type FollowCachePort } from "../ports/follow-cache.port.js";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
 	type FollowWithUser,
-} from "../ports/follow.repository.port";
+} from "../ports/follow.repository.port.js";
 
 /** 친구/요청 목록 조회 파라미터 (정규화 전 — size 선택) */
 export interface GetFollowsParams {

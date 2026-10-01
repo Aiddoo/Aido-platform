@@ -8,11 +8,11 @@ import {
 	type AfterCommitTaskRegistryPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
 
-import { ClsUnitOfWork } from "./cls-unit-of-work";
-import { DatabaseModule } from "./database.module";
-import { DatabaseService } from "./database.service";
+import { ClsUnitOfWork } from "./cls-unit-of-work.js";
+import { DatabaseModule } from "./database.module.js";
+import { DatabaseService } from "./database.service.js";
 
 const transactionHost = {
 	isTransactionActive: () => false,

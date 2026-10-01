@@ -1,11 +1,11 @@
 import type { UpdateMarketingPushConsentResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { buildMarketingPushConsentView } from "../../../domain/services/consent-view";
+import { buildMarketingPushConsentView } from "../../../domain/services/consent-view.js";
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
+} from "../../ports/user-consent.repository.port.js";
 
 @Injectable()
 export class UpdateMarketingPushConsentUseCase {

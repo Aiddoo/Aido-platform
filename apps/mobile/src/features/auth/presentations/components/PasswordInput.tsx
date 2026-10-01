@@ -1,10 +1,22 @@
-import { EyeIcon, EyeOffIcon, Input, type InputProps } from '@src/shared/ui';
-import { forwardRef, useState } from 'react';
-import { Pressable, type TextInput } from 'react-native';
+import { EyeIcon, EyeOffIcon, Input } from '@src/shared/ui';
+import type {
+  ComponentRef,
+  ForwardRefExoticComponent,
+  PropsWithoutRef,
+  RefAttributes,
+} from 'react';
+import { forwardRef, useState, type ComponentProps } from 'react';
+import type { TextInput } from 'react-native';
+import { Pressable } from 'react-native';
 
-export interface PasswordInputProps extends Omit<InputProps, 'secureTextEntry' | 'rightContent'> {}
+export interface PasswordInputProps extends Omit<
+  ComponentProps<typeof Input>,
+  'secureTextEntry' | 'rightContent'
+> {}
 
-export const PasswordInput = forwardRef<TextInput, PasswordInputProps>((props, ref) => {
+export const PasswordInput: ForwardRefExoticComponent<
+  PropsWithoutRef<PasswordInputProps> & RefAttributes<ComponentRef<typeof TextInput>>
+> = forwardRef<ComponentRef<typeof TextInput>, PasswordInputProps>((props, ref) => {
   const [isSecure, setIsSecure] = useState(true);
 
   return (

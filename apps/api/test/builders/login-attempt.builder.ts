@@ -8,7 +8,7 @@
  * ```
  */
 
-import type { AccountProvider, LoginAttempt } from "@/generated/prisma/client";
+import type { AccountProvider, LoginAttempt } from "#api/generated/prisma/client";
 
 let idCounter = 1;
 

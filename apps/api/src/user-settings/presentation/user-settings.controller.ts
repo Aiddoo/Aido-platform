@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -10,13 +10,13 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { GetConsentUseCase } from "../application/use-cases/get-consent/get-consent.use-case";
-import { GetPreferenceUseCase } from "../application/use-cases/get-preference/get-preference.use-case";
-import { UpdateMarketingConsentUseCase } from "../application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
-import { UpdateMarketingPushConsentUseCase } from "../application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case";
-import { UpdatePreferenceUseCase } from "../application/use-cases/update-preference/update-preference.use-case";
+import { GetConsentUseCase } from "../application/use-cases/get-consent/get-consent.use-case.js";
+import { GetPreferenceUseCase } from "../application/use-cases/get-preference/get-preference.use-case.js";
+import { UpdateMarketingConsentUseCase } from "../application/use-cases/update-marketing-consent/update-marketing-consent.use-case.js";
+import { UpdateMarketingPushConsentUseCase } from "../application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case.js";
+import { UpdatePreferenceUseCase } from "../application/use-cases/update-preference/update-preference.use-case.js";
 import {
 	ConsentResponseDto,
 	PreferenceResponseDto,
@@ -26,7 +26,7 @@ import {
 	UpdateMarketingPushConsentResponseDto,
 	UpdatePreferenceDto,
 	UpdatePreferenceResponseDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
@@ -108,7 +108,7 @@ export class SettingsController {
 	@ApiBadRequestError(ErrorCode.PREFERENCE_1702)
 	async updatePreference(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: UpdatePreferenceDto,
+		@Body({ schema: UpdatePreferenceDto }) dto: UpdatePreferenceDto,
 	) {
 		return this.updatePreferenceUseCase.execute(user.userId, dto);
 	}
@@ -154,7 +154,7 @@ export class SettingsController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async updateMarketingConsent(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: UpdateMarketingConsentDto,
+		@Body({ schema: UpdateMarketingConsentDto }) dto: UpdateMarketingConsentDto,
 	) {
 		return this.updateMarketingConsentUseCase.execute(user.userId, dto.agreed);
 	}
@@ -171,7 +171,7 @@ export class SettingsController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async updateMarketingPushConsent(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: UpdateMarketingPushConsentDto,
+		@Body({ schema: UpdateMarketingPushConsentDto }) dto: UpdateMarketingPushConsentDto,
 	) {
 		return this.updateMarketingPushConsentUseCase.execute(user.userId, dto.agreed);
 	}

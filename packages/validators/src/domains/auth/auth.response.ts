@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from './auth.constants';
-import { deviceTypeSchema, oauthProviderSchema } from './auth.request';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime.js';
+import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from './auth.constants.js';
+import { deviceTypeSchema, oauthProviderSchema } from './auth.request.js';
 
 export const userStatusSchema = z.enum(USER_STATUS).describe('사용자 계정 상태');
 export const userRoleSchema = z
@@ -400,6 +400,9 @@ export const linkedAccountsResponseSchema = z
   });
 
 export type LinkedAccountsResponse = z.infer<typeof linkedAccountsResponseSchema>;
+
+export const linkAccountResponseSchema = z.object({ message: z.string() });
+export type LinkAccountResponse = z.infer<typeof linkAccountResponseSchema>;
 
 export const unlinkAccountResponseSchema = z
   .object({

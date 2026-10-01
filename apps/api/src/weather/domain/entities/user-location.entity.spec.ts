@@ -4,8 +4,8 @@
  * 좌표로부터 격자를 결정적으로 파생하는지, 복원이 저장된 격자를 그대로
  * 유지하는지 검증한다.
  */
-import { Coordinate } from "../value-objects/coordinate.vo";
-import { UserLocation } from "./user-location.entity";
+import { Coordinate } from "../value-objects/coordinate.vo.js";
+import { UserLocation } from "./user-location.entity.js";
 
 describe("UserLocation — 사용자 위치 애그리게잇", () => {
 	describe("create", () => {

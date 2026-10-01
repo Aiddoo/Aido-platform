@@ -3,14 +3,14 @@ import type { ReportStatus } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { now } from "@/shared/domain/date/utils/core";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
-} from "../../ports/ai-report.repository.port";
+} from "../../ports/ai-report.repository.port.js";
 
 /** 리포트 생성 기준 타임존 (KST 고정) */
 const KST = "Asia/Seoul";

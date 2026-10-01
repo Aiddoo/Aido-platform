@@ -2,8 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	ClaimedPushDelivery,
@@ -14,8 +14,8 @@ import type {
 	ReopenPushDeliveriesAfterClaimFailureInput,
 	ReleasePushDeliveryInput,
 	ReservePushDeliveryRateLimitInput,
-} from "../../application/ports/push-delivery-lifecycle.repository.port";
-import type { PushDeliveryPublication } from "../../application/types/push-delivery.types";
+} from "../../application/ports/push-delivery-lifecycle.repository.port.js";
+import type { PushDeliveryPublication } from "../../application/types/push-delivery.types.js";
 
 interface ClaimedDispatchRow {
 	readonly dispatchId: number | null;

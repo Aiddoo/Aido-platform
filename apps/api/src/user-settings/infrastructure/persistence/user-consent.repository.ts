@@ -2,11 +2,11 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { UserConsent } from "@/generated/prisma/client";
-import { now } from "@/shared/domain/date/utils/core";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { UserConsent } from "#api/generated/prisma/client";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { UserConsentRepositoryPort } from "../../application/ports/user-consent.repository.port";
+import type { UserConsentRepositoryPort } from "../../application/ports/user-consent.repository.port.js";
 
 export interface CreateConsentData {
 	termsAgreedAt?: Date;

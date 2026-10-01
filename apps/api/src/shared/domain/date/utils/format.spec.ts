@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * format 유틸 테스트
  *
@@ -18,17 +20,17 @@ import {
 	toISOStringOrNull,
 	toIsoMonthId,
 	toIsoWeekId,
-} from "./format";
+} from "./format.js";
 
 const FROZEN_TIME = new Date("2026-03-04T12:00:00.000Z");
 
 beforeAll(() => {
-	jest.useFakeTimers();
-	jest.setSystemTime(FROZEN_TIME);
+	vi.useFakeTimers();
+	vi.setSystemTime(FROZEN_TIME);
 });
 
 afterAll(() => {
-	jest.useRealTimers();
+	vi.useRealTimers();
 });
 
 describe("format", () => {

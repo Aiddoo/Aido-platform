@@ -2,19 +2,19 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
-import { ApplicationException } from "@/shared/domain";
-import { isAfter } from "@/shared/domain/date/utils/compare";
-import { toDateString } from "@/shared/domain/date/utils/format";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { isAfter } from "#api/shared/domain/date/utils/compare";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import type { FindFriendTodosParams, GetFriendTodosParams } from "../../types";
+} from "../../ports/todo-read.repository.port.js";
+import type { FindFriendTodosParams, GetFriendTodosParams } from "../../types.js";
 
 /** 친구 Todo 목록 조회 입력. */
 export type GetFriendTodosInput = GetFriendTodosParams;

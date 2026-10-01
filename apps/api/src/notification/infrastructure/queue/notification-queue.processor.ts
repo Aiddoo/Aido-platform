@@ -1,22 +1,26 @@
 import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobData, type JobRuntimePort } from "@/shared/application/ports";
+import {
+	JOB_RUNTIME,
+	type JobData,
+	type JobRuntimePort,
+} from "#api/shared/application/ports/index";
 
-import { ReconcilePushReceiptsUseCase } from "../../application/use-cases/reconcile-push-receipts/reconcile-push-receipts.use-case";
-import { SendBillingIssueNotificationUseCase } from "../../application/use-cases/send-billing-issue-notification/send-billing-issue-notification.use-case";
-import { SendCheerNotificationUseCase } from "../../application/use-cases/send-cheer-notification/send-cheer-notification.use-case";
-import { SendFollowAcceptedNotificationUseCase } from "../../application/use-cases/send-follow-accepted-notification/send-follow-accepted-notification.use-case";
-import { SendFollowRequestNotificationUseCase } from "../../application/use-cases/send-follow-request-notification/send-follow-request-notification.use-case";
-import { SendFriendCompletionNotificationsUseCase } from "../../application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
-import { SendMilestoneNotificationUseCase } from "../../application/use-cases/send-milestone-notification/send-milestone-notification.use-case";
-import { SendNudgeNotificationUseCase } from "../../application/use-cases/send-nudge-notification/send-nudge-notification.use-case";
+import { ReconcilePushReceiptsUseCase } from "../../application/use-cases/reconcile-push-receipts/reconcile-push-receipts.use-case.js";
+import { SendBillingIssueNotificationUseCase } from "../../application/use-cases/send-billing-issue-notification/send-billing-issue-notification.use-case.js";
+import { SendCheerNotificationUseCase } from "../../application/use-cases/send-cheer-notification/send-cheer-notification.use-case.js";
+import { SendFollowAcceptedNotificationUseCase } from "../../application/use-cases/send-follow-accepted-notification/send-follow-accepted-notification.use-case.js";
+import { SendFollowRequestNotificationUseCase } from "../../application/use-cases/send-follow-request-notification/send-follow-request-notification.use-case.js";
+import { SendFriendCompletionNotificationsUseCase } from "../../application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case.js";
+import { SendMilestoneNotificationUseCase } from "../../application/use-cases/send-milestone-notification/send-milestone-notification.use-case.js";
+import { SendNudgeNotificationUseCase } from "../../application/use-cases/send-nudge-notification/send-nudge-notification.use-case.js";
 import {
 	NOTIFICATION_LEGACY_QUEUE,
 	NOTIFICATION_QUEUE,
 	NOTIFICATION_WORKER_POLICY,
 	NotificationJobName,
 	NotificationRuntimeJobSchema,
-} from "./notification-queue.constants";
+} from "./notification-queue.constants.js";
 
 function assertUnreachableJob(job: never): never {
 	throw new Error(`Unhandled notification job: ${JSON.stringify(job)}`);

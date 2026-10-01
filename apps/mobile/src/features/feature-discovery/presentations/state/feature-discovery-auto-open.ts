@@ -3,7 +3,7 @@ import type { AppStateStatus } from 'react-native';
 interface StableFeedForegroundInput {
   isAuthenticated: boolean;
   isFocused: boolean;
-  appState: AppStateStatus;
+  appState: AppStateStatus | null;
   isKeyboardVisible: boolean;
   hasActiveOverlay: boolean;
   hasPendingDeepLink: boolean;

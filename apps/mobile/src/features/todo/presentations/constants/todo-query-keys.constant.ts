@@ -13,7 +13,8 @@ export const TODO_QUERY_KEYS = {
   // 홈 위젯 요약 — completions() 하위에 중첩해 토글/생성/삭제 뮤테이션의
   // 기존 completions() invalidation을 그대로 상속받는다 (추가 배선 불필요)
   widgetSummary: () => [...TODO_QUERY_KEYS.completions(), 'widget-summary'] as const,
-  widgetSummaryByDate: (date: string) => [...TODO_QUERY_KEYS.widgetSummary(), date] as const,
+  widgetSummaryByDate: (date: string, userId?: string | null) =>
+    [...TODO_QUERY_KEYS.widgetSummary(), { date, userId: userId ?? null }] as const,
 
   // 무한 스크롤 리스트 (선택된 날짜의 상세 목록)
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,

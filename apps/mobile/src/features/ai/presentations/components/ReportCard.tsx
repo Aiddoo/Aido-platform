@@ -4,7 +4,7 @@ import { HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
-import { router, type Href } from 'expo-router';
+import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 
@@ -20,12 +20,13 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('ai');
-  const href = (
-    isSample ? `/reports/sample-${report.type.toLowerCase()}` : `/reports/${report.id}`
-  ) as Href;
+  const reportId = isSample ? `sample-${report.type.toLowerCase()}` : String(report.id);
 
   return (
-    <PressableFeedback onPress={() => push(href)} className="rounded-xl">
+    <PressableFeedback
+      onPress={() => push({ pathname: '/reports/[id]', params: { id: reportId } })}
+      className="rounded-xl"
+    >
       <PressableFeedback.Highlight className="rounded-xl" />
       <View className={cn('py-3', !report.hasActivity && 'opacity-50')}>
         <VStack gap={10}>

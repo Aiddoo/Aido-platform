@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * TransactionalEmailSender 통합 테스트
  *
@@ -16,32 +17,21 @@
  * pnpm --filter @aido/api test email.integration-spec
  * ```
  */
+import { vi } from "vitest";
 
-import { Test, type TestingModule } from "@nestjs/testing";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { EMAIL_SENDER, type EmailSenderPort } from "#api/email/application/ports/email-sender.port";
+import { TransactionalEmailSender } from "#api/email/index";
+import { ResendEmailSenderAdapter } from "#api/email/infrastructure/adapters/resend-email-sender.adapter";
+import { EMAIL_CONSTANTS } from "#api/email/infrastructure/constants/email.constants";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { TransactionalEmailSender } from "@/email";
-import { EMAIL_SENDER, type EmailSenderPort } from "@/email/application/ports/email-sender.port";
-import { ResendEmailSenderAdapter } from "@/email/infrastructure/adapters/resend-email-sender.adapter";
-import { EMAIL_CONSTANTS } from "@/email/infrastructure/constants/email.constants";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+const resendMock = vi.hoisted(() => ({ emails: { send: vi.fn() } }));
 
-// Resend 모킹용 타입
-type ResendMock = {
-	emails: {
-		send: jest.Mock;
-	};
-};
-
-// Resend 생성자를 모킹하여 private #resend 필드에 mock이 주입되도록 함
-const resendMock: ResendMock = {
-	emails: {
-		send: jest.fn(),
-	},
-};
-
-jest.mock("resend", () => ({
-	Resend: jest.fn().mockImplementation(() => resendMock),
+vi.mock("resend", () => ({
+	Resend: vi.fn().mockImplementation(function () {
+		return resendMock;
+	}),
 }));
 
 describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
@@ -57,7 +47,7 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 		suppressLogger();
 
 		// fake timers를 사용하여 #sleep의 setTimeout을 즉시 실행
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 
 		module = await Test.createTestingModule({
 			providers: [
@@ -86,13 +76,13 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 	});
 
 	afterAll(async () => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	/**
@@ -116,7 +106,7 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 
 		// 타이머를 반복적으로 flush하여 재시도 루프 전체를 처리
 		while (!resolved) {
-			jest.advanceTimersByTime(10_000);
+			vi.advanceTimersByTime(10_000);
 			// microtask queue를 비워서 Promise continuation이 실행되도록 함
 			await Promise.resolve();
 		}
@@ -262,11 +252,11 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 			);
 
 			// Then - 템플릿에 인증 코드와 만료 시간이 포함됨
-			const call = resendMock.emails.send.mock.calls[0][0];
-			expect(call.html).toContain("123456");
-			expect(call.text).toContain("123456");
-			expect(call.html).toContain("10");
-			expect(call.text).toContain("10");
+			const call = resendMock.emails.send.mock.calls[0]?.[0];
+			expect(call?.html).toContain("123456");
+			expect(call?.text).toContain("123456");
+			expect(call?.html).toContain("10");
+			expect(call?.text).toContain("10");
 			expect(call.subject).toBeDefined();
 			expect(call.subject.length).toBeGreaterThan(0);
 		});
@@ -287,11 +277,11 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 			);
 
 			// Then - 템플릿에 재설정 코드와 만료 시간이 포함됨
-			const call = resendMock.emails.send.mock.calls[0][0];
-			expect(call.html).toContain("654321");
-			expect(call.text).toContain("654321");
-			expect(call.html).toContain("30");
-			expect(call.text).toContain("30");
+			const call = resendMock.emails.send.mock.calls[0]?.[0];
+			expect(call?.html).toContain("654321");
+			expect(call?.text).toContain("654321");
+			expect(call?.html).toContain("30");
+			expect(call?.text).toContain("30");
 		});
 	});
 
@@ -362,7 +352,7 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 			);
 
 			// Then - verification 태그가 포함됨
-			const call = resendMock.emails.send.mock.calls[0][0];
+			const call = resendMock.emails.send.mock.calls[0]?.[0];
 			expect(call.tags).toEqual(
 				expect.arrayContaining([
 					{ name: "type", value: "verification" },
@@ -387,7 +377,7 @@ describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
 			);
 
 			// Then - password-reset 태그가 포함됨
-			const call = resendMock.emails.send.mock.calls[0][0];
+			const call = resendMock.emails.send.mock.calls[0]?.[0];
 			expect(call.tags).toEqual(
 				expect.arrayContaining([
 					{ name: "type", value: "password-reset" },

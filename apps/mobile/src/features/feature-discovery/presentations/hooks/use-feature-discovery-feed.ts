@@ -3,12 +3,11 @@ import { useFeatureDiscoveryStateService } from '@src/bootstrap/providers/di-con
 import { FeatureDiscoveryPolicy } from '@src/features/feature-discovery/models/feature-discovery.model';
 import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discovery/models/feature-discovery.registry';
 import { getNativeAppVersion } from '@src/features/feature-discovery/services/native-app-version';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import { InteractionManager } from 'react-native';
 
-import { useFeatureDiscoveryQueryOptions } from '../queries/use-feature-discovery-query-options';
+import { useFeatureDiscoveryQueryOptions } from '../queries/get-feature-discovery-query-options';
 import { claimAndOpenFeatureDiscovery } from '../state/feature-discovery-auto-open';
 import { useFeatureDiscoveryHub } from './use-feature-discovery-hub';
 import { useStableFeedForeground } from './use-stable-feed-foreground';
@@ -54,7 +53,7 @@ export function useFeatureDiscoveryFeed() {
       return;
     }
 
-    const task = InteractionManager.runAfterInteractions(() => {
+    const task = requestIdleCallback(() => {
       const opened = claimAndOpenFeatureDiscovery({
         canAutoOpen,
         isStable,
@@ -71,7 +70,7 @@ export function useFeatureDiscoveryFeed() {
       }
     });
 
-    return () => task.cancel();
+    return () => cancelIdleCallback(task);
   }, [accountId, campaign, canAutoOpen, identity, isStable, openHub, stateService]);
 
   const isReentryVisible =

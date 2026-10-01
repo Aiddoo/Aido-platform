@@ -1,24 +1,24 @@
 import { Module } from "@nestjs/common";
 
-import { AiReportModule } from "../ai-report/ai-report.module";
-import { AiModule } from "../ai/ai.module";
-import { NotificationModule } from "../notification/notification.module";
-import { TodoModule } from "../todo/todo.module";
-import { WeatherModule } from "../weather/weather.module";
-import { AI_SUGGESTION_REPOSITORY } from "./application/ports/ai-suggestion.repository.port";
-import { RECURRING_TODO_CREATOR } from "./application/ports/recurring-todo-creator.port";
-import { WEEKLY_REPORT_READER } from "./application/ports/weekly-report-reader.port";
-import { SuggestionContextBuilder } from "./application/services/suggestion-context.builder";
-import { AnalyzeAndCreateSuggestionsUseCase } from "./application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
-import { GetPendingSuggestionsUseCase } from "./application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case";
-import { HandleSuggestionActionUseCase } from "./application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
-import { RecurringTodoCreatorAdapter } from "./infrastructure/adapters/recurring-todo-creator.adapter";
-import { WeeklyReportReaderAdapter } from "./infrastructure/adapters/weekly-report-reader.adapter";
-import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestion-analysis.job";
-import { PrismaAiSuggestionRepository } from "./infrastructure/persistence/prisma-ai-suggestion.repository";
-import { SuggestionAnalysisProcessor } from "./infrastructure/processors/suggestion-analysis.processor";
-import { AiSuggestionQueueMaintenanceService } from "./infrastructure/queue/ai-suggestion-queue-maintenance.service";
-import { AiSuggestionController } from "./presentation/ai-suggestion.controller";
+import { AiReportModule } from "../ai-report/ai-report.module.js";
+import { AiModule } from "../ai/ai.module.js";
+import { NotificationModule } from "../notification/notification.module.js";
+import { TodoModule } from "../todo/todo.module.js";
+import { WeatherModule } from "../weather/weather.module.js";
+import { AI_SUGGESTION_REPOSITORY } from "./application/ports/ai-suggestion.repository.port.js";
+import { RECURRING_TODO_CREATOR } from "./application/ports/recurring-todo-creator.port.js";
+import { WEEKLY_REPORT_READER } from "./application/ports/weekly-report-reader.port.js";
+import { SuggestionContextBuilder } from "./application/services/suggestion-context.builder.js";
+import { AnalyzeAndCreateSuggestionsUseCase } from "./application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.js";
+import { GetPendingSuggestionsUseCase } from "./application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case.js";
+import { HandleSuggestionActionUseCase } from "./application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.js";
+import { RecurringTodoCreatorAdapter } from "./infrastructure/adapters/recurring-todo-creator.adapter.js";
+import { WeeklyReportReaderAdapter } from "./infrastructure/adapters/weekly-report-reader.adapter.js";
+import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestion-analysis.job.js";
+import { PrismaAiSuggestionRepository } from "./infrastructure/persistence/prisma-ai-suggestion.repository.js";
+import { SuggestionAnalysisProcessor } from "./infrastructure/processors/suggestion-analysis.processor.js";
+import { AiSuggestionQueueMaintenanceService } from "./infrastructure/queue/ai-suggestion-queue-maintenance.service.js";
+import { AiSuggestionController } from "./presentation/ai-suggestion.controller.js";
 
 /**
  * AI 반복 제안 모듈 (DDD 클린아키텍처 · use-case 기반).

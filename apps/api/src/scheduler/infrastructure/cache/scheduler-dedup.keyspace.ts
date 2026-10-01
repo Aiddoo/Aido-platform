@@ -1,4 +1,4 @@
-import { cacheKey } from "@/shared/infrastructure/cache/keyspace/cache-key";
+import { cacheKey } from "#api/shared/infrastructure/cache/keyspace/cache-key";
 
 export const SCHEDULER_DEDUP_TTL_MS = {
 	WINBACK_STAGES: 90 * 24 * 60 * 60_000,

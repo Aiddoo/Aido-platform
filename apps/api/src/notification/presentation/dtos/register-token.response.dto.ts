@@ -1,4 +1,7 @@
 import { registerTokenResponseSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class RegisterTokenResponseDto extends createZodDto(registerTokenResponseSchema) {}
+export const RegisterTokenResponseDto = registerTokenResponseSchema.meta({
+	id: "RegisterTokenResponseDto",
+});
+export type RegisterTokenResponseDto = z.infer<typeof RegisterTokenResponseDto>;

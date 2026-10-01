@@ -1,6 +1,6 @@
 # Aido API 종합 테스팅 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
 
 > 테스트 유형 선택 기준 + 공유 인프라 + 공통 규칙. 각 유형별 상세는 개별 가이드 참조.
 
@@ -81,7 +81,7 @@ const { unit, unitRef } = await TestBed.solitary(UpdateTodoUseCase)
   .mock(UNIT_OF_WORK)
   .impl(() => createUnitOfWorkMock()) // run(work) 즉시 실행 패스스루
   .mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-  .impl(() => ({ publishAll: jest.fn() }))
+  .impl(() => ({ publishAll: vi.fn() }))
   .compile();
 useCase = unit;
 eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
@@ -113,7 +113,7 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 | `test/mocks/mock-database.factory.ts`                  | `createMockDatabaseService()` — DB Mock + `$transaction` 자동 설정 | Integration (Mock DB)       |
 | `test/e2e/helpers/e2e-app-factory.ts`                  | `createE2eApp()` / `destroyE2eApp()`                               | E2E                         |
 | `test/e2e/helpers/e2e-helpers.ts`                      | `E2eHelpers` — `createVerifiedUser()` 등                           | E2E                         |
-| `test/setup/managed-test-database.ts`                  | Jest 실행당 Testcontainers PostgreSQL + migration 수명주기         | Integration (실제 DB) + E2E |
+| `test/setup/managed-test-database.ts`                  | Vitest 실행당 Testcontainers PostgreSQL + migration 수명주기       | Integration (실제 DB) + E2E |
 | `test/setup/test-database.ts`                          | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate                   | Integration (실제 DB) + E2E |
 | `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()`                                           | Integration (실제 DB, Auth) |
 
@@ -142,10 +142,10 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 ### DO
 
-- ✅ Given/When/Then 주석으로 테스트 의도 표현
+- ✅ 테스트 이름과 준비·실행·검증 순서로 의도 표현. 주석은 동시성 보장이나 계약상 제약처럼 코드만으로 드러나지 않는 이유에 사용
 - ✅ Builder 패턴으로 테스트 데이터 생성
 - ✅ 한국어 describe명 + 유형 태그 (예: `"(Mock DB)"`, `"(실제 DB)"`)
-- ✅ `jest.clearAllMocks()`는 전역 설정(`test/setup/jest.setup.ts`)에서 자동 호출되므로 **개별 파일에서 불필요** — Builder ID 카운터 리셋만 `beforeEach`에서 호출
+- ✅ `clearMocks`/`restoreMocks`는 `vitest.config.ts`에서 매 테스트 전에 적용된다. Fixture ID 리셋도 setup의 `beforeEach`가 소유한다
 - ✅ FakeService로 외부 서비스 대체 (E2E)
 
 ### DON'T
@@ -160,7 +160,7 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 ### 전역 설정 참고
 
-`jest.clearAllMocks()`는 `test/setup/jest.setup.ts`에서 `afterEach`로 전역 호출되며, `jest.preset.cjs`에서도 `clearMocks: true`, `restoreMocks: true`가 설정되어 있습니다. **개별 테스트 파일에서 별도로 호출할 필요가 없습니다.**
+`vitest.config.ts`의 `clearMocks: true`, `restoreMocks: true`가 매 테스트 전에 적용된다. `vi.spyOn()`과 `suppressLogger()`는 `beforeEach`에서 생성한다. `beforeAll`에서 만든 spy는 첫 테스트 전에 복원되므로 사용하지 않는다. Fixture ID와 fake 상태는 setup의 `beforeEach`에서 초기화한다.
 
 ---
 
@@ -199,4 +199,31 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 ---
 
 **문서 버전**: 4.0.0
-**최종 수정일**: 2026-04-05
+**최종 수정일**: 2026-10-01
+
+## ESM과 격리
+
+- API는 NodeNext ESM이다. 내부 별칭은 `#api/*`, 테스트 별칭은 `#test/*`, 상대 경로에는 `.js`를 명시한다. `require`와 `__dirname`은 사용하지 않는다.
+- Unit, integration, E2E는 Vitest project로 나눈다. DB project는 파일을 직렬 실행하고 순서를 섞어 공유 상태 의존을 확인한다.
+- DB global setup은 project마다 PostgreSQL 컨테이너 하나를 생성하고 migration을 적용한다. `provide`/`inject`로 연결 정보를 worker에 전달하며, 컨테이너 종료는 global setup의 반환 teardown이 소유한다.
+- SDK mock은 `vi.hoisted`와 `vi.mock`을 사용한다. 실제 오류 클래스, 토큰 검증, 순수 SDK 함수는 `importOriginal`로 유지한다. Constructor mock의 구현은 일반 함수나 class를 사용한다.
+- Prisma query의 select 결과는 필요한 반환 필드를 명시한다. `asMock`의 partial mock 지원은 Prisma generic query가 선택한 필드만 돌려주는 테스트에서 사용한다.
+- 동시성 테스트는 transaction barrier와 PostgreSQL lock 상태를 관찰한다. 한 번의 event loop tick이나 임의 sleep으로 순서를 가정하지 않는다.
+- E2E throttle은 해당 TestingModule의 provider override로만 격리한다. 전역 prototype이나 다른 suite의 guard를 변경하지 않는다.
+- E2E reset이 실패하면 같은 환경의 후속 테스트도 차단한다. timeout은 작업을 취소하지 못하므로 오염된 환경을 재사용하지 않는다. 종료는 앱/Redis/cache를 먼저 정리한 뒤 Prisma 연결을 닫는다.
+
+## 순서 의존 검증
+
+실패를 재현할 때 seed를 로그와 PR 검증 기록에 남깁니다. 동일 프로젝트의 DB 파일은 직렬 실행하며, 독립된 프로세스로 반복할 때는 각 실행이 자체 관리형 DB를 소유합니다.
+
+```bash
+pnpm --filter @aido/api exec vitest run --project unit --sequence.shuffle --sequence.seed=101
+pnpm --filter @aido/api exec vitest run --project integration --sequence.shuffle --sequence.seed=101
+pnpm --filter @aido/api exec vitest run --project e2e --sequence.shuffle --sequence.seed=101
+pnpm --filter @aido/api exec vitest run --project integration \
+  test/integration/push-delivery-outbox.integration-spec.ts \
+  test/integration/mutation-lock-concurrency.integration-spec.ts \
+  --sequence.shuffle --sequence.seed=1001
+```
+
+릴리스 전에는 전체 프로젝트를 서로 다른 seed로 반복하고, outbox 및 mutation lock 테스트는 실제 PostgreSQL에서 별도로 반복합니다. 통과 횟수, 테스트 수, seed, 실행 시간과 실패 여부를 기록하며, 병렬 빌드나 캐시 조건이 다른 수치로 성능 향상률을 주장하지 않습니다.

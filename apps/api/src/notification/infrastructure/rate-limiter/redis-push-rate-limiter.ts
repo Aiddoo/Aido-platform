@@ -1,16 +1,16 @@
 import { Logger } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { RedisErrorLogSampler } from "@/shared/infrastructure/redis/redis-error-log-sampler";
+import { RedisErrorLogSampler } from "#api/shared/infrastructure/redis/redis-error-log-sampler";
 
 import type {
 	EngagementPushRateLimitRequest,
 	GeneralPushRateLimitRequest,
 	PushRateLimitRequest,
 	PushRateLimiterPort,
-} from "../../application/ports/push-rate-limiter.port";
-import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy";
-import { PushRateLimiterKeys } from "./push-rate-limiter.keys";
+} from "../../application/ports/push-rate-limiter.port.js";
+import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy.js";
+import { PushRateLimiterKeys } from "./push-rate-limiter.keys.js";
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 const RESERVATION_TTL_MS = ENGAGEMENT.RETENTION_MS;

@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 /**
  * 검색 결과 keyset 커서.

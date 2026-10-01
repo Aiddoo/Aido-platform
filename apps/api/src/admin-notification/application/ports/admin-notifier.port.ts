@@ -8,12 +8,12 @@
  * @see apps/api/src/notification/providers/push-provider.interface.ts
  */
 
-import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
+import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo.js";
 
 export type {
 	AdminNotification,
 	AdminNotificationField,
-} from "../../domain/value-objects/admin-notification-message.vo";
+} from "../../domain/value-objects/admin-notification-message.vo.js";
 
 /**
  * 알림 발송 결과

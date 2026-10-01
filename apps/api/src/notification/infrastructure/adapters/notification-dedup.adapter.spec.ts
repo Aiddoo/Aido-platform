@@ -1,21 +1,22 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	DEDUP_PROVIDER,
 	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
+} from "#api/shared/infrastructure/dedup/interfaces/dedup.interface";
 
-import { NotificationDedupAdapter } from "./notification-dedup.adapter";
+import { NotificationDedupAdapter } from "./notification-dedup.adapter.js";
 
 describe("NotificationDedupAdapter", () => {
 	it("application dedup records를 인프라 key와 sentinel 계약으로 저장한다", async () => {
 		const { unit, unitRef } = await TestBed.solitary(NotificationDedupAdapter)
 			.mock<IDedupProvider>(DEDUP_PROVIDER)
 			.impl(() => ({
-				filterMembers: jest.fn(),
-				isMember: jest.fn(),
-				addMembers: jest.fn().mockResolvedValue(undefined),
+				filterMembers: vi.fn(),
+				isMember: vi.fn(),
+				addMembers: vi.fn().mockResolvedValue(undefined),
 			}))
 			.compile();
 		const provider: Mocked<IDedupProvider> = unitRef.get(DEDUP_PROVIDER);

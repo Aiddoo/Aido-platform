@@ -13,8 +13,8 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
 
-import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
-import { Timezone } from "@/shared/presentation/decorators";
+import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { Timezone } from "#api/shared/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiConflictError,
@@ -26,14 +26,14 @@ import {
 	ApiTooManyRequestsError,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { CheerReader } from "../application/services/cheer.reader";
-import { MarkCheerReadUseCase } from "../application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
-import { MarkManyCheersReadUseCase } from "../application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
-import { SendCheerUseCase } from "../application/use-cases/send-cheer/send-cheer.use-case";
-import { CheerMapper } from "./cheer.mapper";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { CheerReader } from "../application/services/cheer.reader.js";
+import { MarkCheerReadUseCase } from "../application/use-cases/mark-cheer-read/mark-cheer-read.use-case.js";
+import { MarkManyCheersReadUseCase } from "../application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case.js";
+import { SendCheerUseCase } from "../application/use-cases/send-cheer/send-cheer.use-case.js";
+import { CheerMapper } from "./cheer.mapper.js";
 import {
 	CheerCooldownResponseDto,
 	CheerIdParamDto,
@@ -45,7 +45,7 @@ import {
 	ReceivedCheersResponseDto,
 	SendCheerDto,
 	SentCheersResponseDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.CHEERS)
 @ApiBearerAuth()
@@ -88,7 +88,7 @@ export class CheerController {
 	@ApiTooManyRequestsError(ErrorCode.CHEER_1202)
 	async sendCheer(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: SendCheerDto,
+		@Body({ schema: SendCheerDto }) dto: SendCheerDto,
 		@Timezone() tz: string,
 	): Promise<CreateCheerResponseDto> {
 		this.#logger.debug(`응원 보내기: senderId=${user.userId}, receiverId=${dto.receiverId}`);
@@ -126,7 +126,7 @@ export class CheerController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getReceivedCheers(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetCheersQueryDto,
+		@Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
 	): Promise<ReceivedCheersResponseDto> {
 		this.#logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
 
@@ -162,7 +162,7 @@ export class CheerController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSentCheers(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetCheersQueryDto,
+		@Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
 	): Promise<SentCheersResponseDto> {
 		this.#logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
 
@@ -247,7 +247,7 @@ export class CheerController {
 	@ApiNotFoundError(ErrorCode.CHEER_1205)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: CheerIdParamDto,
+		@Param({ schema: CheerIdParamDto }) params: CheerIdParamDto,
 	): Promise<MarkCheerReadResponseDto> {
 		this.#logger.debug(`응원 읽음 처리: userId=${user.userId}, id=${params.id}`);
 
@@ -276,7 +276,7 @@ export class CheerController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async markManyAsRead(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: MarkCheersReadDto,
+		@Body({ schema: MarkCheersReadDto }) dto: MarkCheersReadDto,
 	): Promise<MarkCheerReadResponseDto> {
 		this.#logger.debug(`여러 응원 읽음 처리: userId=${user.userId}, count=${dto.cheerIds.length}`);
 

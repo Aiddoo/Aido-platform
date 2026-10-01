@@ -29,7 +29,7 @@ describe('UserService', () => {
       const result = await service.getCurrentUser();
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/auth/me');
+      expect(httpClient.get).toHaveBeenCalledWith('v1/auth/me', { signal: undefined });
       expect(result).toEqual({
         ok: true,
         value: expect.objectContaining({

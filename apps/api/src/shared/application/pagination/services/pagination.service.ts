@@ -1,6 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
-import { PAGINATION_DEFAULT, SORT_DEFAULT, type SortOrder } from "../constants/pagination.constant";
+import {
+	PAGINATION_DEFAULT,
+	SORT_DEFAULT,
+	type SortOrder,
+} from "../constants/pagination.constant.js";
 import type {
 	CursorPaginatedResponse,
 	CursorPaginationInfo,
@@ -12,7 +16,7 @@ import type {
 	PaginationInfo,
 	PaginationParams,
 	SortParams,
-} from "../interfaces/pagination.interface";
+} from "../interfaces/pagination.interface.js";
 
 /**
  * 페이지네이션 서비스

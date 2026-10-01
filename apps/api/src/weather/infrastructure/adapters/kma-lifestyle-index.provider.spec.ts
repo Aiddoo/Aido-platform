@@ -1,3 +1,5 @@
+import { TestBed } from "@suites/unit";
+import type { MockInstance } from "vitest";
 /**
  * KmaLifestyleIndexProvider 단위 테스트
  *
@@ -10,18 +12,17 @@
  * pnpm --filter @aido/api test kma-lifestyle-index.provider.spec
  * ```
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-
-import { KmaLifestyleIndexProvider } from "./kma-lifestyle-index.provider";
+import { KmaLifestyleIndexProvider } from "./kma-lifestyle-index.provider.js";
 
 describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더", () => {
 	let provider: KmaLifestyleIndexProvider;
 	let configService: Mocked<TypedConfigService>;
-	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
+	let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(KmaLifestyleIndexProvider).compile();
@@ -29,11 +30,11 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 		provider = unit;
 		configService = unitRef.get(TypedConfigService);
 
-		fetchSpy = jest.spyOn(globalThis, "fetch");
+		fetchSpy = vi.spyOn(globalThis, "fetch");
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	describe("getIndex", () => {

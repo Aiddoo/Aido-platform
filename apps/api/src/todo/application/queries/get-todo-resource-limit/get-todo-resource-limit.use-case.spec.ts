@@ -5,15 +5,16 @@
  * - categoryId가 있으면 활성 개수까지 조회하고, 없으면 상한만 반환한다
  */
 import { TODO_LIMITS } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createTodoReadRepositoryMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { GetTodoResourceLimitUseCase } from "./get-todo-resource-limit.use-case";
+} from "../../ports/todo-read.repository.port.js";
+import { GetTodoResourceLimitUseCase } from "./get-todo-resource-limit.use-case.js";
 
 describe("GetTodoResourceLimitUseCase — 카테고리 활성 Todo 리소스 제한 조회", () => {
 	let useCase: GetTodoResourceLimitUseCase;

@@ -1,19 +1,20 @@
 import { HealthIndicatorService } from "@nestjs/terminus";
+import { vi, type Mocked } from "vitest";
 
-import type { JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { BullHealthIndicator } from "./bull.health";
+import { BullHealthIndicator } from "./bull.health.js";
 
-function runtime(): jest.Mocked<JobRuntimePort> {
+function runtime(): Mocked<JobRuntimePort> {
 	return {
-		start: jest.fn(),
-		stop: jest.fn(),
-		enqueue: jest.fn(),
-		schedule: jest.fn(),
-		unschedule: jest.fn(),
-		cancel: jest.fn(),
-		work: jest.fn(),
-		health: jest.fn().mockResolvedValue({
+		start: vi.fn(),
+		stop: vi.fn(),
+		enqueue: vi.fn(),
+		schedule: vi.fn(),
+		unschedule: vi.fn(),
+		cancel: vi.fn(),
+		work: vi.fn(),
+		health: vi.fn().mockResolvedValue({
 			backend: "postgres",
 			degraded: false,
 			queues: {
@@ -86,16 +87,16 @@ describe("BullHealthIndicator — durable job runtime health", () => {
 	});
 
 	it("health가 멈추면 2초 후 degraded로 반환한다", async () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		const jobRuntime = runtime();
 		jobRuntime.health.mockReturnValue(new Promise(() => {}));
 		const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
 		const pending = indicator.isHealthy("queues");
-		await jest.advanceTimersByTimeAsync(2_000);
+		await vi.advanceTimersByTimeAsync(2_000);
 		await expect(pending).resolves.toMatchObject({
 			queues: { status: "up", degraded: true },
 		});
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 });

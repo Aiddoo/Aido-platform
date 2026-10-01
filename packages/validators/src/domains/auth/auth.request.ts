@@ -6,7 +6,7 @@ import {
   PASSWORD_RULES,
   PROFILE_ICON_KEYS,
   VERIFICATION_CODE,
-} from './auth.constants';
+} from './auth.constants.js';
 
 export const emailSchema = z
   .string()

@@ -9,18 +9,18 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import type * as PrismaModels from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { toInputJson } from "@/shared/infrastructure/database/json.util";
-import { toSupportedLocale } from "@/shared/presentation/decorators";
+import type * as PrismaModels from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { toInputJson } from "#api/shared/infrastructure/database/json.util";
+import { toSupportedLocale } from "#api/shared/presentation/decorators/index";
 
 import type {
 	AiReportRepositoryPort,
 	CreateAiReportInput,
 	FindReportsParams,
-} from "../../application/ports/ai-report.repository.port";
-import { AiReport } from "../../domain/entities/ai-report.entity";
-import type { ReportType } from "../../domain/types";
+} from "../../application/ports/ai-report.repository.port.js";
+import { AiReport } from "../../domain/entities/ai-report.entity.js";
+import type { ReportType } from "../../domain/types.js";
 
 const DEFAULT_STATS = {
 	totalTodos: 0,

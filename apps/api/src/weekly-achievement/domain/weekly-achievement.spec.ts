@@ -13,7 +13,7 @@ import {
 	type WeeklyAchievementRecord,
 	type WeeklyAchievementRow,
 	type WeeklyAchievementUpsert,
-} from "./weekly-achievement";
+} from "./weekly-achievement.js";
 
 function row(overrides?: Partial<WeeklyAchievementRow>): WeeklyAchievementRow {
 	return {

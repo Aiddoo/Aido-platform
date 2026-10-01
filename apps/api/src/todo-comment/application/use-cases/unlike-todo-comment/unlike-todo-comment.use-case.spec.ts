@@ -1,12 +1,14 @@
+import { vi } from "vitest";
+
 import {
 	createMutationLockMock,
 	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import { TodoComment } from "../../../domain/entities/todo-comment.aggregate";
-import { UnlikeTodoCommentUseCase } from "./unlike-todo-comment.use-case";
+import { TodoComment } from "../../../domain/entities/todo-comment.aggregate.js";
+import { UnlikeTodoCommentUseCase } from "./unlike-todo-comment.use-case.js";
 
 const TODO_ID = 1;
 const COMMENT_ID = "cm1todoacomment00000000001";
@@ -18,8 +20,8 @@ describe("UnlikeTodoCommentUseCase", () => {
 		const reader = createTodoCommentReaderMock();
 		const mutationLock = createMutationLockMock();
 		const createdAt = new Date("2026-08-16T00:00:00.000Z");
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(repository.findComment).mockResolvedValue(
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(repository.findComment).mockResolvedValue(
 			TodoComment.reconstitute({
 				id: COMMENT_ID,
 				todoId: TODO_ID,
@@ -34,7 +36,7 @@ describe("UnlikeTodoCommentUseCase", () => {
 				updatedAt: createdAt,
 			}),
 		);
-		jest.mocked(repository.removeLike).mockResolvedValue({
+		vi.mocked(repository.removeLike).mockResolvedValue({
 			commentId: COMMENT_ID,
 			commentAuthorId: USER_ID,
 			changed: true,

@@ -1,6 +1,6 @@
 import { applyDecorators, SetMetadata, UseGuards } from "@nestjs/common";
 
-import { AdminGuard } from "@/auth/infrastructure/guards/admin.guard";
+import { AdminGuard } from "#api/auth/infrastructure/guards/admin.guard";
 
 export const IS_ADMIN_KEY = "isAdmin";
 

@@ -1,18 +1,19 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * AiRouterAdapter 단위 테스트
  *
  * 현재는 Gemini 단일 Provider pass-through 이므로, Gemini 로의 위임과
  * `isAvailable` 위임만 검증합니다. 향후 라우팅 분기가 추가되면 케이스를 확장합니다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 import { z } from "zod";
 
 import type {
 	AiProvider,
 	GenerateStructuredResult,
-} from "../../application/ports/ai-provider.port";
-import { AI_PROVIDER_GEMINI, AiRouterAdapter } from "./ai-router.adapter";
+} from "../../application/ports/ai-provider.port.js";
+import { AI_PROVIDER_GEMINI, AiRouterAdapter } from "./ai-router.adapter.js";
 
 describe("AiRouterAdapter — 라우팅 Provider", () => {
 	let router: AiRouterAdapter;
@@ -29,8 +30,8 @@ describe("AiRouterAdapter — 라우팅 Provider", () => {
 		const { unit, unitRef } = await TestBed.solitary(AiRouterAdapter)
 			.mock(AI_PROVIDER_GEMINI)
 			.impl(() => ({
-				generateStructured: jest.fn().mockResolvedValue(sampleResult),
-				isAvailable: jest.fn().mockReturnValue(true),
+				generateStructured: vi.fn().mockResolvedValue(sampleResult),
+				isAvailable: vi.fn().mockReturnValue(true),
 			}))
 			.compile();
 

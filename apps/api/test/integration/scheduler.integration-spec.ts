@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * TimezoneAwareReminderOrchestrator 통합 테스트
  *
@@ -16,11 +17,11 @@
  * pnpm --filter @aido/api test scheduler.integration-spec
  * ```
  */
+import { vi } from "vitest";
 
-import { Test, type TestingModule } from "@nestjs/testing";
-import { TEST_CUID } from "@test/fixtures";
-import { suppressLogger } from "@test/setup/suppress-logger";
-
+import { SCHEDULER_PREFERENCE_READER } from "#api/scheduler/application/ports/scheduler-preference-reader.port";
+import { TIMEZONE_REMINDER_ENQUEUER } from "#api/scheduler/application/ports/timezone-reminder-enqueuer.port";
+import { NOTIFICATION_SCHEDULE } from "#api/scheduler/domain/services/notification-schedule";
 import {
 	EveningReminderStrategy,
 	LunchNudgeStrategy,
@@ -36,10 +37,9 @@ import {
 	WeeklyAchievementStrategy,
 	WeeklyReportStrategy,
 	WinbackStrategy,
-} from "@/scheduler";
-import { SCHEDULER_PREFERENCE_READER } from "@/scheduler/application/ports/scheduler-preference-reader.port";
-import { TIMEZONE_REMINDER_ENQUEUER } from "@/scheduler/application/ports/timezone-reminder-enqueuer.port";
-import { NOTIFICATION_SCHEDULE } from "@/scheduler/domain/services/notification-schedule";
+} from "#api/scheduler/index";
+import { TEST_CUID } from "#test/fixtures/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () => {
 	let module: TestingModule;
@@ -47,49 +47,49 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
 	// ── Strategy mocks ──────────────────────────────────────────────────
 	const mockMorningReminder = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
 	const mockEveningReminder = {
-		execute: jest.fn().mockResolvedValue({ sent: 0, recipientUserIds: [] }),
+		execute: vi.fn().mockResolvedValue({ sent: 0, recipientUserIds: [] }),
 	};
-	const mockOnboarding = { execute: jest.fn().mockResolvedValue({ sent: 0 }) };
+	const mockOnboarding = { execute: vi.fn().mockResolvedValue({ sent: 0 }) };
 	const mockWeeklyReport = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
 	const mockMonthlyReport = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
 	const mockWeeklyAchievement = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
-	const mockWinback = { execute: jest.fn().mockResolvedValue({ sent: 0 }) };
+	const mockWinback = { execute: vi.fn().mockResolvedValue({ sent: 0 }) };
 	const mockNudgeSuggest = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
 	const mockSocialDigest = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
-	const mockLunchNudge = { execute: jest.fn().mockResolvedValue({ sent: 0 }) };
+	const mockLunchNudge = { execute: vi.fn().mockResolvedValue({ sent: 0 }) };
 	const mockStreakAtRisk = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
 	const mockWeatherMorning = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
 	const mockWeatherEvening = {
-		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+		execute: vi.fn().mockResolvedValue({ sent: 0 }),
 	};
 
 	// ── Port mocks ──────────────────────────────────────────────────────
 	const mockPreferenceReader = {
-		findActiveTimezones: jest.fn(),
-		findUserLocales: jest.fn(),
+		findActiveTimezones: vi.fn(),
+		findUserLocales: vi.fn(),
 	};
 
 	const mockEnqueuer = {
-		registerSweepScheduler: jest.fn(),
-		enqueueReminderHourChanged: jest.fn(),
-		enqueueSocialDigest: jest.fn(),
+		registerSweepScheduler: vi.fn(),
+		enqueueReminderHourChanged: vi.fn(),
+		enqueueSocialDigest: vi.fn(),
 	};
 
 	beforeAll(async () => {
@@ -127,25 +127,25 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.useFakeTimers();
-		jest.clearAllMocks();
+		vi.useFakeTimers();
+		vi.clearAllMocks();
 
 		// 기본: 활성 타임존 조회 결과
 		mockPreferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	describe("handleMinuteSweep 전략 실행", () => {
 		it("KST 08:00 — 아침 리마인더 전략이 실행된다", async () => {
 			// Given - UTC 2026-03-15 23:00 = KST 2026-03-16 (월) 08:00
-			jest.setSystemTime(new Date("2026-03-15T23:00:00Z"));
+			vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -169,7 +169,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
 		it("KST 18:00 — 저녁 리마인더 전략이 실행되고 SocialDigest가 지연 enqueue된다", async () => {
 			// Given - UTC 2026-03-16 09:00 = KST 2026-03-16 (월) 18:00
-			jest.setSystemTime(new Date("2026-03-16T09:00:00Z"));
+			vi.setSystemTime(new Date("2026-03-16T09:00:00Z"));
 			mockEveningReminder.execute.mockResolvedValue({
 				sent: 5,
 				recipientUserIds: [
@@ -206,7 +206,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
 		it("월요일 KST 11:30 — 주간 리포트 전략이 실행된다", async () => {
 			// Given - UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
-			jest.setSystemTime(new Date("2026-03-16T02:30:00Z"));
+			vi.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -223,7 +223,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
 		it("매월 1일 KST 11:30 — 월간 리포트 전략이 실행된다", async () => {
 			// Given - UTC 2026-04-01 02:30 = KST 2026-04-01 (수) 11:30
-			jest.setSystemTime(new Date("2026-04-01T02:30:00Z"));
+			vi.setSystemTime(new Date("2026-04-01T02:30:00Z"));
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -240,7 +240,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
 		it("월요일 KST 11:30 — 주간 달성 전략이 실행된다", async () => {
 			// Given - UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
-			jest.setSystemTime(new Date("2026-03-16T02:30:00Z"));
+			vi.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
 			// When - 매분 스윕 실행
 			await orchestrator.handleMinuteSweep();
@@ -259,7 +259,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 	describe("handleMinuteSweep 오류 격리", () => {
 		it("한 타임존 실패 시 — 다른 타임존은 정상 실행된다", async () => {
 			// Given - 2개 타임존, 첫 번째 타임존에서 에러 발생
-			jest.setSystemTime(new Date("2026-03-15T23:00:00Z"));
+			vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
 			mockPreferenceReader.findActiveTimezones.mockResolvedValue([
 				"America/New_York",
@@ -293,7 +293,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 	describe("handleMinuteSweep 빈 타임존", () => {
 		it("활성 타임존 없는 경우 — 전략이 실행되지 않는다", async () => {
 			// Given - 활성 타임존 없음
-			jest.setSystemTime(new Date("2026-03-15T23:00:00Z"));
+			vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 			mockPreferenceReader.findActiveTimezones.mockResolvedValue([]);
 
 			// When - 매분 스윕 실행

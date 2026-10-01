@@ -3,7 +3,7 @@ import {
 	resolveDeadLetterJobPolicy,
 	resolveDeadLetterQueue,
 	resolveJobIdempotencyKey,
-} from "./job-runtime.port";
+} from "./job-runtime.port.js";
 
 const BASE_OPTIONS = {
 	retryLimit: 2,

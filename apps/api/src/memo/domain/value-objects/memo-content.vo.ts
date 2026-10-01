@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { MEMO_LIMITS } from "@aido/validators";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /** 메모를 할 일로 변환할 때 제목 최대 길이 (초과 시 잘림). */
 const TODO_TITLE_MAX_LENGTH = 200;

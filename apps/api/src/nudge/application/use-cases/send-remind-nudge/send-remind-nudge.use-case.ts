@@ -1,26 +1,26 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { FollowReader } from "@/follow";
+import { FollowReader } from "#api/follow/index";
 import {
 	MUTATION_LOCK,
 	MutationLockKeys,
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { now } from "@/shared/domain/date/utils/core";
-import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+} from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { evaluateRemindNudgeCooldown } from "../../../domain/services/nudge-cooldown";
-import { NudgeMessage } from "../../../domain/value-objects/nudge-message.vo";
-import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port";
+import { evaluateRemindNudgeCooldown } from "../../../domain/services/nudge-cooldown.js";
+import { NudgeMessage } from "../../../domain/value-objects/nudge-message.vo.js";
+import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port.js";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type ReminderNudgeWithRelations,
-} from "../../ports/nudge.repository.port";
+} from "../../ports/nudge.repository.port.js";
 
 export interface SendRemindNudgeInput {
 	senderId: string;

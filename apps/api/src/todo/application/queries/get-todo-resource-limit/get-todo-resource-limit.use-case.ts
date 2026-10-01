@@ -4,7 +4,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
+} from "../../ports/todo-read.repository.port.js";
 
 /** 카테고리당 활성 Todo 리소스 제한 조회 결과 — use-case가 계약(반환 타입)을 소유합니다 */
 export interface TodoResourceLimitResult {

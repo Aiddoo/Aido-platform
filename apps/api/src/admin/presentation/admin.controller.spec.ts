@@ -4,15 +4,15 @@
  * 컨트롤러의 DTO→UseCase 입력 매핑과 결과 반환을 검증한다.
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { BroadcastNotificationUseCase } from "../application/use-cases/broadcast-notification/broadcast-notification.use-case";
-import { SendTargetedNotificationUseCase } from "../application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
-import { AdminController } from "./admin.controller";
-import type { BroadcastNotificationDto, TargetedNotificationDto } from "./dtos";
+import { BroadcastNotificationUseCase } from "../application/use-cases/broadcast-notification/broadcast-notification.use-case.js";
+import { SendTargetedNotificationUseCase } from "../application/use-cases/send-targeted-notification/send-targeted-notification.use-case.js";
+import { AdminController } from "./admin.controller.js";
+import type { BroadcastNotificationDto, TargetedNotificationDto } from "./dtos/index.js";
 
 function makeBroadcastDto(
 	overrides: Partial<BroadcastNotificationDto> = {},

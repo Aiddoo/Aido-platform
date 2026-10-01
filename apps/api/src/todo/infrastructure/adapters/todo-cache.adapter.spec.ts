@@ -1,8 +1,10 @@
-import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { vi } from "vitest";
 
-import { FRIEND_TODOS_INITIAL_GENERATION, TodoCacheKey } from "../cache/todo-cache.keyspace";
-import { TodoCacheAdapter } from "./todo-cache.adapter";
+import { InMemoryCacheAdapter } from "#api/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+
+import { FRIEND_TODOS_INITIAL_GENERATION, TodoCacheKey } from "../cache/todo-cache.keyspace.js";
+import { TodoCacheAdapter } from "./todo-cache.adapter.js";
 
 const OWNER_ID = "friend-1";
 const START_DATE = "2026-07-01";
@@ -141,7 +143,7 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
 		const pageReadStarted = createDeferred();
 		const releasePageRead = createDeferred();
 		const originalGet = cacheService.get.bind(cacheService);
-		jest.spyOn(cacheService, "get").mockImplementation(async (key) => {
+		vi.spyOn(cacheService, "get").mockImplementation(async (key) => {
 			const value = await originalGet(key);
 			if (key === pageKey) {
 				pageReadStarted.resolve();

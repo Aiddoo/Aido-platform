@@ -8,22 +8,22 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { VERIFICATION_CODE } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { VerificationType } from "@/auth/domain/types";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import type { VerificationType } from "#api/auth/domain/types";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { AUTH_EMAIL_SENDER, type AuthEmailSenderPort } from "../ports/auth-collaboration.port";
+import { AUTH_EMAIL_SENDER, type AuthEmailSenderPort } from "../ports/auth-collaboration.port.js";
 import {
 	AUTH_VERIFICATION_REPOSITORY,
 	type AuthVerificationRepositoryPort,
-} from "../ports/auth-persistence.port";
+} from "../ports/auth-persistence.port.js";
 import {
 	VERIFICATION_CODE_SECURITY,
 	type VerificationCodeSecurityPort,
-} from "../ports/verification-code-security.port";
-import { VerificationService } from "./verification.service";
+} from "../ports/verification-code-security.port.js";
+import { VerificationService } from "./verification.service.js";
 
 describe("VerificationService — 인증 코드 서비스", () => {
 	let service: VerificationService;

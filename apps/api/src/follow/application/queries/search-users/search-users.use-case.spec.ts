@@ -1,22 +1,22 @@
+import { TestBed } from "@suites/unit";
 /**
  * SearchUsersUseCase 단위 테스트 (Suites solitary + 포트 모킹).
  *
  * 검색어 정규화·size clamp·커서 인코딩/디코딩·hasMore slice·랭킹 통과를 검증한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { PaginationService } from "@/shared/application/pagination";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
 	type UserSearchResult,
-} from "../../ports/follow.repository.port";
-import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor";
-import { SearchUsersUseCase } from "./search-users.use-case";
+} from "../../ports/follow.repository.port.js";
+import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor.js";
+import { SearchUsersUseCase } from "./search-users.use-case.js";
 
 const row = (id: string, rank: number): UserSearchResult => ({
 	id,

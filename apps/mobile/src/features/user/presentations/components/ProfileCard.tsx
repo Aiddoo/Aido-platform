@@ -11,7 +11,7 @@ import { Avatar, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
 
 import { formatUserHashtag } from '../../utils/user-hashtag';
-import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 
 export function ProfileCard() {
   const push = useSingleTap(router.push);

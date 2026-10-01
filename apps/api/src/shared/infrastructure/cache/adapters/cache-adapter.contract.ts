@@ -1,4 +1,4 @@
-import type { ICacheService } from "../interfaces/cache.interface";
+import type { ICacheService } from "../interfaces/cache.interface.js";
 
 /**
  * ICacheService 계약 공유 테스트
@@ -111,7 +111,7 @@ export function describeCacheAdapterContract(context: {
 
 		it("wrap은 캐시 미스 시 factory를 실행하고 결과를 캐싱한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue("fresh");
+			const factory = vi.fn().mockResolvedValue("fresh");
 
 			// When
 			const first = await cache.wrap("contract:wrap", factory);

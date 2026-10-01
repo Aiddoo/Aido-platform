@@ -1,13 +1,20 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock, createNotificationRepositoryMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
 
-import { NOTIFICATION_CACHE, type NotificationCachePort } from "../ports/notification-cache.port";
+import {
+	createNotificationCacheMock,
+	createNotificationRepositoryMock,
+} from "#test/mocks/ports/index";
+
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../ports/notification.repository.port";
-import { NotificationAccountCleanup } from "./notification-account-cleanup";
+} from "../ports/notification.repository.port.js";
+import { NotificationAccountCleanup } from "./notification-account-cleanup.js";
 
 describe("NotificationAccountCleanup", () => {
 	it("bounded context 저장소에 actor 개인정보 정리를 위임한다", async () => {

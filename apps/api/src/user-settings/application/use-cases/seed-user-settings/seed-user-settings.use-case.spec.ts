@@ -1,25 +1,26 @@
+import { TestBed } from "@suites/unit";
 /**
  * SeedUserSettingsUseCase 단위 테스트
  *
  * 회원가입 시 기본 설정 시딩 — 약관 동의 + 푸시 설정 기본 행 생성.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
+
 import {
 	createUserConsentRepositoryMock,
 	createUserPreferenceRepositoryMock,
-} from "@test/mocks/ports/user-settings.mock";
+} from "#test/mocks/ports/user-settings.mock";
 
 import {
 	type ConsentSeedInput,
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
+} from "../../ports/user-consent.repository.port.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
-import { SeedUserSettingsUseCase } from "./seed-user-settings.use-case";
+} from "../../ports/user-preference.repository.port.js";
+import { SeedUserSettingsUseCase } from "./seed-user-settings.use-case.js";
 
 const userId = "user-1";
 

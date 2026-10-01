@@ -30,7 +30,7 @@ describe('TodoCategoryService', () => {
       const result = await service.getCategories();
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories');
+      expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', { signal: undefined });
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.categories).toHaveLength(2);

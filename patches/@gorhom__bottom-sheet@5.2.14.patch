@@ -1,0 +1,217 @@
+diff --git a/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js b/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js
+index 55c63080..5129aa5f 100644
+--- a/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js
++++ b/lib/commonjs/components/bottomSheetTextInput/BottomSheetTextInput.js
+@@ -93,7 +93,7 @@ const BottomSheetTextInputComponent = /*#__PURE__*/(0, _react.forwardRef)(({
+   (0, _react.useImperativeHandle)(providedRef, () => ref.current ?? undefined, []);
+   //#endregion
+ 
+-  return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNativeGestureHandler.TextInput, {
++  return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNativeGestureHandler.LegacyTextInput, {
+     ref: ref,
+     onFocus: handleOnFocus,
+     onBlur: handleOnBlur,
+diff --git a/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js b/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js
+index 4be35994..81f2ce6d 100644
+--- a/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js
++++ b/lib/module/components/bottomSheetTextInput/BottomSheetTextInput.js
+@@ -2,7 +2,7 @@
+ 
+ import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+ import { TextInput as RNTextInput } from 'react-native';
+-import { TextInput } from 'react-native-gesture-handler';
++import { LegacyTextInput as TextInput } from 'react-native-gesture-handler';
+ import { useBottomSheetInternal } from '../../hooks';
+ import { findNodeHandle } from '../../utilities';
+ import { jsx as _jsx } from "react/jsx-runtime";
+diff --git a/lib/typescript/components/bottomSheet/types.d.ts b/lib/typescript/components/bottomSheet/types.d.ts
+index 6b23056a..c0218882 100644
+--- a/lib/typescript/components/bottomSheet/types.d.ts
++++ b/lib/typescript/components/bottomSheet/types.d.ts
+@@ -1,6 +1,6 @@
+ import type React from 'react';
+ import type { Insets, StyleProp, ViewStyle } from 'react-native';
+-import type { PanGesture } from 'react-native-gesture-handler';
++import type { LegacyPanGesture as PanGesture } from 'react-native-gesture-handler';
+ import type {
+   AnimateStyle,
+   ReduceMotion,
+diff --git a/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts b/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts
+index c09584d1..2d297912 100644
+--- a/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts
++++ b/lib/typescript/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.d.ts
+@@ -1,6 +1,6 @@
+ import React from 'react';
+ import { type RefreshControlProps } from 'react-native';
+-import { type SimultaneousGesture } from 'react-native-gesture-handler';
++import { type LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ interface BottomSheetRefreshControlProps extends RefreshControlProps {
+     scrollableGesture: SimultaneousGesture;
+ }
+diff --git a/lib/typescript/components/bottomSheetRefreshControl/index.d.ts b/lib/typescript/components/bottomSheetRefreshControl/index.d.ts
+index 6554dc1b..84b2a613 100644
+--- a/lib/typescript/components/bottomSheetRefreshControl/index.d.ts
++++ b/lib/typescript/components/bottomSheetRefreshControl/index.d.ts
+@@ -1,6 +1,6 @@
+ import type React from 'react';
+ import type { RefreshControlProps } from 'react-native';
+-import type { NativeViewGestureHandlerProps, SimultaneousGesture } from 'react-native-gesture-handler';
++import type { NativeViewGestureHandlerProps, LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ declare const _default: React.MemoExoticComponent<React.ForwardRefExoticComponent<RefreshControlProps & {
+     scrollableGesture: SimultaneousGesture;
+     children: React.ReactNode | React.ReactNode[];
+diff --git a/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts b/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts
+index 0e4911b3..31772803 100644
+--- a/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts
++++ b/lib/typescript/components/bottomSheetScrollable/BottomSheetDraggableScrollable.d.ts
+@@ -1,5 +1,5 @@
+ import React from 'react';
+-import { type SimultaneousGesture } from 'react-native-gesture-handler';
++import { type LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ interface BottomSheetDraggableScrollableProps {
+     scrollableGesture?: SimultaneousGesture;
+     children: React.ReactNode;
+diff --git a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts
+index 7714abb5..b993095f 100644
+--- a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts
++++ b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.android.d.ts
+@@ -1,5 +1,5 @@
+ import React from 'react';
+-import type { SimultaneousGesture } from 'react-native-gesture-handler';
++import type { LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ interface ScrollableContainerProps {
+     nativeGesture: SimultaneousGesture;
+     refreshControl: any;
+diff --git a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts
+index f6e1f7dc..f62f576f 100644
+--- a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts
++++ b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.d.ts
+@@ -1,5 +1,5 @@
+ import React, { type FC } from 'react';
+-import type { SimultaneousGesture } from 'react-native-gesture-handler';
++import type { LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ interface ScrollableContainerProps {
+     nativeGesture?: SimultaneousGesture;
+     ScrollableComponent: FC<any>;
+diff --git a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts
+index 44c9744f..66c7e6f1 100644
+--- a/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts
++++ b/lib/typescript/components/bottomSheetScrollable/ScrollableContainer.web.d.ts
+@@ -1,6 +1,6 @@
+ import React from 'react';
+ import type { ViewProps } from 'react-native';
+-import type { SimultaneousGesture } from 'react-native-gesture-handler';
++import type { LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ interface ScrollableContainerProps {
+     nativeGesture: SimultaneousGesture;
+     setContentSize: (contentHeight: number) => void;
+diff --git a/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts b/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts
+index 1f0e1cab..9b813662 100644
+--- a/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts
++++ b/lib/typescript/components/bottomSheetTextInput/BottomSheetTextInput.d.ts
+@@ -1,5 +1,5 @@
+ import React from 'react';
+-import { TextInput } from 'react-native-gesture-handler';
++import { LegacyTextInput as TextInput } from 'react-native-gesture-handler';
+ import type { BottomSheetTextInputProps } from './types';
+ declare const BottomSheetTextInput: React.MemoExoticComponent<React.ForwardRefExoticComponent<BottomSheetTextInputProps & React.RefAttributes<TextInput | undefined>>>;
+ export default BottomSheetTextInput;
+diff --git a/src/components/bottomSheet/types.d.ts b/src/components/bottomSheet/types.d.ts
+index 6b23056a..c0218882 100644
+--- a/src/components/bottomSheet/types.d.ts
++++ b/src/components/bottomSheet/types.d.ts
+@@ -1,6 +1,6 @@
+ import type React from 'react';
+ import type { Insets, StyleProp, ViewStyle } from 'react-native';
+-import type { PanGesture } from 'react-native-gesture-handler';
++import type { LegacyPanGesture as PanGesture } from 'react-native-gesture-handler';
+ import type {
+   AnimateStyle,
+   ReduceMotion,
+diff --git a/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx b/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx
+index 36a1a60b..5ffcc563 100644
+--- a/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx
++++ b/src/components/bottomSheetRefreshControl/BottomSheetRefreshControl.android.tsx
+@@ -3,7 +3,7 @@ import { RefreshControl, type RefreshControlProps } from 'react-native';
+ import {
+   Gesture,
+   GestureDetector,
+-  type SimultaneousGesture,
++  type LegacySimultaneousGesture as SimultaneousGesture,
+ } from 'react-native-gesture-handler';
+ import Animated, { useAnimatedProps } from 'react-native-reanimated';
+ import { SCROLLABLE_STATUS } from '../../constants';
+diff --git a/src/components/bottomSheetRefreshControl/index.ts b/src/components/bottomSheetRefreshControl/index.ts
+index b716fa28..8eee70e3 100644
+--- a/src/components/bottomSheetRefreshControl/index.ts
++++ b/src/components/bottomSheetRefreshControl/index.ts
+@@ -2,7 +2,7 @@ import type React from 'react';
+ import type { RefreshControlProps } from 'react-native';
+ import type {
+   NativeViewGestureHandlerProps,
+-  SimultaneousGesture,
++  LegacySimultaneousGesture as SimultaneousGesture,
+ } from 'react-native-gesture-handler';
+ import BottomSheetRefreshControl from './BottomSheetRefreshControl';
+ 
+diff --git a/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx b/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx
+index 92d035a9..db521227 100644
+--- a/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx
++++ b/src/components/bottomSheetScrollable/BottomSheetDraggableScrollable.tsx
+@@ -1,7 +1,7 @@
+ import React from 'react';
+ import {
+   GestureDetector,
+-  type SimultaneousGesture,
++  type LegacySimultaneousGesture as SimultaneousGesture,
+ } from 'react-native-gesture-handler';
+ 
+ interface BottomSheetDraggableScrollableProps {
+diff --git a/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx b/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx
+index 1f944e06..8cdaea1e 100644
+--- a/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx
++++ b/src/components/bottomSheetScrollable/ScrollableContainer.android.tsx
+@@ -1,5 +1,5 @@
+ import React, { forwardRef } from 'react';
+-import type { SimultaneousGesture } from 'react-native-gesture-handler';
++import type { LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ import BottomSheetRefreshControl from '../bottomSheetRefreshControl';
+ import { BottomSheetDraggableScrollable } from './BottomSheetDraggableScrollable';
+ import { styles } from './styles';
+diff --git a/src/components/bottomSheetScrollable/ScrollableContainer.tsx b/src/components/bottomSheetScrollable/ScrollableContainer.tsx
+index ab3bc59b..694bfc3c 100644
+--- a/src/components/bottomSheetScrollable/ScrollableContainer.tsx
++++ b/src/components/bottomSheetScrollable/ScrollableContainer.tsx
+@@ -1,5 +1,5 @@
+ import React, { type FC, forwardRef } from 'react';
+-import type { SimultaneousGesture } from 'react-native-gesture-handler';
++import type { LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ import { BottomSheetDraggableScrollable } from './BottomSheetDraggableScrollable';
+ 
+ interface ScrollableContainerProps {
+diff --git a/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx b/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx
+index bb76c4ea..c7dc2a52 100644
+--- a/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx
++++ b/src/components/bottomSheetScrollable/ScrollableContainer.web.tsx
+@@ -5,7 +5,7 @@ import React, {
+   useRef,
+ } from 'react';
+ import type { LayoutChangeEvent, ViewProps } from 'react-native';
+-import type { SimultaneousGesture } from 'react-native-gesture-handler';
++import type { LegacySimultaneousGesture as SimultaneousGesture } from 'react-native-gesture-handler';
+ import Animated from 'react-native-reanimated';
+ import { INITIAL_LAYOUT_VALUE } from '../../constants';
+ import { useBottomSheetInternal } from '../../hooks';
+diff --git a/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx b/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx
+index 861d276e..614ffd8a 100644
+--- a/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx
++++ b/src/components/bottomSheetTextInput/BottomSheetTextInput.tsx
+@@ -11,7 +11,7 @@ import type {
+   TextInputFocusEventData,
+ } from 'react-native';
+ import { TextInput as RNTextInput } from 'react-native';
+-import { TextInput } from 'react-native-gesture-handler';
++import { LegacyTextInput as TextInput } from 'react-native-gesture-handler';
+ import { useBottomSheetInternal } from '../../hooks';
+ import { findNodeHandle } from '../../utilities';
+ import type { BottomSheetTextInputProps } from './types';

@@ -1,5 +1,5 @@
-import { HttpStatus } from './http-status';
-import type { ErrorDefinition } from './types';
+import { HttpStatus } from './http-status.js';
+import type { ErrorDefinition } from './types.js';
 
 /**
  * Numeric 에러 코드

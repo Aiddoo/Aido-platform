@@ -1,4 +1,4 @@
-import type { PushDeliveryPublication } from "../types/push-delivery.types";
+import type { PushDeliveryPublication } from "../types/push-delivery.types.js";
 
 export const PUSH_DELIVERY_JOB_ENQUEUER = Symbol("PUSH_DELIVERY_JOB_ENQUEUER");
 

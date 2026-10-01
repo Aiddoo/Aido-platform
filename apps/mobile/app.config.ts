@@ -4,6 +4,8 @@ import path from 'node:path';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 import { match } from 'ts-pattern';
 
+import { version } from './package.json';
+
 type AppEnvironment = 'development' | 'preview' | 'production';
 
 interface EnvironmentConfig {
@@ -16,7 +18,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.9.0';
+const VERSION = version;
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -153,6 +155,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // iOS
     ios: {
+      appStoreUrl: 'https://apps.apple.com/app/id6757722325',
       requireFullScreen: true,
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
@@ -194,6 +197,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // Android
     android: {
+      playStoreUrl: 'https://play.google.com/store/apps/details?id=com.aido.mobile',
       package: envConfig.packageName,
       adaptiveIcon: {
         foregroundImage: ADAPTIVE_ICON,
@@ -232,7 +236,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       './plugins/withJitpackFilter',
       './plugins/withGradleJvmArgs',
-      './plugins/withAndroidXWorkAlignment',
       [
         'expo-localization',
         {
@@ -369,72 +372,63 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 홈 위젯 — iOS(WidgetKit). 위젯은 앱이 기록한 스냅샷의 순수 렌더러(네트워크·토큰 없음)
       [
         'expo-widgets',
         {
-          // 명시하지 않으면 prebuild가 fallback 경고를 낸다 — 환경별 번들 id 추종
           bundleIdentifier: `${envConfig.bundleIdentifier}.ExpoWidgetsTarget`,
           groupIdentifier: appGroupIdentifier,
+          enableAndroid: true,
           widgets: [
+            {
+              name: 'AidoTodaySummary',
+              displayName: '오늘 진행률',
+              description: '오늘 할 일 진행률과 연속 달성 기록을 한눈에 확인해요',
+              ios: null,
+              android: {
+                initialLayout: './src/features/widget/presentations/widgets.android.tsx',
+                minWidth: 110,
+                minHeight: 110,
+                targetCellWidth: 2,
+                targetCellHeight: 2,
+                resizeMode: 'none',
+              },
+            },
             {
               name: 'AidoTodayList',
               displayName: '오늘 할 일',
               description: '오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요',
-              supportedFamilies: ['systemSmall', 'systemMedium', 'systemLarge'],
-            },
-          ],
-        },
-      ],
-
-      // 홈 위젯 — Android(RemoteViews). 렌더는 headless task handler가 스냅샷을 읽어 수행
-      [
-        'react-native-android-widget',
-        {
-          fonts: [
-            './assets/fonts/WantedSans-Regular.ttf',
-            './assets/fonts/WantedSans-Medium.ttf',
-            './assets/fonts/WantedSans-SemiBold.ttf',
-            './assets/fonts/WantedSans-Bold.ttf',
-          ],
-          widgets: [
-            {
-              name: 'AidoTodaySummary',
-              label: '오늘 진행률',
-              description: '오늘 할 일 진행률과 연속 달성 기록을 한눈에 확인해요',
-              minWidth: '110dp',
-              minHeight: '110dp',
-              targetCellWidth: 2,
-              targetCellHeight: 2,
-              resizeMode: 'none',
-              updatePeriodMillis: 1_800_000,
-            },
-            {
-              name: 'AidoTodayList',
-              label: '오늘 할 일',
-              description: '오늘의 주요 할 일 3개와 체크 여부를 바로 확인해요',
-              minWidth: '250dp',
-              minHeight: '110dp',
-              targetCellWidth: 4,
-              targetCellHeight: 2,
-              resizeMode: 'none',
-              updatePeriodMillis: 1_800_000,
+              ios: {
+                initialLayout: './src/features/widget/presentations/widgets.ios.tsx',
+                supportedFamilies: ['systemSmall', 'systemMedium', 'systemLarge'],
+              },
+              android: {
+                initialLayout: './src/features/widget/presentations/widgets.android.tsx',
+                minWidth: 250,
+                minHeight: 110,
+                targetCellWidth: 4,
+                targetCellHeight: 2,
+                resizeMode: 'none',
+              },
             },
             {
               name: 'AidoTodayLarge',
-              label: '오늘 할 일 크게',
+              displayName: '오늘 할 일 크게',
               description: '오늘의 주요 할 일 8개와 체크 여부를 넉넉하게 확인해요',
-              minWidth: '250dp',
-              minHeight: '250dp',
-              targetCellWidth: 4,
-              targetCellHeight: 4,
-              resizeMode: 'none',
-              // 자정 롤오버 안전망: 시스템 주기 갱신(최소 30분)
-              updatePeriodMillis: 1_800_000,
+              ios: null,
+              android: {
+                initialLayout: './src/features/widget/presentations/widgets.android.tsx',
+                minWidth: 250,
+                minHeight: 250,
+                targetCellWidth: 4,
+                targetCellHeight: 4,
+                resizeMode: 'none',
+              },
             },
           ],
         },
       ],
+      './plugins/withWidgetRefreshInterval',
+      './plugins/withAndroidWidgetCompatibility',
     ],
 
     // Experiments

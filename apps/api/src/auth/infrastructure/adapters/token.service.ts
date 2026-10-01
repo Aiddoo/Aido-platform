@@ -8,8 +8,8 @@ import {
 	AUTH_DEFAULTS,
 	TOKEN_VERIFY_ERROR,
 	type TokenVerifyError,
-} from "@/auth/domain/constants/auth.constants";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+} from "#api/auth/domain/constants/auth.constants";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 export interface JwtPayload {
 	sub: string;

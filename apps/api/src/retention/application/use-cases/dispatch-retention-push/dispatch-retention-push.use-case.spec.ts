@@ -1,20 +1,21 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createRetentionRepositoryMock, createUnitOfWorkMock } from "@test/mocks/ports";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
 	RETENTION_PUSH_SENDER,
 	type RetentionPushSenderPort,
-} from "../../ports/retention-push-sender.port";
+} from "../../ports/retention-push-sender.port.js";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionDispatchCandidate,
 	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
-import { DispatchRetentionPushUseCase } from "./dispatch-retention-push.use-case";
+} from "../../ports/retention.repository.port.js";
+import { DispatchRetentionPushUseCase } from "./dispatch-retention-push.use-case.js";
 
 describe("DispatchRetentionPushUseCase — 멱등 푸시 처리", () => {
 	const execution = {
@@ -33,7 +34,7 @@ describe("DispatchRetentionPushUseCase — 멱등 푸시 처리", () => {
 			.mock<RetentionRepositoryPort>(RETENTION_REPOSITORY)
 			.impl(() => createRetentionRepositoryMock())
 			.mock<RetentionPushSenderPort>(RETENTION_PUSH_SENDER)
-			.impl(() => ({ isEligible: jest.fn(), reserveRateLimit: jest.fn(), send: jest.fn() }))
+			.impl(() => ({ isEligible: vi.fn(), reserveRateLimit: vi.fn(), send: vi.fn() }))
 			.mock<RetentionConfigPort>(RETENTION_CONFIG)
 			.impl(() => ({ enabled: true, treatmentPercent: 50 }))
 			.mock(UNIT_OF_WORK)
@@ -86,7 +87,7 @@ describe("DispatchRetentionPushUseCase — 멱등 푸시 처리", () => {
 			.mock<RetentionRepositoryPort>(RETENTION_REPOSITORY)
 			.impl(() => createRetentionRepositoryMock())
 			.mock<RetentionPushSenderPort>(RETENTION_PUSH_SENDER)
-			.impl(() => ({ isEligible: jest.fn(), reserveRateLimit: jest.fn(), send: jest.fn() }))
+			.impl(() => ({ isEligible: vi.fn(), reserveRateLimit: vi.fn(), send: vi.fn() }))
 			.mock<RetentionConfigPort>(RETENTION_CONFIG)
 			.impl(() => ({ enabled: false, treatmentPercent: 50 }))
 			.mock(UNIT_OF_WORK)

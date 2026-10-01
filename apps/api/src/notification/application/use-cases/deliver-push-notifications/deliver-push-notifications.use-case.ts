@@ -1,29 +1,29 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { PushDeliveryClaimRecoveryConflictError } from "../../errors/push-delivery-claim-recovery-conflict.error";
-import { PushDeliveryRateLimitReservationConflictError } from "../../errors/push-delivery-rate-limit-reservation-conflict.error";
-import { pushDeliveryOutboxRetryDelayMs } from "../../policies/push-delivery-outbox-retry.policy";
-import type { CreateNotificationData } from "../../ports/notification-data";
+import { PushDeliveryClaimRecoveryConflictError } from "../../errors/push-delivery-claim-recovery-conflict.error.js";
+import { PushDeliveryRateLimitReservationConflictError } from "../../errors/push-delivery-rate-limit-reservation-conflict.error.js";
+import { pushDeliveryOutboxRetryDelayMs } from "../../policies/push-delivery-outbox-retry.policy.js";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
 	type ClaimedPushDelivery,
 	type PushDeliveryContext,
 	type PushDeliveryLifecycleRepositoryPort,
-} from "../../ports/push-delivery-lifecycle.repository.port";
-import type { PushResult } from "../../ports/push-provider.port";
+} from "../../ports/push-delivery-lifecycle.repository.port.js";
+import type { PushResult } from "../../ports/push-provider.port.js";
 import {
 	type BatchPushDeliveryRecipient,
 	PushDeliveryEligibilityService,
 	type PushDeliveryEligibilityDecision,
-} from "../../services/push-delivery-eligibility.service";
-import { PushNotificationDeliveryService } from "../../services/push-notification-delivery.service";
-import { PushNotificationPayloadFactory } from "../../services/push-notification-payload.factory";
+} from "../../services/push-delivery-eligibility.service.js";
+import { PushNotificationDeliveryService } from "../../services/push-notification-delivery.service.js";
+import { PushNotificationPayloadFactory } from "../../services/push-notification-payload.factory.js";
 import type {
 	DeliverPushNotificationsInput,
 	PushDispatchSkipReason,
-} from "../../types/push-delivery.types";
+} from "../../types/push-delivery.types.js";
 
 interface ClaimedBatchCandidate {
 	readonly claimed: ClaimedPushDelivery;

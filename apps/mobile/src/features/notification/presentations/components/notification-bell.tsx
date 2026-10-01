@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { Suspense } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { useGetUnreadCountQueryOptions } from '../queries/use-get-unread-count-query-options';
+import { useGetUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
 
 export const NotificationBell = () => {
   const navigate = useSingleTap(router.navigate);

@@ -6,7 +6,7 @@ import { BottomSheet, PressableFeedback } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { useUpdateProfileMutationOptions } from '../queries/use-update-profile-mutation-options';
 import { getProfileIconSource } from '../utils/profile-icon.util';
 

@@ -2,7 +2,7 @@ import { useTodoScreenParams } from '@src/features/todo/presentations/hooks/use-
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { useTodoCommentConversationQueryOptions } from '../queries/use-todo-comment-conversation-query-options';
+import { useTodoCommentConversationQueryOptions } from '../queries/todo-comment-conversation-query-options';
 import { toInitialConversationWindow } from '../utils/comment-conversation-position';
 import type { ConversationPages } from '../utils/todo-comment-cache-pages';
 import { useTodoCommentRoute } from './use-todo-comment-route';

@@ -5,7 +5,7 @@
  */
 
 // 요청 스키마 (Request)
-export * from './weekly-achievement.request';
+export * from './weekly-achievement.request.js';
 
 // 응답 스키마 (Response)
-export * from './weekly-achievement.response';
+export * from './weekly-achievement.response.js';

@@ -1,11 +1,11 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service";
-import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
-import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter";
-import { RedisLockAdapter } from "./adapters/redis-lock.adapter";
-import { type ILockProvider, LOCK_PROVIDER } from "./interfaces/lock.interface";
+import { TypedConfigService } from "../config/services/config.service.js";
+import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
+import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter.js";
+import { RedisLockAdapter } from "./adapters/redis-lock.adapter.js";
+import { type ILockProvider, LOCK_PROVIDER } from "./interfaces/lock.interface.js";
 
 /**
  * 잠금 모듈
@@ -58,7 +58,7 @@ export class LockModule {
 	 * 특정 어댑터를 직접 주입하여 사용
 	 *
 	 * @example
-	 * const mockAdapter = { acquire: jest.fn(), isLocked: jest.fn() };
+	 * const mockAdapter = { acquire: vi.fn(), isLocked: vi.fn() };
 	 * const module = await Test.createTestingModule({
 	 *   imports: [LockModule.forTesting(mockAdapter)],
 	 * }).compile();

@@ -1,7 +1,7 @@
 import { PRECIPITATION_TYPES, SKY_CONDITIONS } from '@aido/validators';
 import { z } from 'zod';
 
-export const HourlyForecastSchema = z.object({
+export const hourlyForecastSchema = z.object({
   hour: z.number().int().min(0).max(23),
   temperature: z.number(),
   skyCondition: z.enum(SKY_CONDITIONS),
@@ -10,9 +10,9 @@ export const HourlyForecastSchema = z.object({
   snowAmount: z.number().min(0),
 });
 
-export type HourlyForecast = z.infer<typeof HourlyForecastSchema>;
+export type HourlyForecast = z.infer<typeof hourlyForecastSchema>;
 
-export const DailyForecastSchema = z.object({
+export const dailyForecastSchema = z.object({
   date: z.string(),
   skyCondition: z.enum(SKY_CONDITIONS),
   precipitationType: z.enum(PRECIPITATION_TYPES),
@@ -21,9 +21,9 @@ export const DailyForecastSchema = z.object({
   temperatureMax: z.number(),
 });
 
-export type DailyForecast = z.infer<typeof DailyForecastSchema>;
+export type DailyForecast = z.infer<typeof dailyForecastSchema>;
 
-export const WeatherConditionsSchema = z.object({
+export const weatherConditionsSchema = z.object({
   feelsLikeTemperature: z.number().nullable(),
   sunrise: z.string().nullable(),
   sunset: z.string().nullable(),
@@ -31,9 +31,9 @@ export const WeatherConditionsSchema = z.object({
   pm25: z.number().nullable(),
 });
 
-export type WeatherConditions = z.infer<typeof WeatherConditionsSchema>;
+export type WeatherConditions = z.infer<typeof weatherConditionsSchema>;
 
-export const WeatherForecastSchema = z.object({
+export const weatherForecastSchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
   date: z.date(),
@@ -44,33 +44,35 @@ export const WeatherForecastSchema = z.object({
   temperatureMax: z.number(),
   humidity: z.number().int().min(0).max(100),
   windSpeed: z.number(),
-  hourlyForecasts: z.array(HourlyForecastSchema),
-  dailyForecasts: z.array(DailyForecastSchema).optional().default([]),
+  hourlyForecasts: z.array(hourlyForecastSchema),
+  dailyForecasts: z.array(dailyForecastSchema).optional().default([]),
 });
 
-export type WeatherForecast = z.infer<typeof WeatherForecastSchema>;
+export type WeatherForecast = z.infer<typeof weatherForecastSchema>;
 
-export const LocationSchema = z.object({
+export const locationSchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
   gridX: z.number().int(),
   gridY: z.number().int(),
 });
 
-export type Location = z.infer<typeof LocationSchema>;
+export type Location = z.infer<typeof locationSchema>;
 
-/** Weather 도메인 비즈니스 규칙 */
+export function shouldShowPrecipitation(forecast: WeatherForecast): boolean {
+  return forecast.precipitationType !== 'NONE' && forecast.precipitationProbability >= 30;
+}
+
+export function shouldShowHourlyPrecipitation(hourly: HourlyForecast): boolean {
+  return hourly.precipitationProbability >= 30;
+}
+
+export function hasHourlyForecasts(forecast: WeatherForecast): boolean {
+  return forecast.hourlyForecasts.length > 0;
+}
+
 export const WeatherPolicy = {
-  /** 강수 배지 표시 여부 (강수 타입이 있고, 확률 30% 이상일 때) */
-  shouldShowPrecipitation(forecast: WeatherForecast): boolean {
-    return forecast.precipitationType !== 'NONE' && forecast.precipitationProbability >= 30;
-  },
-  /** 시간별 강수 확률 표시 여부 (30% 이상일 때) */
-  shouldShowHourlyPrecipitation(hourly: HourlyForecast): boolean {
-    return hourly.precipitationProbability >= 30;
-  },
-  /** 시간별 예보 데이터 존재 여부 */
-  hasHourlyForecasts(forecast: WeatherForecast): boolean {
-    return forecast.hourlyForecasts.length > 0;
-  },
+  shouldShowPrecipitation,
+  shouldShowHourlyPrecipitation,
+  hasHourlyForecasts,
 } as const;

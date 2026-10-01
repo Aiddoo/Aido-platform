@@ -1,8 +1,7 @@
-import { TestDatabase } from "@test/setup/test-database";
-
-import type { PrismaClient } from "@/generated/prisma/client";
-import { PostgresPushRateLimiter } from "@/notification/infrastructure/rate-limiter/postgres-push-rate-limiter";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { PrismaClient } from "#api/generated/prisma/client";
+import { PostgresPushRateLimiter } from "#api/notification/infrastructure/rate-limiter/postgres-push-rate-limiter";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { TestDatabase } from "#test/setup/test-database";
 
 describe("PostgresPushRateLimiter (실제 PostgreSQL)", () => {
 	let testDatabase: TestDatabase;

@@ -14,10 +14,10 @@
 export type {
 	ReminderHourChangedJobData,
 	SocialDigestJobData,
-} from "./application/ports/timezone-reminder-enqueuer.port";
+} from "./application/ports/timezone-reminder-enqueuer.port.js";
 export {
 	TIMEZONE_REMINDER_QUEUE,
 	TimezoneReminderJobName,
-} from "./infrastructure/queue/timezone-reminder-queue.constants";
-export { TimezoneReminderQueueModule } from "./infrastructure/queue/timezone-reminder-queue.module";
-export { TimezoneReminderQueueService } from "./infrastructure/queue/timezone-reminder-queue.service";
+} from "./infrastructure/queue/timezone-reminder-queue.constants.js";
+export { TimezoneReminderQueueModule } from "./infrastructure/queue/timezone-reminder-queue.module.js";
+export { TimezoneReminderQueueService } from "./infrastructure/queue/timezone-reminder-queue.service.js";

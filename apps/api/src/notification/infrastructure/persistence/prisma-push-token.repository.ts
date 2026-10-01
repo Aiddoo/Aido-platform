@@ -2,19 +2,19 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { now } from "@/shared/domain/date/utils/core";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { isRecordNotFoundError } from "@/shared/infrastructure/database/prisma-error.util";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { isRecordNotFoundError } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import type {
 	FindPushTokensParams,
 	RegisterPushTokenData,
-} from "../../application/ports/notification-data";
+} from "../../application/ports/notification-data.js";
 import {
 	PushTokenNotFoundError,
 	type PushTokenRepositoryPort,
-} from "../../application/ports/push-token.repository.port";
-import type { PushTokenRecord } from "../../domain/records/notification.record";
+} from "../../application/ports/push-token.repository.port.js";
+import type { PushTokenRecord } from "../../domain/records/notification.record.js";
 
 @Injectable()
 export class PrismaPushTokenRepository implements PushTokenRepositoryPort {

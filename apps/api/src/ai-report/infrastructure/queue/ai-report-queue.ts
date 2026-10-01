@@ -5,7 +5,7 @@
  * 딥임포트하지 않고 큐 상수만 참조하도록 한다.
  */
 
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const AI_REPORT_QUEUE = "ai-report-generation.v1";
 export const AI_REPORT_LEGACY_QUEUE = "ai-report-generation";
@@ -61,3 +61,7 @@ export type AiReportJobData = AiReportJobMap[keyof AiReportJobMap];
 export type AiReportRuntimeJob = z.infer<typeof AiReportRuntimeJobSchema>;
 
 import { z } from "zod";
+
+export interface ReportDispatcher {
+	dispatchReports(reportType: AiReportDispatchData["reportType"]): Promise<void>;
+}

@@ -12,7 +12,7 @@ import {
 } from "@aido/validators";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 function tamperCursorPayload(
 	cursor: string,

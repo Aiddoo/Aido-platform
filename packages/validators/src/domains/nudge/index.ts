@@ -5,10 +5,10 @@
  */
 
 // 상수
-export * from './nudge.constants';
+export * from './nudge.constants.js';
 
 // 요청 스키마 (Request)
-export * from './nudge.request';
+export * from './nudge.request.js';
 
 // 응답 스키마 (Response)
-export * from './nudge.response';
+export * from './nudge.response.js';

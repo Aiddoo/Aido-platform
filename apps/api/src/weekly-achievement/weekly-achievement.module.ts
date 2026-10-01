@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
 
-import { WeeklyAchievementWriterAccess } from "./application/access/weekly-achievement-writer.access";
-import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "./application/ports/weekly-achievement.repository.port";
-import { UpsertWeeklyAchievementsUseCase } from "./application/use-cases/upsert-weekly-achievements/upsert-weekly-achievements.use-case";
-import { WEEKLY_ACHIEVEMENT_PROVIDERS } from "./application/weekly-achievement.providers";
-import { PrismaWeeklyAchievementRepository } from "./infrastructure/adapters/prisma-weekly-achievement.repository";
-import { WeeklyAchievementController } from "./presentation/weekly-achievement.controller";
+import { WeeklyAchievementWriterAccess } from "./application/access/weekly-achievement-writer.access.js";
+import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "./application/ports/weekly-achievement.repository.port.js";
+import { UpsertWeeklyAchievementsUseCase } from "./application/use-cases/upsert-weekly-achievements/upsert-weekly-achievements.use-case.js";
+import { WEEKLY_ACHIEVEMENT_PROVIDERS } from "./application/weekly-achievement.providers.js";
+import { PrismaWeeklyAchievementRepository } from "./infrastructure/adapters/prisma-weekly-achievement.repository.js";
+import { WeeklyAchievementController } from "./presentation/weekly-achievement.controller.js";
 
 /**
  * WeeklyAchievement 모듈 (클린아키텍처)

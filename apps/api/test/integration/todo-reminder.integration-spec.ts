@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * TodoReminderProcessor 통합 테스트
  *
@@ -17,19 +18,17 @@
  * pnpm --filter @aido/api test todo-reminder.integration-spec
  * ```
  */
+import { vi } from "vitest";
 
-import { Test, type TestingModule } from "@nestjs/testing";
-import { NotificationBuilder, TodoBuilder } from "@test/builders";
-import { asJob } from "@test/mocks/bull-job.mock";
-import { suppressLogger } from "@test/setup/suppress-logger";
-import type { Job } from "bullmq";
+import { NotificationPublisher, NotificationRecipientLocaleReader } from "#api/notification/index";
+import { TODO_REMINDER_READER } from "#api/scheduler/application/ports/todo-reminder-reader.port";
+import { TodoReminderProcessor } from "#api/scheduler/index";
+import { NotificationBuilder, TodoBuilder } from "#test/builders/index";
+import { createMockJob as createJob } from "#test/mocks/bull-job.mock";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { NotificationPublisher, NotificationRecipientLocaleReader } from "@/notification";
-import { TodoReminderProcessor } from "@/scheduler";
-import { TODO_REMINDER_READER } from "@/scheduler/application/ports/todo-reminder-reader.port";
-
-function createMockJob(data: { todoId: number; userId: string; stageLabel: string }): Job {
-	return asJob({ data, id: "job-1", name: "todo-reminder" });
+function createMockJob(data: { todoId: number; userId: string; stageLabel: string }) {
+	return createJob("todo-reminder", data);
 }
 
 describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
@@ -38,12 +37,12 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 	// Mock 리마인더 리더 포트 (투두 유효성 조회 + dedup 판정)
 	const mockReader = {
-		findActiveTodo: jest.fn(),
-		existsRecentReminderNotification: jest.fn(),
+		findActiveTodo: vi.fn(),
+		existsRecentReminderNotification: vi.fn(),
 	};
 
-	const mockNotificationPublisher = { publish: jest.fn() };
-	const mockRecipientLocaleReader = { getRecipientLocale: jest.fn().mockResolvedValue("ko") };
+	const mockNotificationPublisher = { publish: vi.fn() };
+	const mockRecipientLocaleReader = { getRecipientLocale: vi.fn().mockResolvedValue("ko") };
 
 	// 테스트 데이터
 	const mockUserId = "user-reminder-123";
@@ -75,11 +74,11 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		TodoBuilder.resetIdCounter();
 		NotificationBuilder.resetIdCounter();
 	});
@@ -189,7 +188,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 			const sentMessages: Array<{ title: string; body: string }> = [];
 
 			for (const stage of stages) {
-				jest.clearAllMocks();
+				vi.clearAllMocks();
 				mockReader.findActiveTodo.mockResolvedValue(mockTodo);
 				mockReader.existsRecentReminderNotification.mockResolvedValue(false);
 				mockNotificationPublisher.publish.mockResolvedValue(

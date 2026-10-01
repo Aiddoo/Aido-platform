@@ -1,18 +1,26 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { FollowReader } from "@/follow";
-import { MUTATION_LOCK, type MutationLockPort, UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { FollowReader } from "#api/follow/index";
+import {
+	MUTATION_LOCK,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { CHEER_LIMIT_READER, type CheerLimitReaderPort } from "../../ports/cheer-limit-reader.port";
-import { CHEER_NOTIFIER, type CheerNotifierPort } from "../../ports/cheer-notifier.port";
+import {
+	CHEER_LIMIT_READER,
+	type CheerLimitReaderPort,
+} from "../../ports/cheer-limit-reader.port.js";
+import { CHEER_NOTIFIER, type CheerNotifierPort } from "../../ports/cheer-notifier.port.js";
 import {
 	CHEER_REPOSITORY,
 	type CheerRepositoryPort,
 	type CheerWithRelations,
-} from "../../ports/cheer.repository.port";
-import { SendCheerUseCase } from "./send-cheer.use-case";
+} from "../../ports/cheer.repository.port.js";
+import { SendCheerUseCase } from "./send-cheer.use-case.js";
 
 const createdCheer: CheerWithRelations = {
 	id: 1,
@@ -41,7 +49,7 @@ describe("SendCheerUseCase", () => {
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(SendCheerUseCase)
 			.mock<MutationLockPort>(MUTATION_LOCK)
-			.impl(() => ({ acquire: jest.fn() }))
+			.impl(() => ({ acquire: vi.fn() }))
 			.compile();
 		useCase = unit;
 		repo = unitRef.get(CHEER_REPOSITORY);
@@ -100,12 +108,12 @@ describe("SendCheerUseCase", () => {
 
 	it("같은 시각 기준의 일일·쿨다운 키를 guarded read 전에 UoW 안에서 잠근다", async () => {
 		// Given - KST 자정 직전 시작하고 lock 대기 중 다음 날로 넘어가는 상황
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
 		const events: string[] = [];
 		mutationLock.acquire.mockImplementation(async () => {
 			events.push("lock");
-			jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+			vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
 		});
 		limitReader.getDailyLimitInTx.mockImplementation(async () => {
 			events.push("limit");
@@ -139,6 +147,6 @@ describe("SendCheerUseCase", () => {
 			}),
 		);
 		expect(events).toEqual(["lock", "limit", "daily-count", "cooldown-read"]);
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 });

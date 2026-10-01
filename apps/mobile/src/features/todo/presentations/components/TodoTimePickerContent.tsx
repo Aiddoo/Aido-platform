@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';

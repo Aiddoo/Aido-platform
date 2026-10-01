@@ -1,7 +1,7 @@
 import type {
 	AirQuality,
 	AirQualityProvider,
-} from "@/weather/application/ports/air-quality-provider.port";
+} from "#api/weather/application/ports/air-quality-provider.port";
 
 /**
  * 테스트용 FakeAirQualityProvider

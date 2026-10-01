@@ -13,7 +13,7 @@ import {
   usePendingTodoCommentTransition,
   useTodoCommentScreenTransitionActions,
 } from '../providers/todo-comment-screen-transition-provider';
-import { useTodoCommentOverviewQueryOptions } from '../queries/use-todo-comment-overview-query-options';
+import { useTodoCommentOverviewQueryOptions } from '../queries/todo-comment-overview-query-options';
 import { useTodoCommentRoute } from './use-todo-comment-route';
 
 interface TodoCommentSortState {

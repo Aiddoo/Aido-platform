@@ -3,6 +3,7 @@ import { AchievementService } from '@src/features/achievement/services/achieveme
 import { createActivationProgressRepository } from '@src/features/activation/repositories/activation-progress.repository';
 import { ActivationService } from '@src/features/activation/services/activation.service';
 import { AiService } from '@src/features/ai/services/ai.service';
+import { AppVersionService } from '@src/features/app-version/services/app-version.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/repositories/feature-discovery-state.repository';
 import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
@@ -28,11 +29,11 @@ import { TodoService } from '@src/features/todo/services/todo.service';
 import { UserService } from '@src/features/user/services/user.service';
 import { WeatherService } from '@src/features/weather/services/weather.service';
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
-import { WidgetSnapshotRepositoryImpl } from '@src/features/widget/repositories/widget-snapshot.repository';
-import { widgetSyncStorage } from '@src/features/widget/repositories/widget-storage';
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { ENV } from '@src/shared/config/env';
+import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
+import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
@@ -53,7 +54,6 @@ import {
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
-import { expoStoreReviewGateway } from '@src/shared/infra/store-review/expo-store-review.gateway';
 import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
@@ -120,6 +120,11 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // Feature discovery — app-config 응답은 기존 API envelope 없이 원문 JSON을 반환한다.
     const featureDiscoveryService = new FeatureDiscoveryService(publicJsonFetcher);
+    const appVersionService = new AppVersionService(
+      publicJsonFetcher,
+      expoApplicationMetadataGateway,
+      expoAppStoreGateway,
+    );
     const featureDiscoveryStateRepository = createFeatureDiscoveryStateRepository(mmkvSyncStorage);
     const featureDiscoveryStateService = new FeatureDiscoveryStateService(
       featureDiscoveryStateRepository,
@@ -158,7 +163,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     );
     const storeReviewPromptService = new StoreReviewPromptService(
       createStoreReviewPromptRepository(mmkvSyncStorage),
-      expoStoreReviewGateway,
+      expoAppStoreGateway,
     );
 
     // User
@@ -172,8 +177,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const weatherService = new WeatherService(authHttpClient);
 
     // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
-    const widgetSnapshotRepository = new WidgetSnapshotRepositoryImpl(widgetSyncStorage);
-    const widgetBridge = createWidgetBridge(widgetSnapshotRepository);
+    const widgetBridge = createWidgetBridge();
     const widgetSyncService = new WidgetSyncService(widgetBridge, errorReporter);
 
     return {
@@ -189,6 +193,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       aiService,
       authService,
       activationService,
+      appVersionService,
       friendService,
       featureDiscoveryService,
       featureDiscoveryStateService,
@@ -219,6 +224,7 @@ export {
   StaticDIProvider,
   useAchievementService,
   useActivationService,
+  useAppVersionService,
   useAiService,
   useAnalytics,
   useAuthService,

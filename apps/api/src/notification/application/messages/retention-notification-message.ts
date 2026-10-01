@@ -1,15 +1,15 @@
 import { notificationContentSchema } from "@aido/validators";
 
-import { DEFAULT_LOCALE, type SupportedLocale } from "@/shared/domain/locale";
-import { deterministicIndex } from "@/shared/domain/services/deterministic-variant";
+import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
-import * as en from "./locales/en";
-import * as ko from "./locales/ko";
+import * as en from "./locales/en.js";
+import * as ko from "./locales/ko.js";
 import type {
 	NotificationMessage,
 	RetentionNotificationCopySelection,
 	RetentionTemplateKey,
-} from "./notification-copy.types";
+} from "./notification-copy.types.js";
 
 const LOCALE_TEMPLATES = { ko, en };
 

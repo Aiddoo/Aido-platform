@@ -60,9 +60,6 @@ junit.xml
 !apps/*/.claude/
 .serena/
 
-# Worktrees
-.worktrees/
-
 # OS
 .DS_Store
 .AppleDouble
@@ -88,8 +85,10 @@ settings.local.json
 my-docs
 약관
 
-# Turborepo
-.turbo
-
 # 마이그레이션 안전망 산출물 (로컬 전용)
 backups/
+
+# Vitest
+.vitest/
+
+/docs/releases/1.10.0.md

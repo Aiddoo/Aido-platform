@@ -1,9 +1,10 @@
 import { featureDiscoveryResponseSchema } from "@aido/validators";
 import request from "supertest";
+import { vi } from "vitest";
 
-import { GetFeatureDiscoveryUseCase } from "@/app-config/application/queries/get-feature-discovery/get-feature-discovery.use-case";
+import { GetFeatureDiscoveryUseCase } from "#api/app-config/application/queries/get-feature-discovery/get-feature-discovery.use-case";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("Feature discovery configuration (e2e)", () => {
 	let ctx: E2eTestContext;
@@ -49,7 +50,7 @@ describe("Feature discovery configuration (e2e)", () => {
 			launchedAt: "2026-08-01T00:00:00.000Z",
 			autoOpen: true,
 		};
-		jest.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(response);
+		vi.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(response);
 
 		// When
 		const result = await request(ctx.app.getHttpServer())

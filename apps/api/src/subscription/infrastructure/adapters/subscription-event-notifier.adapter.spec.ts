@@ -1,35 +1,36 @@
+import { vi, type Mock } from "vitest";
 /**
  * SubscriptionEventNotifierAdapter 단위 테스트
  *
  * 웹훅 실패 보고(reportWebhookFailure)의 Sentry 태깅·Discord 메시지 형식을 검증한다.
- * Sentry SDK는 벤더 경계라 jest.mock으로 격리한다(프로젝트 규칙 — vendor/native만 허용).
+ * Sentry SDK는 벤더 경계라 vi.mock으로 격리한다(프로젝트 규칙 — vendor/native만 허용).
  * withScope는 팩토리에서 즉시 콜백을 호출해 mockScope로 태깅을 관측한다.
  */
-const mockScope = { setTag: jest.fn(), setExtra: jest.fn() };
-jest.mock("@sentry/nestjs", () => ({
-	captureException: jest.fn(),
-	withScope: jest.fn((cb: (scope: typeof mockScope) => void) => cb(mockScope)),
+const mockScope = { setTag: vi.fn(), setExtra: vi.fn() };
+vi.mock("@sentry/nestjs", () => ({
+	captureException: vi.fn(),
+	withScope: vi.fn((cb: (scope: typeof mockScope) => void) => cb(mockScope)),
 }));
 
 import * as Sentry from "@sentry/nestjs";
 import { TestBed } from "@suites/unit";
-import { SubscriptionEventBuilder } from "@test/builders";
 
-import { PAYMENT_NOTIFIER } from "@/admin-notification";
+import { PAYMENT_NOTIFIER } from "#api/admin-notification/index";
+import { SubscriptionEventBuilder } from "#test/builders/index";
 
-import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter";
+import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
-const captureException = jest.mocked(Sentry.captureException);
+const captureException = vi.mocked(Sentry.captureException);
 
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 	let adapter: SubscriptionEventNotifierAdapter;
-	let mockNotifier: { name: string; send: jest.Mock; isConfigured: jest.Mock };
+	let mockNotifier: { name: string; send: Mock; isConfigured: Mock };
 
 	beforeEach(async () => {
 		mockNotifier = {
 			name: "fake",
-			send: jest.fn().mockResolvedValue({ success: true }),
-			isConfigured: jest.fn().mockReturnValue(true),
+			send: vi.fn().mockResolvedValue({ success: true }),
+			isConfigured: vi.fn().mockReturnValue(true),
 		};
 
 		const { unit } = await TestBed.solitary(SubscriptionEventNotifierAdapter)
@@ -41,7 +42,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 	});
 
 	afterEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	const payload = SubscriptionEventBuilder.initialPurchase()

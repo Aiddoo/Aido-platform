@@ -9,11 +9,11 @@ import {
 	ApiErrorResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { CreateInquiryUseCase } from "../application/use-cases/create-inquiry/create-inquiry.use-case";
-import { CreateInquiryDto, CreateInquiryResponseDto } from "./dtos";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { CreateInquiryUseCase } from "../application/use-cases/create-inquiry/create-inquiry.use-case.js";
+import { CreateInquiryDto, CreateInquiryResponseDto } from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
@@ -40,7 +40,10 @@ export class InquiryController {
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async createInquiry(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateInquiryDto) {
+	async createInquiry(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body({ schema: CreateInquiryDto }) dto: CreateInquiryDto,
+	) {
 		await this.createInquiryUseCase.execute({
 			userId: user.userId,
 			userEmail: user.email,

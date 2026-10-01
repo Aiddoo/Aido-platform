@@ -43,7 +43,7 @@ export class TodoCommentService {
     query: GetTodoCommentOverviewQuery,
     signal?: AbortSignal,
   ): Promise<Result<TodoCommentOverviewPage, ApiError>> => {
-    const response = await this.#httpClient.get<unknown>(`v1/todos/${todoId}/comments/overview`, {
+    const response = await this.#httpClient.get(`v1/todos/${todoId}/comments/overview`, {
       params: query,
       signal,
     });
@@ -65,7 +65,7 @@ export class TodoCommentService {
     query: GetTodoConversationQuery,
     signal?: AbortSignal,
   ): Promise<Result<TodoConversationPage, ApiError>> => {
-    const response = await this.#httpClient.get<unknown>(`v1/todos/${todoId}/conversation`, {
+    const response = await this.#httpClient.get(`v1/todos/${todoId}/conversation`, {
       params: query,
       signal,
     });
@@ -86,7 +86,7 @@ export class TodoCommentService {
     todoId: number,
     input: CreateTodoCommentChainInput,
   ): Promise<Result<TodoCommentChain, ApiError>> => {
-    const response = await this.#httpClient.post<unknown>(`v1/todos/${todoId}/comments`, input);
+    const response = await this.#httpClient.post(`v1/todos/${todoId}/comments`, input);
 
     if (!response.ok) {
       return response;
@@ -105,7 +105,7 @@ export class TodoCommentService {
     commentId: string,
     input: UpdateTodoCommentInput,
   ): Promise<Result<TodoComment, ApiError>> => {
-    const response = await this.#httpClient.patch<unknown>(
+    const response = await this.#httpClient.patch(
       `v1/todos/${todoId}/comments/${commentId}`,
       input,
     );
@@ -114,9 +114,7 @@ export class TodoCommentService {
   };
 
   deleteComment = async (todoId: number, commentId: string): Promise<Result<string, ApiError>> => {
-    const response = await this.#httpClient.delete<unknown>(
-      `v1/todos/${todoId}/comments/${commentId}`,
-    );
+    const response = await this.#httpClient.delete(`v1/todos/${todoId}/comments/${commentId}`);
 
     if (!response.ok) {
       return response;
@@ -137,8 +135,8 @@ export class TodoCommentService {
   ): Promise<Result<TodoCommentLikeResult, ApiError>> => {
     const path = `v1/todos/${todoId}/comments/${commentId}/likes`;
     const response = isLiked
-      ? await this.#httpClient.put<unknown>(path)
-      : await this.#httpClient.delete<unknown>(path);
+      ? await this.#httpClient.put(path)
+      : await this.#httpClient.delete(path);
 
     if (!response.ok) {
       return response;

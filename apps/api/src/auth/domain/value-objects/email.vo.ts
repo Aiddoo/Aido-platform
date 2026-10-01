@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { z } from "@aido/validators";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /**
  * 이메일 형식 검증 스키마.

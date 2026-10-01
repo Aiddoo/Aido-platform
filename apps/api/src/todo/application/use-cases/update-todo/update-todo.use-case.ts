@@ -7,25 +7,25 @@ import {
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.aggregate";
+import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.aggregate.js";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
-} from "../../ports/category-ownership.port";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+} from "../../ports/category-ownership.port.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
+} from "../../ports/todo-read.repository.port.js";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 	type TodoUpdatePatch,
-} from "../../ports/todo.repository.port";
-import type { UpdateTodoData } from "../../types";
+} from "../../ports/todo.repository.port.js";
+import type { UpdateTodoData } from "../../types.js";
 
 /** Todo 부분 수정 입력. */
 export interface UpdateTodoInput {

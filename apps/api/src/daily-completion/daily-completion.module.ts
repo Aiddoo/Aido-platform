@@ -1,16 +1,16 @@
 import { Module } from "@nestjs/common";
 
-import { FollowModule } from "@/follow";
+import { FollowModule } from "#api/follow/index";
 
-import { DAILY_COMPLETION_PROVIDERS } from "./application/daily-completion.providers";
-import { DailyCompletionCacheInvalidator } from "./application/events/daily-completion-cache.invalidator";
-import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completion-cache.port";
-import { FRIEND_PORT } from "./application/ports/friend.port";
-import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port";
-import { DailyCompletionCacheAdapter } from "./infrastructure/adapters/daily-completion-cache.adapter";
-import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
-import { PrismaTodoCompletionRepository } from "./infrastructure/adapters/prisma-todo-completion.repository";
-import { DailyCompletionController } from "./presentation/daily-completion.controller";
+import { DAILY_COMPLETION_PROVIDERS } from "./application/daily-completion.providers.js";
+import { DailyCompletionCacheInvalidator } from "./application/events/daily-completion-cache.invalidator.js";
+import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completion-cache.port.js";
+import { FRIEND_PORT } from "./application/ports/friend.port.js";
+import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port.js";
+import { DailyCompletionCacheAdapter } from "./infrastructure/adapters/daily-completion-cache.adapter.js";
+import { FriendAdapter } from "./infrastructure/adapters/friend.adapter.js";
+import { PrismaTodoCompletionRepository } from "./infrastructure/adapters/prisma-todo-completion.repository.js";
+import { DailyCompletionController } from "./presentation/daily-completion.controller.js";
 
 /**
  * DailyCompletion 모듈 (클린아키텍처, 읽기 전용)

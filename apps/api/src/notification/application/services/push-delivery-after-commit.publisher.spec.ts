@@ -1,15 +1,16 @@
 import { Logger } from "@nestjs/common";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	AFTER_COMMIT_TASK_REGISTRY,
 	type AfterCommitTask,
 	type AfterCommitTaskRegistryPort,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
 
-import { PublishPushDeliveryOutboxUseCase } from "../use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
-import { PushDeliveryAfterCommitPublisher } from "./push-delivery-after-commit.publisher";
+import { PublishPushDeliveryOutboxUseCase } from "../use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case.js";
+import { PushDeliveryAfterCommitPublisher } from "./push-delivery-after-commit.publisher.js";
 
 function firstRegisteredTask(tasks: readonly AfterCommitTask[]): AfterCommitTask {
 	const task = tasks[0];
@@ -28,7 +29,7 @@ describe("PushDeliveryAfterCommitPublisher — commit 이후 fast path", () => {
 		const { unit, unitRef } = await TestBed.solitary(PushDeliveryAfterCommitPublisher)
 			.mock<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY)
 			.impl(() => ({
-				register: jest.fn((task: AfterCommitTask) => {
+				register: vi.fn((task: AfterCommitTask) => {
 					registeredTasks.push(task);
 				}),
 			}))
@@ -41,7 +42,7 @@ describe("PushDeliveryAfterCommitPublisher — commit 이후 fast path", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("등록 시점의 dispatch ID 복사본만 commit 이후 발행한다", async () => {
@@ -63,8 +64,8 @@ describe("PushDeliveryAfterCommitPublisher — commit 이후 fast path", () => {
 
 	it("2초 timeout은 commit 흐름만 놓아주고 이미 시작한 발행은 취소하지 않는다", async () => {
 		// Given - fast path 제한 시간보다 늦게 완료되는 outbox publication
-		jest.useFakeTimers();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+		vi.useFakeTimers();
+		vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
 		let resolvePublication: ((publishedCount: number) => void) | undefined;
 		let underlyingPublicationSettled = false;
 		const underlyingPublication = new Promise<number>((resolve) => {
@@ -78,7 +79,7 @@ describe("PushDeliveryAfterCommitPublisher — commit 이후 fast path", () => {
 
 		// When - after-commit task가 2초 제한에 도달
 		const fastPath = firstRegisteredTask(registeredTasks)();
-		await jest.advanceTimersByTimeAsync(2_000);
+		await vi.advanceTimersByTimeAsync(2_000);
 
 		// Then - task는 best-effort로 끝나지만 underlying promise는 이후 정상 완료 가능
 		await expect(fastPath).resolves.toBeUndefined();

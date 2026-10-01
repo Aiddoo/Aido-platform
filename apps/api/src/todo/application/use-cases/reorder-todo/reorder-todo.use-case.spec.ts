@@ -7,27 +7,27 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { TodoBuilder } from "@test/builders";
+import type { Mocked } from "vitest";
+
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { TodoBuilder } from "#test/builders/index";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import { UNIT_OF_WORK } from "@/shared/application/ports";
-
-import { Todo } from "../../../domain/entities/todo.aggregate";
-import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
-import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
+import { Todo } from "../../../domain/entities/todo.aggregate.js";
+import { TodoId } from "../../../domain/value-objects/todo-id.vo.js";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo.js";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
-import { ReorderTodoUseCase } from "./reorder-todo.use-case";
+} from "../../ports/todo-read.repository.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
+import { ReorderTodoUseCase } from "./reorder-todo.use-case.js";
 
 function buildEntity(id: number, sortOrder: number): Todo {
 	return Todo.reconstitute({

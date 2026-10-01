@@ -2,9 +2,9 @@ import type {
 	PushDeliveryItem,
 	PushDeliveryPublication,
 	PushDispatchSkipReason,
-} from "../types/push-delivery.types";
-import type { PushDeliveryMode } from "./push-dispatch-staging.repository.port";
-import type { PushResult } from "./push-provider.port";
+} from "../types/push-delivery.types.js";
+import type { PushDeliveryMode } from "./push-dispatch-staging.repository.port.js";
+import type { PushResult } from "./push-provider.port.js";
 
 export const PUSH_DELIVERY_LIFECYCLE_REPOSITORY = Symbol("PUSH_DELIVERY_LIFECYCLE_REPOSITORY");
 

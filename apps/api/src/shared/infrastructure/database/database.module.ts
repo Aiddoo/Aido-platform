@@ -4,11 +4,11 @@ import {
 	AFTER_COMMIT_TASK_REGISTRY,
 	MUTATION_LOCK,
 	UNIT_OF_WORK,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
 
-import { ClsUnitOfWork } from "./cls-unit-of-work";
-import { DatabaseService } from "./database.service";
-import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter";
+import { ClsUnitOfWork } from "./cls-unit-of-work.js";
+import { DatabaseService } from "./database.service.js";
+import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
 
 @Global()
 @Module({

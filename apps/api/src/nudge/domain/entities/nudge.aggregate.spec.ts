@@ -1,4 +1,4 @@
-import { Nudge } from "./nudge.aggregate";
+import { Nudge } from "./nudge.aggregate.js";
 
 const base = {
 	id: 1,

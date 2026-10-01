@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * EnqueueSubscriptionEventUseCase 단위 테스트
  *
@@ -5,16 +6,15 @@
  * - 금액 표시(구매 통화/USD fallback)·이름 표시 검증
  * - 큐 실패는 그대로 전파(파사드가 fire-and-forget 처리)
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { SubscriptionEventPayload } from "@/subscription";
+import type { SubscriptionEventPayload } from "#api/subscription/index";
 
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,
-} from "../../ports/admin-notification-queue.port";
-import { EnqueueSubscriptionEventUseCase } from "./enqueue-subscription-event.use-case";
+} from "../../ports/admin-notification-queue.port.js";
+import { EnqueueSubscriptionEventUseCase } from "./enqueue-subscription-event.use-case.js";
 
 describe("EnqueueSubscriptionEventUseCase", () => {
 	let useCase: EnqueueSubscriptionEventUseCase;

@@ -2,12 +2,16 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { Prisma, Todo } from "@/generated/prisma/client";
-import { now } from "@/shared/domain/date/utils/core";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { Prisma, Todo } from "#api/generated/prisma/client";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { FindFriendTodosParams, FindTodosParams } from "../../application/types";
-import { TODO_CATEGORY_INCLUDE, type TodoItemData, type TodoWithCategory } from "./todo-row.types";
+import type { FindFriendTodosParams, FindTodosParams } from "../../application/types.js";
+import {
+	TODO_CATEGORY_INCLUDE,
+	type TodoItemData,
+	type TodoWithCategory,
+} from "./todo-row.types.js";
 
 /**
  * 날짜 범위 필터 조건 생성 (Overlapping Intervals 패턴)

@@ -1,4 +1,4 @@
-import { Cheer } from "./cheer.aggregate";
+import { Cheer } from "./cheer.aggregate.js";
 
 const make = (over: Partial<{ readAt: Date | null; receiverId: string }> = {}) =>
 	Cheer.reconstitute({

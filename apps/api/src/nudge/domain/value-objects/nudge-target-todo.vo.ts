@@ -1,4 +1,4 @@
-import { isSameDay } from "@/shared/domain/date/utils/compare";
+import { isSameDay } from "#api/shared/domain/date/utils/compare";
 
 export interface NudgeTargetTodoProps {
 	ownerId: string;

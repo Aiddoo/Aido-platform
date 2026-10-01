@@ -3,9 +3,9 @@ import { ExecutionContext, HttpException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";
 
-import { IS_PUBLIC_KEY } from "@/auth/presentation/decorators/public.decorator";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { ErrorCodedException } from "@/shared/domain/exceptions/error-coded.exception";
+import { IS_PUBLIC_KEY } from "#api/auth/presentation/decorators/public.decorator";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 /**
  * JWT Access Token 인증 가드

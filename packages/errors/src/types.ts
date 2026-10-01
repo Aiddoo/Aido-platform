@@ -1,4 +1,4 @@
-import type { HttpStatus } from './http-status';
+import type { HttpStatus } from './http-status.js';
 
 /**
  * 에러 정의 인터페이스

@@ -2,11 +2,11 @@ import { ErrorCode } from "@aido/errors";
 import type { InquiryCategory } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { now } from "@/shared/domain/date/utils/core";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { buildInquirySubmission } from "../../../domain/services/inquiry-submission";
-import { INQUIRY_MAILER, type InquiryMailerPort } from "../../ports/inquiry-mailer.port";
+import { buildInquirySubmission } from "../../../domain/services/inquiry-submission.js";
+import { INQUIRY_MAILER, type InquiryMailerPort } from "../../ports/inquiry-mailer.port.js";
 
 export interface CreateInquiryInput {
 	userId: string;

@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { CHEER_LIMITS } from "@aido/validators";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /**
  * CheerMessage — 응원 메시지 값 객체.

@@ -4,12 +4,16 @@ import {
 	markNudgeReadSchema,
 	markNudgesReadSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class SendNudgeDto extends createZodDto(createNudgeSchema) {}
+export const SendNudgeDto = createNudgeSchema.meta({ id: "SendNudgeDto" });
+export type SendNudgeDto = z.infer<typeof SendNudgeDto>;
 
-export class SendRemindNudgeDto extends createZodDto(createRemindNudgeSchema) {}
+export const SendRemindNudgeDto = createRemindNudgeSchema.meta({ id: "SendRemindNudgeDto" });
+export type SendRemindNudgeDto = z.infer<typeof SendRemindNudgeDto>;
 
-export class MarkNudgeReadDto extends createZodDto(markNudgeReadSchema) {}
+export const MarkNudgeReadDto = markNudgeReadSchema.meta({ id: "MarkNudgeReadDto" });
+export type MarkNudgeReadDto = z.infer<typeof MarkNudgeReadDto>;
 
-export class MarkNudgesReadDto extends createZodDto(markNudgesReadSchema) {}
+export const MarkNudgesReadDto = markNudgesReadSchema.meta({ id: "MarkNudgesReadDto" });
+export type MarkNudgesReadDto = z.infer<typeof MarkNudgesReadDto>;

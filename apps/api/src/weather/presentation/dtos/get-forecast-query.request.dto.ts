@@ -1,4 +1,8 @@
 import { getForecastQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetForecastQueryDto extends createZodDto(getForecastQuerySchema) {}
+export const GetForecastQueryDto = getForecastQuerySchema.meta({
+	id: "GetForecastQueryDto",
+	apiParameter: true,
+});
+export type GetForecastQueryDto = z.infer<typeof GetForecastQueryDto>;

@@ -2,11 +2,11 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { AuthPersistenceConflict } from "@/auth/application/ports/auth-persistence.port";
-import type { Account, AccountProvider } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
-import { EncryptionService } from "@/shared/infrastructure/encryption";
+import { AuthPersistenceConflict } from "#api/auth/application/ports/auth-persistence.port";
+import type { Account, AccountProvider } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { isUniqueConstraintViolation } from "#api/shared/infrastructure/database/prisma-error.util";
+import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
 
 @Injectable()
 export class AccountRepository {

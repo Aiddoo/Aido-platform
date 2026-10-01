@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { RETENTION_ENROLLMENT, type RetentionEnrollmentPort } from "@/retention";
+import { RETENTION_ENROLLMENT, type RetentionEnrollmentPort } from "#api/retention/index";
 
-import type { RetentionEnrollerPort } from "../../application/ports/retention-enroller.port";
+import type { RetentionEnrollerPort } from "../../application/ports/retention-enroller.port.js";
 
 @Injectable()
 export class RetentionEnrollerAdapter implements RetentionEnrollerPort {

@@ -2,8 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	ClaimedOutbox,
@@ -13,13 +13,13 @@ import type {
 	RetentionDispatchCandidate,
 	RetentionRepositoryPort,
 	RetentionStageCandidate,
-} from "../../application/ports/retention.repository.port";
+} from "../../application/ports/retention.repository.port.js";
 import {
 	RETENTION_CAMPAIGN_KEY,
 	RETENTION_EXPERIMENT_KEY,
 	RETENTION_STAGE_NAMES,
-} from "../../domain/retention.constants";
-import { localDateString } from "../../domain/services/stage-policy";
+} from "../../domain/retention.constants.js";
+import { localDateString } from "../../domain/services/stage-policy.js";
 
 interface RetentionStageRow {
 	readonly assignmentId: string;

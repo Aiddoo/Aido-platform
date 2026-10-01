@@ -5,9 +5,9 @@
  */
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { normalizeUserSearchQuery } from "./user-search-query";
+import { normalizeUserSearchQuery } from "./user-search-query.js";
 
 describe("normalizeUserSearchQuery — 검색어 정규화", () => {
 	it("영문 검색어를 trim하고 upperTag를 대문자화한다", () => {
@@ -35,7 +35,7 @@ describe("normalizeUserSearchQuery — 검색어 정규화", () => {
 		expect(() => normalizeUserSearchQuery("   ")).toThrow(DomainException);
 		try {
 			normalizeUserSearchQuery("   ");
-			fail("should have thrown");
+			expect.fail("should have thrown");
 		} catch (error) {
 			expect(error).toBeInstanceOf(DomainException);
 			if (error instanceof DomainException) {

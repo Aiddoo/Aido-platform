@@ -1,4 +1,4 @@
-import { toDateString } from "@/shared/domain/date/utils/format";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 /**
  * 날짜별 Todo 집계 (인프라가 DB에서 집계한 읽기 모델 입력)

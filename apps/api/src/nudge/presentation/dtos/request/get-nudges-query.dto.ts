@@ -1,4 +1,8 @@
 import { getNudgesQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetNudgesQueryDto extends createZodDto(getNudgesQuerySchema) {}
+export const GetNudgesQueryDto = getNudgesQuerySchema.meta({
+	id: "GetNudgesQueryDto",
+	apiParameter: true,
+});
+export type GetNudgesQueryDto = z.infer<typeof GetNudgesQueryDto>;

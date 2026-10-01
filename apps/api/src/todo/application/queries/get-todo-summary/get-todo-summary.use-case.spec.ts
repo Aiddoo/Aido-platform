@@ -1,20 +1,21 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetTodoSummaryUseCase 단위 테스트
  *
  * - 오늘 통계 + 상위 할 일 + 스트릭을 병렬 조회해 요약으로 합성
  * - 완료율/완료일 규칙은 도메인 정책(summarizeCompletion)과 동일해야 한다
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createStreakMock, createTodoReadRepositoryMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
 
-import { STREAK_PORT, type StreakPort } from "../../ports/streak.port";
+import { createStreakMock, createTodoReadRepositoryMock } from "#test/mocks/ports/index";
+
+import { STREAK_PORT, type StreakPort } from "../../ports/streak.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodaySummaryTodoRow,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { GetTodoSummaryUseCase } from "./get-todo-summary.use-case";
+} from "../../ports/todo-read.repository.port.js";
+import { GetTodoSummaryUseCase } from "./get-todo-summary.use-case.js";
 
 function buildRow(id: number, completed: boolean, title = `할 일 ${id}`): TodaySummaryTodoRow {
 	return { id, title, completed, categoryColor: "#FFB3B3" };

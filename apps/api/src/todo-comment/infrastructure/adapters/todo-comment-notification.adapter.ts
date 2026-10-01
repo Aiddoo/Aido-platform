@@ -6,13 +6,13 @@ import {
 	NotificationPublisher,
 	NotificationRecipientLocaleReader,
 	TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
-} from "@/notification";
+} from "#api/notification/index";
 
 import type {
 	TodoCommentActivityNotificationInput,
 	TodoCommentNotificationPort,
 	TodoCommentWrittenInput,
-} from "../../application/ports/todo-comment-notification.port";
+} from "../../application/ports/todo-comment-notification.port.js";
 
 type TodoCommentNotificationActivity =
 	| { readonly activityKind: "COMMENT" | "REPLY"; readonly commentCount: number }

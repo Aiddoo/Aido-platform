@@ -1,19 +1,19 @@
+import { TestBed } from "@suites/unit";
 /**
  * SendAdminNotificationUseCase 단위 테스트
  *
  * - 채널별 올바른 notifier 라우팅
  * - 발송 실패 시 예외(BullMQ 재시도 트리거)
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { AdminNotification } from "../../../domain/value-objects/admin-notification-message.vo";
+import type { AdminNotification } from "../../../domain/value-objects/admin-notification-message.vo.js";
 import {
 	ADMIN_NOTIFIER,
 	type AdminNotifier,
 	PAYMENT_NOTIFIER,
-} from "../../ports/admin-notifier.port";
-import { SendAdminNotificationUseCase } from "./send-admin-notification.use-case";
+} from "../../ports/admin-notifier.port.js";
+import { SendAdminNotificationUseCase } from "./send-admin-notification.use-case.js";
 
 describe("SendAdminNotificationUseCase", () => {
 	let useCase: SendAdminNotificationUseCase;

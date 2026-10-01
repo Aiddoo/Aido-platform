@@ -1,18 +1,18 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "#api/generated/prisma/client";
 import {
 	NOTIFICATION_QUEUE,
 	NotificationJobName,
-} from "@/notification/infrastructure/queue/notification-queue.constants";
+} from "#api/notification/infrastructure/queue/notification-queue.constants";
 import {
 	RETENTION_QUEUE,
 	RetentionJobName,
-} from "@/retention/infrastructure/queue/retention-queue.constants";
-import type { EnqueueJobOptions } from "@/shared/application/ports/job-runtime.port";
+} from "#api/retention/infrastructure/queue/retention-queue.constants";
+import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 
 import {
 	type CriticalQueueProcessorHarness,
 	createCriticalQueueProcessorHarness,
-} from "./helpers/critical-queue-processor.harness";
+} from "./helpers/critical-queue-processor.harness.js";
 
 const JOB_OPTIONS: EnqueueJobOptions = {
 	retryLimit: 1,

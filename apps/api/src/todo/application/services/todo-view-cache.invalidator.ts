@@ -1,5 +1,5 @@
-import type { TodoCachePort } from "../ports/todo-cache.port";
-import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port";
+import type { TodoCachePort } from "../ports/todo-cache.port.js";
+import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 
 /**
  * 다른 모듈이 쓰는 최소 capability — "이 할 일의 목록 캐시를 버려라".

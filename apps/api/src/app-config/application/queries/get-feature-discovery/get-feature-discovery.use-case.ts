@@ -4,7 +4,7 @@ import {
 	FEATURE_DISCOVERY_CONFIG,
 	type FeatureDiscoveryConfig,
 	type FeatureDiscoveryConfigPort,
-} from "../../ports/feature-discovery-config.port";
+} from "../../ports/feature-discovery-config.port.js";
 
 @Injectable()
 export class GetFeatureDiscoveryUseCase {

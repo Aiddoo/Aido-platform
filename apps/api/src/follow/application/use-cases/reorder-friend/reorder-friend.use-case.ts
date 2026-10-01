@@ -1,15 +1,15 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { ReorderPlan, ReorderPosition } from "../../../domain/services/friend-reorder";
+import type { ReorderPlan, ReorderPosition } from "../../../domain/services/friend-reorder.js";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
 	type FollowWithUser,
-} from "../../ports/follow.repository.port";
+} from "../../ports/follow.repository.port.js";
 
 export interface ReorderFriendInput {
 	followId: string;

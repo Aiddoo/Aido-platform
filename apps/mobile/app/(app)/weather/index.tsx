@@ -18,8 +18,8 @@ import {
   TimePaletteContext,
   useTimePalette,
 } from '@src/features/weather/presentations/hooks/use-time-palette';
-import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/use-get-conditions-query-options';
-import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
+import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/get-conditions-query-options';
+import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/get-forecast-query-options';
 import { useUpdateLocationMutationOptions } from '@src/features/weather/presentations/queries/use-update-location-mutation-options';
 import type { WeatherForecastViewModel } from '@src/features/weather/presentations/view-models/weather-forecast.view-model';
 import { isApiError } from '@src/shared/errors/api-error';

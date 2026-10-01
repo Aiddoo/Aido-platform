@@ -2,7 +2,7 @@
 
 > **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
 
-NestJS 11 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
+NestJS 12 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
 
 ## 목차
 
@@ -18,15 +18,15 @@ NestJS 11 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
 
 ## 기술 스택
 
-| 분류          | 기술                          |
-| ------------- | ----------------------------- |
-| Framework     | NestJS 11                     |
-| ORM           | Prisma 7 + @prisma/adapter-pg |
-| Database      | PostgreSQL 16                 |
-| Validation    | Zod + nestjs-zod              |
-| Documentation | Swagger/OpenAPI               |
-| Logging       | Pino                          |
-| Testing       | Jest, Testcontainers          |
+| 분류          | 기술                               |
+| ------------- | ---------------------------------- |
+| Framework     | NestJS 12                          |
+| ORM           | Prisma 7 + @prisma/adapter-pg      |
+| Database      | PostgreSQL 16                      |
+| Validation    | Zod + StandardSchemaValidationPipe |
+| Documentation | Swagger/OpenAPI                    |
+| Logging       | Pino                               |
+| Testing       | Vitest, Testcontainers             |
 
 ## 구조
 

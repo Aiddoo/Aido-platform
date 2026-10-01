@@ -1,10 +1,10 @@
 import type { UserRole } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
-import type { AccountProvider } from "@/auth/domain/types";
+import { SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
+import type { AccountProvider } from "#api/auth/domain/types";
 
-import type { TokenPair } from "../../ports/auth-crypto.port";
+import type { TokenPair } from "../../ports/auth-crypto.port.js";
 import {
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
 	AUTH_SECURITY_LOG_REPOSITORY,
@@ -12,8 +12,8 @@ import {
 	type AuthLoginAttemptRepositoryPort,
 	type AuthSecurityLogRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../../ports/auth-persistence.port";
-import { SessionService } from "../../services/session.service";
+} from "../../ports/auth-persistence.port.js";
+import { SessionService } from "../../services/session.service.js";
 
 export interface IssueLoginInput {
 	userId: string;

@@ -1,4 +1,5 @@
 import { changeTodoCategorySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class ChangeTodoCategoryDto extends createZodDto(changeTodoCategorySchema) {}
+export const ChangeTodoCategoryDto = changeTodoCategorySchema.meta({ id: "ChangeTodoCategoryDto" });
+export type ChangeTodoCategoryDto = z.infer<typeof ChangeTodoCategoryDto>;

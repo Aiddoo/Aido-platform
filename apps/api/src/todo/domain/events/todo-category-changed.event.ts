@@ -5,7 +5,7 @@
  * 카테고리가 바뀌면 daily-completion 캐시(캘린더 dot 색상)가 스테일해집니다.
  * 무효화 부수효과는 크로스모듈 @OnEvent 구독자가 커밋 후 처리합니다.
  */
-import { TODO_EVENTS } from "./todo-event-names";
+import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoCategoryChangedEvent {
 	readonly eventName = TODO_EVENTS.CATEGORY_CHANGED;

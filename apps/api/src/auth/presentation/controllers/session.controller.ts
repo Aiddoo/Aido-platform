@@ -3,19 +3,19 @@ import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Req } from "@nest
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
-import { ListActiveSessionsQuery } from "@/auth/application/queries";
-import { RevokeSessionUseCase } from "@/auth/application/use-cases";
-import { CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
+import { ListActiveSessionsQuery } from "#api/auth/application/queries/index";
+import { RevokeSessionUseCase } from "#api/auth/application/use-cases/index";
+import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
 	ApiDoc,
 	ApiNotFoundError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { MessageResponseDto, SessionListDto } from "../dtos";
-import { extractMetadata } from "./auth-controller.utils";
+import { MessageResponseDto, SessionListDto } from "../dtos/index.js";
+import { extractMetadata } from "./auth-controller.utils.js";
 
 /**
  * Session API 컨트롤러

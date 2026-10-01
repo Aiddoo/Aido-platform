@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * WinbackStrategy 전략 단위 테스트
  *
@@ -9,28 +12,26 @@
  * pnpm --filter @aido/api test winback.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createWinbackNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
-} from "../ports/re-engagement-reader.port";
-import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port";
+} from "../ports/re-engagement-reader.port.js";
+import { SCHEDULER_DEDUP, type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
-import { WinbackStrategy } from "./winback.strategy";
+} from "../ports/scheduler-preference-reader.port.js";
+import { WinbackStrategy } from "./winback.strategy.js";
 
 describe("WinbackStrategy — 윈백 전략", () => {
 	let strategy: WinbackStrategy;
@@ -56,8 +57,8 @@ describe("WinbackStrategy — 윈백 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
 
 		const { unit, unitRef } = await TestBed.solitary(WinbackStrategy).compile();
 
@@ -78,7 +79,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("7일 미접속 유저에게 day7 Win-back을 발송한다", async () => {

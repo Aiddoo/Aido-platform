@@ -7,7 +7,7 @@
  * ```
  */
 
-import { convertToTm } from "./wgs84-to-utmk";
+import { convertToTm } from "./wgs84-to-utmk.js";
 
 describe("convertToTm", () => {
 	it("서울시청 좌표를 TM 중부원점으로 변환해야 한다", () => {

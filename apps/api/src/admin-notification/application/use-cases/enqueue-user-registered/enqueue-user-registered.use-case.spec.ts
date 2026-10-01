@@ -1,18 +1,18 @@
+import { TestBed } from "@suites/unit";
 /**
  * EnqueueUserRegisteredUseCase 단위 테스트
  *
  * - 회원가입 메시지를 admin 채널 SEND 잡으로 등록
  * - 큐 실패는 그대로 전파(파사드가 fire-and-forget 처리)
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload";
+import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload.js";
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,
-} from "../../ports/admin-notification-queue.port";
-import { EnqueueUserRegisteredUseCase } from "./enqueue-user-registered.use-case";
+} from "../../ports/admin-notification-queue.port.js";
+import { EnqueueUserRegisteredUseCase } from "./enqueue-user-registered.use-case.js";
 
 describe("EnqueueUserRegisteredUseCase", () => {
 	let useCase: EnqueueUserRegisteredUseCase;

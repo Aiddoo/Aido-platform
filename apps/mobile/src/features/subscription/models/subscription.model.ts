@@ -21,8 +21,6 @@ export const subscriptionOfferingSchema = z.object({
 });
 export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
 
-// Filters & Predicates
-
 export function isActiveSubscription(status: SubscriptionStatus) {
   return status === 'ACTIVE';
 }
@@ -30,8 +28,6 @@ export function isActiveSubscription(status: SubscriptionStatus) {
 export function isCancelledSubscription(status: SubscriptionStatus) {
   return status === 'CANCELLED';
 }
-
-// Calculations
 
 export function getAnnualDiscountPercent(monthlyPrice: number, annualPrice: number) {
   return Math.round((1 - annualPrice / (monthlyPrice * 12)) * 100);
@@ -41,13 +37,13 @@ export function getMonthlyEquivalent(annualPrice: number) {
   return Math.round((annualPrice / 12) * 100) / 100;
 }
 
-// Policy (Business Logic)
+export function shouldShowExpirationDetails(
+  status: SubscriptionStatus,
+  expiresAt: Date | null,
+): expiresAt is Date {
+  return (isActiveSubscription(status) || isCancelledSubscription(status)) && expiresAt !== null;
+}
 
 export const SubscriptionPolicy = {
-  shouldShowExpirationDetails(
-    status: SubscriptionStatus,
-    expiresAt: Date | null,
-  ): expiresAt is Date {
-    return (isActiveSubscription(status) || isCancelledSubscription(status)) && expiresAt !== null;
-  },
+  shouldShowExpirationDetails,
 } as const;

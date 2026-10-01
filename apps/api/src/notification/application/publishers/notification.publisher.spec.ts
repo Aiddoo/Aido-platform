@@ -1,13 +1,15 @@
-import type { SendBatchNotificationUseCase } from "../use-cases/send-batch-notification/send-batch-notification.use-case";
-import type { SendNotificationWithDedupUseCase } from "../use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
-import type { SendNotificationUseCase } from "../use-cases/send-notification/send-notification.use-case";
-import { NotificationPublisher } from "./notification.publisher";
+import { vi } from "vitest";
+
+import type { SendBatchNotificationUseCase } from "../use-cases/send-batch-notification/send-batch-notification.use-case.js";
+import type { SendNotificationWithDedupUseCase } from "../use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.js";
+import type { SendNotificationUseCase } from "../use-cases/send-notification/send-notification.use-case.js";
+import { NotificationPublisher } from "./notification.publisher.js";
 
 describe("NotificationPublisher", () => {
 	it("발행 요청을 목적별 유스케이스에 위임한다", async () => {
-		const send = { execute: jest.fn().mockResolvedValue(null) };
-		const sendWithDeduplication = { execute: jest.fn().mockResolvedValue(null) };
-		const sendBatch = { execute: jest.fn().mockResolvedValue({ count: 1 }) };
+		const send = { execute: vi.fn().mockResolvedValue(null) };
+		const sendWithDeduplication = { execute: vi.fn().mockResolvedValue(null) };
+		const sendBatch = { execute: vi.fn().mockResolvedValue({ count: 1 }) };
 		const publisher = new NotificationPublisher(
 			send as unknown as SendNotificationUseCase,
 			sendWithDeduplication as unknown as SendNotificationWithDedupUseCase,

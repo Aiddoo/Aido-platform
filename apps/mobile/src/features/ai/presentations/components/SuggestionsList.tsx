@@ -9,7 +9,7 @@ import { Spinner } from 'heroui-native';
 import { useState } from 'react';
 import { Image, View } from 'react-native';
 
-import { useGetSuggestionsQueryOptions } from '../queries/use-get-suggestions-query-options';
+import { useGetSuggestionsQueryOptions } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
 import { ScallopedContainer } from './ScallopedContainer';
 import { SuggestionCategoryBottomSheet } from './SuggestionCategoryBottomSheet';
@@ -22,40 +22,7 @@ export function SuggestionsList() {
   const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
   const [pendingSuggestionId, setPendingSuggestionId] = useState<number | null>(null);
 
-  if (suggestions.length === 0)
-    return (
-      <ScallopedContainer>
-        <View className="items-center px-5 pt-4">
-          <Image
-            source={require('@assets/images/ido_cat_suggestion.webp')}
-            style={{ width: 100, height: 100 }}
-            resizeMode="contain"
-          />
-          <Spacing size={8} />
-          <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-            {t('suggestions.list.emptyNoHistory')}
-          </H4>
-          <Text size="b4" shade={6} align="center">
-            {t('suggestions.list.emptyNoHistoryDescription')}
-          </Text>
-        </View>
-
-        <Spacing size={20} />
-
-        <View className="px-4 pb-4">
-          <View className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-4 py-8">
-            <VStack gap={4} align="center">
-              <Text size="b3" weight="semibold" shade={8} align="center">
-                {t('suggestions.list.emptyNoPending')}
-              </Text>
-              <Text size="b4" shade={6} align="center">
-                {t('suggestions.list.emptyNoPendingDescription')}
-              </Text>
-            </VStack>
-          </View>
-        </View>
-      </ScallopedContainer>
-    );
+  if (suggestions.length === 0) return <SuggestionsList.Empty />;
 
   const handleDismiss = (suggestionId: number) => {
     setPendingSuggestionId(suggestionId);
@@ -93,7 +60,7 @@ export function SuggestionsList() {
 
       <View className="px-4 pb-4">
         {suggestions.map((suggestion, index) => (
-          <SuggestionCard
+          <SuggestionsList.Item
             key={suggestion.id}
             suggestion={suggestion}
             onAccepted={() => replace('/feed')}
@@ -116,15 +83,13 @@ SuggestionsList.Loading = function Loading() {
   );
 };
 
-// --- SuggestionCard ---
-
 const formatSchedule = (suggestion: AiSuggestion): string => {
   const days = formatDaysOfWeek(suggestion.daysOfWeek);
   const time = suggestion.scheduledTime ?? tGlobal('ai:suggestions.list.allDay');
   return `${days} · ${time}`;
 };
 
-interface SuggestionCardProps {
+interface SuggestionItemProps {
   suggestion: AiSuggestion;
   onAccepted: () => void;
   onDismiss: () => void;
@@ -133,14 +98,14 @@ interface SuggestionCardProps {
   isLast?: boolean;
 }
 
-function SuggestionCard({
+SuggestionsList.Item = function Item({
   suggestion,
   onAccepted,
   onDismiss,
   pendingAction = null,
   isPending = false,
   isLast = false,
-}: SuggestionCardProps) {
+}: SuggestionItemProps) {
   const { t } = useTranslation('ai');
   const overlay = useOverlay();
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
@@ -220,4 +185,41 @@ function SuggestionCard({
       {!isLast && <View className="mt-5 border-b border-dashed border-gray-3" />}
     </View>
   );
-}
+};
+
+SuggestionsList.Empty = function Empty() {
+  const { t } = useTranslation('ai');
+  return (
+    <ScallopedContainer>
+      <View className="items-center px-5 pt-4">
+        <Image
+          source={require('@assets/images/ido_cat_suggestion.webp')}
+          style={{ width: 100, height: 100 }}
+          resizeMode="contain"
+        />
+        <Spacing size={8} />
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {t('suggestions.list.emptyNoHistory')}
+        </H4>
+        <Text size="b4" shade={6} align="center">
+          {t('suggestions.list.emptyNoHistoryDescription')}
+        </Text>
+      </View>
+
+      <Spacing size={20} />
+
+      <View className="px-4 pb-4">
+        <View className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-4 py-8">
+          <VStack gap={4} align="center">
+            <Text size="b3" weight="semibold" shade={8} align="center">
+              {t('suggestions.list.emptyNoPending')}
+            </Text>
+            <Text size="b4" shade={6} align="center">
+              {t('suggestions.list.emptyNoPendingDescription')}
+            </Text>
+          </VStack>
+        </View>
+      </View>
+    </ScallopedContainer>
+  );
+};

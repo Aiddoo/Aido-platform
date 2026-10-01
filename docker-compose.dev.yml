@@ -56,7 +56,6 @@ services:
       - ./apps/api/src:/app/apps/api/src
       - ./apps/api/prisma:/app/apps/api/prisma
       - ./packages/errors/src:/app/packages/errors/src
-      - ./packages/utils/src:/app/packages/utils/src
       - ./packages/validators/src:/app/packages/validators/src
     healthcheck:
       test:

@@ -1,12 +1,12 @@
 // Types
 
-export type { ErrorCodeType } from './errors';
+export type { ErrorCodeType } from './errors.js';
 // Error Codes & Definitions
-export { ErrorCode, Errors } from './errors';
-export type { HttpStatus as HttpStatusType } from './http-status';
+export { ErrorCode, Errors } from './errors.js';
+export type { HttpStatus as HttpStatusType } from './http-status.js';
 // HTTP Status
-export { HttpStatus } from './http-status';
-export type { ErrorDefinition, ErrorResponse } from './types';
+export { HttpStatus } from './http-status.js';
+export type { ErrorDefinition, ErrorResponse } from './types.js';
 
 // Utils
 export {
@@ -17,4 +17,4 @@ export {
   getErrorsByDomain,
   getErrorsByHttpStatus,
   isErrorCode,
-} from './utils';
+} from './utils.js';

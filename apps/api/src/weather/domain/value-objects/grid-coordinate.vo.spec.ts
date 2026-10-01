@@ -1,7 +1,7 @@
 /**
  * GridCoordinate 값 객체 단위 테스트
  */
-import { GridCoordinate } from "./grid-coordinate.vo";
+import { GridCoordinate } from "./grid-coordinate.vo.js";
 
 describe("GridCoordinate — 기상청 격자 좌표 값 객체", () => {
 	it("격자 좌표를 생성하고 getter로 노출한다", () => {

@@ -53,6 +53,7 @@ export const StackedBottomSheetModal = ({
   return (
     <BottomSheetModal
       ref={modalRef}
+      accessible={false}
       stackBehavior="push"
       enableDynamicSizing
       maxDynamicContentSize={maxDynamicContentSize}

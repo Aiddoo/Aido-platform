@@ -1,6 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 
-import type { ILockProvider } from "../interfaces/lock.interface";
+import type { ILockProvider } from "../interfaces/lock.interface.js";
 
 interface LockEntry {
 	expiresAt: number;

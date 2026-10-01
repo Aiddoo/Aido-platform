@@ -1,20 +1,20 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { forEachBatch } from "@/shared/infrastructure/database/utils/batch-cursor.util";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { forEachBatch } from "#api/shared/infrastructure/database/utils/batch-cursor.util";
 
-import { SuggestionAnalysisProcessor } from "../processors/suggestion-analysis.processor";
+import { SuggestionAnalysisProcessor } from "../processors/suggestion-analysis.processor.js";
+import { AiSuggestionQueueMaintenanceService } from "../queue/ai-suggestion-queue-maintenance.service.js";
 import {
 	AI_SUGGESTION_LEGACY_QUEUE,
 	AI_SUGGESTION_QUEUE,
 	type AiSuggestionAnalyzeData,
 	AiSuggestionJobName,
-} from "../queue/ai-suggestion-queue";
-import { AiSuggestionQueueMaintenanceService } from "../queue/ai-suggestion-queue-maintenance.service";
+} from "../queue/ai-suggestion-queue.js";
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;

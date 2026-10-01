@@ -15,7 +15,7 @@ import {
 	buildBullRedisOptions,
 	buildCommandRedisOptions,
 	type RedisConnectionSettings,
-} from "./redis-client.factory";
+} from "./redis-client.factory.js";
 
 describe("redis-client.factory — Redis 클라이언트 옵션 팩토리", () => {
 	const baseSettings: RedisConnectionSettings = {
@@ -30,7 +30,6 @@ describe("redis-client.factory — Redis 클라이언트 옵션 팩토리", () =
 
 			// Then
 			expect(options.maxRetriesPerRequest).toBeNull();
-			expect(options.protocol).toBe(2);
 			expect(options.enableReadyCheck).toBe(true);
 			expect(options.connectionName).toBe("aido-main");
 		});
@@ -101,7 +100,6 @@ describe("redis-client.factory — Redis 클라이언트 옵션 팩토리", () =
 			expect(options.commandTimeout).toBe(1500);
 			expect(options.connectTimeout).toBe(5000);
 			expect(options.maxRetriesPerRequest).toBe(1);
-			expect(options.protocol).toBe(2);
 			expect(options.enableReadyCheck).toBe(true);
 			expect(options.connectionName).toBe("aido-command");
 		});

@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import { Injectable, Logger } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
-import type { ILockProvider } from "../interfaces/lock.interface";
+import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
+import type { ILockProvider } from "../interfaces/lock.interface.js";
 
 /**
  * Lua 스크립트: compare-and-delete

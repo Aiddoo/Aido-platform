@@ -2,14 +2,14 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { WeeklyAchievementRepositoryPort } from "../../application/ports/weekly-achievement.repository.port";
+import type { WeeklyAchievementRepositoryPort } from "../../application/ports/weekly-achievement.repository.port.js";
 import type {
 	WeeklyAchievementRow,
 	WeeklyAchievementUpsert,
-} from "../../domain/weekly-achievement";
+} from "../../domain/weekly-achievement.js";
 
 /** 응답 뷰가 요구하는 컬럼만 선택 (userId·타임스탬프 제외) */
 const ROW_SELECT = {

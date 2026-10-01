@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
+import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {

@@ -1,23 +1,24 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * SendNotificationWithDedupUseCase 단위 테스트
  *
  * - 전략 없는 타입(NUDGE_RECEIVED): 바로 SendNotification 위임 (락 미사용)
  * - 전략 있는 타입(FOLLOW_NEW): 락 경합 시 skip, 최근 중복 시 skip, 아니면 발송
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CreateNotificationData } from "../../ports/notification-data";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	NOTIFICATION_DEDUP_LOCK,
 	type NotificationDedupLockPort,
-} from "../../ports/notification-dedup.port";
+} from "../../ports/notification-dedup.port.js";
 import {
 	NOTIFICATION_HISTORY_READER,
 	type NotificationHistoryReaderPort,
-} from "../../ports/notification-history.reader.port";
-import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
-import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case";
+} from "../../ports/notification-history.reader.port.js";
+import { SendNotificationUseCase } from "../send-notification/send-notification.use-case.js";
+import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
 
 const followData: CreateNotificationData = {
 	userId: "user-1",
@@ -40,7 +41,7 @@ describe("SendNotificationWithDedupUseCase", () => {
 	let sendNotification: Mocked<SendNotificationUseCase>;
 	let repository: Mocked<NotificationHistoryReaderPort>;
 	let dedupLock: Mocked<NotificationDedupLockPort>;
-	const release = jest.fn().mockResolvedValue(undefined);
+	const release = vi.fn().mockResolvedValue(undefined);
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(SendNotificationWithDedupUseCase).compile();

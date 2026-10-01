@@ -1,7 +1,7 @@
 /**
  * computeEffectiveStreak 단위 테스트 (DB 접근 없는 순수 계산)
  */
-import { computeEffectiveStreak } from "./effective-streak";
+import { computeEffectiveStreak } from "./effective-streak.js";
 
 const TODAY = new Date("2024-01-16T00:00:00.000Z");
 const YESTERDAY = new Date("2024-01-15T00:00:00.000Z");

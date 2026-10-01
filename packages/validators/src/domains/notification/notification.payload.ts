@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { todoCommentIdSchema } from '../todo-comment/todo-comment.request';
-import { notificationTypeSchema } from './notification.constants';
+import { todoCommentIdSchema } from '../todo-comment/todo-comment.request.js';
+import { notificationTypeSchema } from './notification.constants.js';
 
 // =============================================================================
 // Action Type

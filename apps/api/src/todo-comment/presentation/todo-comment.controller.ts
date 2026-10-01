@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -12,20 +12,20 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
 import {
 	GetTodoCommentOverviewUseCase,
 	GetTodoConversationUseCase,
 	GetTodoDetailsUseCase,
-} from "../application/queries";
+} from "../application/queries/index.js";
 import {
 	DeleteTodoCommentUseCase,
 	LikeTodoCommentUseCase,
 	UnlikeTodoCommentUseCase,
 	UpdateTodoCommentUseCase,
 	WriteTodoCommentChainUseCase,
-} from "../application/use-cases";
+} from "../application/use-cases/index.js";
 import {
 	DeleteTodoCommentResponseDto,
 	GetTodoCommentOverviewQueryDto,
@@ -40,7 +40,7 @@ import {
 	TodoDetailsResponseDto,
 	UpdateTodoCommentDto,
 	WriteTodoCommentChainDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
@@ -64,7 +64,7 @@ export class TodoCommentController {
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	getDetails(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoDetailsParamDto,
+		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
 	): Promise<TodoDetailsResponseDto> {
 		return this.getTodoDetailsUseCase.execute({ todoId: params.todoId, viewerId: user.userId });
 	}
@@ -77,8 +77,8 @@ export class TodoCommentController {
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	getOverview(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoDetailsParamDto,
-		@Query() query: GetTodoCommentOverviewQueryDto,
+		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
+		@Query({ schema: GetTodoCommentOverviewQueryDto }) query: GetTodoCommentOverviewQueryDto,
 	): Promise<TodoCommentOverviewResponseDto> {
 		return this.getTodoCommentOverviewUseCase.execute({
 			todoId: params.todoId,
@@ -98,8 +98,8 @@ export class TodoCommentController {
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	getConversation(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoDetailsParamDto,
-		@Query() query: GetTodoConversationQueryDto,
+		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
+		@Query({ schema: GetTodoConversationQueryDto }) query: GetTodoConversationQueryDto,
 	): Promise<TodoConversationResponseDto> {
 		return this.getTodoConversationUseCase.execute({
 			todoId: params.todoId,
@@ -119,8 +119,8 @@ export class TodoCommentController {
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	writeComments(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoDetailsParamDto,
-		@Body() body: WriteTodoCommentChainDto,
+		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
+		@Body({ schema: WriteTodoCommentChainDto }) body: WriteTodoCommentChainDto,
 	): Promise<TodoCommentChainResponseDto> {
 		return this.writeTodoCommentChainUseCase.execute({
 			todoId: params.todoId,
@@ -137,8 +137,8 @@ export class TodoCommentController {
 	@ApiForbiddenError(ErrorCode.TODO_0832)
 	updateComment(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCommentIdParamDto,
-		@Body() body: UpdateTodoCommentDto,
+		@Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
+		@Body({ schema: UpdateTodoCommentDto }) body: UpdateTodoCommentDto,
 	): Promise<TodoCommentMutationResponseDto> {
 		return this.updateTodoCommentUseCase.execute({
 			todoId: params.todoId,
@@ -155,7 +155,7 @@ export class TodoCommentController {
 	@ApiForbiddenError(ErrorCode.TODO_0832)
 	deleteComment(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCommentIdParamDto,
+		@Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
 	): Promise<DeleteTodoCommentResponseDto> {
 		return this.deleteTodoCommentUseCase.execute({
 			todoId: params.todoId,
@@ -170,7 +170,7 @@ export class TodoCommentController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	likeComment(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCommentIdParamDto,
+		@Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
 	): Promise<TodoCommentLikeResponseDto> {
 		return this.likeTodoCommentUseCase.execute({
 			todoId: params.todoId,
@@ -185,7 +185,7 @@ export class TodoCommentController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	unlikeComment(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoCommentIdParamDto,
+		@Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
 	): Promise<TodoCommentLikeResponseDto> {
 		return this.unlikeTodoCommentUseCase.execute({
 			todoId: params.todoId,

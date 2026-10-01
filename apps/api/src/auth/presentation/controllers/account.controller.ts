@@ -14,14 +14,14 @@ import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
-import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "@/auth/application/queries";
+import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "#api/auth/application/queries/index";
 import {
 	DeleteAccountUseCase,
 	UnlinkOAuthAccountUseCase,
 	UpdateProfileUseCase,
-} from "@/auth/application/use-cases";
-import { AuthMapper } from "@/auth/presentation/auth.mapper";
-import { CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
+} from "#api/auth/application/use-cases/index";
+import { AuthMapper } from "#api/auth/presentation/auth.mapper";
+import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -30,7 +30,7 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
 import {
 	CurrentUserDto,
@@ -40,8 +40,8 @@ import {
 	MessageResponseDto,
 	UpdateProfileDto,
 	UpdateProfileResponseDto,
-} from "../dtos";
-import { extractMetadata } from "./auth-controller.utils";
+} from "../dtos/index.js";
+import { extractMetadata } from "./auth-controller.utils.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
@@ -101,7 +101,10 @@ export class AccountController {
 	})
 	@ApiSuccessResponse({ type: UpdateProfileResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async updateProfile(@CurrentUser() user: CurrentUserPayload, @Body() dto: UpdateProfileDto) {
+	async updateProfile(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body({ schema: UpdateProfileDto }) dto: UpdateProfileDto,
+	) {
 		const result = await this.updateProfileUseCase.execute(user.userId, dto);
 		return AuthMapper.toUpdateProfileResponse(result);
 	}
@@ -231,7 +234,7 @@ export class AccountController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
 	async deleteAccount(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: DeleteAccountDto,
+		@Body({ schema: DeleteAccountDto }) dto: DeleteAccountDto,
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);

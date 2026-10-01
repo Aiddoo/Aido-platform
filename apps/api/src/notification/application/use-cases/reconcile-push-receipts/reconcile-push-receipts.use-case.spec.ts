@@ -1,16 +1,16 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
+import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port.js";
 import {
 	PUSH_RECEIPT_REPOSITORY,
 	type PushReceiptRepositoryPort,
-} from "../../ports/push-receipt.repository.port";
+} from "../../ports/push-receipt.repository.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../../ports/push-token.repository.port";
-import { ReconcilePushReceiptsUseCase } from "./reconcile-push-receipts.use-case";
+} from "../../ports/push-token.repository.port.js";
+import { ReconcilePushReceiptsUseCase } from "./reconcile-push-receipts.use-case.js";
 
 describe("ReconcilePushReceiptsUseCase", () => {
 	it("records provider receipts and deactivates invalid tokens", async () => {

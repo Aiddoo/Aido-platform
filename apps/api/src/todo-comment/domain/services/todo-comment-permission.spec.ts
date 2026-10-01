@@ -1,7 +1,7 @@
 import {
 	getTodoCommentViewerPermissions,
 	getTodoDetailsPermissions,
-} from "./todo-comment-permission";
+} from "./todo-comment-permission.js";
 
 describe("todo comment permission", () => {
 	it("작성자는 살아 있는 댓글을 수정하고 삭제할 수 있다", () => {

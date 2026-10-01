@@ -1,4 +1,4 @@
-import { decideRetentionStage, localDateString } from "./stage-policy";
+import { decideRetentionStage, localDateString } from "./stage-policy.js";
 
 describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
 	const base = {

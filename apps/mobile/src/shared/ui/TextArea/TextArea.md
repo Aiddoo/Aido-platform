@@ -15,7 +15,7 @@ import { TextArea } from '@src/shared/ui/TextArea';
   label="메시지"
   placeholder="메시지를 입력하세요"
   value={message}
-  onChangeText={setMessage}
+  onChange={setMessage}
 />
 
 // 에러 상태

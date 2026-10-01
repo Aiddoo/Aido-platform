@@ -4,8 +4,8 @@ import { ErrorCode } from "@aido/errors";
 import { CanActivate, ExecutionContext, Injectable, Logger } from "@nestjs/common";
 import type { Request } from "express";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 /**
  * RevenueCat Webhook 서명 검증 가드

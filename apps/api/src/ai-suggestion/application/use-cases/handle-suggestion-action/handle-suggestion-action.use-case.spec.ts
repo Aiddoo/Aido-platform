@@ -5,23 +5,23 @@
  * - 프리미엄 게이트, 상태·만료 불변식, 수락/거절, 롤백
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { Suggestion, type SuggestionProps } from "../../../domain/entities/suggestion.aggregate";
+import { Suggestion, type SuggestionProps } from "../../../domain/entities/suggestion.aggregate.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../../ports/ai-suggestion.repository.port";
+} from "../../ports/ai-suggestion.repository.port.js";
 import {
 	RECURRING_TODO_CREATOR,
 	type RecurringTodoCreatorPort,
-} from "../../ports/recurring-todo-creator.port";
-import { HandleSuggestionActionUseCase } from "./handle-suggestion-action.use-case";
+} from "../../ports/recurring-todo-creator.port.js";
+import { HandleSuggestionActionUseCase } from "./handle-suggestion-action.use-case.js";
 
 const mockUserId = "user-123";
 

@@ -1,17 +1,17 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	toWeeklyAchievementView,
 	type WeekLabelLocale,
 	type WeeklyAchievementView,
-} from "../../../domain/weekly-achievement";
+} from "../../../domain/weekly-achievement.js";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
-} from "../../ports/weekly-achievement.repository.port";
+} from "../../ports/weekly-achievement.repository.port.js";
 
 export interface GetWeeklyAchievementInput {
 	userId: string;

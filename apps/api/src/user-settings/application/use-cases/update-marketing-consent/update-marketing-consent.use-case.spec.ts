@@ -1,14 +1,14 @@
+import { TestBed } from "@suites/unit";
 /**
  * UpdateMarketingConsentUseCase 단위 테스트
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
-import { UpdateMarketingConsentUseCase } from "./update-marketing-consent.use-case";
+} from "../../ports/user-consent.repository.port.js";
+import { UpdateMarketingConsentUseCase } from "./update-marketing-consent.use-case.js";
 
 describe("UpdateMarketingConsentUseCase", () => {
 	let useCase: UpdateMarketingConsentUseCase;

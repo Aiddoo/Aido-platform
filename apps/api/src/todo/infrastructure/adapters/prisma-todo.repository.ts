@@ -3,17 +3,20 @@ import { Injectable } from "@nestjs/common";
 import type {
 	TodoRepositoryPort,
 	TodoUpdatePatch,
-} from "../../application/ports/todo.repository.port";
-import { TodoItem } from "../../domain/entities/todo-item.entity";
+} from "../../application/ports/todo.repository.port.js";
+import { TodoItem } from "../../domain/entities/todo-item.entity.js";
 import {
 	Todo,
 	type TodoCreationPlan,
 	type TodoVisibility,
-} from "../../domain/entities/todo.aggregate";
-import { TodoId } from "../../domain/value-objects/todo-id.vo";
-import { TodoSchedule, type TodoScheduleProps } from "../../domain/value-objects/todo-schedule.vo";
-import { TodoRowRepository } from "../persistence/todo-row.repository";
-import type { TodoWithCategory } from "../persistence/todo-row.types";
+} from "../../domain/entities/todo.aggregate.js";
+import { TodoId } from "../../domain/value-objects/todo-id.vo.js";
+import {
+	TodoSchedule,
+	type TodoScheduleProps,
+} from "../../domain/value-objects/todo-schedule.vo.js";
+import { TodoRowRepository } from "../persistence/todo-row.repository.js";
+import type { TodoWithCategory } from "../persistence/todo-row.types.js";
 
 /**
  * Prisma Todo 쓰기 어댑터

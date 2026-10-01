@@ -9,16 +9,31 @@ import {
 	todoSummaryResponseSchema,
 	updateTodoResponseSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class TodoResponseDto extends createZodDto(todoSchema) {}
-export class TodoListResponseDto extends createZodDto(todoListResponseSchema) {}
-export class CreateTodoResponseDto extends createZodDto(createTodoResponseSchema) {}
-export class CreateRecurringTodoResponseDto extends createZodDto(
-	createRecurringTodoResponseSchema,
-) {}
-export class UpdateTodoResponseDto extends createZodDto(updateTodoResponseSchema) {}
-export class DeleteTodoResponseDto extends createZodDto(deleteTodoResponseSchema) {}
-export class ReorderTodoResponseDto extends createZodDto(reorderTodoResponseSchema) {}
-export class TodoResourceLimitResponseDto extends createZodDto(todoResourceLimitResponseSchema) {}
-export class TodoSummaryResponseDto extends createZodDto(todoSummaryResponseSchema) {}
+export const TodoResponseDto = todoSchema.meta({ id: "TodoResponseDto" });
+export type TodoResponseDto = z.infer<typeof TodoResponseDto>;
+export const TodoListResponseDto = todoListResponseSchema.meta({ id: "TodoListResponseDto" });
+export type TodoListResponseDto = z.infer<typeof TodoListResponseDto>;
+export const CreateTodoResponseDto = createTodoResponseSchema.meta({ id: "CreateTodoResponseDto" });
+export type CreateTodoResponseDto = z.infer<typeof CreateTodoResponseDto>;
+export const CreateRecurringTodoResponseDto = createRecurringTodoResponseSchema.meta({
+	id: "CreateRecurringTodoResponseDto",
+});
+export type CreateRecurringTodoResponseDto = z.infer<typeof CreateRecurringTodoResponseDto>;
+export const UpdateTodoResponseDto = updateTodoResponseSchema.meta({ id: "UpdateTodoResponseDto" });
+export type UpdateTodoResponseDto = z.infer<typeof UpdateTodoResponseDto>;
+export const DeleteTodoResponseDto = deleteTodoResponseSchema.meta({ id: "DeleteTodoResponseDto" });
+export type DeleteTodoResponseDto = z.infer<typeof DeleteTodoResponseDto>;
+export const ReorderTodoResponseDto = reorderTodoResponseSchema.meta({
+	id: "ReorderTodoResponseDto",
+});
+export type ReorderTodoResponseDto = z.infer<typeof ReorderTodoResponseDto>;
+export const TodoResourceLimitResponseDto = todoResourceLimitResponseSchema.meta({
+	id: "TodoResourceLimitResponseDto",
+});
+export type TodoResourceLimitResponseDto = z.infer<typeof TodoResourceLimitResponseDto>;
+export const TodoSummaryResponseDto = todoSummaryResponseSchema.meta({
+	id: "TodoSummaryResponseDto",
+});
+export type TodoSummaryResponseDto = z.infer<typeof TodoSummaryResponseDto>;

@@ -1,4 +1,5 @@
 import { updateTodoItemSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class UpdateTodoItemDto extends createZodDto(updateTodoItemSchema) {}
+export const UpdateTodoItemDto = updateTodoItemSchema.meta({ id: "UpdateTodoItemDto" });
+export type UpdateTodoItemDto = z.infer<typeof UpdateTodoItemDto>;

@@ -5,8 +5,8 @@
  *   (periodLabel·dateRange 파생 포함)
  */
 
-import type { AiReportProps } from "./ai-report.entity";
-import { AiReport } from "./ai-report.entity";
+import type { AiReportProps } from "./ai-report.entity.js";
+import { AiReport } from "./ai-report.entity.js";
 
 function makeProps(overrides?: Partial<AiReportProps>): AiReportProps {
 	return {

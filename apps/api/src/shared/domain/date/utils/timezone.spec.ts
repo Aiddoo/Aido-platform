@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * timezone 유틸 테스트
  *
@@ -19,16 +21,16 @@ import {
 	startOfDayInTimezone,
 	todayInTimezone,
 	toLocalTimeString,
-} from "./timezone";
+} from "./timezone.js";
 
 // 2026-03-03T12:00:00Z = KST 2026-03-03T21:00:00
 beforeAll(() => {
-	jest.useFakeTimers();
-	jest.setSystemTime(new Date("2026-03-03T12:00:00Z"));
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date("2026-03-03T12:00:00Z"));
 });
 
 afterAll(() => {
-	jest.useRealTimers();
+	vi.useRealTimers();
 });
 
 describe("timezone", () => {

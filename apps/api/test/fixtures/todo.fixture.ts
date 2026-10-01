@@ -3,7 +3,7 @@
  *
  * 타입 안전한 Todo 및 관련 엔티티 테스트 데이터 생성
  */
-import type { Todo, TodoCategory } from "@/generated/prisma/client";
+import type { Todo, TodoCategory } from "#api/generated/prisma/client";
 
 let todoCounter = 0;
 let categoryCounter = 0;

@@ -1,14 +1,14 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetConsentUseCase 단위 테스트
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
-import { GetConsentUseCase } from "./get-consent.use-case";
+} from "../../ports/user-consent.repository.port.js";
+import { GetConsentUseCase } from "./get-consent.use-case.js";
 
 describe("GetConsentUseCase", () => {
 	let useCase: GetConsentUseCase;

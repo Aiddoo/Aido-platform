@@ -11,15 +11,15 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
+import type { Mocked } from "vitest";
 
-import { ListActiveSessionsQuery } from "@/auth/application/queries";
-import { RevokeSessionUseCase } from "@/auth/application/use-cases";
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import { ListActiveSessionsQuery } from "#api/auth/application/queries/index";
+import { RevokeSessionUseCase } from "#api/auth/application/use-cases/index";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { SessionController } from "./session.controller";
+import { SessionController } from "./session.controller.js";
 
 describe("SessionController — 세션 컨트롤러", () => {
 	let controller: SessionController;

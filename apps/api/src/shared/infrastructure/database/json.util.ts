@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "#api/generated/prisma/client";
 
 /**
  * 도메인 타입 값을 Prisma Json 입력값으로 좁히는 경계 헬퍼.

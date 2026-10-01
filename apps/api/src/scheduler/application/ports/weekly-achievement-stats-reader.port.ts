@@ -3,7 +3,7 @@
  *
  * 지난 주(월~일) 유저별 전체/완료 투두 수를 타임존 스코프로 집계한다.
  */
-import type { UserTodoCount } from "./scheduler-read-models";
+import type { UserTodoCount } from "./scheduler-read-models.js";
 
 export const WEEKLY_ACHIEVEMENT_STATS_READER = Symbol("WEEKLY_ACHIEVEMENT_STATS_READER");
 

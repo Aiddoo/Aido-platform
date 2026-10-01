@@ -1,8 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { createBillingIssueNotificationMessage } from "../../messages/notification-messages";
-import { NotificationPublisher } from "../../publishers/notification.publisher";
-import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
+import { createBillingIssueNotificationMessage } from "../../messages/notification-messages.js";
+import { NotificationPublisher } from "../../publishers/notification.publisher.js";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
 
 export interface SendBillingIssueNotificationInput {
 	readonly userId: string;

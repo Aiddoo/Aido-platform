@@ -1,13 +1,13 @@
 import { notificationContentSchema } from "@aido/validators";
 
-import type { SupportedLocale } from "@/shared/domain/locale";
-import { deterministicIndex } from "@/shared/domain/services/deterministic-variant";
+import type { SupportedLocale } from "#api/shared/domain/locale";
+import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
 import type {
 	LocalizedNotificationTemplate,
 	NotificationMessage,
 	NotificationVariantContext,
-} from "./notification-copy.types";
+} from "./notification-copy.types.js";
 
 const KOREAN_NOTIFICATION_LABEL_MAX_GRAPHEMES = 24;
 const ENGLISH_NOTIFICATION_LABEL_MAX_GRAPHEMES = 16;

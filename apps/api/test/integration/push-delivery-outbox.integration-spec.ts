@@ -1,13 +1,15 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { TestDatabase } from "@test/setup/test-database";
+import { vi } from "vitest";
+import { mock } from "vitest-mock-extended";
 
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { PrismaPushDeliveryLifecycleRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery-lifecycle.repository";
-import { PrismaPushDeliveryOutboxRepository } from "@/notification/infrastructure/persistence/prisma-push-delivery-outbox.repository";
-import { PrismaPushDispatchStagingRepository } from "@/notification/infrastructure/persistence/prisma-push-dispatch-staging.repository";
-import { PrismaRetentionRepository } from "@/retention/infrastructure/persistence/prisma-retention.repository";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { Prisma, PrismaClient } from "#api/generated/prisma/client";
+import { PrismaPushDeliveryLifecycleRepository } from "#api/notification/infrastructure/persistence/prisma-push-delivery-lifecycle.repository";
+import { PrismaPushDeliveryOutboxRepository } from "#api/notification/infrastructure/persistence/prisma-push-delivery-outbox.repository";
+import { PrismaPushDispatchStagingRepository } from "#api/notification/infrastructure/persistence/prisma-push-dispatch-staging.repository";
+import { PrismaRetentionRepository } from "#api/retention/infrastructure/persistence/prisma-retention.repository";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { TestDatabase } from "#test/setup/test-database";
 
 type TransactionClient = Prisma.TransactionClient;
 
@@ -45,8 +47,19 @@ async function waitUntilTransactionHoldsLock(
 	]);
 }
 
-function waitForPendingDatabaseQuery(): Promise<void> {
-	return new Promise((resolve) => setImmediate(resolve));
+async function waitForBlockedDatabaseQuery(prisma: PrismaClient): Promise<void> {
+	await vi.waitFor(
+		async () => {
+			const waiting = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
+			SELECT EXISTS (
+				SELECT 1 FROM pg_stat_activity
+				WHERE datname = current_database() AND wait_event_type = 'Lock'
+			) AS blocked
+		`;
+			expect(waiting[0]?.blocked).toBe(true);
+		},
+		{ timeout: 5_000, interval: 10 },
+	);
 }
 
 function trackSettlement<T>(promise: Promise<T>): TrackedPromise<T> {
@@ -69,7 +82,9 @@ function trackSettlement<T>(promise: Promise<T>): TrackedPromise<T> {
 function transactionHost(
 	client: PrismaClient | TransactionClient,
 ): TransactionHost<TransactionalAdapterPrisma<DatabaseService>> {
-	return { tx: client } as unknown as TransactionHost<TransactionalAdapterPrisma<DatabaseService>>;
+	const host = mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>();
+	Object.defineProperty(host, "tx", { value: client });
+	return host;
 }
 
 function staging(client: PrismaClient | TransactionClient): PrismaPushDispatchStagingRepository {
@@ -396,7 +411,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let claimWaitedForRecovery = false;
 		try {
 			await claimStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			claimWaitedForRecovery = !trackedClaim.isSettled();
 		} finally {
 			releaseRecovery.resolve();
@@ -453,7 +468,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let deferWaitedForClaim = false;
 		try {
 			await deferStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			deferWaitedForClaim = !trackedDefer.isSettled();
 		} finally {
 			releaseClaim.resolve();
@@ -510,7 +525,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let claimWaitedForDefer = false;
 		try {
 			await claimStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			claimWaitedForDefer = !trackedClaim.isSettled();
 		} finally {
 			releaseDefer.resolve();
@@ -582,7 +597,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let retryWaitedForTerminal = false;
 		try {
 			await terminalRetryStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			retryWaitedForTerminal = !terminalRetry.isSettled();
 		} finally {
 			releaseTerminal.resolve();
@@ -647,7 +662,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let finalizeWaitedForRetry = false;
 		try {
 			await staleFinalizeStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			finalizeWaitedForRetry = !staleFinalize.isSettled();
 		} finally {
 			releaseRetry.resolve();
@@ -984,7 +999,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let claimWaitedForRecovery = false;
 		try {
 			await claimStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			claimWaitedForRecovery = !trackedClaim.isSettled();
 		} finally {
 			releaseRecovery.resolve();
@@ -1041,7 +1056,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let deferWaitedForClaim = false;
 		try {
 			await deferStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			deferWaitedForClaim = !trackedDefer.isSettled();
 		} finally {
 			releaseClaim.resolve();
@@ -1096,7 +1111,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let claimWaitedForDefer = false;
 		try {
 			await claimStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			claimWaitedForDefer = !trackedClaim.isSettled();
 		} finally {
 			releaseDefer.resolve();
@@ -1165,7 +1180,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let retryWaitedForTerminal = false;
 		try {
 			await retryStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			retryWaitedForTerminal = !trackedRetry.isSettled();
 		} finally {
 			releaseTerminal.resolve();
@@ -1225,7 +1240,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 		let finalizeWaitedForRetry = false;
 		try {
 			await staleFinalizeStarted.promise;
-			await waitForPendingDatabaseQuery();
+			await waitForBlockedDatabaseQuery(prisma);
 			finalizeWaitedForRetry = !trackedFinalize.isSettled();
 		} finally {
 			releaseRetry.resolve();

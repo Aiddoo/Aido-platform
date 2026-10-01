@@ -1,22 +1,23 @@
+import { TestBed } from "@suites/unit";
 /**
  * UpsertPushTimezoneUseCase 단위 테스트
  *
  * 푸시 토큰 등록 시 타임존 upsert 후 activeTimezones 캐시 무효화 검증
  * (새 타임존이 스케줄러 활성 목록에서 누락되지 않도록 — update-preference와 대칭)
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUserSettingsCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { createUserSettingsCacheMock } from "#test/mocks/ports/index";
 
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
-import { UpsertPushTimezoneUseCase } from "./upsert-push-timezone.use-case";
+} from "../../ports/user-settings-cache.port.js";
+import { UpsertPushTimezoneUseCase } from "./upsert-push-timezone.use-case.js";
 
 describe("UpsertPushTimezoneUseCase — 푸시 토큰 등록 시 타임존 upsert", () => {
 	let useCase: UpsertPushTimezoneUseCase;

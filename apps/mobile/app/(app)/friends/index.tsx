@@ -4,7 +4,7 @@ import { SentRequestList } from '@src/features/friend/presentations/components/S
 import { useFriendListEditMode } from '@src/features/friend/presentations/hooks/use-friend-list-edit-mode';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
+import { Box, HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
 import { router, useNavigation, useRoute } from 'expo-router';
 import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
 import { Tabs } from 'heroui-native';
@@ -118,29 +118,35 @@ export default function FriendsScreen() {
         {match(view)
           .with(TabView.friends, () => (
             <Tabs.Content value={TabView.friends} className="flex-1">
-              <QueryErrorBoundary>
-                <Suspense fallback={<FriendList.Loading />}>
-                  <FriendList />
-                </Suspense>
-              </QueryErrorBoundary>
+              <Box flex={1} px={16}>
+                <QueryErrorBoundary>
+                  <Suspense fallback={<FriendList.Loading />}>
+                    <FriendList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </Box>
             </Tabs.Content>
           ))
           .with(TabView.receiver, () => (
             <Tabs.Content value={TabView.receiver} className="flex-1">
-              <QueryErrorBoundary>
-                <Suspense fallback={<ReceivedRequestList.Loading />}>
-                  <ReceivedRequestList />
-                </Suspense>
-              </QueryErrorBoundary>
+              <Box flex={1} px={16}>
+                <QueryErrorBoundary>
+                  <Suspense fallback={<ReceivedRequestList.Loading />}>
+                    <ReceivedRequestList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </Box>
             </Tabs.Content>
           ))
           .with(TabView.sender, () => (
             <Tabs.Content value={TabView.sender} className="flex-1">
-              <QueryErrorBoundary>
-                <Suspense fallback={<SentRequestList.Loading />}>
-                  <SentRequestList />
-                </Suspense>
-              </QueryErrorBoundary>
+              <Box flex={1} px={16}>
+                <QueryErrorBoundary>
+                  <Suspense fallback={<SentRequestList.Loading />}>
+                    <SentRequestList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </Box>
             </Tabs.Content>
           ))
           .exhaustive()}

@@ -3,7 +3,7 @@
  *
  * 삭제(DELETE /todos/:id) 완료 시 발행됩니다. 리마인더 취소 부수효과가 동작합니다.
  */
-import { TODO_EVENTS } from "./todo-event-names";
+import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoDeletedEvent {
 	readonly eventName = TODO_EVENTS.DELETED;

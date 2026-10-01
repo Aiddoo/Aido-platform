@@ -1,4 +1,8 @@
 import { sendFriendRequestParamSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class UserTagParamDto extends createZodDto(sendFriendRequestParamSchema) {}
+export const UserTagParamDto = sendFriendRequestParamSchema.meta({
+	id: "UserTagParamDto",
+	apiParameter: true,
+});
+export type UserTagParamDto = z.infer<typeof UserTagParamDto>;

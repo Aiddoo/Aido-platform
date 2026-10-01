@@ -1,6 +1,6 @@
-import type { SupportedLocale } from "@/shared/domain/locale";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { GeneratedReportContent } from "../../types";
+import type { GeneratedReportContent } from "../../types.js";
 
 /**
  * AI 불가용 시 폴백 콘텐츠

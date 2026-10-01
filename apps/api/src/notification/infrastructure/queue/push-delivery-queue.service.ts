@@ -2,17 +2,17 @@ import { createHash } from "node:crypto";
 
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports";
-import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
+import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
 
-import type { PushDeliveryJobEnqueuerPort } from "../../application/ports/push-delivery-job-enqueuer.port";
-import type { PushDeliveryPublication } from "../../application/types/push-delivery.types";
+import type { PushDeliveryJobEnqueuerPort } from "../../application/ports/push-delivery-job-enqueuer.port.js";
+import type { PushDeliveryPublication } from "../../application/types/push-delivery.types.js";
 import {
 	PUSH_DELIVERY_DISPATCH_JOB_POLICY,
 	PUSH_DELIVERY_JOB_POLICY,
 	PUSH_DELIVERY_QUEUE,
 	PushDeliveryJobName,
-} from "./push-delivery-queue.constants";
+} from "./push-delivery-queue.constants.js";
 
 function deliveryIdempotencyKey(publications: readonly PushDeliveryPublication[]): string {
 	const generationFingerprint = [...publications]

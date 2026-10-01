@@ -1,11 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Resend } from "resend";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import type { EmailSenderPort, EmailSendResult } from "../../application/ports/email-sender.port";
-import type { EmailMessage } from "../../domain/value-objects/email-message.vo";
-import { EMAIL_CONSTANTS, RETRYABLE_ERROR_TYPES } from "../constants/email.constants";
+import type {
+	EmailSenderPort,
+	EmailSendResult,
+} from "../../application/ports/email-sender.port.js";
+import type { EmailMessage } from "../../domain/value-objects/email-message.vo.js";
+import { EMAIL_CONSTANTS, RETRYABLE_ERROR_TYPES } from "../constants/email.constants.js";
 
 /**
  * EmailSenderPort의 Resend 어댑터.

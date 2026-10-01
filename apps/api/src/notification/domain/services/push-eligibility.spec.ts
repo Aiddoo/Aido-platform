@@ -2,7 +2,7 @@ import {
 	isAutomatedEngagementNotification,
 	isMarketingNotification,
 	isNightExemptNotification,
-} from "./push-eligibility";
+} from "./push-eligibility.js";
 
 describe("push eligibility policy", () => {
 	it.each([

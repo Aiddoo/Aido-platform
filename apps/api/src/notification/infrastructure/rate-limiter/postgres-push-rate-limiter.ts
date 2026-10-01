@@ -1,16 +1,16 @@
 import { Injectable } from "@nestjs/common";
 
-import { Prisma, type PushRateLimitPhase } from "@/generated/prisma/client";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { isTransactionWriteConflict } from "@/shared/infrastructure/database/prisma-error.util";
+import { Prisma, type PushRateLimitPhase } from "#api/generated/prisma/client";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { isTransactionWriteConflict } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import type {
 	EngagementPushRateLimitRequest,
 	GeneralPushRateLimitRequest,
 	PushRateLimitRequest,
 	PushRateLimiterPort,
-} from "../../application/ports/push-rate-limiter.port";
-import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy";
+} from "../../application/ports/push-rate-limiter.port.js";
+import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy.js";
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 const MAX_TRANSACTION_RETRIES = 5;

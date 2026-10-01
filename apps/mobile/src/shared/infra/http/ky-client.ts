@@ -1,7 +1,12 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode, isErrorCode } from '@aido/errors';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import { ApiError } from '@src/shared/errors/api-error';
-import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors/infra-error';
+import {
+  NetworkError,
+  ParseError,
+  ServerError,
+  TimeoutError,
+} from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import {
   HTTPError,
@@ -10,22 +15,23 @@ import {
   TimeoutError as KyTimeoutError,
   type Options,
 } from 'ky';
+import { z } from 'zod';
 
 import { resolveMessage } from './error-handler';
 
-interface ServerResponse<T> {
-  success: boolean;
-  data: T;
-  timestamp: number;
-}
+const successEnvelopeSchema = z.object({
+  success: z.literal(true),
+  data: z.unknown(),
+  timestamp: z.number(),
+});
 
-interface ServerErrorBody {
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, unknown>;
-  };
-}
+const errorEnvelopeSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    details: z.record(z.string(), z.unknown()).optional(),
+  }),
+});
 
 /**
  * Ky 기반 Result HttpClient — HTTP 결과 → 도메인 에러 분류의 **유일한 소유자**.
@@ -42,35 +48,43 @@ export class KyHttpClient implements HttpClient {
     this.#client = client;
   }
 
-  async get<T>(url: string, config?: RequestConfig): Promise<Result<T, ApiError>> {
-    return this.#request<T>(() => this.#client.get(url, this.#buildOptions(config)));
+  async get(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> {
+    return this.#request(() => this.#client.get(url, this.#buildOptions(config)));
   }
 
-  async post<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>> {
-    return this.#request<T>(() =>
+  async post(
+    url: string,
+    data?: unknown,
+    config?: RequestConfig,
+  ): Promise<Result<unknown, ApiError>> {
+    return this.#request(() =>
       this.#client.post(url, { ...this.#buildOptions(config), json: data }),
     );
   }
 
-  async put<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>> {
-    return this.#request<T>(() =>
+  async put(
+    url: string,
+    data?: unknown,
+    config?: RequestConfig,
+  ): Promise<Result<unknown, ApiError>> {
+    return this.#request(() =>
       this.#client.put(url, { ...this.#buildOptions(config), json: data }),
     );
   }
 
-  async patch<T>(
+  async patch(
     url: string,
     data?: unknown,
     config?: RequestConfig,
-  ): Promise<Result<T, ApiError>> {
-    return this.#request<T>(() =>
+  ): Promise<Result<unknown, ApiError>> {
+    return this.#request(() =>
       this.#client.patch(url, { ...this.#buildOptions(config), json: data }),
     );
   }
 
-  async delete<T>(url: string, config?: RequestConfig): Promise<Result<T, ApiError>> {
+  async delete(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> {
     const { body, ...restConfig } = config ?? {};
-    return this.#request<T>(() =>
+    return this.#request(() =>
       this.#client.delete(url, {
         ...this.#buildOptions(restConfig),
         ...(body !== undefined ? { json: body } : {}),
@@ -78,11 +92,14 @@ export class KyHttpClient implements HttpClient {
     );
   }
 
-  async #request<T>(request: () => Promise<Response>): Promise<Result<T, ApiError>> {
+  async #request(request: () => Promise<Response>): Promise<Result<unknown, ApiError>> {
     try {
       const response = await request();
-      const { data } = (await response.json()) as ServerResponse<T>;
-      return ok(data);
+      const parsed = successEnvelopeSchema.safeParse(await response.json());
+      if (!parsed.success) {
+        throw new ParseError(`[KyHttpClient] Invalid success envelope: ${parsed.error.message}`);
+      }
+      return ok(parsed.data.data);
     } catch (error) {
       if (error instanceof KyTimeoutError) {
         throw new TimeoutError();
@@ -98,8 +115,11 @@ export class KyHttpClient implements HttpClient {
         // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다
         // (`response.json()` 재호출 불가). 미리 파싱된 값에서 서버 에러 코드를 읽는다.
         const parsed: unknown = error.data;
-        const body = this.#isServerErrorBody(parsed) ? parsed : null;
-        const code = body?.error.code ?? ErrorCode.SYS_0001;
+        const envelope = errorEnvelopeSchema.safeParse(parsed);
+        const body = envelope.success ? envelope.data : undefined;
+        const candidateCode = body?.error.code;
+        const code =
+          candidateCode && isErrorCode(candidateCode) ? candidateCode : ErrorCode.SYS_0001;
         return err(
           new ApiError(
             code,
@@ -118,16 +138,6 @@ export class KyHttpClient implements HttpClient {
 
       throw error;
     }
-  }
-
-  #isServerErrorBody(body: unknown): body is ServerErrorBody {
-    return (
-      body !== null &&
-      typeof body === 'object' &&
-      'error' in body &&
-      typeof (body as ServerErrorBody).error === 'object' &&
-      (body as ServerErrorBody).error !== null
-    );
   }
 
   #buildOptions(config?: RequestConfig): Options {

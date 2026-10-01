@@ -1,8 +1,12 @@
 // 상수
 
 // Todo Category Common
-export { hexColorRegex, type ReorderPosition, reorderPositionSchema } from './todo-category.common';
-export * from './todo-category.constants';
+export {
+  hexColorRegex,
+  type ReorderPosition,
+  reorderPositionSchema,
+} from './todo-category.common.js';
+export * from './todo-category.constants.js';
 
 // Todo Category Request
 export {
@@ -16,7 +20,7 @@ export {
   todoCategoryIdParamSchema,
   type UpdateTodoCategoryInput,
   updateTodoCategorySchema,
-} from './todo-category.request';
+} from './todo-category.request.js';
 
 // Todo Category Response
 export {
@@ -38,4 +42,4 @@ export {
   todoCategoryWithCountSchema,
   type UpdateTodoCategoryResponse,
   updateTodoCategoryResponseSchema,
-} from './todo-category.response';
+} from './todo-category.response.js';

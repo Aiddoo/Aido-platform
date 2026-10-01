@@ -1,4 +1,4 @@
-import type { WeatherConditions, WeatherForecast } from "./weather-provider.port";
+import type { WeatherConditions, WeatherForecast } from "./weather-provider.port.js";
 
 export const WEATHER_CACHE = Symbol("WEATHER_CACHE");
 

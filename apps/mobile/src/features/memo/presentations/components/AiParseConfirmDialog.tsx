@@ -1,10 +1,10 @@
 import { ErrorCode } from '@aido/errors';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { useParseMemoMutationOptions } from '@src/features/ai/presentations/queries/use-parse-memo-mutation-options';
-import { useGetMemoQueryOptions } from '@src/features/memo/presentations/queries/use-get-memo-query-options';
+import { useGetMemoQueryOptions } from '@src/features/memo/presentations/queries/get-memo-query-options';
 import { AiUsagePolicy } from '@src/features/todo/models/todo.model';
-import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/use-get-ai-usage-query-options';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/get-ai-usage-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';

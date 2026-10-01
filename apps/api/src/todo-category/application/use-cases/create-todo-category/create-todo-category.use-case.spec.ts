@@ -1,28 +1,29 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	MUTATION_LOCK,
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
+import { TodoCategory } from "../../../domain/entities/todo-category.aggregate.js";
 import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
-} from "../../ports/todo-category-cache.port";
+} from "../../ports/todo-category-cache.port.js";
 import {
 	TODO_CATEGORY_LIMIT_READER,
 	type TodoCategoryLimitReaderPort,
-} from "../../ports/todo-category-limit-reader.port";
+} from "../../ports/todo-category-limit-reader.port.js";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import { CreateTodoCategoryUseCase } from "./create-todo-category.use-case";
+} from "../../ports/todo-category.repository.port.js";
+import { CreateTodoCategoryUseCase } from "./create-todo-category.use-case.js";
 
 const created = TodoCategory.reconstitute({
 	id: 1,
@@ -45,9 +46,9 @@ describe("CreateTodoCategoryUseCase", () => {
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(CreateTodoCategoryUseCase)
 			.mock<MutationLockPort>(MUTATION_LOCK)
-			.impl(() => ({ acquire: jest.fn() }))
+			.impl(() => ({ acquire: vi.fn() }))
 			.mock<UnitOfWorkPort>(UNIT_OF_WORK)
-			.impl(() => ({ run: jest.fn((work) => work()) }))
+			.impl(() => ({ run: vi.fn((work) => work()) }))
 			.compile();
 		useCase = unit;
 		repo = unitRef.get(TODO_CATEGORY_REPOSITORY);

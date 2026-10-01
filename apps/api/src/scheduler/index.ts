@@ -9,19 +9,19 @@ export {
 	type IReminderScheduler,
 	REMINDER_SCHEDULER,
 	type ReminderCancellationResult,
-} from "./application/ports/reminder-scheduler.port";
+} from "./application/ports/reminder-scheduler.port.js";
 export {
 	type ReminderHourChangedJobData,
 	type SocialDigestJobData,
 	TIMEZONE_REMINDER_ENQUEUER,
 	type TimezoneReminderEnqueuerPort,
-} from "./application/ports/timezone-reminder-enqueuer.port";
+} from "./application/ports/timezone-reminder-enqueuer.port.js";
 // --- Orchestrator (e2e/통합 테스트 부팅용) ---
-export { TimezoneAwareReminderOrchestrator } from "./application/services/timezone-aware-reminder.orchestrator";
+export { TimezoneAwareReminderOrchestrator } from "./application/services/timezone-aware-reminder.orchestrator.js";
 // --- Strategies (통합 테스트) ---
-export * from "./application/strategies";
+export * from "./application/strategies/index.js";
 // --- Todo 리마인더 프로세서 (e2e/통합 테스트 부팅용) ---
-export { TodoReminderProcessor } from "./infrastructure/processors/todo-reminder.processor";
+export { TodoReminderProcessor } from "./infrastructure/processors/todo-reminder.processor.js";
 // --- Queue (user-settings enqueuer · health · e2e) ---
 export {
 	TIMEZONE_REMINDER_QUEUE,
@@ -29,11 +29,11 @@ export {
 	TimezoneReminderProcessor,
 	TimezoneReminderQueueModule,
 	TimezoneReminderQueueService,
-} from "./infrastructure/queue";
+} from "./infrastructure/queue/index.js";
 // --- Reminder scheduler 큐 이름 (health · e2e) ---
 export {
 	type ReminderJobData,
 	TODO_REMINDER_QUEUE,
-} from "./infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
+} from "./infrastructure/scheduler/bullmq-reminder-scheduler.adapter.js";
 // --- Module ---
-export { SchedulerModule } from "./scheduler.module";
+export { SchedulerModule } from "./scheduler.module.js";

@@ -1,9 +1,9 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { NotificationPublisher } from "../../publishers/notification.publisher";
-import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
-import { SendBillingIssueNotificationUseCase } from "./send-billing-issue-notification.use-case";
+import { NotificationPublisher } from "../../publishers/notification.publisher.js";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
+import { SendBillingIssueNotificationUseCase } from "./send-billing-issue-notification.use-case.js";
 
 describe("SendBillingIssueNotificationUseCase", () => {
 	it("sends a localized SYSTEM_NOTICE and propagates failures", async () => {

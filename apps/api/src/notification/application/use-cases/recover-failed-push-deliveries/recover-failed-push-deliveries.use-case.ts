@@ -1,12 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import {
 	PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
 	type PushDeliveryLifecycleRepositoryPort,
-} from "../../ports/push-delivery-lifecycle.repository.port";
-import type { PushDeliveryPublication } from "../../types/push-delivery.types";
+} from "../../ports/push-delivery-lifecycle.repository.port.js";
+import type { PushDeliveryPublication } from "../../types/push-delivery.types.js";
 
 interface RecoverFailedPushDeliveriesInput {
 	readonly publications: readonly PushDeliveryPublication[];

@@ -1,11 +1,11 @@
 import type { CurrentUserPayload } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { IS_ADMIN_KEY } from "@/auth/presentation/decorators/admin.decorator";
+import { IS_ADMIN_KEY } from "#api/auth/presentation/decorators/admin.decorator";
 
-import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query";
-import { AdminGrowthController } from "./admin-growth.controller";
+import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query.js";
+import { AdminGrowthController } from "./admin-growth.controller.js";
 
 describe("AdminGrowthController — 관리자 성장 지표", () => {
 	it("관리자 전용 summary 요청을 facade에 위임한다", async () => {

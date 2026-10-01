@@ -1,6 +1,6 @@
 import type { Request } from "express";
 
-import { extractMetadata } from "./auth-controller.utils";
+import { extractMetadata } from "./auth-controller.utils.js";
 
 describe("extractMetadata", () => {
 	it("감사 IP는 전달 헤더의 왼쪽 값이 아니라 Express가 확정한 req.ip를 사용한다", () => {

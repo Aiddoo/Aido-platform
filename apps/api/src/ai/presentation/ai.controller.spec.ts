@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * AiController 컨트롤러 단위 테스트
  *
@@ -10,14 +11,13 @@
  * pnpm --filter @aido/api test ai.controller
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "../../auth/presentation/decorators";
-import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case";
-import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case";
-import { AiUsage } from "../domain/value-objects/ai-usage.vo";
-import { AiController } from "./ai.controller";
+import type { CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case.js";
+import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case.js";
+import { AiUsage } from "../domain/value-objects/ai-usage.vo.js";
+import { AiController } from "./ai.controller.js";
 
 describe("AiController — AI 컨트롤러", () => {
 	let controller: AiController;

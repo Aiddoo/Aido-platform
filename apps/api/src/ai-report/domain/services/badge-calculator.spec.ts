@@ -9,7 +9,7 @@
  * pnpm --filter @aido/api test badge-calculator
  * ```
  */
-import { type BadgeCalculatorInput, calculateBadges } from "./badge-calculator";
+import { type BadgeCalculatorInput, calculateBadges } from "./badge-calculator.js";
 
 function createInput(overrides?: Partial<BadgeCalculatorInput>): BadgeCalculatorInput {
 	return {

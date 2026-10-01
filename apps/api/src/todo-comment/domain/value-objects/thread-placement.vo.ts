@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException, ValueObject } from "@/shared/domain";
+import { DomainException, ValueObject } from "#api/shared/domain/index";
 
-import { TodoCommentId } from "./todo-comment-id.vo";
+import { TodoCommentId } from "./todo-comment-id.vo.js";
 
 interface ThreadPlacementProps {
 	/** 직계 부모. 최상위 댓글이면 null */

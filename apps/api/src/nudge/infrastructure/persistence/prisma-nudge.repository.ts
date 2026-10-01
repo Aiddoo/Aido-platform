@@ -2,12 +2,12 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type * as PrismaModels from "@/generated/prisma/client";
-import { addDays } from "@/shared/domain/date/utils/arithmetic";
-import { now } from "@/shared/domain/date/utils/core";
-import { startOfDay } from "@/shared/domain/date/utils/range";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { USER_BRIEF_SELECT } from "@/shared/infrastructure/database/selects";
+import type * as PrismaModels from "#api/generated/prisma/client";
+import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
+import { startOfDay } from "#api/shared/domain/date/utils/range";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { USER_BRIEF_SELECT } from "#api/shared/infrastructure/database/selects";
 
 import type {
 	CreateNudgeInput,
@@ -17,9 +17,9 @@ import type {
 	NudgeWithRelations,
 	ReminderNudgeWithRelations,
 	TargetTodoRecord,
-} from "../../application/ports/nudge.repository.port";
-import { Nudge } from "../../domain/entities/nudge.aggregate";
-import { ReminderNudge } from "../../domain/entities/reminder-nudge.entity";
+} from "../../application/ports/nudge.repository.port.js";
+import { Nudge } from "../../domain/entities/nudge.aggregate.js";
+import { ReminderNudge } from "../../domain/entities/reminder-nudge.entity.js";
 
 type UserBriefRow = {
 	id: string;

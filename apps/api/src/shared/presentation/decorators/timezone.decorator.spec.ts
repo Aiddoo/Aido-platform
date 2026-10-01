@@ -1,4 +1,4 @@
-import { parseTimezoneHeader } from "./timezone.decorator";
+import { parseTimezoneHeader } from "./timezone.decorator.js";
 
 describe("parseTimezoneHeader", () => {
 	it.each([

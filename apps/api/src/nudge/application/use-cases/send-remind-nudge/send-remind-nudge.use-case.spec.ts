@@ -1,18 +1,23 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { FollowReader } from "@/follow";
-import { MUTATION_LOCK, type MutationLockPort, UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { FollowReader } from "#api/follow/index";
+import {
+	MUTATION_LOCK,
+	type MutationLockPort,
+	UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { ReminderNudge } from "../../../domain/entities/reminder-nudge.entity";
-import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port";
+import { ReminderNudge } from "../../../domain/entities/reminder-nudge.entity.js";
+import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port.js";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type ReminderNudgeWithRelations,
-} from "../../ports/nudge.repository.port";
-import { SendRemindNudgeUseCase } from "./send-remind-nudge.use-case";
+} from "../../ports/nudge.repository.port.js";
+import { SendRemindNudgeUseCase } from "./send-remind-nudge.use-case.js";
 
 const createdRemind: ReminderNudgeWithRelations = {
 	id: 5,
@@ -38,7 +43,7 @@ describe("SendRemindNudgeUseCase", () => {
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(SendRemindNudgeUseCase)
 			.mock<MutationLockPort>(MUTATION_LOCK)
-			.impl(() => ({ acquire: jest.fn() }))
+			.impl(() => ({ acquire: vi.fn() }))
 			.compile();
 		useCase = unit;
 		repo = unitRef.get(NUDGE_REPOSITORY);

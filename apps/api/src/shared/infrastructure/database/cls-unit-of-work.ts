@@ -6,7 +6,7 @@ import type {
 	AfterCommitTask,
 	AfterCommitTaskRegistryPort,
 	UnitOfWorkPort,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
 
 const AFTER_COMMIT_TASK_SCOPE = Symbol("AFTER_COMMIT_TASK_SCOPE");
 

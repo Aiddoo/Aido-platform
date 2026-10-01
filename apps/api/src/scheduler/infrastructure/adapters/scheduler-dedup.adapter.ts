@@ -3,10 +3,10 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	DEDUP_PROVIDER,
 	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
+} from "#api/shared/infrastructure/dedup/interfaces/dedup.interface";
 
-import type { SchedulerDedupPort } from "../../application/ports/scheduler-dedup.port";
-import { SCHEDULER_DEDUP_TTL_MS, SchedulerDedupKey } from "../cache/scheduler-dedup.keyspace";
+import type { SchedulerDedupPort } from "../../application/ports/scheduler-dedup.port.js";
+import { SCHEDULER_DEDUP_TTL_MS, SchedulerDedupKey } from "../cache/scheduler-dedup.keyspace.js";
 
 @Injectable()
 export class SchedulerDedupAdapter implements SchedulerDedupPort {

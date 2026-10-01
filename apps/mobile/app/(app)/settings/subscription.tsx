@@ -9,11 +9,11 @@ import {
   SubscriptionPolicy,
 } from '@src/features/subscription/models/subscription.model';
 import { SubscriptionPlanCard } from '@src/features/subscription/presentations/components/SubscriptionPlanCard';
-import { useGetOfferingsQueryOptions } from '@src/features/subscription/presentations/queries/use-get-offerings-query-options';
+import { useGetOfferingsQueryOptions } from '@src/features/subscription/presentations/queries/get-offerings-query-options';
 import { usePurchaseMutationOptions } from '@src/features/subscription/presentations/queries/use-purchase-mutation-options';
 import { useRestoreMutationOptions } from '@src/features/subscription/presentations/queries/use-restore-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { STORE_URLS } from '@src/shared/constants/store-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';

@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 
-import type { NotificationCachePort } from "../../application/ports/notification-cache.port";
+import type { NotificationCachePort } from "../../application/ports/notification-cache.port.js";
 
 /**
  * NotificationCachePort의 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임한다.

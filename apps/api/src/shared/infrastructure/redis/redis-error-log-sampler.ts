@@ -1,6 +1,6 @@
 import type { Logger } from "@nestjs/common";
 
-import { toErrorMessage } from "@/shared/application/utils/error-message.util";
+import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
 
 /**
  * Redis 에러 로그 샘플러

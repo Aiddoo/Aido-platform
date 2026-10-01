@@ -9,7 +9,7 @@ import { Separator, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { useGetNotificationsInfiniteQueryOptions } from '../queries/use-get-notifications-infinite-query-options';
+import { useGetNotificationsInfiniteQueryOptions } from '../queries/get-notifications-infinite-query-options';
 import { NotificationItem } from './notification-item';
 
 interface NotificationListProps {

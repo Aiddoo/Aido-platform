@@ -1,13 +1,13 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
 
 import {
 	ADMIN_NOTIFICATION_QUEUE,
 	AdminNotificationJobName,
 	DAILY_SIGNUP_SUMMARY_SCHEDULE,
-} from "../queue/admin-notification-queue.constants";
+} from "../queue/admin-notification-queue.constants.js";
 
 /**
  * 일일 가입 요약 스케줄러 등록기.

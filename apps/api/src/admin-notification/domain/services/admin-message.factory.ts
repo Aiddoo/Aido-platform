@@ -1,19 +1,23 @@
-import type { SubscriptionEventPayload } from "@/subscription";
+import type { SubscriptionEventPayload } from "#api/subscription/index";
 
-import type { UserRegisteredEventPayload } from "../types/user-registered.payload";
+import type { UserRegisteredEventPayload } from "../types/user-registered.payload.js";
 import {
 	type AdminNotificationField,
 	AdminNotificationMessage,
-} from "../value-objects/admin-notification-message.vo";
-import { formatDate, formatPrice } from "./discord-format";
-import { accountProviderLabel, PROVIDER_DEVICE_LABELS, PROVIDER_LABELS } from "./provider-labels";
+} from "../value-objects/admin-notification-message.vo.js";
+import { formatDate, formatPrice } from "./discord-format.js";
+import {
+	accountProviderLabel,
+	PROVIDER_DEVICE_LABELS,
+	PROVIDER_LABELS,
+} from "./provider-labels.js";
 import {
 	DEFAULT_META,
 	DEVICE_LABELS,
 	EVENT_META,
 	REVENUECAT_EVENT_TO_INTERNAL,
 	STORE_LABELS,
-} from "./subscription-event-meta";
+} from "./subscription-event-meta.js";
 
 /** 전일 가입 집계 (provider별 count + 총 사용자 수) */
 export interface DailySignupSummary {

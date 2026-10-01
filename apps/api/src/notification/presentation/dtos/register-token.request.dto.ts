@@ -1,4 +1,5 @@
 import { registerPushTokenSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class RegisterPushTokenDto extends createZodDto(registerPushTokenSchema) {}
+export const RegisterPushTokenDto = registerPushTokenSchema.meta({ id: "RegisterPushTokenDto" });
+export type RegisterPushTokenDto = z.infer<typeof RegisterPushTokenDto>;

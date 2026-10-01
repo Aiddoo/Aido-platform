@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException, ValueObject } from "@/shared/domain";
+import { DomainException, ValueObject } from "#api/shared/domain/index";
 
 /**
  * Todo 일정 VO 프로퍼티

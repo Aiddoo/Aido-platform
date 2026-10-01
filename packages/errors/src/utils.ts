@@ -1,5 +1,5 @@
-import { ErrorCode, type ErrorCodeType, Errors } from './errors';
-import type { ErrorDefinition, ErrorResponse } from './types';
+import { ErrorCode, type ErrorCodeType, Errors } from './errors.js';
+import type { ErrorDefinition, ErrorResponse } from './types.js';
 
 /**
  * 에러 코드로 에러 정의 가져오기

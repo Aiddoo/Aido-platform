@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { nullableDatetimeSchema } from '../../common/datetime';
+import { nullableDatetimeSchema } from '../../common/datetime.js';
 
 export const userConsentSchema = z
   .object({

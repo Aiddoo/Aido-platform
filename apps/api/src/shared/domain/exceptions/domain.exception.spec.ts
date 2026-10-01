@@ -7,9 +7,9 @@
 
 import { ErrorCode, Errors } from "@aido/errors";
 
-import { ApplicationException } from "./application.exception";
-import { DomainException } from "./domain.exception";
-import { ErrorCodedException } from "./error-coded.exception";
+import { ApplicationException } from "./application.exception.js";
+import { DomainException } from "./domain.exception.js";
+import { ErrorCodedException } from "./error-coded.exception.js";
 
 describe("DomainException — 도메인 예외", () => {
 	it("에러 코드와 details를 보존한다", () => {

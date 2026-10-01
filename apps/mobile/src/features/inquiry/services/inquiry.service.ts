@@ -1,8 +1,4 @@
-import {
-  type CreateInquiryInput,
-  type CreateInquiryResponse,
-  createInquiryResponseSchema,
-} from '@aido/validators';
+import { type CreateInquiryInput, createInquiryResponseSchema } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
@@ -19,7 +15,7 @@ export class InquiryService {
   }
 
   createInquiry = async (input: CreateInquiryInput): Promise<Result<InquiryResult, ApiError>> => {
-    const result = await this.#httpClient.post<CreateInquiryResponse>('v1/inquiries', input);
+    const result = await this.#httpClient.post('v1/inquiries', input);
 
     if (!result.ok) {
       return result;

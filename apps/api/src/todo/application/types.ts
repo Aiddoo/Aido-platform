@@ -35,6 +35,7 @@ export interface CreateRecurringTodoData {
 	scheduledTime?: string | null;
 	isAllDay?: boolean;
 	visibility?: "PUBLIC" | "PRIVATE";
+	items?: { title: string }[];
 }
 
 /**

@@ -1,20 +1,20 @@
 import { Injectable } from "@nestjs/common";
 
-import type { ConsentSeedInput } from "../../application/ports/user-consent.repository.port";
+import type { ConsentSeedInput } from "../../application/ports/user-consent.repository.port.js";
 import type {
 	UserNotificationSettingsAccessPort,
 	UserSettingsProvisionerPort,
 	UserStreakAccessPort,
-} from "../../application/ports/user-settings-access.port";
-import { GetConsentRecordUseCase } from "../../application/use-cases/get-consent-record/get-consent-record.use-case";
-import { GetConsentRecordsUseCase } from "../../application/use-cases/get-consent-records/get-consent-records.use-case";
-import { GetPreferenceRecordUseCase } from "../../application/use-cases/get-preference-record/get-preference-record.use-case";
-import { GetPreferenceRecordsUseCase } from "../../application/use-cases/get-preference-records/get-preference-records.use-case";
-import { OnTodoToggledUseCase } from "../../application/use-cases/on-todo-toggled/on-todo-toggled.use-case";
-import { SeedUserSettingsUseCase } from "../../application/use-cases/seed-user-settings/seed-user-settings.use-case";
-import { UpdateMarketingPushConsentUseCase } from "../../application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case";
-import { UpsertPushLocaleUseCase } from "../../application/use-cases/upsert-push-locale/upsert-push-locale.use-case";
-import { UpsertPushTimezoneUseCase } from "../../application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case";
+} from "../../application/ports/user-settings-access.port.js";
+import { GetConsentRecordUseCase } from "../../application/use-cases/get-consent-record/get-consent-record.use-case.js";
+import { GetConsentRecordsUseCase } from "../../application/use-cases/get-consent-records/get-consent-records.use-case.js";
+import { GetPreferenceRecordUseCase } from "../../application/use-cases/get-preference-record/get-preference-record.use-case.js";
+import { GetPreferenceRecordsUseCase } from "../../application/use-cases/get-preference-records/get-preference-records.use-case.js";
+import { OnTodoToggledUseCase } from "../../application/use-cases/on-todo-toggled/on-todo-toggled.use-case.js";
+import { SeedUserSettingsUseCase } from "../../application/use-cases/seed-user-settings/seed-user-settings.use-case.js";
+import { UpdateMarketingPushConsentUseCase } from "../../application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case.js";
+import { UpsertPushLocaleUseCase } from "../../application/use-cases/upsert-push-locale/upsert-push-locale.use-case.js";
+import { UpsertPushTimezoneUseCase } from "../../application/use-cases/upsert-push-timezone/upsert-push-timezone.use-case.js";
 
 /** 외부 컨텍스트에 공개한 좁은 capability를 내부 endpoint UseCase에 연결한다. */
 @Injectable()

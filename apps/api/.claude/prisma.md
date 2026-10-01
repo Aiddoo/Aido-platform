@@ -1,8 +1,8 @@
 # Prisma 7 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
 
-> Prisma 7.4 사용법 및 쿼리 패턴 가이드
+> Prisma 7.10 사용법 및 쿼리 패턴 가이드
 
 ## 관련 문서
 
@@ -18,12 +18,14 @@
 
 | 항목            | 값                                |
 | --------------- | --------------------------------- |
-| 버전            | Prisma 7.4.0                      |
+| 버전            | Prisma 7.10.0                     |
 | 스키마 위치     | `prisma/schema.prisma`            |
 | 생성 클라이언트 | `src/generated/prisma/`           |
 | 어댑터          | `@prisma/adapter-pg` (PostgreSQL) |
 
-Prisma 7은 Rust에서 TypeScript로 재작성되어 **90% 작은 번들**, **3배 빠른 쿼리 성능**을 제공합니다.
+생성 클라이언트는 ESM이고 PostgreSQL 연결은 `@prisma/adapter-pg`가 소유한다. 버전 갱신만으로 성능 개선을 주장하지 않고 동일한 시나리오로 측정한다.
+
+`prisma` CLI는 클라이언트 생성과 migration에 쓰는 직접 개발 의존성이다. API 실행에는 생성 클라이언트, `@prisma/client` runtime, PostgreSQL adapter와 CLS transaction adapter를 사용한다. Migration workspace는 CLI를 직접 의존하며 API production 이미지와 분리한다. CLI/client 버전은 catalog에서 함께 유지한다.
 
 ---
 
@@ -35,7 +37,7 @@ Prisma 7은 Rust에서 TypeScript로 재작성되어 **90% 작은 번들**, **3�
 generator client {
   provider     = "prisma-client"            // ❌ prisma-client-js 아님
   output       = "../src/generated/prisma"  // ✅ 필수
-  moduleFormat = "cjs"                      // CommonJS (NestJS 호환)
+  moduleFormat = "esm"                      // NodeNext ESM
 }
 ```
 
@@ -53,8 +55,7 @@ const prisma = new PrismaClient({ adapter });
 
 ### ESM 지원
 
-- `package.json`에 `"type": "module"` 또는
-- `moduleFormat = "cjs"` 설정 (NestJS 권장)
+API package의 `"type": "module"`, TypeScript의 NodeNext 설정, generator의 `moduleFormat = "esm"`을 함께 유지한다.
 
 ---
 
@@ -73,23 +74,27 @@ const prisma = new PrismaClient({ adapter });
 
 ### 기본 구조
 
-> `tx?` 파라미터로 트랜잭션 참여를 선택적으로 허용하여, 같은 Repository 메서드를 트랜잭션 안팎 모두에서 재사용 가능.
+리포지토리는 `TransactionHost`의 `tx`를 읽는다. 활성 CLS 트랜잭션이 있으면 참여하고, 없으면 기본 클라이언트를 사용한다. application/domain 계층에는 Prisma client나 `tx` 파라미터를 전달하지 않는다.
 
 ```typescript
-@Injectable()
-export class {Feature}Repository {
-  constructor(private readonly db: DatabaseService) {}
+import { TransactionHost } from '@nestjs-cls/transactional';
+import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { Injectable } from '@nestjs/common';
 
-  async findById(id: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? this.db;
-    return client.{model}.findUnique({ where: { id } });
+import type { DatabaseService } from '#api/shared/infrastructure/database/database.service';
+
+@Injectable()
+export class TodoRowRepository {
+  constructor(
+    private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
+  ) {}
+
+  private get client() {
+    return this.txHost.tx;
   }
 
-  async findByUserId(userId: string) {
-    return this.db.{model}.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findByIdAndUserId(id: number, userId: string) {
+    return this.client.todo.findFirst({ where: { id, userId } });
   }
 }
 ```
@@ -98,7 +103,7 @@ export class {Feature}Repository {
 
 ```typescript
 // ✅ 필요한 관계만 명시
-const user = await this.db.user.findUnique({
+const user = await this.client.user.findUnique({
   where: { id },
   include: {
     profile: true,
@@ -111,7 +116,7 @@ const user = await this.db.user.findUnique({
 
 ```typescript
 // ✅ 필요한 필드만 조회 (성능 최적화)
-const users = await this.db.user.findMany({
+const users = await this.client.user.findMany({
   select: {
     id: true,
     email: true,
@@ -124,27 +129,18 @@ const users = await this.db.user.findMany({
 
 ## 트랜잭션
 
-### Interactive Transaction (권장)
+### UnitOfWorkPort와 CLS
+
+쓰기 use-case는 `UNIT_OF_WORK`로 주입한 `UnitOfWorkPort`의 `run`에서 트랜잭션 경계를 선언한다. 콜백은 `tx`를 받지 않으며 모든 리포지토리는 동일한 CLS context에 참여한다. 중첩 `run`은 Required propagation으로 기존 트랜잭션을 재사용한다.
 
 ```typescript
-await this.db.$transaction(async (tx) => {
-  const user = await tx.user.create({ data: userData });
-  await tx.userProfile.create({
-    data: { userId: user.id, ...profileData },
-  });
-  return user;
+const created = await this.uow.run(async () => {
+  const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId);
+  return this.todoRepository.create({ ...draft, sortOrder: maxSortOrder + 1 });
 });
 ```
 
-### Sequential Transaction
-
-```typescript
-// 여러 쿼리를 원자적으로 실행
-await this.db.$transaction([
-  this.db.todo.deleteMany({ where: { userId } }),
-  this.db.user.delete({ where: { id: userId } }),
-]);
-```
+상세 구현은 `src/todo/application/use-cases/create-todo/create-todo.use-case.ts`와 `src/shared/application/ports/unit-of-work.port.ts`를 기준으로 한다. use-case에서 직접 `$transaction`을 호출하거나 Prisma의 `TransactionClient`를 계층 간에 전달하지 않는다. 캐시 무효화와 도메인 이벤트 발행은 commit 뒤에 수행한다.
 
 ---
 
@@ -164,13 +160,13 @@ model Todo {
 
 ```typescript
 // 오프셋 기반 (간단하지만 대량 데이터에 느림)
-const todos = await this.db.todo.findMany({
+const todos = await this.client.todo.findMany({
   skip: (page - 1) * size,
   take: size,
 });
 
 // 커서 기반 (권장 - 대량 데이터에 효율적)
-const todos = await this.db.todo.findMany({
+const todos = await this.client.todo.findMany({
   take: size,
   cursor: cursor ? { id: cursor } : undefined,
   skip: cursor ? 1 : 0,
@@ -181,13 +177,13 @@ const todos = await this.db.todo.findMany({
 
 ```typescript
 // 대량 생성
-await this.db.todo.createMany({
+await this.client.todo.createMany({
   data: todosData,
   skipDuplicates: true,
 });
 
 // 대량 업데이트
-await this.db.todo.updateMany({
+await this.client.todo.updateMany({
   where: { userId, completed: false },
   data: { completed: true },
 });
@@ -202,17 +198,17 @@ await this.db.todo.updateMany({
 ```typescript
 // ❌ 루프 내 쿼리
 for (const user of users) {
-  const todos = await this.db.todo.findMany({ where: { userId: user.id } });
+  const todos = await this.client.todo.findMany({ where: { userId: user.id } });
 }
 
 // ✅ Include 사용
-const users = await this.db.user.findMany({
+const users = await this.client.user.findMany({
   include: { todos: true },
 });
 
 // ✅ 또는 별도 쿼리로 일괄 조회
 const userIds = users.map((u) => u.id);
-const todos = await this.db.todo.findMany({
+const todos = await this.client.todo.findMany({
   where: { userId: { in: userIds } },
 });
 ```
@@ -221,13 +217,13 @@ const todos = await this.db.todo.findMany({
 
 ```typescript
 // 삭제 시
-await this.db.user.update({
+await this.client.user.update({
   where: { id },
   data: { deletedAt: new Date() },
 });
 
 // 조회 시 항상 필터
-const users = await this.db.user.findMany({
+const users = await this.client.user.findMany({
   where: { deletedAt: null },
 });
 ```
@@ -274,7 +270,7 @@ Testcontainers로 격리된 PostgreSQL 컨테이너를 사용합니다.
 // test/setup/test-database.ts
 export class TestDatabase {
   async start() {
-    // PostgreSQL 컨테이너 시작 및 마이그레이션 적용
+    // global setup이 준비한 관리형 DB에 연결
   }
 
   getPrisma() {
@@ -295,9 +291,9 @@ export class TestDatabase {
 
 - [Prisma 7 릴리즈 공지](https://www.prisma.io/blog/announcing-prisma-orm-7-0-0)
 - [Prisma 7 업그레이드 가이드](https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)
-- [Prisma 7.4.0 변경사항](https://www.prisma.io/blog/announcing-prisma-orm-7-4-0)
+- [Prisma 7.10.0 변경사항](https://www.prisma.io/docs/orm/overview/releases)
 
 ---
 
 **문서 버전**: 3.1.0
-**최종 수정일**: 2026-04-05
+**최종 수정일**: 2026-10-01

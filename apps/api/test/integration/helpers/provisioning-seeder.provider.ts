@@ -13,10 +13,10 @@ import {
 	type ProvisioningConsent,
 	USER_PROVISIONING_SEEDER,
 	type UserProvisioningSeederPort,
-} from "@/auth/application/ports/user-provisioning-seeder.port";
-import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
-import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
+} from "#api/auth/application/ports/user-provisioning-seeder.port";
+import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
+import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
 
 export const provisioningSeederTestProvider: Provider = {
 	provide: USER_PROVISIONING_SEEDER,

@@ -1,10 +1,11 @@
 import type { PrismaTransactionLike } from "pg-boss";
 import { PgBoss } from "pg-boss";
+import { vi } from "vitest";
 
-import type { EnqueueJobOptions } from "@/shared/application/ports/job-runtime.port";
-import { PgBossJobRuntimeAdapter } from "@/shared/infrastructure/jobs/pg-boss-job-runtime.adapter";
+import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
+import { PgBossJobRuntimeAdapter } from "#api/shared/infrastructure/jobs/pg-boss-job-runtime.adapter";
 
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 const SCHEMA = "pgboss";
 
@@ -88,7 +89,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 			{ documentId: 1 },
 			options({ idempotencyKey: "complete:1" }),
 		);
-		const handled = jest.fn().mockResolvedValue(undefined);
+		const handled = vi.fn().mockResolvedValue(undefined);
 
 		await runtime.work(queue, handled, {
 			teamSize: 1,
@@ -104,7 +105,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 
 	it("startAfter 전에는 처리하지 않고 이후에 처리한다", async () => {
 		const queue = "integration-delayed";
-		const handled = jest.fn().mockResolvedValue(undefined);
+		const handled = vi.fn().mockResolvedValue(undefined);
 		await runtime.enqueue(
 			queue,
 			{ documentId: 2 },
@@ -153,8 +154,8 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 			retentionSeconds: 14 * 24 * 60 * 60,
 			deleteAfterSeconds: 7 * 24 * 60 * 60,
 		} as const;
-		const handled = jest.fn().mockRejectedValue(new Error("expected failure"));
-		const deadLetterHandled = jest.fn().mockRejectedValue(new Error("database still unavailable"));
+		const handled = vi.fn().mockRejectedValue(new Error("expected failure"));
+		const deadLetterHandled = vi.fn().mockRejectedValue(new Error("database still unavailable"));
 		// 이전 버전이 기본 정책으로 먼저 만든 queue도 typed worker 등록으로 수렴해야 한다.
 		await boss.createQueue(deadLetter);
 		await runtime.work(deadLetter, deadLetterHandled, {
@@ -225,7 +226,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 			job: { shutdownTimeoutMs: 10_000 },
 		});
 		await runtime.start();
-		const handled = jest.fn().mockResolvedValue(undefined);
+		const handled = vi.fn().mockResolvedValue(undefined);
 		await runtime.work(queue, handled, {
 			teamSize: 1,
 			pollingIntervalSeconds: 1,

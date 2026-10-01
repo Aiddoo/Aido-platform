@@ -11,7 +11,7 @@
  */
 import { NIGHT_TIME_CONFIG } from "@aido/validators";
 
-import { isNightTime } from "./night-time";
+import { isNightTime } from "./night-time.js";
 
 describe("night-time.util", () => {
 	const KST = "Asia/Seoul";

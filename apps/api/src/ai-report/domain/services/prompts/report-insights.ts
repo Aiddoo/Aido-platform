@@ -1,6 +1,6 @@
-import type { SupportedLocale } from "@/shared/domain/locale";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { AggregatedReportData } from "../../types";
+import type { AggregatedReportData } from "../../types.js";
 
 const DAY_KOREAN: Record<string, string> = {
 	MON: "월요일",

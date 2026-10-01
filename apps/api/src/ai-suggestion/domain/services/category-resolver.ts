@@ -9,7 +9,7 @@
  * Live QA 에서 발견된 "운동 30분" 제안이 자기계발 카테고리로 잘못 할당되던
  * 문제를 1단계 매칭으로 예방한다.
  */
-import type { TodoSummaryForAnalysis } from "../types";
+import type { TodoSummaryForAnalysis } from "../types.js";
 
 /**
  * 제안 제목 + 매칭 투두 기반으로 추천 카테고리 ID 를 결정.

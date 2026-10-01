@@ -1,12 +1,12 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
+import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign.js";
 import {
 	createNudgeReceivedNotificationMessage,
 	createTodoCreationNudgeNotificationMessage,
-} from "../../messages/notification-messages";
-import { NotificationPublisher } from "../../publishers/notification.publisher";
-import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
+} from "../../messages/notification-messages.js";
+import { NotificationPublisher } from "../../publishers/notification.publisher.js";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
 
 export interface SendNudgeNotificationInput {
 	readonly nudgeId: number;

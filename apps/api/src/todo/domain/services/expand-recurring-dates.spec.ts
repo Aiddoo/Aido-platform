@@ -4,7 +4,7 @@
  * GWT 패턴 — 순수 함수 날짜 확장 규칙 검증
  */
 
-import { expandRecurringDates } from "./expand-recurring-dates";
+import { expandRecurringDates } from "./expand-recurring-dates.js";
 
 describe("expandRecurringDates — 반복 날짜 확장", () => {
 	it("범위 내에서 지정 요일의 날짜만 반환한다", () => {

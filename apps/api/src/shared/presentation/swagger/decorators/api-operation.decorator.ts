@@ -1,9 +1,9 @@
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 
-import { SWAGGER_DESCRIPTION } from "../constants/swagger.constant";
-import type { ApiDocOptions } from "../interfaces/swagger.interface";
-import { ErrorResponseSchema } from "../schemas/response.schema";
+import { SWAGGER_DESCRIPTION } from "../constants/swagger.constant.js";
+import type { ApiDocOptions } from "../interfaces/swagger.interface.js";
+import { ErrorResponseSchema } from "../schemas/response.schema.js";
 
 /**
  * API 문서화를 위한 통합 데코레이터

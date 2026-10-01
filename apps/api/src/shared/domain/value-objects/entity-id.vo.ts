@@ -1,4 +1,4 @@
-import { ValueObject } from "../value-object";
+import { ValueObject } from "../value-object.js";
 
 /**
  * 엔티티 식별자 VO 베이스

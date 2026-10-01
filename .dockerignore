@@ -1,12 +1,12 @@
 # Dependencies
-node_modules/
+**/node_modules/
 .pnpm-store/
 
 # Build outputs
-dist/
-.turbo/
+**/dist/
+**/.turbo/
 .next/
-.expo/
+**/.expo/
 
 # Mobile app (API 빌드에 불필요)
 apps/mobile/
@@ -20,8 +20,6 @@ backups/
 
 # Environment
 .env*
-!.env.docker.dev.example
-!.env.docker.prod.example
 
 # IDE
 .idea/
@@ -38,9 +36,22 @@ backups/
 # Documentation
 *.md
 myDocs/
+docs/
 
 # Tests
-coverage/
-*.spec.ts
-*.e2e-spec.ts
-test/
+**/coverage/
+**/*.spec.ts
+**/*.e2e-spec.ts
+**/test/
+**/*.test.ts
+**/*.test.tsx
+**/*.integration-spec.ts
+**/*.snap
+**/*.tsbuildinfo
+**/.jest-cache/
+**/.vitest/
+**/.claude/
+**/src/generated/
+**/prisma/generated/
+**/AGENTS.md
+**/CLAUDE.md

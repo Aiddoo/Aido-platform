@@ -5,14 +5,25 @@ import {
 	reorderFriendResponseSchema,
 	sendFriendRequestResponseSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class SendFriendRequestResponseDto extends createZodDto(sendFriendRequestResponseSchema) {}
-export class AcceptFriendRequestResponseDto extends createZodDto(
-	acceptFriendRequestResponseSchema,
-) {}
-export class RejectFriendRequestResponseDto extends createZodDto(
-	rejectFriendRequestResponseSchema,
-) {}
-export class RemoveFriendResponseDto extends createZodDto(removeFriendResponseSchema) {}
-export class ReorderFriendResponseDto extends createZodDto(reorderFriendResponseSchema) {}
+export const SendFriendRequestResponseDto = sendFriendRequestResponseSchema.meta({
+	id: "SendFriendRequestResponseDto",
+});
+export type SendFriendRequestResponseDto = z.infer<typeof SendFriendRequestResponseDto>;
+export const AcceptFriendRequestResponseDto = acceptFriendRequestResponseSchema.meta({
+	id: "AcceptFriendRequestResponseDto",
+});
+export type AcceptFriendRequestResponseDto = z.infer<typeof AcceptFriendRequestResponseDto>;
+export const RejectFriendRequestResponseDto = rejectFriendRequestResponseSchema.meta({
+	id: "RejectFriendRequestResponseDto",
+});
+export type RejectFriendRequestResponseDto = z.infer<typeof RejectFriendRequestResponseDto>;
+export const RemoveFriendResponseDto = removeFriendResponseSchema.meta({
+	id: "RemoveFriendResponseDto",
+});
+export type RemoveFriendResponseDto = z.infer<typeof RemoveFriendResponseDto>;
+export const ReorderFriendResponseDto = reorderFriendResponseSchema.meta({
+	id: "ReorderFriendResponseDto",
+});
+export type ReorderFriendResponseDto = z.infer<typeof ReorderFriendResponseDto>;

@@ -1,4 +1,5 @@
 import { reorderMemoSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class ReorderMemoDto extends createZodDto(reorderMemoSchema) {}
+export const ReorderMemoDto = reorderMemoSchema.meta({ id: "ReorderMemoDto" });
+export type ReorderMemoDto = z.infer<typeof ReorderMemoDto>;

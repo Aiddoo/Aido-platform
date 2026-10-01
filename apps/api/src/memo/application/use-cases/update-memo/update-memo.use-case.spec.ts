@@ -5,13 +5,14 @@
  * 길이 불변식은 도메인 값 객체(MemoContent)가 소유하며 빈 내용은 SYS_0002.
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+import type { Mocked } from "vitest";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { UpdateMemoUseCase } from "./update-memo.use-case";
+import { createMemoRepositoryMock } from "#test/mocks/ports/memo.mock";
+
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { UpdateMemoUseCase } from "./update-memo.use-case.js";
 
 const memoEntity = (content: string): Memo =>
 	Memo.reconstitute({

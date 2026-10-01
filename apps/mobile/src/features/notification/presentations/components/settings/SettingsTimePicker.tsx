@@ -4,7 +4,7 @@ import DateTimePicker, {
   type IOSNativeProps,
 } from '@react-native-community/datetimepicker';
 import type { Preference } from '@src/features/auth/models/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
 import { PickerHeader } from '@src/features/todo/presentations/components/PickerHeader';
 import { useLanguage } from '@src/shared/providers/language-provider';

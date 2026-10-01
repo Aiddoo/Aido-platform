@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * Admin 클린아키텍처 수직 통합 테스트
  *
@@ -11,22 +12,21 @@
  * pnpm --filter @aido/api test admin.integration-spec
  * ```
  */
+import { vi } from "vitest";
 
-import { Test, type TestingModule } from "@nestjs/testing";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { suppressLogger } from "@test/setup/suppress-logger";
-
-import { ADMIN_PROVIDERS } from "@/admin/application/admin.providers";
-import { ADMIN_BROADCAST_NOTIFIER } from "@/admin/application/ports/admin-broadcast-notifier.port";
-import { ADMIN_GROWTH_METRICS } from "@/admin/application/ports/admin-growth-metrics.port";
-import { ADMIN_USER_DIRECTORY } from "@/admin/application/ports/admin-user-directory.port";
-import { BroadcastNotificationUseCase } from "@/admin/application/use-cases/broadcast-notification/broadcast-notification.use-case";
-import { SendTargetedNotificationUseCase } from "@/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
-import { NotificationAdminBroadcastNotifierAdapter } from "@/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
-import { PrismaAdminUserDirectoryAdapter } from "@/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
-import { NotificationPublisher } from "@/notification";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { ADMIN_PROVIDERS } from "#api/admin/application/admin.providers";
+import { ADMIN_BROADCAST_NOTIFIER } from "#api/admin/application/ports/admin-broadcast-notifier.port";
+import { ADMIN_GROWTH_METRICS } from "#api/admin/application/ports/admin-growth-metrics.port";
+import { ADMIN_USER_DIRECTORY } from "#api/admin/application/ports/admin-user-directory.port";
+import { BroadcastNotificationUseCase } from "#api/admin/application/use-cases/broadcast-notification/broadcast-notification.use-case";
+import { SendTargetedNotificationUseCase } from "#api/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
+import { NotificationAdminBroadcastNotifierAdapter } from "#api/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
+import { PrismaAdminUserDirectoryAdapter } from "#api/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
+import { NotificationPublisher } from "#api/notification/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 	let module: TestingModule;
@@ -34,8 +34,8 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 	let sendTargetedNotificationUseCase: SendTargetedNotificationUseCase;
 
 	const mockUserDb = {
-		findMany: jest.fn(),
-		count: jest.fn(),
+		findMany: vi.fn(),
+		count: vi.fn(),
 	};
 
 	const mockDatabaseService = createMockDatabaseService({
@@ -43,7 +43,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 	});
 
 	const mockNotificationPublisher = {
-		publishBatch: jest.fn().mockResolvedValue({ count: 0 }),
+		publishBatch: vi.fn().mockResolvedValue({ count: 0 }),
 	};
 
 	beforeAll(async () => {
@@ -54,7 +54,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 				...ADMIN_PROVIDERS,
 				{
 					provide: ADMIN_GROWTH_METRICS,
-					useValue: { getSummary: jest.fn() },
+					useValue: { getSummary: vi.fn() },
 				},
 				{
 					provide: ADMIN_USER_DIRECTORY,
@@ -76,11 +76,11 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		mockNotificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
 	});
 

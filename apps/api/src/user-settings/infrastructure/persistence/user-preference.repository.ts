@@ -2,11 +2,11 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { UserPreference } from "@/generated/prisma/client";
-import type { TimeFormat } from "@/generated/prisma/enums";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { UserPreference } from "#api/generated/prisma/client";
+import type { TimeFormat } from "#api/generated/prisma/enums";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { UserPreferenceRepositoryPort } from "../../application/ports/user-preference.repository.port";
+import type { UserPreferenceRepositoryPort } from "../../application/ports/user-preference.repository.port.js";
 
 export interface UpdatePreferenceData {
 	pushEnabled?: boolean;

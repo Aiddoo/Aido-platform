@@ -208,6 +208,7 @@ export const KeyboardBottomSheet = ({
   return (
     <GorhomBottomSheet
       ref={sheetRef}
+      accessible={false}
       index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
       enableDynamicSizing
       maxDynamicContentSize={maxDynamicContentSize}

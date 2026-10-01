@@ -3,18 +3,18 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	createRetentionNotificationMessage,
 	type RetentionNotificationCopySelection,
-} from "@/notification";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+} from "#api/notification/index";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { RETENTION_CAMPAIGN_KEY } from "../../../domain/retention.constants";
-import { retentionPushSkipReason } from "../../../domain/services/push-eligibility";
-import { decideRetentionStage, localDateString } from "../../../domain/services/stage-policy";
-import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import { RETENTION_CAMPAIGN_KEY } from "../../../domain/retention.constants.js";
+import { retentionPushSkipReason } from "../../../domain/services/push-eligibility.js";
+import { decideRetentionStage, localDateString } from "../../../domain/services/stage-policy.js";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
 	type RetentionStageCandidate,
-} from "../../ports/retention.repository.port";
+} from "../../ports/retention.repository.port.js";
 
 @Injectable()
 export class ProcessRetentionStagesUseCase {

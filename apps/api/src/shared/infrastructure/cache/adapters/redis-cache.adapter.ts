@@ -1,9 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
-import type { CacheStats, ICacheService, TtlValue } from "../interfaces/cache.interface";
-import { parseTtl } from "../interfaces/cache.interface";
+import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
+import type { CacheStats, ICacheService, TtlValue } from "../interfaces/cache.interface.js";
+import { parseTtl } from "../interfaces/cache.interface.js";
 
 /**
  * Redis 캐시 어댑터

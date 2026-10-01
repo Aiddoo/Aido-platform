@@ -1,82 +1,17 @@
 # @aido/vitest-config
 
-> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+> **Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
 
-Aido 모노레포 공유 Vitest 설정
+공유 패키지의 Node.js 단위 테스트에 사용하는 Vitest 5 ESM 프리셋입니다. API도 Vitest를 사용하며, Nest 데코레이터 메타데이터와 PostgreSQL 수명주기는 `apps/api/vitest.config.ts`에서 설정합니다.
 
-## 사용 대상
-
-- `packages/*` (utils, validators 등)
-- 빠른 단위 테스트가 필요한 라이브러리
-
-> **Note:** `apps/api`는 NestJS 통합을 위해 Jest를 사용합니다.
-
-## 주요 설정
-
-| 옵션         | 값                    | 설명                           |
-| ------------ | --------------------- | ------------------------------ |
-| globals      | true                  | describe, it, expect 전역 사용 |
-| environment  | node                  | Node.js 테스트 환경            |
-| include      | `**/*.{test,spec}.ts` | 테스트 파일 패턴               |
-| clearMocks   | true                  | 각 테스트 후 mock 초기화       |
-| restoreMocks | true                  | 각 테스트 후 mock 복원         |
-
-### Coverage 설정
-
-| 옵션             | 값               |
-| ---------------- | ---------------- |
-| provider         | v8 (2025년 표준) |
-| reporter         | text, lcov, html |
-| reportsDirectory | ./coverage       |
-
----
-
-## Jest와 비교
-
-| 항목   | Vitest         | Jest            |
-| ------ | -------------- | --------------- |
-| 속도   | 빠름 (esbuild) | 보통 (ts-jest)  |
-| 설정   | 간단           | NestJS에 최적화 |
-| Watch  | 기본 내장      | --watch 필요    |
-| ESM    | 네이티브 지원  | 설정 필요       |
-| 사용처 | packages/\*    | apps/api        |
-
----
-
-## 사용 방법
-
-### 1. 기본 사용
-
-```typescript
-// packages/utils/vitest.config.ts
-import { defineConfig, mergeConfig } from 'vitest/config';
-import baseConfig from '@aido/vitest-config';
-
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    // 추가 설정
-  }),
-);
-```
-
-### 2. 루트 디렉토리 변경
-
-```typescript
-import { defineConfig, mergeConfig } from 'vitest/config';
-import baseConfig from '@aido/vitest-config';
-
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    test: {
-      root: './src',
-    },
-  }),
-);
-```
-
-### 3. 커버리지 임계값 추가
+| 설정         | 값                    | 동작                                 |
+| ------------ | --------------------- | ------------------------------------ |
+| globals      | `true`                | `describe`, `it`, `expect` 전역 제공 |
+| environment  | `node`                | Node.js 환경                         |
+| include      | `**/*.{test,spec}.ts` | 단위 테스트 탐색                     |
+| clearMocks   | `true`                | 각 테스트 전에 호출 기록 초기화      |
+| restoreMocks | `true`                | 각 테스트 전에 spy 복원              |
+| coverage     | `v8`                  | text, lcov, html, json-summary 출력  |
 
 ```typescript
 import { defineConfig, mergeConfig } from 'vitest/config';
@@ -87,132 +22,21 @@ export default mergeConfig(
   defineConfig({
     test: {
       coverage: {
-        thresholds: {
-          lines: 80,
-          functions: 80,
-          branches: 80,
-          statements: 80,
-        },
+        thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
       },
     },
   }),
 );
 ```
 
-### 4. 별칭(alias) 설정
-
-```typescript
-import { defineConfig, mergeConfig } from 'vitest/config';
-import baseConfig from '@aido/vitest-config';
-import path from 'node:path';
-
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-      },
-    },
-  }),
-);
-```
-
----
-
-## 테스트 작성
-
-### 기본 테스트
-
-```typescript
-// src/add.spec.ts
-import { describe, it, expect } from 'vitest';
-import { add } from './add';
-
-describe('add', () => {
-  it('두 숫자를 더한다', () => {
-    expect(add(1, 2)).toBe(3);
-  });
-});
-```
-
-### Mock 사용
-
-```typescript
-import { describe, it, expect, vi } from 'vitest';
-
-describe('fetchData', () => {
-  it('API 호출을 테스트한다', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ data: 'test' });
-
-    const result = await fetchData(mockFetch);
-
-    expect(mockFetch).toHaveBeenCalledOnce();
-    expect(result).toEqual({ data: 'test' });
-  });
-});
-```
-
-### Snapshot 테스트
-
-```typescript
-import { describe, it, expect } from 'vitest';
-
-describe('schema', () => {
-  it('올바른 형태를 반환한다', () => {
-    const result = createSchema();
-    expect(result).toMatchSnapshot();
-  });
-});
-```
-
----
-
-## 명령어
+`vi.spyOn`은 `beforeEach` 또는 테스트 내부에서 등록합니다. `beforeAll`에서 만든 spy는 `restoreMocks`가 다음 테스트 전에 복원하므로 이후 테스트에 적용되지 않습니다. ESM 모듈 mock은 `vi.mock`과 `vi.hoisted`를 사용하며, 생성자 mock은 일반 함수로 작성합니다.
 
 ```bash
-# 테스트 실행
-pnpm test
-
-# Watch 모드
-pnpm test --watch
-
-# 커버리지
-pnpm test --coverage
-
-# 특정 파일
-pnpm test src/add.spec.ts
-
-# 패턴 매칭
-pnpm test -t "add"
+pnpm --filter @aido/validators test
+pnpm --filter @aido/validators exec vitest --coverage
+pnpm --filter @aido/api exec vitest run --project unit
+pnpm --filter @aido/api exec vitest run --project integration
+pnpm --filter @aido/api exec vitest run --project e2e
 ```
 
----
-
-## 프리셋 전체 설정
-
-```typescript
-// vitest.preset.ts
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['**/*.{test,spec}.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov', 'html'],
-      reportsDirectory: './coverage',
-      exclude: ['**/*.d.ts', '**/index.ts', '**/*.spec.ts', '**/*.test.ts'],
-    },
-    clearMocks: true,
-    restoreMocks: true,
-  },
-});
-```
-
----
-
-## 라이선스
-
-MIT
+API의 통합 및 E2E 프로젝트는 각각 독립된 관리형 PostgreSQL을 준비하고 종료합니다. 자세한 규칙은 [API 테스트 가이드](../../apps/api/.claude/testing-guide.md)를 참고합니다.

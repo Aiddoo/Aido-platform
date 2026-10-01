@@ -1,3 +1,5 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * SendNotificationUseCase 단위 테스트
  *
@@ -5,12 +7,7 @@
  * - push 발행과 캐시 무효화는 커밋 후에만 시작
  * - unique 위반(P2002)은 graceful skip, 그 외 오류는 재전파
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { NotificationBuilder } from "@test/builders";
-import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import { createNotificationRepositoryMock } from "@test/mocks/ports/notification.mock";
-import { createUnitOfWorkMock } from "@test/mocks/ports/unit-of-work.mock";
+import type { Mocked } from "vitest";
 
 import {
 	AFTER_COMMIT_TASK_REGISTRY,
@@ -18,24 +15,28 @@ import {
 	type AfterCommitTaskRegistryPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
+import { NotificationBuilder } from "#test/builders/index";
+import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
+import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
+import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
-import type { CreateNotificationData } from "../../ports/notification-data";
+} from "../../ports/notification-cache.port.js";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	DuplicateNotificationError,
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+} from "../../ports/notification.repository.port.js";
 import {
 	PUSH_DISPATCH_STAGING,
 	type PushDispatchStagingRepositoryPort,
-} from "../../ports/push-dispatch-staging.repository.port";
-import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher";
-import { SendNotificationUseCase } from "./send-notification.use-case";
+} from "../../ports/push-dispatch-staging.repository.port.js";
+import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher.js";
+import { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 const data: CreateNotificationData = {
 	userId: "user-1",
@@ -47,8 +48,8 @@ const data: CreateNotificationData = {
 
 function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
 	return {
-		stage: jest.fn(),
-		stageMany: jest.fn(),
+		stage: vi.fn(),
+		stageMany: vi.fn(),
 	};
 }
 
@@ -65,7 +66,7 @@ describe("SendNotificationUseCase", () => {
 		NotificationBuilder.resetIdCounter();
 		afterCommitTasks = [];
 		const afterCommit: AfterCommitTaskRegistryPort = {
-			register: jest.fn((task) => afterCommitTasks.push(task)),
+			register: vi.fn((task) => afterCommitTasks.push(task)),
 		};
 
 		const { unit, unitRef } = await TestBed.solitary(SendNotificationUseCase)

@@ -1,22 +1,22 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { addDays, subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { startOfDay } from "@/shared/domain/date/utils/range";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { addDays, subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { startOfDay } from "#api/shared/domain/date/utils/range";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { UserPreference } from "../../../domain/entities/user-preference.aggregate";
+import { UserPreference } from "../../../domain/entities/user-preference.aggregate.js";
 import {
 	STREAK_MILESTONE_NOTIFIER,
 	type StreakMilestoneNotifierPort,
-} from "../../ports/streak-milestone.notifier.port";
+} from "../../ports/streak-milestone.notifier.port.js";
 import {
 	TODO_COMPLETION_STATS_READER,
 	type TodoCompletionStatsReaderPort,
-} from "../../ports/todo-completion-stats.reader.port";
+} from "../../ports/todo-completion-stats.reader.port.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 
 /**
  * 투두 완료 토글 시 스트릭 갱신 유스케이스.

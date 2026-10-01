@@ -5,7 +5,7 @@ import {
 	type ICacheService,
 	parseTtl,
 	type TtlValue,
-} from "../interfaces/cache.interface";
+} from "../interfaces/cache.interface.js";
 
 interface CacheEntry<T> {
 	value: T;

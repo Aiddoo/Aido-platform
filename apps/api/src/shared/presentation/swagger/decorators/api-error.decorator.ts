@@ -2,7 +2,7 @@ import { type ErrorCodeType, Errors } from "@aido/errors";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiResponse } from "@nestjs/swagger";
 
-import type { ApiErrorResponseOptions } from "../interfaces/swagger.interface";
+import type { ApiErrorResponseOptions } from "../interfaces/swagger.interface.js";
 
 /**
  * 에러 응답 스키마 생성 (에러 코드, 메시지 포함)

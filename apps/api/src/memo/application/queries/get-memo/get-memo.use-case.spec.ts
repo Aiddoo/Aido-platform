@@ -4,13 +4,14 @@
  * 소유권 확인(MEMO_2001) 후 메모 뷰 반환을 검증한다.
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+import type { Mocked } from "vitest";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { GetMemoUseCase } from "./get-memo.use-case";
+import { createMemoRepositoryMock } from "#test/mocks/ports/memo.mock";
+
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { GetMemoUseCase } from "./get-memo.use-case.js";
 
 const memoEntity = (): Memo =>
 	Memo.reconstitute({

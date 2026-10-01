@@ -1,4 +1,8 @@
-import type { AdminNotification, AdminNotifier, AdminNotifyResult } from "@/admin-notification";
+import type {
+	AdminNotification,
+	AdminNotifier,
+	AdminNotifyResult,
+} from "#api/admin-notification/index";
 
 /**
  * 테스트용 FakeAdminNotifier

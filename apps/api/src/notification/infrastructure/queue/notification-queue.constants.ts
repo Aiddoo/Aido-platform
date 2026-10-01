@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 /** 알림 큐의 이름·메시지 스키마·운영 정책을 소유하는 단일 계약. */
 

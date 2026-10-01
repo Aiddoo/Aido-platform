@@ -1,8 +1,6 @@
 import { TODO_ITEM_LIMITS } from '@aido/validators';
 import { z } from 'zod';
 
-import type { TodoItem } from './todo.model';
-
 export const subTodoSchema = z.object({
   id: z.number(),
   title: z.string(),
@@ -46,28 +44,40 @@ function completionProgress(stats: SubTodoStats): number {
   return stats.completed / stats.total;
 }
 
+export function canAddSubTodo(parentTodo: { subTodoStats: SubTodoStats }): boolean {
+  return !isMaxSubTodosReached(parentTodo.subTodoStats);
+}
+
+export function getStatsAfterSubTodoToggle(
+  parentTodo: { subTodoStats: SubTodoStats },
+  completed: boolean,
+): SubTodoStats {
+  return statsAfterToggle(parentTodo.subTodoStats, completed);
+}
+
+export function getStatsAfterSubTodoAdd(parentTodo: { subTodoStats: SubTodoStats }): SubTodoStats {
+  return statsAfterAdd(parentTodo.subTodoStats);
+}
+
+export function getStatsAfterSubTodoDelete(
+  parentTodo: { subTodoStats: SubTodoStats; subTodos: readonly SubTodo[] },
+  subTodoId: number,
+): SubTodoStats {
+  const deleted = parentTodo.subTodos.find((subTodo) => subTodo.id === subTodoId);
+  if (!deleted) {
+    return parentTodo.subTodoStats;
+  }
+  return statsAfterDelete(parentTodo.subTodoStats, deleted.completed);
+}
+
+export function getSubTodoCompletionProgress(parentTodo: { subTodoStats: SubTodoStats }): number {
+  return completionProgress(parentTodo.subTodoStats);
+}
+
 export const SubTodoPolicy = {
-  canAddSubTodo(parentTodo: TodoItem): boolean {
-    return !isMaxSubTodosReached(parentTodo.subTodoStats);
-  },
-
-  statsAfterToggle(parentTodo: TodoItem, completed: boolean): SubTodoStats {
-    return statsAfterToggle(parentTodo.subTodoStats, completed);
-  },
-
-  statsAfterAdd(parentTodo: TodoItem): SubTodoStats {
-    return statsAfterAdd(parentTodo.subTodoStats);
-  },
-
-  statsAfterDelete(parentTodo: TodoItem, subTodoId: number): SubTodoStats {
-    const deleted = parentTodo.subTodos.find((subTodo) => subTodo.id === subTodoId);
-    if (!deleted) {
-      return parentTodo.subTodoStats;
-    }
-    return statsAfterDelete(parentTodo.subTodoStats, deleted.completed);
-  },
-
-  completionProgress(parentTodo: TodoItem): number {
-    return completionProgress(parentTodo.subTodoStats);
-  },
+  canAddSubTodo,
+  statsAfterToggle: getStatsAfterSubTodoToggle,
+  statsAfterAdd: getStatsAfterSubTodoAdd,
+  statsAfterDelete: getStatsAfterSubTodoDelete,
+  completionProgress: getSubTodoCompletionProgress,
 } as const;

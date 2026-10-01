@@ -4,7 +4,7 @@
  * 레거시 MemoService.#reorderRelativeTo / #reorderToEdge 알고리즘과 동등함을
  * 검증한다 (새 sortOrder + 사이 구간 시프트 계획).
  */
-import { planReorderRelativeTo, planReorderToEdge } from "./memo-reorder";
+import { planReorderRelativeTo, planReorderToEdge } from "./memo-reorder.js";
 
 describe("memo-reorder — 재정렬 계획", () => {
 	describe("planReorderRelativeTo", () => {

@@ -3,7 +3,7 @@ import type {
 	OAuthTokenVerifier,
 	SocialLoginOptions,
 	VerifiedProfile,
-} from "@/auth/application/ports/oauth-identity-provider.port";
+} from "#api/auth/application/ports/oauth-identity-provider.port";
 
 /**
  * Apple OAuth 전략

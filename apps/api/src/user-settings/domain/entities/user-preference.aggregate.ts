@@ -1,7 +1,7 @@
-import { AggregateRoot } from "@/shared/domain/aggregate-root";
+import { AggregateRoot } from "#api/shared/domain/aggregate-root";
 
-import type { UserPreferenceRecord } from "../records/user-preference.record";
-import { Streak, type StreakCompletionPlan, type StreakState } from "../value-objects/streak.vo";
+import type { UserPreferenceRecord } from "../records/user-preference.record.js";
+import { Streak, type StreakCompletionPlan, type StreakState } from "../value-objects/streak.vo.js";
 
 /** 사용자 설정 애그리게잇. 현재는 설정 중 상태 전이가 있는 스트릭을 소유한다. */
 export class UserPreference extends AggregateRoot<UserPreferenceRecord> {

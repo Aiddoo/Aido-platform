@@ -1,20 +1,22 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { vi, type MockedFunction } from "vitest";
 
-import type { DatabaseService } from "./database.service";
-import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter";
+import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
+
+import type { DatabaseService } from "./database.service.js";
+import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
 
 describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
 	let adapter: PostgresMutationLockAdapter;
 	let tx: MockPrismaClient;
-	let isTransactionActive: jest.MockedFunction<() => boolean>;
+	let isTransactionActive: MockedFunction<() => boolean>;
 
 	beforeEach(async () => {
 		tx = createMockPrisma();
 		tx.$queryRaw.mockResolvedValue([]);
-		isTransactionActive = jest.fn(() => true);
+		isTransactionActive = vi.fn(() => true);
 
 		const { unit } = await TestBed.solitary(PostgresMutationLockAdapter)
 			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)

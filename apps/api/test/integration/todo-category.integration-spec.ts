@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * TodoCategory 모듈 통합 테스트 (Mock DB)
  *
@@ -7,30 +8,29 @@
  *
  * 실행: pnpm --filter @aido/api test:integration -- --testPathPattern=todo-category.integration
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { TodoCategoryBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi, type Mock } from "vitest";
 
-import type { TodoCategory } from "@/generated/prisma/client";
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TODO_CATEGORY_CACHE } from "@/todo-category/application/ports/todo-category-cache.port";
-import { TODO_CATEGORY_LIMIT_READER } from "@/todo-category/application/ports/todo-category-limit-reader.port";
-import { TODO_CATEGORY_REPOSITORY } from "@/todo-category/application/ports/todo-category.repository.port";
-import { TodoCategoryReader } from "@/todo-category/application/services/todo-category.reader";
-import { CreateTodoCategoryUseCase } from "@/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
-import { DeleteTodoCategoryUseCase } from "@/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case";
-import { ReorderTodoCategoryUseCase } from "@/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
-import { UpdateTodoCategoryUseCase } from "@/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case";
-import { TodoCategoryCacheAdapter } from "@/todo-category/infrastructure/adapters/todo-category-cache.adapter";
-import { PrismaTodoCategoryRepository } from "@/todo-category/infrastructure/persistence/prisma-todo-category.repository";
-import { DefaultTodoCategorySeeder } from "@/todo-category/infrastructure/seeders/default-todo-category.seeder";
+import type { TodoCategory } from "#api/generated/prisma/client";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TODO_CATEGORY_CACHE } from "#api/todo-category/application/ports/todo-category-cache.port";
+import { TODO_CATEGORY_LIMIT_READER } from "#api/todo-category/application/ports/todo-category-limit-reader.port";
+import { TODO_CATEGORY_REPOSITORY } from "#api/todo-category/application/ports/todo-category.repository.port";
+import { TodoCategoryReader } from "#api/todo-category/application/services/todo-category.reader";
+import { CreateTodoCategoryUseCase } from "#api/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
+import { DeleteTodoCategoryUseCase } from "#api/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case";
+import { ReorderTodoCategoryUseCase } from "#api/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
+import { UpdateTodoCategoryUseCase } from "#api/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case";
+import { TodoCategoryCacheAdapter } from "#api/todo-category/infrastructure/adapters/todo-category-cache.adapter";
+import { PrismaTodoCategoryRepository } from "#api/todo-category/infrastructure/persistence/prisma-todo-category.repository";
+import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
+import { TodoCategoryBuilder } from "#test/builders/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -41,18 +41,18 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 	let reorderUseCase: ReorderTodoCategoryUseCase;
 
 	const mockTodoCategoryDb = {
-		create: jest.fn(),
-		createMany: jest.fn(),
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		update: jest.fn(),
-		updateMany: jest.fn(),
-		delete: jest.fn(),
-		count: jest.fn(),
-		aggregate: jest.fn(),
+		create: vi.fn(),
+		createMany: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		update: vi.fn(),
+		updateMany: vi.fn(),
+		delete: vi.fn(),
+		count: vi.fn(),
+		aggregate: vi.fn(),
 	};
-	const mockTodoDb = { updateMany: jest.fn(), count: jest.fn() };
+	const mockTodoDb = { updateMany: vi.fn(), count: vi.fn() };
 	const mockDatabaseService = createMockDatabaseService({
 		todoCategory: mockTodoCategoryDb,
 		todo: mockTodoDb,
@@ -106,7 +106,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				{
 					provide: EntitlementService,
 					useValue: {
-						getResourceLimit: jest.fn().mockResolvedValue({
+						getResourceLimit: vi.fn().mockResolvedValue({
 							maxCount: null,
 							isAdmin: false,
 							subscriptionStatus: "ACTIVE",
@@ -116,8 +116,8 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 				{
 					provide: CacheService,
 					useValue: {
-						invalidateTodoCategories: jest.fn().mockResolvedValue(undefined),
-						wrapTodoCategories: jest.fn().mockImplementation((_userId, factory) => factory()),
+						invalidateTodoCategories: vi.fn().mockResolvedValue(undefined),
+						wrapTodoCategories: vi.fn().mockImplementation((_userId, factory) => factory()),
 					},
 				},
 			],
@@ -132,16 +132,16 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		for (const method of Object.values(mockTodoCategoryDb)) {
-			(method as jest.Mock).mockReset();
+			(method as Mock).mockReset();
 		}
 		for (const method of Object.values(mockTodoDb)) {
-			(method as jest.Mock).mockReset();
+			(method as Mock).mockReset();
 		}
 		TodoCategoryBuilder.resetIdCounter();
 	});

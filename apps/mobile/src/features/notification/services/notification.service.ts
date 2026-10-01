@@ -61,7 +61,7 @@ export class NotificationService {
 
     this.#logger.debug('[PushToken] Registering', { payloadVersion: 2 });
 
-    const result = await this.#httpClient.post<unknown>('v1/notifications/token', {
+    const result = await this.#httpClient.post('v1/notifications/token', {
       token: tokenResult.value,
       deviceId,
       payloadVersion: 2,
@@ -84,7 +84,7 @@ export class NotificationService {
 
   unregisterPushToken = async (): Promise<Result<void, ApiError>> => {
     const deviceId = await this.#deviceIdService.get();
-    const result = await this.#httpClient.delete<unknown>(
+    const result = await this.#httpClient.delete(
       'v1/notifications/token',
       deviceId ? { params: { deviceId } } : undefined,
     );
@@ -100,8 +100,10 @@ export class NotificationService {
 
   getNotifications = async (
     query?: GetNotificationsQuery,
+    signal?: AbortSignal,
   ): Promise<Result<NotificationListResult, ApiError>> => {
-    const result = await this.#httpClient.get<unknown>('v1/notifications', {
+    const result = await this.#httpClient.get('v1/notifications', {
+      signal,
       params: {
         limit: query?.limit,
         cursor: query?.cursor,
@@ -124,8 +126,8 @@ export class NotificationService {
     return ok(toNotificationListResult(parsed.data));
   };
 
-  getUnreadCount = async (): Promise<Result<number, ApiError>> => {
-    const result = await this.#httpClient.get<unknown>('v1/notifications/unread-count');
+  getUnreadCount = async (signal?: AbortSignal): Promise<Result<number, ApiError>> => {
+    const result = await this.#httpClient.get('v1/notifications/unread-count', { signal });
 
     if (!result.ok) {
       return result;
@@ -142,7 +144,7 @@ export class NotificationService {
   };
 
   markAsRead = async (notificationId: number): Promise<Result<MarkReadResponse, ApiError>> => {
-    const result = await this.#httpClient.patch<unknown>(`v1/notifications/${notificationId}/read`);
+    const result = await this.#httpClient.patch(`v1/notifications/${notificationId}/read`);
 
     if (!result.ok) {
       return result;
@@ -159,7 +161,7 @@ export class NotificationService {
   };
 
   markAllAsRead = async (): Promise<Result<MarkReadResponse, ApiError>> => {
-    const result = await this.#httpClient.patch<unknown>('v1/notifications/read-all');
+    const result = await this.#httpClient.patch('v1/notifications/read-all');
 
     if (!result.ok) {
       return result;
@@ -176,9 +178,7 @@ export class NotificationService {
   };
 
   markOpened = async (notificationId: number): Promise<Result<boolean, ApiError>> => {
-    const result = await this.#httpClient.post<unknown>(
-      `v1/notifications/${notificationId}/opened`,
-    );
+    const result = await this.#httpClient.post(`v1/notifications/${notificationId}/opened`);
     if (!result.ok) return result;
     const parsed = notificationOpenedResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -190,10 +190,9 @@ export class NotificationService {
   };
 
   optOutMarketingPush = async (token: string): Promise<Result<boolean, ApiError>> => {
-    const result = await this.#publicHttpClient.post<unknown>(
-      'v1/notifications/marketing-push/opt-out',
-      { token },
-    );
+    const result = await this.#publicHttpClient.post('v1/notifications/marketing-push/opt-out', {
+      token,
+    });
     if (!result.ok) return result;
     const parsed = marketingPushOptOutResponseSchema.safeParse(result.value);
     if (!parsed.success) {

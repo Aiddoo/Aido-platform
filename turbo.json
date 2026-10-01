@@ -1,31 +1,37 @@
 {
-  "$schema": "https://v2-9-4.turborepo.dev/schema.json",
+  "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": [
     "package.json",
     "pnpm-workspace.yaml",
     "pnpm-lock.yaml",
-    "tsconfig.json",
-    ".env.example"
+    ".pnpmfile.cjs",
+    "patches/**",
+    ".nvmrc",
+    "tooling/typescript/**",
+    "tooling/vitest/**"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["src/**", "package.json", "tsconfig.json"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/**", ".expo/**"]
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["dist/**", "build/**"],
+      "env": ["APP_ENV", "EXPO_PUBLIC_*"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "test": {
-      "inputs": ["src/**", "test/**", "jest.config.*", "vitest.config.*"],
-      "outputs": []
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": [],
+      "env": ["TZ"],
+      "dependsOn": ["^build"]
     },
     "test:e2e": {
       "dependsOn": ["^build"],
       "cache": false,
-      "inputs": ["src/**", "test/**", "jest.config.*"],
-      "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": [],
       "passThroughEnv": [
         "DATABASE_URL",
         "REDIS_URL",
@@ -38,12 +44,13 @@
         "EMAIL_FROM_NAME",
         "TOKEN_ENCRYPTION_KEY",
         "NODE_ENV"
-      ]
+      ],
+      "env": ["TZ"]
     },
     "test:integration": {
       "dependsOn": ["^build"],
       "cache": false,
-      "inputs": ["src/**", "test/**", "jest.config.*"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": [],
       "passThroughEnv": [
         "DATABASE_URL",
@@ -51,14 +58,17 @@
         "JWT_REFRESH_SECRET",
         "TOKEN_ENCRYPTION_KEY",
         "NODE_ENV"
-      ]
+      ],
+      "env": ["TZ"]
     },
     "test:cov": {
-      "inputs": ["src/**", "test/**", "jest.config.*"],
-      "outputs": ["coverage/**"]
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["coverage/**"],
+      "env": ["TZ"],
+      "dependsOn": ["^build"]
     },
     "lint": {
-      "inputs": ["src/**", "$TURBO_ROOT$/.oxlintrc.json", "package.json"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.oxlintrc.json"],
       "outputs": []
     },
     "lint:fix": {
@@ -68,19 +78,31 @@
       "cache": false
     },
     "format:check": {
-      "inputs": ["src/**", "$TURBO_ROOT$/.oxfmtrc.json", "package.json"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.oxfmtrc.json"],
       "outputs": []
     },
     "typecheck": {
       "dependsOn": ["^build"],
-      "inputs": ["src/**", "tsconfig.json"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": []
     },
     "check": {
-      "inputs": ["src/**", "$TURBO_ROOT$/.oxlintrc.json", "$TURBO_ROOT$/.oxfmtrc.json"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.oxlintrc.json", "$TURBO_ROOT$/.oxfmtrc.json"],
       "outputs": []
     },
     "clean": {
+      "cache": false
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:deploy": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:push": {
       "cache": false
     }
   }

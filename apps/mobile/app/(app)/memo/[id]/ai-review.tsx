@@ -1,11 +1,12 @@
 import { ErrorCode } from '@aido/errors';
 import type { ParsedMemoResult, ParsedMemoTodo } from '@src/features/ai/models/ai.model';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
+import { useMemoScreenParams } from '@src/features/memo/presentations/hooks/use-memo-screen-params';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todos-mutation-options';
 import { CategorySelectContent } from '@src/features/todo/presentations/components/CategorySelectBottomSheet';
 import { TodoDatePickerContent } from '@src/features/todo/presentations/components/TodoDatePickerContent';
 import { TodoTimePickerContent } from '@src/features/todo/presentations/components/TodoTimePickerContent';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
@@ -30,7 +31,7 @@ import {
 import { formatDate, formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { CloseButton } from 'heroui-native';
 import { createContext, Suspense, use, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, TextInput } from 'react-native';
@@ -103,7 +104,7 @@ AiReviewScreen.Error = function ErrorFallback({ error }: Pick<QueryErrorFallback
     <Result
       title={t('memo:aiReview.parseFailed')}
       description={message}
-      button={<Result.Button onPress={goBack}>{t('memo:aiReview.goBack')}</Result.Button>}
+      button={<Result.Button onPress={() => goBack()}>{t('memo:aiReview.goBack')}</Result.Button>}
     />
   );
 };
@@ -114,8 +115,7 @@ function AiReviewContent() {
   const navigate = useSingleTap(router.navigate);
 
   const { t } = useTranslation('memo');
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const memoId = Number(id);
+  const { id: memoId } = useMemoScreenParams();
   const queryClient = useQueryClient();
   const { bottom: safeBottom } = useSafeAreaInsets();
 

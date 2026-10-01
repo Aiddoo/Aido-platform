@@ -1,4 +1,4 @@
-import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
+import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo.js";
 
 /** 알림 발송 채널 (관리자/결제) */
 export type NotificationChannel = "admin" | "payment";

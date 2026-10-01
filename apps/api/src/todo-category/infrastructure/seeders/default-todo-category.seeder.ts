@@ -2,10 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { TransactionClient } from "#api/shared/infrastructure/database/prisma.types";
 
-import { DEFAULT_CATEGORIES } from "../../domain/default-categories";
+import { DEFAULT_CATEGORIES } from "../../domain/default-categories.js";
 
 /**
  * 회원가입 기본 카테고리 생성 전용 capability.

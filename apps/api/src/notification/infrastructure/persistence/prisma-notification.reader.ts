@@ -2,18 +2,18 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { Prisma } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { FindNotificationsParams } from "../../application/ports/notification-data";
+import type { FindNotificationsParams } from "../../application/ports/notification-data.js";
 import type {
 	FindAlreadyNotifiedUserIdsQuery,
 	NotificationHistoryReaderPort,
-} from "../../application/ports/notification-history.reader.port";
-import type { ExistsRecentNotificationQuery } from "../../application/ports/notification-history.reader.port";
-import type { NotificationInboxReaderPort } from "../../application/ports/notification-inbox.reader.port";
-import type { NotificationRecord } from "../../domain/records/notification.record";
-import type { NotificationMilestone } from "../../domain/types/notification-milestone";
+} from "../../application/ports/notification-history.reader.port.js";
+import type { ExistsRecentNotificationQuery } from "../../application/ports/notification-history.reader.port.js";
+import type { NotificationInboxReaderPort } from "../../application/ports/notification-inbox.reader.port.js";
+import type { NotificationRecord } from "../../domain/records/notification.record.js";
+import type { NotificationMilestone } from "../../domain/types/notification-milestone.js";
 
 @Injectable()
 export class PrismaNotificationReader

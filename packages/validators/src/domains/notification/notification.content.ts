@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { NOTIFICATION_LIMITS } from './notification.constants';
+import { NOTIFICATION_LIMITS } from './notification.constants.js';
 
 export const notificationTitleSchema = z
   .string()

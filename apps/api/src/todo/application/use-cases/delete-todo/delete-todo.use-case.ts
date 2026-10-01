@@ -6,11 +6,11 @@ import {
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
 
 /** Todo 삭제 입력. */
 export interface DeleteTodoInput {

@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * ReportAggregatorService 통합 테스트 (Testcontainers)
  *
@@ -17,21 +18,20 @@
  * pnpm --filter @aido/api test report-aggregator.integration-spec
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
 import {
 	TODO_STATS_READER,
 	type TodoStatsReaderPort,
-} from "@/ai-report/application/ports/todo-stats.reader.port";
-import { assembleAggregatedData } from "@/ai-report/domain/services/report-aggregation";
-import type { AggregatedReportData, AggregateParams } from "@/ai-report/domain/types";
-import { PrismaTodoStatsReader } from "@/ai-report/infrastructure/persistence/prisma-todo-stats.reader";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+} from "#api/ai-report/application/ports/todo-stats.reader.port";
+import { assembleAggregatedData } from "#api/ai-report/domain/services/report-aggregation";
+import type { AggregatedReportData, AggregateParams } from "#api/ai-report/domain/types";
+import { PrismaTodoStatsReader } from "#api/ai-report/infrastructure/persistence/prisma-todo-stats.reader";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -76,7 +76,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
 	// 각 테스트 전 데이터 초기화
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		await testDb.cleanup();
 
 		// 테스트 사용자 생성

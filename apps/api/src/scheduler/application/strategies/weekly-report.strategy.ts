@@ -4,22 +4,22 @@ import {
 	createWeeklyReportNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { DEFAULT_LOCALE } from "@/shared/domain/locale";
+} from "#api/notification/index";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
-} from "../ports/scheduled-reminder-reader.port";
+} from "../ports/scheduled-reminder-reader.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
+} from "../ports/scheduler-preference-reader.port.js";
 
 @Injectable()
 export class WeeklyReportStrategy implements ITimezoneStrategy {

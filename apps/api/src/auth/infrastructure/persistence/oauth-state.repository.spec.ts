@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * OAuthStateRepository 단위 테스트
  *
@@ -10,14 +11,13 @@
  * pnpm --filter @aido/api test oauth-state.repository.spec.ts
  * ```
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
 
-import { DatabaseService } from "@/shared/infrastructure/database";
-import { EncryptionService } from "@/shared/infrastructure/encryption";
-
-import { OAuthStateRepository } from "./oauth-state.repository";
+import { OAuthStateRepository } from "./oauth-state.repository.js";
 
 describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 	let repository: OAuthStateRepository;
@@ -63,7 +63,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 	describe("create", () => {
 		it("OAuth 상태를 생성한다", async () => {
 			// Given
-			db.oAuthState.create.mockResolvedValue(mockOAuthState);
+			vi.mocked(db.oAuthState.create).mockResolvedValue(mockOAuthState);
 
 			// When
 			const result = await repository.create(
@@ -94,7 +94,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 				userAgent: "Mozilla/5.0",
 				initiatingUserId: "user-123",
 			};
-			db.oAuthState.create.mockResolvedValue(stateWithOptions);
+			vi.mocked(db.oAuthState.create).mockResolvedValue(stateWithOptions);
 
 			// When
 			const result = await repository.create(
@@ -131,7 +131,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 	describe("findByState", () => {
 		it("state 값으로 OAuth 상태를 찾는다", async () => {
 			// Given
-			db.oAuthState.findFirst.mockResolvedValue(mockOAuthState);
+			vi.mocked(db.oAuthState.findFirst).mockResolvedValue(mockOAuthState);
 
 			// When
 			const result = await repository.findByState("test-state");
@@ -148,7 +148,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 
 		it("존재하지 않으면 null을 반환한다", async () => {
 			// Given
-			db.oAuthState.findFirst.mockResolvedValue(null);
+			vi.mocked(db.oAuthState.findFirst).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findByState("nonexistent-state");
@@ -165,7 +165,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 				...mockOAuthState,
 				exchangeCode: "exchange-code-123",
 			};
-			db.oAuthState.findFirst.mockResolvedValue(stateWithExchangeCode);
+			vi.mocked(db.oAuthState.findFirst).mockResolvedValue(stateWithExchangeCode);
 
 			// When
 			const result = await repository.findByExchangeCode("exchange-code-123");
@@ -200,7 +200,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 
 		it("교환 코드의 암호화된 토큰을 복호화하여 반환한다", async () => {
 			// Given - DB에는 암호화된 토큰이 저장되어 있음
-			db.oAuthState.findFirst.mockResolvedValue({
+			vi.mocked(db.oAuthState.findFirst).mockResolvedValue({
 				...mockOAuthState,
 				exchangeCode: "exchange-code-123",
 				accessToken: "encrypted-access-token",
@@ -221,7 +221,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 
 		it("교환 코드가 없으면 null을 반환한다", async () => {
 			// Given
-			db.oAuthState.findFirst.mockResolvedValue(null);
+			vi.mocked(db.oAuthState.findFirst).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findByExchangeCode("nonexistent");
@@ -243,7 +243,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 				userName: "홍길동",
 				profileImage: "https://example.com/photo.jpg",
 			};
-			db.oAuthState.update.mockResolvedValue(updatedState);
+			vi.mocked(db.oAuthState.update).mockResolvedValue(updatedState);
 
 			// When
 			const result = await repository.saveExchangeData(1, {
@@ -282,7 +282,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 				provider: "GOOGLE" as const,
 				userId: "provider-account-id",
 			};
-			db.oAuthState.update.mockResolvedValue(updatedState);
+			vi.mocked(db.oAuthState.update).mockResolvedValue(updatedState);
 
 			// When
 			const result = await repository.saveLinkingData(1, {
@@ -313,7 +313,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 				accessToken: null,
 				refreshToken: null,
 			};
-			db.oAuthState.update.mockResolvedValue(exchangedState);
+			vi.mocked(db.oAuthState.update).mockResolvedValue(exchangedState);
 
 			// When
 			const result = await repository.markAsExchanged(1);
@@ -334,7 +334,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 	describe("delete", () => {
 		it("ID로 OAuth 상태를 삭제한다", async () => {
 			// Given
-			db.oAuthState.delete.mockResolvedValue(mockOAuthState);
+			vi.mocked(db.oAuthState.delete).mockResolvedValue(mockOAuthState);
 
 			// When
 			await repository.delete(1);
@@ -349,7 +349,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 	describe("deleteExpired", () => {
 		it("만료된 레코드를 삭제하고 삭제 수를 반환한다", async () => {
 			// Given
-			db.oAuthState.deleteMany.mockResolvedValue({ count: 5 });
+			vi.mocked(db.oAuthState.deleteMany).mockResolvedValue({ count: 5 });
 
 			// When
 			const result = await repository.deleteExpired();
@@ -365,7 +365,7 @@ describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 
 		it("만료된 레코드가 없으면 0을 반환한다", async () => {
 			// Given
-			db.oAuthState.deleteMany.mockResolvedValue({ count: 0 });
+			vi.mocked(db.oAuthState.deleteMany).mockResolvedValue({ count: 0 });
 
 			// When
 			const result = await repository.deleteExpired();

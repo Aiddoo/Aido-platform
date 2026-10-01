@@ -1,21 +1,23 @@
+import { vi } from "vitest";
+
 import type {
 	OAuthIdentityProvider,
 	OAuthIdentityProviderRegistry,
-} from "@/auth/application/ports/oauth-identity-provider.port";
+} from "#api/auth/application/ports/oauth-identity-provider.port";
 
-import { FakeOAuthProviderRegistry } from "../mocks/fake-oauth-provider-registry";
+import { FakeOAuthProviderRegistry } from "../mocks/fake-oauth-provider-registry.js";
 
 function createGoogleProvider(): OAuthIdentityProvider {
 	return {
 		provider: "GOOGLE",
 		failureEmail: "google_unknown@social.aido.kr",
-		generateAuthUrl: jest.fn().mockResolvedValue("https://accounts.google.com"),
-		exchangeCode: jest.fn().mockRejectedValue(new Error("real exchange called")),
-		verifyToken: jest.fn().mockResolvedValue({
+		generateAuthUrl: vi.fn().mockResolvedValue("https://accounts.google.com"),
+		exchangeCode: vi.fn().mockRejectedValue(new Error("real exchange called")),
+		verifyToken: vi.fn().mockResolvedValue({
 			id: "google-user",
 			emailVerified: true,
 		}),
-		buildLoginOptions: jest.fn().mockReturnValue({ emailVerified: true }),
+		buildLoginOptions: vi.fn().mockReturnValue({ emailVerified: true }),
 	};
 }
 

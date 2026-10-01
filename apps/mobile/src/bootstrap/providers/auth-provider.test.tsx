@@ -1,6 +1,8 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { TodoService } from '@src/features/todo/services/todo.service';
+import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
+import { UserService } from '@src/features/user/services/user.service';
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import {
   createMockAnalytics,
@@ -9,12 +11,13 @@ import {
   createMockTokenStore,
 } from '@src/shared/__tests__';
 import { KeychainLockedError } from '@src/shared/errors';
+import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, waitFor } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { AppState, Text } from 'react-native';
 
-import { AuthProvider, useAuthStatus } from './auth-provider';
+import { AuthProvider, useAuth, useAuthStatus } from './auth-provider';
 import { StaticDIProvider } from './di-context';
 
 const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
@@ -25,6 +28,15 @@ const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
 });
 
 const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
+
+const LogoutProbe = () => {
+  const { setStatus } = useAuth();
+  return (
+    <Text testID="logout" onPress={() => setStatus('unauthenticated')}>
+      Logout
+    </Text>
+  );
+};
 
 describe('AuthProvider', () => {
   let tokenStore: ReturnType<typeof createMockTokenStore>;
@@ -51,13 +63,19 @@ describe('AuthProvider', () => {
     for (const unsubscribe of unsubscribes) {
       unsubscribe();
     }
+    await queryClient.cancelQueries();
+    queryClient.clear();
     jest.clearAllTimers();
     jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   const renderProvider = async () => {
     // AuthProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
     const todoService = new TodoService(createMockHttpClient());
+    const userHttpClient = createMockHttpClient();
+    userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+    const userService = new UserService(userHttpClient);
     const widgetSyncService = new WidgetSyncService(
       { writeSnapshot: jest.fn().mockResolvedValue(undefined) },
       errorReporter,
@@ -70,6 +88,7 @@ describe('AuthProvider', () => {
           errorReporter,
           analytics,
           todoService,
+          userService,
           widgetSyncService,
         })}
       >
@@ -77,6 +96,7 @@ describe('AuthProvider', () => {
           <LocalDateProvider>
             <AuthProvider>
               <StatusProbe />
+              <LogoutProbe />
             </AuthProvider>
           </LocalDateProvider>
         </QueryClientProvider>
@@ -169,6 +189,49 @@ describe('AuthProvider', () => {
       // Then
       expect(tokenStore.clear).not.toHaveBeenCalled();
     });
+  });
+
+  describe('잠금 해제 재판정', () => {
+    it.each(['success', 'failure'] as const)(
+      '로그아웃 후 늦게 끝난 %s 판정은 세션을 변경하거나 리포팅하지 않는다',
+      async (outcome) => {
+        const listeners: Array<Parameters<typeof AppState.addEventListener>[1]> = [];
+        jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
+          listeners.push(listener);
+          return { remove: jest.fn() };
+        });
+        let resolveRead: (value: string | null) => void = () => {
+          throw new Error('Deferred read is not initialized');
+        };
+        let rejectRead: (error: Error) => void = () => {
+          throw new Error('Deferred read is not initialized');
+        };
+        const pendingRead = new Promise<string | null>((resolve, reject) => {
+          resolveRead = resolve;
+          rejectRead = reject;
+        });
+        tokenStore.readRefreshToken
+          .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
+          .mockReturnValueOnce(pendingRead);
+        await renderProvider();
+        await expectStatus('locked');
+
+        await act(() => {
+          for (const listener of listeners) listener('active');
+        });
+        expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(2);
+        await fireEvent.press(screen.getByTestId('logout'));
+        await expectStatus('unauthenticated');
+
+        await act(() => {
+          if (outcome === 'success') resolveRead('previous-session-token');
+          else rejectRead(new Error('late keychain failure'));
+        });
+
+        await expectStatus('unauthenticated');
+        expect(errorReporter.captureException).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('세션 만료 처리', () => {

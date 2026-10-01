@@ -1,6 +1,6 @@
-import type { CheerWithRelations } from "../application/ports/cheer.repository.port";
-import type { CheerLimitInfo } from "../application/services/cheer.reader";
-import { CheerMapper } from "./cheer.mapper";
+import type { CheerWithRelations } from "../application/ports/cheer.repository.port.js";
+import type { CheerLimitInfo } from "../application/services/cheer.reader.js";
+import { CheerMapper } from "./cheer.mapper.js";
 
 const createdAt = new Date("2026-01-01T00:00:00.000Z");
 const readAt = new Date("2026-01-02T00:00:00.000Z");

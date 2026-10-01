@@ -1,17 +1,20 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
-import { now } from "@/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
+import {
+	EntitlementService,
+	Feature,
+} from "#api/shared/application/entitlement/entitlement.service";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { type CheerCooldown, evaluateCheerCooldown } from "../../domain/services/cheer-cooldown";
+import { type CheerCooldown, evaluateCheerCooldown } from "../../domain/services/cheer-cooldown.js";
 import {
 	CHEER_REPOSITORY,
 	type CheerRepositoryPort,
 	type CheerWithRelations,
-} from "../ports/cheer.repository.port";
+} from "../ports/cheer.repository.port.js";
 
 export interface CheerLimitInfo {
 	dailyLimit: number | null;

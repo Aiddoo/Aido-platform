@@ -1,4 +1,4 @@
-import { toNotificationRouting } from "./notification-routing";
+import { toNotificationRouting } from "./notification-routing.js";
 
 const COMMENT_ID = "cmt92zn3n000b7voxx9quc2th";
 

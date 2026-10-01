@@ -1,17 +1,18 @@
+import { TestBed } from "@suites/unit";
 /**
  * UpdateMarketingPushConsentUseCase 단위 테스트
  *
  * 광고성 앱 푸시 동의 변경 upsert + marketingPushAgreedAt 뷰 매핑.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUserConsentRepositoryMock } from "@test/mocks/ports/user-settings.mock";
+import type { Mocked } from "vitest";
+
+import { createUserConsentRepositoryMock } from "#test/mocks/ports/user-settings.mock";
 
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
-import { UpdateMarketingPushConsentUseCase } from "./update-marketing-push-consent.use-case";
+} from "../../ports/user-consent.repository.port.js";
+import { UpdateMarketingPushConsentUseCase } from "./update-marketing-push-consent.use-case.js";
 
 const userId = "user-1";
 

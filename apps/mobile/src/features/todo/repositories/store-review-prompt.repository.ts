@@ -1,40 +1,26 @@
+import { datetimeSchema } from '@aido/validators';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { z } from 'zod';
 
 import {
-  type StoreReviewCompletion,
-  StoreReviewPromptPolicy,
+  createEmptyStoreReviewPromptState,
+  STORE_REVIEW_MAX_COMPLETION_RECORDS,
+  storeReviewCompletionSchema,
+  storeReviewPromptStateSchema,
   type StoreReviewPromptState,
-} from '../models/store-review-prompt.policy';
+} from '../models/store-review-prompt.model';
 
 const KEY_PREFIX = 'aido_store_review_prompt_v1';
-const localDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const isoDateSchema = z.string().refine((value) => !Number.isNaN(Date.parse(value)));
-const stateSchema = z.object({
-  completions: z.array(
-    z.object({
-      todoId: z.number().int().positive(),
-      localDate: localDateSchema,
-    }),
-  ),
-  dismissedAt: isoDateSchema.nullable(),
-  reviewRequestedAt: isoDateSchema.nullable(),
+const persistedStateSchema = z.object({
+  completions: z.array(storeReviewCompletionSchema).max(STORE_REVIEW_MAX_COMPLETION_RECORDS),
+  dismissedAt: datetimeSchema.nullable(),
+  reviewRequestedAt: datetimeSchema.nullable(),
 });
-
-const EMPTY_STATE: StoreReviewPromptState = {
-  completions: [],
-  dismissedAt: null,
-  reviewRequestedAt: null,
-};
+type StateTransition = (current: StoreReviewPromptState) => StoreReviewPromptState;
 
 export interface StoreReviewPromptRepository {
   read(accountId: string): StoreReviewPromptState;
-  recordSuccessfulCompletion(
-    accountId: string,
-    completion: StoreReviewCompletion,
-  ): StoreReviewPromptState;
-  recordDismissal(accountId: string, dismissedAt: Date): StoreReviewPromptState;
-  recordReviewRequested(accountId: string, requestedAt: Date): StoreReviewPromptState;
+  update(accountId: string, transition: StateTransition): StoreReviewPromptState;
 }
 
 const storageKey = (accountId: string): string => `${KEY_PREFIX}:${accountId}`;
@@ -44,42 +30,36 @@ export function createStoreReviewPromptRepository(
 ): StoreReviewPromptRepository {
   const read = (accountId: string): StoreReviewPromptState => {
     const saved = storage.getString(storageKey(accountId));
-    if (!saved) {
-      return { ...EMPTY_STATE };
-    }
-
+    if (!saved) return createEmptyStoreReviewPromptState();
     try {
-      const parsed = stateSchema.safeParse(JSON.parse(saved));
-      return parsed.success ? parsed.data : { ...EMPTY_STATE };
+      const parsed = persistedStateSchema.safeParse(JSON.parse(saved));
+      if (!parsed.success) return createEmptyStoreReviewPromptState();
+      return storeReviewPromptStateSchema.parse({
+        ...parsed.data,
+        dismissedAt: parsed.data.dismissedAt ? new Date(parsed.data.dismissedAt) : null,
+        reviewRequestedAt: parsed.data.reviewRequestedAt
+          ? new Date(parsed.data.reviewRequestedAt)
+          : null,
+      });
     } catch {
-      return { ...EMPTY_STATE };
+      return createEmptyStoreReviewPromptState();
     }
   };
 
-  const write = (accountId: string, state: StoreReviewPromptState): StoreReviewPromptState => {
-    storage.set(storageKey(accountId), JSON.stringify(state));
-    return state;
+  const update = (accountId: string, transition: StateTransition): StoreReviewPromptState => {
+    const current = read(accountId);
+    const candidate = transition(current);
+    if (candidate === current) return current;
+    const next = storeReviewPromptStateSchema.parse(candidate);
+    storage.set(
+      storageKey(accountId),
+      JSON.stringify({
+        completions: next.completions,
+        dismissedAt: next.dismissedAt?.toISOString() ?? null,
+        reviewRequestedAt: next.reviewRequestedAt?.toISOString() ?? null,
+      }),
+    );
+    return next;
   };
-
-  return {
-    read,
-    recordSuccessfulCompletion(accountId, completion) {
-      return write(
-        accountId,
-        StoreReviewPromptPolicy.recordSuccessfulCompletion(read(accountId), completion),
-      );
-    },
-    recordDismissal(accountId, dismissedAt) {
-      return write(accountId, {
-        ...read(accountId),
-        dismissedAt: dismissedAt.toISOString(),
-      });
-    },
-    recordReviewRequested(accountId, requestedAt) {
-      return write(accountId, {
-        ...read(accountId),
-        reviewRequestedAt: requestedAt.toISOString(),
-      });
-    },
-  };
+  return { read, update };
 }

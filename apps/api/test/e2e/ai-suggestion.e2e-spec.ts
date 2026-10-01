@@ -13,12 +13,12 @@
 
 import request from "supertest";
 
-import { AI_PROVIDER } from "@/ai";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { AI_PROVIDER } from "#api/ai/index";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import { FakeAiProvider } from "../mocks/fake-ai.provider";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("AI 제안 E2E", () => {
 	let ctx: E2eTestContext;

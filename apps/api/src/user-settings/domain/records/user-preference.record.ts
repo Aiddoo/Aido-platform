@@ -1,4 +1,4 @@
-import type { TimeFormatValue } from "../services/preference-view";
+import type { TimeFormatValue } from "../services/preference-view.js";
 
 /**
  * 설정 레코드(리포지토리 읽기 모델).

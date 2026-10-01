@@ -1,11 +1,11 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
-import { createFollowRequestNotificationMessage } from "../../messages/notification-messages";
-import { NotificationPublisher } from "../../publishers/notification.publisher";
-import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
-import { SendFollowRequestNotificationUseCase } from "./send-follow-request-notification.use-case";
+import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign.js";
+import { createFollowRequestNotificationMessage } from "../../messages/notification-messages.js";
+import { NotificationPublisher } from "../../publishers/notification.publisher.js";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
+import { SendFollowRequestNotificationUseCase } from "./send-follow-request-notification.use-case.js";
 
 describe("SendFollowRequestNotificationUseCase", () => {
 	let useCase: SendFollowRequestNotificationUseCase;

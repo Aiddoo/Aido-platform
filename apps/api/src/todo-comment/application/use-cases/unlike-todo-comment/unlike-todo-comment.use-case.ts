@@ -8,18 +8,18 @@ import {
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
+import { assertTodoCommentAccess } from "../../assert-todo-comment-access.js";
 import {
 	TODO_COMMENT_READER,
 	type TodoCommentReaderPort,
-} from "../../ports/todo-comment.reader.port";
+} from "../../ports/todo-comment.reader.port.js";
 import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
-} from "../../ports/todo-comment.repository.port";
+} from "../../ports/todo-comment.repository.port.js";
 
 export interface UnlikeTodoCommentInput {
 	todoId: number;

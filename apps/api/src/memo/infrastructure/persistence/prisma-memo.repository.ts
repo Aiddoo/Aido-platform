@@ -2,14 +2,14 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { Memo as MemoRow } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { Memo as MemoRow } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	FindMemosParams,
 	MemoRepositoryPort,
-} from "../../application/ports/memo.repository.port";
-import { Memo } from "../../domain/entities/memo.aggregate";
+} from "../../application/ports/memo.repository.port.js";
+import { Memo } from "../../domain/entities/memo.aggregate.js";
 
 /**
  * MemoRepositoryPort의 Prisma 어댑터.

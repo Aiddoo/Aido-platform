@@ -1,5 +1,5 @@
 import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/models/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
 import {
   GroupSkeleton,
@@ -32,7 +32,7 @@ export default function WeatherSettingsScreen() {
 function WeatherSettingsForm() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
-  const { t } = useTranslation('notification');
+  const { t } = useTranslation(['notification', 'auth']);
 
   const pushDisabled = PreferencePolicy.isPushDisabled(preference) || updateMutation.isPending;
 
@@ -42,7 +42,9 @@ function WeatherSettingsForm() {
         <SettingsToggle
           label={t('settings.weatherLabel')}
           description={
-            PreferencePolicy.pushDisabledMessage(preference) ?? t('settings.weatherDescription')
+            PreferencePolicy.isPushDisabled(preference)
+              ? t('auth:preference.enablePushFirst')
+              : t('settings.weatherDescription')
           }
           isSelected={isWeatherEnabled(preference)}
           onSelectedChange={(enabled) =>

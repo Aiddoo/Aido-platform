@@ -1,14 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import * as Linking from 'expo-linking';
 import type { EffectCallback } from 'react';
-import { AppState, InteractionManager, Keyboard } from 'react-native';
+import { AppState, Keyboard } from 'react-native';
 
 import { useStableFeedForeground } from './use-stable-feed-foreground';
 
 let mockHasActiveOverlay = false;
 let focusEffect: EffectCallback | undefined;
 let deepLinkListener: Parameters<typeof Linking.addEventListener>[1] | undefined;
-let interactionCallbacks: Array<() => void> = [];
+let idleCallbacks: Array<() => void> = [];
 
 jest.mock('@src/bootstrap/providers/auth-provider', () => ({
   useAuth: () => ({ status: 'authenticated' }),
@@ -29,7 +29,7 @@ describe('useStableFeedForeground', () => {
     mockHasActiveOverlay = false;
     focusEffect = undefined;
     deepLinkListener = undefined;
-    interactionCallbacks = [];
+    idleCallbacks = [];
     Object.defineProperty(AppState, 'currentState', {
       configurable: true,
       value: 'active',
@@ -43,11 +43,16 @@ describe('useStableFeedForeground', () => {
       return { remove: jest.fn() } as never;
     });
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation((callback) => {
-      if (typeof callback === 'function') {
-        interactionCallbacks.push(callback);
-      }
-      return { cancel: jest.fn() } as never;
+    Object.defineProperty(globalThis, 'requestIdleCallback', {
+      configurable: true,
+      value: jest.fn((callback: IdleRequestCallback) => {
+        idleCallbacks.push(() => callback({ didTimeout: false, timeRemaining: () => 10 }));
+        return idleCallbacks.length;
+      }),
+    });
+    Object.defineProperty(globalThis, 'cancelIdleCallback', {
+      configurable: true,
+      value: jest.fn(),
     });
   });
 
@@ -65,10 +70,10 @@ describe('useStableFeedForeground', () => {
     // Then
     expect(result.current).toBe(false);
     await act(async () => {
-      interactionCallbacks.shift()?.();
+      idleCallbacks.shift()?.();
     });
     await waitFor(() => expect(result.current).toBe(true));
-    expect(InteractionManager.runAfterInteractions).toHaveBeenCalled();
+    expect(globalThis.requestIdleCallback).toHaveBeenCalled();
   });
 
   it('포커스를 유지한 런타임 딥링크도 라우팅 상호작용이 끝날 때까지 노출을 미룬다', async () => {
@@ -90,11 +95,23 @@ describe('useStableFeedForeground', () => {
 
     // When
     await act(async () => {
-      interactionCallbacks.shift()?.();
+      idleCallbacks.shift()?.();
     });
 
     // Then
     expect(result.current).toBe(true);
+  });
+
+  it('화면을 떠나면 대기 중인 딥링크 해제를 취소한다', async () => {
+    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido://feed');
+    const hook = await renderHook(() => useStableFeedForeground());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(globalThis.requestIdleCallback).toHaveBeenCalledTimes(1);
+
+    await hook.unmount();
+    expect(globalThis.cancelIdleCallback).toHaveBeenCalledWith(1);
   });
 
   it('실제 OverlayProvider의 폼/오버레이 신호가 활성인 동안만 자동 노출을 막는다', async () => {

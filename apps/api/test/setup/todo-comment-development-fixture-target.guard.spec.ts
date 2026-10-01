@@ -1,4 +1,4 @@
-import { assertTodoCommentDevelopmentFixtureTarget } from "./todo-comment-development-fixture-target.guard";
+import { assertTodoCommentDevelopmentFixtureTarget } from "./todo-comment-development-fixture-target.guard.js";
 
 const LOCAL_TARGET = {
 	nodeEnv: "development",

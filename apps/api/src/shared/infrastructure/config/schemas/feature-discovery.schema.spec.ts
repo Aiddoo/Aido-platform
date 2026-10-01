@@ -1,4 +1,4 @@
-import { envSchema } from ".";
+import { envSchema } from "./index.js";
 
 const requiredEnvironment = {
 	DATABASE_URL: "postgresql://localhost:5432/aido",

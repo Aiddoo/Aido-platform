@@ -1,7 +1,7 @@
 /**
  * Prisma 관련 공통 타입 정의
  */
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "#api/generated/prisma/client";
 
 /**
  * Prisma 트랜잭션 클라이언트 타입

@@ -7,15 +7,15 @@
  */
 
 import type { AiReport as AiReportDto, ReportStatus } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case";
-import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case";
-import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case";
-import { AiReportController } from "./ai-report.controller";
+import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case.js";
+import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case.js";
+import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case.js";
+import { AiReportController } from "./ai-report.controller.js";
 
 describe("AiReportController — AI 리포트 컨트롤러", () => {
 	let controller: AiReportController;

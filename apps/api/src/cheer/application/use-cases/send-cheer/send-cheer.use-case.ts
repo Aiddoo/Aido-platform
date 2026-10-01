@@ -1,27 +1,30 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { FollowReader } from "@/follow";
+import { FollowReader } from "#api/follow/index";
 import {
 	MUTATION_LOCK,
 	MutationLockKeys,
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { now } from "@/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+} from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { evaluateCheerCooldown } from "../../../domain/services/cheer-cooldown";
-import { CheerMessage } from "../../../domain/value-objects/cheer-message.vo";
-import { CHEER_LIMIT_READER, type CheerLimitReaderPort } from "../../ports/cheer-limit-reader.port";
-import { CHEER_NOTIFIER, type CheerNotifierPort } from "../../ports/cheer-notifier.port";
+import { evaluateCheerCooldown } from "../../../domain/services/cheer-cooldown.js";
+import { CheerMessage } from "../../../domain/value-objects/cheer-message.vo.js";
+import {
+	CHEER_LIMIT_READER,
+	type CheerLimitReaderPort,
+} from "../../ports/cheer-limit-reader.port.js";
+import { CHEER_NOTIFIER, type CheerNotifierPort } from "../../ports/cheer-notifier.port.js";
 import {
 	CHEER_REPOSITORY,
 	type CheerRepositoryPort,
 	type CheerWithRelations,
-} from "../../ports/cheer.repository.port";
+} from "../../ports/cheer.repository.port.js";
 
 export interface SendCheerInput {
 	senderId: string;

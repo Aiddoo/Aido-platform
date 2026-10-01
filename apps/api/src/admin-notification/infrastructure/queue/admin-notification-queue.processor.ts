@@ -4,11 +4,11 @@ import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
-import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
+} from "#api/shared/application/ports/job-runtime.port";
+import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
 
-import { DispatchDailySignupSummaryUseCase } from "../../application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
-import { SendAdminNotificationUseCase } from "../../application/use-cases/send-admin-notification/send-admin-notification.use-case";
+import { DispatchDailySignupSummaryUseCase } from "../../application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case.js";
+import { SendAdminNotificationUseCase } from "../../application/use-cases/send-admin-notification/send-admin-notification.use-case.js";
 import {
 	ADMIN_NOTIFICATION_LEGACY_QUEUE,
 	ADMIN_NOTIFICATION_QUEUE,
@@ -17,7 +17,7 @@ import {
 	type AdminNotificationJobMap,
 	AdminNotificationJobName,
 	AdminNotificationRuntimeJobSchema,
-} from "./admin-notification-queue.constants";
+} from "./admin-notification-queue.constants.js";
 
 /**
  * 관리자 알림 BullMQ Processor (진입 어댑터).

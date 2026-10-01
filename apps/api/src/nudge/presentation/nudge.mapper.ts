@@ -3,13 +3,13 @@
  */
 import type { Nudge, NudgeDetail, NudgeLimitInfo, RemindNudge } from "@aido/validators";
 
-import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
+import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type {
 	NudgeWithRelations,
 	ReminderNudgeWithRelations,
-} from "../application/ports/nudge.repository.port";
-import type { NudgeLimitInfo as ReaderLimitInfo } from "../application/services/nudge.reader";
+} from "../application/ports/nudge.repository.port.js";
+import type { NudgeLimitInfo as ReaderLimitInfo } from "../application/services/nudge.reader.js";
 
 export abstract class NudgeMapper {
 	static toDetailDto(nudge: NudgeWithRelations): NudgeDetail {

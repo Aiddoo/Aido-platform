@@ -1,6 +1,6 @@
 # 단위 테스트 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
 
 > `@suites/unit` + Builder 패턴으로 개별 클래스/메서드를 격리 테스트
 >
@@ -20,22 +20,22 @@
 
 ## 개요
 
-| 항목            | 설명                                                                |
-| --------------- | ------------------------------------------------------------------- |
-| **파일 위치**   | 테스트 대상과 같은 폴더 (`src/{name}/`)                             |
-| **명명 규칙**   | `{파일명}.spec.ts`                                                  |
-| **핵심 도구**   | `@suites/unit` (TestBed.solitary) + `@suites/doubles.jest` (Mocked) |
-| **데이터 생성** | Builder 패턴 (`@test/builders`)                                     |
-| **실행 속도**   | 빠름 (DB 연결 없음, 모든 의존성 자동 Mock)                          |
+| 항목            | 설명                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| **파일 위치**   | 테스트 대상과 같은 폴더 (`src/{name}/`)                                                  |
+| **명명 규칙**   | `{파일명}.spec.ts`                                                                       |
+| **핵심 도구**   | `@suites/unit` (TestBed.solitary) + `@suites/doubles.vitest` adapter + `vitest` (Mocked) |
+| **데이터 생성** | Builder 패턴 (`@test/builders`)                                                          |
+| **실행 속도**   | 빠름 (DB 연결 없음, 모든 의존성 자동 Mock)                                               |
 
 ---
 
 ## 핵심 라이브러리
 
-| 패키지                 | 역할                  | import                                               |
-| ---------------------- | --------------------- | ---------------------------------------------------- |
-| `@suites/unit`         | 자동 Mock DI 컨테이너 | `import { TestBed } from "@suites/unit"`             |
-| `@suites/doubles.jest` | Mock 타입 유틸리티    | `import type { Mocked } from "@suites/doubles.jest"` |
+| 패키지         | 역할                  | import                                                 |
+| -------------- | --------------------- | ------------------------------------------------------ |
+| `@suites/unit` | 자동 Mock DI 컨테이너 | `import { TestBed } from "@suites/unit"`               |
+| `vitest`       | Mock 타입 유틸리티    | `import type { Mocked } from "@suites/doubles.vitest"` |
 
 ---
 
@@ -47,9 +47,9 @@
 
 ```typescript
 import { TestBed } from "@suites/unit";
-import type { Mocked } from "@suites/doubles.jest";
-import { {Feature}Service } from "@/{name}/{name}.service";
-import { {Feature}Repository } from "@/{name}/{name}.repository";
+import type { Mocked } from "vitest";
+import { {Feature}Service } from "#api/{name}/{name}.service";
+import { {Feature}Repository } from "#api/{name}/{name}.repository";
 
 describe("{Feature}Service — 기능 설명", () => {
   let service: {Feature}Service;
@@ -82,8 +82,8 @@ describe("{Feature}Service — 기능 설명", () => {
 beforeEach(async () => {
   const mockPushProvider = {
     name: "expo",
-    validateToken: jest.fn().mockReturnValue(true),
-    sendBatch: jest.fn().mockResolvedValue({ total: 1, successCount: 1 }),
+    validateToken: vi.fn().mockReturnValue(true),
+    sendBatch: vi.fn().mockResolvedValue({ total: 1, successCount: 1 }),
   };
 
   const { unit, unitRef } = await TestBed.solitary({Feature}Service)
@@ -105,9 +105,9 @@ beforeEach(async () => {
 - `notification-templates.spec.ts` - 알림 템플릿 상수
 - `in-memory-cache.adapter.spec.ts` - 캐시 어댑터
 
-외부 SDK의 **모듈 레벨 mock**(`jest.mock()`)이 필요한 경우에도 `Test.createTestingModule()`을 사용합니다:
+외부 SDK의 **모듈 레벨 mock**(`vi.mock()`)이 필요한 경우에도 `Test.createTestingModule()`을 사용합니다:
 
-- `gemini.provider.spec.ts` - AI SDK(`ai` 패키지)를 `jest.mock("ai")`로 모킹. Suites는 모듈 레벨 mock을 지원하지 않으므로 이 방식이 정당함
+- `gemini.provider.spec.ts` - AI SDK(`ai` 패키지)를 `vi.mock("ai")`로 모킹. Suites는 모듈 레벨 mock을 지원하지 않으므로 이 방식이 정당함
 
 ---
 
@@ -177,7 +177,7 @@ beforeEach(() => {
 **구조 규칙**:
 
 ```typescript
-import type { {Model} } from "@/generated/prisma/client";
+import type { {Model} } from "#api/generated/prisma/client";
 
 export class {Model}Builder {
   private data: {Model};
@@ -241,7 +241,7 @@ VerificationBuilder.create(userId, type);
 
 ## GWT 주석 형식
 
-모든 `it` 블록에 **Given/When/Then** 주석을 작성합니다.
+각 `it` 블록은 준비·실행·검증 순서로 작성합니다. 코드로 읽히는 동작을 주석으로 반복하지 않고, 동시성 보장이나 계약상 제약처럼 이유가 필요한 부분만 설명합니다.
 
 ### 정상 케이스
 
@@ -311,7 +311,7 @@ pnpm --filter @aido/api test:cov                 # 커버리지
 
 - ✅ `TestBed.solitary()` 패턴 사용 (`@suites/unit`)
 - ✅ Builder 패턴으로 테스트 데이터 생성 (`@test/builders`)
-- ✅ Given/When/Then 주석으로 의도 표현
+- ✅ 테스트 이름과 준비·실행·검증 순서로 의도 표현. 코드로 드러나는 동작은 주석으로 반복하지 않는다
 - ✅ 각 테스트 케이스는 독립적으로 실행 가능
 - ✅ Edge case와 에러 케이스 테스트 포함
 - ✅ `beforeEach`에서 Builder ID 카운터 리셋
@@ -329,4 +329,4 @@ pnpm --filter @aido/api test:cov                 # 커버리지
 ---
 
 **문서 버전**: 4.0.0
-**최종 수정일**: 2026-04-05
+**최종 수정일**: 2026-10-01
