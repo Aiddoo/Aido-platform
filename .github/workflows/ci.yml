@@ -5,7 +5,17 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        converted_to_draft,
+        labeled,
+        unlabeled,
+        edited,
+      ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,6 +23,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -20,12 +31,29 @@ env:
   DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
 jobs:
-  # 릴리스 PR(develop→main, head=develop) 스킵: 같은 커밋의 push 런이 전체 검증을
-  # 이미 수행하고(develop↔main은 릴리스마다 ff-sync로 동기) 그 체크가 동일 SHA로 PR에
-  # 표시된다 — 이중 실행(러너 분수·Testcontainers)과 머지 시 취소(✗) 노이즈 제거.
+  gate:
+    name: CI Scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.policy.outputs.run }}
+      base: ${{ steps.policy.outputs.base }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: node --test scripts/ci/stack-policy.test.mjs
+      - name: Resolve cumulative CI scope
+        id: policy
+        run: node scripts/ci/stack-gate.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
   lint:
     name: Lint & Type Check
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -34,6 +62,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          affected-base: ${{ needs.gate.outputs.base }}
 
       # Oxc는 전체 저장소를 한 번 스캔한다. 패키지별 프로세스를 반복하지 않아 로컬·CI 결과가 같다.
       - name: Oxlint
@@ -47,7 +77,8 @@ jobs:
 
   test-unit:
     name: Test - Unit & Coverage
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -57,6 +88,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          affected-base: ${{ needs.gate.outputs.base }}
 
       - name: Verify test log failure propagation
         run: bash scripts/ci/run-with-tee.spec.sh
@@ -82,7 +115,8 @@ jobs:
 
   test-integration:
     name: Test - Integration
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -92,6 +126,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          affected-base: ${{ needs.gate.outputs.base }}
 
       # 통합/E2E 태스크는 @aido/api에만 존재 → PR에서 --affected만으로 자연 스코프됨
       # (모바일/문서-only PR은 Testcontainers 스킵, api 영향 변경은 실행)
@@ -108,7 +144,8 @@ jobs:
 
   test-e2e:
     name: Test - E2E
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -118,6 +155,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          affected-base: ${{ needs.gate.outputs.base }}
 
       - name: Run E2E tests
         env:
@@ -141,7 +180,8 @@ jobs:
 
   build:
     name: Build
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'develop'
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -150,6 +190,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          affected-base: ${{ needs.gate.outputs.base }}
 
       - name: Build
         run: pnpm turbo run build --filter='!@aido/mobile'
@@ -168,7 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -177,28 +219,28 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push api image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: apps/api/Dockerfile
           target: production
           platforms: linux/arm64
           push: true
-          pull: true # node:24.20.0-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Build & push migrate image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: apps/api/Dockerfile
           target: migrate
           platforms: linux/arm64
           push: true
-          pull: true # node:24.20.0-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
           cache-from: type=gha

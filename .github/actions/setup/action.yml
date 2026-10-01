@@ -1,6 +1,12 @@
 name: Setup
 description: pnpm + Node.js + dependencies + Prisma Client
 
+inputs:
+  affected-base:
+    description: Branch used for the cumulative Turbo change scope
+    required: false
+    default: ''
+
 runs:
   using: composite
   steps:
@@ -16,12 +22,12 @@ runs:
       run: pnpm install --frozen-lockfile
       shell: bash
 
-    # PR base 브랜치를 turbo --affected 기준으로 명시 (develop 타겟 PR이 main과 diff되던 과잉 실행도 수정)
+    # 최종 스택 PR은 develop부터 누적 변경을 검사한다.
     - name: Set turbo affected base (PR 전용)
       if: github.event_name == 'pull_request'
       shell: bash
       env:
-        BASE_REF: ${{ github.base_ref }}
+        BASE_REF: ${{ inputs.affected-base || github.base_ref }}
       run: |
         git fetch origin "$BASE_REF"
         echo "TURBO_SCM_BASE=origin/$BASE_REF" >> "$GITHUB_ENV"
