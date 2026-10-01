@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { TIME_FORMATS, USER_PREFERENCE_DEFAULTS } from './user-preference.constants';
+import { TIME_FORMATS, USER_PREFERENCE_DEFAULTS } from './user-preference.constants.js';
 
 export const userPreferenceSchema = z
   .object({

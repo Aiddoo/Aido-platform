@@ -5,7 +5,7 @@
  */
 
 // 요청 스키마 (Request)
-export * from './daily-completion.request';
+export * from './daily-completion.request.js';
 
 // 응답 스키마 (Response)
-export * from './daily-completion.response';
+export * from './daily-completion.response.js';

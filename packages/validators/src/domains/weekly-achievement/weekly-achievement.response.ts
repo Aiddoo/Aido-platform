@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { dateSchema, datetimeSchema } from '../../common/datetime';
-import { numberCursorPaginationInfoSchema } from '../../common/pagination';
+import { dateSchema, datetimeSchema } from '../../common/datetime.js';
+import { numberCursorPaginationInfoSchema } from '../../common/pagination.js';
 
 export const weeklyAchievementSchema = z
   .object({

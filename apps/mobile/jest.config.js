@@ -1,6 +1,7 @@
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  resolver: '<rootDir>/jest.resolver.cjs',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   clearMocks: true,
   restoreMocks: true,
@@ -8,6 +9,7 @@ module.exports = {
     'node_modules/(?!(.pnpm/[^/]+/node_modules/)?(react-native|@react-native|expo|@expo|heroui-native|uniwind|tailwind-variants|tailwind-merge|@gorhom|react-native-reanimated|react-native-gesture-handler|react-native-svg|react-native-worklets|ky|standard-navigation))',
   ],
   moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     // .svg는 별칭보다 먼저 잡아야 한다 — @assets/... 규칙이 먼저 걸리면 에셋으로 새어 나간다
     '\\.svg$': '<rootDir>/src/shared/__tests__/mocks/svg.tsx',
 
@@ -19,7 +21,6 @@ module.exports = {
     // Monorepo packages
     '^@aido/validators$': '<rootDir>/../../packages/validators/src',
     '^@aido/errors$': '<rootDir>/../../packages/errors/src',
-    '^@aido/utils$': '<rootDir>/../../packages/utils/src',
 
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/shared/__tests__/mocks/expo-secure-store.ts',

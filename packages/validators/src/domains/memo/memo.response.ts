@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { datetimeSchema } from '../../common/datetime';
-import { numberCursorPaginationInfoSchema } from '../../common/pagination';
-import { todoSchema } from '../todo/todo.response';
+import { datetimeSchema } from '../../common/datetime.js';
+import { numberCursorPaginationInfoSchema } from '../../common/pagination.js';
+import { todoSchema } from '../todo/todo.response.js';
 
 export const memoSchema = z
   .object({

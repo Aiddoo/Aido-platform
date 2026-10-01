@@ -5,10 +5,10 @@
  */
 
 // 상수
-export * from './auth.constants';
+export * from './auth.constants.js';
 
 // 요청 스키마 (Request)
-export * from './auth.request';
+export * from './auth.request.js';
 
 // 응답 스키마 (Response)
-export * from './auth.response';
+export * from './auth.response.js';

@@ -5,7 +5,8 @@ export default mergeConfig(
   baseConfig,
   defineConfig({
     test: {
-      root: './src',
+      include: ['test/**/*.spec.ts'],
+      coverage: { include: ['src/**/*.ts'] },
     },
   }),
 );

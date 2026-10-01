@@ -1,3 +1,3 @@
-export * from './weather.constants';
-export * from './weather.request';
-export * from './weather.response';
+export * from './weather.constants.js';
+export * from './weather.request.js';
+export * from './weather.response.js';

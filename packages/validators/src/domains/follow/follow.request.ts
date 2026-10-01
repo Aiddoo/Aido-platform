@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { reorderPositionSchema } from '../todo-category/todo-category.common';
+import { reorderPositionSchema } from '../todo-category/todo-category.common.js';
 
 export const userIdParamSchema = z.object({
   userId: z

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { dateSchema, nullableDatetimeSchema } from '../../common/datetime';
+import { dateSchema, nullableDatetimeSchema } from '../../common/datetime.js';
 
 /** 성장/리텐션 cohort 달성 지표 */
 export const growthCohortMetricSchema = z

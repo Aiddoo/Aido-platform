@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { datetimeSchema } from '../../common/datetime';
+import { datetimeSchema } from '../../common/datetime.js';
 
 export const dailyCompletionSchema = z
   .object({

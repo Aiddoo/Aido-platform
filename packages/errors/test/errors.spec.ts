@@ -9,7 +9,7 @@ import {
   getErrorsByHttpStatus,
   HttpStatus,
   isErrorCode,
-} from '../src';
+} from '../src/index.js';
 
 describe('@aido/errors', () => {
   describe('ErrorCode', () => {

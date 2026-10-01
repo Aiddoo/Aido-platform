@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { notificationActionSchema } from '../notification/notification.payload';
-import { BROADCAST_TARGET_FILTER, BROADCAST_TARGET_FILTERS } from './admin.constants';
+import { notificationActionSchema } from '../notification/notification.payload.js';
+import { BROADCAST_TARGET_FILTER, BROADCAST_TARGET_FILTERS } from './admin.constants.js';
 
 const MAX_GROWTH_QUERY_DAYS = 90;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;

@@ -1,0 +1,79 @@
+diff --git a/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt b/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
+index 4c27e67e..9b238564 100644
+--- a/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
++++ b/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
+@@ -5,6 +5,8 @@ import android.annotation.SuppressLint
+ import android.content.Context
+ import android.os.Bundle
+ import androidx.compose.ui.unit.DpSize
++import androidx.glance.action.clickable
++import androidx.glance.appwidget.action.actionStartActivity
+ import androidx.glance.Emittable
+ import androidx.glance.appwidget.AppWidgetId
+ import androidx.glance.appwidget.SizeMode
+@@ -28,6 +30,12 @@ internal class ExpoWidgetsPeekWidget(
+     val environment = getWidgetEnvironment(appContext)
+     val node = evaluateLayout(appContext, layout, props, environment)
+ 
+-    return node.toPeekRoot(appContext, widgetName, size)
++    return node.toPeekRoot(appContext, widgetName, size).also { root ->
++      if (props?.get("opensApp") == true) {
++        appContext.packageManager.getLaunchIntentForPackage(appContext.packageName)?.let { intent ->
++          root.modifier = root.modifier.clickable(actionStartActivity(intent))
++        }
++      }
++    }
+   }
+ }
+diff --git a/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt b/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt
+index e36dfdf4..81326f4e 100644
+--- a/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt
++++ b/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt
+@@ -1,10 +1,18 @@
+ package expo.modules.widgets
+ 
++import android.appwidget.AppWidgetManager
++import android.content.pm.PackageManager
+ import android.content.ComponentName
+ import android.content.Context
+ 
+ private const val PROVIDER_SUFFIX = "Provider"
+ 
+ internal fun widgetProviderComponentName(context: Context, widgetName: String): ComponentName {
+-  return ComponentName(context.packageName, "${context.packageName}.$widgetName$PROVIDER_SUFFIX")
++  val registeredProvider = AppWidgetManager.getInstance(context).installedProviders.firstOrNull { provider ->
++    provider.provider.packageName == context.packageName && runCatching {
++      context.packageManager.getReceiverInfo(provider.provider, PackageManager.GET_META_DATA)
++        .metaData?.getString("expo.modules.widgets.NAME") == widgetName
++    }.getOrDefault(false)
++  }
++  return registeredProvider?.provider ?: ComponentName(context.packageName, "${context.packageName}.$widgetName$PROVIDER_SUFFIX")
+ }
+diff --git a/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt b/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt
+index f5dbbd21..32a0860d 100644
+--- a/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt
++++ b/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt
+@@ -7,7 +7,10 @@ internal object WidgetsStorage {
+   private const val PREFERENCES_NAME = "expo.modules.widgets"
+ 
+   fun set(context: Context, key: String, value: String) {
+-    preferences(context).edit(commit = true) { putString(key, value) }
++    val preferences = preferences(context)
++    synchronized(preferences) {
++      preferences.edit(commit = true) { putString(key, value) }
++    }
+   }
+ 
+   fun set(context: Context, key: String, value: Map<String, Any?>) {
+diff --git a/scripts/build-layout-registry.mjs b/scripts/build-layout-registry.mjs
+index d52a60e3..5b2da22d 100644
+--- a/scripts/build-layout-registry.mjs
++++ b/scripts/build-layout-registry.mjs
+@@ -154,6 +154,6 @@ function createLayoutRegistry(expectedWidgets, capturedLayouts) {
+   return registry;
+ }
+ 
+-if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
++if (process.argv[1] && fs.realpathSync(process.argv[1]) === __filename) {
+   await main();
+ }

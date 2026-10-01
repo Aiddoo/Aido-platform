@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { LATITUDE_RANGE, LONGITUDE_RANGE } from './weather.constants';
+import { LATITUDE_RANGE, LONGITUDE_RANGE } from './weather.constants.js';
 
 export const updateLocationSchema = z.object({
   latitude: z

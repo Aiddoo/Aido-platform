@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { dateSchema, datetimeSchema } from '../../common/datetime';
-import { dayOfWeekSchema } from '../todo/todo.common';
+import { dateSchema, datetimeSchema } from '../../common/datetime.js';
+import { dayOfWeekSchema } from '../todo/todo.common.js';
 
 // ============================================================================
 // AI 리포트 통계 서브스키마

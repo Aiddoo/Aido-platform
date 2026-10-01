@@ -11,10 +11,10 @@
     "db:migrate": "pnpm --filter @aido/api db:migrate",
     "db:push": "pnpm --filter @aido/api db:push",
     "dev": "turbo run dev",
-    "docker:dev:build": "docker compose -f docker-compose.dev.yml build",
-    "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
-    "docker:dev:logs": "docker compose -f docker-compose.dev.yml logs -f api",
-    "docker:dev:migrate": "DATABASE_URL=postgresql://postgres:postgres@localhost:${DB_PORT:-5433}/aido pnpm --filter @aido/api db:deploy",
+    "docker:dev:build": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml build",
+    "docker:dev:down": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml down",
+    "docker:dev:logs": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml logs -f api",
+    "docker:dev:migrate": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml run --rm migrate",
     "docker:dev:studio": "DATABASE_URL=postgresql://postgres:postgres@localhost:${DB_PORT:-5433}/aido pnpm --filter @aido/api db:studio",
     "docker:dev:up": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml up -d",
     "docker:down": "docker compose down",
@@ -26,7 +26,7 @@
     "docker:up": "docker compose up -d",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "postinstall": "turbo build --filter=./packages/* --filter=./tooling/*",
+    "postinstall": "turbo build --filter=./packages/*",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "prepare": "simple-git-hooks",
@@ -35,20 +35,22 @@
     "test:cov": "turbo run test:cov",
     "test:coverage": "pnpm --filter @aido/api test:coverage && pnpm --filter @aido/mobile test:coverage",
     "test:e2e": "turbo run test:e2e --filter=@aido/api",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "test:integration": "turbo run test:integration --filter=@aido/api"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.2",
-    "@commitlint/config-conventional": "^21.2.2",
-    "@commitlint/types": "^21.2.0",
-    "commitizen": "^4.3.2",
-    "cz-conventional-changelog": "^3.3.0",
-    "lint-staged": "^17.2.0",
-    "oxfmt": "0.63.0",
-    "oxlint": "1.78.0",
-    "simple-git-hooks": "^2.13.1",
-    "tsx": "^4.23.11",
-    "turbo": "^2.10.10"
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "@commitlint/types": "21.2.3",
+    "commitizen": "4.3.2",
+    "cz-conventional-changelog": "3.3.0",
+    "lint-staged": "17.6.0",
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
+    "simple-git-hooks": "2.14.0",
+    "tsx": "4.23.15",
+    "turbo": "2.11.6",
+    "vite": "catalog:"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged && pnpm typecheck && pnpm build",
@@ -67,7 +69,7 @@
     }
   },
   "engines": {
-    "node": ">=24.20.0 <25.0.0"
+    "node": ">=24.21.0 <25.0.0"
   },
-  "packageManager": "pnpm@10.29.3+sha512.498e1fb4cca5aa06c1dcf2611e6fafc50972ffe7189998c409e90de74566444298ffe43e6cd2acdc775ba1aa7cc5e092a8b7054c811ba8c5770f84693d33d2dc"
+  "packageManager": "pnpm@10.34.6"
 }

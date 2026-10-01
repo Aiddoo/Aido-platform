@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { hexColorRegex, reorderPositionSchema } from './todo-category.common';
+import { hexColorRegex, reorderPositionSchema } from './todo-category.common.js';
 
 export const createTodoCategorySchema = z.object({
   name: z

@@ -1,3 +1,3 @@
-export * from './inquiry.constants';
-export * from './inquiry.request';
-export * from './inquiry.response';
+export * from './inquiry.constants.js';
+export * from './inquiry.request.js';
+export * from './inquiry.response.js';

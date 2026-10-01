@@ -5,10 +5,10 @@
  */
 
 // 상수
-export * from './user-preference.constants';
+export * from './user-preference.constants.js';
 
 // 요청 스키마 (Request)
-export * from './user-preference.request';
+export * from './user-preference.request.js';
 
 // 응답 스키마 (Response)
-export * from './user-preference.response';
+export * from './user-preference.response.js';

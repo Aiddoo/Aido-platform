@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { datetimeSchema } from '../../common/datetime';
-import { PRECIPITATION_TYPES, SKY_CONDITIONS } from './weather.constants';
+import { datetimeSchema } from '../../common/datetime.js';
+import { PRECIPITATION_TYPES, SKY_CONDITIONS } from './weather.constants.js';
 
 export const hourlyForecastSchema = z.object({
   hour: z.number().int().min(0).max(23).describe('시간 (0-23)'),
