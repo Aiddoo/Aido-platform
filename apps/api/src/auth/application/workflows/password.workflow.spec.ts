@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * PasswordWorkflow 테스트 (Suites 패턴)
  *
@@ -10,16 +11,15 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { AccountBuilder, UserBuilder } from "@test/builders";
-import { asMock } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { REVOKE_REASON, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { REVOKE_REASON, SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { AccountBuilder, UserBuilder } from "#test/builders/index";
+import { asMock } from "#test/mocks/index";
 
-import { AUTH_PASSWORD_HASHER, type AuthPasswordHasherPort } from "../ports/auth-crypto.port";
+import { AUTH_PASSWORD_HASHER, type AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_SECURITY_LOG_REPOSITORY,
@@ -29,9 +29,9 @@ import {
 	type AuthSecurityLogRepositoryPort,
 	type AuthSessionRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port";
-import { VerificationService } from "../services/verification.service";
-import { PasswordWorkflow } from "./password.workflow";
+} from "../ports/auth-persistence.port.js";
+import { VerificationService } from "../services/verification.service.js";
+import { PasswordWorkflow } from "./password.workflow.js";
 
 describe("PasswordWorkflow — 비밀번호 workflow", () => {
 	let service: PasswordWorkflow;
@@ -124,14 +124,17 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create(mockUser.id).build(),
+				id: 123,
 				userId: mockUser.id,
 				password: "old-hashed-password",
 			});
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
 			asMock(verificationService.verifyCode).mockResolvedValue(true);
-			asMock(accountRepo.updatePassword).mockResolvedValue({});
+			asMock(accountRepo.updatePassword).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
@@ -183,14 +186,17 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create(mockUser.id).build(),
+				id: 123,
 				userId: mockUser.id,
 				password: "old-hashed-password",
 			});
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
 			asMock(verificationService.verifyCode).mockResolvedValue(true);
-			asMock(accountRepo.updatePassword).mockResolvedValue({});
+			asMock(accountRepo.updatePassword).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
@@ -211,14 +217,17 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create(mockUser.id).build(),
+				id: 123,
 				userId: mockUser.id,
 				password: "old-hashed-password",
 			});
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
 			asMock(verificationService.verifyCode).mockResolvedValue(true);
-			asMock(accountRepo.updatePassword).mockResolvedValue({});
+			asMock(accountRepo.updatePassword).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
@@ -248,14 +257,17 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create("user-123").build(),
+				id: 123,
 				userId,
 				password: "current-hashed-password",
 			});
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
-			asMock(accountRepo.updatePassword).mockResolvedValue({});
+			asMock(accountRepo.updatePassword).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
@@ -271,7 +283,8 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create("user-123").build(),
+				id: 123,
 				userId,
 				password: "current-hashed-password",
 			});
@@ -300,14 +313,17 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create("user-123").build(),
+				id: 123,
 				userId,
 				password: "current-hashed-password",
 			});
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			uow.run.mockImplementation((work) => work());
-			asMock(accountRepo.updatePassword).mockResolvedValue({});
+			asMock(accountRepo.updatePassword).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 
 			// When
@@ -330,14 +346,17 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 				const user = UserBuilder.create().withId(userId).verified().build();
 				userRepo.findById.mockResolvedValue(user);
 				asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-					id: "account-123",
+					...AccountBuilder.create("user-123").build(),
+					id: 123,
 					userId,
 					password: "current-hashed-password",
 				});
 				passwordService.verify.mockResolvedValue(true);
 				passwordService.hash.mockResolvedValue("new-hashed-password");
 				uow.run.mockImplementation((work) => work());
-				asMock(accountRepo.updatePassword).mockResolvedValue({});
+				asMock(accountRepo.updatePassword).mockResolvedValue({
+					...AccountBuilder.create("user-123").build(),
+				});
 				sessionRepo.revokeAllByUserId.mockResolvedValue(3);
 				asMock(securityLogRepo.create).mockResolvedValue({});
 
@@ -448,7 +467,9 @@ describe("PasswordWorkflow — 비밀번호 workflow", () => {
 			passwordService.hash.mockResolvedValue("hashed-password");
 			uow.run.mockImplementation((work) => work());
 			verificationService.verifyCode.mockResolvedValue(true);
-			asMock(accountRepo.createCredentialAccount).mockResolvedValue({});
+			asMock(accountRepo.createCredentialAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			return user;
 		};

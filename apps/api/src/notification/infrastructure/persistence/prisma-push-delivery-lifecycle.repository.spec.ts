@@ -1,15 +1,16 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { PushTokenBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
 import type {
 	FinalizePushDeliveryResultsInput,
 	PushDeliveryFence,
-} from "../../application/ports/push-delivery-lifecycle.repository.port";
-import { PrismaPushDeliveryLifecycleRepository } from "./prisma-push-delivery-lifecycle.repository";
+} from "../../application/ports/push-delivery-lifecycle.repository.port.js";
+import { PrismaPushDeliveryLifecycleRepository } from "./prisma-push-delivery-lifecycle.repository.js";
 
 interface SqlFragment {
 	readonly values: readonly unknown[];
@@ -75,10 +76,12 @@ describe("PrismaPushDeliveryLifecycleRepository", () => {
 	});
 
 	it("두 token 결과를 정확히 두 attempt row로 bulk upsert한다", async () => {
-		asMock(db.pushToken.findMany).mockResolvedValue([
-			{ id: 801, token: "token-a" },
-			{ id: 802, token: "token-b" },
-		]);
+		asMock(db.pushToken.findMany).mockResolvedValue(
+			[
+				{ id: 801, token: "token-a" },
+				{ id: 802, token: "token-b" },
+			].map((value) => ({ ...PushTokenBuilder.create("user-1").build(), ...value })),
+		);
 		asMock(db.$queryRaw).mockResolvedValue([{ dispatchId: 701, publishAttempt: 1 }]);
 		asMock(db.$executeRaw).mockResolvedValue(1);
 
@@ -103,7 +106,9 @@ describe("PrismaPushDeliveryLifecycleRepository", () => {
 			]),
 		);
 		asMock(db.pushToken.findMany).mockResolvedValue(
-			inputs.map((_, index) => ({ id: index + 101, token: `token-${index + 1}` })),
+			inputs
+				.map((_, index) => ({ id: index + 101, token: `token-${index + 1}` }))
+				.map((value) => ({ ...PushTokenBuilder.create("user-1").build(), ...value })),
 		);
 		asMock(db.$queryRaw).mockResolvedValue(
 			inputs.map((input) => ({

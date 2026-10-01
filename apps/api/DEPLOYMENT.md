@@ -1,6 +1,6 @@
 # Aido API 배포 가이드
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-07-19 · **Owner**: Aido Platform Team
+> **Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
 
 ## 목차
 
@@ -14,7 +14,7 @@
 ## Prerequisites
 
 - Docker 24+ / Docker Compose V2
-- Node.js 24.20.0 / pnpm 10.29+
+- Node.js 24.21.0 / pnpm 10.34.6
 
 ---
 
@@ -201,6 +201,16 @@ docker logs --tail 100 aido-prod-api                     # 원인 확인
 
 ### 3.7 `develop` → `main` 릴리스 브랜치 정합
 
+앱 출시 버전은 package.json을 Expo 설정이 직접 참조한다. EAS remote/autoIncrement와
+fingerprint 정책을 유지하며 모바일 스토어 제출은 서버 main 배포와 별개다.
+
+`APP_VERSION_CHECK_ENABLED`의 기본값은 `false`다. 기존 환경변수만으로 새 서버를 실행할 수 있다.
+스토어 버전 확인을 활성화할 때는 `APP_VERSION_CHECK_IOS_LATEST_VERSION`과
+`APP_VERSION_CHECK_ANDROID_LATEST_VERSION`에 각 스토어에 실제 공개된 `MAJOR.MINOR.PATCH`를 설정한다.
+심사 중인 앱 버전을 미리 설정하지 않는다. 버전 확인은 사용자 요청의 안내이며 기존 앱의 API 접근을 막지 않는다.
+현재 설정은 서버 시작 시 읽으므로 운영 `.env.docker.prod` 변경은 다음 정상 배포/재기동부터 반영된다.
+앱 출시 버전은 package.json, 빌드 번호는 EAS, 스토어 공개 버전은 서버 운영 설정이 각각 소유한다.
+
 기능 PR과 릴리스 PR의 merge 방식을 구분한다.
 
 | PR 방향             | merge 방식                     | 이유                                                                     |
@@ -318,4 +328,34 @@ docker exec aido-prod-api wget -qO- http://localhost:8080/health
 docker images aido-platform-api
 ```
 
-Production 이미지는 `node:24.20.0-alpine3.24` + production deps만 포함하여 경량화됩니다.
+Production 이미지는 `node:24.21.0-alpine3.24` + production deps만 포함하여 경량화됩니다.
+
+## 1.10 ESM 런타임
+
+NestJS 12, Prisma 7.10, NodeNext ESM을 사용한다. API package의 `#api/*` imports는 개발 중 source를, 배포 중 `dist/src`를 가리킨다. 상대 import에는 `.js`를 명시한다.
+
+`bootstrap.ts`가 instrumentation을 먼저 초기화하고 `main.ts`를 동적으로 불러온다. 개발 Nest CLI와 production start는 같은 진입 순서를 따른다. ESM dependency가 먼저 평가되어 Sentry가 늦게 시작되는 순서를 만들지 않는다.
+
+SIGTERM/SIGINT는 단일 handler가 한 번만 처리한다. Nest 모듈 종료로 worker와 Redis/Prisma 연결을 정리한 뒤 Sentry를 flush한다. 같은 프로세스에서 `enableShutdownHooks`와 별도 signal handler가 중복 종료하지 않는다.
+
+DB migration 이미지는 애플리케이션 runtime과 분리한다. Prisma와 pg-boss의 두 DB URL을 먼저 검증하고 migration을 실행한다. 원격 DB는 명시적인 `AIDO_ALLOW_REMOTE_DB=1`이 필요하며 URL 오류에 자격증명을 출력하지 않는다.
+
+Prisma CLI는 build의 client generation과 별도 migration 이미지에서 사용한다. API production dependency에는 client runtime과 PostgreSQL/CLS adapter만 필요하다. CLI 전용 의존성이 API 이미지에 들어오지 않도록 선택된 client/transaction adapter 버전의 CLI peer 연결만 제거하며, 각 workspace의 직접 CLI 의존성과 strict peer 검사는 유지한다.
+
+공개 route, HTTP status, 오류 envelope, 기존 스토어 클라이언트 계약은 유지한다. Zod는 기존 공개 검증 규칙을 유지하는 4.3 patch 계열을 사용하며, CUID/date-time 규칙을 바꾸는 업데이트는 별도 계약 변경으로 다룬다.
+
+## 구 클라이언트 릴리스 gate
+
+새 서버는 1.7.x, 1.8.2 및 1.9.0의 기존 요청을 계속 수용한다. 필드 삭제, optional 필드의 required 전환, 날짜·커서 검증 강화, 성공·오류 envelope 변경은 이번 현대화에 포함하지 않는다. `app-version`은 추가 endpoint이며 기존 인증이나 API 접근에 강제 버전 조건을 붙이지 않는다.
+
+```bash
+pnpm --filter @aido/api exec vitest run --project e2e \
+  test/e2e/openapi-contract.e2e-spec.ts \
+  test/e2e/legacy-client-compatibility.e2e-spec.ts
+```
+
+배포 전 published OpenAPI fingerprint와 고정된 구 클라이언트 payload의 실제 HTTP 테스트가 모두 통과해야 한다. 기존 release fixture를 현재 구현에 맞춰 다시 생성하지 않는다. 구 payload gate는 인증·토큰 갱신·할 일·댓글·알림·날짜·커서와 오류 envelope를 확인하고, 새 응답 필드는 이전 strip parser가 무시하는지 검증한다. DB/queue migration은 기존 서버의 동작과 데이터 해석을 유지해야 하며, 파괴적 변경은 별도 rollout으로 분리한다.
+
+pg-boss는 12.27.0과 schema 37을 유지한다. 12.35.1은 schema 43으로 migration하며, `migrate: false`인 기존 12.27 runtime은 schema가 다르면 재시작하지 못한다. 따라서 이번 릴리스에는 pg-boss schema upgrade를 포함하지 않는다. 구 서버 이미지로 rollback할 수 있는 DB 구조를 유지한다. 이 예외는 [구 버전의 schema 검사](https://github.com/timgit/pg-boss/blob/12.27.0/src/contractor.ts)와 격리 PostgreSQL 재시작 검증을 기준으로 결정했다.
+
+검증 중 별도 schema를 사용할 때는 API와 migration에 같은 `JOB_SCHEMA` 값을 전달한다. migration script는 이를 `PGBOSS_SCHEMA`로 연결한다. 기존 개발 계정이나 기존 schema를 삭제해서 검증 환경을 맞추지 않는다.

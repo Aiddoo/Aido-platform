@@ -4,6 +4,7 @@ import type {
   DailyCompletionsRangeResponse,
   ParseTodoResponse,
   Todo,
+  TodoDetailsResponse,
   TodoSummaryResponse,
 } from '@aido/validators';
 
@@ -13,6 +14,7 @@ import type {
   DailyCompletionsResult,
   ParsedTodoResult,
   TodoItem,
+  TodoDetails,
   TodoSummary,
 } from '../models/todo.model';
 import { toSubTodo } from './sub-todo.mapper';
@@ -89,3 +91,16 @@ export const toTodoSummary = (dto: TodoSummaryResponse): TodoSummary => ({
     categoryColor: todo.categoryColor,
   })),
 });
+
+export function toTodoDetails(dto: TodoDetailsResponse): TodoDetails {
+  return {
+    todo: toTodoItem(dto.todo),
+    owner: {
+      id: dto.owner.id,
+      name: dto.owner.name,
+      profileImage: dto.owner.profileImage,
+    },
+    permissions: { ...dto.permissions },
+    metrics: { ...dto.metrics },
+  };
+}

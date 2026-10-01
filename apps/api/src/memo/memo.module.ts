@@ -11,13 +11,13 @@
  */
 import { Module } from "@nestjs/common";
 
-import { TodoModule } from "../todo/todo.module";
-import { MEMO_PROVIDERS } from "./application/memo.providers";
-import { MEMO_REPOSITORY } from "./application/ports/memo.repository.port";
-import { TODO_CREATOR } from "./application/ports/todo-creator.port";
-import { TodoCreatorAdapter } from "./infrastructure/adapters/todo-creator.adapter";
-import { PrismaMemoRepository } from "./infrastructure/persistence/prisma-memo.repository";
-import { MemoController } from "./presentation/memo.controller";
+import { TodoModule } from "../todo/todo.module.js";
+import { MEMO_PROVIDERS } from "./application/memo.providers.js";
+import { MEMO_REPOSITORY } from "./application/ports/memo.repository.port.js";
+import { TODO_CREATOR } from "./application/ports/todo-creator.port.js";
+import { TodoCreatorAdapter } from "./infrastructure/adapters/todo-creator.adapter.js";
+import { PrismaMemoRepository } from "./infrastructure/persistence/prisma-memo.repository.js";
+import { MemoController } from "./presentation/memo.controller.js";
 
 @Module({
 	imports: [TodoModule],

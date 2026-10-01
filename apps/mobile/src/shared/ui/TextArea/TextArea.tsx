@@ -1,5 +1,11 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
+import type {
+  ComponentRef,
+  ForwardRefExoticComponent,
+  PropsWithoutRef,
+  RefAttributes,
+} from 'react';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
@@ -16,7 +22,9 @@ import {
 
 const StyledTextInput = withUniwind(TextInput);
 
-export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
+export const TextArea: ForwardRefExoticComponent<
+  PropsWithoutRef<TextAreaInternalProps> & RefAttributes<ComponentRef<typeof TextInput>>
+> = forwardRef<ComponentRef<typeof TextInput>, TextAreaInternalProps>(
   (
     {
       variant = 'filled',
@@ -30,6 +38,8 @@ export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
       placeholder,
       className,
       textInputComponent,
+      value,
+      onChange,
       onFocus,
       onBlur,
       onLayout,
@@ -96,6 +106,8 @@ export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
           >
             <InputComponent
               ref={ref}
+              value={value}
+              onChangeText={onChange}
               allowFontScaling={false}
               placeholder={placeholder}
               editable={!isDisabled}

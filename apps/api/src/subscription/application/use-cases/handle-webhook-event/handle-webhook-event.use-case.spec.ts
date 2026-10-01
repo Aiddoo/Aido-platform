@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * HandleWebhookEventUseCase 단위 테스트
  *
@@ -6,38 +7,37 @@
  *
  * @execute pnpm --filter @aido/api test -- handle-webhook-event.use-case.spec
  */
+import { vi, type Mock } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { SubscriptionEventBuilder } from "@test/builders";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { SubscriptionEventBuilder } from "#test/builders/index";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { UNIT_OF_WORK } from "@/shared/application/ports";
-
-import { Subscription } from "../../../domain/entities/subscription.aggregate";
+import { Subscription } from "../../../domain/entities/subscription.aggregate.js";
 import {
 	SUBSCRIPTION_CACHE,
 	type SubscriptionCachePort,
-} from "../../ports/subscription-cache.port";
+} from "../../ports/subscription-cache.port.js";
 import {
 	SUBSCRIPTION_EVENT_NOTIFIER,
 	type SubscriptionEventNotifierPort,
-} from "../../ports/subscription-event-notifier.port";
-import { SUBSCRIPTION_WEBHOOK_LOCK } from "../../ports/subscription-webhook-lock.port";
+} from "../../ports/subscription-event-notifier.port.js";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "../../ports/subscription-webhook-lock.port.js";
 import {
 	SUBSCRIPTION_REPOSITORY,
 	type SubscriptionRepositoryPort,
 	type SubscriptionUser,
-} from "../../ports/subscription.repository.port";
-import { HandleWebhookEventUseCase } from "./handle-webhook-event.use-case";
+} from "../../ports/subscription.repository.port.js";
+import { HandleWebhookEventUseCase } from "./handle-webhook-event.use-case.js";
 
 describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 	let useCase: HandleWebhookEventUseCase;
 	let mockRepository: Mocked<SubscriptionRepositoryPort>;
 	let mockCache: Mocked<SubscriptionCachePort>;
 	let mockNotifier: Mocked<SubscriptionEventNotifierPort>;
-	let releaseMock: jest.Mock;
-	let acquireMock: jest.Mock;
+	let releaseMock: Mock;
+	let acquireMock: Mock;
 
 	const APP_USER_ID = "rc-user-123";
 	const TXN_ID = "otxn-test-1234";
@@ -72,14 +72,14 @@ describe("HandleWebhookEventUseCase — RevenueCat 웹훅 처리", () => {
 		});
 
 	beforeEach(async () => {
-		releaseMock = jest.fn().mockResolvedValue(undefined);
-		acquireMock = jest.fn().mockResolvedValue(releaseMock);
+		releaseMock = vi.fn().mockResolvedValue(undefined);
+		acquireMock = vi.fn().mockResolvedValue(releaseMock);
 
 		const { unit, unitRef } = await TestBed.solitary(HandleWebhookEventUseCase)
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
 			.mock(SUBSCRIPTION_WEBHOOK_LOCK)
-			.impl(() => ({ acquire: acquireMock, isLocked: jest.fn() }))
+			.impl(() => ({ acquire: acquireMock, isLocked: vi.fn() }))
 			.compile();
 
 		useCase = unit;

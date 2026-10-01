@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 
-import { AggregateRoot } from "@/shared/domain";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { AggregateRoot } from "#api/shared/domain/index";
 
 /** 제안 상태 — PENDING(대기) → ACCEPTED(수락) | DISMISSED(거절) */
 export type SuggestionStatus = "PENDING" | "ACCEPTED" | "DISMISSED";

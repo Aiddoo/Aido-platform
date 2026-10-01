@@ -5,18 +5,18 @@
  * - 프리미엄 게이트 + 목록 조회 위임
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { Suggestion } from "../../../domain/entities/suggestion.aggregate";
+import { Suggestion } from "../../../domain/entities/suggestion.aggregate.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../../ports/ai-suggestion.repository.port";
-import { GetPendingSuggestionsUseCase } from "./get-pending-suggestions.use-case";
+} from "../../ports/ai-suggestion.repository.port.js";
+import { GetPendingSuggestionsUseCase } from "./get-pending-suggestions.use-case.js";
 
 const mockUserId = "user-123";
 

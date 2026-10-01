@@ -30,7 +30,6 @@ body:
         - apps/api
         - apps/mobile
         - packages/validators
-        - packages/utils
         - packages/errors
         - tooling/*
         - multiple

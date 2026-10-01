@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 
-import { ACCOUNT_DELETION } from "@/auth/domain/constants/auth.constants";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { ACCOUNT_DELETION } from "#api/auth/domain/constants/auth.constants";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { assertRestorableWithinGracePeriod } from "./account-restoration-policy";
+import { assertRestorableWithinGracePeriod } from "./account-restoration-policy.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

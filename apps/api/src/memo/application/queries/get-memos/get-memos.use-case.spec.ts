@@ -5,15 +5,15 @@
  * 저장소가 내려준 고정 우선 정렬 순서 보존을 검증한다.
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+import type { Mocked } from "vitest";
 
-import { PaginationService } from "@/shared/application/pagination";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { createMemoRepositoryMock } from "#test/mocks/ports/memo.mock";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { GetMemosUseCase } from "./get-memos.use-case";
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { GetMemosUseCase } from "./get-memos.use-case.js";
 
 const memoEntity = (id: number, isPinned = false): Memo =>
 	Memo.reconstitute({

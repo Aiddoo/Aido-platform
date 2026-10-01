@@ -8,17 +8,17 @@ import {
 	Optional,
 	type Provider,
 } from "@nestjs/common";
-import Redis, { type RedisOptions } from "ioredis";
+import { Redis, type RedisOptions } from "ioredis";
 
-import { withTimeout } from "@/shared/application/utils/with-timeout.util";
+import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
-import { TypedConfigService } from "../config/services/config.service";
+import { TypedConfigService } from "../config/services/config.service.js";
 import {
 	buildBullRedisOptions,
 	buildCommandRedisOptions,
 	type RedisConnectionSettings,
-} from "./redis-client.factory";
-import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants";
+} from "./redis-client.factory.js";
+import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
 const QUIT_TIMEOUT_MS = 3_000;
@@ -115,8 +115,6 @@ export class RedisModule implements OnApplicationShutdown {
 	 * "Connection is closed." unhandled rejection을 일으킨다.
 	 */
 	async onApplicationShutdown(): Promise<void> {
-		// main.ts의 enableShutdownHooks + 자체 SIGTERM 핸들러가 app.close()를
-		// 중복 호출할 수 있으므로 멱등하게 처리한다
 		this.shutdownPromise ??= this.closeClients();
 		await this.shutdownPromise;
 	}

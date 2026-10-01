@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * CacheService 테스트 (Suites 패턴)
  *
@@ -7,14 +8,14 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createMockUserProfile } from "@test/mocks/cache-test-utils";
+import { createMockUserProfile } from "#test/mocks/cache-test-utils";
 
-import { CacheService } from "./cache.service";
-import { CacheKeys } from "./constants/cache-keys";
-import { CACHE_SERVICE, type ICacheService, type TtlValue } from "./interfaces/cache.interface";
+import { CacheService } from "./cache.service.js";
+import { CacheKeys } from "./constants/cache-keys.js";
+import { CACHE_SERVICE, type ICacheService, type TtlValue } from "./interfaces/cache.interface.js";
 
 describe("CacheService — 캐시 서비스", () => {
 	let service: CacheService;
@@ -23,18 +24,18 @@ describe("CacheService — 캐시 서비스", () => {
 	beforeEach(async () => {
 		// Given - Mock 캐시 어댑터 설정 (테스트에서 직접 참조하기 위해 별도 변수로 관리)
 		const mockCacheAdapterImpl = {
-			get: jest.fn(),
-			set: jest.fn(),
-			del: jest.fn(),
-			delByPattern: jest.fn(),
-			reset: jest.fn(),
-			getStats: jest.fn(),
-			wrap: jest.fn(),
-			mget: jest.fn(),
-			mset: jest.fn(),
-			has: jest.fn(),
-			ttl: jest.fn(),
-			touch: jest.fn(),
+			get: vi.fn(),
+			set: vi.fn(),
+			del: vi.fn(),
+			delByPattern: vi.fn(),
+			reset: vi.fn(),
+			getStats: vi.fn(),
+			wrap: vi.fn(),
+			mget: vi.fn(),
+			mset: vi.fn(),
+			has: vi.fn(),
+			ttl: vi.fn(),
+			touch: vi.fn(),
 		};
 
 		// Suites가 모든 의존성을 자동으로 mock (CACHE_SERVICE는 impl()로 수동 설정)
@@ -127,7 +128,7 @@ describe("CacheService — 캐시 서비스", () => {
 		it("wrap 호출을 어댑터에 위임한다", async () => {
 			// Given
 			const key = "key";
-			const factory = jest.fn().mockResolvedValue("value");
+			const factory = vi.fn().mockResolvedValue("value");
 			const ttl: TtlValue = "5m";
 			mockCacheAdapter.wrap.mockResolvedValue("value");
 
@@ -267,7 +268,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapSession이 wrap을 올바른 키와 TTL로 호출한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(sessionData);
+			const factory = vi.fn().mockResolvedValue(sessionData);
 			mockCacheAdapter.wrap.mockResolvedValue(sessionData);
 
 			// When
@@ -284,7 +285,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapSession이 factory가 undefined를 반환하면 undefined를 반환한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(undefined);
+			const factory = vi.fn().mockResolvedValue(undefined);
 			mockCacheAdapter.wrap.mockResolvedValue(undefined);
 
 			// When
@@ -355,7 +356,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapUserProfile이 wrap을 올바른 키와 TTL로 호출한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(profile);
+			const factory = vi.fn().mockResolvedValue(profile);
 			mockCacheAdapter.wrap.mockResolvedValue(profile);
 
 			// When
@@ -372,7 +373,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapUserProfile이 factory가 undefined를 반환하면 undefined를 반환한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(undefined);
+			const factory = vi.fn().mockResolvedValue(undefined);
 			mockCacheAdapter.wrap.mockResolvedValue(undefined);
 
 			// When
@@ -440,7 +441,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapSubscription이 wrap을 올바른 키와 TTL로 호출한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(subscription);
+			const factory = vi.fn().mockResolvedValue(subscription);
 			mockCacheAdapter.wrap.mockResolvedValue(subscription);
 
 			// When
@@ -457,7 +458,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapSubscription이 factory가 undefined를 반환하면 undefined를 반환한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(undefined);
+			const factory = vi.fn().mockResolvedValue(undefined);
 			mockCacheAdapter.wrap.mockResolvedValue(undefined);
 
 			// When
@@ -568,7 +569,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapMutualFriend가 wrap을 올바른 키와 TTL로 호출한다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(true);
+			const factory = vi.fn().mockResolvedValue(true);
 			mockCacheAdapter.wrap.mockResolvedValue(true);
 
 			// When
@@ -585,7 +586,7 @@ describe("CacheService — 캐시 서비스", () => {
 
 		it("wrapMutualFriend가 false를 반환할 수 있다", async () => {
 			// Given
-			const factory = jest.fn().mockResolvedValue(false);
+			const factory = vi.fn().mockResolvedValue(false);
 			mockCacheAdapter.wrap.mockResolvedValue(false);
 
 			// When

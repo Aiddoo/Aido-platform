@@ -17,7 +17,7 @@ import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
-import { GetOAuthRedirectUriQuery } from "@/auth/application/queries";
+import { GetOAuthRedirectUriQuery } from "#api/auth/application/queries/index";
 import {
 	CompleteOAuthAuthorizationUseCase,
 	ExchangeOAuthCodeUseCase,
@@ -25,9 +25,13 @@ import {
 	LinkOAuthAccountWithCodeUseCase,
 	LoginWithOAuthTokenUseCase,
 	StartOAuthAuthorizationUseCase,
-} from "@/auth/application/use-cases";
-import { AuthMapper } from "@/auth/presentation/auth.mapper";
-import { CurrentUser, type CurrentUserPayload, Public } from "@/auth/presentation/decorators";
+} from "#api/auth/application/use-cases/index";
+import { AuthMapper } from "#api/auth/presentation/auth.mapper";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+	Public,
+} from "#api/auth/presentation/decorators/index";
 import {
 	ApiConflictError,
 	ApiDoc,
@@ -35,7 +39,7 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
 import {
 	AppleMobileCallbackDto,
@@ -46,8 +50,8 @@ import {
 	LinkSocialAccountDto,
 	MessageResponseDto,
 	NaverMobileCallbackDto,
-} from "../dtos";
-import { buildOAuthErrorParams, extractMetadata } from "./auth-controller.utils";
+} from "../dtos/index.js";
+import { buildOAuthErrorParams, extractMetadata } from "./auth-controller.utils.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
@@ -104,7 +108,9 @@ export class OAuthController {
 		type: AuthTokensDto,
 	})
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async exchangeCode(@Body() dto: ExchangeCodeDto): Promise<AuthTokensDto> {
+	async exchangeCode(
+		@Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
+	): Promise<AuthTokensDto> {
 		const result = await this.exchangeOAuthCodeUseCase.execute(dto.code);
 		return AuthMapper.toExchangeCodeResponse(result);
 	}
@@ -149,7 +155,10 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async appleCallback(@Body() dto: AppleMobileCallbackDto, @Req() req: Request) {
+	async appleCallback(
+		@Body({ schema: AppleMobileCallbackDto }) dto: AppleMobileCallbackDto,
+		@Req() req: Request,
+	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"APPLE",
@@ -205,7 +214,10 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async googleCallback(@Body() dto: GoogleMobileCallbackDto, @Req() req: Request) {
+	async googleCallback(
+		@Body({ schema: GoogleMobileCallbackDto }) dto: GoogleMobileCallbackDto,
+		@Req() req: Request,
+	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"GOOGLE",
@@ -394,7 +406,10 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async kakaoCallback(@Body() dto: KakaoMobileCallbackDto, @Req() req: Request) {
+	async kakaoCallback(
+		@Body({ schema: KakaoMobileCallbackDto }) dto: KakaoMobileCallbackDto,
+		@Req() req: Request,
+	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"KAKAO",
@@ -577,7 +592,10 @@ export class OAuthController {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-	async naverCallback(@Body() dto: NaverMobileCallbackDto, @Req() req: Request) {
+	async naverCallback(
+		@Body({ schema: NaverMobileCallbackDto }) dto: NaverMobileCallbackDto,
+		@Req() req: Request,
+	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
 			"NAVER",
@@ -778,7 +796,7 @@ provider에 따라 필수 토큰이 다릅니다:
 	@ApiConflictError(ErrorCode.NAVER_0455)
 	async linkSocialAccount(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: LinkSocialAccountDto,
+		@Body({ schema: LinkSocialAccountDto }) dto: LinkSocialAccountDto,
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
@@ -836,7 +854,7 @@ provider에 따라 필수 토큰이 다릅니다:
 	@ApiConflictError(ErrorCode.NAVER_0455)
 	async linkWithExchangeCode(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: ExchangeCodeDto,
+		@Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);

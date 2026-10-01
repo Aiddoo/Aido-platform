@@ -1,10 +1,10 @@
-import type { TodoComment } from "../../domain/entities/todo-comment.aggregate";
+import type { TodoComment } from "../../domain/entities/todo-comment.aggregate.js";
 import type {
 	CreateTodoCommentChainInput,
 	TodoCommentChainCreationResult,
 	TodoCommentLikeTransition,
 	TodoCommentChainCommand,
-} from "../types";
+} from "../types.js";
 
 export const TODO_COMMENT_REPOSITORY = Symbol("TODO_COMMENT_REPOSITORY");
 

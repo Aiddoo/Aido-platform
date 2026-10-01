@@ -10,15 +10,15 @@
  * ```
  */
 import type { CurrentUserPayload } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMockExecutionContext } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { createMockExecutionContext } from "#test/mocks/index";
 
-import { GetAiUsageUseCase } from "../../application/queries/get-ai-usage/get-ai-usage.use-case";
-import { AiUsage } from "../../domain/value-objects/ai-usage.vo";
-import { AiUsageGuard } from "./ai-usage.guard";
+import { GetAiUsageUseCase } from "../../application/queries/get-ai-usage/get-ai-usage.use-case.js";
+import { AiUsage } from "../../domain/value-objects/ai-usage.vo.js";
+import { AiUsageGuard } from "./ai-usage.guard.js";
 
 describe("AiUsageGuard — AI 사용량 가드", () => {
 	let guard: AiUsageGuard;

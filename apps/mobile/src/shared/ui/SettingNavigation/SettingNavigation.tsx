@@ -1,5 +1,5 @@
 import { PressableFeedback } from 'heroui-native';
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 
 import { ArrowRightIcon } from '../Icon';
 import { ListRow } from '../ListRow';
@@ -23,20 +23,37 @@ export function SettingNavigation({ label, children }: SettingNavigationProps) {
   );
 }
 
-interface SettingNavigationItemProps {
+interface SettingNavigationItemProps extends Omit<
+  ComponentProps<typeof PressableFeedback>,
+  'children' | 'isDisabled'
+> {
   label: string;
-  onPress: () => void;
   right?: ReactNode;
+  disabled?: boolean;
 }
 
-SettingNavigation.Item = function Item({ label, onPress, right }: SettingNavigationItemProps) {
+SettingNavigation.Item = function Item({
+  label,
+  right,
+  disabled,
+  className,
+  ...props
+}: SettingNavigationItemProps) {
   return (
-    <PressableFeedback onPress={onPress} className="rounded-lg">
+    <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      isDisabled={disabled}
+      className={['rounded-lg', className].filter(Boolean).join(' ')}
+      {...props}
+    >
       <PressableFeedback.Highlight className="rounded-xl" />
       <ListRow
         contents={<ListRow.Texts type="1RowTypeA" top={label} topProps={{ shade: 8 }} />}
         right={right ?? <ArrowRightIcon colorClassName="text-gray-6" />}
         horizontalPadding="medium"
+        disabled={disabled}
+        className="min-h-11"
       />
     </PressableFeedback>
   );

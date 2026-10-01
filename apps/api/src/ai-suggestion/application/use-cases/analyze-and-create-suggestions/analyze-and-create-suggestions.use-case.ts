@@ -2,28 +2,28 @@ import { AI_SUGGESTION_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { AI_PROVIDER, type AiProvider } from "@/ai";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { now } from "@/shared/domain/date/utils/core";
-import type { SupportedLocale } from "@/shared/domain/locale";
-import type { GridInput } from "@/weather";
+import { AI_PROVIDER, type AiProvider } from "#api/ai/index";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { GridInput } from "#api/weather/index";
 
-import { resolveSuggestedCategoryId } from "../../../domain/services/category-resolver";
+import { resolveSuggestedCategoryId } from "../../../domain/services/category-resolver.js";
 import {
 	applyTypeCap,
 	dedupeByTitlePrefixAndDays,
 	filterWeakPatterns,
 	normalizeStarterSuggestions,
-} from "../../../domain/services/pattern-filter";
+} from "../../../domain/services/pattern-filter.js";
 import {
 	buildSuggestionPrompt,
 	getDetectedPatternsSchema,
-} from "../../../domain/services/prompts/detect-patterns.prompt";
+} from "../../../domain/services/prompts/detect-patterns.prompt.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../../ports/ai-suggestion.repository.port";
-import { SuggestionContextBuilder } from "../../services/suggestion-context.builder";
+} from "../../ports/ai-suggestion.repository.port.js";
+import { SuggestionContextBuilder } from "../../services/suggestion-context.builder.js";
 
 /**
  * 사용자의 최근 할 일을 분석하여 반복 제안을 생성하는 use-case.

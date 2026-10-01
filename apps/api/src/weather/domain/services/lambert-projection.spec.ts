@@ -11,7 +11,7 @@
  * ```
  */
 
-import { convertToGrid } from "./lambert-projection";
+import { convertToGrid } from "./lambert-projection.js";
 
 describe("convertToGrid", () => {
 	it("서울 (37.5665, 126.9780) → nx=60, ny=127", () => {

@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { DELETED_COMMENT_AUTHOR } from "@/shared/domain/system-user";
+import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
 
 const FINALIZE_MIGRATION_PATH = join(
-	__dirname,
+	import.meta.dirname,
 	"../../prisma/migrations/20260826100000_finalize_todo_conversation/migration.sql",
 );
 

@@ -1,6 +1,6 @@
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { FriendshipStatus } from "./friendship-status.vo";
+import { FriendshipStatus } from "./friendship-status.vo.js";
 
 describe("FriendshipStatus VO", () => {
 	it("pending/accepted 팩토리와 판별", () => {

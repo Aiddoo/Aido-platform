@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { CHEER_LIMITS } from './cheer.constants';
+import { CHEER_LIMITS } from './cheer.constants.js';
 
 export const createCheerSchema = z.object({
   receiverId: z

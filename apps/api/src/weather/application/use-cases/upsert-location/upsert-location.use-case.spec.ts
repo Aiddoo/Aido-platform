@@ -1,20 +1,21 @@
+import { TestBed } from "@suites/unit";
 /**
  * UpsertLocationUseCase 단위 테스트
  *
  * 저장소 포트/캐시를 스텁으로 대체해 격자 변경 시 구 격자 캐시 무효화 동작만
  * 검증한다 (SOLID/DIP). 실제 DB·Redis는 통합/E2E에서 담당한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createWeatherCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
 
-import { UserLocation } from "../../../domain/entities/user-location.entity";
-import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
+import { createWeatherCacheMock } from "#test/mocks/ports/index";
+
+import { UserLocation } from "../../../domain/entities/user-location.entity.js";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port.js";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
-} from "../../ports/weather-location.repository.port";
-import { UpsertLocationUseCase } from "./upsert-location.use-case";
+} from "../../ports/weather-location.repository.port.js";
+import { UpsertLocationUseCase } from "./upsert-location.use-case.js";
 
 function reconstitute(
 	userId: string,

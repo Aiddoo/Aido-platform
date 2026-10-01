@@ -1,26 +1,19 @@
 {
 	"$schema": "https://json.schemastore.org/tsconfig",
 	"extends": "@aido/typescript-config/nestjs.json",
-	"ts-node": {
-		"compilerOptions": {
-			"module": "CommonJS",
-			"moduleResolution": "Node"
-		}
-	},
 	"compilerOptions": {
-		// node16 → nodenext: 운영 Node 24의 require(esm)을 타입 레벨에서도 허용
-		// (expo-server-sdk v6, ai v7 등 ESM-only 의존성을 CJS 빌드에서 사용)
 		"module": "nodenext",
 		"moduleResolution": "nodenext",
 		"outDir": "./dist",
+		"declaration": false,
+		"declarationMap": false,
 		"rootDir": ".",
-		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"],
-			"@test/*": ["./test/*"]
+			"#api/*": ["./src/*.ts"],
+			"#test/*": ["./test/*.ts"]
 		},
-		"types": ["node", "jest"]
+		"types": ["node", "vitest/globals"]
 	},
-	"include": ["src/**/*", "test/**/*"],
+	"include": ["src/**/*", "test/**/*", "vitest.config.ts"],
 	"exclude": ["node_modules", "dist"]
 }

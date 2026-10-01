@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * NotificationController 컨트롤러 단위 테스트
  *
@@ -10,17 +11,16 @@
  * pnpm --filter @aido/api test notification.controller
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { GetUnreadCountUseCase } from "../application/use-cases/get-unread-count/get-unread-count.use-case";
-import { MarkAllAsReadUseCase } from "../application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
-import { MarkAsReadUseCase } from "../application/use-cases/mark-as-read/mark-as-read.use-case";
-import { RegisterPushTokenUseCase } from "../application/use-cases/register-push-token/register-push-token.use-case";
-import type { RegisterPushTokenDto } from "./dtos";
-import { NotificationController } from "./notification.controller";
+import { GetUnreadCountUseCase } from "../application/use-cases/get-unread-count/get-unread-count.use-case.js";
+import { MarkAllAsReadUseCase } from "../application/use-cases/mark-all-as-read/mark-all-as-read.use-case.js";
+import { MarkAsReadUseCase } from "../application/use-cases/mark-as-read/mark-as-read.use-case.js";
+import { RegisterPushTokenUseCase } from "../application/use-cases/register-push-token/register-push-token.use-case.js";
+import type { RegisterPushTokenDto } from "./dtos/index.js";
+import { NotificationController } from "./notification.controller.js";
 
 describe("NotificationController — 알림 컨트롤러", () => {
 	let controller: NotificationController;

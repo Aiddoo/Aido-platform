@@ -1,4 +1,4 @@
-import { type SupportedLocale, toSupportedLocale } from "./locale";
+import { type SupportedLocale, toSupportedLocale } from "./locale.js";
 
 const CASES: ReadonlyArray<readonly [value: unknown, expected: SupportedLocale]> = [
 	["ko", "ko"],

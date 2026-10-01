@@ -1,13 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "#api/notification/queue";
 
 import type {
 	FirstFriendMilestoneNotification,
 	FollowMutualNotification,
 	FollowNewNotification,
 	FollowNotifierPort,
-} from "../../application/ports/follow-notifier.port";
+} from "../../application/ports/follow-notifier.port.js";
 
 /**
  * FollowNotifierPort의 어댑터 — 레거시 NotificationQueueService(BullMQ)에 위임한다.

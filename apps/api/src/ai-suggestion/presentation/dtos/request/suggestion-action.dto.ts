@@ -1,4 +1,5 @@
 import { suggestionActionSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class SuggestionActionDto extends createZodDto(suggestionActionSchema) {}
+export const SuggestionActionDto = suggestionActionSchema.meta({ id: "SuggestionActionDto" });
+export type SuggestionActionDto = z.infer<typeof SuggestionActionDto>;

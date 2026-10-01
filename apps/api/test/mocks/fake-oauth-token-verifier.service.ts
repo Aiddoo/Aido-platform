@@ -7,8 +7,8 @@
 
 import { ErrorCode } from "@aido/errors";
 
-import type { VerifiedProfile } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import type { VerifiedProfile } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 /**
  * 테스트용 OAuth 토큰 검증 서비스

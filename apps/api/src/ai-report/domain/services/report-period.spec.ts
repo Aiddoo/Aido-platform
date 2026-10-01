@@ -5,7 +5,7 @@
  * - computeDateRange: 주간/월간 날짜 범위 계산 검증
  */
 
-import { computeDateRange, computePeriodLabel } from "./report-period";
+import { computeDateRange, computePeriodLabel } from "./report-period.js";
 
 describe("computePeriodLabel — en 로케일", () => {
 	it("en 주간 라벨은 'Week N, YYYY' 형식이다", () => {

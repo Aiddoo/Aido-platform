@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetWeeklyAchievementsUseCase 단위 테스트
  *
@@ -5,18 +6,17 @@
  * - hasNext/nextCursor는 use-case가 소유(take=size+1 초과분으로 판정, nextCursor=마지막 노출 주차)
  * - summary는 연도 전체 기록으로 computeSummary가 계산(연속 주차·완벽 주차·평균 완료율)
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createWeeklyAchievementRepositoryMock } from "@test/mocks/ports/weekly-achievement.mock";
+import type { Mocked } from "vitest";
 
-import { PaginationService } from "@/shared/application/pagination";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { createWeeklyAchievementRepositoryMock } from "#test/mocks/ports/weekly-achievement.mock";
 
-import type { WeeklyAchievementRow } from "../../../domain/weekly-achievement";
+import type { WeeklyAchievementRow } from "../../../domain/weekly-achievement.js";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
-} from "../../ports/weekly-achievement.repository.port";
-import { GetWeeklyAchievementsUseCase } from "./get-weekly-achievements.use-case";
+} from "../../ports/weekly-achievement.repository.port.js";
+import { GetWeeklyAchievementsUseCase } from "./get-weekly-achievements.use-case.js";
 
 function buildRow(week: number, total = 5, completed = 5): WeeklyAchievementRow {
 	return {

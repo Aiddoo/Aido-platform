@@ -1,7 +1,7 @@
 /**
  * ai-usage-period 도메인 서비스 단위 테스트 (KST 리셋 주기)
  */
-import { isNewBillingMonth, nextBillingResetIso } from "./ai-usage-period";
+import { isNewBillingMonth, nextBillingResetIso } from "./ai-usage-period.js";
 
 describe("ai-usage-period — 사용량 리셋 주기", () => {
 	describe("isNewBillingMonth", () => {

@@ -1,3 +1,5 @@
+import type { Request } from "express";
+import { vi } from "vitest";
 /**
  * JwtRefreshStrategy 단위 테스트
  *
@@ -11,13 +13,12 @@
  * ```
  */
 
-import { asDep, mockOf } from "@test/mocks";
-import type { Request } from "express";
+import type { JwtPayload } from "#api/auth/infrastructure/adapters/token.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { asDep, mockOf } from "#test/mocks/index";
 
-import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-
-import { JwtRefreshStrategy } from "./jwt-refresh.strategy";
+import { JwtRefreshStrategy } from "./jwt-refresh.strategy.js";
 
 describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 	let strategy: JwtRefreshStrategy;
@@ -40,9 +41,9 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 	beforeEach(() => {
 		// JwtRefreshStrategy는 configService.get('JWT_REFRESH_SECRET')만 필요
 		const mockConfigService = {
-			get: jest.fn().mockReturnValue("test-refresh-secret-key"),
+			get: vi.fn().mockReturnValue("test-refresh-secret-key"),
 		};
-		strategy = new JwtRefreshStrategy(asDep(mockConfigService));
+		strategy = new JwtRefreshStrategy(asDep<TypedConfigService>(mockConfigService));
 	});
 
 	it("유효한 refresh 페이로드면 RefreshTokenPayload를 반환한다", async () => {

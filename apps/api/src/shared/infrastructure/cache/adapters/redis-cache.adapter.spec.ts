@@ -12,10 +12,11 @@
  * ```
  */
 import RedisMock from "ioredis-mock";
+import { vi, type Mock } from "vitest";
 
-import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
-import { describeCacheAdapterContract } from "./cache-adapter.contract";
-import { RedisCacheAdapter } from "./redis-cache.adapter";
+import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
+import { describeCacheAdapterContract } from "./cache-adapter.contract.js";
+import { RedisCacheAdapter } from "./redis-cache.adapter.js";
 
 describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 	describeCacheAdapterContract({
@@ -26,18 +27,18 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 	describe("fail-open (Redis 장애 시)", () => {
 		const failure = new Error("Connection is closed.");
 		let redis: InstanceType<typeof RedisMock>;
-		let warn: jest.Mock;
+		let warn: Mock;
 		let cache: RedisCacheAdapter;
 
 		beforeEach(() => {
 			redis = new RedisMock();
-			warn = jest.fn();
+			warn = vi.fn();
 			cache = new RedisCacheAdapter(redis, 60_000, new RedisErrorLogSampler({ warn }));
 		});
 
 		it("get 실패 시 캐시 미스(undefined)로 취급한다", async () => {
 			// Given
-			jest.spyOn(redis, "get").mockRejectedValue(failure);
+			vi.spyOn(redis, "get").mockRejectedValue(failure);
 
 			// When
 			const result = await cache.get("key");
@@ -48,7 +49,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("mget 실패 시 전원 undefined를 반환한다", async () => {
 			// Given
-			jest.spyOn(redis, "mget").mockRejectedValue(failure);
+			vi.spyOn(redis, "mget").mockRejectedValue(failure);
 
 			// When
 			const result = await cache.mget(["a", "b", "c"]);
@@ -59,7 +60,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("has 실패 시 false를 반환한다", async () => {
 			// Given
-			jest.spyOn(redis, "exists").mockRejectedValue(failure);
+			vi.spyOn(redis, "exists").mockRejectedValue(failure);
 
 			// When / Then
 			expect(await cache.has("key")).toBe(false);
@@ -67,7 +68,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("ttl 실패 시 -2(키 없음)를 반환한다", async () => {
 			// Given
-			jest.spyOn(redis, "pttl").mockRejectedValue(failure);
+			vi.spyOn(redis, "pttl").mockRejectedValue(failure);
 
 			// When / Then
 			expect(await cache.ttl("key")).toBe(-2);
@@ -75,7 +76,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("touch 실패 시 false를 반환한다", async () => {
 			// Given
-			jest.spyOn(redis, "pexpire").mockRejectedValue(failure);
+			vi.spyOn(redis, "pexpire").mockRejectedValue(failure);
 
 			// When / Then
 			expect(await cache.touch("key", 1000)).toBe(false);
@@ -83,9 +84,9 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("set/del/mset 실패는 조용히 무시한다 (throw하지 않음)", async () => {
 			// Given
-			jest.spyOn(redis, "set").mockRejectedValue(failure);
-			jest.spyOn(redis, "del").mockRejectedValue(failure);
-			jest.spyOn(redis, "pipeline").mockImplementation(() => {
+			vi.spyOn(redis, "set").mockRejectedValue(failure);
+			vi.spyOn(redis, "del").mockRejectedValue(failure);
+			vi.spyOn(redis, "pipeline").mockImplementation(() => {
 				throw failure;
 			});
 
@@ -97,7 +98,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("delByPattern 실패 시 지금까지 삭제한 개수를 반환한다", async () => {
 			// Given
-			jest.spyOn(redis, "scan").mockRejectedValue(failure);
+			vi.spyOn(redis, "scan").mockRejectedValue(failure);
 
 			// When / Then
 			expect(await cache.delByPattern("user:*")).toBe(0);
@@ -105,7 +106,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("reset 실패는 조용히 무시한다", async () => {
 			// Given
-			jest.spyOn(redis, "scan").mockRejectedValue(failure);
+			vi.spyOn(redis, "scan").mockRejectedValue(failure);
 
 			// When / Then
 			await expect(cache.reset()).resolves.toBeUndefined();
@@ -113,9 +114,9 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("wrap은 get 실패 시 factory 결과를 그대로 반환한다 (DB 폴백)", async () => {
 			// Given
-			jest.spyOn(redis, "get").mockRejectedValue(failure);
-			jest.spyOn(redis, "set").mockRejectedValue(failure);
-			const factory = jest.fn().mockResolvedValue("from-db");
+			vi.spyOn(redis, "get").mockRejectedValue(failure);
+			vi.spyOn(redis, "set").mockRejectedValue(failure);
+			const factory = vi.fn().mockResolvedValue("from-db");
 
 			// When
 			const result = await cache.wrap("key", factory);
@@ -127,7 +128,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
 		it("장애 중 반복 에러는 샘플러가 억제한다 (warn 1회)", async () => {
 			// Given
-			jest.spyOn(redis, "get").mockRejectedValue(failure);
+			vi.spyOn(redis, "get").mockRejectedValue(failure);
 
 			// When
 			for (let i = 0; i < 50; i++) {

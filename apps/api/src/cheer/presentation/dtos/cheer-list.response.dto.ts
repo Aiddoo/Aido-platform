@@ -3,10 +3,15 @@ import {
 	receivedCheersResponseSchema,
 	sentCheersResponseSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class CheerDetailDto extends createZodDto(cheerDetailSchema) {}
+export const CheerDetailDto = cheerDetailSchema.meta({ id: "CheerDetailDto" });
+export type CheerDetailDto = z.infer<typeof CheerDetailDto>;
 
-export class ReceivedCheersResponseDto extends createZodDto(receivedCheersResponseSchema) {}
+export const ReceivedCheersResponseDto = receivedCheersResponseSchema.meta({
+	id: "ReceivedCheersResponseDto",
+});
+export type ReceivedCheersResponseDto = z.infer<typeof ReceivedCheersResponseDto>;
 
-export class SentCheersResponseDto extends createZodDto(sentCheersResponseSchema) {}
+export const SentCheersResponseDto = sentCheersResponseSchema.meta({ id: "SentCheersResponseDto" });
+export type SentCheersResponseDto = z.infer<typeof SentCheersResponseDto>;

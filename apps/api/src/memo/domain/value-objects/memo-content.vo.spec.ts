@@ -3,9 +3,9 @@
  */
 import { MEMO_LIMITS } from "@aido/validators";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { MemoContent } from "./memo-content.vo";
+import { MemoContent } from "./memo-content.vo.js";
 
 describe("MemoContent — 메모 내용 값 객체", () => {
 	describe("of", () => {

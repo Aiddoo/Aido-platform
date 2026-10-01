@@ -3,7 +3,7 @@
  *
  * 명명 팩토리가 종류별 제목·태그를 조립하고 불변식을 강제하는지 검증한다.
  */
-import { EmailMessage } from "./email-message.vo";
+import { EmailMessage } from "./email-message.vo.js";
 
 describe("EmailMessage 값 객체", () => {
 	describe("verificationCode", () => {

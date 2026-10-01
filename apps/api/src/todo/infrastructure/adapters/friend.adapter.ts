@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { FollowReader } from "@/follow";
+import { FollowReader } from "#api/follow/index";
 
-import type { FriendPort } from "../../application/ports/friend.port";
+import type { FriendPort } from "../../application/ports/friend.port.js";
 
 /**
  * 친구/맞팔 포트 어댑터 — FollowReader에 위임

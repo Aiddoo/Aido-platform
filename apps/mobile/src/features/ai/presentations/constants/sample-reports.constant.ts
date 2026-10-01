@@ -169,8 +169,11 @@ const SAMPLE_REPORT_BUILDERS: Record<string, () => AiReport> = {
 };
 
 /** route param이 샘플 리포트 ID인지 판별 */
-export const isSampleReportId = (id?: string): boolean => !!id && id in SAMPLE_REPORT_BUILDERS;
+export const isSampleReportId = (id?: string): boolean =>
+  !!id && Object.hasOwn(SAMPLE_REPORT_BUILDERS, id);
 
 /** 샘플 리포트 조회 (없으면 주간 폴백) */
 export const getSampleReport = (id?: string): AiReport =>
-  ((id ? SAMPLE_REPORT_BUILDERS[id] : undefined) ?? buildWeeklySampleReport)();
+  (
+    (id && isSampleReportId(id) ? SAMPLE_REPORT_BUILDERS[id] : undefined) ?? buildWeeklySampleReport
+  )();

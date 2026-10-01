@@ -129,7 +129,7 @@ describe('TodoNudgeService', () => {
       const result = await service.getLimitInfo();
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/limit');
+      expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/limit', { signal: undefined });
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.dailyLimit).toBe(5);
@@ -162,7 +162,9 @@ describe('TodoNudgeService', () => {
       const result = await service.getCooldownInfoForUser('user-1');
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/cooldown/user-1');
+      expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/cooldown/user-1', {
+        signal: undefined,
+      });
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.canNudge).toBe(true);

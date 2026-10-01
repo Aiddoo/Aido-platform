@@ -5,12 +5,12 @@
  */
 
 // 공통 스키마
-export * from './todo.common';
+export * from './todo.common.js';
 // 상수
-export * from './todo.constants';
+export * from './todo.constants.js';
 
 // 요청 스키마 (Request)
-export * from './todo.request';
+export * from './todo.request.js';
 
 // 응답 스키마 (Response)
-export * from './todo.response';
+export * from './todo.response.js';

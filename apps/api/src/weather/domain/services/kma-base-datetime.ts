@@ -1,4 +1,4 @@
-import { toCompactDateString } from "@/shared/domain/date/utils/format";
+import { toCompactDateString } from "#api/shared/domain/date/utils/format";
 
 /**
  * 단기예보 발표 시각 (Base Time)

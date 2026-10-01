@@ -3,8 +3,8 @@ import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 /**
  * 관리자 전용 가드

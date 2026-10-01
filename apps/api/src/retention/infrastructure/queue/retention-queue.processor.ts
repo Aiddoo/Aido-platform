@@ -4,13 +4,13 @@ import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
-import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
+} from "#api/shared/application/ports/job-runtime.port";
+import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
 
-import { DispatchRetentionPushUseCase } from "../../application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
-import { ProcessRetentionStagesUseCase } from "../../application/use-cases/process-retention-stages/process-retention-stages.use-case";
-import { RecoverFailedRetentionDeliveryUseCase } from "../../application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case";
-import { RelayRetentionOutboxUseCase } from "../../application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case";
+import { DispatchRetentionPushUseCase } from "../../application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case.js";
+import { ProcessRetentionStagesUseCase } from "../../application/use-cases/process-retention-stages/process-retention-stages.use-case.js";
+import { RecoverFailedRetentionDeliveryUseCase } from "../../application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case.js";
+import { RelayRetentionOutboxUseCase } from "../../application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case.js";
 import {
 	RETENTION_LEGACY_QUEUE,
 	RETENTION_DEAD_LETTER_QUEUE,
@@ -22,7 +22,7 @@ import {
 	RetentionJobName,
 	RetentionDeadLetterJobSchema,
 	RetentionRuntimeJobSchema,
-} from "./retention-queue.constants";
+} from "./retention-queue.constants.js";
 
 type RetentionJob = NamedJob<RetentionJobMap>;
 type RetentionJobLike = { readonly name: string; readonly data: JobData };

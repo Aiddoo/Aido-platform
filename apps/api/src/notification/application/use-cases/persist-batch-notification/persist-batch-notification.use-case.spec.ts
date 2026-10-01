@@ -1,27 +1,28 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { NotificationBuilder } from "@test/builders";
-import { createNotificationRepositoryMock } from "@test/mocks/ports/notification.mock";
-import { createUnitOfWorkMock } from "@test/mocks/ports/unit-of-work.mock";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { NotificationBuilder } from "#test/builders/index";
+import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
+import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import type { CreateNotificationData } from "../../ports/notification-data";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+} from "../../ports/notification.repository.port.js";
 import {
 	PUSH_DISPATCH_STAGING,
 	type PushDispatchStagingRepositoryPort,
-} from "../../ports/push-dispatch-staging.repository.port";
-import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher";
-import { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case";
+} from "../../ports/push-dispatch-staging.repository.port.js";
+import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher.js";
+import { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 
 function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
 	return {
-		stage: jest.fn(),
-		stageMany: jest.fn(),
+		stage: vi.fn(),
+		stageMany: vi.fn(),
 	};
 }
 

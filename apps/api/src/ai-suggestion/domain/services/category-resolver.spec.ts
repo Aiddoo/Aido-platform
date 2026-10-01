@@ -1,8 +1,8 @@
 /**
  * category-resolver.util — 순수 함수 유닛 테스트
  */
-import type { TodoSummaryForAnalysis } from "../types";
-import { resolveSuggestedCategoryId } from "./category-resolver";
+import type { TodoSummaryForAnalysis } from "../types.js";
+import { resolveSuggestedCategoryId } from "./category-resolver.js";
 
 const makeTodo = (overrides: Partial<TodoSummaryForAnalysis> = {}): TodoSummaryForAnalysis => ({
 	title: "기본 할일",

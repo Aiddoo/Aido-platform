@@ -1,17 +1,18 @@
 import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { vi, type MockInstance } from "vitest";
 
-import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher";
+import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher.js";
 
 describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () => {
 	let eventEmitter: EventEmitter2;
 	let publisher: EventEmitterDomainEventPublisher;
-	let errorLogger: jest.SpyInstance;
+	let errorLogger: MockInstance;
 
 	beforeEach(() => {
 		eventEmitter = new EventEmitter2();
 		publisher = new EventEmitterDomainEventPublisher(eventEmitter);
-		errorLogger = jest.spyOn(Logger.prototype, "error").mockImplementation();
+		errorLogger = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
 	});
 
 	it("비동기 listener가 끝날 때까지 발행 Promise를 완료하지 않는다", async () => {
@@ -45,7 +46,7 @@ describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () =
 		eventEmitter.on("todo.deleted", async () => {
 			throw new Error(context);
 		});
-		const nextListener = jest.fn();
+		const nextListener = vi.fn();
 		eventEmitter.on("todo.updated", nextListener);
 
 		// When & Then - post-commit 요청을 실패시키지 않고 오류를 격리

@@ -1,4 +1,4 @@
-import { resolveDeliveryTimezone } from "@/shared/domain/date/utils/timezone";
+import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
 
 export interface RetentionPushEligibilityInput {
 	readonly pushEnabled: boolean;

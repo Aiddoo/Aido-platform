@@ -1,14 +1,14 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { Suggestion } from "../../../domain/entities/suggestion.aggregate";
+import type { Suggestion } from "../../../domain/entities/suggestion.aggregate.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../../ports/ai-suggestion.repository.port";
+} from "../../ports/ai-suggestion.repository.port.js";
 
 /**
  * 대기 중인 제안 목록 조회 use-case.

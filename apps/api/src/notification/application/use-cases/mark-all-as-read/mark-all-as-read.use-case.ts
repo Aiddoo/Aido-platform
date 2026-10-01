@@ -3,11 +3,11 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+} from "../../ports/notification.repository.port.js";
 
 /**
  * 모든 알림 읽음 처리 유스케이스.

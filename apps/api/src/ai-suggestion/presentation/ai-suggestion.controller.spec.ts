@@ -5,15 +5,15 @@
  * - Facade 위임 + 매퍼 변환 검증
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case";
-import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
-import { Suggestion, type SuggestionProps } from "../domain/entities/suggestion.aggregate";
-import { AiSuggestionController } from "./ai-suggestion.controller";
+import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case.js";
+import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.js";
+import { Suggestion, type SuggestionProps } from "../domain/entities/suggestion.aggregate.js";
+import { AiSuggestionController } from "./ai-suggestion.controller.js";
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
 	return Suggestion.reconstitute({

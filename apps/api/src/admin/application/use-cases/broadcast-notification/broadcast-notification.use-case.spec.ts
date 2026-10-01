@@ -1,20 +1,20 @@
+import { TestBed } from "@suites/unit";
 /**
  * BroadcastNotificationUseCase 단위 테스트
  *
  * 실제 DB/발송 없이 포트를 스텁으로 대체해 배치 스트리밍·집계·예외만 검증한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
 import {
 	ADMIN_BROADCAST_NOTIFIER,
 	type AdminBroadcastNotifierPort,
-} from "../../ports/admin-broadcast-notifier.port";
+} from "../../ports/admin-broadcast-notifier.port.js";
 import {
 	ADMIN_USER_DIRECTORY,
 	type AdminUserDirectoryPort,
-} from "../../ports/admin-user-directory.port";
-import { BroadcastNotificationUseCase } from "./broadcast-notification.use-case";
+} from "../../ports/admin-user-directory.port.js";
+import { BroadcastNotificationUseCase } from "./broadcast-notification.use-case.js";
 
 /** 주어진 배치들을 순서대로 흘려보내는 async 이터러블 스텁 */
 async function* streamOf(batches: string[][]): AsyncIterable<string[]> {

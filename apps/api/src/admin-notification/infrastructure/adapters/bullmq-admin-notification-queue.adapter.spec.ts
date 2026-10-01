@@ -1,16 +1,17 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * BullmqAdminNotificationQueueAdapter 단위 테스트
  *
  * - SEND 잡 등록 + 공통 옵션(재시도) 검증
  * - jobId 병합 검증
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { ADMIN_NOTIFICATION_QUEUE } from "../queue/admin-notification-queue.constants";
-import { BullmqAdminNotificationQueueAdapter } from "./bullmq-admin-notification-queue.adapter";
+import { ADMIN_NOTIFICATION_QUEUE } from "../queue/admin-notification-queue.constants.js";
+import { BullmqAdminNotificationQueueAdapter } from "./bullmq-admin-notification-queue.adapter.js";
 
 describe("BullmqAdminNotificationQueueAdapter", () => {
 	let adapter: BullmqAdminNotificationQueueAdapter;
@@ -19,7 +20,7 @@ describe("BullmqAdminNotificationQueueAdapter", () => {
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(BullmqAdminNotificationQueueAdapter)
 			.mock<JobRuntimePort>(JOB_RUNTIME)
-			.impl(() => ({ enqueue: jest.fn().mockResolvedValue("job-1") }))
+			.impl(() => ({ enqueue: vi.fn().mockResolvedValue("job-1") }))
 			.compile();
 
 		adapter = unit;

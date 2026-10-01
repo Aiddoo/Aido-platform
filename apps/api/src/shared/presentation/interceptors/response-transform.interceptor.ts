@@ -8,8 +8,8 @@ import { Reflector } from "@nestjs/core";
 import type { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 
-import { RAW_RESPONSE_KEY } from "../decorators";
-import type { SuccessResponse } from "./response.interface";
+import { RAW_RESPONSE_KEY } from "../decorators/index.js";
+import type { SuccessResponse } from "./response.interface.js";
 
 /**
  * 응답 변환 인터셉터

@@ -1,10 +1,12 @@
-import { FakeJobRuntime } from "@test/mocks/fake-job-runtime";
+import { vi } from "vitest";
 
-import { REMINDER_IMMEDIATE_LABEL, REMINDER_STAGES } from "../../domain/services/reminder-plan";
+import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+
+import { REMINDER_IMMEDIATE_LABEL, REMINDER_STAGES } from "../../domain/services/reminder-plan.js";
 import {
 	BullMQReminderSchedulerAdapter,
 	TODO_REMINDER_QUEUE,
-} from "./bullmq-reminder-scheduler.adapter";
+} from "./bullmq-reminder-scheduler.adapter.js";
 
 const USER_ID = "user-1";
 const HOUR_MS = 60 * 60 * 1000;
@@ -55,7 +57,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 	it("재스케줄 전 기존 작업 취소 실패를 호출자에게 전파한다", async () => {
 		// Given - non-null 일정으로 재스케줄링 중 첫 기존 작업 취소 실패
 		const infrastructureError = new Error("postgres unavailable");
-		jest.spyOn(runtime, "cancel").mockRejectedValueOnce(infrastructureError);
+		vi.spyOn(runtime, "cancel").mockRejectedValueOnce(infrastructureError);
 
 		// When & Then - fire-and-forget으로 삼키지 않고 문맥과 원인을 보존
 		await expect(
@@ -70,7 +72,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 	it("새 리마인더 enqueue 실패를 호출자에게 전파한다", async () => {
 		// Given - 기존 작업 취소 후 새 작업 등록 실패
 		const infrastructureError = new Error("queue unavailable");
-		jest.spyOn(runtime, "enqueue").mockRejectedValueOnce(infrastructureError);
+		vi.spyOn(runtime, "enqueue").mockRejectedValueOnce(infrastructureError);
 
 		// When & Then - schedule 실패를 관찰 가능한 rejection으로 보존
 		await expect(
@@ -93,7 +95,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 
 	it("모든 단계 작업이 없으면 missing을 반환한다", async () => {
 		// Given - 모든 stage job이 이미 없음
-		jest.spyOn(runtime, "cancel").mockResolvedValue({ status: "missing" });
+		vi.spyOn(runtime, "cancel").mockResolvedValue({ status: "missing" });
 
 		// When & Then - missing을 정상 결과로 보존
 		await expect(adapter.cancelReminder(42)).resolves.toEqual({
@@ -103,8 +105,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 
 	it("일부 단계만 취소돼도 cancelled를 반환한다", async () => {
 		// Given - 첫 stage만 존재하고 나머지는 없음
-		jest
-			.spyOn(runtime, "cancel")
+		vi.spyOn(runtime, "cancel")
 			.mockResolvedValue({ status: "missing" })
 			.mockResolvedValueOnce({ status: "cancelled" });
 
@@ -117,7 +118,7 @@ describe("BullMQReminderSchedulerAdapter — durable reminder scheduler", () => 
 	it("인프라 오류는 todoId·stage·runtime 문맥과 cause를 보존해 reject한다", async () => {
 		// Given - 첫 stage 취소 중 Redis/PostgreSQL runtime 실패
 		const infrastructureError = new Error("runtime unavailable");
-		jest.spyOn(runtime, "cancel").mockRejectedValueOnce(infrastructureError);
+		vi.spyOn(runtime, "cancel").mockRejectedValueOnce(infrastructureError);
 
 		// When
 		const cancellation = adapter.cancelReminder(42);

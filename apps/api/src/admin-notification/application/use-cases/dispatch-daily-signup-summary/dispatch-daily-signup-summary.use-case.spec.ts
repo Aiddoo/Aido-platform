@@ -1,3 +1,5 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * DispatchDailySignupSummaryUseCase 단위 테스트
  *
@@ -5,18 +7,17 @@
  * - 집계 기간(전일 KST 00:00 ~ 당일 KST 00:00) 계산
  * - 실패(집계/큐)는 예외를 전파하지 않는다
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,
-} from "../../ports/admin-notification-queue.port";
+} from "../../ports/admin-notification-queue.port.js";
 import {
 	SIGNUP_STATS_READER,
 	type SignupStatsReaderPort,
-} from "../../ports/signup-stats.reader.port";
-import { DispatchDailySignupSummaryUseCase } from "./dispatch-daily-signup-summary.use-case";
+} from "../../ports/signup-stats.reader.port.js";
+import { DispatchDailySignupSummaryUseCase } from "./dispatch-daily-signup-summary.use-case.js";
 
 describe("DispatchDailySignupSummaryUseCase", () => {
 	let useCase: DispatchDailySignupSummaryUseCase;
@@ -24,7 +25,7 @@ describe("DispatchDailySignupSummaryUseCase", () => {
 	let queue: Mocked<AdminNotificationQueuePort>;
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 
 		const { unit, unitRef } = await TestBed.solitary(DispatchDailySignupSummaryUseCase).compile();
 		useCase = unit;
@@ -33,7 +34,7 @@ describe("DispatchDailySignupSummaryUseCase", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	/** enqueueSend 호출의 notification 인자 추출 */
@@ -43,7 +44,7 @@ describe("DispatchDailySignupSummaryUseCase", () => {
 
 	it("일일 가입 요약을 큐에 등록한다", async () => {
 		// Given
-		jest.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
+		vi.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
 		reader.getSignupStats.mockResolvedValue({
 			signupsByProvider: [
 				{ provider: "CREDENTIAL", count: 3 },
@@ -81,7 +82,7 @@ describe("DispatchDailySignupSummaryUseCase", () => {
 
 	it("가입자가 없으면 해당 메시지를 표시한다", async () => {
 		// Given
-		jest.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
+		vi.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
 		reader.getSignupStats.mockResolvedValue({
 			signupsByProvider: [],
 			totalUsers: 100,
@@ -109,7 +110,7 @@ describe("DispatchDailySignupSummaryUseCase", () => {
 
 	it("큐 등록 실패해도 예외가 전파되지 않는다", async () => {
 		// Given
-		jest.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
+		vi.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
 		reader.getSignupStats.mockResolvedValue({
 			signupsByProvider: [],
 			totalUsers: 100,

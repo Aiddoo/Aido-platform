@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService as NestConfigService } from "@nestjs/config";
 
-import type { EnvConfig } from "../schemas";
+import type { EnvConfig } from "../schemas/index.js";
 
 /**
  * 타입 안전한 ConfigService 래퍼
@@ -211,6 +211,14 @@ export class TypedConfigService {
 			minAppVersion: this.get("FEATURE_DISCOVERY_MIN_APP_VERSION"),
 			launchedAt: this.get("FEATURE_DISCOVERY_LAUNCHED_AT"),
 			autoOpen: this.get("FEATURE_DISCOVERY_AUTO_OPEN"),
+		};
+	}
+
+	get appVersion() {
+		return {
+			enabled: this.get("APP_VERSION_CHECK_ENABLED"),
+			iosLatestVersion: this.get("APP_VERSION_CHECK_IOS_LATEST_VERSION"),
+			androidLatestVersion: this.get("APP_VERSION_CHECK_ANDROID_LATEST_VERSION"),
 		};
 	}
 

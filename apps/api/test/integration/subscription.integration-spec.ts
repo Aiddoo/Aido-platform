@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * HandleWebhookEventUseCase 통합 테스트
  *
@@ -19,29 +20,28 @@
  * pnpm --filter @aido/api test subscription.integration-spec
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { SubscriptionEventBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { AdminEventNotifier, PAYMENT_NOTIFIER } from "@/admin-notification";
-import { NotificationQueueService } from "@/notification/queue";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
-import { SUBSCRIPTION_CACHE } from "@/subscription/application/ports/subscription-cache.port";
-import { SUBSCRIPTION_EVENT_NOTIFIER } from "@/subscription/application/ports/subscription-event-notifier.port";
-import { SUBSCRIPTION_WEBHOOK_LOCK } from "@/subscription/application/ports/subscription-webhook-lock.port";
-import { SUBSCRIPTION_REPOSITORY } from "@/subscription/application/ports/subscription.repository.port";
-import { HandleWebhookEventUseCase } from "@/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
-import { SubscriptionCacheAdapter } from "@/subscription/infrastructure/adapters/subscription-cache.adapter";
-import { SubscriptionEventNotifierAdapter } from "@/subscription/infrastructure/adapters/subscription-event-notifier.adapter";
-import { SubscriptionWebhookLockAdapter } from "@/subscription/infrastructure/adapters/subscription-webhook-lock.adapter";
-import { PrismaSubscriptionRepository } from "@/subscription/infrastructure/persistence/prisma-subscription.repository";
+import { AdminEventNotifier, PAYMENT_NOTIFIER } from "#api/admin-notification/index";
+import { NotificationQueueService } from "#api/notification/queue";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { LOCK_PROVIDER } from "#api/shared/infrastructure/lock/index";
+import { SUBSCRIPTION_CACHE } from "#api/subscription/application/ports/subscription-cache.port";
+import { SUBSCRIPTION_EVENT_NOTIFIER } from "#api/subscription/application/ports/subscription-event-notifier.port";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "#api/subscription/application/ports/subscription-webhook-lock.port";
+import { SUBSCRIPTION_REPOSITORY } from "#api/subscription/application/ports/subscription.repository.port";
+import { HandleWebhookEventUseCase } from "#api/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
+import { SubscriptionCacheAdapter } from "#api/subscription/infrastructure/adapters/subscription-cache.adapter";
+import { SubscriptionEventNotifierAdapter } from "#api/subscription/infrastructure/adapters/subscription-event-notifier.adapter";
+import { SubscriptionWebhookLockAdapter } from "#api/subscription/infrastructure/adapters/subscription-webhook-lock.adapter";
+import { PrismaSubscriptionRepository } from "#api/subscription/infrastructure/persistence/prisma-subscription.repository";
+import { SubscriptionEventBuilder } from "#test/builders/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -49,15 +49,15 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 
 	// Mock 데이터베이스 모델
 	const mockSubscriptionDb = {
-		create: jest.fn(),
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		update: jest.fn(),
+		create: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		update: vi.fn(),
 	};
 
 	const mockUserDb = {
-		findFirst: jest.fn(),
-		update: jest.fn(),
+		findFirst: vi.fn(),
+		update: vi.fn(),
 	};
 
 	const mockDatabaseService = createMockDatabaseService({
@@ -67,32 +67,32 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 
 	// Mock CacheService
 	const mockCacheService = {
-		invalidateSubscription: jest.fn().mockResolvedValue(undefined),
-		invalidateUserProfile: jest.fn().mockResolvedValue(undefined),
+		invalidateSubscription: vi.fn().mockResolvedValue(undefined),
+		invalidateUserProfile: vi.fn().mockResolvedValue(undefined),
 	};
 
 	// Mock AdminEventNotifier
 	const mockAdminEventNotifier = {
-		notifySubscriptionEvent: jest.fn(),
+		notifySubscriptionEvent: vi.fn(),
 	};
 
 	// Mock NotificationQueueService
 	const mockNotificationQueueService = {
-		enqueueBillingIssue: jest.fn(),
+		enqueueBillingIssue: vi.fn(),
 	};
 
 	// Mock PAYMENT_NOTIFIER (웹훅 실패 보고의 Discord 전송 — reportWebhookFailure 경로)
 	const mockPaymentNotifier = {
 		name: "fake",
-		send: jest.fn().mockResolvedValue({ success: true }),
-		isConfigured: jest.fn().mockReturnValue(true),
+		send: vi.fn().mockResolvedValue({ success: true }),
+		isConfigured: vi.fn().mockReturnValue(true),
 	};
 
 	// Mock LockProvider
-	const mockRelease = jest.fn().mockResolvedValue(undefined);
+	const mockRelease = vi.fn().mockResolvedValue(undefined);
 	const mockLockProvider = {
-		acquire: jest.fn().mockResolvedValue(mockRelease),
-		isLocked: jest.fn(),
+		acquire: vi.fn().mockResolvedValue(mockRelease),
+		isLocked: vi.fn(),
 	};
 
 	// 테스트 데이터
@@ -163,11 +163,11 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 
 		// 기본 mock 설정: Lock 획득 성공
 		mockLockProvider.acquire.mockResolvedValue(mockRelease);

@@ -1,6 +1,6 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "#api/generated/prisma/client";
 
-import { isTransactionWriteConflict } from "./prisma-error.util";
+import { isTransactionWriteConflict } from "./prisma-error.util.js";
 
 describe("isTransactionWriteConflict — Prisma 트랜잭션 충돌 판별", () => {
 	it("Prisma P2034 오류를 재시도 대상으로 판별한다", () => {

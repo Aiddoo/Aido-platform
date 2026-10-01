@@ -1,6 +1,6 @@
 import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
 
-import { calculateCooldown } from "@/shared/domain/date/utils/cooldown";
+import { calculateCooldown } from "#api/shared/domain/date/utils/cooldown";
 
 export interface NudgeCooldown {
 	isActive: boolean;

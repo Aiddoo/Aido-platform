@@ -4,8 +4,8 @@ import type {
 	TodoConversationItem,
 } from "@aido/validators";
 
-import type { TodoCommentRecord, TodoConversationRecord } from "../types";
-import { toTodoCommentResponse } from "./todo-comment.presenter";
+import type { TodoCommentRecord, TodoConversationRecord } from "../types.js";
+import { toTodoCommentResponse } from "./todo-comment.presenter.js";
 
 function isDirectParent(
 	parent: TodoCommentRecord | null | undefined,

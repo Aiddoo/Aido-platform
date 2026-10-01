@@ -1,19 +1,19 @@
 import { Module } from "@nestjs/common";
 
-import { AiModule } from "../ai/ai.module";
-import { AI_REPORT_REPOSITORY } from "./application/ports/ai-report.repository.port";
-import { LATEST_REPORT_STATS_READER } from "./application/ports/latest-report-stats.reader.port";
-import { TODO_STATS_READER } from "./application/ports/todo-stats.reader.port";
-import { GenerateReportUseCase } from "./application/use-cases/generate-report/generate-report.use-case";
-import { GetReportByIdUseCase } from "./application/use-cases/get-report-by-id/get-report-by-id.use-case";
-import { GetReportStatusUseCase } from "./application/use-cases/get-report-status/get-report-status.use-case";
-import { GetReportsUseCase } from "./application/use-cases/get-reports/get-reports.use-case";
-import { LatestReportStatsReader } from "./infrastructure/adapters/latest-report-stats.reader";
-import { ReportGenerationJob } from "./infrastructure/jobs/report-generation.job";
-import { PrismaAiReportRepository } from "./infrastructure/persistence/prisma-ai-report.repository";
-import { PrismaTodoStatsReader } from "./infrastructure/persistence/prisma-todo-stats.reader";
-import { ReportGenerationProcessor } from "./infrastructure/processors/report-generation.processor";
-import { AiReportController } from "./presentation/ai-report.controller";
+import { AiModule } from "../ai/ai.module.js";
+import { AI_REPORT_REPOSITORY } from "./application/ports/ai-report.repository.port.js";
+import { LATEST_REPORT_STATS_READER } from "./application/ports/latest-report-stats.reader.port.js";
+import { TODO_STATS_READER } from "./application/ports/todo-stats.reader.port.js";
+import { GenerateReportUseCase } from "./application/use-cases/generate-report/generate-report.use-case.js";
+import { GetReportByIdUseCase } from "./application/use-cases/get-report-by-id/get-report-by-id.use-case.js";
+import { GetReportStatusUseCase } from "./application/use-cases/get-report-status/get-report-status.use-case.js";
+import { GetReportsUseCase } from "./application/use-cases/get-reports/get-reports.use-case.js";
+import { LatestReportStatsReader } from "./infrastructure/adapters/latest-report-stats.reader.js";
+import { ReportGenerationJob } from "./infrastructure/jobs/report-generation.job.js";
+import { PrismaAiReportRepository } from "./infrastructure/persistence/prisma-ai-report.repository.js";
+import { PrismaTodoStatsReader } from "./infrastructure/persistence/prisma-todo-stats.reader.js";
+import { ReportGenerationProcessor } from "./infrastructure/processors/report-generation.processor.js";
+import { AiReportController } from "./presentation/ai-report.controller.js";
 
 /**
  * AI 리포트 모듈

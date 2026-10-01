@@ -1,18 +1,18 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import type {
 	ReminderHourChangedJobData,
 	TargetedSocialDigestJobData,
 	TimezoneReminderEnqueuerPort,
-} from "../../application/ports/timezone-reminder-enqueuer.port";
-import { SOCIAL_DIGEST_DELAY_MS } from "../../domain/services/notification-campaign";
+} from "../../application/ports/timezone-reminder-enqueuer.port.js";
+import { SOCIAL_DIGEST_DELAY_MS } from "../../domain/services/notification-campaign.js";
 import {
 	type SweepRemindersJobData,
 	TIMEZONE_REMINDER_QUEUE,
 	TimezoneReminderJobName,
-} from "./timezone-reminder-queue.constants";
+} from "./timezone-reminder-queue.constants.js";
 
 /** Sweep 잡은 페이로드가 없다 (크론 트리거) */
 const SWEEP_JOB_DATA: SweepRemindersJobData = {};

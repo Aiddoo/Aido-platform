@@ -1,9 +1,9 @@
 import { TestBed } from "@suites/unit";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { PrismaSignupStatsReader } from "./prisma-signup-stats.reader";
+import { PrismaSignupStatsReader } from "./prisma-signup-stats.reader.js";
 
 describe("PrismaSignupStatsReader", () => {
 	let reader: PrismaSignupStatsReader;

@@ -2,7 +2,7 @@ import { ScallopedContainer } from '@src/features/ai/presentations/components/Sc
 import { SuggestionsList } from '@src/features/ai/presentations/components/SuggestionsList';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';

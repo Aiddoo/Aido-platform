@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { MEMO_LIMITS } from '../memo/memo.constants';
+import { MEMO_LIMITS } from '../memo/memo.constants.js';
 
 export const parseMemoRequestSchema = z.object({
   content: z

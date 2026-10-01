@@ -5,10 +5,10 @@
  */
 
 // 상수
-export * from './admin.constants';
+export * from './admin.constants.js';
 
 // 요청 스키마 (Request)
-export * from './admin.request';
+export * from './admin.request.js';
 
 // 응답 스키마 (Response)
-export * from './admin.response';
+export * from './admin.response.js';

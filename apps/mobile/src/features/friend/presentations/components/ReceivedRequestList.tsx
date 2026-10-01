@@ -5,8 +5,8 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
 import type { FriendRequest } from '../../models/friend.model';
+import { useGetReceivedRequestsQueryOptions } from '../queries/get-received-requests-query-options';
 import { useAcceptRequestMutationOptions } from '../queries/use-accept-request-mutation-options';
-import { useGetReceivedRequestsQueryOptions } from '../queries/use-get-received-requests-query-options';
 import { useRejectRequestMutationOptions } from '../queries/use-reject-request-mutation-options';
 import { UserList } from './UserList';
 

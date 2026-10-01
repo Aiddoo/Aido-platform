@@ -4,7 +4,7 @@ import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRecord,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 
 /** 푸시 발송 판단용 단건 설정 조회 (notification). */
 @Injectable()

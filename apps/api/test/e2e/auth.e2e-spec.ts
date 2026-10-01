@@ -1,3 +1,4 @@
+import request from "supertest";
 /**
  * Auth E2E 테스트
  *
@@ -5,17 +6,16 @@
  * 인증 시스템 전체 플로우 테스트
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
+import { vi } from "vitest";
 
-import request from "supertest";
-
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import {
 	CACHE_SERVICE,
 	type ICacheService,
-} from "@/shared/infrastructure/cache/interfaces/cache.interface";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+} from "#api/shared/infrastructure/cache/interfaces/cache.interface";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("인증 E2E", () => {
 	let ctx: E2eTestContext;
@@ -828,7 +828,7 @@ describe("인증 E2E", () => {
 			const authorizationCode = "kakao-success-code";
 			const exchangedToken = "kakao-success-token";
 			const redirectUri = "aido://auth/kakao-success";
-			const fetchSpy = jest.spyOn(global, "fetch");
+			const fetchSpy = vi.spyOn(global, "fetch");
 
 			ctx.fakeOAuthProviderRegistry.setExchangeToken("KAKAO", authorizationCode, exchangedToken);
 			ctx.fakeOAuthTokenVerifierService.setCustomProfile("kakao", exchangedToken, {

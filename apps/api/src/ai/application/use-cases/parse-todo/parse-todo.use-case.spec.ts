@@ -5,16 +5,16 @@
  * 검증한다 (실제 벤더 호출 없음, SOLID/DIP).
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port";
+import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port.js";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
-} from "../../ports/user-category-reader.port";
-import { AiUsageMeter } from "../../services/ai-usage-meter.service";
-import { type ParseTodoInput, ParseTodoUseCase } from "./parse-todo.use-case";
+} from "../../ports/user-category-reader.port.js";
+import { AiUsageMeter } from "../../services/ai-usage-meter.service.js";
+import { type ParseTodoInput, ParseTodoUseCase } from "./parse-todo.use-case.js";
 
 const OUTPUT = {
 	title: "팀 미팅",

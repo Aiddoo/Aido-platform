@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { TODO_COMMENT_LIMITS, TODO_COMMENT_SORT } from './todo-comment.constants';
+import { TODO_COMMENT_LIMITS, TODO_COMMENT_SORT } from './todo-comment.constants.js';
 
 export const todoCommentIdSchema = z.cuid('댓글 ID를 확인해주세요.').describe('댓글 ID (CUID)');
 

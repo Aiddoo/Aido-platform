@@ -1,6 +1,6 @@
-import { TIME_UNIT } from "@/shared/domain/date/constants/date.constant";
+import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 
-import type { NotificationType } from "../types/notification-type";
+import type { NotificationType } from "../types/notification-type.js";
 
 /**
  * 알림 서비스 레이어 중복 방지 정책 (순수 도메인).

@@ -1,14 +1,14 @@
 import { TODO_COMMENT_SORT, z } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import type {
 	TodoCommentOverviewRootRecord,
 	TodoConversationRecord,
-} from "../../application/types";
-import { HmacTodoCommentCursorCodec } from "./hmac-todo-comment-cursor.codec";
+} from "../../application/types.js";
+import { HmacTodoCommentCursorCodec } from "./hmac-todo-comment-cursor.codec.js";
 
 const record: TodoConversationRecord = {
 	id: "cm1todoacomment00000000001",

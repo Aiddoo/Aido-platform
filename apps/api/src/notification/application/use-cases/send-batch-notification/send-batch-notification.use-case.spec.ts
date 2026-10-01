@@ -1,10 +1,10 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CreateNotificationData } from "../../ports/notification-data";
-import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
-import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
-import { SendBatchNotificationUseCase } from "./send-batch-notification.use-case";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
+import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case.js";
+import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case.js";
+import { SendBatchNotificationUseCase } from "./send-batch-notification.use-case.js";
 
 describe("SendBatchNotificationUseCase", () => {
 	let useCase: SendBatchNotificationUseCase;

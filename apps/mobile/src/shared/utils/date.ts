@@ -1,13 +1,13 @@
-import { t } from '@src/shared/i18n';
+import { i18n, t } from '@src/shared/i18n';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-import isToday from 'dayjs/plugin/isToday';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { times } from 'es-toolkit/compat';
 
+import { formatClockTime, formatDateLabel, type DateFormatContext } from './date-format';
+
 dayjs.extend(weekOfYear);
 dayjs.extend(isoWeek);
-dayjs.extend(isToday);
 // dayjs 전역 locale은 i18n init(languageChanged 리스너)이 관리한다
 
 // Format
@@ -16,34 +16,29 @@ export const formatDate = (date: Date | string | number): string => {
   return d.isValid() ? d.format('YYYY-MM-DD') : '';
 };
 
+function getDateFormatContext(): DateFormatContext {
+  return {
+    locale: i18n.language.startsWith('ko') ? 'ko-KR' : 'en-US',
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  };
+}
+
 export const formatTime = (
   date: Date | string | number,
   timeFormat: 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR' = 'TWELVE_HOUR',
-): string => {
-  const d = dayjs(date);
-  if (!d.isValid()) return '';
-  return timeFormat === 'TWENTY_FOUR_HOUR' ? d.format('HH:mm') : d.format('A h:mm');
-};
+): string => formatClockTime(dayjs(date).toDate(), timeFormat, getDateFormatContext());
 
-export const formatFullDate = (date: Date | string | number): string => {
-  const d = dayjs(date);
-  return d.isValid() ? d.format(t('common:dateFormats.fullDate')) : '';
-};
+export const formatFullDate = (date: Date | string | number): string =>
+  formatDateLabel(dayjs(date).toDate(), 'fullDate', getDateFormatContext());
 
-export const formatMonthDay = (date: Date | string | number): string => {
-  const d = dayjs(date);
-  return d.isValid() ? d.format(t('common:dateFormats.monthDay')) : '';
-};
+export const formatMonthDay = (date: Date | string | number): string =>
+  formatDateLabel(dayjs(date).toDate(), 'monthDay', getDateFormatContext());
 
-export const formatDayOfMonth = (date: Date | string | number): string => {
-  const d = dayjs(date);
-  return d.isValid() ? d.format(t('common:dateFormats.dayOfMonth')) : '';
-};
+export const formatDayOfMonth = (date: Date | string | number): string =>
+  formatDateLabel(dayjs(date).toDate(), 'dayOfMonth', getDateFormatContext());
 
-export const formatTime24 = (date: Date | string | number): string => {
-  const d = dayjs(date);
-  return d.isValid() ? d.format('HH:mm') : '';
-};
+export const formatTime24 = (date: Date | string | number): string =>
+  formatClockTime(dayjs(date).toDate(), 'TWENTY_FOUR_HOUR', getDateFormatContext());
 
 export const toDate = (date: Date | string | number): Date => {
   const d = dayjs(date);
@@ -60,8 +55,8 @@ export const toNullableDate = (date?: Date | string | number | null): Date | nul
 };
 
 // Predicates
-export const isDateToday = (date: Date): boolean => {
-  return dayjs(date).isToday();
+export const isDateToday = (date: Date, now: Date = new Date()): boolean => {
+  return dayjs(date).isSame(now, 'day');
 };
 
 export const isSameDay = (date1: Date, date2: Date): boolean => {
@@ -117,13 +112,13 @@ export const getWeekHeaderText = (date: Date): string => {
   const d = dayjs(date);
   const weekOfMonth = Math.ceil(d.date() / 7);
   return t('common:calendar.weekHeader', {
-    month: d.format(t('common:dateFormats.monthLabel')),
+    month: formatDateLabel(d.toDate(), 'month', getDateFormatContext()),
     week: weekOfMonth,
   });
 };
 
 export const getMonthHeaderText = (date: Date): string => {
-  return dayjs(date).format(t('common:dateFormats.yearMonth'));
+  return formatDateLabel(dayjs(date).toDate(), 'yearMonth', getDateFormatContext());
 };
 
 export const getWeekStart = (date: Date): Date => {
@@ -248,11 +243,11 @@ export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd:
 };
 
 /** 날짜를 섹션 라벨로 변환 ("오늘", "어제", "이번 주", "이번 달", "이전") */
-export const getDateSectionLabel = (date: Date): string => {
-  const now = dayjs();
+export const getDateSectionLabel = (date: Date, referenceDate: Date = new Date()): string => {
+  const now = dayjs(referenceDate);
   const target = dayjs(date);
 
-  if (target.isToday()) return t('common:dateSections.today');
+  if (target.isSame(now, 'day')) return t('common:dateSections.today');
   if (now.subtract(1, 'day').isSame(target, 'day')) return t('common:dateSections.yesterday');
   if (target.isSame(now, 'isoWeek')) return t('common:dateSections.thisWeek');
   if (target.isSame(now, 'month')) return t('common:dateSections.thisMonth');
@@ -260,8 +255,8 @@ export const getDateSectionLabel = (date: Date): string => {
 };
 
 /** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025.1.5") */
-export const formatRelativeTime = (date: Date): string => {
-  const now = dayjs();
+export const formatRelativeTime = (date: Date, referenceDate: Date = new Date()): string => {
+  const now = dayjs(referenceDate);
   const target = dayjs(date);
   const diffMinutes = now.diff(target, 'minute');
   const diffHours = now.diff(target, 'hour');

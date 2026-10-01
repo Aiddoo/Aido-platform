@@ -1,11 +1,9 @@
+import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
 import { createMockSyncStorage } from '@src/shared/__tests__';
 
+import { StoreReviewPromptTransitions } from '../models/store-review-prompt.transition';
 import { createStoreReviewPromptRepository } from '../repositories/store-review-prompt.repository';
-import {
-  type StoreReviewDecision,
-  type StoreReviewGateway,
-  StoreReviewPromptService,
-} from './store-review-prompt.service';
+import { type StoreReviewDecision, StoreReviewPromptService } from './store-review-prompt.service';
 
 describe('StoreReviewPromptService', () => {
   const createFixture = () => {
@@ -14,7 +12,7 @@ describe('StoreReviewPromptService', () => {
     storage.getString.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     const repository = createStoreReviewPromptRepository(storage);
-    const gateway: jest.Mocked<StoreReviewGateway> = {
+    const gateway: jest.Mocked<AppStoreReviewGateway> = {
       isAvailable: jest.fn().mockResolvedValue(true),
       requestReview: jest.fn().mockResolvedValue(undefined),
     };
@@ -67,14 +65,18 @@ describe('StoreReviewPromptService', () => {
   it('같은 계정의 동시 완료에서는 리뷰 결정을 하나만 연다', async () => {
     // Given
     const { repository, service } = createFixture();
-    repository.recordSuccessfulCompletion('account-1', {
-      todoId: 1,
-      localDate: '2026-07-25',
-    });
-    repository.recordSuccessfulCompletion('account-1', {
-      todoId: 2,
-      localDate: '2026-07-26',
-    });
+    repository.update('account-1', (state) =>
+      StoreReviewPromptTransitions.recordSuccessfulCompletion(state, {
+        todoId: 1,
+        localDate: '2026-07-25',
+      }),
+    );
+    repository.update('account-1', (state) =>
+      StoreReviewPromptTransitions.recordSuccessfulCompletion(state, {
+        todoId: 2,
+        localDate: '2026-07-26',
+      }),
+    );
     let resolveDecision: ((decision: StoreReviewDecision) => void) | undefined;
     const decide = jest.fn(
       () =>
@@ -106,14 +108,16 @@ describe('StoreReviewPromptService', () => {
     const offered = await becomeEligible(service, async () => 'dismiss');
 
     expect(offered).toBe(true);
-    expect(repository.read('account-a').dismissedAt).toBe('2026-08-12T00:00:00.000Z');
+    expect(repository.read('account-a').dismissedAt).toEqual(new Date('2026-08-12T00:00:00.000Z'));
     expect(gateway.requestReview).not.toHaveBeenCalled();
   });
 
   it('리뷰 선택은 상태를 먼저 기록한 뒤 네이티브 리뷰를 요청한다', async () => {
     const { gateway, repository, service } = createFixture();
     gateway.requestReview.mockImplementation(async () => {
-      expect(repository.read('account-a').reviewRequestedAt).toBe('2026-08-12T00:00:00.000Z');
+      expect(repository.read('account-a').reviewRequestedAt).toEqual(
+        new Date('2026-08-12T00:00:00.000Z'),
+      );
     });
 
     const offered = await becomeEligible(service, async () => 'review');

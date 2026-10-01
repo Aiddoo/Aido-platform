@@ -11,21 +11,22 @@
  * ```
  */
 import type { Provider, ValueProvider } from "@nestjs/common";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
+import { vi, type Mock } from "vitest";
 
-import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants";
-import { type RedisLifecycleClient, RedisModule } from "./redis.module";
+import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants.js";
+import { type RedisLifecycleClient, RedisModule } from "./redis.module.js";
 
 interface FakeRedisClient extends RedisLifecycleClient {
-	quit: jest.Mock;
-	disconnect: jest.Mock;
+	quit: Mock;
+	disconnect: Mock;
 }
 
 function createFakeClient(overrides: Partial<FakeRedisClient> = {}): FakeRedisClient {
 	return {
 		status: "ready",
-		quit: jest.fn().mockResolvedValue("OK"),
-		disconnect: jest.fn(),
+		quit: vi.fn().mockResolvedValue("OK"),
+		disconnect: vi.fn(),
 		...overrides,
 	};
 }
@@ -97,7 +98,7 @@ describe("RedisModule — Redis 연결 모듈", () => {
 		it("quit이 reject되면 disconnect로 강제 종료한다", async () => {
 			// Given
 			const bullClient = createFakeClient({
-				quit: jest.fn().mockRejectedValue(new Error("Connection is closed.")),
+				quit: vi.fn().mockRejectedValue(new Error("Connection is closed.")),
 			});
 			const module = new RedisModule(bullClient, null);
 
@@ -110,27 +111,25 @@ describe("RedisModule — Redis 연결 모듈", () => {
 
 		it("quit이 응답하지 않으면(hang) 타임아웃 후 disconnect로 폴백한다", async () => {
 			// Given — Redis 다운 중 종료: 오프라인 큐에 걸린 quit은 영원히 pending
-			jest.useFakeTimers();
+			vi.useFakeTimers();
 			const bullClient = createFakeClient({
-				quit: jest.fn().mockReturnValue(new Promise(() => {})),
+				quit: vi.fn().mockReturnValue(new Promise(() => {})),
 			});
 			const module = new RedisModule(bullClient, null);
 
 			// When
 			const shutdown = module.onApplicationShutdown();
-			await jest.advanceTimersByTimeAsync(3_000);
+			await vi.advanceTimersByTimeAsync(3_000);
 			await shutdown;
 
 			// Then
 			expect(bullClient.disconnect).toHaveBeenCalledTimes(1);
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("두 번 호출돼도 quit/disconnect는 한 번만 실행된다 (멱등)", async () => {
-			// Given — main.ts의 enableShutdownHooks + 자체 SIGTERM 핸들러가
-			// app.close()를 중복 호출하는 상황
 			const bullClient = createFakeClient({
-				quit: jest.fn().mockReturnValue(
+				quit: vi.fn().mockReturnValue(
 					new Promise((resolve) => {
 						setTimeout(() => resolve("OK"), 10);
 					}),

@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetForecastsByGridBatchUseCase 단위 테스트
  *
@@ -5,12 +6,11 @@
  * - fan-out(mget→미스만 병렬 호출)·폴백·캐시 저장은 WeatherForecastReader.fetchBatch 소유
  * - 따라서 여기서는 grids/date 전달과 결과 Map(입력 순서 보존)의 무손실 반환만 검증한다
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { WeatherForecast } from "../../ports/weather-provider.port";
-import { type GridInput, WeatherForecastReader } from "../../services/weather-forecast.reader";
-import { GetForecastsByGridBatchUseCase } from "./get-forecasts-by-grid-batch.use-case";
+import type { WeatherForecast } from "../../ports/weather-provider.port.js";
+import { type GridInput, WeatherForecastReader } from "../../services/weather-forecast.reader.js";
+import { GetForecastsByGridBatchUseCase } from "./get-forecasts-by-grid-batch.use-case.js";
 
 function buildForecast(temperatureMax: number): WeatherForecast {
 	return {

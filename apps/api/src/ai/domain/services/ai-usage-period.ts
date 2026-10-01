@@ -5,9 +5,9 @@
  * "다음 리셋 시각" 계산은 시간대 규칙이 얽힌 도메인 정책이므로 여기에 둔다.
  * 현재 시각은 참조값으로 주입받아 순수성을 유지한다.
  */
-import { addMonths } from "@/shared/domain/date/utils/arithmetic";
-import { toISOString, toIsoMonthId } from "@/shared/domain/date/utils/format";
-import { firstOfMonthInTimezone } from "@/shared/domain/date/utils/timezone";
+import { addMonths } from "#api/shared/domain/date/utils/arithmetic";
+import { toISOString, toIsoMonthId } from "#api/shared/domain/date/utils/format";
+import { firstOfMonthInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 /** 사용량 리셋 기준 시간대 (KST). */
 const BILLING_TIMEZONE = "Asia/Seoul";

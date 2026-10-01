@@ -1,5 +1,5 @@
-import type { Nudge } from "../../domain/entities/nudge.aggregate";
-import type { ReminderNudge } from "../../domain/entities/reminder-nudge.entity";
+import type { Nudge } from "../../domain/entities/nudge.aggregate.js";
+import type { ReminderNudge } from "../../domain/entities/reminder-nudge.entity.js";
 
 /** 콕 찌르기 목록/응답에 필요한 사용자 요약 */
 export interface NudgeUserBrief {

@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { numberCursorPaginationInfoSchema } from '../../common/pagination';
-import { todoCategorySummarySchema } from '../todo-category/todo-category.response';
-import { todoVisibilitySchema } from './todo.common';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime.js';
+import { numberCursorPaginationInfoSchema } from '../../common/pagination.js';
+import { todoCategorySummarySchema } from '../todo-category/todo-category.response.js';
+import { todoVisibilitySchema } from './todo.common.js';
 
 export const todoItemResponseSchema = z.object({
   id: z.number().int().describe('하위 항목 고유 ID'),

@@ -141,3 +141,13 @@ pnpm --filter @aido/mobile test:conventions
 
 작업을 마칠 때는 변경한 Model/Service/util 테스트와 정적 검증을 먼저 실행한다. 전체 모바일 테스트는
 공유 코드나 공통 설정을 바꿨거나 릴리스 전 회귀 확인이 필요할 때 실행한다.
+
+## SDK 58 native test runtime
+
+Reanimated 4.7의 공식 Jest resolver와 `setUpTests()`를 사용한다. `jest.resolver.cjs`는 React Native 0.88 preset의 내부 경로 해석을 유지하면서, 실제 Reanimated/Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 들어 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다.
+
+SVG는 Reanimated가 제공하는 SVG mock을 사용한다. 공용 `renderUi`는 실제 HeroUI provider를 유지하고, provider의 원본 config prop으로 테스트에서만 애니메이션을 끈다. 모바일 단위 테스트에는 DOM 레이아웃·네이티브 네비게이터를 만들지 않는다. 경로 이동은 테스트 harness의 router 경계에서 대체하며, 실제 Expo Router/Native Tabs 동작은 Android/iOS 앱에서 확인한다.
+
+테스트 종료 시 QueryClient를 비우고 구독·대기 중인 idle callback을 해제한다. `--forceExit`로 미정리 타이머를 감추지 않는다. 재현 순서 검증은 `--runInBand --randomize --seed <number> --showSeed`, 종료 핸들 검증은 `--detectOpenHandles`로 실행한다.
+
+공식 문서: [Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/).

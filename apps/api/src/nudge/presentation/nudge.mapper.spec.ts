@@ -1,9 +1,9 @@
 import type {
 	NudgeWithRelations,
 	ReminderNudgeWithRelations,
-} from "../application/ports/nudge.repository.port";
-import type { NudgeLimitInfo } from "../application/services/nudge.reader";
-import { NudgeMapper } from "./nudge.mapper";
+} from "../application/ports/nudge.repository.port.js";
+import type { NudgeLimitInfo } from "../application/services/nudge.reader.js";
+import { NudgeMapper } from "./nudge.mapper.js";
 
 const createdAt = new Date("2026-01-01T00:00:00.000Z");
 const readAt = new Date("2026-01-02T00:00:00.000Z");

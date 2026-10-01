@@ -13,14 +13,14 @@
 
 import { ErrorCode } from "@aido/errors";
 import { Reflector } from "@nestjs/core";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMockExecutionContext } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { IS_PUBLIC_KEY } from "@/auth/presentation/decorators/public.decorator";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { IS_PUBLIC_KEY } from "#api/auth/presentation/decorators/public.decorator";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { createMockExecutionContext } from "#test/mocks/index";
 
-import { JwtAuthGuard } from "./jwt-auth.guard";
+import { JwtAuthGuard } from "./jwt-auth.guard.js";
 
 describe("JwtAuthGuard — JWT 인증 가드", () => {
 	let guard: JwtAuthGuard;
@@ -99,7 +99,7 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 			// When & Then
 			try {
 				guard.handleRequest(error, false);
-				fail("에러가 발생해야 합니다");
+				expect.fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
 				if (error instanceof ApplicationException) {
@@ -123,7 +123,7 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 			// Given & When & Then
 			try {
 				guard.handleRequest(null, false);
-				fail("에러가 발생해야 합니다");
+				expect.fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
 				if (error instanceof ApplicationException) {

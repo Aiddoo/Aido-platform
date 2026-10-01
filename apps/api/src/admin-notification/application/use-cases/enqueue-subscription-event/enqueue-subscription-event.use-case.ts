@@ -1,12 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import type { SubscriptionEventPayload } from "@/subscription";
+import type { SubscriptionEventPayload } from "#api/subscription/index";
 
-import { buildSubscriptionEventMessage } from "../../../domain/services/admin-message.factory";
+import { buildSubscriptionEventMessage } from "../../../domain/services/admin-message.factory.js";
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,
-} from "../../ports/admin-notification-queue.port";
+} from "../../ports/admin-notification-queue.port.js";
 
 /**
  * 구독 이벤트 관리자 알림 등록 유스케이스.

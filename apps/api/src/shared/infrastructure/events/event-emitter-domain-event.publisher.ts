@@ -1,8 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
-import type { DomainEventPublisherPort } from "@/shared/application/ports";
-import type { DomainEvent } from "@/shared/domain/aggregate-root";
+import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
+import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 
 /**
  * EventEmitter2 기반 도메인 이벤트 퍼블리셔

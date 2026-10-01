@@ -1,5 +1,5 @@
 import { useTodoScreenParams } from '@src/features/todo/presentations/hooks/use-todo-screen-params';
-import { useTodoDetailsQueryOptions } from '@src/features/todo/presentations/queries/use-todo-page-query-options';
+import { useTodoDetailsQueryOptions } from '@src/features/todo/presentations/queries/get-todo-details-query-options';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { ScreenTitleBar } from '@src/shared/ui';

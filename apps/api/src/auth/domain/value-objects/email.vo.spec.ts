@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { Email } from "./email.vo";
+import { Email } from "./email.vo.js";
 
 describe("Email 값 객체", () => {
 	describe("of", () => {

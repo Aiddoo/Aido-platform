@@ -13,7 +13,7 @@ import type {
 	UserTodoCount,
 	UserWithTodosAndStreak,
 	WinbackUser,
-} from "./scheduler-read-models";
+} from "./scheduler-read-models.js";
 
 export const RE_ENGAGEMENT_READER = Symbol("RE_ENGAGEMENT_READER");
 

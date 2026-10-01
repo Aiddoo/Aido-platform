@@ -1,6 +1,6 @@
-import { addDays, subtractDays } from "@/shared/domain/date/utils/arithmetic";
+import { addDays, subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
-import { NudgeTargetTodo } from "./nudge-target-todo.vo";
+import { NudgeTargetTodo } from "./nudge-target-todo.vo.js";
 
 const today = new Date("2026-01-10T00:00:00.000Z");
 

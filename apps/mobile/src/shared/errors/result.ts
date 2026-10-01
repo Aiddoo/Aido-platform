@@ -48,4 +48,4 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
  * - code와 message를 가진 Error 객체인지 확인
  */
 export const isBusinessError = (error: unknown): error is BusinessError =>
-  error instanceof Error && 'code' in error && typeof (error as BusinessError).code === 'string';
+  error instanceof Error && 'code' in error && typeof error.code === 'string';

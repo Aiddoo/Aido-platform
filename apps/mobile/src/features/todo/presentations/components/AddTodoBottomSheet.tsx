@@ -1,7 +1,8 @@
 import type { DayOfWeek } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useConvertMemoToTodoMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todo-mutation-options';
+import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todos-mutation-options';
 import { useTrack } from '@src/shared/analytics';
+import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -27,26 +28,31 @@ import {
   usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/FormField/FormField';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate, formatDaysOfWeek } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
+import type { ComponentRef } from 'react';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
-import { ActivityIndicator, Keyboard, ScrollView, type TextInput } from 'react-native';
+import { useErrorBoundary } from 'react-error-boundary';
+import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import type { TextInput } from 'react-native';
+import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
 
 import { AiUsagePolicy } from '../../models/todo.model';
+import { useGetAiUsageQueryOptions } from '../queries/get-ai-usage-query-options';
+import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
-import { useGetAiUsageQueryOptions } from '../queries/use-get-ai-usage-query-options';
-import { useGetTodoCategoriesQueryOptions } from '../queries/use-get-todo-categories-query-options';
 import { useParseTodoMutationOptions } from '../queries/use-parse-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
+import { toMemoConversionInput } from '../utils/to-memo-conversion-input';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { CategorySelectContent } from './CategorySelectBottomSheet';
 import { TodoDatePickerContent } from './TodoDatePickerContent';
@@ -95,6 +101,7 @@ type AddTodoBottomSheetProps =
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
 export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
+  const { showBoundary } = useErrorBoundary();
   const { isOpen, onOpenChange, onClose } = props;
 
   const defaultValues: AddTodoFormValues = match(props)
@@ -139,12 +146,12 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     }))
     .exhaustive();
 
-  const methods = useForm<AddTodoFormValues, unknown, AddTodoFormInput>({
+  const methods = useForm({
     resolver: zodResolver(addTodoFormSchema),
     defaultValues,
   });
 
-  const todoInputRef = useRef<TextInput>(null);
+  const todoInputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const isClosingRef = useRef(false);
   const pendingFocusRef = useRef<number | null>(null);
 
@@ -167,96 +174,91 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const createMutation = useMutation(useCreateTodoMutationOptions());
   const updateMutation = useMutation(useUpdateTodoMutationOptions());
   const createRecurringMutation = useMutation(useCreateRecurringTodoMutationOptions());
-  const convertMemoMutation = useMutation(useConvertMemoToTodoMutationOptions());
+  const convertMemoMutation = useMutation(useConvertMemoToTodosMutationOptions());
 
-  const isSubmitting =
-    createMutation.isPending ||
-    updateMutation.isPending ||
-    createRecurringMutation.isPending ||
-    convertMemoMutation.isPending;
+  const { isSubmitting } = useFormState({ control: methods.control });
 
-  const onSubmit = methods.handleSubmit((data: AddTodoFormInput) => {
-    match(props)
-      .with({ mode: 'edit' }, ({ todo }) => {
-        updateMutation.mutate(
-          {
-            todoId: todo.id,
-            input: {
-              title: data.title,
-              startDate: formatDate(data.startDate),
-              endDate: data.endDate ? formatDate(data.endDate) : null,
-              scheduledTime: data.isAllDay ? null : (data.scheduledTime ?? null),
-              isAllDay: data.isAllDay,
-              visibility: data.visibility,
-            },
-          },
-          { onSuccess: onClose },
-        );
-      })
-      .with({ mode: 'convert-memo' }, (convertProps) => {
-        convertMemoMutation.mutate(
-          {
-            memoId: convertProps.memoId,
-            input: {
-              categoryId: data.categoryId,
-              startDate: formatDate(data.startDate),
-              scheduledTime: data.isAllDay ? undefined : (data.scheduledTime ?? undefined),
-              isAllDay: data.isAllDay,
-              visibility: data.visibility,
-            },
-          },
-          {
-            onSuccess: () => {
-              onClose();
-              convertProps.onSuccess?.();
-            },
-          },
-        );
-      })
-      .with({ mode: 'create' }, (createProps) => {
-        const onMutationSuccess = () => {
-          onClose();
-          createProps.onSuccess?.();
-        };
-
-        if (data.isRecurring) {
-          createRecurringMutation.mutate(
+  const onSubmit = methods.handleSubmit(async (data: AddTodoFormInput) => {
+    try {
+      await match(props)
+        .with({ mode: 'edit' }, async ({ todo }) => {
+          await updateMutation.mutateAsync(
             {
+              todoId: todo.id,
               input: {
                 title: data.title,
                 startDate: formatDate(data.startDate),
-                endDate: formatDate(data.repeatEndDate ?? data.startDate),
-                daysOfWeek: data.daysOfWeek,
-                scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
+                endDate: data.endDate ? formatDate(data.endDate) : null,
+                scheduledTime: data.isAllDay ? null : (data.scheduledTime ?? null),
                 isAllDay: data.isAllDay,
                 visibility: data.visibility,
-                categoryId: data.categoryId,
               },
-              source: data.source,
             },
-            { onSuccess: onMutationSuccess },
+            { onSuccess: onClose },
           );
-        } else {
-          createMutation.mutate(
+        })
+        .with({ mode: 'convert-memo' }, async (convertProps) => {
+          await convertMemoMutation.mutateAsync(
             {
-              input: {
-                title: data.title,
-                startDate: formatDate(data.startDate),
-                scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-                isAllDay: data.isAllDay,
-                visibility: data.visibility,
-                categoryId: data.categoryId,
-              },
-              source: data.source,
+              memoId: convertProps.memoId,
+              input: toMemoConversionInput(data),
+              source: 'manual',
             },
-            { onSuccess: onMutationSuccess },
+            {
+              onSuccess: () => {
+                onClose();
+                convertProps.onSuccess?.();
+              },
+            },
           );
-        }
-      })
-      .exhaustive();
+        })
+        .with({ mode: 'create' }, async (createProps) => {
+          const onMutationSuccess = () => {
+            onClose();
+            createProps.onSuccess?.();
+          };
+
+          if (data.isRecurring) {
+            await createRecurringMutation.mutateAsync(
+              {
+                input: {
+                  title: data.title,
+                  startDate: formatDate(data.startDate),
+                  endDate: formatDate(data.repeatEndDate ?? data.startDate),
+                  daysOfWeek: data.daysOfWeek,
+                  scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
+                  isAllDay: data.isAllDay,
+                  visibility: data.visibility,
+                  categoryId: data.categoryId,
+                },
+                source: data.source,
+              },
+              { onSuccess: onMutationSuccess },
+            );
+          } else {
+            await createMutation.mutateAsync(
+              {
+                input: {
+                  title: data.title,
+                  startDate: formatDate(data.startDate),
+                  scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
+                  isAllDay: data.isAllDay,
+                  visibility: data.visibility,
+                  categoryId: data.categoryId,
+                },
+                source: data.source,
+              },
+              { onSuccess: onMutationSuccess },
+            );
+          }
+        })
+        .exhaustive();
+    } catch (error) {
+      if (!isBusinessError(error)) showBoundary(error);
+    }
   });
 
-  const title = methods.watch('title');
+  const title = useWatch({ control: methods.control, name: 'title' });
   const isSubmitDisabled = !title?.trim() || isSubmitting;
 
   const openDatePicker = () => {
@@ -394,24 +396,22 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         }}
       >
         <VStack gap={12}>
-          <Controller
-            control={methods.control}
-            name="title"
-            render={({ field: { onChange, value } }) => (
+          <FormField control={methods.control} name="title">
+            {({ onChange, value }) => (
               <BottomSheetInput
                 ref={todoInputRef}
                 autoFocus
                 placeholder={tGlobal('todo:add.placeholder')}
                 value={value}
-                onChangeText={onChange}
+                onChange={onChange}
                 maxLength={200}
                 size="medium"
                 renderErrorMessage={false}
                 returnKeyType="done"
-                onSubmitEditing={isSubmitDisabled ? onClose : onSubmit}
+                onSubmitEditing={() => (isSubmitDisabled ? onClose() : onSubmit())}
               />
             )}
-          />
+          </FormField>
 
           <ScrollView
             horizontal
@@ -433,7 +433,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             <AiParseButton onClose={onClose} />
             <PressableFeedback
               isDisabled={isSubmitDisabled}
-              onPress={onSubmit}
+              onPress={() => onSubmit()}
               style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className={cn(
                 'items-center justify-center rounded-4xl',
@@ -543,10 +543,8 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
 const VisibilityChip = () => {
   const { control } = useFormContext<AddTodoFormValues>();
   return (
-    <Controller
-      control={control}
-      name="visibility"
-      render={({ field: { value, onChange } }) => {
+    <FormField control={control} name="visibility">
+      {({ value, onChange }) => {
         const isPrivate = (value ?? 'PUBLIC') === 'PRIVATE';
         return (
           <ActionChip
@@ -570,7 +568,7 @@ const VisibilityChip = () => {
           />
         );
       }}
-    />
+    </FormField>
   );
 };
 

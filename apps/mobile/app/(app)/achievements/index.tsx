@@ -3,10 +3,11 @@ import { AchievementSummaryCard } from '@src/features/achievement/presentations/
 import { BadgeIcon } from '@src/features/achievement/presentations/components/BadgeIcon';
 import { CertificateBorder } from '@src/features/achievement/presentations/components/CertificateBorder';
 import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/presentations/constants/achievement-query-keys.constant';
-import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/presentations/queries/use-get-weekly-achievements-query-options';
+import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/presentations/queries/get-weekly-achievements-query-options';
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useToday } from '@src/shared/hooks/useToday';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -26,9 +27,8 @@ import { router } from 'expo-router';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, View } from 'react-native';
 
-const CURRENT_YEAR = new Date().getFullYear();
-
 const AchievementsScreen = () => {
+  const today = useToday();
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <QueryErrorBoundary>
@@ -39,7 +39,7 @@ const AchievementsScreen = () => {
             </View>
           }
         >
-          <AchievementsContent year={CURRENT_YEAR} />
+          <AchievementsContent year={today.getFullYear()} />
         </Suspense>
       </QueryErrorBoundary>
     </StyledSafeAreaView>

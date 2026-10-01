@@ -1,14 +1,14 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
 import {
 	createTodoCommentNotificationMessage,
 	NotificationPublisher,
 	NotificationRecipientLocaleReader,
 	TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
-} from "@/notification";
+} from "#api/notification/index";
 
-import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adapter";
+import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adapter.js";
 
 describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", () => {
 	let adapter: TodoCommentNotificationAdapter;

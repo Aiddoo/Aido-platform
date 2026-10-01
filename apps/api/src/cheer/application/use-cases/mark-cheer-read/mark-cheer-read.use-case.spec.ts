@@ -1,13 +1,14 @@
+import { TestBed } from "@suites/unit";
 /**
  * MarkCheerReadUseCase 단위 테스트 (Suites solitary + 포트 모킹).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createCheerRepositoryMock } from "@test/mocks/ports/cheer.mock";
+import type { Mocked } from "vitest";
 
-import { Cheer } from "../../../domain/entities/cheer.aggregate";
-import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../../ports/cheer.repository.port";
-import { MarkCheerReadUseCase } from "./mark-cheer-read.use-case";
+import { createCheerRepositoryMock } from "#test/mocks/ports/cheer.mock";
+
+import { Cheer } from "../../../domain/entities/cheer.aggregate.js";
+import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../../ports/cheer.repository.port.js";
+import { MarkCheerReadUseCase } from "./mark-cheer-read.use-case.js";
 
 const RECEIVER = "u-receiver";
 const SENDER = "u-sender";

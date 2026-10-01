@@ -24,7 +24,7 @@
  * ```
  */
 
-export type { Mocked } from "@suites/doubles.jest";
+export type { Mocked } from "@suites/doubles.vitest";
 // Suites 타입 재export
 export { TestBed } from "@suites/unit";
 

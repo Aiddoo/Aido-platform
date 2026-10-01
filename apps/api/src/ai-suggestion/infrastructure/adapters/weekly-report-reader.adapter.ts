@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { LATEST_REPORT_STATS_READER, type LatestReportStatsReaderPort } from "@/ai-report";
+import { LATEST_REPORT_STATS_READER, type LatestReportStatsReaderPort } from "#api/ai-report/index";
 
 import type {
 	WeeklyReportReaderPort,
 	WeeklyReportView,
-} from "../../application/ports/weekly-report-reader.port";
+} from "../../application/ports/weekly-report-reader.port.js";
 
 /**
  * WeeklyReportReaderPort의 어댑터.

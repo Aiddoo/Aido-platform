@@ -1,6 +1,6 @@
-import { TIME_UNIT } from "../constants/date.constant";
-import { addMilliseconds } from "./arithmetic";
-import { now } from "./core";
+import { TIME_UNIT } from "../constants/date.constant.js";
+import { addMilliseconds } from "./arithmetic.js";
+import { now } from "./core.js";
 
 export interface CooldownResult {
 	/** 쿨다운이 현재 활성 상태인지 */

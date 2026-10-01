@@ -1,5 +1,4 @@
 import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/validators';
-import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
@@ -25,15 +24,6 @@ export type User = z.infer<typeof userSchema>;
 
 export const updateProfileResultSchema = userSchema.pick({ name: true, profileImage: true });
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
-
-export const updateNameInputSchema = z.object({
-  name: z
-    .string()
-    .min(1, { error: () => t('user:editName.required') })
-    .max(20, { error: () => t('user:editName.maxLength') })
-    .trim(),
-});
-export type UpdateNameInput = z.infer<typeof updateNameInputSchema>;
 
 const isPremiumUser = (user: User) => {
   return user.role === 'ADMIN' || user.subscriptionStatus === 'ACTIVE';

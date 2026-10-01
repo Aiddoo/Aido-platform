@@ -1,7 +1,7 @@
 import { Injectable, type LoggerService as NestLoggerService } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
 
-import type { LogContext } from "../interfaces/logger.interface";
+import type { LogContext } from "../interfaces/logger.interface.js";
 
 /**
  * Pino Logger를 래핑한 서비스

@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * Cheer 모듈 통합 테스트 (Mock DB)
  *
@@ -7,31 +8,30 @@
  *
  * 실행: pnpm --filter @aido/api test cheer.integration-spec
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { CheerBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { CHEER_LIMIT_READER } from "@/cheer/application/ports/cheer-limit-reader.port";
-import { CHEER_NOTIFIER } from "@/cheer/application/ports/cheer-notifier.port";
-import { CHEER_REPOSITORY } from "@/cheer/application/ports/cheer.repository.port";
-import { CheerReader } from "@/cheer/application/services/cheer.reader";
-import { MarkCheerReadUseCase } from "@/cheer/application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
-import { MarkManyCheersReadUseCase } from "@/cheer/application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
-import { SendCheerUseCase } from "@/cheer/application/use-cases/send-cheer/send-cheer.use-case";
-import { CheerLimitReaderAdapter } from "@/cheer/infrastructure/adapters/cheer-limit-reader.adapter";
-import { CheerNotifierAdapter } from "@/cheer/infrastructure/adapters/cheer-notifier.adapter";
-import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
-import { FollowReader } from "@/follow";
-import { NotificationQueueService } from "@/notification/queue";
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { CHEER_LIMIT_READER } from "#api/cheer/application/ports/cheer-limit-reader.port";
+import { CHEER_NOTIFIER } from "#api/cheer/application/ports/cheer-notifier.port";
+import { CHEER_REPOSITORY } from "#api/cheer/application/ports/cheer.repository.port";
+import { CheerReader } from "#api/cheer/application/services/cheer.reader";
+import { MarkCheerReadUseCase } from "#api/cheer/application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
+import { MarkManyCheersReadUseCase } from "#api/cheer/application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
+import { SendCheerUseCase } from "#api/cheer/application/use-cases/send-cheer/send-cheer.use-case";
+import { CheerLimitReaderAdapter } from "#api/cheer/infrastructure/adapters/cheer-limit-reader.adapter";
+import { CheerNotifierAdapter } from "#api/cheer/infrastructure/adapters/cheer-notifier.adapter";
+import { PrismaCheerRepository } from "#api/cheer/infrastructure/persistence/prisma-cheer.repository";
+import { FollowReader } from "#api/follow/index";
+import { NotificationQueueService } from "#api/notification/queue";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { CheerBuilder } from "#test/builders/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -56,26 +56,26 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	};
 
 	const mockCheerDb = {
-		create: jest.fn(),
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		update: jest.fn(),
-		updateMany: jest.fn(),
-		count: jest.fn(),
+		create: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		update: vi.fn(),
+		updateMany: vi.fn(),
+		count: vi.fn(),
 	};
-	const mockUserDb = { findUnique: jest.fn() };
+	const mockUserDb = { findUnique: vi.fn() };
 	const mockDatabaseService = createMockDatabaseService({
 		cheer: mockCheerDb,
 		user: mockUserDb,
 	});
 
-	const mockFollowReader = { isMutualFriend: jest.fn() };
-	const mockNotificationQueueService = { enqueueCheerSent: jest.fn() };
+	const mockFollowReader = { isMutualFriend: vi.fn() };
+	const mockNotificationQueueService = { enqueueCheerSent: vi.fn() };
 	const mockEntitlementService = {
-		getFeatureLimit: jest.fn(),
-		getFeatureLimitInTx: jest.fn(),
-		calculateRemaining: jest.fn(),
+		getFeatureLimit: vi.fn(),
+		getFeatureLimitInTx: vi.fn(),
+		calculateRemaining: vi.fn(),
 	};
 
 	const senderId = "user-cheer-sender-123";
@@ -112,7 +112,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
 				{
 					provide: MUTATION_LOCK,
-					useValue: { acquire: jest.fn().mockResolvedValue(undefined) },
+					useValue: { acquire: vi.fn().mockResolvedValue(undefined) },
 				},
 				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
 				{
@@ -138,11 +138,11 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		CheerBuilder.resetIdCounter();
 		mockEntitlementService.getFeatureLimit.mockResolvedValue({
 			dailyLimit: 3,

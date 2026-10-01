@@ -1,11 +1,13 @@
-import type { ActivePushTokenReaderPort } from "@/notification/application/ports/active-push-token.reader.port";
-import type { MarketingPushOptOutTokenPort } from "@/notification/application/ports/marketing-push-opt-out-token.port";
-import type { NotificationHistoryReaderPort } from "@/notification/application/ports/notification-history.reader.port";
-import type { NotificationInboxReaderPort } from "@/notification/application/ports/notification-inbox.reader.port";
-import type { NotificationRepositoryPort } from "@/notification/application/ports/notification.repository.port";
-import type { PushReceiptRepositoryPort } from "@/notification/application/ports/push-receipt.repository.port";
-import type { PushTokenRepositoryPort } from "@/notification/application/ports/push-token.repository.port";
-import type { UserNotificationSettingsPort } from "@/notification/application/ports/user-notification-settings.port";
+import { vi } from "vitest";
+
+import type { ActivePushTokenReaderPort } from "#api/notification/application/ports/active-push-token.reader.port";
+import type { MarketingPushOptOutTokenPort } from "#api/notification/application/ports/marketing-push-opt-out-token.port";
+import type { NotificationHistoryReaderPort } from "#api/notification/application/ports/notification-history.reader.port";
+import type { NotificationInboxReaderPort } from "#api/notification/application/ports/notification-inbox.reader.port";
+import type { NotificationRepositoryPort } from "#api/notification/application/ports/notification.repository.port";
+import type { PushReceiptRepositoryPort } from "#api/notification/application/ports/push-receipt.repository.port";
+import type { PushTokenRepositoryPort } from "#api/notification/application/ports/push-token.repository.port";
+import type { UserNotificationSettingsPort } from "#api/notification/application/ports/user-notification-settings.port";
 
 /**
  * Notification application 포트 mock 팩토리 모음.
@@ -18,83 +20,83 @@ import type { UserNotificationSettingsPort } from "@/notification/application/po
 /** NotificationRepositoryPort mock 팩토리. */
 export function createNotificationRepositoryMock(): NotificationRepositoryPort {
 	return {
-		createNotification: jest.fn(),
-		createManyNotificationsAndReturn: jest.fn(),
-		markAsRead: jest.fn(),
-		markAsOpened: jest.fn(),
-		markAllAsRead: jest.fn(),
-		deleteNotificationsByActorId: jest.fn(),
+		createNotification: vi.fn(),
+		createManyNotificationsAndReturn: vi.fn(),
+		markAsRead: vi.fn(),
+		markAsOpened: vi.fn(),
+		markAllAsRead: vi.fn(),
+		deleteNotificationsByActorId: vi.fn(),
 	};
 }
 
 export function createNotificationInboxReaderMock(): NotificationInboxReaderPort {
 	return {
-		findNotificationById: jest.fn(),
-		findNotificationsByUser: jest.fn(),
-		countUnread: jest.fn(),
+		findNotificationById: vi.fn(),
+		findNotificationsByUser: vi.fn(),
+		countUnread: vi.fn(),
 	};
 }
 
 export function createNotificationHistoryReaderMock(): NotificationHistoryReaderPort {
 	return {
-		existsRecentNotification: jest.fn(),
-		findAlreadyNotifiedUserIds: jest.fn(),
-		hasMilestoneNotification: jest.fn(),
+		existsRecentNotification: vi.fn(),
+		findAlreadyNotifiedUserIds: vi.fn(),
+		hasMilestoneNotification: vi.fn(),
 	};
 }
 
 export function createPushTokenRepositoryMock(): PushTokenRepositoryPort {
 	return {
-		registerPushToken: jest.fn(),
-		findPushTokensByUser: jest.fn(),
-		findActivePushTokensByUsers: jest.fn(),
-		deletePushToken: jest.fn(),
-		deleteAllPushTokensByUser: jest.fn(),
-		deactivateInvalidTokens: jest.fn(),
+		registerPushToken: vi.fn(),
+		findPushTokensByUser: vi.fn(),
+		findActivePushTokensByUsers: vi.fn(),
+		deletePushToken: vi.fn(),
+		deleteAllPushTokensByUser: vi.fn(),
+		deactivateInvalidTokens: vi.fn(),
 	};
 }
 
 export function createActivePushTokenReaderMock(): ActivePushTokenReaderPort {
 	return {
-		findByUserId: jest.fn(),
-		findByUserIds: jest.fn(),
+		findByUserId: vi.fn(),
+		findByUserIds: vi.fn(),
 	};
 }
 
 export function createNotificationRecipientPreferenceReaderMock(): NotificationRecipientPreferenceReaderPort {
-	return { getPreference: jest.fn() };
+	return { getPreference: vi.fn() };
 }
 
 export function createNotificationRecipientLocaleReaderMock(): NotificationRecipientLocaleReaderPort {
-	return { getLocale: jest.fn() };
+	return { getLocale: vi.fn() };
 }
 
 export function createPushReceiptRepositoryMock(): PushReceiptRepositoryPort {
 	return {
-		findPendingPushReceipts: jest.fn(),
-		recordPushReceipts: jest.fn(),
+		findPendingPushReceipts: vi.fn(),
+		recordPushReceipts: vi.fn(),
 	};
 }
 
 /** MarketingPushOptOutTokenPort mock 팩토리. */
 export function createMarketingPushOptOutTokenMock(): MarketingPushOptOutTokenPort {
 	return {
-		issue: jest.fn(),
-		verify: jest.fn(),
+		issue: vi.fn(),
+		verify: vi.fn(),
 	};
 }
 
 /** UserNotificationSettingsPort mock 팩토리. */
 export function createUserNotificationSettingsMock(): UserNotificationSettingsPort {
 	return {
-		upsertPushTimezone: jest.fn(),
-		upsertPushLocale: jest.fn(),
-		getPreferenceRecord: jest.fn(),
-		getPreferenceRecordsByUserIds: jest.fn(),
-		getConsentRecord: jest.fn(),
-		getConsentRecordsByUserIds: jest.fn(),
-		updateMarketingPushConsent: jest.fn(),
+		upsertPushTimezone: vi.fn(),
+		upsertPushLocale: vi.fn(),
+		getPreferenceRecord: vi.fn(),
+		getPreferenceRecordsByUserIds: vi.fn(),
+		getConsentRecord: vi.fn(),
+		getConsentRecordsByUserIds: vi.fn(),
+		updateMarketingPushConsent: vi.fn(),
 	};
 }
-import type { NotificationRecipientLocaleReaderPort } from "@/notification/application/ports/notification-recipient-locale.reader.port";
-import type { NotificationRecipientPreferenceReaderPort } from "@/notification/application/ports/notification-recipient-preference.reader.port";
+import type { NotificationRecipientLocaleReaderPort } from "#api/notification/application/ports/notification-recipient-locale.reader.port";
+import type { NotificationRecipientPreferenceReaderPort } from "#api/notification/application/ports/notification-recipient-preference.reader.port";

@@ -1,13 +1,13 @@
-import { mock } from "jest-mock-extended";
+import { mock } from "vitest-mock-extended";
 
-import { GetCurrentUserQuery, ListActiveSessionsQuery } from "../queries";
-import { CredentialAuthWorkflow, OAuthWorkflow, PasswordWorkflow } from "../workflows";
-import { ExchangeOAuthCodeUseCase } from "./exchange-oauth-code/exchange-oauth-code.use-case";
-import { LoginWithPasswordUseCase } from "./login-with-password/login-with-password.use-case";
-import { RegisterUseCase } from "./register/register.use-case";
-import { RequestPasswordResetUseCase } from "./request-password-reset/request-password-reset.use-case";
-import { SetPasswordUseCase } from "./set-password/set-password.use-case";
-import { StartOAuthAuthorizationUseCase } from "./start-oauth-authorization/start-oauth-authorization.use-case";
+import { GetCurrentUserQuery, ListActiveSessionsQuery } from "../queries/index.js";
+import { CredentialAuthWorkflow, OAuthWorkflow, PasswordWorkflow } from "../workflows/index.js";
+import { ExchangeOAuthCodeUseCase } from "./exchange-oauth-code/exchange-oauth-code.use-case.js";
+import { LoginWithPasswordUseCase } from "./login-with-password/login-with-password.use-case.js";
+import { RegisterUseCase } from "./register/register.use-case.js";
+import { RequestPasswordResetUseCase } from "./request-password-reset/request-password-reset.use-case.js";
+import { SetPasswordUseCase } from "./set-password/set-password.use-case.js";
+import { StartOAuthAuthorizationUseCase } from "./start-oauth-authorization/start-oauth-authorization.use-case.js";
 
 describe("auth endpoint use-cases", () => {
 	it("인증 endpoint를 독립 실행 단위로 위임한다", async () => {

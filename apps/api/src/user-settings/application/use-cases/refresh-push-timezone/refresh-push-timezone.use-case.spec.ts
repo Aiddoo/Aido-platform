@@ -1,22 +1,23 @@
+import { TestBed } from "@suites/unit";
 /**
  * RefreshPushTimezoneUseCase 단위 테스트
  *
  * 자가치유(핫패스): 저장 타임존이 다를 때만 갱신하고, 그때만 activeTimezones 캐시를 무효화한다.
  * 값이 같으면(0행) 캐시 무효화도 없어 sweep 캐시 thundering-herd를 피한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUserSettingsCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { createUserSettingsCacheMock } from "#test/mocks/ports/index";
 
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
-import { RefreshPushTimezoneUseCase } from "./refresh-push-timezone.use-case";
+} from "../../ports/user-settings-cache.port.js";
+import { RefreshPushTimezoneUseCase } from "./refresh-push-timezone.use-case.js";
 
 describe("RefreshPushTimezoneUseCase — 타임존 자가치유", () => {
 	let useCase: RefreshPushTimezoneUseCase;

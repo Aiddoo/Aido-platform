@@ -1,0 +1,13 @@
+{
+  "name": "@aido/database-migrate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:deploy": "sh ../../apps/api/scripts/migrate.sh"
+  },
+  "dependencies": {
+    "pg-boss": "catalog:",
+    "prisma": "catalog:nest12"
+  }
+}

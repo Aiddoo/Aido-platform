@@ -16,7 +16,7 @@ describe('KyJsonFetcher', () => {
 
     // Then
     expect(result).toBe(rawResponse);
-    expect(get).toHaveBeenCalledWith('v1/app-config/feature-discovery');
+    expect(get).toHaveBeenCalledWith('v1/app-config/feature-discovery', { signal: undefined });
   });
 
   it('JSON 읽기 실패를 호출자에게 전파한다', async () => {

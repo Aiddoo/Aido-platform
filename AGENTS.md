@@ -19,7 +19,7 @@ Turborepo + pnpm 모노레포. AI 기반 할 일 관리 서비스의 API 서버�
 
 ## 기술 스택 (요약)
 
-NestJS 11 · Prisma 7 · PostgreSQL 16 · Expo SDK 57 · React Native 0.86 · React 19.2 · TypeScript 5.9 · Zod 4.3 · Oxlint 1.78 · Oxfmt 0.63 · Turbo 2.10 · pnpm 10.29
+NestJS 12 ESM · Prisma 7.10 · PostgreSQL 16 · Expo SDK 58 · React Native 0.88 RC · React 19.3 · TypeScript 6 · Zod 4.3.6 · Oxlint 1.86 · Oxfmt 0.71 · Turbo 2.11 · pnpm 10.34
 
 상세: [README.md](./README.md)
 
@@ -31,9 +31,8 @@ NestJS 11 · Prisma 7 · PostgreSQL 16 · Expo SDK 57 · React Native 0.86 · Re
 apps/api            NestJS 백엔드
 apps/mobile         Expo 모바일 앱
 packages/validators Zod 스키마 (@aido/validators)
-packages/utils      공유 유틸리티 (@aido/utils)
 packages/errors     에러 코드 (@aido/errors)
-tooling/*           공유 설정 (jest, vitest, typescript)
+tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 ```
 
 ---

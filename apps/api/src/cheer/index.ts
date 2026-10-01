@@ -1,1 +1,1 @@
-export { CheerModule } from "./cheer.module";
+export { CheerModule } from "./cheer.module.js";

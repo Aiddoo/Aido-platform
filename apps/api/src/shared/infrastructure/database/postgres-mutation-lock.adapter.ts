@@ -2,10 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import type { MutationLockPort } from "@/shared/application/ports";
+import { Prisma } from "#api/generated/prisma/client";
+import type { MutationLockPort } from "#api/shared/application/ports/index";
 
-import type { DatabaseService } from "./database.service";
+import type { DatabaseService } from "./database.service.js";
 
 /**
  * PostgreSQL transaction advisory lock 어댑터.

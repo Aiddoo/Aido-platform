@@ -1,5 +1,5 @@
-import type { NotificationMilestone } from "../../domain/types/notification-milestone";
-import type { NotificationType } from "../../domain/types/notification-type";
+import type { NotificationMilestone } from "../../domain/types/notification-milestone.js";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 
 export const NOTIFICATION_HISTORY_READER = Symbol("NOTIFICATION_HISTORY_READER");
 

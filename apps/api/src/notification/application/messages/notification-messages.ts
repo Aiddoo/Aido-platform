@@ -1,4 +1,4 @@
-export { createRetentionNotificationMessage } from "./retention-notification-message";
+export { createRetentionNotificationMessage } from "./retention-notification-message.js";
 export {
 	createEveningReminderNotificationMessage,
 	createLunchNudgeNotificationMessage,
@@ -9,7 +9,7 @@ export {
 	createStreakAtRiskNotificationMessage,
 	createTodoReminderNotificationMessage,
 	createWeeklyAchievementNotificationMessage,
-} from "./scheduler-notification-message";
+} from "./scheduler-notification-message.js";
 export {
 	createCheerReceivedNotificationMessage,
 	createFollowAcceptedNotificationMessage,
@@ -18,7 +18,7 @@ export {
 	createNudgeReceivedNotificationMessage,
 	createTodoCommentNotificationMessage,
 	createTodoCreationNudgeNotificationMessage,
-} from "./social-notification-message";
+} from "./social-notification-message.js";
 export {
 	createAiSuggestionNotificationMessage,
 	createBillingIssueNotificationMessage,
@@ -27,10 +27,10 @@ export {
 	createOnboardingNotificationMessage,
 	createWeeklyReportNotificationMessage,
 	createWinbackNotificationMessage,
-} from "./system-notification-message";
+} from "./system-notification-message.js";
 export {
 	createWeatherEveningFallbackNotificationMessage,
 	createWeatherEveningNotificationMessage,
 	createWeatherMorningFallbackNotificationMessage,
 	createWeatherMorningNotificationMessage,
-} from "./weather-notification-message";
+} from "./weather-notification-message.js";

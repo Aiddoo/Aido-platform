@@ -1,9 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
-import { TODO_EVENTS } from "../../domain/events/todo-event-names";
-import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event";
-import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
+import { TODO_EVENTS } from "../../domain/events/todo-event-names.js";
+import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event.js";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port.js";
 
 /**
  * Todo 일정 변경 이벤트 핸들러

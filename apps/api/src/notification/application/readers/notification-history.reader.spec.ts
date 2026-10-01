@@ -1,10 +1,12 @@
-import type { FindAlreadyNotifiedUsersUseCase } from "../use-cases/find-already-notified-users/find-already-notified-users.use-case";
-import { NotificationHistoryReader } from "./notification-history.reader";
+import { vi } from "vitest";
+
+import type { FindAlreadyNotifiedUsersUseCase } from "../use-cases/find-already-notified-users/find-already-notified-users.use-case.js";
+import { NotificationHistoryReader } from "./notification-history.reader.js";
 
 describe("NotificationHistoryReader", () => {
 	it("캐시와 DB fallback을 소유한 조회 유스케이스에 위임한다", async () => {
 		const recipients = new Set(["user-1"]);
-		const useCase = { execute: jest.fn().mockResolvedValue(recipients) };
+		const useCase = { execute: vi.fn().mockResolvedValue(recipients) };
 		const reader = new NotificationHistoryReader(
 			useCase as unknown as FindAlreadyNotifiedUsersUseCase,
 		);

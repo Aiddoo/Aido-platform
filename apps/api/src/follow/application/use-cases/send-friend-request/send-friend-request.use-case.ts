@@ -1,15 +1,21 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { EntitlementService, Resource } from "@/shared/application/entitlement/entitlement.service";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	EntitlementService,
+	Resource,
+} from "#api/shared/application/entitlement/entitlement.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { Friendship } from "../../../domain/entities/friendship.aggregate";
-import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../../ports/follow-notifier.port";
-import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
-import { FollowReader } from "../../services/follow.reader";
-import { FriendshipEffects } from "../../services/friendship-effects.service";
+import type { Friendship } from "../../../domain/entities/friendship.aggregate.js";
+import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../../ports/follow-notifier.port.js";
+import {
+	FOLLOW_REPOSITORY,
+	type FollowRepositoryPort,
+} from "../../ports/follow.repository.port.js";
+import { FollowReader } from "../../services/follow.reader.js";
+import { FriendshipEffects } from "../../services/friendship-effects.service.js";
 
 export interface SendFriendRequestInput {
 	userId: string;

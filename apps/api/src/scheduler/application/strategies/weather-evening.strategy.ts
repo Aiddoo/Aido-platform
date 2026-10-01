@@ -5,17 +5,17 @@ import {
 	createWeatherEveningNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { toSupportedLocale } from "@/shared/domain/locale";
-import { WeatherForecastAccess } from "@/weather";
+} from "#api/notification/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { toSupportedLocale } from "#api/shared/domain/locale";
+import { WeatherForecastAccess } from "#api/weather/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	WEATHER_REMINDER_READER,
 	type WeatherReminderReaderPort,
-} from "../ports/weather-reminder-reader.port";
+} from "../ports/weather-reminder-reader.port.js";
 
 interface VerifiedUserWithLocation {
 	readonly id: string;

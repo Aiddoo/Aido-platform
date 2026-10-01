@@ -3,11 +3,11 @@ import type { Memo as MemoResponse } from "@aido/validators";
 import { MEMO_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { MemoContent } from "../../../domain/value-objects/memo-content.vo";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { MemoContent } from "../../../domain/value-objects/memo-content.vo.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
 
 /** 메모 변경 계열 유스케이스의 공통 결과(메시지 + 메모 뷰). */
 export interface MemoMutationResult {

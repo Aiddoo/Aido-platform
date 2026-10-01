@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * MorningReminderStrategy 전략 단위 테스트
  *
@@ -9,25 +12,23 @@
  * pnpm --filter @aido/api test morning-reminder.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { TEST_CUID } from "@test/fixtures";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createMorningNoTodoNotificationMessage,
 	createMorningReminderNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
+import { TEST_CUID } from "#test/fixtures/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
-} from "../ports/scheduled-reminder-reader.port";
-import { MorningReminderStrategy } from "./morning-reminder.strategy";
+} from "../ports/scheduled-reminder-reader.port.js";
+import { MorningReminderStrategy } from "./morning-reminder.strategy.js";
 
 describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 	let strategy: MorningReminderStrategy;
@@ -56,9 +57,9 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
-		jest.spyOn(Math, "random").mockReturnValue(0);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
+		vi.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } = await TestBed.solitary(MorningReminderStrategy).compile();
 
@@ -75,8 +76,8 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
-		jest.restoreAllMocks();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	it("프리미엄 사용자에게 커스텀 시간에 아침 리마인더를 발송한다", async () => {

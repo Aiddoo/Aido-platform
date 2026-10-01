@@ -1,13 +1,13 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "@/shared/domain/locale";
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "#api/shared/domain/locale";
 
 export {
 	DEFAULT_LOCALE,
 	SUPPORTED_LOCALES,
 	type SupportedLocale,
 	toSupportedLocale,
-} from "@/shared/domain/locale";
+} from "#api/shared/domain/locale";
 
 /**
  * Accept-Language 헤더에서 지원 로케일을 추출한다.

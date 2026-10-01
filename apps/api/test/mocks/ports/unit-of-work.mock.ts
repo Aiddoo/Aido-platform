@@ -1,4 +1,6 @@
-import type { UnitOfWorkPort } from "@/shared/application/ports";
+import { vi } from "vitest";
+
+import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 /**
  * UNIT_OF_WORK 포트 mock 팩토리
@@ -16,7 +18,7 @@ import type { UnitOfWorkPort } from "@/shared/application/ports";
  * ```
  */
 export function createUnitOfWorkMock(): UnitOfWorkPort {
-	const run = jest.fn();
+	const run = vi.fn();
 	run.mockImplementation((work: () => Promise<unknown>) => work());
 	return { run };
 }

@@ -1,4 +1,4 @@
-import type { RetentionStageName, RetentionVariant } from "../../domain/retention.constants";
+import type { RetentionStageName, RetentionVariant } from "../../domain/retention.constants.js";
 
 export const RETENTION_REPOSITORY = Symbol("RETENTION_REPOSITORY");
 

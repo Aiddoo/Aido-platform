@@ -25,7 +25,9 @@ export const useToggleMemoPinMutationOptions = () => {
       const result = await service.togglePin(memoId, { isPinned });
       return unwrap(result);
     },
-    onSuccess: (_, { memoId, isPinned }) => {
+    onSuccess: async (memo, { memoId, isPinned }) => {
+      await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail(memoId) });
+      queryClient.setQueryData(MEMO_QUERY_KEYS.detail(memoId), memo);
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
     onError: (error) => {
@@ -37,8 +39,6 @@ export const useToggleMemoPinMutationOptions = () => {
       }
       toast.error(undefined, { fallback: t('memo:toasts.retryLater') });
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all });
-    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all }),
   });
 };

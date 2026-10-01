@@ -1,4 +1,7 @@
 import { unreadCountResponseSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class UnreadCountResponseDto extends createZodDto(unreadCountResponseSchema) {}
+export const UnreadCountResponseDto = unreadCountResponseSchema.meta({
+	id: "UnreadCountResponseDto",
+});
+export type UnreadCountResponseDto = z.infer<typeof UnreadCountResponseDto>;

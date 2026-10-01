@@ -1,4 +1,4 @@
-import type { ClaimedOutbox } from "./retention.repository.port";
+import type { ClaimedOutbox } from "./retention.repository.port.js";
 
 export const RETENTION_JOB_ENQUEUER = Symbol("RETENTION_JOB_ENQUEUER");
 

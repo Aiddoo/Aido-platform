@@ -1,5 +1,6 @@
 import type { ErrorCodeType } from "@aido/errors";
 import type { Type } from "@nestjs/common";
+import type { z } from "zod";
 
 /**
  * @ApiDoc 데코레이터 옵션
@@ -25,8 +26,8 @@ export interface ApiSuccessResponseOptions<T = unknown> {
 	status?: number;
 	/** 응답 설명 */
 	description?: string;
-	/** 응답 데이터 타입 (DTO 클래스) */
-	type: Type<T>;
+	/** 응답 데이터 스키마 */
+	type: z.ZodType<T> | Type<T>;
 	/** 배열 응답 여부 */
 	isArray?: boolean;
 }
@@ -37,18 +38,8 @@ export interface ApiSuccessResponseOptions<T = unknown> {
 export interface ApiCreatedResponseOptions<T = unknown> {
 	/** 응답 설명 */
 	description?: string;
-	/** 응답 데이터 타입 (DTO 클래스) */
-	type: Type<T>;
-}
-
-/**
- * @ApiPaginatedResponse 데코레이터 옵션
- */
-export interface ApiPaginatedResponseOptions<T = unknown> {
-	/** 아이템 데이터 타입 (DTO 클래스) */
-	type: Type<T>;
-	/** 응답 설명 */
-	description?: string;
+	/** 응답 데이터 스키마 */
+	type: z.ZodType<T> | Type<T>;
 }
 
 /**

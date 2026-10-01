@@ -1,9 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { cacheKey } from "@/shared/infrastructure/cache";
-import { type ILockProvider, LOCK_PROVIDER } from "@/shared/infrastructure/lock";
+import { cacheKey } from "#api/shared/infrastructure/cache/index";
+import { type ILockProvider, LOCK_PROVIDER } from "#api/shared/infrastructure/lock/index";
 
-import type { SubscriptionWebhookLockPort } from "../../application/ports/subscription-webhook-lock.port";
+import type { SubscriptionWebhookLockPort } from "../../application/ports/subscription-webhook-lock.port.js";
 
 const REVENUECAT_WEBHOOK_LOCK_TTL_MS = 10_000;
 

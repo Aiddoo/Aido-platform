@@ -1,4 +1,4 @@
-import { cacheKey } from "@/shared/infrastructure/cache/keyspace/cache-key";
+import { cacheKey } from "#api/shared/infrastructure/cache/keyspace/cache-key";
 
 export const NOTIFICATION_CACHE_TTL_MS = { PUSH_TOKENS: 5 * 60_000 } as const;
 

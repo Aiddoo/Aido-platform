@@ -1,26 +1,26 @@
 import { Injectable } from "@nestjs/common";
 
-import type { Prisma } from "@/generated/prisma/client";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
-import { toSupportedLocale } from "@/shared/domain/locale";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { Prisma } from "#api/generated/prisma/client";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
+import { toSupportedLocale } from "#api/shared/domain/locale";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	InactiveWindowParams,
 	ReEngagementReaderPort,
 	SocialDigestCandidateParams,
 	TodayRangeParams,
-} from "../../application/ports/re-engagement-reader.port";
+} from "../../application/ports/re-engagement-reader.port.js";
 import type {
 	CustomTimeReminderParams,
 	FixedTimeReminderParams,
 	PeriodReportParams,
 	ScheduledReminderReaderPort,
-} from "../../application/ports/scheduled-reminder-reader.port";
-import type { SchedulerPreferenceReaderPort } from "../../application/ports/scheduler-preference-reader.port";
+} from "../../application/ports/scheduled-reminder-reader.port.js";
+import type { SchedulerPreferenceReaderPort } from "../../application/ports/scheduler-preference-reader.port.js";
 import type {
 	ActiveTodo,
 	FollowPair,
@@ -36,16 +36,16 @@ import type {
 	WeatherFallbackUser,
 	WeatherReminderUser,
 	WinbackUser,
-} from "../../application/ports/scheduler-read-models";
-import type { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port";
+} from "../../application/ports/scheduler-read-models.js";
+import type { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import type {
 	WeatherReminderParams,
 	WeatherReminderReaderPort,
-} from "../../application/ports/weather-reminder-reader.port";
+} from "../../application/ports/weather-reminder-reader.port.js";
 import type {
 	WeeklyAchievementStatsReaderPort,
 	WeeklyStatsParams,
-} from "../../application/ports/weekly-achievement-stats-reader.port";
+} from "../../application/ports/weekly-achievement-stats-reader.port.js";
 
 /**
  * 스케줄러 리더 어댑터 (Prisma).

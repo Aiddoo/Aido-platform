@@ -1,17 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import type { NotificationMilestone } from "../../../domain/types/notification-milestone";
-import { createMilestoneNotificationMessage } from "../../messages/notification-messages";
+import type { NotificationMilestone } from "../../../domain/types/notification-milestone.js";
+import { createMilestoneNotificationMessage } from "../../messages/notification-messages.js";
 import {
 	NOTIFICATION_DEDUP_LOCK,
 	type NotificationDedupLockPort,
-} from "../../ports/notification-dedup.port";
+} from "../../ports/notification-dedup.port.js";
 import {
 	NOTIFICATION_HISTORY_READER,
 	type NotificationHistoryReaderPort,
-} from "../../ports/notification-history.reader.port";
-import { NotificationPublisher } from "../../publishers/notification.publisher";
-import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
+} from "../../ports/notification-history.reader.port.js";
+import { NotificationPublisher } from "../../publishers/notification.publisher.js";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
 
 export interface SendMilestoneNotificationInput {
 	readonly userId: string;

@@ -1,10 +1,14 @@
 import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobData, type JobRuntimePort } from "@/shared/application/ports";
+import {
+	JOB_RUNTIME,
+	type JobData,
+	type JobRuntimePort,
+} from "#api/shared/application/ports/index";
 
-import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case";
-import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries/recover-failed-push-deliveries.use-case";
-import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox/relay-push-delivery-outbox.use-case";
+import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case.js";
+import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries/recover-failed-push-deliveries.use-case.js";
+import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox/relay-push-delivery-outbox.use-case.js";
 import {
 	PUSH_DELIVERY_QUEUE,
 	PUSH_DELIVERY_DEAD_LETTER_QUEUE,
@@ -14,7 +18,7 @@ import {
 	PushDeliveryJobName,
 	PushDeliveryDeadLetterJobSchema,
 	PushDeliveryRuntimeJobSchema,
-} from "./push-delivery-queue.constants";
+} from "./push-delivery-queue.constants.js";
 
 function assertUnreachable(job: never): never {
 	throw new Error(`Unhandled push delivery job: ${JSON.stringify(job)}`);

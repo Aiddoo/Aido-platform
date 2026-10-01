@@ -1,14 +1,14 @@
 import { ErrorCode } from "@aido/errors";
 import type { NotificationAction } from "@aido/validators";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import type {
 	AdminBroadcastMessage,
 	AdminBroadcastType,
 	BroadcastMetadata,
 	BroadcastTargetFilter,
-} from "../broadcast-message";
+} from "../broadcast-message.js";
 
 /**
  * 브로드캐스트 캠페인 애그리게잇.

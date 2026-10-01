@@ -1,4 +1,4 @@
-import type { LogLevel } from "../constants/logger.constant";
+import type { LogLevel } from "../constants/logger.constant.js";
 
 /**
  * Logger 모듈 옵션

@@ -1,6 +1,6 @@
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { CategoryName } from "./category-name.vo";
+import { CategoryName } from "./category-name.vo.js";
 
 describe("CategoryName", () => {
 	it("1~50자는 통과", () => {

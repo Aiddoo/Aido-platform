@@ -1,4 +1,4 @@
-import type { NotificationDeliveryPreference } from "./user-notification-settings.port";
+import type { NotificationDeliveryPreference } from "./user-notification-settings.port.js";
 
 export const NOTIFICATION_RECIPIENT_PREFERENCE_READER = Symbol(
 	"NOTIFICATION_RECIPIENT_PREFERENCE_READER",

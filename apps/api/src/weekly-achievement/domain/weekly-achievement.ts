@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/errors";
 import dayjs from "dayjs";
-import isLeapYear from "dayjs/plugin/isLeapYear";
-import isoWeek from "dayjs/plugin/isoWeek";
-import isoWeeksInYear from "dayjs/plugin/isoWeeksInYear";
+import isLeapYear from "dayjs/plugin/isLeapYear.js";
+import isoWeek from "dayjs/plugin/isoWeek.js";
+import isoWeeksInYear from "dayjs/plugin/isoWeeksInYear.js";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 dayjs.extend(isoWeek);
 dayjs.extend(isoWeeksInYear);

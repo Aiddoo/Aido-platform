@@ -5,10 +5,10 @@
  */
 
 // 상수
-export * from './follow.constants';
+export * from './follow.constants.js';
 
 // 요청 스키마 (Request)
-export * from './follow.request';
+export * from './follow.request.js';
 
 // 응답 스키마 (Response)
-export * from './follow.response';
+export * from './follow.response.js';

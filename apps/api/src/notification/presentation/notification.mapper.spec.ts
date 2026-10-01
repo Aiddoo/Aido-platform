@@ -9,9 +9,9 @@
  * pnpm --filter @aido/api test notification.mapper
  * ```
  */
-import { NotificationBuilder } from "@test/builders";
+import { NotificationBuilder } from "#test/builders/index";
 
-import { NotificationMapper } from "./notification.mapper";
+import { NotificationMapper } from "./notification.mapper.js";
 
 describe("NotificationMapper — 알림 매퍼", () => {
 	describe("toDto", () => {

@@ -1,9 +1,14 @@
 import { ErrorCode } from "@aido/errors";
 import { TODO_COMMENT_SORT } from "@aido/validators";
-import { createTodoCommentCursorCodecMock, createTodoCommentReaderMock } from "@test/mocks/ports";
+import { vi } from "vitest";
 
-import type { TodoCommentOverviewItemRecord, TodoCommentOverviewRootRecord } from "../../types";
-import { GetTodoCommentOverviewUseCase } from "./get-todo-comment-overview.use-case";
+import {
+	createTodoCommentCursorCodecMock,
+	createTodoCommentReaderMock,
+} from "#test/mocks/ports/index";
+
+import type { TodoCommentOverviewItemRecord, TodoCommentOverviewRootRecord } from "../../types.js";
+import { GetTodoCommentOverviewUseCase } from "./get-todo-comment-overview.use-case.js";
 
 const TODO_ID = 1;
 const VIEWER_ID = "cm1viewer0000000000000001";
@@ -67,17 +72,16 @@ describe("GetTodoCommentOverviewUseCase", () => {
 		const reader = createTodoCommentReaderMock();
 		const cursorCodec = createTodoCommentCursorCodecMock();
 		const item = createOverviewItem();
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listOverview).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listOverview).mockResolvedValue({
 			items: [item],
 			previousRecord: createRoot({ id: "cm1previousroot00000000001" }),
 			nextRecord: createRoot({ id: "cm1nextroot000000000000001" }),
 			hasPrevious: true,
 			hasNext: true,
 		});
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([REPLY_ID]));
-		jest
-			.mocked(cursorCodec.encodeOverview)
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([REPLY_ID]));
+		vi.mocked(cursorCodec.encodeOverview)
 			.mockReturnValueOnce("previous")
 			.mockReturnValueOnce("next");
 		const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
@@ -112,15 +116,15 @@ describe("GetTodoCommentOverviewUseCase", () => {
 		const item = createOverviewItem();
 		item.previewReply = null;
 		item.totalCount = 0;
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listOverview).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listOverview).mockResolvedValue({
 			items: [item],
 			previousRecord: null,
 			nextRecord: null,
 			hasPrevious: false,
 			hasNext: false,
 		});
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
 
 		// When
@@ -143,7 +147,7 @@ describe("GetTodoCommentOverviewUseCase", () => {
 		// Given
 		const reader = createTodoCommentReaderMock();
 		const cursorCodec = createTodoCommentCursorCodecMock();
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(false);
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(false);
 		const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
 
 		// When
@@ -164,7 +168,7 @@ describe("GetTodoCommentOverviewUseCase", () => {
 		const cursorCodec = createTodoCommentCursorCodecMock();
 		const root = createRoot({ overviewPosition: { rootLikeCount: 9, rootReplyCount: 5 } });
 		const cursor = "signed-cursor";
-		jest.mocked(cursorCodec.decodeOverview).mockReturnValue({
+		vi.mocked(cursorCodec.decodeOverview).mockReturnValue({
 			v: 1,
 			kind: "overview",
 			sort: TODO_COMMENT_SORT.POPULAR,
@@ -172,15 +176,15 @@ describe("GetTodoCommentOverviewUseCase", () => {
 			rootId: root.id,
 			position: root.overviewPosition,
 		});
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listOverview).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listOverview).mockResolvedValue({
 			items: [],
 			previousRecord: root,
 			nextRecord: null,
 			hasPrevious: false,
 			hasNext: false,
 		});
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
 
 		await useCase.execute({
@@ -203,11 +207,11 @@ describe("GetTodoCommentOverviewUseCase", () => {
 	it("다른 todo의 cursor는 reader 호출 전에 거부한다", async () => {
 		const reader = createTodoCommentReaderMock();
 		const cursorCodec = createTodoCommentCursorCodecMock();
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
 		const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
 		const cursor = "other-todo-cursor";
 		const root = createRoot({ todoId: 2 });
-		jest.mocked(cursorCodec.decodeOverview).mockReturnValue({
+		vi.mocked(cursorCodec.decodeOverview).mockReturnValue({
 			v: 1,
 			kind: "overview",
 			sort: TODO_COMMENT_SORT.LATEST,

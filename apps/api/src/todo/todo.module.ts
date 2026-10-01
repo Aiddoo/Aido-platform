@@ -1,34 +1,34 @@
 import { Module } from "@nestjs/common";
 
-import { FollowModule } from "../follow/follow.module";
-import { NotificationModule } from "../notification/notification.module";
-import { SchedulerModule } from "../scheduler/scheduler.module";
-import { TodoCategoryModule } from "../todo-category/todo-category.module";
-import { UserSettingsModule } from "../user-settings/user-settings.module";
-import { CATEGORY_OWNERSHIP } from "./application/ports/category-ownership.port";
-import { FRIEND_PORT } from "./application/ports/friend.port";
-import { STREAK_PORT } from "./application/ports/streak.port";
-import { TODO_CACHE, type TodoCachePort } from "./application/ports/todo-cache.port";
-import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port";
+import { FollowModule } from "../follow/follow.module.js";
+import { NotificationModule } from "../notification/notification.module.js";
+import { SchedulerModule } from "../scheduler/scheduler.module.js";
+import { TodoCategoryModule } from "../todo-category/todo-category.module.js";
+import { UserSettingsModule } from "../user-settings/user-settings.module.js";
+import { CATEGORY_OWNERSHIP } from "./application/ports/category-ownership.port.js";
+import { FRIEND_PORT } from "./application/ports/friend.port.js";
+import { STREAK_PORT } from "./application/ports/streak.port.js";
+import { TODO_CACHE, type TodoCachePort } from "./application/ports/todo-cache.port.js";
+import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "./application/ports/todo-read.repository.port";
-import { TODO_REMINDER } from "./application/ports/todo-reminder.port";
-import { TODO_REPOSITORY } from "./application/ports/todo.repository.port";
-import { TodoViewCacheInvalidator } from "./application/services/todo-view-cache.invalidator";
-import { TODO_PROVIDERS } from "./application/todo.providers";
-import { CreateRecurringTodosUseCase, CreateTodoUseCase } from "./application/use-cases";
-import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter";
-import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
-import { PrismaTodoReadRepository } from "./infrastructure/adapters/prisma-todo-read.repository";
-import { PrismaTodoRepository } from "./infrastructure/adapters/prisma-todo.repository";
-import { StreakAdapter } from "./infrastructure/adapters/streak.adapter";
-import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter";
-import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter";
-import { TodoReminderAdapter } from "./infrastructure/adapters/todo-reminder.adapter";
-import { TodoRowRepository } from "./infrastructure/persistence/todo-row.repository";
-import { TodoController } from "./presentation/todo.controller";
+} from "./application/ports/todo-read.repository.port.js";
+import { TODO_REMINDER } from "./application/ports/todo-reminder.port.js";
+import { TODO_REPOSITORY } from "./application/ports/todo.repository.port.js";
+import { TodoViewCacheInvalidator } from "./application/services/todo-view-cache.invalidator.js";
+import { TODO_PROVIDERS } from "./application/todo.providers.js";
+import { CreateRecurringTodosUseCase, CreateTodoUseCase } from "./application/use-cases/index.js";
+import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter.js";
+import { FriendAdapter } from "./infrastructure/adapters/friend.adapter.js";
+import { PrismaTodoReadRepository } from "./infrastructure/adapters/prisma-todo-read.repository.js";
+import { PrismaTodoRepository } from "./infrastructure/adapters/prisma-todo.repository.js";
+import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
+import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter.js";
+import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter.js";
+import { TodoReminderAdapter } from "./infrastructure/adapters/todo-reminder.adapter.js";
+import { TodoRowRepository } from "./infrastructure/persistence/todo-row.repository.js";
+import { TodoController } from "./presentation/todo.controller.js";
 
 /**
  * Todo 모듈

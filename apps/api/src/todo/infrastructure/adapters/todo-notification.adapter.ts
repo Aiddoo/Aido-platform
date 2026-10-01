@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "#api/notification/queue";
 
 import type {
 	FriendCompletedPayload,
 	MilestoneReachedPayload,
 	TodoNotificationPort,
-} from "../../application/ports/todo-notification.port";
+} from "../../application/ports/todo-notification.port.js";
 
 /**
  * Todo 알림 포트 어댑터 — NotificationQueueService에 위임

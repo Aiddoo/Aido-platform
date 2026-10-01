@@ -1,20 +1,20 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { DEFAULT_LOCALE, toSupportedLocale } from "@/shared/domain/locale";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE, toSupportedLocale } from "#api/shared/domain/locale";
 
-import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
-import { createFriendCompletedNotificationMessage } from "../../messages/notification-messages";
-import { DuplicateNotificationError } from "../../ports/notification.repository.port";
+import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign.js";
+import { createFriendCompletedNotificationMessage } from "../../messages/notification-messages.js";
+import { DuplicateNotificationError } from "../../ports/notification.repository.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
-} from "../../ports/user-notification-settings.port";
-import { NotificationHistoryReader } from "../../readers/notification-history.reader";
-import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types";
-import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
-import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
+} from "../../ports/user-notification-settings.port.js";
+import { NotificationHistoryReader } from "../../readers/notification-history.reader.js";
+import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types.js";
+import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case.js";
+import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case.js";
 
 export interface SendFriendCompletionNotificationsInput {
 	readonly friendId: string;

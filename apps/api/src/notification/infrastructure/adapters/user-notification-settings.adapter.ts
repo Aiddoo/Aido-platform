@@ -7,9 +7,9 @@ import {
 	type UserNotificationSettingsAccessPort,
 	type UserPreferenceRecord,
 	type UserPreferenceRecordWithId,
-} from "@/user-settings";
+} from "#api/user-settings/index";
 
-import type { UserNotificationSettingsPort } from "../../application/ports/user-notification-settings.port";
+import type { UserNotificationSettingsPort } from "../../application/ports/user-notification-settings.port.js";
 
 /**
  * notification의 설정 포트를 user-settings의 공개 capability에 연결한다.

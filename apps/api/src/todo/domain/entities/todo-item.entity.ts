@@ -1,6 +1,6 @@
-import { Entity } from "@/shared/domain";
+import { Entity } from "#api/shared/domain/index";
 
-import { TodoTitle } from "../value-objects/todo-title.vo";
+import { TodoTitle } from "../value-objects/todo-title.vo.js";
 
 /**
  * 하위 항목 엔티티 프로퍼티

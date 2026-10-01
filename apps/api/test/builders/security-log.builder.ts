@@ -10,7 +10,7 @@
  * ```
  */
 
-import type { SecurityEvent, SecurityLog } from "@/generated/prisma/client";
+import type { SecurityEvent, SecurityLog } from "#api/generated/prisma/client";
 
 let idCounter = 1;
 

@@ -5,7 +5,7 @@ import {
   MORNING_REMINDER_HOUR_RANGE,
   TIME_FORMATS,
   WEATHER_HOUR_RANGE,
-} from './user-preference.constants';
+} from './user-preference.constants.js';
 
 export const updatePreferenceSchema = z
   .object({

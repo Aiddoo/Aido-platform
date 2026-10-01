@@ -6,7 +6,7 @@ import type {
 	JobRuntimeHealth,
 	JobRuntimePort,
 	WorkJobOptions,
-} from "@/shared/application/ports/job-runtime.port";
+} from "#api/shared/application/ports/job-runtime.port";
 
 export interface FakeEnqueueCall {
 	readonly queue: string;

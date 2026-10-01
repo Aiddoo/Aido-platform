@@ -1,4 +1,4 @@
-import { createNotificationLabelPreview } from "./notification-copy.renderer";
+import { createNotificationLabelPreview } from "./notification-copy.renderer.js";
 import {
 	createBillingIssueNotificationMessage,
 	createEveningReminderNotificationMessage,
@@ -10,7 +10,7 @@ import {
 	createWeatherMorningNotificationMessage,
 	createWeeklyAchievementNotificationMessage,
 	createWinbackNotificationMessage,
-} from "./notification-messages";
+} from "./notification-messages.js";
 
 const VARIANT_CONTEXT = {
 	campaignKey: "copy_test_v1",

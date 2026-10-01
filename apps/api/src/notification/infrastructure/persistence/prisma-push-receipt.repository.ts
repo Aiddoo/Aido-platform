@@ -2,15 +2,15 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import { now } from "@/shared/domain/date/utils/core";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { PushReceiptResult } from "../../application/ports/push-provider.port";
+import type { PushReceiptResult } from "../../application/ports/push-provider.port.js";
 import type {
 	PendingPushReceipt,
 	PushReceiptRepositoryPort,
-} from "../../application/ports/push-receipt.repository.port";
+} from "../../application/ports/push-receipt.repository.port.js";
 
 @Injectable()
 export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {

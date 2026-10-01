@@ -1,16 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import {
 	PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
 	type PushDeliveryLifecycleRepositoryPort,
-} from "../../ports/push-delivery-lifecycle.repository.port";
+} from "../../ports/push-delivery-lifecycle.repository.port.js";
 import {
 	PUSH_DELIVERY_OUTBOX_REPOSITORY,
 	type PushDeliveryOutboxRepositoryPort,
-} from "../../ports/push-delivery-outbox.repository.port";
-import { PublishPushDeliveryOutboxUseCase } from "../publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
+} from "../../ports/push-delivery-outbox.repository.port.js";
+import { PublishPushDeliveryOutboxUseCase } from "../publish-push-delivery-outbox/publish-push-delivery-outbox.use-case.js";
 
 const RELAY_BATCH_SIZE = 100;
 const MAX_BATCHES_PER_TRIGGER = 10;

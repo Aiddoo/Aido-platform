@@ -1,9 +1,6 @@
 import {
-  type LocationResponse,
   locationResponseSchema,
   type UpdateLocationInput,
-  type WeatherConditions as WeatherConditionsDTO,
-  type WeatherForecastResponse,
   weatherConditionsSchema,
   weatherForecastSchema,
 } from '@aido/validators';
@@ -22,10 +19,11 @@ export class WeatherService {
     this.#httpClient = httpClient;
   }
 
-  getForecast = async (date: string): Promise<Result<WeatherForecast, ApiError>> => {
-    const result = await this.#httpClient.get<WeatherForecastResponse>('v1/weather/forecast', {
-      params: { date },
-    });
+  getForecast = async (
+    date: string,
+    signal?: AbortSignal,
+  ): Promise<Result<WeatherForecast, ApiError>> => {
+    const result = await this.#httpClient.get('v1/weather/forecast', { signal, params: { date } });
 
     if (!result.ok) {
       return result;
@@ -41,8 +39,8 @@ export class WeatherService {
     return ok(toWeatherForecast(parsed.data));
   };
 
-  getConditions = async (): Promise<Result<WeatherConditions, ApiError>> => {
-    const result = await this.#httpClient.get<WeatherConditionsDTO>('v1/weather/conditions');
+  getConditions = async (signal?: AbortSignal): Promise<Result<WeatherConditions, ApiError>> => {
+    const result = await this.#httpClient.get('v1/weather/conditions', { signal });
 
     if (!result.ok) {
       return result;
@@ -59,7 +57,7 @@ export class WeatherService {
   };
 
   updateLocation = async (input: UpdateLocationInput): Promise<Result<Location, ApiError>> => {
-    const result = await this.#httpClient.put<LocationResponse>('v1/weather/location', input);
+    const result = await this.#httpClient.put('v1/weather/location', input);
 
     if (!result.ok) {
       return result;

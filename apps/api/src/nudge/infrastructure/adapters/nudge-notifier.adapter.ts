@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "#api/notification/queue";
 
 import type {
 	NudgeNotifierPort,
 	NudgeSentNotification,
-} from "../../application/ports/nudge-notifier.port";
+} from "../../application/ports/nudge-notifier.port.js";
 
 /**
  * NudgeNotifierPort의 어댑터 — 레거시 NotificationQueueService(BullMQ)에 위임한다.

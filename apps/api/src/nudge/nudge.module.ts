@@ -1,19 +1,19 @@
 import { Module } from "@nestjs/common";
 
-import { FollowModule } from "@/follow/follow.module";
-import { NotificationModule } from "@/notification";
+import { FollowModule } from "#api/follow/follow.module";
+import { NotificationModule } from "#api/notification/index";
 
-import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit-reader.port";
-import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port";
-import { NUDGE_REPOSITORY } from "./application/ports/nudge.repository.port";
-import { NudgeReader } from "./application/services/nudge.reader";
-import { MarkNudgeReadUseCase } from "./application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
-import { SendNudgeUseCase } from "./application/use-cases/send-nudge/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "./application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
-import { NudgeLimitReaderAdapter } from "./infrastructure/adapters/nudge-limit-reader.adapter";
-import { NudgeNotifierAdapter } from "./infrastructure/adapters/nudge-notifier.adapter";
-import { PrismaNudgeRepository } from "./infrastructure/persistence/prisma-nudge.repository";
-import { NudgeController } from "./presentation/nudge.controller";
+import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit-reader.port.js";
+import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port.js";
+import { NUDGE_REPOSITORY } from "./application/ports/nudge.repository.port.js";
+import { NudgeReader } from "./application/services/nudge.reader.js";
+import { MarkNudgeReadUseCase } from "./application/use-cases/mark-nudge-read/mark-nudge-read.use-case.js";
+import { SendNudgeUseCase } from "./application/use-cases/send-nudge/send-nudge.use-case.js";
+import { SendRemindNudgeUseCase } from "./application/use-cases/send-remind-nudge/send-remind-nudge.use-case.js";
+import { NudgeLimitReaderAdapter } from "./infrastructure/adapters/nudge-limit-reader.adapter.js";
+import { NudgeNotifierAdapter } from "./infrastructure/adapters/nudge-notifier.adapter.js";
+import { PrismaNudgeRepository } from "./infrastructure/persistence/prisma-nudge.repository.js";
+import { NudgeController } from "./presentation/nudge.controller.js";
 
 /**
  * Nudge 모듈 (DDD 클린아키텍처 · use-case 기반).

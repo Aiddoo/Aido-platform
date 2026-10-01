@@ -1,16 +1,16 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
 
-import type { RetentionJobEnqueuerPort } from "../../application/ports/retention-job-enqueuer.port";
-import type { ClaimedOutbox } from "../../application/ports/retention.repository.port";
+import type { RetentionJobEnqueuerPort } from "../../application/ports/retention-job-enqueuer.port.js";
+import type { ClaimedOutbox } from "../../application/ports/retention.repository.port.js";
 import {
 	RETENTION_DISPATCH_JOB_POLICY,
 	RETENTION_JOB_POLICY,
 	RETENTION_QUEUE,
 	RetentionJobName,
-} from "./retention-queue.constants";
+} from "./retention-queue.constants.js";
 
 @Injectable()
 export class RetentionQueueService implements RetentionJobEnqueuerPort, OnModuleInit {

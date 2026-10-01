@@ -4,10 +4,10 @@ import {
 	JOB_RUNTIME,
 	type JobData,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
-import { fromLegacyJob, type NamedJob } from "@/shared/infrastructure/jobs/named-job";
+} from "#api/shared/application/ports/job-runtime.port";
+import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
 
-import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator";
+import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator.js";
 import {
 	TIMEZONE_REMINDER_LEGACY_QUEUE,
 	TIMEZONE_REMINDER_QUEUE,
@@ -15,7 +15,7 @@ import {
 	type TimezoneReminderJobMap,
 	TimezoneReminderJobName,
 	TimezoneReminderRuntimeJobSchema,
-} from "./timezone-reminder-queue.constants";
+} from "./timezone-reminder-queue.constants.js";
 
 /**
  * 타임존 리마인더 BullMQ Processor (진입 어댑터).

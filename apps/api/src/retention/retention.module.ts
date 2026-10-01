@@ -1,24 +1,24 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationModule } from "@/notification";
+import { NotificationModule } from "#api/notification/index";
 
-import { RETENTION_CONFIG } from "./application/ports/retention-config.port";
-import { RETENTION_ENROLLMENT } from "./application/ports/retention-enrollment.port";
-import { RETENTION_JOB_ENQUEUER } from "./application/ports/retention-job-enqueuer.port";
-import { RETENTION_PUSH_SENDER } from "./application/ports/retention-push-sender.port";
-import { RETENTION_REPOSITORY } from "./application/ports/retention.repository.port";
-import { ActivateRetentionExperimentUseCase } from "./application/use-cases/activate-retention-experiment/activate-retention-experiment.use-case";
-import { DispatchRetentionPushUseCase } from "./application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
-import { EnrollRetentionExperimentUseCase } from "./application/use-cases/enroll-retention-experiment/enroll-retention-experiment.use-case";
-import { ProcessRetentionStagesUseCase } from "./application/use-cases/process-retention-stages/process-retention-stages.use-case";
-import { RecoverFailedRetentionDeliveryUseCase } from "./application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case";
-import { RelayRetentionOutboxUseCase } from "./application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case";
-import { ExpoRetentionPushSenderAdapter } from "./infrastructure/adapters/expo-retention-push-sender.adapter";
-import { RetentionConfigAdapter } from "./infrastructure/adapters/retention-config.adapter";
-import { RetentionEnrollmentAdapter } from "./infrastructure/adapters/retention-enrollment.adapter";
-import { PrismaRetentionRepository } from "./infrastructure/persistence/prisma-retention.repository";
-import { RetentionQueueProcessor } from "./infrastructure/queue/retention-queue.processor";
-import { RetentionQueueService } from "./infrastructure/queue/retention-queue.service";
+import { RETENTION_CONFIG } from "./application/ports/retention-config.port.js";
+import { RETENTION_ENROLLMENT } from "./application/ports/retention-enrollment.port.js";
+import { RETENTION_JOB_ENQUEUER } from "./application/ports/retention-job-enqueuer.port.js";
+import { RETENTION_PUSH_SENDER } from "./application/ports/retention-push-sender.port.js";
+import { RETENTION_REPOSITORY } from "./application/ports/retention.repository.port.js";
+import { ActivateRetentionExperimentUseCase } from "./application/use-cases/activate-retention-experiment/activate-retention-experiment.use-case.js";
+import { DispatchRetentionPushUseCase } from "./application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case.js";
+import { EnrollRetentionExperimentUseCase } from "./application/use-cases/enroll-retention-experiment/enroll-retention-experiment.use-case.js";
+import { ProcessRetentionStagesUseCase } from "./application/use-cases/process-retention-stages/process-retention-stages.use-case.js";
+import { RecoverFailedRetentionDeliveryUseCase } from "./application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case.js";
+import { RelayRetentionOutboxUseCase } from "./application/use-cases/relay-retention-outbox/relay-retention-outbox.use-case.js";
+import { ExpoRetentionPushSenderAdapter } from "./infrastructure/adapters/expo-retention-push-sender.adapter.js";
+import { RetentionConfigAdapter } from "./infrastructure/adapters/retention-config.adapter.js";
+import { RetentionEnrollmentAdapter } from "./infrastructure/adapters/retention-enrollment.adapter.js";
+import { PrismaRetentionRepository } from "./infrastructure/persistence/prisma-retention.repository.js";
+import { RetentionQueueProcessor } from "./infrastructure/queue/retention-queue.processor.js";
+import { RetentionQueueService } from "./infrastructure/queue/retention-queue.service.js";
 
 @Module({
 	imports: [NotificationModule],

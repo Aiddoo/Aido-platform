@@ -1,11 +1,33 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { PushTokenBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { PrismaPushReceiptRepository } from "./prisma-push-receipt.repository";
+import { PrismaPushReceiptRepository } from "./prisma-push-receipt.repository.js";
+
+function receiptAttempt(value: {
+	expoTicketId?: string | null;
+	pushToken: { token: string };
+}): Prisma.PushDeliveryAttemptGetPayload<{ include: { pushToken: true } }> {
+	const date = new Date("2026-08-29T00:00:00.000Z");
+	return {
+		id: 1,
+		createdAt: date,
+		updatedAt: date,
+		status: "TICKET_ACCEPTED",
+		dispatchId: 1,
+		errorCode: null,
+		pushTokenId: 1,
+		expoTicketId: value.expoTicketId ?? null,
+		errorMessage: null,
+		receiptCheckedAt: null,
+		pushToken: PushTokenBuilder.create("user-1").withToken(value.pushToken.token).build(),
+	};
+}
 
 describe("PrismaPushReceiptRepository", () => {
 	let repository: PrismaPushReceiptRepository;
@@ -22,8 +44,8 @@ describe("PrismaPushReceiptRepository", () => {
 
 	it("pending receipt를 오래된 순으로 제한 조회한다", async () => {
 		asMock(db.pushDeliveryAttempt.findMany).mockResolvedValue([
-			{ expoTicketId: "ticket-1", pushToken: { token: "token-1" } },
-			{ expoTicketId: null, pushToken: { token: "token-2" } },
+			receiptAttempt({ expoTicketId: "ticket-1", pushToken: { token: "token-1" } }),
+			receiptAttempt({ expoTicketId: null, pushToken: { token: "token-2" } }),
 		]);
 
 		await expect(repository.findPendingPushReceipts(900)).resolves.toEqual([
@@ -34,7 +56,7 @@ describe("PrismaPushReceiptRepository", () => {
 	it("Expo receipt를 한 SQL로 기록하고 무효 토큰만 반환한다", async () => {
 		asMock(db.$executeRaw).mockResolvedValue(2);
 		asMock(db.pushDeliveryAttempt.findMany).mockResolvedValue([
-			{ pushToken: { token: "ExponentPushToken[invalid]" } },
+			receiptAttempt({ pushToken: { token: "ExponentPushToken[invalid]" } }),
 		]);
 
 		await expect(

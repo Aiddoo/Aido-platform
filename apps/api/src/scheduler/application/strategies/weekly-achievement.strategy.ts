@@ -4,23 +4,23 @@ import {
 	createWeeklyAchievementNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { DEFAULT_LOCALE } from "@/shared/domain/locale";
-import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
+} from "#api/notification/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+import { WeeklyAchievementWriterAccess } from "#api/weekly-achievement/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
+} from "../ports/scheduler-preference-reader.port.js";
 import {
 	WEEKLY_ACHIEVEMENT_STATS_READER,
 	type WeeklyAchievementStatsReaderPort,
-} from "../ports/weekly-achievement-stats-reader.port";
+} from "../ports/weekly-achievement-stats-reader.port.js";
 
 @Injectable()
 export class WeeklyAchievementStrategy implements ITimezoneStrategy {

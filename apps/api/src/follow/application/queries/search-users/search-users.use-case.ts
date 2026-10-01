@@ -1,14 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { PaginationService } from "@/shared/application/pagination";
+import { PaginationService } from "#api/shared/application/pagination/index";
 
-import { normalizeUserSearchQuery } from "../../../domain/services/user-search-query";
+import { normalizeUserSearchQuery } from "../../../domain/services/user-search-query.js";
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
 	type UserSearchResult,
-} from "../../ports/follow.repository.port";
-import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor";
+} from "../../ports/follow.repository.port.js";
+import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor.js";
 
 /** 사용자 검색 입력 (정규화 전 원본 검색어). */
 export interface SearchUsersInput {

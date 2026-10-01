@@ -3,11 +3,11 @@ import dayjs from "dayjs";
 import {
 	PROMPT_OUTPUT_DISCIPLINE_EN,
 	PROMPT_SECURITY_GUARD_EN,
-} from "@/shared/domain/prompt/prompt-sections";
-import { encodeUntrustedJson, sanitizeMemoForPrompt } from "@/shared/domain/prompt/sanitize";
+} from "#api/shared/domain/prompt/prompt-sections";
+import { encodeUntrustedJson, sanitizeMemoForPrompt } from "#api/shared/domain/prompt/sanitize";
 
-import type { CategoryInfo, ParseMemoPrompt } from "./parse-memo.prompt";
-import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules";
+import type { CategoryInfo, ParseMemoPrompt } from "./parse-memo.prompt.js";
+import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules.js";
 
 /**
  * buildParseMemoPrompt의 영어 버전 — en 로케일 사용자의 영어 메모용.

@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * SessionService 단위 테스트
  *
@@ -7,28 +8,27 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { SessionBuilder } from "@test/builders";
+import type { Mocked } from "vitest";
 
-import type { Session } from "@/generated/prisma/client";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import type { Session } from "#api/generated/prisma/client";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { SessionBuilder } from "#test/builders/index";
 
 import {
 	AUTH_TOKEN_ISSUER,
 	type AuthTokenIssuerPort,
 	type TokenPair,
-} from "../ports/auth-crypto.port";
+} from "../ports/auth-crypto.port.js";
 import {
 	AUTH_SESSION_REPOSITORY,
 	type AuthSessionRepositoryPort,
-} from "../ports/auth-persistence.port";
+} from "../ports/auth-persistence.port.js";
 import {
 	type CreateSessionParams,
 	type CreateSessionResult,
 	SessionService,
 	type SessionValidatable,
-} from "./session.service";
+} from "./session.service.js";
 
 describe("SessionService — 세션 서비스", () => {
 	let service: SessionService;

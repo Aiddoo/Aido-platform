@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { reorderPositionSchema } from '../todo-category/todo-category.common';
-import { dayOfWeekSchema, todoVisibilitySchema } from './todo.common';
-import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from './todo.constants';
+import { reorderPositionSchema } from '../todo-category/todo-category.common.js';
+import { dayOfWeekSchema, todoVisibilitySchema } from './todo.common.js';
+import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from './todo.constants.js';
 
-export { todoVisibilitySchema } from './todo.common';
+export { todoVisibilitySchema } from './todo.common.js';
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 

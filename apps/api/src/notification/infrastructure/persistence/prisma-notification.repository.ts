@@ -2,18 +2,18 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import { now } from "@/shared/domain/date/utils/core";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { toInputJson } from "@/shared/infrastructure/database/json.util";
-import { isUniqueConstraintViolation } from "@/shared/infrastructure/database/prisma-error.util";
+import { Prisma } from "#api/generated/prisma/client";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { toInputJson } from "#api/shared/infrastructure/database/json.util";
+import { isUniqueConstraintViolation } from "#api/shared/infrastructure/database/prisma-error.util";
 
-import type { CreateNotificationData } from "../../application/ports/notification-data";
+import type { CreateNotificationData } from "../../application/ports/notification-data.js";
 import {
 	DuplicateNotificationError,
 	type NotificationRepositoryPort,
-} from "../../application/ports/notification.repository.port";
-import type { NotificationRecord } from "../../domain/records/notification.record";
+} from "../../application/ports/notification.repository.port.js";
+import type { NotificationRecord } from "../../domain/records/notification.record.js";
 
 interface DeletedNotificationRecipientRow {
 	userId: string;

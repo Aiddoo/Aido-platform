@@ -6,34 +6,35 @@
  * - 예보 조회 실패 시 lifestyle 계산 입력은 기본값(0, 0)으로 폴백
  */
 import { ErrorCode } from "@aido/errors";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createWeatherCacheMock } from "@test/mocks/ports/weather-cache.mock";
+import type { Mocked } from "vitest";
+
+import { createWeatherCacheMock } from "#test/mocks/ports/weather-cache.mock";
 import {
 	createAirQualityProviderMock,
 	createLifestyleIndexProviderMock,
 	createSunTimeProviderMock,
 	createWeatherLocationRepositoryMock,
-} from "@test/mocks/ports/weather.mock";
+} from "#test/mocks/ports/weather.mock";
 
-import { UserLocation } from "../../../domain/entities/user-location.entity";
+import { UserLocation } from "../../../domain/entities/user-location.entity.js";
 import {
 	AIR_QUALITY_PROVIDER,
 	type AirQualityProvider,
-} from "../../ports/air-quality-provider.port";
+} from "../../ports/air-quality-provider.port.js";
 import {
 	LIFESTYLE_INDEX_PROVIDER,
 	type LifestyleIndexProvider,
-} from "../../ports/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER, type SunTimeProvider } from "../../ports/sun-time-provider.port";
-import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
+} from "../../ports/lifestyle-index-provider.port.js";
+import { SUN_TIME_PROVIDER, type SunTimeProvider } from "../../ports/sun-time-provider.port.js";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port.js";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
-} from "../../ports/weather-location.repository.port";
-import type { WeatherForecast } from "../../ports/weather-provider.port";
-import { WeatherForecastReader } from "../../services/weather-forecast.reader";
-import { GetWeatherConditionsUseCase } from "./get-weather-conditions.use-case";
+} from "../../ports/weather-location.repository.port.js";
+import type { WeatherForecast } from "../../ports/weather-provider.port.js";
+import { WeatherForecastReader } from "../../services/weather-forecast.reader.js";
+import { GetWeatherConditionsUseCase } from "./get-weather-conditions.use-case.js";
 
 function buildForecast(): WeatherForecast {
 	return {

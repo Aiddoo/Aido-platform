@@ -1,28 +1,32 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
+import type { Mocked } from "vitest";
+
+import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import {
 	createActivePushTokenReaderMock,
 	createPushTokenRepositoryMock,
-} from "@test/mocks/ports/notification.mock";
+} from "#test/mocks/ports/notification.mock";
 
-import type { PushTokenRecord } from "../../domain/records/notification.record";
+import type { PushTokenRecord } from "../../domain/records/notification.record.js";
 import {
 	ACTIVE_PUSH_TOKEN_READER,
 	type ActivePushTokenReaderPort,
-} from "../ports/active-push-token.reader.port";
-import { NOTIFICATION_CACHE, type NotificationCachePort } from "../ports/notification-cache.port";
+} from "../ports/active-push-token.reader.port.js";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../ports/notification-cache.port.js";
 import {
 	PUSH_PROVIDER,
 	type PushProvider,
 	RetryablePushProviderTransportError,
-} from "../ports/push-provider.port";
+} from "../ports/push-provider.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../ports/push-token.repository.port";
-import { PushNotificationDeliveryService } from "./push-notification-delivery.service";
-import type { BatchPushNotificationPayload } from "./push-notification-payload.factory";
+} from "../ports/push-token.repository.port.js";
+import { PushNotificationDeliveryService } from "./push-notification-delivery.service.js";
+import type { BatchPushNotificationPayload } from "./push-notification-payload.factory.js";
 
 const TOKEN_DATE = new Date("2026-07-01T00:00:00.000Z");
 

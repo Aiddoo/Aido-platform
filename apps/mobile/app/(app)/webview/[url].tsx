@@ -1,22 +1,23 @@
 import { useTranslation } from '@src/shared/i18n';
 import { Text } from '@src/shared/ui';
+import { parseWebViewUrl } from '@src/shared/utils/route-params';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 const WebViewScreen = () => {
-  const { url } = useLocalSearchParams<{ url: string }>();
+  const { url } = useLocalSearchParams();
   const { t } = useTranslation();
 
-  if (!url || typeof url !== 'string') {
+  const decodedUrl = parseWebViewUrl(url);
+
+  if (!decodedUrl) {
     return (
       <View className="flex-1 justify-center items-center">
         <Text size="b3">{t('webview.invalidUrl')}</Text>
       </View>
     );
   }
-
-  const decodedUrl = decodeURIComponent(url);
 
   return (
     <>

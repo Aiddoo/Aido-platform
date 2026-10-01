@@ -1,7 +1,8 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
 import {
 	PUSH_DELIVERY_DEAD_LETTER_QUEUE,
@@ -9,8 +10,8 @@ import {
 	PUSH_DELIVERY_JOB_POLICY,
 	PUSH_DELIVERY_QUEUE,
 	PushDeliveryJobName,
-} from "./push-delivery-queue.constants";
-import { PushDeliveryQueueService } from "./push-delivery-queue.service";
+} from "./push-delivery-queue.constants.js";
+import { PushDeliveryQueueService } from "./push-delivery-queue.service.js";
 
 describe("PushDeliveryQueueService — durable push queue 발행", () => {
 	let service: PushDeliveryQueueService;
@@ -20,14 +21,14 @@ describe("PushDeliveryQueueService — durable push queue 발행", () => {
 		const { unit, unitRef } = await TestBed.solitary(PushDeliveryQueueService)
 			.mock<JobRuntimePort>(JOB_RUNTIME)
 			.impl(() => ({
-				start: jest.fn(),
-				stop: jest.fn(),
-				enqueue: jest.fn().mockResolvedValue("push-job-1"),
-				schedule: jest.fn().mockResolvedValue(undefined),
-				unschedule: jest.fn(),
-				cancel: jest.fn(),
-				work: jest.fn(),
-				health: jest.fn(),
+				start: vi.fn(),
+				stop: vi.fn(),
+				enqueue: vi.fn().mockResolvedValue("push-job-1"),
+				schedule: vi.fn().mockResolvedValue(undefined),
+				unschedule: vi.fn(),
+				cancel: vi.fn(),
+				work: vi.fn(),
+				health: vi.fn(),
 			}))
 			.compile();
 

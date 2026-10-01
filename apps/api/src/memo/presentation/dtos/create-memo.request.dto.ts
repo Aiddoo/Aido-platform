@@ -1,4 +1,5 @@
 import { createMemoSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class CreateMemoDto extends createZodDto(createMemoSchema) {}
+export const CreateMemoDto = createMemoSchema.meta({ id: "CreateMemoDto" });
+export type CreateMemoDto = z.infer<typeof CreateMemoDto>;

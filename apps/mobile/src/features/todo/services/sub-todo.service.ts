@@ -1,8 +1,7 @@
 import {
   type CreateTodoItemInput,
   type ReorderTodoItemsInput,
-  type Todo,
-  todoSchema,
+  updateTodoResponseSchema,
   type UpdateTodoItemInput,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
@@ -24,21 +23,18 @@ export class SubTodoService {
     todoId: number,
     body: CreateTodoItemInput,
   ): Promise<Result<TodoItem, ApiError>> => {
-    const result = await this.#httpClient.post<{ message: string; todo: Todo }>(
-      `v1/todos/${todoId}/items`,
-      body,
-    );
+    const result = await this.#httpClient.post(`v1/todos/${todoId}/items`, body);
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = todoSchema.safeParse(result.value.todo);
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[SubTodoService] Invalid addSubTodo response: ${parsed.error.message}`);
     }
 
-    return ok(toTodoItem(parsed.data));
+    return ok(toTodoItem(parsed.data.todo));
   };
 
   updateSubTodo = async (
@@ -46,67 +42,59 @@ export class SubTodoService {
     subTodoId: number,
     body: UpdateTodoItemInput,
   ): Promise<Result<TodoItem, ApiError>> => {
-    const result = await this.#httpClient.patch<{ message: string; todo: Todo }>(
-      `v1/todos/${todoId}/items/${subTodoId}`,
-      body,
-    );
+    const result = await this.#httpClient.patch(`v1/todos/${todoId}/items/${subTodoId}`, body);
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = todoSchema.safeParse(result.value.todo);
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[SubTodoService] Invalid updateSubTodo response: ${parsed.error.message}`,
       );
     }
 
-    return ok(toTodoItem(parsed.data));
+    return ok(toTodoItem(parsed.data.todo));
   };
 
   deleteSubTodo = async (
     todoId: number,
     subTodoId: number,
   ): Promise<Result<TodoItem, ApiError>> => {
-    const result = await this.#httpClient.delete<{ message: string; todo: Todo }>(
-      `v1/todos/${todoId}/items/${subTodoId}`,
-    );
+    const result = await this.#httpClient.delete(`v1/todos/${todoId}/items/${subTodoId}`);
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = todoSchema.safeParse(result.value.todo);
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[SubTodoService] Invalid deleteSubTodo response: ${parsed.error.message}`,
       );
     }
 
-    return ok(toTodoItem(parsed.data));
+    return ok(toTodoItem(parsed.data.todo));
   };
 
   reorderSubTodos = async (
     todoId: number,
     body: ReorderTodoItemsInput,
   ): Promise<Result<TodoItem, ApiError>> => {
-    const result = await this.#httpClient.patch<{ message: string; todo: Todo }>(
-      `v1/todos/${todoId}/items/reorder`,
-      body,
-    );
+    const result = await this.#httpClient.patch(`v1/todos/${todoId}/items/reorder`, body);
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = todoSchema.safeParse(result.value.todo);
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[SubTodoService] Invalid reorderSubTodos response: ${parsed.error.message}`,
       );
     }
 
-    return ok(toTodoItem(parsed.data));
+    return ok(toTodoItem(parsed.data.todo));
   };
 }

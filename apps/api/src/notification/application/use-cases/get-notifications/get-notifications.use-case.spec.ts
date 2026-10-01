@@ -1,20 +1,20 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetNotificationsUseCase 단위 테스트
  *
  * - 카테고리 → 알림 타입 배열 변환
  * - 커서 페이지네이션 정규화·조회 위임
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { NotificationBuilder } from "@test/builders";
+import type { Mocked } from "vitest";
 
-import { PaginationService } from "@/shared/application/pagination";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { NotificationBuilder } from "#test/builders/index";
 
 import {
 	NOTIFICATION_INBOX_READER,
 	type NotificationInboxReaderPort,
-} from "../../ports/notification-inbox.reader.port";
-import { GetNotificationsUseCase } from "./get-notifications.use-case";
+} from "../../ports/notification-inbox.reader.port.js";
+import { GetNotificationsUseCase } from "./get-notifications.use-case.js";
 
 describe("GetNotificationsUseCase", () => {
 	let useCase: GetNotificationsUseCase;

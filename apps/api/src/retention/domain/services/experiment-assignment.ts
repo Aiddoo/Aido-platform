@@ -1,4 +1,4 @@
-import type { RetentionVariant } from "../retention.constants";
+import type { RetentionVariant } from "../retention.constants.js";
 
 /** 사용자별로 영구히 안정적인 실험군을 선택한다. */
 export function assignRetentionVariant(userId: string, treatmentPercent: number): RetentionVariant {

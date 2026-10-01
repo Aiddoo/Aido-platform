@@ -1,5 +1,4 @@
 import { PASSWORD_RULES } from '@aido/validators';
-import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 
 export const authTokensSchema = z.object({
@@ -33,24 +32,29 @@ export function isWeatherEnabled(preference: Preference) {
   return preference.weatherMorningEnabled || preference.weatherEveningEnabled;
 }
 
+export function isPushDisabled(preference: Preference) {
+  return !preference.pushEnabled;
+}
+
+export function isWeatherDisabled(preference: Preference) {
+  return !preference.pushEnabled || !isWeatherEnabled(preference);
+}
+
+export function pushDisabledMessageKey(preference: Preference) {
+  return !preference.pushEnabled ? ('auth:preference.enablePushFirst' as const) : undefined;
+}
+
+export function weatherDisabledMessageKey(preference: Preference) {
+  if (!preference.pushEnabled) return 'auth:preference.enablePushFirst' as const;
+  if (!isWeatherEnabled(preference)) return 'auth:preference.enableWeatherFirst' as const;
+  return undefined;
+}
+
 export const PreferencePolicy = {
-  isPushDisabled(preference: Preference) {
-    return !preference.pushEnabled;
-  },
-
-  isWeatherDisabled(preference: Preference) {
-    return !preference.pushEnabled || !isWeatherEnabled(preference);
-  },
-
-  pushDisabledMessage(preference: Preference) {
-    return !preference.pushEnabled ? t('auth:preference.enablePushFirst') : undefined;
-  },
-
-  weatherDisabledMessage(preference: Preference) {
-    if (!preference.pushEnabled) return t('auth:preference.enablePushFirst');
-    if (!isWeatherEnabled(preference)) return t('auth:preference.enableWeatherFirst');
-    return undefined;
-  },
+  isPushDisabled,
+  isWeatherDisabled,
+  pushDisabledMessageKey,
+  weatherDisabledMessageKey,
 } as const;
 
 export const consentSchema = z.object({
@@ -121,8 +125,12 @@ export function hasMinLength(password: string, min: number) {
   return password.length >= min;
 }
 
+export function hasMinimumPasswordLength(password: string) {
+  return hasMinLength(password, PASSWORD_RULES.MIN_LENGTH);
+}
+
 export const PasswordPolicy = {
   hasLetter,
   hasNumber,
-  hasMinLength: (password: string) => hasMinLength(password, PASSWORD_RULES.MIN_LENGTH),
+  hasMinLength: hasMinimumPasswordLength,
 } as const;

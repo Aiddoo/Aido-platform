@@ -1,4 +1,8 @@
 import { getDailyCompletionsRangeSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetDailyCompletionsRangeDto extends createZodDto(getDailyCompletionsRangeSchema) {}
+export const GetDailyCompletionsRangeDto = getDailyCompletionsRangeSchema.meta({
+	id: "GetDailyCompletionsRangeDto",
+	apiParameter: true,
+});
+export type GetDailyCompletionsRangeDto = z.infer<typeof GetDailyCompletionsRangeDto>;

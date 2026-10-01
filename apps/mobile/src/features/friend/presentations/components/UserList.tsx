@@ -1,11 +1,11 @@
 import { FlashList } from '@shopify/flash-list';
-import { Flex, VStack } from '@src/shared/ui';
+import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
+import { Flex, VStack, HStack, ListRow } from '@src/shared/ui';
 import { times } from 'es-toolkit/compat';
-import type { ReactElement, ReactNode } from 'react';
+import { Avatar, Skeleton } from 'heroui-native';
+import { type ReactElement, type ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
-
-import { UserListRow } from './UserListRow';
 
 interface UserListRefresh {
   isRefreshing: boolean;
@@ -16,22 +16,14 @@ interface UserListProps<T> {
   data: T[];
   renderItem: (item: T) => ReactElement;
   keyExtractor: (item: T) => string;
-  /** 결과가 없을 때 표시 (중앙 정렬됨) */
   emptyContent: ReactNode;
   header?: ReactElement;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onEndReached: () => void;
-  /** pull-to-refresh (선택) */
   refresh?: UserListRefresh;
 }
 
-/**
- * 사용자 리스트 공용 스캐폴드.
- * FlashList 기반의 빈 상태/무한스크롤 푸터/pull-to-refresh 보일러플레이트를 흡수한다.
- * 행은 `UserList.Item`(= UserListRow), 로딩은 `UserList.Loading`을 사용한다.
- * 메모리 안전을 위해 FlashList를 사용하며, 색상은 테마 변수로 다크/라이트에 대응한다.
- */
 export function UserList<T>({
   data,
   renderItem,
@@ -79,12 +71,10 @@ export function UserList<T>({
           />
         ) : undefined
       }
-      contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
     />
   );
 }
-
-UserList.Item = UserListRow;
 
 interface UserListLoadingProps {
   header?: ReactNode;
@@ -94,13 +84,61 @@ interface UserListLoadingProps {
 
 UserList.Loading = function Loading({ header, rows = 3, hasAction = true }: UserListLoadingProps) {
   return (
-    <ScrollView className="flex-1 px-4">
+    <ScrollView className="flex-1">
       {header}
       <VStack>
         {times(rows, (index) => (
-          <UserListRow.Loading key={index} hasAction={hasAction} />
+          <UserList.ItemLoading key={index} hasAction={hasAction} />
         ))}
       </VStack>
     </ScrollView>
+  );
+};
+
+interface UserListItemProps {
+  displayName: string;
+  subtitle?: string;
+  profileImage: string | null;
+  action?: ReactNode;
+}
+
+UserList.Item = function Item({ displayName, subtitle, profileImage, action }: UserListItemProps) {
+  return (
+    <ListRow
+      horizontalPadding="none"
+      left={
+        <Avatar alt={displayName} className="size-10">
+          <Avatar.Image source={getProfileIconSource(profileImage)} />
+        </Avatar>
+      }
+      contents={
+        subtitle != null ? (
+          <ListRow.Texts
+            type="2RowTypeA"
+            top={displayName}
+            topProps={{ maxLines: 1 }}
+            bottom={subtitle}
+            bottomProps={{ maxLines: 1 }}
+          />
+        ) : (
+          <ListRow.Texts type="1RowTypeA" top={displayName} topProps={{ maxLines: 1 }} />
+        )
+      }
+      right={action}
+    />
+  );
+};
+
+interface UserListItemLoadingProps {
+  hasAction?: boolean;
+}
+
+UserList.ItemLoading = function Loading({ hasAction = true }: UserListItemLoadingProps) {
+  return (
+    <HStack align="center" className="py-2" gap={12}>
+      <Skeleton className="w-10 h-10 rounded-full" />
+      <Skeleton className="flex-1 h-5" />
+      {hasAction ? <Skeleton className="w-12 h-8 rounded" /> : null}
+    </HStack>
   );
 };

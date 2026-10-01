@@ -1,3 +1,3 @@
-export * from "./locale.decorator";
-export * from "./raw-response.decorator";
-export * from "./timezone.decorator";
+export * from "./locale.decorator.js";
+export * from "./raw-response.decorator.js";
+export * from "./timezone.decorator.js";

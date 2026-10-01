@@ -1,23 +1,24 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * OnTodoToggledUseCase 단위 테스트 (스트릭 갱신 오케스트레이션)
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record";
+import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record.js";
 import {
 	STREAK_MILESTONE_NOTIFIER,
 	type StreakMilestoneNotifierPort,
-} from "../../ports/streak-milestone.notifier.port";
+} from "../../ports/streak-milestone.notifier.port.js";
 import {
 	TODO_COMPLETION_STATS_READER,
 	type TodoCompletionStatsReaderPort,
-} from "../../ports/todo-completion-stats.reader.port";
+} from "../../ports/todo-completion-stats.reader.port.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
-import { OnTodoToggledUseCase } from "./on-todo-toggled.use-case";
+} from "../../ports/user-preference.repository.port.js";
+import { OnTodoToggledUseCase } from "./on-todo-toggled.use-case.js";
 
 const userId = "user-1";
 const tz = "Asia/Seoul";
@@ -52,8 +53,8 @@ describe("OnTodoToggledUseCase", () => {
 	let notifier: Mocked<StreakMilestoneNotifierPort>;
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date("2024-01-16T09:00:00Z"));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2024-01-16T09:00:00Z"));
 
 		const { unit, unitRef } = await TestBed.solitary(OnTodoToggledUseCase).compile();
 		useCase = unit;
@@ -63,7 +64,7 @@ describe("OnTodoToggledUseCase", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("오늘 투두가 0개면 아무 것도 하지 않는다", async () => {

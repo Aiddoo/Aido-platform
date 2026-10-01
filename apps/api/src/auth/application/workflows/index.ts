@@ -1,3 +1,3 @@
-export * from "./credential-auth.workflow";
-export * from "./oauth.workflow";
-export * from "./password.workflow";
+export * from "./credential-auth.workflow.js";
+export * from "./oauth.workflow.js";
+export * from "./password.workflow.js";

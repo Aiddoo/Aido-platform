@@ -5,10 +5,10 @@
  */
 
 // 상수
-export * from './user-consent.constants';
+export * from './user-consent.constants.js';
 
 // 요청 스키마 (Request)
-export * from './user-consent.request';
+export * from './user-consent.request.js';
 
 // 응답 스키마 (Response)
-export * from './user-consent.response';
+export * from './user-consent.response.js';

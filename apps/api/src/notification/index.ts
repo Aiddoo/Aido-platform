@@ -7,9 +7,9 @@
 export {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
-} from "./application/ports/marketing-push-opt-out-token.port";
+} from "./application/ports/marketing-push-opt-out-token.port.js";
 // --- Data contracts ---
-export type { CreateNotificationData } from "./application/ports/notification-data";
+export type { CreateNotificationData } from "./application/ports/notification-data.js";
 // --- Ports (푸시 프로바이더/rate limiter 추상화) ---
 export {
 	type BatchPushResult,
@@ -20,20 +20,20 @@ export {
 	type PushResult,
 	RetryablePushProviderTransportError,
 	type RetryablePushProviderTransportErrorMetadata,
-} from "./application/ports/push-provider.port";
+} from "./application/ports/push-provider.port.js";
 export {
 	PUSH_RATE_LIMITER,
 	type PushRateLimiterPort,
-} from "./application/ports/push-rate-limiter.port";
+} from "./application/ports/push-rate-limiter.port.js";
 // --- Cross-module notification capability ---
-export { NotificationPublisher } from "./application/publishers/notification.publisher";
+export { NotificationPublisher } from "./application/publishers/notification.publisher.js";
 export {
 	type FindAlreadyNotifiedRecipientsQuery,
 	NotificationHistoryReader,
-} from "./application/readers/notification-history.reader";
-export { NotificationRecipientLocaleReader } from "./application/readers/notification-recipient-locale.reader";
-export { NotificationAccountCleanup } from "./application/services/notification-account-cleanup";
-export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./domain/services/transactional-notification-campaign";
+} from "./application/readers/notification-history.reader.js";
+export { NotificationRecipientLocaleReader } from "./application/readers/notification-recipient-locale.reader.js";
+export { NotificationAccountCleanup } from "./application/services/notification-account-cleanup.js";
+export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./domain/services/transactional-notification-campaign.js";
 // --- Type-safe notification copy factories consumed across feature boundaries ---
 export {
 	createAiSuggestionNotificationMessage,
@@ -56,9 +56,9 @@ export {
 	createWeeklyAchievementNotificationMessage,
 	createWeeklyReportNotificationMessage,
 	createWinbackNotificationMessage,
-} from "./application/messages/notification-messages";
-export type { RetentionNotificationCopySelection } from "./application/messages/notification-copy.types";
+} from "./application/messages/notification-messages.js";
+export type { RetentionNotificationCopySelection } from "./application/messages/notification-copy.types.js";
 // Prisma repository is internal to NotificationModule.
 // Cross-module consumers use the public capability boundary above.
 // --- Module wiring ---
-export { NotificationModule } from "./notification.module";
+export { NotificationModule } from "./notification.module.js";

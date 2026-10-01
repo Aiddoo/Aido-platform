@@ -3,10 +3,17 @@ import {
 	markNudgeReadResponseSchema,
 	nudgeLimitInfoSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class NudgeLimitInfoDto extends createZodDto(nudgeLimitInfoSchema) {}
+export const NudgeLimitInfoDto = nudgeLimitInfoSchema.meta({ id: "NudgeLimitInfoDto" });
+export type NudgeLimitInfoDto = z.infer<typeof NudgeLimitInfoDto>;
 
-export class CreateNudgeResponseDto extends createZodDto(createNudgeResponseSchema) {}
+export const CreateNudgeResponseDto = createNudgeResponseSchema.meta({
+	id: "CreateNudgeResponseDto",
+});
+export type CreateNudgeResponseDto = z.infer<typeof CreateNudgeResponseDto>;
 
-export class MarkNudgeReadResponseDto extends createZodDto(markNudgeReadResponseSchema) {}
+export const MarkNudgeReadResponseDto = markNudgeReadResponseSchema.meta({
+	id: "MarkNudgeReadResponseDto",
+});
+export type MarkNudgeReadResponseDto = z.infer<typeof MarkNudgeReadResponseDto>;

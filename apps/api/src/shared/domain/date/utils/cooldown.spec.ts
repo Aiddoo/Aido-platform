@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * calculateCooldown 유틸 테스트
  *
@@ -9,15 +11,15 @@
  * pnpm --filter @aido/api test cooldown
  * ```
  */
-import { calculateCooldown } from "./cooldown";
+import { calculateCooldown } from "./cooldown.js";
 
 beforeAll(() => {
-	jest.useFakeTimers();
-	jest.setSystemTime(new Date("2026-03-03T12:00:00Z"));
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date("2026-03-03T12:00:00Z"));
 });
 
 afterAll(() => {
-	jest.useRealTimers();
+	vi.useRealTimers();
 });
 
 describe("calculateCooldown", () => {

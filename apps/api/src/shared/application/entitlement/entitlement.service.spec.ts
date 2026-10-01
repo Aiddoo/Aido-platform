@@ -16,22 +16,23 @@ import {
 	NUDGE_LIMITS,
 	TODO_CATEGORY_LIMITS,
 } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi, type Mock } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	ENTITLEMENT_CACHE,
 	ENTITLEMENT_DATABASE,
 	type EntitlementCachePort,
 	type EntitlementDatabasePort,
-} from "./entitlement-state.port";
+} from "./entitlement-state.port.js";
 import {
 	EntitlementService,
 	Feature,
 	type FeatureEntitlement,
 	Resource,
 	type ResourceEntitlement,
-} from "./entitlement.service";
+} from "./entitlement.service.js";
 
 describe("EntitlementService — 권한 관리 서비스", () => {
 	let service: EntitlementService;
@@ -56,7 +57,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				["AI_PARSE", Feature.AI_PARSE],
 			] as const)("ADMIN은 %s 기능이 무제한이다", async (_name, feature) => {
 				// Given - 캐시에 ADMIN 사용자 정보 존재
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as Mock).mockResolvedValue({
 					status: "FREE",
 					isAdmin: true,
 				});
@@ -80,7 +81,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				["AI_PARSE", Feature.AI_PARSE],
 			] as const)("ACTIVE 구독 + %s 기능은 무제한이다", async (_name, feature) => {
 				// Given - 캐시에 ACTIVE 구독 사용자 정보 존재
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as Mock).mockResolvedValue({
 					status: "ACTIVE",
 					isAdmin: false,
 				});
@@ -112,7 +113,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				"%s 구독 + %s 기능은 일일 %d회 제한이다",
 				async (status, _featureName, feature, expectedLimit) => {
 					// Given
-					(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+					(cacheService.wrapSubscription as Mock).mockResolvedValue({
 						status,
 						isAdmin: false,
 					});
@@ -133,7 +134,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 		describe("캐시 동작", () => {
 			it("캐시 히트 시 DB 조회를 하지 않는다", async () => {
 				// Given - 캐시에 데이터 존재 (히트)
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as Mock).mockResolvedValue({
 					status: "FREE",
 					isAdmin: false,
 				});
@@ -147,10 +148,10 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 			it("캐시 미스 시 DB 조회 후 캐싱한다", async () => {
 				// Given - wrapSubscription이 팩토리 실행 (캐시 미스 시뮬레이션)
-				(cacheService.wrapSubscription as jest.Mock).mockImplementation(
+				(cacheService.wrapSubscription as Mock).mockImplementation(
 					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
-				(database.user.findUnique as jest.Mock).mockResolvedValue({
+				(database.user.findUnique as Mock).mockResolvedValue({
 					role: "USER",
 					subscriptionStatus: "FREE",
 				});
@@ -177,10 +178,10 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 			it("캐시 미스 + DB에 사용자 없으면 기본값(USER/FREE)을 사용한다", async () => {
 				// Given - wrapSubscription이 팩토리 실행 (캐시 미스), DB에도 사용자 없음
-				(cacheService.wrapSubscription as jest.Mock).mockImplementation(
+				(cacheService.wrapSubscription as Mock).mockImplementation(
 					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
-				(database.user.findUnique as jest.Mock).mockResolvedValue(null);
+				(database.user.findUnique as Mock).mockResolvedValue(null);
 
 				// When - CHEER 기능 제한 조회
 				const result = await service.getFeatureLimit(userId, Feature.CHEER);
@@ -195,10 +196,10 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 			it("캐시 미스 + DB에 ADMIN 사용자면 isAdmin: true로 캐싱한다", async () => {
 				// Given - wrapSubscription이 팩토리 실행 (캐시 미스), DB에 ADMIN 사용자 존재
-				(cacheService.wrapSubscription as jest.Mock).mockImplementation(
+				(cacheService.wrapSubscription as Mock).mockImplementation(
 					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
-				(database.user.findUnique as jest.Mock).mockResolvedValue({
+				(database.user.findUnique as Mock).mockResolvedValue({
 					role: "ADMIN",
 					subscriptionStatus: "FREE",
 				});
@@ -219,14 +220,14 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 	describe("getFeatureLimitInTx", () => {
 		let txMock: {
 			user: {
-				findUnique: jest.Mock;
+				findUnique: Mock;
 			};
 		};
 
 		beforeEach(() => {
 			txMock = {
 				user: {
-					findUnique: jest.fn(),
+					findUnique: vi.fn(),
 				},
 			};
 		});
@@ -352,7 +353,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				["FRIEND", Resource.FRIEND],
 			] as const)("ADMIN은 %s 리소스가 무제한이다", async (_name, resource) => {
 				// Given
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as Mock).mockResolvedValue({
 					status: "FREE",
 					isAdmin: true,
 				});
@@ -372,7 +373,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 		describe("ACTIVE 구독", () => {
 			it("ACTIVE 구독 + FRIEND 리소스는 무제한이다", async () => {
 				// Given
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as Mock).mockResolvedValue({
 					status: "ACTIVE",
 					isAdmin: false,
 				});
@@ -390,7 +391,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 			it("ACTIVE 구독 + CATEGORY 리소스는 30개 제한이다", async () => {
 				// Given
-				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as Mock).mockResolvedValue({
 					status: "ACTIVE",
 					isAdmin: false,
 				});
@@ -416,7 +417,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				"%s 구독 + %s 리소스는 최대 %d개 제한이다",
 				async (status, _name, resource, expectedLimit) => {
 					// Given
-					(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+					(cacheService.wrapSubscription as Mock).mockResolvedValue({
 						status,
 						isAdmin: false,
 					});
@@ -438,7 +439,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 	describe("getResourceLimitInTx", () => {
 		it("CATEGORY 한도는 활성 tx만 조회하고 base DB와 cache를 우회한다", async () => {
 			// Given - tx/base/cache가 서로 다른 클라이언트
-			const txFindUnique = jest.fn().mockResolvedValue({
+			const txFindUnique = vi.fn().mockResolvedValue({
 				role: "USER",
 				subscriptionStatus: "FREE",
 			});
@@ -447,10 +448,10 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 					findUnique: txFindUnique,
 				},
 			};
-			(database.user.findUnique as jest.Mock).mockRejectedValue(
+			(database.user.findUnique as Mock).mockRejectedValue(
 				new Error("base database path must not be used"),
 			);
-			(cacheService.wrapSubscription as jest.Mock).mockRejectedValue(
+			(cacheService.wrapSubscription as Mock).mockRejectedValue(
 				new Error("cache path must not be used"),
 			);
 
@@ -475,7 +476,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 	describe("hasPremiumAccess", () => {
 		it("ADMIN 역할은 true를 반환한다", async () => {
 			// Given
-			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+			(cacheService.wrapSubscription as Mock).mockResolvedValue({
 				status: "FREE",
 				isAdmin: true,
 			});
@@ -489,7 +490,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		it("ACTIVE 구독은 true를 반환한다", async () => {
 			// Given
-			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+			(cacheService.wrapSubscription as Mock).mockResolvedValue({
 				status: "ACTIVE",
 				isAdmin: false,
 			});
@@ -503,7 +504,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		it("FREE 구독은 false를 반환한다", async () => {
 			// Given
-			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+			(cacheService.wrapSubscription as Mock).mockResolvedValue({
 				status: "FREE",
 				isAdmin: false,
 			});
@@ -517,7 +518,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		it("EXPIRED 구독은 false를 반환한다", async () => {
 			// Given
-			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+			(cacheService.wrapSubscription as Mock).mockResolvedValue({
 				status: "EXPIRED",
 				isAdmin: false,
 			});
@@ -531,7 +532,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		it("CANCELLED 구독은 false를 반환한다", async () => {
 			// Given
-			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+			(cacheService.wrapSubscription as Mock).mockResolvedValue({
 				status: "CANCELLED",
 				isAdmin: false,
 			});

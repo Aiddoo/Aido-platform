@@ -5,27 +5,27 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import { ApplicationException } from "@/shared/domain";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import { ApplicationException } from "#api/shared/domain/index";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import {
 	isUniqueConstraintViolation,
 	uniqueConstraintTargets,
-} from "@/shared/infrastructure/database/prisma-error.util";
+} from "#api/shared/infrastructure/database/prisma-error.util";
 
 import {
 	TodoCommentIdempotencyConflict,
 	TodoCommentIdempotencyRace,
 	type TodoCommentRepositoryPort,
-} from "../../application/ports/todo-comment.repository.port";
+} from "../../application/ports/todo-comment.repository.port.js";
 import type {
 	CreateTodoCommentChainInput,
 	TodoCommentChainCreationResult,
 	TodoCommentChainCommand,
 	TodoCommentLikeTransition,
-} from "../../application/types";
-import { TodoComment } from "../../domain/entities/todo-comment.aggregate";
-import { TodoCommentId } from "../../domain/value-objects/todo-comment-id.vo";
+} from "../../application/types.js";
+import { TodoComment } from "../../domain/entities/todo-comment.aggregate.js";
+import { TodoCommentId } from "../../domain/value-objects/todo-comment-id.vo.js";
 
 type CommentRow = Prisma.TodoCommentGetPayload<object>;
 

@@ -18,9 +18,15 @@
  * - POST   /memos/:id/convert-to-todos
  */
 
+import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/validators";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext, type VerifiedUser } from "./helpers";
+import {
+	createE2eApp,
+	destroyE2eApp,
+	type E2eTestContext,
+	type VerifiedUser,
+} from "./helpers/index.js";
 
 describe("메모 E2E", () => {
 	let ctx: E2eTestContext;
@@ -639,6 +645,61 @@ describe("메모 E2E", () => {
 	});
 
 	describe("POST /memos/:id/convert-to-todos - 메모를 여러 할 일로 일괄 변환", () => {
+		it("반복 변환은 수정한 제목과 체크리스트를 각 날짜에 저장하고 항목을 독립적으로 관리한다", async () => {
+			const user = await ctx.helpers.createVerifiedUser("memo-recurring-items@test.com", password);
+			const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+			const memo = await createMemo(user, "원본 메모 제목");
+			const response = await request(ctx.app.getHttpServer())
+				.post(`/v1/memos/${memo.id}/convert-to-todos`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
+				.send({
+					todos: [
+						{
+							title: "수정한 반복 제목",
+							categoryId,
+							startDate: "2026-04-06",
+							isRecurring: true,
+							recurrence: { daysOfWeek: ["MON", "WED"], endDate: "2026-04-08" },
+							items: [{ title: "우유" }, { title: "계란" }],
+						},
+					],
+				})
+				.expect(201);
+			const { todos } = convertMemoToTodosResponseSchema.parse(response.body.data);
+			expect(todos.map((todo) => todo.startDate)).toEqual(["2026-04-06", "2026-04-08"]);
+			for (const todo of todos) {
+				expect(todo.title).toBe("수정한 반복 제목");
+				expect(todo.items.map((item) => item.title)).toEqual(["우유", "계란"]);
+				expect(todo.items.map((item) => item.sortOrder)).toEqual([0, 1]);
+				expect(todo.itemStats).toEqual({ total: 2, completed: 0 });
+			}
+			const [first, second] = todos;
+			expect(first).toBeDefined();
+			expect(second).toBeDefined();
+			if (!first || !second || !first.items[0]) {
+				throw new Error("Expected two recurring todos with checklist items");
+			}
+			expect(new Set(todos.flatMap((todo) => todo.items.map((item) => item.id))).size).toBe(4);
+			await request(ctx.app.getHttpServer())
+				.patch(`/v1/todos/${first.id}/items/${first.items[0].id}`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.send({ completed: true })
+				.expect(200);
+			const unchanged = await request(ctx.app.getHttpServer())
+				.get(`/v1/todos/${second.id}`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.expect(200);
+			expect(todoSchema.parse(unchanged.body.data).items.map((item) => item.completed)).toEqual([
+				false,
+				false,
+			]);
+			await request(ctx.app.getHttpServer())
+				.get(`/v1/memos/${memo.id}`)
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.expect(404);
+		});
+
 		it("여러 할 일로 일괄 변환하고 원본 메모를 삭제한다 (반복 일정 포함)", async () => {
 			// Given - 메모를 가진 사용자
 			const user = await ctx.helpers.createVerifiedUser("memo-convert-batch@test.com", password);

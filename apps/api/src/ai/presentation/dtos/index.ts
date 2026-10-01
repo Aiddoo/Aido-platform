@@ -1,2 +1,2 @@
-export * from "./ai.request.dto";
-export * from "./ai.response.dto";
+export * from "./ai.request.dto.js";
+export * from "./ai.response.dto.js";

@@ -14,10 +14,10 @@
 
 import request from "supertest";
 
-import { AI_PROVIDER } from "@/ai";
+import { AI_PROVIDER } from "#api/ai/index";
 
-import { FakeAiProvider } from "../mocks/fake-ai.provider";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("AI E2E", () => {
 	let ctx: E2eTestContext;

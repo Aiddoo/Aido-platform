@@ -6,26 +6,26 @@
  */
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { TodoBuilder } from "@test/builders";
+import type { Mocked } from "vitest";
+
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { TodoBuilder } from "#test/builders/index";
 import {
 	createFriendMock,
 	createTodoCacheMock,
 	createTodoReadRepositoryMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
-
-import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
-import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper.js";
+import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { GetFriendTodosUseCase } from "./get-friend-todos.use-case";
+} from "../../ports/todo-read.repository.port.js";
+import { GetFriendTodosUseCase } from "./get-friend-todos.use-case.js";
 
 function buildResponse(id: number): TodoResponse {
 	return TodoMapper.toResponse(TodoBuilder.create("friend-1").withId(id).build());

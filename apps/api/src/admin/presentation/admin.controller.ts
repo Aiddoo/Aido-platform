@@ -9,12 +9,20 @@ import {
 	ApiForbiddenError,
 	ApiNotFoundError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { Admin, CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { BroadcastNotificationUseCase } from "../application/use-cases/broadcast-notification/broadcast-notification.use-case";
-import { SendTargetedNotificationUseCase } from "../application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
-import { BroadcastNotificationDto, BroadcastResultDto, TargetedNotificationDto } from "./dtos";
+import {
+	Admin,
+	CurrentUser,
+	type CurrentUserPayload,
+} from "../../auth/presentation/decorators/index.js";
+import { BroadcastNotificationUseCase } from "../application/use-cases/broadcast-notification/broadcast-notification.use-case.js";
+import { SendTargetedNotificationUseCase } from "../application/use-cases/send-targeted-notification/send-targeted-notification.use-case.js";
+import {
+	BroadcastNotificationDto,
+	BroadcastResultDto,
+	TargetedNotificationDto,
+} from "./dtos/index.js";
 
 /**
  * Admin API 컨트롤러
@@ -55,7 +63,7 @@ export class AdminController {
 	@ApiNotFoundError(ErrorCode.ADMIN_1402)
 	async broadcastNotification(
 		@CurrentUser() _user: CurrentUserPayload,
-		@Body() dto: BroadcastNotificationDto,
+		@Body({ schema: BroadcastNotificationDto }) dto: BroadcastNotificationDto,
 	): Promise<BroadcastResultDto> {
 		return this.broadcastNotificationUseCase.execute({
 			title: dto.title,
@@ -81,7 +89,7 @@ export class AdminController {
 	@ApiNotFoundError(ErrorCode.ADMIN_1402)
 	async sendTargetedNotification(
 		@CurrentUser() _user: CurrentUserPayload,
-		@Body() dto: TargetedNotificationDto,
+		@Body({ schema: TargetedNotificationDto }) dto: TargetedNotificationDto,
 	): Promise<BroadcastResultDto> {
 		return this.sendTargetedNotificationUseCase.execute({
 			title: dto.title,

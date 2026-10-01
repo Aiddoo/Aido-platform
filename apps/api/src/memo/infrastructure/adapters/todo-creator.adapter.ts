@@ -5,13 +5,13 @@ import {
 	type CreateRecurringTodosResult,
 	CreateRecurringTodosUseCase,
 	CreateTodoUseCase,
-} from "@/todo";
+} from "#api/todo/index";
 
 import type {
 	CreateRecurringTodoData,
 	CreateTodoData,
 	TodoCreatorPort,
-} from "../../application/ports/todo-creator.port";
+} from "../../application/ports/todo-creator.port.js";
 
 /**
  * Memo가 요구하는 생성 계약을 Todo의 생성 UseCase에 연결한다.

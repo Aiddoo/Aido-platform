@@ -6,15 +6,15 @@
  * - 패턴 감지 여부에 따른 알림 발송 검증
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMockJob } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { NotificationPublisher } from "@/notification";
+import { NotificationPublisher } from "#api/notification/index";
+import { createMockJob } from "#test/mocks/index";
 
-import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case";
-import { type AiSuggestionJobData, AiSuggestionJobName } from "../queue/ai-suggestion-queue";
-import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor";
+import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.js";
+import { type AiSuggestionJobData, AiSuggestionJobName } from "../queue/ai-suggestion-queue.js";
+import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor.js";
 
 describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
 	let processor: SuggestionAnalysisProcessor;

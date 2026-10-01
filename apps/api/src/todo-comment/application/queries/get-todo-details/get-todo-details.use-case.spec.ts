@@ -1,15 +1,16 @@
 import { ErrorCode } from "@aido/errors";
-import { TodoBuilder } from "@test/builders";
+import { vi } from "vitest";
+
+import { TodoMapper } from "#api/todo/infrastructure/persistence/todo-response.mapper";
+import { TodoBuilder } from "#test/builders/index";
 import {
 	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import { TodoMapper } from "@/todo/infrastructure/persistence/todo-response.mapper";
-
-import type { TodoDetailsRecord } from "../../types";
-import { GetTodoDetailsUseCase } from "./get-todo-details.use-case";
+import type { TodoDetailsRecord } from "../../types.js";
+import { GetTodoDetailsUseCase } from "./get-todo-details.use-case.js";
 
 const TODO_ID = 42;
 const OWNER_ID = "cmowner000000000000000001";
@@ -30,7 +31,7 @@ describe("GetTodoDetailsUseCase", () => {
 		// Given
 		const reader = createTodoCommentReaderMock();
 		const repository = createTodoCommentRepositoryMock();
-		jest.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(createTodoDetails(true));
+		vi.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(createTodoDetails(true));
 		const useCase = new GetTodoDetailsUseCase(reader, repository, createUnitOfWorkMock());
 
 		// When
@@ -46,8 +47,8 @@ describe("GetTodoDetailsUseCase", () => {
 		// Given
 		const reader = createTodoCommentReaderMock();
 		const repository = createTodoCommentRepositoryMock();
-		jest.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(createTodoDetails(false));
-		jest.mocked(repository.recordView).mockResolvedValue({ recorded: true, viewCount: 8 });
+		vi.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(createTodoDetails(false));
+		vi.mocked(repository.recordView).mockResolvedValue({ recorded: true, viewCount: 8 });
 		const useCase = new GetTodoDetailsUseCase(reader, repository, createUnitOfWorkMock());
 
 		// When
@@ -63,7 +64,7 @@ describe("GetTodoDetailsUseCase", () => {
 		// Given
 		const reader = createTodoCommentReaderMock();
 		const repository = createTodoCommentRepositoryMock();
-		jest.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(null);
+		vi.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(null);
 		const useCase = new GetTodoDetailsUseCase(reader, repository, createUnitOfWorkMock());
 
 		// When

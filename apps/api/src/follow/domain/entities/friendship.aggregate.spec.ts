@@ -1,4 +1,4 @@
-import { Friendship } from "./friendship.aggregate";
+import { Friendship } from "./friendship.aggregate.js";
 
 const make = (status: "PENDING" | "ACCEPTED", sortOrder = 0): Friendship =>
 	Friendship.reconstitute({

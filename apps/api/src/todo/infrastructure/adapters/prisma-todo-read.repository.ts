@@ -1,10 +1,10 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import type { TodoReadRepositoryPort } from "../../application/ports/todo-read.repository.port";
-import type { FindFriendTodosParams, FindTodosParams } from "../../application/types";
-import { TodoMapper } from "../persistence/todo-response.mapper";
-import { TodoRowRepository } from "../persistence/todo-row.repository";
+import type { TodoReadRepositoryPort } from "../../application/ports/todo-read.repository.port.js";
+import type { FindFriendTodosParams, FindTodosParams } from "../../application/types.js";
+import { TodoMapper } from "../persistence/todo-response.mapper.js";
+import { TodoRowRepository } from "../persistence/todo-row.repository.js";
 
 /**
  * Prisma Todo 읽기 어댑터

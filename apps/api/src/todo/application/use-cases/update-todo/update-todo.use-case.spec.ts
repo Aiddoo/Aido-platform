@@ -1,45 +1,45 @@
+import { ErrorCode } from "@aido/errors";
 /**
  * UpdateTodoUseCase 단위 테스트
  *
  * Suites + 포트 mock 팩토리 + GWT 패턴
  * 오라클: 레거시 TodoService.update 분기(completedAt 전이 3분기·카테고리 캐시·이벤트) 재현
  */
-
-import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { TodoBuilder } from "@test/builders";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
+
+import {
+	DOMAIN_EVENT_PUBLISHER,
+	type DomainEventPublisherPort,
+	UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
+import { TodoBuilder } from "#test/builders/index";
 import {
 	createCategoryOwnershipMock,
 	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
 	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import {
-	DOMAIN_EVENT_PUBLISHER,
-	type DomainEventPublisherPort,
-	UNIT_OF_WORK,
-} from "@/shared/application/ports";
-
-import { Todo } from "../../../domain/entities/todo.aggregate";
-import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
-import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
-import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
+import { Todo } from "../../../domain/entities/todo.aggregate.js";
+import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event.js";
+import { TodoId } from "../../../domain/value-objects/todo-id.vo.js";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo.js";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper.js";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
-} from "../../ports/category-ownership.port";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+} from "../../ports/category-ownership.port.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
-import { UpdateTodoUseCase } from "./update-todo.use-case";
+} from "../../ports/todo-read.repository.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
+import { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 /** 소유권 확인용 애그리게잇 */
 function buildEntity(overrides: { completed?: boolean } = {}): Todo {
@@ -91,7 +91,7 @@ describe("UpdateTodoUseCase — 할 일 부분 수정 핸들러", () => {
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
 			.mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-			.impl(() => ({ publishAll: jest.fn().mockResolvedValue(undefined) }))
+			.impl(() => ({ publishAll: vi.fn().mockResolvedValue(undefined) }))
 			.compile();
 
 		useCase = unit;

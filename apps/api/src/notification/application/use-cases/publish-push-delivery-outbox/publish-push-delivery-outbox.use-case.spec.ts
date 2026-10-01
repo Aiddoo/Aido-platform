@@ -1,32 +1,33 @@
 import { Logger } from "@nestjs/common";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createUnitOfWorkMock } from "@test/mocks/ports/unit-of-work.mock";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import {
 	PUSH_DELIVERY_JOB_ENQUEUER,
 	type PushDeliveryJobEnqueuerPort,
-} from "../../ports/push-delivery-job-enqueuer.port";
+} from "../../ports/push-delivery-job-enqueuer.port.js";
 import {
 	PUSH_DELIVERY_OUTBOX_REPOSITORY,
 	type PushDeliveryOutboxRepositoryPort,
-} from "../../ports/push-delivery-outbox.repository.port";
-import { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-outbox.use-case";
+} from "../../ports/push-delivery-outbox.repository.port.js";
+import { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-outbox.use-case.js";
 
 function createOutboxMock(): PushDeliveryOutboxRepositoryPort {
 	return {
-		claimByDispatchIds: jest.fn(),
-		claimAvailable: jest.fn(),
-		markPublished: jest.fn(),
-		defer: jest.fn(),
-		recoverStaleProcessing: jest.fn(),
+		claimByDispatchIds: vi.fn(),
+		claimAvailable: vi.fn(),
+		markPublished: vi.fn(),
+		defer: vi.fn(),
+		recoverStaleProcessing: vi.fn(),
 	};
 }
 
 function createEnqueuerMock(): PushDeliveryJobEnqueuerPort {
-	return { enqueueDeliveries: jest.fn() };
+	return { enqueueDeliveries: vi.fn() };
 }
 
 describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
@@ -50,7 +51,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("available relay는 한 job의 최대 100건만 claim하고 발행 완료 수를 반환한다", async () => {
@@ -75,8 +76,8 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
 	it("enqueue가 거부되면 같은 generation을 backoff 시점까지 defer한다", async () => {
 		// Given - claim 성공 후 queue backend가 enqueue를 거부
 		const now = new Date("2026-08-29T00:00:00.000Z");
-		jest.useFakeTimers({ now });
-		jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+		vi.useFakeTimers({ now });
+		vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
 		const publications = [{ dispatchId: 41, publishAttempt: 2 }];
 		outbox.claimByDispatchIds.mockResolvedValue(publications);
 		enqueuer.enqueueDeliveries.mockRejectedValue(new Error("queue unavailable"));
@@ -99,7 +100,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
 	});
 
 	it("queue가 문자열 오류를 반환해도 안전한 메시지로 정규화해 defer한다", async () => {
-		jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+		vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
 		const publications = [{ dispatchId: 42, publishAttempt: 1 }];
 		outbox.claimByDispatchIds.mockResolvedValue(publications);
 		enqueuer.enqueueDeliveries.mockRejectedValue("queue unavailable");
@@ -113,7 +114,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
 
 	it("enqueue 성공 뒤 publish mark가 실패하면 generation을 defer하지 않는다", async () => {
 		// Given - queue가 job을 수락했지만 publish mark 저장이 일시적으로 실패
-		jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+		vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
 		const publications = [{ dispatchId: 52, publishAttempt: 3 }];
 		outbox.claimByDispatchIds.mockResolvedValue(publications);
 		enqueuer.enqueueDeliveries.mockResolvedValue(undefined);

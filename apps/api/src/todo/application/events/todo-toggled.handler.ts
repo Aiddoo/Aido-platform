@@ -1,23 +1,23 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { TODO_EVENTS } from "../../domain/events/todo-event-names";
-import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
-import { isAllCompletedToday, milestoneForCount } from "../../domain/services/completion-policy";
-import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
-import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
-import { TODO_NOTIFICATION, type TodoNotificationPort } from "../ports/todo-notification.port";
+import { TODO_EVENTS } from "../../domain/events/todo-event-names.js";
+import { TodoToggledEvent } from "../../domain/events/todo-toggled.event.js";
+import { isAllCompletedToday, milestoneForCount } from "../../domain/services/completion-policy.js";
+import { FRIEND_PORT, type FriendPort } from "../ports/friend.port.js";
+import { STREAK_PORT, type StreakPort } from "../ports/streak.port.js";
+import { TODO_NOTIFICATION, type TodoNotificationPort } from "../ports/todo-notification.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../ports/todo-read.repository.port";
+} from "../ports/todo-read.repository.port.js";
 import {
 	TODO_REMINDER,
 	type TodoReminderCancellationResult,
 	type TodoReminderPort,
-} from "../ports/todo-reminder.port";
+} from "../ports/todo-reminder.port.js";
 
 /**
  * Todo 완료 토글 이벤트 핸들러

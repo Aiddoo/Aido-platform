@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * EncryptionService 단위 테스트
  *
@@ -9,9 +11,9 @@
  * pnpm --filter @aido/api test encryption.service
  * ```
  */
-import type { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import type { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import { EncryptionService } from "./encryption.service";
+import { EncryptionService } from "./encryption.service.js";
 
 describe("EncryptionService — 암호화 서비스", () => {
 	let service: EncryptionService;
@@ -20,7 +22,7 @@ describe("EncryptionService — 암호화 서비스", () => {
 		// Given - Mock 설정 서비스
 		const mockConfigService = {
 			tokenEncryptionKey: "test-encryption-key-must-be-at-least-32-characters-long",
-			get: jest.fn().mockReturnValue(undefined),
+			get: vi.fn().mockReturnValue(undefined),
 		} as unknown as TypedConfigService;
 
 		service = new EncryptionService(mockConfigService);

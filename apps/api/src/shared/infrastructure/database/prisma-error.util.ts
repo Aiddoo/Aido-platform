@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "#api/generated/prisma/client";
 
 /**
  * Prisma 알려진 요청 오류 판별 경계 헬퍼.

@@ -12,7 +12,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 
 const MIDNIGHT_GRACE_MS = 100;
 
@@ -97,7 +97,7 @@ export function LocalDateProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => {
-    let currentAppState: AppStateStatus = AppState.currentState;
+    let currentAppState = AppState.currentState;
     let localMidnightTimer: ReturnType<typeof setTimeout> | null = null;
 
     const clearLocalMidnightTimer = () => {

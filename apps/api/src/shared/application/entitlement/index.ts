@@ -1,1 +1,1 @@
-export * from "./entitlement.service";
+export * from "./entitlement.service.js";

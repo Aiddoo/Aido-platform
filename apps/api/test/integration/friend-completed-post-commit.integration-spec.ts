@@ -1,48 +1,49 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import { Test, type TestingModule } from "@nestjs/testing";
-import { createNotificationCacheMock } from "@test/mocks/ports/notification-cache.mock";
-import { createNotificationRepositoryMock } from "@test/mocks/ports/notification.mock";
+import { vi, type Mocked, type MockedFunction } from "vitest";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "@/notification/application/ports/notification-cache.port";
-import type { CreateNotificationData } from "@/notification/application/ports/notification-data";
+} from "#api/notification/application/ports/notification-cache.port";
+import type { CreateNotificationData } from "#api/notification/application/ports/notification-data";
 import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
-} from "@/notification/application/ports/notification-dedup.port";
+} from "#api/notification/application/ports/notification-dedup.port";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "@/notification/application/ports/notification.repository.port";
+} from "#api/notification/application/ports/notification.repository.port";
 import {
 	PUSH_DISPATCH_STAGING,
 	type PushDispatchStagingRepositoryPort,
 	type StagePushDispatchInput,
-} from "@/notification/application/ports/push-dispatch-staging.repository.port";
+} from "#api/notification/application/ports/push-dispatch-staging.repository.port";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
-} from "@/notification/application/ports/user-notification-settings.port";
-import { NotificationHistoryReader } from "@/notification/application/readers/notification-history.reader";
-import { PushDeliveryAfterCommitPublisher } from "@/notification/application/services/push-delivery-after-commit.publisher";
-import { FinalizeBatchNotificationUseCase } from "@/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
-import { PersistBatchNotificationUseCase } from "@/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+} from "#api/notification/application/ports/user-notification-settings.port";
+import { NotificationHistoryReader } from "#api/notification/application/readers/notification-history.reader";
+import { PushDeliveryAfterCommitPublisher } from "#api/notification/application/services/push-delivery-after-commit.publisher";
+import { FinalizeBatchNotificationUseCase } from "#api/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
+import { PersistBatchNotificationUseCase } from "#api/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
 import {
 	PublishPushDeliveryOutboxUseCase,
 	type PublishPushDeliveryOutboxInput,
-} from "@/notification/application/use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
-import { SendFriendCompletionNotificationsUseCase } from "@/notification/application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
-import type { NotificationRecord } from "@/notification/domain/records/notification.record";
+} from "#api/notification/application/use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
+import { SendFriendCompletionNotificationsUseCase } from "#api/notification/application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
+import type { NotificationRecord } from "#api/notification/domain/records/notification.record";
 import {
 	AFTER_COMMIT_TASK_REGISTRY,
 	type AfterCommitTask,
 	type AfterCommitTaskRegistryPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
+import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
+import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 
 interface TransactionContext {
 	closed: boolean;
@@ -121,26 +122,24 @@ describe("friend-completed durable post-commit publication (component)", () => {
 	let useCase: SendFriendCompletionNotificationsUseCase;
 	let persistBatch: PersistBatchNotificationUseCase;
 	let unitOfWork: AfterCommitAwareUnitOfWork;
-	let repository: jest.Mocked<NotificationRepositoryPort>;
-	let staging: jest.Mocked<PushDispatchStagingRepositoryPort>;
-	let cache: jest.Mocked<NotificationCachePort>;
-	let executePublish: jest.MockedFunction<
-		(input: PublishPushDeliveryOutboxInput) => Promise<number>
-	>;
+	let repository: Mocked<NotificationRepositoryPort>;
+	let staging: Mocked<PushDispatchStagingRepositoryPort>;
+	let cache: Mocked<NotificationCachePort>;
+	let executePublish: MockedFunction<(input: PublishPushDeliveryOutboxInput) => Promise<number>>;
 	let events: string[];
 
 	beforeEach(async () => {
 		events = [];
 		unitOfWork = new AfterCommitAwareUnitOfWork();
-		repository = jest.mocked(createNotificationRepositoryMock());
+		repository = vi.mocked(createNotificationRepositoryMock());
 		repository.createManyNotificationsAndReturn.mockImplementation(async (items) => {
 			expect(unitOfWork.storage.getStore()?.closed).toBe(false);
 			events.push("persist-notifications");
 			return items.map(toNotificationRecord);
 		});
-		staging = jest.mocked({
-			stage: jest.fn(),
-			stageMany: jest.fn(async (inputs: readonly StagePushDispatchInput[]) => {
+		staging = vi.mocked({
+			stage: vi.fn(),
+			stageMany: vi.fn(async (inputs: readonly StagePushDispatchInput[]) => {
 				expect(unitOfWork.storage.getStore()?.closed).toBe(false);
 				events.push("stage-dispatch-outbox");
 				return inputs.map((input, index) => ({
@@ -149,30 +148,30 @@ describe("friend-completed durable post-commit publication (component)", () => {
 				}));
 			}),
 		} satisfies PushDispatchStagingRepositoryPort);
-		cache = jest.mocked(createNotificationCacheMock());
+		cache = vi.mocked(createNotificationCacheMock());
 		cache.invalidateUnreadCount.mockImplementation(async (userId) => {
 			events.push(`invalidate-cache:${userId}`);
 		});
 		const notificationDedup: NotificationDedupPort = {
-			recordNotifiedUsers: jest.fn(async () => {
+			recordNotifiedUsers: vi.fn(async () => {
 				events.push("record-dedup");
 			}),
-			readKnownRecipients: jest.fn(),
-			warmRecipients: jest.fn(),
+			readKnownRecipients: vi.fn(),
+			warmRecipients: vi.fn(),
 		};
 		const userSettings: UserNotificationSettingsPort = {
-			upsertPushTimezone: jest.fn(),
-			upsertPushLocale: jest.fn(),
-			getPreferenceRecord: jest.fn(),
-			getPreferenceRecordsByUserIds: jest.fn().mockResolvedValue([]),
-			getConsentRecord: jest.fn(),
-			getConsentRecordsByUserIds: jest.fn(),
-			updateMarketingPushConsent: jest.fn(),
+			upsertPushTimezone: vi.fn(),
+			upsertPushLocale: vi.fn(),
+			getPreferenceRecord: vi.fn(),
+			getPreferenceRecordsByUserIds: vi.fn().mockResolvedValue([]),
+			getConsentRecord: vi.fn(),
+			getConsentRecordsByUserIds: vi.fn(),
+			updateMarketingPushConsent: vi.fn(),
 		};
 		const notificationHistoryReader = {
-			findAlreadyNotifiedUserIds: jest.fn().mockResolvedValue(new Set<string>()),
+			findAlreadyNotifiedUserIds: vi.fn().mockResolvedValue(new Set<string>()),
 		};
-		executePublish = jest.fn(async (input) => {
+		executePublish = vi.fn(async (input) => {
 			expect(unitOfWork.storage.getStore()?.closed).toBe(true);
 			events.push("publish-delivery-job");
 			return input.kind === "dispatches" ? input.dispatchIds.length : 0;

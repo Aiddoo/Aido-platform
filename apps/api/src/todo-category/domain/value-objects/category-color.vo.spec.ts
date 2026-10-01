@@ -1,6 +1,6 @@
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { CategoryColor } from "./category-color.vo";
+import { CategoryColor } from "./category-color.vo.js";
 
 describe("CategoryColor", () => {
 	it("#RRGGBB 형식은 통과", () => {

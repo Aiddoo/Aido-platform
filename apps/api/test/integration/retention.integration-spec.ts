@@ -1,9 +1,12 @@
-import { asDep } from "@test/mocks";
+import type { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { PrismaRetentionRepository } from "@/retention/infrastructure/persistence/prisma-retention.repository";
+import type { Prisma, PrismaClient } from "#api/generated/prisma/client";
+import { PrismaRetentionRepository } from "#api/retention/infrastructure/persistence/prisma-retention.repository";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { asDep } from "#test/mocks/index";
 
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 	let testDb: TestDatabase;
@@ -16,7 +19,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 		prisma = await testDb.start();
 		activeClient = prisma;
 		repository = new PrismaRetentionRepository(
-			asDep({
+			asDep<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>({
 				get tx() {
 					return activeClient;
 				},

@@ -1,18 +1,20 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createNotificationRecipientPreferenceReaderMock } from "@test/mocks/ports/notification.mock";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
+
+import { createNotificationRecipientPreferenceReaderMock } from "#test/mocks/ports/notification.mock";
 
 import {
 	NOTIFICATION_RECIPIENT_PREFERENCE_READER,
 	type NotificationRecipientPreferenceReaderPort,
-} from "../ports/notification-recipient-preference.reader.port";
-import { PUSH_RATE_LIMITER, type PushRateLimiterPort } from "../ports/push-rate-limiter.port";
+} from "../ports/notification-recipient-preference.reader.port.js";
+import { PUSH_RATE_LIMITER, type PushRateLimiterPort } from "../ports/push-rate-limiter.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type NotificationDeliveryPreference,
 	type UserNotificationSettingsPort,
-} from "../ports/user-notification-settings.port";
-import { PushDeliveryEligibilityService } from "./push-delivery-eligibility.service";
+} from "../ports/user-notification-settings.port.js";
+import { PushDeliveryEligibilityService } from "./push-delivery-eligibility.service.js";
 
 const DAYTIME = new Date("2026-07-16T03:00:00.000Z");
 const KST_NIGHT = new Date("2026-07-16T14:00:00.000Z");
@@ -61,7 +63,7 @@ describe("PushDeliveryEligibilityService", () => {
 	let preferenceReader: Mocked<NotificationRecipientPreferenceReaderPort>;
 
 	beforeEach(async () => {
-		jest.useFakeTimers().setSystemTime(DAYTIME);
+		vi.useFakeTimers().setSystemTime(DAYTIME);
 		const { unit, unitRef } = await TestBed.solitary(PushDeliveryEligibilityService)
 			.mock<NotificationRecipientPreferenceReaderPort>(NOTIFICATION_RECIPIENT_PREFERENCE_READER)
 			.impl(() => createNotificationRecipientPreferenceReaderMock())
@@ -75,7 +77,7 @@ describe("PushDeliveryEligibilityService", () => {
 		rateLimiter.reserveEngagement.mockResolvedValue(false);
 	});
 
-	afterEach(() => jest.useRealTimers());
+	afterEach(() => vi.useRealTimers());
 
 	it("단건 수신자 컨텍스트는 미상 UTC를 배송용 KST와 현지 날짜로 보정한다", async () => {
 		preferenceReader.getPreference.mockResolvedValue(preference({ timezone: "UTC" }));
@@ -118,7 +120,7 @@ describe("PushDeliveryEligibilityService", () => {
 	});
 
 	it("단건 마케팅은 야간 quiet-hours를 동의 조회보다 앞서 적용한다", async () => {
-		jest.setSystemTime(KST_NIGHT);
+		vi.setSystemTime(KST_NIGHT);
 		const recipient = await service.loadSingleRecipient("user-1");
 
 		await expect(
@@ -173,7 +175,7 @@ describe("PushDeliveryEligibilityService", () => {
 	});
 
 	it("재시도 시 quiet-hours로 전환되면 저장된 rate 예약과 무관하게 마케팅을 중단한다", async () => {
-		jest.setSystemTime(KST_NIGHT);
+		vi.setSystemTime(KST_NIGHT);
 		const recipient = await service.loadSingleRecipient("user-1");
 
 		await expect(

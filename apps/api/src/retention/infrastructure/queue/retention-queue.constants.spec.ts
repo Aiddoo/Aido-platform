@@ -1,4 +1,4 @@
-import { RetentionJobName, RetentionRuntimeJobSchema } from "./retention-queue.constants";
+import { RetentionJobName, RetentionRuntimeJobSchema } from "./retention-queue.constants.js";
 
 describe("RetentionRuntimeJobSchema", () => {
 	it("큐에서 복원한 dispatch payload를 검증한다", () => {

@@ -1,26 +1,18 @@
 import {
-  type AiUsageResponse,
   aiUsageResponseSchema,
   type CreateRecurringTodoInput,
-  type CreateRecurringTodoResponse,
   type CreateTodoInput,
   createRecurringTodoResponseSchema,
-  type DeleteTodoResponse,
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
   type GetTodosQuery,
-  type ParseTodoResponse,
   parseTodoResponseSchema,
   type ReorderTodoInput,
-  type ReorderTodoResponse,
   reorderTodoResponseSchema,
-  type Todo,
-  type TodoListResponse,
   type ToggleTodoCompleteInput,
-  type TodoDetailsResponse,
   todoDetailsResponseSchema,
   todoListResponseSchema,
-  todoSchema,
+  createTodoResponseSchema,
   todoSummaryResponseSchema,
   type UpdateTodoInput,
   type UpdateTodoScheduleInput,
@@ -36,6 +28,7 @@ import type {
   DailyCompletionsResult,
   ParsedTodoResult,
   TodoItem,
+  TodoDetails,
   TodoSummary,
   TodosResult,
 } from '../models/todo.model';
@@ -44,6 +37,7 @@ import {
   toDailyCompletionsResult,
   toParsedTodoResult,
   toTodoItem,
+  toTodoDetails,
   toTodoItems,
   toTodoSummary,
 } from './todo.mapper';
@@ -55,8 +49,12 @@ export class TodoService {
     this.#httpClient = httpClient;
   }
 
-  getTodos = async (params: GetTodosQuery): Promise<Result<TodosResult, ApiError>> => {
-    const result = await this.#httpClient.get<TodoListResponse>('v1/todos', {
+  getTodos = async (
+    params: GetTodosQuery,
+    signal?: AbortSignal,
+  ): Promise<Result<TodosResult, ApiError>> => {
+    const result = await this.#httpClient.get('v1/todos', {
+      signal,
       params: {
         cursor: params.cursor,
         size: params.size,
@@ -86,18 +84,17 @@ export class TodoService {
   getFriendTodos = async (
     friendUserId: string,
     params: GetTodosQuery,
+    signal?: AbortSignal,
   ): Promise<Result<TodosResult, ApiError>> => {
-    const result = await this.#httpClient.get<TodoListResponse>(
-      `v1/todos/friends/${friendUserId}`,
-      {
-        params: {
-          cursor: params.cursor,
-          size: params.size,
-          startDate: params.startDate,
-          endDate: params.endDate,
-        },
+    const result = await this.#httpClient.get(`v1/todos/friends/${friendUserId}`, {
+      signal,
+      params: {
+        cursor: params.cursor,
+        size: params.size,
+        startDate: params.startDate,
+        endDate: params.endDate,
       },
-    );
+    });
 
     if (!result.ok) {
       return result;
@@ -121,38 +118,35 @@ export class TodoService {
     todoId: number,
     body: ToggleTodoCompleteInput,
   ): Promise<Result<TodoItem, ApiError>> => {
-    const result = await this.#httpClient.patch<{ todo: Todo }>(
-      `v1/todos/${todoId}/complete`,
-      body,
-    );
+    const result = await this.#httpClient.patch(`v1/todos/${todoId}/complete`, body);
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = todoSchema.safeParse(result.value.todo);
+    const parsed = createTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[TodoService] Invalid toggleTodoComplete response: ${parsed.error.message}`,
       );
     }
 
-    return ok(toTodoItem(parsed.data));
+    return ok(toTodoItem(parsed.data.todo));
   };
 
   createTodo = async (params: CreateTodoInput): Promise<Result<TodoItem, ApiError>> => {
-    const result = await this.#httpClient.post<{ todo: Todo }>('v1/todos', params);
+    const result = await this.#httpClient.post('v1/todos', params);
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = todoSchema.safeParse(result.value.todo);
+    const parsed = createTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[TodoService] Invalid createTodo response: ${parsed.error.message}`);
     }
 
-    return ok(toTodoItem(parsed.data));
+    return ok(toTodoItem(parsed.data.todo));
   };
 
   updateTodo = async (
@@ -194,7 +188,7 @@ export class TodoService {
   };
 
   deleteTodo = async (todoId: number): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.delete<DeleteTodoResponse>(`v1/todos/${todoId}`);
+    const result = await this.#httpClient.delete(`v1/todos/${todoId}`);
 
     if (!result.ok) {
       return result;
@@ -212,7 +206,7 @@ export class TodoService {
     text: string,
     categoryId?: number,
   ): Promise<Result<ParsedTodoResult, ApiError>> => {
-    const result = await this.#httpClient.post<ParseTodoResponse>('v1/ai/parse-todo', {
+    const result = await this.#httpClient.post('v1/ai/parse-todo', {
       text,
       ...(categoryId != null && { categoryId }),
     });
@@ -229,8 +223,8 @@ export class TodoService {
     return ok(toParsedTodoResult(parsed.data));
   };
 
-  getAiUsage = async (): Promise<Result<AiUsage, ApiError>> => {
-    const result = await this.#httpClient.get<AiUsageResponse>('v1/ai/usage');
+  getAiUsage = async (signal?: AbortSignal): Promise<Result<AiUsage, ApiError>> => {
+    const result = await this.#httpClient.get('v1/ai/usage', { signal });
 
     if (!result.ok) {
       return result;
@@ -247,8 +241,10 @@ export class TodoService {
   getDailyCompletions = async (
     startDate: string,
     endDate: string,
+    signal?: AbortSignal,
   ): Promise<Result<DailyCompletionsResult, ApiError>> => {
-    const result = await this.#httpClient.get<unknown>('v1/daily-completions', {
+    const result = await this.#httpClient.get('v1/daily-completions', {
+      signal,
       params: { startDate, endDate },
     });
 
@@ -271,13 +267,12 @@ export class TodoService {
     friendUserId: string,
     startDate: string,
     endDate: string,
+    signal?: AbortSignal,
   ): Promise<Result<DailyCompletionsResult, ApiError>> => {
-    const result = await this.#httpClient.get<unknown>(
-      `v1/daily-completions/friends/${friendUserId}`,
-      {
-        params: { startDate, endDate },
-      },
-    );
+    const result = await this.#httpClient.get(`v1/daily-completions/friends/${friendUserId}`, {
+      signal,
+      params: { startDate, endDate },
+    });
 
     if (!result.ok) {
       return result;
@@ -294,8 +289,8 @@ export class TodoService {
   };
 
   /** 오늘의 할 일 요약 (홈 위젯 스냅샷) — 진행률·스트릭·상위 할 일을 한 번에 */
-  getTodoSummary = async (): Promise<Result<TodoSummary, ApiError>> => {
-    const result = await this.#httpClient.get<unknown>('v1/todos/summary');
+  getTodoSummary = async (signal?: AbortSignal): Promise<Result<TodoSummary, ApiError>> => {
+    const result = await this.#httpClient.get('v1/todos/summary', { signal });
 
     if (!result.ok) {
       return result;
@@ -314,10 +309,7 @@ export class TodoService {
   createRecurringTodo = async (
     params: CreateRecurringTodoInput,
   ): Promise<Result<TodoItem[], ApiError>> => {
-    const result = await this.#httpClient.post<CreateRecurringTodoResponse>(
-      'v1/todos/recurring',
-      params,
-    );
+    const result = await this.#httpClient.post('v1/todos/recurring', params);
 
     if (!result.ok) {
       return result;
@@ -337,10 +329,7 @@ export class TodoService {
     todoId: number,
     input: ReorderTodoInput,
   ): Promise<Result<TodoItem, ApiError>> => {
-    const result = await this.#httpClient.patch<ReorderTodoResponse>(
-      `v1/todos/${todoId}/reorder`,
-      input,
-    );
+    const result = await this.#httpClient.patch(`v1/todos/${todoId}/reorder`, input);
 
     if (!result.ok) {
       return result;
@@ -354,8 +343,11 @@ export class TodoService {
     return ok(toTodoItem(parsed.data.todo));
   };
 
-  getTodoDetails = async (todoId: number): Promise<Result<TodoDetailsResponse, ApiError>> => {
-    const response = await this.#httpClient.get<unknown>(`v1/todos/${todoId}/details`);
+  getTodoDetails = async (
+    todoId: number,
+    signal?: AbortSignal,
+  ): Promise<Result<TodoDetails, ApiError>> => {
+    const response = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
 
     if (!response.ok) {
       return response;
@@ -366,6 +358,6 @@ export class TodoService {
       throw new ParseError(`[TodoService] Invalid todo details: ${parsed.error.message}`);
     }
 
-    return ok(parsed.data);
+    return ok(toTodoDetails(parsed.data));
   };
 }

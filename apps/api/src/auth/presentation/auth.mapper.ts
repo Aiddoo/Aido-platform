@@ -15,7 +15,7 @@ import type {
 	RegisterResult,
 	UpdateProfileResult,
 	VerifyEmailResult,
-} from "@/auth/application/types/auth.types";
+} from "#api/auth/application/types/auth.types";
 
 /**
  * Auth 도메인의 Mapper 클래스

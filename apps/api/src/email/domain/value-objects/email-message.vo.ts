@@ -1,31 +1,31 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import {
 	getInquiryHtml,
 	getInquirySubject,
 	getInquiryText,
 	type InquiryTemplateData,
-} from "../templates/inquiry.template";
+} from "../templates/inquiry.template.js";
 import {
 	getPasswordResetHtml,
 	getPasswordResetSubject,
 	getPasswordResetText,
 	type PasswordResetTemplateData,
-} from "../templates/password-reset.template";
+} from "../templates/password-reset.template.js";
 import {
 	getPasswordSetupHtml,
 	getPasswordSetupSubject,
 	getPasswordSetupText,
 	type PasswordSetupTemplateData,
-} from "../templates/password-setup.template";
+} from "../templates/password-setup.template.js";
 import {
 	getVerificationCodeHtml,
 	getVerificationCodeSubject,
 	getVerificationCodeText,
 	type VerificationCodeTemplateData,
-} from "../templates/verification-code.template";
+} from "../templates/verification-code.template.js";
 
 /** 이메일 태그 (추적/분류용) */
 export interface EmailTag {

@@ -1,6 +1,6 @@
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { UserTag } from "./user-tag.vo";
+import { UserTag } from "./user-tag.vo.js";
 
 describe("UserTag VO", () => {
 	it("8자리 영숫자 대문자를 허용한다", () => {

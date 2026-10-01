@@ -1,40 +1,40 @@
+import { ErrorCode } from "@aido/errors";
 /**
  * GlobalExceptionFilter 테스트
  *
  * Prisma P2002 매핑, BusinessException, HttpException, 알 수 없는 에러 처리 검증
  */
-
-import { ErrorCode } from "@aido/errors";
 import { HttpException, HttpStatus } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import { PinoLogger } from "nestjs-pino";
+import { vi, type Mock, type Mocked } from "vitest";
 
-import { Prisma } from "@/generated/prisma/client";
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
-import type { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { Prisma } from "#api/generated/prisma/client";
+import { BusinessExceptions } from "#api/shared/application/exceptions/business-exception.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import type { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import { GlobalExceptionFilter } from "./global-exception.filter";
+import { GlobalExceptionFilter } from "./global-exception.filter.js";
 
-jest.mock("@sentry/nestjs", () => ({
-	captureException: jest.fn(),
-	withScope: jest.fn((callback: (scope: unknown) => void) => {
+vi.mock("@sentry/nestjs", () => ({
+	captureException: vi.fn(),
+	withScope: vi.fn((callback: (scope: unknown) => void) => {
 		callback({
-			setUser: jest.fn(),
-			setTags: jest.fn(),
-			setExtra: jest.fn(),
+			setUser: vi.fn(),
+			setTags: vi.fn(),
+			setExtra: vi.fn(),
 		});
 	}),
 }));
 
 describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 	let filter: GlobalExceptionFilter;
-	let mockLogger: jest.Mocked<PinoLogger>;
+	let mockLogger: Mocked<PinoLogger>;
 	let mockConfigService: TypedConfigService;
-	let mockResponse: { status: jest.Mock; json: jest.Mock };
+	let mockResponse: { status: Mock; json: Mock };
 	let mockRequest: { method: string; url: string; user?: { userId: string } };
-	let mockHost: { switchToHttp: jest.Mock };
+	let mockHost: { switchToHttp: Mock };
 
 	const createFilter = (isDevelopment = true) => {
 		mockConfigService = {
@@ -45,14 +45,14 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 	beforeEach(() => {
 		mockLogger = {
-			setContext: jest.fn(),
-			error: jest.fn(),
-			warn: jest.fn(),
-		} as unknown as jest.Mocked<PinoLogger>;
+			setContext: vi.fn(),
+			error: vi.fn(),
+			warn: vi.fn(),
+		} as unknown as Mocked<PinoLogger>;
 
 		mockResponse = {
-			status: jest.fn().mockReturnThis(),
-			json: jest.fn(),
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
 		};
 
 		mockRequest = {
@@ -61,7 +61,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 		};
 
 		mockHost = {
-			switchToHttp: jest.fn().mockReturnValue({
+			switchToHttp: vi.fn().mockReturnValue({
 				getResponse: () => mockResponse,
 				getRequest: () => mockRequest,
 			}),
@@ -84,8 +84,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.EMAIL_0501);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.EMAIL_0501);
 		});
 
 		it("알려진 constraint(userId_name)를 BusinessException으로 매핑해야 한다", () => {
@@ -101,8 +101,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.TODO_CATEGORY_0853);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.TODO_CATEGORY_0853);
 		});
 
 		it("알려진 constraint(followerId_followingId)를 BusinessException으로 매핑해야 한다", () => {
@@ -118,8 +118,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.FOLLOW_0901);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.FOLLOW_0901);
 		});
 
 		it("알 수 없는 constraint를 SYS_0004 (409)로 폴백해야 한다", () => {
@@ -135,8 +135,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0004);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0004);
 			expect(mockLogger.warn).toHaveBeenCalledWith(
 				expect.stringContaining("Unknown P2002 constraint"),
 			);
@@ -155,8 +155,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0002);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
 		});
 
 		it("처리되지 않은 Prisma 에러는 500 SYS_0001로 처리해야 한다", () => {
@@ -172,8 +172,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0001);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0001);
 		});
 	});
 
@@ -187,8 +187,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(exception.getStatus());
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.TODO_CATEGORY_0851);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.TODO_CATEGORY_0851);
 		});
 
 		it("HttpException을 올바르게 처리해야 한다", () => {
@@ -200,8 +200,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0002);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
 		});
 
 		it("알 수 없는 에러를 500 SYS_0001로 처리해야 한다", () => {
@@ -213,8 +213,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then
 			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0001);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0001);
 		});
 	});
 
@@ -269,8 +269,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.details).toBeDefined();
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.details).toBeDefined();
 		});
 
 		it("production 환경에서 HttpException의 details가 포함되지 않는다", () => {
@@ -285,8 +285,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.details).toBeUndefined();
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.details).toBeUndefined();
 		});
 
 		it("development 환경에서 알 수 없는 에러의 details가 포함된다", () => {
@@ -298,8 +298,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.details).toBe("unexpected error");
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.details).toBe("unexpected error");
 		});
 
 		it("production 환경에서 알 수 없는 에러의 details가 포함되지 않는다", () => {
@@ -311,8 +311,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.details).toBeUndefined();
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.details).toBeUndefined();
 		});
 	});
 
@@ -329,13 +329,13 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 			// Then - 동일 ErrorCode의 BusinessException과 상태/바디가 동일
 			expect(mockResponse.status).toHaveBeenCalledWith(expected.getStatus());
-			const jsonArg = mockResponse.json.mock.calls[0][0];
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
 			const expectedResponse = expected.getResponse() as {
 				error: { code: string; message: string; details: unknown };
 			};
-			expect(jsonArg.error.code).toBe(expectedResponse.error.code);
-			expect(jsonArg.error.message).toBe(expectedResponse.error.message);
-			expect(jsonArg.error.details).toEqual(expectedResponse.error.details);
+			expect(jsonArg?.error.code).toBe(expectedResponse.error.code);
+			expect(jsonArg?.error.message).toBe(expectedResponse.error.message);
+			expect(jsonArg?.error.details).toEqual(expectedResponse.error.details);
 			expect(jsonArg.success).toBe(false);
 		});
 
@@ -349,8 +349,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.code).toBe(ErrorCode.USER_0601);
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.code).toBe(ErrorCode.USER_0601);
 			expect(jsonArg.success).toBe(false);
 		});
 
@@ -362,8 +362,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.message).toBe("커스텀 도메인 메시지");
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.message).toBe("커스텀 도메인 메시지");
 		});
 
 		it("production 환경에서 DomainException의 details가 제거된다", () => {
@@ -377,8 +377,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
-			const jsonArg = mockResponse.json.mock.calls[0][0];
-			expect(jsonArg.error.details).toBeUndefined();
+			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+			expect(jsonArg?.error.details).toBeUndefined();
 		});
 	});
 });

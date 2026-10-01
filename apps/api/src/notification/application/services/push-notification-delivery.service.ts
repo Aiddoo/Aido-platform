@@ -1,28 +1,31 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import type { PushTokenRecord } from "../../domain/records/notification.record";
+import type { PushTokenRecord } from "../../domain/records/notification.record.js";
 import {
 	FEATURE_DISCOVERY_CAMPAIGN_KEY,
 	supportsFeatureDiscoveryMarketing,
-} from "../../domain/services/feature-marketing-capability";
+} from "../../domain/services/feature-marketing-capability.js";
 import {
 	ACTIVE_PUSH_TOKEN_READER,
 	type ActivePushTokenReaderPort,
-} from "../ports/active-push-token.reader.port";
-import { NOTIFICATION_CACHE, type NotificationCachePort } from "../ports/notification-cache.port";
-import type { CreateNotificationData } from "../ports/notification-data";
+} from "../ports/active-push-token.reader.port.js";
+import {
+	NOTIFICATION_CACHE,
+	type NotificationCachePort,
+} from "../ports/notification-cache.port.js";
+import type { CreateNotificationData } from "../ports/notification-data.js";
 import {
 	PUSH_PROVIDER,
 	type PushPayload,
 	type PushProvider,
 	type PushResult,
-} from "../ports/push-provider.port";
+} from "../ports/push-provider.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../ports/push-token.repository.port";
-import type { PushDispatchSkipReason } from "../types/push-delivery.types";
-import type { BatchPushNotificationPayload } from "./push-notification-payload.factory";
+} from "../ports/push-token.repository.port.js";
+import type { PushDispatchSkipReason } from "../types/push-delivery.types.js";
+import type { BatchPushNotificationPayload } from "./push-notification-payload.factory.js";
 
 export type SinglePushNotificationDeliveryResult =
 	| {

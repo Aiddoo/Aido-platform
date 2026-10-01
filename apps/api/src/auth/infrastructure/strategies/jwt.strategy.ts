@@ -4,15 +4,15 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
-import { SessionService } from "@/auth/application/services/session.service";
-import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { toErrorMessage } from "@/shared/application/utils/error-message.util";
-import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { type CachedSession, CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { SessionService } from "#api/auth/application/services/session.service";
+import type { JwtPayload } from "#api/auth/infrastructure/adapters/token.service";
+import { SessionRepository } from "#api/auth/infrastructure/persistence/session.repository";
+import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
+import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
+import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { type CachedSession, CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 /**
  * @aido/validators에서 re-export (하위 호환성 유지)

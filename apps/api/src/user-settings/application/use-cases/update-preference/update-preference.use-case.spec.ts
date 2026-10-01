@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * UpdatePreferenceUseCase 단위 테스트
  *
@@ -5,26 +6,25 @@
  * - 시간 범위 불변식(PREFERENCE_1702)
  * - 캐시 무효화 + 즉시 반영 잡 등록
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUserSettingsCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { createUserSettingsCacheMock } from "#test/mocks/ports/index";
 
-import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record";
+import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record.js";
 import {
 	REMINDER_SCHEDULE_ENQUEUER,
 	type ReminderScheduleEnqueuerPort,
-} from "../../ports/reminder-schedule.enqueuer.port";
+} from "../../ports/reminder-schedule.enqueuer.port.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
-import { UpdatePreferenceUseCase } from "./update-preference.use-case";
+} from "../../ports/user-settings-cache.port.js";
+import { UpdatePreferenceUseCase } from "./update-preference.use-case.js";
 
 const userId = "user-1";
 

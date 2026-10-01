@@ -1,17 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { now } from "@/shared/domain/date/utils/core";
+import { now } from "#api/shared/domain/date/utils/core";
 
-import { buildDailySummaryMessage } from "../../../domain/services/admin-message.factory";
-import { computePreviousKstDayRange } from "../../../domain/services/signup-report-period";
+import { buildDailySummaryMessage } from "../../../domain/services/admin-message.factory.js";
+import { computePreviousKstDayRange } from "../../../domain/services/signup-report-period.js";
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,
-} from "../../ports/admin-notification-queue.port";
+} from "../../ports/admin-notification-queue.port.js";
 import {
 	SIGNUP_STATS_READER,
 	type SignupStatsReaderPort,
-} from "../../ports/signup-stats.reader.port";
+} from "../../ports/signup-stats.reader.port.js";
 
 /**
  * 일일 가입 요약 발송 유스케이스.

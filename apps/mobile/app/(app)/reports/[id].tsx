@@ -4,7 +4,11 @@ import {
   getSampleReport,
   isSampleReportId,
 } from '@src/features/ai/presentations/constants/sample-reports.constant';
-import { useGetReportDetailQueryOptions } from '@src/features/ai/presentations/queries/use-get-report-detail-query-options';
+import {
+  reportScreenParamsSchema,
+  useReportScreenParams,
+} from '@src/features/ai/presentations/hooks/use-report-screen-params';
+import { useGetReportDetailQueryOptions } from '@src/features/ai/presentations/queries/get-report-detail-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -17,15 +21,18 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 
 const ReportDetailScreen = () => {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useLocalSearchParams();
 
-  if (!id) {
-    return null;
+  if (
+    typeof id !== 'string' ||
+    (!isSampleReportId(id) && !reportScreenParamsSchema.safeParse({ id }).success)
+  ) {
+    return <Redirect href="/reports" />;
   }
 
   return (
@@ -35,7 +42,7 @@ const ReportDetailScreen = () => {
       ) : (
         <QueryErrorBoundary>
           <Suspense fallback={<ReportDetailContent.Loading />}>
-            <ReportDetailBody id={Number(id)} />
+            <ReportDetailBody />
           </Suspense>
         </QueryErrorBoundary>
       )}
@@ -45,7 +52,8 @@ const ReportDetailScreen = () => {
 
 export default ReportDetailScreen;
 
-function ReportDetailBody({ id }: { id: number }) {
+function ReportDetailBody() {
+  const { id } = useReportScreenParams();
   const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions(id));
   const { trackEvent } = useTrack();
 

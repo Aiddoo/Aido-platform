@@ -3,10 +3,10 @@ import { ReportStatusBanner } from '@src/features/ai/presentations/components/Re
 import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { getSampleReport } from '@src/features/ai/presentations/constants/sample-reports.constant';
-import { useGetReportStatusQueryOptions } from '@src/features/ai/presentations/queries/use-get-report-status-query-options';
-import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/use-get-reports-query-options';
+import { useGetReportStatusQueryOptions } from '@src/features/ai/presentations/queries/get-report-status-query-options';
+import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/get-reports-query-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {

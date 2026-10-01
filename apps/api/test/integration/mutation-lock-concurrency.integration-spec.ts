@@ -7,43 +7,44 @@ import { type DynamicModule, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { ClsModule, ClsService } from "nestjs-cls";
+import { vi } from "vitest";
 
-import { type CheerLimitReaderPort } from "@/cheer/application/ports/cheer-limit-reader.port";
-import type { CheerNotifierPort } from "@/cheer/application/ports/cheer-notifier.port";
-import { CheerReader } from "@/cheer/application/services/cheer.reader";
-import { SendCheerUseCase } from "@/cheer/application/use-cases/send-cheer/send-cheer.use-case";
-import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
-import { FollowReader } from "@/follow";
-import { Prisma, PrismaClient } from "@/generated/prisma/client";
-import type { NudgeLimitReaderPort } from "@/nudge/application/ports/nudge-limit-reader.port";
-import type { NudgeNotifierPort } from "@/nudge/application/ports/nudge-notifier.port";
-import { NudgeReader } from "@/nudge/application/services/nudge.reader";
-import { SendNudgeUseCase } from "@/nudge/application/use-cases/send-nudge/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "@/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
-import { PrismaNudgeRepository } from "@/nudge/infrastructure/persistence/prisma-nudge.repository";
+import { type CheerLimitReaderPort } from "#api/cheer/application/ports/cheer-limit-reader.port";
+import type { CheerNotifierPort } from "#api/cheer/application/ports/cheer-notifier.port";
+import { CheerReader } from "#api/cheer/application/services/cheer.reader";
+import { SendCheerUseCase } from "#api/cheer/application/use-cases/send-cheer/send-cheer.use-case";
+import { PrismaCheerRepository } from "#api/cheer/infrastructure/persistence/prisma-cheer.repository";
+import { FollowReader } from "#api/follow/index";
+import { Prisma, PrismaClient } from "#api/generated/prisma/client";
+import type { NudgeLimitReaderPort } from "#api/nudge/application/ports/nudge-limit-reader.port";
+import type { NudgeNotifierPort } from "#api/nudge/application/ports/nudge-notifier.port";
+import { NudgeReader } from "#api/nudge/application/services/nudge.reader";
+import { SendNudgeUseCase } from "#api/nudge/application/use-cases/send-nudge/send-nudge.use-case";
+import { SendRemindNudgeUseCase } from "#api/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
+import { PrismaNudgeRepository } from "#api/nudge/infrastructure/persistence/prisma-nudge.repository";
 import {
 	ENTITLEMENT_CACHE,
 	ENTITLEMENT_DATABASE,
-} from "@/shared/application/entitlement/entitlement-state.port";
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import type { PaginationService } from "@/shared/application/pagination";
+} from "#api/shared/application/entitlement/entitlement-state.port";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import type { PaginationService } from "#api/shared/application/pagination/index";
 import {
 	MutationLockKeys,
 	type MutationLockPort,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { ClsUnitOfWork } from "@/shared/infrastructure/database/cls-unit-of-work";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { PostgresMutationLockAdapter } from "@/shared/infrastructure/database/postgres-mutation-lock.adapter";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
-import type { TodoCategoryCachePort } from "@/todo-category/application/ports/todo-category-cache.port";
-import { CreateTodoCategoryUseCase } from "@/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
-import { ReorderTodoCategoryUseCase } from "@/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
-import { TodoCategoryLimitReaderAdapter } from "@/todo-category/infrastructure/adapters/todo-category-limit-reader.adapter";
-import { PrismaTodoCategoryRepository } from "@/todo-category/infrastructure/persistence/prisma-todo-category.repository";
+} from "#api/shared/application/ports/index";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { ClsUnitOfWork } from "#api/shared/infrastructure/database/cls-unit-of-work";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { PostgresMutationLockAdapter } from "#api/shared/infrastructure/database/postgres-mutation-lock.adapter";
+import type { TransactionClient } from "#api/shared/infrastructure/database/prisma.types";
+import type { TodoCategoryCachePort } from "#api/todo-category/application/ports/todo-category-cache.port";
+import { CreateTodoCategoryUseCase } from "#api/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
+import { ReorderTodoCategoryUseCase } from "#api/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
+import { TodoCategoryLimitReaderAdapter } from "#api/todo-category/infrastructure/adapters/todo-category-limit-reader.adapter";
+import { PrismaTodoCategoryRepository } from "#api/todo-category/infrastructure/persistence/prisma-todo-category.repository";
 
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 const CONCURRENCY = 20;
 const CATEGORY_POOL_MAX = 30;
@@ -695,14 +696,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 
 	beforeEach(async () => {
 		await testDatabase.cleanup();
-		jest.useFakeTimers({
-			doNotFake: ["nextTick", "setImmediate", "setTimeout"],
+		vi.useFakeTimers({
+			toNotFake: ["nextTick", "setImmediate", "setTimeout"],
 		});
-		jest.setSystemTime(new Date("2026-07-26T12:00:00.000Z"));
+		vi.setSystemTime(new Date("2026-07-26T12:00:00.000Z"));
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	afterAll(async () => {
@@ -1143,7 +1144,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 
 	it("Cheer lock 대기가 KST 자정을 넘어도 row는 캡처한 이전 날짜 시각으로 저장한다", async () => {
 		// Given - 이전 날짜 key를 별도 트랜잭션이 보유해 send를 실제 DB에서 대기시킴
-		jest.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+		vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
 		const senderId = await createUser(prisma, 0);
 		const receiverId = await createUser(prisma, 1);
 		const held = createDeferred();
@@ -1203,7 +1204,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 			).rejects.toThrow("pid=-1, databaseOid=-1");
 			const observation = await waitForBlockedAdvisoryLock(prisma, dailyKey, identity);
 			expect(observation.waitingCount).toBe(1);
-			jest.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+			vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
 		} finally {
 			continueLockAttempt.resolve();
 			release.resolve();

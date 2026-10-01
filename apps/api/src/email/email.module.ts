@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 
-import { EMAIL_SENDER, type EmailSenderPort } from "./application/ports/email-sender.port";
-import { TransactionalEmailSender } from "./application/senders/transactional-email.sender";
-import { ResendEmailSenderAdapter } from "./infrastructure/adapters/resend-email-sender.adapter";
+import { EMAIL_SENDER, type EmailSenderPort } from "./application/ports/email-sender.port.js";
+import { TransactionalEmailSender } from "./application/senders/transactional-email.sender.js";
+import { ResendEmailSenderAdapter } from "./infrastructure/adapters/resend-email-sender.adapter.js";
 
 /**
  * 이메일 모듈 (클린아키텍처 capability — 컨트롤러 없음)

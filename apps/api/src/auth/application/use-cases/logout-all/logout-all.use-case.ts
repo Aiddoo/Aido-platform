@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CredentialAuthWorkflow } from "../../workflows/credential-auth.workflow";
+import { CredentialAuthWorkflow } from "../../workflows/credential-auth.workflow.js";
 
 @Injectable()
 export class LogoutAllUseCase {

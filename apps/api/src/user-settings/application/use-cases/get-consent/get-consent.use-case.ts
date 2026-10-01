@@ -1,11 +1,11 @@
 import type { ConsentResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { buildConsentView } from "../../../domain/services/consent-view";
+import { buildConsentView } from "../../../domain/services/consent-view.js";
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
+} from "../../ports/user-consent.repository.port.js";
 
 /**
  * 약관 동의 상태 조회 유스케이스.

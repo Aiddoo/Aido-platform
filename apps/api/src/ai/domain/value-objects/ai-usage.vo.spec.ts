@@ -1,7 +1,7 @@
 /**
  * AiUsage 값 객체 단위 테스트
  */
-import { AiUsage } from "./ai-usage.vo";
+import { AiUsage } from "./ai-usage.vo.js";
 
 describe("AiUsage — AI 사용량 값 객체", () => {
 	const RESETS_AT = "2026-08-31T15:00:00.000Z";

@@ -1,4 +1,4 @@
-import { encodeUntrustedJson, sanitizeForPrompt, sanitizeMemoForPrompt } from "./sanitize";
+import { encodeUntrustedJson, sanitizeForPrompt, sanitizeMemoForPrompt } from "./sanitize.js";
 
 describe("sanitizeForPrompt (단문 200자)", () => {
 	it("줄바꿈을 공백으로 치환해야 한다", () => {

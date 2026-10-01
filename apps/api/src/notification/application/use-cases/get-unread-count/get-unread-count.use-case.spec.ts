@@ -1,19 +1,20 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetUnreadCountUseCase 단위 테스트 — 캐시 경유 미읽음 수 조회
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_INBOX_READER,
 	type NotificationInboxReaderPort,
-} from "../../ports/notification-inbox.reader.port";
-import { GetUnreadCountUseCase } from "./get-unread-count.use-case";
+} from "../../ports/notification-inbox.reader.port.js";
+import { GetUnreadCountUseCase } from "./get-unread-count.use-case.js";
 
 describe("GetUnreadCountUseCase", () => {
 	let useCase: GetUnreadCountUseCase;

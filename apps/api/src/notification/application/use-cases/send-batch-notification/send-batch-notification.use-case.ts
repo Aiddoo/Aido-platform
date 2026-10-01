@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import type { CreateNotificationData } from "../../ports/notification-data";
-import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
-import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
+import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case.js";
+import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case.js";
 
 /**
  * 여러 사용자에게 알림 생성 및 발송 유스케이스.

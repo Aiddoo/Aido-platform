@@ -4,7 +4,7 @@
  * 라이브 Redis 데이터 호환을 위해 키 문자열은 byte-identical해야 한다.
  * 리팩토링 중 우발적 키 드리프트를 회귀로 잡는다.
  */
-import { PushRateLimiterKeys } from "./push-rate-limiter.keys";
+import { PushRateLimiterKeys } from "./push-rate-limiter.keys.js";
 
 describe("PushRateLimiterKeys — 키 문자열 고정", () => {
 	it("general 키는 push-rate:{userId}", () => {

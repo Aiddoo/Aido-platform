@@ -9,7 +9,7 @@
 import type { Todo } from "@aido/validators";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("할 일 E2E", () => {
 	let ctx: E2eTestContext;

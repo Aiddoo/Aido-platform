@@ -3,7 +3,7 @@
  *
  * 지연 잡 실행 시 투두 유효성(미완료) 확인과 24시간 내 동일 알림 dedup 판정을 담당한다.
  */
-import type { ActiveTodo } from "./scheduler-read-models";
+import type { ActiveTodo } from "./scheduler-read-models.js";
 
 export const TODO_REMINDER_READER = Symbol("TODO_REMINDER_READER");
 

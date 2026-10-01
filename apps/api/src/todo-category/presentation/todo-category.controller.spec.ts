@@ -1,17 +1,21 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port";
-import { TodoCategoryReader } from "../application/services/todo-category.reader";
-import { CreateTodoCategoryUseCase } from "../application/use-cases/create-todo-category/create-todo-category.use-case";
-import { DeleteTodoCategoryUseCase } from "../application/use-cases/delete-todo-category/delete-todo-category.use-case";
-import { ReorderTodoCategoryUseCase } from "../application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
-import { UpdateTodoCategoryUseCase } from "../application/use-cases/update-todo-category/update-todo-category.use-case";
-import { TodoCategory } from "../domain/entities/todo-category.aggregate";
-import type { CreateTodoCategoryDto, ReorderTodoCategoryDto, UpdateTodoCategoryDto } from "./dtos";
-import { TodoCategoryController } from "./todo-category.controller";
+import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port.js";
+import { TodoCategoryReader } from "../application/services/todo-category.reader.js";
+import { CreateTodoCategoryUseCase } from "../application/use-cases/create-todo-category/create-todo-category.use-case.js";
+import { DeleteTodoCategoryUseCase } from "../application/use-cases/delete-todo-category/delete-todo-category.use-case.js";
+import { ReorderTodoCategoryUseCase } from "../application/use-cases/reorder-todo-category/reorder-todo-category.use-case.js";
+import { UpdateTodoCategoryUseCase } from "../application/use-cases/update-todo-category/update-todo-category.use-case.js";
+import { TodoCategory } from "../domain/entities/todo-category.aggregate.js";
+import type {
+	CreateTodoCategoryDto,
+	ReorderTodoCategoryDto,
+	UpdateTodoCategoryDto,
+} from "./dtos/index.js";
+import { TodoCategoryController } from "./todo-category.controller.js";
 
 const user: CurrentUserPayload = {
 	userId: "u1",

@@ -1,1 +1,1 @@
-export * from "./last-active.interceptor";
+export * from "./last-active.interceptor.js";

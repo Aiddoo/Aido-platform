@@ -1,4 +1,5 @@
 import { toggleTodoCompleteSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class ToggleTodoCompleteDto extends createZodDto(toggleTodoCompleteSchema) {}
+export const ToggleTodoCompleteDto = toggleTodoCompleteSchema.meta({ id: "ToggleTodoCompleteDto" });
+export type ToggleTodoCompleteDto = z.infer<typeof ToggleTodoCompleteDto>;

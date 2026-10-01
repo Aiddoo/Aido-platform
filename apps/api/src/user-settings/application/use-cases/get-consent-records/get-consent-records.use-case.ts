@@ -4,7 +4,7 @@ import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRecordWithId,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
+} from "../../ports/user-consent.repository.port.js";
 
 /** 푸시 발송 판단용 배치 동의 조회 (notification). */
 @Injectable()

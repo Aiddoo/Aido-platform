@@ -2,20 +2,20 @@ import { ErrorCode } from "@aido/errors";
 import type { ReorderPosition, Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
 	type ReorderPlan,
-} from "../../../domain/services/reorder-position";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+} from "../../../domain/services/reorder-position.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
+} from "../../ports/todo-read.repository.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
 
 /** Todo 순서 변경 입력. */
 export interface ReorderTodoInput {

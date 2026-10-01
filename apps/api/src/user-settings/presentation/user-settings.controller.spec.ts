@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * SettingsController 컨트롤러 단위 테스트
  *
@@ -9,16 +10,15 @@
  * pnpm --filter @aido/api test user-settings.controller
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { GetConsentUseCase } from "../application/use-cases/get-consent/get-consent.use-case";
-import { GetPreferenceUseCase } from "../application/use-cases/get-preference/get-preference.use-case";
-import { UpdateMarketingConsentUseCase } from "../application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
-import { UpdatePreferenceUseCase } from "../application/use-cases/update-preference/update-preference.use-case";
-import { SettingsController } from "./user-settings.controller";
+import { GetConsentUseCase } from "../application/use-cases/get-consent/get-consent.use-case.js";
+import { GetPreferenceUseCase } from "../application/use-cases/get-preference/get-preference.use-case.js";
+import { UpdateMarketingConsentUseCase } from "../application/use-cases/update-marketing-consent/update-marketing-consent.use-case.js";
+import { UpdatePreferenceUseCase } from "../application/use-cases/update-preference/update-preference.use-case.js";
+import { SettingsController } from "./user-settings.controller.js";
 
 const WEATHER_DEFAULTS = {
 	weatherMorningEnabled: false,

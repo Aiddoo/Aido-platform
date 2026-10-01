@@ -1,17 +1,18 @@
+import { TestBed } from "@suites/unit";
 /**
  * UpsertPushLocaleUseCase 단위 테스트
  *
  * 푸시 토큰 등록 시 로케일 upsert 위임(값 변형 없음).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUserPreferenceRepositoryMock } from "@test/mocks/ports/user-settings.mock";
+import type { Mocked } from "vitest";
+
+import { createUserPreferenceRepositoryMock } from "#test/mocks/ports/user-settings.mock";
 
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
-import { UpsertPushLocaleUseCase } from "./upsert-push-locale.use-case";
+} from "../../ports/user-preference.repository.port.js";
+import { UpsertPushLocaleUseCase } from "./upsert-push-locale.use-case.js";
 
 const userId = "user-1";
 

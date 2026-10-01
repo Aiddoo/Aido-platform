@@ -3,18 +3,18 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { toIsoMonthId, toIsoWeekId } from "@/shared/domain/date/utils/format";
-import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { forEachBatch } from "@/shared/infrastructure/database/utils/batch-cursor.util";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { toIsoMonthId, toIsoWeekId } from "#api/shared/domain/date/utils/format";
+import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { forEachBatch } from "#api/shared/infrastructure/database/utils/batch-cursor.util";
 
-import { ReportGenerationProcessor } from "../processors/report-generation.processor";
+import { ReportGenerationProcessor } from "../processors/report-generation.processor.js";
 import {
 	AI_REPORT_QUEUE,
 	type AiReportGenerateData,
 	AiReportJobName,
-} from "../queue/ai-report-queue";
+} from "../queue/ai-report-queue.js";
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;

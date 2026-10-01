@@ -1,4 +1,8 @@
 import { weeklyAchievementParamSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class WeeklyAchievementParamDto extends createZodDto(weeklyAchievementParamSchema) {}
+export const WeeklyAchievementParamDto = weeklyAchievementParamSchema.meta({
+	id: "WeeklyAchievementParamDto",
+	apiParameter: true,
+});
+export type WeeklyAchievementParamDto = z.infer<typeof WeeklyAchievementParamDto>;

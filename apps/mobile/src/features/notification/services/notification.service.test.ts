@@ -186,7 +186,9 @@ describe('NotificationService', () => {
       const result = await service.getUnreadCount();
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/notifications/unread-count');
+      expect(httpClient.get).toHaveBeenCalledWith('v1/notifications/unread-count', {
+        signal: undefined,
+      });
       expect(result).toEqual({ ok: true, value: 5 });
     });
 

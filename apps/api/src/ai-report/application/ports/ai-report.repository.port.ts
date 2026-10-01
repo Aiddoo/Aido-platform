@@ -5,10 +5,10 @@ import type {
 	TimePatternItem,
 } from "@aido/validators";
 
-import type { SupportedLocale } from "@/shared/domain/locale";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { AiReport } from "../../domain/entities/ai-report.entity";
-import type { ReportType } from "../../domain/types";
+import type { AiReport } from "../../domain/entities/ai-report.entity.js";
+import type { ReportType } from "../../domain/types.js";
 
 export const AI_REPORT_REPOSITORY = Symbol("AI_REPORT_REPOSITORY");
 

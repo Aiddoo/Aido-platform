@@ -1,4 +1,5 @@
 import { updateLocationSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class UpdateLocationDto extends createZodDto(updateLocationSchema) {}
+export const UpdateLocationDto = updateLocationSchema.meta({ id: "UpdateLocationDto" });
+export type UpdateLocationDto = z.infer<typeof UpdateLocationDto>;

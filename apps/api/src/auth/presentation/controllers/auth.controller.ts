@@ -26,11 +26,15 @@ import {
 	ResetPasswordUseCase,
 	SetPasswordUseCase,
 	VerifyEmailUseCase,
-} from "@/auth/application/use-cases";
-import { JwtRefreshGuard } from "@/auth/infrastructure/guards";
-import type { RefreshTokenPayload } from "@/auth/infrastructure/strategies/jwt-refresh.strategy";
-import { AuthMapper } from "@/auth/presentation/auth.mapper";
-import { CurrentUser, type CurrentUserPayload, Public } from "@/auth/presentation/decorators";
+} from "#api/auth/application/use-cases/index";
+import { JwtRefreshGuard } from "#api/auth/infrastructure/guards/index";
+import type { RefreshTokenPayload } from "#api/auth/infrastructure/strategies/jwt-refresh.strategy";
+import { AuthMapper } from "#api/auth/presentation/auth.mapper";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+	Public,
+} from "#api/auth/presentation/decorators/index";
 import {
 	ApiCreatedResponse,
 	ApiDoc,
@@ -38,7 +42,7 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
 import {
 	AuthTokensDto,
@@ -52,8 +56,8 @@ import {
 	ResetPasswordDto,
 	SetPasswordDto,
 	VerifyEmailDto,
-} from "../dtos";
-import { extractMetadata } from "./auth-controller.utils";
+} from "../dtos/index.js";
+import { extractMetadata } from "./auth-controller.utils.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
@@ -102,7 +106,7 @@ export class AuthController {
 	})
 	@ApiCreatedResponse({ type: MessageResponseDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
-	async register(@Body() dto: RegisterDto, @Req() req: Request) {
+	async register(@Body({ schema: RegisterDto }) dto: RegisterDto, @Req() req: Request) {
 		const result = await this.registerUseCase.execute(dto, extractMetadata(req));
 		return AuthMapper.toRegisterResponse(result);
 	}
@@ -141,7 +145,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
-	async verifyEmail(@Body() dto: VerifyEmailDto, @Req() req: Request) {
+	async verifyEmail(@Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
 		const result = await this.verifyEmailUseCase.execute(dto, metadata);
 		return AuthMapper.toAuthTokensResponse(result);
@@ -173,7 +177,7 @@ export class AuthController {
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
-	async resendVerification(@Body() dto: ResendVerificationDto) {
+	async resendVerification(@Body({ schema: ResendVerificationDto }) dto: ResendVerificationDto) {
 		const result = await this.resendVerificationUseCase.execute(dto.email);
 		return result;
 	}
@@ -223,7 +227,7 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
-	async login(@Body() dto: LoginDto, @Req() req: Request) {
+	async login(@Body({ schema: LoginDto }) dto: LoginDto, @Req() req: Request) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithPasswordUseCase.execute(dto, metadata);
 		return AuthMapper.toAuthTokensResponse(result);
@@ -364,7 +368,10 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
+	async forgotPassword(
+		@Body({ schema: ForgotPasswordDto }) dto: ForgotPasswordDto,
+		@Req() req: Request,
+	) {
 		const result = await this.requestPasswordResetUseCase.execute(dto.email, extractMetadata(req));
 		return result;
 	}
@@ -407,7 +414,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
-	async resetPassword(@Body() dto: ResetPasswordDto) {
+	async resetPassword(@Body({ schema: ResetPasswordDto }) dto: ResetPasswordDto) {
 		const result = await this.resetPasswordUseCase.execute(dto.email, dto.code, dto.newPassword);
 		return result;
 	}
@@ -492,7 +499,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
 	async setPassword(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: SetPasswordDto,
+		@Body({ schema: SetPasswordDto }) dto: SetPasswordDto,
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
@@ -536,7 +543,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async changePassword(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: ChangePasswordDto,
+		@Body({ schema: ChangePasswordDto }) dto: ChangePasswordDto,
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);

@@ -1,8 +1,8 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { INQUIRY_MAILER, type InquiryMailerPort } from "../../ports/inquiry-mailer.port";
-import { type CreateInquiryInput, CreateInquiryUseCase } from "./create-inquiry.use-case";
+import { INQUIRY_MAILER, type InquiryMailerPort } from "../../ports/inquiry-mailer.port.js";
+import { type CreateInquiryInput, CreateInquiryUseCase } from "./create-inquiry.use-case.js";
 
 function makeInput(overrides: Partial<CreateInquiryInput> = {}): CreateInquiryInput {
 	return {

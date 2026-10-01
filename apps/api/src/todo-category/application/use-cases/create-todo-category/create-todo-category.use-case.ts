@@ -7,24 +7,24 @@ import {
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
-import { CategoryColor } from "../../../domain/value-objects/category-color.vo";
-import { CategoryName } from "../../../domain/value-objects/category-name.vo";
+import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate.js";
+import { CategoryColor } from "../../../domain/value-objects/category-color.vo.js";
+import { CategoryName } from "../../../domain/value-objects/category-name.vo.js";
 import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
-} from "../../ports/todo-category-cache.port";
+} from "../../ports/todo-category-cache.port.js";
 import {
 	TODO_CATEGORY_LIMIT_READER,
 	type TodoCategoryLimitReaderPort,
-} from "../../ports/todo-category-limit-reader.port";
+} from "../../ports/todo-category-limit-reader.port.js";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
+} from "../../ports/todo-category.repository.port.js";
 
 export interface CreateTodoCategoryInput {
 	userId: string;

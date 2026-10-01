@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * Weather 통합 테스트 (Mock DB)
  *
@@ -11,40 +12,39 @@
  * pnpm --filter @aido/api test weather.integration-spec
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { UserLocationBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import {
 	AIR_QUALITY_PROVIDER,
 	type AirQualityProvider,
-} from "@/weather/application/ports/air-quality-provider.port";
+} from "#api/weather/application/ports/air-quality-provider.port";
 import {
 	LIFESTYLE_INDEX_PROVIDER,
 	type LifestyleIndexProvider,
-} from "@/weather/application/ports/lifestyle-index-provider.port";
+} from "#api/weather/application/ports/lifestyle-index-provider.port";
 import {
 	SUN_TIME_PROVIDER,
 	type SunTimeProvider,
-} from "@/weather/application/ports/sun-time-provider.port";
-import { WEATHER_CACHE } from "@/weather/application/ports/weather-cache.port";
-import { WEATHER_LOCATION_REPOSITORY } from "@/weather/application/ports/weather-location.repository.port";
+} from "#api/weather/application/ports/sun-time-provider.port";
+import { WEATHER_CACHE } from "#api/weather/application/ports/weather-cache.port";
+import { WEATHER_LOCATION_REPOSITORY } from "#api/weather/application/ports/weather-location.repository.port";
 import {
 	WEATHER_PROVIDER,
 	type WeatherProvider,
-} from "@/weather/application/ports/weather-provider.port";
-import { GetWeatherConditionsUseCase } from "@/weather/application/queries/get-weather-conditions/get-weather-conditions.use-case";
-import { GetWeatherForecastUseCase } from "@/weather/application/queries/get-weather-forecast/get-weather-forecast.use-case";
-import { WeatherForecastReader } from "@/weather/application/services/weather-forecast.reader";
-import { UpsertLocationUseCase } from "@/weather/application/use-cases/upsert-location/upsert-location.use-case";
-import { WEATHER_PROVIDERS } from "@/weather/application/weather.providers";
-import { WeatherCacheAdapter } from "@/weather/infrastructure/adapters/weather-cache.adapter";
-import { PrismaWeatherLocationRepository } from "@/weather/infrastructure/persistence/prisma-weather-location.repository";
+} from "#api/weather/application/ports/weather-provider.port";
+import { GetWeatherConditionsUseCase } from "#api/weather/application/queries/get-weather-conditions/get-weather-conditions.use-case";
+import { GetWeatherForecastUseCase } from "#api/weather/application/queries/get-weather-forecast/get-weather-forecast.use-case";
+import { WeatherForecastReader } from "#api/weather/application/services/weather-forecast.reader";
+import { UpsertLocationUseCase } from "#api/weather/application/use-cases/upsert-location/upsert-location.use-case";
+import { WEATHER_PROVIDERS } from "#api/weather/application/weather.providers";
+import { WeatherCacheAdapter } from "#api/weather/infrastructure/adapters/weather-cache.adapter";
+import { PrismaWeatherLocationRepository } from "#api/weather/infrastructure/persistence/prisma-weather-location.repository";
+import { UserLocationBuilder } from "#test/builders/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Weather 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -54,9 +54,9 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 
 	// Mock 데이터베이스 서비스
 	const mockUserLocationDb = {
-		findUnique: jest.fn(),
-		upsert: jest.fn(),
-		deleteMany: jest.fn(),
+		findUnique: vi.fn(),
+		upsert: vi.fn(),
+		deleteMany: vi.fn(),
 	};
 
 	const mockDatabaseService = createMockDatabaseService({
@@ -66,7 +66,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 	// Mock Weather Provider
 	const mockWeatherProvider: WeatherProvider = {
 		name: "mock",
-		getForecast: jest.fn().mockResolvedValue({
+		getForecast: vi.fn().mockResolvedValue({
 			date: new Date(),
 			skyCondition: "CLEAR",
 			precipitationType: "NONE",
@@ -87,28 +87,28 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 			],
 			dailyForecasts: [],
 		}),
-		isConfigured: jest.fn().mockReturnValue(true),
+		isConfigured: vi.fn().mockReturnValue(true),
 	};
 
 	const mockAirQualityProvider: AirQualityProvider = {
-		getAirQuality: jest.fn().mockResolvedValue({ pm10: 45, pm25: 22 }),
+		getAirQuality: vi.fn().mockResolvedValue({ pm10: 45, pm25: 22 }),
 	};
 
 	const mockLifestyleIndexProvider: LifestyleIndexProvider = {
-		getIndex: jest.fn().mockResolvedValue({ feelsLikeTemperature: 12, uvIndex: 5 }),
+		getIndex: vi.fn().mockResolvedValue({ feelsLikeTemperature: 12, uvIndex: 5 }),
 	};
 
 	const mockSunTimeProvider: SunTimeProvider = {
-		getSunTime: jest.fn().mockResolvedValue({ sunrise: "06:15", sunset: "18:45" }),
+		getSunTime: vi.fn().mockResolvedValue({ sunrise: "06:15", sunset: "18:45" }),
 	};
 
 	const mockCacheService = {
-		get: jest.fn().mockResolvedValue(null),
-		set: jest.fn().mockResolvedValue(undefined),
-		mget: jest.fn().mockResolvedValue([]),
-		mset: jest.fn().mockResolvedValue(undefined),
-		del: jest.fn().mockResolvedValue(undefined),
-		delByPattern: jest.fn().mockResolvedValue(undefined),
+		get: vi.fn().mockResolvedValue(null),
+		set: vi.fn().mockResolvedValue(undefined),
+		mget: vi.fn().mockResolvedValue([]),
+		mset: vi.fn().mockResolvedValue(undefined),
+		del: vi.fn().mockResolvedValue(undefined),
+		delByPattern: vi.fn().mockResolvedValue(undefined),
 	};
 
 	beforeAll(async () => {
@@ -152,7 +152,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		UserLocationBuilder.resetIdCounter();
 	});
 

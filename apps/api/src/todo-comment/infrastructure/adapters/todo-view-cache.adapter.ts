@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoViewCacheInvalidator } from "@/todo";
+import { TodoViewCacheInvalidator } from "#api/todo/index";
 
-import type { TodoViewCachePort } from "../../application/ports/todo-view-cache.port";
+import type { TodoViewCachePort } from "../../application/ports/todo-view-cache.port.js";
 
 @Injectable()
 export class TodoViewCacheAdapter implements TodoViewCachePort {

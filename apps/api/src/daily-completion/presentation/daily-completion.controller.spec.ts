@@ -4,15 +4,15 @@
  * 컨트롤러의 endpoint UseCase 위임과 응답 매핑을 검증한다.
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { GetDailyCompletionsUseCase } from "../application/queries/get-daily-completions/get-daily-completions.use-case";
-import type { DailyCompletionsRange } from "../domain/daily-completion";
-import { DailyCompletionController } from "./daily-completion.controller";
-import type { GetDailyCompletionsRangeDto } from "./dtos";
+import { GetDailyCompletionsUseCase } from "../application/queries/get-daily-completions/get-daily-completions.use-case.js";
+import type { DailyCompletionsRange } from "../domain/daily-completion.js";
+import { DailyCompletionController } from "./daily-completion.controller.js";
+import type { GetDailyCompletionsRangeDto } from "./dtos/index.js";
 
 function makeQuery(
 	overrides: Partial<GetDailyCompletionsRangeDto> = {},

@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import { TODO_COMMENT_LIMITS } from "@aido/validators";
 
-import { DomainException, ValueObject } from "@/shared/domain";
+import { DomainException, ValueObject } from "#api/shared/domain/index";
 
 export class TodoCommentContent extends ValueObject<string> {
 	static create(value: string): TodoCommentContent {

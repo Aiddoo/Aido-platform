@@ -9,7 +9,7 @@ import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 
 export function PokeBanner() {
   const { t } = useTranslation('todo');

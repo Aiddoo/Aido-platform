@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { assignRetentionVariant } from "../../../domain/services/experiment-assignment";
-import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import { assignRetentionVariant } from "../../../domain/services/experiment-assignment.js";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
+} from "../../ports/retention.repository.port.js";
 
 @Injectable()
 export class EnrollRetentionExperimentUseCase {

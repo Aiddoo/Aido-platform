@@ -1,30 +1,30 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { resolveDeliveryTimezone, resolveTimezone } from "@/shared/domain/date/utils/timezone";
+import { resolveDeliveryTimezone, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { isNightTime } from "../../domain/services/night-time";
+import { isNightTime } from "../../domain/services/night-time.js";
 import {
 	isAutomatedEngagementNotification,
 	isMarketingNotification,
 	isNightExemptNotification,
-} from "../../domain/services/push-eligibility";
-import type { CreateNotificationData } from "../ports/notification-data";
+} from "../../domain/services/push-eligibility.js";
+import type { CreateNotificationData } from "../ports/notification-data.js";
 import {
 	NOTIFICATION_RECIPIENT_PREFERENCE_READER,
 	type NotificationRecipientPreferenceReaderPort,
-} from "../ports/notification-recipient-preference.reader.port";
+} from "../ports/notification-recipient-preference.reader.port.js";
 import {
 	PUSH_RATE_LIMITER,
 	type PushRateLimitRequest,
 	type PushRateLimiterPort,
-} from "../ports/push-rate-limiter.port";
+} from "../ports/push-rate-limiter.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type NotificationDeliveryPreference,
 	type NotificationMarketingConsent,
 	type UserNotificationSettingsPort,
-} from "../ports/user-notification-settings.port";
-import type { PushDispatchSkipReason } from "../types/push-delivery.types";
+} from "../ports/user-notification-settings.port.js";
+import type { PushDispatchSkipReason } from "../types/push-delivery.types.js";
 
 export interface SinglePushDeliveryRecipient {
 	readonly userId: string;

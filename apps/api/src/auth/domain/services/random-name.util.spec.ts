@@ -11,7 +11,7 @@
  * ```
  */
 
-import { generateRandomName } from "./random-name.util";
+import { generateRandomName } from "./random-name.util.js";
 
 describe("generateRandomName", () => {
 	it("비어있지 않은 문자열을 반환한다", () => {

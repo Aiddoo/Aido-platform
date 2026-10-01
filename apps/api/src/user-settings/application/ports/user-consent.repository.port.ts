@@ -1,4 +1,4 @@
-import type { UserConsentRecord } from "../../domain/records/user-consent.record";
+import type { UserConsentRecord } from "../../domain/records/user-consent.record.js";
 
 export type { UserConsentRecord };
 

@@ -6,7 +6,7 @@ import { HttpException } from "@nestjs/common";
  */
 export class BusinessException extends HttpException {
 	constructor(
-		public readonly errorCode: ErrorCodeType,
+		public override readonly errorCode: ErrorCodeType,
 		public readonly details?: unknown,
 		message?: string,
 		statusCode?: number,

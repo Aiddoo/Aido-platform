@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * compare 유틸 테스트
  *
@@ -17,15 +19,15 @@ import {
 	isExpired,
 	isSame,
 	isSameDay,
-} from "./compare";
+} from "./compare.js";
 
 beforeAll(() => {
-	jest.useFakeTimers();
-	jest.setSystemTime(new Date("2026-06-15T12:00:00Z"));
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
 });
 
 afterAll(() => {
-	jest.useRealTimers();
+	vi.useRealTimers();
 });
 
 describe("compare", () => {

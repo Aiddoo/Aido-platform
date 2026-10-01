@@ -1,7 +1,7 @@
 import { NIGHT_TIME_CONFIG } from "@aido/validators";
 import dayjs from "dayjs";
 
-import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
 /**
  * 사용자 타임존 기준 야간 시간대 확인 (로컬 21:00-08:00)

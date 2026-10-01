@@ -4,20 +4,20 @@ import {
 	type EnqueueJobOptions,
 	JOB_RUNTIME,
 	type JobRuntimePort,
-} from "@/shared/application/ports/job-runtime.port";
+} from "#api/shared/application/ports/job-runtime.port";
 
 import type {
 	AdminNotificationQueuePort,
 	EnqueueSendOptions,
 	NotificationChannel,
-} from "../../application/ports/admin-notification-queue.port";
-import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
+} from "../../application/ports/admin-notification-queue.port.js";
+import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo.js";
 import {
 	ADMIN_NOTIFICATION_JOB_POLICY,
 	ADMIN_NOTIFICATION_QUEUE,
 	AdminNotificationJobName,
 	type AdminNotificationSendData,
-} from "../queue/admin-notification-queue.constants";
+} from "../queue/admin-notification-queue.constants.js";
 
 /**
  * BullMQ 관리자 알림 큐 어댑터.

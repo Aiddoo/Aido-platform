@@ -7,19 +7,19 @@ import {
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
 import {
 	TodoSchedule,
 	type TodoScheduleProps,
-} from "../../../domain/value-objects/todo-schedule.vo";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+} from "../../../domain/value-objects/todo-schedule.vo.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
+} from "../../ports/todo-read.repository.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
 
 /**
  * 일정 변경 입력

@@ -1,16 +1,17 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
-import { DispatchRetentionPushUseCase } from "../../application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case";
-import { RecoverFailedRetentionDeliveryUseCase } from "../../application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case";
+import { DispatchRetentionPushUseCase } from "../../application/use-cases/dispatch-retention-push/dispatch-retention-push.use-case.js";
+import { RecoverFailedRetentionDeliveryUseCase } from "../../application/use-cases/recover-failed-retention-delivery/recover-failed-retention-delivery.use-case.js";
 import {
 	RETENTION_DEAD_LETTER_QUEUE,
 	RETENTION_DEAD_LETTER_WORKER_POLICY,
 	RetentionJobName,
-} from "./retention-queue.constants";
-import { RetentionQueueProcessor } from "./retention-queue.processor";
+} from "./retention-queue.constants.js";
+import { RetentionQueueProcessor } from "./retention-queue.processor.js";
 
 describe("RetentionQueueProcessor", () => {
 	let processor: RetentionQueueProcessor;
@@ -22,14 +23,14 @@ describe("RetentionQueueProcessor", () => {
 		const compiled = await TestBed.solitary(RetentionQueueProcessor)
 			.mock<JobRuntimePort>(JOB_RUNTIME)
 			.impl(() => ({
-				start: jest.fn(),
-				stop: jest.fn(),
-				enqueue: jest.fn(),
-				schedule: jest.fn(),
-				unschedule: jest.fn(),
-				cancel: jest.fn(),
-				work: jest.fn(),
-				health: jest.fn(),
+				start: vi.fn(),
+				stop: vi.fn(),
+				enqueue: vi.fn(),
+				schedule: vi.fn(),
+				unschedule: vi.fn(),
+				cancel: vi.fn(),
+				work: vi.fn(),
+				health: vi.fn(),
 			}))
 			.compile();
 		processor = compiled.unit;

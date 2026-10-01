@@ -1,7 +1,7 @@
-import { DomainException } from "@/shared/domain";
+import { DomainException } from "#api/shared/domain/index";
 
-import { ThreadPlacement } from "./thread-placement.vo";
-import { TodoCommentId } from "./todo-comment-id.vo";
+import { ThreadPlacement } from "./thread-placement.vo.js";
+import { TodoCommentId } from "./todo-comment-id.vo.js";
 
 const ROOT_ID = "cm1todoacomment00000000001";
 const REPLY_ID = "cm1todoacomment00000000002";

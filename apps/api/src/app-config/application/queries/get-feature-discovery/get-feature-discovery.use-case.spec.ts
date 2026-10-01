@@ -3,8 +3,8 @@ import { TestBed } from "@suites/unit";
 import {
 	FEATURE_DISCOVERY_CONFIG,
 	type FeatureDiscoveryConfigPort,
-} from "../../ports/feature-discovery-config.port";
-import { GetFeatureDiscoveryUseCase } from "./get-feature-discovery.use-case";
+} from "../../ports/feature-discovery-config.port.js";
+import { GetFeatureDiscoveryUseCase } from "./get-feature-discovery.use-case.js";
 
 describe("GetFeatureDiscoveryUseCase — feature discovery configuration", () => {
 	it("returns the fail-closed configuration supplied by the port", async () => {

@@ -4,6 +4,7 @@ import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, Button, HStack, SendIcon, Text, TextArea, TextButton, VStack } from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/FormField/FormField';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
@@ -17,7 +18,6 @@ import {
 } from 'react';
 import {
   FormProvider,
-  useController,
   useFieldArray,
   useForm,
   useFormContext,
@@ -72,7 +72,7 @@ export function TodoCommentForm({
   const isEditing = session.type === 'edit';
   const target = session.type === 'new' ? null : session.target;
   const initialContent = isEditing ? (session.target.content ?? '') : '';
-  const form = useForm<TodoCommentFormInput>({
+  const form = useForm({
     resolver: zodResolver(todoCommentFormSchema),
     defaultValues: { items: [{ content: initialContent }] },
     mode: 'onChange',
@@ -292,42 +292,41 @@ function CommentFormField({
 }) {
   const { t } = useTranslation('todoComment');
   const { control } = useFormContext<TodoCommentFormInput>();
-  const {
-    field: { value, onChange, onBlur, ref },
-    fieldState: { error },
-  } = useController({ control, name });
-
   return (
-    <TextArea
-      ref={ref}
-      nativeID={isFocused ? TODO_COMMENT_INPUT_NATIVE_ID : undefined}
-      testID={`todo-comment-input-${index}`}
-      value={value}
-      onChangeText={onChange}
-      onBlur={onBlur}
-      onFocus={onFocus}
-      isDisabled={isSubmitting}
-      isInvalid={error !== undefined}
-      variant="plain"
-      textSize="b3"
-      preserveErrorSpace={false}
-      errorMessage={resolveValidationMessage(error, {
-        default: 'comment.required',
-        byType: { too_big: 'comment.tooLong' },
-      })}
-      growsWithContent
-      placeholder={
-        index > 0
-          ? t('form.chainPlaceholder')
-          : isEditing
-            ? t('input.editPlaceholder')
-            : session.type === 'reply'
-              ? t('input.replyPlaceholder')
-              : t('input.placeholder')
-      }
-      accessibilityLabel={t('form.inputLabel', { index: index + 1, count: fieldCount })}
-      className="min-h-11 max-h-28"
-    />
+    <FormField control={control} name={name}>
+      {({ value, onChange, onBlur, ref }, { error }) => (
+        <TextArea
+          ref={ref}
+          nativeID={isFocused ? TODO_COMMENT_INPUT_NATIVE_ID : undefined}
+          testID={`todo-comment-input-${index}`}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          isDisabled={isSubmitting}
+          isInvalid={error !== undefined}
+          variant="plain"
+          textSize="b3"
+          preserveErrorSpace={false}
+          errorMessage={resolveValidationMessage(error, {
+            default: 'comment.required',
+            byType: { too_big: 'comment.tooLong' },
+          })}
+          growsWithContent
+          placeholder={
+            index > 0
+              ? t('form.chainPlaceholder')
+              : isEditing
+                ? t('input.editPlaceholder')
+                : session.type === 'reply'
+                  ? t('input.replyPlaceholder')
+                  : t('input.placeholder')
+          }
+          accessibilityLabel={t('form.inputLabel', { index: index + 1, count: fieldCount })}
+          className="min-h-11 max-h-28"
+        />
+      )}
+    </FormField>
   );
 }
 
@@ -375,7 +374,7 @@ function CommentSubmitButton({
       className="min-h-11 min-w-11 px-0"
       isDisabled={!isValid || isSubmitting}
       isLoading={isSubmitting}
-      onPress={onSubmit}
+      onPress={() => onSubmit()}
       accessibilityLabel={isEditing ? t('actions.save') : t('form.post')}
     >
       <SendIcon

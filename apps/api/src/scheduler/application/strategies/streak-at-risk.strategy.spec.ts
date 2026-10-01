@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * StreakAtRiskStrategy 전략 단위 테스트
  *
@@ -9,24 +12,22 @@
  * pnpm --filter @aido/api test streak-at-risk.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createStreakAtRiskNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
-} from "../ports/re-engagement-reader.port";
-import type { UserWithTodosAndStreak } from "../ports/scheduler-read-models";
-import { StreakAtRiskStrategy } from "./streak-at-risk.strategy";
+} from "../ports/re-engagement-reader.port.js";
+import type { UserWithTodosAndStreak } from "../ports/scheduler-read-models.js";
+import { StreakAtRiskStrategy } from "./streak-at-risk.strategy.js";
 
 describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 	let strategy: StreakAtRiskStrategy;
@@ -64,9 +65,9 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
-		jest.spyOn(Math, "random").mockReturnValue(0);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
+		vi.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } = await TestBed.solitary(StreakAtRiskStrategy).compile();
 
@@ -82,8 +83,8 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
-		jest.restoreAllMocks();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	it("스트릭 3일+ & 미완료 유저에게 스트릭 위기 알림을 발송한다", async () => {

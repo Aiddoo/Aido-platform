@@ -1,11 +1,15 @@
 import { BadgeIcon } from '@src/features/achievement/presentations/components/BadgeIcon';
 import { CertificateBorder } from '@src/features/achievement/presentations/components/CertificateBorder';
-import { useGetWeeklyAchievementQueryOptions } from '@src/features/achievement/presentations/queries/use-get-weekly-achievement-query-options';
+import {
+  achievementScreenParamsSchema,
+  useAchievementScreenParams,
+} from '@src/features/achievement/presentations/hooks/use-achievement-screen-params';
+import { useGetWeeklyAchievementQueryOptions } from '@src/features/achievement/presentations/queries/get-weekly-achievement-query-options';
 import {
   type BadgeType,
   getBadgeType,
 } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useShareView } from '@src/shared/hooks/useShareView';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -21,7 +25,7 @@ import {
 } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense, useRef } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
@@ -34,7 +38,9 @@ const BADGE_NAME_KEYS = {
 } as const satisfies Record<BadgeType, string>;
 
 const AchievementDetailScreen = () => {
-  const { year, week } = useLocalSearchParams<{ year: string; week: string }>();
+  const params = useLocalSearchParams();
+  if (!achievementScreenParamsSchema.safeParse(params).success)
+    return <Redirect href="/achievements" />;
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -46,7 +52,7 @@ const AchievementDetailScreen = () => {
             </View>
           }
         >
-          <AchievementDetailContent year={Number(year)} week={Number(week)} />
+          <AchievementDetailContent />
         </Suspense>
       </QueryErrorBoundary>
     </StyledSafeAreaView>
@@ -55,12 +61,8 @@ const AchievementDetailScreen = () => {
 
 export default AchievementDetailScreen;
 
-interface AchievementDetailContentProps {
-  year: number;
-  week: number;
-}
-
-function AchievementDetailContent({ year, week }: AchievementDetailContentProps) {
+function AchievementDetailContent() {
+  const { year, week } = useAchievementScreenParams();
   const { data: achievement } = useSuspenseQuery(useGetWeeklyAchievementQueryOptions(year, week));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { t } = useTranslation('achievement');

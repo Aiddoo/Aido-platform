@@ -1,7 +1,7 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-reorder-todo-category-mutation-options';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -97,7 +97,7 @@ export function CategoryList({ mode }: CategoryListProps) {
           <Box className="pb-2">
             <ReorderCoachmark accountId={user.id} kind="category" />
           </Box>
-        ) : null
+        ) : undefined
       }
       keyExtractor={(item) => String(item.id)}
       onPlaceholderIndexChange={handlePlaceholderIndexChange}

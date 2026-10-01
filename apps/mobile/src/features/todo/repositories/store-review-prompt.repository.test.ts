@@ -1,5 +1,6 @@
 import { createMockSyncStorage } from '@src/shared/__tests__';
 
+import { StoreReviewPromptTransitions } from '../models/store-review-prompt.transition';
 import { createStoreReviewPromptRepository } from './store-review-prompt.repository';
 
 describe('StoreReviewPromptRepository', () => {
@@ -16,14 +17,18 @@ describe('StoreReviewPromptRepository', () => {
     const { storage, values } = createMemoryStorage();
     const repository = createStoreReviewPromptRepository(storage);
 
-    repository.recordSuccessfulCompletion('account-a', {
-      todoId: 1,
-      localDate: '2026-08-10',
-    });
-    repository.recordSuccessfulCompletion('account-a', {
-      todoId: 1,
-      localDate: '2026-08-10',
-    });
+    repository.update('account-a', (state) =>
+      StoreReviewPromptTransitions.recordSuccessfulCompletion(state, {
+        todoId: 1,
+        localDate: '2026-08-10',
+      }),
+    );
+    repository.update('account-a', (state) =>
+      StoreReviewPromptTransitions.recordSuccessfulCompletion(state, {
+        todoId: 1,
+        localDate: '2026-08-10',
+      }),
+    );
 
     expect(repository.read('account-a').completions).toEqual([
       { todoId: 1, localDate: '2026-08-10' },
@@ -36,11 +41,20 @@ describe('StoreReviewPromptRepository', () => {
     const { storage } = createMemoryStorage();
     const repository = createStoreReviewPromptRepository(storage);
 
-    repository.recordDismissal('account-a', new Date('2026-08-12T00:00:00.000Z'));
-    expect(repository.read('account-a').dismissedAt).toBe('2026-08-12T00:00:00.000Z');
+    repository.update('account-a', (state) =>
+      StoreReviewPromptTransitions.recordDismissal(state, new Date('2026-08-12T00:00:00.000Z')),
+    );
+    expect(repository.read('account-a').dismissedAt).toEqual(new Date('2026-08-12T00:00:00.000Z'));
 
-    repository.recordReviewRequested('account-a', new Date('2026-08-13T00:00:00.000Z'));
-    expect(repository.read('account-a').reviewRequestedAt).toBe('2026-08-13T00:00:00.000Z');
+    repository.update('account-a', (state) =>
+      StoreReviewPromptTransitions.recordReviewRequested(
+        state,
+        new Date('2026-08-13T00:00:00.000Z'),
+      ),
+    );
+    expect(repository.read('account-a').reviewRequestedAt).toEqual(
+      new Date('2026-08-13T00:00:00.000Z'),
+    );
   });
 
   it('손상되거나 구버전인 저장값은 안전한 빈 상태로 복구한다', () => {

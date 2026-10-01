@@ -1,4 +1,8 @@
 import { getTodosQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetTodosQueryDto extends createZodDto(getTodosQuerySchema) {}
+export const GetTodosQueryDto = getTodosQuerySchema.meta({
+	id: "GetTodosQueryDto",
+	apiParameter: true,
+});
+export type GetTodosQueryDto = z.infer<typeof GetTodosQueryDto>;

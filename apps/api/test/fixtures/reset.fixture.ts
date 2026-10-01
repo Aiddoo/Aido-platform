@@ -5,11 +5,11 @@
  * index.ts의 순환 참조 문제를 방지하고 구조를 명확하게 유지
  */
 
-import { CheerFixture, FollowFixture, NudgeFixture } from "./friend.fixture";
-import { NotificationFixture, PushTokenFixture } from "./notification.fixture";
-import { SessionFixture, VerificationFixture } from "./session.fixture";
-import { TodoCategoryFixture, TodoFixture } from "./todo.fixture";
-import { AccountFixture, UserFixture } from "./user.fixture";
+import { CheerFixture, FollowFixture, NudgeFixture } from "./friend.fixture.js";
+import { NotificationFixture, PushTokenFixture } from "./notification.fixture.js";
+import { SessionFixture, VerificationFixture } from "./session.fixture.js";
+import { TodoCategoryFixture, TodoFixture } from "./todo.fixture.js";
+import { AccountFixture, UserFixture } from "./user.fixture.js";
 
 /**
  * 모든 Fixture 카운터 리셋

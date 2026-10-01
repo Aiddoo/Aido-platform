@@ -9,7 +9,7 @@
  * pnpm --filter @aido/api test range
  * ```
  */
-import { previousIsoWeekRange } from "./range";
+import { previousIsoWeekRange } from "./range.js";
 
 describe("previousIsoWeekRange", () => {
 	it("월요일 기준 이전 주의 월~일 범위를 반환한다", () => {

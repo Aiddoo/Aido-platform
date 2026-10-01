@@ -2,15 +2,15 @@
  * pattern-filter.util — 순수 함수 유닛 테스트
  */
 
-import type { SuggestionContext } from "../types";
+import type { SuggestionContext } from "../types.js";
 import {
 	applyTypeCap,
 	dedupeByTitlePrefixAndDays,
 	filterWeakPatterns,
 	isWeatherRelated,
 	mergeUniquePatterns,
-} from "./pattern-filter";
-import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt";
+} from "./pattern-filter.js";
+import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt.js";
 
 type Pattern = DetectedPatternsResponse["patterns"][number];
 

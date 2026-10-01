@@ -11,11 +11,11 @@
  * ```
  */
 import { TestBed } from "@suites/unit";
-import { asDep, createMockExecutionContext } from "@test/mocks";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { createMockExecutionContext } from "#test/mocks/index";
 
-import { AdminGuard } from "./admin.guard";
+import { AdminGuard } from "./admin.guard.js";
 
 describe("AdminGuard — 관리자 가드", () => {
 	let guard: AdminGuard;
@@ -75,7 +75,7 @@ describe("AdminGuard — 관리자 가드", () => {
 					userId: "user-1",
 					email: "unknown@test.com",
 					sessionId: "session-1",
-					role: asDep("UNKNOWN_ROLE"),
+					role: "UNKNOWN_ROLE",
 				},
 			});
 
@@ -90,7 +90,7 @@ describe("AdminGuard — 관리자 가드", () => {
 					userId: "user-1",
 					email: "empty@test.com",
 					sessionId: "session-1",
-					role: asDep(""),
+					role: "",
 				},
 			});
 
@@ -114,7 +114,7 @@ describe("AdminGuard — 관리자 가드", () => {
 			// When & Then
 			try {
 				guard.canActivate(context);
-				fail("에러가 발생해야 합니다");
+				expect.fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
 				if (error instanceof ApplicationException) {
@@ -130,7 +130,7 @@ describe("AdminGuard — 관리자 가드", () => {
 			// When & Then
 			try {
 				guard.canActivate(context);
-				fail("에러가 발생해야 합니다");
+				expect.fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
 				// invalidToken 에러는 AUTH 도메인 에러 코드를 사용

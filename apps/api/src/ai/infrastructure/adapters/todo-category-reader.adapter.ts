@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoCategoryReader } from "@/todo-category";
+import { TodoCategoryReader } from "#api/todo-category/index";
 
 import type {
 	UserCategory,
 	UserCategoryReaderPort,
-} from "../../application/ports/user-category-reader.port";
+} from "../../application/ports/user-category-reader.port.js";
 
 /**
  * UserCategoryReaderPort의 어댑터.

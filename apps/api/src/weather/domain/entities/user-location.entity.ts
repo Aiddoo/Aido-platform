@@ -1,5 +1,5 @@
-import { Coordinate } from "../value-objects/coordinate.vo";
-import { GridCoordinate } from "../value-objects/grid-coordinate.vo";
+import { Coordinate } from "../value-objects/coordinate.vo.js";
+import { GridCoordinate } from "../value-objects/grid-coordinate.vo.js";
 
 /**
  * 사용자 위치 애그리게잇.

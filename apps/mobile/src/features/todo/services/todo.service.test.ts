@@ -78,7 +78,7 @@ describe('TodoService', () => {
     test('정상 응답 → TodoItem 반환', async () => {
       // Given
       const todo = createTodoDto();
-      httpClient.post.mockResolvedValue({ ok: true, value: { todo } });
+      httpClient.post.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
 
       // When
       const result = await service.createTodo({
@@ -138,7 +138,7 @@ describe('TodoService', () => {
     test('정상 응답 → TodoItem 반환', async () => {
       // Given
       const todo = createTodoDto({ completed: true });
-      httpClient.patch.mockResolvedValue({ ok: true, value: { todo } });
+      httpClient.patch.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
 
       // When
       const result = await service.toggleTodoComplete(1, { completed: true });
@@ -262,7 +262,7 @@ describe('TodoService', () => {
       const result = await service.getAiUsage();
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/ai/usage');
+      expect(httpClient.get).toHaveBeenCalledWith('v1/ai/usage', { signal: undefined });
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.used).toBe(3);

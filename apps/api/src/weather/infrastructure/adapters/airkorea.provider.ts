@@ -1,13 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { readJson } from "@/shared/infrastructure/http/read-json";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { readJson } from "#api/shared/infrastructure/http/read-json";
 
 import type {
 	AirQuality,
 	AirQualityProvider,
-} from "../../application/ports/air-quality-provider.port";
-import { convertToTm } from "./wgs84-to-utmk";
+} from "../../application/ports/air-quality-provider.port.js";
+import { convertToTm } from "./wgs84-to-utmk.js";
 
 interface NearbyStationResponse {
 	response?: {

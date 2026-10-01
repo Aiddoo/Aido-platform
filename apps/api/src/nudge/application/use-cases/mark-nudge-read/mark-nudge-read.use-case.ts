@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port";
+import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port.js";
 
 export interface MarkNudgeReadInput {
 	userId: string;

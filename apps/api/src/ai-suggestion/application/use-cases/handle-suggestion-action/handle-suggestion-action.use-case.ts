@@ -4,20 +4,20 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { z } from "zod";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { now } from "@/shared/domain/date/utils/core";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { Suggestion } from "../../../domain/entities/suggestion.aggregate";
+import type { Suggestion } from "../../../domain/entities/suggestion.aggregate.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../../ports/ai-suggestion.repository.port";
+} from "../../ports/ai-suggestion.repository.port.js";
 import {
 	RECURRING_TODO_CREATOR,
 	type RecurringTodoCreatorPort,
-} from "../../ports/recurring-todo-creator.port";
+} from "../../ports/recurring-todo-creator.port.js";
 
 export interface HandleSuggestionActionInput {
 	userId: string;

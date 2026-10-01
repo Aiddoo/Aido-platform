@@ -1,12 +1,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const APPLICATION_ROOT = join(__dirname);
+const APPLICATION_ROOT = join(import.meta.dirname);
 const FORBIDDEN_IMPORT_PREFIXES = [
-	"@/auth/infrastructure/",
-	"@/shared/infrastructure/",
-	"@/admin-notification",
-	"@/email",
+	"#api/auth/infrastructure/",
+	"#api/shared/infrastructure/",
+	"#api/admin-notification/",
+	"#api/email/",
 ];
 
 function importPathsOf(source: string): string[] {
@@ -41,8 +41,8 @@ function sourceFiles(directory: string): string[] {
 describe("auth application boundary", () => {
 	it("주석과 문자열의 경로 텍스트는 import 위반으로 보지 않는다", () => {
 		const source = `
-			// from "@/auth/infrastructure/example"
-			const documentation = 'from "@/shared/infrastructure/example"';
+			// from "#api/auth/infrastructure/example"
+			const documentation = 'from "#api/shared/infrastructure/example"';
 		`;
 
 		expect(forbiddenImportsIn(source)).toEqual([]);
@@ -50,13 +50,13 @@ describe("auth application boundary", () => {
 
 	it("실제 import와 export의 금지 경로를 따옴표 종류와 무관하게 찾는다", () => {
 		const source = `
-			import { adapter } from "@/auth/infrastructure/example";
-			export type { Mailer } from '@/email/contracts';
+			import { adapter } from "#api/auth/infrastructure/example";
+			export type { Mailer } from '#api/email/contracts';
 		`;
 
 		expect(forbiddenImportsIn(source)).toEqual([
-			"@/auth/infrastructure/example",
-			"@/email/contracts",
+			"#api/auth/infrastructure/example",
+			"#api/email/contracts",
 		]);
 	});
 

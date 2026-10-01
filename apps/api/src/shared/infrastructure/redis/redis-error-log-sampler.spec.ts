@@ -1,3 +1,5 @@
+import { vi, type Mock } from "vitest";
+
 /**
  * RedisErrorLogSampler 단위 테스트
  *
@@ -10,18 +12,18 @@
  * pnpm --filter @aido/api test redis-error-log-sampler
  * ```
  */
-import { RedisErrorLogSampler } from "./redis-error-log-sampler";
+import { RedisErrorLogSampler } from "./redis-error-log-sampler.js";
 
 describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
-	let warn: jest.Mock;
+	let warn: Mock;
 
 	beforeEach(() => {
-		jest.useFakeTimers();
-		warn = jest.fn();
+		vi.useFakeTimers();
+		warn = vi.fn();
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("첫 에러는 즉시 warn 로그를 남긴다", () => {
@@ -58,7 +60,7 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
 		}
 
 		// When — 윈도우 경과 후 새 에러
-		jest.advanceTimersByTime(30_000);
+		vi.advanceTimersByTime(30_000);
 		sampler.warn("SET", new Error("still down"));
 
 		// Then

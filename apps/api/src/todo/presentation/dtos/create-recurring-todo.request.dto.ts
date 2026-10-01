@@ -1,4 +1,7 @@
 import { createRecurringTodoSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class CreateRecurringTodoDto extends createZodDto(createRecurringTodoSchema) {}
+export const CreateRecurringTodoDto = createRecurringTodoSchema.meta({
+	id: "CreateRecurringTodoDto",
+});
+export type CreateRecurringTodoDto = z.infer<typeof CreateRecurringTodoDto>;

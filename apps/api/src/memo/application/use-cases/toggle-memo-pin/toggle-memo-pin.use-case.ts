@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import type { MemoMutationResult } from "../create-memo/create-memo.use-case";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import type { MemoMutationResult } from "../create-memo/create-memo.use-case.js";
 
 /** 메모 고정/해제 입력. */
 export interface ToggleMemoPinInput {

@@ -7,16 +7,16 @@ import {
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import type { TodoVisibility } from "../../../domain/entities/todo.aggregate";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+import type { TodoVisibility } from "../../../domain/entities/todo.aggregate.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
+} from "../../ports/todo-read.repository.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
 
 /** Todo 공개 범위 변경 입력. */
 export interface UpdateTodoVisibilityInput {

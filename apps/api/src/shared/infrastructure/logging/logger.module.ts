@@ -2,10 +2,10 @@ import { type DynamicModule, Global, Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
 
-import type { EnvConfig } from "../config";
-import { LOGGER_REDACT_PATHS } from "./constants/logger.constant";
-import type { LoggerModuleOptions } from "./interfaces/logger.interface";
-import { LoggerService } from "./services/logger.service";
+import type { EnvConfig } from "../config/index.js";
+import { LOGGER_REDACT_PATHS } from "./constants/logger.constant.js";
+import type { LoggerModuleOptions } from "./interfaces/logger.interface.js";
+import { LoggerService } from "./services/logger.service.js";
 
 /**
  * 환경에 따른 기본 로그 레벨 결정

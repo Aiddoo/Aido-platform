@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { RevenueCatWebhookPayload } from "@aido/validators";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 

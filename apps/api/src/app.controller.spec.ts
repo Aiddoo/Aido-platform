@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * AppController 컨트롤러 단위 테스트
  *
@@ -9,11 +10,10 @@
  * pnpm --filter @aido/api test app.controller
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
+import { AppController } from "./app.controller.js";
+import { AppService } from "./app.service.js";
 
 describe("AppController — 앱 컨트롤러", () => {
 	let appController: AppController;

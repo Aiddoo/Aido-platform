@@ -1,12 +1,7 @@
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-/**
- * 홈 위젯 스냅샷 — 위젯이 렌더하는 유일한 데이터 (단일 진실원).
- *
- * 위젯 프로세스(iOS 확장 / Android headless)는 네트워크·토큰에 접근하지 않고
- * 앱이 기록한 이 스냅샷만 읽어 렌더한다. 사용자 노출 문자열은 쓰기 시점에
- * localize되어 함께 저장된다(iOS 타임라인 props는 직렬화되어 i18n 불가).
- */
+// Persist only display data; isolated widget runtimes cannot access auth or i18n.
 export const widgetSnapshotSchema = z.object({
   version: z.literal(1),
   /** data: 오늘 할 일 있음 · empty: 로그인했으나 오늘 할 일 없음 · loggedOut: 비로그인 */
@@ -57,35 +52,36 @@ export type WidgetTopTodo = WidgetSnapshot['topTodos'][number];
 /** 위젯 렌더 시점의 표시 상태 — 스냅샷 상태에 자정 경과(stale)를 더한 판정 결과 */
 export type WidgetRenderState = 'data' | 'empty' | 'loggedOut' | 'stale';
 
+export function isWidgetSnapshotStale(snapshot: WidgetSnapshot, todayLocalDate: string): boolean {
+  return snapshot.state !== 'loggedOut' && snapshot.date !== todayLocalDate;
+}
+
+export function getWidgetRenderState(
+  snapshot: WidgetSnapshot,
+  todayLocalDate: string,
+): WidgetRenderState {
+  return isWidgetSnapshotStale(snapshot, todayLocalDate) ? 'stale' : snapshot.state;
+}
+
+export function getWidgetStateScreenStrings(
+  snapshot: WidgetSnapshot,
+  renderState: WidgetRenderState,
+): { title: string; cta: string } {
+  return match(renderState)
+    .with('loggedOut', () => ({
+      title: snapshot.strings.loggedOutTitle,
+      cta: snapshot.strings.loggedOutCta,
+    }))
+    .with('stale', () => ({ title: snapshot.strings.staleTitle, cta: snapshot.strings.staleCta }))
+    .with('data', 'empty', () => ({
+      title: snapshot.strings.emptyTitle,
+      cta: snapshot.strings.emptyCta,
+    }))
+    .exhaustive();
+}
+
 export const WidgetSnapshotPolicy = {
-  /** 스냅샷이 설명하는 날짜가 지났는지 (자정 롤오버) */
-  isStale(snapshot: WidgetSnapshot, todayLocalDate: string): boolean {
-    return snapshot.state !== 'loggedOut' && snapshot.date !== todayLocalDate;
-  },
-
-  /** 렌더 시점 표시 상태 판정 — 위젯(양 플랫폼)과 테스트가 공유하는 단일 규칙 */
-  renderState(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetRenderState {
-    if (snapshot.state === 'loggedOut') {
-      return 'loggedOut';
-    }
-    if (WidgetSnapshotPolicy.isStale(snapshot, todayLocalDate)) {
-      return 'stale';
-    }
-    return snapshot.state;
-  },
-
-  /** 상태 화면(empty/loggedOut/stale) 문구 선택 — 양 플랫폼이 공유하는 단일 매핑 */
-  stateScreenStrings(
-    snapshot: WidgetSnapshot,
-    renderState: WidgetRenderState,
-  ): { title: string; cta: string } {
-    switch (renderState) {
-      case 'loggedOut':
-        return { title: snapshot.strings.loggedOutTitle, cta: snapshot.strings.loggedOutCta };
-      case 'stale':
-        return { title: snapshot.strings.staleTitle, cta: snapshot.strings.staleCta };
-      default:
-        return { title: snapshot.strings.emptyTitle, cta: snapshot.strings.emptyCta };
-    }
-  },
-} as const;
+  isStale: isWidgetSnapshotStale,
+  renderState: getWidgetRenderState,
+  stateScreenStrings: getWidgetStateScreenStrings,
+};

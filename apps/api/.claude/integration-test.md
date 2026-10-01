@@ -1,6 +1,6 @@
 # 통합 테스트 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
 
 > Mock DB 또는 실제 DB로 Service + Repository DI 통합을 검증하는 테스트
 
@@ -20,10 +20,10 @@
 
 통합 테스트는 두 가지 유형으로 나뉩니다:
 
-| 유형        | DB                                        | 도구                         | 목적                         | 예시                          |
-| ----------- | ----------------------------------------- | ---------------------------- | ---------------------------- | ----------------------------- |
-| **Mock DB** | `createMockDatabaseService()`             | NestJS `TestingModule`       | Service → Repository DI 검증 | cheer, follow, nudge, todo 등 |
-| **실제 DB** | Jest 실행당 Testcontainers PostgreSQL 1개 | `TestDatabase` + 모듈 팩토리 | 전체 DB 트랜잭션 검증        | auth, oauth, account-deletion |
+| 유형        | DB                                          | 도구                         | 목적                         | 예시                          |
+| ----------- | ------------------------------------------- | ---------------------------- | ---------------------------- | ----------------------------- |
+| **Mock DB** | `createMockDatabaseService()`               | NestJS `TestingModule`       | Service → Repository DI 검증 | cheer, follow, nudge, todo 등 |
+| **실제 DB** | Vitest 실행당 Testcontainers PostgreSQL 1개 | `TestDatabase` + 모듈 팩토리 | 전체 DB 트랜잭션 검증        | auth, oauth, account-deletion |
 
 ### 파일 위치 및 명명
 
@@ -64,10 +64,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { [Feature]Builder } from "@test/builders";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { [Feature]Repository } from "@/{name}/{name}.repository";
-import { [Feature]Service } from "@/{name}/{name}.service";
-import { [Feature]QueueService } from "@/{name}/queue/{name}-queue.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { [Feature]Repository } from "#api/{name}/{name}.repository";
+import { [Feature]Service } from "#api/{name}/{name}.service";
+import { [Feature]QueueService } from "#api/{name}/queue/{name}-queue.service";
 
 describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
@@ -75,10 +75,10 @@ describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
 
   // Mock DB 팩토리로 생성 — $transaction 자동 설정됨
   const mockDb = createMockDatabaseService({
-    [model]: { create: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn() },
+    [model]: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn() },
   });
 
-  const mockQueueService = { enqueueXxx: jest.fn() };
+  const mockQueueService = { enqueueXxx: vi.fn() };
 
   beforeAll(async () => {
     suppressLogger();
@@ -97,11 +97,11 @@ describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
 
   afterAll(async () => {
     await module.close();
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     [Feature]Builder.resetIdCounter();
   });
 
@@ -141,8 +141,8 @@ import { createMockDatabaseService } from '@test/mocks/mock-database.factory';
 
 // 필요한 모델만 전달 — $transaction은 자동 설정됨
 const mockDb = createMockDatabaseService({
-  todo: { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), delete: jest.fn() },
-  todoCategory: { findUnique: jest.fn() },
+  todo: { create: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  todoCategory: { findUnique: vi.fn() },
 });
 
 // 사용: Service 내부의 $transaction이 정상 동작
@@ -156,14 +156,14 @@ const mockDb = createMockDatabaseService({
 
 ```typescript
 // Given - 트랜잭션 내부에서 사용할 모델별 mock 설정
-(database.$transaction as jest.Mock).mockImplementation(
+vi.mocked(database.$transaction).mockImplementation(
   async (callback: (tx: unknown) => Promise<unknown>) => {
     const txProxy = {
       user: {
-        findUnique: jest.fn().mockResolvedValue(mockUser),
+        findUnique: vi.fn().mockResolvedValue(mockUser),
       },
       cheer: {
-        create: jest.fn().mockResolvedValue(mockCheer),
+        create: vi.fn().mockResolvedValue(mockCheer),
       },
     };
     return callback(txProxy);
@@ -190,11 +190,11 @@ const mockDb = createMockDatabaseService({
 
 ```typescript
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { {Feature}Service } from "@/{feature}/services/{feature}.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { TestDatabase } from "../setup/test-database";
-import { createAuthTestModule } from "./helpers/auth-test-module.factory";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { {Feature}Service } from "#api/{feature}/services/{feature}.service";
+import { FakeEmailService } from "../mocks/fake-email.service.js";
+import { TestDatabase } from "../setup/test-database.js";
+import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("{Feature} 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
@@ -233,7 +233,7 @@ describe("{Feature} 통합 테스트 (실제 DB)", () => {
 Auth 팩토리에 포함되지 않는 서비스(OAuth, AccountPurge)는 자체 모듈을 구성합니다.
 공통 패턴은 동일합니다:
 
-컨테이너 생성과 migration은 Jest `globalSetup`이 suite 전체에서 한 번만 수행합니다.
+컨테이너 생성과 migration은 Vitest `globalSetup`이 suite 전체에서 한 번만 수행합니다.
 각 spec의 `TestDatabase.start()`는 이미 관리 중인 `aido_test_<run-id>` DB에 연결만 하며,
 `cleanup()`은 `_prisma_migrations`를 제외한 `public` 테이블을 동적으로 truncate합니다.
 
@@ -253,7 +253,7 @@ beforeAll(async () => {
       { provide: CacheService, useValue: { invalidateSession: async () => {}, ... } },
       { provide: CACHE_SERVICE, useValue: { get: async () => undefined, set: async () => {}, del: async () => {} } },
       { provide: EncryptionService, useValue: { encrypt: (v) => v, decryptSafe: (v) => v } },
-      { provide: [Feature]QueueService, useValue: { enqueueXxx: jest.fn() } },
+      { provide: [Feature]QueueService, useValue: { enqueueXxx: vi.fn() } },
       // ... ConfigService, TypedConfigService mocks
     ],
   }).compile();
@@ -316,4 +316,4 @@ pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 ---
 
 **문서 버전**: 4.0.0
-**최종 수정일**: 2026-04-05
+**최종 수정일**: 2026-10-01

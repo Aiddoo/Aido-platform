@@ -13,7 +13,7 @@ export default function MemoLayout() {
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
-  const { t } = useTranslation('memo');
+  const { t } = useTranslation(['memo', 'common']);
 
   return (
     <Stack
@@ -30,7 +30,13 @@ export default function MemoLayout() {
         headerTitleAlign: 'center',
         headerLeft: () => (
           <View className="justify-center items-center">
-            <Pressable onPress={() => goBack()} hitSlop={8} className="p-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common:actions.goBack')}
+              onPress={() => goBack()}
+              hitSlop={8}
+              className="p-2"
+            >
               <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
             </Pressable>
           </View>

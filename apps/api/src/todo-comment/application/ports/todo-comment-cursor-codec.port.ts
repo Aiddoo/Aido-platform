@@ -6,7 +6,7 @@ import type {
 	TodoConversationCursor,
 	TodoConversationRecord,
 	TodoConversationScope,
-} from "../types";
+} from "../types.js";
 
 export const TODO_COMMENT_CURSOR_CODEC = Symbol("TODO_COMMENT_CURSOR_CODEC");
 

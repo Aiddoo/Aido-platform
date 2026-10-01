@@ -1,6 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 
-import type { FindFriendTodosParams, FindTodosParams } from "../types";
+import type { FindFriendTodosParams, FindTodosParams } from "../types.js";
 
 export const TODO_READ_REPOSITORY = Symbol("TODO_READ_REPOSITORY");
 

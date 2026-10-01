@@ -1,4 +1,4 @@
-import { formatDate, formatPrice } from "./discord-format";
+import { formatDate, formatPrice } from "./discord-format.js";
 
 describe("discord-format 도메인 서비스", () => {
 	describe("formatDate", () => {

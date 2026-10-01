@@ -1,8 +1,10 @@
+import { vi } from "vitest";
+
 import {
 	assertManagedTestDatabaseEnvironment,
 	resolvePnpmCommand,
 	startManagedTestDatabase,
-} from "./managed-test-database";
+} from "./managed-test-database.js";
 
 describe("관리형 테스트 DB 수명주기", () => {
 	it.each([
@@ -36,9 +38,9 @@ describe("관리형 테스트 DB 수명주기", () => {
 
 	it("migration 실패 시 시작한 컨테이너를 중지해야 한다", async () => {
 		// Given - migration이 실패하는 관리형 컨테이너
-		const stop = jest.fn().mockResolvedValue(undefined);
+		const stop = vi.fn().mockResolvedValue(undefined);
 		const env: NodeJS.ProcessEnv = {};
-		const migrate = jest.fn().mockRejectedValue(new Error("migration failed"));
+		const migrate = vi.fn().mockRejectedValue(new Error("migration failed"));
 
 		// When & Then - 시작 실패를 전파하면서 컨테이너를 정리
 		await expect(
@@ -61,9 +63,9 @@ describe("관리형 테스트 DB 수명주기", () => {
 		// Given - migration과 실패 정리를 위한 컨테이너 중지가 모두 실패
 		const migrationError = new Error("migration failed");
 		const stopError = new Error("stop failed");
-		const stop = jest.fn().mockRejectedValue(stopError);
+		const stop = vi.fn().mockRejectedValue(stopError);
 		const env: NodeJS.ProcessEnv = {};
-		const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 		try {
 			// When & Then - 원래 오류를 전파하고 정리 오류는 진단 가능하게 기록
@@ -92,10 +94,10 @@ describe("관리형 테스트 DB 수명주기", () => {
 		}
 	});
 
-	it("Jest 실행당 migration을 한 번만 적용해야 한다", async () => {
+	it("Vitest 실행당 migration을 한 번만 적용해야 한다", async () => {
 		// Given - 정상 시작되는 관리형 컨테이너
-		const stop = jest.fn().mockResolvedValue(undefined);
-		const migrate = jest.fn().mockResolvedValue(undefined);
+		const stop = vi.fn().mockResolvedValue(undefined);
+		const migrate = vi.fn().mockResolvedValue(undefined);
 		const env: NodeJS.ProcessEnv = {};
 
 		// When - 관리형 테스트 DB 시작

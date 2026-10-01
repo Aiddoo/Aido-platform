@@ -1,13 +1,17 @@
+import { TestBed } from "@suites/unit";
 /**
  * RejectFriendRequestUseCase 단위 테스트 (Suites solitary + 포트 모킹).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
+import type { Mocked } from "vitest";
 
-import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
-import { RejectFriendRequestUseCase } from "./reject-friend-request.use-case";
+import { createFollowRepositoryMock } from "#test/mocks/ports/follow.mock";
+
+import { Friendship } from "../../../domain/entities/friendship.aggregate.js";
+import {
+	FOLLOW_REPOSITORY,
+	type FollowRepositoryPort,
+} from "../../ports/follow.repository.port.js";
+import { RejectFriendRequestUseCase } from "./reject-friend-request.use-case.js";
 
 const ME = "u-me";
 const REQUESTER = "u-req";

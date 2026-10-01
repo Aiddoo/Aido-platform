@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "#api/notification/queue";
 
 import type {
 	CheerNotifierPort,
 	CheerSentNotification,
-} from "../../application/ports/cheer-notifier.port";
+} from "../../application/ports/cheer-notifier.port.js";
 
 /**
  * CheerNotifierPort의 어댑터 — 레거시 NotificationQueueService(BullMQ)에 위임한다.

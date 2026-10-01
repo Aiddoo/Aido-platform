@@ -8,9 +8,9 @@ import type {
 	OAuthTokenVerifier,
 	SocialLoginOptions,
 	VerifiedProfile,
-} from "@/auth/application/ports/oauth-identity-provider.port";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { readJson } from "@/shared/infrastructure/http/read-json";
+} from "#api/auth/application/ports/oauth-identity-provider.port";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { readJson } from "#api/shared/infrastructure/http/read-json";
 
 interface OAuthConfig {
 	clientId: string | undefined;

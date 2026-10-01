@@ -1,7 +1,11 @@
 import { marketingPushOptOutResponseSchema, marketingPushOptOutSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class MarketingPushOptOutDto extends createZodDto(marketingPushOptOutSchema) {}
-export class MarketingPushOptOutResponseDto extends createZodDto(
-	marketingPushOptOutResponseSchema,
-) {}
+export const MarketingPushOptOutDto = marketingPushOptOutSchema.meta({
+	id: "MarketingPushOptOutDto",
+});
+export type MarketingPushOptOutDto = z.infer<typeof MarketingPushOptOutDto>;
+export const MarketingPushOptOutResponseDto = marketingPushOptOutResponseSchema.meta({
+	id: "MarketingPushOptOutResponseDto",
+});
+export type MarketingPushOptOutResponseDto = z.infer<typeof MarketingPushOptOutResponseDto>;

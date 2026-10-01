@@ -7,16 +7,16 @@
 export {
 	type CreateRecurringTodosResult,
 	CreateRecurringTodosUseCase,
-} from "./application/use-cases/create-recurring-todos/create-recurring-todos.use-case";
-export { TodoViewCacheInvalidator } from "./application/services/todo-view-cache.invalidator";
-export { CreateTodoUseCase } from "./application/use-cases/create-todo/create-todo.use-case";
-export * from "./domain/events/todo-category-changed.event";
-export * from "./domain/events/todo-created.event";
-export * from "./domain/events/todo-deleted.event";
-export * from "./domain/events/todo-event-names";
-export * from "./domain/events/todo-rescheduled.event";
-export * from "./domain/events/todo-toggled.event";
-export * from "./domain/events/todo-updated.event";
-export * from "./domain/events/todo-visibility-changed.event";
-export * from "./presentation/dtos";
-export * from "./todo.module";
+} from "./application/use-cases/create-recurring-todos/create-recurring-todos.use-case.js";
+export { TodoViewCacheInvalidator } from "./application/services/todo-view-cache.invalidator.js";
+export { CreateTodoUseCase } from "./application/use-cases/create-todo/create-todo.use-case.js";
+export * from "./domain/events/todo-category-changed.event.js";
+export * from "./domain/events/todo-created.event.js";
+export * from "./domain/events/todo-deleted.event.js";
+export * from "./domain/events/todo-event-names.js";
+export * from "./domain/events/todo-rescheduled.event.js";
+export * from "./domain/events/todo-toggled.event.js";
+export * from "./domain/events/todo-updated.event.js";
+export * from "./domain/events/todo-visibility-changed.event.js";
+export * from "./presentation/dtos/index.js";
+export * from "./todo.module.js";

@@ -1,8 +1,8 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import type { OAuthMode } from "../../ports/oauth-identity-provider.port";
-import { OAuthWorkflow } from "../../workflows/oauth.workflow";
+import type { OAuthMode } from "../../ports/oauth-identity-provider.port.js";
+import { OAuthWorkflow } from "../../workflows/oauth.workflow.js";
 
 type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
 type WebOAuthProvider = Exclude<OAuthProvider, "APPLE">;

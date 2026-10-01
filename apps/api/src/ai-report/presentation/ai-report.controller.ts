@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { Timezone } from "@/shared/presentation/decorators";
+import { Timezone } from "#api/shared/presentation/decorators/index";
 import {
 	ApiDoc,
 	ApiForbiddenError,
@@ -10,19 +10,19 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case";
-import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case";
-import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/get-report-by-id.use-case.js";
+import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case.js";
+import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case.js";
 import {
 	AiReportIdParamDto,
 	AiReportListResponseDto,
 	AiReportResponseDto,
 	GetAiReportsQueryDto,
 	ReportStatusResponseDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 /**
  * AI 리포트 API 컨트롤러
@@ -180,7 +180,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 	@ApiForbiddenError(ErrorCode.AI_1308)
 	async getReports(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetAiReportsQueryDto,
+		@Query({ schema: GetAiReportsQueryDto }) query: GetAiReportsQueryDto,
 	): Promise<AiReportListResponseDto> {
 		const reports = await this.getReportsUseCase.execute(user.userId, {
 			type: query.type as "WEEKLY" | "MONTHLY" | undefined,
@@ -223,7 +223,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 	@ApiNotFoundError(ErrorCode.AI_1304)
 	async getReport(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: AiReportIdParamDto,
+		@Param({ schema: AiReportIdParamDto }) params: AiReportIdParamDto,
 	): Promise<AiReportResponseDto> {
 		const report = await this.getReportByIdUseCase.execute(user.userId, params.id);
 

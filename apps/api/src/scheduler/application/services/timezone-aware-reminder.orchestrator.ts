@@ -1,40 +1,40 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { toErrorMessage } from "@/shared/application/utils/error-message.util";
-import { addDays } from "@/shared/domain/date/utils/arithmetic";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
+import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import {
 	FIRST_DAY_OF_MONTH,
 	isWithinScheduleWindow,
 	MONDAY,
 	NOTIFICATION_SCHEDULE,
-} from "../../domain/services/notification-schedule";
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+} from "../../domain/services/notification-schedule.js";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
+} from "../ports/scheduler-preference-reader.port.js";
 import {
 	type ReminderHourChangedJobData,
 	type SocialDigestJobData,
 	TIMEZONE_REMINDER_ENQUEUER,
 	type TimezoneReminderEnqueuerPort,
-} from "../ports/timezone-reminder-enqueuer.port";
-import { EveningReminderStrategy } from "../strategies/evening-reminder.strategy";
-import { LunchNudgeStrategy } from "../strategies/lunch-nudge.strategy";
-import { MonthlyReportStrategy } from "../strategies/monthly-report.strategy";
-import { MorningReminderStrategy } from "../strategies/morning-reminder.strategy";
-import { NudgeSuggestStrategy } from "../strategies/nudge-suggest.strategy";
-import { OnboardingStrategy } from "../strategies/onboarding.strategy";
-import { SocialDigestStrategy } from "../strategies/social-digest.strategy";
-import { StreakAtRiskStrategy } from "../strategies/streak-at-risk.strategy";
-import { WeatherEveningStrategy } from "../strategies/weather-evening.strategy";
-import { WeatherMorningStrategy } from "../strategies/weather-morning.strategy";
-import { WeeklyAchievementStrategy } from "../strategies/weekly-achievement.strategy";
-import { WeeklyReportStrategy } from "../strategies/weekly-report.strategy";
-import { WinbackStrategy } from "../strategies/winback.strategy";
+} from "../ports/timezone-reminder-enqueuer.port.js";
+import { EveningReminderStrategy } from "../strategies/evening-reminder.strategy.js";
+import { LunchNudgeStrategy } from "../strategies/lunch-nudge.strategy.js";
+import { MonthlyReportStrategy } from "../strategies/monthly-report.strategy.js";
+import { MorningReminderStrategy } from "../strategies/morning-reminder.strategy.js";
+import { NudgeSuggestStrategy } from "../strategies/nudge-suggest.strategy.js";
+import { OnboardingStrategy } from "../strategies/onboarding.strategy.js";
+import { SocialDigestStrategy } from "../strategies/social-digest.strategy.js";
+import { StreakAtRiskStrategy } from "../strategies/streak-at-risk.strategy.js";
+import { WeatherEveningStrategy } from "../strategies/weather-evening.strategy.js";
+import { WeatherMorningStrategy } from "../strategies/weather-morning.strategy.js";
+import { WeeklyAchievementStrategy } from "../strategies/weekly-achievement.strategy.js";
+import { WeeklyReportStrategy } from "../strategies/weekly-report.strategy.js";
+import { WinbackStrategy } from "../strategies/winback.strategy.js";
 
 /**
  * 타임존 인식 리마인더 — Every-Minute Sweep 오케스트레이터.

@@ -1,13 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { MUTATION_LOCK, MutationLockKeys, type MutationLockPort } from "@/shared/application/ports";
+import {
+	MUTATION_LOCK,
+	MutationLockKeys,
+	type MutationLockPort,
+} from "#api/shared/application/ports/index";
 
 import {
 	TODO_COMMENT_ACCOUNT_CLEANUP_STORE,
 	type TodoCommentAccountCleanupStorePort,
-} from "../ports/todo-comment-account-cleanup.store.port";
-import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../ports/todo-view-cache.port";
-import { settleAfterCommit } from "../settle-after-commit";
+} from "../ports/todo-comment-account-cleanup.store.port.js";
+import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
+import { settleAfterCommit } from "../settle-after-commit.js";
 
 export interface TodoCommentAccountCleanupResult {
 	readonly affectedTodoIds: readonly number[];

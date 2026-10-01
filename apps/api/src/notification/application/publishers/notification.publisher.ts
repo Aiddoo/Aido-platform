@@ -1,8 +1,8 @@
-import type { NotificationRecord } from "../../domain/records/notification.record";
-import type { CreateNotificationData } from "../ports/notification-data";
-import type { SendBatchNotificationUseCase } from "../use-cases/send-batch-notification/send-batch-notification.use-case";
-import type { SendNotificationWithDedupUseCase } from "../use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case";
-import type { SendNotificationUseCase } from "../use-cases/send-notification/send-notification.use-case";
+import type { NotificationRecord } from "../../domain/records/notification.record.js";
+import type { CreateNotificationData } from "../ports/notification-data.js";
+import type { SendBatchNotificationUseCase } from "../use-cases/send-batch-notification/send-batch-notification.use-case.js";
+import type { SendNotificationWithDedupUseCase } from "../use-cases/send-notification-with-dedup/send-notification-with-dedup.use-case.js";
+import type { SendNotificationUseCase } from "../use-cases/send-notification/send-notification.use-case.js";
 
 /** 다른 모듈에 노출하는 알림 발행 capability. */
 export class NotificationPublisher {

@@ -1,20 +1,20 @@
 import { Module } from "@nestjs/common";
 
-import { DatabaseModule } from "@/shared/infrastructure/database/database.module";
+import { DatabaseModule } from "#api/shared/infrastructure/database/database.module";
 
-import { NotificationModule } from "../notification/notification.module";
-import { WeatherModule } from "../weather/weather.module";
-import { WeeklyAchievementModule } from "../weekly-achievement/weekly-achievement.module";
-import { RE_ENGAGEMENT_READER } from "./application/ports/re-engagement-reader.port";
-import { REMINDER_SCHEDULER } from "./application/ports/reminder-scheduler.port";
-import { SCHEDULED_REMINDER_READER } from "./application/ports/scheduled-reminder-reader.port";
-import { SCHEDULER_DEDUP } from "./application/ports/scheduler-dedup.port";
-import { SCHEDULER_PREFERENCE_READER } from "./application/ports/scheduler-preference-reader.port";
-import { TIMEZONE_REMINDER_ENQUEUER } from "./application/ports/timezone-reminder-enqueuer.port";
-import { TODO_REMINDER_READER } from "./application/ports/todo-reminder-reader.port";
-import { WEATHER_REMINDER_READER } from "./application/ports/weather-reminder-reader.port";
-import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/weekly-achievement-stats-reader.port";
-import { TimezoneAwareReminderOrchestrator } from "./application/services/timezone-aware-reminder.orchestrator";
+import { NotificationModule } from "../notification/notification.module.js";
+import { WeatherModule } from "../weather/weather.module.js";
+import { WeeklyAchievementModule } from "../weekly-achievement/weekly-achievement.module.js";
+import { RE_ENGAGEMENT_READER } from "./application/ports/re-engagement-reader.port.js";
+import { REMINDER_SCHEDULER } from "./application/ports/reminder-scheduler.port.js";
+import { SCHEDULED_REMINDER_READER } from "./application/ports/scheduled-reminder-reader.port.js";
+import { SCHEDULER_DEDUP } from "./application/ports/scheduler-dedup.port.js";
+import { SCHEDULER_PREFERENCE_READER } from "./application/ports/scheduler-preference-reader.port.js";
+import { TIMEZONE_REMINDER_ENQUEUER } from "./application/ports/timezone-reminder-enqueuer.port.js";
+import { TODO_REMINDER_READER } from "./application/ports/todo-reminder-reader.port.js";
+import { WEATHER_REMINDER_READER } from "./application/ports/weather-reminder-reader.port.js";
+import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/weekly-achievement-stats-reader.port.js";
+import { TimezoneAwareReminderOrchestrator } from "./application/services/timezone-aware-reminder.orchestrator.js";
 import {
 	EveningReminderStrategy,
 	LunchNudgeStrategy,
@@ -29,13 +29,16 @@ import {
 	WeeklyAchievementStrategy,
 	WeeklyReportStrategy,
 	WinbackStrategy,
-} from "./application/strategies";
-import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter";
-import { PrismaSchedulerReader } from "./infrastructure/persistence/prisma-scheduler.reader";
-import { TodoReminderProcessor } from "./infrastructure/processors/todo-reminder.processor";
-import { TimezoneReminderQueueModule, TimezoneReminderQueueService } from "./infrastructure/queue";
-import { TimezoneReminderProcessor } from "./infrastructure/queue/timezone-reminder-queue.processor";
-import { BullMQReminderSchedulerAdapter } from "./infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
+} from "./application/strategies/index.js";
+import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter.js";
+import { PrismaSchedulerReader } from "./infrastructure/persistence/prisma-scheduler.reader.js";
+import { TodoReminderProcessor } from "./infrastructure/processors/todo-reminder.processor.js";
+import {
+	TimezoneReminderQueueModule,
+	TimezoneReminderQueueService,
+} from "./infrastructure/queue/index.js";
+import { TimezoneReminderProcessor } from "./infrastructure/queue/timezone-reminder-queue.processor.js";
+import { BullMQReminderSchedulerAdapter } from "./infrastructure/scheduler/bullmq-reminder-scheduler.adapter.js";
 
 /**
  * SchedulerModule (클린아키텍처 4계층 + 포트/어댑터)

@@ -1,13 +1,15 @@
-import type { AdminGrowthMetricsPort } from "../../ports/admin-growth-metrics.port";
-import { GetGrowthSummaryQuery } from "./get-growth-summary.query";
+import { vi } from "vitest";
+
+import type { AdminGrowthMetricsPort } from "../../ports/admin-growth-metrics.port.js";
+import { GetGrowthSummaryQuery } from "./get-growth-summary.query.js";
 
 describe("GetGrowthSummaryQuery — 관리자 성장 지표", () => {
 	it("범위가 없으면 마지막 30개 완료 UTC 날짜를 사용하고 측정 전 리텐션을 null로 반환한다", async () => {
 		// Given - 2026-07-26 현재, 아직 활동 측정 행이 없는 저장소
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date("2026-07-26T12:34:56.000Z"));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-26T12:34:56.000Z"));
 		const metrics: AdminGrowthMetricsPort = {
-			getSummary: jest.fn().mockResolvedValue({
+			getSummary: vi.fn().mockResolvedValue({
 				measurementStartedAt: null,
 				totalActiveUsers: 0,
 				signups: 2,
@@ -53,14 +55,14 @@ describe("GetGrowthSummaryQuery — 관리자 성장 지표", () => {
 				d7RetainedActivatedUsers: null,
 			});
 		} finally {
-			jest.useRealTimers();
+			vi.useRealTimers();
 		}
 	});
 
 	it("명시한 cohort 현지 날짜 범위를 그대로 조회한다", async () => {
 		// Given - 집계 저장소와 명시적 cohort 범위
 		const metrics: AdminGrowthMetricsPort = {
-			getSummary: jest.fn().mockResolvedValue({
+			getSummary: vi.fn().mockResolvedValue({
 				measurementStartedAt: null,
 				totalActiveUsers: 4,
 				signups: 3,
@@ -101,7 +103,7 @@ describe("GetGrowthSummaryQuery — 관리자 성장 지표", () => {
 		// Given - D1/D7은 자격 cohort가 있고 D30은 아직 없는 집계
 		const measurementStartedAt = new Date("2026-04-01T03:04:05.000Z");
 		const metrics: AdminGrowthMetricsPort = {
-			getSummary: jest.fn().mockResolvedValue({
+			getSummary: vi.fn().mockResolvedValue({
 				measurementStartedAt,
 				totalActiveUsers: 10,
 				signups: 6,

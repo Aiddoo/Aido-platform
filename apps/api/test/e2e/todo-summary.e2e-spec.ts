@@ -9,10 +9,10 @@
 
 import request from "supertest";
 
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("오늘의 할 일 요약 E2E", () => {
 	let ctx: E2eTestContext;

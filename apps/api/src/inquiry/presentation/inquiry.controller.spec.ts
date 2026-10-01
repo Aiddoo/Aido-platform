@@ -4,14 +4,14 @@
  * 컨트롤러의 endpoint UseCase 위임과 응답 래핑을 검증한다.
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import { CreateInquiryUseCase } from "../application/use-cases/create-inquiry/create-inquiry.use-case";
-import type { CreateInquiryDto } from "./dtos";
-import { InquiryController } from "./inquiry.controller";
+import { CreateInquiryUseCase } from "../application/use-cases/create-inquiry/create-inquiry.use-case.js";
+import type { CreateInquiryDto } from "./dtos/index.js";
+import { InquiryController } from "./inquiry.controller.js";
 
 /** 타입 지정 CreateInquiryDto 팩토리 (as 캐스팅 없이 부분 오버라이드) */
 function makeDto(overrides: Partial<CreateInquiryDto> = {}): CreateInquiryDto {

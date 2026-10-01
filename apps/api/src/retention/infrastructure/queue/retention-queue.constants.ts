@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const RETENTION_QUEUE = "retention.v1";
 export const RETENTION_DEAD_LETTER_QUEUE = "retention-dead-letter.v1";

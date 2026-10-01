@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const WeeklyAchievementSchema = z.object({
+export const weeklyAchievementSchema = z.object({
   id: z.number(),
   year: z.number(),
   week: z.number(),
@@ -15,9 +15,9 @@ export const WeeklyAchievementSchema = z.object({
   achievedAt: z.date(),
 });
 
-export type WeeklyAchievement = z.infer<typeof WeeklyAchievementSchema>;
+export type WeeklyAchievement = z.infer<typeof weeklyAchievementSchema>;
 
-export const AchievementSummarySchema = z.object({
+export const achievementSummarySchema = z.object({
   totalWeeks: z.number(),
   perfectWeeks: z.number(),
   currentStreak: z.number(),
@@ -25,7 +25,7 @@ export const AchievementSummarySchema = z.object({
   averageRate: z.number(),
 });
 
-export type AchievementSummary = z.infer<typeof AchievementSummarySchema>;
+export type AchievementSummary = z.infer<typeof achievementSummarySchema>;
 
 export interface AchievementPaginationParams {
   year: number;

@@ -1,6 +1,12 @@
 import { suggestionActionResponseSchema, suggestionListResponseSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class SuggestionListResponseDto extends createZodDto(suggestionListResponseSchema) {}
+export const SuggestionListResponseDto = suggestionListResponseSchema.meta({
+	id: "SuggestionListResponseDto",
+});
+export type SuggestionListResponseDto = z.infer<typeof SuggestionListResponseDto>;
 
-export class SuggestionActionResponseDto extends createZodDto(suggestionActionResponseSchema) {}
+export const SuggestionActionResponseDto = suggestionActionResponseSchema.meta({
+	id: "SuggestionActionResponseDto",
+});
+export type SuggestionActionResponseDto = z.infer<typeof SuggestionActionResponseDto>;

@@ -5,9 +5,9 @@
  */
 import { ErrorCode } from "@aido/errors";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor";
+import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor.js";
 
 describe("search-cursor — keyset 커서 코덱", () => {
 	it("인코딩 후 디코딩하면 원본 (rank, id)를 복원한다", () => {
@@ -25,7 +25,7 @@ describe("search-cursor — keyset 커서 코덱", () => {
 		try {
 			// 콜론 없이 디코딩되는 문자열 → 유효하지 않은 커서
 			decodeSearchCursor("notavalidcursor");
-			fail("should have thrown");
+			expect.fail("should have thrown");
 		} catch (error) {
 			expect(error).toBeInstanceOf(ApplicationException);
 			if (error instanceof ApplicationException) {

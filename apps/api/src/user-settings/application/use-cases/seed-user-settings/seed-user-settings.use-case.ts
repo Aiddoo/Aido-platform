@@ -4,11 +4,11 @@ import {
 	type ConsentSeedInput,
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
+} from "../../ports/user-consent.repository.port.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 
 /**
  * 회원가입 시 기본 설정 시딩 — 약관 동의 + 푸시 설정 기본값.

@@ -1,6 +1,4 @@
 import {
-  type WeeklyAchievementDetailResponse,
-  type WeeklyAchievementListResponse,
   weeklyAchievementDetailResponseSchema,
   weeklyAchievementListResponseSchema,
 } from '@aido/validators';
@@ -25,17 +23,16 @@ export class AchievementService {
 
   getWeeklyAchievements = async (
     params: AchievementPaginationParams,
+    signal?: AbortSignal,
   ): Promise<Result<WeeklyAchievementsResult, ApiError>> => {
-    const result = await this.#httpClient.get<WeeklyAchievementListResponse>(
-      'v1/weekly-achievements',
-      {
-        params: {
-          year: params.year,
-          cursor: params.cursor,
-          size: params.size,
-        },
+    const result = await this.#httpClient.get('v1/weekly-achievements', {
+      signal,
+      params: {
+        year: params.year,
+        cursor: params.cursor,
+        size: params.size,
       },
-    );
+    });
 
     if (!result.ok) return result;
 
@@ -52,10 +49,9 @@ export class AchievementService {
   getWeeklyAchievement = async (
     year: number,
     week: number,
+    signal?: AbortSignal,
   ): Promise<Result<WeeklyAchievement, ApiError>> => {
-    const result = await this.#httpClient.get<WeeklyAchievementDetailResponse>(
-      `v1/weekly-achievements/${year}/${week}`,
-    );
+    const result = await this.#httpClient.get(`v1/weekly-achievements/${year}/${week}`, { signal });
 
     if (!result.ok) return result;
 

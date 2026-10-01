@@ -13,7 +13,7 @@
  * const inactive = PushTokenBuilder.create('user-123').asInactive().build();
  * ```
  */
-import type { Platform, PushToken } from "@/generated/prisma/client";
+import type { Platform, PushToken } from "#api/generated/prisma/client";
 
 export class PushTokenBuilder {
 	private data: PushToken;

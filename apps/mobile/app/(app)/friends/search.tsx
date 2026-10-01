@@ -31,7 +31,7 @@ const SearchFriendScreen = () => {
           leftContent={<SearchIcon width={20} height={20} colorClassName="text-gray-5" />}
           placeholder={t('search.placeholder')}
           value={query}
-          onChangeText={setQuery}
+          onChange={setQuery}
           autoFocus
           autoCorrect={false}
           autoCapitalize="none"
@@ -41,11 +41,13 @@ const SearchFriendScreen = () => {
       </Box>
 
       {isValidQuery ? (
-        <QueryErrorBoundary>
-          <Suspense fallback={<FriendSearchList.Loading />}>
-            <FriendSearchList query={debouncedQuery.trim()} />
-          </Suspense>
-        </QueryErrorBoundary>
+        <Box flex={1} px={16}>
+          <QueryErrorBoundary>
+            <Suspense fallback={<FriendSearchList.Loading />}>
+              <FriendSearchList query={debouncedQuery.trim()} />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
       ) : (
         <Flex flex={1} justify="center" align="center">
           <Result

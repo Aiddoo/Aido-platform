@@ -4,7 +4,7 @@ import {
   EXPO_PUSH_TOKEN_REGEX,
   NOTIFICATION_CATEGORY,
   NOTIFICATION_LIMITS,
-} from './notification.constants';
+} from './notification.constants.js';
 
 export const registerPushTokenSchema = z.object({
   token: z

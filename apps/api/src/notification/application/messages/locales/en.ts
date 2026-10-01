@@ -7,7 +7,7 @@ import type {
 	SystemNotificationCopyCatalog,
 	WeatherFallbackCopyCatalog,
 	WeatherNotificationCopyCatalog,
-} from "../notification-copy.types";
+} from "../notification-copy.types.js";
 
 export const SOCIAL_SENDER_FALLBACK = "A friend";
 

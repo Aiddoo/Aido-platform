@@ -158,6 +158,9 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
   받는다.
 - 서버 상태는 `queryOptions`/`infiniteQueryOptions`/`mutationOptions` factory로 정의한다. component는
   식별자를 읽어 factory를 호출하되 query key, queryFn, cache 정책을 인라인으로 만들지 않는다.
+- 순수 `get...QueryOptions(service, { ...dependencies })`는 `get-...-query-options.ts`에 둔다.
+  같은 파일의 `useGet...QueryOptions`는 DI/locale 의존성만 주입한다. 서버 GET의 queryFn은
+  TanStack Query AbortSignal을 Service → HttpClient/Ky에 전달한다.
 - 옵션 팩토리의 인자는 `{ todoId, sort, focusCommentId }`처럼 이름 있는 객체로 받고, query key에도
   같은 직렬화 가능한 객체를 넣는다. 이 저장소는 Expo Router + TanStack Query + Ky를 사용하므로
   TanStack Router의 `loaderDeps`나 oRPC 패턴을 억지로 추가하지 않는다. 전환 전 데이터가 필요하면
@@ -167,17 +170,21 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 - 한 화면 block에서만 의미가 있는 작은 조립 조각은 소유 파일의 지역 컴포넌트로 둔다. 둘 이상의
   화면 surface가 공유할 때만 독립 파일로 승격하고, 함께 바뀌는 목록·행·작성기 family는 같은 하위
   폴더에 모은다. 폴더 `index.ts` re-export는 만들지 않고 정의 파일에서 직접 import한다.
+- HTTP transport 성공 데이터는 `unknown`이다. Service가 공유 응답 스키마 전체를 검증한 뒤
+  mapper로 독립적인 client model을 만든다. 응답 타입을 generic HTTP 인자나 DTO Omit으로 단정하지 않는다.
 - form과 wire schema는 가능한 한 `@aido/validators`를 단일 원본으로 사용한다. 모바일 전용 Date,
   policy, 화면 view-model만 model/mapper에서 별도로 표현한다.
 - 페이지 단위 폼은 가장 가까운 session 부모가 `useForm`, Zod resolver, submit mutation을 소유하고
-  지역 `FormProvider`로 field에 전달한다. field는 `useController`, 액션은 `useFormState`/`useWatch`의
+  지역 `FormProvider`로 field에 전달한다. `shared/ui/FormField`만 `Controller`를 소유하고 field는
+  제어형 Input의 `value/onChange/onBlur`와 해당 fieldState를 소비한다. 액션은 `useFormState`/`useWatch`의
   좁은 구독을 사용한다. 폼 값을 전역 Context나 별도 전역 상태에 복제하지 않는다.
 - hook은 라우트 읽기, 전환 조정, mutation 상태, field focus처럼 하나의 변화 이유만 갖는다. 계산은
   순수 함수/Policy로 빼고 화면 hook은 작은 계약을 조합한다. 한 컴포넌트에서만 쓰는 작은 hook은
   소유 파일에 둘 수 있다.
-- 날짜 표시는 `shared/utils/date`의 로케일 포맷을 재사용하고 오늘 기준은 `useToday`/`useTodayKey`로
-  읽는다. render 중 `new Date()`를 기준 상태로 만들지 않는다. Expo static web output을 요청 단위
-  SSR로 가정해 별도 `Intl` 계층을 중복 구현하지 않는다.
+- 날짜 표시는 `shared/utils/date`의 호환 wrapper를 재사용한다. 순수 포맷 구현은
+  `date-format.ts`의 Intl.DateTimeFormat에 locale/timeZone을 명시해 호출한다. 오늘 기준은
+  `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다.
+  날짜 산술과 YYYY-MM-DD API key는 기존 dayjs 유틸을 유지한다.
 - 미디어 업로드는 실제 API 계약이 있을 때만 도입한다. Expo 호환성과 유지 상태가 검증된 라이브러리를
   우선하고, 없다면 선택·검증·전송을 각각 작은 hook/service로 분리한다. API가 없는 기능을 미리 만들지 않는다.
 - 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.
@@ -275,9 +282,9 @@ export class {Feature}Service {
   }
 
   // 패턴 A: HTTP + Zod + Mapper
-  get{Feature}s = async (params: Get{Feature}sQuery): Promise<Result<{Feature}sResult, ApiError>> => {
+  get{Feature}s = async (params: Get{Feature}sQuery, signal?: AbortSignal): Promise<Result<{Feature}sResult, ApiError>> => {
     // 1. API 호출
-    const result = await this.#httpClient.get<{Feature}ListResponse>('v1/{feature}s', { params });
+    const result = await this.#httpClient.get('v1/{feature}s', { params, signal });
 
     // 2. 서버 비즈니스 에러(4xx) 전파
     if (!result.ok) {
@@ -366,7 +373,7 @@ export const useGet{Feature}sQueryOptions = () => {
     // ...
     select: (items) => items.map((item) => ({
       ...item,
-      isNew: Date.now() - item.createdAt.getTime() < 24 * 60 * 60 * 1000,
+      isNew: referenceTime - item.createdAt.getTime() < 24 * 60 * 60 * 1000,
     })),
   });
 };

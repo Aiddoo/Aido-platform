@@ -91,7 +91,6 @@ export const aiUsageSchema = z.object({
 });
 export type AiUsage = z.infer<typeof aiUsageSchema>;
 
-// Daily Completion
 export const dailyCompletionSummaryClientSchema = z.object({
   date: z.string(),
   totalTodos: z.number(),
@@ -112,7 +111,6 @@ export const dailyCompletionsResultSchema = z.object({
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
 
-// Todo Summary (홈 위젯 스냅샷 데이터 — GET v1/todos/summary)
 export const todoSummaryClientSchema = z.object({
   date: z.string(),
   totalTodos: z.number(),
@@ -131,15 +129,31 @@ export const todoSummaryClientSchema = z.object({
 });
 export type TodoSummary = z.infer<typeof todoSummaryClientSchema>;
 
-/** AI 사용량 관련 도메인 규칙 */
-export const AiUsagePolicy = {
-  /** 무료 사용자의 AI 파싱 한도에 도달했는지 (limit이 null이면 프리미엄 = 무제한) */
-  isLimitReached(usage: AiUsage): boolean {
-    return usage.limit != null && usage.used >= usage.limit;
-  },
+export function isLimitReached(usage: AiUsage): boolean {
+  return usage.limit != null && usage.used >= usage.limit;
+}
 
-  /** 남은 사용 횟수 (null이면 무제한/프리미엄) */
-  getRemainingCount(usage: AiUsage): number | null {
-    return usage.limit != null ? usage.limit - usage.used : null;
-  },
+export function getRemainingCount(usage: AiUsage): number | null {
+  return usage.limit != null ? usage.limit - usage.used : null;
+}
+
+export const AiUsagePolicy = {
+  isLimitReached,
+  getRemainingCount,
 } as const;
+
+export const todoDetailsSchema = z.object({
+  todo: todoItemSchema,
+  owner: z.object({
+    id: z.string(),
+    name: z.string().nullable(),
+    profileImage: z.string().nullable(),
+  }),
+  permissions: z.object({
+    canEdit: z.boolean(),
+    canComment: z.boolean(),
+    canNudge: z.boolean(),
+  }),
+  metrics: z.object({ viewCount: z.number(), commentCount: z.number() }),
+});
+export type TodoDetails = z.infer<typeof todoDetailsSchema>;

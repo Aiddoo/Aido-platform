@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * GetTodoSummaryUseCase 통합 테스트 (Mock DB)
  *
@@ -16,16 +17,15 @@
  * pnpm --filter @aido/api test todo-summary.integration-spec
  * ```
  */
+import { vi } from "vitest";
 
-import { Test, type TestingModule } from "@nestjs/testing";
-import { createTodoReadRepositoryMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
-
-import { STREAK_PORT } from "@/todo/application/ports/streak.port";
-import { TODO_READ_REPOSITORY } from "@/todo/application/ports/todo-read.repository.port";
-import { GetTodoSummaryUseCase } from "@/todo/application/queries/get-todo-summary/get-todo-summary.use-case";
-import { StreakAdapter } from "@/todo/infrastructure/adapters/streak.adapter";
-import { USER_STREAK_ACCESS } from "@/user-settings";
+import { STREAK_PORT } from "#api/todo/application/ports/streak.port";
+import { TODO_READ_REPOSITORY } from "#api/todo/application/ports/todo-read.repository.port";
+import { GetTodoSummaryUseCase } from "#api/todo/application/queries/get-todo-summary/get-todo-summary.use-case";
+import { StreakAdapter } from "#api/todo/infrastructure/adapters/streak.adapter";
+import { USER_STREAK_ACCESS } from "#api/user-settings/index";
+import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -34,7 +34,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 	const mockReadRepository = createTodoReadRepositoryMock();
 
 	const mockUserStreakAccess = {
-		getPreferenceRecord: jest.fn(),
+		getPreferenceRecord: vi.fn(),
 	};
 
 	const today = new Date("2026-07-12T00:00:00.000Z");
@@ -59,16 +59,16 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	it("실제 DI 체인(use-case → StreakAdapter → user-settings capability)으로 요약을 합성한다", async () => {
 		// Given
-		jest.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
+		vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
 			total: 2,
 			completed: 2,
 		});
-		jest.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+		vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
 		// lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
 		mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
 			currentStreak: 7,
@@ -88,11 +88,11 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 
 	it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {
 		// Given
-		jest.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
+		vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
 			total: 0,
 			completed: 0,
 		});
-		jest.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+		vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
 		mockUserStreakAccess.getPreferenceRecord.mockResolvedValue(null);
 
 		// When

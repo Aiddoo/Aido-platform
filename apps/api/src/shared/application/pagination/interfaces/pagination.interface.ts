@@ -1,4 +1,4 @@
-import type { SortOrder } from "../constants/pagination.constant";
+import type { SortOrder } from "../constants/pagination.constant.js";
 
 // ============================================
 // 오프셋 기반 페이지네이션

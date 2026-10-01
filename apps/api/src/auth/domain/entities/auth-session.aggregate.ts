@@ -1,4 +1,4 @@
-import { AggregateRoot } from "@/shared/domain";
+import { AggregateRoot } from "#api/shared/domain/index";
 
 export interface AuthSessionProps {
 	id: string;

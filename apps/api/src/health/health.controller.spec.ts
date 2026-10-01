@@ -10,10 +10,10 @@
 
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheckService } from "@nestjs/terminus";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { HealthController } from "./health.controller";
+import { HealthController } from "./health.controller.js";
 
 describe("HealthController — 헬스 체크 컨트롤러", () => {
 	let controller: HealthController;

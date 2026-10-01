@@ -1,21 +1,22 @@
 import type { CurrentUserPayload } from "@aido/validators";
 import { Logger } from "@nestjs/common";
-import { createMockExecutionContext } from "@test/mocks";
 import { of } from "rxjs";
+import { vi, type MockInstance } from "vitest";
 
-import type { AuthUserActivityWriterPort } from "@/auth/application/ports/auth-collaboration.port";
+import type { AuthUserActivityWriterPort } from "#api/auth/application/ports/auth-collaboration.port";
+import { createMockExecutionContext } from "#test/mocks/index";
 
-import { LastActiveInterceptor } from "./last-active.interceptor";
+import { LastActiveInterceptor } from "./last-active.interceptor.js";
 
 describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 	let activityWriter: AuthUserActivityWriterPort;
 	let interceptor: LastActiveInterceptor;
-	let loggerError: jest.SpyInstance;
+	let loggerError: MockInstance;
 
 	beforeEach(() => {
-		loggerError = jest.spyOn(Logger.prototype, "error").mockImplementation();
+		loggerError = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
 		activityWriter = {
-			updateLastActiveAt: jest.fn().mockResolvedValue(undefined),
+			updateLastActiveAt: vi.fn().mockResolvedValue(undefined),
 		};
 		interceptor = new LastActiveInterceptor(activityWriter);
 	});
@@ -104,7 +105,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 			user,
 			headers: { "x-timezone": "Asia/Seoul" },
 		});
-		const dateNow = jest.spyOn(Date, "now");
+		const dateNow = vi.spyOn(Date, "now");
 
 		try {
 			// When - 현지 자정을 사이에 둔 두 요청이 통과하면
@@ -126,8 +127,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 
 	it("활동 저장이 실패하면 같은 현지 날짜의 다음 요청이 재시도한다", async () => {
 		// Given - 첫 저장만 실패하는 writer와 같은 현지 날짜의 요청
-		jest
-			.mocked(activityWriter.updateLastActiveAt)
+		vi.mocked(activityWriter.updateLastActiveAt)
 			.mockRejectedValueOnce(new Error("database unavailable"))
 			.mockResolvedValueOnce(undefined);
 		const user: CurrentUserPayload = {
@@ -161,8 +161,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 		const firstWrite = new Promise<void>((_resolve, reject) => {
 			rejectFirst = reject;
 		});
-		jest
-			.mocked(activityWriter.updateLastActiveAt)
+		vi.mocked(activityWriter.updateLastActiveAt)
 			.mockImplementationOnce(() => firstWrite)
 			.mockResolvedValueOnce(undefined);
 		const user: CurrentUserPayload = {
@@ -176,7 +175,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 				user,
 				headers: { "x-timezone": "Asia/Seoul" },
 			});
-		const dateNow = jest.spyOn(Date, "now");
+		const dateNow = vi.spyOn(Date, "now");
 
 		try {
 			// When - 다음 날짜가 기록된 뒤 이전 날짜의 요청만 실패하면

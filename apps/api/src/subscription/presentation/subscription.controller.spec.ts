@@ -11,15 +11,15 @@
  * ```
  */
 import { ErrorCode } from "@aido/errors";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { SubscriptionEventBuilder } from "@test/builders";
 import type { Request } from "express";
+import type { Mocked } from "vitest";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { SubscriptionEventBuilder } from "#test/builders/index";
 
-import { HandleWebhookEventUseCase } from "../application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
-import { SubscriptionController } from "./subscription.controller";
+import { HandleWebhookEventUseCase } from "../application/use-cases/handle-webhook-event/handle-webhook-event.use-case.js";
+import { SubscriptionController } from "./subscription.controller.js";
 
 describe("SubscriptionController — 구독 컨트롤러 (thin delegation)", () => {
 	let controller: SubscriptionController;

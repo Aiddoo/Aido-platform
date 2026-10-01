@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { todoSchema } from '../todo/todo.response';
-import { TODO_COMMENT_LIMITS } from './todo-comment.constants';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime.js';
+import { todoSchema } from '../todo/todo.response.js';
+import { TODO_COMMENT_LIMITS } from './todo-comment.constants.js';
 
 export const todoCommentAuthorSchema = z
   .object({

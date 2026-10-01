@@ -2,7 +2,7 @@ import { APP_ICONS, getAppIconLabel } from '@src/features/app-icon/constants/app
 import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
 import type { AppIconKey } from '@src/features/app-icon/types/app-icon.types';
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {

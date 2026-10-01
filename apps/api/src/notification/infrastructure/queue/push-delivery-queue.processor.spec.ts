@@ -1,18 +1,19 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
-import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case";
-import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries/recover-failed-push-deliveries.use-case";
-import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox/relay-push-delivery-outbox.use-case";
+import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications/deliver-push-notifications.use-case.js";
+import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries/recover-failed-push-deliveries.use-case.js";
+import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox/relay-push-delivery-outbox.use-case.js";
 import {
 	PUSH_DELIVERY_DEAD_LETTER_QUEUE,
 	PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
 	PUSH_DELIVERY_QUEUE,
 	PushDeliveryJobName,
-} from "./push-delivery-queue.constants";
-import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor";
+} from "./push-delivery-queue.constants.js";
+import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor.js";
 
 describe("PushDeliveryQueueProcessor — durable push queue routing", () => {
 	let processor: PushDeliveryQueueProcessor;
@@ -25,14 +26,14 @@ describe("PushDeliveryQueueProcessor — durable push queue routing", () => {
 		const { unit, unitRef } = await TestBed.solitary(PushDeliveryQueueProcessor)
 			.mock<JobRuntimePort>(JOB_RUNTIME)
 			.impl(() => ({
-				start: jest.fn(),
-				stop: jest.fn(),
-				enqueue: jest.fn(),
-				schedule: jest.fn(),
-				unschedule: jest.fn(),
-				cancel: jest.fn(),
-				work: jest.fn().mockResolvedValue(undefined),
-				health: jest.fn(),
+				start: vi.fn(),
+				stop: vi.fn(),
+				enqueue: vi.fn(),
+				schedule: vi.fn(),
+				unschedule: vi.fn(),
+				cancel: vi.fn(),
+				work: vi.fn().mockResolvedValue(undefined),
+				health: vi.fn(),
 			}))
 			.compile();
 

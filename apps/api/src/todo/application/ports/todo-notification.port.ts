@@ -1,4 +1,4 @@
-import type { TodoCompletionMilestone } from "../../domain/services/completion-policy";
+import type { TodoCompletionMilestone } from "../../domain/services/completion-policy.js";
 
 export const TODO_NOTIFICATION = Symbol("TODO_NOTIFICATION");
 

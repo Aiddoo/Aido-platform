@@ -1,6 +1,6 @@
-import { resolveTimezone } from "@/shared/domain/date/utils/timezone";
+import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import type { RetentionStageName } from "../retention.constants";
+import type { RetentionStageName } from "../retention.constants.js";
 
 export interface RetentionStageState {
 	readonly startedAt: Date;

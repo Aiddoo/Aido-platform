@@ -1,4 +1,3 @@
-import type { TodoDetailsResponse } from '@aido/validators';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useTodayKey } from '@src/shared/hooks/useToday';
 import { useTranslation } from '@src/shared/i18n';
@@ -8,9 +7,10 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
 import { TodoNudgePolicy } from '../../models/todo-nudge.model';
+import type { TodoDetails } from '../../models/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
-import { useTodoDetailsQueryOptions } from '../queries/use-todo-page-query-options';
+import { useTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { TodoNudgeButton } from './TodoNudgeButton';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './TodoRow';
 
@@ -27,7 +27,7 @@ export function TodoDetailCard() {
   );
 }
 
-type TodoDetailSectionProps = { detail: TodoDetailsResponse };
+type TodoDetailSectionProps = { detail: TodoDetails };
 
 function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
   const { t } = useTranslation('todo');
@@ -59,15 +59,15 @@ function TodoBody({ detail }: TodoDetailSectionProps) {
         left={<TodoCheckbox isSelected={todo.completed} />}
         top={<TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>}
         middle={
-          todo.items.length > 0 && (
-            <TodoProgress value={todo.itemStats.completed} total={todo.itemStats.total} />
+          todo.subTodos.length > 0 && (
+            <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
           )
         }
       />
 
-      {todo.items.length > 0 && (
+      {todo.subTodos.length > 0 && (
         <VStack className="ml-8 border-l border-gray-2 pl-4" gap={0}>
-          {todo.items.map((item) => (
+          {todo.subTodos.map((item) => (
             <TodoRow
               key={item.id}
               left={<TodoCheckbox isSelected={item.completed} />}

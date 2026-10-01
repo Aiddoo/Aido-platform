@@ -1,19 +1,20 @@
+import { TestBed } from "@suites/unit";
 /**
  * MarkAllAsReadUseCase 단위 테스트 — 전체 읽음 처리 + 캐시 무효화
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
-import { MarkAllAsReadUseCase } from "./mark-all-as-read.use-case";
+} from "../../ports/notification.repository.port.js";
+import { MarkAllAsReadUseCase } from "./mark-all-as-read.use-case.js";
 
 describe("MarkAllAsReadUseCase", () => {
 	let useCase: MarkAllAsReadUseCase;

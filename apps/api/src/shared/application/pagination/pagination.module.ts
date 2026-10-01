@@ -1,6 +1,6 @@
 import { Global, Module } from "@nestjs/common";
 
-import { PaginationService } from "./services/pagination.service";
+import { PaginationService } from "./services/pagination.service.js";
 
 /**
  * Pagination 모듈

@@ -1,4 +1,4 @@
-import { evaluateNudgeCooldown, evaluateRemindNudgeCooldown } from "./nudge-cooldown";
+import { evaluateNudgeCooldown, evaluateRemindNudgeCooldown } from "./nudge-cooldown.js";
 
 describe("nudge-cooldown 도메인 서비스", () => {
 	describe("evaluateNudgeCooldown (24h)", () => {

@@ -24,13 +24,13 @@ import type {
 	JobRuntimePort,
 	JobRetryPolicy,
 	WorkJobOptions,
-} from "@/shared/application/ports/job-runtime.port";
+} from "#api/shared/application/ports/job-runtime.port";
 import {
 	resolveDeadLetterJobPolicy,
 	resolveDeadLetterQueue,
 	resolveJobIdempotencyKey,
-} from "@/shared/application/ports/job-runtime.port";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+} from "#api/shared/application/ports/job-runtime.port";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
@@ -166,8 +166,6 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
 	inject: [TypedConfigService],
 	useFactory: (config: TypedConfigService) =>
 		new LazyPgBossClient(async () => {
-			// pg-boss 12는 ESM 전용이다. PostgreSQL backend가 실제 시작될 때만
-			// 로드하여 기본 Redis 배포와 CJS 기반 테스트에 영향을 주지 않는다.
 			const { PgBoss } = await import("pg-boss");
 			return new PgBoss({
 				connectionString: config.databaseUrl,

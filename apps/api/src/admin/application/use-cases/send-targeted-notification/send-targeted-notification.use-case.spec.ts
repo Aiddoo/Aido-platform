@@ -1,20 +1,20 @@
+import { TestBed } from "@suites/unit";
 /**
  * SendTargetedNotificationUseCase 단위 테스트
  *
  * 실제 DB/발송 없이 포트를 스텁으로 대체해 존재 사용자 필터·발송·예외를 검증한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
 import {
 	ADMIN_BROADCAST_NOTIFIER,
 	type AdminBroadcastNotifierPort,
-} from "../../ports/admin-broadcast-notifier.port";
+} from "../../ports/admin-broadcast-notifier.port.js";
 import {
 	ADMIN_USER_DIRECTORY,
 	type AdminUserDirectoryPort,
-} from "../../ports/admin-user-directory.port";
-import { SendTargetedNotificationUseCase } from "./send-targeted-notification.use-case";
+} from "../../ports/admin-user-directory.port.js";
+import { SendTargetedNotificationUseCase } from "./send-targeted-notification.use-case.js";
 
 describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
 	let useCase: SendTargetedNotificationUseCase;

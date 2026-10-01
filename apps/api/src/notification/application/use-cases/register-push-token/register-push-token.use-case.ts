@@ -1,23 +1,23 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
-import type { RegisterPushTokenData } from "../../ports/notification-data";
-import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port";
+} from "../../ports/notification-cache.port.js";
+import type { RegisterPushTokenData } from "../../ports/notification-data.js";
+import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../../ports/push-token.repository.port";
+} from "../../ports/push-token.repository.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
-} from "../../ports/user-notification-settings.port";
+} from "../../ports/user-notification-settings.port.js";
 
 /**
  * 푸시 토큰 등록 유스케이스.

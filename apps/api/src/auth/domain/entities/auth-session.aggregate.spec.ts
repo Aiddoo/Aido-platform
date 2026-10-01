@@ -1,4 +1,4 @@
-import { AuthSession } from "./auth-session.aggregate";
+import { AuthSession } from "./auth-session.aggregate.js";
 
 const createSession = () =>
 	AuthSession.reconstitute({

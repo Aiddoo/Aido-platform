@@ -2,19 +2,19 @@ import { ErrorCode } from "@aido/errors";
 import type { NotificationAction } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { BroadcastTargetFilter } from "../../../domain/broadcast-message";
-import { type BroadcastResult, buildBroadcastResult } from "../../../domain/broadcast-result";
-import { BroadcastCampaign } from "../../../domain/entities/broadcast-campaign";
+import type { BroadcastTargetFilter } from "../../../domain/broadcast-message.js";
+import { type BroadcastResult, buildBroadcastResult } from "../../../domain/broadcast-result.js";
+import { BroadcastCampaign } from "../../../domain/entities/broadcast-campaign.js";
 import {
 	ADMIN_BROADCAST_NOTIFIER,
 	type AdminBroadcastNotifierPort,
-} from "../../ports/admin-broadcast-notifier.port";
+} from "../../ports/admin-broadcast-notifier.port.js";
 import {
 	ADMIN_USER_DIRECTORY,
 	type AdminUserDirectoryPort,
-} from "../../ports/admin-user-directory.port";
+} from "../../ports/admin-user-directory.port.js";
 
 export interface BroadcastNotificationInput {
 	title: string;

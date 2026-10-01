@@ -5,10 +5,10 @@
  */
 
 // 상수
-export * from './memo.constants';
+export * from './memo.constants.js';
 
 // 요청 스키마 (Request)
-export * from './memo.request';
+export * from './memo.request.js';
 
 // 응답 스키마 (Response)
-export * from './memo.response';
+export * from './memo.response.js';

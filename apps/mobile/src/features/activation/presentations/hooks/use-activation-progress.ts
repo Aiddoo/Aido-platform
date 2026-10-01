@@ -1,7 +1,7 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useActivationService } from '@src/bootstrap/providers/di-context';
-import { useFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/presentations/queries/use-feature-discovery-query-options';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/presentations/queries/get-feature-discovery-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useQuery } from '@tanstack/react-query';
 
 import { ActivationPolicy, type ActivationProgress } from '../../models/activation.model';

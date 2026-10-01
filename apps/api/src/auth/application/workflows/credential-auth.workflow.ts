@@ -9,6 +9,7 @@ import {
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import type { VerifiedRefreshPayload } from "#api/auth/application/types/auth.types";
 import type {
 	CurrentUserResult,
 	DeleteAccountResult,
@@ -19,9 +20,8 @@ import type {
 	SessionInfo,
 	UpdateProfileResult,
 	VerifyEmailResult,
-} from "@/auth/application/types";
-import type { VerifiedRefreshPayload } from "@/auth/application/types/auth.types";
-import { assertNotDeleted } from "@/auth/application/utils/auth-validation.utils";
+} from "#api/auth/application/types/index";
+import { assertNotDeleted } from "#api/auth/application/utils/auth-validation.utils";
 import {
 	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
@@ -29,18 +29,18 @@ import {
 	REVOKE_REASON,
 	SECURITY_EVENT,
 	TOKEN_REUSE_GRACE_PERIOD_MS,
-} from "@/auth/domain/constants/auth.constants";
-import { AuthSession } from "@/auth/domain/entities/auth-session.aggregate";
-import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/account-restoration-policy";
-import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
-import type { UserStatus } from "@/auth/domain/types";
-import { Email } from "@/auth/domain/value-objects/email.vo";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { addMilliseconds, subtractMinutes } from "@/shared/domain/date/utils/arithmetic";
-import { now } from "@/shared/domain/date/utils/core";
-import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { maskEmail } from "@/shared/domain/utils/mask.util";
+} from "#api/auth/domain/constants/auth.constants";
+import { AuthSession } from "#api/auth/domain/entities/auth-session.aggregate";
+import { assertRestorableWithinGracePeriod } from "#api/auth/domain/services/account-restoration-policy";
+import { assertStatusAllowsLogin } from "#api/auth/domain/services/account-status-policy";
+import type { UserStatus } from "#api/auth/domain/types";
+import { Email } from "#api/auth/domain/value-objects/email.vo";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { addMilliseconds, subtractMinutes } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { maskEmail } from "#api/shared/domain/utils/mask.util";
 
 import {
 	AUTH_CACHE,
@@ -48,13 +48,13 @@ import {
 	type AuthCachePort,
 	type AuthRegistrationNotifierPort,
 	type AuthUserRegisteredNotification,
-} from "../ports/auth-collaboration.port";
+} from "../ports/auth-collaboration.port.js";
 import {
 	AUTH_PASSWORD_HASHER,
 	AUTH_TOKEN_ISSUER,
 	type AuthPasswordHasherPort,
 	type AuthTokenIssuerPort,
-} from "../ports/auth-crypto.port";
+} from "../ports/auth-crypto.port.js";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
@@ -67,12 +67,15 @@ import {
 	type AuthSecurityLogRepositoryPort,
 	type AuthSessionRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port";
-import { RETENTION_ENROLLER, type RetentionEnrollerPort } from "../ports/retention-enroller.port";
-import { SessionService } from "../services/session.service";
-import { VerificationService } from "../services/verification.service";
-import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
+} from "../ports/auth-persistence.port.js";
+import {
+	RETENTION_ENROLLER,
+	type RetentionEnrollerPort,
+} from "../ports/retention-enroller.port.js";
+import { SessionService } from "../services/session.service.js";
+import { VerificationService } from "../services/verification.service.js";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case.js";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case.js";
 
 @Injectable()
 export class CredentialAuthWorkflow {

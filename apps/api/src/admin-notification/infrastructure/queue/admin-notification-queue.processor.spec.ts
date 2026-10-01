@@ -1,21 +1,22 @@
+import { TestBed } from "@suites/unit";
 /**
  * AdminNotificationProcessor 단위 테스트
  *
  * - 잡 이름에 따라 올바른 유스케이스로 라우팅
  * - 알 수 없는 잡은 경고만
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createMockJob } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { DispatchDailySignupSummaryUseCase } from "../../application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
-import { SendAdminNotificationUseCase } from "../../application/use-cases/send-admin-notification/send-admin-notification.use-case";
+import { createMockJob } from "#test/mocks/index";
+
+import { DispatchDailySignupSummaryUseCase } from "../../application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case.js";
+import { SendAdminNotificationUseCase } from "../../application/use-cases/send-admin-notification/send-admin-notification.use-case.js";
 import {
 	type AdminNotificationJobData,
 	AdminNotificationJobName,
 	type AdminNotificationSendData,
-} from "./admin-notification-queue.constants";
-import { AdminNotificationProcessor } from "./admin-notification-queue.processor";
+} from "./admin-notification-queue.constants.js";
+import { AdminNotificationProcessor } from "./admin-notification-queue.processor.js";
 
 describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 	let processor: AdminNotificationProcessor;

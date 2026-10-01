@@ -1,4 +1,4 @@
-import type { PushReceiptResult } from "./push-provider.port";
+import type { PushReceiptResult } from "./push-provider.port.js";
 
 export const PUSH_RECEIPT_REPOSITORY = Symbol("PUSH_RECEIPT_REPOSITORY");
 

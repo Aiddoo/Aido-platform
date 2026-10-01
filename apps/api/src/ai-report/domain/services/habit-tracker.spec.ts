@@ -10,11 +10,12 @@
  * ```
  */
 import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
+import isoWeek from "dayjs/plugin/isoWeek.js";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
+import { vi } from "vitest";
 
-import { analyzeHabitFormation, classifyHabit, type HabitTrackerInput } from "./habit-tracker";
+import { analyzeHabitFormation, classifyHabit, type HabitTrackerInput } from "./habit-tracker.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -92,12 +93,12 @@ describe("analyzeHabitFormation", () => {
 	const TZ = "Asia/Seoul";
 
 	beforeEach(() => {
-		jest.useFakeTimers();
-		jest.setSystemTime(new Date("2026-03-24T00:00:00+09:00"));
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-03-24T00:00:00+09:00"));
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	function makeTodo(title: string, date: string, completed: boolean): HabitTrackerInput {

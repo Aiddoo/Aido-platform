@@ -1,55 +1,37 @@
-# widget — 홈 화면 위젯 (iOS WidgetKit + Android AppWidget)
+# widget — iOS·Android 홈 화면 위젯
 
-> 상세 아키텍처 가이드: [`apps/mobile/.claude/widgets.md`](../../../.claude/widgets.md)
+Expo SDK 58의 `expo-widgets`로 양 플랫폼을 구현한다.
+[플랫폼 설정·제약·native QA](../../../.claude/widgets.md)를 따른다.
 
-iOS `AidoTodayList`의 Small/Medium/Large와 Android 3종(`AidoTodaySummary`,
-`AidoTodayList`, `AidoTodayLarge`)을 같은 정보 구조로 렌더하는 feature.
+## 구조
 
-## 핵심 원칙
+| 위치                              | 책임                                                 |
+| --------------------------------- | ---------------------------------------------------- |
+| models                            | snapshot Zod 계약, 순수 policy, 직렬화 props         |
+| services                          | summary→snapshot→props mapper와 쓰기 직렬화          |
+| bridge                            | iOS timeline / Android snapshot / 미지원 플랫폼 경계 |
+| presentations/widgets.ios.tsx     | 격리된 SwiftUI renderer                              |
+| presentations/widgets.android.tsx | 격리된 Glance renderer                               |
+| presentations/hooks               | AuthProvider가 소유하는 계정·날짜·언어 동기화        |
 
-**위젯은 앱이 기록한 스냅샷의 순수 렌더러다.** 위젯 프로세스(iOS 확장 / Android headless)는
-네트워크·토큰·SecureStore에 일절 접근하지 않는다. 따라서 이 feature의 어떤 실패도
-로그인 세션에 영향을 줄 수 없다(세션 불변식 — v1.4.0 사고 재발 방지).
+위젯은 네트워크·인증 저장소에 접근하지 않는다. 변경은 앱에서 검증한 표시용 snapshot으로만
+전달한다. iOS는 다음 자정 stale 엔트리, Android는 renderer 날짜 경계와 OS 주기 갱신을 사용한다.
+동기화 실패는 앱으로 throw하지 않는다.
 
-## 데이터 흐름
+iOS identity·App Group·snapshot v1은 유지한다. Android의 이전 component 이름은 SDK receiver로
+연결하고, 이전 snapshot은 read-only native adapter로 이관한다. 기존 widget ID와 배치를 유지한다.
+SDK의 cold launch 누락은 버전 고정된 최소 Glance patch로 보완한다.
 
-```
-GET v1/todos/summary (진행률+스트릭+상위 할 일, X-Timezone 기준 "오늘")
-  → useWidgetSnapshotSync (AuthProvider에 마운트된 유일한 통합 지점)
-  → WidgetSyncService.syncSummary
-  → widget-snapshot.mapper (localized 문자열을 스냅샷에 굽기)
-  → WidgetBridge (플랫폼 포트)
-      ├─ iOS: expo-widgets updateTimeline([지금, 다음 자정=stale]) → App Group
-      └─ Android: MMKV(widget-storage) 영속화 + 3종 requestWidgetUpdate({light, dark})
+## 1.10.0 migration evidence
 
-위젯 렌더 (읽기 전용):
-  iOS: presentations/ios/aido-widgets.tsx ('widget' 디렉티브 → SwiftUI 컴파일)
-  Android: task-handler → 스냅샷 읽기 → presentations/android FlexWidget 트리
-```
+| Measure                          | 1.9.0                                                  | 1.10.0                                                                 |
+| -------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Non-test TypeScript source files | 22                                                     | 14                                                                     |
+| Non-test TypeScript source lines | 1,685                                                  | 1,033                                                                  |
+| Android widget implementation    | Separate headless renderer, MMKV snapshot, WorkManager | Expo Widgets registry, shared snapshot props, platform renderer        |
+| Android layouts                  | Legacy provider placements                             | Existing component/ID preserved; summary 2×2, list 4×2, large list 4×4 |
+| iOS widget identity              | `AidoTodayList`, existing App Group                    | Preserved                                                              |
+| Tap while app is closed          | JavaScript headless interaction                        | Native Glance activity launch                                          |
+| Logout synchronization           | Independent writes                                     | Serialized writes; obsolete queued snapshots skipped                   |
 
-갱신 트리거: 할 일 토글/생성/삭제(쿼리 키가 `completions()` 하위라 기존 invalidation 상속),
-앱 포그라운드 복귀(focusManager), 자정 넘긴 복귀(useToday 키 회전), 언어 변경, 로그아웃.
-
-## 구조 (SRP)
-
-| 경로                                 | 책임                                                                 |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| `models/widget-snapshot.model.ts`    | Zod 스냅샷 스키마 + 렌더 상태 정책 + 배지 티어 (단일 진실원)         |
-| `services/widget-snapshot.mapper.ts` | 요약 → 스냅샷 순수 변환 (t/locale/now 주입)                          |
-| `services/widget-sync.service.ts`    | 오케스트레이션 — **절대 throw하지 않음** (Sentry 관측만)             |
-| `services/widget-fallback.ts`        | 첫 스냅샷 이전의 정적 2개 국어 폴백                                  |
-| `repositories/`                      | Android 스냅샷 영속화 (MMKV `widget-storage` — Repository 패턴 예외) |
-| `bridge/`                            | `WidgetBridge` 포트 + 플랫폼 어댑터 3종 (ios/android/noop)           |
-| `presentations/ios/`                 | 'widget' 디렉티브 레이아웃 — **모듈 스코프 참조 금지(자기완결)**     |
-| `presentations/android/`             | FlexWidget 트리 (라이트/다크 × data/empty/loggedOut/stale)           |
-| `presentations/hooks/`               | `useWidgetSnapshotSync` — 앱 트리 통합 지점                          |
-| `task-handler/`                      | Android headless 엔트리 (읽기+렌더만) + headless 관측 도구           |
-
-## 주의사항
-
-- iOS 레이아웃 함수는 빌드 타임에 소스 문자열로 추출된다 — 임포트한 **값**을 참조하면
-  위젯 런타임에서 터진다. 팔레트는 `widget-colors.constant.ts`와 동일 값을 인라인 유지할 것.
-- iOS 위젯 이름 `AidoTodayList`는 `app.config.ts`의 `expo-widgets`와 `createWidget()`이,
-  Android 3종 이름은 `react-native-android-widget` 설정과 `ANDROID_WIDGET_NAMES`가 일치해야 한다.
-- 스냅샷 스키마 변경 시 `version` 리터럴을 올리고 read 쪽 safeParse가 폴백하게 둘 것.
-- 색상은 global.css OKLCH 토큰의 hex 고정본 — 토큰 변경 시 함께 갱신.
+Counts compare the tracked 1.9.0 revision with the migration worktree and exclude tests, documentation, native plugins, and vendor patches. They measure source size, not frame performance. Android compatibility adds 274 production lines across one plugin and two Kotlin adapters. An actual 1.8.0 → 1.10.0 APK upgrade preserved three registered widgets, matched the shared mapper output, left the old MMKV files unchanged, and passed 50 concurrent migration/account-write races. See the platform guide for the reproducible native harness and remaining OEM/release checks.

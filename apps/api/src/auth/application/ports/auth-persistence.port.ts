@@ -1,8 +1,8 @@
 import type { SubscriptionStatus, UserRole } from "@aido/validators";
 
-import type { AccountProvider, UserStatus, VerificationType } from "../../domain/types";
-import type { CreateSessionData } from "../types";
-import type { OAuthMode } from "./oauth-identity-provider.port";
+import type { AccountProvider, UserStatus, VerificationType } from "../../domain/types.js";
+import type { CreateSessionData } from "../types/index.js";
+import type { OAuthMode } from "./oauth-identity-provider.port.js";
 
 export const AUTH_USER_REPOSITORY = Symbol("AUTH_USER_REPOSITORY");
 export const AUTH_ACCOUNT_REPOSITORY = Symbol("AUTH_ACCOUNT_REPOSITORY");

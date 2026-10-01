@@ -7,30 +7,30 @@ import type {
 import { TODO_COMMENT_LIMITS } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
+import { assertTodoCommentAccess } from "../../assert-todo-comment-access.js";
 import {
 	TODO_COMMENT_CURSOR_CODEC,
 	type TodoCommentCursorCodecPort,
-} from "../../ports/todo-comment-cursor-codec.port";
+} from "../../ports/todo-comment-cursor-codec.port.js";
 import {
 	TODO_COMMENT_READER,
 	type TodoCommentReaderPort,
-} from "../../ports/todo-comment.reader.port";
+} from "../../ports/todo-comment.reader.port.js";
 import {
 	toTodoCommentCursorPagination,
 	collectCommentIds,
 	toTodoConversationAncestorItems,
 	toTodoConversationItems,
-} from "../../presenters";
+} from "../../presenters/index.js";
 import type {
 	ConversationPageMode,
 	TodoCommentRecord,
 	TodoConversationCursor,
 	TodoConversationPosition,
 	TodoConversationScope,
-} from "../../types";
+} from "../../types.js";
 
 export interface GetTodoConversationInput {
 	todoId: number;

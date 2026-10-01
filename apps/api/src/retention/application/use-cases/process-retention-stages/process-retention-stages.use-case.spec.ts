@@ -1,23 +1,24 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createRetentionRepositoryMock, createUnitOfWorkMock } from "@test/mocks/ports";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
 	type RetentionStageCandidate,
-} from "../../ports/retention.repository.port";
-import { ProcessRetentionStagesUseCase } from "./process-retention-stages.use-case";
+} from "../../ports/retention.repository.port.js";
+import { ProcessRetentionStagesUseCase } from "./process-retention-stages.use-case.js";
 
 describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () => {
 	let useCase: ProcessRetentionStagesUseCase;
 	let repository: Mocked<RetentionRepositoryPort>;
 
 	beforeEach(async () => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T10:30:00Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:30:00Z"));
 		const compiled = await TestBed.solitary(ProcessRetentionStagesUseCase)
 			.mock<RetentionRepositoryPort>(RETENTION_REPOSITORY)
 			.impl(() => createRetentionRepositoryMock())
@@ -30,7 +31,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
 		repository = compiled.unitRef.get(RETENTION_REPOSITORY);
 	});
 
-	afterEach(() => jest.useRealTimers());
+	afterEach(() => vi.useRealTimers());
 
 	function candidate(overrides: Partial<RetentionStageCandidate> = {}): RetentionStageCandidate {
 		return {

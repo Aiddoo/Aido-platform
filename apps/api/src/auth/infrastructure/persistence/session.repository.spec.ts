@@ -14,12 +14,12 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { SessionBuilder } from "@test/builders";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { SessionBuilder } from "#test/builders/index";
+import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { SessionRepository } from "./session.repository";
+import { SessionRepository } from "./session.repository.js";
 
 describe("SessionRepository — 세션 리포지토리", () => {
 	let repository: SessionRepository;

@@ -1,9 +1,9 @@
 import { Logger } from "@nestjs/common";
 import type { ThrottlerStorage } from "@nestjs/throttler";
-import type { ThrottlerStorageRecord } from "@nestjs/throttler/dist/throttler-storage-record.interface";
-import type Redis from "ioredis";
+import type { ThrottlerStorageRecord } from "@nestjs/throttler/dist/throttler-storage-record.interface.js";
+import type { Redis } from "ioredis";
 
-import { RedisErrorLogSampler } from "../redis/redis-error-log-sampler";
+import { RedisErrorLogSampler } from "../redis/redis-error-log-sampler.js";
 
 /**
  * Lua 스크립트: atomic throttle increment + block 처리

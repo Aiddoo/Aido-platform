@@ -1,3 +1,5 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
 /**
  * Durable push worker orchestration contract.
  *
@@ -5,33 +7,32 @@
  * exactly-once가 아니라 durable at-least-once다. 아래 테스트는 재시도 때 stale worker가
  * 상태를 덮어쓰지 않도록 모든 상태 변경이 claimed fence와 UOW를 거치는지 고정한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { InMemoryPushRateLimiter } from "../../../infrastructure/rate-limiter/in-memory-push-rate-limiter";
-import { PushDeliveryRateLimitReservationConflictError } from "../../errors/push-delivery-rate-limit-reservation-conflict.error";
-import type { CreateNotificationData } from "../../ports/notification-data";
+import { InMemoryPushRateLimiter } from "../../../infrastructure/rate-limiter/in-memory-push-rate-limiter.js";
+import { PushDeliveryRateLimitReservationConflictError } from "../../errors/push-delivery-rate-limit-reservation-conflict.error.js";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
 	type ReservePushDeliveryRateLimitInput,
 	type ClaimedPushDelivery,
 	type PushDeliveryLifecycleRepositoryPort,
-} from "../../ports/push-delivery-lifecycle.repository.port";
+} from "../../ports/push-delivery-lifecycle.repository.port.js";
 import {
 	type PushResult,
 	RetryablePushProviderTransportError,
-} from "../../ports/push-provider.port";
+} from "../../ports/push-provider.port.js";
 import {
 	type BatchPushDeliveryRecipient,
 	PushDeliveryEligibilityService,
 	type SinglePushDeliveryRecipient,
-} from "../../services/push-delivery-eligibility.service";
-import { PushNotificationDeliveryService } from "../../services/push-notification-delivery.service";
-import { PushNotificationPayloadFactory } from "../../services/push-notification-payload.factory";
-import type { DeliverPushNotificationsInput } from "../../types/push-delivery.types";
-import { DeliverPushNotificationsUseCase } from "./deliver-push-notifications.use-case";
+} from "../../services/push-delivery-eligibility.service.js";
+import { PushNotificationDeliveryService } from "../../services/push-notification-delivery.service.js";
+import { PushNotificationPayloadFactory } from "../../services/push-notification-payload.factory.js";
+import type { DeliverPushNotificationsInput } from "../../types/push-delivery.types.js";
+import { DeliverPushNotificationsUseCase } from "./deliver-push-notifications.use-case.js";
 
 const PROCESSING_JOB_ID = "push-delivery-job-20260829";
 const LOCAL_DATE = "2026-08-29";
@@ -158,7 +159,7 @@ describe("DeliverPushNotificationsUseCase — durable staged delivery", () => {
 			callOrder.push(operation);
 			persistenceObservations.push({ operation, transactionDepth });
 		};
-		const run = jest.fn();
+		const run = vi.fn();
 		run.mockImplementation(async (work: () => Promise<unknown>) => {
 			transactionDepth += 1;
 			try {
@@ -171,32 +172,32 @@ describe("DeliverPushNotificationsUseCase — durable staged delivery", () => {
 		const { unit, unitRef } = await TestBed.solitary(DeliverPushNotificationsUseCase)
 			.mock<PushDeliveryLifecycleRepositoryPort>(PUSH_DELIVERY_LIFECYCLE_REPOSITORY)
 			.impl(() => ({
-				claim: jest.fn(async () => {
+				claim: vi.fn(async () => {
 					observePersistence("claim");
 					return claimedDeliveries;
 				}),
-				markRateLimitReserved: jest.fn(
+				markRateLimitReserved: vi.fn(
 					async (inputs: readonly ReservePushDeliveryRateLimitInput[]) => {
 						observePersistence("markRateLimitReserved");
 						return inputs.map((input) => input.fence.dispatchId);
 					},
 				),
-				reopenAfterFinalClaimFailure: jest.fn(async () => 0),
-				reopenFailedPublications: jest.fn(async () => 0),
-				finalizeSkipped: jest.fn(async (inputs) => {
+				reopenAfterFinalClaimFailure: vi.fn(async () => 0),
+				reopenFailedPublications: vi.fn(async () => 0),
+				finalizeSkipped: vi.fn(async (inputs) => {
 					observePersistence("finalizeSkipped");
 					return inputs.length;
 				}),
-				finalizeResults: jest.fn(async (inputs) => {
+				finalizeResults: vi.fn(async (inputs) => {
 					observePersistence("finalizeResults");
 					if (finalizeResultsError) throw finalizeResultsError;
 					return inputs.length;
 				}),
-				release: jest.fn(async (inputs) => {
+				release: vi.fn(async (inputs) => {
 					observePersistence("release");
 					return inputs.length;
 				}),
-				recoverStaleProcessing: jest.fn(async () => 0),
+				recoverStaleProcessing: vi.fn(async () => 0),
 			}))
 			.mock<UnitOfWorkPort>(UNIT_OF_WORK)
 			.impl(() => ({ run }))

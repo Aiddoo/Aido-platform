@@ -17,7 +17,7 @@
  *   .buildWithUser();
  * ```
  */
-import type { Follow, FollowStatus } from "@/generated/prisma/client";
+import type { Follow, FollowStatus } from "#api/generated/prisma/client";
 
 /**
  * 팔로워/팔로잉 사용자 정보 (목록 조회용)

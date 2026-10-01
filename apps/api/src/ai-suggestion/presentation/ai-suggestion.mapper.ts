@@ -8,8 +8,8 @@ import type { RecurringSuggestion, SuggestionActionResponse } from "@aido/valida
 import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
 
-import type { SuggestionActionResult } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
-import type { Suggestion } from "../domain/entities/suggestion.aggregate";
+import type { SuggestionActionResult } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.js";
+import type { Suggestion } from "../domain/entities/suggestion.aggregate.js";
 
 /**
  * AI 반복 제안 매퍼 클래스

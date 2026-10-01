@@ -1,7 +1,7 @@
 import type {
 	RetentionDeliveryResult,
 	RetentionDispatchCandidate,
-} from "./retention.repository.port";
+} from "./retention.repository.port.js";
 
 export const RETENTION_PUSH_SENDER = Symbol("RETENTION_PUSH_SENDER");
 

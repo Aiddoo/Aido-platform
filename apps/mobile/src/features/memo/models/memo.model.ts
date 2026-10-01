@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-// ─── Domain Types ───────────────────────────────────────────
-
 export const memoItemSchema = z.object({
   id: z.number(),
   content: z.string(),

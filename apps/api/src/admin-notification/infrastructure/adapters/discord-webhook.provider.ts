@@ -1,13 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { now } from "@/shared/domain/date/utils/core";
-import { toISOString } from "@/shared/domain/date/utils/format";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import type {
 	AdminNotification,
 	AdminNotifier,
 	AdminNotifyResult,
-} from "../../application/ports/admin-notifier.port";
+} from "../../application/ports/admin-notifier.port.js";
 
 /**
  * Discord Webhook Provider

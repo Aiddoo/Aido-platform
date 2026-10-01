@@ -9,10 +9,10 @@
  * pnpm --filter @aido/api test todo-response.mapper
  * ```
  */
-import { TodoBuilder } from "@test/builders";
+import { TodoBuilder } from "#test/builders/index";
 
-import { TodoMapper } from "./todo-response.mapper";
-import type { TodoItemData } from "./todo-row.types";
+import { TodoMapper } from "./todo-response.mapper.js";
+import type { TodoItemData } from "./todo-row.types.js";
 
 describe("TodoMapper — 할 일 매퍼", () => {
 	beforeEach(() => {

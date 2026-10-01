@@ -3,10 +3,10 @@
  *
  * 한국 좌표 범위 불변식과 격자 변환을 검증한다.
  */
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { Coordinate } from "./coordinate.vo";
-import { GridCoordinate } from "./grid-coordinate.vo";
+import { Coordinate } from "./coordinate.vo.js";
+import { GridCoordinate } from "./grid-coordinate.vo.js";
 
 describe("Coordinate — WGS84 위경도 값 객체", () => {
 	describe("of", () => {

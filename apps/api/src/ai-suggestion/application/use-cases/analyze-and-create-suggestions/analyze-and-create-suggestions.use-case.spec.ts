@@ -1,25 +1,25 @@
+import { TestBed } from "@suites/unit";
 /**
  * AnalyzeAndCreateSuggestionsUseCase 단위 테스트
  *
  * Suites + GWT 패턴 적용
  * - 최소 할 일 게이트, 패턴 필터/캡/중복제거, 재시도, 트랜잭션 교체, 카테고리 해석
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
+import type { AiProvider } from "#api/ai/index";
+import { AI_PROVIDER } from "#api/ai/index";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import type { AiProvider } from "@/ai";
-import { AI_PROVIDER } from "@/ai";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-
-import type { SuggestionContext } from "../../../domain/types";
+import type { SuggestionContext } from "../../../domain/types.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../../ports/ai-suggestion.repository.port";
-import { SuggestionContextBuilder } from "../../services/suggestion-context.builder";
-import { AnalyzeAndCreateSuggestionsUseCase } from "./analyze-and-create-suggestions.use-case";
+} from "../../ports/ai-suggestion.repository.port.js";
+import { SuggestionContextBuilder } from "../../services/suggestion-context.builder.js";
+import { AnalyzeAndCreateSuggestionsUseCase } from "./analyze-and-create-suggestions.use-case.js";
 
 describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 	let useCase: AnalyzeAndCreateSuggestionsUseCase;
@@ -50,8 +50,8 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 		const { unit, unitRef } = await TestBed.solitary(AnalyzeAndCreateSuggestionsUseCase)
 			.mock(AI_PROVIDER)
 			.impl(() => ({
-				generateStructured: jest.fn(),
-				isAvailable: jest.fn().mockReturnValue(true),
+				generateStructured: vi.fn(),
+				isAvailable: vi.fn().mockReturnValue(true),
 			}))
 			.mock(UNIT_OF_WORK)
 			.impl(() => createUnitOfWorkMock())
@@ -238,7 +238,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
 
 		await useCase.execute(mockUserId, "Asia/Seoul");
 
-		expect(jest.mocked(mockUow.run)).toHaveBeenCalledTimes(1);
+		expect(vi.mocked(mockUow.run)).toHaveBeenCalledTimes(1);
 	});
 
 	it("createMany 에러 발생 시 트랜잭션이 롤백되어야 한다", async () => {

@@ -1,13 +1,13 @@
-import { TEST_CUID } from "@test/fixtures";
-import { flushPromises } from "@test/mocks";
-import { FakeJobRuntime } from "@test/mocks/fake-job-runtime";
+import { TEST_CUID } from "#test/fixtures/index";
+import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { flushPromises } from "#test/mocks/index";
 
 import {
 	type ReminderHourChangedJobData,
 	TIMEZONE_REMINDER_QUEUE,
 	TimezoneReminderJobName,
-} from "./timezone-reminder-queue.constants";
-import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service";
+} from "./timezone-reminder-queue.constants.js";
+import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service.js";
 
 describe("TimezoneReminderQueueService — durable runtime", () => {
 	let runtime: FakeJobRuntime;

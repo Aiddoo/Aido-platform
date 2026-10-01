@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * WeeklyReportStrategy 전략 단위 테스트
  *
@@ -9,26 +12,24 @@
  * pnpm --filter @aido/api test weekly-report.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createWeeklyReportNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
 
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
-} from "../ports/scheduled-reminder-reader.port";
+} from "../ports/scheduled-reminder-reader.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
-import { WeeklyReportStrategy } from "./weekly-report.strategy";
+} from "../ports/scheduler-preference-reader.port.js";
+import { WeeklyReportStrategy } from "./weekly-report.strategy.js";
 
 describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 	let strategy: WeeklyReportStrategy;
@@ -53,8 +54,8 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
 
 		const { unit, unitRef } = await TestBed.solitary(WeeklyReportStrategy).compile();
 
@@ -72,7 +73,7 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("프리미엄 유저 전체에게 주간 리포트를 발송한다", async () => {

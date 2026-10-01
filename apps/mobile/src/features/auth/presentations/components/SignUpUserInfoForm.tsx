@@ -4,9 +4,12 @@ import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, Input, KeyboardAdaptiveButton, Spacing, VStack } from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/FormField/FormField';
+import type { ComponentRef } from 'react';
 import { useEffect, useRef } from 'react';
-import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import { ScrollView, type TextInput, View } from 'react-native';
+import { useFormContext, useWatch } from 'react-hook-form';
+import type { TextInput } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -26,13 +29,10 @@ interface SignUpUserInfoFormProps {
 
 export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
   const { t } = useTranslation(['auth']);
-  const {
-    control,
-    formState: { errors },
-  } = useFormContext<SignUpFormData>();
+  const { control } = useFormContext<SignUpFormData>();
   const [email, name] = useWatch({ control, name: ['email', 'name'] });
   const { step, setStep } = useStepper<typeof USER_INFO_STEPS>(USER_INFO_STEPS);
-  const emailInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   useEffect(() => {
     if (step !== 'email') return;
@@ -81,17 +81,15 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
           <Animated.View
             entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
           >
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, value } }) => (
+            <FormField control={control} name="email">
+              {({ onChange, value }, { error }) => (
                 <VStack gap={8}>
                   <Input
                     ref={emailInputRef}
                     label={t('auth:signUp.emailLabel')}
                     placeholder="example@email.com"
                     value={value}
-                    onChangeText={onChange}
+                    onChange={onChange}
                     keyboardType="email-address"
                     textContentType="emailAddress"
                     autoComplete="email"
@@ -99,8 +97,8 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                     autoCorrect={false}
                     submitBehavior="submit"
                     returnKeyType="next"
-                    isInvalid={!!errors.email}
-                    errorMessage={resolveValidationMessage(errors.email, {
+                    isInvalid={!!error}
+                    errorMessage={resolveValidationMessage(error, {
                       default: 'email.invalid',
                       byType: { too_big: 'email.tooLong' },
                     })}
@@ -111,33 +109,31 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                   <SuggestedEmailDomainList<SignUpFormData> name="email" />
                 </VStack>
               )}
-            />
+            </FormField>
             <Spacing size={20} />
           </Animated.View>
         )}
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <Controller
-            control={control}
-            name="name"
-            render={({ field: { onChange, value } }) => (
+          <FormField control={control} name="name">
+            {({ onChange, value }, { error }) => (
               <Input
                 label={t('auth:signUp.nicknameLabel')}
                 placeholder={t('auth:signUp.nicknamePlaceholder')}
                 value={value}
-                onChangeText={onChange}
+                onChange={onChange}
                 autoCapitalize="none"
                 submitBehavior="submit"
                 autoFocus={step === 'name'}
                 returnKeyType="next"
-                isInvalid={!!errors.name}
-                errorMessage={errors.name?.message}
+                isInvalid={!!error}
+                errorMessage={error?.message}
                 onSubmitEditing={() => {
                   if (isNameValid) handleNext();
                 }}
               />
             )}
-          />
+          </FormField>
         </Animated.View>
       </ScrollView>
 

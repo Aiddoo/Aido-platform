@@ -1,13 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { NotificationBuilder } from "@test/builders";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { NotificationBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import type { FindNotificationsParams } from "../../application/ports/notification-data";
-import { PrismaNotificationReader } from "./prisma-notification.reader";
+import type { FindNotificationsParams } from "../../application/ports/notification-data.js";
+import { PrismaNotificationReader } from "./prisma-notification.reader.js";
 
 describe("PrismaNotificationReader", () => {
 	let reader: PrismaNotificationReader;
@@ -37,7 +37,9 @@ describe("PrismaNotificationReader", () => {
 	it("알림함 기본 조회는 size + 1과 안정적인 복합 정렬을 사용한다", async () => {
 		const params: FindNotificationsParams = { userId: "user-1", size: 10 };
 		const notifications = [NotificationBuilder.create("user-1").build()];
-		asMock(db.notification.findMany).mockResolvedValue(notifications);
+		asMock(db.notification.findMany).mockResolvedValue(
+			notifications.map((value) => ({ ...NotificationBuilder.create("user-1").build(), ...value })),
+		);
 
 		await expect(reader.findNotificationsByUser(params)).resolves.toEqual(notifications);
 		expect(db.notification.findMany).toHaveBeenCalledWith({
@@ -134,10 +136,12 @@ describe("PrismaNotificationReader", () => {
 
 	it("이미 알림 받은 수신자를 distinct Set으로 반환한다", async () => {
 		const notificationDate = new Date("2026-02-06T00:00:00.000Z");
-		asMock(db.notification.findMany).mockResolvedValue([
-			{ userId: "user-1" },
-			{ userId: "user-3" },
-		]);
+		asMock(db.notification.findMany).mockResolvedValue(
+			[{ userId: "user-1" }, { userId: "user-3" }].map((value) => ({
+				...NotificationBuilder.create("user-1").build(),
+				...value,
+			})),
+		);
 
 		await expect(
 			reader.findAlreadyNotifiedUserIds({

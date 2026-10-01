@@ -5,7 +5,7 @@
  */
 
 // 상수
-export * from './subscription.constants';
+export * from './subscription.constants.js';
 
 // Webhook 스키마
-export * from './subscription.webhook';
+export * from './subscription.webhook.js';

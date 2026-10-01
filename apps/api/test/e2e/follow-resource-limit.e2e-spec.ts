@@ -9,8 +9,8 @@
 import { FOLLOW_LIMITS } from "@aido/validators";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
-import type { VerifiedUser } from "./helpers/e2e-helpers";
+import type { VerifiedUser } from "./helpers/e2e-helpers.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 const FREE_LIMIT = FOLLOW_LIMITS.FREE_MAX_FRIENDS; // 5
 

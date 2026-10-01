@@ -1,4 +1,4 @@
-import { assignRetentionVariant } from "./experiment-assignment";
+import { assignRetentionVariant } from "./experiment-assignment.js";
 
 describe("assignRetentionVariant — 신규 사용자 실험 배정", () => {
 	it("같은 사용자는 항상 같은 실험군에 배정한다", () => {

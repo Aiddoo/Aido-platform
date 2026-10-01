@@ -1,7 +1,7 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { useGetFriendsQueryOptions } from '../queries/use-get-friends-query-options';
+import { useGetFriendsQueryOptions } from '../queries/get-friends-query-options';
 import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
 
 export function useFriendById(friendId: string): FriendUserViewModel | null {

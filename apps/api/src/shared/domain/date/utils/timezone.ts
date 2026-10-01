@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { now } from "./core";
+import { now } from "./core.js";
 
 const DEFAULT_TIMEZONE = "UTC";
 

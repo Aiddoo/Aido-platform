@@ -1,12 +1,12 @@
 import {
 	PROMPT_OUTPUT_DISCIPLINE_EN,
 	PROMPT_SECURITY_GUARD_EN,
-} from "@/shared/domain/prompt/prompt-sections";
-import { encodeUntrustedJson, sanitizeForPrompt } from "@/shared/domain/prompt/sanitize";
+} from "#api/shared/domain/prompt/prompt-sections";
+import { encodeUntrustedJson, sanitizeForPrompt } from "#api/shared/domain/prompt/sanitize";
 
-import type { CategoryInfo } from "./parse-memo.prompt";
-import type { ParseTodoPrompt } from "./parse-todo.prompt";
-import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules";
+import type { CategoryInfo } from "./parse-memo.prompt.js";
+import type { ParseTodoPrompt } from "./parse-todo.prompt.js";
+import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules.js";
 
 /**
  * buildParseTodoPrompt의 영어 버전 — en 로케일 사용자의 영어 자연어 입력용.

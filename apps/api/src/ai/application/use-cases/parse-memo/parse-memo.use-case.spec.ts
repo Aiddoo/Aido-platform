@@ -1,19 +1,19 @@
+import { TestBed } from "@suites/unit";
 /**
  * ParseMemoUseCase 단위 테스트
  *
  * AI_PROVIDER·카테고리 리더·사용량 미터를 스텁으로 대체해 메모 파싱 오케스트레이션
  * (5개 상한·미지 카테고리 대체·에러 규약)만 검증한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port";
+import { AI_PROVIDER, type AiProvider, AiProviderCallError } from "../../ports/ai-provider.port.js";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
-} from "../../ports/user-category-reader.port";
-import { AiUsageMeter } from "../../services/ai-usage-meter.service";
-import { type ParseMemoInput, ParseMemoUseCase } from "./parse-memo.use-case";
+} from "../../ports/user-category-reader.port.js";
+import { AiUsageMeter } from "../../services/ai-usage-meter.service.js";
+import { type ParseMemoInput, ParseMemoUseCase } from "./parse-memo.use-case.js";
 
 const todo = (title: string, categoryId: number) => ({
 	title,

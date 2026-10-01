@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service";
+import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service.js";
 
 /**
  * Timezone Reminder Queue 모듈

@@ -1,7 +1,7 @@
-import { AggregateRoot } from "@/shared/domain";
+import { AggregateRoot } from "#api/shared/domain/index";
 
-import { CategoryColor } from "../value-objects/category-color.vo";
-import { CategoryName } from "../value-objects/category-name.vo";
+import { CategoryColor } from "../value-objects/category-color.vo.js";
+import { CategoryName } from "../value-objects/category-name.vo.js";
 
 export interface TodoCategoryProps {
 	id: number;

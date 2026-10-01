@@ -11,8 +11,8 @@ import type {
 	AiProvider,
 	GenerateStructuredOptions,
 	GenerateStructuredResult,
-} from "../../application/ports/ai-provider.port";
-import { GeminiAiAdapter } from "./gemini-ai.adapter";
+} from "../../application/ports/ai-provider.port.js";
+import { GeminiAiAdapter } from "./gemini-ai.adapter.js";
 
 export const AI_PROVIDER_GEMINI = Symbol("AI_PROVIDER_GEMINI");
 

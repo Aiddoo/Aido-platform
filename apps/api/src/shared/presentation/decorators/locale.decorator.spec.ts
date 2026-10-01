@@ -1,4 +1,4 @@
-import { parseAcceptLanguage } from "./locale.decorator";
+import { parseAcceptLanguage } from "./locale.decorator.js";
 
 describe("parseAcceptLanguage", () => {
 	it.each([

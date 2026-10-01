@@ -6,9 +6,9 @@
 
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain";
+import { DomainException } from "#api/shared/domain/index";
 
-import { TodoSchedule } from "./todo-schedule.vo";
+import { TodoSchedule } from "./todo-schedule.vo.js";
 
 describe("TodoSchedule — 일정 값 객체", () => {
 	it("유효한 일정으로 생성하면 각 필드를 그대로 노출한다", () => {

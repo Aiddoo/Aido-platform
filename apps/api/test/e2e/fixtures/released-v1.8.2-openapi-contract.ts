@@ -1,4 +1,4 @@
-import { RELEASED_V1_OPENAPI_CONTRACT } from "./released-v1-openapi-contract";
+import { RELEASED_V1_OPENAPI_CONTRACT } from "./released-v1-openapi-contract.js";
 
 /**
  * App Store와 Play Store에 배포된 1.8.2 앱이 출시될 때의 서버 계약입니다.

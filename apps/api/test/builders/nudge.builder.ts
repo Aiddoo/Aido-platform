@@ -22,7 +22,7 @@
  *   .buildWithRelations();
  * ```
  */
-import type { Nudge } from "@/generated/prisma/client";
+import type { Nudge } from "#api/generated/prisma/client";
 
 /**
  * 사용자 프로필 정보

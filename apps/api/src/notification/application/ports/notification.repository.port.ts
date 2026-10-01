@@ -1,5 +1,5 @@
-import type { NotificationRecord } from "../../domain/records/notification.record";
-import type { CreateNotificationData } from "./notification-data";
+import type { NotificationRecord } from "../../domain/records/notification.record.js";
+import type { CreateNotificationData } from "./notification-data.js";
 
 /** 알림 저장소 포트 (DI 토큰) */
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");

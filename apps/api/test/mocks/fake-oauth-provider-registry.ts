@@ -7,9 +7,9 @@ import type {
 	OAuthIdentityProviderRegistry,
 	SocialLoginOptions,
 	VerifiedProfile,
-} from "@/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "@/auth/domain/types";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+} from "#api/auth/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/auth/domain/types";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 function exchangeKey(provider: AccountProvider, code: string): string {
 	return `${provider}:${code}`;

@@ -1,14 +1,16 @@
+import { vi } from "vitest";
+
 import {
 	createMutationLockMock,
 	createTodoCommentNotificationMock,
 	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import { TodoComment } from "../../../domain/entities/todo-comment.aggregate";
-import type { TodoCommentLikeTransition } from "../../types";
-import { LikeTodoCommentUseCase } from "./like-todo-comment.use-case";
+import { TodoComment } from "../../../domain/entities/todo-comment.aggregate.js";
+import type { TodoCommentLikeTransition } from "../../types.js";
+import { LikeTodoCommentUseCase } from "./like-todo-comment.use-case.js";
 
 const TODO_ID = 1;
 const COMMENT_ID = "cm1todoacomment00000000001";
@@ -36,8 +38,8 @@ function setup(transition = createTransition()) {
 	const mutationLock = createMutationLockMock();
 
 	const createdAt = new Date("2026-08-16T00:00:00.000Z");
-	jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-	jest.mocked(repository.findComment).mockResolvedValue(
+	vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+	vi.mocked(repository.findComment).mockResolvedValue(
 		TodoComment.reconstitute({
 			id: COMMENT_ID,
 			todoId: TODO_ID,
@@ -52,8 +54,8 @@ function setup(transition = createTransition()) {
 			updatedAt: createdAt,
 		}),
 	);
-	jest.mocked(reader.findUserDisplayName).mockResolvedValue("좋아요 누른 사람");
-	jest.mocked(repository.setLike).mockResolvedValue(transition);
+	vi.mocked(reader.findUserDisplayName).mockResolvedValue("좋아요 누른 사람");
+	vi.mocked(repository.setLike).mockResolvedValue(transition);
 
 	const useCase = new LikeTodoCommentUseCase(
 		reader,
@@ -74,8 +76,8 @@ describe("LikeTodoCommentUseCase", () => {
 
 		expect(notification.notifyCommentLiked).toHaveBeenCalledTimes(1);
 		expect(repository.markLikeNotified).toHaveBeenCalledWith(COMMENT_ID, LIKER_ID);
-		expect(jest.mocked(notification.notifyCommentLiked).mock.invocationCallOrder[0]).toBeLessThan(
-			jest.mocked(repository.markLikeNotified).mock.invocationCallOrder[0] ?? 0,
+		expect(vi.mocked(notification.notifyCommentLiked).mock.invocationCallOrder[0]).toBeLessThan(
+			vi.mocked(repository.markLikeNotified).mock.invocationCallOrder[0] ?? 0,
 		);
 	});
 
@@ -100,7 +102,7 @@ describe("LikeTodoCommentUseCase", () => {
 	 */
 	it("알림 발송이 실패하면 보냈다고 표시하지 않는다", async () => {
 		const { useCase, repository, notification } = setup();
-		jest.mocked(notification.notifyCommentLiked).mockRejectedValue(new Error("push down"));
+		vi.mocked(notification.notifyCommentLiked).mockRejectedValue(new Error("push down"));
 
 		const result = await useCase.execute({
 			todoId: TODO_ID,
@@ -114,7 +116,7 @@ describe("LikeTodoCommentUseCase", () => {
 
 	it("알림이 실패해도 좋아요 자체는 성공으로 돌려준다", async () => {
 		const { useCase, notification } = setup();
-		jest.mocked(notification.notifyCommentLiked).mockRejectedValue(new Error("push down"));
+		vi.mocked(notification.notifyCommentLiked).mockRejectedValue(new Error("push down"));
 
 		await expect(
 			useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: LIKER_ID }),

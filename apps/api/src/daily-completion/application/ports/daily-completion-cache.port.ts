@@ -1,4 +1,4 @@
-import type { DailyCompletionsRange } from "../../domain/daily-completion";
+import type { DailyCompletionsRange } from "../../domain/daily-completion.js";
 
 /** DailyCompletionCachePort DI 토큰 */
 export const DAILY_COMPLETION_CACHE = Symbol("DAILY_COMPLETION_CACHE");

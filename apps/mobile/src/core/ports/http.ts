@@ -16,9 +16,9 @@ export interface RequestConfig {
  * - 5xx/네트워크/타임아웃: throw InfraError → ErrorBoundary 처리
  */
 export interface HttpClient {
-  get<T>(url: string, config?: RequestConfig): Promise<Result<T, ApiError>>;
-  post<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
-  put<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
-  patch<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
-  delete<T>(url: string, config?: RequestConfig): Promise<Result<T, ApiError>>;
+  get(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>>;
+  post(url: string, data?: unknown, config?: RequestConfig): Promise<Result<unknown, ApiError>>;
+  put(url: string, data?: unknown, config?: RequestConfig): Promise<Result<unknown, ApiError>>;
+  patch(url: string, data?: unknown, config?: RequestConfig): Promise<Result<unknown, ApiError>>;
+  delete(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>>;
 }

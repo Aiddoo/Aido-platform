@@ -1,5 +1,5 @@
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { isSameDay } from "@/shared/domain/date/utils/compare";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { isSameDay } from "#api/shared/domain/date/utils/compare";
 
 export interface EffectiveStreakResult {
 	streak: number;

@@ -1,19 +1,19 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { ACCOUNT_DELETION, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import { ACCOUNT_DELETION, SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
+import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
+import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
 import {
 	ACCOUNT_PURGE_JOB_NAME,
 	ACCOUNT_PURGE_QUEUE,
 	AccountPurgeProcessor,
-} from "@/auth/infrastructure/queue/account-purge.processor";
-import { NotificationAccountCleanup } from "@/notification";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { runInBackground } from "@/shared/infrastructure/bullmq/non-blocking-init";
-import { TodoCommentAccountCleanup } from "@/todo-comment";
+} from "#api/auth/infrastructure/queue/account-purge.processor";
+import { NotificationAccountCleanup } from "#api/notification/index";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
+import { TodoCommentAccountCleanup } from "#api/todo-comment/index";
 
 /**
  * 계정 정리 스케줄러

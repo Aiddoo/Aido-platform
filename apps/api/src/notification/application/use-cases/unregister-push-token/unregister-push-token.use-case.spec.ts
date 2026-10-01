@@ -1,23 +1,24 @@
+import { TestBed } from "@suites/unit";
 /**
  * UnregisterPushTokenUseCase 단위 테스트
  *
  * - deviceId 있으면 단건 해제, RecordNotFound(P2025)는 우아하게 스킵
  * - deviceId 없으면 사용자 전체 토큰 해제
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createNotificationCacheMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
+
+import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	PushTokenNotFoundError,
 	type PushTokenRepositoryPort,
-} from "../../ports/push-token.repository.port";
-import { UnregisterPushTokenUseCase } from "./unregister-push-token.use-case";
+} from "../../ports/push-token.repository.port.js";
+import { UnregisterPushTokenUseCase } from "./unregister-push-token.use-case.js";
 
 describe("UnregisterPushTokenUseCase", () => {
 	let useCase: UnregisterPushTokenUseCase;

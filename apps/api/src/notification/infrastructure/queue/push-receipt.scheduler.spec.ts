@@ -1,15 +1,15 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
 import {
 	NOTIFICATION_JOB_POLICY,
 	NOTIFICATION_QUEUE,
 	NotificationJobName,
 	PUSH_RECEIPT_SCHEDULE,
-} from "./notification-queue.constants";
-import { PushReceiptScheduler } from "./push-receipt.scheduler";
+} from "./notification-queue.constants.js";
+import { PushReceiptScheduler } from "./push-receipt.scheduler.js";
 
 describe("PushReceiptScheduler", () => {
 	it("registers the existing receipt cron and retry policy", async () => {

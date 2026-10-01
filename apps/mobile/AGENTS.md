@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.2.0 · **Last Updated**: 2026-08-26 · **Owner**: Aido Mobile Team
+> **Version**: 1.2.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -8,28 +8,29 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ## 문서 가이드
 
-| 상황                                                           | 읽을 문서                                                      |
-| -------------------------------------------------------------- | -------------------------------------------------------------- |
-| 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md)             |
-| Todo 댓글 화면·대화·작성 시트                                  | [.claude/todo-comments.md](.claude/todo-comments.md)           |
-| 테스트 작성 (Model · Service · 순수 util 중심)                 | [.claude/testing-guide.md](.claude/testing-guide.md)           |
-| UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN)       | [.claude/ui-components.md](.claude/ui-components.md)           |
-| 다국어 / 문자열 추가 (i18n, ko+en 카탈로그)                    | [.claude/i18n-guide.md](.claude/i18n-guide.md)                 |
-| 인증 상태 · 토큰 · 로그인 플로우                               | [docs/authentication_guide.md](docs/authentication_guide.md)   |
-| OAuth · 소셜 로그인 구현                                       | [.claude/oauth-client-guide.md](.claude/oauth-client-guide.md) |
-| 홈 화면 위젯 (iOS WidgetKit / Android AppWidget)               | [.claude/widgets.md](.claude/widgets.md)                       |
-| 에러 처리 (Result, ApiError, BusinessError)                    | [docs/error-handling.md](docs/error-handling.md)               |
-| 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)           |
-| 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)           |
-| EAS 빌드                                                       | [docs/eas-build-guide.md](docs/eas-build-guide.md)             |
-| EAS Secrets 관리                                               | [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md)                     |
-| 배포 (EAS, App Store / Play)                                   | [DEPLOYMENT.md](DEPLOYMENT.md)                                 |
+| 상황                                                           | 읽을 문서                                                        |
+| -------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md)               |
+| Todo 댓글 화면·대화·작성 시트                                  | [.claude/todo-comments.md](.claude/todo-comments.md)             |
+| 테스트 작성 (Model · Service · 순수 util 중심)                 | [.claude/testing-guide.md](.claude/testing-guide.md)             |
+| UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN)       | [.claude/ui-components.md](.claude/ui-components.md)             |
+| 다국어 / 문자열 추가 (i18n, ko+en 카탈로그)                    | [.claude/i18n-guide.md](.claude/i18n-guide.md)                   |
+| 인증 상태 · 토큰 · 로그인 플로우                               | [docs/authentication_guide.md](docs/authentication_guide.md)     |
+| OAuth · 소셜 로그인 구현                                       | [.claude/oauth-client-guide.md](.claude/oauth-client-guide.md)   |
+| 홈 화면 위젯 (iOS WidgetKit / Android AppWidget)               | [.claude/widgets.md](.claude/widgets.md)                         |
+| 에러 처리 (Result, ApiError, BusinessError)                    | [docs/error-handling.md](docs/error-handling.md)                 |
+| 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)             |
+| 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)             |
+| 1.10 클라이언트 변경 및 검증                                   | [docs/releases/1.10.0-client.md](docs/releases/1.10.0-client.md) |
+| EAS 빌드                                                       | [docs/eas-build-guide.md](docs/eas-build-guide.md)               |
+| EAS Secrets 관리                                               | [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md)                       |
+| 배포 (EAS, App Store / Play)                                   | [DEPLOYMENT.md](DEPLOYMENT.md)                                   |
 
 ---
 
 ## 기술 스택 (요약)
 
-Expo SDK 57 · React Native 0.86 · React 19.2 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · NativeWind · `react-hook-form`
+Expo SDK 58.0.1 · React Native 0.88 RC · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · Uniwind · `react-hook-form`
 
 ---
 
@@ -59,7 +60,7 @@ features/{feature}/
 └── presentations/  # Query Keys / Options, 컴포넌트, view-models
 ```
 
-> **예외**: `DeviceIdRepository`·`WidgetSnapshotRepository`는 Repository 패턴 유지 (로컬 스토리지 — HTTP 아님).
+> **예외**: `DeviceIdRepository`는 Repository 패턴 유지 (로컬 스토리지 — HTTP 아님).
 
 ---
 

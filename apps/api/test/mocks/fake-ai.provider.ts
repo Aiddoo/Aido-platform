@@ -12,7 +12,7 @@ import type {
 	GenerateStructuredOptions,
 	GenerateStructuredResult,
 	TokenUsage,
-} from "@/ai";
+} from "#api/ai/index";
 
 /**
  * FakeAiProvider 설정 옵션

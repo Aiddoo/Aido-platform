@@ -1,20 +1,20 @@
+import type { Todo } from "@aido/validators";
 /**
  * ConvertMemoToTodoUseCase 단위 테스트
  *
  * TodoCreatorPort 호출(제목 축약)과 커밋 후 메모 삭제를 검증한다.
  */
-
-import type { Todo } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port.js";
 import {
 	type ConvertMemoToTodoInput,
 	ConvertMemoToTodoUseCase,
-} from "./convert-memo-to-todo.use-case";
+} from "./convert-memo-to-todo.use-case.js";
 
 const memoEntity = (content: string): Memo =>
 	Memo.reconstitute({
@@ -66,8 +66,8 @@ describe("ConvertMemoToTodoUseCase — 메모→할 일 변환", () => {
 		const { unit, unitRef } = await TestBed.solitary(ConvertMemoToTodoUseCase)
 			.mock<TodoCreatorPort>(TODO_CREATOR)
 			.impl(() => ({
-				createTodo: jest.fn(),
-				createRecurringTodos: jest.fn(),
+				createTodo: vi.fn(),
+				createRecurringTodos: vi.fn(),
 			}))
 			.compile();
 		useCase = unit;

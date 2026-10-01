@@ -5,7 +5,11 @@
  * (프리미엄 = 커스텀 시간, 무료 = 고정 시간 쿼리를 별도 메서드로 분리해
  *  전략이 "무료 쿼리 스킵" 조건을 그대로 제어)
  */
-import type { ReminderCountUser, UserIdRow, UserWithTodosAndStreak } from "./scheduler-read-models";
+import type {
+	ReminderCountUser,
+	UserIdRow,
+	UserWithTodosAndStreak,
+} from "./scheduler-read-models.js";
 
 export const SCHEDULED_REMINDER_READER = Symbol("SCHEDULED_REMINDER_READER");
 

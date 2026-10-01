@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { CreateRecurringTodosUseCase } from "@/todo";
+import { CreateRecurringTodosUseCase } from "#api/todo/index";
 
 import type {
 	CreateRecurringTodoInput,
 	RecurringTodoCreatorPort,
-} from "../../application/ports/recurring-todo-creator.port";
+} from "../../application/ports/recurring-todo-creator.port.js";
 
 /**
  * RecurringTodoCreatorPort의 어댑터.

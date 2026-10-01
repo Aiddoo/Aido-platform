@@ -5,5 +5,5 @@
  * ai-suggestion)이 사용량 미터 없이 생성만 수행하기 위해 직접 주입한다.
  */
 
-export * from "./ai.module";
-export * from "./application/ports/ai-provider.port";
+export * from "./ai.module.js";
+export * from "./application/ports/ai-provider.port.js";

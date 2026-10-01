@@ -1,4 +1,5 @@
 import { markReadResponseSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class MarkReadResponseDto extends createZodDto(markReadResponseSchema) {}
+export const MarkReadResponseDto = markReadResponseSchema.meta({ id: "MarkReadResponseDto" });
+export type MarkReadResponseDto = z.infer<typeof MarkReadResponseDto>;

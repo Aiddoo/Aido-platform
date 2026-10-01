@@ -11,19 +11,19 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
+import type { Mocked } from "vitest";
 
 import {
 	LoginWithPasswordUseCase,
 	LogoutAllUseCase,
 	RegisterUseCase,
-} from "@/auth/application/use-cases";
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+} from "#api/auth/application/use-cases/index";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import type { LoginDto, RegisterDto } from "../dtos";
-import { AuthController } from "./auth.controller";
+import type { LoginDto, RegisterDto } from "../dtos/index.js";
+import { AuthController } from "./auth.controller.js";
 
 describe("AuthController — 인증 컨트롤러", () => {
 	let controller: AuthController;

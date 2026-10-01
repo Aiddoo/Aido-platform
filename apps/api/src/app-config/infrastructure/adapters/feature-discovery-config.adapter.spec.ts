@@ -1,8 +1,8 @@
 import { TestBed } from "@suites/unit";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import { FeatureDiscoveryConfigAdapter } from "./feature-discovery-config.adapter";
+import { FeatureDiscoveryConfigAdapter } from "./feature-discovery-config.adapter.js";
 
 describe("FeatureDiscoveryConfigAdapter — environment kill switch", () => {
 	it("fails closed when enabled configuration is incomplete", async () => {

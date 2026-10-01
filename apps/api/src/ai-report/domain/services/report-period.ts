@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 
-import { toDateString } from "@/shared/domain/date/utils/format";
-import type { SupportedLocale } from "@/shared/domain/locale";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { ReportType } from "../types";
+import type { ReportType } from "../types.js";
 
 const MONTH_NAMES_EN = [
 	"January",

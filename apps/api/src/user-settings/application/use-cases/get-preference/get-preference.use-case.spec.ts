@@ -6,24 +6,24 @@
  * - 레코드가 없으면 기본 스냅샷을 사용한다.
  */
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createUserSettingsCacheMock } from "@test/mocks/ports/user-settings-cache.mock";
-import { createUserPreferenceRepositoryMock } from "@test/mocks/ports/user-settings.mock";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { createUserSettingsCacheMock } from "#test/mocks/ports/user-settings-cache.mock";
+import { createUserPreferenceRepositoryMock } from "#test/mocks/ports/user-settings.mock";
 
-import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record";
-import type { PreferenceSnapshot } from "../../../domain/services/preference-view";
+import type { UserPreferenceRecord } from "../../../domain/records/user-preference.record.js";
+import type { PreferenceSnapshot } from "../../../domain/services/preference-view.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
-import { GetPreferenceUseCase } from "./get-preference.use-case";
+} from "../../ports/user-settings-cache.port.js";
+import { GetPreferenceUseCase } from "./get-preference.use-case.js";
 
 const userId = "user-1";
 

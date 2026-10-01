@@ -10,7 +10,7 @@
 import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/validators";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 const FREE_LIMIT = TODO_CATEGORY_LIMITS.FREE_MAX_COUNT; // 3
 

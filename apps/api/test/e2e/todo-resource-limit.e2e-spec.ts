@@ -10,7 +10,7 @@
 import { TODO_LIMITS } from "@aido/validators";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 const CATEGORY_LIMIT = TODO_LIMITS.MAX_PER_CATEGORY; // 300
 

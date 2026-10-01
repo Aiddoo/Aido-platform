@@ -22,9 +22,8 @@
 - [ ] `apps/api` - NestJS 백엔드
 - [ ] `apps/mobile` - Expo 모바일 앱
 - [ ] `packages/validators` - Zod 스키마
-- [ ] `packages/utils` - 공유 유틸리티
 - [ ] `packages/errors` - 에러 정의
-- [ ] `tooling/*` - 개발 도구 설정 (biome, jest, typescript)
+- [ ] `tooling/*` - 개발 도구 설정 (Oxlint, Oxfmt, Vitest, Jest Expo, TypeScript)
 - [ ] multiple - 여러 영역 동시 변경
 
 ## 📝 변경 내용
@@ -57,7 +56,7 @@ pnpm test
 ### 작성자 확인
 
 - [ ] 코드가 프로젝트의 코딩 컨벤션을 따릅니다
-- [ ] `pnpm check` (Biome) 검사를 통과했습니다
+- [ ] `pnpm check` (lint·format·typecheck·모바일 규칙) 검사를 통과했습니다
 - [ ] 변경사항에 대한 테스트를 작성/수정했습니다
 - [ ] 모든 테스트가 통과합니다 (`pnpm test`)
 - [ ] 빌드가 성공합니다 (`pnpm build`)

@@ -2,17 +2,21 @@ import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { Admin, CurrentUser, type CurrentUserPayload } from "@/auth/presentation/decorators";
+import {
+	Admin,
+	CurrentUser,
+	type CurrentUserPayload,
+} from "#api/auth/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiDoc,
 	ApiForbiddenError,
 	ApiSuccessResponse,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query";
-import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "./dtos";
+import { GetGrowthSummaryQuery } from "../application/queries/get-growth-summary/get-growth-summary.query.js";
+import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.ADMIN_GROWTH)
 @ApiBearerAuth()
@@ -33,7 +37,7 @@ export class AdminGrowthController {
 	@ApiForbiddenError(ErrorCode.ADMIN_1401)
 	async getGrowthSummary(
 		@CurrentUser() _user: CurrentUserPayload,
-		@Query() query: GrowthSummaryQueryDto,
+		@Query({ schema: GrowthSummaryQueryDto }) query: GrowthSummaryQueryDto,
 	): Promise<GrowthSummaryResponseDto> {
 		return this.getGrowthSummaryQuery.execute(query);
 	}

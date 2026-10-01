@@ -5,18 +5,18 @@
  * - 목록 조회 + toView 변환
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { AiReport } from "../../../domain/entities/ai-report.entity";
+import { AiReport } from "../../../domain/entities/ai-report.entity.js";
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
-} from "../../ports/ai-report.repository.port";
-import { GetReportsUseCase } from "./get-reports.use-case";
+} from "../../ports/ai-report.repository.port.js";
+import { GetReportsUseCase } from "./get-reports.use-case.js";
 
 const makeReport = (id: number): AiReport =>
 	AiReport.reconstitute({

@@ -1,4 +1,4 @@
-import { cacheKey, cachePattern } from "@/shared/infrastructure/cache/keyspace/cache-key";
+import { cacheKey, cachePattern } from "#api/shared/infrastructure/cache/keyspace/cache-key";
 
 export const WEATHER_CACHE_TTL_MS = {
 	FORECAST: 3 * 60 * 60_000,

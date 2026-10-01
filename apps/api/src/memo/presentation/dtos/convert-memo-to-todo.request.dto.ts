@@ -1,4 +1,5 @@
 import { convertMemoToTodoSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class ConvertMemoToTodoDto extends createZodDto(convertMemoToTodoSchema) {}
+export const ConvertMemoToTodoDto = convertMemoToTodoSchema.meta({ id: "ConvertMemoToTodoDto" });
+export type ConvertMemoToTodoDto = z.infer<typeof ConvertMemoToTodoDto>;

@@ -1,4 +1,7 @@
 import { updateTodoVisibilitySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class UpdateTodoVisibilityDto extends createZodDto(updateTodoVisibilitySchema) {}
+export const UpdateTodoVisibilityDto = updateTodoVisibilitySchema.meta({
+	id: "UpdateTodoVisibilityDto",
+});
+export type UpdateTodoVisibilityDto = z.infer<typeof UpdateTodoVisibilityDto>;

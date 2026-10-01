@@ -1,12 +1,15 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { DefaultTodoCategorySeeder } from "@/todo-category";
-import { USER_SETTINGS_PROVISIONER, type UserSettingsProvisionerPort } from "@/user-settings";
+import { DefaultTodoCategorySeeder } from "#api/todo-category/index";
+import {
+	USER_SETTINGS_PROVISIONER,
+	type UserSettingsProvisionerPort,
+} from "#api/user-settings/index";
 
 import type {
 	ProvisioningConsent,
 	UserProvisioningSeederPort,
-} from "../../application/ports/user-provisioning-seeder.port";
+} from "../../application/ports/user-provisioning-seeder.port.js";
 
 /**
  * UserProvisioningSeederPort 어댑터 — 설정과 기본 카테고리 생성을 조정한다.

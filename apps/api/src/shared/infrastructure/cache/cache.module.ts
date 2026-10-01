@@ -1,12 +1,12 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service";
-import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
-import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter";
-import { RedisCacheAdapter } from "./adapters/redis-cache.adapter";
-import { CacheService } from "./cache.service";
-import { CACHE_SERVICE, type ICacheService } from "./interfaces/cache.interface";
+import { TypedConfigService } from "../config/services/config.service.js";
+import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
+import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter.js";
+import { RedisCacheAdapter } from "./adapters/redis-cache.adapter.js";
+import { CacheService } from "./cache.service.js";
+import { CACHE_SERVICE, type ICacheService } from "./interfaces/cache.interface.js";
 
 /**
  * 캐시 모듈

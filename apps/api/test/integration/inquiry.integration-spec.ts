@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * Inquiry 외부 경계(어댑터) 통합 테스트
  *
@@ -12,20 +13,19 @@
  * pnpm --filter @aido/api test inquiry.integration-spec
  * ```
  */
+import { vi } from "vitest";
 
-import { Test, type TestingModule } from "@nestjs/testing";
-import { suppressLogger } from "@test/setup/suppress-logger";
-
-import { TransactionalEmailSender } from "@/email";
-import { EmailInquiryMailerAdapter } from "@/inquiry/infrastructure/adapters/email-inquiry-mailer.adapter";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TransactionalEmailSender } from "#api/email/index";
+import { EmailInquiryMailerAdapter } from "#api/inquiry/infrastructure/adapters/email-inquiry-mailer.adapter";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
 	let module: TestingModule;
 	let adapter: EmailInquiryMailerAdapter;
 
 	const mockEmailService = {
-		sendInquiry: jest.fn(),
+		sendInquiry: vi.fn(),
 	};
 
 	const mockConfigService = {
@@ -54,11 +54,11 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	it("어댑터가 정상적으로 주입되어야 함", () => {

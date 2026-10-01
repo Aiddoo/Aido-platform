@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * WeeklyAchievement 통합 테스트 (Mock DB)
  *
@@ -17,21 +18,20 @@
  * pnpm --filter @aido/api test weekly-achievement.integration-spec
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "@/weekly-achievement/application/ports/weekly-achievement.repository.port";
-import { GetWeeklyAchievementUseCase } from "@/weekly-achievement/application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
-import { GetWeeklyAchievementsUseCase } from "@/weekly-achievement/application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
-import { WEEKLY_ACHIEVEMENT_PROVIDERS } from "@/weekly-achievement/application/weekly-achievement.providers";
-import { PrismaWeeklyAchievementRepository } from "@/weekly-achievement/infrastructure/adapters/prisma-weekly-achievement.repository";
+import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "#api/weekly-achievement/application/ports/weekly-achievement.repository.port";
+import { GetWeeklyAchievementUseCase } from "#api/weekly-achievement/application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
+import { GetWeeklyAchievementsUseCase } from "#api/weekly-achievement/application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
+import { WEEKLY_ACHIEVEMENT_PROVIDERS } from "#api/weekly-achievement/application/weekly-achievement.providers";
+import { PrismaWeeklyAchievementRepository } from "#api/weekly-achievement/infrastructure/adapters/prisma-weekly-achievement.repository";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -40,10 +40,10 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 
 	// Mock 데이터베이스 서비스
 	const mockWeeklyAchievementDb = {
-		findMany: jest.fn(),
-		findFirst: jest.fn(),
-		findUnique: jest.fn(),
-		upsert: jest.fn(),
+		findMany: vi.fn(),
+		findFirst: vi.fn(),
+		findUnique: vi.fn(),
+		upsert: vi.fn(),
 	};
 
 	const mockDatabaseService = createMockDatabaseService({
@@ -104,11 +104,11 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	describe("목록 조회 통합 테스트", () => {

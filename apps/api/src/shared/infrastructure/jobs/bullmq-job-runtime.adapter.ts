@@ -1,6 +1,6 @@
 import { type FactoryProvider, Inject, Injectable, Logger } from "@nestjs/common";
 import { type JobState, type JobsOptions, Queue, Worker } from "bullmq";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
 import type {
 	EnqueueJobOptions,
@@ -10,15 +10,15 @@ import type {
 	JobRuntimePort,
 	JobRetryPolicy,
 	WorkJobOptions,
-} from "@/shared/application/ports/job-runtime.port";
+} from "#api/shared/application/ports/job-runtime.port";
 import {
 	resolveDeadLetterJobPolicy,
 	resolveDeadLetterQueue,
 	resolveJobIdempotencyKey,
-} from "@/shared/application/ports/job-runtime.port";
-import { withTimeout } from "@/shared/application/utils/with-timeout.util";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { REDIS_CLIENT } from "@/shared/infrastructure/redis";
+} from "#api/shared/application/ports/job-runtime.port";
+import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { REDIS_CLIENT } from "#api/shared/infrastructure/redis/index";
 
 export const BULLMQ_CLIENT_FACTORY = Symbol("BULLMQ_CLIENT_FACTORY");
 

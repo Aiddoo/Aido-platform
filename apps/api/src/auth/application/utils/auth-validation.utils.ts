@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 /**
  * 탈퇴된 사용자인지 확인하고, 탈퇴 상태면 예외를 던집니다.

@@ -4,5 +4,5 @@
  * Facade가 공개 계약, DTO는 컨트롤러 계약.
  */
 
-export * from "./admin.module";
-export * from "./presentation/dtos";
+export * from "./admin.module.js";
+export * from "./presentation/dtos/index.js";

@@ -1,14 +1,14 @@
 import type { GrowthSummaryQuery, GrowthSummaryResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { now } from "@/shared/domain/date/utils/core";
-import { toDateString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toDateString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import {
 	ADMIN_GROWTH_METRICS,
 	type AdminGrowthMetricsPort,
-} from "../../ports/admin-growth-metrics.port";
+} from "../../ports/admin-growth-metrics.port.js";
 
 const DEFAULT_COHORT_DAYS = 30;
 

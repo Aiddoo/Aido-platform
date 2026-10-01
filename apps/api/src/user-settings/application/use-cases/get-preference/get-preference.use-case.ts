@@ -1,22 +1,22 @@
 import type { PreferenceResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
 
 import {
 	buildPreferenceView,
 	DEFAULT_PREFERENCE_SNAPSHOT,
 	type PreferenceSnapshot,
-} from "../../../domain/services/preference-view";
+} from "../../../domain/services/preference-view.js";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRecord,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
+} from "../../ports/user-settings-cache.port.js";
 
 /**
  * 사용자 설정 조회 유스케이스.

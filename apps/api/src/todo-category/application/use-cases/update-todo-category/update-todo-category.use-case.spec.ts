@@ -1,18 +1,18 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
+import { TodoCategory } from "../../../domain/entities/todo-category.aggregate.js";
 import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
-} from "../../ports/todo-category-cache.port";
+} from "../../ports/todo-category-cache.port.js";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
-import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case";
+} from "../../ports/todo-category.repository.port.js";
+import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case.js";
 
 const createExistingCategory = () =>
 	TodoCategory.reconstitute({
