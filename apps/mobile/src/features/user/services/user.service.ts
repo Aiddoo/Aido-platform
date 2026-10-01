@@ -1,8 +1,6 @@
 import {
-  type CurrentUser,
   currentUserSchema,
   type UpdateProfileInput,
-  type UpdateProfileResponse,
   updateProfileResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
@@ -20,8 +18,8 @@ export class UserService {
     this.#httpClient = httpClient;
   }
 
-  getCurrentUser = async (): Promise<Result<User, ApiError>> => {
-    const result = await this.#httpClient.get<CurrentUser>('v1/auth/me');
+  getCurrentUser = async (signal?: AbortSignal): Promise<Result<User, ApiError>> => {
+    const result = await this.#httpClient.get('v1/auth/me', { signal });
 
     if (!result.ok) {
       return result;
@@ -40,7 +38,7 @@ export class UserService {
   updateProfile = async (
     input: UpdateProfileInput,
   ): Promise<Result<UpdateProfileResult, ApiError>> => {
-    const result = await this.#httpClient.patch<UpdateProfileResponse>('v1/auth/profile', input);
+    const result = await this.#httpClient.patch('v1/auth/profile', input);
 
     if (!result.ok) {
       return result;

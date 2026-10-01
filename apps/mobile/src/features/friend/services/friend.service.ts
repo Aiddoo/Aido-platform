@@ -1,22 +1,12 @@
 import {
-  type AcceptFriendRequestResponse,
   acceptFriendRequestResponseSchema,
-  type CancelFriendRequestResponse,
   cancelFriendRequestResponseSchema,
-  type FriendsListResponse,
   friendsListResponseSchema,
-  type ReceivedRequestsResponse,
-  type RejectFriendRequestResponse,
-  type RemoveFriendResponse,
   type ReorderFriendInput,
-  type ReorderFriendResponse,
   receivedRequestsResponseSchema,
   rejectFriendRequestResponseSchema,
   removeFriendResponseSchema,
   reorderFriendResponseSchema,
-  type SearchUsersResponse,
-  type SendFriendRequestResponse,
-  type SentRequestsResponse,
   searchUsersResponseSchema,
   sendFriendRequestResponseSchema,
   sentRequestsResponseSchema,
@@ -70,9 +60,7 @@ export class FriendService {
       return err(FriendErrors.invalidTag());
     }
 
-    const result = await this.#httpClient.post<SendFriendRequestResponse>(
-      `v1/follows/${encodeURIComponent(trimmed)}`,
-    );
+    const result = await this.#httpClient.post(`v1/follows/${encodeURIComponent(trimmed)}`);
 
     if (!result.ok) {
       return result;
@@ -88,11 +76,12 @@ export class FriendService {
 
   getReceivedRequests = async (
     params?: PaginationParams,
+    signal?: AbortSignal,
   ): Promise<Result<Page<FriendRequest>, ApiError>> => {
-    const result = await this.#httpClient.get<ReceivedRequestsResponse>(
-      'v1/follows/requests/received',
-      { params: { cursor: params?.cursor, limit: params?.limit } },
-    );
+    const result = await this.#httpClient.get('v1/follows/requests/received', {
+      signal,
+      params: { cursor: params?.cursor, limit: params?.limit },
+    });
 
     if (!result.ok) {
       return result;
@@ -110,8 +99,10 @@ export class FriendService {
 
   getSentRequests = async (
     params?: PaginationParams,
+    signal?: AbortSignal,
   ): Promise<Result<Page<FriendRequest>, ApiError>> => {
-    const result = await this.#httpClient.get<SentRequestsResponse>('v1/follows/requests/sent', {
+    const result = await this.#httpClient.get('v1/follows/requests/sent', {
+      signal,
       params: { cursor: params?.cursor, limit: params?.limit },
     });
 
@@ -130,9 +121,7 @@ export class FriendService {
   };
 
   acceptRequest = async (userId: string): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.patch<AcceptFriendRequestResponse>(
-      `v1/follows/${encodeURIComponent(userId)}/accept`,
-    );
+    const result = await this.#httpClient.patch(`v1/follows/${encodeURIComponent(userId)}/accept`);
 
     if (!result.ok) {
       return result;
@@ -149,9 +138,7 @@ export class FriendService {
   };
 
   rejectRequest = async (userId: string): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.patch<RejectFriendRequestResponse>(
-      `v1/follows/${encodeURIComponent(userId)}/reject`,
-    );
+    const result = await this.#httpClient.patch(`v1/follows/${encodeURIComponent(userId)}/reject`);
 
     if (!result.ok) {
       return result;
@@ -168,9 +155,7 @@ export class FriendService {
   };
 
   cancelRequest = async (userId: string): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.delete<CancelFriendRequestResponse>(
-      `v1/follows/${encodeURIComponent(userId)}`,
-    );
+    const result = await this.#httpClient.delete(`v1/follows/${encodeURIComponent(userId)}`);
 
     if (!result.ok) {
       return result;
@@ -186,8 +171,12 @@ export class FriendService {
     return ok(undefined);
   };
 
-  getFriends = async (params?: PaginationParams): Promise<Result<Page<FriendUser>, ApiError>> => {
-    const result = await this.#httpClient.get<FriendsListResponse>('v1/follows/friends', {
+  getFriends = async (
+    params?: PaginationParams,
+    signal?: AbortSignal,
+  ): Promise<Result<Page<FriendUser>, ApiError>> => {
+    const result = await this.#httpClient.get('v1/follows/friends', {
+      signal,
       params: { cursor: params?.cursor, limit: params?.limit },
     });
 
@@ -205,6 +194,7 @@ export class FriendService {
 
   searchUsers = async (
     params: SearchUsersParams,
+    signal?: AbortSignal,
   ): Promise<Result<Page<SearchedUser>, FriendServiceError>> => {
     const query = params.query.trim();
 
@@ -213,7 +203,8 @@ export class FriendService {
       return err(FriendErrors.searchQueryTooShort());
     }
 
-    const result = await this.#httpClient.get<SearchUsersResponse>('v1/follows/search', {
+    const result = await this.#httpClient.get('v1/follows/search', {
+      signal,
       params: { q: query, cursor: params.cursor, limit: params.limit },
     });
 
@@ -233,7 +224,7 @@ export class FriendService {
     followId: string,
     input: ReorderFriendInput,
   ): Promise<Result<FriendUser, ApiError>> => {
-    const result = await this.#httpClient.patch<ReorderFriendResponse>(
+    const result = await this.#httpClient.patch(
       `v1/follows/friends/${encodeURIComponent(followId)}/reorder`,
       input,
     );
@@ -253,9 +244,7 @@ export class FriendService {
   };
 
   removeFriend = async (userId: string): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.delete<RemoveFriendResponse>(
-      `v1/follows/${encodeURIComponent(userId)}`,
-    );
+    const result = await this.#httpClient.delete(`v1/follows/${encodeURIComponent(userId)}`);
 
     if (!result.ok) {
       return result;

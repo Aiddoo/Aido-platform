@@ -16,8 +16,8 @@ export class AppVersionService {
 
   getInstallation = () => this.metadata.getInstallation();
 
-  getConfig = async (): Promise<AppVersionConfig> => {
-    const raw = await this.jsonFetcher.get('v1/app-config/app-version');
+  getConfig = async (signal?: AbortSignal): Promise<AppVersionConfig> => {
+    const raw = await this.jsonFetcher.get('v1/app-config/app-version', signal);
     const parsed = appVersionResponseSchema.safeParse(raw);
     if (!parsed.success) {
       throw new ParseError(`[AppVersionService] Invalid response: ${parsed.error.message}`);

@@ -34,7 +34,7 @@ import Animated, {
 
 import { useDraggableFriendReorderList } from '../hooks/use-draggable-friend-reorder-list';
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
-import { useGetFriendsQueryOptions } from '../queries/use-get-friends-query-options';
+import { useGetFriendsQueryOptions } from '../queries/get-friends-query-options';
 import { useRemoveFriendMutationOptions } from '../queries/use-remove-friend-mutation-options';
 import { useReorderFriendMutationOptions } from '../queries/use-reorder-friend-mutation-options';
 import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
@@ -192,7 +192,7 @@ export function FriendList() {
           <Flex py={16} align="center">
             <ActivityIndicator />
           </Flex>
-        ) : null
+        ) : undefined
       }
       onEndReached={() => {
         if (hasNextPage && !isFetchingNextPage) {
@@ -209,14 +209,14 @@ export function FriendList() {
         />
       }
       containerStyle={{ flex: 1 }}
-      contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
     />
   );
 }
 
 FriendList.Loading = function Loading() {
   return (
-    <ScrollView className="flex-1 px-4">
+    <ScrollView className="flex-1">
       <Box py={12}>
         <Skeleton className="w-12 h-4" />
       </Box>

@@ -4,7 +4,7 @@ import {
   resolveIconBySky,
   resolveSkyIconColor,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
-import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
+import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';

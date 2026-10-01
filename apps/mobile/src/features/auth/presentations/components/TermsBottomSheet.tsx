@@ -1,11 +1,13 @@
 import type { RegisterInput } from '@aido/validators';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
+import { isBusinessError } from '@src/shared/errors/result';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import { useState } from 'react';
+import { useErrorBoundary } from 'react-error-boundary';
 import { useFormContext } from 'react-hook-form';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +22,8 @@ interface TermsBottomSheetProps {
 }
 
 export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBottomSheetProps) => {
+  const { showBoundary } = useErrorBoundary();
+
   const { t } = useTranslation(['auth', 'common']);
   const { handleSubmit } = useFormContext<SignUpFormData>();
   const insets = useSafeAreaInsets();
@@ -51,24 +55,28 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
     setAgreements((prev) => ({ ...prev, [key]: isSelected }));
   };
 
-  const onSubmit = (data: SignUpFormData) => {
-    const validatedData: RegisterInput = {
-      ...data,
-      termsAgreed: true,
-      privacyAgreed: true,
-      marketingAgreed: agreements.marketing,
-      marketingPushAgreed: agreements.marketingPush,
-    };
+  const onSubmit = async (data: SignUpFormData) => {
+    try {
+      const validatedData: RegisterInput = {
+        ...data,
+        termsAgreed: true,
+        privacyAgreed: true,
+        marketingAgreed: agreements.marketing,
+        marketingPushAgreed: agreements.marketingPush,
+      };
 
-    register.mutate(validatedData, {
-      onSuccess: () => {
-        onOpenChange(false);
-        onNextStep();
-      },
-      onError: () => {
-        onOpenChange(false);
-      },
-    });
+      await register.mutateAsync(validatedData, {
+        onSuccess: () => {
+          onOpenChange(false);
+          onNextStep();
+        },
+        onError: () => {
+          onOpenChange(false);
+        },
+      });
+    } catch (error) {
+      if (!isBusinessError(error)) showBoundary(error);
+    }
   };
 
   return (
@@ -127,7 +135,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
 
             <Button
               color="dark"
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               isLoading={register.isPending}
               isDisabled={!isRequiredAgreed}
             >

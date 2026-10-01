@@ -11,8 +11,8 @@ import {
 
 import type { SearchedUser } from '../../models/friend.model';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
+import { useSearchUsersQueryOptions } from '../queries/search-users-query-options';
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
-import { useSearchUsersQueryOptions } from '../queries/use-search-users-query-options';
 import { useSendRequestByTagMutationOptions } from '../queries/use-send-request-by-tag-mutation-options';
 import type { SearchedUserViewModel } from '../view-models/searched-user.view-model';
 import { UserList } from './UserList';

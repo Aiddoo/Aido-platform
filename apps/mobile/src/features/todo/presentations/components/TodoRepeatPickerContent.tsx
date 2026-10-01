@@ -1,4 +1,5 @@
 import type { DayOfWeek } from '@aido/validators';
+import { useToday } from '@src/shared/hooks/useToday';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -13,8 +14,8 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
-import { useDatePicker } from '../hooks/useDatePicker';
-import { useRepeatSetting } from '../hooks/useRepeatSetting';
+import { useDatePicker } from '../hooks/use-date-picker';
+import { useRepeatSetting } from '../hooks/use-repeat-setting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import { getDayOfWeekFromDate, hasSelectedDayInRange } from '../utils/day-of-week';
 import { CalendarWeekdayHeader } from './Calendar/CalendarWeekdayHeader';
@@ -85,7 +86,7 @@ export const TodoRepeatPickerContent = ({
     });
   };
 
-  const [today] = useState(() => new Date());
+  const today = useToday();
 
   const handleCalendarPress = (date: Date) => {
     if (isBeforeDay(date, today)) return;

@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { AddSubTodoBottomSheet } from './AddSubTodoBottomSheet';
 
@@ -44,8 +44,10 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
     });
     expect(deleteButton()).toBeDisabled();
 
-    deferred.settle();
-    await pressing;
+    await act(async () => {
+      deferred.settle();
+      await pressing;
+    });
 
     await waitFor(() => {
       expect(submitButton()).toBeEnabled();
@@ -73,8 +75,10 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
     });
     expect(submitButton()).toBeDisabled();
 
-    deferred.settle();
-    await pressing;
+    await act(async () => {
+      deferred.settle();
+      await pressing;
+    });
   });
 
   it('보낸 뒤에도 수정 모드는 쓰던 값을 지우지 않는다', async () => {

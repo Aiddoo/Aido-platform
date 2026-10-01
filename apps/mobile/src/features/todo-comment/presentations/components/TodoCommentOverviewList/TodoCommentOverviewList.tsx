@@ -30,7 +30,7 @@ import type {
 import { TODO_COMMENT_QUERY_KEYS } from '../../constants/todo-comment-query-keys.constant';
 import { useTodoCommentNavigation } from '../../hooks/use-todo-comment-navigation';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
-import { useTodoCommentOverviewQueryOptions } from '../../queries/use-todo-comment-overview-query-options';
+import { useTodoCommentOverviewQueryOptions } from '../../queries/todo-comment-overview-query-options';
 import {
   TODO_COMMENT_AUTHOR_AVATAR_SIZE,
   TodoCommentAuthorAvatar,

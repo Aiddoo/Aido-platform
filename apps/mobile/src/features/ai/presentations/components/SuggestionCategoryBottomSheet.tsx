@@ -1,5 +1,5 @@
 import { CategorySelectBottomSheet } from '@src/features/todo/presentations/components/CategorySelectBottomSheet';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 

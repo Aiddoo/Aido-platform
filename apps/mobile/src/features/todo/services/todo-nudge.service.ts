@@ -1,10 +1,6 @@
 import {
-  type CreateNudgeResponse,
-  type CreateRemindNudgeResponse,
   createNudgeResponseSchema,
   createRemindNudgeResponseSchema,
-  type NudgeCooldownInfo as NudgeCooldownInfoDTO,
-  type NudgeLimitInfo as NudgeLimitInfoDTO,
   nudgeCooldownInfoSchema,
   nudgeLimitInfoSchema,
 } from '@aido/validators';
@@ -47,7 +43,7 @@ export class TodoNudgeService {
       return err(TodoNudgeErrors.messageTooLong(TodoNudgePolicy.maxMessageLength));
     }
 
-    const result = await this.#httpClient.post<CreateNudgeResponse>('v1/nudges', {
+    const result = await this.#httpClient.post('v1/nudges', {
       receiverId: input.receiverId,
       todoId: input.todoId,
       message: normalizedMessage,
@@ -67,8 +63,8 @@ export class TodoNudgeService {
     return ok(toSendNudgeResult(parsed.data));
   };
 
-  getLimitInfo = async (): Promise<Result<NudgeLimitInfo, ApiError>> => {
-    const result = await this.#httpClient.get<NudgeLimitInfoDTO>('v1/nudges/limit');
+  getLimitInfo = async (signal?: AbortSignal): Promise<Result<NudgeLimitInfo, ApiError>> => {
+    const result = await this.#httpClient.get('v1/nudges/limit', { signal });
 
     if (!result.ok) {
       return result;
@@ -84,8 +80,11 @@ export class TodoNudgeService {
     return ok(toNudgeLimitInfo(parsed.data));
   };
 
-  getCooldownInfoForUser = async (userId: string): Promise<Result<NudgeCooldownInfo, ApiError>> => {
-    const result = await this.#httpClient.get<NudgeCooldownInfoDTO>(`v1/nudges/cooldown/${userId}`);
+  getCooldownInfoForUser = async (
+    userId: string,
+    signal?: AbortSignal,
+  ): Promise<Result<NudgeCooldownInfo, ApiError>> => {
+    const result = await this.#httpClient.get(`v1/nudges/cooldown/${userId}`, { signal });
 
     if (!result.ok) {
       return result;
@@ -110,7 +109,7 @@ export class TodoNudgeService {
       return err(TodoNudgeErrors.messageTooLong(TodoNudgePolicy.maxMessageLength));
     }
 
-    const result = await this.#httpClient.post<CreateRemindNudgeResponse>('v1/nudges/remind', {
+    const result = await this.#httpClient.post('v1/nudges/remind', {
       receiverId: input.receiverId,
       message: normalizedMessage,
     });
@@ -129,10 +128,11 @@ export class TodoNudgeService {
     return ok(toSendRemindNudgeResult(parsed.data));
   };
 
-  getRemindCooldownInfo = async (userId: string): Promise<Result<NudgeCooldownInfo, ApiError>> => {
-    const result = await this.#httpClient.get<NudgeCooldownInfoDTO>(
-      `v1/nudges/remind/cooldown/${userId}`,
-    );
+  getRemindCooldownInfo = async (
+    userId: string,
+    signal?: AbortSignal,
+  ): Promise<Result<NudgeCooldownInfo, ApiError>> => {
+    const result = await this.#httpClient.get(`v1/nudges/remind/cooldown/${userId}`, { signal });
 
     if (!result.ok) {
       return result;

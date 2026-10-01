@@ -1,4 +1,4 @@
-import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
+import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import { useTranslation } from '@src/shared/i18n';

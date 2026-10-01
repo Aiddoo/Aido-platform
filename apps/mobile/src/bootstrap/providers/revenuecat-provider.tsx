@@ -2,7 +2,7 @@ import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/presentations/con
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { ENV } from '@src/shared/config/env';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useCallback, useEffect, useRef } from 'react';

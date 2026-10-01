@@ -3,7 +3,7 @@ import { Box, EditIcon, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';
 
-import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { getProfileIconSource } from '../utils/profile-icon.util';
 
 interface ProfileInfoCardProps {

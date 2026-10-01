@@ -1,121 +1,158 @@
-# 홈 화면 위젯 가이드 (iOS WidgetKit + Android AppWidget)
+# 홈 화면 위젯 가이드 — Expo SDK 58
 
-**Version**: 1.1.0 · **Last Updated**: 2026-07-14 · **Owner**: Aido Mobile Team
+**Version**: 2.0.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Mobile Team
 
-v1.5.1에서 도입, v1.5.2에서 Android를 iOS와 같은 3개 고정 family로 정리했다.
+양 플랫폼 모두 `expo-widgets`를 사용한다. iOS의 기존 `AidoTodayList` identity와 App Group은
+유지한다. Android는 이전 provider component를 Expo Widgets receiver로 연결하여 기존 위젯 ID와
+배치를 유지한다. 이전 인증 토큰·SecureStore 계약은 변경하지 않는다.
 
-- Small: iOS `systemSmall` / Android **AidoTodaySummary**(2x2) — 카운트, 진행률, 스트릭
-- Medium: iOS `systemMedium` / Android **AidoTodayList**(4x2) — 주요 할 일 3개
-- Large: iOS `systemLarge` / Android **AidoTodayLarge**(4x4) — 주요 할 일 8개
+## 데이터 흐름과 소유권
 
-Android는 launcher별 실제 크기 보고 편차로 레이아웃이 흔들리지 않도록 신규 Small/Large의
-family를 위젯 이름으로 고정한다. v1.5.1에 이미 배치된 자유 리사이즈 `AidoTodayList`만 실제
-크기를 읽어 2x2/4x4 호환 레이아웃으로 보정한다.
-
----
-
-## 0. 세션/인증 절대 불변식 (최우선 — 위반 금지)
-
-- 위젯 프로세스(iOS 확장 / Android headless task handler)는 **토큰·SecureStore·네트워크에
-  일절 접근하지 않는다**. 앱이 기록한 스냅샷을 읽어 렌더만 한다.
-- `expo-secure-store`의 키 이름·keychainService·accessGroup 등 영속성 계약을 위젯 때문에
-  변경하지 않는다 (변경 = 기존 토큰 고아화 = 대량 로그아웃).
-- `POST /v1/auth/refresh`는 앱 JS 런타임(기존 ky 훅)만 호출한다.
-- 위젯 요약 쿼리는 AuthProvider(전 화면 상위)에서 돌므로 `throwOnError: false` 필수 —
-  실패가 ErrorBoundary로 새면 콜드 스타트 fallback 화면이 재발한다.
-
-## 1. 아키텍처
-
-```
-GET v1/todos/summary ─→ useWidgetSnapshotSync(AuthProvider) ─→ WidgetSyncService
-                                                                    │ mapper (문자열 굽기)
-                                              WidgetBridge 포트 ────┤
-                          iOS: expo-widgets updateTimeline ←────────┼──→ Android: MMKV + requestWidgetUpdate
-                          (App Group, 2엔트리: 지금/자정 stale)          (3종 headless task handler가 재렌더)
+```text
+AuthProvider
+  → useWidgetSnapshotSync(authState)
+  → 현재 계정·날짜로 scoped된 TodoSummary query
+  → WidgetSyncService
+  → widget-snapshot.mapper / widget-props.mapper
+  → WidgetBridge
+      iOS: updateTimeline(현재, 다음 로컬 자정 stale)
+      Android: updateSnapshot(3종 위젯)
 ```
 
-- **스택**: iOS `expo-widgets`(공식, TS/JSX → SwiftUI 컴파일) · Android `react-native-android-widget`(RemoteViews)
-- **스냅샷**: `features/widget/models/widget-snapshot.model.ts` — Zod 단일 진실원.
-  localized 문자열은 쓰기 시점에 굽는다(iOS 타임라인 props는 직렬화되어 렌더 시 i18n 불가).
-- **갱신 트리거**(전부 `useWidgetSnapshotSync` 하나로 수렴): 할 일 변경(쿼리 키가
-  `TODO_QUERY_KEYS.completions()` 하위라 기존 invalidation 상속) · 포그라운드 복귀 ·
-  자정 넘긴 복귀(useToday 키 회전) · 언어 변경 · 로그아웃.
-- **앱 날짜 롤오버**: 전역 `LocalDateProvider`가 활성 중에는 다음 로컬 자정 timer 하나만 유지하고,
-  background에서는 해제한다. foreground 복귀 시 기기 날짜를 즉시 재검증한다.
-- **위젯 자정 롤오버**: iOS는 타임라인 2번째 엔트리(다음 로컬 자정 = stale 상태)로 자동 전환,
-  Android는 `updatePeriodMillis`(30분) 주기 갱신에서 `snapshot.date !== 오늘`이면 stale 렌더
-  (최대 ~30분 스테일 수용).
+- renderer는 토큰·SecureStore·네트워크·앱 Provider에 접근하지 않는다.
+- locale·번역·카테고리 색은 앱에서 직렬화 가능한 props로 만든다.
+- 인증 판정 중에는 이전 snapshot을 유지한다. 미인증이 확정되면 loggedOut을 기록한다.
+- 요약은 현재 계정과 날짜가 맞을 때만 기록한다. languageChanged도 인증을 먼저 확인한다.
+- native 쓰기를 직렬화하고 오래된 대기 작업을 건너뛰어 로그아웃이 최종 상태가 된다.
+- 내용이 같으면 updatedAt만 바뀐 snapshot은 다시 쓰지 않는다. 실패한 쓰기는 다시 시도할 수 있다.
+- WidgetSyncService는 native·관측 실패를 앱 인증 흐름으로 throw하지 않는다.
+- query는 `throwOnError: false`를 유지한다. 위젯 조회 실패로 앱의 전역 boundary를 열지 않는다.
 
-## 2. 설정 지점
+## 플랫폼 설정
 
-| 위치                | 내용                                                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `app.config.ts`     | `expo-widgets` + `react-native-android-widget` 플러그인, App Group(`group.<bundleId>` — 환경별 자동 분리), 메인 앱 entitlements |
-| `index.ts`          | Android task handler 등록 (`Platform.OS === 'android'` 가드)                                                                    |
-| `di-provider.tsx`   | repository → bridge → `WidgetSyncService` 조립, `useWidgetSyncService` 훅                                                       |
-| `auth-provider.tsx` | `useWidgetSnapshotSync(authState)` 마운트 (유일한 통합 지점)                                                                    |
+`app.config.ts`에서 `expo-widgets`의 `enableAndroid: true`를 명시한다.
+플랫폼 설정은 `widgets[].ios`와 `widgets[].android` 아래에 둔다.
 
-## 3. 새 위젯 추가 방법
+| 이름             | iOS                                      | Android | 목록 행                  |
+| ---------------- | ---------------------------------------- | ------- | ------------------------ |
+| AidoTodaySummary | 등록하지 않음 (`ios: null`)              | 2×2     | 0                        |
+| AidoTodayList    | systemSmall / systemMedium / systemLarge | 4×2     | 0 / 3 / 8 또는 Android 3 |
+| AidoTodayLarge   | 등록하지 않음 (`ios: null`)              | 4×4     | 8                        |
 
-1. `app.config.ts` 두 플러그인의 `widgets[]`에 이름 추가 (Swift 식별자 규칙, 양 플랫폼 동일 이름 권장)
-2. iOS: `presentations/ios/`에 `'widget'` 디렉티브 레이아웃 작성 + `createWidget(name, layout)` export
-   — **함수는 자기완결이어야 함**(모듈 스코프 값 참조 금지, 팔레트 인라인)
-   — **검증된 프리미티브만 사용**: Text/HStack/VStack/Spacer/선형 Gauge(linearCapacity).
-   Gauge 링 중앙 라벨(currentValueLabel)·strikethrough는 위젯 런타임에서 렌더되지 않음(시뮬레이터 확인)
-3. Android: `presentations/android/`에 FlexWidget 트리 + `android-widget-layout.ts`의
-   `ANDROID_WIDGET_NAMES`/family 정책에 이름 추가
-4. 브리지: iOS `expo-widgets.bridge.ts`에 `updateTimeline` 대상 추가 (Android는 이름 배열로 자동)
-5. `pnpm native:prebuild`로 네이티브 재생성 → dev 빌드로 확인 (Expo Go 불가)
+`presentations/widgets.ios.tsx`와 `widgets.android.tsx`는 같은 `WidgetProps`를 소비한다.
+지원하지 않는 web의 `widgets.tsx`는 빈 목록을 제공한다. iOS bundle identifier와 환경별
+`group.<bundleIdentifier>`를 변경하지 않는다.
 
-## 4. 디자인 규칙
+## 날짜 경계와 OS 갱신
 
-- 팔레트: `presentations/constants/widget-colors.constant.ts` — global.css OKLCH 토큰의 hex 고정본.
-  **토큰 변경 시 이 파일과 iOS 레이아웃의 인라인 팔레트를 함께 갱신할 것.**
-- iOS/Android는 Small/Medium/Large별 정보 위계, 행 수(0/3/8), 여백, 단색 progress fill,
-  체크박스 상태를 동일하게 유지한다.
-- Linear 스타일: 뉴트럴 배경 + 타이포 위계, 브랜드 오렌지(#FF6B43)는 프로그레스 필·체크·스트릭에만.
-- 위젯은 OS 시스템 테마 추종(앱 내 테마 오버라이드 미적용 — 플랫폼 표준).
-- 폰트: Android는 플러그인 fonts로 WantedSans, iOS 확장은 시스템 폰트(SF).
-- Android RemoteViews는 시스템 글자 크기로 인한 잘림을 막기 위해 widget text의 font scaling을
-  고정하고, 한 줄 텍스트에는 `maxLines`/auto-fit을 함께 사용한다.
+- 앱의 LocalDateProvider가 현재 로컬 날짜와 자정 timer를 소유한다.
+- iOS에는 현재와 다음 로컬 자정의 stale 엔트리를 쓴다. WidgetKit 갱신은 OS 정책을 따른다.
+- SDK 58의 Android `updateTimeline`은 no-op이다. Android에서는 `updateSnapshot`만 쓴다.
+- Android WidgetEnvironment에는 entry date·family가 없다. renderer 실행 경계에서 현재 날짜를
+  읽어 snapshot 날짜와 비교하고, 위젯별 `maxRows` prop으로 정보량을 결정한다.
+- Expo의 Android XML은 updatePeriodMillis가 0이다. `withWidgetRefreshInterval`은 Expo의 `withFinalizedMod`에서 위젯 XML 생성이 끝난 뒤
+  3개 XML에 최소 30분 갱신을 설정한다. 파일이나 갱신 속성이 없으면 prebuild를 실패시킨다.
+- Doze·launcher 정책으로 지연될 수 있으므로 정확한 자정이나 최대 30분을 보장하지 않는다.
 
-## 5. 관측
+## 격리된 renderer와 디자인
 
-- Sentry: `WidgetSyncService`가 실패를 `feature: 'widget'`으로 captureException,
-  성공은 `widget` 카테고리 breadcrumb. task handler 실패도 동일 계약.
-- Analytics: `widget_added`/`widget_removed` (Android 시스템 이벤트 기반 — iOS는
-  WidgetKit이 콜백을 제공하지 않아 미집계, 알려진 한계).
+`'widget'` 함수는 격리된 runtime에서 실행된다. 모듈 helper·React hook·앱 상태를 closure로
+참조하지 않는다. 렌더에 필요한 helper와 palette는 함수 내부에 둔다.
 
-## 6. 테스트
+- iOS: SwiftUI Text/HStack/VStack/Spacer/Gauge 등 지원 primitive 사용.
+- Android: Expo UI Jetpack Compose의 Glance 변환이 지원하는 Box/Column/Row/Text/Spacer/Progress 사용.
+- Android에서 `weight`, `alpha`, `spacedBy` 등을 지원한다고 가정하지 않는다. 명시적 Spacer 크기,
+  지원되는 padding·size·Box alignment로 배치한다.
+- 팔레트는 global.css의 고정 hex 값을 사용한다. 토큰 변경 시 양 renderer의 팔레트를 함께 갱신한다.
+- 시스템 테마를 따르고 뉴트럴 배경·타이포 위계·브랜드 오렌지 포인트를 유지한다.
+- Android 시스템 폰트와 Glance 제약을 따른다. 앱의 custom font와 동일 렌더링을 보장하지 않는다.
+- iOS의 고정 row 슬롯은 기존 native renderer의 배열 child 제한 때문에 유지한다.
 
-- 단위: 모델 정책(renderState/stale), Android 이름→family/행 수 정책, 컬러 변환,
-  매퍼(문자열 굽기·절단·카테고리 컬러), repository(라운드트립·손상 JSON), sync service(무throw 계약)
-  — `src/features/widget/**/*.test.ts`
-- 렌더 트리(FlexWidget/SwiftUI)는 단위 테스트 불가 — 수동 QA 체크리스트:
-  - [ ] 위젯 추가(픽커 라벨/설명) — 양 플랫폼, 전 사이즈
-  - [ ] 할 일 토글 → 위젯 즉시 반영 (앱 백그라운드 전환 후 홈 화면 확인)
-  - [ ] 라이트/다크 전환
-  - [ ] 상태 4종: data / empty / loggedOut / stale(기기 날짜 변경)
-  - [ ] 언어 변경(ko↔en) 반영
-  - [ ] Android picker에 Summary/List/Large 3개가 각각 노출되고 2x2/4x2/4x4로 배치
-  - [ ] Samsung One UI/Pixel Launcher에서 텍스트 잘림·정렬·라운드 배경 확인
-  - [ ] 로그아웃 → "로그인이 필요해요" / 재로그인 → 데이터 복원
-  - [ ] 콜드 스타트에서 재시도 화면(fallback) 미재현
+## 앱 열기와 compatibility patch
 
-## 7. 알려진 한계 / 후속 과제
+SDK 58.0.10의 Android JS interaction은 앱이 종료된 상태에서 Activity를 시작하지 않는다.
+`patches/expo-widgets@58.0.10.patch`는 `opensApp: true`인 snapshot root에 공식 Glance
+`actionStartActivity`를 연결한다. 대상은 현재 앱 package의 launch Activity이며 token·URL을
+전달하지 않는다. SDK가 같은 기능을 제공하면 해당 patch 변경을 제거한다.
+patch는 provider 이름을 공식 manifest metadata로 조회하여 이전 component를 갱신한다.
+SDK snapshot 쓰기와 초기 이관은 같은 SharedPreferences monitor에서 수행한다.
 
-- 인위젯 체크오프(탭 완료) 미지원 — 탭하면 앱 열림. Android는 headless 경로 검증됨,
-  iOS는 expo-widgets 인터랙션 API 성숙 후 재평가.
-- iOS 상태 화면 마스코트는 🐾 이모지 — 고양이 이미지 자산은 App Group 복사
-  파이프라인(expo-asset/file-system) 도입 후.
-- 위젯 픽커 라벨은 빌드 타임 정적 문자열(한국어 우선) — 양 플러그인의 다국어 미지원.
-- **Android 위젯 컴포넌트 파일은 `'use no memo';` 필수**: `react-native-android-widget`은 컴포넌트를
-  React 렌더러 밖에서 함수로 직접 호출(`jsxTree.type(props)`)하는데, `experiments.reactCompiler: true`가
-  주입한 `useMemoCache`가 훅으로 취급되어 "Invalid hook call" → 렌더 전체 실패(**완전히 빈 위젯**).
-  dev/prod 공통이며 조용히 실패하므로(Sentry에만 기록) 새 위젯 파일 추가 시 최상단 디렉티브를 빠뜨리지 말 것.
-- task handler의 주 렌더가 실패하면 정적 fallback을 한 번 더 렌더한다. fallback 실패도 별도
-  `widgetTaskHandler.fallback`으로 관측하되 headless 프로세스 밖으로 throw하지 않는다.
-- Android androidx.work 중복 클래스: `plugins/withAndroidXWorkAlignment.js`가 2.9.1로 정렬
-  (react-native-android-widget PR #148의 work-runtime 2.8.1 vs 타 의존성 ktx 2.7.1 충돌,
-  WorkManager 2.9.0부터 ktx가 빈 셔틀이라 정렬 시 충돌 카테고리 소멸).
-- 잠금화면 위젯(accessory family), 빠른 추가 위젯 — 후속 버전.
+첫 설치의 snapshot 부재에는 기존 카탈로그의 한국어 initialProps를 사용한다. 앱 동기화 이후
+현재 언어로 바뀐다. initialLayout 모듈은 build-time VM에서 실행되므로 native 모듈이나 policy의
+runtime dependency를 import하지 않는다.
+앱을 열어 동기화하기 전에도 앱 실행 버튼의 native 계약이 적용된다.
+
+## 제거한 레거시와 관측
+
+`react-native-android-widget`, 앱의 MMKV widget repository, headless task handler,
+WorkManager 버전 정렬 plugin, 이전 renderer와 전용 색상 변환을 제거했다.
+MMKV의 다른 feature 사용처는 유지한다. snapshot v1의 optional compactStreak 계약도 유지한다.
+
+SDK 58은 이전 Android provider의 설치·삭제 lifecycle 이벤트를 제공하지 않는다.
+`widget_added/widget_removed` 카탈로그는 제거하며, 지원하지 않는 지표를 추정하지 않는다.
+동기화 성공은 기존 ErrorReporter breadcrumb, 실패는 `feature: widget`로 보고한다.
+
+## 검증
+
+모델·mapper·sync service를 단위 검증한다. 지연된 쓰기와 로그아웃 순서, 중복 snapshot,
+실패 후 재시도, 이전 compactStreak props, 손상 색상 경계를 포함한다.
+
+```sh
+pnpm --filter @aido/mobile test --runInBand src/features/widget
+```
+
+실제 development/release native 빌드에서 다음을 확인한다. Expo Go로 검증하지 않는다.
+
+- iOS 3 family와 Android 3 provider의 picker·크기·정렬.
+- 앱 최초 실행 전 initialProps 및 종료 상태에서 위젯 탭 → 앱 실행.
+- 할 일 변경·로그아웃·재로그인·계정 전환·언어 변경.
+- 빈 목록·현재 데이터·로그아웃·날짜 만료.
+- light/dark와 큰 글꼴, Samsung One UI/Pixel launcher.
+- 자정·foreground 복귀·오프라인 상황의 snapshot 안전성.
+
+## 공식 근거
+
+- [Expo SDK 58](https://expo.dev/changelog/sdk-58-beta)
+- [Expo Widgets](https://docs.expo.dev/versions/v58.0.0/sdk/widgets/)
+- [SDK 구현](https://github.com/expo/expo/tree/main/packages/expo-widgets)
+- [Android Glance interaction](https://developer.android.com/develop/ui/compose/glance/user-interaction)
+- [Android 주기 갱신](https://developer.android.com/develop/ui/views/appwidgets/advanced)
+
+## 기존 Android 위젯 보존
+
+`withAndroidWidgetCompatibility`는 Expo XML·receiver 생성 후 다음 component 이름을 유지한다.
+
+- `com.aido.mobile.widget.AidoTodaySummary`
+- `com.aido.mobile.widget.AidoTodayList`
+- `com.aido.mobile.widget.AidoTodayLarge`
+
+각 receiver는 SDK의 `ExpoWidgetsAppWidgetProvider`를 상속한다. 이전 `WIDGET_CLICK` action은
+앱을 열고, 렌더링·갱신은 SDK에 위임한다. 이전 renderer나 collection service는 유지하지 않는다.
+OS가 가진 widget ID·크기 옵션과 `${package}.WIDGET_SIZES` 설정은 삭제하지 않는다.
+
+앱 실행 전 receiver가 읽는 snapshot은 기존 `files/mmkv/widget-storage`의
+`aido_widget_snapshot_v1`이다. MMKV 2.4.1의 read-only API로 읽고 `finally`에서 닫는다.
+동일 core 버전은 React Native MMKV 4.4.0의 native dependency와 맞춘다. 이 의존성을 올릴 때
+`withAndroidWidgetCompatibility`의 명시 버전도 재검토한다.
+
+SDK props가 없는 이름만 채우고, 새로운 계정·로그아웃 props가 먼저 기록됐으면 보존한다.
+빈 값·손상 JSON·잘못된 타입은 `stale`과 앱 열기 안내로 처리한다. 토큰·계정 저장소를 읽거나
+네트워크에 접근하지 않으며 이전 MMKV 파일을 수정하지 않는다.
+
+### 재현 가능한 APK 업그레이드 검증
+
+전용 `AidoWidgetUpgrade` AVD에서 실행한다. harness는 이 이름을 확인한 뒤 해당 QA 앱 데이터만
+초기화한다. 현재 debug APK를 먼저 빌드하고 이전 APK의 절대 경로를 제공한다.
+
+```sh
+node apps/mobile/scripts/check-android-widget-upgrade.mjs \
+  --device emulator-5556 \
+  --legacy-apk /absolute/path/to/previous/app-debug.apk
+```
+
+2026-10-01 검증은 보관된 1.8.0 APK → 1.10.0 APK로 수행했다. 1.9.0 기준 revision의
+provider 이름과 동일함도 확인했다. 실제 AppWidgetHost에 등록한 3개 ID·component가 유지됐고,
+SDK RemoteViews의 제목·개수·목록이 현재 TypeScript mapper fixture와 일치했다. SDK updater의
+3개 갱신, 손상·잘못된 타입 fallback, 50회 동시 계정 쓰기 경합을 통과했다. 이관 전후 이전
+MMKV data·CRC의 SHA-256이 동일했다. 결과 JSON과 native instrumentation 로그는 실행 시
+출력되는 임시 artifact 경로에 남는다. 실제 OEM launcher·release 빌드의 시각 검증은 별도로 수행한다.

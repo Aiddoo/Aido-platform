@@ -4,7 +4,12 @@ import type { TextInputProps } from 'react-native';
 export type InputVariant = 'filled' | 'line';
 export type InputSize = 'medium' | 'large';
 
-export interface InputProps extends TextInputProps {
+export interface InputProps extends Omit<
+  TextInputProps,
+  'value' | 'defaultValue' | 'onChange' | 'onChangeText'
+> {
+  value: string;
+  onChange: (value: string) => void;
   variant?: InputVariant;
   size?: InputSize;
   label?: string;

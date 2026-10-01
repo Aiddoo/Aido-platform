@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
@@ -26,9 +26,9 @@ import { Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
 import { useFeedDate } from '../hooks/use-feed-date';
-import { useGetFriendTodosQueryOptions } from '../queries/use-get-friend-todos-query-options';
-import { useGetRemindNudgeCooldownQueryOptions } from '../queries/use-get-remind-nudge-cooldown-query-options';
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
+import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
+import { useGetRemindNudgeCooldownQueryOptions } from '../queries/get-remind-nudge-cooldown-query-options';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { RemindNudgeBottomSheet } from './RemindNudgeBottomSheet';
 import { TodoNudgeButton } from './TodoNudgeButton';
@@ -65,7 +65,7 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
   }
 
   return (
-    <Box gap={16} px={16}>
+    <Box gap={16}>
       {categoryGroups.map((group) => (
         <VStack key={group.category.id} gap={8}>
           <CategoryHeader label={group.category.name} color={group.category.color} />
@@ -89,7 +89,7 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
 
 FriendTodoList.Loading = function Loading() {
   return (
-    <VStack px={16} gap={12}>
+    <VStack gap={12}>
       {times(3, (i) => (
         <HStack key={`friend-todo-skeleton-${i}`} gap={12} align="center" className="py-3">
           <Skeleton className="size-5 rounded" />

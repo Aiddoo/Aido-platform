@@ -6,7 +6,7 @@ import type { PropsWithChildren } from 'react';
 
 import { createSearchUsersDto } from '../../__tests__/friend.factories';
 import { FriendService } from '../../services/friend.service';
-import { useSearchUsersQueryOptions } from './use-search-users-query-options';
+import { useSearchUsersQueryOptions } from './search-users-query-options';
 
 const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
   const queryClient = new QueryClient({
@@ -55,6 +55,7 @@ describe('useSearchUsersQueryOptions', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(httpClient.get).toHaveBeenCalledWith('v1/follows/search', {
       params: { q: '홍길동', cursor: undefined, limit: undefined },
+      signal: expect.any(AbortSignal),
     });
     const firstItem = result.current.data?.pages[0]?.items[0];
     expect(firstItem?.displayName).toBe('홍길동');

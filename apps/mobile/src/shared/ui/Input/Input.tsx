@@ -1,4 +1,10 @@
 import { cn } from '@src/shared/utils/cn';
+import type {
+  ComponentRef,
+  ForwardRefExoticComponent,
+  PropsWithoutRef,
+  RefAttributes,
+} from 'react';
 import { forwardRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
@@ -9,7 +15,9 @@ import { inputContainerVariants, inputLabelVariants, inputTextVariants } from '.
 
 const StyledTextInput = withUniwind(TextInput);
 
-export const Input = forwardRef<TextInput, InputInternalProps>(
+export const Input: ForwardRefExoticComponent<
+  PropsWithoutRef<InputInternalProps> & RefAttributes<ComponentRef<typeof TextInput>>
+> = forwardRef<ComponentRef<typeof TextInput>, InputInternalProps>(
   (
     {
       variant = 'filled',
@@ -23,6 +31,8 @@ export const Input = forwardRef<TextInput, InputInternalProps>(
       rightContent,
       placeholder,
       className,
+      value,
+      onChange,
       onFocus,
       onBlur,
       textInputComponent: InputComp = StyledTextInput,
@@ -48,6 +58,8 @@ export const Input = forwardRef<TextInput, InputInternalProps>(
           {leftContent && <View className="mr-3">{leftContent}</View>}
           <InputComp
             ref={ref}
+            value={value}
+            onChangeText={onChange}
             allowFontScaling={false}
             placeholder={placeholder}
             editable={!isDisabled}

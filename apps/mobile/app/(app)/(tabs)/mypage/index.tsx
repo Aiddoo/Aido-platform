@@ -4,7 +4,7 @@ import {
   useFeatureDiscoveryStateService,
 } from '@src/bootstrap/providers/di-context';
 import { AppVersionPolicy } from '@src/features/app-version/models/app-version.model';
-import { useAppVersionQueryOptions } from '@src/features/app-version/presentations/queries/use-app-version-query-options';
+import { useAppVersionQueryOptions } from '@src/features/app-version/presentations/queries/get-app-version-query-options';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/presentations/queries/use-logout-mutation-options';
 import {
@@ -14,10 +14,9 @@ import {
 import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/presentations/hooks/use-feature-discovery-hub';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
-import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,
@@ -41,7 +40,6 @@ import { ScrollView } from 'react-native';
 const MyPageScreen = () => {
   const push = useSingleTap(router.push);
 
-  const tabBarHeight = useTabBarHeight();
   const { t } = useTranslation(['user', 'settings', 'featureDiscovery']);
   const { data: user } = useQuery(useGetMeQueryOptions());
   const { openHub } = useFeatureDiscoveryHub();
@@ -65,7 +63,7 @@ const MyPageScreen = () => {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: tabBarHeight }}>
+      <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
         <H3>{t('mypage.header')}</H3>
 
         <Spacing size={20} />

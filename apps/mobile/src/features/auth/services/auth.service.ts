@@ -1,36 +1,26 @@
 import {
   type AppleMobileCallbackInput,
-  type AuthTokens as AuthTokensDTO,
   authTokensSchema as authTokensDtoSchema,
   type ChangePasswordInput,
-  type ChangePasswordResponse,
-  type ConsentResponse,
   changePasswordResponseSchema,
   consentResponseSchema,
   type DeleteAccountInput,
-  type DeleteAccountResponse,
   deleteAccountResponseSchema,
   type ExchangeCodeInput,
   type ForgotPasswordInput,
-  type ForgotPasswordResponse,
   forgotPasswordResponseSchema,
-  type LinkedAccountsResponse,
+  linkAccountResponseSchema,
+  unlinkAccountResponseSchema,
   linkedAccountsResponseSchema,
-  type PreferenceResponse,
   preferenceResponseSchema,
   type RegisterInput,
-  type RegisterResponse,
   type ResendVerificationInput,
-  type ResendVerificationResponse,
   type ResetPasswordInput,
-  type ResetPasswordResponse,
   registerResponseSchema,
   resendVerificationResponseSchema,
   resetPasswordResponseSchema,
   type UpdateMarketingConsentInput,
-  type UpdateMarketingConsentResponse,
   type UpdateMarketingPushConsentInput,
-  type UpdateMarketingPushConsentResponse,
   type UpdatePreferenceInput,
   updateMarketingConsentResponseSchema,
   updateMarketingPushConsentResponseSchema,
@@ -212,7 +202,7 @@ export class AuthService {
     await this.#tokenStore.clear();
   };
 
-  #parseAuthTokens = (result: { ok: true; value: AuthTokensDTO }): AuthTokens => {
+  #parseAuthTokens = (result: { ok: true; value: unknown }): AuthTokens => {
     const parsed = authTokensDtoSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[AuthService] Invalid auth tokens response: ${parsed.error.message}`);
@@ -305,10 +295,7 @@ export class AuthService {
         deviceType: 'IOS',
       };
 
-      const result = await this.#publicHttpClient.post<AuthTokensDTO>(
-        'v1/auth/apple/callback',
-        input,
-      );
+      const result = await this.#publicHttpClient.post('v1/auth/apple/callback', input);
       if (!result.ok) return result;
 
       const tokens = this.#parseAuthTokens(result);
@@ -326,7 +313,7 @@ export class AuthService {
   };
 
   emailLogin = async (email: string, password: string): Promise<Result<AuthTokens, ApiError>> => {
-    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/login', {
+    const result = await this.#publicHttpClient.post('v1/auth/login', {
       email,
       password,
       deviceType: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
@@ -339,7 +326,7 @@ export class AuthService {
   };
 
   exchangeCode = async (request: ExchangeCodeInput): Promise<Result<AuthTokens, ApiError>> => {
-    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/exchange', request);
+    const result = await this.#publicHttpClient.post('v1/auth/exchange', request);
     if (!result.ok) return result;
 
     const tokens = this.#parseAuthTokens(result);
@@ -357,7 +344,7 @@ export class AuthService {
   };
 
   verifyEmail = async (input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>> => {
-    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/verify-email', input);
+    const result = await this.#publicHttpClient.post('v1/auth/verify-email', input);
     if (!result.ok) return result;
 
     const tokens = this.#parseAuthTokens(result);
@@ -365,8 +352,8 @@ export class AuthService {
     return ok(tokens);
   };
 
-  getPreference = async (): Promise<Result<Preference, ApiError>> => {
-    const result = await this.#authHttpClient.get<PreferenceResponse>('v1/auth/preference');
+  getPreference = async (signal?: AbortSignal): Promise<Result<Preference, ApiError>> => {
+    const result = await this.#authHttpClient.get('v1/auth/preference', { signal });
     if (!result.ok) return result;
 
     const parsed = preferenceResponseSchema.safeParse(result.value);
@@ -380,10 +367,7 @@ export class AuthService {
   updatePreference = async (
     input: UpdatePreferenceInput,
   ): Promise<Result<Preference, ApiError>> => {
-    const result = await this.#authHttpClient.patch<PreferenceResponse>(
-      'v1/auth/preference',
-      input,
-    );
+    const result = await this.#authHttpClient.patch('v1/auth/preference', input);
     if (!result.ok) return result;
 
     const parsed = updatePreferenceResponseSchema.safeParse(result.value);
@@ -396,8 +380,8 @@ export class AuthService {
     return ok(toPreference(parsed.data));
   };
 
-  getConsent = async (): Promise<Result<Consent, ApiError>> => {
-    const result = await this.#authHttpClient.get<ConsentResponse>('v1/auth/consent');
+  getConsent = async (signal?: AbortSignal): Promise<Result<Consent, ApiError>> => {
+    const result = await this.#authHttpClient.get('v1/auth/consent', { signal });
     if (!result.ok) return result;
 
     const parsed = consentResponseSchema.safeParse(result.value);
@@ -411,10 +395,7 @@ export class AuthService {
   updateMarketingConsent = async (
     input: UpdateMarketingConsentInput,
   ): Promise<Result<UpdateMarketingConsentResult, ApiError>> => {
-    const result = await this.#authHttpClient.patch<UpdateMarketingConsentResponse>(
-      'v1/auth/consent/marketing',
-      input,
-    );
+    const result = await this.#authHttpClient.patch('v1/auth/consent/marketing', input);
     if (!result.ok) return result;
 
     const parsed = updateMarketingConsentResponseSchema.safeParse(result.value);
@@ -430,10 +411,7 @@ export class AuthService {
   updateMarketingPushConsent = async (
     input: UpdateMarketingPushConsentInput,
   ): Promise<Result<UpdateMarketingPushConsentResult, ApiError>> => {
-    const result = await this.#authHttpClient.patch<UpdateMarketingPushConsentResponse>(
-      'v1/auth/consent/marketing-push',
-      input,
-    );
+    const result = await this.#authHttpClient.patch('v1/auth/consent/marketing-push', input);
     if (!result.ok) return result;
     const parsed = updateMarketingPushConsentResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -445,7 +423,7 @@ export class AuthService {
   };
 
   register = async (input: RegisterInput): Promise<Result<RegisterResult, ApiError>> => {
-    const result = await this.#publicHttpClient.post<RegisterResponse>('v1/auth/register', input);
+    const result = await this.#publicHttpClient.post('v1/auth/register', input);
     if (!result.ok) return result;
 
     const parsed = registerResponseSchema.safeParse(result.value);
@@ -459,10 +437,7 @@ export class AuthService {
   resendVerification = async (
     input: ResendVerificationInput,
   ): Promise<Result<ResendVerificationResult, ApiError>> => {
-    const result = await this.#publicHttpClient.post<ResendVerificationResponse>(
-      'v1/auth/resend-verification',
-      input,
-    );
+    const result = await this.#publicHttpClient.post('v1/auth/resend-verification', input);
     if (!result.ok) return result;
 
     const parsed = resendVerificationResponseSchema.safeParse(result.value);
@@ -475,9 +450,10 @@ export class AuthService {
     return ok(toResendVerificationResult(parsed.data));
   };
 
-  getLinkedAccounts = async (): Promise<Result<LinkedAccountsResult, ApiError>> => {
-    const result =
-      await this.#authHttpClient.get<LinkedAccountsResponse>('v1/auth/linked-accounts');
+  getLinkedAccounts = async (
+    signal?: AbortSignal,
+  ): Promise<Result<LinkedAccountsResult, ApiError>> => {
+    const result = await this.#authHttpClient.get('v1/auth/linked-accounts', { signal });
     if (!result.ok) return result;
 
     const parsed = linkedAccountsResponseSchema.safeParse(result.value);
@@ -513,7 +489,12 @@ export class AuthService {
   };
 
   linkWithCode = async (code: string): Promise<Result<{ message: string }, ApiError>> => {
-    return this.#authHttpClient.post('v1/auth/link-with-code', { code });
+    const result = await this.#authHttpClient.post('v1/auth/link-with-code', { code });
+    if (!result.ok) return result;
+    const parsed = linkAccountResponseSchema.safeParse(result.value);
+    if (!parsed.success)
+      throw new ParseError(`[AuthService] Invalid link response: ${parsed.error.message}`);
+    return ok(parsed.data);
   };
 
   linkApple = async (): Promise<Result<{ message: string }, AuthServiceError>> => {
@@ -533,7 +514,16 @@ export class AuthService {
         return err(AuthErrors.providerError('apple', t('auth:errors.appleNoToken')));
       }
 
-      return this.#authHttpClient.post('v1/auth/link', { provider: 'APPLE', idToken, nonce });
+      const result = await this.#authHttpClient.post('v1/auth/link', {
+        provider: 'APPLE',
+        idToken,
+        nonce,
+      });
+      if (!result.ok) return result;
+      const parsed = linkAccountResponseSchema.safeParse(result.value);
+      if (!parsed.success)
+        throw new ParseError(`[AuthService] Invalid link response: ${parsed.error.message}`);
+      return ok(parsed.data);
     } catch (error) {
       if (isAuthError(error)) {
         return err(error);
@@ -548,16 +538,18 @@ export class AuthService {
   unlinkAccount = async (
     provider: OAuthProvider,
   ): Promise<Result<{ message: string }, ApiError>> => {
-    return this.#authHttpClient.delete(`v1/auth/linked-accounts/${provider}`);
+    const result = await this.#authHttpClient.delete(`v1/auth/linked-accounts/${provider}`);
+    if (!result.ok) return result;
+    const parsed = unlinkAccountResponseSchema.safeParse(result.value);
+    if (!parsed.success)
+      throw new ParseError(`[AuthService] Invalid unlink response: ${parsed.error.message}`);
+    return ok(parsed.data);
   };
 
   forgotPassword = async (
     input: ForgotPasswordInput,
   ): Promise<Result<ForgotPasswordResult, ApiError>> => {
-    const result = await this.#publicHttpClient.post<ForgotPasswordResponse>(
-      'v1/auth/forgot-password',
-      input,
-    );
+    const result = await this.#publicHttpClient.post('v1/auth/forgot-password', input);
     if (!result.ok) return result;
 
     const parsed = forgotPasswordResponseSchema.safeParse(result.value);
@@ -573,10 +565,7 @@ export class AuthService {
   resetPassword = async (
     input: ResetPasswordInput,
   ): Promise<Result<ResetPasswordResult, ApiError>> => {
-    const result = await this.#publicHttpClient.post<ResetPasswordResponse>(
-      'v1/auth/reset-password',
-      input,
-    );
+    const result = await this.#publicHttpClient.post('v1/auth/reset-password', input);
     if (!result.ok) return result;
 
     const parsed = resetPasswordResponseSchema.safeParse(result.value);
@@ -590,10 +579,7 @@ export class AuthService {
   changePassword = async (
     input: ChangePasswordInput,
   ): Promise<Result<ChangePasswordResult, ApiError>> => {
-    const result = await this.#authHttpClient.patch<ChangePasswordResponse>(
-      'v1/auth/password',
-      input,
-    );
+    const result = await this.#authHttpClient.patch('v1/auth/password', input);
     if (!result.ok) return result;
 
     const parsed = changePasswordResponseSchema.safeParse(result.value);
@@ -609,7 +595,7 @@ export class AuthService {
   deleteAccount = async (
     input: DeleteAccountInput,
   ): Promise<Result<DeleteAccountResult, ApiError>> => {
-    const result = await this.#authHttpClient.delete<DeleteAccountResponse>('v1/auth/account', {
+    const result = await this.#authHttpClient.delete('v1/auth/account', {
       body: input,
     });
     if (!result.ok) return result;

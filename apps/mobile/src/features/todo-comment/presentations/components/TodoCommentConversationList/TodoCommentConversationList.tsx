@@ -47,7 +47,7 @@ import type {
 } from '../../../models/todo-comment.model';
 import { TODO_COMMENT_QUERY_KEYS } from '../../constants/todo-comment-query-keys.constant';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
-import { useTodoCommentConversationQueryOptions } from '../../queries/use-todo-comment-conversation-query-options';
+import { useTodoCommentConversationQueryOptions } from '../../queries/todo-comment-conversation-query-options';
 import {
   canFetchPreviousComments,
   getCommentFocusRevealOffset,

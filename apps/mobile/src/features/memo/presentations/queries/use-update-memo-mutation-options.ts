@@ -27,7 +27,9 @@ export const useUpdateMemoMutationOptions = () => {
       const result = await service.updateMemo(memoId, input);
       return unwrap(result);
     },
-    onSuccess: (_, { memoId }) => {
+    onSuccess: async (memo, { memoId }) => {
+      await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail(memoId) });
+      queryClient.setQueryData(MEMO_QUERY_KEYS.detail(memoId), memo);
       trackEvent('memo_updated', { memo_id: memoId });
       queryClient.removeQueries({ queryKey: AI_QUERY_KEYS.parseMemo(memoId) });
     },
@@ -40,9 +42,10 @@ export const useUpdateMemoMutationOptions = () => {
       }
       toast.error(undefined, { fallback: t('memo:toasts.retryLater') });
     },
-    onSettled: (_, __, { memoId }) => {
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail(memoId) });
-    },
+    onSettled: (_, __, { memoId }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() }),
+        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail(memoId) }),
+      ]),
   });
 };

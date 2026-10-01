@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 
 import { TodoCheckbox, TodoLabel, TodoRow } from '../TodoRow';
 
@@ -31,10 +31,10 @@ export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoList
   );
 }
 
-interface SubTodoListItemProps {
+interface SubTodoListItemProps extends Omit<ComponentProps<typeof TodoCheckbox>, 'children'> {
   label: string;
-  isChecked: boolean;
-  onCheckedChange: (checked: boolean) => void;
+  isSelected: boolean;
+  onSelectedChange: (checked: boolean) => void;
   onMorePress: () => void;
   drag?: () => void;
   isActive?: boolean;
@@ -43,17 +43,24 @@ interface SubTodoListItemProps {
 
 SubTodoList.Item = function Item({
   label,
-  isChecked,
-  onCheckedChange,
+  isSelected,
+  onSelectedChange,
   onMorePress,
   drag: itemDrag,
   isActive: itemIsActive,
   isDragDisabled,
+  ...checkboxProps
 }: SubTodoListItemProps) {
   return (
     <TodoRow
-      left={<TodoCheckbox isSelected={isChecked} onSelectedChange={onCheckedChange} />}
-      top={<TodoLabel isChecked={isChecked}>{label}</TodoLabel>}
+      left={
+        <TodoCheckbox
+          {...checkboxProps}
+          isSelected={isSelected}
+          onSelectedChange={onSelectedChange}
+        />
+      }
+      top={<TodoLabel isChecked={isSelected}>{label}</TodoLabel>}
       right={
         <PressableFeedback onPress={onMorePress} hitSlop={8}>
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />

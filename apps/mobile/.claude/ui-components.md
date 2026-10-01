@@ -1,6 +1,6 @@
 # UI 컴포넌트 사용 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+**Version**: 1.0.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Mobile Team
 
 > 컴포넌트 선택 우선순위: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native 기본.
 
@@ -47,6 +47,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | 컴포넌트                                      | 용도                                                                  | 문서                                                   |
 | --------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------ |
 | `Text`, `H1`~`H4`                             | 텍스트, 헤딩                                                          | `src/shared/ui/Text/README.md`                         |
+| `FormField`                                   | RHF Controller와 field 오류의 단일 바인딩 경계                        | `src/shared/ui/FormField/FormField.md`                 |
 | `Button`                                      | 기본 버튼                                                             | `src/shared/ui/Button/Button.md`                       |
 | `KeyboardAdaptiveButton`                      | 키보드 반응 버튼                                                      | `src/shared/ui/Button/Button.md`                       |
 | `TextButton`                                  | 텍스트/링크 버튼                                                      | `src/shared/ui/TextButton/TextButton.md`               |
@@ -77,8 +78,10 @@ import { ScrollView, FlatList, Image } from 'react-native';
 - Shared UI나 HeroUI Native 컴포넌트를 확장할 때는 `ComponentProps<typeof Original>`을 기준으로 한다.
 - wrapper가 직접 구현하는 prop만 `Omit`한다. `className`, `style`, `testID`, 접근성 prop,
   `hitSlop` 같은 원본 확장 지점을 임의로 제거하지 않는다.
-- 제어형 prop 이름은 원본을 유지한다. React Native 입력은 `value/onChangeText`, HeroUI Checkbox는
+- 제어형 prop 이름은 원본을 유지한다. Shared Input/TextArea는 `value/onChange`, HeroUI Checkbox는
   `isSelected/onSelectedChange`, overlay는 `isOpen/onOpenChange`를 사용한다.
+- `onChangeText` 변환은 Shared Input/TextArea 내부의 native TextInput 어댑터 한 곳에서만 한다.
+- 폼 부모는 FormProvider와 제출 Promise를 소유하고, FormField의 children은 value/onChange/onBlur와 해당 fieldState만 소비한다.
 - `Input`과 `TextArea`의 `className`은 바깥 표면, React Native `style`은 실제 `TextInput`에 전달한다.
 - `condition ? <Node /> : undefined`는 condition이 boolean인 JSX 노드에서
   `condition && <Node />`로 쓸 수 있다. 숫자·문자열 조건과 함수 prop에서는 `false` 노출이나 타입

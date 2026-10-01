@@ -1,18 +1,13 @@
 import {
   type ChangeTodoCategoryInput,
   type CreateTodoCategoryInput,
-  type CreateTodoCategoryResponse,
   createTodoCategoryResponseSchema,
   type DeleteTodoCategoryQuery,
-  type DeleteTodoCategoryResponse,
   deleteTodoCategoryResponseSchema,
   type ReorderTodoCategoryInput,
-  type ReorderTodoCategoryResponse,
   reorderTodoCategoryResponseSchema,
-  type TodoCategoryListResponse,
   todoCategoryListResponseSchema,
   type UpdateTodoCategoryInput,
-  type UpdateTodoCategoryResponse,
   updateTodoCategoryResponseSchema,
   updateTodoResponseSchema,
 } from '@aido/validators';
@@ -33,8 +28,8 @@ export class TodoCategoryService {
     this.#httpClient = httpClient;
   }
 
-  getCategories = async (): Promise<Result<TodoCategoriesResult, ApiError>> => {
-    const result = await this.#httpClient.get<TodoCategoryListResponse>('v1/todo-categories');
+  getCategories = async (signal?: AbortSignal): Promise<Result<TodoCategoriesResult, ApiError>> => {
+    const result = await this.#httpClient.get('v1/todo-categories', { signal });
 
     if (!result.ok) {
       return result;
@@ -55,10 +50,7 @@ export class TodoCategoryService {
   createCategory = async (
     input: CreateTodoCategoryInput,
   ): Promise<Result<TodoCategory, ApiError>> => {
-    const result = await this.#httpClient.post<CreateTodoCategoryResponse>(
-      'v1/todo-categories',
-      input,
-    );
+    const result = await this.#httpClient.post('v1/todo-categories', input);
 
     if (!result.ok) {
       return result;
@@ -78,10 +70,7 @@ export class TodoCategoryService {
     id: number,
     input: UpdateTodoCategoryInput,
   ): Promise<Result<TodoCategory, ApiError>> => {
-    const result = await this.#httpClient.patch<UpdateTodoCategoryResponse>(
-      `v1/todo-categories/${id}`,
-      input,
-    );
+    const result = await this.#httpClient.patch(`v1/todo-categories/${id}`, input);
 
     if (!result.ok) {
       return result;
@@ -101,12 +90,9 @@ export class TodoCategoryService {
     id: number,
     query?: DeleteTodoCategoryQuery,
   ): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.delete<DeleteTodoCategoryResponse>(
-      `v1/todo-categories/${id}`,
-      {
-        params: { moveToCategoryId: query?.moveToCategoryId },
-      },
-    );
+    const result = await this.#httpClient.delete(`v1/todo-categories/${id}`, {
+      params: { moveToCategoryId: query?.moveToCategoryId },
+    });
 
     if (!result.ok) {
       return result;
@@ -146,10 +132,7 @@ export class TodoCategoryService {
     id: number,
     input: ReorderTodoCategoryInput,
   ): Promise<Result<TodoCategory, ApiError>> => {
-    const result = await this.#httpClient.patch<ReorderTodoCategoryResponse>(
-      `v1/todo-categories/${id}/reorder`,
-      input,
-    );
+    const result = await this.#httpClient.patch(`v1/todo-categories/${id}/reorder`, input);
 
     if (!result.ok) {
       return result;

@@ -1,14 +1,8 @@
 import {
-  type AiReportListResponse,
-  type AiReportResponse,
   aiReportListResponseSchema,
   aiReportResponseSchema,
-  type ParseMemoResponse,
   parseMemoResponseSchema,
-  type ReportStatusResponse,
   reportStatusResponseSchema,
-  type SuggestionActionResponse,
-  type SuggestionListResponse,
   suggestionActionResponseSchema,
   suggestionListResponseSchema,
 } from '@aido/validators';
@@ -44,8 +38,8 @@ export class AiService {
     this.#logger = logger;
   }
 
-  getReportStatus = async (): Promise<Result<ReportStatus, ApiError>> => {
-    const result = await this.#httpClient.get<ReportStatusResponse>('v1/ai/reports/status');
+  getReportStatus = async (signal?: AbortSignal): Promise<Result<ReportStatus, ApiError>> => {
+    const result = await this.#httpClient.get('v1/ai/reports/status', { signal });
 
     if (!result.ok) {
       return result;
@@ -63,8 +57,12 @@ export class AiService {
     return ok(toReportStatus(parsed.data.status));
   };
 
-  getReports = async (params?: GetAiReportsParams): Promise<Result<AiReport[], ApiError>> => {
-    const result = await this.#httpClient.get<AiReportListResponse>('v1/ai/reports', {
+  getReports = async (
+    params?: GetAiReportsParams,
+    signal?: AbortSignal,
+  ): Promise<Result<AiReport[], ApiError>> => {
+    const result = await this.#httpClient.get('v1/ai/reports', {
+      signal,
       params: { type: params?.type, limit: params?.limit },
     });
 
@@ -84,8 +82,8 @@ export class AiService {
     return ok(parsed.data.reports.map(toAiReport));
   };
 
-  getReportById = async (id: number): Promise<Result<AiReport, ApiError>> => {
-    const result = await this.#httpClient.get<AiReportResponse>(`v1/ai/reports/${id}`);
+  getReportById = async (id: number, signal?: AbortSignal): Promise<Result<AiReport, ApiError>> => {
+    const result = await this.#httpClient.get(`v1/ai/reports/${id}`, { signal });
 
     if (!result.ok) {
       return result;
@@ -103,8 +101,8 @@ export class AiService {
     return ok(toAiReport(parsed.data.report));
   };
 
-  getSuggestions = async (): Promise<Result<AiSuggestion[], ApiError>> => {
-    const result = await this.#httpClient.get<SuggestionListResponse>('v1/ai/suggestions');
+  getSuggestions = async (signal?: AbortSignal): Promise<Result<AiSuggestion[], ApiError>> => {
+    const result = await this.#httpClient.get('v1/ai/suggestions', { signal });
 
     if (!result.ok) {
       return result;
@@ -126,7 +124,7 @@ export class AiService {
     content: string,
     categoryId: number,
   ): Promise<Result<ParsedMemoResult, ApiError>> => {
-    const result = await this.#httpClient.post<ParseMemoResponse>('v1/ai/parse-memo', {
+    const result = await this.#httpClient.post('v1/ai/parse-memo', {
       content,
       categoryId,
     });
@@ -151,10 +149,7 @@ export class AiService {
     suggestionId: number,
     input: AiSuggestionActionInput,
   ): Promise<Result<AiSuggestionActionResult, ApiError>> => {
-    const result = await this.#httpClient.patch<SuggestionActionResponse>(
-      `v1/ai/suggestions/${suggestionId}`,
-      input,
-    );
+    const result = await this.#httpClient.patch(`v1/ai/suggestions/${suggestionId}`, input);
 
     if (!result.ok) {
       return result;

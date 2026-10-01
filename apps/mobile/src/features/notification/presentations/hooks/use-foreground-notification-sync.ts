@@ -22,22 +22,24 @@ export function useForegroundNotificationSync({
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) {
+      if (timerRef.current !== undefined) {
         clearTimeout(timerRef.current);
+        timerRef.current = undefined;
       }
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return useCallback(
     (notification?: Notifications.Notification) => {
       if (!isAuthenticated) {
         return;
       }
-      if (timerRef.current) {
+      if (timerRef.current !== undefined) {
         clearTimeout(timerRef.current);
       }
 
       timerRef.current = setTimeout(() => {
+        timerRef.current = undefined;
         const tasks: Promise<void>[] = [
           queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
           notificationService.syncBadgeCount(),

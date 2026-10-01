@@ -5,5 +5,5 @@
  * 원문 응답을 반환하는 additive app-config API와 혼용하지 않는다.
  */
 export interface JsonFetcher {
-  get(url: string): Promise<unknown>;
+  get(url: string, signal?: AbortSignal): Promise<unknown>;
 }

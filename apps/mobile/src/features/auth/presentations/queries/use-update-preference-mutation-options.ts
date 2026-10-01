@@ -23,11 +23,11 @@ export const useUpdatePreferenceMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async ({ trackAs: _, ...input }: UpdatePreferenceArgs) => {
+    mutationFn: async ({ trackAs: _trackAs, ...input }: UpdatePreferenceArgs) => {
       const result = await authService.updatePreference(input);
       return unwrap(result);
     },
-    onMutate: async ({ trackAs: _, ...input }) => {
+    onMutate: async ({ trackAs: _trackAs, ...input }) => {
       await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEYS.preference() });
 
       const previousData = queryClient.getQueryData<Preference>(AUTH_QUERY_KEYS.preference());

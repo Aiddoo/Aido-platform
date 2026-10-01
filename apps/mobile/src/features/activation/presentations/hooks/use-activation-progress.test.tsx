@@ -8,13 +8,13 @@ jest.mock('@src/bootstrap/providers/auth-provider', () => ({
 }));
 
 jest.mock(
-  '@src/features/feature-discovery/presentations/queries/use-feature-discovery-query-options',
+  '@src/features/feature-discovery/presentations/queries/get-feature-discovery-query-options',
   () => ({
     useFeatureDiscoveryQueryOptions: () => ({ queryKey: ['feature-discovery'] }),
   }),
 );
 
-jest.mock('@src/features/user/presentations/queries/use-get-me-query-options', () => ({
+jest.mock('@src/features/user/presentations/queries/get-me-query-options', () => ({
   useGetMeQueryOptions: () => ({ queryKey: ['me'] }),
 }));
 

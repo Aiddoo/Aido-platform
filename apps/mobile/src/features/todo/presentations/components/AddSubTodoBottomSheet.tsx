@@ -17,8 +17,10 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
+import type { ComponentRef } from 'react';
 import { useRef, useState } from 'react';
-import { Keyboard, type TextInput } from 'react-native';
+import type { TextInput } from 'react-native';
+import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
 
 interface BaseProps {
@@ -50,7 +52,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
     .exhaustive();
 
   const [value, setValue] = useState(defaultValue);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   // 보내는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
   // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
@@ -99,7 +101,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
           autoFocus
           placeholder={tGlobal('todo:subTodo.placeholder')}
           value={value}
-          onChangeText={setValue}
+          onChange={setValue}
           maxLength={200}
           size="medium"
           renderErrorMessage={false}

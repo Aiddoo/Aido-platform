@@ -3,7 +3,7 @@ import { useOverlayState } from '@src/shared/ui';
 import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, InteractionManager, Keyboard } from 'react-native';
+import { AppState, type AppStateStatus, Keyboard } from 'react-native';
 
 import { isStableFeedForeground } from '../state/feature-discovery-auto-open';
 
@@ -11,16 +11,18 @@ export function useStableFeedForeground(): boolean {
   const { status } = useAuth();
   const { hasActiveOverlay } = useOverlayState();
   const [isFocused, setIsFocused] = useState(false);
-  const [appState, setAppState] = useState(AppState.currentState);
+  const [appState, setAppState] = useState<AppStateStatus | null>(
+    AppState.currentState === 'active' ? 'active' : null,
+  );
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(Keyboard.isVisible());
   const [hasPendingDeepLink, setHasPendingDeepLink] = useState(true);
-  const deepLinkReleaseTaskRef = useRef<ReturnType<
-    typeof InteractionManager.runAfterInteractions
-  > | null>(null);
+  const deepLinkReleaseTaskRef = useRef<number | null>(null);
 
-  const releasePendingDeepLinkAfterInteractions = useCallback(() => {
-    deepLinkReleaseTaskRef.current?.cancel();
-    deepLinkReleaseTaskRef.current = InteractionManager.runAfterInteractions(() => {
+  const releasePendingDeepLinkWhenIdle = useCallback(() => {
+    if (deepLinkReleaseTaskRef.current !== null) {
+      cancelIdleCallback(deepLinkReleaseTaskRef.current);
+    }
+    deepLinkReleaseTaskRef.current = requestIdleCallback(() => {
       deepLinkReleaseTaskRef.current = null;
       setHasPendingDeepLink(false);
     });
@@ -62,28 +64,30 @@ export function useStableFeedForeground(): boolean {
         if (mounted) {
           setHasPendingDeepLink(url !== null);
           if (url !== null) {
-            releasePendingDeepLinkAfterInteractions();
+            releasePendingDeepLinkWhenIdle();
           }
         }
       })
       .catch(() => {
         if (mounted) {
           setHasPendingDeepLink(true);
-          releasePendingDeepLinkAfterInteractions();
+          releasePendingDeepLinkWhenIdle();
         }
       });
 
     const subscription = Linking.addEventListener('url', () => {
       setHasPendingDeepLink(true);
-      releasePendingDeepLinkAfterInteractions();
+      releasePendingDeepLinkWhenIdle();
     });
 
     return () => {
       mounted = false;
-      deepLinkReleaseTaskRef.current?.cancel();
+      if (deepLinkReleaseTaskRef.current !== null) {
+        cancelIdleCallback(deepLinkReleaseTaskRef.current);
+      }
       subscription.remove();
     };
-  }, [releasePendingDeepLinkAfterInteractions]);
+  }, [releasePendingDeepLinkWhenIdle]);
 
   return isStableFeedForeground({
     isAuthenticated: status === 'authenticated',

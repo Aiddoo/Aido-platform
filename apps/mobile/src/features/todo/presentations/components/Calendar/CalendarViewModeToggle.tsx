@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import { Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -33,7 +33,9 @@ export const CalendarViewModeToggle = () => {
 
   const activeLayout = itemLayouts[value];
 
-  if (activeLayout) {
+  useLayoutEffect(() => {
+    if (!activeLayout) return;
+
     if (!hasAnimated.current) {
       translateX.value = activeLayout.x;
       indicatorWidth.value = activeLayout.width;
@@ -43,7 +45,7 @@ export const CalendarViewModeToggle = () => {
       translateX.value = withSpring(activeLayout.x, SPRING_CONFIG);
       indicatorWidth.value = withSpring(activeLayout.width, SPRING_CONFIG);
     }
-  }
+  }, [activeLayout, indicatorWidth, showIndicator, translateX]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
     opacity: showIndicator.value,

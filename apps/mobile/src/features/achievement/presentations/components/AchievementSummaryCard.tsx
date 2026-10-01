@@ -1,4 +1,4 @@
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useShareView } from '@src/shared/hooks/useShareView';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';

@@ -12,8 +12,8 @@ export class FeatureDiscoveryService {
     this.#jsonFetcher = jsonFetcher;
   }
 
-  getConfig = async (): Promise<FeatureDiscoveryConfig> => {
-    const response = await this.#jsonFetcher.get('v1/app-config/feature-discovery');
+  getConfig = async (signal?: AbortSignal): Promise<FeatureDiscoveryConfig> => {
+    const response = await this.#jsonFetcher.get('v1/app-config/feature-discovery', signal);
     const parsed = featureDiscoveryResponseSchema.safeParse(response);
     if (!parsed.success) {
       throw new ParseError(

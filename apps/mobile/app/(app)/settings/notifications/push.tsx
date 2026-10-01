@@ -1,8 +1,8 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { unlockPushRegistrationForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { PreferencePolicy } from '@src/features/auth/models/auth.model';
-import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-push-consent-mutation-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
@@ -46,7 +46,7 @@ function PushSettingsForm() {
   const activationService = useActivationService();
   const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
-  const { t } = useTranslation('notification');
+  const { t } = useTranslation(['notification', 'auth']);
 
   return (
     <VStack gap={24}>
@@ -80,7 +80,9 @@ function PushSettingsForm() {
         <SettingsToggle
           label={t('settings.nightPushLabel')}
           description={
-            PreferencePolicy.pushDisabledMessage(preference) ?? t('settings.nightPushDescription')
+            PreferencePolicy.isPushDisabled(preference)
+              ? t('auth:preference.enablePushFirst')
+              : t('settings.nightPushDescription')
           }
           isSelected={preference.nightPushEnabled}
           onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}

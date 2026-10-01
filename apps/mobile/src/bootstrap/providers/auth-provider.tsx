@@ -98,18 +98,27 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       return;
     }
 
+    let cancelled = false;
     const subscription = AppState.addEventListener('change', async (appState) => {
       if (appState !== 'active') {
         return;
       }
       try {
-        applyStatus(await resolveInitialAuthStatus(tokenStore));
+        const initialStatus = await resolveInitialAuthStatus(tokenStore);
+        if (!cancelled && statusRef.current === 'locked') {
+          applyStatus(initialStatus);
+        }
       } catch (error) {
-        fallbackToUnauthenticated(error);
+        if (!cancelled && statusRef.current === 'locked') {
+          fallbackToUnauthenticated(error);
+        }
       }
     });
 
-    return () => subscription.remove();
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
   }, [status, tokenStore, applyStatus, fallbackToUnauthenticated]);
 
   // 세션 만료 확정 → 미인증으로 전환 + 관측 리포팅.

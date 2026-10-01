@@ -32,9 +32,16 @@ const makeData = (...ids: number[]): InfiniteData<NotificationListResult> => ({
 });
 
 describe('notification cache optimistic update', () => {
+  let client: QueryClient;
+  beforeEach(() => {
+    client = new QueryClient();
+  });
+  afterEach(() => {
+    client.clear();
+    jest.useRealTimers();
+  });
   test('모든 필터와 infinite page를 즉시 읽음 처리하고 롤백한다', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
-    const client = new QueryClient();
     const allKey = NOTIFICATION_QUERY_KEYS.list({});
     const unreadKey = NOTIFICATION_QUERY_KEYS.list({ unreadOnly: true });
     const data = makeData(1, 2);
@@ -54,13 +61,10 @@ describe('notification cache optimistic update', () => {
 
     restoreNotificationCache(client, snapshot);
     expect(client.getQueryData<InfiniteData<NotificationListResult>>(allKey)).toEqual(data);
-    client.clear();
-    jest.useRealTimers();
   });
 
   test('단일 미읽음 알림은 모든 필터에서 한 번만 감소하고 unread 목록에서 제거한다', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
-    const client = new QueryClient();
     const allKey = NOTIFICATION_QUERY_KEYS.list({});
     const unreadKey = NOTIFICATION_QUERY_KEYS.list({ unreadOnly: true });
     client.setQueryData(allKey, makeData(1, 2));
@@ -76,12 +80,9 @@ describe('notification cache optimistic update', () => {
     ).toBe(true);
     expect(unread?.pages.flatMap((page) => page.notifications).map((item) => item.id)).toEqual([2]);
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
-    client.clear();
-    jest.useRealTimers();
   });
 
   test('캐시에 이미 읽은 알림을 다시 처리해도 unread count를 중복 감소시키지 않는다', async () => {
-    const client = new QueryClient();
     const allKey = NOTIFICATION_QUERY_KEYS.list({});
     const page = makePage(1);
     const data: InfiniteData<NotificationListResult> = {
@@ -103,6 +104,5 @@ describe('notification cache optimistic update', () => {
     await optimisticallyMarkNotificationsRead(client, 1);
 
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
-    client.clear();
   });
 });

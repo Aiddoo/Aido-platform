@@ -1,11 +1,10 @@
 import { MemoPolicy } from '@src/features/memo/models/memo.model';
 import { MemoList } from '@src/features/memo/presentations/components/MemoList';
 import { MEMO_QUERY_KEYS } from '@src/features/memo/presentations/constants/memo-query-keys.constant';
-import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/presentations/queries/use-get-memo-resource-limit-query-options';
+import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/presentations/queries/get-memo-resource-limit-query-options';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
-import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -25,11 +24,8 @@ import { PressableFeedback } from 'heroui-native';
 import { Suspense, useCallback, useRef } from 'react';
 import { RefreshControl } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MemoScreen() {
-  const { bottom: safeBottom } = useSafeAreaInsets();
-  const tabBarHeight = useTabBarHeight();
   const queryClient = useQueryClient();
   const scrollRef = useRef<Animated.ScrollView>(null);
 
@@ -50,8 +46,6 @@ export default function MemoScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  const bottomPadding = Math.max(tabBarHeight, safeBottom + 60);
-
   return (
     <Box className="flex-1">
       <QueryErrorBoundary fallback={(props) => <Header.Error {...props} />}>
@@ -65,24 +59,26 @@ export default function MemoScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: bottomPadding,
+          paddingBottom: 60,
         }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={onScroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
-          <Suspense fallback={<MemoList.Loading />}>
-            <MemoList />
-          </Suspense>
-        </QueryErrorBoundary>
+        <Box px={12}>
+          <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
+            <Suspense fallback={<MemoList.Loading />}>
+              <MemoList />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
       </Animated.ScrollView>
 
       <ScrollProgressWidget
         progress={progress}
         onScrollToTop={handleScrollToTop}
-        bottomOffset={tabBarHeight + safeBottom + 16}
+        bottomOffset={16}
       />
     </Box>
   );
@@ -111,6 +107,8 @@ function Header() {
       </Box>
       <PressableFeedback
         onPress={handleCreate}
+        accessibilityRole="button"
+        accessibilityLabel={t('titles.create')}
         style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
         className={cn(
           'items-center justify-center rounded-full',
