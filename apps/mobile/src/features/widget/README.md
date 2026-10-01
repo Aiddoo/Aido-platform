@@ -27,7 +27,7 @@ SDK의 cold launch 누락은 버전 고정된 최소 Glance patch로 보완한�
 | Measure                          | 1.9.0                                                  | 1.10.0                                                                 |
 | -------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------- |
 | Non-test TypeScript source files | 22                                                     | 14                                                                     |
-| Non-test TypeScript source lines | 1,685                                                  | 1,026                                                                  |
+| Non-test TypeScript source lines | 1,685                                                  | 1,033                                                                  |
 | Android widget implementation    | Separate headless renderer, MMKV snapshot, WorkManager | Expo Widgets registry, shared snapshot props, platform renderer        |
 | Android layouts                  | Legacy provider placements                             | Existing component/ID preserved; summary 2×2, list 4×2, large list 4×4 |
 | iOS widget identity              | `AidoTodayList`, existing App Group                    | Preserved                                                              |

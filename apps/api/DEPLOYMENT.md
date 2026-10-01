@@ -201,6 +201,16 @@ docker logs --tail 100 aido-prod-api                     # 원인 확인
 
 ### 3.7 `develop` → `main` 릴리스 브랜치 정합
 
+앱 출시 전 `pnpm --filter @aido/mobile check:release-version`으로 package/Expo 버전 일치,
+EAS remote/autoIncrement와 fingerprint 정책을 확인한다. 모바일 스토어 제출은 서버 main 배포와 별개다.
+
+`APP_VERSION_CHECK_ENABLED`의 기본값은 `false`다. 기존 환경변수만으로 새 서버를 실행할 수 있다.
+스토어 버전 확인을 활성화할 때는 `APP_VERSION_CHECK_IOS_LATEST_VERSION`과
+`APP_VERSION_CHECK_ANDROID_LATEST_VERSION`에 각 스토어에 실제 공개된 `MAJOR.MINOR.PATCH`를 설정한다.
+심사 중인 앱 버전을 미리 설정하지 않는다. 버전 확인은 사용자 요청의 안내이며 기존 앱의 API 접근을 막지 않는다.
+현재 설정은 서버 시작 시 읽으므로 운영 `.env.docker.prod` 변경은 다음 정상 배포/재기동부터 반영된다.
+앱 출시 버전은 package.json, 빌드 번호는 EAS, 스토어 공개 버전은 서버 운영 설정이 각각 소유한다.
+
 기능 PR과 릴리스 PR의 merge 방식을 구분한다.
 
 | PR 방향             | merge 방식                     | 이유                                                                     |

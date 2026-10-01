@@ -10,6 +10,9 @@ import { AuthGateLayout } from './auth-gate-layout';
 jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() }));
 jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
+jest.mock('@src/shared/providers/theme-provider', () => ({
+  useTheme: () => ({ resolvedTheme: 'light' }),
+}));
 jest.mock('uniwind', () => ({ useResolveClassNames: () => ({ backgroundColor: '#ffffff' }) }));
 
 type AuthState = ReturnType<typeof useAuth>;

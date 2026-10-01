@@ -1,11 +1,14 @@
 import { useUserIdentity } from '@src/bootstrap/hooks/use-user-identity';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
+import { useTheme } from '@src/shared/providers/theme-provider';
 import { Stack } from 'expo-router';
+import { Platform } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 export const AuthGateLayout = () => {
   const { status } = useAuth();
+  const { resolvedTheme } = useTheme();
   useScreenTracking();
   useUserIdentity();
   const { backgroundColor } = useResolveClassNames('bg-white');
@@ -20,6 +23,8 @@ export const AuthGateLayout = () => {
     <Stack
       screenOptions={{
         headerShown: false,
+        statusBarStyle:
+          Platform.OS === 'android' ? (resolvedTheme === 'dark' ? 'light' : 'dark') : undefined,
         animation: 'fade',
         animationDuration: 250,
         animationTypeForReplace: 'pop',

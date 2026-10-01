@@ -67,6 +67,9 @@ AuthProvider
 - 시스템 테마를 따르고 뉴트럴 배경·타이포 위계·브랜드 오렌지 포인트를 유지한다.
 - Android 시스템 폰트와 Glance 제약을 따른다. 앱의 custom font와 동일 렌더링을 보장하지 않는다.
 - iOS의 고정 row 슬롯은 기존 native renderer의 배열 child 제한 때문에 유지한다.
+- Android Glance Column은 직접 child를 최대 10개만 표시한다. header·progress·Spacer를 포함해
+  이 제한을 지키고, 큰 목록은 4행씩 두 Column으로 구성한다. 최대 8행과 각 Column의 child 수를
+  serialized widget layout 회귀 테스트로 확인한다.
 
 ## 앱 열기와 compatibility patch
 
@@ -115,6 +118,7 @@ pnpm --filter @aido/mobile test --runInBand src/features/widget
 - [Expo SDK 58](https://expo.dev/changelog/sdk-58-beta)
 - [Expo Widgets](https://docs.expo.dev/versions/v58.0.0/sdk/widgets/)
 - [SDK 구현](https://github.com/expo/expo/tree/main/packages/expo-widgets)
+- [Android Glance Column 제한](https://developer.android.com/reference/kotlin/androidx/glance/layout/Column.composable)
 - [Android Glance interaction](https://developer.android.com/develop/ui/compose/glance/user-interaction)
 - [Android 주기 갱신](https://developer.android.com/develop/ui/views/appwidgets/advanced)
 
@@ -156,3 +160,18 @@ SDK RemoteViews의 제목·개수·목록이 현재 TypeScript mapper fixture와
 3개 갱신, 손상·잘못된 타입 fallback, 50회 동시 계정 쓰기 경합을 통과했다. 이관 전후 이전
 MMKV data·CRC의 SHA-256이 동일했다. 결과 JSON과 native instrumentation 로그는 실행 시
 출력되는 임시 artifact 경로에 남는다. 실제 OEM launcher·release 빌드의 시각 검증은 별도로 수행한다.
+
+### 2026-10-02 실제 홈 화면 검증
+
+- iOS 27 Simulator: WidgetKit picker에서 small·medium·large를 실제 홈에 추가했다. 오늘 날짜,
+  4건의 목록·완료 표시·진행률이 앱과 일치했다. 완료 1/4 → 2/4 → 1/4 변경을 large·medium에서
+  확인하고, small도 원복된 1/4·25%를 표시했다. 위젯 탭으로 현재 앱을 열었다.
+- Android API 36.1 Pixel Launcher: 기존 native QA host ID와 MMKV data·CRC를 유지한 상태에서
+  APK를 업데이트했다. 실제 picker에서 2×2·4×2·4×4를 추가하고 날짜 만료 안내·loggedOut·
+  로그인 후 목록과 진행률을 확인했다. 종료된 앱의 Activity를 위젯 탭으로 실행했다.
+- Android 4×4 시각 검증에서 Glance child 제한에 따른 목록 누락을 발견하고 수정했다.
+  SDK snapshot을 임시 QA fixture로 갱신해 실제 8행 전체·완료 표시·빈 안내도 확인하고 원래
+  snapshot을 복원했다. 이 과정은 계정·API 데이터·기존 MMKV를 변경하지 않는다.
+
+이는 development native build의 검증이다. 실제 iOS 이전 앱 binary 업그레이드, OEM launcher,
+release 빌드, 시스템 큰 글꼴·dark 테마 및 정확한 자정 OS 갱신을 통과했다고 주장하지 않는다.

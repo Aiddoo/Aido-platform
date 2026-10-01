@@ -90,3 +90,5 @@ backups/
 
 # Vitest
 .vitest/
+
+/docs/releases/1.10.0.md

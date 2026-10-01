@@ -194,21 +194,28 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
         modifiers={[fillMaxWidth(), height(4)]}
       />
       <Spacer modifiers={[height(rowSpacing)]} />
-      {renderRow(todos[0])}
-      {todos[1] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
-      {renderRow(todos[1])}
-      {todos[2] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
-      {renderRow(todos[2])}
-      {todos[3] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
-      {renderRow(todos[3])}
-      {todos[4] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
-      {renderRow(todos[4])}
-      {todos[5] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
-      {renderRow(todos[5])}
-      {todos[6] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
-      {renderRow(todos[6])}
-      {todos[7] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
-      {renderRow(todos[7])}
+      {/* Glance truncates a Column after ten direct children. */}
+      <Column modifiers={[fillMaxWidth()]}>
+        {renderRow(todos[0])}
+        {todos[1] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
+        {renderRow(todos[1])}
+        {todos[2] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
+        {renderRow(todos[2])}
+        {todos[3] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
+        {renderRow(todos[3])}
+      </Column>
+      {todos[4] ? (
+        <Column modifiers={[fillMaxWidth()]}>
+          <Spacer modifiers={[height(rowSpacing)]} />
+          {renderRow(todos[4])}
+          {todos[5] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
+          {renderRow(todos[5])}
+          {todos[6] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
+          {renderRow(todos[6])}
+          {todos[7] ? <Spacer modifiers={[height(rowSpacing)]} /> : null}
+          {renderRow(todos[7])}
+        </Column>
+      ) : null}
       {overflowCount > 0 ? (
         <Row horizontalArrangement="end" modifiers={[fillMaxWidth()]}>
           <Text color={palette.muted} style={{ fontSize: 11 }}>

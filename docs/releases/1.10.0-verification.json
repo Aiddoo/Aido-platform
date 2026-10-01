@@ -354,6 +354,119 @@
       "totalCases": 3686,
       "allPassed": true,
       "warning": "Existing Prisma relation queries can emit pg concurrent-query deprecation; no test failures."
+    },
+    "finalDependencyVerification": {
+      "startedAt": "2026-10-02T01:45:16.713196+09:00",
+      "headAtStart": "f088edd6e748e6f2a7c9d2967f898c73a11b8c32",
+      "node": "v24.21.0",
+      "seed": 42,
+      "isolatedTestContainers": true,
+      "mainQaDatabaseTouched": false,
+      "dependencyProfile": {
+        "pg-boss": "12.27.0",
+        "@nestjs/core": "12.1.2",
+        "@prisma/client": "7.10.0",
+        "zod": "4.3.6"
+      },
+      "completedAt": "2026-10-02T01:51:05.027021+09:00",
+      "headAtCompletion": "f088edd6e748e6f2a7c9d2967f898c73a11b8c32",
+      "allPassed": true,
+      "totalTestFiles": 508,
+      "totalTestCases": 3686,
+      "runs": [
+        {
+          "project": "unit",
+          "seed": 42,
+          "scope": "final-dependency-baseline",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "unit",
+            "--sequence.shuffle",
+            "--sequence.seed=42"
+          ],
+          "exitCode": 0,
+          "log": "aido-api-verify-unit-42-final-dependency-baseline.log",
+          "summary": [
+            "Test Files  434 passed (434)",
+            "Tests  2800 passed (2800)",
+            "Duration  20.19s (import 62%, transform 21%, tests 11%, setup 5%, worker 2%)"
+          ],
+          "testFilesPassed": 434,
+          "testCasesPassed": 2800,
+          "vitestDurationSeconds": 20.19,
+          "wallSeconds": 21.416
+        },
+        {
+          "project": "integration",
+          "seed": 42,
+          "scope": "final-dependency-baseline",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "integration",
+            "--sequence.shuffle",
+            "--sequence.seed=42"
+          ],
+          "exitCode": 0,
+          "log": "aido-api-verify-integration-42-final-dependency-baseline.log",
+          "summary": [
+            "Test Files  42 passed (42)",
+            "Tests  425 passed (425)",
+            "Duration  197.77s (tests 86%, import 11%, transform 3%)"
+          ],
+          "testFilesPassed": 42,
+          "testCasesPassed": 425,
+          "vitestDurationSeconds": 197.77,
+          "wallSeconds": 199.982
+        },
+        {
+          "project": "e2e",
+          "seed": 42,
+          "scope": "final-dependency-baseline",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "e2e",
+            "--sequence.shuffle",
+            "--sequence.seed=42"
+          ],
+          "exitCode": 0,
+          "log": "aido-api-verify-e2e-42-final-dependency-baseline.log",
+          "summary": [
+            "Test Files  32 passed (32)",
+            "Tests  461 passed (461)",
+            "Duration  300.49s (tests 82%, import 15%, transform 4%)"
+          ],
+          "testFilesPassed": 32,
+          "testCasesPassed": 461,
+          "vitestDurationSeconds": 300.49,
+          "wallSeconds": 303.423
+        }
+      ],
+      "scope": "Full API unit/integration/e2e after final within-range transitive security refresh, scoped Prisma mysql2 patch and package-local TypeScript 5.9.3 resolution. Seed 42; independent test containers; no source changes.",
+      "knownWarnings": [
+        "pg 8.22 concurrent-client-query deprecation from Prisma relation queries remains observable; no suppression."
+      ],
+      "excludedClaims": [
+        "No real released iOS/Android binary compatibility execution is claimed by these tests.",
+        "No external OAuth, RevenueCat, push delivery or paid AI/KMA service coverage is claimed."
+      ]
     }
   },
   "releasedContracts": [
@@ -446,7 +559,28 @@
     "runtimeConfiguration": "local development/mock, production-stage artifact",
     "health": "database and PostgreSQL queues up",
     "sigtermExitCode": 0,
-    "excluded": ["Prisma CLI", "PGlite", "API source", "mobile source", "tests", "env files"]
+    "excluded": ["Prisma CLI", "PGlite", "API source", "mobile source", "tests", "env files"],
+    "finalDependencyRuntimeBytes": 157378215,
+    "finalDependencyImage": "sha256:40d626628a31cfb5e3a36255bf712b161a7b75e4bcb6916fab7198149e283444",
+    "finalDependencyMigrationBytes": 216313352,
+    "finalDependencyVerification": {
+      "productionBuildExitCode": 0,
+      "migrationBuildExitCode": 0,
+      "uid": 1001,
+      "caReadable": true,
+      "prismaGeneratedImport": true,
+      "prismaCliAndPgliteExcluded": true,
+      "databaseAndQueueHealthHttp": 200,
+      "sigtermExitCode": 0,
+      "migrationDeployExitCode": 0,
+      "pendingBusinessMigrations": 0,
+      "logs": [
+        "aido-final-dependency-docker-production.log",
+        "aido-final-dependency-docker-migrate.log",
+        "aido-final-docker-inspection-corrected.log",
+        "aido-final-dependency-migrate-deploy.log"
+      ]
+    }
   },
   "productionModuleCycles": {
     "api": 0,
@@ -454,20 +588,53 @@
     "excluded": "tests/assets/generated Prisma SDK"
   },
   "pending": [
-    "iOS remaining routes",
-    "Android full UI alternative input method",
-    "old iOS binary QA",
-    "live vendor sandbox QA",
-    "final stack tip GitHub CI"
+    "unexercised routes and live vendor sandbox QA",
+    "old iOS binary QA (no artifact found in scoped local search)",
+    "final stack tip GitHub CI and authorized develop/main merge/deployment"
   ],
   "mobile": {
-    "suites": 155,
-    "cases": 1321,
-    "durationSeconds": 20.998,
+    "suites": 156,
+    "cases": 1324,
+    "durationSeconds": 22.211,
     "exitCode": 0,
     "openHandleWarning": false,
-    "log": "aido-client-final-mobile-release.log",
-    "productionCycles": 0
+    "log": "aido-widget-home-final-full-test.log",
+    "productionCycles": 0,
+    "finalDependencyVerification": {
+      "verifiedAt": "2026-10-02T01:46:33.302208+09:00",
+      "scope": "latest source after Android statusbar platform guard, Expo symbols install and settled compatible transitive dependency lock refresh",
+      "mobileTests": {
+        "suitesPassed": 155,
+        "suitesTotal": 155,
+        "casesPassed": 1321,
+        "casesTotal": 1321,
+        "seconds": 51.808,
+        "exitCode": 0,
+        "openHandleWarning": false,
+        "log": "aido-mobile-final-dependency-verification.log"
+      },
+      "sourceCycles": {
+        "count": 0,
+        "log": "aido-mobile-final-dependency-cycles.json"
+      },
+      "static": {
+        "lint": {
+          "exitCode": 0,
+          "log": "aido-mobile-final-dependency-lint.log"
+        },
+        "formatCheck": {
+          "exitCode": 0,
+          "log": "aido-mobile-final-dependency-format.log"
+        },
+        "typecheck": {
+          "exitCode": 0,
+          "tasks": 6,
+          "log": "aido-mobile-final-dependency-types.log"
+        }
+      },
+      "speedClaim": "No comparison claim: transforms and dependency/cache conditions differ",
+      "ui": "No device UI or Metro control during this verification"
+    }
   },
   "recurringChecklistRegression": {
     "problem": "Memo batch conversion accepted recurring checklist items but discarded them, deleting the original memo after creating empty checklists.",
@@ -599,7 +766,10 @@
       "native installed version row",
       "disabled config manual version failure feedback",
       "notification/reminder settings navigation",
-      "friend list/received/sent empty states and submitted empty search"
+      "friend list/received/sent empty states and submitted empty search",
+      "subtodo add/complete/undo 0/1 -> 1/1 -> 0/1",
+      "actual manual version tap: one disabled-policy fallback toast, no crash or Store launch",
+      "software keyboard visibly shown in comment field"
     ],
     "notValidated": [
       "premium provider success",
@@ -615,7 +785,9 @@
     "format": "pass",
     "typecheck": "pass",
     "mobileConventions": "pass",
-    "turboSeconds": 9.933
+    "turboSeconds": 9.933,
+    "finalDependencyCheckLog": "aido-final-dependency-check.log",
+    "finalDependencyTurboSeconds": 9.93
   },
   "stackPullRequests": [
     {
@@ -638,5 +810,204 @@
       "number": 825,
       "url": "https://github.com/Aiddoo/Aido-platform/pull/825"
     }
-  ]
+  ],
+  "androidUi": {
+    "device": "emulator-5554",
+    "platform": "Android API36.1",
+    "startedAt": "2026-10-02T01:00:45+09:00",
+    "method": "Android SDK ADB input + UIAutomator; no HTTP/JS navigation; existing app data retained",
+    "cases": [
+      {
+        "flow": "Email login and native tabs",
+        "status": "PASS after fix",
+        "evidence": "Actual UI login reached protected tabs; missing expo-symbols was fixed through official Expo install/rebuild; existing login survived installation"
+      },
+      {
+        "flow": "Todo create",
+        "status": "PASS",
+        "evidence": "QA Android Todo input submitted, Feed row appeared"
+      },
+      {
+        "flow": "Todo complete",
+        "status": "PASS",
+        "evidence": "Actual checkbox selected and title dimmed on Feed screenshot"
+      },
+      {
+        "flow": "SubTodo create and complete",
+        "status": "PASS",
+        "evidence": "QA Android SubTodo row created; 0/1 became 1/1 and checkbox selected"
+      },
+      {
+        "flow": "Todo edit",
+        "status": "PASS",
+        "evidence": "Edit action opened form, title changed, Updated your to-do toast shown; Feed shows QA Android Todo edited with retained 1/1"
+      },
+      {
+        "flow": "Memo create and back autosave",
+        "status": "PASS",
+        "evidence": "New Memo field entered, header Go back saved and list opened detail"
+      },
+      {
+        "flow": "Memo edit and immediate reopen cache",
+        "status": "PASS",
+        "evidence": "Changed draft to edited text, back saved, immediate detail reopened latest exact value"
+      },
+      {
+        "flow": "Memo conversion edited title",
+        "status": "PASS",
+        "evidence": "Form title changed to QA Android converted title; Feed exact title and single conversion success toast appeared"
+      },
+      {
+        "flow": "Theme light/dark/system",
+        "status": "PASS after fix",
+        "evidence": "Body colors and selection readable; discovered Android default light status bar over light background, Stack style now resolved-theme based; light black icons, dark white icons, system restored and screenshot verified"
+      },
+      {
+        "flow": "Language Korean/English/system",
+        "status": "PASS",
+        "evidence": "Radio selection translated header to Korean, English switched, System default restored"
+      },
+      {
+        "flow": "Notification settings",
+        "status": "PASS read only",
+        "evidence": "Push/Weather On and reminder times displayed; no remote delivery assertion and settings retained"
+      },
+      {
+        "flow": "Friend search",
+        "status": "PASS",
+        "evidence": "Search entered QA no-match query, no-results state appeared; no request sent"
+      },
+      {
+        "flow": "Category add and subscription eligibility",
+        "status": "PASS policy guard",
+        "evidence": "Category input and submit accessible, Basic account existing 3 categories rejected 4th with Premium Feature dialog; no purchase"
+      },
+      {
+        "flow": "Installed version row",
+        "status": "PASS",
+        "evidence": "My Account displays Version 1.10.0"
+      },
+      {
+        "flow": "Manual version check",
+        "status": "PASS disabled-policy fallback",
+        "evidence": "Actual Version row clicked. Current version 1.10.0 retained; one checkFailed toast TextView displayed; My Account remains accessible, no crash, no double toast, no Store launch. Policy-enabled latest/updateRequired/Store branches not exercised."
+      }
+    ],
+    "credentials": "Not included",
+    "screenshots": "Private temp only, not included",
+    "plannedFlows": [
+      "Authenticated startup and Feed",
+      "Todo create/edit/complete",
+      "SubTodo add/complete",
+      "Memo create/autosave/edit/reopen cache",
+      "Memo convert with edited title",
+      "Category add",
+      "Theme light/dark/system",
+      "Language English/Korean/system",
+      "Friend search without sending requests",
+      "Notification preferences and permission status",
+      "Installed version row/manual disabled policy"
+    ],
+    "limitations": [
+      "No external OAuth, purchase, live push, AI parsing, account deletion, widget placement or policy-enabled production store update assertion",
+      "Actual Android API36.1 emulator only; physical OEM device not covered",
+      "App data retained; emulator-5556 untouched; QA fixtures only; no friend requests"
+    ],
+    "completedAt": "2026-10-02T01:33:42.978707+09:00",
+    "validation": {
+      "authRoutes": "1 suite / 7 cases passed, 4.642s, normal exit 0",
+      "plainMobileTypecheck": "passed",
+      "rootLint": "passed",
+      "rootFormatCheck": "passed",
+      "rootTypecheck": "6 successful tasks, 5 cached; 5.667s",
+      "platformCompatibility": "Stack statusBarStyle only Android; iOS original UIViewControllerBasedStatusBarAppearance=NO preserved"
+    },
+    "manualCheckAt": "2026-10-02T01:43:19.530149+09:00"
+  },
+  "dependencyAudit": {
+    "command": "pnpm audit --prod --json",
+    "before": {
+      "high": 22,
+      "moderate": 16,
+      "low": 6,
+      "critical": 0,
+      "advisories": 44
+    },
+    "after": {
+      "info": 0,
+      "low": 1,
+      "moderate": 1,
+      "high": 1,
+      "critical": 0
+    },
+    "remainingAdvisories": [
+      {
+        "package": "decode-uri-component",
+        "severity": "moderate",
+        "url": "https://github.com/advisories/GHSA-vcc3-ghjq-m6fr",
+        "paths": ["apps__mobile>expo-router>query-string>decode-uri-component"]
+      },
+      {
+        "package": "@grpc/grpc-js",
+        "severity": "high",
+        "url": "https://github.com/advisories/GHSA-m9gg-hp2v-232j",
+        "paths": [
+          "apps__mobile>@react-native-firebase/app>firebase>@firebase/firestore>@grpc/grpc-js"
+        ]
+      },
+      {
+        "package": "@grpc/grpc-js",
+        "severity": "low",
+        "url": "https://github.com/advisories/GHSA-f596-whhp-79r4",
+        "paths": [
+          "apps__mobile>@react-native-firebase/app>firebase>@firebase/firestore>@grpc/grpc-js"
+        ]
+      }
+    ],
+    "exceptions": "Decoder0.5 breaks callable CJS parent contract; Firestore Node grpc outside parent range, native Analytics only; no forced override or audit suppression",
+    "strictFrozenInstallExitCode": 0
+  },
+  "widgetFinalUi": {
+    "ios": [
+      "small/medium/large actual Home placement",
+      "date and list",
+      "completion 1/4 -> 2/4 -> 1/4 restored",
+      "large tap to Feed"
+    ],
+    "android": [
+      "summary/list/large actual Pixel Launcher placement",
+      "all 8 rows including completed items",
+      "medium overflow and summary count",
+      "empty state fixture",
+      "original snapshot restored",
+      "cold tap launches Activity",
+      "old host IDs and legacy MMKV hash preserved"
+    ],
+    "regression": "Glance Column <=10 direct children; nested groups preserve rows",
+    "newRegressionCases": 3,
+    "productionFiles": 14,
+    "productionLines": 1033,
+    "limitations": [
+      "old iOS binary upgrade",
+      "physical OEM launcher",
+      "release builds",
+      "widget dark and large-font UI",
+      "exact OS midnight refresh"
+    ]
+  },
+  "environmentSetup": {
+    "newRequiredKeys": [],
+    "optionalKeys": [
+      "APP_VERSION_CHECK_ENABLED",
+      "APP_VERSION_CHECK_IOS_LATEST_VERSION",
+      "APP_VERSION_CHECK_ANDROID_LATEST_VERSION"
+    ],
+    "enabled": false,
+    "localAndSshExistingValuesPreserved": true,
+    "secretFilesIgnored": true,
+    "secretFileMode": "0600",
+    "restartBeforeMerge": false,
+    "storeSubmission": "user owns mobile1.10.0 submission",
+    "releaseVersionCheck": "PASS: package/Expo version, EAS remote/autoIncrement, fingerprint"
+  }
 }

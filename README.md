@@ -149,4 +149,4 @@ pnpm dev
 
 MIT
 
-1.10.0 변경과 검증 현황은 [릴리스 작업 기록](docs/releases/1.10.0.md)과 [클라이언트 Before/After](apps/mobile/docs/releases/1.10.0-client.md)를 참고하세요.
+1.10.0 변경과 검증 현황은 [클라이언트 Before/After](apps/mobile/docs/releases/1.10.0-client.md)와 [검증 기록](docs/releases/1.10.0-verification.json)을 참고하세요.
