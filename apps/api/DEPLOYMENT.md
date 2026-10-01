@@ -201,8 +201,8 @@ docker logs --tail 100 aido-prod-api                     # 원인 확인
 
 ### 3.7 `develop` → `main` 릴리스 브랜치 정합
 
-앱 출시 전 `pnpm --filter @aido/mobile check:release-version`으로 package/Expo 버전 일치,
-EAS remote/autoIncrement와 fingerprint 정책을 확인한다. 모바일 스토어 제출은 서버 main 배포와 별개다.
+앱 출시 버전은 package.json을 Expo 설정이 직접 참조한다. EAS remote/autoIncrement와
+fingerprint 정책을 유지하며 모바일 스토어 제출은 서버 main 배포와 별개다.
 
 `APP_VERSION_CHECK_ENABLED`의 기본값은 `false`다. 기존 환경변수만으로 새 서버를 실행할 수 있다.
 스토어 버전 확인을 활성화할 때는 `APP_VERSION_CHECK_IOS_LATEST_VERSION`과

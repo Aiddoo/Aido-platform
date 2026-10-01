@@ -1008,6 +1008,11 @@
     "secretFileMode": "0600",
     "restartBeforeMerge": false,
     "storeSubmission": "user owns mobile1.10.0 submission",
-    "releaseVersionCheck": "PASS: package/Expo version, EAS remote/autoIncrement, fingerprint"
+    "versionManagement": {
+      "appVersionSource": "mobile package.json imported by Expo config",
+      "buildNumbers": "EAS remote + production autoIncrement",
+      "otaCompatibility": "fingerprint",
+      "customReleaseVersionScript": false
+    }
   }
 }

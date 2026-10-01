@@ -19,7 +19,6 @@
     "check": "pnpm lint && pnpm format:check && pnpm check:conventions",
     "check:conventions": "node scripts/check-mobile-conventions.mjs",
     "check:release-assets": "node scripts/check-growth-release-assets.mjs",
-    "check:release-version": "node scripts/check-release-version.mjs",
     "clean": "rm -rf dist .expo android ios node_modules/.cache",
     "dev": "expo start",
     "dev:android": "pnpm adb:reverse || true && expo start --android",
