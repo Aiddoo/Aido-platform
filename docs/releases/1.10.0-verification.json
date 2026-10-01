@@ -1,0 +1,620 @@
+{
+  "startedAt": "2026-10-01T19:53:29+09:00",
+  "scope": "local verification; external providers and store release not verified",
+  "baselineCommit": "c1c58408",
+  "api": {
+    "pgBoss": "12.27.0",
+    "node": "24.21.0",
+    "seedBaseline": 42,
+    "priorBroadMatrixPgBoss": "12.35.1",
+    "runs": {
+      "unit-final-baseline": [
+        {
+          "project": "unit",
+          "seed": 42,
+          "scope": "final-baseline",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "unit",
+            "--sequence.shuffle",
+            "--sequence.seed=42"
+          ],
+          "seconds": 20.45,
+          "exitCode": 0,
+          "log": "aido-api-verify-unit-42-final-baseline.log",
+          "summary": [
+            "Test Files  434 passed (434)",
+            "Tests  2800 passed (2800)",
+            "Duration  19.46s (import 61%, transform 21%, tests 11%, setup 5%, worker 2%)"
+          ]
+        }
+      ],
+      "integration-final-baseline": [
+        {
+          "project": "integration",
+          "seed": 42,
+          "scope": "final-baseline",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "integration",
+            "--sequence.shuffle",
+            "--sequence.seed=42"
+          ],
+          "seconds": 170.531,
+          "exitCode": 0,
+          "log": "aido-api-verify-integration-42-final-baseline.log",
+          "summary": [
+            "Test Files  42 passed (42)",
+            "Tests  425 passed (425)",
+            "Duration  168.72s (tests 87%, import 10%, transform 3%)"
+          ]
+        }
+      ],
+      "e2e-final-baseline": [
+        {
+          "project": "e2e",
+          "seed": 42,
+          "scope": "final-baseline",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "e2e",
+            "--sequence.shuffle",
+            "--sequence.seed=42"
+          ],
+          "seconds": 287.167,
+          "exitCode": 0,
+          "log": "aido-api-verify-e2e-42-final-baseline.log",
+          "summary": [
+            "Test Files  32 passed (32)",
+            "Tests  460 passed (460)",
+            "Duration  284.22s (tests 83%, import 14%, transform 3%)"
+          ]
+        }
+      ],
+      "integration-final-critical": [
+        {
+          "project": "integration",
+          "seed": 1001,
+          "scope": "final-critical",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "integration",
+            "--sequence.shuffle",
+            "--sequence.seed=1001",
+            "test/integration/job-runtime-postgres.integration-spec.ts",
+            "test/integration/push-delivery-outbox.integration-spec.ts",
+            "test/integration/mutation-lock-concurrency.integration-spec.ts"
+          ],
+          "seconds": 39.442,
+          "exitCode": 0,
+          "log": "aido-api-verify-integration-1001-final-critical.log",
+          "summary": [
+            "Test Files  3 passed (3)",
+            "Tests  39 passed (39)",
+            "Duration  38.33s (tests 90%, transform 5%, import 5%)"
+          ]
+        },
+        {
+          "project": "integration",
+          "seed": 1002,
+          "scope": "final-critical",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "integration",
+            "--sequence.shuffle",
+            "--sequence.seed=1002",
+            "test/integration/job-runtime-postgres.integration-spec.ts",
+            "test/integration/push-delivery-outbox.integration-spec.ts",
+            "test/integration/mutation-lock-concurrency.integration-spec.ts"
+          ],
+          "seconds": 37.585,
+          "exitCode": 0,
+          "log": "aido-api-verify-integration-1002-final-critical.log",
+          "summary": [
+            "Test Files  3 passed (3)",
+            "Tests  39 passed (39)",
+            "Duration  36.81s (tests 91%, transform 5%, import 4%)"
+          ]
+        },
+        {
+          "project": "integration",
+          "seed": 1003,
+          "scope": "final-critical",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "integration",
+            "--sequence.shuffle",
+            "--sequence.seed=1003",
+            "test/integration/job-runtime-postgres.integration-spec.ts",
+            "test/integration/push-delivery-outbox.integration-spec.ts",
+            "test/integration/mutation-lock-concurrency.integration-spec.ts"
+          ],
+          "seconds": 43.626,
+          "exitCode": 0,
+          "log": "aido-api-verify-integration-1003-final-critical.log",
+          "summary": [
+            "Test Files  3 passed (3)",
+            "Tests  39 passed (39)",
+            "Duration  42.53s (tests 89%, import 6%, transform 5%)"
+          ]
+        }
+      ],
+      "e2e-final-legacy": [
+        {
+          "project": "e2e",
+          "seed": 101,
+          "scope": "final-legacy",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "e2e",
+            "--sequence.shuffle",
+            "--sequence.seed=101",
+            "test/e2e/legacy-client-compatibility.e2e-spec.ts"
+          ],
+          "seconds": 18.533,
+          "exitCode": 0,
+          "log": "aido-api-verify-e2e-101-final-legacy.log",
+          "summary": [
+            "Test Files  1 passed (1)",
+            "Tests  4 passed (4)",
+            "Duration  17.42s (transform 49%, tests 31%, import 19%)"
+          ]
+        },
+        {
+          "project": "e2e",
+          "seed": 202,
+          "scope": "final-legacy",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "e2e",
+            "--sequence.shuffle",
+            "--sequence.seed=202",
+            "test/e2e/legacy-client-compatibility.e2e-spec.ts"
+          ],
+          "seconds": 18.425,
+          "exitCode": 0,
+          "log": "aido-api-verify-e2e-202-final-legacy.log",
+          "summary": [
+            "Test Files  1 passed (1)",
+            "Tests  4 passed (4)",
+            "Duration  17.41s (transform 50%, tests 31%, import 20%)"
+          ]
+        },
+        {
+          "project": "e2e",
+          "seed": 303,
+          "scope": "final-legacy",
+          "command": [
+            "pnpm",
+            "--filter",
+            "@aido/api",
+            "exec",
+            "vitest",
+            "run",
+            "--project",
+            "e2e",
+            "--sequence.shuffle",
+            "--sequence.seed=303",
+            "test/e2e/legacy-client-compatibility.e2e-spec.ts"
+          ],
+          "seconds": 17.855,
+          "exitCode": 0,
+          "log": "aido-api-verify-e2e-303-final-legacy.log",
+          "summary": [
+            "Test Files  1 passed (1)",
+            "Tests  4 passed (4)",
+            "Duration  16.38s (transform 47%, tests 33%, import 20%)"
+          ]
+        }
+      ]
+    },
+    "latestReleaseTree": {
+      "startedAt": "2026-10-02T00:46:38.235860+09:00",
+      "headAtStart": "88cd3240b05c8a735db8fbe5f85131e8e3bee4a1",
+      "apiFixCommit": "88cd3240",
+      "node": "v24.21.0",
+      "pgBoss": "12.27.0",
+      "seed": 42,
+      "isolatedTestContainers": true,
+      "devQaDatabaseTouched": false,
+      "completedAt": "2026-10-02T00:53:32.828390+09:00",
+      "headAtCompletion": "015a1c2cc1af28a6c7b2177dba54e335f2323639",
+      "runs": {
+        "unit": [
+          {
+            "project": "unit",
+            "seed": 42,
+            "scope": "release-tree-baseline",
+            "command": [
+              "pnpm",
+              "--filter",
+              "@aido/api",
+              "exec",
+              "vitest",
+              "run",
+              "--project",
+              "unit",
+              "--sequence.shuffle",
+              "--sequence.seed=42"
+            ],
+            "seconds": 19.607,
+            "exitCode": 0,
+            "log": "aido-api-verify-unit-42-release-tree-baseline.log",
+            "summary": [
+              "Test Files  434 passed (434)",
+              "Tests  2800 passed (2800)",
+              "Duration  18.96s (import 65%, transform 18%, tests 11%, setup 5%, worker 2%)"
+            ]
+          }
+        ],
+        "integration": [
+          {
+            "project": "integration",
+            "seed": 42,
+            "scope": "release-tree-baseline",
+            "command": [
+              "pnpm",
+              "--filter",
+              "@aido/api",
+              "exec",
+              "vitest",
+              "run",
+              "--project",
+              "integration",
+              "--sequence.shuffle",
+              "--sequence.seed=42"
+            ],
+            "seconds": 151.57,
+            "exitCode": 0,
+            "log": "aido-api-verify-integration-42-release-tree-baseline.log",
+            "summary": [
+              "Test Files  42 passed (42)",
+              "Tests  425 passed (425)",
+              "Duration  150.08s (tests 87%, import 10%, transform 3%)"
+            ]
+          }
+        ],
+        "e2e": [
+          {
+            "project": "e2e",
+            "seed": 42,
+            "scope": "release-tree-baseline",
+            "command": [
+              "pnpm",
+              "--filter",
+              "@aido/api",
+              "exec",
+              "vitest",
+              "run",
+              "--project",
+              "e2e",
+              "--sequence.shuffle",
+              "--sequence.seed=42"
+            ],
+            "seconds": 329.24,
+            "exitCode": 0,
+            "log": "aido-api-verify-e2e-42-release-tree-baseline.log",
+            "summary": [
+              "Test Files  32 passed (32)",
+              "Tests  461 passed (461)",
+              "Duration  324.20s (tests 83%, import 14%, transform 3%)"
+            ]
+          }
+        ]
+      },
+      "totalFiles": 508,
+      "totalCases": 3686,
+      "allPassed": true,
+      "warning": "Existing Prisma relation queries can emit pg concurrent-query deprecation; no test failures."
+    }
+  },
+  "releasedContracts": [
+    {
+      "version": "1.7.x",
+      "schemaCount": 137,
+      "pathCount": 111,
+      "missingSchemas": [],
+      "missingPaths": [],
+      "schemasFingerprint": "7d54df326aea8812a463f4a7ea5e842fc333c6823276a14e29e58f8a8d3b992b",
+      "pathsFingerprint": "ea3b45b70f071294634c39a8523e2683112a02a87f17c1366f279ca7b46e6d8e",
+      "schemaMatch": true,
+      "pathMatch": true
+    },
+    {
+      "version": "1.8.2",
+      "schemaCount": 140,
+      "pathCount": 113,
+      "missingSchemas": [],
+      "missingPaths": [],
+      "schemasFingerprint": "6c5ddff698ad39fd7e2f0c432a1c45b70f22d39aa27acd0404ac9f1dfe273421",
+      "pathsFingerprint": "a48b351d1220db66cd3d89330e0b57cb4de887204e5921d6df22d2041f9c3b47",
+      "schemaMatch": true,
+      "pathMatch": true
+    }
+  ],
+  "businessSqlMigrationsChanged": [],
+  "restSmoke": {
+    "recordedHttpRequests": 129,
+    "uniqueOpenApiOperations": 99,
+    "applicationBugsFound": 0,
+    "unresolvedUnexpectedResponses": 0,
+    "providedMainAccountChanged": false,
+    "businessPublicDataDeleted": false,
+    "notValidatedWithLiveVendors": [
+      "OAuth provider sign-in",
+      "RevenueCat purchase event",
+      "real Expo push delivery",
+      "real premium AI generation",
+      "configured KMA forecast provider"
+    ]
+  },
+  "themes": [
+    {
+      "platform": "ios",
+      "theme": "light",
+      "tokens": 27,
+      "changedDeclarations": 0,
+      "unresolved": 0,
+      "main": "#ff6843",
+      "gray8": "#616161",
+      "background": "#ffffff"
+    },
+    {
+      "platform": "ios",
+      "theme": "dark",
+      "tokens": 27,
+      "changedDeclarations": 0,
+      "unresolved": 0,
+      "main": "#ff6843",
+      "gray8": "#ebebeb",
+      "background": "#121212"
+    },
+    {
+      "platform": "android",
+      "theme": "light",
+      "tokens": 27,
+      "changedDeclarations": 0,
+      "unresolved": 0,
+      "main": "#ff6843",
+      "gray8": "#616161",
+      "background": "#ffffff"
+    },
+    {
+      "platform": "android",
+      "theme": "dark",
+      "tokens": 27,
+      "changedDeclarations": 0,
+      "unresolved": 0,
+      "main": "#ff6843",
+      "gray8": "#ebebeb",
+      "background": "#121212"
+    }
+  ],
+  "docker": {
+    "packagingBeforeBytes": 221398359,
+    "runtimeAfterBytes": 156198678,
+    "sourceComparison": "same 1.10 code, runtime peer dependency separation",
+    "user": "nestjs (uid 1001)",
+    "runtimeConfiguration": "local development/mock, production-stage artifact",
+    "health": "database and PostgreSQL queues up",
+    "sigtermExitCode": 0,
+    "excluded": ["Prisma CLI", "PGlite", "API source", "mobile source", "tests", "env files"]
+  },
+  "productionModuleCycles": {
+    "api": 0,
+    "mobile": 0,
+    "excluded": "tests/assets/generated Prisma SDK"
+  },
+  "pending": [
+    "iOS remaining routes",
+    "Android full UI alternative input method",
+    "old iOS binary QA",
+    "live vendor sandbox QA",
+    "stack PR publication and CI"
+  ],
+  "mobile": {
+    "suites": 155,
+    "cases": 1321,
+    "durationSeconds": 20.998,
+    "exitCode": 0,
+    "openHandleWarning": false,
+    "log": "aido-client-final-mobile-release.log",
+    "productionCycles": 0
+  },
+  "recurringChecklistRegression": {
+    "problem": "Memo batch conversion accepted recurring checklist items but discarded them, deleting the original memo after creating empty checklists.",
+    "fix": "Forward validated items through internal creator contracts and persist each occurrence checklist using the existing repository inside the recurring group UnitOfWork.",
+    "publicSchemaChanged": false,
+    "businessMigrationChanged": false,
+    "beforeChecklistTitles": [],
+    "afterChecklistTitles": ["우유", "계란"],
+    "afterIndependentItemIds": 4,
+    "siblingCompletionUnchanged": true,
+    "files": [
+      "apps/api/src/memo/application/ports/todo-creator.port.ts",
+      "apps/api/src/memo/application/use-cases/convert-memo-to-todos/convert-memo-to-todos.use-case.ts",
+      "apps/api/src/memo/application/use-cases/convert-memo-to-todos/convert-memo-to-todos.use-case.spec.ts",
+      "apps/api/src/todo/application/types.ts",
+      "apps/api/src/todo/application/use-cases/create-recurring-todos/create-recurring-todos.use-case.ts",
+      "apps/api/test/e2e/memo.e2e-spec.ts"
+    ],
+    "runs": [
+      {
+        "scope": "before-unit",
+        "exitCode": 1,
+        "expectedFailure": true,
+        "summary": [
+          "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+          "Test Files  1 failed (1)",
+          "Tests  1 failed | 4 passed (5)",
+          "Duration  963ms (transform 63%, import 28%, tests 5%, setup 3%, worker 2%)"
+        ],
+        "log": "aido-recurring-items-before-unit.log"
+      },
+      {
+        "scope": "before-e2e",
+        "exitCode": 1,
+        "expectedFailure": true,
+        "summary": [
+          "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+          "Test Files  1 failed (1)",
+          "Tests  1 failed | 37 skipped (38)",
+          "Duration  9.73s (transform 53%, import 29%, tests 18%)"
+        ],
+        "log": "aido-recurring-items-before-e2e.log"
+      },
+      {
+        "scope": "after-unit",
+        "exitCode": 0,
+        "expectedFailure": false,
+        "summary": [
+          "Test Files  2 passed (2)",
+          "Tests  11 passed (11)",
+          "Duration  763ms (transform 63%, import 28%, tests 6%, setup 3%, worker 1%)"
+        ],
+        "log": "aido-recurring-items-after-unit.log"
+      },
+      {
+        "scope": "after-e2e",
+        "exitCode": 0,
+        "expectedFailure": false,
+        "summary": [
+          "Test Files  3 passed (3)",
+          "Tests  46 passed (46)",
+          "Duration  33.05s (tests 81%, import 10%, transform 9%)"
+        ],
+        "log": "aido-recurring-items-after-e2e.log"
+      },
+      {
+        "scope": "todo-e2e",
+        "exitCode": 0,
+        "expectedFailure": false,
+        "summary": [
+          "Test Files  1 passed (1)",
+          "Tests  58 passed (58)",
+          "Duration  27.83s (tests 84%, transform 11%, import 6%)"
+        ],
+        "log": "aido-recurring-items-todo-e2e.log"
+      },
+      {
+        "scope": "seed-1301",
+        "exitCode": 0,
+        "expectedFailure": false,
+        "summary": [
+          "Test Files  1 passed (1)",
+          "Tests  1 passed | 37 skipped (38)",
+          "Duration  12.45s (transform 57%, import 23%, tests 19%)"
+        ],
+        "log": "aido-recurring-items-seed-1301.log"
+      },
+      {
+        "scope": "seed-1302",
+        "exitCode": 0,
+        "expectedFailure": false,
+        "summary": [
+          "Test Files  1 passed (1)",
+          "Tests  1 passed | 37 skipped (38)",
+          "Duration  12.44s (transform 57%, import 23%, tests 19%)"
+        ],
+        "log": "aido-recurring-items-seed-1302.log"
+      },
+      {
+        "scope": "seed-1303",
+        "exitCode": 0,
+        "expectedFailure": false,
+        "summary": [
+          "Test Files  1 passed (1)",
+          "Tests  1 passed | 37 skipped (38)",
+          "Duration  12.45s (transform 57%, import 23%, tests 19%)"
+        ],
+        "log": "aido-recurring-items-seed-1303.log"
+      }
+    ],
+    "checks": {
+      "typecheck": "pass",
+      "lint": "pass",
+      "format": "pass"
+    }
+  },
+  "iosUi": {
+    "passed": [
+      "email signup/OTP/login/feed",
+      "todo create/complete/undo/edit",
+      "comment/like/reply",
+      "category creation/color",
+      "memo create/edit/back save/pin",
+      "memo immediate detail reopen after edit",
+      "memo conversion edited title",
+      "reinstall auth restoration",
+      "light/dark/system theme",
+      "ko/en/system language",
+      "native installed version row",
+      "disabled config manual version failure feedback",
+      "notification/reminder settings navigation",
+      "friend list/received/sent empty states and submitted empty search"
+    ],
+    "notValidated": [
+      "premium provider success",
+      "category long-press reorder",
+      "all remaining routes",
+      "old iOS binary against new API"
+    ]
+  },
+  "staticChecks": {
+    "command": "pnpm check",
+    "exitCode": 0,
+    "lint": "pass",
+    "format": "pass",
+    "typecheck": "pass",
+    "mobileConventions": "pass",
+    "turboSeconds": 9.933
+  }
+}

@@ -20,15 +20,15 @@
 
 ## 기술 스택
 
-| 분류         | 기술                                   |
-| ------------ | -------------------------------------- |
-| Monorepo     | Turborepo 2.9, pnpm 10.29              |
-| Backend      | NestJS 11, Prisma 7, PostgreSQL 16     |
-| Mobile       | Expo 55, React Native 0.83, React 19.2 |
-| Validation   | Zod 4.3, nestjs-zod                    |
-| Testing      | Jest 29, Vitest 4, Testcontainers      |
-| Code Quality | Oxlint 1.78, Oxfmt 0.63                |
-| Runtime      | Node.js 24.20.0 LTS                    |
+| 분류         | 기술                                             |
+| ------------ | ------------------------------------------------ |
+| Monorepo     | Turborepo 2.11, pnpm 10.34                       |
+| Backend      | NestJS 12 ESM, Prisma 7.10, PostgreSQL 16        |
+| Mobile       | Expo 58, React Native 0.88 RC, React 19.3        |
+| Validation   | Zod 4.3.6, Nest Standard Schema                  |
+| Testing      | Jest Expo 58 (Jest 29), Vitest 5, Testcontainers |
+| Code Quality | Oxlint 1.86, Oxfmt 0.71                          |
+| Runtime      | Node.js 24.21.0 LTS                              |
 
 ## 구조
 
@@ -39,12 +39,11 @@ aido/
 │   └── mobile/       # Expo 모바일 앱
 ├── packages/
 │   ├── validators/   # Zod 스키마 (@aido/validators)
-│   ├── utils/        # 유틸리티 (@aido/utils)
 │   └── errors/       # 에러 정의 (@aido/errors)
 ├── tooling/
 │   ├── typescript/   # TypeScript 프리셋
-│   ├── jest/         # Jest 프리셋
-│   └── vitest/       # Vitest 프리셋
+│   ├── vitest/       # Vitest 프리셋
+│   └── database-migrate/ # 고정 lockfile 기반 migration CLI
 └── turbo.json
 ```
 
@@ -125,7 +124,6 @@ pnpm dev
 | [@aido/api](./apps/api)                   | NestJS 백엔드 API |
 | [@aido/mobile](./apps/mobile)             | Expo 모바일 앱    |
 | [@aido/validators](./packages/validators) | Zod 스키마        |
-| [@aido/utils](./packages/utils)           | 유틸리티 함수     |
 | [@aido/errors](./packages/errors)         | 에러 정의         |
 
 ## 개발 가이드
@@ -150,3 +148,5 @@ pnpm dev
 ## 라이선스
 
 MIT
+
+1.10.0 변경과 검증 현황은 [릴리스 작업 기록](docs/releases/1.10.0.md)과 [클라이언트 Before/After](apps/mobile/docs/releases/1.10.0-client.md)를 참고하세요.
