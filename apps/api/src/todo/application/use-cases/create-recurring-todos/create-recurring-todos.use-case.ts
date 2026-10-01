@@ -133,7 +133,13 @@ export class CreateRecurringTodosUseCase {
 					: null,
 			}));
 
-			return this.todoRepository.createMany(items, recurrenceGroupId);
+			const todos = await this.todoRepository.createMany(items, recurrenceGroupId);
+			if (data.items?.length) {
+				for (const todo of todos) {
+					await this.todoRepository.createInlineItems(todo.getId().getValue(), data.items);
+				}
+			}
+			return todos;
 		});
 
 		this.#logger.log(

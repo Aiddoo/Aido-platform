@@ -144,6 +144,7 @@ describe("ConvertMemoToTodosUseCase — 메모→다중 할 일 일괄 변환", 
 				singleTodo({
 					title: "운동",
 					isRecurring: true,
+					items: [{ title: "운동복 준비" }, { title: "스트레칭" }],
 					recurrence: {
 						daysOfWeek: ["MON", "WED"],
 						endDate: new Date("2026-04-30"),
@@ -161,6 +162,7 @@ describe("ConvertMemoToTodosUseCase — 메모→다중 할 일 일괄 변환", 
 				startDate: "2026-04-06",
 				endDate: "2026-04-30",
 				daysOfWeek: ["MON", "WED"],
+				items: [{ title: "운동복 준비" }, { title: "스트레칭" }],
 			}),
 			"Asia/Seoul",
 		);

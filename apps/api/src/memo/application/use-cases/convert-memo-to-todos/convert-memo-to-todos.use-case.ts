@@ -93,6 +93,7 @@ export class ConvertMemoToTodosUseCase {
 							: null,
 						isAllDay: todoData.isAllDay ?? true,
 						visibility: todoData.visibility ?? "PUBLIC",
+						items: todoData.items,
 					},
 					timezone,
 				);
