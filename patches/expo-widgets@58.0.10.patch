@@ -69,6 +69,15 @@ diff --git a/scripts/build-layout-registry.mjs b/scripts/build-layout-registry.m
 index d52a60e3..5b2da22d 100644
 --- a/scripts/build-layout-registry.mjs
 +++ b/scripts/build-layout-registry.mjs
+@@ -70,7 +70,7 @@ async function readExpectedWidgets(projectRoot, configPath) {
+     .map((widget) => ({
+       name: widget.name,
+       initialLayout: widget.initialLayout,
+-      initialLayoutFile: path.resolve(projectRoot, widget.initialLayout),
++      initialLayoutFile: fs.realpathSync(path.resolve(projectRoot, widget.initialLayout)),
+     }));
+ }
+ 
 @@ -154,6 +154,6 @@ function createLayoutRegistry(expectedWidgets, capturedLayouts) {
    return registry;
  }

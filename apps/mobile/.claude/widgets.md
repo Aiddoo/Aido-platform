@@ -85,6 +85,10 @@ SDK snapshot 쓰기와 초기 이관은 같은 SharedPreferences monitor에서 �
 runtime dependency를 import하지 않는다.
 앱을 열어 동기화하기 전에도 앱 실행 버튼의 native 계약이 적용된다.
 
+layout registry patch는 `initialLayout`의 상대 경로를 실제 파일 경로로 정규화한다.
+macOS EAS local build의 `/tmp`·`/private/tmp` 또는 `/var`·`/private/var` alias가
+Metro의 파일 경로와 달라져 기존 파일을 찾지 못하는 문제를 방지한다.
+
 ## 제거한 레거시와 관측
 
 `react-native-android-widget`, 앱의 MMKV widget repository, headless task handler,

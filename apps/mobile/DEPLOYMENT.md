@@ -1,6 +1,6 @@
 # Aido Mobile App 배포 가이드
 
-> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+> **Version**: 1.1.0 · **Last Updated**: 2026-10-02 · **Owner**: Aido Mobile Team
 
 ## 목차
 
@@ -18,7 +18,7 @@
 
 ```bash
 # EAS CLI 설치
-npm install -g eas-cli
+npm install -g eas-cli@24.8.0
 
 # Expo 계정 로그인
 eas login
@@ -79,6 +79,46 @@ eas build --profile production --platform android
 - App Store / Google Play 제출용
 - API: `https://api.aido.kr`
 - 자동 버전 증가
+
+---
+
+## 로컬 production 파일 생성
+
+SDK 58 빌드는 EAS CLI 24.8.0 이상을 사용한다. `eas --version`으로 현재 PATH에서 실행되는 버전을 확인한다. Node 버전 관리 도구와 Homebrew의 전역 설치 위치가 다르면 설치 후에도 이전 CLI가 실행될 수 있다.
+
+```bash
+npm install -g eas-cli@24.8.0
+eas --version
+```
+
+macOS의 iOS 빌드는 Xcode, Fastlane, CocoaPods가 필요하며 Android 빌드는 Android SDK/NDK와 Java가 필요하다.
+
+```bash
+brew install fastlane
+fastlane --version
+pod --version
+xcode-select -p
+```
+
+`apps/mobile`에서 실행한다. 결과는 Android `.aab`, iOS `.ipa`이며 스토어 제출은 별도 절차다.
+
+```bash
+pnpm build:production:local:android
+pnpm build:production:local:ios
+```
+
+직접 명령도 동일하다. 플랫폼 이름은 `android`, `ios`를 사용한다.
+
+```bash
+eas build --local --platform android --profile production
+eas build --local --platform ios --profile production
+```
+
+로컬 빌드는 `eas.json`의 Node/Fastlane/CocoaPods 도구 버전을 설치하지 않는다. EAS의 Secret 환경변수도 자동 제공되지 않으므로 기존 로컬 환경에 필요한 값을 공급해야 한다. Firebase 설정은 기존 `GOOGLE_SERVICES_JSON`, `GOOGLE_SERVICES_INFO_PLIST` 복원 경로를 사용하며 실제 값·서명 파일·빌드 로그를 Git에 넣지 않는다. [Expo 로컬 빌드 문서](https://docs.expo.dev/build-reference/local-builds/)를 기준으로 준비한다.
+
+SDK 58의 `expo-web-browser`는 `app.plugin.js`를 package exports에 공개하지 않는다. EAS resolver가 이를 앱 런타임 모듈로 오인하지 않도록 `app.config.ts`에서 설치된 package의 실제 plugin 파일을 프로젝트 상대 경로로 지정한다. 절대 경로가 fingerprint에 포함되어 원본과 임시 빌드 디렉터리의 runtime이 달라지지 않게 한다. `Expo.fx` Node module 오류를 고치기 위해 앱 런타임이나 Expo 소스를 변경하지 않는다.
+
+위젯 layout registry의 import 경로는 실제 파일 경로로 정규화한다. macOS에서 `/tmp`와 `/private/tmp`처럼 같은 임시 폴더를 가리키는 경로가 Metro에서 다르게 처리되어 iOS archive가 실패하지 않도록 기존 `expo-widgets` 패치에 반영한다.
 
 ---
 
