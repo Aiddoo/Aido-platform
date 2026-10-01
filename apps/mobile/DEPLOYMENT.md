@@ -84,6 +84,38 @@ eas build --profile production --platform android
 
 ## 로컬 production 파일 생성
 
+### 1.10.0 시작 크래시 이후 필수 검증
+
+iOS 117은 precompiled ExpoFileSystem이 ExpoModulesJSI에 없는 Swift 심볼을 참조해 JS 시작 전에
+DYLD에서 종료됐다. `expo-build-properties.ios.usePrecompiledModules=false`로 Expo 모듈을 함께
+소스 빌드한다. 이는 [Expo 공식 설정](https://docs.expo.dev/guides/prebuilt-expo-modules/)이며
+의존성 버전을 임의로 내리거나 생성된 `ios/` 파일만 수정하는 방식으로 대체하지 않는다.
+
+`withFirebaseInitialization`은 RNFirebase 26.4가 인식하지 못하는 SDK 58 AppDelegate에 네이티브
+Firebase 초기화를 추가한다. RNFirebase 플러그인 바로 뒤에 등록하며, 새 template을 인식하지 못하면
+prebuild를 실패시킨다. 생성된 launch method에서 Firebase가 React Native factory보다 먼저 한 번만
+설정되는지 확인한다.
+
+```bash
+pnpm test:native-config
+pnpm check:ipa-linkage /absolute/path/to/production.ipa
+
+# production API·Firebase·Sentry 설정을 사용하는 실기기 Release 설치 파일
+# iOS는 등록된 기기용 Ad Hoc 서명, Android는 APK다. 스토어 제출 파일과 구분한다.
+eas build --local --platform ios --profile production-device
+eas build --local --platform android --profile production-device
+```
+
+`production-device`는 `production` EAS environment를 명시적으로 상속한다. 내부 배포의 기본
+environment인 preview로 production 설정이 바뀌지 않도록 한다. 로컬 빌드의 Secret 변수는 별도로
+주입한다. 값이나 인증 파일을 로그·저장소에 넣지 않는다.
+
+IPA 검사 범위는 arm64 앱 및 번들된 Expo framework의 강한 two-level 심볼 참조다. 시스템 framework,
+실제 기기 실행, Firebase 초기화 및 화면 회귀 검증을 대신하지 않는다. 이전 117 IPA에서 실제 누락
+심볼을 검출하고 실패하는 것을 확인했다. 서명된 최종 IPA/AAB는 TestFlight·Play 내부 테스트에서
+시작·재시작·로그인·주요 기능을 확인한 뒤 production 심사에 제출한다. OTA로 이 DYLD 장애를
+해결할 수 없다.
+
 SDK 58 빌드는 EAS CLI 24.8.0 이상을 사용한다. `eas --version`으로 현재 PATH에서 실행되는 버전을 확인한다. Node 버전 관리 도구와 Homebrew의 전역 설치 위치가 다르면 설치 후에도 이전 CLI가 실행될 수 있다.
 
 ```bash
