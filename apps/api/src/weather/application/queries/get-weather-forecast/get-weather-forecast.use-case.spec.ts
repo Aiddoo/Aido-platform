@@ -6,18 +6,19 @@
  * - 캐시/프로바이더/폴백 오케스트레이션은 WeatherForecastReader 소유이므로 여기서는 위임만 검증
  */
 import { ErrorCode } from "@aido/errors";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createWeatherLocationRepositoryMock } from "@test/mocks/ports/weather.mock";
+import type { Mocked } from "vitest";
 
-import { UserLocation } from "../../../domain/entities/user-location.entity";
+import { createWeatherLocationRepositoryMock } from "#test/mocks/ports/weather.mock";
+
+import { UserLocation } from "../../../domain/entities/user-location.entity.js";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
-} from "../../ports/weather-location.repository.port";
-import type { WeatherForecast } from "../../ports/weather-provider.port";
-import { WeatherForecastReader } from "../../services/weather-forecast.reader";
-import { GetWeatherForecastUseCase } from "./get-weather-forecast.use-case";
+} from "../../ports/weather-location.repository.port.js";
+import type { WeatherForecast } from "../../ports/weather-provider.port.js";
+import { WeatherForecastReader } from "../../services/weather-forecast.reader.js";
+import { GetWeatherForecastUseCase } from "./get-weather-forecast.use-case.js";
 
 function buildForecast(): WeatherForecast {
 	return {

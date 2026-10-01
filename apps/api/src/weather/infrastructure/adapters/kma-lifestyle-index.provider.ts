@@ -1,14 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { toCompactDateHourString } from "@/shared/domain/date/utils/format";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { readJson } from "@/shared/infrastructure/http/read-json";
+import { toCompactDateHourString } from "#api/shared/domain/date/utils/format";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { readJson } from "#api/shared/infrastructure/http/read-json";
 
 import type {
 	LifestyleIndex,
 	LifestyleIndexProvider,
-} from "../../application/ports/lifestyle-index-provider.port";
-import { getRegionCode } from "./region-code";
+} from "../../application/ports/lifestyle-index-provider.port.js";
+import { getRegionCode } from "./region-code.js";
 
 interface UvIndexResponse {
 	response?: {

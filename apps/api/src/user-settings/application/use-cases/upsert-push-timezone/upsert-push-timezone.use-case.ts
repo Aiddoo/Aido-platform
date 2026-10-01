@@ -3,11 +3,11 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	USER_PREFERENCE_REPOSITORY,
 	type UserPreferenceRepositoryPort,
-} from "../../ports/user-preference.repository.port";
+} from "../../ports/user-preference.repository.port.js";
 import {
 	USER_SETTINGS_CACHE,
 	type UserSettingsCachePort,
-} from "../../ports/user-settings-cache.port";
+} from "../../ports/user-settings-cache.port.js";
 
 /**
  * 푸시 토큰 등록 시 타임존 upsert (notification).

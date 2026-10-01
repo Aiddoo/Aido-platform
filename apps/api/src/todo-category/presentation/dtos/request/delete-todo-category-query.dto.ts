@@ -1,4 +1,8 @@
 import { deleteTodoCategoryQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class DeleteTodoCategoryQueryDto extends createZodDto(deleteTodoCategoryQuerySchema) {}
+export const DeleteTodoCategoryQueryDto = deleteTodoCategoryQuerySchema.meta({
+	id: "DeleteTodoCategoryQueryDto",
+	apiParameter: true,
+});
+export type DeleteTodoCategoryQueryDto = z.infer<typeof DeleteTodoCategoryQueryDto>;

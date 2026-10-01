@@ -1,4 +1,4 @@
-import { retentionSchema } from "./retention.schema";
+import { retentionSchema } from "./retention.schema.js";
 
 describe("retentionSchema — 신규 가입자 리텐션 실험 설정", () => {
 	it("미설정 시 실험을 비활성화하고 treatment 비율을 50으로 둔다", () => {

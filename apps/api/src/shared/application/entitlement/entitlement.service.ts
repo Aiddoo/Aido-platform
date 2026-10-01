@@ -18,7 +18,7 @@ import {
 	type EntitlementCachePort,
 	type EntitlementDatabasePort,
 	type EntitlementTransaction,
-} from "./entitlement-state.port";
+} from "./entitlement-state.port.js";
 
 export const Feature = {
 	CHEER: "CHEER",

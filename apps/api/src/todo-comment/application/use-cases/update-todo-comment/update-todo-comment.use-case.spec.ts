@@ -1,13 +1,15 @@
+import { vi } from "vitest";
+
 import {
 	createMutationLockMock,
 	createTodoCommentReaderMock,
 	createTodoCommentRepositoryMock,
 	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import { TodoComment } from "../../../domain/entities/todo-comment.aggregate";
-import type { TodoCommentRecord } from "../../types";
-import { UpdateTodoCommentUseCase } from "./update-todo-comment.use-case";
+import { TodoComment } from "../../../domain/entities/todo-comment.aggregate.js";
+import type { TodoCommentRecord } from "../../types.js";
+import { UpdateTodoCommentUseCase } from "./update-todo-comment.use-case.js";
 
 const TODO_ID = 1;
 const COMMENT_ID = "cm1todoacomment00000000001";
@@ -57,11 +59,11 @@ describe("UpdateTodoCommentUseCase", () => {
 		const repository = createTodoCommentRepositoryMock();
 		const reader = createTodoCommentReaderMock();
 		const mutationLock = createMutationLockMock();
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(repository.findComment).mockResolvedValue(createComment());
-		jest.mocked(repository.updateComment).mockResolvedValue(true);
-		jest.mocked(reader.findCommentRecord).mockResolvedValue(createRecord());
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(repository.findComment).mockResolvedValue(createComment());
+		vi.mocked(repository.updateComment).mockResolvedValue(true);
+		vi.mocked(reader.findCommentRecord).mockResolvedValue(createRecord());
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new UpdateTodoCommentUseCase(
 			reader,
 			repository,

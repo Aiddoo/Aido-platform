@@ -6,17 +6,17 @@
  */
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 import type {
 	ReminderHourChangedJobData,
 	SocialDigestJobData,
-} from "../../application/ports/timezone-reminder-enqueuer.port";
+} from "../../application/ports/timezone-reminder-enqueuer.port.js";
 
 export type {
 	ReminderHourChangedJobData,
 	SocialDigestJobData,
-} from "../../application/ports/timezone-reminder-enqueuer.port";
+} from "../../application/ports/timezone-reminder-enqueuer.port.js";
 
 // =============================================================================
 // Queue / Job Names

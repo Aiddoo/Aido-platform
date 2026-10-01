@@ -7,16 +7,33 @@ import {
 	todoConversationResponseSchema,
 	todoDetailsResponseSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class TodoDetailsResponseDto extends createZodDto(todoDetailsResponseSchema) {}
-export class TodoCommentOverviewResponseDto extends createZodDto(
-	todoCommentOverviewResponseSchema,
-) {}
-export class TodoConversationResponseDto extends createZodDto(todoConversationResponseSchema) {}
-export class TodoCommentChainResponseDto extends createZodDto(todoCommentChainResponseSchema) {}
-export class TodoCommentMutationResponseDto extends createZodDto(
-	todoCommentMutationResponseSchema,
-) {}
-export class TodoCommentLikeResponseDto extends createZodDto(todoCommentLikeResponseSchema) {}
-export class DeleteTodoCommentResponseDto extends createZodDto(deleteTodoCommentResponseSchema) {}
+export const TodoDetailsResponseDto = todoDetailsResponseSchema.meta({
+	id: "TodoDetailsResponseDto",
+});
+export type TodoDetailsResponseDto = z.infer<typeof TodoDetailsResponseDto>;
+export const TodoCommentOverviewResponseDto = todoCommentOverviewResponseSchema.meta({
+	id: "TodoCommentOverviewResponseDto",
+});
+export type TodoCommentOverviewResponseDto = z.infer<typeof TodoCommentOverviewResponseDto>;
+export const TodoConversationResponseDto = todoConversationResponseSchema.meta({
+	id: "TodoConversationResponseDto",
+});
+export type TodoConversationResponseDto = z.infer<typeof TodoConversationResponseDto>;
+export const TodoCommentChainResponseDto = todoCommentChainResponseSchema.meta({
+	id: "TodoCommentChainResponseDto",
+});
+export type TodoCommentChainResponseDto = z.infer<typeof TodoCommentChainResponseDto>;
+export const TodoCommentMutationResponseDto = todoCommentMutationResponseSchema.meta({
+	id: "TodoCommentMutationResponseDto",
+});
+export type TodoCommentMutationResponseDto = z.infer<typeof TodoCommentMutationResponseDto>;
+export const TodoCommentLikeResponseDto = todoCommentLikeResponseSchema.meta({
+	id: "TodoCommentLikeResponseDto",
+});
+export type TodoCommentLikeResponseDto = z.infer<typeof TodoCommentLikeResponseDto>;
+export const DeleteTodoCommentResponseDto = deleteTodoCommentResponseSchema.meta({
+	id: "DeleteTodoCommentResponseDto",
+});
+export type DeleteTodoCommentResponseDto = z.infer<typeof DeleteTodoCommentResponseDto>;

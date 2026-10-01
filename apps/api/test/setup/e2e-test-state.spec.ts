@@ -1,15 +1,17 @@
-import { createE2eTestStateResetter } from "../e2e/helpers/e2e-test-state";
+import { vi } from "vitest";
+
+import { createE2eTestStateResetter } from "../e2e/helpers/e2e-test-state.js";
 
 describe("E2E 테스트 상태 reset", () => {
 	it("DB, cache, Redis, 공용 fake와 suite fake를 모두 초기화해야 한다", async () => {
 		// Given - 상태를 가진 모든 테스트 의존성
-		const cleanupDatabase = jest.fn().mockResolvedValue(undefined);
-		const resetCache = jest.fn().mockResolvedValue(undefined);
-		const flushRedis = jest.fn().mockResolvedValue("OK");
-		const clearEmail = jest.fn();
-		const clearOAuth = jest.fn();
-		const clearPush = jest.fn();
-		const clearSuiteFake = jest.fn();
+		const cleanupDatabase = vi.fn().mockResolvedValue(undefined);
+		const resetCache = vi.fn().mockResolvedValue(undefined);
+		const flushRedis = vi.fn().mockResolvedValue("OK");
+		const clearEmail = vi.fn();
+		const clearOAuth = vi.fn();
+		const clearPush = vi.fn();
+		const clearSuiteFake = vi.fn();
 		const reset = createE2eTestStateResetter({
 			cleanupDatabase,
 			resetCache,
@@ -34,18 +36,18 @@ describe("E2E 테스트 상태 reset", () => {
 	it("백그라운드 작업을 모두 기다린 뒤 DB를 초기화해야 한다", async () => {
 		// Given - push 저장 작업이 아직 진행 중인 상태
 		let backgroundWorkCompleted = false;
-		const drainBackgroundWork = jest.fn(async () => {
+		const drainBackgroundWork = vi.fn(async () => {
 			await Promise.resolve();
 			backgroundWorkCompleted = true;
 		});
-		const cleanupDatabase = jest.fn(() => {
+		const cleanupDatabase = vi.fn(() => {
 			expect(backgroundWorkCompleted).toBe(true);
 		});
 		const reset = createE2eTestStateResetter({
 			drainBackgroundWork,
 			cleanupDatabase,
-			resetCache: jest.fn(),
-			flushRedis: jest.fn(),
+			resetCache: vi.fn(),
+			flushRedis: vi.fn(),
 			sharedResetters: [],
 		});
 
@@ -61,11 +63,11 @@ describe("E2E 테스트 상태 reset", () => {
 		// drain 실패 시 TRUNCATE를 건너뛰면 오염이 다음 테스트로 전파되므로
 		// DB 정리는 항상 수행하고, drain 에러는 AggregateError로 함께 드러낸다
 		const drainError = new Error("drain failed");
-		const drainBackgroundWork = jest.fn().mockRejectedValue(drainError);
-		const cleanupDatabase = jest.fn();
-		const resetCache = jest.fn().mockRejectedValue("cache failed");
-		const flushRedis = jest.fn().mockResolvedValue("OK");
-		const clearFake = jest.fn();
+		const drainBackgroundWork = vi.fn().mockRejectedValue(drainError);
+		const cleanupDatabase = vi.fn();
+		const resetCache = vi.fn().mockRejectedValue("cache failed");
+		const flushRedis = vi.fn().mockResolvedValue("OK");
+		const clearFake = vi.fn();
 		const reset = createE2eTestStateResetter({
 			drainBackgroundWork,
 			cleanupDatabase,
@@ -83,44 +85,62 @@ describe("E2E 테스트 상태 reset", () => {
 		expect(clearFake).toHaveBeenCalledTimes(1);
 	});
 
-	// 이 reset은 beforeEach에서 돈다. 여기서 매달리면 jest는 그 시간을 다음 it의
-	// 예산에서 빼가고, randomize 때문에 매번 다른 테스트가 원인 없이 죽는다.
-	// 아래 두 계약이 그 연결고리를 끊는다.
 	describe("시간 상한", () => {
 		const neverSettles = () => new Promise<void>(() => undefined);
+		beforeEach(() => vi.useFakeTimers());
+		afterEach(() => vi.useRealTimers());
 
 		it("정착하지 않는 drain을 끊고 어느 단계였는지 말한다", async () => {
-			const cleanupDatabase = jest.fn();
+			const cleanupDatabase = vi.fn();
 			const reset = createE2eTestStateResetter({
 				drainBackgroundWork: neverSettles,
 				cleanupDatabase,
-				resetCache: jest.fn(),
-				flushRedis: jest.fn(),
+				resetCache: vi.fn(),
+				flushRedis: vi.fn(),
 				sharedResetters: [],
 				timeoutMs: 20,
 			});
 
-			await expect(reset()).rejects.toMatchObject({
+			const assertion = expect(reset()).rejects.toMatchObject({
 				errors: [
 					expect.objectContaining({ message: expect.stringMatching(/drainBackgroundWork.*20ms/) }),
 				],
 			});
+			await vi.advanceTimersByTimeAsync(20);
+			await assertion;
 			// drain이 끊겨도 DB 정리는 여전히 수행된다 — 오염을 다음 테스트로 넘기지 않는다.
 			expect(cleanupDatabase).toHaveBeenCalledTimes(1);
 		});
 
 		it("어느 단계가 멈추든 이름과 함께 실패한다", async () => {
 			const reset = createE2eTestStateResetter({
-				cleanupDatabase: jest.fn(),
+				cleanupDatabase: vi.fn(),
 				resetCache: neverSettles,
-				flushRedis: jest.fn(),
+				flushRedis: vi.fn(),
 				sharedResetters: [],
 				timeoutMs: 20,
 			});
 
-			await expect(reset()).rejects.toMatchObject({
+			const assertion = expect(reset()).rejects.toMatchObject({
 				errors: [expect.objectContaining({ message: expect.stringMatching(/resetCache.*20ms/) })],
 			});
+			await vi.advanceTimersByTimeAsync(20);
+			await assertion;
+		});
+		it("timeout 이후 같은 상태를 다시 사용하지 않는다", async () => {
+			const cleanupDatabase = vi.fn();
+			const reset = createE2eTestStateResetter({
+				cleanupDatabase,
+				resetCache: neverSettles,
+				flushRedis: vi.fn(),
+				sharedResetters: [],
+				timeoutMs: 20,
+			});
+			const assertion = expect(reset()).rejects.toBeInstanceOf(AggregateError);
+			await vi.advanceTimersByTimeAsync(20);
+			await assertion;
+			await expect(reset()).rejects.toBeInstanceOf(AggregateError);
+			expect(cleanupDatabase).toHaveBeenCalledTimes(1);
 		});
 	});
 });

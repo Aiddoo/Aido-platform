@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 import { Request } from "express";
 
-import type { CurrentUserPayload } from "@/auth/infrastructure/strategies/jwt.strategy";
+import type { CurrentUserPayload } from "#api/auth/infrastructure/strategies/jwt.strategy";
 
 /**
  * JWT 토큰에서 추출된 현재 사용자 정보를 주입하는 데코레이터

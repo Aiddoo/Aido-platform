@@ -1,29 +1,30 @@
+import { TestBed } from "@suites/unit";
 /**
  * TodoToggledHandler 단위 테스트
  *
  * Suites + 포트 mock 팩토리 + GWT 패턴
  * 완료/미완료 방향에 따른 부수효과 분기를 검증합니다.
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
 import {
 	createFriendMock,
 	createStreakMock,
 	createTodoNotificationMock,
 	createTodoReadRepositoryMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
-import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
-import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
-import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
-import { TODO_NOTIFICATION, type TodoNotificationPort } from "../ports/todo-notification.port";
+import { TodoToggledEvent } from "../../domain/events/todo-toggled.event.js";
+import { FRIEND_PORT, type FriendPort } from "../ports/friend.port.js";
+import { STREAK_PORT, type StreakPort } from "../ports/streak.port.js";
+import { TODO_NOTIFICATION, type TodoNotificationPort } from "../ports/todo-notification.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../ports/todo-read.repository.port";
-import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
-import { TodoToggledHandler } from "./todo-toggled.handler";
+} from "../ports/todo-read.repository.port.js";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port.js";
+import { TodoToggledHandler } from "./todo-toggled.handler.js";
 
 describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 	let handler: TodoToggledHandler;
@@ -35,8 +36,8 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 
 	beforeEach(async () => {
 		todoReminder = {
-			scheduleReminder: jest.fn(),
-			cancelReminder: jest.fn().mockResolvedValue({ status: "cancelled" }),
+			scheduleReminder: vi.fn(),
+			cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
 		};
 
 		const { unit, unitRef } = await TestBed.solitary(TodoToggledHandler)
@@ -128,7 +129,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 
 	it("취소할 작업이 이미 없으면 missing을 정상 처리한다", async () => {
 		// Given - 잡이 이미 처리됐고 나머지 부수효과는 정상
-		jest.mocked(todoReminder.cancelReminder).mockResolvedValue({
+		vi.mocked(todoReminder.cancelReminder).mockResolvedValue({
 			status: "missing",
 		});
 		todoReadRepository.getTodayTodoStats.mockResolvedValue({
@@ -148,7 +149,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		const error = new Error("scheduler down");
 		const rejected = Promise.reject(error);
 		void rejected.catch(() => undefined);
-		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
+		vi.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
 		todoReadRepository.getTodayTodoStats.mockResolvedValue({
 			total: 1,
 			completed: 0,

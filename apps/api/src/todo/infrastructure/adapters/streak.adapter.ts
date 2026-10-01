@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { USER_STREAK_ACCESS, type UserStreakAccessPort } from "@/user-settings";
+import { USER_STREAK_ACCESS, type UserStreakAccessPort } from "#api/user-settings/index";
 
-import type { StreakPort } from "../../application/ports/streak.port";
+import type { StreakPort } from "../../application/ports/streak.port.js";
 
 /**
  * todo의 스트릭 포트를 user-settings의 공개 capability에 연결한다.

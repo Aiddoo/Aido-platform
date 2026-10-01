@@ -1,4 +1,4 @@
-import type { UserLocation } from "../../domain/entities/user-location.entity";
+import type { UserLocation } from "../../domain/entities/user-location.entity.js";
 
 /** WeatherLocationRepositoryPort DI 토큰 */
 export const WEATHER_LOCATION_REPOSITORY = Symbol("WEATHER_LOCATION_REPOSITORY");

@@ -1,16 +1,16 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { UserLocation } from "../../domain/entities/user-location.entity";
-import { getKmaBaseDateTime } from "../../domain/services/kma-base-datetime";
-import { WEATHER_CACHE, type WeatherCachePort } from "../ports/weather-cache.port";
+import type { UserLocation } from "../../domain/entities/user-location.entity.js";
+import { getKmaBaseDateTime } from "../../domain/services/kma-base-datetime.js";
+import { WEATHER_CACHE, type WeatherCachePort } from "../ports/weather-cache.port.js";
 import {
 	WEATHER_PROVIDER,
 	type WeatherForecast,
 	type WeatherProvider,
-} from "../ports/weather-provider.port";
+} from "../ports/weather-provider.port.js";
 
 /** 격자 배치 조회 입력 (스케줄러·ai-suggestion 등 크로스 모듈에서 사용) */
 export interface GridInput {

@@ -1,14 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
 
-import { ADMIN_NOTIFICATION_QUEUE } from "@/admin-notification/queue";
-import { AI_REPORT_QUEUE } from "@/ai-report";
-import { AI_SUGGESTION_QUEUE } from "@/ai-suggestion";
-import { PUSH_DELIVERY_DEAD_LETTER_QUEUE, PUSH_DELIVERY_QUEUE } from "@/notification/queue";
-import { RETENTION_DEAD_LETTER_QUEUE, RETENTION_QUEUE } from "@/retention/queue";
-import { TODO_REMINDER_QUEUE } from "@/scheduler";
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { withTimeout } from "@/shared/application/utils/with-timeout.util";
+import { ADMIN_NOTIFICATION_QUEUE } from "#api/admin-notification/queue";
+import { AI_REPORT_QUEUE } from "#api/ai-report/index";
+import { AI_SUGGESTION_QUEUE } from "#api/ai-suggestion/index";
+import { PUSH_DELIVERY_DEAD_LETTER_QUEUE, PUSH_DELIVERY_QUEUE } from "#api/notification/queue";
+import { RETENTION_DEAD_LETTER_QUEUE, RETENTION_QUEUE } from "#api/retention/queue";
+import { TODO_REMINDER_QUEUE } from "#api/scheduler/index";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
 const QUEUE_STATS_TIMEOUT_MS = 2_000;
 const MONITORED_QUEUES = [

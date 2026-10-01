@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 
-import type { SubscriptionCachePort } from "../../application/ports/subscription-cache.port";
+import type { SubscriptionCachePort } from "../../application/ports/subscription-cache.port.js";
 
 /**
  * 구독 캐시 무효화 어댑터.

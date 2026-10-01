@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 /**
  * JwtStrategy 단위 테스트
  *
@@ -10,21 +11,20 @@
  * pnpm --filter @aido/api test jwt.strategy.spec.ts
  * ```
  */
-
-import { ErrorCode } from "@aido/errors";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { asDep, asMock } from "@test/mocks";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { SessionService } from "@/auth/application/services/session.service";
-import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
-import { SessionRepository } from "@/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { SessionService } from "#api/auth/application/services/session.service";
+import type { JwtPayload } from "#api/auth/infrastructure/adapters/token.service";
+import { SessionRepository } from "#api/auth/infrastructure/persistence/session.repository";
+import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { asDep, asMock } from "#test/mocks/index";
 
-import { JwtStrategy } from "./jwt.strategy";
+import { JwtStrategy } from "./jwt.strategy.js";
 
 describe("JwtStrategy — JWT 전략", () => {
 	let strategy: JwtStrategy;
@@ -46,7 +46,7 @@ describe("JwtStrategy — JWT 전략", () => {
 			.mock(TypedConfigService)
 			.impl((mock) => ({
 				...mock,
-				get: jest.fn().mockReturnValue("test-jwt-secret-key"),
+				get: vi.fn().mockReturnValue("test-jwt-secret-key"),
 			}))
 			.compile();
 
@@ -140,7 +140,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("캐시 미스 시 DB에서 세션을 조회하고 캐시에 저장한다", async () => {
 		// Given
-		asMock(cacheService.getSession).mockResolvedValue(null);
+		asMock(cacheService.getSession).mockResolvedValue(undefined);
 		const futureDate = new Date(Date.now() + 86400000);
 		asMock(sessionRepo.findById).mockResolvedValue({
 			id: "session-456",
@@ -166,7 +166,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("DB에서 세션을 찾을 수 없으면 에러를 던진다", async () => {
 		// Given
-		asMock(cacheService.getSession).mockResolvedValue(null);
+		asMock(cacheService.getSession).mockResolvedValue(undefined);
 		asMock(sessionRepo.findById).mockResolvedValue(null);
 		sessionService.assertSessionValid.mockImplementation(() => {
 			throw new ApplicationException(ErrorCode.SESSION_0701, {
@@ -180,7 +180,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("DB에서 조회한 세션이 폐기 상태면 에러를 던진다", async () => {
 		// Given
-		asMock(cacheService.getSession).mockResolvedValue(null);
+		asMock(cacheService.getSession).mockResolvedValue(undefined);
 		asMock(sessionRepo.findById).mockResolvedValue({
 			id: "session-456",
 			userId: "user-123",
@@ -200,7 +200,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 	it("DB에서 조회한 세션이 만료 상태면 에러를 던진다", async () => {
 		// Given
-		asMock(cacheService.getSession).mockResolvedValue(null);
+		asMock(cacheService.getSession).mockResolvedValue(undefined);
 		asMock(sessionRepo.findById).mockResolvedValue({
 			id: "session-456",
 			userId: "user-123",
@@ -241,7 +241,7 @@ describe("JwtStrategy — JWT 전략", () => {
 
 		it("세션 캐시 쓰기 실패는 무시하고 정상 인증한다", async () => {
 			// Given
-			asMock(cacheService.getSession).mockResolvedValue(null);
+			asMock(cacheService.getSession).mockResolvedValue(undefined);
 			asMock(cacheService.setSession).mockRejectedValue(cacheFailure);
 			asMock(sessionRepo.findById).mockResolvedValue({
 				id: "session-456",

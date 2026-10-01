@@ -1,14 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import type { NotificationType } from "../../../domain/types/notification-type";
+import type { NotificationType } from "../../../domain/types/notification-type.js";
 import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
-} from "../../ports/notification-dedup.port";
+} from "../../ports/notification-dedup.port.js";
 import {
 	NOTIFICATION_HISTORY_READER,
 	type NotificationHistoryReaderPort,
-} from "../../ports/notification-history.reader.port";
+} from "../../ports/notification-history.reader.port.js";
 
 /**
  * 이미 알림을 받은 사용자 ID 목록 조회 유스케이스 (배치)

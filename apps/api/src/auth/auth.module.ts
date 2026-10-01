@@ -2,15 +2,15 @@ import { Module } from "@nestjs/common";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
-import { AdminEventNotifier, AdminNotificationModule } from "@/admin-notification";
-import { EmailModule, TransactionalEmailSender } from "@/email";
-import { NotificationModule } from "@/notification";
-import { RetentionModule } from "@/retention";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { TodoCategoryModule } from "@/todo-category";
-import { TodoCommentModule } from "@/todo-comment";
-import { UserSettingsModule } from "@/user-settings";
+import { AdminEventNotifier, AdminNotificationModule } from "#api/admin-notification/index";
+import { EmailModule, TransactionalEmailSender } from "#api/email/index";
+import { NotificationModule } from "#api/notification/index";
+import { RetentionModule } from "#api/retention/index";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { TodoCategoryModule } from "#api/todo-category/index";
+import { TodoCommentModule } from "#api/todo-comment/index";
+import { UserSettingsModule } from "#api/user-settings/index";
 
 import {
 	AUTH_ACCOUNT_REPOSITORY,
@@ -27,18 +27,18 @@ import {
 	AUTH_USER_ACTIVITY_WRITER,
 	AUTH_USER_REPOSITORY,
 	AUTH_VERIFICATION_REPOSITORY,
-} from "./application/ports";
-import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "./application/ports/oauth-identity-provider.port";
-import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port";
-import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port";
-import { VERIFICATION_CODE_SECURITY } from "./application/ports/verification-code-security.port";
+} from "./application/ports/index.js";
+import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "./application/ports/oauth-identity-provider.port.js";
+import { RETENTION_ENROLLER } from "./application/ports/retention-enroller.port.js";
+import { USER_PROVISIONING_SEEDER } from "./application/ports/user-provisioning-seeder.port.js";
+import { VERIFICATION_CODE_SECURITY } from "./application/ports/verification-code-security.port.js";
 import {
 	GetCurrentUserQuery,
 	GetOAuthRedirectUriQuery,
 	ListActiveSessionsQuery,
 	ListLinkedAccountsQuery,
-} from "./application/queries";
-import { SessionService, VerificationService } from "./application/services";
+} from "./application/queries/index.js";
+import { SessionService, VerificationService } from "./application/services/index.js";
 import {
 	ChangePasswordUseCase,
 	CompleteOAuthAuthorizationUseCase,
@@ -62,18 +62,22 @@ import {
 	UnlinkOAuthAccountUseCase,
 	UpdateProfileUseCase,
 	VerifyEmailUseCase,
-} from "./application/use-cases";
-import { IssueLoginUseCase } from "./application/use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "./application/use-cases/provision-user/provision-user.use-case";
-import { CredentialAuthWorkflow, OAuthWorkflow, PasswordWorkflow } from "./application/workflows";
-import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/node-verification-code-security.adapter";
-import { PasswordService } from "./infrastructure/adapters/password.service";
-import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter";
-import { TokenService } from "./infrastructure/adapters/token.service";
-import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter";
-import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards";
-import { createOAuthProviderRegistry } from "./infrastructure/oauth/adapters";
-import { OAuthTokenVerifierService } from "./infrastructure/oauth/verifier/oauth-token-verifier.service";
+} from "./application/use-cases/index.js";
+import { IssueLoginUseCase } from "./application/use-cases/issue-login/issue-login.use-case.js";
+import { ProvisionUserUseCase } from "./application/use-cases/provision-user/provision-user.use-case.js";
+import {
+	CredentialAuthWorkflow,
+	OAuthWorkflow,
+	PasswordWorkflow,
+} from "./application/workflows/index.js";
+import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/node-verification-code-security.adapter.js";
+import { PasswordService } from "./infrastructure/adapters/password.service.js";
+import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter.js";
+import { TokenService } from "./infrastructure/adapters/token.service.js";
+import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter.js";
+import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards/index.js";
+import { createOAuthProviderRegistry } from "./infrastructure/oauth/adapters/index.js";
+import { OAuthTokenVerifierService } from "./infrastructure/oauth/verifier/oauth-token-verifier.service.js";
 import {
 	AccountRepository,
 	LoginAttemptRepository,
@@ -82,17 +86,17 @@ import {
 	SessionRepository,
 	UserRepository,
 	VerificationRepository,
-} from "./infrastructure/persistence";
-import { AccountPurgeProcessor } from "./infrastructure/queue/account-purge.processor";
-import { AccountPurgeJob } from "./infrastructure/scheduler/account-purge.job";
-import { JwtRefreshStrategy, JwtStrategy } from "./infrastructure/strategies";
+} from "./infrastructure/persistence/index.js";
+import { AccountPurgeProcessor } from "./infrastructure/queue/account-purge.processor.js";
+import { AccountPurgeJob } from "./infrastructure/scheduler/account-purge.job.js";
+import { JwtRefreshStrategy, JwtStrategy } from "./infrastructure/strategies/index.js";
 import {
 	AccountController,
 	AuthController,
 	OAuthController,
 	SessionController,
-} from "./presentation/controllers";
-import { LastActiveInterceptor } from "./presentation/interceptors/last-active.interceptor";
+} from "./presentation/controllers/index.js";
+import { LastActiveInterceptor } from "./presentation/interceptors/last-active.interceptor.js";
 
 /**
  * 인증 모듈

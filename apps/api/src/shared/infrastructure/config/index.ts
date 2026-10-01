@@ -1,3 +1,3 @@
-export * from "./config.module";
-export * from "./schemas";
-export * from "./services/config.service";
+export * from "./config.module.js";
+export * from "./schemas/index.js";
+export * from "./services/config.service.js";

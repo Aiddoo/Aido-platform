@@ -1,18 +1,20 @@
+import { vi, type Mocked } from "vitest";
+
 /**
  * TransactionalEmailSender 단위 테스트
  *
  * 각 메서드가 올바른 EmailMessage를 조립해 EMAIL_SENDER 포트에 위임하는지
  * 스텁 sender로 검증한다 (실제 발송 없음).
  */
-import type { EmailSenderPort } from "../ports/email-sender.port";
-import { TransactionalEmailSender } from "../senders/transactional-email.sender";
+import type { EmailSenderPort } from "../ports/email-sender.port.js";
+import { TransactionalEmailSender } from "../senders/transactional-email.sender.js";
 
 describe("TransactionalEmailSender — 트랜잭션 이메일 발송", () => {
 	let emailSender: TransactionalEmailSender;
-	let sender: jest.Mocked<EmailSenderPort>;
+	let sender: Mocked<EmailSenderPort>;
 
 	beforeEach(() => {
-		sender = { send: jest.fn() };
+		sender = { send: vi.fn() };
 		emailSender = new TransactionalEmailSender(sender);
 		sender.send.mockResolvedValue({ success: true, messageId: "id-1" });
 	});

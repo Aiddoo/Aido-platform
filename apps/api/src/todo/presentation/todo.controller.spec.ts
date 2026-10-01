@@ -12,27 +12,27 @@
  * ```
  */
 import type { Todo as TodoResponse } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { TodoBuilder } from "@test/builders";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
+import { TodoBuilder } from "#test/builders/index";
 
-import { GetTodosUseCase } from "../application/queries";
+import { GetTodosUseCase } from "../application/queries/index.js";
 import {
 	CreateRecurringTodosUseCase,
 	CreateTodoUseCase,
 	DeleteTodoUseCase,
-} from "../application/use-cases";
-import { TodoMapper } from "../infrastructure/persistence/todo-response.mapper";
-import type { TodoWithCategory } from "../infrastructure/persistence/todo-row.types";
+} from "../application/use-cases/index.js";
+import { TodoMapper } from "../infrastructure/persistence/todo-response.mapper.js";
+import type { TodoWithCategory } from "../infrastructure/persistence/todo-row.types.js";
 import type {
 	CreateRecurringTodoDto,
 	CreateTodoDto,
 	GetTodosQueryDto,
 	TodoIdParamDto,
-} from "./dtos";
-import { TodoController } from "./todo.controller";
+} from "./dtos/index.js";
+import { TodoController } from "./todo.controller.js";
 
 /** 응답 read model(TodoResponse) 생성 헬퍼 — 행을 매핑해 계약 형태를 보장한다 */
 function buildResponse(overrides: Partial<TodoWithCategory> = {}): TodoResponse {

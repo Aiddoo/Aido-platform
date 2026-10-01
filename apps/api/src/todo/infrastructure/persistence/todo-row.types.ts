@@ -5,7 +5,7 @@
  * (프레임워크 비의존 파라미터 타입은 application/types.ts 참조)
  */
 
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "#api/generated/prisma/client";
 
 /**
  * Todo 조회 시 포함할 카테고리·하위 항목 select 설정

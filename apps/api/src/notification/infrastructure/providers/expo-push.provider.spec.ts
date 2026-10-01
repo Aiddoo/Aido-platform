@@ -1,3 +1,5 @@
+import { TestBed } from "@suites/unit";
+import type { ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
 /**
  * ExpoPushProvider 단위 테스트 (Suites + GWT 패턴)
  *
@@ -6,35 +8,30 @@
  * - 단일 발송 (send): 성공/실패 티켓 처리, BusinessException 전파
  * - 배치 발송 (sendBatch): 청크 처리, 부분 실패, 유효하지 않은 토큰 필터링
  */
+import { vi } from "vitest";
 
-import { TestBed } from "@suites/unit";
-
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import {
 	type PushPayload,
 	RetryablePushProviderTransportError,
-} from "../../application/ports/push-provider.port";
-import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message";
-import { ExpoPushProvider } from "./expo-push.provider";
+} from "../../application/ports/push-provider.port.js";
+import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.js";
+import { ExpoPushProvider } from "./expo-push.provider.js";
 
-// expo-server-sdk 모듈 mock — #expo 필드에 직접 접근 불가하므로 모듈 레벨 mock 사용
-const mockSendPushNotificationsAsync = jest.fn();
-const mockChunkPushNotifications = jest.fn();
-const mockExpoConstructor = jest.fn();
+const { mockSendPushNotificationsAsync, mockChunkPushNotifications, mockExpoConstructor } =
+	vi.hoisted(() => ({
+		mockSendPushNotificationsAsync:
+			vi.fn<(messages: ExpoPushMessage[]) => Promise<ExpoPushTicket[]>>(),
+		mockChunkPushNotifications: vi.fn<(messages: ExpoPushMessage[]) => ExpoPushMessage[][]>(),
+		mockExpoConstructor: vi.fn<(options?: unknown) => void>(),
+	}));
 
-jest.mock("expo-server-sdk", () => {
-	// v6부터 ESM-only라 jest 29(CJS)에서 requireActual 불가 —
-	// isExpoPushToken은 실제 구현과 동일한 판정식으로 직접 제공
-	const isExpoPushToken = (token: unknown): boolean =>
-		typeof token === "string" &&
-		(((token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[")) &&
-			token.endsWith("]")) ||
-			/^[a-z\d]{8}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{12}$/i.test(token));
-
+vi.mock("expo-server-sdk", async (importOriginal) => {
+	const sdk = await importOriginal<typeof import("expo-server-sdk")>();
 	return {
-		__esModule: true,
+		...sdk,
 		default: class MockExpo {
 			constructor(options?: unknown) {
 				mockExpoConstructor(options);
@@ -42,7 +39,7 @@ jest.mock("expo-server-sdk", () => {
 
 			sendPushNotificationsAsync = mockSendPushNotificationsAsync;
 			chunkPushNotifications = mockChunkPushNotifications;
-			static isExpoPushToken = isExpoPushToken;
+			static isExpoPushToken = sdk.default.isExpoPushToken;
 		},
 	};
 });
@@ -183,7 +180,7 @@ describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 			// Given
 			const payload = createPayload();
 			// 첫 번째 호출은 빈 티켓 반환 -> pushSendFailed BusinessException 발생
-			mockSendPushNotificationsAsync.mockResolvedValue([undefined]);
+			mockSendPushNotificationsAsync.mockResolvedValue([]);
 
 			// When / Then
 			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);

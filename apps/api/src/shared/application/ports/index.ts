@@ -5,8 +5,8 @@
  * (@/shared/infrastructure/database)에 있습니다. application 계층의
  * Prisma 타입 누출 방지 — lint:boundaries가 검사.
  */
-export * from "./domain-event-publisher.port";
-export * from "./after-commit-task.registry.port";
-export * from "./job-runtime.port";
-export * from "./mutation-lock.port";
-export * from "./unit-of-work.port";
+export * from "./domain-event-publisher.port.js";
+export * from "./after-commit-task.registry.port.js";
+export * from "./job-runtime.port.js";
+export * from "./mutation-lock.port.js";
+export * from "./unit-of-work.port.js";

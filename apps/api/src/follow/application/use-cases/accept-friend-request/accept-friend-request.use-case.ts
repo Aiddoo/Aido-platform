@@ -1,15 +1,15 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	FOLLOW_REPOSITORY,
 	type FollowRepositoryPort,
 	type FollowWithUser,
-} from "../../ports/follow.repository.port";
-import { FriendshipEffects } from "../../services/friendship-effects.service";
+} from "../../ports/follow.repository.port.js";
+import { FriendshipEffects } from "../../services/friendship-effects.service.js";
 
 export interface AcceptFriendRequestInput {
 	userId: string;

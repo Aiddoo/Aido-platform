@@ -2,14 +2,14 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { toDateString } from "@/shared/domain/date/utils/format";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	AggregateByDateRangeParams,
 	TodoCompletionRepositoryPort,
-} from "../../application/ports/todo-completion.repository.port";
-import type { TodoAggregateByDate } from "../../domain/daily-completion";
+} from "../../application/ports/todo-completion.repository.port.js";
+import type { TodoAggregateByDate } from "../../domain/daily-completion.js";
 
 /**
  * TodoCompletionRepositoryPort의 Prisma 어댑터.

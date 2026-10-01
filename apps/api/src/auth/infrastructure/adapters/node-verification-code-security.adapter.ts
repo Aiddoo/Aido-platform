@@ -6,7 +6,7 @@ import { Injectable } from "@nestjs/common";
 import type {
 	GeneratedVerificationCode,
 	VerificationCodeSecurityPort,
-} from "../../application/ports/verification-code-security.port";
+} from "../../application/ports/verification-code-security.port.js";
 
 @Injectable()
 export class NodeVerificationCodeSecurityAdapter implements VerificationCodeSecurityPort {

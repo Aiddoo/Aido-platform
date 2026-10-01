@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationPublisher } from "@/notification";
+import { NotificationPublisher } from "#api/notification/index";
 
-import type { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port";
-import type { AdminBroadcastMessage } from "../../domain/broadcast-message";
+import type { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port.js";
+import type { AdminBroadcastMessage } from "../../domain/broadcast-message.js";
 
 /**
  * AdminBroadcastNotifierPort의 NotificationPublisher 어댑터.

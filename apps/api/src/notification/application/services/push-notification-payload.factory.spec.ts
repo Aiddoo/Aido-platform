@@ -1,12 +1,13 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMarketingPushOptOutTokenMock } from "@test/mocks/ports/notification.mock";
+import type { Mocked } from "vitest";
+
+import { createMarketingPushOptOutTokenMock } from "#test/mocks/ports/notification.mock";
 
 import {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
-} from "../ports/marketing-push-opt-out-token.port";
-import { PushNotificationPayloadFactory } from "./push-notification-payload.factory";
+} from "../ports/marketing-push-opt-out-token.port.js";
+import { PushNotificationPayloadFactory } from "./push-notification-payload.factory.js";
 
 describe("PushNotificationPayloadFactory", () => {
 	let factory: PushNotificationPayloadFactory;

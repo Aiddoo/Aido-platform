@@ -1,19 +1,20 @@
 import request from "supertest";
+import { vi, type MockInstance } from "vitest";
 
-import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 
-import { FakeJobRuntime } from "../mocks/fake-job-runtime";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("durable job runtime health E2E", () => {
 	let ctx: E2eTestContext;
 	const runtime = new FakeJobRuntime();
-	const health = jest.spyOn(runtime, "health");
+	let health: MockInstance<typeof runtime.health>;
 
 	beforeAll(async () => {
 		ctx = await createE2eApp({
 			customizeBuilder: (builder) => builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
-			additionalResetters: [() => health.mockClear()],
+			additionalResetters: [() => health?.mockClear()],
 		});
 	});
 
@@ -22,6 +23,7 @@ describe("durable job runtime health E2E", () => {
 	});
 
 	beforeEach(async () => {
+		health = vi.spyOn(runtime, "health");
 		await ctx.reset();
 	});
 

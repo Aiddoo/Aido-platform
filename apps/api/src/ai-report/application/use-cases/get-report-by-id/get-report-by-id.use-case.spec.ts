@@ -6,18 +6,18 @@
  * - 존재하지 않으면 AI_1304
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { AiReport } from "../../../domain/entities/ai-report.entity";
+import { AiReport } from "../../../domain/entities/ai-report.entity.js";
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
-} from "../../ports/ai-report.repository.port";
-import { GetReportByIdUseCase } from "./get-report-by-id.use-case";
+} from "../../ports/ai-report.repository.port.js";
+import { GetReportByIdUseCase } from "./get-report-by-id.use-case.js";
 
 const makeReport = (id: number): AiReport =>
 	AiReport.reconstitute({

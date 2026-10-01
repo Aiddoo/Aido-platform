@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
 
-import { EmailModule } from "@/email/email.module";
+import { EmailModule } from "#api/email/email.module";
 
-import { INQUIRY_PROVIDERS } from "./application/inquiry.providers";
-import { INQUIRY_MAILER } from "./application/ports/inquiry-mailer.port";
-import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/email-inquiry-mailer.adapter";
-import { InquiryController } from "./presentation/inquiry.controller";
+import { INQUIRY_PROVIDERS } from "./application/inquiry.providers.js";
+import { INQUIRY_MAILER } from "./application/ports/inquiry-mailer.port.js";
+import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/email-inquiry-mailer.adapter.js";
+import { InquiryController } from "./presentation/inquiry.controller.js";
 
 /**
  * 문의 모듈 (클린아키텍처)

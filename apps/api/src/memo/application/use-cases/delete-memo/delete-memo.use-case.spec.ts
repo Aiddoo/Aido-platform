@@ -4,13 +4,14 @@
  * 소유권 확인(MEMO_2001) 후 영구 삭제를 검증한다.
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMemoRepositoryMock } from "@test/mocks/ports/memo.mock";
+import type { Mocked } from "vitest";
 
-import { Memo } from "../../../domain/entities/memo.aggregate";
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { DeleteMemoUseCase } from "./delete-memo.use-case";
+import { createMemoRepositoryMock } from "#test/mocks/ports/memo.mock";
+
+import { Memo } from "../../../domain/entities/memo.aggregate.js";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { DeleteMemoUseCase } from "./delete-memo.use-case.js";
 
 const memoEntity = (): Memo =>
 	Memo.reconstitute({

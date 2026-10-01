@@ -1,15 +1,33 @@
 import { randomUUID } from "node:crypto";
 
 import { Controller, Get, Logger } from "@nestjs/common";
-import { ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiResponse, ApiTags, type SchemaObject } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 
-import { Public } from "@/auth/presentation/decorators";
-import { ApiDoc, SWAGGER_TAGS } from "@/shared/presentation/swagger";
+import { Public } from "#api/auth/presentation/decorators/index";
+import { ApiDoc, SWAGGER_TAGS } from "#api/shared/presentation/swagger/index";
 
-import { BullHealthIndicator } from "./indicators/bull.health";
-import { DatabaseHealthIndicator } from "./indicators/database.health";
+import { BullHealthIndicator } from "./indicators/bull.health.js";
+import { DatabaseHealthIndicator } from "./indicators/database.health.js";
+
+function describeHealthResponse(status: "ok" | "error"): SchemaObject {
+	const indicator: SchemaObject = {
+		type: "object",
+		additionalProperties: true,
+		properties: { status: { type: "string" } },
+		required: ["status"],
+	};
+	return {
+		type: "object",
+		properties: {
+			status: { type: "string", example: status },
+			info: { type: "object", additionalProperties: indicator, nullable: true },
+			error: { type: "object", additionalProperties: indicator, nullable: true },
+			details: { type: "object", additionalProperties: indicator },
+		},
+	};
+}
 
 const INSTANCE_ID = process.env.INSTANCE_ID ?? randomUUID().slice(0, 8);
 
@@ -26,7 +44,7 @@ export class HealthController {
 
 	@Get()
 	@Public()
-	@HealthCheck()
+	@HealthCheck({ swaggerDocumentation: false })
 	@ApiDoc({
 		summary: "서버 상태 확인",
 		operationId: "healthCheck",
@@ -64,6 +82,7 @@ curl https://api.aido.com/health
 		status: 200,
 		description: "서버가 정상 동작 중입니다.",
 		schema: {
+			...describeHealthResponse("ok"),
 			example: {
 				status: "ok",
 				info: {
@@ -82,6 +101,7 @@ curl https://api.aido.com/health
 		status: 503,
 		description: "서버에 문제가 발생했습니다.",
 		schema: {
+			...describeHealthResponse("error"),
 			example: {
 				status: "error",
 				info: { queues: { status: "up" } },

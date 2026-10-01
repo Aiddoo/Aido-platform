@@ -1,8 +1,8 @@
 import type { SubscriptionStatus, UserRole } from "@aido/validators";
 
-import type { AccountProvider, UserStatus } from "@/auth/domain/types";
+import type { AccountProvider, UserStatus } from "#api/auth/domain/types";
 
-import type { TokenPair } from "../ports/auth-crypto.port";
+import type { TokenPair } from "../ports/auth-crypto.port.js";
 
 /**
  * 회원가입 결과

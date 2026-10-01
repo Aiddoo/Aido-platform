@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { now } from "./core";
+import { now } from "./core.js";
 
 /** 지정 분 후의 시각 반환 */
 export function addMinutes(minutes: number, from: Date = now()): Date {

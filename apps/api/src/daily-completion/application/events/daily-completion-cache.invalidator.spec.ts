@@ -1,13 +1,12 @@
+import { Logger } from "@nestjs/common";
 /**
  * DailyCompletionCacheInvalidator 단위 테스트
  *
  * Suites + GWT 패턴 — 투두 쓰기 이벤트 수신 시 캐시 무효화와 실패 삼킴 검증
  */
-
-import { Logger } from "@nestjs/common";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createDailyCompletionCacheMock } from "@test/mocks/ports";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	TODO_EVENTS,
@@ -15,13 +14,14 @@ import {
 	TodoCreatedEvent,
 	TodoToggledEvent,
 	TodoVisibilityChangedEvent,
-} from "@/todo";
+} from "#api/todo/index";
+import { createDailyCompletionCacheMock } from "#test/mocks/ports/index";
 
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
-} from "../ports/daily-completion-cache.port";
-import { DailyCompletionCacheInvalidator } from "./daily-completion-cache.invalidator";
+} from "../ports/daily-completion-cache.port.js";
+import { DailyCompletionCacheInvalidator } from "./daily-completion-cache.invalidator.js";
 
 describe("DailyCompletionCacheInvalidator — 투두 쓰기 이벤트 캐시 무효화", () => {
 	let invalidator: DailyCompletionCacheInvalidator;
@@ -110,7 +110,7 @@ describe("DailyCompletionCacheInvalidator — 투두 쓰기 이벤트 캐시 무
 
 	it("캐시 무효화 실패는 삼키고 로깅한다 (fire-and-forget)", async () => {
 		// Given - 캐시 무효화 실패
-		const errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+		const errorSpy = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
 		cache.invalidate.mockRejectedValue(new Error("redis down"));
 
 		// When & Then - 예외를 전파하지 않는다

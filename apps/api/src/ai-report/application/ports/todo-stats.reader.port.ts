@@ -1,4 +1,4 @@
-import type { AggregateParams, AggregationInputs } from "../../domain/types";
+import type { AggregateParams, AggregationInputs } from "../../domain/types.js";
 
 export const TODO_STATS_READER = Symbol("TODO_STATS_READER");
 

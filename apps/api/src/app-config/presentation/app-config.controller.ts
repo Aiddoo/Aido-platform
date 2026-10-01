@@ -2,12 +2,12 @@ import type { AppVersionResponse, FeatureDiscoveryResponse } from "@aido/validat
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
-import { Public } from "@/auth/presentation/decorators";
-import { RawResponse } from "@/shared/presentation/decorators";
-import { ApiDoc } from "@/shared/presentation/swagger";
+import { Public } from "#api/auth/presentation/decorators/index";
+import { RawResponse } from "#api/shared/presentation/decorators/index";
+import { ApiDoc } from "#api/shared/presentation/swagger/index";
 
-import { GetAppVersionUseCase } from "../application/queries/get-app-version/get-app-version.use-case";
-import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case";
+import { GetAppVersionUseCase } from "../application/queries/get-app-version/get-app-version.use-case.js";
+import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case.js";
 import {
 	AppVersionDisabledResponseDto,
 	AppVersionEnabledResponseDto,
@@ -15,7 +15,7 @@ import {
 	FeatureDiscoveryEnabledResponseDto,
 	appVersionResponseOpenApiSchema,
 	featureDiscoveryResponseOpenApiSchema,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags("App Config")
 @Controller("app-config")

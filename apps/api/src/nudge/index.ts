@@ -1,1 +1,1 @@
-export { NudgeModule } from "./nudge.module";
+export { NudgeModule } from "./nudge.module.js";

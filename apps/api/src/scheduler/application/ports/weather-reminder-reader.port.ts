@@ -3,7 +3,7 @@
  *
  * 아침/저녁 날씨 알림의 위치 보유 유저·폴백(위치 없음) 유저 조회를 담당한다.
  */
-import type { WeatherFallbackUser, WeatherReminderUser } from "./scheduler-read-models";
+import type { WeatherFallbackUser, WeatherReminderUser } from "./scheduler-read-models.js";
 
 export const WEATHER_REMINDER_READER = Symbol("WEATHER_REMINDER_READER");
 

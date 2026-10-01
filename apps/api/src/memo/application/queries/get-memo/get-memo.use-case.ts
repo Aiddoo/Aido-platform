@@ -2,9 +2,9 @@ import { ErrorCode } from "@aido/errors";
 import type { Memo as MemoResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
 
 /** 메모 단건 조회 입력. */
 export interface GetMemoInput {

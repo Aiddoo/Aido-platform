@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * Nudge 모듈 통합 테스트 (Mock DB)
  *
@@ -7,33 +8,32 @@
  *
  * 실행: pnpm --filter @aido/api test nudge.integration-spec
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { NudgeBuilder, TodoBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { FollowReader } from "@/follow";
-import { NotificationQueueService } from "@/notification/queue";
-import { NUDGE_LIMIT_READER } from "@/nudge/application/ports/nudge-limit-reader.port";
-import { NUDGE_NOTIFIER } from "@/nudge/application/ports/nudge-notifier.port";
-import { NUDGE_REPOSITORY } from "@/nudge/application/ports/nudge.repository.port";
-import { NudgeReader } from "@/nudge/application/services/nudge.reader";
-import { MarkNudgeReadUseCase } from "@/nudge/application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
-import { SendNudgeUseCase } from "@/nudge/application/use-cases/send-nudge/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "@/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
-import { NudgeLimitReaderAdapter } from "@/nudge/infrastructure/adapters/nudge-limit-reader.adapter";
-import { NudgeNotifierAdapter } from "@/nudge/infrastructure/adapters/nudge-notifier.adapter";
-import { PrismaNudgeRepository } from "@/nudge/infrastructure/persistence/prisma-nudge.repository";
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "@/shared/application/ports";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { FollowReader } from "#api/follow/index";
+import { NotificationQueueService } from "#api/notification/queue";
+import { NUDGE_LIMIT_READER } from "#api/nudge/application/ports/nudge-limit-reader.port";
+import { NUDGE_NOTIFIER } from "#api/nudge/application/ports/nudge-notifier.port";
+import { NUDGE_REPOSITORY } from "#api/nudge/application/ports/nudge.repository.port";
+import { NudgeReader } from "#api/nudge/application/services/nudge.reader";
+import { MarkNudgeReadUseCase } from "#api/nudge/application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
+import { SendNudgeUseCase } from "#api/nudge/application/use-cases/send-nudge/send-nudge.use-case";
+import { SendRemindNudgeUseCase } from "#api/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
+import { NudgeLimitReaderAdapter } from "#api/nudge/infrastructure/adapters/nudge-limit-reader.adapter";
+import { NudgeNotifierAdapter } from "#api/nudge/infrastructure/adapters/nudge-notifier.adapter";
+import { PrismaNudgeRepository } from "#api/nudge/infrastructure/persistence/prisma-nudge.repository";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { NudgeBuilder, TodoBuilder } from "#test/builders/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -60,20 +60,20 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 	};
 
 	const mockNudgeDb = {
-		create: jest.fn(),
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		update: jest.fn(),
-		count: jest.fn(),
+		create: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		update: vi.fn(),
+		count: vi.fn(),
 	};
 	const mockReminderNudgeDb = {
-		create: jest.fn(),
-		findFirst: jest.fn(),
+		create: vi.fn(),
+		findFirst: vi.fn(),
 	};
 	const mockTodoDb = {
-		findUnique: jest.fn(),
-		count: jest.fn(),
+		findUnique: vi.fn(),
+		count: vi.fn(),
 	};
 	const mockDatabaseService = createMockDatabaseService({
 		nudge: mockNudgeDb,
@@ -81,12 +81,12 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 		todo: mockTodoDb,
 	});
 
-	const mockFollowReader = { isMutualFriend: jest.fn() };
-	const mockNotificationQueueService = { enqueueNudgeSent: jest.fn() };
+	const mockFollowReader = { isMutualFriend: vi.fn() };
+	const mockNotificationQueueService = { enqueueNudgeSent: vi.fn() };
 	const mockEntitlementService = {
-		getFeatureLimit: jest.fn(),
-		getFeatureLimitInTx: jest.fn(),
-		calculateRemaining: jest.fn(),
+		getFeatureLimit: vi.fn(),
+		getFeatureLimitInTx: vi.fn(),
+		calculateRemaining: vi.fn(),
 	};
 
 	const senderId = "user-nudge-sender-123";
@@ -127,7 +127,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
 				{
 					provide: MUTATION_LOCK,
-					useValue: { acquire: jest.fn().mockResolvedValue(undefined) },
+					useValue: { acquire: vi.fn().mockResolvedValue(undefined) },
 				},
 				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
 				{
@@ -153,11 +153,11 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		NudgeBuilder.resetIdCounter();
 		TodoBuilder.resetIdCounter();
 		mockEntitlementService.getFeatureLimit.mockResolvedValue({

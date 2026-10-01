@@ -1,4 +1,4 @@
-import type { TodoAggregateByDate } from "../../domain/daily-completion";
+import type { TodoAggregateByDate } from "../../domain/daily-completion.js";
 
 /** TodoCompletionRepositoryPort DI 토큰 */
 export const TODO_COMPLETION_REPOSITORY = Symbol("TODO_COMPLETION_REPOSITORY");

@@ -1,15 +1,17 @@
+import type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
+export type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
 import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
 
-import type { SupportedLocale } from "@/shared/domain/locale";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
-} from "@/shared/domain/prompt/prompt-sections";
-import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+} from "#api/shared/domain/prompt/prompt-sections";
+import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
-import type { SuggestionContext } from "../../types";
-import { buildSuggestionPromptEn } from "./detect-patterns.prompt.en";
+import type { SuggestionContext } from "../../types.js";
+import { buildSuggestionPromptEn } from "./detect-patterns.prompt.en.js";
 
 export const detectedPatternsSchema = z.object({
 	patterns: z.array(
@@ -45,11 +47,6 @@ export const detectedPatternsSchemaEn = z.object({
 
 export function getDetectedPatternsSchema(locale: SupportedLocale) {
 	return locale === "en" ? detectedPatternsSchemaEn : detectedPatternsSchema;
-}
-
-export interface SuggestionPrompt {
-	system: string;
-	prompt: string;
 }
 
 function buildPatternRules(minOccurrences: number): string {

@@ -1,20 +1,19 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { TestDatabase } from "@test/setup/test-database";
-
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "#api/generated/prisma/client";
+import { TestDatabase } from "#test/setup/test-database";
 
 const MIGRATION_PATH = path.resolve(
-	__dirname,
+	import.meta.dirname,
 	"../../prisma/migrations/20260826090000_remove_todo_comment_notification_deep_link/migration.sql",
 );
 const FRIEND_INDEX_MIGRATION_PATH = path.resolve(
-	__dirname,
+	import.meta.dirname,
 	"../../prisma/migrations/20260826110000_index_notification_friend_actor_cleanup/migration.sql",
 );
 const COMMENT_INDEX_MIGRATION_PATH = path.resolve(
-	__dirname,
+	import.meta.dirname,
 	"../../prisma/migrations/20260826120000_index_notification_comment_actor_cleanup/migration.sql",
 );
 const TEST_SCHEMA = `todo_comment_notification_migration_${process.pid}`;

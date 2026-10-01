@@ -1,23 +1,23 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { subtractMilliseconds } from "@/shared/domain/date/utils/arithmetic";
+import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
-import type { NotificationRecord } from "../../../domain/records/notification.record";
+import type { NotificationRecord } from "../../../domain/records/notification.record.js";
 import {
 	buildDedupContextFields,
 	buildDedupKey,
 	resolveDedupStrategy,
-} from "../../../domain/services/notification-dedup";
-import type { CreateNotificationData } from "../../ports/notification-data";
+} from "../../../domain/services/notification-dedup.js";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	NOTIFICATION_DEDUP_LOCK,
 	type NotificationDedupLockPort,
-} from "../../ports/notification-dedup.port";
+} from "../../ports/notification-dedup.port.js";
 import {
 	NOTIFICATION_HISTORY_READER,
 	type NotificationHistoryReaderPort,
-} from "../../ports/notification-history.reader.port";
-import { SendNotificationUseCase } from "../send-notification/send-notification.use-case";
+} from "../../ports/notification-history.reader.port.js";
+import { SendNotificationUseCase } from "../send-notification/send-notification.use-case.js";
 
 /**
  * 중복 방지가 적용된 알림 생성 및 푸시 발송 유스케이스.

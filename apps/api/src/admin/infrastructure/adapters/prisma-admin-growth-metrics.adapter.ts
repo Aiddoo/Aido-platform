@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	AdminGrowthMetricsPort,
 	AdminGrowthSummaryCounts,
-} from "../../application/ports/admin-growth-metrics.port";
+} from "../../application/ports/admin-growth-metrics.port.js";
 
 interface GrowthSummaryRow {
 	readonly measurementStartedAt: Date | null;

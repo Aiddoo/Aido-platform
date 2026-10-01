@@ -1,6 +1,6 @@
 import type { SubscriptionStatus, UserRole } from "@aido/validators";
 
-import type { AccountProvider, UserStatus } from "../../domain/types";
+import type { AccountProvider, UserStatus } from "../../domain/types.js";
 
 export const AUTH_CACHE = Symbol("AUTH_CACHE");
 export const AUTH_EMAIL_SENDER = Symbol("AUTH_EMAIL_SENDER");

@@ -2,11 +2,15 @@ import type { RevenueCatWebhookPayload } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 
-import { AdminEventNotifier, type AdminNotifier, PAYMENT_NOTIFIER } from "@/admin-notification";
-import { NotificationQueueService } from "@/notification/queue";
+import {
+	AdminEventNotifier,
+	type AdminNotifier,
+	PAYMENT_NOTIFIER,
+} from "#api/admin-notification/index";
+import { NotificationQueueService } from "#api/notification/queue";
 
-import type { SubscriptionEventNotifierPort } from "../../application/ports/subscription-event-notifier.port";
-import type { SubscriptionEventPayload } from "../../application/types/subscription-event.payload";
+import type { SubscriptionEventNotifierPort } from "../../application/ports/subscription-event-notifier.port.js";
+import type { SubscriptionEventPayload } from "../../application/types/subscription-event.payload.js";
 
 /**
  * 구독 이벤트 알림 어댑터.

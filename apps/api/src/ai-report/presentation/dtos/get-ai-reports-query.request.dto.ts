@@ -1,4 +1,8 @@
 import { getAiReportsQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetAiReportsQueryDto extends createZodDto(getAiReportsQuerySchema) {}
+export const GetAiReportsQueryDto = getAiReportsQuerySchema.meta({
+	id: "GetAiReportsQueryDto",
+	apiParameter: true,
+});
+export type GetAiReportsQueryDto = z.infer<typeof GetAiReportsQueryDto>;

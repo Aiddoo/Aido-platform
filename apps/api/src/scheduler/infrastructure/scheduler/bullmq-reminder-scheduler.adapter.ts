@@ -1,16 +1,16 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import type {
 	IReminderScheduler,
 	ReminderCancellationResult,
-} from "../../application/ports/reminder-scheduler.port";
+} from "../../application/ports/reminder-scheduler.port.js";
 import {
 	allReminderLabels,
 	planReminderJobs,
 	REMINDER_IMMEDIATE_LABEL,
-} from "../../domain/services/reminder-plan";
+} from "../../domain/services/reminder-plan.js";
 
 export const TODO_REMINDER_QUEUE = "todo-reminder.v1";
 export const TODO_REMINDER_LEGACY_QUEUE = "todo-reminder";

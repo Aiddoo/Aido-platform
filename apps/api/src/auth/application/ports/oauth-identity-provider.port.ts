@@ -1,4 +1,4 @@
-import type { AccountProvider } from "@/auth/domain/types";
+import type { AccountProvider } from "#api/auth/domain/types";
 
 /**
  * OAuth 신원 제공자 통합 포트.

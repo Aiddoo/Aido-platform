@@ -3,18 +3,18 @@ import { randomUUID } from "node:crypto";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 
 import type {
 	FriendTodosFirstPageCacheRead,
 	TodoCachePort,
-} from "../../application/ports/todo-cache.port";
+} from "../../application/ports/todo-cache.port.js";
 import {
 	FRIEND_TODOS_INITIAL_GENERATION,
 	TODO_CACHE_TTL_MS,
 	TodoCacheKey,
-} from "../cache/todo-cache.keyspace";
+} from "../cache/todo-cache.keyspace.js";
 
 /**
  * Todo 캐시 포트 어댑터 — CacheService에 위임

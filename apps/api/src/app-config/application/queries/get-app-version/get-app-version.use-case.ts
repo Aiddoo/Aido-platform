@@ -1,7 +1,10 @@
 import type { AppVersionResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { APP_VERSION_CONFIG, type AppVersionConfigPort } from "../../ports/app-version-config.port";
+import {
+	APP_VERSION_CONFIG,
+	type AppVersionConfigPort,
+} from "../../ports/app-version-config.port.js";
 
 @Injectable()
 export class GetAppVersionUseCase {

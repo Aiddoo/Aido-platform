@@ -4,17 +4,17 @@ import { ErrorCode } from "@aido/errors";
 import { TODO_COMMENT_SORT, z, type TodoCommentSort } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { ApplicationException } from "#api/shared/domain/index";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import type { TodoCommentCursorCodecPort } from "../../application/ports/todo-comment-cursor-codec.port";
+import type { TodoCommentCursorCodecPort } from "../../application/ports/todo-comment-cursor-codec.port.js";
 import type {
 	TodoCommentOverviewCursor,
 	TodoCommentOverviewRootRecord,
 	TodoConversationCursor,
 	TodoConversationRecord,
 	TodoConversationScope,
-} from "../../application/types";
+} from "../../application/types.js";
 
 const CURSOR_DOMAIN = "todo-comment-cursor:v1:";
 const postgresCountSchema = z.number().int().min(0).max(2_147_483_647);

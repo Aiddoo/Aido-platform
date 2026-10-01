@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * forEachBatch 유틸 테스트
  *
@@ -9,13 +11,13 @@
  * pnpm --filter @aido/api test batch-cursor.util
  * ```
  */
-import { forEachBatch } from "./batch-cursor.util";
+import { forEachBatch } from "./batch-cursor.util.js";
 
 describe("forEachBatch", () => {
 	it("빈 결과에서는 onBatch가 호출되지 않아야 한다", async () => {
 		// Given
-		const fetchPage = jest.fn().mockResolvedValue([]);
-		const onBatch = jest.fn();
+		const fetchPage = vi.fn().mockResolvedValue([]);
+		const onBatch = vi.fn();
 
 		// When
 		await forEachBatch({ fetchPage, batchSize: 10, onBatch });
@@ -29,8 +31,8 @@ describe("forEachBatch", () => {
 	it("단일 배치(page < batchSize)에서 1회 호출 후 종료해야 한다", async () => {
 		// Given
 		const items = [{ id: "a" }, { id: "b" }];
-		const fetchPage = jest.fn().mockResolvedValue(items);
-		const onBatch = jest.fn();
+		const fetchPage = vi.fn().mockResolvedValue(items);
+		const onBatch = vi.fn();
 
 		// When
 		await forEachBatch({ fetchPage, batchSize: 10, onBatch });
@@ -45,8 +47,8 @@ describe("forEachBatch", () => {
 		// Given
 		const page1 = [{ id: "a" }, { id: "b" }];
 		const page2 = [{ id: "c" }];
-		const fetchPage = jest.fn().mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
-		const onBatch = jest.fn();
+		const fetchPage = vi.fn().mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
+		const onBatch = vi.fn();
 
 		// When
 		await forEachBatch({ fetchPage, batchSize: 2, onBatch });
@@ -61,8 +63,8 @@ describe("forEachBatch", () => {
 	it("onBatch 에러가 즉시 전파되어야 한다", async () => {
 		// Given
 		const items = [{ id: "a" }];
-		const fetchPage = jest.fn().mockResolvedValue(items);
-		const onBatch = jest.fn().mockRejectedValue(new Error("batch error"));
+		const fetchPage = vi.fn().mockResolvedValue(items);
+		const onBatch = vi.fn().mockRejectedValue(new Error("batch error"));
 
 		// When & Then
 		await expect(forEachBatch({ fetchPage, batchSize: 10, onBatch })).rejects.toThrow(
@@ -74,8 +76,8 @@ describe("forEachBatch", () => {
 		// Given
 		const page1 = [{ id: "a" }, { id: "b" }];
 		const page2: { id: string }[] = [];
-		const fetchPage = jest.fn().mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
-		const onBatch = jest.fn();
+		const fetchPage = vi.fn().mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
+		const onBatch = vi.fn();
 
 		// When
 		await forEachBatch({ fetchPage, batchSize: 2, onBatch });

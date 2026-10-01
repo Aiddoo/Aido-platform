@@ -3,10 +3,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { type Follow as FollowRow, Prisma } from "@/generated/prisma/client";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { USER_BRIEF_SELECT } from "@/shared/infrastructure/database/selects";
+import { type Follow as FollowRow, Prisma } from "#api/generated/prisma/client";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { USER_BRIEF_SELECT } from "#api/shared/infrastructure/database/selects";
 
 import type {
 	CreateFollowInput,
@@ -16,8 +16,8 @@ import type {
 	SearchUsersParams,
 	UpdateFollowInput,
 	UserSearchResult,
-} from "../../application/ports/follow.repository.port";
-import { Friendship } from "../../domain/entities/friendship.aggregate";
+} from "../../application/ports/follow.repository.port.js";
+import { Friendship } from "../../domain/entities/friendship.aggregate.js";
 
 /** USER_BRIEF_SELECT 결과가 포함된 Follow 행 형태 */
 type FollowRowWithUser = FollowRow & {

@@ -1,4 +1,7 @@
 import { nudgeCooldownInfoSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class NudgeCooldownResponseDto extends createZodDto(nudgeCooldownInfoSchema) {}
+export const NudgeCooldownResponseDto = nudgeCooldownInfoSchema.meta({
+	id: "NudgeCooldownResponseDto",
+});
+export type NudgeCooldownResponseDto = z.infer<typeof NudgeCooldownResponseDto>;

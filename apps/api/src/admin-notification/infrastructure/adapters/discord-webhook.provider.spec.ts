@@ -9,7 +9,7 @@
  * pnpm --filter @aido/api test discord-webhook.provider
  * ```
  */
-import { DiscordWebhookProvider } from "./discord-webhook.provider";
+import { DiscordWebhookProvider } from "./discord-webhook.provider.js";
 
 describe("DiscordWebhookProvider — Discord 웹훅 프로바이더", () => {
 	it("name이 discord이다", () => {

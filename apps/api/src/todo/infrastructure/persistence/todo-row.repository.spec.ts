@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * TodoRowRepository 단위 테스트
  *
@@ -8,17 +9,16 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { TodoBuilder } from "@test/builders";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { vi } from "vitest";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { TodoBuilder } from "#test/builders/index";
+import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import type { FindFriendTodosParams, FindTodosParams } from "../../application/types";
-import { TodoRowRepository } from "./todo-row.repository";
+import type { FindFriendTodosParams, FindTodosParams } from "../../application/types.js";
+import { TodoRowRepository } from "./todo-row.repository.js";
 
 describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 	let repository: TodoRowRepository;
@@ -51,7 +51,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				TodoBuilder.create("user-1").withId(1).build(),
 				TodoBuilder.create("user-1").withId(2).build(),
 			];
-			jest.mocked(db.todo.findMany).mockResolvedValue(todos);
+			vi.mocked(db.todo.findMany).mockResolvedValue(todos);
 
 			// When
 			const result = await repository.findManyByUserId(params);
@@ -89,7 +89,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				size: 10,
 			};
 			const todos = [TodoBuilder.create("user-1").withId(4).build()];
-			jest.mocked(db.todo.findMany).mockResolvedValue(todos);
+			vi.mocked(db.todo.findMany).mockResolvedValue(todos);
 
 			// When
 			const result = await repository.findManyByUserId(params);
@@ -128,7 +128,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				cursor: 0,
 				size: 10,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findManyByUserId(params);
@@ -166,7 +166,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				size: 10,
 				completed: true,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findManyByUserId(params);
@@ -189,7 +189,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				size: 10,
 				categoryId: 3,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findManyByUserId(params);
@@ -215,7 +215,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				startDate,
 				endDate,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findManyByUserId(params);
@@ -237,13 +237,13 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				userId: "user-1",
 				size: 10,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findManyByUserId(params);
 
 			// Then - orderBy가 복합키 배열인지 검증
-			const callArgs = jest.mocked(db.todo.findMany).mock.calls[0]?.[0];
+			const callArgs = vi.mocked(db.todo.findMany).mock.calls[0]?.[0];
 			expect(callArgs?.orderBy).toEqual([
 				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
@@ -263,7 +263,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				TodoBuilder.create("friend-1").withId(1).asPublic().build(),
 				TodoBuilder.create("friend-1").withId(2).asPublic().build(),
 			];
-			jest.mocked(db.todo.findMany).mockResolvedValue(todos);
+			vi.mocked(db.todo.findMany).mockResolvedValue(todos);
 
 			// When
 			const result = await repository.findPublicTodosByUserId(params);
@@ -303,7 +303,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				cursor: 5,
 				size: 10,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findPublicTodosByUserId(params);
@@ -344,7 +344,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				cursor: 0,
 				size: 10,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findPublicTodosByUserId(params);
@@ -388,7 +388,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				startDate,
 				endDate,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findPublicTodosByUserId(params);
@@ -411,13 +411,13 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				friendUserId: "friend-1",
 				size: 10,
 			};
-			jest.mocked(db.todo.findMany).mockResolvedValue([]);
+			vi.mocked(db.todo.findMany).mockResolvedValue([]);
 
 			// When
 			await repository.findPublicTodosByUserId(params);
 
 			// Then - orderBy가 복합키 배열인지 검증
-			const callArgs = jest.mocked(db.todo.findMany).mock.calls[0]?.[0];
+			const callArgs = vi.mocked(db.todo.findMany).mock.calls[0]?.[0];
 			expect(callArgs?.orderBy).toEqual([
 				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
@@ -440,7 +440,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
-			jest.mocked(db.todoItem.create).mockResolvedValue(expected);
+			vi.mocked(db.todoItem.create).mockResolvedValue(expected);
 
 			// When
 			const result = await repository.createItem(todoId, data);
@@ -466,7 +466,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 			// Given
 			const itemId = 10;
 			const data = { title: "수정된 항목", completed: true };
-			jest.mocked(db.todoItem.update).mockResolvedValue({
+			vi.mocked(db.todoItem.update).mockResolvedValue({
 				id: 10,
 				todoId: 1,
 				title: "항목",
@@ -491,7 +491,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 		it("todoItem.delete를 올바른 파라미터로 호출한다", async () => {
 			// Given
 			const itemId = 10;
-			jest.mocked(db.todoItem.delete).mockResolvedValue({
+			vi.mocked(db.todoItem.delete).mockResolvedValue({
 				id: 10,
 				todoId: 1,
 				title: "항목",
@@ -515,7 +515,7 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 		it("각 itemId에 대해 update를 호출한다", async () => {
 			// Given
 			const itemIds = [30, 10, 20];
-			jest.mocked(db.todoItem.update).mockResolvedValue({
+			vi.mocked(db.todoItem.update).mockResolvedValue({
 				id: 10,
 				todoId: 1,
 				title: "항목",

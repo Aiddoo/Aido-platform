@@ -1,19 +1,20 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createRetentionRepositoryMock, createUnitOfWorkMock } from "@test/mocks/ports";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
 	RETENTION_JOB_ENQUEUER,
 	type RetentionJobEnqueuerPort,
-} from "../../ports/retention-job-enqueuer.port";
+} from "../../ports/retention-job-enqueuer.port.js";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
-import { RelayRetentionOutboxUseCase } from "./relay-retention-outbox.use-case";
+} from "../../ports/retention.repository.port.js";
+import { RelayRetentionOutboxUseCase } from "./relay-retention-outbox.use-case.js";
 
 describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 	let useCase: RelayRetentionOutboxUseCase;
@@ -26,7 +27,7 @@ describe("RelayRetentionOutboxUseCase — 내구성 큐 전달", () => {
 			.mock<RetentionRepositoryPort>(RETENTION_REPOSITORY)
 			.impl(() => createRetentionRepositoryMock())
 			.mock<RetentionJobEnqueuerPort>(RETENTION_JOB_ENQUEUER)
-			.impl(() => ({ enqueueDispatch: jest.fn() }))
+			.impl(() => ({ enqueueDispatch: vi.fn() }))
 			.mock<RetentionConfigPort>(RETENTION_CONFIG)
 			.impl(() => ({ enabled: true, treatmentPercent: 50 }))
 			.mock(UNIT_OF_WORK)

@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException, EntityId } from "@/shared/domain";
+import { DomainException, EntityId } from "#api/shared/domain/index";
 
 /**
  * Todo 식별자 VO

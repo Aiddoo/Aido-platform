@@ -1,17 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { pushDeliveryOutboxRetryDelayMs } from "../../policies/push-delivery-outbox-retry.policy";
+import { pushDeliveryOutboxRetryDelayMs } from "../../policies/push-delivery-outbox-retry.policy.js";
 import {
 	PUSH_DELIVERY_JOB_ENQUEUER,
 	type PushDeliveryJobEnqueuerPort,
-} from "../../ports/push-delivery-job-enqueuer.port";
+} from "../../ports/push-delivery-job-enqueuer.port.js";
 import {
 	PUSH_DELIVERY_OUTBOX_REPOSITORY,
 	type PushDeliveryOutboxRepositoryPort,
-} from "../../ports/push-delivery-outbox.repository.port";
-import type { PushDeliveryPublication } from "../../types/push-delivery.types";
+} from "../../ports/push-delivery-outbox.repository.port.js";
+import type { PushDeliveryPublication } from "../../types/push-delivery.types.js";
 
 const DELIVERY_JOB_BATCH_SIZE = 100;
 

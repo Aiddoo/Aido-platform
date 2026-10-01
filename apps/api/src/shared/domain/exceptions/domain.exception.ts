@@ -1,6 +1,6 @@
 import type { ErrorCodeType } from "@aido/errors";
 
-import { ErrorCodedException } from "./error-coded.exception";
+import { ErrorCodedException } from "./error-coded.exception.js";
 
 /**
  * 도메인 예외

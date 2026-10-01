@@ -1,7 +1,7 @@
 import type {
 	WeeklyAchievementRow,
 	WeeklyAchievementUpsert,
-} from "../../domain/weekly-achievement";
+} from "../../domain/weekly-achievement.js";
 
 /** WeeklyAchievementRepositoryPort DI 토큰 */
 export const WEEKLY_ACHIEVEMENT_REPOSITORY = Symbol("WEEKLY_ACHIEVEMENT_REPOSITORY");

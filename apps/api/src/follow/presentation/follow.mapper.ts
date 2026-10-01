@@ -7,10 +7,13 @@
 
 import type { Follow, FriendRequestUser, FriendUser, SearchUser } from "@aido/validators";
 
-import { toISOString } from "@/shared/domain/date/utils/format";
+import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import type { FollowWithUser, UserSearchResult } from "../application/ports/follow.repository.port";
-import type { Friendship } from "../domain/entities/friendship.aggregate";
+import type {
+	FollowWithUser,
+	UserSearchResult,
+} from "../application/ports/follow.repository.port.js";
+import type { Friendship } from "../domain/entities/friendship.aggregate.js";
 
 export abstract class FollowMapper {
 	/** Friendship 애그리게잇을 기본 응답 형식으로 변환 */

@@ -1,14 +1,14 @@
+import { TestBed } from "@suites/unit";
 /**
  * TodoDeletedHandler 단위 테스트
  *
  * Suites + GWT 패턴
  */
+import { vi } from "vitest";
 
-import { TestBed } from "@suites/unit";
-
-import { TodoDeletedEvent } from "../../domain/events/todo-deleted.event";
-import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
-import { TodoDeletedHandler } from "./todo-deleted.handler";
+import { TodoDeletedEvent } from "../../domain/events/todo-deleted.event.js";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port.js";
+import { TodoDeletedHandler } from "./todo-deleted.handler.js";
 
 describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
 	let handler: TodoDeletedHandler;
@@ -16,8 +16,8 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
 
 	beforeEach(async () => {
 		todoReminder = {
-			scheduleReminder: jest.fn(),
-			cancelReminder: jest.fn().mockResolvedValue({ status: "cancelled" }),
+			scheduleReminder: vi.fn(),
+			cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
 		};
 
 		const { unit } = await TestBed.solitary(TodoDeletedHandler)
@@ -38,7 +38,7 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
 
 	it("취소할 작업이 이미 없으면 missing을 정상 처리한다", async () => {
 		// Given - 잡이 이미 처리됨
-		jest.mocked(todoReminder.cancelReminder).mockResolvedValue({
+		vi.mocked(todoReminder.cancelReminder).mockResolvedValue({
 			status: "missing",
 		});
 
@@ -51,7 +51,7 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
 		const error = new Error("scheduler down");
 		const rejected = Promise.reject(error);
 		void rejected.catch(() => undefined);
-		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
+		vi.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
 
 		// When & Then - 성공/missing으로 삼키지 않음
 		await expect(handler.handle(new TodoDeletedEvent(1, "user-123"))).rejects.toBe(error);

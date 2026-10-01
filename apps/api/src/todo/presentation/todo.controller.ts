@@ -15,10 +15,10 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 
-import { parseDateOnly } from "@/shared/domain/date/utils/parse";
-import { parseLocalDateTime, todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { Timezone } from "@/shared/presentation/decorators";
-import { UserIdParamDto } from "@/shared/presentation/dtos";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { Timezone } from "#api/shared/presentation/decorators/index";
+import { UserIdParamDto } from "#api/shared/presentation/dtos/index";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -28,16 +28,16 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
 import {
 	GetFriendTodosUseCase,
 	GetTodoByIdUseCase,
 	GetTodoResourceLimitUseCase,
 	GetTodoSummaryUseCase,
 	GetTodosUseCase,
-} from "../application/queries";
+} from "../application/queries/index.js";
 import {
 	AddTodoItemUseCase,
 	ChangeTodoCategoryUseCase,
@@ -53,7 +53,7 @@ import {
 	UpdateTodoTitleUseCase,
 	UpdateTodoUseCase,
 	UpdateTodoVisibilityUseCase,
-} from "../application/use-cases";
+} from "../application/use-cases/index.js";
 import {
 	ChangeTodoCategoryDto,
 	CreateRecurringTodoDto,
@@ -81,7 +81,7 @@ import {
 	UpdateTodoScheduleDto,
 	UpdateTodoTitleDto,
 	UpdateTodoVisibilityDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
@@ -126,7 +126,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: TodoResourceLimitQueryDto,
+		@Query({ schema: TodoResourceLimitQueryDto }) query: TodoResourceLimitQueryDto,
 	): Promise<TodoResourceLimitResponseDto> {
 		return this.getTodoResourceLimitUseCase.execute({
 			userId: user.userId,
@@ -226,7 +226,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiForbiddenError(ErrorCode.TODO_0811)
 	async create(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: CreateTodoDto,
+		@Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
 		@Timezone() tz: string,
 	): Promise<CreateTodoResponseDto> {
 		this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
@@ -286,7 +286,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	async createRecurring(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: CreateRecurringTodoDto,
+		@Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
 		@Timezone() tz: string,
 	): Promise<CreateRecurringTodoResponseDto> {
 		this.#logger.debug(
@@ -447,7 +447,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async findMany(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetTodosQueryDto,
+		@Query({ schema: GetTodosQueryDto }) query: GetTodosQueryDto,
 	): Promise<TodoListResponseDto> {
 		this.#logger.debug(
 			`Todo 목록 조회: user=${user.userId}, size=${query.size}, completed=${query.completed}`,
@@ -483,7 +483,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	async findById(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
 	): Promise<TodoResponseDto> {
 		this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
 
@@ -535,8 +535,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiForbiddenError(ErrorCode.FOLLOW_0906)
 	async findFriendTodos(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: UserIdParamDto,
-		@Query() query: GetFriendTodosQueryDto,
+		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+		@Query({ schema: GetFriendTodosQueryDto }) query: GetFriendTodosQueryDto,
 	): Promise<TodoListResponseDto> {
 		this.#logger.debug(`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`);
 
@@ -578,8 +578,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async update(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: UpdateTodoDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
 		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
@@ -639,8 +639,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async toggleComplete(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: ToggleTodoCompleteDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: ToggleTodoCompleteDto }) dto: ToggleTodoCompleteDto,
 		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(
@@ -675,8 +675,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateVisibility(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: UpdateTodoVisibilityDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: UpdateTodoVisibilityDto }) dto: UpdateTodoVisibilityDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(
 			`Todo 공개 범위 변경: id=${params.id}, visibility=${dto.visibility}, user=${user.userId}`,
@@ -710,8 +710,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateCategory(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: ChangeTodoCategoryDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: ChangeTodoCategoryDto }) dto: ChangeTodoCategoryDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(
 			`Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
@@ -754,8 +754,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateSchedule(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: UpdateTodoScheduleDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: UpdateTodoScheduleDto }) dto: UpdateTodoScheduleDto,
 		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(
@@ -797,8 +797,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateTitle(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: UpdateTodoTitleDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: UpdateTodoTitleDto }) dto: UpdateTodoTitleDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 제목 수정: id=${params.id}, user=${user.userId}`);
 
@@ -831,8 +831,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async reorder(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: ReorderTodoDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: ReorderTodoDto }) dto: ReorderTodoDto,
 	): Promise<ReorderTodoResponseDto> {
 		this.#logger.debug(
 			`Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
@@ -865,7 +865,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	async delete(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
 	): Promise<DeleteTodoResponseDto> {
 		this.#logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
 
@@ -921,8 +921,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async addItem(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: CreateTodoItemDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: CreateTodoItemDto }) dto: CreateTodoItemDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`);
 
@@ -970,8 +970,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async reorderItems(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoIdParamDto,
-		@Body() dto: ReorderTodoItemsDto,
+		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+		@Body({ schema: ReorderTodoItemsDto }) dto: ReorderTodoItemsDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`);
 
@@ -1026,8 +1026,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateItem(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoItemIdParamDto,
-		@Body() dto: UpdateTodoItemDto,
+		@Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
+		@Body({ schema: UpdateTodoItemDto }) dto: UpdateTodoItemDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(
 			`Todo 하위 항목 수정: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
@@ -1078,7 +1078,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiNotFoundError(ErrorCode.TODO_0822)
 	async deleteItem(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: TodoItemIdParamDto,
+		@Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(
 			`Todo 하위 항목 삭제: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,

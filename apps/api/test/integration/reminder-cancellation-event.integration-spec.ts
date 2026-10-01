@@ -1,38 +1,38 @@
 import { Logger } from "@nestjs/common";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { vi, type MockInstance } from "vitest";
 
-import { REMINDER_SCHEDULER } from "@/scheduler";
+import { REMINDER_SCHEDULER } from "#api/scheduler/index";
 import {
 	BullMQReminderSchedulerAdapter,
 	TODO_REMINDER_QUEUE,
-} from "@/scheduler/infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
-import type { DomainEventPublisherPort } from "@/shared/application/ports";
+} from "#api/scheduler/infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
+import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
 import {
 	JOB_RUNTIME,
 	type JobCancellationResult,
-} from "@/shared/application/ports/job-runtime.port";
-import { EventEmitterDomainEventPublisher } from "@/shared/infrastructure/events/event-emitter-domain-event.publisher";
-import { TodoDeletedHandler } from "@/todo/application/events/todo-deleted.handler";
-import { TodoRescheduledHandler } from "@/todo/application/events/todo-rescheduled.handler";
-import { TODO_REMINDER } from "@/todo/application/ports/todo-reminder.port";
-import { TodoDeletedEvent } from "@/todo/domain/events/todo-deleted.event";
-import { TodoRescheduledEvent } from "@/todo/domain/events/todo-rescheduled.event";
-import { TodoReminderAdapter } from "@/todo/infrastructure/adapters/todo-reminder.adapter";
+} from "#api/shared/application/ports/job-runtime.port";
+import { EventEmitterDomainEventPublisher } from "#api/shared/infrastructure/events/event-emitter-domain-event.publisher";
+import { TodoDeletedHandler } from "#api/todo/application/events/todo-deleted.handler";
+import { TodoRescheduledHandler } from "#api/todo/application/events/todo-rescheduled.handler";
+import { TODO_REMINDER } from "#api/todo/application/ports/todo-reminder.port";
+import { TodoDeletedEvent } from "#api/todo/domain/events/todo-deleted.event";
+import { TodoRescheduledEvent } from "#api/todo/domain/events/todo-rescheduled.event";
+import { TodoReminderAdapter } from "#api/todo/infrastructure/adapters/todo-reminder.adapter";
 
-import { FakeJobRuntime } from "../mocks/fake-job-runtime";
-import { suppressLogger } from "../setup/suppress-logger";
+import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
+import { suppressLogger } from "../setup/suppress-logger.js";
 
 describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)", () => {
 	let module: TestingModule;
 	let publisher: DomainEventPublisherPort;
 	let runtime: FakeJobRuntime;
-	let cancel: jest.SpiedFunction<
+	let cancel: MockInstance<
 		(queue: string, idempotencyKey: string) => Promise<JobCancellationResult>
 	>;
 
 	beforeAll(async () => {
-		suppressLogger();
 		runtime = new FakeJobRuntime();
 		module = await Test.createTestingModule({
 			imports: [EventEmitterModule.forRoot()],
@@ -52,10 +52,11 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
 		}).compile();
 		await module.init();
 		publisher = module.get(EventEmitterDomainEventPublisher);
-		cancel = jest.spyOn(runtime, "cancel");
 	});
 
 	beforeEach(() => {
+		suppressLogger();
+		cancel = vi.spyOn(runtime, "cancel");
 		runtime.clear();
 		cancel.mockReset();
 		cancel.mockResolvedValue({ status: "cancelled" });
@@ -69,7 +70,7 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
 		// Given - runtime→scheduler에서 문맥화된 취소 실패
 		const context = "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime";
 		cancel.mockRejectedValueOnce(new Error("postgres unavailable"));
-		const errorLogger = jest.mocked(Logger.prototype.error);
+		const errorLogger = vi.mocked(Logger.prototype.error);
 		errorLogger.mockClear();
 
 		// When - 실제 Nest @OnEvent 구독 경계로 발행
@@ -89,7 +90,7 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
 		// Given - scheduleReminder 내부 기존 작업 취소가 실패
 		const context = "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime";
 		cancel.mockRejectedValueOnce(new Error("postgres unavailable"));
-		const errorLogger = jest.mocked(Logger.prototype.error);
+		const errorLogger = vi.mocked(Logger.prototype.error);
 		errorLogger.mockClear();
 
 		// When - 실제 Nest handler → Todo adapter → scheduler 경계로 발행

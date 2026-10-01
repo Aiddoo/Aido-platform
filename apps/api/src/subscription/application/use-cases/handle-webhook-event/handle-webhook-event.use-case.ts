@@ -6,41 +6,41 @@ import {
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { now } from "@/shared/domain/date/utils/core";
-import { toISOString } from "@/shared/domain/date/utils/format";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toISOString } from "#api/shared/domain/date/utils/format";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	isRefundCancellation,
 	resolveCancellationUserStatus,
-} from "../../../domain/services/cancellation-user-status";
+} from "../../../domain/services/cancellation-user-status.js";
 import {
 	nullableExpiresAt,
 	optionalExpiresAt,
 	requireExpiresAt,
 	requirePurchasedAt,
-} from "../../../domain/services/webhook-timestamps";
-import { TransactionId } from "../../../domain/value-objects/transaction-id.vo";
+} from "../../../domain/services/webhook-timestamps.js";
+import { TransactionId } from "../../../domain/value-objects/transaction-id.vo.js";
 import {
 	SUBSCRIPTION_CACHE,
 	type SubscriptionCachePort,
-} from "../../ports/subscription-cache.port";
+} from "../../ports/subscription-cache.port.js";
 import {
 	SUBSCRIPTION_EVENT_NOTIFIER,
 	type SubscriptionEventNotifierPort,
-} from "../../ports/subscription-event-notifier.port";
+} from "../../ports/subscription-event-notifier.port.js";
 import {
 	SUBSCRIPTION_WEBHOOK_LOCK,
 	type SubscriptionWebhookLockPort,
-} from "../../ports/subscription-webhook-lock.port";
+} from "../../ports/subscription-webhook-lock.port.js";
 import {
 	SUBSCRIPTION_REPOSITORY,
 	type SubscriptionRepositoryPort,
 	type SubscriptionUser,
-} from "../../ports/subscription.repository.port";
-import type { SubscriptionEventPayload } from "../../types/subscription-event.payload";
-import { baseEventPayload } from "./subscription-event-payload.mapper";
+} from "../../ports/subscription.repository.port.js";
+import type { SubscriptionEventPayload } from "../../types/subscription-event.payload.js";
+import { baseEventPayload } from "./subscription-event-payload.mapper.js";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 

@@ -1,8 +1,9 @@
 import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
+import { vi } from "vitest";
 
-import type { JobBackend, JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
+import type { JobBackend, JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 
 import {
 	JobRuntimeLifecycle,
@@ -10,18 +11,18 @@ import {
 	POSTGRES_JOB_RUNTIME,
 	REDIS_JOB_RUNTIME,
 	selectJobRuntime,
-} from "./job-runtime.module";
+} from "./job-runtime.module.js";
 
 function createRuntime(): JobRuntimePort {
 	return {
-		start: jest.fn(),
-		stop: jest.fn(),
-		enqueue: jest.fn(),
-		schedule: jest.fn(),
-		unschedule: jest.fn(),
-		cancel: jest.fn(),
-		work: jest.fn(),
-		health: jest.fn(),
+		start: vi.fn(),
+		stop: vi.fn(),
+		enqueue: vi.fn(),
+		schedule: vi.fn(),
+		unschedule: vi.fn(),
+		cancel: vi.fn(),
+		work: vi.fn(),
+		health: vi.fn(),
 	};
 }
 
@@ -44,7 +45,7 @@ describe("selectJobRuntime — backend 선택", () => {
 		const postgres = createRuntime();
 		const redis = createRuntime();
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);
-		const handler = jest.fn();
+		const handler = vi.fn();
 		const options = {
 			retryLimit: 2,
 			retryDelaySeconds: 1,
@@ -81,9 +82,8 @@ describe("selectJobRuntime — backend 선택", () => {
 		// Given - Redis legacy queue에만 작업이 남아 있음
 		const postgres = createRuntime();
 		const redis = createRuntime();
-		jest.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
-		jest
-			.mocked(redis.cancel)
+		vi.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
+		vi.mocked(redis.cancel)
 			.mockResolvedValueOnce({ status: "missing" })
 			.mockResolvedValueOnce({ status: "cancelled" });
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);
@@ -101,8 +101,8 @@ describe("selectJobRuntime — backend 선택", () => {
 		// Given - 현재/legacy queue에 작업이 모두 없음
 		const postgres = createRuntime();
 		const redis = createRuntime();
-		jest.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
-		jest.mocked(redis.cancel).mockResolvedValue({ status: "missing" });
+		vi.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
+		vi.mocked(redis.cancel).mockResolvedValue({ status: "missing" });
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);
 
 		// When & Then
@@ -118,9 +118,8 @@ describe("selectJobRuntime — backend 선택", () => {
 		const postgres = createRuntime();
 		const redis = createRuntime();
 		const infrastructureError = new Error("redis unavailable");
-		jest.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
-		jest
-			.mocked(redis.cancel)
+		vi.mocked(postgres.cancel).mockResolvedValue({ status: "missing" });
+		vi.mocked(redis.cancel)
 			.mockRejectedValueOnce(infrastructureError)
 			.mockResolvedValueOnce({ status: "missing" });
 		const runtime = selectJobRuntime("postgres", postgres, redis, true);

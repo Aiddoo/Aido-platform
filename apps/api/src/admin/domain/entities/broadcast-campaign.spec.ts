@@ -3,7 +3,7 @@
  *
  * 프레임워크 없이 순수 도메인 불변식과 메시지 조립을 검증한다.
  */
-import { BroadcastCampaign } from "./broadcast-campaign";
+import { BroadcastCampaign } from "./broadcast-campaign.js";
 
 describe("BroadcastCampaign — 브로드캐스트 캠페인", () => {
 	describe("create — 불변식", () => {

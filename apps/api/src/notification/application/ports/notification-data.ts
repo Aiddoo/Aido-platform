@@ -1,6 +1,6 @@
 import type { NotificationActionType } from "@aido/validators";
 
-import type { NotificationType } from "../../domain/types/notification-type";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 
 /** 알림 메타데이터 입력 (DB Json 컬럼에 저장, 어댑터가 Prisma Json으로 변환) */
 export type NotificationMetadataInput = Record<string, unknown>;

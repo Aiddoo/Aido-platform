@@ -6,13 +6,31 @@ import {
 	todoDetailsParamSchema,
 	updateTodoCommentSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class TodoDetailsParamDto extends createZodDto(todoDetailsParamSchema) {}
-export class TodoCommentIdParamDto extends createZodDto(todoCommentIdParamSchema) {}
-export class WriteTodoCommentChainDto extends createZodDto(createTodoCommentChainSchema) {}
-export class UpdateTodoCommentDto extends createZodDto(updateTodoCommentSchema) {}
-export class GetTodoCommentOverviewQueryDto extends createZodDto(
-	getTodoCommentOverviewQuerySchema,
-) {}
-export class GetTodoConversationQueryDto extends createZodDto(getTodoConversationQuerySchema) {}
+export const TodoDetailsParamDto = todoDetailsParamSchema.meta({
+	id: "TodoDetailsParamDto",
+	apiParameter: true,
+});
+export type TodoDetailsParamDto = z.infer<typeof TodoDetailsParamDto>;
+export const TodoCommentIdParamDto = todoCommentIdParamSchema.meta({
+	id: "TodoCommentIdParamDto",
+	apiParameter: true,
+});
+export type TodoCommentIdParamDto = z.infer<typeof TodoCommentIdParamDto>;
+export const WriteTodoCommentChainDto = createTodoCommentChainSchema.meta({
+	id: "WriteTodoCommentChainDto",
+});
+export type WriteTodoCommentChainDto = z.infer<typeof WriteTodoCommentChainDto>;
+export const UpdateTodoCommentDto = updateTodoCommentSchema.meta({ id: "UpdateTodoCommentDto" });
+export type UpdateTodoCommentDto = z.infer<typeof UpdateTodoCommentDto>;
+export const GetTodoCommentOverviewQueryDto = getTodoCommentOverviewQuerySchema.meta({
+	id: "GetTodoCommentOverviewQueryDto",
+	apiParameter: true,
+});
+export type GetTodoCommentOverviewQueryDto = z.infer<typeof GetTodoCommentOverviewQueryDto>;
+export const GetTodoConversationQueryDto = getTodoConversationQuerySchema.meta({
+	id: "GetTodoConversationQueryDto",
+	apiParameter: true,
+});
+export type GetTodoConversationQueryDto = z.infer<typeof GetTodoConversationQueryDto>;

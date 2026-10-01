@@ -1,8 +1,8 @@
-import type { MarketingPushOptOutTokenPort, PushProvider } from "@/notification";
-import { InMemoryPushRateLimiter } from "@/notification/infrastructure/rate-limiter/in-memory-push-rate-limiter";
+import type { MarketingPushOptOutTokenPort, PushProvider } from "#api/notification/index";
+import { InMemoryPushRateLimiter } from "#api/notification/infrastructure/rate-limiter/in-memory-push-rate-limiter";
 
-import type { RetentionDispatchCandidate } from "../../application/ports/retention.repository.port";
-import { ExpoRetentionPushSenderAdapter } from "./expo-retention-push-sender.adapter";
+import type { RetentionDispatchCandidate } from "../../application/ports/retention.repository.port.js";
+import { ExpoRetentionPushSenderAdapter } from "./expo-retention-push-sender.adapter.js";
 
 function candidate(
 	overrides: Partial<RetentionDispatchCandidate> = {},

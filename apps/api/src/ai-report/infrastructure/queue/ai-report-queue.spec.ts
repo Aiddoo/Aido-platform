@@ -1,4 +1,4 @@
-import { AiReportJobName, AiReportRuntimeJobSchema } from "./ai-report-queue";
+import { AiReportJobName, AiReportRuntimeJobSchema } from "./ai-report-queue.js";
 
 describe("AiReportRuntimeJobSchema", () => {
 	it("리포트 종류와 사용자 생성 payload를 런타임에 검증한다", () => {

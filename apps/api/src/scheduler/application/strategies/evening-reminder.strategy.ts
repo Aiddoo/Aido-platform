@@ -5,20 +5,20 @@ import {
 	createEveningReminderNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
-import { addDays } from "@/shared/domain/date/utils/arithmetic";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { toSupportedLocale } from "@/shared/domain/locale";
-import { computeEffectiveStreak } from "@/user-settings";
+} from "#api/notification/index";
+import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { toSupportedLocale } from "#api/shared/domain/locale";
+import { computeEffectiveStreak } from "#api/user-settings/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
-} from "../ports/scheduled-reminder-reader.port";
-import type { UserWithTodosAndStreak } from "../ports/scheduler-read-models";
+} from "../ports/scheduled-reminder-reader.port.js";
+import type { UserWithTodosAndStreak } from "../ports/scheduler-read-models.js";
 
 @Injectable()
 export class EveningReminderStrategy implements ITimezoneStrategy {

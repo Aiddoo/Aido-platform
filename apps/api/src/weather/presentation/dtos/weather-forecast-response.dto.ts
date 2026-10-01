@@ -3,10 +3,17 @@ import {
 	weatherConditionsSchema,
 	weatherForecastSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class WeatherForecastResponseDto extends createZodDto(weatherForecastSchema) {}
+export const WeatherForecastResponseDto = weatherForecastSchema.meta({
+	id: "WeatherForecastResponseDto",
+});
+export type WeatherForecastResponseDto = z.infer<typeof WeatherForecastResponseDto>;
 
-export class WeatherConditionsResponseDto extends createZodDto(weatherConditionsSchema) {}
+export const WeatherConditionsResponseDto = weatherConditionsSchema.meta({
+	id: "WeatherConditionsResponseDto",
+});
+export type WeatherConditionsResponseDto = z.infer<typeof WeatherConditionsResponseDto>;
 
-export class LocationResponseDto extends createZodDto(locationResponseSchema) {}
+export const LocationResponseDto = locationResponseSchema.meta({ id: "LocationResponseDto" });
+export type LocationResponseDto = z.infer<typeof LocationResponseDto>;

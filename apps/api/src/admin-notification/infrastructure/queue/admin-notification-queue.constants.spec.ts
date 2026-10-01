@@ -1,4 +1,4 @@
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 import {
 	ADMIN_NOTIFICATION_JOB_POLICY,
@@ -7,7 +7,7 @@ import {
 	AdminNotificationJobName,
 	AdminNotificationRuntimeJobSchema,
 	DAILY_SIGNUP_SUMMARY_SCHEDULE,
-} from "./admin-notification-queue.constants";
+} from "./admin-notification-queue.constants.js";
 
 describe("Admin notification queue contract", () => {
 	it("queue 이름과 운영 정책을 기존 계약으로 유지한다", () => {

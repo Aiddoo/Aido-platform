@@ -1,15 +1,16 @@
-import { TEST_CUID } from "@test/fixtures";
-import { asDep, mockOf } from "@test/mocks";
+import { vi } from "vitest";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { TEST_CUID } from "#test/fixtures/index";
+import { asDep, mockOf } from "#test/mocks/index";
 
-import { PrismaSchedulerReader } from "./prisma-scheduler.reader";
+import { PrismaSchedulerReader } from "./prisma-scheduler.reader.js";
 
 describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
-	const findMany = jest.fn();
-	const preferenceFindMany = jest.fn();
+	const findMany = vi.fn();
+	const preferenceFindMany = vi.fn();
 	const database = mockOf<DatabaseService>({
 		user: mockOf<DatabaseService["user"]>({ findMany }),
 		userPreference: mockOf<DatabaseService["userPreference"]>({
@@ -17,14 +18,18 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
 		}),
 	});
 	const cache = mockOf<CacheService>({
-		wrapActiveTimezones: jest.fn((loader: () => Promise<string[]>) => loader()),
+		wrapActiveTimezones: vi.fn((loader: () => Promise<string[]>) => loader()),
 	});
 
 	function reader(enabled: boolean): PrismaSchedulerReader {
 		const config = mockOf<TypedConfigService>({
 			retentionOnboardingV2: { enabled, treatmentPercent: 50 },
 		});
-		return new PrismaSchedulerReader(asDep(database), asDep(cache), asDep(config));
+		return new PrismaSchedulerReader(
+			asDep<DatabaseService>(database),
+			asDep<CacheService>(cache),
+			asDep<TypedConfigService>(config),
+		);
 	}
 
 	it("kill switch가 꺼지면 legacy 후보 쿼리에 조건을 전혀 추가하지 않는다", async () => {

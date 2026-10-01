@@ -1,6 +1,6 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "#api/generated/prisma/client";
 
-import type { ConversationPageMode, TodoConversationScope } from "../../application/types";
+import type { ConversationPageMode, TodoConversationScope } from "../../application/types.js";
 
 interface TodoConversationTreeInput {
 	todoId: number;

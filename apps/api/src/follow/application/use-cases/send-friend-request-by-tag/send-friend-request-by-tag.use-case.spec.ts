@@ -1,17 +1,21 @@
+import { TestBed } from "@suites/unit";
 /**
  * SendFriendRequestByTagUseCase 단위 테스트 (Suites solitary + 포트 모킹).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
+import type { Mocked } from "vitest";
 
-import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
+import { createFollowRepositoryMock } from "#test/mocks/ports/follow.mock";
+
+import { Friendship } from "../../../domain/entities/friendship.aggregate.js";
+import {
+	FOLLOW_REPOSITORY,
+	type FollowRepositoryPort,
+} from "../../ports/follow.repository.port.js";
 import {
 	type SendFriendRequestResult,
 	SendFriendRequestUseCase,
-} from "../send-friend-request/send-friend-request.use-case";
-import { SendFriendRequestByTagUseCase } from "./send-friend-request-by-tag.use-case";
+} from "../send-friend-request/send-friend-request.use-case.js";
+import { SendFriendRequestByTagUseCase } from "./send-friend-request-by-tag.use-case.js";
 
 const ME = "u-me";
 const TARGET_ID = "u-target";

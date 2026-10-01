@@ -1,4 +1,4 @@
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 describe("TestDatabase 통합 테스트 (실제 DB)", () => {
 	let testDatabase: TestDatabase;

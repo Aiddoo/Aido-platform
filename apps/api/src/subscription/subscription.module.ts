@@ -1,19 +1,19 @@
 import { Module } from "@nestjs/common";
 
-import { AdminNotificationModule } from "@/admin-notification/admin-notification.module";
-import { NotificationModule } from "@/notification";
+import { AdminNotificationModule } from "#api/admin-notification/admin-notification.module";
+import { NotificationModule } from "#api/notification/index";
 
-import { SUBSCRIPTION_CACHE } from "./application/ports/subscription-cache.port";
-import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscription-event-notifier.port";
-import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscription-webhook-lock.port";
-import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscription.repository.port";
-import { HandleWebhookEventUseCase } from "./application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
-import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscription-cache.adapter";
-import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscription-event-notifier.adapter";
-import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscription-webhook-lock.adapter";
-import { WebhookSignatureGuard } from "./infrastructure/guards/webhook-signature.guard";
-import { PrismaSubscriptionRepository } from "./infrastructure/persistence/prisma-subscription.repository";
-import { SubscriptionController } from "./presentation/subscription.controller";
+import { SUBSCRIPTION_CACHE } from "./application/ports/subscription-cache.port.js";
+import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscription-event-notifier.port.js";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscription-webhook-lock.port.js";
+import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscription.repository.port.js";
+import { HandleWebhookEventUseCase } from "./application/use-cases/handle-webhook-event/handle-webhook-event.use-case.js";
+import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscription-cache.adapter.js";
+import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscription-event-notifier.adapter.js";
+import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscription-webhook-lock.adapter.js";
+import { WebhookSignatureGuard } from "./infrastructure/guards/webhook-signature.guard.js";
+import { PrismaSubscriptionRepository } from "./infrastructure/persistence/prisma-subscription.repository.js";
+import { SubscriptionController } from "./presentation/subscription.controller.js";
 
 @Module({
 	imports: [AdminNotificationModule, NotificationModule],

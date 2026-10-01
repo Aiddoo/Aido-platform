@@ -1,14 +1,14 @@
+import { TestBed } from "@suites/unit";
 /**
  * TodoRescheduledHandler 단위 테스트
  *
  * Suites + GWT 패턴 — scheduledTime 유무에 따른 재스케줄/취소 분기 검증
  */
+import { vi } from "vitest";
 
-import { TestBed } from "@suites/unit";
-
-import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event";
-import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
-import { TodoRescheduledHandler } from "./todo-rescheduled.handler";
+import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event.js";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port.js";
+import { TodoRescheduledHandler } from "./todo-rescheduled.handler.js";
 
 describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 	let handler: TodoRescheduledHandler;
@@ -16,8 +16,8 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 
 	beforeEach(async () => {
 		todoReminder = {
-			scheduleReminder: jest.fn().mockResolvedValue(undefined),
-			cancelReminder: jest.fn().mockResolvedValue({ status: "cancelled" }),
+			scheduleReminder: vi.fn().mockResolvedValue(undefined),
+			cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
 		};
 
 		const { unit } = await TestBed.solitary(TodoRescheduledHandler)
@@ -51,7 +51,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 
 	it("취소할 작업이 이미 없으면 missing을 정상 처리한다", async () => {
 		// Given - 잡이 이미 처리됨
-		jest.mocked(todoReminder.cancelReminder).mockResolvedValue({
+		vi.mocked(todoReminder.cancelReminder).mockResolvedValue({
 			status: "missing",
 		});
 
@@ -66,7 +66,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 		const error = new Error("scheduler down");
 		const rejected = Promise.reject(error);
 		void rejected.catch(() => undefined);
-		jest.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
+		vi.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
 
 		// When & Then - 성공/missing으로 삼키지 않음
 		await expect(handler.handle(new TodoRescheduledEvent(1, "user-123", null))).rejects.toBe(error);
@@ -79,7 +79,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 		);
 		const rejected = Promise.reject(error);
 		void rejected.catch(() => undefined);
-		jest.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
+		vi.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
 
 		// When & Then - schedule 호출만 시작하고 성공으로 조기 반환하지 않음
 		await expect(

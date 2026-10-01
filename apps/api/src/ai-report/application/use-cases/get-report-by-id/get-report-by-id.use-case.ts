@@ -2,13 +2,13 @@ import { ErrorCode } from "@aido/errors";
 import type { AiReport as AiReportDto } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
-} from "../../ports/ai-report.repository.port";
+} from "../../ports/ai-report.repository.port.js";
 
 /**
  * 리포트 상세 조회 use-case.

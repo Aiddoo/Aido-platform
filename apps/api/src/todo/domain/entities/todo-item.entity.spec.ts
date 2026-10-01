@@ -6,9 +6,9 @@
 
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain";
+import { DomainException } from "#api/shared/domain/index";
 
-import { TodoItem, type TodoItemProps } from "./todo-item.entity";
+import { TodoItem, type TodoItemProps } from "./todo-item.entity.js";
 
 function buildProps(overrides: Partial<TodoItemProps> = {}): TodoItemProps {
 	return {

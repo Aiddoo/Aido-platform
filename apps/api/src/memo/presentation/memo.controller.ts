@@ -14,9 +14,9 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
-import { parseDateOnly } from "@/shared/domain/date/utils/parse";
-import { parseLocalDateTime } from "@/shared/domain/date/utils/timezone";
-import { Timezone } from "@/shared/presentation/decorators";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { Timezone } from "#api/shared/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -26,14 +26,14 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
 import {
 	GetMemoResourceLimitUseCase,
 	GetMemosUseCase,
 	GetMemoUseCase,
-} from "../application/queries";
+} from "../application/queries/index.js";
 import {
 	ConvertMemoToTodosUseCase,
 	ConvertMemoToTodoUseCase,
@@ -42,7 +42,7 @@ import {
 	ReorderMemoUseCase,
 	ToggleMemoPinUseCase,
 	UpdateMemoUseCase,
-} from "../application/use-cases";
+} from "../application/use-cases/index.js";
 import {
 	ConvertMemoToTodoDto,
 	ConvertMemoToTodoResponseDto,
@@ -59,7 +59,7 @@ import {
 	ReorderMemoDto,
 	ToggleMemoPinDto,
 	UpdateMemoDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.MEMOS)
 @ApiBearerAuth()
@@ -118,7 +118,7 @@ export class MemoController {
 	@ApiForbiddenError(ErrorCode.MEMO_2003)
 	async create(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: CreateMemoDto,
+		@Body({ schema: CreateMemoDto }) dto: CreateMemoDto,
 	): Promise<MemoMutationResponseDto> {
 		return this.createMemoUseCase.execute({
 			userId: user.userId,
@@ -140,7 +140,7 @@ export class MemoController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async findMany(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetMemosQueryDto,
+		@Query({ schema: GetMemosQueryDto }) query: GetMemosQueryDto,
 	): Promise<MemoListResponseDto> {
 		return this.getMemosUseCase.execute({
 			userId: user.userId,
@@ -160,7 +160,7 @@ export class MemoController {
 	@ApiNotFoundError(ErrorCode.MEMO_2001)
 	async findOne(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: MemoIdParamDto,
+		@Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
 	): Promise<MemoDetailResponseDto> {
 		return this.getMemoUseCase.execute({
 			userId: user.userId,
@@ -180,8 +180,8 @@ export class MemoController {
 	@ApiNotFoundError(ErrorCode.MEMO_2001)
 	async update(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: MemoIdParamDto,
-		@Body() dto: UpdateMemoDto,
+		@Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
+		@Body({ schema: UpdateMemoDto }) dto: UpdateMemoDto,
 	): Promise<MemoMutationResponseDto> {
 		return this.updateMemoUseCase.execute({
 			userId: user.userId,
@@ -201,8 +201,8 @@ export class MemoController {
 	@ApiNotFoundError(ErrorCode.MEMO_2001)
 	async togglePin(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: MemoIdParamDto,
-		@Body() dto: ToggleMemoPinDto,
+		@Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
+		@Body({ schema: ToggleMemoPinDto }) dto: ToggleMemoPinDto,
 	): Promise<MemoMutationResponseDto> {
 		return this.toggleMemoPinUseCase.execute({
 			userId: user.userId,
@@ -227,8 +227,8 @@ export class MemoController {
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async reorder(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: MemoIdParamDto,
-		@Body() dto: ReorderMemoDto,
+		@Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
+		@Body({ schema: ReorderMemoDto }) dto: ReorderMemoDto,
 	): Promise<MemoMutationResponseDto> {
 		return this.reorderMemoUseCase.execute({
 			memoId: params.id,
@@ -250,7 +250,7 @@ export class MemoController {
 	@ApiNotFoundError(ErrorCode.MEMO_2001)
 	async remove(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: MemoIdParamDto,
+		@Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
 	): Promise<MemoDeleteResponseDto> {
 		return this.deleteMemoUseCase.execute({
 			userId: user.userId,
@@ -291,8 +291,8 @@ export class MemoController {
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async convertToTodo(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: MemoIdParamDto,
-		@Body() dto: ConvertMemoToTodoDto,
+		@Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
+		@Body({ schema: ConvertMemoToTodoDto }) dto: ConvertMemoToTodoDto,
 		@Timezone() tz: string,
 	): Promise<ConvertMemoToTodoResponseDto> {
 		return this.convertMemoToTodoUseCase.execute({
@@ -349,8 +349,8 @@ export class MemoController {
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async convertToTodos(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: MemoIdParamDto,
-		@Body() dto: ConvertMemoToTodosDto,
+		@Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
+		@Body({ schema: ConvertMemoToTodosDto }) dto: ConvertMemoToTodosDto,
 		@Timezone() tz: string,
 	): Promise<ConvertMemoToTodosResponseDto> {
 		return this.convertMemoToTodosUseCase.execute({

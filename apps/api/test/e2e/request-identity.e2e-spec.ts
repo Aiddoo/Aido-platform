@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("Trusted request identity E2E (real throttler, serialized)", () => {
 	let ctx: E2eTestContext;

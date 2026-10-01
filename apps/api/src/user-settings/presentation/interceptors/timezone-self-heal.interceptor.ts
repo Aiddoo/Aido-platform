@@ -9,9 +9,9 @@ import {
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
 
-import { normalizeIanaTimezone } from "@/shared/domain/date/utils/timezone";
+import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
+import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case.js";
 
 /**
  * 인증 요청의 X-Timezone 헤더로 UserPreference.timezone을 자가치유하는 인터셉터.

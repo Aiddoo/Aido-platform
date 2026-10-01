@@ -11,13 +11,13 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { ExchangeOAuthCodeUseCase } from "@/auth/application/use-cases";
+import { ExchangeOAuthCodeUseCase } from "#api/auth/application/use-cases/index";
 
-import type { ExchangeCodeDto } from "../dtos";
-import { OAuthController } from "./oauth.controller";
+import type { ExchangeCodeDto } from "../dtos/index.js";
+import { OAuthController } from "./oauth.controller.js";
 
 describe("OAuthController — OAuth 인증 컨트롤러", () => {
 	let controller: OAuthController;

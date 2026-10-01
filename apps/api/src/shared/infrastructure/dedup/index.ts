@@ -6,10 +6,10 @@
  */
 
 // Adapters
-export * from "./adapters/in-memory-dedup.adapter";
-export * from "./adapters/redis-dedup.adapter";
+export * from "./adapters/in-memory-dedup.adapter.js";
+export * from "./adapters/redis-dedup.adapter.js";
 // Constants
 // Module
-export * from "./dedup.module";
+export * from "./dedup.module.js";
 // Interfaces
-export * from "./interfaces/dedup.interface";
+export * from "./interfaces/dedup.interface.js";

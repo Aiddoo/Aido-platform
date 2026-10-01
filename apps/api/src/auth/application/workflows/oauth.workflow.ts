@@ -6,22 +6,22 @@ import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
-} from "@/auth/application/ports/oauth-identity-provider.port";
-import type { LoginResult, RequestMetadata } from "@/auth/application/types";
+} from "#api/auth/application/ports/oauth-identity-provider.port";
+import type { LoginResult, RequestMetadata } from "#api/auth/application/types/index";
 import {
 	AUTH_DEFAULTS,
 	LOGIN_FAILURE_REASON,
 	SECURITY_EVENT,
 	TRUSTED_EMAIL_PROVIDERS,
-} from "@/auth/domain/constants/auth.constants";
-import { assertRestorableWithinGracePeriod } from "@/auth/domain/services/account-restoration-policy";
-import { assertStatusAllowsLogin } from "@/auth/domain/services/account-status-policy";
-import { generateRandomName } from "@/auth/domain/services/random-name.util";
-import type { AccountProvider } from "@/auth/domain/types";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { now } from "@/shared/domain/date/utils/core";
-import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+} from "#api/auth/domain/constants/auth.constants";
+import { assertRestorableWithinGracePeriod } from "#api/auth/domain/services/account-restoration-policy";
+import { assertStatusAllowsLogin } from "#api/auth/domain/services/account-status-policy";
+import { generateRandomName } from "#api/auth/domain/services/random-name.util";
+import type { AccountProvider } from "#api/auth/domain/types";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	AUTH_CACHE,
@@ -31,7 +31,7 @@ import {
 	type AuthRegistrationNotifierPort,
 	type AuthRuntimeConfigPort,
 	type AuthUserRegisteredNotification,
-} from "../ports/auth-collaboration.port";
+} from "../ports/auth-collaboration.port.js";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
@@ -44,10 +44,10 @@ import {
 	AuthPersistenceConflict,
 	type AuthSecurityLogRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port";
-import type { OAuthMode } from "../ports/oauth-identity-provider.port";
-import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
+} from "../ports/auth-persistence.port.js";
+import type { OAuthMode } from "../ports/oauth-identity-provider.port.js";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case.js";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case.js";
 
 /**
  * AccountProvider → 이벤트 페이로드 provider 매핑

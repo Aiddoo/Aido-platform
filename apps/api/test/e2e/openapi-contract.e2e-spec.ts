@@ -6,18 +6,19 @@
  * 의도치 않게 변하지 않음을 보증하는 상시 계약 게이트입니다(CI e2e에서 실행).
  * 모든 서버 변경에 대해 "클라이언트 영향 0"을 기계적으로 증명하는 장치입니다.
  *
- * 의도된 계약 변경 시에만 `jest --config ./test/jest-e2e.json -u`로 스냅샷을 갱신하고,
+ * 의도된 계약 변경 시에만 `pnpm --filter @aido/api test:e2e openapi-contract --update`로 스냅샷을 갱신하고,
  * PR 리뷰에서 스냅샷 diff를 계약 변경으로 취급합니다.
  */
 
 import { createHash } from "node:crypto";
 
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { cleanupOpenApiDoc } from "nestjs-zod";
 
-import { RELEASED_V1_OPENAPI_CONTRACT } from "./fixtures/released-v1-openapi-contract";
-import { RELEASED_V1_8_2_OPENAPI_CONTRACT } from "./fixtures/released-v1.8.2-openapi-contract";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/e2e-app-factory";
+import { convertStandardSchema } from "#api/shared/presentation/swagger/standard-schema.converter";
+
+import { RELEASED_V1_OPENAPI_CONTRACT } from "./fixtures/released-v1-openapi-contract.js";
+import { RELEASED_V1_8_2_OPENAPI_CONTRACT } from "./fixtures/released-v1.8.2-openapi-contract.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/e2e-app-factory.js";
 
 const RELEASED_OPENAPI_CONTRACTS = [
 	RELEASED_V1_OPENAPI_CONTRACT,
@@ -130,7 +131,9 @@ describe("OpenAPI 계약 (e2e)", () => {
 
 		// When
 		const document = normalizeVolatileExamples(
-			cleanupOpenApiDoc(SwaggerModule.createDocument(ctx.app, config)),
+			SwaggerModule.createDocument(ctx.app, config, {
+				standardSchemaConverter: convertStandardSchema,
+			}),
 		);
 
 		// Then - 라우트/스키마 전체가 기준 스냅샷과 동일해야 한다
@@ -143,7 +146,9 @@ describe("OpenAPI 계약 (e2e)", () => {
 		(releasedContract) => {
 			// Given - 운영과 같은 /v1 prefix가 적용된 현재 OpenAPI 계약
 			const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
-			const document = cleanupOpenApiDoc(SwaggerModule.createDocument(ctx.app, config));
+			const document = SwaggerModule.createDocument(ctx.app, config, {
+				standardSchemaConverter: convertStandardSchema,
+			});
 			const currentSchemas = (document.components?.schemas ?? {}) as Record<string, unknown>;
 			const currentPaths = Object.fromEntries(
 				Object.entries(document.paths).map(([route, contract]) => [

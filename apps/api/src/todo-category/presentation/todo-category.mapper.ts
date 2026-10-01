@@ -6,10 +6,10 @@ import type {
 	TodoCategoryWithCount as TodoCategoryWithCountDto,
 } from "@aido/validators";
 
-import { toISOString } from "@/shared/domain/date/utils/format";
+import { toISOString } from "#api/shared/domain/date/utils/format";
 
-import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port";
-import type { TodoCategory } from "../domain/entities/todo-category.aggregate";
+import type { TodoCategoryWithCountView } from "../application/ports/todo-category.repository.port.js";
+import type { TodoCategory } from "../domain/entities/todo-category.aggregate.js";
 
 export abstract class TodoCategoryMapper {
 	static toResponse(category: TodoCategory): TodoCategoryDto {

@@ -1,18 +1,19 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetConsentRecordUseCase 단위 테스트
  *
  * 푸시 발송 판단용 단건 동의 원본 레코드 조회(뷰 매핑 없음).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUserConsentRepositoryMock } from "@test/mocks/ports/user-settings.mock";
+import type { Mocked } from "vitest";
+
+import { createUserConsentRepositoryMock } from "#test/mocks/ports/user-settings.mock";
 
 import {
 	USER_CONSENT_REPOSITORY,
 	type UserConsentRecord,
 	type UserConsentRepositoryPort,
-} from "../../ports/user-consent.repository.port";
-import { GetConsentRecordUseCase } from "./get-consent-record.use-case";
+} from "../../ports/user-consent.repository.port.js";
+import { GetConsentRecordUseCase } from "./get-consent-record.use-case.js";
 
 const userId = "user-1";
 

@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * DailyCompletion 통합 테스트 (Testcontainers)
  *
@@ -19,22 +20,24 @@
  * pnpm --filter @aido/api test daily-completion.integration-spec
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { createDailyCompletionCacheMock, createDailyCompletionFriendMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
+import { vi } from "vitest";
 
-import { DAILY_COMPLETION_PROVIDERS } from "@/daily-completion/application/daily-completion.providers";
-import { DAILY_COMPLETION_CACHE } from "@/daily-completion/application/ports/daily-completion-cache.port";
-import { FRIEND_PORT } from "@/daily-completion/application/ports/friend.port";
-import { TODO_COMPLETION_REPOSITORY } from "@/daily-completion/application/ports/todo-completion.repository.port";
-import { GetDailyCompletionsUseCase } from "@/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case";
-import { PrismaTodoCompletionRepository } from "@/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { DAILY_COMPLETION_PROVIDERS } from "#api/daily-completion/application/daily-completion.providers";
+import { DAILY_COMPLETION_CACHE } from "#api/daily-completion/application/ports/daily-completion-cache.port";
+import { FRIEND_PORT } from "#api/daily-completion/application/ports/friend.port";
+import { TODO_COMPLETION_REPOSITORY } from "#api/daily-completion/application/ports/todo-completion.repository.port";
+import { GetDailyCompletionsUseCase } from "#api/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case";
+import { PrismaTodoCompletionRepository } from "#api/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	createDailyCompletionCacheMock,
+	createDailyCompletionFriendMock,
+} from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { TestDatabase } from "../setup/test-database";
+import { TestDatabase } from "../setup/test-database.js";
 
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -86,7 +89,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 
 	// 각 테스트 전 데이터 초기화
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		await testDb.cleanup();
 	});
 

@@ -23,14 +23,14 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APICallError, generateObject } from "ai";
 
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { BusinessExceptions } from "#api/shared/application/exceptions/business-exception.service";
 
 import type {
 	AiProvider,
 	GenerateStructuredOptions,
 	GenerateStructuredResult,
-} from "../../application/ports/ai-provider.port";
-import { AiProviderCallError } from "../../application/ports/ai-provider.port";
+} from "../../application/ports/ai-provider.port.js";
+import { AiProviderCallError } from "../../application/ports/ai-provider.port.js";
 
 /** Gemini 모델 설정 */
 const GEMINI_MODEL = "gemini-3.1-flash-lite" as const;

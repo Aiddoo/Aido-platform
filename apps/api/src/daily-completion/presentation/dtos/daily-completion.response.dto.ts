@@ -2,10 +2,14 @@ import {
 	dailyCompletionSummarySchema,
 	dailyCompletionsRangeResponseSchema,
 } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class DailyCompletionSummaryDto extends createZodDto(dailyCompletionSummarySchema) {}
+export const DailyCompletionSummaryDto = dailyCompletionSummarySchema.meta({
+	id: "DailyCompletionSummaryDto",
+});
+export type DailyCompletionSummaryDto = z.infer<typeof DailyCompletionSummaryDto>;
 
-export class DailyCompletionsRangeResponseDto extends createZodDto(
-	dailyCompletionsRangeResponseSchema,
-) {}
+export const DailyCompletionsRangeResponseDto = dailyCompletionsRangeResponseSchema.meta({
+	id: "DailyCompletionsRangeResponseDto",
+});
+export type DailyCompletionsRangeResponseDto = z.infer<typeof DailyCompletionsRangeResponseDto>;

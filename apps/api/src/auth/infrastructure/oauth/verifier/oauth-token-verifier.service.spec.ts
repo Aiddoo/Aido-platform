@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 /**
  * OAuthTokenVerifierService 단위 테스트
  *
@@ -10,41 +11,40 @@
  * pnpm --filter @aido/api test oauth-token-verifier.service.spec.ts
  * ```
  */
-
-import { createHash } from "node:crypto";
 import { createServer, type Server } from "node:http";
 
 import { ErrorCode } from "@aido/errors";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { asMock } from "@test/mocks";
 import { exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
+import { vi, type Mock } from "vitest";
+import type { Mocked } from "vitest";
 
-import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { OAuthTokenVerifierService } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { asMock } from "#test/mocks/index";
 
 // Google Auth Library 모킹
-jest.mock("google-auth-library", () => ({
-	OAuth2Client: jest.fn().mockImplementation(() => ({
-		verifyIdToken: jest.fn(),
+vi.mock("google-auth-library", () => ({
+	OAuth2Client: vi.fn().mockImplementation(() => ({
+		verifyIdToken: vi.fn(),
 	})),
 }));
 
 describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 	let service: OAuthTokenVerifierService;
-	let mockGoogleVerifyIdToken: jest.Mock;
+	let mockGoogleVerifyIdToken: Mock;
 	let configService: Mocked<ConfigService>;
 	let appleJwksUrl: string | undefined;
 
 	beforeEach(async () => {
 		// Google Auth Library mock 설정
-		const { OAuth2Client } = jest.requireMock("google-auth-library");
-		mockGoogleVerifyIdToken = jest.fn();
-		OAuth2Client.mockImplementation(() => ({
-			verifyIdToken: mockGoogleVerifyIdToken,
-		}));
+		const { OAuth2Client } = await vi.importMock<{ OAuth2Client: Mock }>("google-auth-library");
+		mockGoogleVerifyIdToken = vi.fn();
+		OAuth2Client.mockImplementation(function () {
+			return { verifyIdToken: mockGoogleVerifyIdToken };
+		});
 
 		const { unit, unitRef } = await TestBed.solitary(OAuthTokenVerifierService).compile();
 
@@ -68,7 +68,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	describe("verifyGoogleToken", () => {
@@ -140,7 +140,9 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("만료된 토큰은 socialTokenExpired 에러를 발생시킨다", async () => {
 			// Given
-			const loggerErrorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation();
+			const loggerErrorSpy = vi
+				.spyOn(Logger.prototype, "error")
+				.mockImplementation(() => undefined);
 			const sensitiveSubject = "google-user-123";
 			mockGoogleVerifyIdToken.mockRejectedValue(
 				new Error(`Token used too late, 100 > 90: {"sub":"${sensitiveSubject}"}`),
@@ -199,7 +201,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 		};
 
 		beforeEach(() => {
-			global.fetch = jest.fn();
+			global.fetch = vi.fn();
 		});
 
 		it("유효한 Kakao access token을 검증하면 프로필을 반환한다", async () => {
@@ -292,7 +294,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 		};
 
 		beforeEach(() => {
-			global.fetch = jest.fn();
+			global.fetch = vi.fn();
 		});
 
 		it("유효한 Naver access token을 검증하면 프로필을 반환한다", async () => {

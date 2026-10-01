@@ -1,21 +1,21 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { addDays } from "@/shared/domain/date/utils/arithmetic";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { parseDateOnly } from "@/shared/domain/date/utils/parse";
+import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
 import {
 	buildDailyCompletionsRange,
 	type DailyCompletionsRange,
-} from "../../../domain/daily-completion";
+} from "../../../domain/daily-completion.js";
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
-} from "../../ports/daily-completion-cache.port";
+} from "../../ports/daily-completion-cache.port.js";
 import {
 	TODO_COMPLETION_REPOSITORY,
 	type TodoCompletionRepositoryPort,
-} from "../../ports/todo-completion.repository.port";
+} from "../../ports/todo-completion.repository.port.js";
 
 export interface GetDailyCompletionsInput {
 	userId: string;

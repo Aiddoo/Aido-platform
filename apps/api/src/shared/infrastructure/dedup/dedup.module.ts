@@ -1,11 +1,11 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service";
-import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
-import { InMemoryDedupAdapter } from "./adapters/in-memory-dedup.adapter";
-import { RedisDedupAdapter } from "./adapters/redis-dedup.adapter";
-import { DEDUP_PROVIDER, type IDedupProvider } from "./interfaces/dedup.interface";
+import { TypedConfigService } from "../config/services/config.service.js";
+import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
+import { InMemoryDedupAdapter } from "./adapters/in-memory-dedup.adapter.js";
+import { RedisDedupAdapter } from "./adapters/redis-dedup.adapter.js";
+import { DEDUP_PROVIDER, type IDedupProvider } from "./interfaces/dedup.interface.js";
 
 /**
  * 중복 방지 모듈
@@ -58,7 +58,7 @@ export class DedupModule {
 	 * 특정 어댑터를 직접 주입하여 사용
 	 *
 	 * @example
-	 * const mockAdapter = { filterMembers: jest.fn(), isMember: jest.fn(), addMembers: jest.fn() };
+	 * const mockAdapter = { filterMembers: vi.fn(), isMember: vi.fn(), addMembers: vi.fn() };
 	 * const module = await Test.createTestingModule({
 	 *   imports: [DedupModule.forTesting(mockAdapter)],
 	 * }).compile();

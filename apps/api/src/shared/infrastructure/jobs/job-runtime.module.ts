@@ -18,16 +18,16 @@ import type {
 	JobRuntimeHealth,
 	JobRuntimePort,
 	WorkJobOptions,
-} from "@/shared/application/ports/job-runtime.port";
-import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
-import type { EnvConfig } from "@/shared/infrastructure/config";
+} from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import type { EnvConfig } from "#api/shared/infrastructure/config/index";
 
 import {
 	BullMqJobRuntimeAdapter,
 	bullMqClientFactoryProvider,
 	legacyQueueName,
-} from "./bullmq-job-runtime.adapter";
-import { PgBossJobRuntimeAdapter, pgBossClientProvider } from "./pg-boss-job-runtime.adapter";
+} from "./bullmq-job-runtime.adapter.js";
+import { PgBossJobRuntimeAdapter, pgBossClientProvider } from "./pg-boss-job-runtime.adapter.js";
 
 export const POSTGRES_JOB_RUNTIME = Symbol("POSTGRES_JOB_RUNTIME");
 export const REDIS_JOB_RUNTIME = Symbol("REDIS_JOB_RUNTIME");

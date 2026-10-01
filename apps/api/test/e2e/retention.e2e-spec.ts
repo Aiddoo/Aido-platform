@@ -3,9 +3,9 @@ import request from "supertest";
 import {
 	RETENTION_CONFIG,
 	type RetentionConfigPort,
-} from "@/retention/application/ports/retention-config.port";
+} from "#api/retention/application/ports/retention-config.port";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("신규 사용자 리텐션 V2 E2E", () => {
 	let ctx: E2eTestContext;

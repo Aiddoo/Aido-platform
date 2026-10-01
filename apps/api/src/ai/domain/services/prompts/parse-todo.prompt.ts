@@ -1,11 +1,11 @@
 import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
-} from "@/shared/domain/prompt/prompt-sections";
-import { encodeUntrustedJson, sanitizeForPrompt } from "@/shared/domain/prompt/sanitize";
+} from "#api/shared/domain/prompt/prompt-sections";
+import { encodeUntrustedJson, sanitizeForPrompt } from "#api/shared/domain/prompt/sanitize";
 
-import type { CategoryInfo } from "./parse-memo.prompt";
-import { buildTimeContext, buildTimeRulesText } from "./time-rules";
+import type { CategoryInfo } from "./parse-memo.prompt.js";
+import { buildTimeContext, buildTimeRulesText } from "./time-rules.js";
 
 export interface ParseTodoPrompt {
 	system: string;

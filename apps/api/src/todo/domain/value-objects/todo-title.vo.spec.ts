@@ -6,9 +6,9 @@
 
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain";
+import { DomainException } from "#api/shared/domain/index";
 
-import { TodoTitle } from "./todo-title.vo";
+import { TodoTitle } from "./todo-title.vo.js";
 
 describe("TodoTitle — 제목 값 객체", () => {
 	it("1자 제목이면 생성된다 (하한 경계값)", () => {

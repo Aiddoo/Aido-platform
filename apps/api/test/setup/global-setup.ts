@@ -1,11 +1,16 @@
-import { type ManagedTestDatabaseHandle, startManagedTestDatabase } from "./managed-test-database";
+import type { TestProject } from "vitest/node";
 
-type TestDatabaseGlobal = typeof globalThis & {
-	__AIDO_TEST_DATABASE__?: ManagedTestDatabaseHandle;
-};
+import { startManagedTestDatabase } from "./managed-test-database.js";
 
-export default async function globalSetup(): Promise<void> {
-	const globalState: TestDatabaseGlobal = globalThis;
-	globalState.__AIDO_TEST_DATABASE__ = await startManagedTestDatabase();
-	console.log(`[test-db] started ${globalState.__AIDO_TEST_DATABASE__.databaseName}`);
+export default async function globalSetup(project: TestProject) {
+	const database = await startManagedTestDatabase();
+	project.provide("testDatabase", {
+		connectionUri: database.connectionUri,
+		databaseName: database.databaseName,
+	});
+	console.log(`[test-db] started ${database.databaseName}`);
+
+	return async () => {
+		await database.stop();
+	};
 }

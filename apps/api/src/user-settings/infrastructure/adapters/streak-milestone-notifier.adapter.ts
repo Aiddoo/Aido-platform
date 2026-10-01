@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "@/notification/queue";
+import { NotificationQueueService } from "#api/notification/queue";
 
-import type { StreakMilestoneNotifierPort } from "../../application/ports/streak-milestone.notifier.port";
+import type { StreakMilestoneNotifierPort } from "../../application/ports/streak-milestone.notifier.port.js";
 
 /**
  * 스트릭 마일스톤 알림 어댑터.

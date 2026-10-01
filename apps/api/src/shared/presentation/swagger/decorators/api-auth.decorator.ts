@@ -1,8 +1,8 @@
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 
-import { SWAGGER_DESCRIPTION, SWAGGER_SECURITY } from "../constants/swagger.constant";
-import { ErrorResponseSchema } from "../schemas/response.schema";
+import { SWAGGER_DESCRIPTION, SWAGGER_SECURITY } from "../constants/swagger.constant.js";
+import { ErrorResponseSchema } from "../schemas/response.schema.js";
 
 /**
  * 인증 필수 엔드포인트 표시 데코레이터

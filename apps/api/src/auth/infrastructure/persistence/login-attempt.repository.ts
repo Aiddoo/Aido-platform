@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import type { AccountProvider, LoginAttempt } from "@/generated/prisma/client";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import type { AccountProvider, LoginAttempt } from "#api/generated/prisma/client";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import type { TransactionClient } from "#api/shared/infrastructure/database/prisma.types";
 
 @Injectable()
 export class LoginAttemptRepository {

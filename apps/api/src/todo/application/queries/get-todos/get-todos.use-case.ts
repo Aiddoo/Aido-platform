@@ -2,16 +2,16 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
-import { ApplicationException } from "@/shared/domain";
-import { isAfter } from "@/shared/domain/date/utils/compare";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { isAfter } from "#api/shared/domain/date/utils/compare";
+import { ApplicationException } from "#api/shared/domain/index";
 
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import type { FindTodosParams, GetTodosParams } from "../../types";
+} from "../../ports/todo-read.repository.port.js";
+import type { FindTodosParams, GetTodosParams } from "../../types.js";
 
 /** Todo 목록 조회 입력. */
 export type GetTodosInput = GetTodosParams;

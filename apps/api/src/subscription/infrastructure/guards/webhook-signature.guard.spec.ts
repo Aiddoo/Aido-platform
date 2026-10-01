@@ -10,12 +10,12 @@
  * ```
  */
 import { Test } from "@nestjs/testing";
-import { createMockExecutionContext } from "@test/mocks";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { createMockExecutionContext } from "#test/mocks/index";
 
-import { WebhookSignatureGuard } from "./webhook-signature.guard";
+import { WebhookSignatureGuard } from "./webhook-signature.guard.js";
 
 /** 가드가 참조하는 config 필드만 담은 스텁 형태 */
 interface GuardConfigStub {

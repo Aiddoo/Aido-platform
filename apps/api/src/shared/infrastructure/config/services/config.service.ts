@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService as NestConfigService } from "@nestjs/config";
 
-import type { EnvConfig } from "../schemas";
+import type { EnvConfig } from "../schemas/index.js";
 
 /**
  * 타입 안전한 ConfigService 래퍼

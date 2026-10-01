@@ -4,22 +4,22 @@
  * @suites/unit은 Symbol 토큰으로 주입된 포트를 auto-mock하지 못하므로
  * (클래스 프로토타입이 없어 메서드 스텁 생성 불가) 포트별 mock 팩토리를 여기에 둡니다.
  * 팩토리는 포트 인터페이스를 반환하며, 포트 확장 시 누락을 타입 에러로 잡습니다.
- * 개별 메서드 mock API는 spec에서 `jest.mocked(mock.method)`로 접근합니다.
+ * 개별 메서드 mock API는 spec에서 `vi.mocked(mock.method)`로 접근합니다.
  */
-export * from "./cheer.mock";
-export * from "./cross-module.mock";
-export * from "./daily-completion.mock";
-export * from "./follow.mock";
-export * from "./memo.mock";
-export * from "./notification.mock";
-export * from "./notification-cache.mock";
-export * from "./retention-repository.mock";
-export * from "./todo-comment.mock";
-export * from "./todo-read-repository.mock";
-export * from "./todo-repository.mock";
-export * from "./unit-of-work.mock";
-export * from "./user-settings.mock";
-export * from "./user-settings-cache.mock";
-export * from "./weather.mock";
-export * from "./weather-cache.mock";
-export * from "./weekly-achievement.mock";
+export * from "./cheer.mock.js";
+export * from "./cross-module.mock.js";
+export * from "./daily-completion.mock.js";
+export * from "./follow.mock.js";
+export * from "./memo.mock.js";
+export * from "./notification.mock.js";
+export * from "./notification-cache.mock.js";
+export * from "./retention-repository.mock.js";
+export * from "./todo-comment.mock.js";
+export * from "./todo-read-repository.mock.js";
+export * from "./todo-repository.mock.js";
+export * from "./unit-of-work.mock.js";
+export * from "./user-settings.mock.js";
+export * from "./user-settings-cache.mock.js";
+export * from "./weather.mock.js";
+export * from "./weather-cache.mock.js";
+export * from "./weekly-achievement.mock.js";

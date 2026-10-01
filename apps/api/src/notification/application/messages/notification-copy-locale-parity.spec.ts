@@ -1,7 +1,7 @@
 import { notificationContentSchema } from "@aido/validators";
 
-import * as en from "./locales/en";
-import * as ko from "./locales/ko";
+import * as en from "./locales/en.js";
+import * as ko from "./locales/ko.js";
 import type {
 	LocalizedNotificationTemplate,
 	NotificationCopy,
@@ -11,7 +11,7 @@ import type {
 	SystemNotificationCopyCatalog,
 	WeatherFallbackCopyCatalog,
 	WeatherNotificationCopyCatalog,
-} from "./notification-copy.types";
+} from "./notification-copy.types.js";
 
 interface LocaleCatalog {
 	readonly SCHEDULER_TEMPLATES: SchedulerNotificationCopyCatalog;

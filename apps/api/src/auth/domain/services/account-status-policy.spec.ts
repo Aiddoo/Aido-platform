@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { assertStatusAllowsLogin } from "./account-status-policy";
+import { assertStatusAllowsLogin } from "./account-status-policy.js";
 
 describe("account-status-policy 도메인 서비스", () => {
 	describe("assertStatusAllowsLogin", () => {

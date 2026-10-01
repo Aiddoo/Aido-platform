@@ -4,9 +4,9 @@
 
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
-import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo";
+import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo.js";
 
 // =============================================================================
 // Queue Name

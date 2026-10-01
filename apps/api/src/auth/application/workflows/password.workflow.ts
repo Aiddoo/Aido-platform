@@ -1,18 +1,18 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import type { RequestMetadata } from "@/auth/application/types";
-import { assertNotDeleted } from "@/auth/application/utils/auth-validation.utils";
+import type { RequestMetadata } from "#api/auth/application/types/index";
+import { assertNotDeleted } from "#api/auth/application/utils/auth-validation.utils";
 import {
 	AUTH_DEFAULTS,
 	REVOKE_REASON,
 	SECURITY_EVENT,
-} from "@/auth/domain/constants/auth.constants";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { maskEmail } from "@/shared/domain/utils/mask.util";
+} from "#api/auth/domain/constants/auth.constants";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { maskEmail } from "#api/shared/domain/utils/mask.util";
 
-import { AUTH_PASSWORD_HASHER, type AuthPasswordHasherPort } from "../ports/auth-crypto.port";
+import { AUTH_PASSWORD_HASHER, type AuthPasswordHasherPort } from "../ports/auth-crypto.port.js";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_SECURITY_LOG_REPOSITORY,
@@ -22,8 +22,8 @@ import {
 	type AuthSecurityLogRepositoryPort,
 	type AuthSessionRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port";
-import { VerificationService } from "../services/verification.service";
+} from "../ports/auth-persistence.port.js";
+import { VerificationService } from "../services/verification.service.js";
 
 @Injectable()
 export class PasswordWorkflow {

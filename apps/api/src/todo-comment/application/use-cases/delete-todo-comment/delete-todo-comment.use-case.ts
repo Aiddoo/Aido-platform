@@ -8,21 +8,21 @@ import {
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
-import { now } from "@/shared/domain/date/utils/core";
+} from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
+import { assertTodoCommentAccess } from "../../assert-todo-comment-access.js";
 import {
 	TODO_COMMENT_READER,
 	type TodoCommentReaderPort,
-} from "../../ports/todo-comment.reader.port";
+} from "../../ports/todo-comment.reader.port.js";
 import {
 	TODO_COMMENT_REPOSITORY,
 	type TodoCommentRepositoryPort,
-} from "../../ports/todo-comment.repository.port";
-import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../../ports/todo-view-cache.port";
-import { settleAfterCommit } from "../../settle-after-commit";
+} from "../../ports/todo-comment.repository.port.js";
+import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../../ports/todo-view-cache.port.js";
+import { settleAfterCommit } from "../../settle-after-commit.js";
 
 export interface DeleteTodoCommentInput {
 	todoId: number;

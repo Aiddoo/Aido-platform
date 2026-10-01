@@ -6,16 +6,17 @@
  * - 라벨/날짜범위는 로케일에 따라 도메인 규칙(ISO 주차 목요일 기준)으로 계산된다
  */
 import { ErrorCode } from "@aido/errors";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createWeeklyAchievementRepositoryMock } from "@test/mocks/ports/weekly-achievement.mock";
+import type { Mocked } from "vitest";
 
-import type { WeeklyAchievementRow } from "../../../domain/weekly-achievement";
+import { createWeeklyAchievementRepositoryMock } from "#test/mocks/ports/weekly-achievement.mock";
+
+import type { WeeklyAchievementRow } from "../../../domain/weekly-achievement.js";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
-} from "../../ports/weekly-achievement.repository.port";
-import { GetWeeklyAchievementUseCase } from "./get-weekly-achievement.use-case";
+} from "../../ports/weekly-achievement.repository.port.js";
+import { GetWeeklyAchievementUseCase } from "./get-weekly-achievement.use-case.js";
 
 // 2026 ISO week 10 → 3월 1주차 / "Week 1 of Mar", 2026-03-02 ~ 2026-03-08 (도메인 규칙 실측)
 function buildRow(): WeeklyAchievementRow {

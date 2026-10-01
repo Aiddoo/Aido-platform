@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
 
 /** 메모 삭제 입력 (소유권 확인 후 영구 삭제). */
 export interface DeleteMemoInput {

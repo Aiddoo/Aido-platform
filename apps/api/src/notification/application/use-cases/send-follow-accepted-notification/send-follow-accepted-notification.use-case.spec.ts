@@ -1,10 +1,10 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign";
-import { NotificationPublisher } from "../../publishers/notification.publisher";
-import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
-import { SendFollowAcceptedNotificationUseCase } from "./send-follow-accepted-notification.use-case";
+import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/transactional-notification-campaign.js";
+import { NotificationPublisher } from "../../publishers/notification.publisher.js";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
+import { SendFollowAcceptedNotificationUseCase } from "./send-follow-accepted-notification.use-case.js";
 
 describe("SendFollowAcceptedNotificationUseCase", () => {
 	it("sends FOLLOW_ACCEPTED with the actor identity", async () => {

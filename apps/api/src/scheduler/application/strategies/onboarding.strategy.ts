@@ -1,32 +1,32 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import type { CreateNotificationData } from "@/notification";
+import type { CreateNotificationData } from "#api/notification/index";
 import {
 	createOnboardingNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { diffInDays } from "@/shared/domain/date/utils/compare";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { DEFAULT_LOCALE } from "@/shared/domain/locale";
+} from "#api/notification/index";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { diffInDays } from "#api/shared/domain/date/utils/compare";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
 import {
 	isOnboardingDay,
 	ONBOARDING_MAX_DAY,
 	requiresCompletedCount,
-} from "../../domain/services/onboarding";
-import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context";
+} from "../../domain/services/onboarding.js";
+import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
-} from "../ports/re-engagement-reader.port";
+} from "../ports/re-engagement-reader.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
+} from "../ports/scheduler-preference-reader.port.js";
 
 @Injectable()
 export class OnboardingStrategy implements ITimezoneStrategy {

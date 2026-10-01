@@ -15,7 +15,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
-import { Locale, Timezone } from "@/shared/presentation/decorators";
+import { Locale, Timezone } from "#api/shared/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -25,17 +25,21 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload, Public } from "../../auth/presentation/decorators";
-import { GetNotificationsUseCase } from "../application/use-cases/get-notifications/get-notifications.use-case";
-import { GetUnreadCountUseCase } from "../application/use-cases/get-unread-count/get-unread-count.use-case";
-import { MarkAllAsReadUseCase } from "../application/use-cases/mark-all-as-read/mark-all-as-read.use-case";
-import { MarkAsReadUseCase } from "../application/use-cases/mark-as-read/mark-as-read.use-case";
-import { MarkNotificationOpenedUseCase } from "../application/use-cases/mark-notification-opened/mark-notification-opened.use-case";
-import { OptOutMarketingPushUseCase } from "../application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case";
-import { RegisterPushTokenUseCase } from "../application/use-cases/register-push-token/register-push-token.use-case";
-import { UnregisterPushTokenUseCase } from "../application/use-cases/unregister-push-token/unregister-push-token.use-case";
+import {
+	CurrentUser,
+	type CurrentUserPayload,
+	Public,
+} from "../../auth/presentation/decorators/index.js";
+import { GetNotificationsUseCase } from "../application/use-cases/get-notifications/get-notifications.use-case.js";
+import { GetUnreadCountUseCase } from "../application/use-cases/get-unread-count/get-unread-count.use-case.js";
+import { MarkAllAsReadUseCase } from "../application/use-cases/mark-all-as-read/mark-all-as-read.use-case.js";
+import { MarkAsReadUseCase } from "../application/use-cases/mark-as-read/mark-as-read.use-case.js";
+import { MarkNotificationOpenedUseCase } from "../application/use-cases/mark-notification-opened/mark-notification-opened.use-case.js";
+import { OptOutMarketingPushUseCase } from "../application/use-cases/opt-out-marketing-push/opt-out-marketing-push.use-case.js";
+import { RegisterPushTokenUseCase } from "../application/use-cases/register-push-token/register-push-token.use-case.js";
+import { UnregisterPushTokenUseCase } from "../application/use-cases/unregister-push-token/unregister-push-token.use-case.js";
 import {
 	GetNotificationsQueryDto,
 	MarketingPushOptOutDto,
@@ -47,8 +51,8 @@ import {
 	RegisterPushTokenDto,
 	RegisterTokenResponseDto,
 	UnreadCountResponseDto,
-} from "./dtos";
-import { NotificationMapper } from "./notification.mapper";
+} from "./dtos/index.js";
+import { NotificationMapper } from "./notification.mapper.js";
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
@@ -77,7 +81,7 @@ export class NotificationController {
 	})
 	@ApiSuccessResponse({ type: MarketingPushOptOutResponseDto })
 	async optOutMarketingPush(
-		@Body() dto: MarketingPushOptOutDto,
+		@Body({ schema: MarketingPushOptOutDto }) dto: MarketingPushOptOutDto,
 	): Promise<MarketingPushOptOutResponseDto> {
 		await this.optOutMarketingPushUseCase.execute(dto.token);
 		// 토큰 유효 여부를 노출하지 않아 사용자 열거/토큰 탐색을 방지한다.
@@ -113,7 +117,7 @@ export class NotificationController {
 	@ApiBadRequestError(ErrorCode.NOTIFICATION_1001)
 	async registerToken(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: RegisterPushTokenDto,
+		@Body({ schema: RegisterPushTokenDto }) dto: RegisterPushTokenDto,
 		@Timezone({ preserveIfMissing: true }) tz: string | undefined,
 		@Locale() locale: string | undefined,
 	): Promise<RegisterTokenResponseDto> {
@@ -205,7 +209,7 @@ export class NotificationController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getNotifications(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetNotificationsQueryDto,
+		@Query({ schema: GetNotificationsQueryDto }) query: GetNotificationsQueryDto,
 	): Promise<NotificationListResponseDto> {
 		this.#logger.debug(`알림 목록 조회: userId=${user.userId}, category=${query.category}`);
 
@@ -261,7 +265,7 @@ export class NotificationController {
 	@ApiForbiddenError(ErrorCode.NOTIFICATION_1005)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: NotificationIdParamDto,
+		@Param({ schema: NotificationIdParamDto }) params: NotificationIdParamDto,
 	): Promise<MarkReadResponseDto> {
 		this.#logger.debug(`알림 읽음 처리: userId=${user.userId}, id=${params.id}`);
 
@@ -284,7 +288,7 @@ export class NotificationController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async markOpened(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: NotificationIdParamDto,
+		@Param({ schema: NotificationIdParamDto }) params: NotificationIdParamDto,
 	): Promise<NotificationOpenedResponseDto> {
 		const opened = await this.markNotificationOpenedUseCase.execute(user.userId, params.id);
 		return { opened };

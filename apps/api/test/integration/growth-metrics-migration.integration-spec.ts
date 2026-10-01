@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import { TestDatabase } from "@test/setup/test-database";
 
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "#api/generated/prisma/client";
+import { TestDatabase } from "#test/setup/test-database";
 
 const MIGRATION_PATH = path.resolve(
-	__dirname,
+	import.meta.dirname,
 	"../../prisma/migrations/20260726000000_optimize_growth_metrics/migration.sql",
 );
 const TEST_SCHEMA = `growth_migration_${process.pid}`;

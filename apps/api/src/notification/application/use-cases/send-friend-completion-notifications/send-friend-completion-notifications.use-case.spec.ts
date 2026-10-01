@@ -1,17 +1,17 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { DuplicateNotificationError } from "../../ports/notification.repository.port";
+import { DuplicateNotificationError } from "../../ports/notification.repository.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type UserNotificationSettingsPort,
-} from "../../ports/user-notification-settings.port";
-import { NotificationHistoryReader } from "../../readers/notification-history.reader";
-import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case";
-import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case";
-import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case";
+} from "../../ports/user-notification-settings.port.js";
+import { NotificationHistoryReader } from "../../readers/notification-history.reader.js";
+import { FinalizeBatchNotificationUseCase } from "../finalize-batch-notification/finalize-batch-notification.use-case.js";
+import { PersistBatchNotificationUseCase } from "../persist-batch-notification/persist-batch-notification.use-case.js";
+import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case.js";
 
 const input = {
 	friendId: "friend-1",

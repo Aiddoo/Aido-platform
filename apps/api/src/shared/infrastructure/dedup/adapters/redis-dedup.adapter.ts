@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
-import { REDIS_COMMAND_CLIENT } from "../../redis/redis.constants";
-import type { IDedupProvider } from "../interfaces/dedup.interface";
+import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
+import { REDIS_COMMAND_CLIENT } from "../../redis/redis.constants.js";
+import type { IDedupProvider } from "../interfaces/dedup.interface.js";
 
 /**
  * Redis Set 기반 중복 방지 어댑터

@@ -10,28 +10,30 @@
  */
 import { ErrorCode } from "@aido/errors";
 import { LOGIN_ATTEMPT } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { SessionBuilder, UserBuilder } from "@test/builders";
-import { asDep, asMock, mockOf } from "@test/mocks";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { REVOKE_REASON, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { REVOKE_REASON, SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { AccountBuilder, SessionBuilder, UserBuilder } from "#test/builders/index";
+import { asDep, asMock, mockOf } from "#test/mocks/index";
 
+import type { AuthCachedUserProfile } from "../ports/auth-collaboration.port.js";
 import {
 	AUTH_CACHE,
 	AUTH_REGISTRATION_NOTIFIER,
 	type AuthCachePort,
 	type AuthRegistrationNotifierPort,
-} from "../ports/auth-collaboration.port";
+} from "../ports/auth-collaboration.port.js";
 import {
 	AUTH_PASSWORD_HASHER,
 	AUTH_TOKEN_ISSUER,
 	type AuthPasswordHasherPort,
 	type AuthTokenIssuerPort,
-} from "../ports/auth-crypto.port";
+} from "../ports/auth-crypto.port.js";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
@@ -44,14 +46,17 @@ import {
 	type AuthSecurityLogRepositoryPort,
 	type AuthSessionRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port";
-import { RETENTION_ENROLLER, type RetentionEnrollerPort } from "../ports/retention-enroller.port";
-import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
-import { SessionService } from "../services/session.service";
-import { VerificationService } from "../services/verification.service";
-import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
-import { CredentialAuthWorkflow } from "./credential-auth.workflow";
+} from "../ports/auth-persistence.port.js";
+import {
+	RETENTION_ENROLLER,
+	type RetentionEnrollerPort,
+} from "../ports/retention-enroller.port.js";
+import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port.js";
+import { SessionService } from "../services/session.service.js";
+import { VerificationService } from "../services/verification.service.js";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case.js";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case.js";
+import { CredentialAuthWorkflow } from "./credential-auth.workflow.js";
 
 describe("CredentialAuthWorkflow — 인증 workflow", () => {
 	let service: CredentialAuthWorkflow;
@@ -99,7 +104,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 		// 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
 		const issueLogin = unitRef.get(IssueLoginUseCase);
 		const realIssueLogin = new IssueLoginUseCase(
-			asDep(sessionService),
+			asDep<SessionService>(sessionService),
 			asDep(loginAttemptRepo),
 			asDep(securityLogRepo),
 			asDep(userRepo),
@@ -111,12 +116,12 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 		// 기본값 시딩은 workflow 직접 의존이 아니므로 시더 포트를 독립 mock으로 구성한다.
 		const provisionUser = unitRef.get(ProvisionUserUseCase);
 		const seederStub = mockOf<UserProvisioningSeederPort>({
-			seedDefaultSettings: jest.fn(),
-			seedDefaultCategories: jest.fn(),
+			seedDefaultSettings: vi.fn(),
+			seedDefaultCategories: vi.fn(),
 		});
 		const retentionStub = mockOf<RetentionEnrollerPort>({
-			enrollNewUser: jest.fn(),
-			activateNewUser: jest.fn(),
+			enrollNewUser: vi.fn(),
+			activateNewUser: vi.fn(),
 		});
 		const realProvisionUser = new ProvisionUserUseCase(
 			asDep(userRepo),
@@ -148,7 +153,9 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			uow.run.mockImplementation((work) => work());
 			userRepo.create.mockResolvedValue(mockUser);
 			userRepo.createProfile.mockResolvedValue(undefined);
-			asMock(accountRepo.createCredentialAccount).mockResolvedValue({});
+			asMock(accountRepo.createCredentialAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
 				expiresAt: new Date(),
@@ -476,9 +483,10 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create(mockUser.id).build(),
+				id: 123,
 				userId: mockUser.id,
-				type: "CREDENTIAL",
+				provider: "CREDENTIAL",
 				password: "hashed-password",
 			});
 			passwordService.verify.mockResolvedValue(true);
@@ -536,7 +544,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create(mockUser.id).build(),
+				id: 123,
 				userId: mockUser.id,
 				password: "hashed-password",
 			});
@@ -560,7 +569,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(pendingUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create(pendingUser.id).build(),
+				id: 123,
 				userId: pendingUser.id,
 				password: "hashed-password",
 			});
@@ -640,7 +650,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(lockedUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
-				id: "account-123",
+				...AccountBuilder.create(lockedUser.id).build(),
+				id: 123,
 				userId: lockedUser.id,
 				password: "hashed-password",
 			});
@@ -869,7 +880,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 		it("토큰 로테이션 시 세션 expiresAt을 갱신한다", async () => {
 			// Given
 			const NOW = new Date("2025-06-01T12:00:00Z");
-			jest.useFakeTimers({ now: NOW });
+			vi.useFakeTimers({ now: NOW });
 
 			const mockSession = SessionBuilder.create(userId)
 				.withId(sessionId)
@@ -899,7 +910,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				}),
 			);
 
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("토큰 로테이션 성공 시 세션 캐시를 무효화한다", async () => {
@@ -945,7 +956,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			// Given — grace period(10초) 초과: 60초 전 로테이션
 			const NOW = new Date("2025-06-01T12:01:00Z");
 			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
-			jest.useFakeTimers({ now: NOW });
+			vi.useFakeTimers({ now: NOW });
 
 			const mockSession = SessionBuilder.create(userId)
 				.withId(sessionId)
@@ -976,14 +987,14 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				}),
 			);
 
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("grace period 내 동일 토큰 재사용은 새 토큰을 발급한다 (네트워크 재시도)", async () => {
 			// Given — 고정 시간: 12:00:10, 로테이션은 12:00:00 (10초 전)
 			const NOW = new Date("2025-06-01T12:00:10Z");
 			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
-			jest.useFakeTimers({ now: NOW });
+			vi.useFakeTimers({ now: NOW });
 
 			const reusedSession = SessionBuilder.create(userId)
 				.withId(sessionId)
@@ -1020,14 +1031,14 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			// grace 분기도 세션을 연장하므로 스테일 캐시를 무효화해야 한다
 			expect(cacheService.invalidateSession).toHaveBeenCalledWith(sessionId);
 
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("grace period 초과 시 토큰 재사용으로 판단하여 패밀리를 폐기한다", async () => {
 			// Given — 고정 시간: 12:00:15, 로테이션은 12:00:00 (15초 전, 10초 grace period 초과)
 			const NOW = new Date("2025-06-01T12:00:15Z");
 			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
-			jest.useFakeTimers({ now: NOW });
+			vi.useFakeTimers({ now: NOW });
 
 			const reusedSession = SessionBuilder.create(userId)
 				.withId(sessionId)
@@ -1052,14 +1063,14 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				REVOKE_REASON.TOKEN_REUSE_DETECTED,
 			);
 
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("grace period 경계값(10초)에서는 재시도로 판단한다", async () => {
 			// Given — 정확히 10초 전 로테이션
 			const NOW = new Date("2025-06-01T12:00:10Z");
 			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
-			jest.useFakeTimers({ now: NOW });
+			vi.useFakeTimers({ now: NOW });
 
 			const reusedSession = SessionBuilder.create(userId)
 				.withId(sessionId)
@@ -1087,12 +1098,12 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			expect(result.tokens).toEqual(mockNewTokens);
 			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
 
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("grace period 재시도 후 동일 토큰으로 재시도하면 거부한다 (sliding window 방지)", async () => {
 			const NOW = new Date("2025-06-01T12:00:05Z");
-			jest.useFakeTimers({ now: NOW });
+			vi.useFakeTimers({ now: NOW });
 
 			// 이미 grace period 재시도가 완료된 세션 — previousTokenHash가 변경됨
 			const sessionAfterGraceRetry = SessionBuilder.create(userId)
@@ -1116,7 +1127,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			);
 			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
 
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("폐기된 세션이면 에러를 던진다", async () => {
@@ -1187,6 +1198,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
+					...AccountBuilder.create("user-123").build(),
 					id: 1,
 					userId,
 					provider: "CREDENTIAL",
@@ -1227,6 +1239,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
+					...AccountBuilder.create("user-123").build(),
 					id: 1,
 					userId,
 					provider: "CREDENTIAL",
@@ -1246,6 +1259,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
+					...AccountBuilder.create("user-123").build(),
 					id: 1,
 					userId,
 					provider: "CREDENTIAL",
@@ -1266,6 +1280,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
+					...AccountBuilder.create("user-123").build(),
 					id: 1,
 					userId,
 					provider: "GOOGLE",
@@ -1315,6 +1330,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			userRepo.findById.mockResolvedValue(user);
 			asMock(accountRepo.findAllByUserId).mockResolvedValue([
 				{
+					...AccountBuilder.create("user-123").build(),
 					id: 1,
 					userId,
 					provider: "GOOGLE",
@@ -1353,6 +1369,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				.build();
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
+				...AccountBuilder.create(deletedUser.id).build(),
 				id: 1,
 				userId: deletedUser.id,
 				provider: "CREDENTIAL",
@@ -1380,6 +1397,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				.build();
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
 			asMock(accountRepo.findByUserIdAndProvider).mockResolvedValue({
+				...AccountBuilder.create(deletedUser.id).build(),
 				id: 1,
 				userId: deletedUser.id,
 				provider: "CREDENTIAL",
@@ -1621,7 +1639,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				.verified()
 				.build();
 
-			const cachedProfile = {
+			const cachedProfile: AuthCachedUserProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
 				userTag: mockUser.userTag,
@@ -1665,7 +1683,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				.verified()
 				.build();
 
-			const cachedProfile = {
+			const cachedProfile: AuthCachedUserProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
 				userTag: mockUser.userTag,
@@ -1697,7 +1715,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 				.verified()
 				.build();
 
-			const cachedProfile = {
+			const cachedProfile: AuthCachedUserProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
 				userTag: mockUser.userTag,

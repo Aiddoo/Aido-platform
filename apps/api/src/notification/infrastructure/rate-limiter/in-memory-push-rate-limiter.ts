@@ -5,8 +5,8 @@ import type {
 	GeneralPushRateLimitRequest,
 	PushRateLimitRequest,
 	PushRateLimiterPort,
-} from "../../application/ports/push-rate-limiter.port";
-import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy";
+} from "../../application/ports/push-rate-limiter.port.js";
+import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy.js";
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 

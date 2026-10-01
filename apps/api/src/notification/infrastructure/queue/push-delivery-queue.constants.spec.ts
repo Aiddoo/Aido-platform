@@ -2,7 +2,7 @@ import {
 	PushDeliveryDeadLetterJobSchema,
 	PushDeliveryJobName,
 	PushDeliveryRuntimeJobSchema,
-} from "./push-delivery-queue.constants";
+} from "./push-delivery-queue.constants.js";
 
 function publication(dispatchId: number, publishAttempt = 1) {
 	return { dispatchId, publishAttempt };

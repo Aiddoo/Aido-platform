@@ -2,29 +2,29 @@ import type { AiReport as AiReportDto } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { AI_PROVIDER, type AiProvider } from "@/ai";
-import { now } from "@/shared/domain/date/utils/core";
-import type { SupportedLocale } from "@/shared/domain/locale";
+import { AI_PROVIDER, type AiProvider } from "#api/ai/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { buildFallbackContent } from "../../../domain/services/prompts/report-fallback";
+import { buildFallbackContent } from "../../../domain/services/prompts/report-fallback.js";
 import {
 	buildReportPrompt,
 	getReportAiResponseSchema,
-} from "../../../domain/services/prompts/report.prompt";
-import { assembleAggregatedData } from "../../../domain/services/report-aggregation";
-import { computePeriodLabel } from "../../../domain/services/report-period";
+} from "../../../domain/services/prompts/report.prompt.js";
+import { assembleAggregatedData } from "../../../domain/services/report-aggregation.js";
+import { computePeriodLabel } from "../../../domain/services/report-period.js";
 import type {
 	AggregatedReportData,
 	AggregateParams,
 	GeneratedReportContent,
 	GenerateReportParams,
 	ReportType,
-} from "../../../domain/types";
+} from "../../../domain/types.js";
 import {
 	AI_REPORT_REPOSITORY,
 	type AiReportRepositoryPort,
-} from "../../ports/ai-report.repository.port";
-import { TODO_STATS_READER, type TodoStatsReaderPort } from "../../ports/todo-stats.reader.port";
+} from "../../ports/ai-report.repository.port.js";
+import { TODO_STATS_READER, type TodoStatsReaderPort } from "../../ports/todo-stats.reader.port.js";
 
 /** AI 리포트 생성 기본 설정 */
 const REPORT_AI_MAX_TOKENS = 800;

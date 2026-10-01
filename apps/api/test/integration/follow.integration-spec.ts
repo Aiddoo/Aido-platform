@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * Follow 모듈 통합 테스트 (Mock DB)
  *
@@ -9,36 +10,35 @@
  *
  * 실행: pnpm --filter @aido/api test follow.integration-spec
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { FollowBuilder, UserBuilder } from "@test/builders";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { FOLLOW_CACHE } from "@/follow/application/ports/follow-cache.port";
-import { FOLLOW_NOTIFIER } from "@/follow/application/ports/follow-notifier.port";
-import { FOLLOW_REPOSITORY } from "@/follow/application/ports/follow.repository.port";
-import { SearchUsersUseCase } from "@/follow/application/queries/search-users/search-users.use-case";
-import { FollowReader } from "@/follow/application/services/follow.reader";
-import { FriendshipEffects } from "@/follow/application/services/friendship-effects.service";
-import { AcceptFriendRequestUseCase } from "@/follow/application/use-cases/accept-friend-request/accept-friend-request.use-case";
-import { RejectFriendRequestUseCase } from "@/follow/application/use-cases/reject-friend-request/reject-friend-request.use-case";
-import { RemoveFriendUseCase } from "@/follow/application/use-cases/remove-friend/remove-friend.use-case";
-import { ReorderFriendUseCase } from "@/follow/application/use-cases/reorder-friend/reorder-friend.use-case";
-import { SendFriendRequestByTagUseCase } from "@/follow/application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
-import { SendFriendRequestUseCase } from "@/follow/application/use-cases/send-friend-request/send-friend-request.use-case";
-import { FollowCacheAdapter } from "@/follow/infrastructure/adapters/follow-cache.adapter";
-import { FollowNotifierAdapter } from "@/follow/infrastructure/adapters/follow-notifier.adapter";
-import { PrismaFollowRepository } from "@/follow/infrastructure/persistence/prisma-follow.repository";
-import { NotificationQueueService } from "@/notification/queue";
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { FOLLOW_CACHE } from "#api/follow/application/ports/follow-cache.port";
+import { FOLLOW_NOTIFIER } from "#api/follow/application/ports/follow-notifier.port";
+import { FOLLOW_REPOSITORY } from "#api/follow/application/ports/follow.repository.port";
+import { SearchUsersUseCase } from "#api/follow/application/queries/search-users/search-users.use-case";
+import { FollowReader } from "#api/follow/application/services/follow.reader";
+import { FriendshipEffects } from "#api/follow/application/services/friendship-effects.service";
+import { AcceptFriendRequestUseCase } from "#api/follow/application/use-cases/accept-friend-request/accept-friend-request.use-case";
+import { RejectFriendRequestUseCase } from "#api/follow/application/use-cases/reject-friend-request/reject-friend-request.use-case";
+import { RemoveFriendUseCase } from "#api/follow/application/use-cases/remove-friend/remove-friend.use-case";
+import { ReorderFriendUseCase } from "#api/follow/application/use-cases/reorder-friend/reorder-friend.use-case";
+import { SendFriendRequestByTagUseCase } from "#api/follow/application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
+import { SendFriendRequestUseCase } from "#api/follow/application/use-cases/send-friend-request/send-friend-request.use-case";
+import { FollowCacheAdapter } from "#api/follow/infrastructure/adapters/follow-cache.adapter";
+import { FollowNotifierAdapter } from "#api/follow/infrastructure/adapters/follow-notifier.adapter";
+import { PrismaFollowRepository } from "#api/follow/infrastructure/persistence/prisma-follow.repository";
+import { NotificationQueueService } from "#api/notification/queue";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { FollowBuilder, UserBuilder } from "#test/builders/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -50,36 +50,36 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	let removeUseCase: RemoveFriendUseCase;
 
 	const mockFollowDb = {
-		create: jest.fn(),
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		findMany: jest.fn(),
-		update: jest.fn(),
-		delete: jest.fn(),
-		count: jest.fn(),
-		updateMany: jest.fn().mockResolvedValue({ count: 0 }),
-		aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
+		create: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
+		findMany: vi.fn(),
+		update: vi.fn(),
+		delete: vi.fn(),
+		count: vi.fn(),
+		updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+		aggregate: vi.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
 	};
-	const mockUserDb = { findUnique: jest.fn(), findFirst: jest.fn() };
+	const mockUserDb = { findUnique: vi.fn(), findFirst: vi.fn() };
 	const mockDatabaseService = createMockDatabaseService({
 		follow: mockFollowDb,
 		user: mockUserDb,
 	});
 
 	const mockNotificationQueueService = {
-		enqueueFollowNew: jest.fn(),
-		enqueueFollowMutual: jest.fn(),
-		enqueueMilestoneReached: jest.fn(),
+		enqueueFollowNew: vi.fn(),
+		enqueueFollowMutual: vi.fn(),
+		enqueueMilestoneReached: vi.fn(),
 	};
 
 	const mockCacheService = {
-		getMutualFriend: jest.fn(),
-		setMutualFriend: jest.fn(),
-		invalidateMutualFriend: jest.fn().mockResolvedValue(undefined),
-		invalidateMutualFriendIds: jest.fn().mockResolvedValue(undefined),
-		invalidateFriendCount: jest.fn().mockResolvedValue(undefined),
-		wrapFriendCount: jest.fn().mockImplementation((_userId, factory) => factory()),
-		wrapMutualFriendIds: jest.fn().mockImplementation((_userId, factory) => factory()),
+		getMutualFriend: vi.fn(),
+		setMutualFriend: vi.fn(),
+		invalidateMutualFriend: vi.fn().mockResolvedValue(undefined),
+		invalidateMutualFriendIds: vi.fn().mockResolvedValue(undefined),
+		invalidateFriendCount: vi.fn().mockResolvedValue(undefined),
+		wrapFriendCount: vi.fn().mockImplementation((_userId, factory) => factory()),
+		wrapMutualFriendIds: vi.fn().mockImplementation((_userId, factory) => factory()),
 	};
 
 	const mockUser = UserBuilder.create().withId("user-integration-123").verified().build();
@@ -130,12 +130,12 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 				{
 					provide: EntitlementService,
 					useValue: {
-						getResourceLimit: jest.fn().mockResolvedValue({
+						getResourceLimit: vi.fn().mockResolvedValue({
 							maxCount: null,
 							isAdmin: false,
 							subscriptionStatus: "ACTIVE",
 						}),
-						enforceResourceLimit: jest.fn(),
+						enforceResourceLimit: vi.fn(),
 					},
 				},
 			],
@@ -151,11 +151,11 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		mockCacheService.getMutualFriend.mockResolvedValue(undefined);
 	});
 

@@ -1,17 +1,20 @@
+import { TestBed } from "@suites/unit";
 /**
  * RemoveFriendUseCase 단위 테스트 (Suites solitary + 포트 모킹).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { createFollowRepositoryMock } from "@test/mocks/ports/follow.mock";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { createFollowRepositoryMock } from "#test/mocks/ports/follow.mock";
+import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
-import { FriendshipEffects } from "../../services/friendship-effects.service";
-import { RemoveFriendUseCase } from "./remove-friend.use-case";
+import { Friendship } from "../../../domain/entities/friendship.aggregate.js";
+import {
+	FOLLOW_REPOSITORY,
+	type FollowRepositoryPort,
+} from "../../ports/follow.repository.port.js";
+import { FriendshipEffects } from "../../services/friendship-effects.service.js";
+import { RemoveFriendUseCase } from "./remove-friend.use-case.js";
 
 const ME = "u-me";
 const TARGET = "u-target";

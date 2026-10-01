@@ -7,38 +7,38 @@
  * @see https://www.prisma.io/docs/orm/prisma-client/testing/unit-testing
  */
 
-export { AccountBuilder } from "./account.builder";
+export { AccountBuilder } from "./account.builder.js";
 export {
 	CheerBuilder,
 	type CheerUserInfo,
 	type CheerUserProfile,
 	type CheerWithRelations,
-} from "./cheer.builder";
+} from "./cheer.builder.js";
 export {
 	FollowBuilder,
 	type FollowUserInfo,
 	type FollowWithFollower,
 	type FollowWithFollowing,
 	type FollowWithUser,
-} from "./follow.builder";
-export { LoginAttemptBuilder } from "./login-attempt.builder";
-export { MemoBuilder } from "./memo.builder";
-export { NotificationBuilder } from "./notification.builder";
+} from "./follow.builder.js";
+export { LoginAttemptBuilder } from "./login-attempt.builder.js";
+export { MemoBuilder } from "./memo.builder.js";
+export { NotificationBuilder } from "./notification.builder.js";
 export {
 	NudgeBuilder,
 	type NudgeTodoInfo,
 	type NudgeUserInfo,
 	type NudgeUserProfile,
 	type NudgeWithRelations,
-} from "./nudge.builder";
-export { PushTokenBuilder } from "./push-token.builder";
-export { SecurityLogBuilder } from "./security-log.builder";
-export { SessionBuilder } from "./session.builder";
-export { SubscriptionEventBuilder } from "./subscription-event.builder";
-export { TodoBuilder } from "./todo.builder";
-export { TodoCategoryBuilder, type TodoCategoryWithCount } from "./todo-category.builder";
-export { UserBuilder } from "./user.builder";
-export { UserConsentBuilder } from "./user-consent.builder";
-export { UserLocationBuilder } from "./user-location.builder";
-export { UserPreferenceBuilder } from "./user-preference.builder";
-export { VerificationBuilder } from "./verification.builder";
+} from "./nudge.builder.js";
+export { PushTokenBuilder } from "./push-token.builder.js";
+export { SecurityLogBuilder } from "./security-log.builder.js";
+export { SessionBuilder } from "./session.builder.js";
+export { SubscriptionEventBuilder } from "./subscription-event.builder.js";
+export { TodoBuilder } from "./todo.builder.js";
+export { TodoCategoryBuilder, type TodoCategoryWithCount } from "./todo-category.builder.js";
+export { UserBuilder } from "./user.builder.js";
+export { UserConsentBuilder } from "./user-consent.builder.js";
+export { UserLocationBuilder } from "./user-location.builder.js";
+export { UserPreferenceBuilder } from "./user-preference.builder.js";
+export { VerificationBuilder } from "./verification.builder.js";

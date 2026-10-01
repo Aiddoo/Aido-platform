@@ -1,4 +1,4 @@
-import { supportsFeatureDiscoveryMarketing } from "./feature-marketing-capability";
+import { supportsFeatureDiscoveryMarketing } from "./feature-marketing-capability.js";
 
 describe("supportsFeatureDiscoveryMarketing", () => {
 	it.each([

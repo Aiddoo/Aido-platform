@@ -1,19 +1,19 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "@/shared/domain/locale";
+import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";
 import {
 	type CachedUserPreference,
 	CacheService,
-} from "@/shared/infrastructure/cache/cache.service";
+} from "#api/shared/infrastructure/cache/cache.service";
 
-import { type NotificationRecipientLocaleReaderPort } from "../../application/ports/notification-recipient-locale.reader.port";
-import { type NotificationRecipientPreferenceReaderPort } from "../../application/ports/notification-recipient-preference.reader.port";
+import { type NotificationRecipientLocaleReaderPort } from "../../application/ports/notification-recipient-locale.reader.port.js";
+import { type NotificationRecipientPreferenceReaderPort } from "../../application/ports/notification-recipient-preference.reader.port.js";
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type NotificationDeliveryPreference,
 	type UserNotificationSettingsPort,
-} from "../../application/ports/user-notification-settings.port";
+} from "../../application/ports/user-notification-settings.port.js";
 
 @Injectable()
 export class CachedNotificationRecipientPreferenceAdapter

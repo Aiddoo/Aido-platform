@@ -2,20 +2,20 @@ import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
-import { UserIdParamDto } from "@/shared/presentation/dtos";
+import { UserIdParamDto } from "#api/shared/presentation/dtos/index";
 import {
 	ApiDoc,
 	ApiForbiddenError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { GetDailyCompletionsUseCase } from "../application/queries/get-daily-completions/get-daily-completions.use-case";
-import { GetFriendDailyCompletionsUseCase } from "../application/queries/get-friend-daily-completions/get-friend-daily-completions.use-case";
-import type { DailyCompletionsRange } from "../domain/daily-completion";
-import { DailyCompletionsRangeResponseDto, GetDailyCompletionsRangeDto } from "./dtos";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { GetDailyCompletionsUseCase } from "../application/queries/get-daily-completions/get-daily-completions.use-case.js";
+import { GetFriendDailyCompletionsUseCase } from "../application/queries/get-friend-daily-completions/get-friend-daily-completions.use-case.js";
+import type { DailyCompletionsRange } from "../domain/daily-completion.js";
+import { DailyCompletionsRangeResponseDto, GetDailyCompletionsRangeDto } from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.DAILY_COMPLETIONS)
 @ApiBearerAuth()
@@ -119,7 +119,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getDailyCompletionsRange(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetDailyCompletionsRangeDto,
+		@Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
 	): Promise<DailyCompletionsRangeResponseDto> {
 		this.#logger.debug(
 			`일일 완료 현황 조회: user=${user.userId}, range=${query.startDate}~${query.endDate}`,
@@ -188,8 +188,8 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
 	@ApiForbiddenError(ErrorCode.FOLLOW_0906)
 	async getFriendDailyCompletions(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: UserIdParamDto,
-		@Query() query: GetDailyCompletionsRangeDto,
+		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+		@Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
 	): Promise<DailyCompletionsRangeResponseDto> {
 		this.#logger.debug(
 			`친구 일일 완료 현황 조회: friendUserId=${params.userId}, user=${user.userId}, range=${query.startDate}~${query.endDate}`,

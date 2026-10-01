@@ -1,17 +1,17 @@
+import { TestBed } from "@suites/unit";
 /**
  * UpsertWeeklyAchievementsUseCase 단위 테스트
  *
  * 실제 DB 없이 저장소 포트를 스텁으로 대체해 빈 배열 단락·불변식 검증·위임을 확인한다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { WeeklyAchievementUpsert } from "../../../domain/weekly-achievement";
+import type { WeeklyAchievementUpsert } from "../../../domain/weekly-achievement.js";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
-} from "../../ports/weekly-achievement.repository.port";
-import { UpsertWeeklyAchievementsUseCase } from "./upsert-weekly-achievements.use-case";
+} from "../../ports/weekly-achievement.repository.port.js";
+import { UpsertWeeklyAchievementsUseCase } from "./upsert-weekly-achievements.use-case.js";
 
 function record(overrides: Partial<WeeklyAchievementUpsert> = {}): WeeklyAchievementUpsert {
 	return {

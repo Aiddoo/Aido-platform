@@ -2,15 +2,15 @@
  * TestDatabase - 통합 테스트용 DB 헬퍼
  *
  * @description
- * Jest globalSetup이 준비한 관리형 PostgreSQL에 Prisma 연결을 제공합니다.
+ * Vitest globalSetup이 준비한 관리형 PostgreSQL에 Prisma 연결을 제공합니다.
  * 컨테이너와 migration 수명주기는 이 클래스가 소유하지 않습니다.
  * - Prisma 7+ Driver Adapter 패턴 사용
  */
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "../../src/generated/prisma/client";
-import { assertManagedTestDatabaseEnvironment } from "./managed-test-database";
+import { PrismaClient } from "../../src/generated/prisma/client.js";
+import { assertManagedTestDatabaseEnvironment } from "./managed-test-database.js";
 
 /** 교착으로 튕긴 TRUNCATE를 다시 시도하는 횟수. */
 const TRUNCATE_MAX_ATTEMPTS = 3;
@@ -26,7 +26,7 @@ function isDeadlock(error: unknown): boolean {
 		typeof error === "object" &&
 		error !== null &&
 		"code" in error &&
-		(error as { code?: unknown }).code === DEADLOCK_DETECTED
+		error.code === DEADLOCK_DETECTED
 	);
 }
 

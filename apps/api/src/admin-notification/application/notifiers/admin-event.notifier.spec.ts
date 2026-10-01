@@ -1,13 +1,13 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { flushPromises } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import type { SubscriptionEventPayload } from "@/subscription";
+import type { SubscriptionEventPayload } from "#api/subscription/index";
+import { flushPromises } from "#test/mocks/index";
 
-import type { UserRegisteredEventPayload } from "../../domain/types/user-registered.payload";
-import { EnqueueSubscriptionEventUseCase } from "../use-cases/enqueue-subscription-event/enqueue-subscription-event.use-case";
-import { EnqueueUserRegisteredUseCase } from "../use-cases/enqueue-user-registered/enqueue-user-registered.use-case";
-import { AdminEventNotifier } from "./admin-event.notifier";
+import type { UserRegisteredEventPayload } from "../../domain/types/user-registered.payload.js";
+import { EnqueueSubscriptionEventUseCase } from "../use-cases/enqueue-subscription-event/enqueue-subscription-event.use-case.js";
+import { EnqueueUserRegisteredUseCase } from "../use-cases/enqueue-user-registered/enqueue-user-registered.use-case.js";
+import { AdminEventNotifier } from "./admin-event.notifier.js";
 
 describe("AdminEventNotifier", () => {
 	let adminEventNotifier: AdminEventNotifier;

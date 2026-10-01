@@ -1,21 +1,21 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import type { AccountProvider, UserStatus } from "@/auth/domain/types";
+import type { AccountProvider, UserStatus } from "#api/auth/domain/types";
 
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_USER_REPOSITORY,
 	type AuthAccountRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../../ports/auth-persistence.port";
+} from "../../ports/auth-persistence.port.js";
 import {
 	RETENTION_ENROLLER,
 	type RetentionEnrollerPort,
-} from "../../ports/retention-enroller.port";
+} from "../../ports/retention-enroller.port.js";
 import {
 	USER_PROVISIONING_SEEDER,
 	type UserProvisioningSeederPort,
-} from "../../ports/user-provisioning-seeder.port";
+} from "../../ports/user-provisioning-seeder.port.js";
 
 /** 신원 계정 유형 — 크레덴셜(이메일) 또는 소셜(OAuth) */
 export type ProvisionAccount =

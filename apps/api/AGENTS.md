@@ -1,6 +1,6 @@
 # Aido API
 
-> Version 2.0.0 · Updated 2026-08-14 · Owner: Aido Platform Team
+> Version 2.1.0 · Updated 2026-10-01 · Owner: Aido Platform Team
 
 NestJS API 작업의 세션 진입점이다. 이 파일은 우선순위가 높은 규칙만 담는다. 세부 설계는 링크된 문서를 읽고, 구조가 불명확하면 `src/todo`의 현재 코드를 기준으로 판단한다.
 
@@ -33,6 +33,9 @@ HTTP → presentation → endpoint UseCase → domain + application port
 ## 절대 규칙
 
 - 공개 HTTP route/method/header/query/body/response/status를 의도 없이 바꾸지 않는다.
+- NestJS 12/Prisma ESM: 상대 import는 `.js`, 내부 경로는 `#api/*`, 테스트는 `#test/*`를 사용한다.
+- DTO는 공유 Zod 스키마와 타입 alias이며 `@Body/Query/Param({ schema: Dto })`로 명시한다.
+- 테스트는 Vitest project(unit/integration/e2e)이며 `Mocked` 타입은 Vitest에서 import한다. Spy는 `beforeEach`에서 생성한다.
 - DTO는 `@aido/validators`, 오류는 `@aido/errors`의 `ErrorCode`를 사용한다.
 - domain에서 `@nestjs/*`, Prisma, application, infrastructure, presentation을 import하지 않는다.
 - application에서 Prisma 타입, vendor SDK, infrastructure, presentation, 타 모듈 내부 경로를 import하지 않는다.

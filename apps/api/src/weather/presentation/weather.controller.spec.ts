@@ -7,17 +7,18 @@
  * pnpm --filter @aido/api test weather.controller.spec
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { UserLocationBuilder } from "@test/builders";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "../../auth/presentation/decorators";
-import type { WeatherConditions } from "../application/ports/weather-provider.port";
-import { GetWeatherConditionsUseCase } from "../application/queries/get-weather-conditions/get-weather-conditions.use-case";
-import { GetWeatherForecastUseCase } from "../application/queries/get-weather-forecast/get-weather-forecast.use-case";
-import { UpsertLocationUseCase } from "../application/use-cases/upsert-location/upsert-location.use-case";
-import { UserLocation } from "../domain/entities/user-location.entity";
-import { WeatherController } from "./weather.controller";
+import { UserLocationBuilder } from "#test/builders/index";
+
+import type { CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import type { WeatherConditions } from "../application/ports/weather-provider.port.js";
+import { GetWeatherConditionsUseCase } from "../application/queries/get-weather-conditions/get-weather-conditions.use-case.js";
+import { GetWeatherForecastUseCase } from "../application/queries/get-weather-forecast/get-weather-forecast.use-case.js";
+import { UpsertLocationUseCase } from "../application/use-cases/upsert-location/upsert-location.use-case.js";
+import { UserLocation } from "../domain/entities/user-location.entity.js";
+import { WeatherController } from "./weather.controller.js";
 
 describe("WeatherController — 날씨 컨트롤러", () => {
 	let controller: WeatherController;

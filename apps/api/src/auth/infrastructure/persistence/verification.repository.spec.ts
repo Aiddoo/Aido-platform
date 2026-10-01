@@ -18,13 +18,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { VerificationBuilder } from "@test/builders";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import { type Verification, VerificationType } from "@/generated/prisma/client";
-import { DatabaseService } from "@/shared/infrastructure/database";
+import { type Verification, VerificationType } from "#api/generated/prisma/client";
+import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import { VerificationBuilder } from "#test/builders/index";
+import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { VerificationRepository } from "./verification.repository";
+import { VerificationRepository } from "./verification.repository.js";
 
 describe("VerificationRepository — 인증 코드 리포지토리", () => {
 	let repository: VerificationRepository;

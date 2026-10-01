@@ -12,9 +12,9 @@
  */
 import { TestBed } from "@suites/unit";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { JwtRefreshGuard } from "./jwt-refresh.guard";
+import { JwtRefreshGuard } from "./jwt-refresh.guard.js";
 
 describe("JwtRefreshGuard — 가드", () => {
 	let guard: JwtRefreshGuard;
@@ -62,7 +62,7 @@ describe("JwtRefreshGuard — 가드", () => {
 			// When & Then
 			try {
 				guard.handleRequest(error, false);
-				fail("에러가 발생해야 합니다");
+				expect.fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
 				if (error instanceof ApplicationException) {
@@ -75,7 +75,7 @@ describe("JwtRefreshGuard — 가드", () => {
 			// Given & When & Then
 			try {
 				guard.handleRequest(null, false);
-				fail("에러가 발생해야 합니다");
+				expect.fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(ApplicationException);
 				if (error instanceof ApplicationException) {

@@ -1,17 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import { decideRetentionOutboxRetry } from "../../policies/retention-outbox-retry.policy";
-import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import { decideRetentionOutboxRetry } from "../../policies/retention-outbox-retry.policy.js";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
 	RETENTION_PUSH_SENDER,
 	type RetentionPushSenderPort,
-} from "../../ports/retention-push-sender.port";
+} from "../../ports/retention-push-sender.port.js";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
+} from "../../ports/retention.repository.port.js";
 
 @Injectable()
 export class DispatchRetentionPushUseCase {

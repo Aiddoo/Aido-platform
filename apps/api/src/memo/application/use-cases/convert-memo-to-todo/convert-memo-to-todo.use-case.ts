@@ -2,10 +2,10 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port.js";
 
 /** 단건 변환 입력 (컨트롤러가 날짜/시간을 파싱해 전달). */
 export interface ConvertMemoToTodoData {

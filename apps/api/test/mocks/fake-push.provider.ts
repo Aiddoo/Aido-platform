@@ -4,7 +4,7 @@ import type {
 	PushProvider,
 	PushReceiptResult,
 	PushResult,
-} from "@/notification";
+} from "#api/notification/index";
 
 /**
  * 테스트용 FakePushProvider

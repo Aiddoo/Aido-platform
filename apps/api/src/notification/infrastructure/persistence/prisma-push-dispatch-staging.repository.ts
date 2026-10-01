@@ -2,14 +2,14 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	PushDispatchStagingRepositoryPort,
 	StagePushDispatchInput,
 	StagedPushDispatch,
-} from "../../application/ports/push-dispatch-staging.repository.port";
+} from "../../application/ports/push-dispatch-staging.repository.port.js";
 
 @Injectable()
 export class PrismaPushDispatchStagingRepository implements PushDispatchStagingRepositoryPort {

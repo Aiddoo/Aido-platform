@@ -1,17 +1,17 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
+import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate.js";
 import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
-} from "../../ports/todo-category-cache.port";
+} from "../../ports/todo-category-cache.port.js";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
+} from "../../ports/todo-category.repository.port.js";
 
 export interface UpdateTodoCategoryInput {
 	name?: string;

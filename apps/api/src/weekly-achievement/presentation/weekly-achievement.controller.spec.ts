@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * WeeklyAchievementController 컨트롤러 단위 테스트
  *
@@ -5,14 +6,13 @@
  * 컨트롤러가 Facade에 올바른 파라미터를 전달하고 응답을 그대로 반환하는지
  * 격리 테스트합니다. Facade는 자동 목으로 대체됩니다.
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "../../auth/presentation/decorators";
-import { GetWeeklyAchievementUseCase } from "../application/queries/get-weekly-achievement/get-weekly-achievement.use-case";
-import type { WeeklyAchievementListView } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
-import { GetWeeklyAchievementsUseCase } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
-import { WeeklyAchievementController } from "./weekly-achievement.controller";
+import type { CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { GetWeeklyAchievementUseCase } from "../application/queries/get-weekly-achievement/get-weekly-achievement.use-case.js";
+import type { WeeklyAchievementListView } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case.js";
+import { GetWeeklyAchievementsUseCase } from "../application/queries/get-weekly-achievements/get-weekly-achievements.use-case.js";
+import { WeeklyAchievementController } from "./weekly-achievement.controller.js";
 
 describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 	let controller: WeeklyAchievementController;

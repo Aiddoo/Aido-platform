@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * InMemoryLockAdapter 단위 테스트
  *
@@ -9,19 +11,19 @@
  * pnpm --filter @aido/api test in-memory-lock.adapter
  * ```
  */
-import { InMemoryLockAdapter } from "./in-memory-lock.adapter";
+import { InMemoryLockAdapter } from "./in-memory-lock.adapter.js";
 
 describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 	let lock: InMemoryLockAdapter;
 
 	beforeEach(() => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		lock = new InMemoryLockAdapter({ cleanupIntervalMs: 30_000 });
 	});
 
 	afterEach(() => {
 		lock.onModuleDestroy();
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	describe("acquire", () => {
@@ -72,7 +74,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 			await lock.acquire(resource, ttlMs);
 
 			// When
-			jest.advanceTimersByTime(ttlMs);
+			vi.advanceTimersByTime(ttlMs);
 			const release = await lock.acquire(resource, 5000);
 
 			// Then
@@ -86,7 +88,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 			await lock.acquire(resource, ttlMs);
 
 			// When
-			jest.advanceTimersByTime(ttlMs - 1);
+			vi.advanceTimersByTime(ttlMs - 1);
 			const secondAttempt = await lock.acquire(resource, 5000);
 
 			// Then
@@ -152,7 +154,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 			await lock.acquire(resource, ttlMs);
 
 			// When
-			jest.advanceTimersByTime(ttlMs);
+			vi.advanceTimersByTime(ttlMs);
 			const result = await lock.isLocked(resource);
 
 			// Then
@@ -166,7 +168,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 			await lock.acquire(resource, ttlMs);
 
 			// When
-			jest.advanceTimersByTime(ttlMs - 1);
+			vi.advanceTimersByTime(ttlMs - 1);
 			const result = await lock.isLocked(resource);
 
 			// Then
@@ -183,7 +185,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 			await lock.acquire(resource2, 10_000);
 
 			// When — TTL 5초 경과 후 cleanup 주기(30초) 도달
-			jest.advanceTimersByTime(30_000);
+			vi.advanceTimersByTime(30_000);
 
 			// Then — resource1은 만료되어 정리됨, resource2는 아직 유효
 			const isLocked1 = await lock.isLocked(resource1);
@@ -198,7 +200,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 			await lock.acquire(resource, 60_000); // 60초 TTL
 
 			// When — cleanup 주기(30초) 도달
-			jest.advanceTimersByTime(30_000);
+			vi.advanceTimersByTime(30_000);
 
 			// Then — 60초 TTL이므로 아직 유효
 			const result = await lock.isLocked(resource);
@@ -217,7 +219,7 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 			// Then — clearInterval이 호출되었는지 간접 확인
 			// cleanup이 더 이상 실행되지 않음을 검증
 			// (interval이 정리되었으므로 advanceTimersByTime 후에도 에러 없이 동작)
-			expect(() => jest.advanceTimersByTime(60_000)).not.toThrow();
+			expect(() => vi.advanceTimersByTime(60_000)).not.toThrow();
 		});
 	});
 });

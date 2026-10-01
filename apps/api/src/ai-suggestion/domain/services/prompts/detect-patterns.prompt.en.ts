@@ -1,11 +1,11 @@
 import {
 	PROMPT_OUTPUT_DISCIPLINE_EN,
 	PROMPT_SECURITY_GUARD_EN,
-} from "@/shared/domain/prompt/prompt-sections";
-import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+} from "#api/shared/domain/prompt/prompt-sections";
+import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
-import type { SuggestionContext } from "../../types";
-import type { SuggestionPrompt } from "./detect-patterns.prompt";
+import type { SuggestionContext } from "../../types.js";
+import type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
 
 function buildPatternRulesEn(minOccurrences: number): string {
 	return `<rules>

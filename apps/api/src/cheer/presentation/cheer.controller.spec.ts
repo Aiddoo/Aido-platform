@@ -1,15 +1,15 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import type { CheerWithRelations } from "../application/ports/cheer.repository.port";
-import { CheerReader } from "../application/services/cheer.reader";
-import { MarkCheerReadUseCase } from "../application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
-import { MarkManyCheersReadUseCase } from "../application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
-import { SendCheerUseCase } from "../application/use-cases/send-cheer/send-cheer.use-case";
-import { CheerController } from "./cheer.controller";
-import type { GetCheersQueryDto, MarkCheersReadDto, SendCheerDto } from "./dtos";
+import type { CheerWithRelations } from "../application/ports/cheer.repository.port.js";
+import { CheerReader } from "../application/services/cheer.reader.js";
+import { MarkCheerReadUseCase } from "../application/use-cases/mark-cheer-read/mark-cheer-read.use-case.js";
+import { MarkManyCheersReadUseCase } from "../application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case.js";
+import { SendCheerUseCase } from "../application/use-cases/send-cheer/send-cheer.use-case.js";
+import { CheerController } from "./cheer.controller.js";
+import type { GetCheersQueryDto, MarkCheersReadDto, SendCheerDto } from "./dtos/index.js";
 
 const user: CurrentUserPayload = {
 	userId: "sender",

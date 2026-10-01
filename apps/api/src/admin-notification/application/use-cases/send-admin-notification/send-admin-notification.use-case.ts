@@ -1,12 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import type { AdminNotification } from "../../../domain/value-objects/admin-notification-message.vo";
-import type { NotificationChannel } from "../../ports/admin-notification-queue.port";
+import type { AdminNotification } from "../../../domain/value-objects/admin-notification-message.vo.js";
+import type { NotificationChannel } from "../../ports/admin-notification-queue.port.js";
 import {
 	ADMIN_NOTIFIER,
 	type AdminNotifier,
 	PAYMENT_NOTIFIER,
-} from "../../ports/admin-notifier.port";
+} from "../../ports/admin-notifier.port.js";
 
 /**
  * 관리자 알림 발송 유스케이스.

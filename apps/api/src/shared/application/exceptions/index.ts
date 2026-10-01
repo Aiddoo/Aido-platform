@@ -1,2 +1,2 @@
-export * from "./business-exception.service";
-export * from "./error.interface";
+export * from "./business-exception.service.js";
+export * from "./error.interface.js";

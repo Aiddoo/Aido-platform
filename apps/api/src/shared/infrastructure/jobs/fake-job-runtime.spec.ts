@@ -1,9 +1,11 @@
-import { FakeJobRuntime } from "@test/mocks/fake-job-runtime";
+import { vi } from "vitest";
+
+import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 describe("FakeJobRuntime", () => {
 	it("등록된 handler를 run으로 실행하고 호출 기록을 초기화한다", async () => {
 		const runtime = new FakeJobRuntime();
-		const handler = jest.fn().mockResolvedValue(undefined);
+		const handler = vi.fn().mockResolvedValue(undefined);
 		await runtime.work("queue.v1", handler, {
 			teamSize: 1,
 			pollingIntervalSeconds: 2,

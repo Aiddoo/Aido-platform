@@ -6,17 +6,18 @@
  */
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { TodoBuilder } from "@test/builders";
-import { createTodoReadRepositoryMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
 
-import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
+import { TodoBuilder } from "#test/builders/index";
+import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
+
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { GetTodoByIdUseCase } from "./get-todo-by-id.use-case";
+} from "../../ports/todo-read.repository.port.js";
+import { GetTodoByIdUseCase } from "./get-todo-by-id.use-case.js";
 
 function buildResponse(id: number, userId = "user-123"): TodoResponse {
 	return TodoMapper.toResponse(TodoBuilder.create(userId).withId(id).build());

@@ -1,6 +1,6 @@
 import type { NotificationType as ContractNotificationType } from "@aido/validators";
 
-import type { NotificationType as DomainNotificationType } from "./notification-type";
+import type { NotificationType as DomainNotificationType } from "./notification-type.js";
 
 type Extends<T, U> = [T] extends [U] ? true : false;
 type Expect<T extends true> = T;

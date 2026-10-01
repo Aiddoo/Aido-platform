@@ -1,1 +1,1 @@
-export * from "./create-inquiry/create-inquiry.use-case";
+export * from "./create-inquiry/create-inquiry.use-case.js";

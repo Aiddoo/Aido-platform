@@ -1,14 +1,14 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createRetentionRepositoryMock, createUnitOfWorkMock } from "@test/mocks/ports";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
-import { RecoverFailedRetentionDeliveryUseCase } from "./recover-failed-retention-delivery.use-case";
+} from "../../ports/retention.repository.port.js";
+import { RecoverFailedRetentionDeliveryUseCase } from "./recover-failed-retention-delivery.use-case.js";
 
 describe("RecoverFailedRetentionDeliveryUseCase", () => {
 	it("DLQ는 matching generation의 unclaimed retention publication만 reopen하도록 위임한다", async () => {

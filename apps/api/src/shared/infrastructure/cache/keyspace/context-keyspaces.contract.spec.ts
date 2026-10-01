@@ -1,25 +1,28 @@
 import {
 	DAILY_COMPLETION_CACHE_TTL_MS,
 	DailyCompletionCacheKey,
-} from "@/daily-completion/infrastructure/cache/daily-completion-cache.keyspace";
+} from "#api/daily-completion/infrastructure/cache/daily-completion-cache.keyspace";
 import {
 	NOTIFICATION_CACHE_TTL_MS,
 	NotificationCacheKey,
-} from "@/notification/infrastructure/cache/notification-cache.keyspace";
+} from "#api/notification/infrastructure/cache/notification-cache.keyspace";
 import {
 	NOTIFICATION_DEDUP_SENTINEL,
 	NOTIFICATION_DEDUP_TTL_MS,
 	notificationDedupKey,
-} from "@/notification/infrastructure/cache/notification-dedup.keyspace";
+} from "#api/notification/infrastructure/cache/notification-dedup.keyspace";
 import {
 	SCHEDULER_DEDUP_TTL_MS,
 	SchedulerDedupKey,
-} from "@/scheduler/infrastructure/cache/scheduler-dedup.keyspace";
-import { TODO_CACHE_TTL_MS, TodoCacheKey } from "@/todo/infrastructure/cache/todo-cache.keyspace";
+} from "#api/scheduler/infrastructure/cache/scheduler-dedup.keyspace";
+import {
+	TODO_CACHE_TTL_MS,
+	TodoCacheKey,
+} from "#api/todo/infrastructure/cache/todo-cache.keyspace";
 import {
 	WEATHER_CACHE_TTL_MS,
 	WeatherCacheKey,
-} from "@/weather/infrastructure/cache/weather-cache.keyspace";
+} from "#api/weather/infrastructure/cache/weather-cache.keyspace";
 
 describe("bounded-context cache keyspace contracts", () => {
 	it("기존 Redis 키 문자열을 그대로 유지한다", () => {

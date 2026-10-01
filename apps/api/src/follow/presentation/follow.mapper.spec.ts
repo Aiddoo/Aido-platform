@@ -1,9 +1,12 @@
 /**
  * FollowMapper 단위 테스트 — 애플리케이션 타입 → API 응답 변환 검증(계약 불변).
  */
-import type { FollowWithUser, UserSearchResult } from "../application/ports/follow.repository.port";
-import { Friendship } from "../domain/entities/friendship.aggregate";
-import { FollowMapper } from "./follow.mapper";
+import type {
+	FollowWithUser,
+	UserSearchResult,
+} from "../application/ports/follow.repository.port.js";
+import { Friendship } from "../domain/entities/friendship.aggregate.js";
+import { FollowMapper } from "./follow.mapper.js";
 
 describe("FollowMapper", () => {
 	const createdAt = new Date("2026-01-01T00:00:00.000Z");

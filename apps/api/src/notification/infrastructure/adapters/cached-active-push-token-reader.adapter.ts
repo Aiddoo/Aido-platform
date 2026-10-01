@@ -1,16 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 
-import { type ActivePushTokenReaderPort } from "../../application/ports/active-push-token.reader.port";
+import { type ActivePushTokenReaderPort } from "../../application/ports/active-push-token.reader.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../../application/ports/push-token.repository.port";
+} from "../../application/ports/push-token.repository.port.js";
 import {
 	NOTIFICATION_CACHE_TTL_MS,
 	NotificationCacheKey,
-} from "../cache/notification-cache.keyspace";
+} from "../cache/notification-cache.keyspace.js";
 
 @Injectable()
 export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReaderPort {

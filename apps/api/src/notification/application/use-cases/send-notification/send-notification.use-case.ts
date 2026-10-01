@@ -5,24 +5,24 @@ import {
 	type AfterCommitTaskRegistryPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
+} from "#api/shared/application/ports/index";
 
-import type { NotificationRecord } from "../../../domain/records/notification.record";
+import type { NotificationRecord } from "../../../domain/records/notification.record.js";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
-import type { CreateNotificationData } from "../../ports/notification-data";
+} from "../../ports/notification-cache.port.js";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	DuplicateNotificationError,
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+} from "../../ports/notification.repository.port.js";
 import {
 	PUSH_DISPATCH_STAGING,
 	type PushDispatchStagingRepositoryPort,
-} from "../../ports/push-dispatch-staging.repository.port";
-import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher";
+} from "../../ports/push-dispatch-staging.repository.port.js";
+import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher.js";
 
 /** 알림과 일반 push outbox를 한 transaction으로 만들고 부수효과는 commit 뒤 시작한다. */
 @Injectable()

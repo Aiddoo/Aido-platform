@@ -14,9 +14,9 @@
 
 import request from "supertest";
 
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("관리자 E2E", () => {
 	let ctx: E2eTestContext;

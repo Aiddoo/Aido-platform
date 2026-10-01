@@ -7,23 +7,23 @@ import {
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate";
+import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate.js";
 import {
 	planReorderRelativeTo,
 	planReorderToEdge,
 	type ReorderPosition,
-} from "../../../domain/services/category-reorder";
+} from "../../../domain/services/category-reorder.js";
 import {
 	TODO_CATEGORY_CACHE,
 	type TodoCategoryCachePort,
-} from "../../ports/todo-category-cache.port";
+} from "../../ports/todo-category-cache.port.js";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
-} from "../../ports/todo-category.repository.port";
+} from "../../ports/todo-category.repository.port.js";
 
 export interface ReorderTodoCategoryInput {
 	userId: string;

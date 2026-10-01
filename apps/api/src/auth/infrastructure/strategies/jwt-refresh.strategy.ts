@@ -5,9 +5,9 @@ import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
-import type { JwtPayload } from "@/auth/infrastructure/adapters/token.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import type { JwtPayload } from "#api/auth/infrastructure/adapters/token.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 /**
  * Refresh Token 요청에서 추출된 정보

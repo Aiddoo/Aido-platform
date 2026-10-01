@@ -2,10 +2,11 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import { Logger } from "@nestjs/common";
 import { ClsService } from "nestjs-cls";
+import { vi } from "vitest";
 
-import type { AfterCommitTaskRegistryPort } from "@/shared/application/ports";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/index";
 
-import { ClsUnitOfWork } from "./cls-unit-of-work";
+import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 
 const TRANSACTION_ACTIVE = Symbol("TEST_TRANSACTION_ACTIVE");
 
@@ -57,7 +58,7 @@ describe("ClsUnitOfWork — after-commit task registry", () => {
 		txHost = new FakeTransactionHost(cls);
 		unitOfWork = new ClsUnitOfWork(txHost, cls);
 		registry = unitOfWork;
-		jest.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+		vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
 	});
 
 	it("root transaction이 commit된 뒤에만 등록 작업을 실행한다", async () => {
@@ -76,7 +77,7 @@ describe("ClsUnitOfWork — after-commit task registry", () => {
 	});
 
 	it("work가 rollback되면 등록 작업을 실행하지 않는다", async () => {
-		const task = jest.fn().mockResolvedValue(undefined);
+		const task = vi.fn().mockResolvedValue(undefined);
 
 		await expect(
 			unitOfWork.run(async () => {
@@ -89,7 +90,7 @@ describe("ClsUnitOfWork — after-commit task registry", () => {
 	});
 
 	it("commit 자체가 실패해도 등록 작업을 실행하지 않는다", async () => {
-		const task = jest.fn().mockResolvedValue(undefined);
+		const task = vi.fn().mockResolvedValue(undefined);
 		txHost.commitError = new Error("commit failed");
 
 		await expect(
@@ -122,11 +123,11 @@ describe("ClsUnitOfWork — after-commit task registry", () => {
 	});
 
 	it("한 작업의 실패가 다음 작업과 이미 commit된 business result를 막지 않는다", async () => {
-		const secondTask = jest.fn().mockResolvedValue(undefined);
+		const secondTask = vi.fn().mockResolvedValue(undefined);
 
 		await expect(
 			unitOfWork.run(async () => {
-				registry.register(jest.fn().mockRejectedValue(new Error("side effect failed")));
+				registry.register(vi.fn().mockRejectedValue(new Error("side effect failed")));
 				registry.register(secondTask);
 				return "committed";
 			}),
@@ -163,7 +164,7 @@ describe("ClsUnitOfWork — after-commit task registry", () => {
 	});
 
 	it("transaction 밖에서는 즉시 실행하고 rejection을 관측한다", async () => {
-		const task = jest.fn().mockRejectedValue(new Error("immediate failure"));
+		const task = vi.fn().mockRejectedValue(new Error("immediate failure"));
 
 		registry.register(task);
 		expect(task).toHaveBeenCalledTimes(1);
@@ -173,7 +174,7 @@ describe("ClsUnitOfWork — after-commit task registry", () => {
 	});
 
 	it("transaction 밖 task의 synchronous throw도 caller에 전파하지 않는다", () => {
-		const task = jest.fn().mockImplementation(() => {
+		const task = vi.fn().mockImplementation(() => {
 			throw new Error("synchronous failure");
 		});
 
@@ -183,7 +184,7 @@ describe("ClsUnitOfWork — after-commit task registry", () => {
 
 	it("active transaction에 registry scope가 없으면 invariant 오류를 낸다", async () => {
 		await txHost.withTransaction(async () => {
-			expect(() => registry.register(jest.fn().mockResolvedValue(undefined))).toThrow(
+			expect(() => registry.register(vi.fn().mockResolvedValue(undefined))).toThrow(
 				"After-commit task scope is missing for an active transaction",
 			);
 		});

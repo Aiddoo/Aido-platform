@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException, ValueObject } from "@/shared/domain";
+import { DomainException, ValueObject } from "#api/shared/domain/index";
 
 /** 제목 불변식 (Zod 경계 검증과 동일 규칙 — 도메인 자기방어) */
 const TITLE_MIN_LENGTH = 1;

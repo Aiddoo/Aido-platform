@@ -1,25 +1,25 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import type { UserLocation } from "../../../domain/entities/user-location.entity";
+import type { UserLocation } from "../../../domain/entities/user-location.entity.js";
 import {
 	AIR_QUALITY_PROVIDER,
 	type AirQualityProvider,
-} from "../../ports/air-quality-provider.port";
+} from "../../ports/air-quality-provider.port.js";
 import {
 	LIFESTYLE_INDEX_PROVIDER,
 	type LifestyleIndexProvider,
-} from "../../ports/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER, type SunTimeProvider } from "../../ports/sun-time-provider.port";
-import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port";
+} from "../../ports/lifestyle-index-provider.port.js";
+import { SUN_TIME_PROVIDER, type SunTimeProvider } from "../../ports/sun-time-provider.port.js";
+import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port.js";
 import {
 	WEATHER_LOCATION_REPOSITORY,
 	type WeatherLocationRepositoryPort,
-} from "../../ports/weather-location.repository.port";
-import type { WeatherConditions } from "../../ports/weather-provider.port";
-import { WeatherForecastReader } from "../../services/weather-forecast.reader";
+} from "../../ports/weather-location.repository.port.js";
+import type { WeatherConditions } from "../../ports/weather-provider.port.js";
+import { WeatherForecastReader } from "../../services/weather-forecast.reader.js";
 
 /**
  * 사용자 위치 기반 날씨 부가 정보(체감온도·자외선·일출/일몰·미세먼지) 조회 입력.

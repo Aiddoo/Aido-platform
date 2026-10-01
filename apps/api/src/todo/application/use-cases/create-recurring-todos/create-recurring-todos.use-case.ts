@@ -10,24 +10,24 @@ import {
 	type DomainEventPublisherPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
-import { parseDateOnly } from "@/shared/domain/date/utils/parse";
-import { parseLocalDateTime } from "@/shared/domain/date/utils/timezone";
+} from "#api/shared/application/ports/index";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
+import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { Todo, type TodoCreationPlan } from "../../../domain/entities/todo.aggregate";
-import { expandRecurringDates } from "../../../domain/services/expand-recurring-dates";
+import { Todo, type TodoCreationPlan } from "../../../domain/entities/todo.aggregate.js";
+import { expandRecurringDates } from "../../../domain/services/expand-recurring-dates.js";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
-} from "../../ports/category-ownership.port";
-import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
+} from "../../ports/category-ownership.port.js";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
-} from "../../ports/todo-read.repository.port";
-import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port";
-import type { CreateRecurringTodoData } from "../../types";
+} from "../../ports/todo-read.repository.port.js";
+import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
+import type { CreateRecurringTodoData } from "../../types.js";
 
 /** 반복 생성 결과 read model — use-case가 계약(반환 타입)을 소유합니다 */
 export interface CreateRecurringTodosResult {

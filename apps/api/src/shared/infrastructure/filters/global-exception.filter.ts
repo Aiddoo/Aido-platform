@@ -10,14 +10,14 @@ import * as Sentry from "@sentry/nestjs";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "#api/generated/prisma/client";
 import {
 	BusinessException,
 	BusinessExceptions,
-} from "@/shared/application/exceptions/business-exception.service";
-import type { ErrorResponse } from "@/shared/application/exceptions/error.interface";
-import { ErrorCodedException } from "@/shared/domain/exceptions/error-coded.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+} from "#api/shared/application/exceptions/business-exception.service";
+import type { ErrorResponse } from "#api/shared/application/exceptions/error.interface";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 /**
  * 전역 예외 필터

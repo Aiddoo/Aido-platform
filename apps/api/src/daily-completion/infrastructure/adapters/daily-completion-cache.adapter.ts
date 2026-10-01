@@ -1,13 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 
-import type { DailyCompletionCachePort } from "../../application/ports/daily-completion-cache.port";
-import type { DailyCompletionsRange } from "../../domain/daily-completion";
+import type { DailyCompletionCachePort } from "../../application/ports/daily-completion-cache.port.js";
+import type { DailyCompletionsRange } from "../../domain/daily-completion.js";
 import {
 	DAILY_COMPLETION_CACHE_TTL_MS,
 	DailyCompletionCacheKey,
-} from "../cache/daily-completion-cache.keyspace";
+} from "../cache/daily-completion-cache.keyspace.js";
 
 /**
  * DailyCompletionCachePort 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임.

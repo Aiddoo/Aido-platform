@@ -3,11 +3,11 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_INBOX_READER,
 	type NotificationInboxReaderPort,
-} from "../../ports/notification-inbox.reader.port";
+} from "../../ports/notification-inbox.reader.port.js";
 
 /**
  * 읽지 않은 알림 수 조회 유스케이스 (2분 캐시).

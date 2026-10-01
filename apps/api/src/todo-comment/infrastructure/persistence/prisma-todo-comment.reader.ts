@@ -3,13 +3,13 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import type { Prisma as PrismaTypes } from "@/generated/prisma/client";
-import { FollowStatus, TodoVisibility } from "@/generated/prisma/enums";
-import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import type { Prisma as PrismaTypes } from "#api/generated/prisma/client";
+import { FollowStatus, TodoVisibility } from "#api/generated/prisma/enums";
+import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { TodoCommentReaderPort } from "../../application/ports/todo-comment.reader.port";
+import type { TodoCommentReaderPort } from "../../application/ports/todo-comment.reader.port.js";
 import type {
 	ListTodoCommentOverviewParams,
 	ListTodoConversationParams,
@@ -20,9 +20,9 @@ import type {
 	TodoConversationRecord,
 	TodoConversationWindow,
 	TodoDetailsRecord,
-} from "../../application/types";
-import { buildTodoConversationTreeCtes } from "./todo-conversation-tree.sql";
-import { TODO_DETAILS_INCLUDE, toTodoResponse } from "./todo-details.mapper";
+} from "../../application/types.js";
+import { buildTodoConversationTreeCtes } from "./todo-conversation-tree.sql.js";
+import { TODO_DETAILS_INCLUDE, toTodoResponse } from "./todo-details.mapper.js";
 
 const COMMENT_INCLUDE = {
 	author: { include: { profile: true } },

@@ -11,15 +11,16 @@
  */
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
+import { vi } from "vitest";
 
-import { CacheModule } from "@/shared/infrastructure/cache/cache.module";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheModule } from "#api/shared/infrastructure/cache/cache.module";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import {
 	CACHE_SERVICE,
 	ICacheService,
-} from "@/shared/infrastructure/cache/interfaces/cache.interface";
+} from "#api/shared/infrastructure/cache/interfaces/cache.interface";
 
-import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils";
+import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils.js";
 
 describe("CacheModule 통합 테스트", () => {
 	describe("인메모리 어댑터 (기본 설정)", () => {
@@ -108,7 +109,7 @@ describe("CacheModule 통합 테스트", () => {
 			it("TTL이 만료되면 캐시가 삭제된다", async () => {
 				// Given
 				const baseTime = Date.now();
-				const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
+				const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
 				const shortTtlModule = await Test.createTestingModule({
 					imports: [
 						ConfigModule.forRoot({
@@ -334,7 +335,7 @@ describe("CacheModule 통합 테스트", () => {
 			it("캐시 미스 시 factory를 호출하고 결과를 캐싱한다", async () => {
 				// Given
 				const key = "wrap-test";
-				const factory = jest.fn().mockResolvedValue("factory-value");
+				const factory = vi.fn().mockResolvedValue("factory-value");
 
 				// When
 				const result = await cacheService.wrap(key, factory);
@@ -352,9 +353,9 @@ describe("CacheModule 통합 테스트", () => {
 			it("TTL shorthand를 지원한다", async () => {
 				// Given
 				const baseTime = Date.now();
-				const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
+				const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
 				const key = "wrap-ttl-test";
-				const factory = jest.fn().mockResolvedValue("value");
+				const factory = vi.fn().mockResolvedValue("value");
 
 				try {
 					// When
@@ -381,7 +382,7 @@ describe("CacheModule 통합 테스트", () => {
 					expiresAt: new Date(),
 					revokedAt: null,
 				};
-				const factory = jest.fn().mockResolvedValue(session);
+				const factory = vi.fn().mockResolvedValue(session);
 
 				// When
 				const result = await cacheService.wrapSession(sessionId, factory);
@@ -404,7 +405,7 @@ describe("CacheModule 통합 테스트", () => {
 					name: "Test",
 					userTag: "test#1234",
 				});
-				const factory = jest.fn().mockResolvedValue(profile);
+				const factory = vi.fn().mockResolvedValue(profile);
 
 				// When
 				const result = await cacheService.wrapUserProfile(userId, factory);
@@ -422,7 +423,7 @@ describe("CacheModule 통합 테스트", () => {
 				// Given
 				const userId = "wrap-friend-test-1";
 				const targetUserId = "wrap-friend-test-2";
-				const factory = jest.fn().mockResolvedValue(true);
+				const factory = vi.fn().mockResolvedValue(true);
 
 				// When
 				const result = await cacheService.wrapMutualFriend(userId, targetUserId, factory);
@@ -470,7 +471,7 @@ describe("CacheModule 통합 테스트", () => {
 			it("mset에서 TTL shorthand를 지원한다", async () => {
 				// Given
 				const baseTime = Date.now();
-				const now = jest.spyOn(Date, "now").mockReturnValue(baseTime);
+				const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
 				const entries = [
 					{ key: "mset-ttl-1", value: "value-1", ttl: "1s" as const },
 					{ key: "mset-ttl-2", value: "value-2", ttl: "1s" as const },
@@ -585,18 +586,18 @@ describe("CacheModule 통합 테스트", () => {
 		it("Jest 모킹된 어댑터를 사용할 수 있다", async () => {
 			// Given
 			const mockAdapter: ICacheService = {
-				get: jest.fn().mockResolvedValue("mocked-value"),
-				set: jest.fn(),
-				del: jest.fn(),
-				delByPattern: jest.fn(),
-				reset: jest.fn(),
-				getStats: jest.fn().mockReturnValue({ hits: 0, misses: 0, keys: 0 }),
-				wrap: jest.fn().mockImplementation((_key, factory) => factory()),
-				mget: jest.fn().mockResolvedValue([]),
-				mset: jest.fn(),
-				has: jest.fn().mockResolvedValue(false),
-				ttl: jest.fn().mockResolvedValue(-2),
-				touch: jest.fn().mockResolvedValue(false),
+				get: vi.fn().mockResolvedValue("mocked-value"),
+				set: vi.fn(),
+				del: vi.fn(),
+				delByPattern: vi.fn(),
+				reset: vi.fn(),
+				getStats: vi.fn().mockReturnValue({ hits: 0, misses: 0, keys: 0 }),
+				wrap: vi.fn().mockImplementation((_key, factory) => factory()),
+				mget: vi.fn().mockResolvedValue([]),
+				mset: vi.fn(),
+				has: vi.fn().mockResolvedValue(false),
+				ttl: vi.fn().mockResolvedValue(-2),
+				touch: vi.fn().mockResolvedValue(false),
 			};
 			const module = await Test.createTestingModule({
 				imports: [CacheModule.forTesting(mockAdapter)],
@@ -618,18 +619,18 @@ describe("CacheModule 통합 테스트", () => {
 		it("모킹된 wrap 메서드를 사용할 수 있다", async () => {
 			// Given
 			const mockAdapter: ICacheService = {
-				get: jest.fn(),
-				set: jest.fn(),
-				del: jest.fn(),
-				delByPattern: jest.fn(),
-				reset: jest.fn(),
-				getStats: jest.fn().mockReturnValue({ hits: 0, misses: 0, keys: 0 }),
-				wrap: jest.fn().mockResolvedValue("wrapped-value"),
-				mget: jest.fn(),
-				mset: jest.fn(),
-				has: jest.fn(),
-				ttl: jest.fn(),
-				touch: jest.fn(),
+				get: vi.fn(),
+				set: vi.fn(),
+				del: vi.fn(),
+				delByPattern: vi.fn(),
+				reset: vi.fn(),
+				getStats: vi.fn().mockReturnValue({ hits: 0, misses: 0, keys: 0 }),
+				wrap: vi.fn().mockResolvedValue("wrapped-value"),
+				mget: vi.fn(),
+				mset: vi.fn(),
+				has: vi.fn(),
+				ttl: vi.fn(),
+				touch: vi.fn(),
 			};
 			const module = await Test.createTestingModule({
 				imports: [CacheModule.forTesting(mockAdapter)],
@@ -638,7 +639,7 @@ describe("CacheModule 통합 테스트", () => {
 
 			try {
 				// When
-				const factory = jest.fn();
+				const factory = vi.fn();
 				const result = await service.wrap("key", factory, "5m");
 
 				// Then

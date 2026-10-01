@@ -1,9 +1,9 @@
-import type { PushPayload } from "../../application/ports/push-provider.port";
+import type { PushPayload } from "../../application/ports/push-provider.port.js";
 import {
 	buildExpoPushMessage,
 	EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH,
 	measureExpoPushMessageByteLength,
-} from "./expo-push-message";
+} from "./expo-push-message.js";
 
 const VALID_TOKEN = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
 

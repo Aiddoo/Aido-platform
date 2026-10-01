@@ -8,7 +8,7 @@ import type {
 	NotificationType,
 	Platform,
 	PushToken,
-} from "@/generated/prisma/client";
+} from "#api/generated/prisma/client";
 
 let notificationCounter = 0;
 let pushTokenCounter = 0;

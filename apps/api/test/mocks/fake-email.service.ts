@@ -1,4 +1,4 @@
-import type { EmailSendResult, EmailTag, EmailType, InquiryTemplateData } from "@/email";
+import type { EmailSendResult, EmailTag, EmailType, InquiryTemplateData } from "#api/email/index";
 
 /**
  * 발송된 이메일 기록

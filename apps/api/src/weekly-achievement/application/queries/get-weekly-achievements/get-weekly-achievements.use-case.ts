@@ -1,6 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { type CursorPaginationInfo, PaginationService } from "@/shared/application/pagination";
+import {
+	type CursorPaginationInfo,
+	PaginationService,
+} from "#api/shared/application/pagination/index";
 
 import {
 	computeSummary,
@@ -8,11 +11,11 @@ import {
 	type WeekLabelLocale,
 	type WeeklyAchievementSummary,
 	type WeeklyAchievementView,
-} from "../../../domain/weekly-achievement";
+} from "../../../domain/weekly-achievement.js";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
-} from "../../ports/weekly-achievement.repository.port";
+} from "../../ports/weekly-achievement.repository.port.js";
 
 export interface GetWeeklyAchievementsInput {
 	userId: string;

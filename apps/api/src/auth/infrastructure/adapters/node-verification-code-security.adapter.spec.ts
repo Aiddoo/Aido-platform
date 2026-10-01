@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { VERIFICATION_CODE } from "@aido/validators";
 
-import { NodeVerificationCodeSecurityAdapter } from "./node-verification-code-security.adapter";
+import { NodeVerificationCodeSecurityAdapter } from "./node-verification-code-security.adapter.js";
 
 describe("NodeVerificationCodeSecurityAdapter", () => {
 	const adapter = new NodeVerificationCodeSecurityAdapter();

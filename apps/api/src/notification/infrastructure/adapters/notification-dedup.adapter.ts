@@ -3,18 +3,18 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	DEDUP_PROVIDER,
 	type IDedupProvider,
-} from "@/shared/infrastructure/dedup/interfaces/dedup.interface";
+} from "#api/shared/infrastructure/dedup/interfaces/dedup.interface";
 
 import type {
 	NotificationDedupPort,
 	NotificationDedupRecord,
-} from "../../application/ports/notification-dedup.port";
-import type { NotificationType } from "../../domain/types/notification-type";
+} from "../../application/ports/notification-dedup.port.js";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 import {
 	NOTIFICATION_DEDUP_SENTINEL,
 	NOTIFICATION_DEDUP_TTL_MS,
 	notificationDedupKey,
-} from "../cache/notification-dedup.keyspace";
+} from "../cache/notification-dedup.keyspace.js";
 
 @Injectable()
 export class NotificationDedupAdapter implements NotificationDedupPort {

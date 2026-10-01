@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { OAuthWorkflow } from "../../workflows/oauth.workflow";
+import { OAuthWorkflow } from "../../workflows/oauth.workflow.js";
 
 @Injectable()
 export class ExchangeOAuthCodeUseCase {

@@ -1,20 +1,22 @@
-import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter";
+import { vi } from "vitest";
+
+import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter.js";
 
 describe("InMemoryPushRateLimiter engagement policy", () => {
 	beforeEach(() => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-15T00:00:00.000Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-15T00:00:00.000Z"));
 	});
-	afterEach(() => jest.useRealTimers());
+	afterEach(() => vi.useRealTimers());
 
 	it("현지 하루 최대 2회, 최소 4시간 간격을 원자적으로 적용한다", async () => {
 		const limiter = new InMemoryPushRateLimiter();
 		expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(false);
 		expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(true);
 
-		jest.advanceTimersByTime(4 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(4 * 60 * 60 * 1000);
 		expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(false);
 
-		jest.advanceTimersByTime(4 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(4 * 60 * 60 * 1000);
 		expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(true);
 		limiter.destroy();
 	});
@@ -23,10 +25,10 @@ describe("InMemoryPushRateLimiter engagement policy", () => {
 		const limiter = new InMemoryPushRateLimiter();
 		const localDate = "2026-07-15";
 		expect(await limiter.isEngagementRateLimited("user-1", localDate)).toBe(false);
-		jest.advanceTimersByTime(4 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(4 * 60 * 60 * 1000);
 		expect(await limiter.isEngagementRateLimited("user-1", localDate)).toBe(false);
 
-		jest.advanceTimersByTime(49 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(49 * 60 * 60 * 1000);
 
 		expect(await limiter.isEngagementRateLimited("user-1", localDate)).toBe(false);
 		limiter.destroy();
@@ -109,7 +111,7 @@ describe("InMemoryPushRateLimiter engagement policy", () => {
 		} as const;
 
 		await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
-		jest.advanceTimersByTime(5 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(5 * 60 * 60 * 1000);
 		await expect(
 			limiter.reserveBatch([
 				{
@@ -119,7 +121,7 @@ describe("InMemoryPushRateLimiter engagement policy", () => {
 				},
 			]),
 		).resolves.toEqual([false]);
-		jest.advanceTimersByTime(4 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(4 * 60 * 60 * 1000);
 		await expect(
 			limiter.reserveBatch([
 				{
@@ -151,7 +153,7 @@ describe("InMemoryPushRateLimiter engagement policy", () => {
 		const reservationId = "push-delivery-general-phase";
 		await expect(limiter.isRateLimited("user-1", reservationId)).resolves.toBe(false);
 
-		jest.advanceTimersByTime(2 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(2 * 60 * 60 * 1000);
 		for (let index = 0; index < 15; index += 1) {
 			await expect(limiter.isRateLimited("user-1")).resolves.toBe(false);
 		}

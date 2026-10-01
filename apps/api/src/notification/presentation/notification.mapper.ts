@@ -5,9 +5,9 @@ import {
 	notificationMetadataSchema,
 } from "@aido/validators";
 
-import { toISOString, toISOStringOrNull } from "@/shared/domain/date/utils/format";
+import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
-import type { NotificationRecord } from "../domain/records/notification.record";
+import type { NotificationRecord } from "../domain/records/notification.record.js";
 
 export abstract class NotificationMapper {
 	static toDto(notification: NotificationRecord): NotificationDto {

@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * InMemoryCacheAdapter 단위 테스트
  *
@@ -9,8 +11,8 @@
  * pnpm --filter @aido/api test in-memory-cache.adapter
  * ```
  */
-import { describeCacheAdapterContract } from "./cache-adapter.contract";
-import { InMemoryCacheAdapter } from "./in-memory-cache.adapter";
+import { describeCacheAdapterContract } from "./cache-adapter.contract.js";
+import { InMemoryCacheAdapter } from "./in-memory-cache.adapter.js";
 
 describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 	// Redis 어댑터와 동일한 ICacheService 계약 준수 검증 (교체 가능성 증명)
@@ -449,7 +451,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 		it("캐시 미스 시 factory를 호출하고 결과를 캐싱한다", async () => {
 			// Given
 			const key = "key1";
-			const factory = jest.fn().mockResolvedValue("value");
+			const factory = vi.fn().mockResolvedValue("value");
 
 			// When
 			const result = await cache.wrap(key, factory);
@@ -464,7 +466,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 			// Given
 			const key = "key1";
 			await cache.set(key, "cached");
-			const factory = jest.fn().mockResolvedValue("new-value");
+			const factory = vi.fn().mockResolvedValue("new-value");
 
 			// When
 			const result = await cache.wrap(key, factory);
@@ -477,7 +479,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 		it("factory가 undefined를 반환하면 캐싱하지 않는다", async () => {
 			// Given
 			const key = "key1";
-			const factory = jest.fn().mockResolvedValue(undefined);
+			const factory = vi.fn().mockResolvedValue(undefined);
 
 			// When
 			const result = await cache.wrap(key, factory);
@@ -490,7 +492,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 		it("factory가 null을 반환하면 캐싱하지 않는다", async () => {
 			// Given
 			const key = "key1";
-			const factory = jest.fn().mockResolvedValue(null);
+			const factory = vi.fn().mockResolvedValue(null);
 
 			// When
 			const result = await cache.wrap(key, factory);
@@ -503,7 +505,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 		it("TTL shorthand를 지원한다", async () => {
 			// Given
 			const key = "key1";
-			const factory = jest.fn().mockResolvedValue("value");
+			const factory = vi.fn().mockResolvedValue("value");
 
 			// When
 			await cache.wrap(key, factory, "5m");
@@ -517,7 +519,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 		it("factory 에러를 전파한다", async () => {
 			// Given
 			const key = "key1";
-			const factory = jest.fn().mockRejectedValue(new Error("factory error"));
+			const factory = vi.fn().mockRejectedValue(new Error("factory error"));
 
 			// When & Then
 			await expect(cache.wrap(key, factory)).rejects.toThrow("factory error");

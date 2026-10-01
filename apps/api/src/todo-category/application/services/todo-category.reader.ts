@@ -1,15 +1,21 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { EntitlementService, Resource } from "@/shared/application/entitlement/entitlement.service";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	EntitlementService,
+	Resource,
+} from "#api/shared/application/entitlement/entitlement.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { TODO_CATEGORY_CACHE, type TodoCategoryCachePort } from "../ports/todo-category-cache.port";
+import {
+	TODO_CATEGORY_CACHE,
+	type TodoCategoryCachePort,
+} from "../ports/todo-category-cache.port.js";
 import {
 	TODO_CATEGORY_REPOSITORY,
 	type TodoCategoryRepositoryPort,
 	type TodoCategoryWithCountView,
-} from "../ports/todo-category.repository.port";
+} from "../ports/todo-category.repository.port.js";
 
 export interface ResourceLimitInfo {
 	categoryCount: number;

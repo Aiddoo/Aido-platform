@@ -8,23 +8,23 @@ import {
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { now } from "@/shared/domain/date/utils/core";
-import { type GridInput, WeatherForecastAccess } from "@/weather";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
+import { type GridInput, WeatherForecastAccess } from "#api/weather/index";
 
 import type {
 	SuggestionContext,
 	SuggestionHistoryItem,
 	TodoSummaryForAnalysis,
-} from "../../domain/types";
+} from "../../domain/types.js";
 import {
 	AI_SUGGESTION_REPOSITORY,
 	type AiSuggestionRepositoryPort,
-} from "../ports/ai-suggestion.repository.port";
+} from "../ports/ai-suggestion.repository.port.js";
 import {
 	WEEKLY_REPORT_READER,
 	type WeeklyReportReaderPort,
-} from "../ports/weekly-report-reader.port";
+} from "../ports/weekly-report-reader.port.js";
 
 const PRECIPITATION_KO: Record<string, string> = {
 	RAIN: "비",

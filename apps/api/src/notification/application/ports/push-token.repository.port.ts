@@ -1,5 +1,5 @@
-import type { PushTokenRecord } from "../../domain/records/notification.record";
-import type { FindPushTokensParams, RegisterPushTokenData } from "./notification-data";
+import type { PushTokenRecord } from "../../domain/records/notification.record.js";
+import type { FindPushTokensParams, RegisterPushTokenData } from "./notification-data.js";
 
 export const PUSH_TOKEN_REPOSITORY = Symbol("PUSH_TOKEN_REPOSITORY");
 

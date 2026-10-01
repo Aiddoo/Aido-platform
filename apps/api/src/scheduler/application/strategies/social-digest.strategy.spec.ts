@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * SocialDigestStrategy 전략 단위 테스트
  *
@@ -9,28 +12,26 @@
  * pnpm --filter @aido/api test social-digest.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { TEST_CUID } from "@test/fixtures";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createSocialDigestNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
+import { TEST_CUID } from "#test/fixtures/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	RE_ENGAGEMENT_READER,
 	type ReEngagementReaderPort,
-} from "../ports/re-engagement-reader.port";
+} from "../ports/re-engagement-reader.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
-import { SocialDigestStrategy } from "./social-digest.strategy";
+} from "../ports/scheduler-preference-reader.port.js";
+import { SocialDigestStrategy } from "./social-digest.strategy.js";
 
 describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	let strategy: SocialDigestStrategy;
@@ -55,8 +56,8 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
 
 		const { unit, unitRef } = await TestBed.solitary(SocialDigestStrategy).compile();
 
@@ -76,7 +77,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("본인 미완료 + 완료 친구 1명일 때 Social Digest를 발송한다", async () => {

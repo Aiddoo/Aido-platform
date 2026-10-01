@@ -2,19 +2,19 @@ import { ErrorCode } from "@aido/errors";
 import type { UserRole } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { addMilliseconds } from "@/shared/domain/date/utils/arithmetic";
-import { isExpired } from "@/shared/domain/date/utils/compare";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
+import { isExpired } from "#api/shared/domain/date/utils/compare";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
 	AUTH_TOKEN_ISSUER,
 	type AuthTokenIssuerPort,
 	type TokenPair,
-} from "../ports/auth-crypto.port";
+} from "../ports/auth-crypto.port.js";
 import {
 	AUTH_SESSION_REPOSITORY,
 	type AuthSessionRepositoryPort,
-} from "../ports/auth-persistence.port";
+} from "../ports/auth-persistence.port.js";
 
 export interface CreateSessionParams {
 	userId: string;

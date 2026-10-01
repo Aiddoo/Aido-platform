@@ -1,4 +1,6 @@
 import { ErrorCode } from "@aido/errors";
+import { vi } from "vitest";
+
 import {
 	createMutationLockMock,
 	createTodoCommentNotificationMock,
@@ -6,14 +8,14 @@ import {
 	createTodoCommentRepositoryMock,
 	createTodoViewCacheMock,
 	createUnitOfWorkMock,
-} from "@test/mocks/ports";
+} from "#test/mocks/ports/index";
 
 import {
 	TodoCommentIdempotencyConflict,
 	TodoCommentIdempotencyRace,
-} from "../../ports/todo-comment.repository.port";
-import type { TodoCommentRecord } from "../../types";
-import { WriteTodoCommentChainUseCase } from "./write-todo-comment-chain.use-case";
+} from "../../ports/todo-comment.repository.port.js";
+import type { TodoCommentRecord } from "../../types.js";
+import { WriteTodoCommentChainUseCase } from "./write-todo-comment-chain.use-case.js";
 
 const TODO_ID = 1;
 const AUTHOR_ID = "cm1author0000000000000001";
@@ -50,16 +52,16 @@ function setup() {
 	const mutationLock = createMutationLockMock();
 	const unitOfWork = createUnitOfWorkMock();
 
-	jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-	jest.mocked(reader.findCommentRecords).mockResolvedValue([createRecord()]);
-	jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
-	jest.mocked(repository.findCommentChainReplay).mockResolvedValue(null);
-	jest.mocked(repository.createCommentChain).mockResolvedValue({
+	vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+	vi.mocked(reader.findCommentRecords).mockResolvedValue([createRecord()]);
+	vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+	vi.mocked(repository.findCommentChainReplay).mockResolvedValue(null);
+	vi.mocked(repository.createCommentChain).mockResolvedValue({
 		commentIds: [COMMENT_ID],
 		createdCount: 1,
 	});
-	jest.mocked(repository.increaseTodoCommentCount).mockResolvedValue(undefined);
-	jest.mocked(repository.incrementReplyCount).mockResolvedValue(true);
+	vi.mocked(repository.increaseTodoCommentCount).mockResolvedValue(undefined);
+	vi.mocked(repository.incrementReplyCount).mockResolvedValue(true);
 
 	const useCase = new WriteTodoCommentChainUseCase(
 		reader,
@@ -88,14 +90,14 @@ function setup() {
 describe("WriteTodoCommentChainUseCase", () => {
 	it("알림이 실패해도 커밋된 댓글을 성공으로 돌려준다", async () => {
 		const { execute, notification } = setup();
-		jest.mocked(notification.notifyCommentsWritten).mockRejectedValue(new Error("push down"));
+		vi.mocked(notification.notifyCommentsWritten).mockRejectedValue(new Error("push down"));
 
 		await expect(execute()).resolves.toMatchObject({ comments: [{ id: COMMENT_ID }] });
 	});
 
 	it("한 커밋 후 작업이 실패해도 나머지 작업은 실행한다", async () => {
 		const { execute, notification, todoViewCache } = setup();
-		jest.mocked(todoViewCache.invalidateForTodo).mockRejectedValue(new Error("cache down"));
+		vi.mocked(todoViewCache.invalidateForTodo).mockRejectedValue(new Error("cache down"));
 
 		await execute();
 
@@ -131,8 +133,8 @@ describe("WriteTodoCommentChainUseCase", () => {
 
 	it("정확한 replay는 생성과 counter 변경을 건너뛰고 viewer 좋아요를 보존한다", async () => {
 		const { execute, reader, repository } = setup();
-		jest.mocked(repository.findCommentChainReplay).mockResolvedValue([COMMENT_ID]);
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([COMMENT_ID]));
+		vi.mocked(repository.findCommentChainReplay).mockResolvedValue([COMMENT_ID]);
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([COMMENT_ID]));
 
 		await expect(execute()).resolves.toMatchObject({
 			comments: [{ id: COMMENT_ID, viewer: { isLiked: true } }],
@@ -144,20 +146,19 @@ describe("WriteTodoCommentChainUseCase", () => {
 
 	it("같은 멱등 키의 다른 명령을 잘못된 파라미터 오류로 변환한다", async () => {
 		const { execute, repository } = setup();
-		jest
-			.mocked(repository.findCommentChainReplay)
-			.mockRejectedValue(new TodoCommentIdempotencyConflict());
+		vi.mocked(repository.findCommentChainReplay).mockRejectedValue(
+			new TodoCommentIdempotencyConflict(),
+		);
 
 		await expect(execute()).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 	});
 
 	it("P2002 경합은 실패한 UoW 밖에서 승자 행을 replay한다", async () => {
 		const { execute, repository, unitOfWork } = setup();
-		jest
-			.mocked(repository.findCommentChainReplay)
+		vi.mocked(repository.findCommentChainReplay)
 			.mockResolvedValueOnce(null)
 			.mockResolvedValueOnce([COMMENT_ID]);
-		jest.mocked(repository.createCommentChain).mockRejectedValue(new TodoCommentIdempotencyRace());
+		vi.mocked(repository.createCommentChain).mockRejectedValue(new TodoCommentIdempotencyRace());
 
 		await expect(execute()).resolves.toMatchObject({ comments: [{ id: COMMENT_ID }] });
 
@@ -167,11 +168,10 @@ describe("WriteTodoCommentChainUseCase", () => {
 
 	it("P2002 뒤 승자 명령이 다르면 잘못된 파라미터 오류로 변환한다", async () => {
 		const { execute, repository } = setup();
-		jest
-			.mocked(repository.findCommentChainReplay)
+		vi.mocked(repository.findCommentChainReplay)
 			.mockResolvedValueOnce(null)
 			.mockRejectedValueOnce(new TodoCommentIdempotencyConflict());
-		jest.mocked(repository.createCommentChain).mockRejectedValue(new TodoCommentIdempotencyRace());
+		vi.mocked(repository.createCommentChain).mockRejectedValue(new TodoCommentIdempotencyRace());
 
 		await expect(execute()).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 	});

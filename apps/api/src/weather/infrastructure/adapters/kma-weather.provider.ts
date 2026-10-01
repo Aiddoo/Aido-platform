@@ -1,18 +1,18 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { readJson } from "@/shared/infrastructure/http/read-json";
+import { BusinessExceptions } from "#api/shared/application/exceptions/business-exception.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { readJson } from "#api/shared/infrastructure/http/read-json";
 
 import type {
 	WeatherForecast,
 	WeatherProvider,
-} from "../../application/ports/weather-provider.port";
-import { getKmaBaseDateTime } from "../../domain/services/kma-base-datetime";
-import { convertToGrid } from "../../domain/services/lambert-projection";
-import type { KmaApiResponse } from "./kma-response-parser";
-import { parseKmaResponse } from "./kma-response-parser";
-import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants";
+} from "../../application/ports/weather-provider.port.js";
+import { getKmaBaseDateTime } from "../../domain/services/kma-base-datetime.js";
+import { convertToGrid } from "../../domain/services/lambert-projection.js";
+import type { KmaApiResponse } from "./kma-response-parser.js";
+import { parseKmaResponse } from "./kma-response-parser.js";
+import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants.js";
 
 @Injectable()
 export class KmaWeatherProvider implements WeatherProvider {

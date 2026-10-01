@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 
-import { ACCOUNT_DELETION } from "@/auth/domain/constants/auth.constants";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { ACCOUNT_DELETION } from "#api/auth/domain/constants/auth.constants";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /**
  * 탈퇴(soft-delete) 계정의 복구 가능성 불변식.

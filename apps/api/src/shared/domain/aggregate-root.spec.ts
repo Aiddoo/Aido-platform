@@ -5,7 +5,7 @@
  * - 도메인 이벤트 적립(raise) → pullDomainEvents 드레인 검증
  */
 
-import { AggregateRoot } from "./aggregate-root";
+import { AggregateRoot } from "./aggregate-root.js";
 
 class TestCreatedEvent {
 	readonly eventName = "test.created";

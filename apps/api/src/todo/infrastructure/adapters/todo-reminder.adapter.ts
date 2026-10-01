@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { type IReminderScheduler, REMINDER_SCHEDULER } from "@/scheduler";
+import { type IReminderScheduler, REMINDER_SCHEDULER } from "#api/scheduler/index";
 
 import type {
 	TodoReminderCancellationResult,
 	TodoReminderPort,
-} from "../../application/ports/todo-reminder.port";
+} from "../../application/ports/todo-reminder.port.js";
 
 /**
  * Todo 리마인더 포트 어댑터 — scheduler의 IReminderScheduler에 위임

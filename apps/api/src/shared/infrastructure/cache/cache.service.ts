@@ -6,15 +6,15 @@ import {
 	type TimeFormat,
 	UserRole,
 	UserStatus,
-} from "@/generated/prisma/enums";
+} from "#api/generated/prisma/enums";
 
-import { CacheKeys } from "./constants/cache-keys";
+import { CacheKeys } from "./constants/cache-keys.js";
 import {
 	CACHE_SERVICE,
 	type CacheStats,
 	type ICacheService,
 	type TtlValue,
-} from "./interfaces/cache.interface";
+} from "./interfaces/cache.interface.js";
 
 export interface CachedSession {
 	userId: string;

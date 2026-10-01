@@ -1,3 +1,4 @@
+import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 /**
  * user-settings 유스케이스 통합 테스트
  *
@@ -11,28 +12,27 @@
  * pnpm --filter @aido/api test user-settings.integration-spec
  * ```
  */
-
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { UserConsentBuilder, UserPreferenceBuilder } from "@test/builders";
-import { TEST_CUID } from "@test/fixtures";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { vi } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { REMINDER_SCHEDULE_ENQUEUER } from "@/user-settings/application/ports/reminder-schedule.enqueuer.port";
-import { USER_CONSENT_REPOSITORY } from "@/user-settings/application/ports/user-consent.repository.port";
-import { USER_PREFERENCE_REPOSITORY } from "@/user-settings/application/ports/user-preference.repository.port";
-import { USER_SETTINGS_CACHE } from "@/user-settings/application/ports/user-settings-cache.port";
-import { GetPreferenceUseCase } from "@/user-settings/application/use-cases/get-preference/get-preference.use-case";
-import { UpdateMarketingConsentUseCase } from "@/user-settings/application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
-import { UpdatePreferenceUseCase } from "@/user-settings/application/use-cases/update-preference/update-preference.use-case";
-import { UserSettingsCacheAdapter } from "@/user-settings/infrastructure/adapters/user-settings-cache.adapter";
-import { UserConsentRepository } from "@/user-settings/infrastructure/persistence/user-consent.repository";
-import { UserPreferenceRepository } from "@/user-settings/infrastructure/persistence/user-preference.repository";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { REMINDER_SCHEDULE_ENQUEUER } from "#api/user-settings/application/ports/reminder-schedule.enqueuer.port";
+import { USER_CONSENT_REPOSITORY } from "#api/user-settings/application/ports/user-consent.repository.port";
+import { USER_PREFERENCE_REPOSITORY } from "#api/user-settings/application/ports/user-preference.repository.port";
+import { USER_SETTINGS_CACHE } from "#api/user-settings/application/ports/user-settings-cache.port";
+import { GetPreferenceUseCase } from "#api/user-settings/application/use-cases/get-preference/get-preference.use-case";
+import { UpdateMarketingConsentUseCase } from "#api/user-settings/application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
+import { UpdatePreferenceUseCase } from "#api/user-settings/application/use-cases/update-preference/update-preference.use-case";
+import { UserSettingsCacheAdapter } from "#api/user-settings/infrastructure/adapters/user-settings-cache.adapter";
+import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
+import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
+import { TEST_CUID } from "#test/fixtures/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -41,13 +41,13 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 	let updateMarketingConsent: UpdateMarketingConsentUseCase;
 
 	const mockUserPreferenceDb = {
-		findUnique: jest.fn(),
-		upsert: jest.fn(),
+		findUnique: vi.fn(),
+		upsert: vi.fn(),
 	};
 
 	const mockUserConsentDb = {
-		findUnique: jest.fn(),
-		upsert: jest.fn(),
+		findUnique: vi.fn(),
+		upsert: vi.fn(),
 	};
 
 	const mockDatabaseService = createMockDatabaseService({
@@ -56,19 +56,19 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 	});
 
 	const mockEntitlementService = {
-		hasPremiumAccess: jest.fn(),
+		hasPremiumAccess: vi.fn(),
 	};
 
 	const mockCacheService = {
-		wrapUserPreference: jest
+		wrapUserPreference: vi
 			.fn()
 			.mockImplementation((_id: string, factory: () => Promise<unknown>) => factory()),
-		invalidateUserPreference: jest.fn(),
-		invalidateActiveTimezones: jest.fn(),
+		invalidateUserPreference: vi.fn(),
+		invalidateActiveTimezones: vi.fn(),
 	};
 
 	const mockReminderEnqueuer = {
-		enqueueReminderHourChanged: jest.fn(),
+		enqueueReminderHourChanged: vi.fn(),
 	};
 
 	const mockUserId = TEST_CUID.USER_1;
@@ -112,11 +112,11 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
 	afterAll(async () => {
 		await module.close();
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		UserPreferenceBuilder.resetIdCounter();
 	});
 

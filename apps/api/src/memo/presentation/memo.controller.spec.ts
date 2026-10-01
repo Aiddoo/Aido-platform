@@ -11,16 +11,16 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
 import {
 	GetMemoResourceLimitUseCase,
 	GetMemosUseCase,
 	GetMemoUseCase,
-} from "../application/queries";
+} from "../application/queries/index.js";
 import {
 	ConvertMemoToTodoUseCase,
 	CreateMemoUseCase,
@@ -28,7 +28,7 @@ import {
 	ReorderMemoUseCase,
 	ToggleMemoPinUseCase,
 	UpdateMemoUseCase,
-} from "../application/use-cases";
+} from "../application/use-cases/index.js";
 import type {
 	ConvertMemoToTodoDto,
 	CreateMemoDto,
@@ -36,8 +36,8 @@ import type {
 	ReorderMemoDto,
 	ToggleMemoPinDto,
 	UpdateMemoDto,
-} from "./dtos";
-import { MemoController } from "./memo.controller";
+} from "./dtos/index.js";
+import { MemoController } from "./memo.controller.js";
 
 describe("MemoController — 메모 컨트롤러", () => {
 	let controller: MemoController;

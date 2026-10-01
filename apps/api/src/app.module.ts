@@ -8,47 +8,47 @@ import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from "@nestjs/
 import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
 
-import { AdminModule } from "@/admin";
-import { AdminNotificationModule } from "@/admin-notification";
-import { AiModule } from "@/ai";
-import { AiReportModule } from "@/ai-report";
-import { AiSuggestionModule } from "@/ai-suggestion";
-import { AppConfigModule as FeatureDiscoveryAppConfigModule } from "@/app-config";
-import { AuthModule, JwtAuthGuard, LastActiveInterceptor } from "@/auth";
-import { CheerModule } from "@/cheer";
-import { DailyCompletionModule } from "@/daily-completion";
-import { FollowModule } from "@/follow";
-import { HealthModule } from "@/health";
-import { InquiryModule } from "@/inquiry";
-import { MemoModule } from "@/memo";
-import { NotificationModule } from "@/notification";
-import { NudgeModule } from "@/nudge";
-import { SchedulerModule } from "@/scheduler";
-import { PaginationModule } from "@/shared/application/pagination";
-import { CacheModule } from "@/shared/infrastructure/cache";
-import type { EnvConfig } from "@/shared/infrastructure/config";
-import { AppConfigModule } from "@/shared/infrastructure/config";
-import { DatabaseModule, DatabaseService } from "@/shared/infrastructure/database";
-import { DedupModule } from "@/shared/infrastructure/dedup";
-import { EncryptionModule } from "@/shared/infrastructure/encryption";
-import { EntitlementModule } from "@/shared/infrastructure/entitlement/entitlement.module";
-import { DomainEventsModule } from "@/shared/infrastructure/events";
-import { JobRuntimeModule } from "@/shared/infrastructure/jobs/job-runtime.module";
-import { LockModule } from "@/shared/infrastructure/lock";
-import { LoggerModule } from "@/shared/infrastructure/logging";
-import { RedisModule } from "@/shared/infrastructure/redis";
-import { SharedKernelModule } from "@/shared/infrastructure/shared-kernel.module";
-import { THROTTLER_STORAGE, ThrottleModule } from "@/shared/infrastructure/throttle";
-import { SubscriptionModule } from "@/subscription";
-import { TodoModule } from "@/todo";
-import { TodoCategoryModule } from "@/todo-category";
-import { TodoCommentModule } from "@/todo-comment";
-import { TimezoneSelfHealInterceptor, UserSettingsModule } from "@/user-settings";
-import { WeatherModule } from "@/weather/weather.module";
-import { WeeklyAchievementModule } from "@/weekly-achievement";
+import { AdminNotificationModule } from "#api/admin-notification/index";
+import { AdminModule } from "#api/admin/index";
+import { AiReportModule } from "#api/ai-report/index";
+import { AiSuggestionModule } from "#api/ai-suggestion/index";
+import { AiModule } from "#api/ai/index";
+import { AppConfigModule as FeatureDiscoveryAppConfigModule } from "#api/app-config/index";
+import { AuthModule, JwtAuthGuard, LastActiveInterceptor } from "#api/auth/index";
+import { CheerModule } from "#api/cheer/index";
+import { DailyCompletionModule } from "#api/daily-completion/index";
+import { FollowModule } from "#api/follow/index";
+import { HealthModule } from "#api/health/index";
+import { InquiryModule } from "#api/inquiry/index";
+import { MemoModule } from "#api/memo/index";
+import { NotificationModule } from "#api/notification/index";
+import { NudgeModule } from "#api/nudge/index";
+import { SchedulerModule } from "#api/scheduler/index";
+import { PaginationModule } from "#api/shared/application/pagination/index";
+import { CacheModule } from "#api/shared/infrastructure/cache/index";
+import type { EnvConfig } from "#api/shared/infrastructure/config/index";
+import { AppConfigModule } from "#api/shared/infrastructure/config/index";
+import { DatabaseModule, DatabaseService } from "#api/shared/infrastructure/database/index";
+import { DedupModule } from "#api/shared/infrastructure/dedup/index";
+import { EncryptionModule } from "#api/shared/infrastructure/encryption/index";
+import { EntitlementModule } from "#api/shared/infrastructure/entitlement/entitlement.module";
+import { DomainEventsModule } from "#api/shared/infrastructure/events/index";
+import { JobRuntimeModule } from "#api/shared/infrastructure/jobs/job-runtime.module";
+import { LockModule } from "#api/shared/infrastructure/lock/index";
+import { LoggerModule } from "#api/shared/infrastructure/logging/index";
+import { RedisModule } from "#api/shared/infrastructure/redis/index";
+import { SharedKernelModule } from "#api/shared/infrastructure/shared-kernel.module";
+import { THROTTLER_STORAGE, ThrottleModule } from "#api/shared/infrastructure/throttle/index";
+import { SubscriptionModule } from "#api/subscription/index";
+import { TodoCategoryModule } from "#api/todo-category/index";
+import { TodoCommentModule } from "#api/todo-comment/index";
+import { TodoModule } from "#api/todo/index";
+import { TimezoneSelfHealInterceptor, UserSettingsModule } from "#api/user-settings/index";
+import { WeatherModule } from "#api/weather/weather.module";
+import { WeeklyAchievementModule } from "#api/weekly-achievement/index";
 
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
+import { AppController } from "./app.controller.js";
+import { AppService } from "./app.service.js";
 
 @Module({
 	imports: [
@@ -135,6 +135,7 @@ import { AppService } from "./app.service";
 	// Providers
 	providers: [
 		AppService,
+		ThrottlerGuard,
 
 		// Global Guards
 		{
@@ -143,7 +144,7 @@ import { AppService } from "./app.service";
 		},
 		{
 			provide: APP_GUARD,
-			useClass: ThrottlerGuard,
+			useExisting: ThrottlerGuard,
 		},
 
 		// Global Interceptors

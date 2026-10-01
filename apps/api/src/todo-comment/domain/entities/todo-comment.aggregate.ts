@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/errors";
 
-import { AggregateRoot, DomainException } from "@/shared/domain";
+import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
-import { ThreadPlacement } from "../value-objects/thread-placement.vo";
-import { TodoCommentContent } from "../value-objects/todo-comment-content.vo";
-import { TodoCommentId } from "../value-objects/todo-comment-id.vo";
+import { ThreadPlacement } from "../value-objects/thread-placement.vo.js";
+import { TodoCommentContent } from "../value-objects/todo-comment-content.vo.js";
+import { TodoCommentId } from "../value-objects/todo-comment-id.vo.js";
 
 interface TodoCommentProps {
 	id: TodoCommentId;

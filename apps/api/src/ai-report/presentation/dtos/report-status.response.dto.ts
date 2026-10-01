@@ -1,4 +1,7 @@
 import { reportStatusResponseSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class ReportStatusResponseDto extends createZodDto(reportStatusResponseSchema) {}
+export const ReportStatusResponseDto = reportStatusResponseSchema.meta({
+	id: "ReportStatusResponseDto",
+});
+export type ReportStatusResponseDto = z.infer<typeof ReportStatusResponseDto>;

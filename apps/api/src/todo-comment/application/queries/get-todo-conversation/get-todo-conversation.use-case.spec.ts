@@ -1,9 +1,14 @@
 import { ErrorCode } from "@aido/errors";
 import { TODO_COMMENT_SORT } from "@aido/validators";
-import { createTodoCommentCursorCodecMock, createTodoCommentReaderMock } from "@test/mocks/ports";
+import { vi } from "vitest";
 
-import type { TodoConversationRecord } from "../../types";
-import { GetTodoConversationUseCase } from "./get-todo-conversation.use-case";
+import {
+	createTodoCommentCursorCodecMock,
+	createTodoCommentReaderMock,
+} from "#test/mocks/ports/index";
+
+import type { TodoConversationRecord } from "../../types.js";
+import { GetTodoConversationUseCase } from "./get-todo-conversation.use-case.js";
 
 const TODO_ID = 1;
 const VIEWER_ID = "cm1viewer0000000000000001";
@@ -50,8 +55,8 @@ describe("GetTodoConversationUseCase", () => {
 			path: [ROOT_ID],
 			depth: 1,
 		});
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listConversation).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listConversation).mockResolvedValue({
 			items: [first, child],
 			anchorIndex: null,
 			previousRecord: createRecord({ id: "cm1previous000000000000001" }),
@@ -63,9 +68,8 @@ describe("GetTodoConversationUseCase", () => {
 			hasPrevious: true,
 			hasNext: true,
 		});
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([CHILD_ID]));
-		jest
-			.mocked(cursorCodec.encodeConversation)
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([CHILD_ID]));
+		vi.mocked(cursorCodec.encodeConversation)
 			.mockReturnValueOnce("previous")
 			.mockReturnValueOnce("next");
 		const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
@@ -126,8 +130,8 @@ describe("GetTodoConversationUseCase", () => {
 			path: [ROOT_ID],
 			depth: 1,
 		});
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listConversation).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listConversation).mockResolvedValue({
 			items: [firstChild, sibling],
 			anchorIndex: null,
 			previousRecord: null,
@@ -135,7 +139,7 @@ describe("GetTodoConversationUseCase", () => {
 			hasPrevious: false,
 			hasNext: false,
 		});
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
 
 		const response = await useCase.execute({
@@ -192,8 +196,8 @@ describe("GetTodoConversationUseCase", () => {
 			path: allAncestorIds,
 			depth: allAncestorIds.length,
 		});
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listConversation).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listConversation).mockResolvedValue({
 			items: [createRecord(), focused],
 			anchorIndex: 1,
 			previousRecord: null,
@@ -201,8 +205,8 @@ describe("GetTodoConversationUseCase", () => {
 			hasPrevious: false,
 			hasNext: false,
 		});
-		jest.mocked(reader.findAncestors).mockResolvedValue(ancestors);
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		vi.mocked(reader.findAncestors).mockResolvedValue(ancestors);
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
 
 		const response = await useCase.execute({
@@ -241,11 +245,11 @@ describe("GetTodoConversationUseCase", () => {
 	it("다른 todo의 cursor는 reader를 호출하기 전에 거부한다", async () => {
 		const reader = createTodoCommentReaderMock();
 		const cursorCodec = createTodoCommentCursorCodecMock();
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
 		const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
 		const cursor = "other-todo-cursor";
 		const anchor = createRecord({ todoId: 2 });
-		jest.mocked(cursorCodec.decodeConversation).mockReturnValue({
+		vi.mocked(cursorCodec.decodeConversation).mockReturnValue({
 			v: 1,
 			kind: "conversation",
 			sort: TODO_COMMENT_SORT.LATEST,
@@ -276,7 +280,7 @@ describe("GetTodoConversationUseCase", () => {
 			conversationPosition: { rootLikeCount: 7, rootReplyCount: 4 },
 		});
 		const cursor = "signed-cursor";
-		jest.mocked(cursorCodec.decodeConversation).mockReturnValue({
+		vi.mocked(cursorCodec.decodeConversation).mockReturnValue({
 			v: 1,
 			kind: "conversation",
 			sort: TODO_COMMENT_SORT.POPULAR,
@@ -286,8 +290,8 @@ describe("GetTodoConversationUseCase", () => {
 			scope: "TODO",
 			position: anchor.conversationPosition,
 		});
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listConversation).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listConversation).mockResolvedValue({
 			items: [anchor],
 			anchorIndex: null,
 			previousRecord: anchor,
@@ -295,7 +299,7 @@ describe("GetTodoConversationUseCase", () => {
 			hasPrevious: true,
 			hasNext: false,
 		});
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
 
 		await useCase.execute({
@@ -320,8 +324,8 @@ describe("GetTodoConversationUseCase", () => {
 	it("없거나 tree에서 사라진 focus는 다른 root 대신 빈 대화로 복구한다", async () => {
 		const reader = createTodoCommentReaderMock();
 		const cursorCodec = createTodoCommentCursorCodecMock();
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listConversation).mockResolvedValue(null);
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listConversation).mockResolvedValue(null);
 		const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
 
 		await expect(
@@ -363,8 +367,8 @@ describe("GetTodoConversationUseCase", () => {
 			authorName: null,
 			replyCount: 1,
 		});
-		jest.mocked(reader.canAccessTodo).mockResolvedValue(true);
-		jest.mocked(reader.listConversation).mockResolvedValue({
+		vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+		vi.mocked(reader.listConversation).mockResolvedValue({
 			items: [createRecord(), deletedFocus],
 			anchorIndex: 1,
 			previousRecord: null,
@@ -372,7 +376,7 @@ describe("GetTodoConversationUseCase", () => {
 			hasPrevious: false,
 			hasNext: false,
 		});
-		jest.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+		vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
 		const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
 
 		await expect(

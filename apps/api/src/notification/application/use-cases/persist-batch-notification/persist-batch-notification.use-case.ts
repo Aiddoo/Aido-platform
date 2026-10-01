@@ -1,18 +1,18 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-import type { CreateNotificationData } from "../../ports/notification-data";
+import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+} from "../../ports/notification.repository.port.js";
 import {
 	PUSH_DISPATCH_STAGING,
 	type PushDispatchStagingRepositoryPort,
-} from "../../ports/push-dispatch-staging.repository.port";
-import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher";
-import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types";
+} from "../../ports/push-dispatch-staging.repository.port.js";
+import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher.js";
+import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types.js";
 
 /**
  * 배치 알림과 push dispatch outbox를 원자 저장하고 후속 cache/dedup용 결과를 반환한다.

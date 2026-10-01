@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * AccountPurgeJob 단위 테스트
  *
@@ -10,24 +11,23 @@
  * pnpm --filter @aido/api test account-purge.job.spec.ts
  * ```
  */
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { asMock } from "@test/mocks";
-
-import { ACCOUNT_DELETION, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
-import { SecurityLogRepository } from "@/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "@/auth/infrastructure/persistence/user.repository";
+import { ACCOUNT_DELETION, SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
+import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
+import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
 import {
 	ACCOUNT_PURGE_QUEUE,
 	AccountPurgeProcessor,
-} from "@/auth/infrastructure/queue/account-purge.processor";
-import { NotificationAccountCleanup } from "@/notification";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { TodoCommentAccountCleanup } from "@/todo-comment";
+} from "#api/auth/infrastructure/queue/account-purge.processor";
+import { NotificationAccountCleanup } from "#api/notification/index";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { TodoCommentAccountCleanup } from "#api/todo-comment/index";
+import { asMock } from "#test/mocks/index";
 
-import { AccountPurgeJob } from "./account-purge.job";
+import { AccountPurgeJob } from "./account-purge.job.js";
 
 describe("AccountPurgeJob — 계정 삭제 잡", () => {
 	let job: AccountPurgeJob;
@@ -43,8 +43,8 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		const { unit, unitRef } = await TestBed.solitary(AccountPurgeJob)
 			.mock(JOB_RUNTIME)
 			.impl(() => ({
-				enqueue: jest.fn().mockResolvedValue("job-1"),
-				schedule: jest.fn().mockResolvedValue(undefined),
+				enqueue: vi.fn().mockResolvedValue("job-1"),
+				schedule: vi.fn().mockResolvedValue(undefined),
 			}))
 			.compile();
 
@@ -63,13 +63,13 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	describe("onModuleInit 스케줄러 등록", () => {
 		it("서버 시작 시 일일 계정 정리 스케줄러를 등록해야 한다", async () => {
 			// Given — 02:00 KST (catch-up 미발동)
-			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
+			vi.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
 
 			// When
 			job.onModuleInit();
@@ -87,7 +87,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 
 		it("Processor에 자신을 등록해야 한다", async () => {
 			// Given
-			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
+			vi.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
 
 			// When
 			job.onModuleInit();
@@ -122,7 +122,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 	describe("catch-up on startup", () => {
 		it("03:00 이후 시작 시 purge 잡을 추가해야 한다", async () => {
 			// Given — 05:00 KST
-			jest.useFakeTimers({ now: new Date("2026-03-09T05:00:00+09:00") });
+			vi.useFakeTimers({ now: new Date("2026-03-09T05:00:00+09:00") });
 
 			// When
 			job.onModuleInit();
@@ -138,7 +138,7 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 
 		it("03:00 이전에 시작 시 catch-up하지 않아야 한다", async () => {
 			// Given — 02:00 KST
-			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
+			vi.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
 
 			// When
 			job.onModuleInit();

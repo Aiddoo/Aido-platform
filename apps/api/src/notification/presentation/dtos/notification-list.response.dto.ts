@@ -1,4 +1,7 @@
 import { notificationListResponseSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class NotificationListResponseDto extends createZodDto(notificationListResponseSchema) {}
+export const NotificationListResponseDto = notificationListResponseSchema.meta({
+	id: "NotificationListResponseDto",
+});
+export type NotificationListResponseDto = z.infer<typeof NotificationListResponseDto>;

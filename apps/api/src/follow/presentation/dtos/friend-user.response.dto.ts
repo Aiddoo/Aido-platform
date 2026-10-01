@@ -1,12 +1,10 @@
-import {
-	type FriendRequestUser,
-	type FriendUser,
-	friendRequestUserSchema,
-	friendUserSchema,
-} from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import { friendRequestUserSchema, friendUserSchema } from "@aido/validators";
+import type { z } from "zod";
 
-export class FriendUserResponseDto extends createZodDto(friendUserSchema) implements FriendUser {}
-export class FriendRequestUserResponseDto
-	extends createZodDto(friendRequestUserSchema)
-	implements FriendRequestUser {}
+export const FriendUserResponseDto = friendUserSchema.meta({ id: "FriendUserResponseDto" });
+export type FriendUserResponseDto = z.infer<typeof FriendUserResponseDto>;
+
+export const FriendRequestUserResponseDto = friendRequestUserSchema.meta({
+	id: "FriendRequestUserResponseDto",
+});
+export type FriendRequestUserResponseDto = z.infer<typeof FriendRequestUserResponseDto>;

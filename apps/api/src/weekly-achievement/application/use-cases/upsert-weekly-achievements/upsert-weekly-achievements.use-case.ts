@@ -3,11 +3,11 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	buildWeeklyAchievementSnapshot,
 	type WeeklyAchievementUpsert,
-} from "../../../domain/weekly-achievement";
+} from "../../../domain/weekly-achievement.js";
 import {
 	WEEKLY_ACHIEVEMENT_REPOSITORY,
 	type WeeklyAchievementRepositoryPort,
-} from "../../ports/weekly-achievement.repository.port";
+} from "../../ports/weekly-achievement.repository.port.js";
 
 export interface UpsertWeeklyAchievementsInput {
 	records: WeeklyAchievementUpsert[];

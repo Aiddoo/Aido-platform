@@ -1,19 +1,19 @@
 import { Module } from "@nestjs/common";
 
-import { FollowModule } from "@/follow/follow.module";
-import { NotificationModule } from "@/notification";
+import { FollowModule } from "#api/follow/follow.module";
+import { NotificationModule } from "#api/notification/index";
 
-import { CHEER_LIMIT_READER } from "./application/ports/cheer-limit-reader.port";
-import { CHEER_NOTIFIER } from "./application/ports/cheer-notifier.port";
-import { CHEER_REPOSITORY } from "./application/ports/cheer.repository.port";
-import { CheerReader } from "./application/services/cheer.reader";
-import { MarkCheerReadUseCase } from "./application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
-import { MarkManyCheersReadUseCase } from "./application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
-import { SendCheerUseCase } from "./application/use-cases/send-cheer/send-cheer.use-case";
-import { CheerLimitReaderAdapter } from "./infrastructure/adapters/cheer-limit-reader.adapter";
-import { CheerNotifierAdapter } from "./infrastructure/adapters/cheer-notifier.adapter";
-import { PrismaCheerRepository } from "./infrastructure/persistence/prisma-cheer.repository";
-import { CheerController } from "./presentation/cheer.controller";
+import { CHEER_LIMIT_READER } from "./application/ports/cheer-limit-reader.port.js";
+import { CHEER_NOTIFIER } from "./application/ports/cheer-notifier.port.js";
+import { CHEER_REPOSITORY } from "./application/ports/cheer.repository.port.js";
+import { CheerReader } from "./application/services/cheer.reader.js";
+import { MarkCheerReadUseCase } from "./application/use-cases/mark-cheer-read/mark-cheer-read.use-case.js";
+import { MarkManyCheersReadUseCase } from "./application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case.js";
+import { SendCheerUseCase } from "./application/use-cases/send-cheer/send-cheer.use-case.js";
+import { CheerLimitReaderAdapter } from "./infrastructure/adapters/cheer-limit-reader.adapter.js";
+import { CheerNotifierAdapter } from "./infrastructure/adapters/cheer-notifier.adapter.js";
+import { PrismaCheerRepository } from "./infrastructure/persistence/prisma-cheer.repository.js";
+import { CheerController } from "./presentation/cheer.controller.js";
 
 /**
  * Cheer 모듈 (DDD 클린아키텍처 · use-case 기반).

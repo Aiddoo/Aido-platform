@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { TimezoneReminderQueueService } from "@/scheduler/queue";
+import { TimezoneReminderQueueService } from "#api/scheduler/queue";
 
 import type {
 	ReminderHourChangedPayload,
 	ReminderScheduleEnqueuerPort,
-} from "../../application/ports/reminder-schedule.enqueuer.port";
+} from "../../application/ports/reminder-schedule.enqueuer.port.js";
 
 /**
  * 리마인더 스케줄 즉시 반영 어댑터.

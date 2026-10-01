@@ -1,15 +1,16 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createRetentionRepositoryMock, createUnitOfWorkMock } from "@test/mocks/ports";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port";
+import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
 	RETENTION_REPOSITORY,
 	type RetentionRepositoryPort,
-} from "../../ports/retention.repository.port";
-import { ActivateRetentionExperimentUseCase } from "./activate-retention-experiment.use-case";
+} from "../../ports/retention.repository.port.js";
+import { ActivateRetentionExperimentUseCase } from "./activate-retention-experiment.use-case.js";
 
 describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", () => {
 	let repository: Mocked<RetentionRepositoryPort>;
@@ -28,13 +29,13 @@ describe("ActivateRetentionExperimentUseCase — 최초 인증 시점 시작", (
 	}
 
 	it("assignment가 있을 수 있는 활성 환경에서만 시작을 요청한다", async () => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-15T00:00:00Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-15T00:00:00Z"));
 		const useCase = await build(true);
 
 		await useCase.execute("new-user");
 
 		expect(repository.activate).toHaveBeenCalledWith("new-user", new Date("2026-07-15T00:00:00Z"));
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("kill switch가 꺼지면 기존 인증 경로에서 DB를 조회하지 않는다", async () => {

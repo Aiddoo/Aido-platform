@@ -1,4 +1,4 @@
-import { cacheKey, cachePattern } from "../keyspace/cache-key";
+import { cacheKey, cachePattern } from "../keyspace/cache-key.js";
 
 /**
  * 캐시 키 상수 및 빌더

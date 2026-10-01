@@ -3,23 +3,23 @@ import type { ParsedTodoData } from "@aido/validators";
 import { parsedTodoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { now } from "@/shared/domain/date/utils/core";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { SupportedLocale } from "@/shared/domain/locale";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { buildParseTodoPrompt } from "../../../domain/services/prompts/parse-todo.prompt";
-import { buildParseTodoPromptEn } from "../../../domain/services/prompts/parse-todo.prompt.en";
+import { buildParseTodoPromptEn } from "../../../domain/services/prompts/parse-todo.prompt.en.js";
+import { buildParseTodoPrompt } from "../../../domain/services/prompts/parse-todo.prompt.js";
 import {
 	AI_PROVIDER,
 	type AiProvider,
 	AiProviderCallError,
 	type TokenUsage,
-} from "../../ports/ai-provider.port";
+} from "../../ports/ai-provider.port.js";
 import {
 	USER_CATEGORY_READER,
 	type UserCategoryReaderPort,
-} from "../../ports/user-category-reader.port";
-import { AiUsageMeter } from "../../services/ai-usage-meter.service";
+} from "../../ports/user-category-reader.port.js";
+import { AiUsageMeter } from "../../services/ai-usage-meter.service.js";
 
 /** 파싱 메타데이터 (모델·처리시간·토큰). */
 export interface ParseTodoMeta {

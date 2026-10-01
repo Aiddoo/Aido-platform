@@ -1,3 +1,4 @@
+import type { TestingModule } from "@nestjs/testing";
 /**
  * 비밀번호 설정 통합 테스트 (Testcontainers)
  *
@@ -19,18 +20,17 @@
  * pnpm --filter @aido/api test auth-password-setup.integration-spec
  * ```
  */
+import { vi } from "vitest";
 
-import type { TestingModule } from "@nestjs/testing";
-import { suppressLogger } from "@test/setup/suppress-logger";
+import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
+import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { CredentialAuthWorkflow } from "@/auth/application/workflows/credential-auth.workflow";
-import { PasswordWorkflow } from "@/auth/application/workflows/password.workflow";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { TestDatabase } from "../setup/test-database";
-import { createAuthTestModule } from "./helpers/auth-test-module.factory";
+import { FakeEmailService } from "../mocks/fake-email.service.js";
+import { TestDatabase } from "../setup/test-database.js";
+import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
@@ -53,7 +53,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 	}, 60000);
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		await testDb.cleanup();
 		fakeEmailService.clear();
 	});

@@ -2,14 +2,14 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "@/generated/prisma/client";
-import { DELETED_COMMENT_AUTHOR_ID } from "@/shared/domain/system-user";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import { DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	TodoCommentAccountCleanupPlan,
 	TodoCommentAccountCleanupStorePort,
-} from "../../application/ports/todo-comment-account-cleanup.store.port";
+} from "../../application/ports/todo-comment-account-cleanup.store.port.js";
 
 interface TodoIdRow {
 	todoId: number;

@@ -1,6 +1,6 @@
 import type { DayOfWeek, Todo as TodoResponse } from "@aido/validators";
 
-import type { CreateRecurringTodosResult } from "@/todo";
+import type { CreateRecurringTodosResult } from "#api/todo/index";
 
 export const TODO_CREATOR = Symbol("TODO_CREATOR");
 

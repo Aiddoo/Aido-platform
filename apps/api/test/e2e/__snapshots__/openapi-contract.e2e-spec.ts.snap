@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경): openapi-components 1`] = `
+exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경) > openapi-components 1`] = `
 {
   "schemas": {
     "AcceptFriendRequestResponseDto": {
@@ -568,6 +568,42 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "required": [
         "success",
         "data",
+      ],
+      "type": "object",
+    },
+    "AppVersionDisabledResponseDto": {
+      "properties": {
+        "enabled": {
+          "enum": [
+            false,
+          ],
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "enabled",
+      ],
+      "type": "object",
+    },
+    "AppVersionEnabledResponseDto": {
+      "properties": {
+        "android": {
+          "$ref": "#/components/schemas/PlatformVersionDto",
+        },
+        "enabled": {
+          "enum": [
+            true,
+          ],
+          "type": "boolean",
+        },
+        "ios": {
+          "$ref": "#/components/schemas/PlatformVersionDto",
+        },
+      },
+      "required": [
+        "enabled",
+        "ios",
+        "android",
       ],
       "type": "object",
     },
@@ -5047,6 +5083,19 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
         "success",
         "data",
         "meta",
+      ],
+      "type": "object",
+    },
+    "PlatformVersionDto": {
+      "properties": {
+        "latestVersion": {
+          "example": "1.9.1",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "latestVersion",
       ],
       "type": "object",
     },
@@ -12154,7 +12203,7 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
 }
 `;
 
-exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경): openapi-paths 1`] = `
+exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경) > openapi-paths 1`] = `
 {
   "/health": {
     "get": {
@@ -12193,6 +12242,26 @@ curl https://api.aido.com/health
           "content": {
             "application/json": {
               "schema": {
+                "example": {
+                  "details": {
+                    "database": {
+                      "status": "up",
+                    },
+                    "queues": {
+                      "status": "up",
+                    },
+                  },
+                  "error": {},
+                  "info": {
+                    "database": {
+                      "status": "up",
+                    },
+                    "queues": {
+                      "status": "up",
+                    },
+                  },
+                  "status": "ok",
+                },
                 "properties": {
                   "details": {
                     "additionalProperties": {
@@ -12206,11 +12275,6 @@ curl https://api.aido.com/health
                         "status",
                       ],
                       "type": "object",
-                    },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
                     },
                     "type": "object",
                   },
@@ -12227,7 +12291,6 @@ curl https://api.aido.com/health
                       ],
                       "type": "object",
                     },
-                    "example": {},
                     "nullable": true,
                     "type": "object",
                   },
@@ -12243,11 +12306,6 @@ curl https://api.aido.com/health
                         "status",
                       ],
                       "type": "object",
-                    },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
                     },
                     "nullable": true,
                     "type": "object",
@@ -12261,14 +12319,35 @@ curl https://api.aido.com/health
               },
             },
           },
-          "description": "서버가 정상 동작 중입니다.
-
-The Health Check is successful",
+          "description": "서버가 정상 동작 중입니다.",
         },
         "503": {
           "content": {
             "application/json": {
               "schema": {
+                "example": {
+                  "details": {
+                    "database": {
+                      "message": "Connection refused",
+                      "status": "down",
+                    },
+                    "queues": {
+                      "status": "up",
+                    },
+                  },
+                  "error": {
+                    "database": {
+                      "message": "Connection refused",
+                      "status": "down",
+                    },
+                  },
+                  "info": {
+                    "queues": {
+                      "status": "up",
+                    },
+                  },
+                  "status": "error",
+                },
                 "properties": {
                   "details": {
                     "additionalProperties": {
@@ -12282,15 +12361,6 @@ The Health Check is successful",
                         "status",
                       ],
                       "type": "object",
-                    },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
-                      "redis": {
-                        "message": "Could not connect",
-                        "status": "down",
-                      },
                     },
                     "type": "object",
                   },
@@ -12306,12 +12376,6 @@ The Health Check is successful",
                         "status",
                       ],
                       "type": "object",
-                    },
-                    "example": {
-                      "redis": {
-                        "message": "Could not connect",
-                        "status": "down",
-                      },
                     },
                     "nullable": true,
                     "type": "object",
@@ -12329,11 +12393,6 @@ The Health Check is successful",
                       ],
                       "type": "object",
                     },
-                    "example": {
-                      "database": {
-                        "status": "up",
-                      },
-                    },
                     "nullable": true,
                     "type": "object",
                   },
@@ -12346,9 +12405,7 @@ The Health Check is successful",
               },
             },
           },
-          "description": "서버에 문제가 발생했습니다.
-
-The Health Check is not successful",
+          "description": "서버에 문제가 발생했습니다.",
         },
       },
       "summary": "서버 상태 확인",
@@ -12368,6 +12425,7 @@ The Health Check is not successful",
           "name": "cohortFrom",
           "required": false,
           "schema": {
+            "description": "가입 cohort 시작 현지 날짜 (YYYY-MM-DD)",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
@@ -12379,6 +12437,7 @@ The Health Check is not successful",
           "name": "cohortTo",
           "required": false,
           "schema": {
+            "description": "가입 cohort 종료 현지 날짜 (YYYY-MM-DD)",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
@@ -14214,6 +14273,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
           "name": "id",
           "required": true,
           "schema": {
+            "description": "AI 리포트 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -15094,6 +15154,112 @@ if (limit !== null && used >= limit) {
       "summary": "AI 사용량 조회",
       "tags": [
         "AI",
+      ],
+    },
+  },
+  "/v1/app-config/app-version": {
+    "get": {
+      "operationId": "getAppVersionConfig",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "propertyName": "enabled",
+                },
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "enabled": {
+                        "enum": [
+                          false,
+                        ],
+                        "type": "boolean",
+                      },
+                    },
+                    "required": [
+                      "enabled",
+                    ],
+                    "title": "AppVersionDisabledResponse",
+                    "type": "object",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "android": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "latestVersion": {
+                            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "latestVersion",
+                        ],
+                        "type": "object",
+                      },
+                      "enabled": {
+                        "enum": [
+                          true,
+                        ],
+                        "type": "boolean",
+                      },
+                      "ios": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "latestVersion": {
+                            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "latestVersion",
+                        ],
+                        "type": "object",
+                      },
+                    },
+                    "required": [
+                      "enabled",
+                      "ios",
+                      "android",
+                    ],
+                    "title": "AppVersionEnabledResponse",
+                    "type": "object",
+                  },
+                ],
+              },
+            },
+          },
+          "description": "App version configuration",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "summary": "Published app versions",
+      "tags": [
+        "App Config",
       ],
     },
   },
@@ -21742,6 +21908,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
           "required": false,
           "schema": {
             "default": 20,
+            "description": "조회할 개수 (1-50, 기본값: 20)",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -21753,6 +21920,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (0 이상의 정수)",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
@@ -21883,6 +22051,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
           "required": false,
           "schema": {
             "default": 20,
+            "description": "조회할 개수 (1-50, 기본값: 20)",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -21894,6 +22063,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (0 이상의 정수)",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
@@ -22019,6 +22189,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
           "name": "id",
           "required": true,
           "schema": {
+            "description": "응원 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -22261,7 +22432,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
           "name": "startDate",
           "required": true,
           "schema": {
-            "example": "2026-01-01",
+            "description": "시작 날짜 (YYYY-MM-DD, 예: 2026-01-01)",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -22272,7 +22443,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
           "name": "endDate",
           "required": true,
           "schema": {
-            "example": "2026-01-31",
+            "description": "종료 날짜 (YYYY-MM-DD, 예: 2026-01-31)",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -22424,6 +22595,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "userId",
           "required": true,
           "schema": {
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -22435,7 +22607,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "startDate",
           "required": true,
           "schema": {
-            "example": "2026-01-01",
+            "description": "시작 날짜 (YYYY-MM-DD, 예: 2026-01-01)",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -22446,7 +22618,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "endDate",
           "required": true,
           "schema": {
-            "example": "2026-01-31",
+            "description": "종료 날짜 (YYYY-MM-DD, 예: 2026-01-31)",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -22623,6 +22795,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (CUID 25자, 선택)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -22634,6 +22807,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "limit",
           "required": false,
           "schema": {
+            "description": "페이지 크기 (1-50, 기본값: 20)",
             "pattern": "^\\d+$",
             "type": "string",
           },
@@ -22644,6 +22818,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "search",
           "required": false,
           "schema": {
+            "description": "검색어 (최대 50자, 선택)",
             "maxLength": 50,
             "type": "string",
           },
@@ -22957,6 +23132,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (CUID 25자, 선택)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -22968,6 +23144,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "limit",
           "required": false,
           "schema": {
+            "description": "페이지 크기 (1-50, 기본값: 20)",
             "pattern": "^\\d+$",
             "type": "string",
           },
@@ -23096,6 +23273,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (CUID 25자, 선택)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -23107,6 +23285,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "limit",
           "required": false,
           "schema": {
+            "description": "페이지 크기 (1-50, 기본값: 20)",
             "pattern": "^\\d+$",
             "type": "string",
           },
@@ -23356,6 +23535,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "q",
           "required": true,
           "schema": {
+            "description": "검색어: 이름 또는 Aido ID (2-50자)",
             "maxLength": 50,
             "minLength": 2,
             "type": "string",
@@ -23367,6 +23547,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (불투명 문자열, 선택)",
             "type": "string",
           },
         },
@@ -23376,6 +23557,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "limit",
           "required": false,
           "schema": {
+            "description": "페이지 크기 (1-50, 기본값: 20)",
             "pattern": "^\\d+$",
             "type": "string",
           },
@@ -23544,7 +23726,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "userId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -23719,7 +23901,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "userId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -23894,7 +24076,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "userId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -24603,6 +24785,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (0 이상의 정수)",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
@@ -24615,6 +24798,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": false,
           "schema": {
             "default": 20,
+            "description": "조회할 개수 (1-200, 기본값: 20)",
             "maximum": 200,
             "minimum": 1,
             "type": "integer",
@@ -25077,6 +25261,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "메모 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -25248,6 +25433,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "메모 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -25419,6 +25605,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "메모 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -25657,6 +25844,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "메모 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -25958,6 +26146,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "메모 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -26242,6 +26431,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "메모 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -26428,6 +26618,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "메모 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -26674,6 +26865,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": false,
           "schema": {
             "default": 20,
+            "description": "조회할 알림 개수 (1-100, 기본값: 20)",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -26685,6 +26877,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (선택, 0 이상의 정수)",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
@@ -26704,6 +26897,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                 "type": "string",
               },
             ],
+            "description": "읽지 않은 알림만 조회 여부 (기본값: false)",
           },
         },
         {
@@ -27459,6 +27653,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "알림 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -28436,6 +28631,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": false,
           "schema": {
             "default": 20,
+            "description": "조회할 개수 (1-50, 기본값: 20)",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -28447,6 +28643,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (0 이상의 정수)",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
@@ -28984,6 +29181,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": false,
           "schema": {
             "default": 20,
+            "description": "조회할 개수 (1-50, 기본값: 20)",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -28995,6 +29193,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (0 이상의 정수)",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
@@ -29120,6 +29319,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "description": "콕 찌름 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -29823,6 +30023,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "id",
           "required": true,
           "schema": {
+            "description": "카테고리 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -29835,6 +30036,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "moveToCategoryId",
           "required": false,
           "schema": {
+            "description": "할 일을 이동할 카테고리 ID (선택, 양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -30055,6 +30257,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "id",
           "required": true,
           "schema": {
+            "description": "카테고리 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -30282,6 +30485,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "id",
           "required": true,
           "schema": {
+            "description": "카테고리 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -30539,6 +30743,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "id",
           "required": true,
           "schema": {
+            "description": "카테고리 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -31351,6 +31556,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "userId",
           "required": true,
           "schema": {
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -31362,6 +31568,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "cursor",
           "required": false,
           "schema": {
+            "description": "페이지네이션 커서 (마지막 조회 Todo ID, 0 이상)",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
@@ -31374,6 +31581,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "required": false,
           "schema": {
             "default": 20,
+            "description": "페이지 크기 (1-200, 기본값: 20)",
             "maximum": 200,
             "minimum": 1,
             "type": "integer",
@@ -31385,6 +31593,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "startDate",
           "required": false,
           "schema": {
+            "description": "시작 날짜 필터 (선택, YYYY-MM-DD)",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
@@ -31396,6 +31605,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "endDate",
           "required": false,
           "schema": {
+            "description": "종료 날짜 필터 (선택, YYYY-MM-DD)",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
@@ -31858,6 +32068,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           "name": "categoryId",
           "required": false,
           "schema": {
+            "description": "카테고리 ID (지정 시 해당 카테고리의 activeCount도 반환)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -32119,6 +32330,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -32292,6 +32504,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -32465,6 +32678,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -32704,6 +32918,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -32939,6 +33154,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -33198,6 +33414,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -33488,6 +33705,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -33731,6 +33949,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "부모 할 일 ID",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -33743,6 +33962,7 @@ Todo를 찾을 수 없습니다.",
           "name": "itemId",
           "required": true,
           "schema": {
+            "description": "하위 항목 ID",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -33941,6 +34161,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "부모 할 일 ID",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -33953,6 +34174,7 @@ Todo를 찾을 수 없습니다.",
           "name": "itemId",
           "required": true,
           "schema": {
+            "description": "하위 항목 ID",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -34184,6 +34406,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -34415,6 +34638,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -34653,6 +34877,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -34880,6 +35105,7 @@ Todo를 찾을 수 없습니다.",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "할 일 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -35104,6 +35330,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -35286,6 +35513,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -35299,6 +35527,7 @@ Todo를 찾을 수 없습니다.",
           "required": false,
           "schema": {
             "default": "LATEST",
+            "description": "댓글 정렬 (LATEST: 최신순, POPULAR: 인기순)",
             "enum": [
               "POPULAR",
               "LATEST",
@@ -35312,6 +35541,7 @@ Todo를 찾을 수 없습니다.",
           "name": "before",
           "required": false,
           "schema": {
+            "description": "댓글 페이지 위치 커서",
             "minLength": 1,
             "type": "string",
           },
@@ -35322,6 +35552,7 @@ Todo를 찾을 수 없습니다.",
           "name": "after",
           "required": false,
           "schema": {
+            "description": "댓글 페이지 위치 커서",
             "minLength": 1,
             "type": "string",
           },
@@ -35333,6 +35564,7 @@ Todo를 찾을 수 없습니다.",
           "required": false,
           "schema": {
             "default": 30,
+            "description": "댓글 조회 개수 (기본 30, 최대 50)",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -35546,6 +35778,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -35558,6 +35791,7 @@ Todo를 찾을 수 없습니다.",
           "name": "commentId",
           "required": true,
           "schema": {
+            "description": "댓글 ID (CUID)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -35727,6 +35961,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -35739,6 +35974,7 @@ Todo를 찾을 수 없습니다.",
           "name": "commentId",
           "required": true,
           "schema": {
+            "description": "댓글 ID (CUID)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -35920,6 +36156,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -35932,6 +36169,7 @@ Todo를 찾을 수 없습니다.",
           "name": "commentId",
           "required": true,
           "schema": {
+            "description": "댓글 ID (CUID)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -36054,6 +36292,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -36066,6 +36305,7 @@ Todo를 찾을 수 없습니다.",
           "name": "commentId",
           "required": true,
           "schema": {
+            "description": "댓글 ID (CUID)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -36190,6 +36430,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -36203,6 +36444,7 @@ Todo를 찾을 수 없습니다.",
           "required": false,
           "schema": {
             "default": "LATEST",
+            "description": "댓글 정렬 (LATEST: 최신순, POPULAR: 인기순)",
             "enum": [
               "POPULAR",
               "LATEST",
@@ -36216,6 +36458,7 @@ Todo를 찾을 수 없습니다.",
           "name": "focusCommentId",
           "required": false,
           "schema": {
+            "description": "댓글 ID (CUID)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -36227,6 +36470,7 @@ Todo를 찾을 수 없습니다.",
           "name": "before",
           "required": false,
           "schema": {
+            "description": "댓글 페이지 위치 커서",
             "minLength": 1,
             "type": "string",
           },
@@ -36237,6 +36481,7 @@ Todo를 찾을 수 없습니다.",
           "name": "after",
           "required": false,
           "schema": {
+            "description": "댓글 페이지 위치 커서",
             "minLength": 1,
             "type": "string",
           },
@@ -36248,6 +36493,7 @@ Todo를 찾을 수 없습니다.",
           "required": false,
           "schema": {
             "default": 30,
+            "description": "댓글 조회 개수 (기본 30, 최대 50)",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
@@ -36461,6 +36707,7 @@ Todo를 찾을 수 없습니다.",
           "name": "todoId",
           "required": true,
           "schema": {
+            "description": "할 일 ID (양의 정수)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -36676,6 +36923,7 @@ Todo를 찾을 수 없습니다.",
           "name": "date",
           "required": false,
           "schema": {
+            "description": "예보 날짜 (YYYY-MM-DD, 기본: 오늘)",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
@@ -36812,6 +37060,7 @@ Todo를 찾을 수 없습니다.",
           "name": "date",
           "required": false,
           "schema": {
+            "description": "예보 날짜 (YYYY-MM-DD, 기본: 오늘)",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
@@ -37171,7 +37420,7 @@ GET /weekly-achievements/2026/10
           "name": "year",
           "required": true,
           "schema": {
-            "example": 2026,
+            "description": "연도 (양의 정수, 예: 2026)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -37184,7 +37433,7 @@ GET /weekly-achievements/2026/10
           "name": "week",
           "required": true,
           "schema": {
-            "example": 10,
+            "description": "주차 (1-53, 예: 12)",
             "maximum": 53,
             "minimum": 1,
             "type": "integer",

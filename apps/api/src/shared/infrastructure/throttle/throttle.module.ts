@@ -1,11 +1,11 @@
 import { type DynamicModule, Module, type Provider } from "@nestjs/common";
 import type { ThrottlerStorage } from "@nestjs/throttler";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service";
-import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
-import { RedisThrottlerStorage } from "./redis-throttler-storage";
-import { THROTTLER_STORAGE } from "./throttle.constants";
+import { TypedConfigService } from "../config/services/config.service.js";
+import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
+import { RedisThrottlerStorage } from "./redis-throttler-storage.js";
+import { THROTTLER_STORAGE } from "./throttle.constants.js";
 
 /**
  * 스로틀 스토리지 모듈

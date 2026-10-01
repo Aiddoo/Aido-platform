@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationQueueService } from "./notification-queue.service";
-import { PushReceiptScheduler } from "./push-receipt.scheduler";
+import { NotificationQueueService } from "./notification-queue.service.js";
+import { PushReceiptScheduler } from "./push-receipt.scheduler.js";
 
 /**
  * Notification Queue 모듈

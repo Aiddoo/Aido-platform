@@ -14,7 +14,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
-import { UserIdParamDto } from "@/shared/presentation/dtos";
+import { UserIdParamDto } from "#api/shared/presentation/dtos/index";
 import {
 	ApiBadRequestError,
 	ApiConflictError,
@@ -25,16 +25,16 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { SearchUsersUseCase } from "../application/queries/search-users/search-users.use-case";
-import { FollowReader } from "../application/services/follow.reader";
-import { AcceptFriendRequestUseCase } from "../application/use-cases/accept-friend-request/accept-friend-request.use-case";
-import { RejectFriendRequestUseCase } from "../application/use-cases/reject-friend-request/reject-friend-request.use-case";
-import { RemoveFriendUseCase } from "../application/use-cases/remove-friend/remove-friend.use-case";
-import { ReorderFriendUseCase } from "../application/use-cases/reorder-friend/reorder-friend.use-case";
-import { SendFriendRequestByTagUseCase } from "../application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { SearchUsersUseCase } from "../application/queries/search-users/search-users.use-case.js";
+import { FollowReader } from "../application/services/follow.reader.js";
+import { AcceptFriendRequestUseCase } from "../application/use-cases/accept-friend-request/accept-friend-request.use-case.js";
+import { RejectFriendRequestUseCase } from "../application/use-cases/reject-friend-request/reject-friend-request.use-case.js";
+import { RemoveFriendUseCase } from "../application/use-cases/remove-friend/remove-friend.use-case.js";
+import { ReorderFriendUseCase } from "../application/use-cases/reorder-friend/reorder-friend.use-case.js";
+import { SendFriendRequestByTagUseCase } from "../application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case.js";
 import {
 	AcceptFriendRequestResponseDto,
 	FollowResourceLimitResponseDto,
@@ -51,8 +51,8 @@ import {
 	SendFriendRequestResponseDto,
 	SentRequestsResponseDto,
 	UserTagParamDto,
-} from "./dtos";
-import { FollowMapper } from "./follow.mapper";
+} from "./dtos/index.js";
+import { FollowMapper } from "./follow.mapper.js";
 
 /**
  * ### 친구 요청 상태 전이 다이어그램
@@ -104,7 +104,7 @@ export class FollowController {
 	@ApiForbiddenError(ErrorCode.FOLLOW_0909)
 	async sendRequest(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: UserTagParamDto,
+		@Param({ schema: UserTagParamDto }) params: UserTagParamDto,
 	): Promise<SendFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
 
@@ -145,7 +145,7 @@ export class FollowController {
 	@ApiNotFoundError(ErrorCode.FOLLOW_0903)
 	async acceptRequest(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: UserIdParamDto,
+		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
 	): Promise<AcceptFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
 
@@ -181,7 +181,7 @@ export class FollowController {
 	@ApiNotFoundError(ErrorCode.FOLLOW_0903)
 	async rejectRequest(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: UserIdParamDto,
+		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
 	): Promise<RejectFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 거절: ${params.userId} -> ${user.userId}`);
 
@@ -214,7 +214,7 @@ export class FollowController {
 	@ApiNotFoundError(ErrorCode.FOLLOW_0907)
 	async remove(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: UserIdParamDto,
+		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
 	): Promise<RemoveFriendResponseDto> {
 		this.#logger.debug(`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`);
 
@@ -250,7 +250,7 @@ export class FollowController {
 	async reorderFriend(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("followId") followId: string,
-		@Body() dto: ReorderFriendDto,
+		@Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
 	): Promise<ReorderFriendResponseDto> {
 		this.#logger.debug(`친구 순서 변경: user=${user.userId}, followId=${followId}`);
 
@@ -302,7 +302,7 @@ export class FollowController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getFriends(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetFriendsQueryDto,
+		@Query({ schema: GetFriendsQueryDto }) query: GetFriendsQueryDto,
 	): Promise<FriendsListResponseDto> {
 		this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
 
@@ -342,7 +342,7 @@ export class FollowController {
 	@ApiBadRequestError(ErrorCode.FOLLOW_0911)
 	async searchUsers(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: SearchUsersQueryDto,
+		@Query({ schema: SearchUsersQueryDto }) query: SearchUsersQueryDto,
 	): Promise<SearchUsersResponseDto> {
 		this.#logger.debug(`사용자 검색: user=${user.userId}, q=${query.q}`);
 
@@ -375,7 +375,7 @@ export class FollowController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getReceivedRequests(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetFollowsQueryDto,
+		@Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
 	): Promise<ReceivedRequestsResponseDto> {
 		this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
 
@@ -409,7 +409,7 @@ export class FollowController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSentRequests(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query() query: GetFollowsQueryDto,
+		@Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
 	): Promise<SentRequestsResponseDto> {
 		this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
 

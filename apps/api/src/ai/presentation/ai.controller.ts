@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
-import { Locale, Timezone } from "@/shared/presentation/decorators";
+import { Locale, Timezone } from "#api/shared/presentation/decorators/index";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -12,20 +12,20 @@ import {
 	ApiUnauthorizedError,
 	ApiUnprocessableError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case";
-import { ParseMemoUseCase } from "../application/use-cases/parse-memo/parse-memo.use-case";
-import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case";
-import { AiUsageGuard } from "../infrastructure/guards/ai-usage.guard";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { GetAiUsageUseCase } from "../application/queries/get-ai-usage/get-ai-usage.use-case.js";
+import { ParseMemoUseCase } from "../application/use-cases/parse-memo/parse-memo.use-case.js";
+import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case.js";
+import { AiUsageGuard } from "../infrastructure/guards/ai-usage.guard.js";
 import {
 	AiUsageResponseDto,
 	ParseMemoRequestDto,
 	ParseMemoResponseDto,
 	ParseTodoRequestDto,
 	ParseTodoResponseDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
@@ -180,7 +180,7 @@ if (confirmed) {
 	})
 	async parseTodo(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: ParseTodoRequestDto,
+		@Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
 		@Timezone() tz: string,
 		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<ParseTodoResponseDto> {
@@ -327,7 +327,7 @@ if (confirmed) {
 	})
 	async parseMemo(
 		@CurrentUser() user: CurrentUserPayload,
-		@Body() dto: ParseMemoRequestDto,
+		@Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
 		@Timezone() tz: string,
 		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<ParseMemoResponseDto> {

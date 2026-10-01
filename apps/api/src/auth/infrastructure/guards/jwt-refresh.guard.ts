@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Injectable } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 /**
  * JWT Refresh Token 인증 가드

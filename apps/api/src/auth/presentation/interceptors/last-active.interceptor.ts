@@ -13,8 +13,8 @@ import type { Observable } from "rxjs";
 import {
 	AUTH_USER_ACTIVITY_WRITER,
 	type AuthUserActivityWriterPort,
-} from "@/auth/application/ports/auth-collaboration.port";
-import { resolveTimezone, startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
+} from "#api/auth/application/ports/auth-collaboration.port";
+import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 /**
  * 인증된 API 요청 시 User.lastActiveAt을 갱신하는 인터셉터

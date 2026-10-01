@@ -1,19 +1,19 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createUserNotificationSettingsMock } from "@test/mocks/ports/notification.mock";
+import type { Mocked } from "vitest";
 
 import {
 	type CachedUserPreference,
 	CacheService,
-} from "@/shared/infrastructure/cache/cache.service";
+} from "#api/shared/infrastructure/cache/cache.service";
+import { createUserNotificationSettingsMock } from "#test/mocks/ports/notification.mock";
 
 import {
 	USER_NOTIFICATION_SETTINGS,
 	type NotificationDeliveryPreference,
 	type UserNotificationSettingsPort,
-} from "../../application/ports/user-notification-settings.port";
-import { CachedNotificationRecipientPreferenceAdapter } from "./cached-notification-recipient-preference.adapter";
+} from "../../application/ports/user-notification-settings.port.js";
+import { CachedNotificationRecipientPreferenceAdapter } from "./cached-notification-recipient-preference.adapter.js";
 
 function createPreference(
 	overrides: Partial<NotificationDeliveryPreference> = {},

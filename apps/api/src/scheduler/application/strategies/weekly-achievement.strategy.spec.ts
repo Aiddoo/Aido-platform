@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * WeeklyAchievementStrategy 전략 단위 테스트
  *
@@ -9,24 +12,22 @@
  * pnpm --filter @aido/api test weekly-achievement.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
-import { NotificationHistoryReader, NotificationPublisher } from "@/notification";
-import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
-import { WeeklyAchievementWriterAccess } from "@/weekly-achievement";
+import { NotificationHistoryReader, NotificationPublisher } from "#api/notification/index";
+import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
+import { WeeklyAchievementWriterAccess } from "#api/weekly-achievement/index";
 
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
+} from "../ports/scheduler-preference-reader.port.js";
 import {
 	WEEKLY_ACHIEVEMENT_STATS_READER,
 	type WeeklyAchievementStatsReaderPort,
-} from "../ports/weekly-achievement-stats-reader.port";
-import { WeeklyAchievementStrategy } from "./weekly-achievement.strategy";
+} from "../ports/weekly-achievement-stats-reader.port.js";
+import { WeeklyAchievementStrategy } from "./weekly-achievement.strategy.js";
 
 describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 	let strategy: WeeklyAchievementStrategy;
@@ -52,8 +53,8 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
 
 		const { unit, unitRef } = await TestBed.solitary(WeeklyAchievementStrategy).compile();
 
@@ -99,7 +100,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("이전 주 월~일 범위로 todo를 집계한다", async () => {

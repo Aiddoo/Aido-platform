@@ -1,6 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 
-import type { IDedupProvider } from "../interfaces/dedup.interface";
+import type { IDedupProvider } from "../interfaces/dedup.interface.js";
 
 interface DedupEntry {
 	members: Set<string>;

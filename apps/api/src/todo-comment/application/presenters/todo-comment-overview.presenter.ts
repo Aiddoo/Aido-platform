@@ -1,7 +1,7 @@
 import type { TodoCommentOverviewItem } from "@aido/validators";
 
-import type { TodoCommentOverviewItemRecord } from "../types";
-import { toTodoCommentAuthorResponse, toTodoCommentResponse } from "./todo-comment.presenter";
+import type { TodoCommentOverviewItemRecord } from "../types.js";
+import { toTodoCommentAuthorResponse, toTodoCommentResponse } from "./todo-comment.presenter.js";
 
 export function toTodoCommentOverviewItem(input: {
 	record: TodoCommentOverviewItemRecord;

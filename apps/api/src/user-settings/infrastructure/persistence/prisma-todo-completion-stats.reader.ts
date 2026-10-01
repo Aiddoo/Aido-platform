@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { DatabaseService } from "@/shared/infrastructure/database";
+import { DatabaseService } from "#api/shared/infrastructure/database/index";
 
 import type {
 	TodoCompletionStats,
 	TodoCompletionStatsReaderPort,
-} from "../../application/ports/todo-completion-stats.reader.port";
+} from "../../application/ports/todo-completion-stats.reader.port.js";
 
 /**
  * Prisma 투두 완료 통계 리더.

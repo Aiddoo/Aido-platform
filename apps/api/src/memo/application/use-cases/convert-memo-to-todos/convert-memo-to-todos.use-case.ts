@@ -2,12 +2,12 @@ import { ErrorCode } from "@aido/errors";
 import type { DayOfWeek, Todo } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { toDateString } from "@/shared/domain/date/utils/format";
-import { toLocalTimeString } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port";
-import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port";
+import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
+import { TODO_CREATOR, type TodoCreatorPort } from "../../ports/todo-creator.port.js";
 
 /** 일괄 변환 단일 항목 입력 (컨트롤러가 날짜/시간을 파싱해 전달). */
 export interface ConvertMemoToSingleTodoData {

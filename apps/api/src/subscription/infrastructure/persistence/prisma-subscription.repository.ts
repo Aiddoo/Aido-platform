@@ -3,10 +3,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type * as PrismaModels from "@/generated/prisma/client";
-import { Prisma } from "@/generated/prisma/client";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type * as PrismaModels from "#api/generated/prisma/client";
+import { Prisma } from "#api/generated/prisma/client";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	CreateSubscriptionData,
@@ -14,8 +14,8 @@ import type {
 	SubscriptionUser,
 	UpdateSubscriptionStatusData,
 	UpdateUserSubscriptionStatusData,
-} from "../../application/ports/subscription.repository.port";
-import { Subscription } from "../../domain/entities/subscription.aggregate";
+} from "../../application/ports/subscription.repository.port.js";
+import { Subscription } from "../../domain/entities/subscription.aggregate.js";
 
 /**
  * 사용자 조회 시 필요한 필드만 select

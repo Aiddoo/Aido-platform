@@ -1,5 +1,5 @@
-import type { Friendship } from "../../domain/entities/friendship.aggregate";
-import type { FriendshipStatusValue } from "../../domain/value-objects/friendship-status.vo";
+import type { Friendship } from "../../domain/entities/friendship.aggregate.js";
+import type { FriendshipStatusValue } from "../../domain/value-objects/friendship-status.vo.js";
 
 /**
  * FollowRepositoryPort — 친구/팔로우 영속성 포트.

@@ -1,15 +1,16 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
 import {
 	RETENTION_DEAD_LETTER_QUEUE,
 	RETENTION_DEAD_LETTER_JOB_POLICY,
 	RETENTION_QUEUE,
 	RetentionJobName,
-} from "./retention-queue.constants";
-import { RetentionQueueService } from "./retention-queue.service";
+} from "./retention-queue.constants.js";
+import { RetentionQueueService } from "./retention-queue.service.js";
 
 describe("RetentionQueueService", () => {
 	let service: RetentionQueueService;
@@ -19,14 +20,14 @@ describe("RetentionQueueService", () => {
 		const compiled = await TestBed.solitary(RetentionQueueService)
 			.mock<JobRuntimePort>(JOB_RUNTIME)
 			.impl(() => ({
-				start: jest.fn(),
-				stop: jest.fn(),
-				enqueue: jest.fn(),
-				schedule: jest.fn(),
-				unschedule: jest.fn(),
-				cancel: jest.fn(),
-				work: jest.fn(),
-				health: jest.fn(),
+				start: vi.fn(),
+				stop: vi.fn(),
+				enqueue: vi.fn(),
+				schedule: vi.fn(),
+				unschedule: vi.fn(),
+				cancel: vi.fn(),
+				work: vi.fn(),
+				health: vi.fn(),
 			}))
 			.compile();
 		service = compiled.unit;

@@ -5,8 +5,8 @@
  * - 값 기반 동등성, 타입 불일치, EntityId 문자열 변환 검증
  */
 
-import { ValueObject } from "./value-object";
-import { EntityId } from "./value-objects/entity-id.vo";
+import { ValueObject } from "./value-object.js";
+import { EntityId } from "./value-objects/entity-id.vo.js";
 
 class TestStringVo extends ValueObject<string> {
 	static create(value: string): TestStringVo {

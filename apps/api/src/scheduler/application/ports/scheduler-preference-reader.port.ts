@@ -4,7 +4,7 @@
  * 오케스트레이터의 활성 타임존 목록 조회와, 전략들의 푸시 로케일 일괄 조회를 담당한다.
  * (활성 타임존은 어댑터에서 캐시 스루로 조회 — 캐싱은 인프라 관심사)
  */
-import type { UserLocaleMap } from "./scheduler-read-models";
+import type { UserLocaleMap } from "./scheduler-read-models.js";
 
 export const SCHEDULER_PREFERENCE_READER = Symbol("SCHEDULER_PREFERENCE_READER");
 

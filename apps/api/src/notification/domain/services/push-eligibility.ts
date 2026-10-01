@@ -1,4 +1,4 @@
-import type { NotificationType } from "../types/notification-type";
+import type { NotificationType } from "../types/notification-type.js";
 
 /**
  * 푸시 발송 자격 정책 (순수 도메인).

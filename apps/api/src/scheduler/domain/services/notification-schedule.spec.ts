@@ -3,7 +3,7 @@ import {
 	matchesScheduleTime,
 	NOTIFICATION_SCHEDULE,
 	SCHEDULE_GRACE_MINUTES,
-} from "./notification-schedule";
+} from "./notification-schedule.js";
 
 describe("notification-schedule", () => {
 	describe("matchesScheduleTime (정확 일치 — 기존 계약 보존)", () => {

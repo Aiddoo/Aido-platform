@@ -3,12 +3,12 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_DEDUP,
 	type NotificationDedupPort,
-} from "../../ports/notification-dedup.port";
-import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types";
+} from "../../ports/notification-dedup.port.js";
+import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types.js";
 
 /** 커밋된 배치 알림의 cache와 날짜 dedup 후처리를 관찰 가능한 방식으로 정리한다. */
 @Injectable()

@@ -17,7 +17,7 @@
  *   .build();
  * ```
  */
-import type { UserLocation } from "@/generated/prisma/client";
+import type { UserLocation } from "#api/generated/prisma/client";
 
 export class UserLocationBuilder {
 	private data: UserLocation;

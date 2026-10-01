@@ -1,4 +1,8 @@
 import { getNotificationsQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetNotificationsQueryDto extends createZodDto(getNotificationsQuerySchema) {}
+export const GetNotificationsQueryDto = getNotificationsQuerySchema.meta({
+	id: "GetNotificationsQueryDto",
+	apiParameter: true,
+});
+export type GetNotificationsQueryDto = z.infer<typeof GetNotificationsQueryDto>;

@@ -1,5 +1,5 @@
-import type { NotificationType } from "../../domain/types/notification-type";
-import type { FindAlreadyNotifiedUsersUseCase } from "../use-cases/find-already-notified-users/find-already-notified-users.use-case";
+import type { NotificationType } from "../../domain/types/notification-type.js";
+import type { FindAlreadyNotifiedUsersUseCase } from "../use-cases/find-already-notified-users/find-already-notified-users.use-case.js";
 
 export interface FindAlreadyNotifiedRecipientsQuery {
 	readonly userIds: string[];

@@ -1,3 +1,6 @@
+import { TestBed } from "@suites/unit";
+import dayjs from "dayjs";
+import { vi } from "vitest";
 /**
  * LunchNudgeStrategy 전략 단위 테스트
  *
@@ -9,27 +12,25 @@
  * pnpm --filter @aido/api test lunch-nudge.strategy
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import dayjs from "dayjs";
+import type { Mocked } from "vitest";
 
 import {
 	createLunchNudgeNotificationMessage,
 	NotificationHistoryReader,
 	NotificationPublisher,
-} from "@/notification";
+} from "#api/notification/index";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign";
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	SCHEDULED_REMINDER_READER,
 	type ScheduledReminderReaderPort,
-} from "../ports/scheduled-reminder-reader.port";
+} from "../ports/scheduled-reminder-reader.port.js";
 import {
 	SCHEDULER_PREFERENCE_READER,
 	type SchedulerPreferenceReaderPort,
-} from "../ports/scheduler-preference-reader.port";
-import { LunchNudgeStrategy } from "./lunch-nudge.strategy";
+} from "../ports/scheduler-preference-reader.port.js";
+import { LunchNudgeStrategy } from "./lunch-nudge.strategy.js";
 
 describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 	let strategy: LunchNudgeStrategy;
@@ -54,8 +55,8 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 	});
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
-		jest.setSystemTime(FAKE_NOW);
+		vi.useFakeTimers();
+		vi.setSystemTime(FAKE_NOW);
 
 		const { unit, unitRef } = await TestBed.solitary(LunchNudgeStrategy).compile();
 
@@ -73,7 +74,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("오늘 할일이 있지만 완료가 0개인 유저에게 점심 넛지를 발송한다", async () => {

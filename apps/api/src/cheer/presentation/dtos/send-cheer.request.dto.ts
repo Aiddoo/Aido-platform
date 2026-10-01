@@ -1,8 +1,11 @@
 import { createCheerSchema, markCheerReadSchema, markCheersReadSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class SendCheerDto extends createZodDto(createCheerSchema) {}
+export const SendCheerDto = createCheerSchema.meta({ id: "SendCheerDto" });
+export type SendCheerDto = z.infer<typeof SendCheerDto>;
 
-export class MarkCheerReadDto extends createZodDto(markCheerReadSchema) {}
+export const MarkCheerReadDto = markCheerReadSchema.meta({ id: "MarkCheerReadDto" });
+export type MarkCheerReadDto = z.infer<typeof MarkCheerReadDto>;
 
-export class MarkCheersReadDto extends createZodDto(markCheersReadSchema) {}
+export const MarkCheersReadDto = markCheersReadSchema.meta({ id: "MarkCheersReadDto" });
+export type MarkCheersReadDto = z.infer<typeof MarkCheersReadDto>;

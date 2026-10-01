@@ -1,4 +1,4 @@
-import { maskEmail, maskUserId } from "./mask.util";
+import { maskEmail, maskUserId } from "./mask.util.js";
 
 describe("mask.util — 로깅 마스킹 유틸", () => {
 	describe("maskEmail", () => {

@@ -6,8 +6,8 @@
  */
 import { AI_SUGGESTION_LIMITS } from "@aido/validators";
 
-import type { SuggestionContext } from "../types";
-import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt";
+import type { SuggestionContext } from "../types.js";
+import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt.js";
 
 type Pattern = DetectedPatternsResponse["patterns"][number];
 

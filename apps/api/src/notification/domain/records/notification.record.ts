@@ -1,4 +1,4 @@
-import type { NotificationType } from "../types/notification-type";
+import type { NotificationType } from "../types/notification-type.js";
 
 /**
  * 알림 읽기 레코드 (도메인 소유 뷰).

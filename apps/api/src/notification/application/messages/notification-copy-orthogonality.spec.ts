@@ -8,12 +8,12 @@
  *
  * 이 스펙이 깨지면 누군가 카피 선택을 언어/타임존에 결합시킨 것이다.
  */
-import type { NotificationVariantContext } from "./notification-copy.types";
+import type { NotificationVariantContext } from "./notification-copy.types.js";
 import {
 	createEveningReminderNotificationMessage,
 	createMorningReminderNotificationMessage,
 	createWinbackNotificationMessage,
-} from "./notification-messages";
+} from "./notification-messages.js";
 
 const context: NotificationVariantContext = {
 	campaignKey: "orthogonality-test",

@@ -1,2 +1,2 @@
-export * from "./encryption.module";
-export * from "./encryption.service";
+export * from "./encryption.module.js";
+export * from "./encryption.service.js";

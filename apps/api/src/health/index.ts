@@ -1,3 +1,3 @@
-export * from "./health.controller";
-export * from "./health.module";
-export * from "./indicators/database.health";
+export * from "./health.controller.js";
+export * from "./health.module.js";
+export * from "./indicators/database.health.js";

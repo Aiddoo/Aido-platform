@@ -1,17 +1,18 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi, type MockedFunction } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	NOTIFICATION_DEDUP_LOCK,
 	type NotificationDedupLockPort,
-} from "../../ports/notification-dedup.port";
+} from "../../ports/notification-dedup.port.js";
 import {
 	NOTIFICATION_HISTORY_READER,
 	type NotificationHistoryReaderPort,
-} from "../../ports/notification-history.reader.port";
-import { NotificationPublisher } from "../../publishers/notification.publisher";
-import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader";
-import { SendMilestoneNotificationUseCase } from "./send-milestone-notification.use-case";
+} from "../../ports/notification-history.reader.port.js";
+import { NotificationPublisher } from "../../publishers/notification.publisher.js";
+import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
+import { SendMilestoneNotificationUseCase } from "./send-milestone-notification.use-case.js";
 
 describe("SendMilestoneNotificationUseCase", () => {
 	let useCase: SendMilestoneNotificationUseCase;
@@ -19,7 +20,7 @@ describe("SendMilestoneNotificationUseCase", () => {
 	let localeReader: Mocked<NotificationRecipientLocaleReader>;
 	let history: Mocked<NotificationHistoryReaderPort>;
 	let lock: Mocked<NotificationDedupLockPort>;
-	let release: jest.MockedFunction<() => Promise<void>>;
+	let release: MockedFunction<() => Promise<void>>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(SendMilestoneNotificationUseCase).compile();
@@ -28,7 +29,7 @@ describe("SendMilestoneNotificationUseCase", () => {
 		localeReader = unitRef.get(NotificationRecipientLocaleReader);
 		history = unitRef.get(NOTIFICATION_HISTORY_READER);
 		lock = unitRef.get(NOTIFICATION_DEDUP_LOCK);
-		release = jest.fn().mockResolvedValue(undefined);
+		release = vi.fn().mockResolvedValue(undefined);
 		lock.acquire.mockResolvedValue(release);
 		history.hasMilestoneNotification.mockResolvedValue(false);
 		localeReader.getRecipientLocale.mockResolvedValue("ko");

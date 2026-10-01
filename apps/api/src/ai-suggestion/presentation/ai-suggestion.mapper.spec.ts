@@ -7,8 +7,8 @@
  * - 수락/거절 결과 변환 검증
  */
 
-import { Suggestion, type SuggestionProps } from "../domain/entities/suggestion.aggregate";
-import { AiSuggestionMapper } from "./ai-suggestion.mapper";
+import { Suggestion, type SuggestionProps } from "../domain/entities/suggestion.aggregate.js";
+import { AiSuggestionMapper } from "./ai-suggestion.mapper.js";
 
 function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
 	return Suggestion.reconstitute({

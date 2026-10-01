@@ -3,5 +3,5 @@
  *
  * 모듈과 HTTP DTO만 공개한다.
  */
-export * from "./inquiry.module";
-export * from "./presentation/dtos";
+export * from "./inquiry.module.js";
+export * from "./presentation/dtos/index.js";

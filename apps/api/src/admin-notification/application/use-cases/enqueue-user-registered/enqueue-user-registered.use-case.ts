@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { buildUserRegisteredMessage } from "../../../domain/services/admin-message.factory";
-import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload";
+import { buildUserRegisteredMessage } from "../../../domain/services/admin-message.factory.js";
+import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload.js";
 import {
 	ADMIN_NOTIFICATION_QUEUE_PORT,
 	type AdminNotificationQueuePort,
-} from "../../ports/admin-notification-queue.port";
+} from "../../ports/admin-notification-queue.port.js";
 
 /**
  * 회원가입 관리자 알림 등록 유스케이스.

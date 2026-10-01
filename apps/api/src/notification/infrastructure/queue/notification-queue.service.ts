@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import {
 	type BillingIssueJobData,
@@ -14,7 +14,7 @@ import {
 	NotificationJobName,
 	type NotificationRuntimeJob,
 	type NudgeSentJobData,
-} from "./notification-queue.constants";
+} from "./notification-queue.constants.js";
 
 @Injectable()
 export class NotificationQueueService {

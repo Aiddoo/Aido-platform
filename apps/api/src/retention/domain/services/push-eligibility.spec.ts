@@ -1,4 +1,4 @@
-import { retentionPushSkipReason } from "./push-eligibility";
+import { retentionPushSkipReason } from "./push-eligibility.js";
 
 describe("retentionPushSkipReason — 신규 리텐션 푸시 자격", () => {
 	const eligible = {

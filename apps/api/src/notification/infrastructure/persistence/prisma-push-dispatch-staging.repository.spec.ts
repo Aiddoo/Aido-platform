@@ -1,11 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { PrismaPushDispatchStagingRepository } from "./prisma-push-dispatch-staging.repository";
+import { PrismaPushDispatchStagingRepository } from "./prisma-push-dispatch-staging.repository.js";
 
 describe("PrismaPushDispatchStagingRepository", () => {
 	let repository: PrismaPushDispatchStagingRepository;

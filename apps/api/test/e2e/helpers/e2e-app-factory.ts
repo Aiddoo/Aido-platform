@@ -1,3 +1,4 @@
+import type { INestApplication } from "@nestjs/common";
 /**
  * E2E 테스트 앱 팩토리
  *
@@ -5,70 +6,71 @@
  * 모든 E2E 테스트에서 반복되는 NestJS 앱 초기화 보일러플레이트를 통합합니다.
  * - TestDatabase (Testcontainers)
  * - 외부 서비스 Fake 처리 (Email, OAuth, Push, AI, Discord, Weather)
- * - ZodValidationPipe
+ * - Native StandardSchemaValidationPipe
  * - PinoLogger 억제
  */
-
-import type { INestApplication } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { ThrottlerGuard } from "@nestjs/throttler";
 import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
-import type { App } from "supertest/types";
+import type { App } from "supertest/types.js";
 
-import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "@/admin-notification";
-import { AdminNotificationProcessor } from "@/admin-notification/infrastructure/queue/admin-notification-queue.processor";
-import { DailySignupSummaryScheduler } from "@/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
-import { AI_PROVIDER } from "@/ai";
-import { ReportGenerationJob } from "@/ai-report/infrastructure/jobs/report-generation.job";
-import { ReportGenerationProcessor } from "@/ai-report/infrastructure/processors/report-generation.processor";
-import { SuggestionAnalysisJob } from "@/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
-import { SuggestionAnalysisProcessor } from "@/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
-import { AppModule } from "@/app.module";
-import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "@/auth/application/ports/oauth-identity-provider.port";
-import { createOAuthProviderRegistry } from "@/auth/infrastructure/oauth/adapters";
-import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { AccountPurgeProcessor } from "@/auth/infrastructure/queue/account-purge.processor";
-import { AccountPurgeJob } from "@/auth/infrastructure/scheduler/account-purge.job";
-import { TransactionalEmailSender } from "@/email";
-import { PUSH_PROVIDER } from "@/notification";
-import { NotificationQueueProcessor } from "@/notification/infrastructure/queue/notification-queue.processor";
-import { RetentionQueueProcessor } from "@/retention/infrastructure/queue/retention-queue.processor";
-import { RetentionQueueService } from "@/retention/infrastructure/queue/retention-queue.service";
+import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "#api/admin-notification/index";
+import { AdminNotificationProcessor } from "#api/admin-notification/infrastructure/queue/admin-notification-queue.processor";
+import { DailySignupSummaryScheduler } from "#api/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
+import { ReportGenerationJob } from "#api/ai-report/infrastructure/jobs/report-generation.job";
+import { ReportGenerationProcessor } from "#api/ai-report/infrastructure/processors/report-generation.processor";
+import { SuggestionAnalysisJob } from "#api/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
+import { SuggestionAnalysisProcessor } from "#api/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
+import { AI_PROVIDER } from "#api/ai/index";
+import { AppModule } from "#api/app.module";
+import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/auth/application/ports/oauth-identity-provider.port";
+import { createOAuthProviderRegistry } from "#api/auth/infrastructure/oauth/adapters/index";
+import { OAuthTokenVerifierService } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+import { AccountPurgeProcessor } from "#api/auth/infrastructure/queue/account-purge.processor";
+import { AccountPurgeJob } from "#api/auth/infrastructure/scheduler/account-purge.job";
+import { TransactionalEmailSender } from "#api/email/index";
+import { PUSH_PROVIDER } from "#api/notification/index";
+import { NotificationQueueProcessor } from "#api/notification/infrastructure/queue/notification-queue.processor";
+import { RetentionQueueProcessor } from "#api/retention/infrastructure/queue/retention-queue.processor";
+import { RetentionQueueService } from "#api/retention/infrastructure/queue/retention-queue.service";
 import {
 	TimezoneAwareReminderOrchestrator,
 	TimezoneReminderProcessor,
 	TodoReminderProcessor,
-} from "@/scheduler";
-import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "@/shared/application/ports";
-import { InMemoryCacheAdapter } from "@/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
-import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "@/shared/infrastructure/database";
-import { configureApplication } from "@/shared/infrastructure/http/configure-application";
-import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "@/shared/infrastructure/redis/redis.constants";
-import { AIR_QUALITY_PROVIDER } from "@/weather/application/ports/air-quality-provider.port";
-import { LIFESTYLE_INDEX_PROVIDER } from "@/weather/application/ports/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER } from "@/weather/application/ports/sun-time-provider.port";
-import { WEATHER_PROVIDER } from "@/weather/application/ports/weather-provider.port";
+} from "#api/scheduler/index";
+import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
+import { InMemoryCacheAdapter } from "#api/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
+import { CACHE_SERVICE } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import { configureApplication } from "#api/shared/infrastructure/http/configure-application";
+import {
+	REDIS_CLIENT,
+	REDIS_COMMAND_CLIENT,
+} from "#api/shared/infrastructure/redis/redis.constants";
+import { AIR_QUALITY_PROVIDER } from "#api/weather/application/ports/air-quality-provider.port";
+import { LIFESTYLE_INDEX_PROVIDER } from "#api/weather/application/ports/lifestyle-index-provider.port";
+import { SUN_TIME_PROVIDER } from "#api/weather/application/ports/sun-time-provider.port";
+import { WEATHER_PROVIDER } from "#api/weather/application/ports/weather-provider.port";
 
-import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
-import { FakeAiProvider } from "../../mocks/fake-ai.provider";
-import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";
-import { FakeEmailService } from "../../mocks/fake-email.service";
-import { FakeJobRuntime } from "../../mocks/fake-job-runtime";
-import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider";
-import { FakeLogger } from "../../mocks/fake-logger.service";
-import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry";
-import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service";
-import { FakePushProvider } from "../../mocks/fake-push.provider";
-import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider";
-import { FakeWeatherProvider } from "../../mocks/fake-weather.provider";
-import { TestDatabase } from "../../setup/test-database";
-import { E2eHelpers } from "./e2e-helpers";
-import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-state";
-import { bypassE2eThrottler, restoreRealE2eThrottler } from "./e2e-throttler-control";
-import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher";
+import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
+import { FakeAiProvider } from "../../mocks/fake-ai.provider.js";
+import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
+import { FakeEmailService } from "../../mocks/fake-email.service.js";
+import { FakeJobRuntime } from "../../mocks/fake-job-runtime.js";
+import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider.js";
+import { FakeLogger } from "../../mocks/fake-logger.service.js";
+import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
+import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service.js";
+import { FakePushProvider } from "../../mocks/fake-push.provider.js";
+import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider.js";
+import { FakeWeatherProvider } from "../../mocks/fake-weather.provider.js";
+import { TestDatabase } from "../../setup/test-database.js";
+import { E2eHelpers } from "./e2e-helpers.js";
+import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-state.js";
+import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher.js";
 
 /* ── 백그라운드 작업 격리 대상 ────────────────────────── */
 
@@ -121,24 +123,6 @@ export interface E2eAppOptions {
 }
 
 export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestContext> {
-	const withRealThrottler = options?.withRealThrottler === true;
-	if (withRealThrottler) {
-		restoreRealE2eThrottler();
-	}
-
-	let contextOwnsThrottlerLifecycle = false;
-	try {
-		const context = await createE2eAppContext(options);
-		contextOwnsThrottlerLifecycle = true;
-		return context;
-	} finally {
-		if (withRealThrottler && !contextOwnsThrottlerLifecycle) {
-			bypassE2eThrottler();
-		}
-	}
-}
-
-async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestContext> {
 	const testDatabase = options?.testDatabase ?? new TestDatabase();
 	if (!options?.testDatabase) {
 		await testDatabase.start();
@@ -175,34 +159,35 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 		applicationClosed = true;
 		const errors: unknown[] = [];
 		try {
-			try {
-				await app?.close();
-			} catch (error) {
-				errors.push(error);
-			}
+			await app?.close();
+		} catch (error) {
+			errors.push(error);
+		}
 
-			const results = await Promise.allSettled([
-				Promise.resolve().then(() => redisMock.disconnect()),
-				Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
-			]);
-			errors.push(
-				...results.flatMap((result) => (result.status === "rejected" ? [result.reason] : [])),
-			);
-			if (errors.length > 0) {
-				throw new AggregateError(errors, "Failed to close E2E app resources");
-			}
-		} finally {
-			if (options?.withRealThrottler) {
-				bypassE2eThrottler();
-			}
+		const results = await Promise.allSettled([
+			Promise.resolve().then(() => redisMock.disconnect()),
+			Promise.resolve().then(() => cacheAdapter.onModuleDestroy()),
+		]);
+		errors.push(
+			...results.flatMap((result) => (result.status === "rejected" ? [result.reason] : [])),
+		);
+		if (errors.length > 0) {
+			throw new AggregateError(errors, "Failed to close E2E app resources");
 		}
 	};
 
 	const closeTestResources = async (): Promise<void> => {
-		const results = await Promise.allSettled([closeApplicationResources(), testDatabase.stop()]);
-		const errors = results.flatMap((result) =>
-			result.status === "rejected" ? [result.reason] : [],
-		);
+		const errors: unknown[] = [];
+		try {
+			await closeApplicationResources();
+		} catch (error) {
+			errors.push(error);
+		}
+		try {
+			await testDatabase.stop();
+		} catch (error) {
+			errors.push(error);
+		}
 		if (errors.length > 0) {
 			throw new AggregateError(errors, "Failed to close E2E test resources");
 		}
@@ -262,6 +247,10 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 			},
 		});
 
+	if (!options?.withRealThrottler) {
+		builder = builder.overrideProvider(ThrottlerGuard).useValue({ canActivate: async () => true });
+	}
+
 	// Processor → no-op (E2E 앱에서 실제 worker 실행 차단)
 	for (const processor of BACKGROUND_PROCESSORS) {
 		builder = builder.overrideProvider(processor).useValue({});
@@ -284,7 +273,8 @@ async function createE2eAppContext(options?: E2eAppOptions): Promise<E2eTestCont
 			corsOrigins: ["http://localhost:3000"],
 			enableShutdownHooks: false,
 		});
-		await app.init();
+		// Supertest의 요청별 임시 서버 재시작 대신 suite 전체에서 같은 HTTP 서버를 사용한다.
+		await app.listen(0, "127.0.0.1");
 
 		if (!fakeOAuthProviderRegistry) {
 			throw new Error("Fake OAuth provider registry was not initialized");

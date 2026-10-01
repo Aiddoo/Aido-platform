@@ -1,16 +1,18 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import type { JobRuntimePort } from "@/shared/application/ports/job-runtime.port";
-import { JOB_RUNTIME } from "@/shared/application/ports/job-runtime.port";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { UserBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { ReportGenerationProcessor } from "../processors/report-generation.processor";
-import { AI_REPORT_QUEUE } from "../queue/ai-report-queue";
-import { ReportGenerationJob } from "./report-generation.job";
+import { ReportGenerationProcessor } from "../processors/report-generation.processor.js";
+import { AI_REPORT_QUEUE } from "../queue/ai-report-queue.js";
+import { ReportGenerationJob } from "./report-generation.job.js";
 
 describe("ReportGenerationJob — durable dispatcher", () => {
 	let job: ReportGenerationJob;
@@ -25,8 +27,8 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 			.impl(() => ({ tx: database }))
 			.mock(JOB_RUNTIME)
 			.impl(() => ({
-				schedule: jest.fn().mockResolvedValue(undefined),
-				enqueue: jest.fn().mockResolvedValue("job-1"),
+				schedule: vi.fn().mockResolvedValue(undefined),
+				enqueue: vi.fn().mockResolvedValue("job-1"),
 			}))
 			.compile();
 		job = unit;
@@ -34,10 +36,10 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 		processor = unitRef.get(ReportGenerationProcessor);
 	});
 
-	afterEach(() => jest.useRealTimers());
+	afterEach(() => vi.useRealTimers());
 
 	it("KST 주간·월간 스케줄을 등록하고 processor를 연결한다", async () => {
-		jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
+		vi.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
 		job.onModuleInit();
 		await job.schedulerRegistration;
 
@@ -53,7 +55,7 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 	});
 
 	it("월요일 01시 이후 재시작하면 주간 dispatch를 멱등 키로 보정한다", async () => {
-		jest.useFakeTimers({ now: new Date("2026-03-09T03:00:00+09:00") });
+		vi.useFakeTimers({ now: new Date("2026-03-09T03:00:00+09:00") });
 		job.onModuleInit();
 		await job.schedulerRegistration;
 
@@ -67,13 +69,15 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 	});
 
 	it("대상 사용자마다 생성 작업과 재시도 정책을 등록한다", async () => {
-		asMock(database.user.findMany).mockResolvedValue([
-			{ id: "user-1", preference: { timezone: "Asia/Seoul", locale: "ko" } },
-			{
-				id: "user-2",
-				preference: { timezone: "America/New_York", locale: "en" },
-			},
-		]);
+		asMock(database.user.findMany).mockResolvedValue(
+			[
+				{ id: "user-1", preference: { timezone: "Asia/Seoul", locale: "ko" } },
+				{
+					id: "user-2",
+					preference: { timezone: "America/New_York", locale: "en" },
+				},
+			].map((value) => ({ ...UserBuilder.create().build(), ...value })),
+		);
 
 		await job.dispatchReports("WEEKLY");
 
@@ -92,7 +96,12 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 	});
 
 	it("preference가 없으면 기존 기본값을 유지한다", async () => {
-		asMock(database.user.findMany).mockResolvedValue([{ id: "user-1", preference: null }]);
+		asMock(database.user.findMany).mockResolvedValue(
+			[{ id: "user-1", preference: null }].map((value) => ({
+				...UserBuilder.create().build(),
+				...value,
+			})),
+		);
 		await job.dispatchReports("MONTHLY");
 
 		expect(runtime.enqueue).toHaveBeenCalledWith(

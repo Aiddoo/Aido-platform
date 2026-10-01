@@ -1,14 +1,14 @@
+import { TestBed } from "@suites/unit";
 /**
  * TodoCreatedHandler 단위 테스트
  *
  * Suites + GWT 패턴 — scheduledTime 유무에 따른 리마인더 스케줄 분기 검증
  */
+import { vi } from "vitest";
 
-import { TestBed } from "@suites/unit";
-
-import { TodoCreatedEvent } from "../../domain/events/todo-created.event";
-import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port";
-import { TodoCreatedHandler } from "./todo-created.handler";
+import { TodoCreatedEvent } from "../../domain/events/todo-created.event.js";
+import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.port.js";
+import { TodoCreatedHandler } from "./todo-created.handler.js";
 
 describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
 	let handler: TodoCreatedHandler;
@@ -16,8 +16,8 @@ describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
 
 	beforeEach(async () => {
 		todoReminder = {
-			scheduleReminder: jest.fn().mockResolvedValue(undefined),
-			cancelReminder: jest.fn(),
+			scheduleReminder: vi.fn().mockResolvedValue(undefined),
+			cancelReminder: vi.fn(),
 		};
 
 		const { unit } = await TestBed.solitary(TodoCreatedHandler)
@@ -53,7 +53,7 @@ describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
 		const error = new Error("scheduler down");
 		const rejected = Promise.reject(error);
 		void rejected.catch(() => undefined);
-		jest.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
+		vi.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
 
 		// When & Then - handler에서 성공으로 삼키지 않음
 		await expect(handler.handle(new TodoCreatedEvent(1, "user-123", new Date()))).rejects.toBe(

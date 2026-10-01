@@ -13,7 +13,7 @@ import type {
 	CategoryMetaRow,
 	CompletedTodoRow,
 	DailyGroupRow,
-} from "../types";
+} from "../types.js";
 
 /**
  * 요일 인덱스 → DayOfWeek 매핑 (dayjs day(): 0=SUN ~ 6=SAT)

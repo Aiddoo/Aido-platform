@@ -1,21 +1,24 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
-import { now } from "@/shared/domain/date/utils/core";
-import { dayWindowInTimezone } from "@/shared/domain/date/utils/timezone";
+import {
+	EntitlementService,
+	Feature,
+} from "#api/shared/application/entitlement/entitlement.service";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import {
 	evaluateNudgeCooldown,
 	evaluateRemindNudgeCooldown,
 	type NudgeCooldown,
-} from "../../domain/services/nudge-cooldown";
+} from "../../domain/services/nudge-cooldown.js";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
 	type NudgeWithRelations,
-} from "../ports/nudge.repository.port";
+} from "../ports/nudge.repository.port.js";
 
 export interface NudgeLimitInfo {
 	dailyLimit: number | null;

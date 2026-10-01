@@ -1,18 +1,20 @@
+import type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt.types.js";
+export type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt.types.js";
 import { z } from "zod";
 
-import { now } from "@/shared/domain/date/utils/core";
-import type { SupportedLocale } from "@/shared/domain/locale";
+import { now } from "#api/shared/domain/date/utils/core";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
-} from "@/shared/domain/prompt/prompt-sections";
-import { encodeUntrustedJson } from "@/shared/domain/prompt/sanitize";
+} from "#api/shared/domain/prompt/prompt-sections";
+import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
-import type { AggregatedReportData, ReportType } from "../../types";
-import { getKoreanSeasonalContext } from "../korean-seasonal-context";
-import { selectProfileTemplate } from "../profile-template-selector";
-import { computeDerivedInsights } from "./report-insights";
-import { buildReportPromptEn } from "./report.prompt.en";
+import type { AggregatedReportData, ReportType } from "../../types.js";
+import { getKoreanSeasonalContext } from "../korean-seasonal-context.js";
+import { selectProfileTemplate } from "../profile-template-selector.js";
+import { computeDerivedInsights } from "./report-insights.js";
+import { buildReportPromptEn } from "./report.prompt.en.js";
 
 export const reportAiResponseSchema = z.object({
 	summary: z.string().describe("한국어로 작성된 주간/월간 요약 (4-6문장)"),
@@ -28,15 +30,6 @@ export const reportAiResponseSchemaEn = z.object({
 
 export function getReportAiResponseSchema(locale: SupportedLocale) {
 	return locale === "en" ? reportAiResponseSchemaEn : reportAiResponseSchema;
-}
-
-export interface BuildReportPromptOptions {
-	prevTips: string[] | null;
-}
-
-export interface ReportPrompt {
-	system: string;
-	prompt: string;
 }
 
 const REPORT_SYSTEM = `<role>

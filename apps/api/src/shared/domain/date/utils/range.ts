@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { now } from "./core";
+import { now } from "./core.js";
 
 /** 해당 날짜의 시작 시각 (00:00:00.000) */
 export function startOfDay(date: Date = now()): Date {

@@ -2,9 +2,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { Injectable } from "@nestjs/common";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import type { MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port";
+import type { MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port.js";
 
 const TOKEN_TTL_SECONDS = 90 * 24 * 60 * 60;
 

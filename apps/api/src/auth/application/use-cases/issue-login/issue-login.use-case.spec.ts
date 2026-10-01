@@ -1,8 +1,8 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { asMock } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
+import { SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
+import { asMock } from "#test/mocks/index";
 
 import {
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
@@ -11,9 +11,9 @@ import {
 	type AuthLoginAttemptRepositoryPort,
 	type AuthSecurityLogRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../../ports/auth-persistence.port";
-import { SessionService } from "../../services/session.service";
-import { type IssueLoginInput, IssueLoginUseCase } from "./issue-login.use-case";
+} from "../../ports/auth-persistence.port.js";
+import { SessionService } from "../../services/session.service.js";
+import { type IssueLoginInput, IssueLoginUseCase } from "./issue-login.use-case.js";
 
 describe("IssueLoginUseCase — 로그인 발급 수렴 시퀀스", () => {
 	let useCase: IssueLoginUseCase;

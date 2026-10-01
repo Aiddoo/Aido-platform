@@ -1,17 +1,19 @@
-import { TEST_CUID } from "@test/fixtures/id.fixture";
-import { mockOf } from "@test/mocks";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 import RedisMock from "ioredis-mock";
+import { vi } from "vitest";
 
-import { RedisPushRateLimiter } from "./redis-push-rate-limiter";
+import { TEST_CUID } from "#test/fixtures/id.fixture";
+import { mockOf } from "#test/mocks/index";
+
+import { RedisPushRateLimiter } from "./redis-push-rate-limiter.js";
 
 describe("RedisPushRateLimiter batch policy", () => {
 	afterEach(() => {
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("여러 사용자의 일반·참여 유도 제한을 단일 원자적 Redis 호출로 예약한다", async () => {
-		const redis = mockOf<Redis>({ eval: jest.fn() });
+		const redis = mockOf<Redis>({ eval: vi.fn() });
 		redis.eval.mockResolvedValue([0, 1, 0]);
 		const limiter = new RedisPushRateLimiter(redis);
 
@@ -26,7 +28,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 	});
 
 	it("Redis가 잘못된 결과를 반환하면 fail-open으로 전체 발송을 허용한다", async () => {
-		const redis = mockOf<Redis>({ eval: jest.fn() });
+		const redis = mockOf<Redis>({ eval: vi.fn() });
 		redis.eval.mockResolvedValue([0, "invalid"]);
 		const limiter = new RedisPushRateLimiter(redis);
 
@@ -36,7 +38,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 	});
 
 	it("빈 배치는 Redis를 호출하지 않는다", async () => {
-		const redis = mockOf<Redis>({ eval: jest.fn() });
+		const redis = mockOf<Redis>({ eval: vi.fn() });
 		const limiter = new RedisPushRateLimiter(redis);
 
 		await expect(limiter.reserveBatch([])).resolves.toEqual([]);
@@ -44,7 +46,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 	});
 
 	it("참여 유도 제한에 걸리면 일반 푸시 quota를 소비하지 않는다", async () => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
 		const redis = new RedisMock();
 		await redis.flushall();
 		await redis.hset(
@@ -68,7 +70,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 	});
 
 	it("같은 dispatch 예약은 재시도와 새 publication generation에서도 quota를 한 번만 소비한다", async () => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
 		const redis = new RedisMock();
 		await redis.flushall();
 		const limiter = new RedisPushRateLimiter(redis);
@@ -91,7 +93,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 	});
 
 	it("단건 일반·engagement 단계도 같은 dispatch 예약을 각각 재사용한다", async () => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:00:00.000Z"));
 		const redis = new RedisMock();
 		await redis.flushall();
 		const limiter = new RedisPushRateLimiter(redis);
@@ -113,7 +115,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 	});
 
 	it("batch 예약 marker는 general key 만료와 현지 날짜 변경 뒤에도 같은 dispatch를 재사용한다", async () => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
 		const redis = new RedisMock();
 		await redis.flushall();
 		const limiter = new RedisPushRateLimiter(redis);
@@ -124,7 +126,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 		} as const;
 
 		await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
-		jest.advanceTimersByTime(5 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(5 * 60 * 60 * 1000);
 		await expect(
 			limiter.reserveBatch([
 				{
@@ -134,7 +136,7 @@ describe("RedisPushRateLimiter batch policy", () => {
 				},
 			]),
 		).resolves.toEqual([false]);
-		jest.advanceTimersByTime(4 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(4 * 60 * 60 * 1000);
 		await expect(
 			limiter.reserveBatch([
 				{
@@ -170,14 +172,14 @@ describe("RedisPushRateLimiter batch policy", () => {
 	});
 
 	it("단건 general 예약 직후 crash한 재시도는 key 만료 뒤에도 quota를 다시 쓰지 않는다", async () => {
-		jest.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
+		vi.useFakeTimers().setSystemTime(new Date("2026-07-15T23:00:00.000Z"));
 		const redis = new RedisMock();
 		await redis.flushall();
 		const limiter = new RedisPushRateLimiter(redis);
 		const reservationId = "push-delivery-general-phase";
 		await expect(limiter.isRateLimited(TEST_CUID.USER_1, reservationId)).resolves.toBe(false);
 
-		jest.advanceTimersByTime(2 * 60 * 60 * 1000);
+		vi.advanceTimersByTime(2 * 60 * 60 * 1000);
 		for (let index = 0; index < 15; index += 1) {
 			await expect(limiter.isRateLimited(TEST_CUID.USER_1)).resolves.toBe(false);
 		}

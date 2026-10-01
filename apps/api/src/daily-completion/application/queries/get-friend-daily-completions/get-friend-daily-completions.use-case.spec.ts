@@ -1,26 +1,29 @@
+import { ErrorCode } from "@aido/errors";
 /**
  * GetFriendDailyCompletionsUseCase 단위 테스트
  *
  * Suites + 포트 mock + GWT 패턴 — 맞팔 검증, PUBLIC 집계, 소유자 기준 cache-aside 검증
  */
-
-import { ErrorCode } from "@aido/errors";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { ApplicationException } from "@/shared/domain";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import type { DailyCompletionsRange, TodoAggregateByDate } from "../../../domain/daily-completion";
+import type {
+	DailyCompletionsRange,
+	TodoAggregateByDate,
+} from "../../../domain/daily-completion.js";
 import {
 	DAILY_COMPLETION_CACHE,
 	type DailyCompletionCachePort,
-} from "../../ports/daily-completion-cache.port";
-import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port";
+} from "../../ports/daily-completion-cache.port.js";
+import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port.js";
 import {
 	TODO_COMPLETION_REPOSITORY,
 	type TodoCompletionRepositoryPort,
-} from "../../ports/todo-completion.repository.port";
-import { GetFriendDailyCompletionsUseCase } from "./get-friend-daily-completions.use-case";
+} from "../../ports/todo-completion.repository.port.js";
+import { GetFriendDailyCompletionsUseCase } from "./get-friend-daily-completions.use-case.js";
 
 function buildAggregates(): TodoAggregateByDate[] {
 	return [
@@ -50,15 +53,15 @@ describe("GetFriendDailyCompletionsUseCase — 친구 기간별 완료 현황 �
 		const { unit, unitRef } = await TestBed.solitary(GetFriendDailyCompletionsUseCase)
 			.mock<TodoCompletionRepositoryPort>(TODO_COMPLETION_REPOSITORY)
 			.impl(() => ({
-				aggregatePublicByDateRange: jest.fn().mockResolvedValue([]),
+				aggregatePublicByDateRange: vi.fn().mockResolvedValue([]),
 			}))
 			.mock<DailyCompletionCachePort>(DAILY_COMPLETION_CACHE)
 			.impl(() => ({
-				getPublicRange: jest.fn().mockResolvedValue(undefined),
-				setPublicRange: jest.fn().mockResolvedValue(undefined),
+				getPublicRange: vi.fn().mockResolvedValue(undefined),
+				setPublicRange: vi.fn().mockResolvedValue(undefined),
 			}))
 			.mock<FriendPort>(FRIEND_PORT)
-			.impl(() => ({ isMutualFriend: jest.fn().mockResolvedValue(true) }))
+			.impl(() => ({ isMutualFriend: vi.fn().mockResolvedValue(true) }))
 			.compile();
 
 		useCase = unit;

@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { convertToGrid } from "../services/lambert-projection";
-import { GridCoordinate } from "./grid-coordinate.vo";
+import { convertToGrid } from "../services/lambert-projection.js";
+import { GridCoordinate } from "./grid-coordinate.vo.js";
 
 /** 한국 좌표 범위 (기상청 격자 유효 범위) */
 const LATITUDE_RANGE = { min: 33.0, max: 39.0 } as const;

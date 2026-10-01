@@ -1,9 +1,9 @@
 import type { AppVersionResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
-import type { AppVersionConfigPort } from "../../application/ports/app-version-config.port";
+import type { AppVersionConfigPort } from "../../application/ports/app-version-config.port.js";
 
 @Injectable()
 export class AppVersionConfigAdapter implements AppVersionConfigPort {

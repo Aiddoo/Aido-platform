@@ -7,14 +7,14 @@ import {
 	PUSH_RATE_LIMITER,
 	type PushProvider,
 	type PushRateLimiterPort,
-} from "@/notification";
+} from "#api/notification/index";
 
-import type { RetentionPushSenderPort } from "../../application/ports/retention-push-sender.port";
+import type { RetentionPushSenderPort } from "../../application/ports/retention-push-sender.port.js";
 import type {
 	RetentionDeliveryResult,
 	RetentionDispatchCandidate,
-} from "../../application/ports/retention.repository.port";
-import { retentionPushSkipReason } from "../../domain/services/push-eligibility";
+} from "../../application/ports/retention.repository.port.js";
+import { retentionPushSkipReason } from "../../domain/services/push-eligibility.js";
 
 @Injectable()
 export class ExpoRetentionPushSenderAdapter implements RetentionPushSenderPort {

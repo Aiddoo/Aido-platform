@@ -1,4 +1,5 @@
-import { buildParseTodoPrompt } from "./parse-todo.prompt";
+import { buildParseTodoPromptEn } from "./parse-todo.prompt.en.js";
+import { buildParseTodoPrompt } from "./parse-todo.prompt.js";
 
 describe("buildParseTodoPrompt", () => {
 	describe("system/prompt 분리", () => {
@@ -162,8 +163,6 @@ describe("buildParseTodoPrompt", () => {
 });
 
 describe("buildParseTodoPromptEn — en 로케일", () => {
-	const { buildParseTodoPromptEn } = require("./parse-todo.prompt.en");
-
 	it("영어 지시 프롬프트를 생성하고 입력을 삽입한다", () => {
 		// Given / When
 		const { system, prompt } = buildParseTodoPromptEn(

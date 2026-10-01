@@ -1,7 +1,7 @@
 import type { Request } from "express";
 
-import type { RequestMetadata } from "@/auth/application/types/auth.types";
-import { ErrorCodedException } from "@/shared/domain/exceptions/error-coded.exception";
+import type { RequestMetadata } from "#api/auth/application/types/auth.types";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 /**
  * 요청에서 메타데이터 추출

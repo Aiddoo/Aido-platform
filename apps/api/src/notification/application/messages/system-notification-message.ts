@@ -1,10 +1,10 @@
-import { DEFAULT_LOCALE, type SupportedLocale } from "@/shared/domain/locale";
+import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
-import type { NotificationMilestone } from "../../domain/types/notification-milestone";
-import * as en from "./locales/en";
-import * as ko from "./locales/ko";
-import { renderLocalizedNotification } from "./notification-copy.renderer";
-import type { NotificationMessage, NotificationVariantContext } from "./notification-copy.types";
+import type { NotificationMilestone } from "../../domain/types/notification-milestone.js";
+import * as en from "./locales/en.js";
+import * as ko from "./locales/ko.js";
+import { renderLocalizedNotification } from "./notification-copy.renderer.js";
+import type { NotificationMessage, NotificationVariantContext } from "./notification-copy.types.js";
 
 const LOCALE_TEMPLATES = { ko, en };
 

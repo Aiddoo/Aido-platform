@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	SignupStats,
 	SignupStatsReaderPort,
-} from "../../application/ports/signup-stats.reader.port";
+} from "../../application/ports/signup-stats.reader.port.js";
 
 /**
  * Prisma 가입 통계 리더.

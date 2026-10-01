@@ -1,5 +1,5 @@
-import { subtractMilliseconds } from "@/shared/domain/date/utils/arithmetic";
-import { isAfter } from "@/shared/domain/date/utils/compare";
+import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
+import { isAfter } from "#api/shared/domain/date/utils/compare";
 
 /** 일반 취소 시 clock skew 대응 grace period(60초) */
 const GRACE_PERIOD_MS = 60_000;

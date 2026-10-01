@@ -1,7 +1,7 @@
 import {
 	TimezoneReminderJobName,
 	TimezoneReminderRuntimeJobSchema,
-} from "./timezone-reminder-queue.constants";
+} from "./timezone-reminder-queue.constants.js";
 
 describe("TimezoneReminderRuntimeJobSchema", () => {
 	it("리마인더 잡의 이름과 payload 상관관계를 검증한다", () => {

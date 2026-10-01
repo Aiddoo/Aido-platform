@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { DOMAIN_EVENT_PUBLISHER } from "@/shared/application/ports";
+import { DOMAIN_EVENT_PUBLISHER } from "#api/shared/application/ports/index";
 
-import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher";
+import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher.js";
 
 /**
  * 도메인 이벤트 발행 모듈 (@Global)

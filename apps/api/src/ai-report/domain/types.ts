@@ -1,6 +1,6 @@
 import type { CategoryBreakdownItem, DayPatternItem, TimePatternItem } from "@aido/validators";
 
-import type { SupportedLocale } from "@/shared/domain/locale";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 /**
  * 리포트 타입 — Prisma ReportType과 동일한 리터럴(도메인은 generated를 참조하지 않는다)

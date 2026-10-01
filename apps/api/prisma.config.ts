@@ -27,7 +27,7 @@ assertDatabaseUrlIsSafe(DATABASE_URL);
 
 export default defineConfig({
 	earlyAccess: true,
-	schema: path.resolve(__dirname, "prisma/schema.prisma"),
+	schema: path.resolve(import.meta.dirname, "prisma/schema.prisma"),
 	datasource: {
 		url: DATABASE_URL,
 	},

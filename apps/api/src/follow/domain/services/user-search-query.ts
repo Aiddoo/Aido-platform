@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /**
  * 정규화된 사용자 검색어.

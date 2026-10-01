@@ -1,19 +1,22 @@
+import { TestBed } from "@suites/unit";
 /**
  * SendFriendRequestUseCase 단위 테스트 (Suites solitary + 포트 모킹).
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { Friendship } from "../../../domain/entities/friendship.aggregate";
-import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../../ports/follow-notifier.port";
-import { FOLLOW_REPOSITORY, type FollowRepositoryPort } from "../../ports/follow.repository.port";
-import { FollowReader } from "../../services/follow.reader";
-import { FriendshipEffects } from "../../services/friendship-effects.service";
-import { SendFriendRequestUseCase } from "./send-friend-request.use-case";
+import { Friendship } from "../../../domain/entities/friendship.aggregate.js";
+import { FOLLOW_NOTIFIER, type FollowNotifierPort } from "../../ports/follow-notifier.port.js";
+import {
+	FOLLOW_REPOSITORY,
+	type FollowRepositoryPort,
+} from "../../ports/follow.repository.port.js";
+import { FollowReader } from "../../services/follow.reader.js";
+import { FriendshipEffects } from "../../services/friendship-effects.service.js";
+import { SendFriendRequestUseCase } from "./send-friend-request.use-case.js";
 
 const friendship = (
 	followerId: string,

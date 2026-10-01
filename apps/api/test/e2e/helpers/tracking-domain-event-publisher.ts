@@ -1,8 +1,8 @@
 import { Logger } from "@nestjs/common";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
 
-import type { DomainEventPublisherPort } from "@/shared/application/ports";
-import type { DomainEvent } from "@/shared/domain/aggregate-root";
+import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
+import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 
 /**
  * E2E 전용 도메인 이벤트 퍼블리셔 (추적 데코레이터)

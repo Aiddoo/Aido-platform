@@ -1,10 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { toCompactDateString } from "@/shared/domain/date/utils/format";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
-import { readJson } from "@/shared/infrastructure/http/read-json";
+import { toCompactDateString } from "#api/shared/domain/date/utils/format";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { readJson } from "#api/shared/infrastructure/http/read-json";
 
-import type { SunTime, SunTimeProvider } from "../../application/ports/sun-time-provider.port";
+import type { SunTime, SunTimeProvider } from "../../application/ports/sun-time-provider.port.js";
 
 interface SunTimeResponse {
 	response?: {

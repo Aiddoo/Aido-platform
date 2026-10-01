@@ -1,16 +1,16 @@
+import { TestBed } from "@suites/unit";
 /**
  * GetAiUsageUseCase 단위 테스트
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
 
 import {
 	AI_USAGE_REPOSITORY,
 	type AiUsageRepositoryPort,
-} from "../../ports/ai-usage.repository.port";
-import { GetAiUsageUseCase } from "./get-ai-usage.use-case";
+} from "../../ports/ai-usage.repository.port.js";
+import { GetAiUsageUseCase } from "./get-ai-usage.use-case.js";
 
 describe("GetAiUsageUseCase — AI 사용량 조회 use-case", () => {
 	let useCase: GetAiUsageUseCase;

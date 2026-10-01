@@ -18,13 +18,13 @@
 
 ## 개요
 
-| 항목          | 설명                                                    |
-| ------------- | ------------------------------------------------------- |
-| **파일 위치** | `test/e2e/`                                             |
-| **명명 규칙** | `{도메인}.e2e-spec.ts`                                  |
-| **핵심 도구** | `createE2eApp()` + `E2eHelpers` + `supertest`           |
-| **환경**      | Jest 실행당 Testcontainers PostgreSQL 1개 + FakeService |
-| **목적**      | 사용자 관점에서 HTTP API 전체 흐름 검증                 |
+| 항목          | 설명                                                      |
+| ------------- | --------------------------------------------------------- |
+| **파일 위치** | `test/e2e/`                                               |
+| **명명 규칙** | `{도메인}.e2e-spec.ts`                                    |
+| **핵심 도구** | `createE2eApp()` + `E2eHelpers` + `supertest`             |
+| **환경**      | Vitest 실행당 Testcontainers PostgreSQL 1개 + FakeService |
+| **목적**      | 사용자 관점에서 HTTP API 전체 흐름 검증                   |
 
 ---
 
@@ -77,12 +77,18 @@ test/
 - `FakeEmailService` / OAuth provider registry / `FakeOAuthTokenVerifierService` 주입
 - `PinoLogger` → `FakeLogger` 교체
 - 운영과 동일한 전역 `/v1` 프리픽스 (`/health` 제외)
-- `ZodValidationPipe` 설정
+- `StandardSchemaValidationPipe` 설정
+- suite 동안 유지되는 HTTP 서버를 `127.0.0.1`의 임의 포트에 바인딩하고 teardown에서 닫는다. 요청마다 임시 서버를 재시작하지 않는다
 - `E2eHelpers` 인스턴스 생성
 - DB, cache, Redis mock, 공용 fake를 한 번에 초기화하는 `ctx.reset()` 제공
 
 ```typescript
-import { createE2eApp, destroyE2eApp, type E2eTestContext, type VerifiedUser } from './helpers';
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+  type VerifiedUser,
+} from './helpers/index.js';
 
 describe('Todo E2E', () => {
   let ctx: E2eTestContext;
@@ -367,7 +373,7 @@ ctx.fakeOAuthTokenVerifierService.clear();
 {
   "success": true,
   "data": { ... },
-  "timestamp": "2026-02-14T10:30:00.000Z"
+  "timestamp": 1771065000000
 }
 ```
 
@@ -380,7 +386,7 @@ ctx.fakeOAuthTokenVerifierService.clear();
     "code": "AUTH_0101",
     "message": "이미 등록된 이메일입니다."
   },
-  "timestamp": "2026-02-14T10:30:00.000Z"
+  "timestamp": 1771065000000
 }
 ```
 
@@ -445,4 +451,4 @@ pnpm --filter @aido/api test:e2e -- -t "회원가입"
 ---
 
 **문서 버전**: 4.0.0
-**최종 수정일**: 2026-04-05
+**최종 수정일**: 2026-10-01

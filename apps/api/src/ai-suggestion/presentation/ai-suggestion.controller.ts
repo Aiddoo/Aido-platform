@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { Timezone } from "@/shared/presentation/decorators";
+import { Timezone } from "#api/shared/presentation/decorators/index";
 import {
 	ApiDoc,
 	ApiForbiddenError,
@@ -10,18 +10,18 @@ import {
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
-} from "@/shared/presentation/swagger";
+} from "#api/shared/presentation/swagger/index";
 
-import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators";
-import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case";
-import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case";
-import { AiSuggestionMapper } from "./ai-suggestion.mapper";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
+import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pending-suggestions/get-pending-suggestions.use-case.js";
+import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.js";
+import { AiSuggestionMapper } from "./ai-suggestion.mapper.js";
 import {
 	SuggestionActionDto,
 	SuggestionActionResponseDto,
 	SuggestionIdParamDto,
 	SuggestionListResponseDto,
-} from "./dtos";
+} from "./dtos/index.js";
 
 /**
  * AI 제안 API 컨트롤러
@@ -256,8 +256,8 @@ export class AiSuggestionController {
 	@ApiNotFoundError(ErrorCode.AI_1305)
 	async handleSuggestion(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: SuggestionIdParamDto,
-		@Body() body: SuggestionActionDto,
+		@Param({ schema: SuggestionIdParamDto }) params: SuggestionIdParamDto,
+		@Body({ schema: SuggestionActionDto }) body: SuggestionActionDto,
 		@Timezone() tz: string,
 	): Promise<SuggestionActionResponseDto> {
 		const result = await this.handleSuggestionActionUseCase.execute({

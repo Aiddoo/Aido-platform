@@ -11,11 +11,11 @@
  */
 
 import { JwtService } from "@nestjs/jwt";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
 
-import { TokenService } from "@/auth/infrastructure/adapters/token.service";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { TokenService } from "#api/auth/infrastructure/adapters/token.service";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 describe("TokenService — 토큰 서비스", () => {
 	let service: TokenService;

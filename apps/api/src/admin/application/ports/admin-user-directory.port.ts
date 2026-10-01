@@ -1,4 +1,4 @@
-import type { BroadcastTargetFilter } from "../../domain/broadcast-message";
+import type { BroadcastTargetFilter } from "../../domain/broadcast-message.js";
 
 /** AdminUserDirectoryPort DI 토큰 */
 export const ADMIN_USER_DIRECTORY = Symbol("ADMIN_USER_DIRECTORY");

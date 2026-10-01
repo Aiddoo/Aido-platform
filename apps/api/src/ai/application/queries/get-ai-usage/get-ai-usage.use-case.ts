@@ -1,16 +1,22 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { EntitlementService, Feature } from "@/shared/application/entitlement/entitlement.service";
-import { now } from "@/shared/domain/date/utils/core";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
+import {
+	EntitlementService,
+	Feature,
+} from "#api/shared/application/entitlement/entitlement.service";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { isNewBillingMonth, nextBillingResetIso } from "../../../domain/services/ai-usage-period";
-import { AiUsage } from "../../../domain/value-objects/ai-usage.vo";
+import {
+	isNewBillingMonth,
+	nextBillingResetIso,
+} from "../../../domain/services/ai-usage-period.js";
+import { AiUsage } from "../../../domain/value-objects/ai-usage.vo.js";
 import {
 	AI_USAGE_REPOSITORY,
 	type AiUsageRepositoryPort,
-} from "../../ports/ai-usage.repository.port";
+} from "../../ports/ai-usage.repository.port.js";
 
 /**
  * 현재 사용자의 월간 AI 사용량 조회 입력.

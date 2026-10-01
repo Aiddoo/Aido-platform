@@ -11,21 +11,21 @@
  * ```
  */
 
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
+import type { Mocked } from "vitest";
 
-import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "@/auth/application/queries";
+import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "#api/auth/application/queries/index";
 import {
 	DeleteAccountUseCase,
 	UnlinkOAuthAccountUseCase,
 	UpdateProfileUseCase,
-} from "@/auth/application/use-cases";
-import { AuthMapper } from "@/auth/presentation/auth.mapper";
-import type { CurrentUserPayload } from "@/auth/presentation/decorators";
+} from "#api/auth/application/use-cases/index";
+import { AuthMapper } from "#api/auth/presentation/auth.mapper";
+import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
-import type { DeleteAccountDto, UpdateProfileDto } from "../dtos";
-import { AccountController } from "./account.controller";
+import type { DeleteAccountDto, UpdateProfileDto } from "../dtos/index.js";
+import { AccountController } from "./account.controller.js";
 
 describe("AccountController — 계정 컨트롤러", () => {
 	let controller: AccountController;

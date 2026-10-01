@@ -1,8 +1,8 @@
-import type { TodoCommentRecord, TodoConversationRecord } from "../types";
+import type { TodoCommentRecord, TodoConversationRecord } from "../types.js";
 import {
 	toTodoConversationAncestorItems,
 	toTodoConversationItems,
-} from "./todo-conversation.presenter";
+} from "./todo-conversation.presenter.js";
 
 const VIEWER_ID = "viewer";
 const ROOT_ID = "root";

@@ -1,15 +1,15 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { NotificationBuilder } from "@test/builders";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import { Prisma } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { NotificationBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import type { CreateNotificationData } from "../../application/ports/notification-data";
-import { DuplicateNotificationError } from "../../application/ports/notification.repository.port";
-import { PrismaNotificationRepository } from "./prisma-notification.repository";
+import type { CreateNotificationData } from "../../application/ports/notification-data.js";
+import { DuplicateNotificationError } from "../../application/ports/notification.repository.port.js";
+import { PrismaNotificationRepository } from "./prisma-notification.repository.js";
 
 describe("PrismaNotificationRepository", () => {
 	let repository: PrismaNotificationRepository;

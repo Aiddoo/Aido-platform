@@ -1,3 +1,5 @@
+import { ConfigService } from "@nestjs/config";
+import { Test, type TestingModule } from "@nestjs/testing";
 /**
  * GeminiAiAdapter 프로바이더 단위 테스트
  *
@@ -9,38 +11,29 @@
  * pnpm --filter @aido/api test gemini.provider
  * ```
  */
-import { ConfigService } from "@nestjs/config";
-import { Test, type TestingModule } from "@nestjs/testing";
+import { APICallError } from "ai";
+import { vi } from "vitest";
 import { z } from "zod";
 
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { BusinessException } from "#api/shared/application/exceptions/business-exception.service";
 
-import { GeminiAiAdapter } from "./gemini-ai.adapter";
+import { GeminiAiAdapter } from "./gemini-ai.adapter.js";
 
-// Vercel AI SDK mock
-jest.mock("ai", () => {
-	class _MockAPICallError extends Error {
-		readonly statusCode: number;
-		constructor(message: string, statusCode: number) {
-			super(message);
-			this.statusCode = statusCode;
-		}
-		static isInstance(error: unknown): error is _MockAPICallError {
-			return error instanceof _MockAPICallError;
-		}
-	}
-	return {
-		generateObject: jest.fn(),
-		APICallError: _MockAPICallError,
-	};
+const { generateObject } = vi.hoisted(() => ({
+	generateObject: vi.fn<(options: unknown) => Promise<unknown>>(),
+}));
+
+vi.mock("ai", async (importOriginal) => {
+	const sdk = await importOriginal<typeof import("ai")>();
+	return { ...sdk, generateObject };
 });
 
-jest.mock("@ai-sdk/google", () => ({
-	createGoogleGenerativeAI: jest.fn(() => jest.fn(() => "mock-model")),
+vi.mock("@ai-sdk/google", () => ({
+	createGoogleGenerativeAI: vi.fn(() => vi.fn(() => "mock-model")),
 }));
 
 const mockConfigService = {
-	get: jest.fn(),
+	get: vi.fn(),
 };
 
 async function createProvider(): Promise<GeminiAiAdapter> {
@@ -110,7 +103,6 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 
 		it("Vercel AI SDK generateObject를 호출한다", async () => {
 			// Given - API 키가 설정되고 generateObject가 결과 반환
-			const { generateObject } = require("ai");
 			generateObject.mockResolvedValue({
 				object: {
 					title: "테스트 할 일",
@@ -155,7 +147,6 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 
 		it("기본 maxOutputTokens만 적용하고 Gemini 3 권장 sampling 기본값을 유지한다", async () => {
 			// Given - API 키가 설정됨
-			const { generateObject } = require("ai");
 			generateObject.mockResolvedValue({
 				object: { title: "테스트", startDate: "2025-01-26", isAllDay: true },
 				usage: { inputTokens: 100, outputTokens: 50 },
@@ -181,7 +172,6 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 
 		it("generateObject 에러를 전파한다", async () => {
 			// Given - generateObject가 에러를 던짐
-			const { generateObject } = require("ai");
 			generateObject.mockRejectedValue(new Error("API error"));
 
 			mockConfigService.get.mockReturnValue("test-api-key");
@@ -198,8 +188,14 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 
 		it("429 에러 시 aiRateLimitExceeded BusinessException을 던진다", async () => {
 			// Given - generateObject가 429 에러를 던짐
-			const { generateObject, APICallError } = require("ai");
-			generateObject.mockRejectedValue(new APICallError("Rate limit exceeded", 429));
+			generateObject.mockRejectedValue(
+				new APICallError({
+					message: "Rate limit exceeded",
+					url: "https://test.invalid",
+					requestBodyValues: {},
+					statusCode: 429,
+				}),
+			);
 
 			mockConfigService.get.mockReturnValue("test-api-key");
 			const provider = await createProvider();
@@ -215,8 +211,14 @@ describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
 
 		it("429가 아닌 APICallError는 그대로 전파한다", async () => {
 			// Given - generateObject가 500 에러를 던짐
-			const { generateObject, APICallError } = require("ai");
-			generateObject.mockRejectedValue(new APICallError("Internal server error", 500));
+			generateObject.mockRejectedValue(
+				new APICallError({
+					message: "Internal server error",
+					url: "https://test.invalid",
+					requestBodyValues: {},
+					statusCode: 500,
+				}),
+			);
 
 			mockConfigService.get.mockReturnValue("test-api-key");
 			const provider = await createProvider();

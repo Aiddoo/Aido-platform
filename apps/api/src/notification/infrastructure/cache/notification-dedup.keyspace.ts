@@ -1,6 +1,6 @@
-import { cacheKey } from "@/shared/infrastructure/cache/keyspace/cache-key";
+import { cacheKey } from "#api/shared/infrastructure/cache/keyspace/cache-key";
 
-import type { NotificationType } from "../../domain/types/notification-type";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 
 export const NOTIFICATION_DEDUP_SENTINEL = "__init__";
 export const NOTIFICATION_DEDUP_TTL_MS = 25 * 60 * 60_000;

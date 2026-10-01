@@ -1,4 +1,4 @@
-import type { Memo } from "@/generated/prisma/client";
+import type { Memo } from "#api/generated/prisma/client";
 
 export class MemoBuilder {
 	private data: Memo;

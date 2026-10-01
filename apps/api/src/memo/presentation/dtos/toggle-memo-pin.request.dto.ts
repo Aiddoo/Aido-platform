@@ -1,4 +1,5 @@
 import { toggleMemoPinSchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class ToggleMemoPinDto extends createZodDto(toggleMemoPinSchema) {}
+export const ToggleMemoPinDto = toggleMemoPinSchema.meta({ id: "ToggleMemoPinDto" });
+export type ToggleMemoPinDto = z.infer<typeof ToggleMemoPinDto>;

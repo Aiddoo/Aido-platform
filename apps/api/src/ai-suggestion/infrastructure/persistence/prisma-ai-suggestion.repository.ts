@@ -4,16 +4,16 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
 import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 
-import type * as PrismaModels from "@/generated/prisma/client";
-import { now } from "@/shared/domain/date/utils/core";
-import { toDateString } from "@/shared/domain/date/utils/format";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type * as PrismaModels from "#api/generated/prisma/client";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	AiSuggestionRepositoryPort,
 	CreateSuggestionInput,
-} from "../../application/ports/ai-suggestion.repository.port";
-import { Suggestion, type SuggestionStatus } from "../../domain/entities/suggestion.aggregate";
+} from "../../application/ports/ai-suggestion.repository.port.js";
+import { Suggestion, type SuggestionStatus } from "../../domain/entities/suggestion.aggregate.js";
 import type {
 	CategoryCompletionRate,
 	DayCompletionRate,
@@ -21,7 +21,7 @@ import type {
 	TimeCompletionRate,
 	TodoSummaryForAnalysis,
 	UserStreakInfo,
-} from "../../domain/types";
+} from "../../domain/types.js";
 
 /**
  * AiSuggestionRepositoryPort의 Prisma 어댑터.

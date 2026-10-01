@@ -1,4 +1,4 @@
-import type { EmailMessage } from "../../domain/value-objects/email-message.vo";
+import type { EmailMessage } from "../../domain/value-objects/email-message.vo.js";
 
 /** EmailSenderPort DI 토큰 */
 export const EMAIL_SENDER = Symbol("EMAIL_SENDER");

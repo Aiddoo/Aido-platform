@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/errors";
 
-import { ApplicationException } from "@/shared/domain";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import type { TodoCommentReaderPort } from "./ports/todo-comment.reader.port";
+import type { TodoCommentReaderPort } from "./ports/todo-comment.reader.port.js";
 
 export async function assertTodoCommentAccess(
 	reader: TodoCommentReaderPort,

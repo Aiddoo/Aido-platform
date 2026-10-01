@@ -1,4 +1,4 @@
-import type { InquirySubmission } from "../../domain/services/inquiry-submission";
+import type { InquirySubmission } from "../../domain/services/inquiry-submission.js";
 
 /** InquiryMailerPort DI 토큰 */
 export const INQUIRY_MAILER = Symbol("INQUIRY_MAILER");

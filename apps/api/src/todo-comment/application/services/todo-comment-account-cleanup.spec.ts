@@ -1,28 +1,29 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { MUTATION_LOCK, type MutationLockPort } from "@/shared/application/ports";
+import { MUTATION_LOCK, type MutationLockPort } from "#api/shared/application/ports/index";
 
 import {
 	TODO_COMMENT_ACCOUNT_CLEANUP_STORE,
 	type TodoCommentAccountCleanupStorePort,
-} from "../ports/todo-comment-account-cleanup.store.port";
-import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../ports/todo-view-cache.port";
-import { TodoCommentAccountCleanup } from "./todo-comment-account-cleanup";
+} from "../ports/todo-comment-account-cleanup.store.port.js";
+import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../ports/todo-view-cache.port.js";
+import { TodoCommentAccountCleanup } from "./todo-comment-account-cleanup.js";
 
 function createCleanupStoreMock(): TodoCommentAccountCleanupStorePort {
 	return {
-		plan: jest.fn(),
-		cleanup: jest.fn(),
+		plan: vi.fn(),
+		cleanup: vi.fn(),
 	};
 }
 
 function createTodoViewCacheMock(): TodoViewCachePort {
-	return { invalidateForTodo: jest.fn() };
+	return { invalidateForTodo: vi.fn() };
 }
 
 function createMutationLockMock(): MutationLockPort {
-	return { acquire: jest.fn() };
+	return { acquire: vi.fn() };
 }
 
 describe("TodoCommentAccountCleanup", () => {

@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * TimezoneReminderProcessor 잡/프로세서 단위 테스트
  *
@@ -10,19 +11,19 @@
  * pnpm --filter @aido/api test timezone-reminder-queue.processor
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
-import { TEST_CUID } from "@test/fixtures";
-import { createMockJob } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator";
+import { TEST_CUID } from "#test/fixtures/index";
+import { createMockJob } from "#test/mocks/index";
+
+import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator.js";
 import {
 	type ReminderHourChangedJobData,
 	type SocialDigestJobData,
 	type SweepRemindersJobData,
 	TimezoneReminderJobName,
-} from "./timezone-reminder-queue.constants";
-import { TimezoneReminderProcessor } from "./timezone-reminder-queue.processor";
+} from "./timezone-reminder-queue.constants.js";
+import { TimezoneReminderProcessor } from "./timezone-reminder-queue.processor.js";
 
 describe("TimezoneReminderProcessor — 타임존 리마인더 프로세서", () => {
 	let processor: TimezoneReminderProcessor;

@@ -1,3 +1,4 @@
+import { TestBed } from "@suites/unit";
 /**
  * WeatherEveningStrategy 단위 테스트
  *
@@ -9,21 +10,20 @@
  * pnpm --filter @aido/api test weather-evening.strategy.spec
  * ```
  */
-
-import type { Mocked } from "@suites/doubles.jest";
-import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { NotificationHistoryReader, NotificationPublisher } from "@/notification";
-import type { WeatherForecast } from "@/weather";
-import { WeatherForecastAccess } from "@/weather";
+import { NotificationHistoryReader, NotificationPublisher } from "#api/notification/index";
+import type { WeatherForecast } from "#api/weather/index";
+import { WeatherForecastAccess } from "#api/weather/index";
 
-import type { TimezoneContext } from "../../domain/services/timezone-context";
+import type { TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
 	WEATHER_REMINDER_READER,
 	type WeatherReminderReaderPort,
-} from "../ports/weather-reminder-reader.port";
-import { WeatherEveningStrategy } from "./weather-evening.strategy";
+} from "../ports/weather-reminder-reader.port.js";
+import { WeatherEveningStrategy } from "./weather-evening.strategy.js";
 
 const TZ = "Asia/Seoul";
 
@@ -59,7 +59,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 	let weatherForecastAccess: Mocked<WeatherForecastAccess>;
 
 	beforeEach(async () => {
-		jest.spyOn(Math, "random").mockReturnValue(0);
+		vi.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } = await TestBed.solitary(WeatherEveningStrategy).compile();
 
@@ -76,7 +76,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("대상 유저가 없으면 sent: 0을 반환해야 한다", async () => {

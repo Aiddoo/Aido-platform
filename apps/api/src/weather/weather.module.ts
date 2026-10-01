@@ -1,22 +1,22 @@
 import { Module } from "@nestjs/common";
 
-import { WeatherForecastAccess } from "./application/access/weather-forecast.access";
-import { AIR_QUALITY_PROVIDER } from "./application/ports/air-quality-provider.port";
-import { LIFESTYLE_INDEX_PROVIDER } from "./application/ports/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER } from "./application/ports/sun-time-provider.port";
-import { WEATHER_CACHE } from "./application/ports/weather-cache.port";
-import { WEATHER_LOCATION_REPOSITORY } from "./application/ports/weather-location.repository.port";
-import { WEATHER_PROVIDER } from "./application/ports/weather-provider.port";
-import { GetForecastsByGridBatchUseCase } from "./application/queries/get-forecasts-by-grid-batch/get-forecasts-by-grid-batch.use-case";
-import { WeatherForecastReader } from "./application/services/weather-forecast.reader";
-import { WEATHER_PROVIDERS } from "./application/weather.providers";
-import { AirkoreaProvider } from "./infrastructure/adapters/airkorea.provider";
-import { KasiSunTimeProvider } from "./infrastructure/adapters/kasi-sun-time.provider";
-import { KmaLifestyleIndexProvider } from "./infrastructure/adapters/kma-lifestyle-index.provider";
-import { KmaWeatherProvider } from "./infrastructure/adapters/kma-weather.provider";
-import { WeatherCacheAdapter } from "./infrastructure/adapters/weather-cache.adapter";
-import { PrismaWeatherLocationRepository } from "./infrastructure/persistence/prisma-weather-location.repository";
-import { WeatherController } from "./presentation/weather.controller";
+import { WeatherForecastAccess } from "./application/access/weather-forecast.access.js";
+import { AIR_QUALITY_PROVIDER } from "./application/ports/air-quality-provider.port.js";
+import { LIFESTYLE_INDEX_PROVIDER } from "./application/ports/lifestyle-index-provider.port.js";
+import { SUN_TIME_PROVIDER } from "./application/ports/sun-time-provider.port.js";
+import { WEATHER_CACHE } from "./application/ports/weather-cache.port.js";
+import { WEATHER_LOCATION_REPOSITORY } from "./application/ports/weather-location.repository.port.js";
+import { WEATHER_PROVIDER } from "./application/ports/weather-provider.port.js";
+import { GetForecastsByGridBatchUseCase } from "./application/queries/get-forecasts-by-grid-batch/get-forecasts-by-grid-batch.use-case.js";
+import { WeatherForecastReader } from "./application/services/weather-forecast.reader.js";
+import { WEATHER_PROVIDERS } from "./application/weather.providers.js";
+import { AirkoreaProvider } from "./infrastructure/adapters/airkorea.provider.js";
+import { KasiSunTimeProvider } from "./infrastructure/adapters/kasi-sun-time.provider.js";
+import { KmaLifestyleIndexProvider } from "./infrastructure/adapters/kma-lifestyle-index.provider.js";
+import { KmaWeatherProvider } from "./infrastructure/adapters/kma-weather.provider.js";
+import { WeatherCacheAdapter } from "./infrastructure/adapters/weather-cache.adapter.js";
+import { PrismaWeatherLocationRepository } from "./infrastructure/persistence/prisma-weather-location.repository.js";
+import { WeatherController } from "./presentation/weather.controller.js";
 
 /**
  * 날씨 모듈 (클린아키텍처)

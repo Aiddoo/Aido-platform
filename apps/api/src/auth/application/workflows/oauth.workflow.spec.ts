@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/errors";
 /**
  * OAuthWorkflow 테스트 (Suites 패턴)
  *
@@ -8,32 +9,31 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-
-import { ErrorCode } from "@aido/errors";
 import { Logger } from "@nestjs/common";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { AccountBuilder, UserBuilder } from "@test/builders";
-import { asDep, asMock, mockOf } from "@test/mocks";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
 	type OAuthIdentityProvider,
 	type OAuthIdentityProviderRegistry,
-} from "@/auth/application/ports/oauth-identity-provider.port";
-import { LOGIN_FAILURE_REASON, SECURITY_EVENT } from "@/auth/domain/constants/auth.constants";
-import type { AccountProvider } from "@/auth/domain/types";
+} from "#api/auth/application/ports/oauth-identity-provider.port";
+import { LOGIN_FAILURE_REASON, SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
+import type { AccountProvider } from "#api/auth/domain/types";
 import {
 	AppleOAuthProvider,
 	GoogleOAuthProvider,
 	KakaoOAuthProvider,
 	NaverOAuthProvider,
-} from "@/auth/infrastructure/oauth/adapters";
-import { OAuthTokenVerifierService } from "@/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
-import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+} from "#api/auth/infrastructure/oauth/adapters/index";
+import { OAuthTokenVerifierService } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { AccountBuilder, UserBuilder } from "#test/builders/index";
+import { asDep, asMock, mockOf } from "#test/mocks/index";
 
 import {
 	AUTH_CACHE,
@@ -41,7 +41,7 @@ import {
 	AUTH_RUNTIME_CONFIG,
 	type AuthCachePort,
 	type AuthRegistrationNotifierPort,
-} from "../ports/auth-collaboration.port";
+} from "../ports/auth-collaboration.port.js";
 import {
 	AUTH_ACCOUNT_REPOSITORY,
 	AUTH_LOGIN_ATTEMPT_REPOSITORY,
@@ -54,13 +54,13 @@ import {
 	AuthPersistenceConflict,
 	type AuthSecurityLogRepositoryPort,
 	type AuthUserRepositoryPort,
-} from "../ports/auth-persistence.port";
-import type { RetentionEnrollerPort } from "../ports/retention-enroller.port";
-import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port";
-import { SessionService } from "../services/session.service";
-import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case";
-import { OAuthWorkflow } from "./oauth.workflow";
+} from "../ports/auth-persistence.port.js";
+import type { RetentionEnrollerPort } from "../ports/retention-enroller.port.js";
+import type { UserProvisioningSeederPort } from "../ports/user-provisioning-seeder.port.js";
+import { SessionService } from "../services/session.service.js";
+import { IssueLoginUseCase } from "../use-cases/issue-login/issue-login.use-case.js";
+import { ProvisionUserUseCase } from "../use-cases/provision-user/provision-user.use-case.js";
+import { OAuthWorkflow } from "./oauth.workflow.js";
 
 /** Apple 토큰 검증 결과 프로필 */
 interface AppleVerifiedProfile {
@@ -86,8 +86,8 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 	let securityLogRepo: Mocked<AuthSecurityLogRepositoryPort>;
 	let loginAttemptRepo: Mocked<AuthLoginAttemptRepositoryPort>;
 	let oauthStateRepo: Mocked<AuthOAuthStateRepositoryPort>;
-	let sessionService: jest.Mocked<SessionService>;
-	let tokenVerifier: jest.Mocked<OAuthTokenVerifierService>;
+	let sessionService: Mocked<SessionService>;
+	let tokenVerifier: Mocked<OAuthTokenVerifierService>;
 	let configService: Mocked<TypedConfigService>;
 	let adminEventNotifier: Mocked<AuthRegistrationNotifierPort>;
 	let cacheService: Mocked<AuthCachePort>;
@@ -118,7 +118,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		// SessionService는 OAuthWorkflow 직접 의존이 아니라 IssueLoginUseCase의 의존이므로
 		// 발급 수렴 유스케이스에 배선할 독립 mock으로 구성한다
 		sessionService = mockOf<SessionService>({
-			createSessionWithTokens: jest.fn(),
+			createSessionWithTokens: vi.fn(),
 		});
 		configService = unitRef.get(AUTH_RUNTIME_CONFIG);
 		adminEventNotifier = unitRef.get(AUTH_REGISTRATION_NOTIFIER);
@@ -128,7 +128,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		// 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
 		const issueLogin = unitRef.get(IssueLoginUseCase);
 		const realIssueLogin = new IssueLoginUseCase(
-			asDep(sessionService),
+			asDep<SessionService>(sessionService),
 			asDep(loginAttemptRepo),
 			asDep(securityLogRepo),
 			asDep(userRepo),
@@ -140,12 +140,12 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		// 기본값 시딩은 OAuthWorkflow 직접 의존이 아니므로 시더 포트를 독립 mock으로 구성한다.
 		const provisionUser = unitRef.get(ProvisionUserUseCase);
 		const seederStub = mockOf<UserProvisioningSeederPort>({
-			seedDefaultSettings: jest.fn(),
-			seedDefaultCategories: jest.fn(),
+			seedDefaultSettings: vi.fn(),
+			seedDefaultCategories: vi.fn(),
 		});
 		const retentionStub = mockOf<RetentionEnrollerPort>({
-			enrollNewUser: jest.fn(),
-			activateNewUser: jest.fn(),
+			enrollNewUser: vi.fn(),
+			activateNewUser: vi.fn(),
 		});
 		const realProvisionUser = new ProvisionUserUseCase(
 			asDep(userRepo),
@@ -162,11 +162,11 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		// (프로덕션 auth.module의 useFactory와 동일 구성을 spec으로 재현 —
 		//  OAuthWorkflow는 검증기를 직접 주입받지 않고 registry.get으로 전략을 얻는다)
 		tokenVerifier = mockOf<OAuthTokenVerifierService>({
-			verifyToken: jest.fn(),
-			verifyAppleToken: jest.fn(),
-			verifyGoogleToken: jest.fn(),
-			verifyKakaoToken: jest.fn(),
-			verifyNaverToken: jest.fn(),
+			verifyToken: vi.fn(),
+			verifyAppleToken: vi.fn(),
+			verifyGoogleToken: vi.fn(),
+			verifyKakaoToken: vi.fn(),
+			verifyNaverToken: vi.fn(),
 		});
 
 		const logger = new Logger(OAuthWorkflow.name);
@@ -178,7 +178,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			["NAVER", new NaverOAuthProvider(() => configService.naverOAuth, verifier, logger)],
 		]);
 		const registry = unitRef.get<OAuthIdentityProviderRegistry>(OAUTH_IDENTITY_PROVIDER_REGISTRY);
-		registry.get = jest.fn((p) => realProviders.get(p));
+		registry.get.mockImplementation((provider) => realProviders.get(provider));
 	});
 
 	/**
@@ -254,7 +254,6 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			subscriptionStatus: mockUser.subscriptionStatus,
 			subscriptionExpiresAt: mockUser.subscriptionExpiresAt,
 			createdAt: mockUser.createdAt,
-			lastLoginAt: mockUser.lastLoginAt,
 			profile: { name: "테스트유저", profileImage: null },
 		});
 		uow.run.mockImplementation((work) => work());
@@ -343,8 +342,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
-				asMock(userRepo.createProfile).mockResolvedValue({});
+				asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+					...AccountBuilder.create("user-123").build(),
+				});
+				asMock(userRepo.createProfile).mockResolvedValue(undefined);
 
 				// When
 				const result = await service.handleAppleMobileLogin("valid-id-token", "홍길동");
@@ -386,8 +387,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
-				asMock(userRepo.createProfile).mockResolvedValue({});
+				asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+					...AccountBuilder.create("user-123").build(),
+				});
+				asMock(userRepo.createProfile).mockResolvedValue(undefined);
 
 				// When
 				await service.handleAppleMobileLogin("valid-id-token", "홍길동");
@@ -420,8 +423,10 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(profileWithoutEmail);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
-				asMock(userRepo.createProfile).mockResolvedValue({});
+				asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+					...AccountBuilder.create("user-123").build(),
+				});
+				asMock(userRepo.createProfile).mockResolvedValue(undefined);
 
 				// When
 				const result = await service.handleAppleMobileLogin("valid-id-token");
@@ -449,7 +454,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+				asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+					...AccountBuilder.create("user-123").build(),
+				});
 				asMock(userRepo.findByIdWithProfile).mockResolvedValue({
 					...existingUser,
 					profile: { name: "기존유저", profileImage: null },
@@ -554,7 +561,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		it("새로운 소셜 계정을 연결한다", async () => {
 			// Given
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
-			asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+			asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
 
@@ -607,7 +616,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		it("SecurityLog(OAUTH_LINKED)를 기록한다", async () => {
 			// Given
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
-			asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+			asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
 
@@ -658,7 +669,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
 			accountRepo.findAllByUserId.mockResolvedValue([appleAccount, credentialAccount]);
-			asMock(accountRepo.deleteAccount).mockResolvedValue({});
+			asMock(accountRepo.deleteAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
 
@@ -678,7 +691,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
 			accountRepo.findAllByUserId.mockResolvedValue([appleAccount, credentialAccount]);
-			asMock(accountRepo.deleteAccount).mockResolvedValue({});
+			asMock(accountRepo.deleteAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
 
@@ -824,7 +839,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		beforeEach(() => {
 			// linkAccount 내부에서 사용하는 $transaction mock
 			uow.run.mockImplementation((work) => work());
-			asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+			asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 		});
 
@@ -1221,7 +1238,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
 				// Given
 				oauthStateRepo.findByState.mockResolvedValue(null);
-				global.fetch = jest.fn();
+				global.fetch = vi.fn();
 
 				// When & Then
 				await expect(
@@ -1281,7 +1298,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -1607,7 +1624,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+				asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+					...AccountBuilder.create("user-123").build(),
+				});
 
 				// When
 				const result = await service.handleGoogleMobileLogin(
@@ -1701,7 +1720,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+				asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+					...AccountBuilder.create("user-123").build(),
+				});
 
 				// When
 				const result = await service.handleAppleMobileLogin(
@@ -2019,7 +2040,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
 				// Given
 				oauthStateRepo.findByState.mockResolvedValue(null);
-				global.fetch = jest.fn();
+				global.fetch = vi.fn();
 
 				// When & Then
 				await expect(
@@ -2086,7 +2107,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -2129,7 +2150,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
 				// Given
 				oauthStateRepo.findByState.mockResolvedValue(null);
-				global.fetch = jest.fn();
+				global.fetch = vi.fn();
 
 				// When & Then
 				await expect(
@@ -2196,7 +2217,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -2247,7 +2268,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
 				// Given
 				oauthStateRepo.findByState.mockResolvedValue(null);
-				global.fetch = jest.fn();
+				global.fetch = vi.fn();
 
 				// When & Then
 				await expect(
@@ -2314,7 +2335,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -2384,7 +2405,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
 
 				// Kakao token exchange mock
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -2466,7 +2487,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -2508,7 +2529,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
 
 				// Google token exchange mock (idToken 반환)
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -2565,7 +2586,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
 
 				// Naver token exchange mock (accessToken 반환)
-				global.fetch = jest.fn().mockResolvedValue({
+				global.fetch = vi.fn().mockResolvedValue({
 					ok: true,
 					json: () =>
 						Promise.resolve({
@@ -2640,7 +2661,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 			// linkAccount 내부에서 사용하는 mock
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
-			asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+			asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
 
@@ -2762,7 +2785,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			oauthStateRepo.findByExchangeCode.mockResolvedValue(mockOAuthState);
 			asMock(oauthStateRepo.markAsExchanged).mockResolvedValue({});
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
-			asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+			asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
 
@@ -2838,7 +2863,9 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			oauthStateRepo.findByExchangeCode.mockResolvedValue(mockOAuthState);
 			asMock(oauthStateRepo.markAsExchanged).mockResolvedValue({});
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
-			asMock(accountRepo.createOAuthAccount).mockResolvedValue({});
+			asMock(accountRepo.createOAuthAccount).mockResolvedValue({
+				...AccountBuilder.create("user-123").build(),
+			});
 			asMock(securityLogRepo.create).mockResolvedValue({});
 			uow.run.mockImplementation((work) => work());
 

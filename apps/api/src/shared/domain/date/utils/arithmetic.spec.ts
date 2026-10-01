@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * arithmetic 유틸 테스트
  *
@@ -17,17 +19,17 @@ import {
 	subtractDays,
 	subtractMilliseconds,
 	subtractSeconds,
-} from "./arithmetic";
+} from "./arithmetic.js";
 
 const FROZEN_TIME = new Date("2026-03-03T12:00:00.000Z");
 
 beforeAll(() => {
-	jest.useFakeTimers();
-	jest.setSystemTime(FROZEN_TIME);
+	vi.useFakeTimers();
+	vi.setSystemTime(FROZEN_TIME);
 });
 
 afterAll(() => {
-	jest.useRealTimers();
+	vi.useRealTimers();
 });
 
 describe("arithmetic", () => {

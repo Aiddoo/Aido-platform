@@ -1,15 +1,15 @@
 import { CATEGORY_TYPE_MAP, type NotificationCategory } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import type { CursorPaginatedResponse } from "@/shared/application/pagination";
-import { PaginationService } from "@/shared/application/pagination";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/index";
 
-import type { NotificationRecord } from "../../../domain/records/notification.record";
-import type { NotificationType } from "../../../domain/types/notification-type";
+import type { NotificationRecord } from "../../../domain/records/notification.record.js";
+import type { NotificationType } from "../../../domain/types/notification-type.js";
 import {
 	NOTIFICATION_INBOX_READER,
 	type NotificationInboxReaderPort,
-} from "../../ports/notification-inbox.reader.port";
+} from "../../ports/notification-inbox.reader.port.js";
 
 export interface GetNotificationsInput {
 	userId: string;

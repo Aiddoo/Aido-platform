@@ -1,6 +1,6 @@
 import type { ExpoPushMessage } from "expo-server-sdk";
 
-import type { PushPayload } from "../../application/ports/push-provider.port";
+import type { PushPayload } from "../../application/ports/push-provider.port.js";
 
 export const EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH = 4096;
 

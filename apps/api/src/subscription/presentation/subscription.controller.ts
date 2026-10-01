@@ -3,10 +3,10 @@ import { ApiExcludeEndpoint } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import type { Request } from "express";
 
-import { Public } from "@/auth/presentation/decorators";
+import { Public } from "#api/auth/presentation/decorators/index";
 
-import { HandleWebhookEventUseCase } from "../application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
-import { WebhookSignatureGuard } from "../infrastructure/guards/webhook-signature.guard";
+import { HandleWebhookEventUseCase } from "../application/use-cases/handle-webhook-event/handle-webhook-event.use-case.js";
+import { WebhookSignatureGuard } from "../infrastructure/guards/webhook-signature.guard.js";
 
 /**
  * RevenueCat Webhook 컨트롤러

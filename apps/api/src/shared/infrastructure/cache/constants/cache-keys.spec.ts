@@ -9,7 +9,7 @@
  * pnpm --filter @aido/api test cache-keys
  * ```
  */
-import { CacheKeys } from "./cache-keys";
+import { CacheKeys } from "./cache-keys.js";
 
 describe("CacheKeys — 캐시 키", () => {
 	describe("TTL 상수", () => {

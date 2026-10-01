@@ -1,5 +1,5 @@
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { isSameDay } from "@/shared/domain/date/utils/compare";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { isSameDay } from "#api/shared/domain/date/utils/compare";
 
 /** 스트릭 지속 상태(영속 대상) */
 export interface StreakState {

@@ -12,7 +12,7 @@ import type {
 	UserProfile,
 	UserRole,
 	UserStatus,
-} from "@/generated/prisma/client";
+} from "#api/generated/prisma/client";
 
 let userCounter = 0;
 

@@ -10,14 +10,15 @@ import type {
 	UpdateQueueOptions,
 	WorkOptions,
 } from "pg-boss";
+import { vi, type Mock } from "vitest";
 
-import type { EnqueueJobOptions, JobData } from "@/shared/application/ports/job-runtime.port";
+import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
 
 import {
 	LazyPgBossClient,
 	type PgBossClient,
 	PgBossJobRuntimeAdapter,
-} from "./pg-boss-job-runtime.adapter";
+} from "./pg-boss-job-runtime.adapter.js";
 
 const QUEUE = "document-generation";
 const DEAD_LETTER_QUEUE = "document-generation-dead-letter";
@@ -186,12 +187,12 @@ function job(overrides: Partial<JobWithMetadata<JobData>> = {}): JobWithMetadata
 
 describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	let boss: FakePgBossClient;
-	let queryRawUnsafe: jest.Mock;
+	let queryRawUnsafe: Mock;
 	let runtime: PgBossJobRuntimeAdapter;
 
 	beforeEach(() => {
 		boss = new FakePgBossClient();
-		queryRawUnsafe = jest.fn().mockResolvedValue([]);
+		queryRawUnsafe = vi.fn().mockResolvedValue([]);
 		runtime = new PgBossJobRuntimeAdapter(
 			boss,
 			{ tx: { $queryRawUnsafe: queryRawUnsafe } },
@@ -252,7 +253,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	});
 
 	it("DLQ worker가 enqueue보다 먼저 등록돼도 typed retry policy로 수렴한다", async () => {
-		await runtime.work(DEAD_LETTER_QUEUE, jest.fn().mockResolvedValue(undefined), {
+		await runtime.work(DEAD_LETTER_QUEUE, vi.fn().mockResolvedValue(undefined), {
 			teamSize: 1,
 			pollingIntervalSeconds: 2,
 			queuePolicy: DEAD_LETTER_JOB_POLICY,
@@ -313,7 +314,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	});
 
 	it("worker batch를 vendor-neutral envelope로 변환한다", async () => {
-		const handler = jest.fn().mockResolvedValue(undefined);
+		const handler = vi.fn().mockResolvedValue(undefined);
 		await runtime.work(QUEUE, handler, {
 			teamSize: 2,
 			pollingIntervalSeconds: 2,
@@ -450,10 +451,10 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 describe("LazyPgBossClient — backend 비선택 시 무초기화", () => {
 	it("start 전에는 pg-boss 모듈과 연결을 생성하지 않는다", async () => {
 		const client = new FakePgBossClient();
-		const load = jest.fn().mockResolvedValue(client);
+		const load = vi.fn().mockResolvedValue(client);
 		const lazyClient = new LazyPgBossClient(load);
 
-		lazyClient.on("error", jest.fn());
+		lazyClient.on("error", vi.fn());
 		expect(load).not.toHaveBeenCalled();
 
 		await lazyClient.start();
@@ -462,7 +463,7 @@ describe("LazyPgBossClient — backend 비선택 시 무초기화", () => {
 
 	it("worker가 lifecycle hook보다 먼저 등록되어도 한 번만 초기화한다", async () => {
 		const client = new FakePgBossClient();
-		const load = jest.fn().mockResolvedValue(client);
+		const load = vi.fn().mockResolvedValue(client);
 		const lazyClient = new LazyPgBossClient(load);
 
 		await Promise.all([

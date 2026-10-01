@@ -5,7 +5,7 @@ import type {
 	TodoCommentOverviewWindow,
 	TodoConversationWindow,
 	TodoDetailsRecord,
-} from "../types";
+} from "../types.js";
 
 export const TODO_COMMENT_READER = Symbol("TODO_COMMENT_READER");
 

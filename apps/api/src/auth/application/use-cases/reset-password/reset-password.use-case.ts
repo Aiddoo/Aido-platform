@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { PasswordWorkflow } from "../../workflows/password.workflow";
+import { PasswordWorkflow } from "../../workflows/password.workflow.js";
 
 @Injectable()
 export class ResetPasswordUseCase {

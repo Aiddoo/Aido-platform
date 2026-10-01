@@ -1,3 +1,5 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 /**
  * SecurityLogRepository 단위 테스트
  *
@@ -10,23 +12,22 @@
  * pnpm --filter @aido/api test security-log.repository.spec.ts
  * ```
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { SecurityLogBuilder } from "@test/builders";
-import { asMock, createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { vi } from "vitest";
 
-import type { SecurityLog } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { SecurityEvent } from "#api/generated/prisma/client";
+import type { SecurityLog } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { SecurityLogBuilder } from "#test/builders/index";
+import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { SecurityLogRepository } from "./security-log.repository";
+import { SecurityLogRepository } from "./security-log.repository.js";
 
 /**
  * groupBy 결과 타입 (Prisma groupBy 결과의 부분 타입)
  */
 interface SecurityLogGroupByResult {
-	event: string;
+	event: SecurityEvent;
 	_count: {
 		event: number;
 	};
@@ -375,7 +376,16 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 				{ event: "LOGIN_FAILURE", _count: { event: 20 } },
 				{ event: "PASSWORD_CHANGED", _count: { event: 5 } },
 			];
-			asMock(db.securityLog.groupBy).mockResolvedValue(groupByResult);
+			asMock(db.securityLog.groupBy).mockResolvedValue(
+				groupByResult.map((value) => ({
+					...SecurityLogBuilder.create("user-1", value.event).build(),
+					...value,
+					_avg: undefined,
+					_sum: undefined,
+					_min: undefined,
+					_max: undefined,
+				})),
+			);
 
 			// When
 			const result = await repository.countByEvent(since, until);
@@ -403,7 +413,16 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			const groupByResult: SecurityLogGroupByResult[] = [
 				{ event: "LOGIN_SUCCESS", _count: { event: 50 } },
 			];
-			asMock(db.securityLog.groupBy).mockResolvedValue(groupByResult);
+			asMock(db.securityLog.groupBy).mockResolvedValue(
+				groupByResult.map((value) => ({
+					...SecurityLogBuilder.create("user-1", value.event).build(),
+					...value,
+					_avg: undefined,
+					_sum: undefined,
+					_min: undefined,
+					_max: undefined,
+				})),
+			);
 
 			// When
 			const result = await repository.countByEvent(since);
@@ -423,7 +442,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 		it("이벤트가 없으면 빈 배열을 반환한다", async () => {
 			// Given
-			jest.mocked(db.securityLog.groupBy).mockResolvedValue([]);
+			vi.mocked(db.securityLog.groupBy).mockResolvedValue([]);
 
 			// When
 			const result = await repository.countByEvent(since);

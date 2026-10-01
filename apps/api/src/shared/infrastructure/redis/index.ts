@@ -2,5 +2,5 @@
  * Redis 모듈 Barrel Export
  */
 
-export * from "./redis.constants";
-export * from "./redis.module";
+export * from "./redis.constants.js";
+export * from "./redis.module.js";

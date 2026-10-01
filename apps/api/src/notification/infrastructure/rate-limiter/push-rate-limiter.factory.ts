@@ -1,11 +1,11 @@
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-import type { PushRateLimiterPort } from "../../application/ports/push-rate-limiter.port";
-import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter";
-import { PostgresPushRateLimiter } from "./postgres-push-rate-limiter";
-import { RedisPushRateLimiter } from "./redis-push-rate-limiter";
+import type { PushRateLimiterPort } from "../../application/ports/push-rate-limiter.port.js";
+import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter.js";
+import { PostgresPushRateLimiter } from "./postgres-push-rate-limiter.js";
+import { RedisPushRateLimiter } from "./redis-push-rate-limiter.js";
 
 export type PushRateLimitBackend = "postgres" | "redis" | "memory";
 

@@ -7,18 +7,18 @@
 import { ErrorCode } from "@aido/errors";
 import { TODO_ITEM_LIMITS } from "@aido/validators";
 
-import { DomainException } from "@/shared/domain";
+import { DomainException } from "#api/shared/domain/index";
 
-import { TodoCategoryChangedEvent } from "../events/todo-category-changed.event";
-import { TodoCreatedEvent } from "../events/todo-created.event";
-import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
-import { TodoToggledEvent } from "../events/todo-toggled.event";
-import { TodoUpdatedEvent } from "../events/todo-updated.event";
-import { TodoVisibilityChangedEvent } from "../events/todo-visibility-changed.event";
-import { TodoId } from "../value-objects/todo-id.vo";
-import { TodoSchedule, type TodoScheduleProps } from "../value-objects/todo-schedule.vo";
-import { TodoItem } from "./todo-item.entity";
-import { Todo, type TodoProps } from "./todo.aggregate";
+import { TodoCategoryChangedEvent } from "../events/todo-category-changed.event.js";
+import { TodoCreatedEvent } from "../events/todo-created.event.js";
+import { TodoRescheduledEvent } from "../events/todo-rescheduled.event.js";
+import { TodoToggledEvent } from "../events/todo-toggled.event.js";
+import { TodoUpdatedEvent } from "../events/todo-updated.event.js";
+import { TodoVisibilityChangedEvent } from "../events/todo-visibility-changed.event.js";
+import { TodoId } from "../value-objects/todo-id.vo.js";
+import { TodoSchedule, type TodoScheduleProps } from "../value-objects/todo-schedule.vo.js";
+import { TodoItem } from "./todo-item.entity.js";
+import { Todo, type TodoProps } from "./todo.aggregate.js";
 
 function buildSchedule(overrides: Partial<TodoScheduleProps> = {}): TodoSchedule {
 	return TodoSchedule.reconstitute({

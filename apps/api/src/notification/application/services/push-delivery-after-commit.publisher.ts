@@ -3,10 +3,10 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	AFTER_COMMIT_TASK_REGISTRY,
 	type AfterCommitTaskRegistryPort,
-} from "@/shared/application/ports";
-import { withTimeout } from "@/shared/application/utils/with-timeout.util";
+} from "#api/shared/application/ports/index";
+import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
-import { PublishPushDeliveryOutboxUseCase } from "../use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
+import { PublishPushDeliveryOutboxUseCase } from "../use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case.js";
 
 const FAST_PATH_TIMEOUT_MS = 2_000;
 

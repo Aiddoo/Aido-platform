@@ -1,10 +1,10 @@
-import type { SuggestionContext } from "../../types";
+import type { SuggestionContext } from "../../types.js";
 import {
 	buildSuggestionPrompt,
 	detectedPatternsSchema,
 	detectedPatternsSchemaEn,
 	getDetectedPatternsSchema,
-} from "./detect-patterns.prompt";
+} from "./detect-patterns.prompt.js";
 
 const baseContext: SuggestionContext = {
 	streak: "3일",

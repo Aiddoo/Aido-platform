@@ -3,12 +3,12 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	PUSH_TOKEN_REPOSITORY,
 	PushTokenNotFoundError,
 	type PushTokenRepositoryPort,
-} from "../../ports/push-token.repository.port";
+} from "../../ports/push-token.repository.port.js";
 
 /**
  * 푸시 토큰 해제 유스케이스.

@@ -3,18 +3,18 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type * as PrismaModels from "@/generated/prisma/client";
-import { Prisma } from "@/generated/prisma/client";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import type * as PrismaModels from "#api/generated/prisma/client";
+import { Prisma } from "#api/generated/prisma/client";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	CreateCategoryInput,
 	TodoCategoryRepositoryPort,
 	TodoCategoryWithCountView,
 	UpdateCategoryInput,
-} from "../../application/ports/todo-category.repository.port";
-import { TodoCategory } from "../../domain/entities/todo-category.aggregate";
+} from "../../application/ports/todo-category.repository.port.js";
+import { TodoCategory } from "../../domain/entities/todo-category.aggregate.js";
 
 type TodoCategoryRowWithCount = PrismaModels.TodoCategory & {
 	_count: { todos: number };

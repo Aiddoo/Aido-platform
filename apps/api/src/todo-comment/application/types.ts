@@ -1,6 +1,6 @@
 import type { Todo, TodoCommentSort, TodoDetailsResponse } from "@aido/validators";
 
-import type { ThreadPlacement } from "../domain/value-objects/thread-placement.vo";
+import type { ThreadPlacement } from "../domain/value-objects/thread-placement.vo.js";
 
 /** 댓글 응답을 만드는 데 필요한 저장소 독립 읽기 모델. */
 export interface TodoCommentRecord {

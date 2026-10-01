@@ -5,7 +5,7 @@ import {
 	buildDailyCompletionsRange,
 	type TodoAggregateByDate,
 	toSummaries,
-} from "./daily-completion";
+} from "./daily-completion.js";
 
 function aggregate(overrides: Partial<TodoAggregateByDate> & { date: Date }): TodoAggregateByDate {
 	return {

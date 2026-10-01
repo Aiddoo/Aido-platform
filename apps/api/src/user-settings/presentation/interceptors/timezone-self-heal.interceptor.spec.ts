@@ -5,12 +5,13 @@
  * 스로틀(같은 tz는 창 안에서 1회) + tz 변경 시 즉시 반영을 검증한다.
  */
 import type { CallHandler, ExecutionContext } from "@nestjs/common";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { of } from "rxjs";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
 
-import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case";
-import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor";
+import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-push-timezone/refresh-push-timezone.use-case.js";
+import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor.js";
 
 const nextHandler: CallHandler = { handle: () => of("ok") };
 
@@ -28,7 +29,7 @@ describe("TimezoneSelfHealInterceptor", () => {
 	let refreshPushTimezoneUseCase: Mocked<RefreshPushTimezoneUseCase>;
 
 	beforeEach(async () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		const { unit, unitRef } = await TestBed.solitary(TimezoneSelfHealInterceptor).compile();
 		interceptor = unit;
 		refreshPushTimezoneUseCase = unitRef.get(RefreshPushTimezoneUseCase);
@@ -37,7 +38,7 @@ describe("TimezoneSelfHealInterceptor", () => {
 
 	afterEach(() => {
 		interceptor.onModuleDestroy();
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("인증 유저 + 유효한 X-Timezone이면 자가치유를 호출한다", () => {

@@ -1,4 +1,7 @@
-import type { SunTime, SunTimeProvider } from "@/weather/application/ports/sun-time-provider.port";
+import type {
+	SunTime,
+	SunTimeProvider,
+} from "#api/weather/application/ports/sun-time-provider.port";
 
 /**
  * 테스트용 FakeSunTimeProvider

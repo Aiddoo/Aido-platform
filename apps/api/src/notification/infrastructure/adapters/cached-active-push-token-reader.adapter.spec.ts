@@ -1,19 +1,19 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { PushTokenBuilder } from "@test/builders";
-import { createPushTokenRepositoryMock } from "@test/mocks/ports/notification.mock";
+import type { Mocked } from "vitest";
 
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { PushTokenBuilder } from "#test/builders/index";
+import { createPushTokenRepositoryMock } from "#test/mocks/ports/notification.mock";
 
 import {
 	PUSH_TOKEN_REPOSITORY,
 	type PushTokenRepositoryPort,
-} from "../../application/ports/push-token.repository.port";
+} from "../../application/ports/push-token.repository.port.js";
 import {
 	NOTIFICATION_CACHE_TTL_MS,
 	NotificationCacheKey,
-} from "../cache/notification-cache.keyspace";
-import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-reader.adapter";
+} from "../cache/notification-cache.keyspace.js";
+import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-reader.adapter.js";
 
 describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside", () => {
 	let reader: CachedActivePushTokenReaderAdapter;

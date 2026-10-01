@@ -1,6 +1,6 @@
 # @aido/validators 패키지 규칙
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
 
 > Zod 스키마 중앙 관리 및 클라이언트-서버 타입 공유
 >
@@ -111,7 +111,7 @@ export type TodoResponse = z.infer<typeof todoResponseSchema>;
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Create{Feature}Dto, {Feature}ResponseDto } from '@aido/validators/nestjs';
-import { {Feature}Service } from './{name}.service';
+import { {Feature}Service } from './{name}.service.js';
 
 @ApiTags('{name}')
 @Controller('{name}')
@@ -137,7 +137,7 @@ export class {Feature}Controller {
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Create{Feature}Input, {Feature}Response } from '@aido/validators';
-import { {Feature}Repository } from './{name}.repository';
+import { {Feature}Repository } from './{name}.repository.js';
 
 @Injectable()
 export class {Feature}Service {
@@ -295,7 +295,7 @@ packages/validators/src/
 // domains/{name}/{name}.request.ts
 
 import { z } from 'zod';
-import { EXAMPLE_RULES } from './{name}.constants';
+import { EXAMPLE_RULES } from './{name}.constants.js';
 
 // ============================================
 // 공통 스키마 (재사용)
@@ -390,56 +390,40 @@ export type ExampleResponse = z.infer<typeof exampleResponseSchema>;
 
 ## NestJS DTO 작성 규칙
 
-### Request DTO
+공유 스키마는 `@aido/validators`에만 정의한다. Presentation DTO는 스키마를 그대로 검증하고, 기존 OpenAPI component 이름을 metadata로 보존한다. Query/Param DTO는 `.meta({ id: "ExampleQueryDto", apiParameter: true })`를 사용하여 Swagger가 객체 필드를 개별 parameter로 확장하게 한다. DTO class나 별도 변환 어댑터를 만들지 않는다.
 
 ```typescript
-// nestjs/domains/{name}/{name}.request.dto.ts
+import { createExampleSchema, exampleResponseSchema } from '@aido/validators';
+import type { z } from 'zod';
 
-import { createZodDto } from 'nestjs-zod';
-import { createExampleSchema, updateExampleSchema } from '../../../domains/{name}/{name}.request';
+export const CreateExampleDto = createExampleSchema.meta({ id: 'CreateExampleDto' });
+export type CreateExampleDto = z.infer<typeof CreateExampleDto>;
 
-/** 예시 생성 요청 DTO */
-export class CreateExampleDto extends createZodDto(createExampleSchema) {}
-
-/** 예시 수정 요청 DTO */
-export class UpdateExampleDto extends createZodDto(updateExampleSchema) {}
+export const ExampleResponseDto = exampleResponseSchema.meta({ id: 'ExampleResponseDto' });
+export type ExampleResponseDto = z.infer<typeof ExampleResponseDto>;
 ```
 
-### Response DTO
+NestJS 12의 `StandardSchemaValidationPipe`가 요청을 검증한다. 타입은 런타임에 사라지므로 parameter decorator에 스키마를 명시한다.
 
 ```typescript
-// nestjs/domains/{name}/{name}.response.dto.ts
-
-import { createZodDto } from 'nestjs-zod';
-import { exampleResponseSchema } from '../../../domains/{name}/{name}.response';
-
-/** 예시 응답 DTO */
-export class ExampleResponseDto extends createZodDto(exampleResponseSchema) {}
+@Post()
+@ApiCreatedResponse({ type: ExampleResponseDto })
+create(@Body({ schema: CreateExampleDto }) body: CreateExampleDto) {
+  return this.createExample.execute(body);
+}
 ```
 
----
+`@Query({ schema: GetExamplesDto })`, `@Param({ schema: ExampleIdParamDto })`도 같은 규칙을 따른다. `configureApplication`에서 오류를 기존 `Validation failed` envelope로 변환하므로 공개 오류 코드와 HTTP status는 유지한다.
+
+Swagger의 `standardSchemaConverter`는 출시한 클라이언트가 fingerprint한 input shape와 component 이름을 유지한다. 응답 스키마를 output mode로 바꾸거나 DTO metadata 이름을 바꾸면 배포된 계약 검증을 먼저 확인한다.
 
 ## Import 규칙
 
-### 클라이언트에서 사용
+클라이언트와 서버는 검증 스키마와 공개 타입을 `@aido/validators`에서 가져온다. Nest 전용 DTO는 API presentation 내부에만 있다.
 
 ```typescript
-// 스키마 + 타입 import (검증 및 타입 사용)
-import {
-  createTodoSchema, // Zod 스키마 (클라이언트 검증용)
-  CreateTodoInput, // Request 타입
-  TodoResponse, // Response 타입
-} from '@aido/validators';
-```
-
-### API 서버에서 사용
-
-```typescript
-// 타입만 필요할 때
-import { CreateTodoInput, TodoResponse } from '@aido/validators';
-
-// NestJS DTO 필요할 때 (Controller용)
-import { CreateTodoDto, TodoResponseDto } from '@aido/validators/nestjs';
+import { createTodoSchema, type CreateTodoInput, type TodoResponse } from '@aido/validators';
+import { CreateTodoDto } from '#api/todo/presentation/dto/create-todo.dto';
 ```
 
 ### 상수 import
@@ -477,9 +461,9 @@ export type DeviceType = (typeof DEVICE_TYPES)[number];
 ```typescript
 // domains/{name}/index.ts
 
-export * from './{name}.constants';
-export * from './{name}.request';
-export * from './{name}.response';
+export * from './{name}.constants.js';
+export * from './{name}.request.js';
+export * from './{name}.response.js';
 ```
 
 ### 메인 index.ts
@@ -487,9 +471,9 @@ export * from './{name}.response';
 ```typescript
 // index.ts
 
-export * from './common';
-export * from './domains/auth';
-export * from './domains/todo';
+export * from './common/index.js';
+export * from './domains/auth/index.js';
+export * from './domains/todo/index.js';
 ```
 
 ### NestJS index.ts
@@ -497,8 +481,8 @@ export * from './domains/todo';
 ```typescript
 // nestjs/index.ts
 
-export * from './domains/auth';
-export * from './domains/todo';
+export * from './domains/auth/index.js';
+export * from './domains/todo/index.js';
 ```
 
 ---
@@ -619,4 +603,4 @@ describe('createTodoSchema', () => {
 ---
 
 **문서 버전**: 3.1.0
-**최종 수정일**: 2026-04-11
+**최종 수정일**: 2026-10-01

@@ -3,7 +3,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable, Logger } from "@nestjs/common";
 
-import { AuthPersistenceConflict } from "@/auth/application/ports/auth-persistence.port";
+import { AuthPersistenceConflict } from "#api/auth/application/ports/auth-persistence.port";
 import type {
 	AccountProvider,
 	Prisma,
@@ -11,15 +11,15 @@ import type {
 	User,
 	UserRole,
 	UserStatus,
-} from "@/generated/prisma/client";
-import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
-import { now } from "@/shared/domain/date/utils/core";
-import { startOfDayInTimezone } from "@/shared/domain/date/utils/timezone";
-import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { uniqueConstraintTargets } from "@/shared/infrastructure/database/prisma-error.util";
+} from "#api/generated/prisma/client";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { uniqueConstraintTargets } from "#api/shared/infrastructure/database/prisma-error.util";
 
-import { generateUserTag } from "./user-tag.generator";
+import { generateUserTag } from "./user-tag.generator.js";
 
 export interface UserWithAccount {
 	id: string;

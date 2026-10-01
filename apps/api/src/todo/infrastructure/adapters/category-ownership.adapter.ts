@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoCategoryReader } from "@/todo-category";
+import { TodoCategoryReader } from "#api/todo-category/index";
 
-import type { CategoryOwnershipPort } from "../../application/ports/category-ownership.port";
+import type { CategoryOwnershipPort } from "../../application/ports/category-ownership.port.js";
 
 /**
  * 카테고리 소유권 포트 어댑터 — TodoCategoryReader에 위임

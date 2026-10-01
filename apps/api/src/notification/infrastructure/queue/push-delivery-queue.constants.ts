@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const PUSH_DELIVERY_QUEUE = "push-delivery.v1";
 export const PUSH_DELIVERY_DEAD_LETTER_QUEUE = "push-delivery-dead-letter.v1";

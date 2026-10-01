@@ -1,15 +1,15 @@
 import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/validators";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/services/feature-marketing-capability";
-import { toNotificationRouting } from "../../domain/services/notification-routing";
-import { isMarketingNotification } from "../../domain/services/push-eligibility";
+import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/services/feature-marketing-capability.js";
+import { toNotificationRouting } from "../../domain/services/notification-routing.js";
+import { isMarketingNotification } from "../../domain/services/push-eligibility.js";
 import {
 	MARKETING_PUSH_OPT_OUT_TOKEN,
 	type MarketingPushOptOutTokenPort,
-} from "../ports/marketing-push-opt-out-token.port";
-import type { CreateNotificationData } from "../ports/notification-data";
-import type { PushPayload } from "../ports/push-provider.port";
+} from "../ports/marketing-push-opt-out-token.port.js";
+import type { CreateNotificationData } from "../ports/notification-data.js";
+import type { PushPayload } from "../ports/push-provider.port.js";
 
 interface CreatePushNotificationPayloadInput {
 	readonly data: CreateNotificationData;

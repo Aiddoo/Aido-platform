@@ -11,7 +11,7 @@
  * pnpm --filter @aido/api test sentry-options
  * ```
  */
-import { resolveSentryOptions } from "./sentry-options";
+import { resolveSentryOptions } from "./sentry-options.js";
 
 const DSN = "https://key@o0.ingest.sentry.io/0";
 

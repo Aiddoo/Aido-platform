@@ -1,1 +1,1 @@
-export * from "./get-growth-summary/get-growth-summary.query";
+export * from "./get-growth-summary/get-growth-summary.query.js";

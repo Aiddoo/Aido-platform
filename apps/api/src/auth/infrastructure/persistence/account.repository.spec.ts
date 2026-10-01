@@ -13,17 +13,17 @@
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { AccountBuilder } from "@test/builders";
-import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { Mocked } from "vitest";
 
-import { AuthPersistenceConflict } from "@/auth/application/ports";
-import { Prisma } from "@/generated/prisma/client";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { EncryptionService } from "@/shared/infrastructure/encryption";
+import { AuthPersistenceConflict } from "#api/auth/application/ports/index";
+import { Prisma } from "#api/generated/prisma/client";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
+import { AccountBuilder } from "#test/builders/index";
+import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
 
-import { AccountRepository } from "./account.repository";
+import { AccountRepository } from "./account.repository.js";
 
 describe("AccountRepository — 계정 리포지토리", () => {
 	let repository: AccountRepository;

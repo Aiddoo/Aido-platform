@@ -1,4 +1,4 @@
-import { cacheKey, cachePattern } from "@/shared/infrastructure/cache/keyspace/cache-key";
+import { cacheKey, cachePattern } from "#api/shared/infrastructure/cache/keyspace/cache-key";
 
 export const TODO_CACHE_TTL_MS = {
 	FRIEND_VIEW: 60_000,

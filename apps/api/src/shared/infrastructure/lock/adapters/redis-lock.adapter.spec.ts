@@ -12,20 +12,21 @@
  * ```
  */
 import RedisMock from "ioredis-mock";
+import { vi, type Mock } from "vitest";
 
-import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
-import { RedisLockAdapter } from "./redis-lock.adapter";
+import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
+import { RedisLockAdapter } from "./redis-lock.adapter.js";
 
 describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
 	let redis: InstanceType<typeof RedisMock>;
-	let warn: jest.Mock;
+	let warn: Mock;
 	let lock: RedisLockAdapter;
 
 	beforeEach(async () => {
 		// ioredis-mock은 인스턴스 간 전역 스토어를 공유하므로 테스트마다 초기화
 		redis = new RedisMock();
 		await redis.flushall();
-		warn = jest.fn();
+		warn = vi.fn();
 		lock = new RedisLockAdapter(redis, new RedisErrorLogSampler({ warn }));
 	});
 
@@ -73,7 +74,7 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
 
 		it("acquire 실패 시 null(busy 취급)을 반환한다", async () => {
 			// Given
-			jest.spyOn(redis, "set").mockRejectedValue(failure);
+			vi.spyOn(redis, "set").mockRejectedValue(failure);
 
 			// When
 			const release = await lock.acquire("resource", 5000);
@@ -86,7 +87,7 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
 		it("release 실패는 throw하지 않는다 (TTL이 정리)", async () => {
 			// Given
 			const release = await lock.acquire("resource", 5000);
-			jest.spyOn(redis, "eval").mockRejectedValue(failure);
+			vi.spyOn(redis, "eval").mockRejectedValue(failure);
 
 			// When / Then
 			await expect(release?.()).resolves.toBeUndefined();
@@ -95,7 +96,7 @@ describe("RedisLockAdapter — Redis 분산 잠금 어댑터", () => {
 
 		it("isLocked 실패 시 true(fail-closed)를 반환한다", async () => {
 			// Given
-			jest.spyOn(redis, "exists").mockRejectedValue(failure);
+			vi.spyOn(redis, "exists").mockRejectedValue(failure);
 
 			// When / Then
 			expect(await lock.isLocked("resource")).toBe(true);

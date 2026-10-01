@@ -58,4 +58,8 @@ export type AiSuggestionRuntimeJob = z.infer<typeof AiSuggestionRuntimeJobSchema
 
 import { z } from "zod";
 
-import { JOB_POLLING_SECONDS } from "@/shared/application/ports";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+
+export interface SuggestionDispatcher {
+	dispatchAnalysis(): Promise<void>;
+}

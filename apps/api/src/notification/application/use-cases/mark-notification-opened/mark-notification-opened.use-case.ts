@@ -3,11 +3,11 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
-} from "../../ports/notification-cache.port";
+} from "../../ports/notification-cache.port.js";
 import {
 	NOTIFICATION_REPOSITORY,
 	type NotificationRepositoryPort,
-} from "../../ports/notification.repository.port";
+} from "../../ports/notification.repository.port.js";
 
 /** 푸시 탭을 멱등 기록하고 알림 센터 상태도 즉시 읽음으로 맞춘다. */
 @Injectable()

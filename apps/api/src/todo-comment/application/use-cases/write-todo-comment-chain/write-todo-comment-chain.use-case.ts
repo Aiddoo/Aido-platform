@@ -8,30 +8,30 @@ import {
 	type MutationLockPort,
 	UNIT_OF_WORK,
 	type UnitOfWorkPort,
-} from "@/shared/application/ports";
-import { ApplicationException } from "@/shared/domain";
+} from "#api/shared/application/ports/index";
+import { ApplicationException } from "#api/shared/domain/index";
 
-import { ThreadPlacement } from "../../../domain/value-objects/thread-placement.vo";
-import { TodoCommentContent } from "../../../domain/value-objects/todo-comment-content.vo";
-import { assertTodoCommentAccess } from "../../assert-todo-comment-access";
+import { ThreadPlacement } from "../../../domain/value-objects/thread-placement.vo.js";
+import { TodoCommentContent } from "../../../domain/value-objects/todo-comment-content.vo.js";
+import { assertTodoCommentAccess } from "../../assert-todo-comment-access.js";
 import {
 	TODO_COMMENT_NOTIFICATION,
 	type TodoCommentNotificationPort,
-} from "../../ports/todo-comment-notification.port";
+} from "../../ports/todo-comment-notification.port.js";
 import {
 	TODO_COMMENT_READER,
 	type TodoCommentReaderPort,
-} from "../../ports/todo-comment.reader.port";
+} from "../../ports/todo-comment.reader.port.js";
 import {
 	TODO_COMMENT_REPOSITORY,
 	TodoCommentIdempotencyConflict,
 	TodoCommentIdempotencyRace,
 	type TodoCommentRepositoryPort,
-} from "../../ports/todo-comment.repository.port";
-import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../../ports/todo-view-cache.port";
-import { toTodoCommentResponse } from "../../presenters";
-import { settleAfterCommit } from "../../settle-after-commit";
-import type { TodoCommentChainCommand, TodoCommentRecord } from "../../types";
+} from "../../ports/todo-comment.repository.port.js";
+import { TODO_VIEW_CACHE, type TodoViewCachePort } from "../../ports/todo-view-cache.port.js";
+import { toTodoCommentResponse } from "../../presenters/index.js";
+import { settleAfterCommit } from "../../settle-after-commit.js";
+import type { TodoCommentChainCommand, TodoCommentRecord } from "../../types.js";
 
 export interface WriteTodoCommentChainInput {
 	todoId: number;

@@ -1,4 +1,8 @@
 import { getMemosQuerySchema } from "@aido/validators";
-import { createZodDto } from "nestjs-zod";
+import type { z } from "zod";
 
-export class GetMemosQueryDto extends createZodDto(getMemosQuerySchema) {}
+export const GetMemosQueryDto = getMemosQuerySchema.meta({
+	id: "GetMemosQueryDto",
+	apiParameter: true,
+});
+export type GetMemosQueryDto = z.infer<typeof GetMemosQueryDto>;

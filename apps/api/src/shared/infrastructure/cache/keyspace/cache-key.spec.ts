@@ -1,4 +1,4 @@
-import { CACHE_KEY_PREFIX, cacheKey, cachePattern } from "./cache-key";
+import { CACHE_KEY_PREFIX, cacheKey, cachePattern } from "./cache-key.js";
 
 describe("versioned infrastructure keyspace", () => {
 	it("bounded context와 resource를 포함한 고정 prefix를 사용한다", () => {

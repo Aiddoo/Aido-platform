@@ -1,8 +1,8 @@
 import { Test } from "@nestjs/testing";
 
-import { GetAppVersionUseCase } from "../application/queries/get-app-version/get-app-version.use-case";
-import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case";
-import { AppConfigController } from "./app-config.controller";
+import { GetAppVersionUseCase } from "../application/queries/get-app-version/get-app-version.use-case.js";
+import { GetFeatureDiscoveryUseCase } from "../application/queries/get-feature-discovery/get-feature-discovery.use-case.js";
+import { AppConfigController } from "./app-config.controller.js";
 
 describe("AppConfigController — feature discovery endpoint", () => {
 	it("returns the public campaign configuration from the use case", async () => {

@@ -1,12 +1,15 @@
 import type { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { mock, mockDeep } from "jest-mock-extended";
+import { mock, mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService, Resource } from "@/shared/application/entitlement/entitlement.service";
-import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import {
+	EntitlementService,
+	Resource,
+} from "#api/shared/application/entitlement/entitlement.service";
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { TransactionClient } from "#api/shared/infrastructure/database/prisma.types";
 
-import { TodoCategoryLimitReaderAdapter } from "./todo-category-limit-reader.adapter";
+import { TodoCategoryLimitReaderAdapter } from "./todo-category-limit-reader.adapter.js";
 
 describe("TodoCategoryLimitReaderAdapter", () => {
 	it("txHost의 활성 트랜잭션 클라이언트로 CATEGORY 한도를 읽는다", async () => {

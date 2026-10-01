@@ -1,8 +1,8 @@
 import { NUDGE_LIMITS } from "@aido/validators";
 
-import { DomainException } from "@/shared/domain/exceptions/domain.exception";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import { NudgeMessage } from "./nudge-message.vo";
+import { NudgeMessage } from "./nudge-message.vo.js";
 
 describe("NudgeMessage", () => {
 	it("null/undefined이면 raw는 undefined", () => {
