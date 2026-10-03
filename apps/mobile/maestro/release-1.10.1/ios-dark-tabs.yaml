@@ -1,0 +1,23 @@
+appId: com.aido.mobile
+name: 다크 모드에서 세 탭과 날씨 상세를 확인한다
+---
+# Given: 다크 모드에서 탭 바가 항상 노출된다
+- extendedWaitUntil:
+    visible: '메모'
+    timeout: 15000
+# When: 세 탭을 순서대로 이동한다
+- tapOn: '메모'
+- takeScreenshot: ios-dark-memo
+- tapOn: '마이'
+- takeScreenshot: ios-dark-mypage
+- tapOn: '할 일'
+- takeScreenshot: ios-dark-todo
+# Then: 날씨 화면에서 홈으로 복귀한다
+- tapOn: '날씨'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ios-dark-weather
+- tapOn: '뒤로'
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: '마이'

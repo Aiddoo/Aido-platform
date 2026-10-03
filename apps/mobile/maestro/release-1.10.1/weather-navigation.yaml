@@ -1,0 +1,35 @@
+appId: com.aido.mobile
+name: 날씨 화면을 반복해서 열고 닫아도 홈과 헤더가 유지된다
+---
+# Given: 로그인한 홈 화면
+- runFlow:
+    when:
+      visible: '.*RevenueCat.*|.*captureMessage.*'
+    commands:
+      - tapOn:
+          point: '94%, 93%'
+- runFlow:
+    when:
+      visible: '뒤로|Back'
+    commands:
+      - tapOn: '뒤로|Back'
+      - waitForAnimationToEnd:
+          timeout: 5000
+# When: 날씨 상세 화면과 홈을 열 번 왕복한다
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          text: '날씨|Weather'
+          index: 0
+      - extendedWaitUntil:
+          visible: '뒤로|Back'
+          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - tapOn: '뒤로|Back'
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - assertVisible: '할 일|To-dos'
+# Then: 앱이 살아 있고 홈 탭이 보인다
+- takeScreenshot: weather-navigation-repeat-result

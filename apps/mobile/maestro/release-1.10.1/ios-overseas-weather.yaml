@@ -1,0 +1,21 @@
+appId: com.aido.mobile
+name: 해외 위치에서는 국내 지원 안내를 표시한다
+---
+# Given: 도쿄 위치와 위치 권한을 허용한 무료 계정
+- runFlow:
+    when:
+      visible: 'Dismiss'
+    commands:
+      - tapOn: 'Dismiss'
+- extendedWaitUntil:
+    visible: '마이'
+    timeout: 30000
+- tapOn: '날씨'
+# When: 위치 지원 범위를 판정한다
+- extendedWaitUntil:
+    visible: '지금은 국내 날씨를 제공하고 있어요'
+    timeout: 30000
+# Then: 해외 날씨 안내와 홈 이동은 유지된다
+- takeScreenshot: ios-overseas-weather
+- tapOn: '뒤로'
+- assertVisible: '마이'
