@@ -1,0 +1,28 @@
+appId: com.aido.mobile
+name: 무료 계정의 AI 및 앱 아이콘 권한 안내를 확인한다
+---
+# Given: 무료 계정의 홈
+- tapOn: '할 일'
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element: '.*AI.*제안.*|.*루틴.*제안.*'
+    direction: DOWN
+    centerElement: true
+- takeScreenshot: ios-free-suggestion-entry
+# When: AI 제안을 연다
+- tapOn: '.*AI.*제안.*|.*루틴.*제안.*'
+# Then: 예시와 구독 안내가 표시된다
+- extendedWaitUntil:
+    visible: 'AI가 투두를 제안해드려요'
+    timeout: 15000
+- takeScreenshot: ios-free-ai-preview
+- tapOn:
+    point: '8%, 9%'
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: '마이'
+- tapOn: '앱 아이콘'
+- tapOn: '턱시도 고양이'
+- assertVisible: '앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.'
+- takeScreenshot: ios-free-icon-gate

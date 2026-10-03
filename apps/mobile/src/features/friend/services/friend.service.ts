@@ -56,7 +56,7 @@ export class FriendService {
       return err(FriendErrors.emptyTag());
     }
 
-    if (!FriendPolicy.isValidTag(trimmed)) {
+    if (!FriendPolicy.isValidTag({ userTag: trimmed })) {
       return err(FriendErrors.invalidTag());
     }
 
@@ -199,7 +199,7 @@ export class FriendService {
     const query = params.query.trim();
 
     // HTTP 호출 전 최소 길이 가드 (2자 미만이면 네트워크 요청 없이 실패)
-    if (!FriendPolicy.isValidSearchQuery(query)) {
+    if (!FriendPolicy.isValidSearchQuery({ query: query })) {
       return err(FriendErrors.searchQueryTooShort());
     }
 

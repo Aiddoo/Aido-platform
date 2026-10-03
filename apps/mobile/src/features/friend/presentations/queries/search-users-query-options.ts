@@ -1,6 +1,7 @@
 import { useFriendService } from '@src/bootstrap/providers/di-context';
 import type { FriendService } from '@src/features/friend/services/friend.service';
 import { unwrap } from '@src/shared/errors/result';
+import { useTranslation } from '@src/shared/i18n';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { FriendPolicy } from '../../models/friend.model';
@@ -14,7 +15,7 @@ import { toSearchedUserViewModel } from '../view-models/searched-user.view-model
  */
 export function getSearchUsersQueryOptions(
   friendService: FriendService,
-  { query }: { query: string },
+  { query, fallbackName }: { query: string; fallbackName: string },
 ) {
   const trimmed = query.trim();
 
@@ -25,7 +26,7 @@ export function getSearchUsersQueryOptions(
       return unwrap(result);
     },
     initialPageParam: undefined as string | undefined,
-    enabled: FriendPolicy.isValidSearchQuery(trimmed),
+    enabled: FriendPolicy.isValidSearchQuery({ query: trimmed }),
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore) {
         return undefined;
@@ -35,7 +36,7 @@ export function getSearchUsersQueryOptions(
     select: (data) => ({
       pages: data.pages.map((page) => ({
         ...page,
-        items: page.items.map(toSearchedUserViewModel),
+        items: page.items.map((user) => toSearchedUserViewModel(user, fallbackName)),
       })),
       pageParams: data.pageParams,
     }),
@@ -43,5 +44,6 @@ export function getSearchUsersQueryOptions(
 }
 
 export function useSearchUsersQueryOptions(query: string) {
-  return getSearchUsersQueryOptions(useFriendService(), { query });
+  const { t } = useTranslation('friend');
+  return getSearchUsersQueryOptions(useFriendService(), { query, fallbackName: t('fallbackName') });
 }

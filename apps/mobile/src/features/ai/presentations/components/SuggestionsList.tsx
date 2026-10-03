@@ -3,13 +3,16 @@ import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { Button, H4, HStack, Spacing, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Spinner } from 'heroui-native';
 import { useState } from 'react';
 import { Image, View } from 'react-native';
 
-import { useGetSuggestionsQueryOptions } from '../queries/get-suggestions-query-options';
+import {
+  isSuggestionsPremiumRequiredError,
+  useGetSuggestionsQueryOptions,
+} from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
 import { ScallopedContainer } from './ScallopedContainer';
 import { SuggestionCategoryBottomSheet } from './SuggestionCategoryBottomSheet';
@@ -18,10 +21,16 @@ export function SuggestionsList() {
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('ai');
-  const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
+  const suggestionsQuery = useQuery(useGetSuggestionsQueryOptions());
   const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
   const [pendingSuggestionId, setPendingSuggestionId] = useState<number | null>(null);
 
+  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
+    return <SuggestionsList.PremiumPreview />;
+  }
+
+  const suggestions = suggestionsQuery.data;
+  if (!suggestions) return <SuggestionsList.Loading />;
   if (suggestions.length === 0) return <SuggestionsList.Empty />;
 
   const handleDismiss = (suggestionId: number) => {
@@ -219,6 +228,62 @@ SuggestionsList.Empty = function Empty() {
             </Text>
           </VStack>
         </View>
+      </View>
+    </ScallopedContainer>
+  );
+};
+
+SuggestionsList.PremiumPreview = function PremiumPreview() {
+  const push = useSingleTap(router.push);
+
+  const { t } = useTranslation('ai');
+
+  return (
+    <ScallopedContainer>
+      <View className="items-center px-5 pt-4">
+        <Image
+          source={require('@assets/images/ido_cat_suggestion.webp')}
+          style={{ width: 100, height: 100 }}
+          resizeMode="contain"
+        />
+        <Spacing size={8} />
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {t('suggestions.paywall.title')}
+        </H4>
+        <Text size="b4" shade={6} align="center">
+          {t('suggestions.paywall.description')}
+        </Text>
+      </View>
+
+      <Spacing size={20} />
+
+      <View className="px-4 pb-4">
+        <View className="py-2 opacity-60">
+          <VStack gap={8}>
+            <VStack gap={4}>
+              <HStack justify="between" align="center">
+                <Text size="b2" weight="semibold" shade={9}>
+                  {t('suggestions.paywall.sampleTitle')}
+                </Text>
+                <Text size="e1" shade={5}>
+                  {t('suggestions.paywall.sampleConfidence')}
+                </Text>
+              </HStack>
+              <Text size="b4" shade={7}>
+                {t('suggestions.paywall.sampleSchedule')}
+              </Text>
+            </VStack>
+            <Text size="b4" shade={6}>
+              {t('suggestions.paywall.sampleReason')}
+            </Text>
+          </VStack>
+        </View>
+
+        <Spacing size={16} />
+
+        <Button size="medium" onPress={() => push('/settings/subscription')}>
+          {t('suggestions.paywall.subscribeCta')}
+        </Button>
       </View>
     </ScallopedContainer>
   );

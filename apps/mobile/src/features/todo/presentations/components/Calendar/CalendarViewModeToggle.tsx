@@ -5,7 +5,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { useCalendarContext } from './calendar-view-mode-context';
+import { useCalendarContext } from '../../providers/calendar-provider';
 import type { CalendarViewMode } from './calendar.types';
 
 const CALENDAR_VIEW_MODE = [

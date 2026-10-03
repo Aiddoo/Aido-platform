@@ -1,38 +1,35 @@
-import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/models/feature-discovery.model';
+import {
+  featureDiscoveryConfigSchema,
+  type FeatureDiscoveryConfig,
+} from '@src/features/feature-discovery/models/feature-discovery.model';
 import {
   FEATURE_DISCOVERY_CAMPAIGN_ID,
   FEATURE_DISCOVERY_CAMPAIGN_LAUNCHED_AT,
 } from '@src/features/feature-discovery/models/feature-discovery.registry';
-import type { User } from '@src/features/user/models/user.model';
+import { userSchema } from '@src/features/user/models/user.model';
+import { z } from 'zod';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
 
-export interface ActivationProgress {
-  todoCreatedAt: Date | null;
-  activatedAt: Date | null;
-  pushRegistrationUnlockedAt: Date | null;
-}
-
-export interface ActivationIdentity {
-  accountId: string;
-  campaignId: string;
-}
-
-export type ActivationUser = Pick<User, 'id' | 'createdAt'>;
-
-interface ChecklistVisibilityInput {
-  config: FeatureDiscoveryConfig | undefined;
-  user: ActivationUser | undefined;
-  progress: ActivationProgress;
-  now: Date;
-}
-
-interface PushRegistrationInput {
-  config: FeatureDiscoveryConfig | undefined;
-  user: ActivationUser | undefined;
-  progress: ActivationProgress;
-}
+const activationProgressSchema = z.object({
+  todoCreatedAt: z.date().nullable(),
+  activatedAt: z.date().nullable(),
+  pushRegistrationUnlockedAt: z.date().nullable(),
+});
+export type ActivationProgress = z.infer<typeof activationProgressSchema>;
+const activationIdentitySchema = z.object({ accountId: z.string(), campaignId: z.string() });
+export type ActivationIdentity = z.infer<typeof activationIdentitySchema>;
+const activationUserSchema = userSchema.pick({ id: true, createdAt: true });
+export type ActivationUser = z.infer<typeof activationUserSchema>;
+const pushRegistrationInputSchema = z.object({
+  config: featureDiscoveryConfigSchema.optional(),
+  user: activationUserSchema.optional(),
+  progress: activationProgressSchema,
+});
+type PushRegistrationInput = z.infer<typeof pushRegistrationInputSchema>;
+const checklistVisibilityInputSchema = pushRegistrationInputSchema.extend({ now: z.date() });
+type ChecklistVisibilityInput = z.infer<typeof checklistVisibilityInputSchema>;
 
 function resolveEnabledCampaign(
   config: FeatureDiscoveryConfig,
@@ -68,13 +65,23 @@ function activationIdentity(
   };
 }
 
+const isWithinTimeWindow = (createdAt: number, now: number, window: number): boolean => {
+  const elapsed = now - createdAt;
+  return elapsed >= 0 && elapsed < window;
+};
+const calculateElapsedDays = (createdAt: number, now: number): number =>
+  Math.max(0, Math.floor((now - createdAt) / DAY_MS));
+
 function isChecklistVisible({ config, user, progress, now }: ChecklistVisibilityInput): boolean {
   if (!isNewUserCohort(config, user) || !user || progress.activatedAt) {
     return false;
   }
 
-  const elapsed = now.getTime() - user.createdAt.getTime();
-  return elapsed >= 0 && elapsed < ACTIVATION_CHECKLIST_WINDOW_MS;
+  return isWithinTimeWindow(
+    user.createdAt.getTime(),
+    now.getTime(),
+    ACTIVATION_CHECKLIST_WINDOW_MS,
+  );
 }
 
 function shouldRegisterPushAutomatically({
@@ -96,7 +103,7 @@ function shouldRegisterPushAutomatically({
 }
 
 function daysSinceSignup(user: ActivationUser, now: Date): number {
-  return Math.max(0, Math.floor((now.getTime() - user.createdAt.getTime()) / DAY_MS));
+  return calculateElapsedDays(user.createdAt.getTime(), now.getTime());
 }
 
 export const ActivationPolicy = {

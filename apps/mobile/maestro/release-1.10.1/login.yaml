@@ -1,0 +1,41 @@
+appId: com.aido.mobile
+name: 첫 진입에서 이메일 로그인 후 홈으로 이동한다
+---
+# Given: Docker 개발 서버에서 인증된 임시 계정
+- runFlow:
+    when:
+      visible: '.*RevenueCat.*|.*captureMessage.*'
+    commands:
+      - tapOn:
+          point: '94%, 93%'
+- runFlow:
+    when:
+      visible: 'Sign in with email|이메일로 로그인'
+    commands:
+      - tapOn: 'Sign in with email|이메일로 로그인'
+# When: 이메일과 비밀번호를 입력하고 로그인한다
+- tapOn:
+    id: email-login-email
+- eraseText: 100
+- inputText: ${QA_EMAIL}
+- pressKey: Enter
+- eraseText: 100
+- inputText: ${QA_PASSWORD}
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: email-login-submit
+- extendedWaitUntil:
+    visible: '지금 안 함|Not Now|마이|Me|Register your location to see the weather|위치를 등록하면 날씨를 볼 수 있어요'
+    timeout: 20000
+- runFlow:
+    when:
+      visible: '지금 안 함|Not Now'
+    commands:
+      - tapOn: '지금 안 함|Not Now'
+# Then: 할 일 탭이 보이고 날씨 설명이 홈 진입을 막지 않는다
+- extendedWaitUntil:
+    visible: 'To-dos|할 일|Register your location to see the weather|위치를 등록하면 날씨를 볼 수 있어요'
+    timeout: 20000
+- takeScreenshot: ${QA_SCREENSHOT_PREFIX}-first-home

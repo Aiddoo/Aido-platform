@@ -1,6 +1,8 @@
 {
   "titles": {
-    "index": "Weather"
+    "index": "Weather",
+    "back": "Back",
+    "settings": "Weather notification settings"
   },
   "sky": {
     "clear": "Clear",
@@ -15,12 +17,14 @@
   },
   "badge": {
     "setup": "Set up weather",
-    "label": "Weather"
+    "label": "Weather",
+    "domesticOnly": "Korea weather"
   },
   "locationPrompt": {
     "title": "Register your location to see the weather",
     "subtitle": "We'll show the weather for your current location",
-    "register": "Register Location"
+    "register": "Register Location",
+    "permissionDenied": "Allow location access in Settings to see the weather"
   },
   "toasts": {
     "locationFailed": "Couldn't get your location",
@@ -46,12 +50,22 @@
     "sunrise": "Sunrise",
     "sunset": "Sunset",
     "pm10": "PM10",
-    "pm25": "PM2.5"
+    "pm25": "PM2.5",
+    "domesticOnly": "Weather is available in Korea for now",
+    "domesticOnlyDescription": "Forecasts for locations abroad are not available yet. Your tasks and memos are still available.",
+    "refreshLocation": "Check current location",
+    "registeredLocation": "Weather for your saved location",
+    "dailyRange": "Today’s low and high temperatures",
+    "refreshFailed": "Couldn’t update. Showing the last forecast.",
+    "nextDayHourLabel": "Tomorrow {{hour}}:00"
   },
   "dust": {
     "good": "Good",
     "normal": "Moderate",
     "bad": "Unhealthy",
     "veryBad": "Very Unhealthy"
+  },
+  "introduction": {
+    "description": "Use your location for today’s weather. You can also enable location later on the weather screen."
   }
 }

@@ -54,6 +54,9 @@ import SendIconSvg from '@assets/icons/ic_send.svg';
 import SettingIconSvg from '@assets/icons/ic_setting.svg';
 import ShareIconSvg from '@assets/icons/ic_share.svg';
 import SunIconSvg from '@assets/icons/ic_sun.svg';
+import MemoTabIconSvg from '@assets/icons/ic_tab_memo.svg';
+import MyPageTabIconSvg from '@assets/icons/ic_tab_mypage.svg';
+import TodoTabIconSvg from '@assets/icons/ic_tab_todo.svg';
 import ToastErrorIconSvg from '@assets/icons/ic_toast_error.svg';
 import ToastSuccessIconSvg from '@assets/icons/ic_toast_success.svg';
 import ToastWarningIconSvg from '@assets/icons/ic_toast_warning.svg';
@@ -138,3 +141,9 @@ export const WeatherShowerIcon = createStyledIcon(WeatherShowerIconSvg);
 export const WeatherSnowIcon = createStyledIcon(WeatherSnowIconSvg);
 export const WeatherSunriseIcon = createStyledIcon(WeatherSunriseIconSvg);
 export const WeatherSunsetIcon = createStyledIcon(WeatherSunsetIconSvg);
+
+export const TodoTabIcon = createStyledIcon(TodoTabIconSvg);
+
+export const MemoTabIcon = createStyledIcon(MemoTabIconSvg);
+
+export const MyPageTabIcon = createStyledIcon(MyPageTabIconSvg);

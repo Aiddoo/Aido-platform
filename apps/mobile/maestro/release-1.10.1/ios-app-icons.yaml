@@ -1,0 +1,56 @@
+appId: com.aido.mobile
+name: iOS에서 새 고양이 아이콘 세 종류와 기본 아이콘으로 변경한다
+---
+# Given: 유료 계정의 앱 아이콘 선택 화면
+- runFlow:
+    when:
+      visible: '확인|OK'
+    commands:
+      - tapOn: '확인|OK'
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: '러시안 블루'
+# When: 새 아이콘을 차례대로 선택한다
+- tapOn: '러시안 블루'
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      visible: '확인|OK'
+    commands:
+      - tapOn: '확인|OK'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ios-russian-blue-selected
+- tapOn: '크림 고양이'
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      visible: '확인|OK'
+    commands:
+      - tapOn: '확인|OK'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ios-cream-cat-selected
+- tapOn: '턱시도 고양이'
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      visible: '확인|OK'
+    commands:
+      - tapOn: '확인|OK'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ios-tuxedo-cat-selected
+# Then: 기본 아이콘으로 돌아갈 수 있다
+- tapOn: '기본'
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      visible: '확인|OK'
+    commands:
+      - tapOn: '확인|OK'
+- takeScreenshot: ios-default-icon-restored

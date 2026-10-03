@@ -1,5 +1,5 @@
 import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
-import { CalendarProvider } from '@src/features/todo/presentations/components/Calendar/calendar-view-mode-context';
+import { CalendarProvider } from '@src/features/todo/presentations/providers/calendar-provider';
 import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
@@ -9,7 +9,9 @@ import {
   HStack,
   PlusIcon,
   QueryErrorBoundary,
-  StyledSafeAreaView,
+  Box,
+  Result,
+  type QueryErrorFallbackProps,
   Text,
   VStack,
 } from '@src/shared/ui';
@@ -24,16 +26,16 @@ export default function FeedGroupLayout() {
   return (
     <FeedDateProvider>
       <CalendarProvider>
-        <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+        <Box flex={1} className="bg-white">
           <VStack>
-            <QueryErrorBoundary>
+            <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
               <Suspense fallback={<AvatarList.Loading />}>
                 <AvatarList />
               </Suspense>
             </QueryErrorBoundary>
           </VStack>
           <Slot />
-        </StyledSafeAreaView>
+        </Box>
       </CalendarProvider>
     </FeedDateProvider>
   );
@@ -51,7 +53,8 @@ function AvatarList() {
     data: friendsData,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage,
+    isFetching,
+    isFetchNextPageError,
   } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
 
   const friends = useMemo(
@@ -60,8 +63,8 @@ function AvatarList() {
   );
 
   const handleScrollEnd = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (hasNextPage && !isFetching) {
+      void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
     }
   };
 
@@ -93,6 +96,8 @@ function AvatarList() {
           }
         />
       ))}
+
+      {isFetchNextPageError && <AvatarList.MoreError onPress={handleScrollEnd} />}
 
       <AvatarList.AddButton onPress={() => push('/friends/search')} />
     </ScrollView>
@@ -149,6 +154,33 @@ AvatarList.AddButton = function AddButton({ onPress }: { onPress: () => void }) 
           <PlusIcon width={16} height={16} colorClassName="text-gray-5" />
         </View>
       </VStack>
+    </PressableFeedback>
+  );
+};
+
+AvatarList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['friend', 'common']);
+  return (
+    <HStack px={16} py={8} gap={8} align="center">
+      <Text size="b4" shade={6} className="flex-1">
+        {t('friend:list.loadFailed')}
+      </Text>
+      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+    </HStack>
+  );
+};
+
+AvatarList.MoreError = function MoreError({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation('common');
+  return (
+    <PressableFeedback
+      onPress={onPress}
+      accessibilityRole="button"
+      className="min-h-11 justify-center rounded-xl bg-gray-1 px-3"
+    >
+      <Text size="b4" tone="brand">
+        {t('errorBoundary.retry')}
+      </Text>
     </PressableFeedback>
   );
 };

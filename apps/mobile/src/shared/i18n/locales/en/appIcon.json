@@ -5,7 +5,10 @@
     "orangeTabby": "Orange Tabby",
     "blackCat": "Black Cat",
     "whiteCat": "White Cat",
-    "siamese": "Siamese"
+    "siamese": "Siamese",
+    "russianBlue": "Russian Blue",
+    "creamCat": "Cream Cat",
+    "tuxedoCat": "Tuxedo Cat"
   },
   "screen": {
     "unsupported": "Changing the app icon isn't supported on this device",
@@ -19,6 +22,6 @@
   },
   "errorDialog": {
     "title": "Couldn't Change Icon",
-    "description": "The app icon couldn't be changed. Try reinstalling the app or using a physical device."
+    "description": "Could not change the icon. Please try again in a moment."
   }
 }

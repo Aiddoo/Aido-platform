@@ -1,3 +1,4 @@
+import { verifyEmailSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SignUpPasswordForm } from '@src/features/auth/presentations/components/SignUpPasswordForm';
 import { SignUpUserInfoForm } from '@src/features/auth/presentations/components/SignUpUserInfoForm';
@@ -27,6 +28,10 @@ const SignUpScreen = () => {
     resolver: zodResolver(signUpFormSchema),
     defaultValues: {
       email: '',
+      termsAgreed: false,
+      privacyAgreed: false,
+      marketingAgreed: false,
+      marketingPushAgreed: false,
       password: '',
       passwordConfirm: '',
       name: '',
@@ -34,17 +39,37 @@ const SignUpScreen = () => {
     mode: 'onTouched',
   });
 
+  const verificationForm = useForm({
+    resolver: zodResolver(verifyEmailSchema),
+    defaultValues: { email: '', code: '' },
+  });
+
+  const enterVerification = () => {
+    verificationForm.reset({ email: form.getValues('email'), code: '' });
+    setStep('verification');
+  };
+
   return (
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ title: t(SIGN_UP_STEP_TITLE_KEYS[step]) }} />
 
-      <FormProvider {...form}>
-        {match(step)
-          .with('userInfo', () => <SignUpUserInfoForm onNextStep={() => setStep('password')} />)
-          .with('password', () => <SignUpPasswordForm onNextStep={() => setStep('verification')} />)
-          .with('verification', () => <SignUpVerificationForm />)
-          .exhaustive()}
-      </FormProvider>
+      {match(step)
+        .with('userInfo', () => (
+          <FormProvider {...form}>
+            <SignUpUserInfoForm onNextStep={() => setStep('password')} />
+          </FormProvider>
+        ))
+        .with('password', () => (
+          <FormProvider {...form}>
+            <SignUpPasswordForm onNextStep={enterVerification} />
+          </FormProvider>
+        ))
+        .with('verification', () => (
+          <FormProvider {...verificationForm}>
+            <SignUpVerificationForm />
+          </FormProvider>
+        ))
+        .exhaustive()}
     </View>
   );
 };

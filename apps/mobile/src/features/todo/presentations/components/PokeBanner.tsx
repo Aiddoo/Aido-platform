@@ -3,7 +3,15 @@ import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, PawIcon, Text, usePremiumDialog, VStack } from '@src/shared/ui';
+import {
+  HStack,
+  PawIcon,
+  Result,
+  Text,
+  usePremiumDialog,
+  VStack,
+  type QueryErrorFallbackProps,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
@@ -93,4 +101,16 @@ export function PokeBanner() {
 
 PokeBanner.Loading = function Loading() {
   return <Skeleton className="mx-4 h-[72px] rounded-xl" />;
+};
+
+PokeBanner.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todo', 'common']);
+  return (
+    <HStack mx={16} p={12} gap={8} align="center" className="rounded-xl bg-gray-1">
+      <Text size="b4" shade={6} className="flex-1">
+        {t('todo:nudge.statusUnavailable')}
+      </Text>
+      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+    </HStack>
+  );
 };

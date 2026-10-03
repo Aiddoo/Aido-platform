@@ -118,7 +118,8 @@
     "dialogTarget": "할 일을 잊은 {{name}}님에게",
     "dialogPlaceholder": "(선택) {{title}} 언제 할 거야?",
     "remindTitle": "할일이 없네? 빨리 만들어!",
-    "remindPlaceholder": "(선택) 할일 좀 만들어!"
+    "remindPlaceholder": "(선택) 할일 좀 만들어!",
+    "statusUnavailable": "콕 찌르기 상태를 불러오지 못했어요"
   },
   "category": {
     "nameLabel": "카테고리 이름",
@@ -136,7 +137,9 @@
   },
   "calendar": {
     "week": "주",
-    "month": "월"
+    "month": "월",
+    "loadFailed": "캘린더 표시를 업데이트하지 못했어요",
+    "loading": "완료 현황을 불러오고 있어요"
   },
   "feed": {
     "me": "나",
@@ -145,7 +148,8 @@
     "suggestionsLoading": "제안을 불러오는 중...",
     "routineSuggestion": "딱 맞는 루틴을 제안해드려요 !",
     "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요 !",
-    "preparing": "이번 주 제안을 준비 중이에요"
+    "preparing": "이번 주 제안을 준비 중이에요",
+    "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 시도해 주세요."
   },
   "activation": {
     "title": "첫 할 일을 만들고 완료해 보세요",

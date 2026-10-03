@@ -1,6 +1,8 @@
 {
   "titles": {
-    "index": "날씨"
+    "index": "날씨",
+    "back": "뒤로",
+    "settings": "날씨 알림 설정"
   },
   "sky": {
     "clear": "맑음",
@@ -15,12 +17,14 @@
   },
   "badge": {
     "setup": "날씨 설정",
-    "label": "날씨"
+    "label": "날씨",
+    "domesticOnly": "국내 날씨"
   },
   "locationPrompt": {
     "title": "위치를 등록하면 날씨를 볼 수 있어요",
     "subtitle": "현재 위치로 날씨를 알려드려요",
-    "register": "위치 등록하기"
+    "register": "위치 등록하기",
+    "permissionDenied": "설정에서 위치 권한을 허용하면 날씨를 볼 수 있어요"
   },
   "toasts": {
     "locationFailed": "위치를 가져올 수 없어요",
@@ -46,12 +50,22 @@
     "sunrise": "일출",
     "sunset": "일몰",
     "pm10": "미세먼지",
-    "pm25": "초미세먼지"
+    "pm25": "초미세먼지",
+    "domesticOnly": "지금은 국내 날씨를 제공하고 있어요",
+    "domesticOnlyDescription": "해외에서는 현재 위치의 예보를 제공하지 않아요. 할 일과 메모는 그대로 이용할 수 있어요.",
+    "refreshLocation": "현재 위치 다시 확인",
+    "registeredLocation": "등록한 위치의 날씨",
+    "dailyRange": "오늘의 최저·최고 기온이에요",
+    "refreshFailed": "업데이트하지 못해 마지막 예보를 보여드려요",
+    "nextDayHourLabel": "내일 {{hour}}시"
   },
   "dust": {
     "good": "좋음",
     "normal": "보통",
     "bad": "나쁨",
     "veryBad": "매우나쁨"
+  },
+  "introduction": {
+    "description": "현재 위치를 사용해 오늘 날씨를 알려드려요. 위치 권한은 나중에 날씨 화면에서도 설정할 수 있어요."
   }
 }

@@ -1,4 +1,3 @@
-import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 // Persist only display data; isolated widget runtimes cannot access auth or i18n.
@@ -46,11 +45,11 @@ export const widgetSnapshotSchema = z.object({
 });
 
 export type WidgetSnapshot = z.infer<typeof widgetSnapshotSchema>;
-export type WidgetSnapshotStrings = WidgetSnapshot['strings'];
-export type WidgetTopTodo = WidgetSnapshot['topTodos'][number];
+export type WidgetSnapshotStrings = z.infer<typeof widgetSnapshotSchema.shape.strings>;
 
 /** 위젯 렌더 시점의 표시 상태 — 스냅샷 상태에 자정 경과(stale)를 더한 판정 결과 */
-export type WidgetRenderState = 'data' | 'empty' | 'loggedOut' | 'stale';
+export const widgetRenderStateSchema = z.enum(['data', 'empty', 'loggedOut', 'stale']);
+export type WidgetRenderState = z.infer<typeof widgetRenderStateSchema>;
 
 export function isWidgetSnapshotStale(snapshot: WidgetSnapshot, todayLocalDate: string): boolean {
   return snapshot.state !== 'loggedOut' && snapshot.date !== todayLocalDate;
@@ -63,25 +62,7 @@ export function getWidgetRenderState(
   return isWidgetSnapshotStale(snapshot, todayLocalDate) ? 'stale' : snapshot.state;
 }
 
-export function getWidgetStateScreenStrings(
-  snapshot: WidgetSnapshot,
-  renderState: WidgetRenderState,
-): { title: string; cta: string } {
-  return match(renderState)
-    .with('loggedOut', () => ({
-      title: snapshot.strings.loggedOutTitle,
-      cta: snapshot.strings.loggedOutCta,
-    }))
-    .with('stale', () => ({ title: snapshot.strings.staleTitle, cta: snapshot.strings.staleCta }))
-    .with('data', 'empty', () => ({
-      title: snapshot.strings.emptyTitle,
-      cta: snapshot.strings.emptyCta,
-    }))
-    .exhaustive();
-}
-
 export const WidgetSnapshotPolicy = {
   isStale: isWidgetSnapshotStale,
   renderState: getWidgetRenderState,
-  stateScreenStrings: getWidgetStateScreenStrings,
 };

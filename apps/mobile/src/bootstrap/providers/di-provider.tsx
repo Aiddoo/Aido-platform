@@ -3,6 +3,7 @@ import { AchievementService } from '@src/features/achievement/services/achieveme
 import { createActivationProgressRepository } from '@src/features/activation/repositories/activation-progress.repository';
 import { ActivationService } from '@src/features/activation/services/activation.service';
 import { AiService } from '@src/features/ai/services/ai.service';
+import { AppIconService } from '@src/features/app-icon/services/app-icon.service';
 import { AppVersionService } from '@src/features/app-version/services/app-version.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/repositories/feature-discovery-state.repository';
@@ -27,11 +28,13 @@ import { TodoCategoryService } from '@src/features/todo/services/todo-category.s
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import { TodoService } from '@src/features/todo/services/todo.service';
 import { UserService } from '@src/features/user/services/user.service';
+import { WeatherLocationStateService } from '@src/features/weather/services/weather-location-state.service';
 import { WeatherService } from '@src/features/weather/services/weather.service';
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { ENV } from '@src/shared/config/env';
+import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
@@ -41,6 +44,7 @@ import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { requestRefreshTokens } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
+import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
 import {
   createCompositeLogger,
   createConsoleLogger,
@@ -82,7 +86,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
     setGlobalErrorReporter(errorReporter);
 
-    const publicKyInstance = createPublicClient();
+    const appVersion =
+      expoApplicationMetadataGateway.getInstallation()?.currentVersion ?? ENV.APP_VERSION;
+    const publicKyInstance = createPublicClient({ appVersion });
     const publicHttpClient = new KyHttpClient(publicKyInstance);
     const publicJsonFetcher = new KyJsonFetcher(publicKyInstance);
 
@@ -97,6 +103,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     });
 
     const authKyInstance = createAuthClient({
+      appVersion,
       tokenStore,
       refresh: tokenRefresher,
       endSession: (reason) => sessionManager.end(reason),
@@ -194,6 +201,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       authService,
       activationService,
       appVersionService,
+      appIconService: new AppIconService(expoAppIconGateway),
       friendService,
       featureDiscoveryService,
       featureDiscoveryStateService,
@@ -211,6 +219,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       revenueCatSdkManager,
       subscriptionService,
       weatherService,
+      weatherLocationStateService: new WeatherLocationStateService(mmkvSyncStorage),
+      locationGateway: expoLocationGateway,
       widgetSyncService,
     };
   });

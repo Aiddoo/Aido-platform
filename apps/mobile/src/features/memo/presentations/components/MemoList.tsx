@@ -2,6 +2,7 @@ import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   DocsIcon,
+  Button,
   HStack,
   PinFilledIcon,
   Result,
@@ -14,12 +15,14 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
+import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { useGetMemosQueryOptions } from '../queries/get-memos-query-options';
 
 export function MemoList() {
-  const { data } = useSuspenseInfiniteQuery(useGetMemosQueryOptions());
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
+    useSuspenseInfiniteQuery(useGetMemosQueryOptions());
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
@@ -32,28 +35,40 @@ export function MemoList() {
   ];
 
   return (
-    <HStack gap={12} align="start">
-      {columns.map((column, colIndex) => (
-        <VStack key={column.key} flex={1} gap={12}>
-          {column.items.map((item, rowIndex) => (
-            <Animated.View
-              key={item.id}
-              layout={LinearTransition.springify().damping(18).stiffness(120)}
-              entering={FadeInDown.delay((rowIndex * 2 + colIndex) * 60)
-                .duration(400)
-                .damping(15)}
-            >
-              <MemoList.Item
-                id={item.id}
-                content={item.content}
-                isPinned={item.isPinned}
-                date={formatMonthDay(item.createdAt)}
-              />
-            </Animated.View>
-          ))}
-        </VStack>
-      ))}
-    </HStack>
+    <VStack gap={20}>
+      <HStack gap={12} align="start">
+        {columns.map((column, colIndex) => (
+          <VStack key={column.key} flex={1} gap={12}>
+            {column.items.map((item, rowIndex) => (
+              <Animated.View
+                key={item.id}
+                layout={LinearTransition.springify().damping(18).stiffness(120)}
+                entering={FadeInDown.delay(Math.min(rowIndex * 2 + colIndex, 8) * 40)
+                  .duration(400)
+                  .damping(15)}
+              >
+                <MemoList.Item
+                  id={item.id}
+                  content={item.content}
+                  isPinned={item.isPinned}
+                  date={formatMonthDay(item.createdAt)}
+                />
+              </Animated.View>
+            ))}
+          </VStack>
+        ))}
+      </HStack>
+      {hasNextPage && (
+        <MemoList.More
+          onPress={() => {
+            void fetchNextPage({ cancelRefetch: false });
+          }}
+          isLoading={isFetchingNextPage}
+          isDisabled={isFetching}
+          hasError={isFetchNextPageError}
+        />
+      )}
+    </VStack>
   );
 }
 
@@ -124,5 +139,24 @@ MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
       title={t('memo:list.loadFailed')}
       button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
     />
+  );
+};
+
+MemoList.More = function More({
+  hasError,
+  ...props
+}: Omit<ComponentProps<typeof Button>, 'children'> & { hasError: boolean }) {
+  const { t } = useTranslation(['memo', 'common']);
+  return (
+    <VStack align="center" gap={8} pb={12}>
+      {hasError && (
+        <Text size="b4" shade={6} align="center">
+          {t('memo:list.nextPageFailed')}
+        </Text>
+      )}
+      <Button variant="weak" display="inline" {...props}>
+        {t(hasError ? 'common:actions.retry' : 'memo:list.loadMore')}
+      </Button>
+    </VStack>
   );
 };

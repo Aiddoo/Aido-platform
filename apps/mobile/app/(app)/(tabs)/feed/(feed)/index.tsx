@@ -9,6 +9,7 @@ import { TodoList } from '@src/features/todo/presentations/components/TodoList/T
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedDateKey } from '@src/features/todo/presentations/hooks/use-feed-date';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/presentations/constants/weather-query-keys.constant';
+import { useWeatherIntroduction } from '@src/features/weather/presentations/hooks/use-weather-introduction';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 export default function MyFeedScreen() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
+  useWeatherIntroduction();
   const featureDiscovery = useFeatureDiscoveryFeed();
   const activation = useActivationChecklist();
   const [refreshing, onRefresh] = useRefresh(() =>
@@ -31,6 +33,7 @@ export default function MyFeedScreen() {
 
   return (
     <NestableScrollContainer
+      contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -48,7 +51,7 @@ export default function MyFeedScreen() {
         </>
       )}
 
-      <Box px={16}>
+      <Box px={16} style={{ flexGrow: 1 }}>
         <QueryErrorBoundary
           resetKeys={[selectedDateKey]}
           fallback={(props) => <TodoList.Error {...props} />}
@@ -77,7 +80,7 @@ export default function MyFeedScreen() {
       </QueryErrorBoundary>
 
       <Box px={16}>
-        <QueryErrorBoundary>
+        <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
           <Suspense fallback={<SuggestionEntry.Loading />}>
             <SuggestionEntry />
           </Suspense>

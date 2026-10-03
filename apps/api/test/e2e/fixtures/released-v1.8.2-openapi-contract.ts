@@ -28,6 +28,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	 * - 2026-08-15 Todo 응답에 commentCount 추가. 1.8.2의 Zod object는 기본 strip
 	 *   모드라 알지 못하는 응답 키를 버리므로 기존 화면과 파싱에는 영향이 없습니다.
 	 */
-	schemasFingerprint: "6c5ddff698ad39fd7e2f0c432a1c45b70f22d39aa27acd0404ac9f1dfe273421",
-	pathsFingerprint: "a48b351d1220db66cd3d89330e0b57cb4de887204e5921d6df22d2041f9c3b47",
+	/** 1.10.1: 선택 X-App-Version 헤더와 입력 아이콘 enum 3종만 추가. 구버전 응답은 기존 키로 매핑한다. */
+	preProfileIconsSchemasFingerprint:
+		"6c5ddff698ad39fd7e2f0c432a1c45b70f22d39aa27acd0404ac9f1dfe273421",
+	preProfileIconsPathsFingerprint:
+		"a48b351d1220db66cd3d89330e0b57cb4de887204e5921d6df22d2041f9c3b47",
+	schemasFingerprint: "8bfc508f3e32e9c95b0b980d8faa8834c835059231832b9ff64fd9599aa6574c",
+	pathsFingerprint: "1630f3af64c5944476f7ebdae1517f65dc51cf5b79d031014a13f10a23b79996",
 } as const;

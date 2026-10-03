@@ -42,8 +42,15 @@ import { FriendDeleteConfirmDialog } from './FriendDeleteConfirmDialog';
 
 export function FriendList() {
   const { t } = useTranslation(['friend', 'common']);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, dataUpdatedAt } =
-    useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    refetch,
+    dataUpdatedAt,
+  } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
 
   const removeMutation = useMutation(useRemoveFriendMutationOptions());
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
@@ -195,8 +202,8 @@ export function FriendList() {
         ) : undefined
       }
       onEndReached={() => {
-        if (hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
+        if (hasNextPage && !isFetching) {
+          void fetchNextPage({ cancelRefetch: false });
         }
       }}
       onEndReachedThreshold={0.5}

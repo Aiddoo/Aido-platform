@@ -1,11 +1,17 @@
-const STACK_LABEL = 'stack:1.10.0';
 const TIP_LABEL = 'ci:stack-tip';
-const STACK_PREFIX = 'upgrade/1.10-';
+const STACK_LABEL_PATTERN = /^stack:\d+\.\d+\.\d+$/;
 
 const hasLabel = (pull, name) => pull.labels.some((label) => label.name === name);
 
 export function planPullRequestCI(current, openPulls, repository) {
-  const isStack = current.head.ref.startsWith(STACK_PREFIX) || hasLabel(current, STACK_LABEL);
+  const stackLabels = current.labels.filter((label) => STACK_LABEL_PATTERN.test(label.name));
+  if (stackLabels.length > 1)
+    throw new Error('A pull request must belong to only one release stack.');
+  const stackLabel = stackLabels[0]?.name;
+  const isStack =
+    current.head.ref.startsWith('upgrade/1.10-') ||
+    current.head.ref.includes('/1.10.1-') ||
+    stackLabel !== undefined;
   if (!isStack) {
     return {
       run: current.head.ref !== 'develop',
@@ -14,10 +20,10 @@ export function planPullRequestCI(current, openPulls, repository) {
       reason: 'regular',
     };
   }
-  if (!hasLabel(current, STACK_LABEL)) {
+  if (!stackLabel) {
     return { run: false, base: 'develop', ancestors: [], reason: 'awaiting-stack-metadata' };
   }
-  const members = openPulls.filter((pull) => hasLabel(pull, STACK_LABEL));
+  const members = openPulls.filter((pull) => hasLabel(pull, stackLabel));
   const tips = members.filter((pull) => hasLabel(pull, TIP_LABEL));
   if (tips.length > 1) throw new Error('A stack must have exactly one CI tip.');
   if (!hasLabel(current, TIP_LABEL) || current.draft) {

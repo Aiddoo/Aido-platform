@@ -1,12 +1,3 @@
-/**
- * Auth 모듈 매퍼
- *
- * 인증 관련 서비스 결과를 API 응답 형식으로 변환하는 Static 메서드를 제공합니다.
- * 회원가입, 로그인, 토큰 갱신, 프로필 관리 등의 응답 변환을 담당합니다.
- *
- * @module auth.mapper
- */
-
 import type {
 	CurrentUserResult,
 	ExchangeCodeResult,
@@ -16,6 +7,15 @@ import type {
 	UpdateProfileResult,
 	VerifyEmailResult,
 } from "#api/auth/application/types/auth.types";
+/**
+ * Auth 모듈 매퍼
+ *
+ * 인증 관련 서비스 결과를 API 응답 형식으로 변환하는 Static 메서드를 제공합니다.
+ * 회원가입, 로그인, 토큰 갱신, 프로필 관리 등의 응답 변환을 담당합니다.
+ *
+ * @module auth.mapper
+ */
+import { resolveProfileImage } from "#api/shared/presentation/profile/profile-image.resolver";
 
 /**
  * Auth 도메인의 Mapper 클래스
@@ -56,14 +56,14 @@ export abstract class AuthMapper {
 	 * return AuthMapper.toAuthTokensResponse(result);
 	 * ```
 	 */
-	static toAuthTokensResponse(result: VerifyEmailResult | LoginResult) {
+	static toAuthTokensResponse(result: VerifyEmailResult | LoginResult, appVersion?: string) {
 		return {
 			userId: result.userId,
 			userTag: result.userTag,
 			accessToken: result.tokens.accessToken,
 			refreshToken: result.tokens.refreshToken,
 			name: result.name,
-			profileImage: result.profileImage,
+			profileImage: resolveProfileImage(result.profileImage, appVersion),
 			accountRestored: result.accountRestored ?? false,
 		};
 	}
@@ -99,7 +99,7 @@ export abstract class AuthMapper {
 	 * return AuthMapper.toCurrentUserResponse(result);
 	 * ```
 	 */
-	static toCurrentUserResponse(result: CurrentUserResult) {
+	static toCurrentUserResponse(result: CurrentUserResult, appVersion?: string) {
 		return {
 			userId: result.userId,
 			email: result.email,
@@ -111,7 +111,7 @@ export abstract class AuthMapper {
 			subscriptionStatus: result.subscriptionStatus,
 			subscriptionExpiresAt: result.subscriptionExpiresAt,
 			name: result.name,
-			profileImage: result.profileImage,
+			profileImage: resolveProfileImage(result.profileImage, appVersion),
 			createdAt: result.createdAt,
 			providers: result.providers,
 		};
@@ -129,11 +129,11 @@ export abstract class AuthMapper {
 	 * return AuthMapper.toUpdateProfileResponse(result);
 	 * ```
 	 */
-	static toUpdateProfileResponse(result: UpdateProfileResult) {
+	static toUpdateProfileResponse(result: UpdateProfileResult, appVersion?: string) {
 		return {
 			message: result.message,
 			name: result.name,
-			profileImage: result.profileImage,
+			profileImage: resolveProfileImage(result.profileImage, appVersion),
 		};
 	}
 
@@ -164,13 +164,13 @@ export abstract class AuthMapper {
 	 * return AuthMapper.toExchangeCodeResponse(result);
 	 * ```
 	 */
-	static toExchangeCodeResponse(result: ExchangeCodeResult) {
+	static toExchangeCodeResponse(result: ExchangeCodeResult, appVersion?: string) {
 		return {
 			userId: result.userId,
 			accessToken: result.accessToken,
 			refreshToken: result.refreshToken,
 			name: result.userName ?? null,
-			profileImage: result.profileImage ?? null,
+			profileImage: resolveProfileImage(result.profileImage ?? null, appVersion),
 			accountRestored: result.accountRestored ?? false,
 		};
 	}

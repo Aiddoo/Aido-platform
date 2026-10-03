@@ -6,6 +6,10 @@ inputs:
     description: Branch used for the cumulative Turbo change scope
     required: false
     default: ''
+  affected-base-sha:
+    description: Immutable commit used for the cumulative Turbo change scope
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -28,9 +32,15 @@ runs:
       shell: bash
       env:
         BASE_REF: ${{ inputs.affected-base || github.base_ref }}
+        BASE_SHA: ${{ inputs.affected-base-sha }}
       run: |
         git fetch origin "$BASE_REF"
-        echo "TURBO_SCM_BASE=origin/$BASE_REF" >> "$GITHUB_ENV"
+        if [ -n "$BASE_SHA" ]; then
+          git cat-file -e "$BASE_SHA^{commit}" || git fetch origin "$BASE_SHA"
+          echo "TURBO_SCM_BASE=$BASE_SHA" >> "$GITHUB_ENV"
+        else
+          echo "TURBO_SCM_BASE=origin/$BASE_REF" >> "$GITHUB_ENV"
+        fi
 
     - name: Generate Prisma Client
       run: pnpm db:generate

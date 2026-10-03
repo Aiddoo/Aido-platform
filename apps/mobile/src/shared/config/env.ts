@@ -133,6 +133,7 @@ const resolveRevenueCatApiKey = (): string | undefined =>
 // =============================================================================
 
 export const ENV = {
+  APP_VERSION: Constants.expoConfig?.version,
   APP_ENV: extra.env,
   IS_DEV: extra.isDevelopment,
   IS_PRODUCTION: extra.isProduction,

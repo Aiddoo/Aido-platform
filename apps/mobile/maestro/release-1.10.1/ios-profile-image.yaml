@@ -1,0 +1,37 @@
+appId: com.aido.mobile
+name: iOS 프로필 선택 시트의 스크롤과 저장을 검증한다
+---
+# Given: 로그인된 홈에서 프로필 정보로 이동한다
+- runFlow:
+    when:
+      visible: 'Dismiss'
+    commands:
+      - tapOn: 'Dismiss'
+- tapOn: '마이'
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    point: '65%, 24%'
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    point: '50%, 21%'
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: '프로필 이미지 선택'
+# When: 새 고양이를 선택하고 저장 버튼까지 스크롤한다
+- tapOn: '턱시도 고양이'
+- swipe:
+    start: '50%, 80%'
+    end: '50%, 42%'
+    duration: 800
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ios-nine-profiles-accessible
+- tapOn: '저장'
+# Then: 시트가 닫히고 프로필이 저장된다
+- extendedWaitUntil:
+    notVisible: '프로필 이미지 선택'
+    timeout: 15000
+- assertVisible: '프로필 정보'
+- takeScreenshot: ios-profile-saved

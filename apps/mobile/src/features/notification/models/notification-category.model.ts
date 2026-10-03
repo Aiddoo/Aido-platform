@@ -1,16 +1,19 @@
 import type { NotificationType } from '@aido/validators';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
-export type NotificationCategoryKey =
-  | 'friend'
-  | 'nudge'
-  | 'cheer'
-  | 'achievement'
-  | 'todo'
-  | 'reminder'
-  | 'ai'
-  | 'notice'
-  | 'social';
+const notificationCategoryKeySchema = z.enum([
+  'friend',
+  'nudge',
+  'cheer',
+  'achievement',
+  'todo',
+  'reminder',
+  'ai',
+  'notice',
+  'social',
+]);
+export type NotificationCategoryKey = z.infer<typeof notificationCategoryKeySchema>;
 
 export const getCategoryKey = (type: NotificationType): NotificationCategoryKey =>
   match<NotificationType, NotificationCategoryKey>(type)

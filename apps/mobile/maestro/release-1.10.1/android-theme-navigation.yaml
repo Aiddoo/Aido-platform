@@ -1,0 +1,65 @@
+appId: com.aido.mobile
+name: Android 테마 변경과 설정 복귀 및 날씨 진입을 반복한다
+---
+# Given: 유료 임시 계정으로 로그인된 홈
+- launchApp
+- runFlow:
+    when:
+      visible: 'No thanks'
+    commands:
+      - tapOn: 'No thanks'
+- extendedWaitUntil:
+    visible: 'To-dos'
+    timeout: 20000
+- repeat:
+    times: 3
+    commands:
+      # When: 다크 모드와 라이트 모드를 변경하고 설정을 닫는다
+      - tapOn:
+          point: '83%, 93%'
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - scrollUntilVisible:
+          element: 'Theme'
+          direction: DOWN
+          centerElement: true
+      - tapOn: 'Theme'
+      - extendedWaitUntil:
+          visible: 'Dark Mode'
+          timeout: 10000
+      - tapOn: 'Dark Mode'
+      - back
+      - extendedWaitUntil:
+          visible: 'To-dos'
+          timeout: 10000
+      - tapOn:
+          point: '16%, 93%'
+      - tapOn: 'Weather'
+      - extendedWaitUntil:
+          visible: 'Wind'
+          timeout: 10000
+      - back
+      - extendedWaitUntil:
+          visible: 'To-dos'
+          timeout: 10000
+      - tapOn:
+          point: '83%, 93%'
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - scrollUntilVisible:
+          element: 'Theme'
+          direction: DOWN
+          centerElement: true
+      - tapOn: 'Theme'
+      - tapOn: 'Light Mode'
+      - back
+      - extendedWaitUntil:
+          visible: 'To-dos'
+          timeout: 10000
+      - tapOn: 'Memos'
+      - assertVisible: 'Add Memo'
+      - tapOn:
+          point: '16%, 93%'
+      # Then: 홈과 메모 탭이 유지된다
+      - assertVisible: 'To-dos'
+- takeScreenshot: android-theme-navigation

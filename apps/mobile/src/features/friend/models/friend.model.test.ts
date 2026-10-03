@@ -1,29 +1,33 @@
 import { FriendPolicy } from './friend.model';
 
-describe('FriendPolicy.isValidSearchQuery', () => {
-  test('2자 이상이면 true', () => {
-    expect(FriendPolicy.isValidSearchQuery('홍길')).toBe(true);
-    expect(FriendPolicy.isValidSearchQuery('ab')).toBe(true);
+describe('친구 검색 정책', () => {
+  test.each([
+    ['홍길', true],
+    ['ab', true],
+    ['  홍길동  ', true],
+    ['a', false],
+    [' a ', false],
+    ['', false],
+  ])('검색어 "%s"의 검색 가능 여부는 %s이다', (query, expected) => {
+    // Given
+    const input = { query };
+    // When
+    const result = FriendPolicy.isValidSearchQuery(input);
+    // Then
+    expect(result).toBe(expected);
   });
 
-  test('trim 후 2자 이상으로 판정한다', () => {
-    expect(FriendPolicy.isValidSearchQuery('  홍길동  ')).toBe(true);
-  });
-
-  test('2자 미만이면 false', () => {
-    expect(FriendPolicy.isValidSearchQuery('a')).toBe(false);
-    expect(FriendPolicy.isValidSearchQuery(' a ')).toBe(false);
-    expect(FriendPolicy.isValidSearchQuery('')).toBe(false);
-  });
-});
-
-describe('FriendPolicy.isValidTag', () => {
-  test('8자리 영문 대문자·숫자면 true', () => {
-    expect(FriendPolicy.isValidTag('ABCD1234')).toBe(true);
-  });
-
-  test('형식이 어긋나면 false', () => {
-    expect(FriendPolicy.isValidTag('abcd1234')).toBe(false);
-    expect(FriendPolicy.isValidTag('ABC123')).toBe(false);
+  test.each([
+    ['ABCD1234', true],
+    [' ABCD1234 ', true],
+    ['abcd1234', false],
+    ['ABC123', false],
+  ])('태그 "%s"의 유효 여부는 %s이다', (userTag, expected) => {
+    // Given
+    const input = { userTag };
+    // When
+    const result = FriendPolicy.isValidTag(input);
+    // Then
+    expect(result).toBe(expected);
   });
 });

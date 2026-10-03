@@ -30,9 +30,8 @@ interface FriendSearchListProps {
 export function FriendSearchList({ query }: FriendSearchListProps) {
   const { t } = useTranslation('friend');
   const queryClient = useQueryClient();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    useSearchUsersQueryOptions(query),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
+    useSuspenseInfiniteQuery(useSearchUsersQueryOptions(query));
   const sendRequest = useMutation(useSendRequestByTagMutationOptions());
   const cancelRequest = useMutation(useCancelRequestMutationOptions());
 
@@ -133,8 +132,11 @@ export function FriendSearchList({ query }: FriendSearchListProps) {
         />
       }
       hasNextPage={hasNextPage}
+      isFetching={isFetching}
       isFetchingNextPage={isFetchingNextPage}
-      onEndReached={fetchNextPage}
+      onEndReached={() => {
+        void fetchNextPage({ cancelRefetch: false });
+      }}
     />
   );
 }

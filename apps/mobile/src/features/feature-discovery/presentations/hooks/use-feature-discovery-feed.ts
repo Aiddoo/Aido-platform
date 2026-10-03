@@ -4,15 +4,17 @@ import { FeatureDiscoveryPolicy } from '@src/features/feature-discovery/models/f
 import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discovery/models/feature-discovery.registry';
 import { getNativeAppVersion } from '@src/features/feature-discovery/services/native-app-version';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useWeatherSession } from '@src/features/weather/presentations/providers/weather-session-provider';
+import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 
 import { useFeatureDiscoveryQueryOptions } from '../queries/get-feature-discovery-query-options';
 import { claimAndOpenFeatureDiscovery } from '../state/feature-discovery-auto-open';
 import { useFeatureDiscoveryHub } from './use-feature-discovery-hub';
-import { useStableFeedForeground } from './use-stable-feed-foreground';
 
 export function useFeatureDiscoveryFeed() {
+  const weather = useWeatherSession();
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const configOptions = useFeatureDiscoveryQueryOptions();
@@ -40,7 +42,7 @@ export function useFeatureDiscoveryFeed() {
   );
   const hasSeen = identity ? stateService.isSeen(identity) : true;
   const canAutoOpen = FeatureDiscoveryPolicy.canAutoOpen({
-    authStatus: status,
+    authStatus: weather.needsIntroduction ? 'loading' : status,
     config,
     user,
     appVersion,

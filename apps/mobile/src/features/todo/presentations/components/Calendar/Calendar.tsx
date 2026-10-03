@@ -1,6 +1,6 @@
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, FishIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import {
   addMonths,
   addWeeks,
@@ -20,7 +20,7 @@ import {
 } from '@src/shared/utils/date';
 import { range } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useCallback, useEffect, useRef } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef } from 'react';
 import {
   FlatList,
   type NativeScrollEvent,
@@ -31,8 +31,8 @@ import {
 import { match } from 'ts-pattern';
 
 import type { DailyCompletionSummary } from '../../../models/todo.model';
+import { useCalendarContext } from '../../providers/calendar-provider';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
-import { useCalendarContext } from './calendar-view-mode-context';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarNavigation } from './CalendarNavigation';
 import { CalendarViewModeToggle } from './CalendarViewModeToggle';
@@ -48,9 +48,10 @@ const PAGES = range(TOTAL_PAGES);
 
 interface CalendarProps {
   completions?: CompletionsByDate;
+  status?: ReactNode;
 }
 
-export function Calendar({ completions = EMPTY_COMPLETIONS }: CalendarProps) {
+export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarProps) {
   const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { viewMode } = useCalendarContext();
@@ -105,6 +106,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS }: CalendarProps) {
           .with('month', () => <CalendarMonthPager completions={completions} />)
           .exhaustive()}
       </Box>
+      {status}
     </VStack>
   );
 }
@@ -382,3 +384,24 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
     </HStack>
   );
 }
+
+Calendar.MarkerLoading = function MarkerLoading() {
+  const { t } = useTranslation('todo');
+  return (
+    <HStack px={16} py={4} align="center" gap={8} accessibilityLabel={t('calendar.loading')}>
+      <Skeleton className="h-3 w-24 rounded" />
+      <Skeleton className="h-3 w-12 rounded" />
+    </HStack>
+  );
+};
+Calendar.Error = function ErrorState({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation(['todo', 'common']);
+  return (
+    <HStack px={16} py={4} align="center" gap={8}>
+      <Text size="e1" shade={6} className="flex-1">
+        {t('todo:calendar.loadFailed')}
+      </Text>
+      <Result.Button onPress={onRetry}>{t('common:actions.retry')}</Result.Button>
+    </HStack>
+  );
+};

@@ -11,29 +11,22 @@ export const memoItemSchema = z.object({
 
 export type MemoItem = z.infer<typeof memoItemSchema>;
 
-export interface MemoPage {
-  items: MemoItem[];
-  pagination: {
-    nextCursor: number | null;
-    hasNext: boolean;
-    size: number;
-  };
-}
+export const memoPageSchema = z.object({
+  items: z.array(memoItemSchema),
+  nextCursor: z.number().nullable(),
+  hasNext: z.boolean(),
+});
+export type MemoPage = z.infer<typeof memoPageSchema>;
 
-export interface MemoResourceLimit {
-  currentCount: number;
-  maxPerUser: number;
-}
+export const memoResourceLimitSchema = z.object({
+  currentCount: z.number(),
+  maxPerUser: z.number(),
+});
+export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
 
-export function canCreate(limit: MemoResourceLimit): boolean {
-  return limit.currentCount < limit.maxPerUser;
-}
-
-export function remainingCount(limit: MemoResourceLimit): number {
-  return limit.maxPerUser - limit.currentCount;
-}
-
+const isBelowLimit = (currentCount: number, maxPerUser: number): boolean =>
+  currentCount < maxPerUser;
 export const MemoPolicy = {
-  canCreate: (limit: MemoResourceLimit): boolean => canCreate(limit),
-  remainingCount: (limit: MemoResourceLimit): number => remainingCount(limit),
-} as const;
+  isCreatable: (limit: MemoResourceLimit): boolean =>
+    isBelowLimit(limit.currentCount, limit.maxPerUser),
+};

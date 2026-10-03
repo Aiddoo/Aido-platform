@@ -71,7 +71,45 @@ export function hasHourlyForecasts(forecast: WeatherForecast): boolean {
   return forecast.hourlyForecasts.length > 0;
 }
 
+const weatherLocationInputSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  countryCode: z.string().nullable(),
+});
+type WeatherLocationInput = z.infer<typeof weatherLocationInputSchema>;
+const isWithinForecastBounds = (latitude: number, longitude: number): boolean =>
+  Number.isFinite(latitude) &&
+  Number.isFinite(longitude) &&
+  latitude >= 33 &&
+  latitude <= 39 &&
+  longitude >= 124 &&
+  longitude <= 132;
+
+const hasCoordinateDifference = (
+  latitude: number,
+  longitude: number,
+  previousLatitude: number,
+  previousLongitude: number,
+): boolean =>
+  Math.abs(latitude - previousLatitude) >= 0.01 || Math.abs(longitude - previousLongitude) >= 0.01;
+
 export const WeatherPolicy = {
+  isWithinSupportedBounds: (
+    location: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
+  ): boolean => isWithinForecastBounds(location.latitude, location.longitude),
+  isRelocationNeeded: (
+    location: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
+    previous: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
+  ): boolean =>
+    hasCoordinateDifference(
+      location.latitude,
+      location.longitude,
+      previous.latitude,
+      previous.longitude,
+    ),
+  isSupportedLocation: (location: WeatherLocationInput): boolean =>
+    location.countryCode?.toUpperCase() === 'KR' &&
+    isWithinForecastBounds(location.latitude, location.longitude),
   shouldShowPrecipitation,
   shouldShowHourlyPrecipitation,
   hasHourlyForecasts,

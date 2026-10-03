@@ -1,12 +1,13 @@
 import { userIdParamSchema } from '@aido/validators';
 import { useFriendById } from '@src/features/friend/presentations/hooks/use-friend-by-id';
+import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { FriendCalendar } from '@src/features/todo/presentations/components/Calendar/FriendCalendar';
 import { FriendTodoList } from '@src/features/todo/presentations/components/FriendTodoList';
 import { PokeBanner } from '@src/features/todo/presentations/components/PokeBanner';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedDateKey } from '@src/features/todo/presentations/hooks/use-feed-date';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
-import { Box, QueryErrorBoundary, Spacing } from '@src/shared/ui';
+import { Box, QueryErrorBoundary, Spacing, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
@@ -16,7 +17,16 @@ export default function FriendFeedScreen() {
   const { friendId } = useLocalSearchParams();
   const parsed = userIdParamSchema.shape.userId.safeParse(friendId);
   if (!parsed.success) return <Redirect href="/feed" />;
-  return <FriendFeedContent />;
+  return (
+    <QueryErrorBoundary
+      resetKeys={[parsed.data]}
+      fallback={(props) => <FriendFeedContent.Error {...props} />}
+    >
+      <Suspense fallback={<FriendFeedContent.Loading />}>
+        <FriendFeedContent />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
 }
 
 function FriendFeedContent() {
@@ -24,7 +34,8 @@ function FriendFeedContent() {
   const friendId = userIdParamSchema.shape.userId.parse(rawFriendId);
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
-  const friend = useFriendById(friendId);
+  const { friend, hasNextPage, isFetchNextPageError, error, fetchNextPage } =
+    useFriendById(friendId);
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
@@ -32,10 +43,21 @@ function FriendFeedContent() {
     ]),
   );
 
+  if (!friend && isFetchNextPageError)
+    return (
+      <FriendFeedContent.Error
+        error={error}
+        reset={() => {
+          void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+        }}
+      />
+    );
+  if (!friend && hasNextPage) return <FriendFeedContent.Loading />;
   if (!friend) return <Redirect href="/feed" />;
 
   return (
     <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -44,7 +66,7 @@ function FriendFeedContent() {
 
       <Spacing size={8} />
 
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={(props) => <PokeBanner.Error {...props} />}>
         <Suspense fallback={<PokeBanner.Loading />}>
           <PokeBanner />
         </Suspense>
@@ -52,8 +74,11 @@ function FriendFeedContent() {
 
       <Spacing size={16} />
 
-      <Box px={16}>
-        <QueryErrorBoundary resetKeys={[selectedDateKey]}>
+      <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+        <QueryErrorBoundary
+          resetKeys={[friend.id, selectedDateKey]}
+          fallback={(props) => <FriendTodoList.Error {...props} />}
+        >
           <Suspense fallback={<FriendTodoList.Loading />}>
             <FriendTodoList key={selectedDateKey} friend={friend} />
           </Suspense>
@@ -62,3 +87,33 @@ function FriendFeedContent() {
     </ScrollView>
   );
 }
+
+FriendFeedContent.Loading = function Loading() {
+  return (
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
+      <Calendar />
+      <Spacing size={16} />
+      <Box px={16}>
+        <FriendTodoList.Loading />
+      </Box>
+    </ScrollView>
+  );
+};
+FriendFeedContent.Error = function ErrorState(props: QueryErrorFallbackProps) {
+  return (
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
+      <Calendar />
+      <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+        <FriendTodoList.Error {...props} />
+      </Box>
+    </ScrollView>
+  );
+};

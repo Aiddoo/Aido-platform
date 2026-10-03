@@ -1,14 +1,22 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect } from 'react';
 
-import { useGetFriendsQueryOptions } from '../queries/get-friends-query-options';
-import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
+import { useGetFriendQueryOptions } from '../queries/get-friend-query-options';
 
-export function useFriendById(friendId: string): FriendUserViewModel | null {
-  const { data } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
+export function useFriendById(friendId: string) {
+  const {
+    data: friend,
+    hasNextPage,
+    isFetching,
+    isFetchNextPageError,
+    error,
+    fetchNextPage,
+  } = useSuspenseInfiniteQuery(useGetFriendQueryOptions({ friendId }));
 
-  return useMemo(
-    () => data.pages.flatMap((p) => p.items).find((f) => f.id === friendId) ?? null,
-    [data.pages, friendId],
-  );
+  useEffect(() => {
+    if (!friend && hasNextPage && !isFetching && !isFetchNextPageError)
+      void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+  }, [friend, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage]);
+
+  return { friend, hasNextPage, isFetching, isFetchNextPageError, error, fetchNextPage };
 }

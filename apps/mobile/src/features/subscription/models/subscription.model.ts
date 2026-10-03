@@ -1,4 +1,4 @@
-import type { SubscriptionStatus } from '@src/features/user/models/user.model';
+import type { SubscriptionStatus, User } from '@src/features/user/models/user.model';
 import { z } from 'zod';
 
 export const planTypeSchema = z.enum(['monthly', 'annual']);
@@ -45,5 +45,7 @@ export function shouldShowExpirationDetails(
 }
 
 export const SubscriptionPolicy = {
-  shouldShowExpirationDetails,
+  isExpirationRelevant: (
+    user: Pick<User, 'subscriptionStatus' | 'subscriptionExpiresAt'>,
+  ): boolean => shouldShowExpirationDetails(user.subscriptionStatus, user.subscriptionExpiresAt),
 } as const;

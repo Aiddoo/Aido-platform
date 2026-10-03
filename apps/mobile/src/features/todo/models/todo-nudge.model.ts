@@ -34,10 +34,16 @@ export const sendTodoNudgeResultSchema = z.object({
 });
 export type SendTodoNudgeResult = z.infer<typeof sendTodoNudgeResultSchema>;
 
-export type NudgeBannerState =
-  | { type: 'limitReached' }
-  | { type: 'available' }
-  | { type: 'remaining'; remainingToday: number; dailyLimit: number | null };
+const nudgeBannerStateSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('limitReached') }),
+  z.object({ type: z.literal('available') }),
+  z.object({
+    type: z.literal('remaining'),
+    remainingToday: z.number(),
+    dailyLimit: z.number().nullable(),
+  }),
+]);
+export type NudgeBannerState = z.infer<typeof nudgeBannerStateSchema>;
 
 const MAX_MESSAGE_LENGTH = 200;
 

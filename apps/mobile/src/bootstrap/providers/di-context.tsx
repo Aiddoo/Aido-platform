@@ -1,5 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
@@ -7,6 +8,7 @@ import type { SessionManager } from '@src/core/session/session-manager';
 import type { AchievementService } from '@src/features/achievement/services/achievement.service';
 import type { ActivationService } from '@src/features/activation/services/activation.service';
 import type { AiService } from '@src/features/ai/services/ai.service';
+import type { AppIconService } from '@src/features/app-icon/services/app-icon.service';
 import type { AppVersionService } from '@src/features/app-version/services/app-version.service';
 import type { AuthService } from '@src/features/auth/services/auth.service';
 import type { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
@@ -25,6 +27,7 @@ import type { TodoCategoryService } from '@src/features/todo/services/todo-categ
 import type { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import type { TodoService } from '@src/features/todo/services/todo.service';
 import type { UserService } from '@src/features/user/services/user.service';
+import type { WeatherLocationStateService } from '@src/features/weather/services/weather-location-state.service';
 import type { WeatherService } from '@src/features/weather/services/weather.service';
 import type { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
@@ -34,6 +37,7 @@ import { createContext, type PropsWithChildren, use } from 'react';
 export interface DIContainer {
   // Infrastructure
   storage: Storage;
+  locationGateway: LocationGateway;
   logger: Logger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
@@ -51,6 +55,7 @@ export interface DIContainer {
   authService: AuthService;
   activationService: ActivationService;
   appVersionService: AppVersionService;
+  appIconService: AppIconService;
   friendService: FriendService;
   featureDiscoveryService: FeatureDiscoveryService;
   featureDiscoveryStateService: FeatureDiscoveryStateService;
@@ -68,6 +73,7 @@ export interface DIContainer {
   revenueCatSdkManager: RevenueCatSdkManager;
   subscriptionService: SubscriptionService;
   weatherService: WeatherService;
+  weatherLocationStateService: WeatherLocationStateService;
   widgetSyncService: WidgetSyncService;
 }
 
@@ -96,6 +102,7 @@ export const useDI = (): DIContainer => {
 };
 
 // Infrastructure Hooks
+export const useLocationGateway = () => useDI().locationGateway;
 export const useStorage = () => useDI().storage;
 export const useTokenStore = () => useDI().tokenStore;
 export const useSessionManager = () => useDI().sessionManager;
@@ -127,5 +134,8 @@ export const useStoreReviewPromptService = () => useDI().storeReviewPromptServic
 export const useUserService = () => useDI().userService;
 export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
+export const useWeatherLocationStateService = () => useDI().weatherLocationStateService;
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;
+
+export const useAppIconService = () => useDI().appIconService;
