@@ -1,8 +1,6 @@
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
 import { WeatherForecastBadge } from '@src/features/weather/presentations/components/WeatherForecastBadge';
-import { useToday } from '@src/shared/hooks/useToday';
 import { HStack } from '@src/shared/ui';
-import { formatDate } from '@src/shared/utils/date';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
@@ -20,7 +18,7 @@ export default function FeedLayout() {
         contentStyle: { backgroundColor: stackBg.backgroundColor as string },
         headerLeft: () => (
           <HStack align="center" pl={4}>
-            <FeedWeatherBadge />
+            <WeatherForecastBadge />
           </HStack>
         ),
         headerRight: () => (
@@ -36,9 +34,4 @@ export default function FeedLayout() {
       />
     </Stack>
   );
-}
-
-function FeedWeatherBadge() {
-  const today = useToday();
-  return <WeatherForecastBadge date={formatDate(today)} />;
 }

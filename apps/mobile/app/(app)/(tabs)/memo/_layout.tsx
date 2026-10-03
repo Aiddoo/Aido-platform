@@ -1,8 +1,6 @@
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
 import { WeatherForecastBadge } from '@src/features/weather/presentations/components/WeatherForecastBadge';
-import { useToday } from '@src/shared/hooks/useToday';
 import { HStack } from '@src/shared/ui';
-import { formatDate } from '@src/shared/utils/date';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
@@ -29,7 +27,7 @@ export default function MemoLayout() {
           contentStyle: { backgroundColor: headerBg.backgroundColor as string },
           headerLeft: () => (
             <HStack align="center" pl={4}>
-              <MemoWeatherBadge />
+              <WeatherForecastBadge />
             </HStack>
           ),
           headerRight: () => (
@@ -41,9 +39,4 @@ export default function MemoLayout() {
       />
     </Stack>
   );
-}
-
-function MemoWeatherBadge() {
-  const today = useToday();
-  return <WeatherForecastBadge date={formatDate(today)} />;
 }

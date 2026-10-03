@@ -12,34 +12,24 @@ import {
   getPrecipitationTypeLabel,
   getSkyConditionLabel,
 } from '@src/features/weather/presentations/constants/weather-labels.constant';
-import {
-  getTimeOfDay,
-  TIME_PALETTES,
-  TimePaletteContext,
-  useTimePalette,
-} from '@src/features/weather/presentations/hooks/use-time-palette';
+import { useTimePalette } from '@src/features/weather/presentations/hooks/use-time-palette';
+import { useWeatherSession } from '@src/features/weather/presentations/providers/weather-session-provider';
 import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/get-conditions-query-options';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/get-forecast-query-options';
-import { useUpdateLocationMutationOptions } from '@src/features/weather/presentations/queries/use-update-location-mutation-options';
 import type { WeatherForecastViewModel } from '@src/features/weather/presentations/view-models/weather-forecast.view-model';
 import { isApiError } from '@src/shared/errors/api-error';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
-import { useToday } from '@src/shared/hooks/useToday';
 import { t as globalT, useTranslation } from '@src/shared/i18n';
-import { Box, CrosshairIcon, HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import { Box, CrosshairIcon, HStack, Result, Spacing, Text, VStack } from '@src/shared/ui';
 import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/Icon';
-import { formatDate, getWeekdayLabels, isDateToday } from '@src/shared/utils/date';
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
-import * as Location from 'expo-location';
+import { getWeekdayLabels } from '@src/shared/utils/date';
+import { useQuery } from '@tanstack/react-query';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { Skeleton } from 'heroui-native';
-import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   ScrollView,
-  StyleSheet,
+  RefreshControl,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -47,217 +37,157 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 
 export default function WeatherDetailScreen() {
-  const { t } = useTranslation('weather');
-  const palette = TIME_PALETTES[getTimeOfDay()];
+  const { t } = useTranslation(['weather', 'common']);
+  const palette = useTimePalette();
+  const session = useWeatherSession();
   const insets = useSafeAreaInsets();
-  // 날씨 상세는 feed 선택 상태의 수명 밖에 있으므로 앱 전역 로컬 날짜를 사용한다.
-  const selectedDate = useToday();
-  const {
-    data: forecast,
-    error,
-    isPending,
-    isFetching,
-  } = useQuery({
-    ...useGetForecastQueryOptions(formatDate(selectedDate)),
-    placeholderData: keepPreviousData,
-  });
-  const isRefreshing = isFetching && !isPending;
-  const { data: conditions } = useQuery({
-    ...useGetConditionsQueryOptions(),
-    placeholderData: keepPreviousData,
-  });
+  const headerHeight = useHeaderHeight();
+  const forecastQuery = useQuery(useGetForecastQueryOptions(session.clock.date));
+  const conditionsQuery = useQuery(useGetConditionsQueryOptions());
+  const forecast = forecastQuery.data;
+  const conditions = conditionsQuery.data;
+  const retryForecast = () => {
+    void forecastQuery.refetch();
+  };
 
-  if (isPending) {
+  if (session.status === 'unsupported') {
     return (
-      <TimePaletteContext.Provider value={palette}>
-        <View className="flex-1" style={{ backgroundColor: palette.bg }}>
-          <GradientBackground />
-          <ForecastSkeleton insetTop={insets.top} />
-        </View>
-      </TimePaletteContext.Provider>
+      <WeatherDetailScreen.Empty
+        title={t('weather:screen.domesticOnly')}
+        description={t('weather:screen.domesticOnlyDescription')}
+        action={t('weather:screen.refreshLocation')}
+        onPress={() => {
+          void session.syncLocation(true);
+        }}
+      />
     );
   }
-
-  if (error) {
-    if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902)) {
-      return (
-        <TimePaletteContext.Provider value={palette}>
-          <View className="flex-1" style={{ backgroundColor: palette.bg }}>
-            <GradientBackground />
-            <WeatherLocationPrompt />
-          </View>
-        </TimePaletteContext.Provider>
-      );
-    }
-
+  if (
+    session.status === 'checking' ||
+    (!forecast && (forecastQuery.isPending || session.isSyncing))
+  ) {
+    return <WeatherDetailScreen.Loading />;
+  }
+  if (!forecast) {
+    const error = forecastQuery.error;
+    if (
+      session.status === 'unregistered' ||
+      session.status === 'denied' ||
+      (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902))
+    )
+      return <WeatherLocationPrompt />;
     if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901)) {
       return (
-        <TimePaletteContext.Provider value={palette}>
-          <View className="flex-1" style={{ backgroundColor: palette.bg }}>
-            <GradientBackground />
-            <VStack align="center" justify="center" flex={1}>
-              <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
-                {t('screen.kmaPreparing')}
-              </Text>
-              <Spacing size={4} />
-              <Text size="b4" align="center" style={{ color: palette.textSub }}>
-                {t('screen.checkLater')}
-              </Text>
-            </VStack>
-          </View>
-        </TimePaletteContext.Provider>
+        <WeatherDetailScreen.Empty
+          title={t('weather:screen.kmaPreparing')}
+          description={t('weather:screen.checkLater')}
+          action={t('common:actions.retry')}
+          onPress={retryForecast}
+        />
       );
     }
-
     return (
-      <TimePaletteContext.Provider value={palette}>
-        <View className="flex-1" style={{ backgroundColor: palette.bg }}>
-          <GradientBackground />
-          <VStack align="center" justify="center" flex={1}>
-            <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
-              {t('screen.loadFailed')}
-            </Text>
-            <Spacing size={4} />
-            <Text size="b4" align="center" style={{ color: palette.textSub }}>
-              {t('screen.retryLater')}
-            </Text>
-          </VStack>
-        </View>
-      </TimePaletteContext.Provider>
+      <WeatherDetailScreen.Error
+        title={t('weather:screen.loadFailed')}
+        description={t('weather:screen.retryLater')}
+        action={t('common:actions.retry')}
+        onPress={retryForecast}
+      />
     );
   }
 
   return (
-    <TimePaletteContext.Provider value={palette}>
-      <View className="flex-1" style={{ backgroundColor: palette.bg }}>
-        <GradientBackground />
-        {isRefreshing && (
-          <View className="absolute inset-0 z-10 items-center justify-center">
-            <ActivityIndicator size="large" color={palette.text} />
-          </View>
-        )}
-        <ScrollView
-          contentContainerStyle={{
-            paddingTop: insets.top + 80,
-            paddingBottom: insets.bottom + 24,
+    <ScrollView
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={{ paddingTop: headerHeight + 24, paddingBottom: insets.bottom + 24 }}
+      refreshControl={
+        <RefreshControl
+          tintColor={palette.text}
+          refreshing={forecastQuery.isFetching && !forecastQuery.isPending}
+          onRefresh={() => {
+            void forecastQuery.refetch();
+            void conditionsQuery.refetch();
           }}
-          style={{ opacity: isRefreshing ? 0.4 : 1 }}
-        >
-          <WeatherLocation latitude={forecast.latitude} longitude={forecast.longitude} />
-
-          <Spacing size={4} />
-
-          <TodayTemperature forecast={forecast} />
-
+        />
+      }
+    >
+      <WeatherLocation />
+      <Spacing size={4} />
+      <TodayTemperature forecast={forecast} />
+      {forecast.currentTemperature === null && (
+        <Text size="b4" align="center" style={{ color: palette.textSub }}>
+          {t('weather:screen.dailyRange')}
+        </Text>
+      )}
+      <Spacing size={32} />
+      <WeatherStats forecast={forecast} />
+      <Spacing size={20} />
+      {conditions?.feelsLikeTemperature != null && (
+        <>
+          <FeelsLike feelsLike={conditions.feelsLikeTemperature} />
           <Spacing size={32} />
-
-          <WeatherStats forecast={forecast} />
-
-          <Spacing size={20} />
-
-          {conditions?.feelsLikeTemperature != null && (
-            <>
-              <FeelsLike feelsLike={conditions.feelsLikeTemperature} />
-              <Spacing size={32} />
-            </>
-          )}
-
-          <HourlyForecastSection
-            items={filterHourlyForecasts(forecast.hourlyForecasts, selectedDate)}
-          />
-          {forecast.dailyForecasts?.length > 0 && (
-            <DailyForecastSection items={forecast.dailyForecasts} />
-          )}
-          {conditions && (
-            <>
-              <SunTime sunrise={conditions.sunrise} sunset={conditions.sunset} />
-              <DustInfo pm10={conditions.pm10} pm25={conditions.pm25} />
-            </>
-          )}
-        </ScrollView>
-      </View>
-    </TimePaletteContext.Provider>
+        </>
+      )}
+      <HourlyForecastSection
+        items={filterHourlyForecasts(forecast.hourlyForecasts, session.clock.hour)}
+      />
+      {forecast.dailyForecasts.length > 0 && (
+        <DailyForecastSection items={forecast.dailyForecasts} />
+      )}
+      {conditions && (
+        <>
+          <SunTime sunrise={conditions.sunrise} sunset={conditions.sunset} />
+          <DustInfo pm10={conditions.pm10} pm25={conditions.pm25} />
+        </>
+      )}
+      {(forecastQuery.error || conditionsQuery.error || session.status === 'error') && (
+        <VStack align="center" gap={12} px={24} py={16}>
+          <Text size="b4" align="center" style={{ color: palette.textSub }}>
+            {t(
+              session.status === 'error'
+                ? 'weather:toasts.locationFailed'
+                : 'weather:screen.refreshFailed',
+            )}
+          </Text>
+          <Result.Button
+            onPress={() => {
+              void session.syncLocation(true);
+              void forecastQuery.refetch();
+              void conditionsQuery.refetch();
+            }}
+          >
+            {t('common:actions.retry')}
+          </Result.Button>
+        </VStack>
+      )}
+    </ScrollView>
   );
 }
 
-interface LocationCoords {
-  latitude: number;
-  longitude: number;
-}
-
-function useLocationName(location: LocationCoords | null): string | null {
-  const [name, setName] = useState<string | null>(null);
-
-  const lat = location?.latitude;
-  const lng = location?.longitude;
-
-  useEffect(() => {
-    if (lat == null || lng == null) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const [geo] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-
-        if (geo && !cancelled) {
-          const parts = [geo.city, geo.district].filter(Boolean);
-          setName(parts.join(' ') || null);
-        }
-      } catch {
-        // 역지오코딩 실패 시 무시
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [lat, lng]);
-
-  return name;
-}
-
-function WeatherLocation({ latitude, longitude }: LocationCoords) {
+function WeatherLocation() {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
-  const toast = useAppToast();
-  const { mutate: updateLocation, isPending } = useMutation(useUpdateLocationMutationOptions());
-  const { requestPermissionAndExecute } = useLocationPermission((message) =>
-    toast.warning(message),
-  );
-  const locationName = useLocationName({ latitude, longitude });
-
-  const handleRefresh = useCallback(async () => {
-    await requestPermissionAndExecute(async () => {
-      try {
-        const position = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        updateLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-      } catch {
-        toast.error(t('toasts.locationFailed'));
-      }
-    });
-  }, [requestPermissionAndExecute, toast, updateLocation, t]);
-
-  if (!locationName) return null;
-
+  const session = useWeatherSession();
   return (
     <HStack align="center" gap={4} justify="center">
       <Text size="b2" weight="medium" style={{ color: palette.textSub }}>
-        {locationName}
+        {session.locationName ?? t('screen.registeredLocation')}
       </Text>
       <TouchableOpacity
-        onPress={handleRefresh}
-        disabled={isPending}
-        hitSlop={8}
+        onPress={() => {
+          void session.syncLocation(true);
+        }}
+        disabled={session.isSyncing}
+        accessibilityRole="button"
+        accessibilityLabel={t('screen.refreshLocation')}
+        style={{ minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' }}
         activeOpacity={0.4}
       >
-        <CrosshairIcon width={18} height={18} color={palette.textSub} />
+        {session.isSyncing ? (
+          <ActivityIndicator color={palette.textSub} />
+        ) : (
+          <CrosshairIcon width={18} height={18} color={palette.textSub} />
+        )}
       </TouchableOpacity>
     </HStack>
   );
@@ -278,10 +208,16 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) 
   return (
     <VStack align="center" gap={8}>
       <Text
-        className="text-[80px] leading-[88px] font-medium tracking-[-2.4px]"
+        className={
+          currentTemp === null
+            ? 'text-[48px] leading-[56px] font-medium'
+            : 'text-[80px] leading-[88px] font-medium tracking-[-2.4px]'
+        }
         style={{ color: palette.text }}
       >
-        {currentTemp}°
+        {currentTemp !== null
+          ? `${currentTemp}°`
+          : `${Math.round(forecast.temperatureMin)}°–${Math.round(forecast.temperatureMax)}°`}
       </Text>
 
       <HStack gap={4} align="center">
@@ -366,17 +302,8 @@ function FeelsLike({ feelsLike }: { feelsLike: number }) {
   );
 }
 
-function filterHourlyForecasts(items: HourlyForecast[], selectedDate: Date): HourlyForecast[] {
-  if (!isDateToday(selectedDate)) {
-    return items.slice(0, 24);
-  }
-
-  const currentHour = new Date().getHours();
-  const startIndex = items.findIndex((item) => item.hour >= currentHour);
-  if (startIndex === -1) {
-    return items.slice(24, 48);
-  }
-  return items.slice(startIndex, startIndex + 24);
+function filterHourlyForecasts(items: HourlyForecast[], currentHour: number): HourlyForecast[] {
+  return items.filter((item) => item.hour >= currentHour);
 }
 
 function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
@@ -644,16 +571,17 @@ function getTempColor(temp: number): string {
 }
 
 function formatDayLabel(dateStr: string): string {
-  const d = new Date(dateStr);
-  return getWeekdayLabels()[d.getDay()] as string;
+  const day = new Date(`${dateStr}T00:00:00Z`).getUTCDay();
+  return getWeekdayLabels()[day] ?? '';
 }
 
-function ForecastSkeleton({ insetTop }: { insetTop: number }) {
+WeatherDetailScreen.Loading = function Loading() {
+  const headerHeight = useHeaderHeight();
   const palette = useTimePalette();
   const glass = palette.glass;
 
   return (
-    <VStack align="center" style={{ paddingTop: insetTop + 80 }}>
+    <VStack align="center" style={{ paddingTop: headerHeight + 24 }}>
       <Skeleton className="h-5 w-20 rounded" style={{ backgroundColor: glass }} />
 
       <Spacing size={12} />
@@ -680,22 +608,40 @@ function ForecastSkeleton({ insetTop }: { insetTop: number }) {
       </VStack>
     </VStack>
   );
-}
+};
 
-function GradientBackground() {
+WeatherDetailScreen.Error = function ErrorState({
+  title,
+  description,
+  action,
+  onPress,
+}: {
+  title: string;
+  description: string;
+  action: string;
+  onPress: () => void;
+}) {
   const palette = useTimePalette();
-  const { width, height } = Dimensions.get('window');
-
+  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
   return (
-    <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
-      <Defs>
-        <SvgLinearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">
-          <Stop offset="0" stopColor={palette.gradient[0]} />
-          <Stop offset="0.5" stopColor={palette.gradient[1]} />
-          <Stop offset="1" stopColor={palette.gradient[2]} />
-        </SvgLinearGradient>
-      </Defs>
-      <Rect width={width} height={height} fill="url(#bg)" />
-    </Svg>
+    <VStack
+      flex={1}
+      align="center"
+      justify="center"
+      px={24}
+      style={{ paddingTop: headerHeight, paddingBottom: insets.bottom }}
+    >
+      <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
+        {title}
+      </Text>
+      <Spacing size={4} />
+      <Text size="b4" align="center" style={{ color: palette.textSub }}>
+        {description}
+      </Text>
+      <Spacing size={24} />
+      <Result.Button onPress={onPress}>{action}</Result.Button>
+    </VStack>
   );
-}
+};
+WeatherDetailScreen.Empty = WeatherDetailScreen.Error;
