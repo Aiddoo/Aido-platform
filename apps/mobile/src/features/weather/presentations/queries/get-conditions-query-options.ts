@@ -5,10 +5,11 @@ import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys.constant';
+import { useWeatherSession } from '../providers/weather-session-provider';
 
-export function getConditionsQueryOptions(weatherService: WeatherService) {
+export function getConditionsQueryOptions(weatherService: WeatherService, locationRevision = 0) {
   return queryOptions({
-    queryKey: WEATHER_QUERY_KEYS.conditions(),
+    queryKey: WEATHER_QUERY_KEYS.conditions(locationRevision),
     queryFn: async ({ signal }) => {
       const result = await weatherService.getConditions(signal);
       return unwrap(result);
@@ -24,5 +25,9 @@ export function getConditionsQueryOptions(weatherService: WeatherService) {
 }
 
 export function useGetConditionsQueryOptions() {
-  return getConditionsQueryOptions(useWeatherService());
+  const session = useWeatherSession();
+  return queryOptions({
+    ...getConditionsQueryOptions(useWeatherService(), session.locationRevision),
+    enabled: !session.isSyncing && session.status === 'registered',
+  });
 }

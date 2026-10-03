@@ -7,7 +7,7 @@ import { match } from 'ts-pattern';
 
 interface UseLocationPermissionReturn {
   /** 권한 있으면 콜백 실행, 없으면 권한 요청 후 처리 */
-  requestPermissionAndExecute: (onGranted: () => void) => Promise<void>;
+  requestPermissionAndExecute: (onGranted: () => void | Promise<void>) => Promise<void>;
 }
 
 /** 설정 앱 열기 */
@@ -49,14 +49,11 @@ export const useLocationPermission = (
   onDenied?: (message: string) => void,
 ): UseLocationPermissionReturn => {
   const requestPermissionAndExecute = useCallback(
-    async (onGranted: () => void) => {
+    async (onGranted: () => void | Promise<void>) => {
       const currentPermission = await Location.getForegroundPermissionsAsync();
 
       const shouldRequestPermission = match(currentPermission)
-        .with({ granted: true }, () => {
-          onGranted();
-          return false;
-        })
+        .with({ granted: true }, () => false)
         .with({ granted: false, canAskAgain: false }, () => {
           showPermissionDeniedAlert();
           return false;
@@ -64,13 +61,15 @@ export const useLocationPermission = (
         .with({ granted: false, canAskAgain: true }, () => true)
         .exhaustive();
 
-      if (!shouldRequestPermission) {
+      if (currentPermission.granted) {
+        await onGranted();
         return;
       }
+      if (!shouldRequestPermission) return;
 
       const permissionResult = await Location.requestForegroundPermissionsAsync();
 
-      match(permissionResult)
+      await match(permissionResult)
         .with({ granted: true }, () => onGranted())
         .with({ granted: false, canAskAgain: false }, () => showPermissionDeniedAlert())
         .with({ granted: false, canAskAgain: true }, () =>

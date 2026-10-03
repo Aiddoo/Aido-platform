@@ -31,8 +31,8 @@ import {
 import { match } from 'ts-pattern';
 
 import type { DailyCompletionSummary } from '../../../models/todo.model';
+import { useCalendarContext } from '../../providers/calendar-provider';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
-import { useCalendarContext } from './calendar-view-mode-context';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarNavigation } from './CalendarNavigation';
 import { CalendarViewModeToggle } from './CalendarViewModeToggle';

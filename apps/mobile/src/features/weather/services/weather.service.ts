@@ -56,8 +56,11 @@ export class WeatherService {
     return ok(toWeatherConditions(parsed.data));
   };
 
-  updateLocation = async (input: UpdateLocationInput): Promise<Result<Location, ApiError>> => {
-    const result = await this.#httpClient.put('v1/weather/location', input);
+  updateLocation = async (
+    input: UpdateLocationInput,
+    signal?: AbortSignal,
+  ): Promise<Result<Location, ApiError>> => {
+    const result = await this.#httpClient.put('v1/weather/location', input, { signal });
 
     if (!result.ok) {
       return result;

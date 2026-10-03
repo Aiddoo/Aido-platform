@@ -1,11 +1,10 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useOverlayState } from '@src/shared/ui';
+import { isStableFeedForeground } from '@src/shared/utils/stable-feed-foreground';
 import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus, Keyboard } from 'react-native';
-
-import { isStableFeedForeground } from '../state/feature-discovery-auto-open';
 
 export function useStableFeedForeground(): boolean {
   const { status } = useAuth();

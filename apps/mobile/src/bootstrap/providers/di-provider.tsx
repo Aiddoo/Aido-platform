@@ -27,6 +27,7 @@ import { TodoCategoryService } from '@src/features/todo/services/todo-category.s
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import { TodoService } from '@src/features/todo/services/todo.service';
 import { UserService } from '@src/features/user/services/user.service';
+import { WeatherLocationStateService } from '@src/features/weather/services/weather-location-state.service';
 import { WeatherService } from '@src/features/weather/services/weather.service';
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
@@ -41,6 +42,7 @@ import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { requestRefreshTokens } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
+import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
 import {
   createCompositeLogger,
   createConsoleLogger,
@@ -214,6 +216,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       revenueCatSdkManager,
       subscriptionService,
       weatherService,
+      weatherLocationStateService: new WeatherLocationStateService(mmkvSyncStorage),
+      locationGateway: expoLocationGateway,
       widgetSyncService,
     };
   });

@@ -53,5 +53,8 @@
     "normal": "Moderate",
     "bad": "Unhealthy",
     "veryBad": "Very Unhealthy"
+  },
+  "introduction": {
+    "description": "Use your location for today’s weather. You can also enable location later on the weather screen."
   }
 }

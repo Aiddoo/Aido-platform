@@ -1,5 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
@@ -25,6 +26,7 @@ import type { TodoCategoryService } from '@src/features/todo/services/todo-categ
 import type { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import type { TodoService } from '@src/features/todo/services/todo.service';
 import type { UserService } from '@src/features/user/services/user.service';
+import type { WeatherLocationStateService } from '@src/features/weather/services/weather-location-state.service';
 import type { WeatherService } from '@src/features/weather/services/weather.service';
 import type { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
@@ -34,6 +36,7 @@ import { createContext, type PropsWithChildren, use } from 'react';
 export interface DIContainer {
   // Infrastructure
   storage: Storage;
+  locationGateway: LocationGateway;
   logger: Logger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
@@ -68,6 +71,7 @@ export interface DIContainer {
   revenueCatSdkManager: RevenueCatSdkManager;
   subscriptionService: SubscriptionService;
   weatherService: WeatherService;
+  weatherLocationStateService: WeatherLocationStateService;
   widgetSyncService: WidgetSyncService;
 }
 
@@ -96,6 +100,7 @@ export const useDI = (): DIContainer => {
 };
 
 // Infrastructure Hooks
+export const useLocationGateway = () => useDI().locationGateway;
 export const useStorage = () => useDI().storage;
 export const useTokenStore = () => useDI().tokenStore;
 export const useSessionManager = () => useDI().sessionManager;
@@ -127,5 +132,6 @@ export const useStoreReviewPromptService = () => useDI().storeReviewPromptServic
 export const useUserService = () => useDI().userService;
 export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
+export const useWeatherLocationStateService = () => useDI().weatherLocationStateService;
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;

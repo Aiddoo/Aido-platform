@@ -1,5 +1,7 @@
 export const WEATHER_QUERY_KEYS = {
   all: ['weather'] as const,
-  forecast: (date: string) => [...WEATHER_QUERY_KEYS.all, 'forecast', date] as const,
-  conditions: () => [...WEATHER_QUERY_KEYS.all, 'conditions'] as const,
+  forecast: (date: string, locationRevision = 0) =>
+    [...WEATHER_QUERY_KEYS.all, 'forecast', date, locationRevision] as const,
+  conditions: (locationRevision = 0) =>
+    [...WEATHER_QUERY_KEYS.all, 'conditions', locationRevision] as const,
 } as const;

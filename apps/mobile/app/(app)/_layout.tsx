@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { WeatherSessionProvider } from '@src/features/weather/presentations/providers/weather-session-provider';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, StyledSafeAreaView } from '@src/shared/ui';
@@ -11,28 +12,30 @@ const AppLayout = () => {
   const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-        animationTypeForReplace: 'push',
-        contentStyle: { backgroundColor: backgroundColor as string },
-      }}
-    >
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="friends" />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="achievements" />
-      <Stack.Screen name="reports" />
-      <Stack.Screen name="suggestions" />
-      <Stack.Screen name="settings" />
-      <Stack.Screen name="weather" />
-      <Stack.Screen name="webview/[url]" />
-      <Stack.Screen
-        name="memo"
-        options={{ animation: 'fade_from_bottom', animationDuration: 200 }}
-      />
-    </Stack>
+    <WeatherSessionProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          animationTypeForReplace: 'push',
+          contentStyle: { backgroundColor: backgroundColor as string },
+        }}
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="friends" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="achievements" />
+        <Stack.Screen name="reports" />
+        <Stack.Screen name="suggestions" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="weather" />
+        <Stack.Screen name="webview/[url]" />
+        <Stack.Screen
+          name="memo"
+          options={{ animation: 'fade_from_bottom', animationDuration: 200 }}
+        />
+      </Stack>
+    </WeatherSessionProvider>
   );
 };
 
