@@ -1,0 +1,13 @@
+appId: com.aido.mobile
+name: 앱이 꺼져 있어도 위젯 할 일 링크를 복원한다
+---
+# Given: 로그인된 Release 앱을 종료한다
+- stopApp
+# When: 홈 위젯과 같은 할 일 링크로 앱을 연다
+- openLink: aido-dev://todo/${QA_TODO_ID}
+# Then: 오늘 피드로 유실되지 않고 대상 할 일 상세가 나타난다
+- extendedWaitUntil:
+    visible: '${QA_TODO_TITLE}'
+    timeout: 25000
+- assertVisible: 'Todo details|할 일 상세'
+- takeScreenshot: 1.11.0-widget-cold-todo

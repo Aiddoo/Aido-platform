@@ -1,0 +1,22 @@
+appId: com.google.android.apps.nexuslauncher
+name: Android 홈에 큰 위젯을 추가한다
+---
+# Given: 작은 위젯이 있는 개발 에뮬레이터 홈
+- longPressOn:
+    point: '83%, 28%'
+- tapOn: Widgets
+- tapOn: Search
+- inputText: Aido
+- tapOn: Aido Development
+# When: 큰 위젯을 추가한다
+- scrollUntilVisible:
+    element: '^오늘 할 일 크게$'
+    direction: DOWN
+    centerElement: true
+- tapOn: '^오늘 할 일 크게$'
+- tapOn: 'Add 오늘 할 일 크게 widget'
+# Then: 주간 달력과 할 일 네 개 및 생성 버튼이 표시된다
+- extendedWaitUntil:
+    visible: '.*Add to-do.*|.*할 일 만들기.*'
+    timeout: 15000
+- takeScreenshot: 1.11.0-android-widget-large

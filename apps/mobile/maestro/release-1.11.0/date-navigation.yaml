@@ -1,0 +1,23 @@
+appId: com.aido.mobile
+name: 위젯 날짜 이동과 오늘 복귀가 예측 가능하다
+---
+# Given: 오늘 피드를 보고 있다
+- openLink: aido-dev://feed?date=today
+- extendedWaitUntil:
+    visible: 'Today|오늘'
+    timeout: 15000
+# When: 이전 날의 위젯 날짜를 누른다
+- openLink: aido-dev://feed?date=${QA_PREVIOUS_DATE}
+# Then: 오늘과 이전 날짜를 구분하고 빈 영역이 중앙에 남는다
+- extendedWaitUntil:
+    visible: ${QA_PREVIOUS_DAY}
+    timeout: 15000
+- assertNotVisible: ${QA_PENDING_TODO_TITLE}
+- takeScreenshot: 1.11.0-date-fixed-empty
+# When: 오늘 버튼으로 돌아온다
+- tapOn: 'Today|오늘'
+# Then: 오늘의 할 일을 다시 보여 준다
+- extendedWaitUntil:
+    visible: ${QA_PENDING_TODO_TITLE}
+    timeout: 15000
+- takeScreenshot: 1.11.0-date-today-restored
