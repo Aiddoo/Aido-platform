@@ -142,10 +142,7 @@ function SubscriberView() {
 
   const isActive = isActiveSubscription(user.subscriptionStatus);
 
-  const showDetails = SubscriptionPolicy.shouldShowExpirationDetails(
-    user.subscriptionStatus,
-    user.subscriptionExpiresAt,
-  );
+  const showDetails = SubscriptionPolicy.isExpirationRelevant(user);
 
   const handleManageSubscription = () => {
     if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
@@ -175,7 +172,7 @@ function SubscriberView() {
 
           <Spacing size={24} />
 
-          {showDetails && (
+          {showDetails && user.subscriptionExpiresAt && (
             <VStack>
               <ListRow
                 verticalPadding="small"

@@ -25,7 +25,7 @@ export function getSearchUsersQueryOptions(
       return unwrap(result);
     },
     initialPageParam: undefined as string | undefined,
-    enabled: FriendPolicy.isValidSearchQuery(trimmed),
+    enabled: FriendPolicy.isValidSearchQuery({ query: trimmed }),
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore) {
         return undefined;

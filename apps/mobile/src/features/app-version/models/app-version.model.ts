@@ -17,18 +17,20 @@ export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
 export type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;
 export type AppVersionConfig = z.infer<typeof appVersionConfigSchema>;
 
-export interface AppVersionPolicyInput {
-  config: AppVersionConfig | undefined;
-  platform: string | undefined;
-  currentVersion: string | undefined;
-}
+const appVersionPolicyInputSchema = z.object({
+  config: appVersionConfigSchema.optional(),
+  platform: z.string().optional(),
+  currentVersion: z.string().optional(),
+});
+export type AppVersionPolicyInput = z.infer<typeof appVersionPolicyInputSchema>;
 
 type EnabledConfig = Extract<AppVersionConfig, { enabled: true }>;
-type DecidableInput = {
-  config: EnabledConfig;
-  platform: AppVersionPlatform;
-  currentVersion: string;
-};
+const decidableInputSchema = z.object({
+  config: appVersionConfigSchema.options[1],
+  platform: appVersionPlatformSchema,
+  currentVersion: appStoreVersionSchema,
+});
+type DecidableInput = z.infer<typeof decidableInputSchema>;
 
 const isEnabled = (config: AppVersionConfig | undefined): config is EnabledConfig =>
   config?.enabled === true;

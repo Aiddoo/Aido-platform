@@ -31,14 +31,15 @@ export const searchedUserSchema = z.object({
 });
 export type SearchedUser = z.infer<typeof searchedUserSchema>;
 
-export interface SendRequestResult {
-  autoAccepted: boolean;
-}
-
-export interface PaginationParams {
-  cursor?: string;
-  limit?: number;
-}
+const sendRequestResultSchema = z.object({ autoAccepted: z.boolean() });
+export type SendRequestResult = z.infer<typeof sendRequestResultSchema>;
+const paginationParamsSchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.number().optional(),
+});
+export type PaginationParams = z.infer<typeof paginationParamsSchema>;
+const friendSearchInputSchema = z.object({ query: z.string() });
+type FriendSearchInput = z.infer<typeof friendSearchInputSchema>;
 
 /** 검색어 최소 길이 (서버 searchUsersQuerySchema q.min(2)와 동일) */
 export const SEARCH_MIN_QUERY_LENGTH = 2;
@@ -53,6 +54,6 @@ export function isValidSearchQuery(query: string): boolean {
 }
 
 export const FriendPolicy = {
-  isValidTag,
-  isValidSearchQuery,
+  isValidTag: (input: Pick<SearchedUser, 'userTag'>): boolean => isValidTag(input.userTag),
+  isValidSearchQuery: (input: FriendSearchInput): boolean => isValidSearchQuery(input.query),
 } as const;

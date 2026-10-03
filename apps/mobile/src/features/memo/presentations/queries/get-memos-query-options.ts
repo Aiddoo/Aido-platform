@@ -20,7 +20,7 @@ export function getMemosQueryOptions(service: MemoService) {
     },
     initialPageParam: null as number | null,
     getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasNext ? lastPage.pagination.nextCursor : undefined,
+      lastPage.hasNext ? (lastPage.nextCursor ?? undefined) : undefined,
   });
 }
 

@@ -1,31 +1,32 @@
 import { featureDiscoveryMinAppVersionSchema } from '@aido/validators';
-import type { User } from '@src/features/user/models/user.model';
+import { userSchema } from '@src/features/user/models/user.model';
+import { z } from 'zod';
 
-export type FeatureDiscoveryConfig =
-  | { enabled: false }
-  | {
-      enabled: true;
-      campaignId: string;
-      minAppVersion: string;
-      launchedAt: Date;
-      autoOpen: boolean;
-    };
-
-type AuthStatus = 'loading' | 'locked' | 'authenticated' | 'unauthenticated';
-
-interface FeatureDiscoveryEligibility {
-  authStatus: AuthStatus;
-  config: FeatureDiscoveryConfig | undefined;
-  user: Pick<User, 'createdAt'> | undefined;
-  appVersion: string | undefined;
-  hasBundledCampaign: boolean;
-  hasSeen: boolean;
-}
-
-interface ParsedSemanticVersion {
-  core: readonly [number, number, number];
-  prerelease: readonly string[] | null;
-}
+export const featureDiscoveryConfigSchema = z.discriminatedUnion('enabled', [
+  z.object({ enabled: z.literal(false) }),
+  z.object({
+    enabled: z.literal(true),
+    campaignId: z.string(),
+    minAppVersion: z.string(),
+    launchedAt: z.date(),
+    autoOpen: z.boolean(),
+  }),
+]);
+export type FeatureDiscoveryConfig = z.infer<typeof featureDiscoveryConfigSchema>;
+const featureDiscoveryEligibilitySchema = z.object({
+  authStatus: z.enum(['loading', 'locked', 'authenticated', 'unauthenticated']),
+  config: featureDiscoveryConfigSchema.optional(),
+  user: userSchema.pick({ createdAt: true }).optional(),
+  appVersion: z.string().optional(),
+  hasBundledCampaign: z.boolean(),
+  hasSeen: z.boolean(),
+});
+type FeatureDiscoveryEligibility = z.infer<typeof featureDiscoveryEligibilitySchema>;
+const parsedSemanticVersionSchema = z.object({
+  core: z.tuple([z.number(), z.number(), z.number()]).readonly(),
+  prerelease: z.array(z.string()).readonly().nullable(),
+});
+type ParsedSemanticVersion = z.infer<typeof parsedSemanticVersionSchema>;
 
 function parseSemanticVersion(value: string | undefined): ParsedSemanticVersion | null {
   if (!value || !featureDiscoveryMinAppVersionSchema.safeParse(value).success) {

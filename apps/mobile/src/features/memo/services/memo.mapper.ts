@@ -13,7 +13,8 @@ export const toMemoItem = (dto: Memo): MemoItem => ({
 
 export const toMemoPage = (dto: MemoListResponse): MemoPage => ({
   items: dto.items.map(toMemoItem),
-  pagination: dto.pagination,
+  nextCursor: dto.pagination.nextCursor,
+  hasNext: dto.pagination.hasNext,
 });
 
 export const toMemoResourceLimit = (dto: MemoResourceLimitResponse): MemoResourceLimit => ({

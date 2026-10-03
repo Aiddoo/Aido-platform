@@ -21,7 +21,7 @@ const SearchFriendScreen = () => {
 
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query);
-  const isValidQuery = FriendPolicy.isValidSearchQuery(debouncedQuery);
+  const isValidQuery = FriendPolicy.isValidSearchQuery({ query: debouncedQuery });
   useFriendSearchTracking(debouncedQuery);
 
   return (

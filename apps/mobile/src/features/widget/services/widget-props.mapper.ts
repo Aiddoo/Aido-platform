@@ -1,12 +1,10 @@
+import { match } from 'ts-pattern';
+
 import type { WidgetProps } from '../models/widget-props.model';
-import {
-  type WidgetRenderState,
-  type WidgetSnapshot,
-  WidgetSnapshotPolicy,
-} from '../models/widget-snapshot.model';
+import { type WidgetRenderState, type WidgetSnapshot } from '../models/widget-snapshot.model';
 
 export function toWidgetProps(snapshot: WidgetSnapshot, state: WidgetRenderState): WidgetProps {
-  const stateScreen = WidgetSnapshotPolicy.stateScreenStrings(snapshot, state);
+  const stateScreen = getWidgetStateScreenStrings(snapshot, state);
 
   return {
     state,
@@ -34,4 +32,21 @@ export function toWidgetProps(snapshot: WidgetSnapshot, state: WidgetRenderState
     staleTitle: snapshot.strings.staleTitle,
     staleCta: snapshot.strings.staleCta,
   };
+}
+
+function getWidgetStateScreenStrings(
+  snapshot: WidgetSnapshot,
+  renderState: WidgetRenderState,
+): { title: string; cta: string } {
+  return match(renderState)
+    .with('loggedOut', () => ({
+      title: snapshot.strings.loggedOutTitle,
+      cta: snapshot.strings.loggedOutCta,
+    }))
+    .with('stale', () => ({ title: snapshot.strings.staleTitle, cta: snapshot.strings.staleCta }))
+    .with('data', 'empty', () => ({
+      title: snapshot.strings.emptyTitle,
+      cta: snapshot.strings.emptyCta,
+    }))
+    .exhaustive();
 }

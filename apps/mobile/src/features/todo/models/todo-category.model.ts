@@ -18,6 +18,7 @@ export const todoCategoriesResultSchema = z.object({
 });
 export type TodoCategoriesResult = z.infer<typeof todoCategoriesResultSchema>;
 
-export type OptimisticTodoCategoryWithCount = TodoCategoryWithCount & {
-  readonly optimistic: true;
-};
+const optimisticTodoCategoryWithCountSchema = todoCategoryWithCountSchema.extend({
+  optimistic: z.literal(true).readonly(),
+});
+export type OptimisticTodoCategoryWithCount = z.infer<typeof optimisticTodoCategoryWithCountSchema>;

@@ -90,7 +90,7 @@ function Header() {
   const toast = useAppToast();
   const { t } = useTranslation('memo');
   const { data: resourceLimit } = useSuspenseQuery(useGetMemoResourceLimitQueryOptions());
-  const canCreate = MemoPolicy.canCreate(resourceLimit);
+  const canCreate = MemoPolicy.isCreatable(resourceLimit);
 
   const handleCreate = () => {
     if (!canCreate) {
