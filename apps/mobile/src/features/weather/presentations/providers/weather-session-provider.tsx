@@ -1,11 +1,16 @@
 import {
+  useErrorReporter,
   useLocationGateway,
   useWeatherLocationStateService,
   useWeatherService,
 } from '@src/bootstrap/providers/di-context';
-import type { LocationCoordinates } from '@src/core/ports/location-gateway';
+import {
+  LocationUnavailableError,
+  type LocationCoordinates,
+} from '@src/core/ports/location-gateway';
 import { WeatherPolicy } from '@src/features/weather/models/weather.model';
-import { unwrap } from '@src/shared/errors/result';
+import { toError } from '@src/shared/errors';
+import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
@@ -42,6 +47,7 @@ const WeatherSessionContext = createContext<WeatherSession | null>(null);
 
 export function WeatherSessionProvider({ children }: PropsWithChildren) {
   const gateway = useLocationGateway();
+  const errorReporter = useErrorReporter();
   const locationState = useWeatherLocationStateService();
   const service = useWeatherService();
   const queryClient = useQueryClient();
@@ -68,6 +74,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
 
   const syncLocation = useCallback(
     (requestPermission = false): Promise<void> => {
+      if (!mounted.current) return Promise.resolve();
       if (activeRequest.current) return activeRequest.current;
       const controller = new AbortController();
       abortController.current = controller;
@@ -119,8 +126,13 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
           setLocationRevision((value) => value + 1);
           setStatus('registered');
           lastSynchronizedAt.current = Date.now();
-        } catch {
+        } catch (error) {
           if (!controller.signal.aborted) {
+            if (!(error instanceof LocationUnavailableError) && !isBusinessError(error)) {
+              try {
+                errorReporter.captureException(toError(error), { feature: 'weather_location' });
+              } catch {}
+            }
             setStatus((current) => (current === 'unsupported' ? current : 'error'));
             setNeedsIntroduction(false);
           }
@@ -136,7 +148,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
       activeRequest.current = promise;
       return promise;
     },
-    [dismissIntroduction, gateway, locationState, queryClient, service],
+    [dismissIntroduction, errorReporter, gateway, locationState, queryClient, service],
   );
 
   useEffect(() => {

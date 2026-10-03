@@ -6,6 +6,7 @@ import {
   Box,
   HStack,
   PlusIcon,
+  Result,
   Text,
   VStack,
   type QueryErrorFallbackProps,
@@ -104,21 +105,10 @@ TodoList.Loading = function Loading() {
 TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
-    <Box py={24} gap={8} className="items-center">
-      <Text size="b3" shade={8}>
-        {t('list.loadError')}
-      </Text>
-
-      <PressableFeedback
-        onPress={reset}
-        accessibilityRole="button"
-        className="min-h-11 justify-center px-4"
-      >
-        <Text size="b4" tone="brand">
-          {t('common:errorBoundary.retry')}
-        </Text>
-      </PressableFeedback>
-    </Box>
+    <Result
+      title={t('list.loadError')}
+      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+    />
   );
 };
 

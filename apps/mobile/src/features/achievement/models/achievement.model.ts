@@ -27,15 +27,17 @@ export const achievementSummarySchema = z.object({
 
 export type AchievementSummary = z.infer<typeof achievementSummarySchema>;
 
-export interface AchievementPaginationParams {
-  year: number;
-  cursor?: number;
-  size?: number;
-}
+const achievementPaginationParamsSchema = z.object({
+  year: z.number().int(),
+  cursor: z.number().int().optional(),
+  size: z.number().int().positive().optional(),
+});
+export type AchievementPaginationParams = z.infer<typeof achievementPaginationParamsSchema>;
 
-export interface WeeklyAchievementsResult {
-  items: WeeklyAchievement[];
-  nextCursor: number | null;
-  hasNext: boolean;
-  summary: AchievementSummary;
-}
+export const weeklyAchievementsResultSchema = z.object({
+  items: z.array(weeklyAchievementSchema),
+  nextCursor: z.number().int().nullable(),
+  hasNext: z.boolean(),
+  summary: achievementSummarySchema,
+});
+export type WeeklyAchievementsResult = z.infer<typeof weeklyAchievementsResultSchema>;

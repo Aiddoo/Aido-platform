@@ -24,7 +24,7 @@ const appVersionPolicyInputSchema = z.object({
 });
 export type AppVersionPolicyInput = z.infer<typeof appVersionPolicyInputSchema>;
 
-type EnabledConfig = Extract<AppVersionConfig, { enabled: true }>;
+type EnabledConfig = z.infer<(typeof appVersionConfigSchema.options)[1]>;
 const decidableInputSchema = z.object({
   config: appVersionConfigSchema.options[1],
   platform: appVersionPlatformSchema,

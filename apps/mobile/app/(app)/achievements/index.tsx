@@ -59,7 +59,7 @@ function AchievementsContent({ year }: AchievementsContentProps) {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const queryOptions = useGetWeeklyAchievementsQueryOptions(year);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
     useSuspenseInfiniteQuery(queryOptions);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -83,7 +83,7 @@ function AchievementsContent({ year }: AchievementsContentProps) {
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onEndReached={() => {
-        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        if (hasNextPage && !isFetching) void fetchNextPage({ cancelRefetch: false });
       }}
       onEndReachedThreshold={0.5}
       ListHeaderComponent={

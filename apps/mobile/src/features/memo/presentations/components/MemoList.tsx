@@ -21,7 +21,7 @@ import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated'
 import { useGetMemosQueryOptions } from '../queries/get-memos-query-options';
 
 export function MemoList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetMemosQueryOptions());
   const memos = data.pages.flatMap((page) => page.items);
 
@@ -61,10 +61,10 @@ export function MemoList() {
       {hasNextPage && (
         <MemoList.More
           onPress={() => {
-            void fetchNextPage();
+            void fetchNextPage({ cancelRefetch: false });
           }}
           isLoading={isFetchingNextPage}
-          isDisabled={isFetchingNextPage}
+          isDisabled={isFetching}
           hasError={isFetchNextPageError}
         />
       )}

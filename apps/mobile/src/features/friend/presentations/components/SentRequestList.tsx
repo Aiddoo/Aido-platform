@@ -11,7 +11,7 @@ import { UserList } from './UserList';
 
 export function SentRequestList() {
   const { t } = useTranslation(['friend', 'common']);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(useGetSentRequestsQueryOptions());
   const cancelMutation = useMutation(useCancelRequestMutationOptions());
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
@@ -56,8 +56,11 @@ export function SentRequestList() {
         <Result icon={<DocsIcon width={72} height={72} />} title={t('list.emptySent')} />
       }
       hasNextPage={hasNextPage}
+      isFetching={isFetching}
       isFetchingNextPage={isFetchingNextPage}
-      onEndReached={fetchNextPage}
+      onEndReached={() => {
+        void fetchNextPage({ cancelRefetch: false });
+      }}
       refresh={{ isRefreshing, onRefresh: handleRefresh }}
     />
   );

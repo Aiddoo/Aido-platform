@@ -53,7 +53,8 @@ function AvatarList() {
     data: friendsData,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage,
+    isFetching,
+    isFetchNextPageError,
   } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
 
   const friends = useMemo(
@@ -62,8 +63,8 @@ function AvatarList() {
   );
 
   const handleScrollEnd = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (hasNextPage && !isFetching) {
+      void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
     }
   };
 
@@ -95,6 +96,8 @@ function AvatarList() {
           }
         />
       ))}
+
+      {isFetchNextPageError && <AvatarList.MoreError onPress={handleScrollEnd} />}
 
       <AvatarList.AddButton onPress={() => push('/friends/search')} />
     </ScrollView>
@@ -164,5 +167,20 @@ AvatarList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
       </Text>
       <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
     </HStack>
+  );
+};
+
+AvatarList.MoreError = function MoreError({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation('common');
+  return (
+    <PressableFeedback
+      onPress={onPress}
+      accessibilityRole="button"
+      className="min-h-11 justify-center rounded-xl bg-gray-1 px-3"
+    >
+      <Text size="b4" tone="brand">
+        {t('errorBoundary.retry')}
+      </Text>
+    </PressableFeedback>
   );
 };

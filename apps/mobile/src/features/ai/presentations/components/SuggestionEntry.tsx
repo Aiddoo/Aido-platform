@@ -3,13 +3,16 @@ import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
-import { ListRow } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { ListRow, QueryErrorBoundary, type QueryErrorFallbackProps } from '@src/shared/ui';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, Suspense } from 'react';
+import type { ComponentProps } from 'react';
 
-import { useGetSuggestionsQueryOptions } from '../queries/get-suggestions-query-options';
+import {
+  isSuggestionsPremiumRequiredError,
+  useGetSuggestionsQueryOptions,
+} from '../queries/get-suggestions-query-options';
 
 export function SuggestionEntry() {
   const push = useSingleTap(router.push);
@@ -23,9 +26,9 @@ export function SuggestionEntry() {
   }
 
   return (
-    <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
+    <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
       <PremiumSuggestionEntry name={user.name} />
-    </Suspense>
+    </QueryErrorBoundary>
   );
 }
 
@@ -36,8 +39,31 @@ interface PremiumSuggestionEntryProps {
 function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
   const push = useSingleTap(router.push);
 
-  const { t } = useTranslation('todo');
-  const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
+  const { t } = useTranslation(['todo', 'ai']);
+  const suggestionsQuery = useQuery(useGetSuggestionsQueryOptions());
+
+  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
+    return (
+      <InfoCard
+        label={t('ai:suggestions.toasts.premiumOnly')}
+        onPress={() => push('/settings/subscription')}
+      />
+    );
+  }
+
+  if (suggestionsQuery.isPending) {
+    return <InfoCard label={t('feed.suggestionsLoading')} />;
+  }
+
+  const suggestions = suggestionsQuery.data;
+  if (!suggestions) {
+    return (
+      <SuggestionEntry.Error
+        error={suggestionsQuery.error}
+        reset={() => void suggestionsQuery.refetch()}
+      />
+    );
+  }
 
   const label =
     suggestions.length > 0
@@ -71,4 +97,9 @@ function InfoCard({ label, ...props }: InfoCardProps) {
 SuggestionEntry.Loading = function Loading() {
   const { t } = useTranslation('todo');
   return <InfoCard label={t('feed.loading')} />;
+};
+
+SuggestionEntry.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('todo');
+  return <InfoCard label={t('feed.suggestionsRetry')} onPress={reset} />;
 };
