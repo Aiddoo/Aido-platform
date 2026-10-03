@@ -18,7 +18,7 @@ export type NotificationCategoryKey = z.infer<typeof notificationCategoryKeySche
 export const getCategoryKey = (type: NotificationType): NotificationCategoryKey =>
   match<NotificationType, NotificationCategoryKey>(type)
     .with('FOLLOW_NEW', 'FOLLOW_ACCEPTED', () => 'friend')
-    .with('NUDGE_RECEIVED', () => 'nudge')
+    .with('NUDGE_RECEIVED', 'NUDGE_REPLIED', 'NUDGE_THANKED', () => 'nudge')
     .with('CHEER_RECEIVED', () => 'cheer')
     .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => 'achievement')
     .with(

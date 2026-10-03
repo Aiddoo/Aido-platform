@@ -144,5 +144,7 @@
   "WEATHER_1902": "No location registered. Please set your location first.",
   "MEMO_2001": "Memo not found",
   "MEMO_2002": "The memo at the target position was not found",
-  "MEMO_2003": "You've reached the memo limit"
+  "MEMO_2003": "You've reached the memo limit",
+  "NUDGE_1109": "You can no longer reply or send thanks for this nudge",
+  "NUDGE_1110": "Complete the to-do before sending thanks"
 }

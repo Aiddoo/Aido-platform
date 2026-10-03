@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  cancelAnimation,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -70,6 +71,15 @@ export const ModalBottomSheet = ({
   const callOnClose = useCallback(() => {
     onCloseRef.current();
   }, []);
+
+  useEffect(
+    () => () => {
+      cancelAnimation(translateY);
+      cancelAnimation(backdropOpacity);
+      cancelAnimation(dragY);
+    },
+    [translateY, backdropOpacity, dragY],
+  );
 
   // isOpen 전환 처리
   useEffect(() => {

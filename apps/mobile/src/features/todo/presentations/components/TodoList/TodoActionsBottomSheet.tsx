@@ -17,11 +17,13 @@ import { formatDate, isDateToday } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 
+import { NudgeInteractionPolicy } from '../../../models/nudge-interaction.model';
 import { useDeleteTodoMutationOptions } from '../../queries/use-delete-todo-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
+import { NudgeThanksButton } from '../nudge-interactions/NudgeThanksButton';
 
 interface TodoActionsBottomSheetProps {
   isOpen: boolean;
@@ -70,6 +72,9 @@ export const TodoActionsBottomSheet = ({
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={8}>
+        {NudgeInteractionPolicy.isThankableTodo(todo, { isOwner: true }) && (
+          <NudgeThanksButton todoId={todo.id} onPress={onClose} />
+        )}
         <PressableFeedback
           onPress={() => {
             onNavigate('edit');

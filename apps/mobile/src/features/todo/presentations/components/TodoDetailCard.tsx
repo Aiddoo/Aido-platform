@@ -1,3 +1,4 @@
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useTodayKey } from '@src/shared/hooks/useToday';
 import { useTranslation } from '@src/shared/i18n';
@@ -6,11 +7,13 @@ import { formatFullDate } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
+import { NudgeInteractionPolicy } from '../../models/nudge-interaction.model';
 import { TodoNudgePolicy } from '../../models/todo-nudge.model';
 import type { TodoDetails } from '../../models/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
 import { useTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
+import { NudgeThanksButton } from './nudge-interactions/NudgeThanksButton';
 import { TodoNudgeButton } from './TodoNudgeButton';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './TodoRow';
 
@@ -23,6 +26,7 @@ export function TodoDetailCard() {
       <TodoOwnerLine detail={detail} />
       <TodoBody detail={detail} />
       <TodoMetricLine detail={detail} />
+      <TodoDetailThanksAction detail={detail} />
     </VStack>
   );
 }
@@ -151,3 +155,12 @@ TodoDetailCard.Loading = function Loading() {
     </VStack>
   );
 };
+
+function TodoDetailThanksAction({ detail }: TodoDetailSectionProps) {
+  const { data: me } = useQuery(useGetMeQueryOptions());
+  return NudgeInteractionPolicy.isThankableTodo(detail.todo, {
+    isOwner: me?.id === detail.owner.id,
+  }) ? (
+    <NudgeThanksButton todoId={detail.todo.id} />
+  ) : null;
+}
