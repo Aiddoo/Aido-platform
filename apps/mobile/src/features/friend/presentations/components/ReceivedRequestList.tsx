@@ -12,7 +12,7 @@ import { UserList } from './UserList';
 
 export function ReceivedRequestList() {
   const { t } = useTranslation('friend');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(useGetReceivedRequestsQueryOptions());
   const acceptMutation = useMutation(useAcceptRequestMutationOptions());
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
@@ -72,8 +72,11 @@ export function ReceivedRequestList() {
         <Result icon={<DocsIcon width={72} height={72} />} title={t('list.emptyReceived')} />
       }
       hasNextPage={hasNextPage}
+      isFetching={isFetching}
       isFetchingNextPage={isFetchingNextPage}
-      onEndReached={fetchNextPage}
+      onEndReached={() => {
+        void fetchNextPage({ cancelRefetch: false });
+      }}
       refresh={{ isRefreshing, onRefresh: handleRefresh }}
     />
   );

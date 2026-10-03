@@ -24,6 +24,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
     data: listData,
     fetchNextPage,
     hasNextPage,
+    isFetching,
     isFetchingNextPage,
     refetch,
   } = useSuspenseInfiniteQuery(
@@ -79,8 +80,8 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
             .exhaustive()
         }
         onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
+          if (hasNextPage && !isFetching) {
+            void fetchNextPage({ cancelRefetch: false });
           }
         }}
         onEndReachedThreshold={0.5}

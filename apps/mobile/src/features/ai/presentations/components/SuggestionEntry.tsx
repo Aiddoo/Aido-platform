@@ -4,12 +4,15 @@ import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/g
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { ListRow, QueryErrorBoundary, type QueryErrorFallbackProps } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, Suspense } from 'react';
+import type { ComponentProps } from 'react';
 
-import { useGetSuggestionsQueryOptions } from '../queries/get-suggestions-query-options';
+import {
+  isSuggestionsPremiumRequiredError,
+  useGetSuggestionsQueryOptions,
+} from '../queries/get-suggestions-query-options';
 
 export function SuggestionEntry() {
   const push = useSingleTap(router.push);
@@ -24,9 +27,7 @@ export function SuggestionEntry() {
 
   return (
     <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
-      <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
-        <PremiumSuggestionEntry name={user.name} />
-      </Suspense>
+      <PremiumSuggestionEntry name={user.name} />
     </QueryErrorBoundary>
   );
 }
@@ -38,8 +39,31 @@ interface PremiumSuggestionEntryProps {
 function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
   const push = useSingleTap(router.push);
 
-  const { t } = useTranslation('todo');
-  const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
+  const { t } = useTranslation(['todo', 'ai']);
+  const suggestionsQuery = useQuery(useGetSuggestionsQueryOptions());
+
+  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
+    return (
+      <InfoCard
+        label={t('ai:suggestions.toasts.premiumOnly')}
+        onPress={() => push('/settings/subscription')}
+      />
+    );
+  }
+
+  if (suggestionsQuery.isPending) {
+    return <InfoCard label={t('feed.suggestionsLoading')} />;
+  }
+
+  const suggestions = suggestionsQuery.data;
+  if (!suggestions) {
+    return (
+      <SuggestionEntry.Error
+        error={suggestionsQuery.error}
+        reset={() => void suggestionsQuery.refetch()}
+      />
+    );
+  }
 
   const label =
     suggestions.length > 0

@@ -19,6 +19,7 @@ interface UserListProps<T> {
   emptyContent: ReactNode;
   header?: ReactElement;
   hasNextPage: boolean;
+  isFetching: boolean;
   isFetchingNextPage: boolean;
   onEndReached: () => void;
   refresh?: UserListRefresh;
@@ -31,6 +32,7 @@ export function UserList<T>({
   emptyContent,
   header,
   hasNextPage,
+  isFetching,
   isFetchingNextPage,
   onEndReached,
   refresh,
@@ -56,7 +58,7 @@ export function UserList<T>({
         ) : null
       }
       onEndReached={() => {
-        if (hasNextPage && !isFetchingNextPage) {
+        if (hasNextPage && !isFetching) {
           onEndReached();
         }
       }}
