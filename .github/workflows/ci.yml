@@ -19,7 +19,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: >-
+    ${{ github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip' }}
 
 permissions:
   contents: read
@@ -33,11 +34,14 @@ env:
 jobs:
   gate:
     name: CI Scope
+    if: >-
+      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'upgrade/1.10-') && !contains(github.head_ref, '/1.10.1-') && !contains(join(github.event.pull_request.labels.*.name, ','), 'stack:')) || (!github.event.pull_request.draft && contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       run: ${{ steps.policy.outputs.run }}
       base: ${{ steps.policy.outputs.base }}
+      base-sha: ${{ steps.policy.outputs.base-sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -64,6 +68,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           affected-base: ${{ needs.gate.outputs.base }}
+          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
 
       # Oxc는 전체 저장소를 한 번 스캔한다. 패키지별 프로세스를 반복하지 않아 로컬·CI 결과가 같다.
       - name: Oxlint
@@ -93,6 +98,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           affected-base: ${{ needs.gate.outputs.base }}
+          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
 
       - name: Verify test log failure propagation
         run: bash scripts/ci/run-with-tee.spec.sh
@@ -131,6 +137,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           affected-base: ${{ needs.gate.outputs.base }}
+          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
 
       # 통합/E2E 태스크는 @aido/api에만 존재 → PR에서 --affected만으로 자연 스코프됨
       # (모바일/문서-only PR은 Testcontainers 스킵, api 영향 변경은 실행)
@@ -160,6 +167,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           affected-base: ${{ needs.gate.outputs.base }}
+          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
 
       - name: Run E2E tests
         env:
@@ -195,6 +203,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           affected-base: ${{ needs.gate.outputs.base }}
+          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
 
       - name: Build
         run: pnpm turbo run build --filter='!@aido/mobile'
