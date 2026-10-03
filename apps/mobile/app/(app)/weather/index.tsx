@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/errors';
 import catImage from '@assets/images/cat_weather_anchor.png';
-import type { DailyForecast, HourlyForecast } from '@src/features/weather/models/weather.model';
+import type { DailyForecast } from '@src/features/weather/models/weather.model';
 import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import {
   resolveIconByPrecipitation,
@@ -16,6 +16,10 @@ import { useTimePalette } from '@src/features/weather/presentations/hooks/use-ti
 import { useWeatherSession } from '@src/features/weather/presentations/providers/weather-session-provider';
 import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/get-conditions-query-options';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/get-forecast-query-options';
+import {
+  type HourlyForecastViewModel,
+  toUpcomingHourlyForecasts,
+} from '@src/features/weather/presentations/view-models/hourly-forecast.view-model';
 import type { WeatherForecastViewModel } from '@src/features/weather/presentations/view-models/weather-forecast.view-model';
 import { isApiError } from '@src/shared/errors/api-error';
 import { t as globalT, useTranslation } from '@src/shared/i18n';
@@ -129,7 +133,7 @@ export default function WeatherDetailScreen() {
         </>
       )}
       <HourlyForecastSection
-        items={filterHourlyForecasts(forecast.hourlyForecasts, session.clock.hour)}
+        items={toUpcomingHourlyForecasts(forecast.hourlyForecasts, session.clock.hour)}
       />
       {forecast.dailyForecasts.length > 0 && (
         <DailyForecastSection items={forecast.dailyForecasts} />
@@ -302,11 +306,7 @@ function FeelsLike({ feelsLike }: { feelsLike: number }) {
   );
 }
 
-function filterHourlyForecasts(items: HourlyForecast[], currentHour: number): HourlyForecast[] {
-  return items.filter((item) => item.hour >= currentHour);
-}
-
-function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
+function HourlyForecastSection({ items }: { items: HourlyForecastViewModel[] }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 
@@ -340,7 +340,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
           contentContainerStyle={{ gap: 8 }}
         >
           {items.map((item) => (
-            <HourlyCard key={item.hour} item={item} />
+            <HourlyForecastSection.Item key={item.id} item={item} />
           ))}
         </ScrollView>
       </VStack>
@@ -348,7 +348,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
   );
 }
 
-function HourlyCard({ item }: { item: HourlyForecast }) {
+HourlyForecastSection.Item = function Item({ item }: { item: HourlyForecastViewModel }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
   const SkyIcon = resolveIconBySky(item.skyCondition);
@@ -356,7 +356,9 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
   return (
     <VStack py={16} px={20} className="items-center justify-between">
       <Text size="b3" align="center" style={{ color: palette.textSub }}>
-        {t('screen.hourLabel', { hour: item.hour })}
+        {t(item.dayOffset > 0 ? 'screen.nextDayHourLabel' : 'screen.hourLabel', {
+          hour: item.hour,
+        })}
       </Text>
 
       <Spacing size={8} />
@@ -382,7 +384,7 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
       </Text>
     </VStack>
   );
-}
+};
 
 function DailyForecastSection({ items }: { items: DailyForecast[] }) {
   const palette = useTimePalette();

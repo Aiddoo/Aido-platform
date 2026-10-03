@@ -56,3 +56,21 @@ ScreenTitleBar/
 ├── ScreenTitleBar.md         # 이 문서
 └── index.ts                  # 배럴
 ```
+
+## Expo Router 헤더
+
+`ScreenTitleBar.StackHeader`는 Expo Router의 `NativeStackHeaderProps`를 그대로 받는다.
+기존 `title`, `headerLeft`, `headerRight` 옵션을 공용 제목 바에 연결하고 위쪽 safe-area를 적용한다.
+화면 저장/취소 버튼과 서버 데이터는 사용처의 옵션에 둔다.
+
+```tsx
+<Stack
+  screenOptions={{
+    header: (props) => <ScreenTitleBar.StackHeader {...props} />,
+  }}
+/>
+```
+
+`leading`은 기존 뒤로가기 영역을 대체하는 ReactNode다. 전달하지 않으면 기존 뒤로가기를 사용한다.
+공용 custom header는 Stack의 화면 전환/뒤로가기 동작을 유지하면서 플랫폼별 native toolbar의
+동적 자식 제거 경로를 사용하지 않는다.

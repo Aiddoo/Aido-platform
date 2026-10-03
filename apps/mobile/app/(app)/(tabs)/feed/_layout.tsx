@@ -1,6 +1,6 @@
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
 import { WeatherForecastBadge } from '@src/features/weather/presentations/components/WeatherForecastBadge';
-import { HStack } from '@src/shared/ui';
+import { HStack, ScreenTitleBar } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
@@ -11,6 +11,7 @@ export default function FeedLayout() {
   return (
     <Stack
       screenOptions={{
+        header: (props) => <ScreenTitleBar.StackHeader {...props} />,
         headerShown: true,
         headerShadowVisible: false,
         headerTitle: '',

@@ -56,7 +56,8 @@
     "refreshLocation": "현재 위치 다시 확인",
     "registeredLocation": "등록한 위치의 날씨",
     "dailyRange": "오늘의 최저·최고 기온이에요",
-    "refreshFailed": "업데이트하지 못해 마지막 예보를 보여드려요"
+    "refreshFailed": "업데이트하지 못해 마지막 예보를 보여드려요",
+    "nextDayHourLabel": "내일 {{hour}}시"
   },
   "dust": {
     "good": "좋음",

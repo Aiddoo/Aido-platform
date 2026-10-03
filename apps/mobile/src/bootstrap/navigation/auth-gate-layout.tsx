@@ -3,7 +3,6 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import { Stack } from 'expo-router';
-import { Platform } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 export const AuthGateLayout = () => {
@@ -23,8 +22,7 @@ export const AuthGateLayout = () => {
     <Stack
       screenOptions={{
         headerShown: false,
-        statusBarStyle:
-          Platform.OS === 'android' ? (resolvedTheme === 'dark' ? 'light' : 'dark') : undefined,
+        statusBarStyle: resolvedTheme === 'dark' ? 'light' : 'dark',
         animation: 'fade',
         animationDuration: 250,
         animationTypeForReplace: 'pop',

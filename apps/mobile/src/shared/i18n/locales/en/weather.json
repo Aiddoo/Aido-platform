@@ -56,7 +56,8 @@
     "refreshLocation": "Check current location",
     "registeredLocation": "Weather for your saved location",
     "dailyRange": "Today’s low and high temperatures",
-    "refreshFailed": "Couldn’t update. Showing the last forecast."
+    "refreshFailed": "Couldn’t update. Showing the last forecast.",
+    "nextDayHourLabel": "Tomorrow {{hour}}:00"
   },
   "dust": {
     "good": "Good",

@@ -171,6 +171,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         usesNonExemptEncryption: false,
       },
       infoPlist: {
+        UIViewControllerBasedStatusBarAppearance: true,
         CFBundleAllowMixedLocalizations: true,
         // CFBundleLocalizations는 expo-localization 플러그인(supportedLocales)이 설정
         NSMicrophoneUsageDescription:

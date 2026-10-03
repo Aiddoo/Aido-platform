@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 export interface ScreenTitleBarProps {
   /** 가운데 굵게 놓이는 화면 이름 */
   title: string;
+  leading?: ReactNode;
   /** 제목 아래 한 줄 보조 문구 (조회수 등) */
   subtitle?: string;
   /** 오른쪽 끝 액션. 없으면 대칭 여백만 두어 제목이 가운데 정렬을 유지한다. */

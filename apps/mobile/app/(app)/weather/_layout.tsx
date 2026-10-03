@@ -4,74 +4,71 @@ import { useWeatherSession } from '@src/features/weather/presentations/providers
 import { getWeatherPalette } from '@src/features/weather/presentations/view-models/weather-palette.view-model';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
-import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { useTheme } from '@src/shared/providers/theme-provider';
-import { Box } from '@src/shared/ui';
-import { ArrowLeftIcon, SettingIcon } from '@src/shared/ui';
-import { getScaledFontSize } from '@src/shared/utils/font-scale';
-import { Stack, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { ArrowLeftIcon, Box, HStack, SettingIcon, Text } from '@src/shared/ui';
+import { Slot, Stack, router } from 'expo-router';
+import { Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const WeatherLayout = () => {
-  const goBack = useSingleTap(router.back);
-  const push = useSingleTap(router.push);
+export default function WeatherLayout() {
+  const { resolvedTheme } = useTheme();
+  const { clock } = useWeatherSession();
+  const palette = getWeatherPalette(clock.deviceHour, resolvedTheme);
 
+  return (
+    <TimePaletteContext.Provider value={palette}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: true,
+          headerShadowVisible: false,
+          header: () => <WeatherLayout.Header />,
+          contentStyle: { backgroundColor: palette.bg },
+          statusBarStyle: 'light',
+        }}
+      />
+      <Box flex={1} style={{ backgroundColor: palette.bg }}>
+        <WeatherBackground />
+        <Slot />
+      </Box>
+    </TimePaletteContext.Provider>
+  );
+}
+
+WeatherLayout.Header = function Header() {
   const { t } = useTranslation('weather');
   const { resolvedTheme } = useTheme();
   const { clock } = useWeatherSession();
   const palette = getWeatherPalette(clock.deviceHour, resolvedTheme);
-  const { fontScale } = useFontScale();
+  const insets = useSafeAreaInsets();
+  const goBack = useSingleTap(router.back);
+  const push = useSingleTap(router.push);
+
   return (
-    <TimePaletteContext.Provider value={palette}>
-      <Box flex={1} style={{ backgroundColor: palette.bg }}>
-        <WeatherBackground />
-        <Stack
-          screenOptions={{
-            headerShown: true,
-            headerTransparent: true,
-            headerShadowVisible: false,
-            contentStyle: { backgroundColor: 'transparent' },
-            headerTintColor: palette.text,
-            statusBarStyle: 'light',
-            headerTitleStyle: {
-              fontSize: getScaledFontSize(fontScale),
-              fontWeight: '600',
-              color: palette.text,
-            },
-            headerTitleAlign: 'center',
-            headerLeft: () => (
-              <View className="justify-center items-center">
-                <Pressable
-                  accessibilityLabel={t('titles.back')}
-                  onPress={() => goBack()}
-                  hitSlop={8}
-                  className="p-3"
-                  accessibilityRole="button"
-                >
-                  <ArrowLeftIcon width={20} height={20} color={palette.text} />
-                </Pressable>
-              </View>
-            ),
-            headerRight: () => (
-              <View className="justify-center items-center">
-                <Pressable
-                  accessibilityLabel={t('titles.settings')}
-                  onPress={() => push('/settings/notifications/weather')}
-                  hitSlop={8}
-                  className="p-3"
-                  accessibilityRole="button"
-                >
-                  <SettingIcon width={20} height={20} color={palette.text} />
-                </Pressable>
-              </View>
-            ),
-          }}
+    <Box style={{ paddingTop: insets.top }}>
+      <HStack align="center" px={12} py={8}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('titles.back')}
+          onPress={() => goBack()}
+          className="h-11 w-11 items-center justify-center"
         >
-          <Stack.Screen name="index" options={{ title: t('titles.index') }} />
-        </Stack>
-      </Box>
-    </TimePaletteContext.Provider>
+          <ArrowLeftIcon width={20} height={20} color={palette.text} />
+        </Pressable>
+        <Box flex={1}>
+          <Text size="b2" weight="semibold" align="center" style={{ color: palette.text }}>
+            {t('titles.index')}
+          </Text>
+        </Box>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('titles.settings')}
+          onPress={() => push('/settings/notifications/weather')}
+          className="h-11 w-11 items-center justify-center"
+        >
+          <SettingIcon width={20} height={20} color={palette.text} />
+        </Pressable>
+      </HStack>
+    </Box>
   );
 };
-
-export default WeatherLayout;
