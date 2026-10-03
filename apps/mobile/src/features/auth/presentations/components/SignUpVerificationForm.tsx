@@ -1,6 +1,5 @@
 import { ErrorCode } from '@aido/errors';
-import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/validators';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { VERIFICATION_CODE, type VerifyEmailInput } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ApiError } from '@src/shared/errors/api-error';
 import { isBusinessError } from '@src/shared/errors/result';
@@ -11,22 +10,19 @@ import { useMutation } from '@tanstack/react-query';
 import { InputOTP, type InputOTPRef } from 'heroui-native';
 import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm, useFormContext } from 'react-hook-form';
+import { useFormContext, useFormState } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { useCooldown } from '../hooks/use-cooldown';
 import { useResendVerificationMutationOptions } from '../queries/use-resend-verification-mutation-options';
 import { useVerifyEmailMutationOptions } from '../queries/use-verify-email-mutation-options';
-import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 
 export const SignUpVerificationForm = () => {
   const { showBoundary } = useErrorBoundary();
 
   const { t } = useTranslation(['auth']);
-  const { getValues } = useFormContext<SignUpFormData>();
+  const { control, handleSubmit, setValue, reset, getValues } = useFormContext<VerifyEmailInput>();
 
   const email = getValues('email');
 
@@ -34,11 +30,6 @@ export const SignUpVerificationForm = () => {
   const [cooldown, setCooldown] = useCooldown(0);
   const [isInvalid, setIsInvalid] = useState(false);
 
-  const formMethods = useForm({
-    resolver: zodResolver(verifyEmailSchema),
-    defaultValues: { email, code: '' },
-  });
-  const { control, handleSubmit, setValue, reset } = formMethods;
   const { isSubmitting } = useFormState({ control });
 
   const verify = useMutation(useVerifyEmailMutationOptions());
@@ -91,67 +82,65 @@ export const SignUpVerificationForm = () => {
   const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
 
   return (
-    <FormProvider {...formMethods}>
-      <View className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+    <View className="flex-1">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View
+          entering={FadeIn.duration(ANIMATION.duration.slow)}
+          style={{ marginBottom: 24 }}
         >
-          <Animated.View
-            entering={FadeIn.duration(ANIMATION.duration.slow)}
-            style={{ marginBottom: 24 }}
-          >
-            <H3>{t('auth:verification.codeSentTo', { email: maskedEmail })}</H3>
-          </Animated.View>
+          <H3>{t('auth:verification.codeSentTo', { email: maskedEmail })}</H3>
+        </Animated.View>
 
-          <VStack gap={32} align="center">
-            <FormField control={control} name="code">
-              {({ onChange, value }) => (
-                <InputOTP
-                  ref={inputOTPRef}
-                  maxLength={VERIFICATION_CODE.LENGTH}
-                  value={value}
-                  onChange={onChange}
-                  onComplete={handleComplete}
-                  isInvalid={isInvalid}
-                >
-                  <InputOTP.Group>
-                    <InputOTP.Slot index={0} />
-                    <InputOTP.Slot index={1} />
-                    <InputOTP.Slot index={2} />
-                    <InputOTP.Slot index={3} />
-                    <InputOTP.Slot index={4} />
-                    <InputOTP.Slot index={5} />
-                  </InputOTP.Group>
-                </InputOTP>
-              )}
-            </FormField>
-
-            {isSubmitting && (
-              <Text size="b4" className="text-main">
-                {t('auth:verification.verifying')}
-              </Text>
-            )}
-
-            <HStack gap={8} justify="center">
-              <Text size="b4" shade={7}>
-                {t('auth:verification.didNotReceive')}
-              </Text>
-              <TextButton
-                size="medium"
-                onPress={handleResend}
-                disabled={cooldown > 0 || resend.isPending}
+        <VStack gap={32} align="center">
+          <FormField control={control} name="code">
+            {({ onChange, value }) => (
+              <InputOTP
+                ref={inputOTPRef}
+                maxLength={VERIFICATION_CODE.LENGTH}
+                value={value}
+                onChange={onChange}
+                onComplete={handleComplete}
+                isInvalid={isInvalid}
               >
-                {cooldown > 0
-                  ? t('auth:verification.resendIn', { count: cooldown })
-                  : t('auth:verification.resend')}
-              </TextButton>
-            </HStack>
-          </VStack>
-        </ScrollView>
-      </View>
-    </FormProvider>
+                <InputOTP.Group>
+                  <InputOTP.Slot index={0} />
+                  <InputOTP.Slot index={1} />
+                  <InputOTP.Slot index={2} />
+                  <InputOTP.Slot index={3} />
+                  <InputOTP.Slot index={4} />
+                  <InputOTP.Slot index={5} />
+                </InputOTP.Group>
+              </InputOTP>
+            )}
+          </FormField>
+
+          {isSubmitting && (
+            <Text size="b4" className="text-main">
+              {t('auth:verification.verifying')}
+            </Text>
+          )}
+
+          <HStack gap={8} justify="center">
+            <Text size="b4" shade={7}>
+              {t('auth:verification.didNotReceive')}
+            </Text>
+            <TextButton
+              size="medium"
+              onPress={handleResend}
+              disabled={cooldown > 0 || resend.isPending}
+            >
+              {cooldown > 0
+                ? t('auth:verification.resendIn', { count: cooldown })
+                : t('auth:verification.resend')}
+            </TextButton>
+          </HStack>
+        </VStack>
+      </ScrollView>
+    </View>
   );
 };
