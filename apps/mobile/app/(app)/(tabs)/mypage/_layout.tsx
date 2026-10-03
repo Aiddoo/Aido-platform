@@ -1,4 +1,5 @@
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
+import { ScreenTitleBar } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
@@ -8,6 +9,7 @@ export default function MyPageLayout() {
   return (
     <Stack
       screenOptions={{
+        header: (props) => <ScreenTitleBar.StackHeader {...props} />,
         headerShown: true,
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },

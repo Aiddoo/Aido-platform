@@ -1,7 +1,7 @@
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon } from '@src/shared/ui';
+import { ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
 import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
@@ -13,11 +13,12 @@ const NotificationsLayout = () => {
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
-  const { t } = useTranslation('notification');
+  const { t } = useTranslation(['notification', 'common']);
 
   return (
     <Stack
       screenOptions={{
+        header: (props) => <ScreenTitleBar.StackHeader {...props} />,
         headerShown: true,
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
@@ -29,7 +30,13 @@ const NotificationsLayout = () => {
         headerTitleAlign: 'center',
         headerLeft: () => (
           <View className="justify-center items-center">
-            <Pressable onPress={() => goBack()} hitSlop={8} className="p-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common:actions.goBack')}
+              onPress={() => goBack()}
+              hitSlop={8}
+              className="p-2"
+            >
               <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
             </Pressable>
           </View>
