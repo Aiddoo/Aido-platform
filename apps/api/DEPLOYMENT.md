@@ -376,3 +376,9 @@ pnpm --filter @aido/api exec vitest run --project e2e \
 pg-boss는 12.27.0과 schema 37을 유지한다. 12.35.1은 schema 43으로 migration하며, `migrate: false`인 기존 12.27 runtime은 schema가 다르면 재시작하지 못한다. 따라서 이번 릴리스에는 pg-boss schema upgrade를 포함하지 않는다. 구 서버 이미지로 rollback할 수 있는 DB 구조를 유지한다. 이 예외는 [구 버전의 schema 검사](https://github.com/timgit/pg-boss/blob/12.27.0/src/contractor.ts)와 격리 PostgreSQL 재시작 검증을 기준으로 결정했다.
 
 검증 중 별도 schema를 사용할 때는 API와 migration에 같은 `JOB_SCHEMA` 값을 전달한다. migration script는 이를 `PGBOSS_SCHEMA`로 연결한다. 기존 개발 계정이나 기존 schema를 삭제해서 검증 환경을 맞추지 않는다.
+
+### 1.11.0 콕 찌르기 답장·감사
+
+`NUDGE_INTERACTIONS_ENABLED` 기본값은 `false`다. 새 앱은 availability 응답으로 진입점을 표시하므로 서버 기능이 꺼져 있어도 기존 앱 기능을 사용할 수 있다. 두 additive migration을 적용하고 native/계약 검증을 마친 뒤 운영 `.env.docker.prod`에 `true`를 설정한다. 환경 변경은 위의 배포 락·private backup 절차를 따른다.
+
+기존 알림 API는 새 reply/thanks 타입을 pagination 전에 제외한다. 새 push는 1.11.0 이상 device에만 보내고, 오래된 앱의 토큰·일반 찌르기·알림 계약은 유지한다. 스토어 최신 버전 설정은 실제 공개 이후 별도로 바꾼다. 빌드 완료만으로 공개 버전을 올리지 않는다.
