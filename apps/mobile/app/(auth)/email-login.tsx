@@ -74,6 +74,7 @@ const EmailLoginScreen = () => {
           <FormField control={control} name="email">
             {({ onChange, onBlur, value }, { error }) => (
               <Input
+                testID="email-login-email"
                 placeholder={t('emailLogin.emailPlaceholder')}
                 value={value}
                 onChange={onChange}
@@ -100,6 +101,7 @@ const EmailLoginScreen = () => {
           <FormField control={control} name="password">
             {({ onChange, onBlur, value }, { error }) => (
               <PasswordInput
+                testID="email-login-password"
                 ref={passwordRef}
                 placeholder={t('emailLogin.passwordPlaceholder')}
                 value={value}
@@ -118,7 +120,12 @@ const EmailLoginScreen = () => {
 
           <Spacing size={16} />
 
-          <Button color="primary" onPress={() => onSubmit()} isLoading={isSubmitting}>
+          <Button
+            testID="email-login-submit"
+            color="primary"
+            onPress={() => onSubmit()}
+            isLoading={isSubmitting}
+          >
             {t('emailLogin.submit')}
           </Button>
 

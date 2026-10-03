@@ -79,6 +79,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
         <BottomSheet.Content
+          accessible={false}
           enableDynamicSizing
           detached
           bottomInset={insets.bottom || 16}
