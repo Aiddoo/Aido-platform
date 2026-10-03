@@ -80,7 +80,7 @@ export default function MyFeedScreen() {
       </QueryErrorBoundary>
 
       <Box px={16}>
-        <QueryErrorBoundary>
+        <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
           <Suspense fallback={<SuggestionEntry.Loading />}>
             <SuggestionEntry />
           </Suspense>

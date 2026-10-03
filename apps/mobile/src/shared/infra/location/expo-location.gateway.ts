@@ -1,4 +1,8 @@
-import type { LocationCoordinates, LocationGateway } from '@src/core/ports/location-gateway';
+import {
+  LocationUnavailableError,
+  type LocationCoordinates,
+  type LocationGateway,
+} from '@src/core/ports/location-gateway';
 import * as Location from 'expo-location';
 
 function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> {
@@ -12,7 +16,7 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
       signal.removeEventListener('abort', onAbort);
       subscription?.remove();
       if (coordinates) resolve(coordinates);
-      else reject(error ?? new Error('Location unavailable'));
+      else reject(error ?? new LocationUnavailableError('Location unavailable'));
     };
     const onAbort = () => finish(undefined, new Error('Location cancelled'));
     const timer = setTimeout(() => finish(undefined, new Error('Location timeout')), 10_000);

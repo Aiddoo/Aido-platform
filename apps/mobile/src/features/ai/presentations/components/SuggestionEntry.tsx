@@ -3,7 +3,7 @@ import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
-import { ListRow } from '@src/shared/ui';
+import { ListRow, QueryErrorBoundary, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -23,9 +23,11 @@ export function SuggestionEntry() {
   }
 
   return (
-    <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
-      <PremiumSuggestionEntry name={user.name} />
-    </Suspense>
+    <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
+      <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
+        <PremiumSuggestionEntry name={user.name} />
+      </Suspense>
+    </QueryErrorBoundary>
   );
 }
 
@@ -71,4 +73,9 @@ function InfoCard({ label, ...props }: InfoCardProps) {
 SuggestionEntry.Loading = function Loading() {
   const { t } = useTranslation('todo');
   return <InfoCard label={t('feed.loading')} />;
+};
+
+SuggestionEntry.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('todo');
+  return <InfoCard label={t('feed.suggestionsRetry')} onPress={reset} />;
 };

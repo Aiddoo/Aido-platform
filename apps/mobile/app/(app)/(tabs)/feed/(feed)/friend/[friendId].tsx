@@ -34,7 +34,8 @@ function FriendFeedContent() {
   const friendId = userIdParamSchema.shape.userId.parse(rawFriendId);
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
-  const friend = useFriendById(friendId);
+  const { friend, hasNextPage, isFetchNextPageError, error, fetchNextPage } =
+    useFriendById(friendId);
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
@@ -42,6 +43,16 @@ function FriendFeedContent() {
     ]),
   );
 
+  if (!friend && isFetchNextPageError)
+    return (
+      <FriendFeedContent.Error
+        error={error}
+        reset={() => {
+          void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+        }}
+      />
+    );
+  if (!friend && hasNextPage) return <FriendFeedContent.Loading />;
   if (!friend) return <Redirect href="/feed" />;
 
   return (

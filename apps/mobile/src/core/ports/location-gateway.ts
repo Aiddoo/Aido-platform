@@ -1,3 +1,10 @@
+export class LocationUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'LocationUnavailableError';
+  }
+}
+
 export interface LocationCoordinates {
   latitude: number;
   longitude: number;

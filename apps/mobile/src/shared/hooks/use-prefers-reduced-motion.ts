@@ -6,11 +6,14 @@ export function usePrefersReducedMotion(): boolean {
 
   useEffect(() => {
     let mounted = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) {
-        setPrefersReducedMotion(enabled);
-      }
-    });
+    void AccessibilityInfo.isReduceMotionEnabled().then(
+      (enabled) => {
+        if (mounted) setPrefersReducedMotion(enabled);
+      },
+      () => {
+        if (mounted) setPrefersReducedMotion(true);
+      },
+    );
 
     const subscription = AccessibilityInfo.addEventListener(
       'reduceMotionChanged',

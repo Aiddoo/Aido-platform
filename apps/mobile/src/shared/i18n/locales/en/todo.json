@@ -153,7 +153,8 @@
     "routineSuggestion": "We'll suggest routines just for you!",
     "suggestionsArrived_one": "{{name}}, {{count}} personalized suggestion just arrived!",
     "suggestionsArrived_other": "{{name}}, {{count}} personalized suggestions just arrived!",
-    "preparing": "We're preparing this week's suggestions"
+    "preparing": "We're preparing this week's suggestions",
+    "suggestionsRetry": "Could not load suggestions. Tap to try again."
   },
   "activation": {
     "title": "Create and complete your first to-do",

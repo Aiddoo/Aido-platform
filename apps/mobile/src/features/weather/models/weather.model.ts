@@ -85,6 +85,14 @@ const isWithinForecastBounds = (latitude: number, longitude: number): boolean =>
   longitude >= 124 &&
   longitude <= 132;
 
+const hasCoordinateDifference = (
+  latitude: number,
+  longitude: number,
+  previousLatitude: number,
+  previousLongitude: number,
+): boolean =>
+  Math.abs(latitude - previousLatitude) >= 0.01 || Math.abs(longitude - previousLongitude) >= 0.01;
+
 export const WeatherPolicy = {
   isWithinSupportedBounds: (
     location: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
@@ -93,8 +101,12 @@ export const WeatherPolicy = {
     location: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
     previous: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
   ): boolean =>
-    Math.abs(location.latitude - previous.latitude) >= 0.01 ||
-    Math.abs(location.longitude - previous.longitude) >= 0.01,
+    hasCoordinateDifference(
+      location.latitude,
+      location.longitude,
+      previous.latitude,
+      previous.longitude,
+    ),
   isSupportedLocation: (location: WeatherLocationInput): boolean =>
     location.countryCode?.toUpperCase() === 'KR' &&
     isWithinForecastBounds(location.latitude, location.longitude),

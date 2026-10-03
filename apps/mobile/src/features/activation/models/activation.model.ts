@@ -65,13 +65,23 @@ function activationIdentity(
   };
 }
 
+const isWithinTimeWindow = (createdAt: number, now: number, window: number): boolean => {
+  const elapsed = now - createdAt;
+  return elapsed >= 0 && elapsed < window;
+};
+const calculateElapsedDays = (createdAt: number, now: number): number =>
+  Math.max(0, Math.floor((now - createdAt) / DAY_MS));
+
 function isChecklistVisible({ config, user, progress, now }: ChecklistVisibilityInput): boolean {
   if (!isNewUserCohort(config, user) || !user || progress.activatedAt) {
     return false;
   }
 
-  const elapsed = now.getTime() - user.createdAt.getTime();
-  return elapsed >= 0 && elapsed < ACTIVATION_CHECKLIST_WINDOW_MS;
+  return isWithinTimeWindow(
+    user.createdAt.getTime(),
+    now.getTime(),
+    ACTIVATION_CHECKLIST_WINDOW_MS,
+  );
 }
 
 function shouldRegisterPushAutomatically({
@@ -93,7 +103,7 @@ function shouldRegisterPushAutomatically({
 }
 
 function daysSinceSignup(user: ActivationUser, now: Date): number {
-  return Math.max(0, Math.floor((now.getTime() - user.createdAt.getTime()) / DAY_MS));
+  return calculateElapsedDays(user.createdAt.getTime(), now.getTime());
 }
 
 export const ActivationPolicy = {
