@@ -32,7 +32,8 @@ export const todoItemSchema = z.object({
   commentCount: z.number(),
 });
 export type TodoItem = z.infer<typeof todoItemSchema>;
-export type OptimisticTodoItem = TodoItem & { readonly optimistic: true };
+const optimisticTodoItemSchema = todoItemSchema.extend({ optimistic: z.literal(true).readonly() });
+export type OptimisticTodoItem = z.infer<typeof optimisticTodoItemSchema>;
 
 export const todosByDateSchema = z.object({
   date: z.string(),

@@ -2,7 +2,7 @@ import {
   notificationActionTypeSchema,
   notificationActivityKindSchema,
   notificationTypeSchema,
-  type NotificationCategory,
+  getNotificationsQuerySchema,
   type NotificationType,
 } from '@aido/validators';
 import { z } from 'zod';
@@ -45,12 +45,8 @@ export const notificationListResultSchema = z.object({
 });
 export type NotificationListResult = z.infer<typeof notificationListResultSchema>;
 
-export interface GetNotificationsQuery {
-  limit?: number;
-  cursor?: number;
-  category?: NotificationCategory;
-  unreadOnly?: boolean;
-}
+const notificationsQueryInputSchema = getNotificationsQuerySchema.partial();
+export type GetNotificationsQuery = z.infer<typeof notificationsQueryInputSchema>;
 
 const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
   'WEEKLY_REPORT',

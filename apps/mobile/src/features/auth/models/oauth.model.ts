@@ -16,8 +16,10 @@ export type AuthProviderSlug = z.infer<typeof authProviderSlugSchema>;
 export const oauthProviderSlugSchema = z.enum(toSlugTuple(OAUTH_PROVIDERS));
 export type OAuthProviderSlug = z.infer<typeof oauthProviderSlugSchema>;
 
-export type OAuthStartProvider = Exclude<OAuthProviderSlug, 'apple'>;
-export type OAuthStartMode = 'login' | 'link';
+const oauthStartProviderSchema = oauthProviderSlugSchema.exclude(['apple']);
+export type OAuthStartProvider = z.infer<typeof oauthStartProviderSchema>;
+const oauthStartModeSchema = z.enum(['login', 'link']);
+export type OAuthStartMode = z.infer<typeof oauthStartModeSchema>;
 
 export const linkedAccountSchema = z.object({
   provider: oauthProviderSchema,

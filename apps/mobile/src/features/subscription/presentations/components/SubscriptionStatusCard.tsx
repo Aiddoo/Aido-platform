@@ -28,10 +28,10 @@ export function SubscriptionStatusCard({
   const { t } = useTranslation('subscription');
   const statusKeys = STATUS_KEYS[subscriptionStatus];
   const isActive = isActiveSubscription(subscriptionStatus);
-  const showDetails = SubscriptionPolicy.shouldShowExpirationDetails(
+  const showDetails = SubscriptionPolicy.isExpirationRelevant({
     subscriptionStatus,
     subscriptionExpiresAt,
-  );
+  });
 
   const description =
     isCancelledSubscription(subscriptionStatus) && subscriptionExpiresAt
@@ -55,7 +55,7 @@ export function SubscriptionStatusCard({
           {description}
         </Text>
 
-        {showDetails && (
+        {showDetails && subscriptionExpiresAt && (
           <>
             <Separator className="bg-gray-2 dark:bg-gray-3" />
 
