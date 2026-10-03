@@ -43,7 +43,8 @@
     "typecheck": "tsc --noEmit",
     "update:preview": "eas update --branch preview",
     "update:production": "eas update --branch production",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "generate:tab-icons": "node scripts/generate-tab-icons.mjs"
   },
   "dependencies": {
     "@aido/errors": "workspace:^",
@@ -139,6 +140,7 @@
     "jest-expo": "catalog:expo58",
     "react-native-svg-transformer": "1.5.3",
     "react-server-dom-webpack": "catalog:expo58",
+    "sharp": "0.35.5",
     "test-renderer": "1.3.0",
     "typescript": "catalog:"
   },

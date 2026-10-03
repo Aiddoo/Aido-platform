@@ -1,8 +1,9 @@
-import { APP_ICONS, getAppIconLabel } from '@src/features/app-icon/constants/app-icons.constant';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { AppIconPicker } from '@src/features/app-icon/presentations/components/AppIconPicker';
 import { useTranslation } from '@src/shared/i18n';
-import { Avatar, Button, Grid, GridItem, HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import { Avatar, Button, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { BottomSheet, PressableFeedback } from 'heroui-native';
+import { BottomSheet } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -43,86 +44,66 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
         <BottomSheet.Content
-          enableDynamicSizing
+          accessible={false}
+          snapPoints={['85%']}
+          enableDynamicSizing={false}
+          enableOverDrag={false}
+          contentContainerClassName="h-full"
           detached
           bottomInset={insets.bottom || 16}
           className="mx-4"
           backgroundClassName="rounded-[32px]"
         >
-          <VStack gap={20}>
-            <BottomSheet.Title>
-              <Text size="b2" weight="semibold">
-                {t('profile.imageSheet.title')}
-              </Text>
-            </BottomSheet.Title>
+          <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+            <VStack gap={20} pb={16}>
+              <BottomSheet.Title>
+                <Text size="b2" weight="semibold">
+                  {t('profile.imageSheet.title')}
+                </Text>
+              </BottomSheet.Title>
 
-            <VStack align="center">
-              <Avatar className="w-24 h-24 rounded-full" alt={t('profile.imageSheet.selectedAlt')}>
-                <Avatar.Image source={getProfileIconSource(selectedIcon)} />
-              </Avatar>
-            </VStack>
+              <VStack align="center">
+                <Avatar
+                  className="w-24 h-24 rounded-full"
+                  alt={t('profile.imageSheet.selectedAlt')}
+                >
+                  <Avatar.Image source={getProfileIconSource(selectedIcon)} />
+                </Avatar>
+              </VStack>
 
-            <Grid columns={3}>
-              {APP_ICONS.map((icon) => {
-                const isSelected = icon.key === (selectedIcon ?? 'default');
-
-                return (
-                  <GridItem key={icon.key} p={8} className="items-center">
-                    <PressableFeedback
-                      isDisabled={updateProfileMutation.isPending}
-                      onPress={() => setSelectedIcon(icon.key)}
-                      className="rounded-2xl overflow-visible"
-                    >
-                      <VStack align="center" gap={8} p={8} className="overflow-visible">
-                        <Avatar
-                          isSelected={isSelected}
-                          alt={getAppIconLabel(icon)}
-                          className="w-20 h-20 rounded-2xl"
-                        >
-                          <Avatar.Image source={icon.preview} />
-                        </Avatar>
-                        <Text
-                          size="b4"
-                          weight={isSelected ? 'semibold' : 'normal'}
-                          shade={isSelected ? 9 : 6}
-                          numberOfLines={1}
-                        >
-                          {getAppIconLabel(icon)}
-                        </Text>
-                      </VStack>
-                      <PressableFeedback.Highlight className="rounded-2xl" />
-                    </PressableFeedback>
-                  </GridItem>
-                );
-              })}
-            </Grid>
-
-            <Spacing size={4} />
-
-            <HStack gap={12}>
-              <Button
-                variant="weak"
-                size="large"
-                color="dark"
-                display="block"
-                onPress={() => handleSave(null)}
+              <AppIconPicker
+                value={selectedIcon}
+                onChange={setSelectedIcon}
                 isDisabled={updateProfileMutation.isPending}
-                className="flex-1"
-              >
-                {t('profile.imageSheet.clear')}
-              </Button>
-              <Button
-                size="large"
-                color="primary"
-                display="block"
-                onPress={() => handleSave(selectedIcon)}
-                isLoading={updateProfileMutation.isPending}
-                className="flex-1"
-              >
-                {t('profile.imageSheet.save')}
-              </Button>
-            </HStack>
-          </VStack>
+              />
+
+              <Spacing size={4} />
+
+              <HStack gap={12}>
+                <Button
+                  variant="weak"
+                  size="large"
+                  color="dark"
+                  display="block"
+                  onPress={() => handleSave(null)}
+                  isDisabled={updateProfileMutation.isPending}
+                  className="flex-1"
+                >
+                  {t('profile.imageSheet.clear')}
+                </Button>
+                <Button
+                  size="large"
+                  color="primary"
+                  display="block"
+                  onPress={() => handleSave(selectedIcon)}
+                  isLoading={updateProfileMutation.isPending}
+                  className="flex-1"
+                >
+                  {t('profile.imageSheet.save')}
+                </Button>
+              </HStack>
+            </VStack>
+          </BottomSheetScrollView>
         </BottomSheet.Content>
       </BottomSheet.Portal>
     </BottomSheet>

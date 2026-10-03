@@ -1,5 +1,5 @@
 import defaultProfileIconImage from '@assets/images/icon.png';
-import { APP_ICONS } from '@src/features/app-icon/constants/app-icons.constant';
+import { APP_ICONS } from '@src/features/app-icon/presentations/constants/app-icons.constant';
 import type { ImageSourcePropType } from 'react-native';
 
 const ICON_MAP = new Map<string, ImageSourcePropType>(
@@ -15,5 +15,5 @@ export const getProfileIconSource = (profileImage: string | null): ImageSourcePr
   const localIcon = ICON_MAP.get(profileImage);
   if (localIcon) return localIcon;
 
-  return { uri: profileImage };
+  return /^https?:\/\//i.test(profileImage) ? { uri: profileImage } : DEFAULT_ICON;
 };

@@ -379,6 +379,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           black_cat: { image: './assets/premium-app-icons/black-cat.png' },
           white_cat: { image: './assets/premium-app-icons/white-cat.png' },
           siamese: { image: './assets/premium-app-icons/siamese.png' },
+          russian_blue: { image: './assets/premium-app-icons/russian-blue.png' },
+          cream_cat: { image: './assets/premium-app-icons/cream-cat.png' },
+          tuxedo_cat: { image: './assets/premium-app-icons/tuxedo-cat.png' },
         },
       ],
 
