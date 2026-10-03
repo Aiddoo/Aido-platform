@@ -43,6 +43,8 @@ export {
 	createMorningNoTodoNotificationMessage,
 	createMorningReminderNotificationMessage,
 	createNudgeSuggestionNotificationMessage,
+	createNudgeReplyNotificationMessage,
+	createNudgeThanksNotificationMessage,
 	createOnboardingNotificationMessage,
 	createRetentionNotificationMessage,
 	createSocialDigestNotificationMessage,

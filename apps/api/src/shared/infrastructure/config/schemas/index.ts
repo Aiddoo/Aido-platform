@@ -17,6 +17,7 @@ import {
 } from "./feature-discovery.schema.js";
 import { type JobConfig, jobSchema } from "./job.schema.js";
 import { type JwtConfig, jwtSchema } from "./jwt.schema.js";
+import { type NudgeConfig, nudgeSchema } from "./nudge.schema.js";
 import { type OAuthConfig, oauthSchema, validateOAuthForProduction } from "./oauth.schema.js";
 import { type PushConfig, pushSchema } from "./push.schema.js";
 import { type RetentionConfig, retentionSchema } from "./retention.schema.js";
@@ -33,6 +34,7 @@ export * from "./external.schema.js";
 export * from "./feature-discovery.schema.js";
 export * from "./job.schema.js";
 export * from "./jwt.schema.js";
+export * from "./nudge.schema.js";
 export * from "./oauth.schema.js";
 export * from "./push.schema.js";
 export * from "./retention.schema.js";
@@ -51,6 +53,7 @@ export const envSchema = z
 	.merge(emailSchema)
 	.merge(jwtSchema)
 	.merge(jobSchema)
+	.merge(nudgeSchema)
 	.merge(oauthSchema)
 	.merge(securitySchema)
 	.merge(pushSchema)
@@ -71,6 +74,7 @@ export type EnvConfig = AppConfig &
 	EmailConfig &
 	JwtConfig &
 	JobConfig &
+	NudgeConfig &
 	OAuthConfig &
 	SecurityConfig &
 	PushConfig &

@@ -1,4 +1,5 @@
 import type { NotificationRecord } from "../../domain/records/notification.record.js";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 import type { FindNotificationsParams } from "./notification-data.js";
 
 export const NOTIFICATION_INBOX_READER = Symbol("NOTIFICATION_INBOX_READER");
@@ -7,5 +8,5 @@ export const NOTIFICATION_INBOX_READER = Symbol("NOTIFICATION_INBOX_READER");
 export interface NotificationInboxReaderPort {
 	findNotificationById(id: number): Promise<NotificationRecord | null>;
 	findNotificationsByUser(params: FindNotificationsParams): Promise<NotificationRecord[]>;
-	countUnread(userId: string): Promise<number>;
+	countUnread(userId: string, types?: readonly NotificationType[]): Promise<number>;
 }

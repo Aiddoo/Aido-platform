@@ -6,6 +6,10 @@ import {
 	supportsFeatureDiscoveryMarketing,
 } from "../../domain/services/feature-marketing-capability.js";
 import {
+	isNudgeInteractionNotification,
+	supportsNudgeInteractions,
+} from "../../domain/services/notification-client-capability.js";
+import {
 	ACTIVE_PUSH_TOKEN_READER,
 	type ActivePushTokenReaderPort,
 } from "../ports/active-push-token.reader.port.js";
@@ -100,18 +104,21 @@ export class PushNotificationDeliveryService {
 	): Promise<PreparedBatchPushDelivery> {
 		const userIds = [...new Set(payloads.map((payload) => payload.userId))];
 		const tokensByUser = await this.activePushTokenReader.findByUserIds(userIds);
-		const featureUserIds = [
+		const capabilityUserIds = [
 			...new Set(
 				payloads
-					.filter((payload) => payload.requiresFeatureCapability)
+					.filter(
+						(payload) =>
+							payload.requiresFeatureCapability || payload.requiresNudgeInteractionCapability,
+					)
 					.map((payload) => payload.userId),
 			),
 		];
-		const featureTokenRecords =
-			featureUserIds.length === 0
+		const capabilityTokenRecords =
+			capabilityUserIds.length === 0
 				? []
-				: await this.pushTokenRepository.findActivePushTokensByUsers(featureUserIds);
-		const featureTokensByUser = this.#groupTokenRecords(featureTokenRecords);
+				: await this.pushTokenRepository.findActivePushTokensByUsers(capabilityUserIds);
+		const capabilityTokensByUser = this.#groupTokenRecords(capabilityTokenRecords);
 
 		const providerPayloads: PushPayload[] = [];
 		const dispatchIds: number[] = [];
@@ -123,10 +130,10 @@ export class PushNotificationDeliveryService {
 
 		for (const payload of payloads) {
 			const activeTokens = tokensByUser.get(payload.userId) ?? [];
-			const featureRecords = featureTokensByUser.get(payload.userId) ?? [];
-			const activeTokenCount = payload.requiresFeatureCapability
-				? featureRecords.length
-				: activeTokens.length;
+			const capabilityRecords = capabilityTokensByUser.get(payload.userId) ?? [];
+			const requiresCapability =
+				payload.requiresFeatureCapability || payload.requiresNudgeInteractionCapability;
+			const activeTokenCount = requiresCapability ? capabilityRecords.length : activeTokens.length;
 			if (activeTokenCount === 0) {
 				skippedDispatches.push({
 					dispatchId: payload.dispatchId,
@@ -135,8 +142,15 @@ export class PushNotificationDeliveryService {
 				continue;
 			}
 
-			const tokens = payload.requiresFeatureCapability
-				? featureRecords.filter(supportsFeatureDiscoveryMarketing).map((record) => record.token)
+			const tokens = requiresCapability
+				? capabilityRecords
+						.filter(
+							(record) =>
+								(!payload.requiresFeatureCapability || supportsFeatureDiscoveryMarketing(record)) &&
+								(!payload.requiresNudgeInteractionCapability ||
+									supportsNudgeInteractions(record.appVersion)),
+						)
+						.map((record) => record.token)
 				: activeTokens;
 			if (tokens.length === 0) {
 				skippedDispatches.push({
@@ -210,7 +224,9 @@ export class PushNotificationDeliveryService {
 		| { readonly status: "resolved"; readonly tokens: readonly string[] }
 		| { readonly status: "skipped"; readonly reason: PushDispatchSkipReason }
 	> {
-		if (data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY) {
+		const requiresFeatureCapability = data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY;
+		const requiresNudgeInteractionCapability = isNudgeInteractionNotification(data.type);
+		if (requiresFeatureCapability || requiresNudgeInteractionCapability) {
 			const records = await this.pushTokenRepository.findPushTokensByUser({
 				userId: data.userId,
 				activeOnly: true,
@@ -218,7 +234,11 @@ export class PushNotificationDeliveryService {
 			if (records.length === 0) return { status: "skipped", reason: "NO_ACTIVE_TOKEN" };
 
 			const tokens = records
-				.filter(supportsFeatureDiscoveryMarketing)
+				.filter(
+					(record) =>
+						(!requiresFeatureCapability || supportsFeatureDiscoveryMarketing(record)) &&
+						(!requiresNudgeInteractionCapability || supportsNudgeInteractions(record.appVersion)),
+				)
 				.map((record) => record.token);
 			return tokens.length > 0
 				? { status: "resolved", tokens }

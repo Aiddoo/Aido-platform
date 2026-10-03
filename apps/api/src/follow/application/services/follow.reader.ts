@@ -167,4 +167,9 @@ export class FollowReader {
 			this.followRepository.getMutualFriendIds(userId),
 		);
 	}
+
+	/** 권한을 판단하는 쓰기 경로는 캐시 대신 현재 친구 관계를 조회한다. */
+	getCurrentMutualFriendIds(userId: string): Promise<string[]> {
+		return this.followRepository.getMutualFriendIds(userId);
+	}
 }

@@ -82,12 +82,25 @@ describe("PrismaNotificationReader", () => {
 		);
 	});
 
-	it.each([undefined, []])("types=%p이면 type 조건을 만들지 않는다", async (types) => {
+	it("타입 필터가 없으면 type 조건을 만들지 않는다", async () => {
 		asMock(db.notification.findMany).mockResolvedValue([]);
 
-		await reader.findNotificationsByUser({ userId: "user-1", size: 20, types });
+		await reader.findNotificationsByUser({ userId: "user-1", size: 20 });
 		const call = asMock(db.notification.findMany).mock.calls[0]?.[0];
 		expect(call?.where).not.toHaveProperty("type");
+	});
+
+	it("허용된 타입이 빈 배열이면 전체 조회로 확장하지 않는다", async () => {
+		// Given
+		asMock(db.notification.findMany).mockResolvedValue([]);
+
+		// When
+		await reader.findNotificationsByUser({ userId: "user-1", size: 20, types: [] });
+
+		// Then
+		expect(db.notification.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({ where: { userId: "user-1", type: { in: [] } } }),
+		);
 	});
 
 	it("미읽음 개수는 사용자와 isRead 조건으로 센다", async () => {

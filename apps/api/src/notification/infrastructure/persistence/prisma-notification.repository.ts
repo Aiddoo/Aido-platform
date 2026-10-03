@@ -14,6 +14,7 @@ import {
 	type NotificationRepositoryPort,
 } from "../../application/ports/notification.repository.port.js";
 import type { NotificationRecord } from "../../domain/records/notification.record.js";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 
 interface DeletedNotificationRecipientRow {
 	userId: string;
@@ -115,9 +116,12 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
 		return result.count > 0;
 	}
 
-	async markAllAsRead(userId: string): Promise<{ count: number }> {
+	async markAllAsRead(
+		userId: string,
+		types?: readonly NotificationType[],
+	): Promise<{ count: number }> {
 		return this.client.notification.updateMany({
-			where: { userId, isRead: false },
+			where: { userId, isRead: false, ...(types && { type: { in: [...types] } }) },
 			data: { isRead: true, readAt: now() },
 		});
 	}

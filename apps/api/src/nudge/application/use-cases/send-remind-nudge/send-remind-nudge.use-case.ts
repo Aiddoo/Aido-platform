@@ -91,11 +91,13 @@ export class SendRemindNudgeUseCase {
 				}
 			}
 
-			return this.nudgeRepository.createRemindNudge({
-				senderId,
-				receiverId,
-				message: nudgeMessage.raw,
-			});
+			return this.nudgeRepository.createRemindNudge(
+				ReminderNudge.planCreation({
+					senderId,
+					receiverId,
+					message: nudgeMessage.raw,
+				}),
+			);
 		});
 
 		this.#logger.log(`Remind nudge sent: senderId=${senderId}, receiverId=${receiverId}`);
@@ -112,3 +114,4 @@ export class SendRemindNudgeUseCase {
 		return remindNudge;
 	}
 }
+import { ReminderNudge } from "../../../domain/entities/reminder-nudge.aggregate.js";

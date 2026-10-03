@@ -1091,6 +1091,8 @@ enum NotificationType {
 
   // 콕 찌르기
   NUDGE_RECEIVED // 콕 찌르기 받음
+  NUDGE_REPLIED
+  NUDGE_THANKED
 
   // 응원
   CHEER_RECEIVED // 응원 받음

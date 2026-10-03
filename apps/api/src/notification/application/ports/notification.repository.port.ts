@@ -1,4 +1,5 @@
 import type { NotificationRecord } from "../../domain/records/notification.record.js";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 import type { CreateNotificationData } from "./notification-data.js";
 
 /** 알림 저장소 포트 (DI 토큰) */
@@ -23,7 +24,7 @@ export interface NotificationRepositoryPort {
 	): Promise<NotificationRecord[]>;
 	markAsRead(id: number, userId: string): Promise<boolean>;
 	markAsOpened(id: number, userId: string): Promise<boolean>;
-	markAllAsRead(userId: string): Promise<{ count: number }>;
+	markAllAsRead(userId: string, types?: readonly NotificationType[]): Promise<{ count: number }>;
 	deleteNotificationsByActorId(
 		actorId: string,
 	): Promise<{ count: number; affectedUserIds: string[] }>;

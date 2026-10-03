@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import { visibleNotificationTypes } from "../../../domain/services/notification-client-capability.js";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
@@ -23,8 +24,11 @@ export class MarkAllAsReadUseCase {
 		private readonly cache: NotificationCachePort,
 	) {}
 
-	async execute(userId: string): Promise<{ count: number }> {
-		const result = await this.notificationRepository.markAllAsRead(userId);
+	async execute(userId: string, appVersion?: string): Promise<{ count: number }> {
+		const result = await this.notificationRepository.markAllAsRead(
+			userId,
+			visibleNotificationTypes(appVersion),
+		);
 		await this.cache.invalidateUnreadCount(userId);
 
 		this.#logger.debug(`All notifications read processed: userId=${userId}, count=${result.count}`);

@@ -18,7 +18,11 @@ export class NudgeTargetTodo {
 	private constructor(private readonly props: NudgeTargetTodoProps) {}
 
 	static of(props: NudgeTargetTodoProps): NudgeTargetTodo {
-		return new NudgeTargetTodo(props);
+		return new NudgeTargetTodo({
+			...props,
+			startDate: new Date(props.startDate),
+			endDate: props.endDate ? new Date(props.endDate) : null,
+		});
 	}
 
 	isOwnedBy(userId: string): boolean {

@@ -55,11 +55,13 @@ function batchPayload(input: {
 	userId: string;
 	dispatchId: number;
 	requiresFeatureCapability?: boolean;
+	requiresNudgeInteractionCapability?: boolean;
 }): BatchPushNotificationPayload {
 	return {
 		userId: input.userId,
 		dispatchId: input.dispatchId,
 		requiresFeatureCapability: input.requiresFeatureCapability ?? false,
+		...(input.requiresNudgeInteractionCapability && { requiresNudgeInteractionCapability: true }),
 		title: `title-${input.dispatchId}`,
 		body: `body-${input.dispatchId}`,
 		data: { dispatchId: input.dispatchId },
@@ -126,6 +128,93 @@ describe("PushNotificationDeliveryService", () => {
 			}),
 		).resolves.toEqual({ status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" });
 		expect(activeTokenReader.findByUserId).not.toHaveBeenCalled();
+	});
+
+	it.each(["NUDGE_REPLIED", "NUDGE_THANKED"] as const)(
+		"%s 알림은 같은 사용자의 여러 기기 중 1.11.0 이상 기기에만 보낸다",
+		async (type) => {
+			// Given
+			tokenRepository.findPushTokensByUser.mockResolvedValue([
+				pushToken({
+					userId: "user-1",
+					token: "old-token",
+					payloadVersion: 2,
+					appVersion: "1.10.1",
+				}),
+				pushToken({
+					userId: "user-1",
+					token: "unknown-token",
+					payloadVersion: 2,
+					appVersion: null,
+				}),
+				pushToken({
+					userId: "user-1",
+					token: "new-token",
+					payloadVersion: 2,
+					appVersion: "1.11.0",
+				}),
+			]);
+			pushProvider.sendBatch.mockResolvedValue({
+				total: 1,
+				successCount: 1,
+				failureCount: 0,
+				results: [{ token: "new-token", success: true }],
+				invalidTokens: [],
+			});
+
+			// When
+			const result = await service.deliverSingle({
+				data: { userId: "user-1", type, title: "친구의 답장", body: "곧 시작해요" },
+				payload: { title: "친구의 답장", body: "곧 시작해요" },
+			});
+
+			// Then
+			expect(result.status).toBe("sent");
+			expect(pushProvider.sendBatch).toHaveBeenCalledWith([
+				{ token: "new-token", title: "친구의 답장", body: "곧 시작해요" },
+			]);
+			expect(activeTokenReader.findByUserId).not.toHaveBeenCalled();
+		},
+	);
+
+	it("답장·감사 배치는 기존 알림을 구버전에도 보내고 새 유형만 지원 기기에 제한한다", async () => {
+		// Given
+		activeTokenReader.findByUserIds.mockResolvedValue(
+			new Map([
+				["mixed", ["old-token", "new-token"]],
+				["old-only", ["unsupported-token"]],
+			]),
+		);
+		tokenRepository.findActivePushTokensByUsers.mockResolvedValue([
+			pushToken({ userId: "mixed", token: "old-token", payloadVersion: 2, appVersion: "1.10.0" }),
+			pushToken({ userId: "mixed", token: "new-token", payloadVersion: 2, appVersion: "1.11.0" }),
+			pushToken({
+				userId: "old-only",
+				token: "unsupported-token",
+				payloadVersion: 2,
+				appVersion: "1.10.1",
+			}),
+		]);
+
+		// When
+		const prepared = await service.prepareBatchDelivery([
+			batchPayload({ userId: "mixed", dispatchId: 1 }),
+			batchPayload({ userId: "mixed", dispatchId: 2, requiresNudgeInteractionCapability: true }),
+			batchPayload({ userId: "old-only", dispatchId: 3, requiresNudgeInteractionCapability: true }),
+			batchPayload({ userId: "missing", dispatchId: 4, requiresNudgeInteractionCapability: true }),
+		]);
+
+		// Then
+		if (prepared.status !== "ready") throw new Error("전송할 알림 배치가 필요합니다");
+		expect(prepared.providerPayloads).toEqual([
+			{ token: "old-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
+			{ token: "new-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
+			{ token: "new-token", title: "title-2", body: "body-2", data: { dispatchId: 2 } },
+		]);
+		expect(prepared.skippedDispatches).toEqual([
+			{ dispatchId: 3, reason: "UNSUPPORTED_APP_CAPABILITY" },
+			{ dispatchId: 4, reason: "NO_ACTIVE_TOKEN" },
+		]);
 	});
 
 	it("단건 provider가 invalid token을 반환하면 저장소 비활성화와 해당 사용자 캐시 무효화를 완료한다", async () => {

@@ -16,6 +16,8 @@ export {
 	createFollowRequestNotificationMessage,
 	createFriendCompletedNotificationMessage,
 	createNudgeReceivedNotificationMessage,
+	createNudgeReplyNotificationMessage,
+	createNudgeThanksNotificationMessage,
 	createTodoCommentNotificationMessage,
 	createTodoCreationNudgeNotificationMessage,
 } from "./social-notification-message.js";

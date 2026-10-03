@@ -15,6 +15,10 @@ const buildNudge = (receiverId: string, readAt: Date | null) =>
 		todoId: 10,
 		message: null,
 		readAt,
+		replyKind: null,
+		repliedAt: null,
+		replyUpdatedAt: null,
+		thankedAt: null,
 		createdAt: new Date(),
 	});
 
@@ -45,12 +49,13 @@ describe("MarkNudgeReadUseCase", () => {
 	it("이미 읽음이면 no-op", async () => {
 		repo.findById.mockResolvedValue(buildNudge("r", new Date()));
 		await useCase.execute({ userId: "r", nudgeId: 1 });
-		expect(repo.markAsRead).not.toHaveBeenCalled();
+		expect(repo.saveRead).not.toHaveBeenCalled();
 	});
 
 	it("미읽음이면 읽음 처리", async () => {
 		repo.findById.mockResolvedValue(buildNudge("r", null));
 		await useCase.execute({ userId: "r", nudgeId: 1 });
-		expect(repo.markAsRead).toHaveBeenCalledWith(1);
+		expect(repo.saveRead).toHaveBeenCalledWith(expect.any(Nudge));
+		expect(repo.saveRead.mock.calls[0]?.[0].readAt).toEqual(expect.any(Date));
 	});
 });

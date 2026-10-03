@@ -19,6 +19,42 @@ interface SenderNotificationInput extends LocalizedVariantInput {
 	readonly senderName: string;
 }
 
+export function createNudgeReplyNotificationMessage(
+	input: SenderNotificationInput & {
+		readonly todoTitle: string;
+		readonly replyKind: NudgeReplyKind;
+	},
+): NotificationMessage {
+	const locale = input.locale ?? DEFAULT_LOCALE;
+	return renderLocalizedNotification({
+		template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.NUDGE_REPLIED,
+		variables: {
+			senderName: createNotificationLabelPreview({ label: input.senderName, locale }),
+			todoTitle: createNotificationLabelPreview({ label: input.todoTitle, locale }),
+			replyKind: input.replyKind,
+		},
+		variantContext: input.variantContext,
+		templateKey: "nudge.reply",
+	});
+}
+
+export function createNudgeThanksNotificationMessage(
+	input: SenderNotificationInput & {
+		readonly todoTitle: string;
+	},
+): NotificationMessage {
+	const locale = input.locale ?? DEFAULT_LOCALE;
+	return renderLocalizedNotification({
+		template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.NUDGE_THANKED,
+		variables: {
+			senderName: createNotificationLabelPreview({ label: input.senderName, locale }),
+			todoTitle: createNotificationLabelPreview({ label: input.todoTitle, locale }),
+		},
+		variantContext: input.variantContext,
+		templateKey: "nudge.thanks",
+	});
+}
+
 export interface FollowRequestNotificationInput extends SenderNotificationInput {}
 export interface FollowAcceptedNotificationInput extends SenderNotificationInput {}
 
@@ -220,3 +256,4 @@ export function createTodoCommentNotificationMessage(
 				templateKey: "todo_comment.reply",
 			});
 }
+import type { NudgeReplyKind } from "@aido/validators";

@@ -4,10 +4,20 @@ import { nullableDatetimeSchema } from '../../common/datetime.js';
 import { nudgeReplyKindSchema } from './nudge.constants.js';
 import { nudgeSchema, nudgeSenderSchema, nudgeTodoSchema } from './nudge.response.js';
 
+export const nudgeInteractionAvailabilityResponseSchema = z.object({
+  enabled: z.boolean().describe('콕 주고받기 기능 사용 가능 여부'),
+});
+
+export type NudgeInteractionAvailabilityResponse = z.infer<
+  typeof nudgeInteractionAvailabilityResponseSchema
+>;
+
 export const nudgeInteractionResponseSchema = nudgeSchema.extend({
   sender: nudgeSenderSchema.describe('콕을 보낸 친구'),
   receiver: nudgeSenderSchema.describe('콕을 받은 친구'),
-  todo: nudgeTodoSchema.describe('콕의 대상 할 일'),
+  todo: nudgeTodoSchema
+    .nullable()
+    .describe('접근할 수 있는 대상 할 일 (비공개 등 접근 불가 시 null)'),
   replyKind: nudgeReplyKindSchema.nullable().describe('선택한 답장 (아직 답하지 않았으면 null)'),
   repliedAt: nullableDatetimeSchema.describe('첫 답장 시각'),
   replyUpdatedAt: nullableDatetimeSchema.describe('마지막 답장 변경 시각'),
