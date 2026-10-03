@@ -55,6 +55,8 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
 	const userMessage = "메".repeat(200);
 
 	return [
+		...render(social.NUDGE_REPLIED, { senderName: longName, todoTitle, replyKind: "STARTING" }),
+		...render(social.NUDGE_THANKED, { senderName: longName, todoTitle }),
 		...render(scheduler.TODO_REMINDER_60MIN, { todoTitle }),
 		...render(scheduler.TODO_REMINDER_10MIN, { todoTitle }),
 		...render(scheduler.TODO_REMINDER_IMMEDIATE, { todoTitle }),
@@ -200,6 +202,19 @@ function graphemeCount(value: string): number {
 }
 
 describe("푸시 카탈로그 locale 계약", () => {
+	it("기존 알림의 문구 선택 키·순서·개수를 유지한다", () => {
+		// Given
+		const catalog = KO_CATALOG;
+
+		// When
+		const selectionContract = Object.fromEntries(
+			CATALOG_GROUPS.map((group) => [group, variantCounts(catalog[group])]),
+		);
+
+		// Then
+		expect(selectionContract).toMatchSnapshot();
+	});
+
 	it("ko/en의 그룹 key와 variant 수가 동일하다", () => {
 		for (const group of CATALOG_GROUPS) {
 			expect(Object.keys(EN_CATALOG[group]).sort()).toEqual(Object.keys(KO_CATALOG[group]).sort());
@@ -294,8 +309,8 @@ describe("푸시 카피 품질 계약", () => {
 		"%s 고정 카피는 잠금 화면 길이 예산을 지킨다",
 		(_locale, notifications) => {
 			for (const notification of notifications) {
-				expect(graphemeCount(notification.title)).toBeLessThanOrEqual(30);
-				expect(graphemeCount(notification.body)).toBeLessThanOrEqual(40);
+				expect(graphemeCount(notification.title), notification.title).toBeLessThanOrEqual(30);
+				expect(graphemeCount(notification.body), notification.body).toBeLessThanOrEqual(40);
 			}
 		},
 	);

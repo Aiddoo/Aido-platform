@@ -8,6 +8,7 @@ import {
 } from "#api/shared/application/ports/index";
 
 import type { NotificationRecord } from "../../../domain/records/notification.record.js";
+import { withNotificationCopyRevision } from "../../messages/notification-copy-revision.js";
 import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
@@ -45,7 +46,9 @@ export class SendNotificationUseCase {
 	async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
 		try {
 			return await this.uow.run(async () => {
-				const notification = await this.notificationRepository.createNotification(data);
+				const notification = await this.notificationRepository.createNotification(
+					withNotificationCopyRevision(data),
+				);
 				const staged = await this.pushDispatchStaging.stage({
 					notificationId: notification.id,
 					userId: data.userId,

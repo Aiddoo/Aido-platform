@@ -156,6 +156,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 			include: { pushDispatch: { include: { outbox: true } } },
 		});
 		expect(notifications).toHaveLength(1);
+		expect(notifications[0]?.metadata).toMatchObject({ copyRevision: "1.11.0" });
 		expect(notifications[0]?.pushDispatch?.outbox).toMatchObject({
 			dispatchId: expect.any(Number),
 		});
