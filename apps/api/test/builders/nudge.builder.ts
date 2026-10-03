@@ -77,6 +77,10 @@ export class NudgeBuilder {
 			message: null,
 			createdAt: now,
 			readAt: null,
+			replyKind: null,
+			repliedAt: null,
+			replyUpdatedAt: null,
+			thankedAt: null,
 		};
 	}
 

@@ -98,6 +98,10 @@ export const NudgeFixture = {
 			todoId: overrides.todoId ?? id,
 			message: overrides.message ?? null,
 			readAt: overrides.readAt ?? null,
+			replyKind: overrides.replyKind ?? null,
+			repliedAt: overrides.repliedAt ?? null,
+			replyUpdatedAt: overrides.replyUpdatedAt ?? null,
+			thankedAt: overrides.thankedAt ?? null,
 			createdAt: overrides.createdAt ?? now,
 		};
 	},

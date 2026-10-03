@@ -12,3 +12,4 @@ export * from './nudge.request.js';
 
 // 응답 스키마 (Response)
 export * from './nudge.response.js';
+export * from './nudge-interaction.response.js';
