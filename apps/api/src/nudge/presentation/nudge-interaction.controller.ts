@@ -40,10 +40,10 @@ import { NudgeInteractionMapper } from "./nudge-interaction.mapper.js";
 @Controller("nudges")
 export class NudgeInteractionController {
 	constructor(
-		private readonly getAvailabilityUseCase: GetNudgeInteractionAvailabilityUseCase,
-		private readonly getInteractionsUseCase: GetNudgeInteractionsUseCase,
-		private readonly getInteractionUseCase: GetNudgeInteractionUseCase,
-		private readonly getThanksPreviewUseCase: GetNudgeThanksPreviewUseCase,
+		private readonly getNudgeInteractionAvailabilityUseCase: GetNudgeInteractionAvailabilityUseCase,
+		private readonly getNudgeInteractionsUseCase: GetNudgeInteractionsUseCase,
+		private readonly getNudgeInteractionUseCase: GetNudgeInteractionUseCase,
+		private readonly getNudgeThanksPreviewUseCase: GetNudgeThanksPreviewUseCase,
 		private readonly replyToNudgeUseCase: ReplyToNudgeUseCase,
 		private readonly sendNudgeThanksUseCase: SendNudgeThanksUseCase,
 	) {}
@@ -56,7 +56,7 @@ export class NudgeInteractionController {
 	@ApiSuccessResponse({ type: NudgeInteractionAvailabilityResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	getAvailability(): NudgeInteractionAvailabilityResponseDto {
-		return this.getAvailabilityUseCase.execute();
+		return this.getNudgeInteractionAvailabilityUseCase.execute();
 	}
 
 	@Get("interactions")
@@ -70,7 +70,7 @@ export class NudgeInteractionController {
 		@Query({ schema: GetNudgeInteractionsQueryDto }) query: GetNudgeInteractionsQueryDto,
 		@Headers("x-app-version") appVersion?: string,
 	): Promise<NudgeInteractionsResponseDto> {
-		const page = await this.getInteractionsUseCase.execute({
+		const page = await this.getNudgeInteractionsUseCase.execute({
 			userId: user.userId,
 			direction: query.direction,
 			cursor: query.cursor,
@@ -95,7 +95,7 @@ export class NudgeInteractionController {
 		@Param({ schema: NudgeIdParamDto }) params: NudgeIdParamDto,
 		@Headers("x-app-version") appVersion?: string,
 	): Promise<NudgeInteractionResponseDto> {
-		const nudge = await this.getInteractionUseCase.execute({
+		const nudge = await this.getNudgeInteractionUseCase.execute({
 			userId: user.userId,
 			nudgeId: params.id,
 		});
@@ -141,7 +141,7 @@ export class NudgeInteractionController {
 		@Param({ schema: NudgeTodoIdParamDto }) params: NudgeTodoIdParamDto,
 		@Headers("x-app-version") appVersion?: string,
 	): Promise<NudgeThanksPreviewResponseDto> {
-		const preview = await this.getThanksPreviewUseCase.execute({
+		const preview = await this.getNudgeThanksPreviewUseCase.execute({
 			userId: user.userId,
 			todoId: params.todoId,
 		});

@@ -9,7 +9,7 @@ import type { NudgeInteractionResult } from "../../nudge-interaction.types.js";
 import {
 	NUDGE_INTERACTION_CONFIG,
 	type NudgeInteractionConfigPort,
-} from "../../ports/nudge-interaction-config.port.js";
+} from "../../ports/nudge-interaction.config.port.js";
 import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port.js";
 
 export interface GetNudgeInteractionInput {
@@ -23,12 +23,12 @@ export class GetNudgeInteractionUseCase {
 		@Inject(NUDGE_REPOSITORY)
 		private readonly nudgeRepository: NudgeRepositoryPort,
 		@Inject(NUDGE_INTERACTION_CONFIG)
-		private readonly interactionConfig: NudgeInteractionConfigPort,
+		private readonly nudgeInteractionConfig: NudgeInteractionConfigPort,
 		private readonly followReader: FollowReader,
 	) {}
 
 	async execute(input: GetNudgeInteractionInput): Promise<NudgeInteractionResult> {
-		if (!this.interactionConfig.enabled) {
+		if (!this.nudgeInteractionConfig.isEnabled) {
 			throw new ApplicationException(ErrorCode.NUDGE_1105);
 		}
 

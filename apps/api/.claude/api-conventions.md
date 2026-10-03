@@ -46,6 +46,19 @@
 - 구현 선택: `Registry`
 - 큐 소비: `JobHandler` 또는 기존 Nest 관례의 `Processor`
 
+### 경계 안에서 사용하는 이름
+
+- 파일·폴더는 kebab-case, 클래스는 PascalCase, 변수·필드는 camelCase로 역할을 일치시킨다.
+- DI 필드는 클래스의 업무 이름을 그대로 드러낸다. `getNudgeInteractionUseCase`, `nudgeRepository`,
+  `notificationPublisher`처럼 읽고, `useCase`, `repository`, `publisher`로 여러 책임을 축약하지 않는다.
+- 단수 식별자는 `nudgeId`, 복수 식별자는 `friendIds`, 시각은 `repliedAt`, 수정 시각은 `replyUpdatedAt`이다.
+- 내부 boolean은 `isEnabled`처럼 판단 의미를 나타낸다. 이미 공개된 `enabled` 등 API 필드는 mapper에서
+  기존 이름을 유지하며, 내부 명명 정리 때문에 DTO·DB 컬럼·알림 payload를 변경하지 않는다.
+- 파일의 기본 단위는 역할이다. Aggregate 복원은 `reconstitute`, 쓰기·읽기 endpoint 흐름은 `execute`,
+  DTO 변환은 `toDto`, 저장 변환은 `toPersistence`처럼 해당 경계의 기존 이름을 사용한다.
+- Nest 공식 provider/module 방식으로 DI를 구성하고, DDD 레이어·Port 이름은 이 저장소 규칙을 적용한다.
+  Nest가 모든 프로젝트에 Aggregate나 VO를 강제하는 것으로 해석하지 않는다.
+
 ## 3. Controller
 
 Controller는 HTTP 경계다.
