@@ -8,6 +8,7 @@ import type { SessionManager } from '@src/core/session/session-manager';
 import type { AchievementService } from '@src/features/achievement/services/achievement.service';
 import type { ActivationService } from '@src/features/activation/services/activation.service';
 import type { AiService } from '@src/features/ai/services/ai.service';
+import type { AppIconService } from '@src/features/app-icon/services/app-icon.service';
 import type { AppVersionService } from '@src/features/app-version/services/app-version.service';
 import type { AuthService } from '@src/features/auth/services/auth.service';
 import type { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
@@ -54,6 +55,7 @@ export interface DIContainer {
   authService: AuthService;
   activationService: ActivationService;
   appVersionService: AppVersionService;
+  appIconService: AppIconService;
   friendService: FriendService;
   featureDiscoveryService: FeatureDiscoveryService;
   featureDiscoveryStateService: FeatureDiscoveryStateService;
@@ -135,3 +137,5 @@ export const useSubscriptionService = () => useDI().subscriptionService;
 export const useWeatherLocationStateService = () => useDI().weatherLocationStateService;
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;
+
+export const useAppIconService = () => useDI().appIconService;

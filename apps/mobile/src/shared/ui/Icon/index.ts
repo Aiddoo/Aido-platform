@@ -34,6 +34,9 @@ export {
   ListIcon,
   LockIcon,
   MemoIcon,
+  TodoTabIcon,
+  MemoTabIcon,
+  MyPageTabIcon,
   MenuIcon,
   MicIcon,
   MoonIcon,
@@ -69,3 +72,5 @@ export {
   WeatherSunriseIcon,
   WeatherSunsetIcon,
 } from './icons';
+
+export { NATIVE_TAB_ICON_SOURCES } from './native-tab-icons';

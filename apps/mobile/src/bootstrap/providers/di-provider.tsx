@@ -3,6 +3,7 @@ import { AchievementService } from '@src/features/achievement/services/achieveme
 import { createActivationProgressRepository } from '@src/features/activation/repositories/activation-progress.repository';
 import { ActivationService } from '@src/features/activation/services/activation.service';
 import { AiService } from '@src/features/ai/services/ai.service';
+import { AppIconService } from '@src/features/app-icon/services/app-icon.service';
 import { AppVersionService } from '@src/features/app-version/services/app-version.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/repositories/feature-discovery-state.repository';
@@ -33,6 +34,7 @@ import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-br
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { ENV } from '@src/shared/config/env';
+import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
@@ -199,6 +201,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       authService,
       activationService,
       appVersionService,
+      appIconService: new AppIconService(expoAppIconGateway),
       friendService,
       featureDiscoveryService,
       featureDiscoveryStateService,

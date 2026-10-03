@@ -51,6 +51,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Button`                                      | 기본 버튼                                                             | `src/shared/ui/Button/Button.md`                       |
 | `KeyboardAdaptiveButton`                      | 키보드 반응 버튼                                                      | `src/shared/ui/Button/Button.md`                       |
 | `TextButton`                                  | 텍스트/링크 버튼                                                      | `src/shared/ui/TextButton/TextButton.md`               |
+| `TodoTabIcon`, `MemoTabIcon`, `MyPageTabIcon` | SVG 및 NativeTabs용 공용 탭 아이콘                                    | `src/shared/ui/Icon/Icon.md`                           |
 | `IconCountButton`                             | 아이콘 + 개수 버튼 (좋아요·답글·댓글)                                 | `src/shared/ui/IconCountButton/IconCountButton.md`     |
 | `Input`                                       | 입력 필드                                                             | `src/shared/ui/Input/Input.md`                         |
 | `BottomSheetInput`                            | BottomSheet 내부 입력 필드                                            | `src/shared/ui/Input/Input.md`                         |
