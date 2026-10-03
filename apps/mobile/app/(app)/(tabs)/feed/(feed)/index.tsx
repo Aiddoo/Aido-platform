@@ -33,6 +33,7 @@ export default function MyFeedScreen() {
 
   return (
     <NestableScrollContainer
+      contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

@@ -46,6 +46,7 @@ function FriendFeedContent() {
 
   return (
     <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -78,7 +79,11 @@ function FriendFeedContent() {
 
 FriendFeedContent.Loading = function Loading() {
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
       <Calendar />
       <Spacing size={16} />
       <Box px={16}>
@@ -89,7 +94,11 @@ FriendFeedContent.Loading = function Loading() {
 };
 FriendFeedContent.Error = function ErrorState(props: QueryErrorFallbackProps) {
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
       <Calendar />
       <Box px={16} pb={24} style={{ flexGrow: 1 }}>
         <FriendTodoList.Error {...props} />
