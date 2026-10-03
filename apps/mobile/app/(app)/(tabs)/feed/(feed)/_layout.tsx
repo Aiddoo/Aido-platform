@@ -9,7 +9,9 @@ import {
   HStack,
   PlusIcon,
   QueryErrorBoundary,
-  StyledSafeAreaView,
+  Box,
+  Result,
+  type QueryErrorFallbackProps,
   Text,
   VStack,
 } from '@src/shared/ui';
@@ -24,16 +26,16 @@ export default function FeedGroupLayout() {
   return (
     <FeedDateProvider>
       <CalendarProvider>
-        <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+        <Box flex={1} className="bg-white">
           <VStack>
-            <QueryErrorBoundary>
+            <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
               <Suspense fallback={<AvatarList.Loading />}>
                 <AvatarList />
               </Suspense>
             </QueryErrorBoundary>
           </VStack>
           <Slot />
-        </StyledSafeAreaView>
+        </Box>
       </CalendarProvider>
     </FeedDateProvider>
   );
@@ -150,5 +152,17 @@ AvatarList.AddButton = function AddButton({ onPress }: { onPress: () => void }) 
         </View>
       </VStack>
     </PressableFeedback>
+  );
+};
+
+AvatarList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['friend', 'common']);
+  return (
+    <HStack px={16} py={8} gap={8} align="center">
+      <Text size="b4" shade={6} className="flex-1">
+        {t('friend:list.loadFailed')}
+      </Text>
+      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+    </HStack>
   );
 };

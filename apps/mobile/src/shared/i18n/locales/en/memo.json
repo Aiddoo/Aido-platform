@@ -9,7 +9,9 @@
   "list": {
     "emptyTitle": "No memos yet",
     "emptyDescription": "Jot down rough ideas here\nand turn them into to-dos later",
-    "loadFailed": "Couldn't load your memos"
+    "loadFailed": "Couldn't load your memos",
+    "loadMore": "Load more memos",
+    "nextPageFailed": "Couldn’t load more memos"
   },
   "create": {
     "placeholder": "Write down your ideas freely..."

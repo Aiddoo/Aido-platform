@@ -121,7 +121,8 @@
     "dialogTarget": "To {{name}}, who forgot their to-do",
     "dialogPlaceholder": "(Optional) When will you do {{title}}?",
     "remindTitle": "No to-dos yet? Go make one!",
-    "remindPlaceholder": "(Optional) Make a to-do already!"
+    "remindPlaceholder": "(Optional) Make a to-do already!",
+    "statusUnavailable": "Couldn’t load poke availability"
   },
   "category": {
     "nameLabel": "Category name",
@@ -140,7 +141,9 @@
   },
   "calendar": {
     "week": "Week",
-    "month": "Month"
+    "month": "Month",
+    "loadFailed": "Couldn’t update calendar markers",
+    "loading": "Loading completion markers"
   },
   "feed": {
     "me": "Me",

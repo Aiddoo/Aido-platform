@@ -50,7 +50,7 @@ export default function MyFeedScreen() {
         </>
       )}
 
-      <Box px={16}>
+      <Box px={16} style={{ flexGrow: 1 }}>
         <QueryErrorBoundary
           resetKeys={[selectedDateKey]}
           fallback={(props) => <TodoList.Error {...props} />}
