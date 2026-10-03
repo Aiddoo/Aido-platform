@@ -46,6 +46,11 @@ describe('위치 구독의 종료와 복구', () => {
     // Then
     expect(remove).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBe(0);
+    expect(watchLocation).toHaveBeenCalledWith(
+      expect.objectContaining({ mayShowUserSettingsDialog: false }),
+      expect.any(Function),
+      expect.any(Function),
+    );
   });
 
   test('위치가 도착하지 않으면 시간 제한 후 구독을 제거한다', async () => {

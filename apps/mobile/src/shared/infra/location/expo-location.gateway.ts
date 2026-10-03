@@ -22,7 +22,11 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
       return;
     }
     void Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.Balanced, distanceInterval: 0 },
+      {
+        accuracy: Location.Accuracy.Balanced,
+        distanceInterval: 0,
+        mayShowUserSettingsDialog: false,
+      },
       ({ coords }) => finish({ latitude: coords.latitude, longitude: coords.longitude }),
       () => finish(undefined, new Error('Location unavailable')),
     ).then(
