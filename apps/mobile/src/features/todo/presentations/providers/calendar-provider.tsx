@@ -5,7 +5,7 @@ import {
 } from '@src/shared/preferences/calendar-view-mode.preference';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 
-import type { CalendarViewMode } from './calendar.types';
+import type { CalendarViewMode } from '../components/Calendar/calendar.types';
 
 interface CalendarContextValue {
   viewMode: CalendarViewMode;

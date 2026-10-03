@@ -1,5 +1,5 @@
 import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
-import { CalendarProvider } from '@src/features/todo/presentations/components/Calendar/calendar-view-mode-context';
+import { CalendarProvider } from '@src/features/todo/presentations/providers/calendar-provider';
 import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';

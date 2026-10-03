@@ -3,7 +3,7 @@ import { getCalendarRange, getWeekRange } from '@src/shared/utils/date';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
-import { useCalendarContext } from './calendar-view-mode-context';
+import { useCalendarContext } from '../../providers/calendar-provider';
 
 /** 현재 뷰 모드(주/월)에 해당하는 캘린더 조회 범위 */
 export function useCalendarRange() {
