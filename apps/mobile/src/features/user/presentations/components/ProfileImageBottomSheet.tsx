@@ -44,6 +44,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
         <BottomSheet.Content
+          accessible={false}
           snapPoints={['85%']}
           enableDynamicSizing={false}
           enableOverDrag={false}

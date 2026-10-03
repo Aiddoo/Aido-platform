@@ -15,7 +15,7 @@ export default function TabsLayout() {
       tintColor={activeStyle.color}
       iconColor={{ default: inactiveStyle.color, selected: activeStyle.color }}
       backgroundColor={backgroundStyle.backgroundColor}
-      minimizeBehavior="onScrollDown"
+      minimizeBehavior="never"
     >
       <NativeTabs.Trigger
         name="feed"
