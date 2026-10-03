@@ -2,6 +2,8 @@ import { randomBytes } from "node:crypto";
 
 import { ErrorCode } from "@aido/errors";
 import {
+	Header,
+	Headers,
 	Body,
 	Controller,
 	Get,
@@ -13,7 +15,7 @@ import {
 	Req,
 	Res,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
@@ -77,6 +79,12 @@ export class OAuthController {
 		}
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("exchange")
 	@Public()
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -110,11 +118,19 @@ export class OAuthController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async exchangeCode(
 		@Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<AuthTokensDto> {
 		const result = await this.exchangeOAuthCodeUseCase.execute(dto.code);
-		return AuthMapper.toExchangeCodeResponse(result);
+		return AuthMapper.toExchangeCodeResponse(result, appVersion);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("apple/callback")
 	@Public()
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -158,6 +174,8 @@ export class OAuthController {
 	async appleCallback(
 		@Body({ schema: AppleMobileCallbackDto }) dto: AppleMobileCallbackDto,
 		@Req() req: Request,
+
+		@Headers("x-app-version") appVersion?: string,
 	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
@@ -172,9 +190,15 @@ export class OAuthController {
 			dto.nonce,
 		);
 
-		return AuthMapper.toAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result, appVersion);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("google/callback")
 	@Public()
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -217,6 +241,8 @@ export class OAuthController {
 	async googleCallback(
 		@Body({ schema: GoogleMobileCallbackDto }) dto: GoogleMobileCallbackDto,
 		@Req() req: Request,
+
+		@Headers("x-app-version") appVersion?: string,
 	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
@@ -230,7 +256,7 @@ export class OAuthController {
 			},
 		);
 
-		return AuthMapper.toAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result, appVersion);
 	}
 
 	@Get("google/start")
@@ -364,6 +390,12 @@ export class OAuthController {
 		}
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("kakao/callback")
 	@Public()
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -409,6 +441,8 @@ export class OAuthController {
 	async kakaoCallback(
 		@Body({ schema: KakaoMobileCallbackDto }) dto: KakaoMobileCallbackDto,
 		@Req() req: Request,
+
+		@Headers("x-app-version") appVersion?: string,
 	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
@@ -422,7 +456,7 @@ export class OAuthController {
 			},
 		);
 
-		return AuthMapper.toAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result, appVersion);
 	}
 
 	@Get("kakao/start")
@@ -550,6 +584,12 @@ export class OAuthController {
 		}
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("naver/callback")
 	@Public()
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -595,6 +635,8 @@ export class OAuthController {
 	async naverCallback(
 		@Body({ schema: NaverMobileCallbackDto }) dto: NaverMobileCallbackDto,
 		@Req() req: Request,
+
+		@Headers("x-app-version") appVersion?: string,
 	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithOAuthTokenUseCase.execute(
@@ -608,7 +650,7 @@ export class OAuthController {
 			},
 		);
 
-		return AuthMapper.toAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result, appVersion);
 	}
 
 	@Get("naver/start")

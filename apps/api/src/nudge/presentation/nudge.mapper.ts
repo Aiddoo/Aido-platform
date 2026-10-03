@@ -4,6 +4,7 @@
 import type { Nudge, NudgeDetail, NudgeLimitInfo, RemindNudge } from "@aido/validators";
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { resolveProfileImage } from "#api/shared/presentation/profile/profile-image.resolver";
 
 import type {
 	NudgeWithRelations,
@@ -12,7 +13,7 @@ import type {
 import type { NudgeLimitInfo as ReaderLimitInfo } from "../application/services/nudge.reader.js";
 
 export abstract class NudgeMapper {
-	static toDetailDto(nudge: NudgeWithRelations): NudgeDetail {
+	static toDetailDto(nudge: NudgeWithRelations, appVersion?: string): NudgeDetail {
 		return {
 			id: nudge.id,
 			senderId: nudge.senderId,
@@ -25,7 +26,7 @@ export abstract class NudgeMapper {
 				id: nudge.sender.id,
 				userTag: nudge.sender.userTag,
 				name: nudge.sender.profile?.name ?? null,
-				profileImage: nudge.sender.profile?.profileImage ?? null,
+				profileImage: resolveProfileImage(nudge.sender.profile?.profileImage ?? null, appVersion),
 			},
 			todo: {
 				id: nudge.todo.id,
@@ -47,8 +48,8 @@ export abstract class NudgeMapper {
 		};
 	}
 
-	static toDetailDtoList(nudges: NudgeWithRelations[]): NudgeDetail[] {
-		return nudges.map((nudge) => NudgeMapper.toDetailDto(nudge));
+	static toDetailDtoList(nudges: NudgeWithRelations[], appVersion?: string): NudgeDetail[] {
+		return nudges.map((nudge) => NudgeMapper.toDetailDto(nudge, appVersion));
 	}
 
 	static toRemindNudgeDto(nudge: ReminderNudgeWithRelations): RemindNudge {

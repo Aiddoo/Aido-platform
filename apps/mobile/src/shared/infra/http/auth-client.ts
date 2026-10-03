@@ -9,6 +9,7 @@ import { createTokenRefreshHook, type EndSession } from './token-refresh-hook';
 import type { TokenRefresher } from './token-refresher';
 
 interface AuthClientDeps {
+  appVersion?: string;
   tokenStore: TokenStore;
   /** 앱 전체 단일 인스턴스. 갈라지면 single-flight mutex가 분리돼 토큰 패밀리를 소모한다. */
   refresh: TokenRefresher;
@@ -22,6 +23,7 @@ interface AuthClientDeps {
  * 따라서 로그아웃/세션 만료 시 리셋하거나 재생성할 상태가 없다.
  */
 export const createAuthClient = ({
+  appVersion,
   tokenStore,
   refresh,
   endSession,
@@ -38,6 +40,7 @@ export const createAuthClient = ({
     headers: {
       'Content-Type': 'application/json',
       'X-Timezone': getDeviceTimezone(),
+      ...(appVersion && { 'X-App-Version': appVersion }),
     },
     hooks: {
       beforeRequest: [

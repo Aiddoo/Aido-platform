@@ -1,5 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import {
+	Header,
+	Headers,
 	Body,
 	Controller,
 	HttpCode,
@@ -9,7 +11,7 @@ import {
 	Req,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
@@ -111,6 +113,12 @@ export class AuthController {
 		return AuthMapper.toRegisterResponse(result);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("verify-email")
 	@Public()
 	@HttpCode(HttpStatus.OK)
@@ -145,10 +153,14 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
-	async verifyEmail(@Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto, @Req() req: Request) {
+	async verifyEmail(
+		@Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto,
+		@Req() req: Request,
+		@Headers("x-app-version") appVersion?: string,
+	) {
 		const metadata = extractMetadata(req);
 		const result = await this.verifyEmailUseCase.execute(dto, metadata);
-		return AuthMapper.toAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result, appVersion);
 	}
 
 	@Post("resend-verification")
@@ -182,6 +194,12 @@ export class AuthController {
 		return result;
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("login")
 	@Public()
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -227,10 +245,14 @@ export class AuthController {
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
-	async login(@Body({ schema: LoginDto }) dto: LoginDto, @Req() req: Request) {
+	async login(
+		@Body({ schema: LoginDto }) dto: LoginDto,
+		@Req() req: Request,
+		@Headers("x-app-version") appVersion?: string,
+	) {
 		const metadata = extractMetadata(req);
 		const result = await this.loginWithPasswordUseCase.execute(dto, metadata);
-		return AuthMapper.toAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result, appVersion);
 	}
 
 	@Post("logout")

@@ -265,8 +265,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	 * - 2026-08-15 todoSchema.commentCount 응답 필드 추가 (목록 진입점 뱃지용).
 	 *   1.7.x 번들 Zod는 strip 모드라 미지 응답 키를 버린다 — 배포 클라이언트 무영향.
 	 */
+	/** 1.10.1: 선택 X-App-Version 헤더와 입력 아이콘 enum 3종만 추가. 구버전 응답은 기존 키로 매핑한다. */
+	preProfileIconsSchemasFingerprint: "7d54df326aea8812a463f4a7ea5e842fc333c6823276a14e29e58f8a8d3b992b",
+	preProfileIconsPathsFingerprint: "ea3b45b70f071294634c39a8523e2683112a02a87f17c1366f279ca7b46e6d8e",
 	schemasFingerprint:
-		"7d54df326aea8812a463f4a7ea5e842fc333c6823276a14e29e58f8a8d3b992b",
+		"661496b690bb1981dc09130a644d779d135f663e218db04b0dd8724d25eab20e",
 	pathsFingerprint:
-		"ea3b45b70f071294634c39a8523e2683112a02a87f17c1366f279ca7b46e6d8e",
+		"12d563b0191e60a54f20cd08208334321e67f67831e3f77cf0d6add48b1f3b22",
 } as const;

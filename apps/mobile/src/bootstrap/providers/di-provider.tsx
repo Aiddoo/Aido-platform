@@ -82,7 +82,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
     setGlobalErrorReporter(errorReporter);
 
-    const publicKyInstance = createPublicClient();
+    const appVersion =
+      expoApplicationMetadataGateway.getInstallation()?.currentVersion ?? ENV.APP_VERSION;
+    const publicKyInstance = createPublicClient({ appVersion });
     const publicHttpClient = new KyHttpClient(publicKyInstance);
     const publicJsonFetcher = new KyJsonFetcher(publicKyInstance);
 
@@ -97,6 +99,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     });
 
     const authKyInstance = createAuthClient({
+      appVersion,
       tokenStore,
       refresh: tokenRefresher,
       endSession: (reason) => sessionManager.end(reason),

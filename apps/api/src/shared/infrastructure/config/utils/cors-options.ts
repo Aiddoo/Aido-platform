@@ -18,6 +18,12 @@ export function createCorsOptions(
 		origin: nodeEnv === "development" ? DEVELOPMENT_ORIGINS : corsOrigins,
 		credentials: true,
 		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-		allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Timezone"],
+		allowedHeaders: [
+			"Content-Type",
+			"Authorization",
+			"X-Requested-With",
+			"X-Timezone",
+			"X-App-Version",
+		],
 	};
 }

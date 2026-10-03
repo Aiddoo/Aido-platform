@@ -1,3 +1,5 @@
+import { isVersionAtLeast } from "#api/shared/domain/version/compare-version";
+
 export const FEATURE_DISCOVERY_CAMPAIGN_KEY = "feature-discovery-2026-08";
 export const FEATURE_DISCOVERY_MIN_APP_VERSION = "1.8.0";
 
@@ -12,25 +14,4 @@ export function supportsFeatureDiscoveryMarketing(capability: PushCapability): b
 		capability.payloadVersion === 2 &&
 		isVersionAtLeast(capability.appVersion, FEATURE_DISCOVERY_MIN_APP_VERSION)
 	);
-}
-
-function isVersionAtLeast(version: string | null, minimumVersion: string): boolean {
-	const current = parseVersion(version);
-	const minimum = parseVersion(minimumVersion);
-	if (!current || !minimum) return false;
-
-	for (let index = 0; index < minimum.length; index += 1) {
-		const currentPart = current[index] ?? 0;
-		const minimumPart = minimum[index] ?? 0;
-		if (currentPart > minimumPart) return true;
-		if (currentPart < minimumPart) return false;
-	}
-	return true;
-}
-
-function parseVersion(version: string | null): number[] | null {
-	if (!version) return null;
-	const match = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(version);
-	if (!match) return null;
-	return match.slice(1).map(Number);
 }
