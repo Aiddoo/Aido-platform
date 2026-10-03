@@ -132,14 +132,16 @@ for (const variant of ORGANIC_VARIANTS) {
 
 const mobilePackage = JSON.parse(read('apps/mobile/package.json'));
 assert(
-  mobilePackage.version === RELEASE_VERSION,
-  `package.json version must be ${RELEASE_VERSION}`,
+  /^\d+\.\d+\.\d+$/.test(mobilePackage.version) &&
+    new Intl.Collator('en', { numeric: true }).compare(mobilePackage.version, RELEASE_VERSION) >= 0,
+  `package.json version must include the ${RELEASE_VERSION} campaign or a later release`,
 );
 
 const appConfig = read('apps/mobile/app.config.ts');
 assert(
-  appConfig.includes(`const VERSION = '${RELEASE_VERSION}'`),
-  `app.config.ts version must be ${RELEASE_VERSION}`,
+  appConfig.includes("import { version } from './package.json'") &&
+    appConfig.includes('const VERSION = version;'),
+  'app.config.ts must use package.json as its version source',
 );
 
 const discoveryConfig = read(

@@ -1,0 +1,37 @@
+appId: com.aido.mobile
+name: 공용 헤더에서 iOS 테마 변경 후 탭과 날씨를 확인한다
+---
+- runFlow:
+    when:
+      visible: 'Dismiss'
+    commands:
+      - tapOn: 'Dismiss'
+# Given: 로그인된 홈, 닫힌 시트
+- tapOn: '마이'
+- scrollUntilVisible:
+    element: '화면 테마'
+    direction: DOWN
+    centerElement: true
+# When: 테마를 변경하고 설정을 닫는다
+- tapOn: '화면 테마'
+- tapOn: '라이트 모드'
+- tapOn: '뒤로 가기'
+- waitForAnimationToEnd:
+    timeout: 5000
+# Then: 탭과 날씨의 진입 및 복귀가 유지된다
+- tapOn: '메모'
+- assertVisible: '메모 추가'
+- tapOn:
+    point: '29%, 94%'
+- extendedWaitUntil:
+    visible: '날씨'
+    timeout: 15000
+- tapOn: '날씨'
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: '바람'
+- takeScreenshot: ios-light-custom-weather
+- tapOn: '뒤로'
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: '마이'
