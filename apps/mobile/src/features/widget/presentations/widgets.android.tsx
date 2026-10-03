@@ -238,7 +238,7 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
           paddingAll(12),
         ]}
       >
-        <Row modifiers={[width(96), fillMaxHeight()]}>
+        <Row verticalAlignment="center" modifiers={[width(96), fillMaxHeight()]}>
           <Column modifiers={[width(84)]}>
             <Text color={palette.muted} style={{ fontSize: 11, fontWeight: '500' }} maxLines={1}>
               {props.progressTitle}
@@ -272,7 +272,7 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
           <Spacer modifiers={[width(10)]} />
           <Box modifiers={[width(1), fillMaxHeight(), background(palette.track)]} />
         </Row>
-        <Column modifiers={[fillMaxSize(), padding(112, 0, 0, 0)]}>
+        <Column verticalArrangement="center" modifiers={[fillMaxSize(), padding(112, 0, 0, 0)]}>
           {props.state === 'empty' ? (
             <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(56)]}>
               <Text color={palette.muted} style={{ fontSize: 12 }} maxLines={2}>
@@ -343,75 +343,82 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
   const weekDays = props.weekDays ?? [];
 
   return (
-    <Column
+    <Box
       modifiers={[fillMaxSize(), background(palette.background), cornerRadius(20), paddingAll(14)]}
     >
-      <Column modifiers={[fillMaxWidth()]}>
-        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
-          <Text
-            color={palette.foreground}
-            style={{ fontSize: 13, fontWeight: '600' }}
-            maxLines={1}
-            modifiers={[fillMaxWidth(), padding(0, 0, 30, 0)]}
-          >
-            {props.weekTitle ?? props.progressTitle}
-          </Text>
-          <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
-            {renderPaw()}
-          </Box>
-        </Box>
-        {props.weekRangeLabel ? (
-          <Text color={palette.muted} style={{ fontSize: 9 }}>
-            {props.weekRangeLabel}
-          </Text>
-        ) : null}
-      </Column>
-      <Spacer modifiers={[height(4)]} />
-      <Row horizontalArrangement="center" modifiers={[fillMaxWidth()]}>
-        {renderWeekDay(weekDays[0], 0)}
-        {renderWeekDay(weekDays[1], 1)}
-        {renderWeekDay(weekDays[2], 2)}
-        {renderWeekDay(weekDays[3], 3)}
-        {renderWeekDay(weekDays[4], 4)}
-        {renderWeekDay(weekDays[5], 5)}
-        {renderWeekDay(weekDays[6], 6)}
-      </Row>
-      <Spacer modifiers={[height(4)]} />
-      <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
-        <Text color={palette.muted} style={{ fontSize: 12 }}>
-          {props.progressTitle}
-        </Text>
-        <Text
-          color={palette.brand}
-          style={{ fontSize: 16, fontWeight: 'bold', textAlign: 'end' }}
-          modifiers={[fillMaxWidth()]}
-        >{`${props.completedTodos}/${props.totalTodos}`}</Text>
-      </Box>
-      <Spacer modifiers={[height(4)]} />
-      <LinearProgressIndicator
-        progress={props.completionRate / 100}
-        color={palette.brand}
-        trackColor={palette.track}
-        modifiers={[fillMaxWidth(), height(4)]}
-      />
-      <Spacer modifiers={[height(4)]} />
-      <Column modifiers={[fillMaxWidth()]}>
-        {props.state === 'empty' ? (
-          <Box contentAlignment="center" modifiers={[fillMaxWidth(), height(88)]}>
-            <Text color={palette.muted} style={{ fontSize: 13 }} maxLines={2}>
-              {props.stateTitle}
+      <Column modifiers={[fillMaxSize(), padding(0, 0, 0, 34)]}>
+        <Column modifiers={[fillMaxWidth()]}>
+          <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
+            <Text
+              color={palette.foreground}
+              style={{ fontSize: 13, fontWeight: '600' }}
+              maxLines={1}
+              modifiers={[fillMaxWidth(), padding(0, 0, 30, 0)]}
+            >
+              {props.weekTitle ?? props.progressTitle}
             </Text>
+            <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
+              {renderPaw()}
+            </Box>
           </Box>
-        ) : null}
-        {renderTodoRow(visibleTodos[0])}
-        {renderTodoRow(visibleTodos[1])}
-        {renderTodoRow(visibleTodos[2])}
-        {renderTodoRow(visibleTodos[3])}
+          {props.weekRangeLabel ? (
+            <Text color={palette.muted} style={{ fontSize: 9 }}>
+              {props.weekRangeLabel}
+            </Text>
+          ) : null}
+        </Column>
+        <Spacer modifiers={[height(4)]} />
+        <Row horizontalArrangement="center" modifiers={[fillMaxWidth()]}>
+          {renderWeekDay(weekDays[0], 0)}
+          {renderWeekDay(weekDays[1], 1)}
+          {renderWeekDay(weekDays[2], 2)}
+          {renderWeekDay(weekDays[3], 3)}
+          {renderWeekDay(weekDays[4], 4)}
+          {renderWeekDay(weekDays[5], 5)}
+          {renderWeekDay(weekDays[6], 6)}
+        </Row>
+        <Spacer modifiers={[height(4)]} />
+        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
+          <Text color={palette.muted} style={{ fontSize: 12 }}>
+            {props.progressTitle}
+          </Text>
+          <Text
+            color={palette.brand}
+            style={{ fontSize: 16, fontWeight: 'bold', textAlign: 'end' }}
+            modifiers={[fillMaxWidth()]}
+          >{`${props.completedTodos}/${props.totalTodos}`}</Text>
+        </Box>
+        <Spacer modifiers={[height(4)]} />
+        <LinearProgressIndicator
+          progress={props.completionRate / 100}
+          color={palette.brand}
+          trackColor={palette.track}
+          modifiers={[fillMaxWidth(), height(4)]}
+        />
+        <Spacer modifiers={[height(4)]} />
+        <Column modifiers={[fillMaxWidth()]}>
+          {props.state === 'empty' ? (
+            <Box contentAlignment="center" modifiers={[fillMaxWidth(), height(88)]}>
+              <Text color={palette.muted} style={{ fontSize: 13 }} maxLines={2}>
+                {props.stateTitle}
+              </Text>
+            </Box>
+          ) : null}
+          {renderTodoRow(visibleTodos[0])}
+          {renderTodoRow(visibleTodos[1])}
+          {renderTodoRow(visibleTodos[2])}
+          {renderTodoRow(visibleTodos[3])}
+        </Column>
       </Column>
-      <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
+      <Box contentAlignment="bottomEnd" modifiers={[fillMaxSize()]}>
+        <Row verticalAlignment="center" modifiers={[fillMaxWidth()]}>
+          <Text color={palette.muted} style={{ fontSize: 10 }} maxLines={1}>
+            {props.openTodoLabel ?? ''}
+          </Text>
+        </Row>
         {renderAddTodo()}
       </Box>
-    </Column>
+    </Box>
   );
 }
 
