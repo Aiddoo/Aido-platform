@@ -281,6 +281,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
           android: {
             edgeToEdgeEnabled: true,
+            // WorkManager restores mergers by reflection, including work saved before an update.
+            extraProguardRules:
+              '-keep class * extends androidx.work.InputMerger { public <init>(); }',
             ...(isDevelopment && { usesCleartextTraffic: true }),
           },
         },
