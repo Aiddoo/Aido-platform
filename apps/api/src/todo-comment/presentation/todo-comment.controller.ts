@@ -1,6 +1,18 @@
 import { ErrorCode } from "@aido/errors";
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import {
+	Header,
+	Headers,
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	Patch,
+	Post,
+	Put,
+	Query,
+} from "@nestjs/common";
+import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
@@ -41,6 +53,7 @@ import {
 	UpdateTodoCommentDto,
 	WriteTodoCommentChainDto,
 } from "./dtos/index.js";
+import { TodoCommentMapper } from "./todo-comment.mapper.js";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
@@ -57,30 +70,50 @@ export class TodoCommentController {
 		private readonly unlikeTodoCommentUseCase: UnlikeTodoCommentUseCase,
 	) {}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("details")
 	@ApiDoc({ summary: "댓글 화면용 할 일 상세 조회", operationId: "getTodoDetails" })
 	@ApiSuccessResponse({ type: TodoDetailsResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
-	getDetails(
+	async getDetails(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<TodoDetailsResponseDto> {
-		return this.getTodoDetailsUseCase.execute({ todoId: params.todoId, viewerId: user.userId });
+		const result = await this.getTodoDetailsUseCase.execute({
+			todoId: params.todoId,
+			viewerId: user.userId,
+		});
+		return TodoCommentMapper.toDetails(result, appVersion);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("comments/overview")
 	@ApiDoc({ summary: "할 일 댓글 개요 조회", operationId: "getTodoCommentOverview" })
 	@ApiSuccessResponse({ type: TodoCommentOverviewResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	getOverview(
+	async getOverview(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
 		@Query({ schema: GetTodoCommentOverviewQueryDto }) query: GetTodoCommentOverviewQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<TodoCommentOverviewResponseDto> {
-		return this.getTodoCommentOverviewUseCase.execute({
+		const result = await this.getTodoCommentOverviewUseCase.execute({
 			todoId: params.todoId,
 			viewerId: user.userId,
 			sort: query.sort,
@@ -88,20 +121,29 @@ export class TodoCommentController {
 			before: query.before,
 			after: query.after,
 		});
+		return TodoCommentMapper.toOverview(result, appVersion);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("conversation")
 	@ApiDoc({ summary: "할 일 댓글 대화 조회", operationId: "getTodoConversation" })
 	@ApiSuccessResponse({ type: TodoConversationResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	getConversation(
+	async getConversation(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
 		@Query({ schema: GetTodoConversationQueryDto }) query: GetTodoConversationQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<TodoConversationResponseDto> {
-		return this.getTodoConversationUseCase.execute({
+		const result = await this.getTodoConversationUseCase.execute({
 			todoId: params.todoId,
 			viewerId: user.userId,
 			sort: query.sort,
@@ -110,42 +152,61 @@ export class TodoCommentController {
 			before: query.before,
 			after: query.after,
 		});
+		return TodoCommentMapper.toConversation(result, appVersion);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Post("comments")
 	@ApiDoc({ summary: "할 일 댓글 작성 (한 번에 이어 쓰기 가능)", operationId: "createTodoComment" })
 	@ApiCreatedResponse({ type: TodoCommentChainResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
-	writeComments(
+	async writeComments(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
 		@Body({ schema: WriteTodoCommentChainDto }) body: WriteTodoCommentChainDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<TodoCommentChainResponseDto> {
-		return this.writeTodoCommentChainUseCase.execute({
+		const result = await this.writeTodoCommentChainUseCase.execute({
 			todoId: params.todoId,
 			authorId: user.userId,
 			parentId: body.parentId,
 			items: body.items,
 		});
+		return TodoCommentMapper.toChain(result, appVersion);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Patch("comments/:commentId")
 	@ApiDoc({ summary: "본인 댓글 수정", operationId: "updateTodoComment" })
 	@ApiSuccessResponse({ type: TodoCommentMutationResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiForbiddenError(ErrorCode.TODO_0832)
-	updateComment(
+	async updateComment(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
 		@Body({ schema: UpdateTodoCommentDto }) body: UpdateTodoCommentDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<TodoCommentMutationResponseDto> {
-		return this.updateTodoCommentUseCase.execute({
+		const result = await this.updateTodoCommentUseCase.execute({
 			todoId: params.todoId,
 			commentId: params.commentId,
 			userId: user.userId,
 			content: body.content,
 		});
+		return TodoCommentMapper.toMutation(result, appVersion);
 	}
 
 	@Delete("comments/:commentId")

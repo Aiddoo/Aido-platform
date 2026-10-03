@@ -10974,6 +10974,9 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "black_cat",
                 "white_cat",
                 "siamese",
+                "russian_blue",
+                "cream_cat",
+                "tuxedo_cat",
               ],
               "type": "string",
             },
@@ -15640,7 +15643,17 @@ if (limit !== null && used >= limit) {
 - Apple은 **최초 로그인 시에만** email/name을 제공합니다
 - "Hide My Email" 선택 시 \`random@privaterelay.appleid.com\` 형식 제공",
       "operationId": "appleCallback",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -16152,7 +16165,17 @@ if (limit !== null && used >= limit) {
 - 응답의 \`accountRestored: true\`로 복구 여부 확인
 - 클라이언트는 이 플래그를 확인하여 "계정이 복구되었습니다" 안내 표시",
       "operationId": "exchangeOAuthCode",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -16385,7 +16408,17 @@ if (limit !== null && used >= limit) {
 - ID Token은 1시간 유효, 만료 후 재인증 필요
 - 웹/iOS/Android별 Client ID가 다르므로 정확히 구분 필요",
       "operationId": "googleMobileCallback",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -16686,7 +16719,17 @@ if (limit !== null && used >= limit) {
 - 이메일은 사용자가 동의해야만 제공됨
 		",
       "operationId": "kakaoMobileCallback",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -17795,7 +17838,17 @@ provider에 따라 필수 토큰이 다릅니다:
 - 30일 경과 후에는 복구 불가 (USER_0606 에러)
 		",
       "operationId": "login",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -18329,7 +18382,17 @@ provider에 따라 필수 토큰이 다릅니다:
 - \`APPLE\`, \`GOOGLE\`, \`KAKAO\`, \`NAVER\`: 소셜 로그인
 		",
       "operationId": "getCurrentUser",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "responses": {
         "200": {
           "content": {
@@ -18473,7 +18536,17 @@ provider에 따라 필수 토큰이 다릅니다:
 - 동의 항목을 사용자가 거부하면 해당 정보는 null 반환
 		",
       "operationId": "naverMobileCallback",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -19781,7 +19854,17 @@ provider에 따라 필수 토큰이 다릅니다:
 - \`profileImage\`: 아이콘 키 또는 이미지 URL (500자 이내, null=삭제)
 		",
       "operationId": "updateProfile",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -20979,7 +21062,17 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 | USER_0604 | 이미 인증 완료된 사용자 |
 		",
       "operationId": "verifyEmail",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "requestBody": {
         "content": {
           "application/json": {
@@ -21926,6 +22019,15 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
             "type": "integer",
           },
         },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -22067,6 +22169,15 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
           },
         },
       ],
@@ -22823,6 +22934,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
             "type": "string",
           },
         },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -22948,6 +23068,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "example": "clz7x5p8k0010qz0z8z8z8z8z",
+            "type": "string",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
             "type": "string",
           },
         },
@@ -23149,6 +23278,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
             "type": "string",
           },
         },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -23287,6 +23425,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "schema": {
             "description": "페이지 크기 (1-50, 기본값: 20)",
             "pattern": "^\\d+$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
             "type": "string",
           },
         },
@@ -23559,6 +23706,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "schema": {
             "description": "페이지 크기 (1-50, 기본값: 20)",
             "pattern": "^\\d+$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
             "type": "string",
           },
         },
@@ -23904,6 +24060,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
             "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
             "type": "string",
           },
         },
@@ -28649,6 +28814,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
             "type": "integer",
           },
         },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -29197,6 +29371,15 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
           },
         },
       ],
@@ -35337,6 +35520,15 @@ Todo를 찾을 수 없습니다.",
             "type": "integer",
           },
         },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "requestBody": {
         "content": {
@@ -35568,6 +35760,15 @@ Todo를 찾을 수 없습니다.",
             "maximum": 50,
             "minimum": 1,
             "type": "integer",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
           },
         },
       ],
@@ -35977,6 +36178,15 @@ Todo를 찾을 수 없습니다.",
             "description": "댓글 ID (CUID)",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
             "type": "string",
           },
         },
@@ -36499,6 +36709,15 @@ Todo를 찾을 수 없습니다.",
             "type": "integer",
           },
         },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -36712,6 +36931,15 @@ Todo를 찾을 수 없습니다.",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
           },
         },
       ],

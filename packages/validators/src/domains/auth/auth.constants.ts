@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const PASSWORD_RULES = {
   MIN_LENGTH: 8,
   MAX_LENGTH: 72,
@@ -107,9 +109,13 @@ export const PROFILE_ICON_KEYS = [
   'black_cat',
   'white_cat',
   'siamese',
+  'russian_blue',
+  'cream_cat',
+  'tuxedo_cat',
 ] as const;
 
-export type ProfileIconKey = (typeof PROFILE_ICON_KEYS)[number];
+export const profileIconKeySchema = z.enum(PROFILE_ICON_KEYS);
+export type ProfileIconKey = z.infer<typeof profileIconKeySchema>;
 
 export const OAUTH_PROVIDERS = ['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'] as const;
 

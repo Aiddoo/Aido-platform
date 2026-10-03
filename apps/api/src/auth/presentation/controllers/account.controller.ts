@@ -1,5 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import {
+	Header,
+	Headers,
 	Body,
 	Controller,
 	Delete,
@@ -10,7 +12,7 @@ import {
 	Patch,
 	Req,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
@@ -55,6 +57,12 @@ export class AccountController {
 		private readonly deleteAccountUseCase: DeleteAccountUseCase,
 	) {}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("me")
 	@ApiDoc({
 		summary: "내 정보 조회",
@@ -77,11 +85,20 @@ export class AccountController {
 	})
 	@ApiSuccessResponse({ type: CurrentUserDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getMe(@CurrentUser() user: CurrentUserPayload) {
+	async getMe(
+		@CurrentUser() user: CurrentUserPayload,
+		@Headers("x-app-version") appVersion?: string,
+	) {
 		const result = await this.getCurrentUserQuery.execute(user.userId, user.email, user.sessionId);
-		return AuthMapper.toCurrentUserResponse(result);
+		return AuthMapper.toCurrentUserResponse(result, appVersion);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Patch("profile")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
@@ -104,9 +121,11 @@ export class AccountController {
 	async updateProfile(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body({ schema: UpdateProfileDto }) dto: UpdateProfileDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	) {
 		const result = await this.updateProfileUseCase.execute(user.userId, dto);
-		return AuthMapper.toUpdateProfileResponse(result);
+		return AuthMapper.toUpdateProfileResponse(result, appVersion);
 	}
 
 	@Get("linked-accounts")

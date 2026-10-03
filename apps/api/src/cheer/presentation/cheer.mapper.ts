@@ -4,12 +4,13 @@
 import type { Cheer, CheerDetail, CheerLimitInfo } from "@aido/validators";
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { resolveProfileImage } from "#api/shared/presentation/profile/profile-image.resolver";
 
 import type { CheerWithRelations } from "../application/ports/cheer.repository.port.js";
 import type { CheerLimitInfo as ReaderLimitInfo } from "../application/services/cheer.reader.js";
 
 export abstract class CheerMapper {
-	static toDetailDto(cheer: CheerWithRelations): CheerDetail {
+	static toDetailDto(cheer: CheerWithRelations, appVersion?: string): CheerDetail {
 		return {
 			id: cheer.id,
 			senderId: cheer.senderId,
@@ -21,7 +22,7 @@ export abstract class CheerMapper {
 				id: cheer.sender.id,
 				userTag: cheer.sender.userTag,
 				name: cheer.sender.profile?.name ?? null,
-				profileImage: cheer.sender.profile?.profileImage ?? null,
+				profileImage: resolveProfileImage(cheer.sender.profile?.profileImage ?? null, appVersion),
 			},
 		};
 	}
@@ -37,8 +38,8 @@ export abstract class CheerMapper {
 		};
 	}
 
-	static toDetailDtoList(cheers: CheerWithRelations[]): CheerDetail[] {
-		return cheers.map((cheer) => CheerMapper.toDetailDto(cheer));
+	static toDetailDtoList(cheers: CheerWithRelations[], appVersion?: string): CheerDetail[] {
+		return cheers.map((cheer) => CheerMapper.toDetailDto(cheer, appVersion));
 	}
 
 	static toLimitInfoDto(limitInfo: ReaderLimitInfo): CheerLimitInfo {

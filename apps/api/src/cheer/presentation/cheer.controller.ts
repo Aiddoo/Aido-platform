@@ -1,5 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import {
+	Header,
+	Headers,
 	Body,
 	Controller,
 	Get,
@@ -112,6 +114,12 @@ export class CheerController {
 		};
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("received")
 	@ApiDoc({
 		summary: "받은 응원 목록 조회",
@@ -127,6 +135,8 @@ export class CheerController {
 	async getReceivedCheers(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<ReceivedCheersResponseDto> {
 		this.#logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
 
@@ -141,13 +151,19 @@ export class CheerController {
 		]);
 
 		return {
-			cheers: CheerMapper.toDetailDtoList(result.items),
+			cheers: CheerMapper.toDetailDtoList(result.items, appVersion),
 			totalCount,
 			unreadCount,
 			hasMore: result.pagination.hasNext,
 		};
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("sent")
 	@ApiDoc({
 		summary: "보낸 응원 목록 조회",
@@ -163,6 +179,8 @@ export class CheerController {
 	async getSentCheers(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<SentCheersResponseDto> {
 		this.#logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
 
@@ -176,7 +194,7 @@ export class CheerController {
 		]);
 
 		return {
-			cheers: CheerMapper.toDetailDtoList(result.items),
+			cheers: CheerMapper.toDetailDtoList(result.items, appVersion),
 			totalCount,
 			hasMore: result.pagination.hasNext,
 		};

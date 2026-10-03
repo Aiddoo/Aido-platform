@@ -4,7 +4,7 @@ import {
   DEVICE_TYPES,
   OAUTH_PROVIDERS,
   PASSWORD_RULES,
-  PROFILE_ICON_KEYS,
+  profileIconKeySchema,
   VERIFICATION_CODE,
 } from './auth.constants.js';
 
@@ -197,7 +197,7 @@ export const updateProfileSchema = z
       .describe('사용자 이름'),
     profileImage: z
       .union([
-        z.enum(PROFILE_ICON_KEYS),
+        profileIconKeySchema,
         z
           .string()
           .url('올바른 URL 형식이 아닙니다')

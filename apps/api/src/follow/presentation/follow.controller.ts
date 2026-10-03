@@ -1,5 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import {
+	Header,
+	Headers,
 	Body,
 	Controller,
 	Delete,
@@ -12,7 +14,7 @@ import {
 	Post,
 	Query,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
 import { UserIdParamDto } from "#api/shared/presentation/dtos/index";
 import {
@@ -126,6 +128,12 @@ export class FollowController {
 		};
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Patch(":userId/accept")
 	@HttpCode(HttpStatus.OK)
 	@ApiParam({
@@ -146,6 +154,8 @@ export class FollowController {
 	async acceptRequest(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<AcceptFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
 
@@ -158,7 +168,7 @@ export class FollowController {
 
 		return {
 			message: "친구 요청을 수락했습니다.",
-			friend: FollowMapper.toFriendUser(result),
+			friend: FollowMapper.toFriendUser(result, appVersion),
 		};
 	}
 
@@ -228,6 +238,12 @@ export class FollowController {
 		return { message: "친구를 삭제했습니다." };
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Patch("friends/:followId/reorder")
 	@HttpCode(HttpStatus.OK)
 	@ApiParam({
@@ -251,6 +267,8 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("followId") followId: string,
 		@Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<ReorderFriendResponseDto> {
 		this.#logger.debug(`친구 순서 변경: user=${user.userId}, followId=${followId}`);
 
@@ -265,7 +283,7 @@ export class FollowController {
 
 		return {
 			message: "친구 순서가 변경되었습니다.",
-			friend: FollowMapper.toFriendUser(result),
+			friend: FollowMapper.toFriendUser(result, appVersion),
 		};
 	}
 
@@ -287,6 +305,12 @@ export class FollowController {
 		return this.followReader.getResourceLimitInfo(user.userId);
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("friends")
 	@ApiDoc({
 		summary: "친구 목록 조회",
@@ -303,6 +327,8 @@ export class FollowController {
 	async getFriends(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query({ schema: GetFriendsQueryDto }) query: GetFriendsQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<FriendsListResponseDto> {
 		this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
 
@@ -317,12 +343,18 @@ export class FollowController {
 		]);
 
 		return {
-			friends: result.items.map(FollowMapper.toFriendUser),
+			friends: result.items.map((item) => FollowMapper.toFriendUser(item, appVersion)),
 			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("search")
 	@ApiDoc({
 		summary: "사용자 검색 (이름 또는 Aido ID)",
@@ -343,6 +375,8 @@ export class FollowController {
 	async searchUsers(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query({ schema: SearchUsersQueryDto }) query: SearchUsersQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<SearchUsersResponseDto> {
 		this.#logger.debug(`사용자 검색: user=${user.userId}, q=${query.q}`);
 
@@ -354,13 +388,19 @@ export class FollowController {
 		});
 
 		return {
-			items: result.items.map(FollowMapper.toSearchUser),
+			items: result.items.map((item) => FollowMapper.toSearchUser(item, appVersion)),
 			totalCount: result.totalCount,
 			hasMore: result.hasMore,
 			nextCursor: result.nextCursor,
 		};
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("requests/received")
 	@ApiDoc({
 		summary: "받은 친구 요청 목록",
@@ -376,6 +416,8 @@ export class FollowController {
 	async getReceivedRequests(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<ReceivedRequestsResponseDto> {
 		this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
 
@@ -389,12 +431,18 @@ export class FollowController {
 		]);
 
 		return {
-			requests: result.items.map(FollowMapper.toReceivedRequest),
+			requests: result.items.map((item) => FollowMapper.toReceivedRequest(item, appVersion)),
 			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
 	}
 
+	@Header("Vary", "Origin, X-App-Version")
+	@ApiHeader({
+		name: "x-app-version",
+		required: false,
+		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+	})
 	@Get("requests/sent")
 	@ApiDoc({
 		summary: "보낸 친구 요청 목록",
@@ -410,6 +458,8 @@ export class FollowController {
 	async getSentRequests(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
+
+		@Headers("x-app-version") appVersion?: string,
 	): Promise<SentRequestsResponseDto> {
 		this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
 
@@ -423,7 +473,7 @@ export class FollowController {
 		]);
 
 		return {
-			requests: result.items.map(FollowMapper.toSentRequest),
+			requests: result.items.map((item) => FollowMapper.toSentRequest(item, appVersion)),
 			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
