@@ -33,6 +33,7 @@ export default function MyFeedScreen() {
 
   return (
     <NestableScrollContainer
+      contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -50,7 +51,7 @@ export default function MyFeedScreen() {
         </>
       )}
 
-      <Box px={16}>
+      <Box px={16} style={{ flexGrow: 1 }}>
         <QueryErrorBoundary
           resetKeys={[selectedDateKey]}
           fallback={(props) => <TodoList.Error {...props} />}

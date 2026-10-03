@@ -109,7 +109,11 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
         {t('list.loadError')}
       </Text>
 
-      <PressableFeedback onPress={reset}>
+      <PressableFeedback
+        onPress={reset}
+        accessibilityRole="button"
+        className="min-h-11 justify-center px-4"
+      >
         <Text size="b4" tone="brand">
           {t('common:errorBoundary.retry')}
         </Text>

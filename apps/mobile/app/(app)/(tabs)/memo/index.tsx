@@ -59,14 +59,14 @@ export default function MemoScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: 60,
+          paddingBottom: 24,
         }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={onScroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Box px={12}>
+        <Box px={12} style={{ flexGrow: 1 }}>
           <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
             <Suspense fallback={<MemoList.Loading />}>
               <MemoList />
@@ -109,7 +109,7 @@ function Header() {
         onPress={handleCreate}
         accessibilityRole="button"
         accessibilityLabel={t('titles.create')}
-        style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
         className={cn(
           'items-center justify-center rounded-full',
           canCreate ? 'bg-main' : 'bg-gray-4',
@@ -136,7 +136,7 @@ Header.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
       </Box>
       <PressableFeedback
         onPress={reset}
-        style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
         className="items-center justify-center rounded-full bg-gray-8"
       >
         <RefreshIcon width={20} height={20} colorClassName="text-white" />

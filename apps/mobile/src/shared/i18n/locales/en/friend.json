@@ -36,7 +36,8 @@
     "editHint": "Tap Edit to reorder or remove\nfriends shown in your feed",
     "accept": "Accept",
     "reject": "Decline",
-    "edit": "Edit"
+    "edit": "Edit",
+    "loadFailed": "Couldn’t load friends"
   },
   "add": {
     "title": "Add your friends",
