@@ -5,6 +5,50 @@ import {
 import { toLoggedOutWidgetSnapshot, toWidgetSnapshot } from './widget-snapshot.mapper';
 
 describe('toWidgetSnapshot', () => {
+  it('주간 발자국은 할 일이 있고 모두 완료한 날에만 표시한다', () => {
+    // Given
+    const summary = buildWidgetSummary({ date: '2026-07-15', isComplete: false });
+    const context = buildWidgetSnapshotContext({
+      weekCompletions: [
+        { date: '2026-07-12', totalTodos: 0, isComplete: true },
+        { date: '2026-07-13', totalTodos: 2, isComplete: true },
+        { date: '2026-07-14', totalTodos: 3, isComplete: false },
+        { date: '2026-07-15', totalTodos: 2, isComplete: true },
+      ],
+    });
+    // When
+    const snapshot = toWidgetSnapshot(summary, context);
+    // Then
+    expect(snapshot.weekDays?.map((day) => day.date)).toEqual([
+      '2026-07-12',
+      '2026-07-13',
+      '2026-07-14',
+      '2026-07-15',
+      '2026-07-16',
+      '2026-07-17',
+      '2026-07-18',
+    ]);
+    expect(snapshot.weekDays?.filter((day) => day.isComplete).map((day) => day.date)).toEqual([
+      '2026-07-13',
+    ]);
+    expect(snapshot.weekDays?.[0]?.weekdayLabel).toBe('일');
+    expect(snapshot.weekDays?.[3]?.hasTodos).toBe(true);
+  });
+
+  it('주간 조회가 실패해도 오늘 요약과 달력 날짜를 표시한다', () => {
+    // Given
+    const summary = buildWidgetSummary({ date: '2026-12-31', totalTodos: 2, isComplete: true });
+    // When
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext({ locale: 'en' }));
+    // Then
+    expect(snapshot.weekDays?.[0]?.date).toBe('2026-12-27');
+    expect(snapshot.weekDays?.[6]?.date).toBe('2027-01-02');
+    expect(snapshot.weekDays?.[0]?.weekdayLabel).toBe('Sun');
+    expect(snapshot.weekDays?.filter((day) => day.isComplete).map((day) => day.date)).toEqual([
+      '2026-12-31',
+    ]);
+    expect(snapshot.strings.weekRangeLabel).toBe('12.27 – 01.02');
+  });
   it('요약을 data 상태 스냅샷으로 변환한다', () => {
     // Given
     const summary = buildWidgetSummary();
