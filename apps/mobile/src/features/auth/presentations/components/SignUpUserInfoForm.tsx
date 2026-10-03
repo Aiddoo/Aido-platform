@@ -106,7 +106,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                       if (isEmailValid) handleNext();
                     }}
                   />
-                  <SuggestedEmailDomainList<SignUpFormData> name="email" />
+                  <SuggestedEmailDomainList value={value} onChange={onChange} />
                 </VStack>
               )}
             </FormField>

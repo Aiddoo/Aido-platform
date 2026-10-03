@@ -4,11 +4,12 @@ import { isBusinessError } from '@src/shared/errors/result';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/FormField/FormField';
 import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
-import { useState } from 'react';
+import type { ComponentProps } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,44 +26,38 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
   const { showBoundary } = useErrorBoundary();
 
   const { t } = useTranslation(['auth', 'common']);
-  const { handleSubmit } = useFormContext<SignUpFormData>();
+  const { control, handleSubmit, setValue } = useFormContext<SignUpFormData>();
   const insets = useSafeAreaInsets();
   const openUrl = useOpenUrl();
 
-  const [agreements, setAgreements] = useState(() => ({
-    terms: false,
-    privacy: false,
-    marketing: false,
-    marketingPush: false,
-  }));
-
+  const [termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed] = useWatch({
+    control,
+    name: ['termsAgreed', 'privacyAgreed', 'marketingAgreed', 'marketingPushAgreed'],
+  });
   const register = useMutation(useRegisterMutationOptions());
+  const isAllAgreed = termsAgreed && privacyAgreed && marketingAgreed && marketingPushAgreed;
+  const isRequiredAgreed = termsAgreed && privacyAgreed;
 
-  const isAllAgreed = Object.values(agreements).every(Boolean);
-  const isRequiredAgreed = agreements.terms && agreements.privacy;
-
-  const toggleAll = () => {
-    const newValue = !isAllAgreed;
-    setAgreements({
-      terms: newValue,
-      privacy: newValue,
-      marketing: newValue,
-      marketingPush: newValue,
-    });
-  };
-
-  const setAgreement = (key: keyof typeof agreements) => (isSelected: boolean) => {
-    setAgreements((prev) => ({ ...prev, [key]: isSelected }));
+  const toggleAll = (isSelected: boolean) => {
+    setValue('termsAgreed', isSelected, { shouldDirty: true });
+    setValue('privacyAgreed', isSelected, { shouldDirty: true });
+    setValue('marketingAgreed', isSelected, { shouldDirty: true });
+    setValue('marketingPushAgreed', isSelected, { shouldDirty: true });
   };
 
   const onSubmit = async (data: SignUpFormData) => {
+    if (!data.termsAgreed || !data.privacyAgreed) return;
+
     try {
       const validatedData: RegisterInput = {
-        ...data,
+        email: data.email,
+        password: data.password,
+        passwordConfirm: data.passwordConfirm,
+        name: data.name,
         termsAgreed: true,
         privacyAgreed: true,
-        marketingAgreed: agreements.marketing,
-        marketingPushAgreed: agreements.marketingPush,
+        marketingAgreed: data.marketingAgreed,
+        marketingPushAgreed: data.marketingPushAgreed,
       };
 
       await register.mutateAsync(validatedData, {
@@ -106,30 +101,46 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
               <Separator />
 
               <VStack gap={20}>
-                <TermsAgreementItem
-                  label={t('terms.termsOfService')}
-                  isRequired
-                  isSelected={agreements.terms}
-                  onSelectedChange={setAgreement('terms')}
-                  onPressLink={() => openUrl(LEGAL_URLS.TERMS)}
-                />
-                <TermsAgreementItem
-                  label={t('terms.marketingPush')}
-                  isSelected={agreements.marketingPush}
-                  onSelectedChange={setAgreement('marketingPush')}
-                />
-                <TermsAgreementItem
-                  label={t('terms.privacyPolicy')}
-                  isRequired
-                  isSelected={agreements.privacy}
-                  onSelectedChange={setAgreement('privacy')}
-                  onPressLink={() => openUrl(LEGAL_URLS.PRIVACY)}
-                />
-                <TermsAgreementItem
-                  label={t('terms.marketing')}
-                  isSelected={agreements.marketing}
-                  onSelectedChange={setAgreement('marketing')}
-                />
+                <FormField control={control} name="termsAgreed">
+                  {({ value, onChange }) => (
+                    <TermsBottomSheet.AgreementItem
+                      label={t('terms.termsOfService')}
+                      isRequired
+                      isSelected={value}
+                      onSelectedChange={onChange}
+                      onPressLink={() => openUrl(LEGAL_URLS.TERMS)}
+                    />
+                  )}
+                </FormField>
+                <FormField control={control} name="marketingPushAgreed">
+                  {({ value, onChange }) => (
+                    <TermsBottomSheet.AgreementItem
+                      label={t('terms.marketingPush')}
+                      isSelected={value}
+                      onSelectedChange={onChange}
+                    />
+                  )}
+                </FormField>
+                <FormField control={control} name="privacyAgreed">
+                  {({ value, onChange }) => (
+                    <TermsBottomSheet.AgreementItem
+                      label={t('terms.privacyPolicy')}
+                      isRequired
+                      isSelected={value}
+                      onSelectedChange={onChange}
+                      onPressLink={() => openUrl(LEGAL_URLS.PRIVACY)}
+                    />
+                  )}
+                </FormField>
+                <FormField control={control} name="marketingAgreed">
+                  {({ value, onChange }) => (
+                    <TermsBottomSheet.AgreementItem
+                      label={t('terms.marketing')}
+                      isSelected={value}
+                      onSelectedChange={onChange}
+                    />
+                  )}
+                </FormField>
               </VStack>
             </VStack>
 
@@ -148,26 +159,23 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
   );
 };
 
-interface TermsAgreementItemProps {
+interface TermsAgreementItemProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
   label: string;
   isRequired?: boolean;
-  isSelected: boolean;
-  onSelectedChange: (isSelected: boolean) => void;
   onPressLink?: () => void;
 }
 
-const TermsAgreementItem = ({
+TermsBottomSheet.AgreementItem = function AgreementItem({
   label,
   isRequired = false,
-  isSelected,
-  onSelectedChange,
   onPressLink,
-}: TermsAgreementItemProps) => {
+  ...props
+}: TermsAgreementItemProps) {
   const { t } = useTranslation('auth');
   const requiredLabel = isRequired ? t('terms.required') : t('terms.optional');
 
   return (
-    <ControlField isSelected={isSelected} onSelectedChange={onSelectedChange}>
+    <ControlField {...props}>
       <ControlField.Indicator>
         <Checkbox className="shadow-none border border-main size-5 rounded-md" />
       </ControlField.Indicator>

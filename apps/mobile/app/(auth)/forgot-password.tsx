@@ -30,7 +30,7 @@ import { FormField } from '@src/shared/ui/FormField/FormField';
 import { useMutation } from '@tanstack/react-query';
 import { InputOTP, type InputOTPRef } from 'heroui-native';
 import type { ComponentRef } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormState } from 'react-hook-form';
 import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
@@ -78,11 +78,7 @@ interface EmailStepProps {
 
 function EmailStep({ onNext }: EmailStepProps) {
   const { t } = useTranslation('auth');
-  const {
-    control,
-
-    getValues,
-  } = useFormContext<ForgotPasswordFormData>();
+  const { control, getValues } = useFormContext<ForgotPasswordFormData>();
   const { errors } = useFormState({ control, name: 'email' });
   const email = useWatch({ control, name: 'email' });
   const isValid = email.length > 0 && !errors.email;
@@ -120,31 +116,33 @@ function EmailStep({ onNext }: EmailStepProps) {
           <VStack gap={8}>
             <FormField control={control} name="email">
               {({ onChange, onBlur, value }, { error }) => (
-                <Input
-                  placeholder={t('forgotPassword.emailPlaceholder')}
-                  value={value}
-                  onChange={onChange}
-                  onBlur={onBlur}
-                  keyboardType="email-address"
-                  textContentType="emailAddress"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoFocus
-                  returnKeyType="done"
-                  submitBehavior="submit"
-                  isInvalid={!!error}
-                  errorMessage={resolveValidationMessage(error, {
-                    default: 'email.invalid',
-                    byType: { too_big: 'email.tooLong' },
-                  })}
-                  onSubmitEditing={() => {
-                    if (isValid) handleNext();
-                  }}
-                />
+                <VStack gap={8}>
+                  <Input
+                    placeholder={t('forgotPassword.emailPlaceholder')}
+                    value={value}
+                    onChange={onChange}
+                    onBlur={onBlur}
+                    keyboardType="email-address"
+                    textContentType="emailAddress"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoFocus
+                    returnKeyType="done"
+                    submitBehavior="submit"
+                    isInvalid={!!error}
+                    errorMessage={resolveValidationMessage(error, {
+                      default: 'email.invalid',
+                      byType: { too_big: 'email.tooLong' },
+                    })}
+                    onSubmitEditing={() => {
+                      if (isValid) handleNext();
+                    }}
+                  />
+                  <SuggestedEmailDomainList value={value} onChange={onChange} />
+                </VStack>
               )}
             </FormField>
-            <SuggestedEmailDomainList<ForgotPasswordFormData> name="email" />
           </VStack>
         </Animated.View>
       </ScrollView>
@@ -166,13 +164,12 @@ interface VerificationCodeStepProps {
 
 function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
   const { t } = useTranslation('auth');
-  const { getValues, setValue } = useFormContext<ForgotPasswordFormData>();
+  const { control, getValues, setValue } = useFormContext<ForgotPasswordFormData>();
   const email = getValues('email');
   const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
 
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [cooldown, setCooldown] = useCooldown(0);
-  const [code, setCode] = useState('');
 
   const forgotPasswordMutation = useMutation(useForgotPasswordMutationOptions());
 
@@ -189,7 +186,7 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
       {
         onSuccess: () => {
           setCooldown(VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
-          setCode('');
+          setValue('code', '');
           inputOTPRef.current?.clear();
         },
         onError: (error) => {
@@ -220,22 +217,26 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
         </Animated.View>
 
         <VStack gap={32} align="center">
-          <InputOTP
-            ref={inputOTPRef}
-            maxLength={VERIFICATION_CODE.LENGTH}
-            value={code}
-            onChange={setCode}
-            onComplete={handleComplete}
-          >
-            <InputOTP.Group>
-              <InputOTP.Slot index={0} />
-              <InputOTP.Slot index={1} />
-              <InputOTP.Slot index={2} />
-              <InputOTP.Slot index={3} />
-              <InputOTP.Slot index={4} />
-              <InputOTP.Slot index={5} />
-            </InputOTP.Group>
-          </InputOTP>
+          <FormField control={control} name="code">
+            {({ value, onChange }) => (
+              <InputOTP
+                ref={inputOTPRef}
+                maxLength={VERIFICATION_CODE.LENGTH}
+                value={value}
+                onChange={onChange}
+                onComplete={handleComplete}
+              >
+                <InputOTP.Group>
+                  <InputOTP.Slot index={0} />
+                  <InputOTP.Slot index={1} />
+                  <InputOTP.Slot index={2} />
+                  <InputOTP.Slot index={3} />
+                  <InputOTP.Slot index={4} />
+                  <InputOTP.Slot index={5} />
+                </InputOTP.Group>
+              </InputOTP>
+            )}
+          </FormField>
 
           <HStack gap={8} justify="center">
             <Text size="b4" shade={7}>

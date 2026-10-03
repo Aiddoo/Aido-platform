@@ -5,6 +5,10 @@ import { z } from 'zod';
 export const signUpFormSchema = z
   .object({
     email: emailSchema,
+    termsAgreed: z.boolean(),
+    privacyAgreed: z.boolean(),
+    marketingAgreed: z.boolean(),
+    marketingPushAgreed: z.boolean(),
     password: passwordSchema,
     passwordConfirm: z.string(),
     name: z
