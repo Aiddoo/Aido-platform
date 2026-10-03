@@ -8,16 +8,37 @@ import { MyCalendar } from '@src/features/todo/presentations/components/Calendar
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedDateKey } from '@src/features/todo/presentations/hooks/use-feed-date';
+import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/presentations/constants/weather-query-keys.constant';
 import { useWeatherIntroduction } from '@src/features/weather/presentations/hooks/use-weather-introduction';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { Suspense } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Suspense, useCallback } from 'react';
 import { RefreshControl } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
+import { z } from 'zod';
 
-export default function MyFeedScreen() {
+const FeedSearchSchema = z.object({
+  date: z
+    .union([dateSchema, z.literal('today')])
+    .optional()
+    .catch(undefined),
+});
+
+export default function MyFeedPage() {
+  const { date } = FeedSearchSchema.parse(useLocalSearchParams());
+  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
+
+  return (
+    <FeedDateProvider date={date} onDateChange={setDate}>
+      <MyFeedScreen />
+    </FeedDateProvider>
+  );
+}
+
+function MyFeedScreen() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
   useWeatherIntroduction();
@@ -90,3 +111,4 @@ export default function MyFeedScreen() {
     </NestableScrollContainer>
   );
 }
+import { dateSchema } from '@aido/validators';

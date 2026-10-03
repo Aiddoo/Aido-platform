@@ -148,7 +148,7 @@ describe('콕과 오늘의 알림 이동', () => {
       kind: 'route',
       href: {
         pathname: '/feed/friend/[friendId]',
-        params: { friendId: 'friend', date: '2026-10-04' },
+        params: { friendId: 'friend', date: 'today' },
       },
     });
   });
@@ -193,7 +193,7 @@ describe('콕과 오늘의 알림 이동', () => {
     });
     expect(morning).toEqual({
       kind: 'route',
-      href: { pathname: '/feed', params: { date: today } },
+      href: { pathname: '/feed', params: { date: 'today' } },
     });
   });
 
