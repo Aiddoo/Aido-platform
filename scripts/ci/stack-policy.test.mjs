@@ -101,6 +101,18 @@ test('1.10.1 브랜치는 라벨 부여 전 검증을 보류한다', () => {
   assert.equal(result.run, false);
 });
 
+for (const branch of ['feat/1.11.0-nudges', 'fix/1.12.2-widgets', 'chore/2.0.0-release']) {
+  test(`${branch}는 라벨 등록 전 무거운 검증을 보류한다`, () => {
+    // Given: 릴리스 스택 브랜치가 먼저 생성되고 라벨은 아직 등록되지 않았다
+    const current = pull(4, branch, 'develop', { stack: false });
+    // When: PR의 CI 범위를 판단한다
+    const result = planPullRequestCI(current, [], repository);
+    // Then: 버전을 하드코딩하지 않고 스택 메타데이터를 기다린다
+    assert.equal(result.run, false);
+    assert.equal(result.reason, 'awaiting-stack-metadata');
+  });
+}
+
 test('동시에 열린 다른 릴리스 스택은 검증 대상에 포함하지 않는다', () => {
   // Given
   const labels = [{ name: 'stack:1.10.1' }];

@@ -35,7 +35,7 @@ jobs:
   gate:
     name: CI Scope
     if: >-
-      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'upgrade/1.10-') && !contains(github.head_ref, '/1.10.1-') && !contains(join(github.event.pull_request.labels.*.name, ','), 'stack:')) || (!github.event.pull_request.draft && contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
+      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (!contains(join(github.event.pull_request.labels.*.name, ','), 'stack:') || contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
