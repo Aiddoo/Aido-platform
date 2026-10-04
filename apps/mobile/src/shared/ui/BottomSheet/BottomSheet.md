@@ -82,6 +82,8 @@ BottomSheet/
 ├── BottomSheet.tsx          # gorhom 기반 기본 바텀시트
 ├── KeyboardBottomSheet.tsx  # gorhom 기반 키보드 연동 바텀시트
 ├── ModalBottomSheet.tsx     # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
+├── StackedBottomSheetModal.tsx # gorhom modal 기반 중첩 시트
+├── useAndroidSheetBackHandler.ts # 열린 시트의 시스템 뒤로가기 구독과 정리
 ├── motion.ts                # 모션 감소용 애니메이션 시간 해석
 ├── constants.ts             # 공유 스타일, 상수
 ├── index.ts                 # barrel export

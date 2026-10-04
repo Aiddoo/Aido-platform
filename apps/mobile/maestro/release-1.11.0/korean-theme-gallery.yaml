@@ -1,0 +1,53 @@
+appId: com.aido.mobile
+name: 한글 다크 모드의 받은 콕·답장·할 일·생성 시트를 검증한다
+---
+# Given: 한글 모드에서 정상 로그인된 QA 계정
+- openLink: aido-dev://settings/theme
+- extendedWaitUntil:
+    visible: 다크 모드
+    timeout: 15000
+- tapOn: 다크 모드
+# When: 동일한 기능을 다크 모드로 연다
+- openLink: aido-dev://nudges?direction=received
+- extendedWaitUntil:
+    visible: 받은 콕
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 08-received-dark
+- openLink: aido-dev://nudges/${QA_NUDGE_ID}
+- extendedWaitUntil:
+    visible: 친구의 응원
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 09-reply-dark
+- openLink: aido-dev://todo/${QA_TODO_ID}
+- extendedWaitUntil:
+    visible: 할 일 상세
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 10-todo-dark
+- openLink: aido-dev://feed?date=today
+- extendedWaitUntil:
+    visible: 할 일
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 11-home-dark
+# Then: 위젯의 기존 생성 링크가 같은 공용 입력 시트를 연다
+- openLink: aido-dev://feed?date=today&action=add-todo
+- extendedWaitUntil:
+    visible: AI로 할 일 만들기
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 12-create-sheet-dark
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+      - hideKeyboard
+      - assertNotVisible: AI로 할 일 만들기

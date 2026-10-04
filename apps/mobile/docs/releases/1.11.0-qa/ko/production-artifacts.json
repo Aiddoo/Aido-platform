@@ -1,0 +1,31 @@
+{
+  "ios": {
+    "bundleId": "com.aido.mobile",
+    "version": "1.11.0",
+    "build": "123",
+    "updatesChannel": "production",
+    "extensions": [
+      {
+        "bundleId": "com.aido.mobile.ExpoWidgetsTarget",
+        "version": "1.11.0",
+        "build": "123"
+      }
+    ],
+    "bytes": 84562744,
+    "sha256": "d315b9da377e0c871f5072b2d041fc751552266faf68fd9316656290d7e96996",
+    "apiUrl": "https://api.aido.kr",
+    "isDevelopment": false,
+    "env": "production",
+    "isProduction": true
+  },
+  "android": {
+    "bytes": 118189262,
+    "sha256": "2b323a6e6d253beeeff5c0447f9e90ec43d73125856d86e1478fa2ce10569384",
+    "version": "1.11.0",
+    "build": 69,
+    "apiUrl": "https://api.aido.kr",
+    "isDevelopment": false,
+    "env": "production",
+    "isProduction": true
+  }
+}
