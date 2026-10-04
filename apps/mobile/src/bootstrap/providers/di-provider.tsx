@@ -31,6 +31,7 @@ import { UserService } from '@src/features/user/services/user.service';
 import { WeatherLocationStateService } from '@src/features/weather/services/weather-location-state.service';
 import { WeatherService } from '@src/features/weather/services/weather.service';
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
+import { createWidgetNavigationRepository } from '@src/features/widget/services/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { ENV } from '@src/shared/config/env';
@@ -58,6 +59,7 @@ import {
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
+import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
 import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
@@ -186,6 +188,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
     const widgetBridge = createWidgetBridge();
     const widgetSyncService = new WidgetSyncService(widgetBridge, errorReporter);
+    const widgetNavigationRepository = createWidgetNavigationRepository(widgetNavigationStorage);
 
     return {
       storage,
@@ -222,6 +225,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       weatherLocationStateService: new WeatherLocationStateService(mmkvSyncStorage),
       locationGateway: expoLocationGateway,
       widgetSyncService,
+      widgetNavigationRepository,
     };
   });
 
@@ -264,4 +268,5 @@ export {
   useUserService,
   useWeatherService,
   useWidgetSyncService,
+  useWidgetNavigationRepository,
 } from './di-context';

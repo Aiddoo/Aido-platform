@@ -29,6 +29,7 @@ import type { TodoService } from '@src/features/todo/services/todo.service';
 import type { UserService } from '@src/features/user/services/user.service';
 import type { WeatherLocationStateService } from '@src/features/weather/services/weather-location-state.service';
 import type { WeatherService } from '@src/features/weather/services/weather.service';
+import type { WidgetNavigationRepository } from '@src/features/widget/services/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
@@ -75,6 +76,7 @@ export interface DIContainer {
   weatherService: WeatherService;
   weatherLocationStateService: WeatherLocationStateService;
   widgetSyncService: WidgetSyncService;
+  widgetNavigationRepository: WidgetNavigationRepository;
 }
 
 export const DIContext = createContext<DIContainer | null>(null);
@@ -137,5 +139,6 @@ export const useSubscriptionService = () => useDI().subscriptionService;
 export const useWeatherLocationStateService = () => useDI().weatherLocationStateService;
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;
+export const useWidgetNavigationRepository = () => useDI().widgetNavigationRepository;
 
 export const useAppIconService = () => useDI().appIconService;

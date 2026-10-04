@@ -50,6 +50,7 @@ export interface WidgetSnapshotContext {
   t: WidgetTranslateFn;
   locale: ResolvedLanguage;
   now: Date;
+  userId?: string;
   weekCompletions?: readonly { date: string; totalTodos: number; isComplete: boolean }[];
 }
 

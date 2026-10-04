@@ -22,17 +22,26 @@ export class WidgetSyncService {
   }
 
   syncSummary(summary: WidgetSummaryInput, context: WidgetSnapshotContext): Promise<void> {
-    return this.#scheduleWrite(() => toWidgetSnapshot(summary, context), 'syncSummary');
+    return this.#scheduleWrite(
+      () => toWidgetSnapshot(summary, context),
+      'syncSummary',
+      context.userId ?? null,
+    );
   }
 
   syncLoggedOut(localDate: string, context: WidgetSnapshotContext): Promise<void> {
     return this.#scheduleWrite(
       () => toLoggedOutWidgetSnapshot(localDate, context),
       'syncLoggedOut',
+      null,
     );
   }
 
-  #scheduleWrite(createSnapshot: () => WidgetSnapshot, method: string): Promise<void> {
+  #scheduleWrite(
+    createSnapshot: () => WidgetSnapshot,
+    method: string,
+    userId: string | null,
+  ): Promise<void> {
     const generation = ++this.#generation;
 
     // Native writes are serialized so an in-flight account snapshot cannot overwrite logout.
@@ -43,10 +52,10 @@ export class WidgetSyncService {
 
       try {
         const snapshot = createSnapshot();
-        const snapshotKey = JSON.stringify({ ...snapshot, updatedAtIso: '' });
+        const snapshotKey = JSON.stringify({ snapshot: { ...snapshot, updatedAtIso: '' }, userId });
         if (snapshotKey === this.#lastSnapshotKey) return;
 
-        await this.#bridge.writeSnapshot(snapshot);
+        await this.#bridge.writeSnapshot(snapshot, userId);
         this.#lastSnapshotKey = snapshotKey;
         this.#errorReporter.addBreadcrumb({
           category: 'widget',

@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
@@ -14,8 +15,23 @@ jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: j
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
 jest.mock('@src/bootstrap/providers/di-context', () => {
   const errorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
-  return { useErrorReporter: () => errorReporter };
+  const repository = {
+    subscribe: () => () => {},
+    getPendingCommand: () => null,
+    clearIfCurrent: () => false,
+  };
+  return {
+    useErrorReporter: () => errorReporter,
+    useWidgetNavigationRepository: () => repository,
+  };
 });
+jest.mock('@src/features/user/presentations/queries/get-me-query-options', () => ({
+  useGetMeQueryOptions: () => ({
+    queryKey: ['user', 'me'],
+    queryFn: async () => ({ id: 'test-account' }),
+    staleTime: Infinity,
+  }),
+}));
 jest.mock('@src/shared/providers/theme-provider', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }));
@@ -67,9 +83,14 @@ function LoadingScreen() {
 }
 
 async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl = '/') {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: 0, retry: false } } });
   function AuthFixture({ children }: PropsWithChildren) {
     const [status, setStatus] = useState(initialStatus);
-    return <AuthContext value={{ status, setStatus }}>{children}</AuthContext>;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthContext value={{ status, setStatus }}>{children}</AuthContext>
+      </QueryClientProvider>
+    );
   }
 
   jest.mocked(useAuth).mockImplementation(useTestAuth);

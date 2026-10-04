@@ -120,6 +120,7 @@ catalogs:
     'react': '19.3.0'
     'react-dom': '19.3.0'
     'react-native': '0.88.0-rc.3'
+    'react-native-android-widget': '0.22.1'
     'react-native-gesture-handler': '~3.2.1'
     'react-native-keyboard-controller': '1.22.4'
     'react-native-reanimated': '4.7.0'
@@ -155,6 +156,5 @@ catalogs:
 
 patchedDependencies:
   '@sentry/react-native@8.28.0': patches/@sentry__react-native@8.28.0.patch
-  expo-widgets@58.0.11: patches/expo-widgets@58.0.11.patch
   '@gorhom/bottom-sheet@5.2.14': patches/@gorhom__bottom-sheet@5.2.14.patch
   react-native-draggable-flatlist@4.0.3: patches/react-native-draggable-flatlist@4.0.3.patch

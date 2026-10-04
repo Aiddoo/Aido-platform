@@ -20,12 +20,14 @@ const translate: WidgetTranslateFn = (key, params) => i18n.t(key, params);
 
 function buildContext(
   weekCompletions?: WidgetSnapshotContext['weekCompletions'],
+  userId?: string,
 ): WidgetSnapshotContext {
   return {
     t: translate,
     locale: toResolvedLanguage(i18n.language),
     now: new Date(),
     weekCompletions,
+    userId,
   };
 }
 
@@ -64,7 +66,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     if (authState === 'authenticated' && userId != null && data?.date === date) {
       void widgetSyncService.syncSummary(
         data,
-        buildContext(completions ? Object.values(completions) : undefined),
+        buildContext(completions ? Object.values(completions) : undefined, userId),
       );
     }
   }, [
@@ -97,7 +99,10 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
       ) {
         void widgetSyncService.syncSummary(
           latest.data,
-          buildContext(latest.completions ? Object.values(latest.completions) : undefined),
+          buildContext(
+            latest.completions ? Object.values(latest.completions) : undefined,
+            latest.userId,
+          ),
         );
       }
     };
