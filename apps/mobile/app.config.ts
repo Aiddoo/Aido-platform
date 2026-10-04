@@ -426,7 +426,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             {
               name: 'AidoTodayLarge',
               displayName: '오늘 할 일 크게',
-              description: '오늘의 주요 할 일 8개와 체크 여부를 넉넉하게 확인해요',
+              description: '한 주의 발자국과 오늘 할 일을 확인하고 바로 만들어요',
               ios: null,
               android: {
                 initialLayout: './src/features/widget/presentations/widgets.android.tsx',
@@ -441,6 +441,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       './plugins/withWidgetRefreshInterval',
+      './plugins/withWidgetAssets',
       './plugins/withAndroidWidgetCompatibility',
     ],
 

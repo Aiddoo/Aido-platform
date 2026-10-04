@@ -25,6 +25,18 @@ export const widgetSnapshotSchema = z.object({
     )
     .max(10),
   locale: z.enum(['ko', 'en']),
+  weekDays: z
+    .array(
+      z.object({
+        date: z.string(),
+        weekdayLabel: z.string(),
+        dayLabel: z.string(),
+        isComplete: z.boolean(),
+        hasTodos: z.boolean(),
+      }),
+    )
+    .length(7)
+    .optional(),
   /** 쓰기 시점에 구워진 localized 문자열 — 위젯은 번역하지 않고 그대로 표시 */
   strings: z.object({
     progressTitle: z.string(),
@@ -41,6 +53,10 @@ export const widgetSnapshotSchema = z.object({
     loggedOutCta: z.string(),
     staleTitle: z.string(),
     staleCta: z.string(),
+    weekTitle: z.string().optional(),
+    weekRangeLabel: z.string().optional(),
+    addTodoLabel: z.string().optional(),
+    openTodoLabel: z.string().optional(),
   }),
 });
 

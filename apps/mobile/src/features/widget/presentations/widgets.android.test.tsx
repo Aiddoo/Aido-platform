@@ -10,7 +10,9 @@ import { createInitialWidgetProps } from './widget-initial-props';
 
 jest.mock('@expo/ui/jetpack-compose', () => ({
   Box: 'Box',
+  Button: 'Button',
   Column: 'Column',
+  Image: 'Image',
   LinearProgressIndicator: 'LinearProgressIndicator',
   Row: 'Row',
   Spacer: 'Spacer',
@@ -21,9 +23,11 @@ jest.mock('@expo/ui/jetpack-compose/modifiers', () => ({
   background: jest.fn(),
   cornerRadius: jest.fn(),
   fillMaxSize: jest.fn(),
+  fillMaxHeight: jest.fn(),
   fillMaxWidth: jest.fn(),
   height: jest.fn(),
   paddingAll: jest.fn(),
+  padding: jest.fn(),
   size: jest.fn(),
   width: jest.fn(),
 }));
@@ -48,7 +52,7 @@ function inspectLayout(node: ReactNode, titles: string[], columnChildCounts: num
   });
 }
 
-describe('Android widget Glance layout', () => {
+describe('Android 위젯 격리 렌더링', () => {
   beforeAll(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-10-02T12:00:00'));
@@ -56,11 +60,18 @@ describe('Android widget Glance layout', () => {
 
   afterAll(() => jest.useRealTimers());
 
-  it.each([0, 3, 8])('크기별 %i행을 Glance child 제한 안에서 표시한다', (maxRows) => {
+  it.each([
+    [0, 0],
+    [2, 2],
+    [4, 4],
+    [3, 2],
+    [8, 4],
+  ])('새 크기와 이전 크기 %i는 %i행을 Glance 제한 안에서 표시한다', (maxRows, visibleRows) => {
+    // Given
     const registration = widgetRegistrations.find(
       ([name]) =>
         name ===
-        (maxRows === 0 ? 'AidoTodaySummary' : maxRows === 3 ? 'AidoTodayList' : 'AidoTodayLarge'),
+        (maxRows === 0 ? 'AidoTodaySummary' : maxRows <= 3 ? 'AidoTodayList' : 'AidoTodayLarge'),
     );
     if (!registration) throw new Error('Widget registration missing');
 
@@ -72,6 +83,8 @@ describe('Android widget Glance layout', () => {
       totalTodos: 8,
       completedTodos: 0,
       topTodos: Array.from({ length: 8 }, (_, index) => ({
+        id: index + 1,
+        destination: `aido://todo/${index + 1}`,
         title: `Widget QA ${index + 1}`,
         completed: false,
         color: '#FF6B43',
@@ -89,12 +102,14 @@ describe('Android widget Glance layout', () => {
       _jsxs: jsx,
     });
     if (typeof render !== 'function') throw new Error('Widget layout is not callable');
+    // When
     const layout: unknown = render(props, { colorScheme: 'light' });
     if (!isValidElement(layout)) throw new Error('Widget layout is not an element');
 
     inspectLayout(layout, titles, columnChildCounts);
 
-    expect(titles.filter((title) => title.startsWith('Widget QA '))).toHaveLength(maxRows);
+    // Then
+    expect(titles.filter((title) => title.startsWith('Widget QA '))).toHaveLength(visibleRows);
     expect(columnChildCounts.every((count) => count <= 10)).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 # 홈 화면 위젯 가이드 — Expo SDK 58
 
-**Version**: 2.0.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Mobile Team
+**Version**: 2.1.0 · **Last Updated**: 2026-10-04 · **Owner**: Aido Mobile Team
 
 양 플랫폼 모두 `expo-widgets`를 사용한다. iOS의 기존 `AidoTodayList` identity와 App Group은
 유지한다. Android는 이전 provider component를 Expo Widgets receiver로 연결하여 기존 위젯 ID와
@@ -11,7 +11,7 @@
 ```text
 AuthProvider
   → useWidgetSnapshotSync(authState)
-  → 현재 계정·날짜로 scoped된 TodoSummary query
+  → 현재 계정·날짜로 scoped된 TodoSummary query + 기존 주간 daily completions query
   → WidgetSyncService
   → widget-snapshot.mapper / widget-props.mapper
   → WidgetBridge
@@ -36,8 +36,8 @@ AuthProvider
 | 이름             | iOS                                      | Android | 목록 행                  |
 | ---------------- | ---------------------------------------- | ------- | ------------------------ |
 | AidoTodaySummary | 등록하지 않음 (`ios: null`)              | 2×2     | 0                        |
-| AidoTodayList    | systemSmall / systemMedium / systemLarge | 4×2     | 0 / 3 / 8 또는 Android 3 |
-| AidoTodayLarge   | 등록하지 않음 (`ios: null`)              | 4×4     | 8                        |
+| AidoTodayList    | systemSmall / systemMedium / systemLarge | 4×2     | 0 / 2 / 4 또는 Android 2 |
+| AidoTodayLarge   | 등록하지 않음 (`ios: null`)              | 4×4     | 4 + 주간 달력            |
 
 `presentations/widgets.ios.tsx`와 `widgets.android.tsx`는 같은 `WidgetProps`를 소비한다.
 지원하지 않는 web의 `widgets.tsx`는 빈 목록을 제공한다. iOS bundle identifier와 환경별
@@ -68,17 +68,32 @@ AuthProvider
 - Android 시스템 폰트와 Glance 제약을 따른다. 앱의 custom font와 동일 렌더링을 보장하지 않는다.
 - iOS의 고정 row 슬롯은 기존 native renderer의 배열 child 제한 때문에 유지한다.
 - Android Glance Column은 직접 child를 최대 10개만 표시한다. header·progress·Spacer를 포함해
-  이 제한을 지키고, 큰 목록은 4행씩 두 Column으로 구성한다. 최대 8행과 각 Column의 child 수를
-  serialized widget layout 회귀 테스트로 확인한다.
+  이 제한을 지키고, 큰 위젯은 주간 달력·오늘의 할 일 4행·생성 버튼을 각 Column으로 구분한다.
+  각 Column의 child 수와 표시 행 수를 isolated widget runtime 회귀 테스트로 확인한다.
 
 ## 앱 열기와 compatibility patch
 
-SDK 58.0.10의 Android JS interaction은 앱이 종료된 상태에서 Activity를 시작하지 않는다.
-`patches/expo-widgets@58.0.10.patch`는 `opensApp: true`인 snapshot root에 공식 Glance
-`actionStartActivity`를 연결한다. 대상은 현재 앱 package의 launch Activity이며 token·URL을
-전달하지 않는다. SDK가 같은 기능을 제공하면 해당 patch 변경을 제거한다.
-patch는 provider 이름을 공식 manifest metadata로 조회하여 이전 component를 갱신한다.
-SDK snapshot 쓰기와 초기 이관은 같은 SharedPreferences monitor에서 수행한다.
+SDK 58.0.11의 Android JS interaction만으로는 종료된 앱의 Activity를 열 수 없다.
+기존 compatibility patch인 `patches/expo-widgets@58.0.11.patch`에서 공식 Glance
+`actionStartActivity`를 연결한다. `opensApp: true` root는 오늘 화면을 열고, 개별 버튼은
+허용된 앱 scheme의 오늘·고정 날짜·할 일 상세·생성 URL만 연다. URL을 받지 못하는 이전
+snapshot은 현재 package의 launch Activity를 연다. 인증 정보는 전달하지 않는다.
+
+- iOS는 공식 SwiftUI `Link`와 root의 `widgetURL` 한 개를 사용한다.
+- scheme은 Expo config에서 읽는다. development·preview·production 링크를 분리한다.
+- 생성 링크는 `feed?date=today&action=add-todo`다. leaf route의 Zod search schema로 해석하고
+  기존 categories query와 `AddTodoBottomSheet`를 재사용한다. 실패·카테고리 없음은 재시도와
+  설정 안내를 제공한다. 예약한 frame은 cleanup에서 취소한다.
+- provider identity, App Group, snapshot v1은 유지한다. 새 URL·주간 데이터·문구는 optional이라
+  이전 props를 복원해도 앱 실행과 기존 진행률을 표시한다.
+- patch는 provider 이름을 공식 manifest metadata로 조회한다. SDK snapshot 쓰기와 초기 이관은
+  같은 SharedPreferences monitor에서 수행한다.
+- 58.0.11의 공식 Android active Glance session 갱신 수정과 Expo UI 측정 크래시 수정을 반영한다.
+
+작은 위젯의 개수·진행률·연속 기록 배치는 유지한다. 두 발자국은 브랜드 오렌지로 밝게 표시한다.
+Android drawable은 `withWidgetAssets` Expo config plugin에서 기존 `ic_paw.svg`를 재사용해 생성한다.
+중간 위젯은 오늘 할 일 2개와 생성 버튼, 큰 위젯은 주간 달력과 오늘 할 일 4개를 보여준다.
+주간 완료 데이터가 없으면 완료 발자국을 추측하지 않으며 오늘은 최신 요약을 우선한다.
 
 첫 설치의 snapshot 부재에는 기존 카탈로그의 한국어 initialProps를 사용한다. 앱 동기화 이후
 현재 언어로 바뀐다. initialLayout 모듈은 build-time VM에서 실행되므로 native 모듈이나 policy의
@@ -179,3 +194,10 @@ MMKV data·CRC의 SHA-256이 동일했다. 결과 JSON과 native instrumentation
 
 이는 development native build의 검증이다. 실제 iOS 이전 앱 binary 업그레이드, OEM launcher,
 release 빌드, 시스템 큰 글꼴·dark 테마 및 정확한 자정 OS 갱신을 통과했다고 주장하지 않는다.
+
+### 1.11.0 검증 진행 기록
+
+- isolated Android/iOS renderer, model·mapper·sync service 36개 테스트 통과.
+- Android API 36.1 debug APK와 iOS 26.5 Simulator 앱 빌드·설치 통과.
+- Pixel Launcher에 실제 작은 위젯을 추가하고 1/5·20% 및 밝은 두 발자국 표시를 확인했다.
+- 중간·큰 위젯의 실제 배치와 개별 링크, 다크 모드 검증 결과는 release 문서에서 관리한다.
