@@ -1,8 +1,9 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { Stack } from 'expo-router';
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { createContext, type PropsWithChildren, use, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 
 import RootIndex from '../../../app/index';
 import { AuthGateLayout } from './auth-gate-layout';
@@ -10,6 +11,10 @@ import { AuthGateLayout } from './auth-gate-layout';
 jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() }));
 jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
+jest.mock('@src/bootstrap/providers/di-context', () => {
+  const errorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
+  return { useErrorReporter: () => errorReporter };
+});
 jest.mock('@src/shared/providers/theme-provider', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }));
@@ -74,6 +79,7 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
       '(app)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
       '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
       '(app)/(tabs)/feed/index': FeedScreen,
+      '(app)/todo/[todoId]/index': () => <Text testID="todo-detail">Todo details</Text>,
     },
     { initialUrl, wrapper: AuthFixture },
   );
@@ -82,7 +88,13 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
 }
 
 describe('root 인증 route 전환', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     jest.useRealTimers();
   });
   it.each(['loading', 'locked'] as const)(
@@ -133,5 +145,40 @@ describe('root 인증 route 전환', () => {
     const route = await renderAuthRoutes('unauthenticated', '/feed');
 
     expect(route.getPathname()).toBe('/login');
+  });
+
+  it('위젯의 초기 할 일 링크를 세션 복원과 인증 영역 마운트 뒤 복원한다', async () => {
+    // Given: 인증 복원 중 초기 위젯 링크가 들어온다
+    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido-dev://todo/8');
+    const route = await renderAuthRoutes('loading', '/todo/8');
+    expect(route.getPathname()).toBe('/loading');
+
+    // When: 저장된 세션 복원을 마친다
+    await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+    // Then: 피드로 유실되지 않고 대상 상세에 한 번 도착한다
+    expect(await screen.findByTestId('todo-detail')).toBeTruthy();
+    expect(route.getPathname()).toBe('/todo/8');
+    expect(useErrorReporter().addBreadcrumb).toHaveBeenCalledWith({
+      category: 'widget',
+      message: 'initial widget destination restored',
+    });
+  });
+
+  it('초기 URL 조회가 실패해도 인증 화면 이동을 막지 않는다', async () => {
+    // Given: 네이티브 초기 URL 조회가 실패한다
+    const error = new Error('initial URL unavailable');
+    jest.spyOn(Linking, 'getInitialURL').mockRejectedValue(error);
+
+    // When: 인증된 앱을 시작한다
+    const route = await renderAuthRoutes('authenticated');
+
+    // Then: 피드에 도착하고 관측 포트에 오류를 보고한다
+    expect(route.getPathname()).toBe('/feed');
+    await waitFor(() => {
+      expect(useErrorReporter().captureException).toHaveBeenCalledWith(error, {
+        feature: 'widget_app_entry',
+      });
+    });
   });
 });
