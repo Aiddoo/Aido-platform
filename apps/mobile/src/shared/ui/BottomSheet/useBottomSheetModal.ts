@@ -1,5 +1,5 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Keyboard } from 'react-native';
 
 import { FAST_DISMISS } from './constants';
@@ -15,21 +15,33 @@ interface UseBottomSheetModalReturn {
  */
 export const useBottomSheetModal = (): UseBottomSheetModalReturn => {
   const ref = useRef<BottomSheetModal>(null);
+  const presentationFrameRef = useRef<number | undefined>(undefined);
 
-  const open = () => {
+  const cancelPresentation = useCallback(() => {
+    if (presentationFrameRef.current === undefined) return;
+    cancelAnimationFrame(presentationFrameRef.current);
+    presentationFrameRef.current = undefined;
+  }, []);
+
+  useEffect(() => cancelPresentation, [cancelPresentation]);
+
+  const open = useCallback(() => {
+    cancelPresentation();
     if (Keyboard.isVisible()) {
       Keyboard.dismiss();
-      requestAnimationFrame(() => {
+      presentationFrameRef.current = requestAnimationFrame(() => {
+        presentationFrameRef.current = undefined;
         ref.current?.present();
       });
     } else {
       ref.current?.present();
     }
-  };
+  }, [cancelPresentation]);
 
-  const close = () => {
+  const close = useCallback(() => {
+    cancelPresentation();
     ref.current?.dismiss(FAST_DISMISS);
-  };
+  }, [cancelPresentation]);
 
   return { ref, open, close };
 };

@@ -4,12 +4,13 @@ import {
   BottomSheetModal,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { type ReactNode, type RefObject, useCallback } from 'react';
+import { type ReactNode, type RefObject, useCallback, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
 import { FAST_DISMISS, MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
+import { useAndroidSheetBackHandler } from './useAndroidSheetBackHandler';
 
 interface StackedBottomSheetModalProps {
   modalRef: RefObject<BottomSheetModal | null>;
@@ -27,6 +28,8 @@ export const StackedBottomSheetModal = ({
   onChange,
   children,
 }: StackedBottomSheetModalProps) => {
+  const [isVisible, setIsVisible] = useState(false);
+  useAndroidSheetBackHandler(isVisible, () => modalRef.current?.dismiss(FAST_DISMISS));
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -64,7 +67,13 @@ export const StackedBottomSheetModal = ({
       backgroundStyle={[backgroundStyle, sharedSheetStyles.detachedBackground]}
       handleIndicatorStyle={[sharedSheetStyles.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}
-      onDismiss={onDismiss}
+      onAnimate={(_fromIndex, toIndex) => {
+        if (toIndex >= 0) setIsVisible(true);
+      }}
+      onDismiss={() => {
+        setIsVisible(false);
+        onDismiss?.();
+      }}
       onChange={onChange}
     >
       <BottomSheetView style={sharedSheetStyles.content}>{children}</BottomSheetView>
