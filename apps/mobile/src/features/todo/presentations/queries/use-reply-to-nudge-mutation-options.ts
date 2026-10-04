@@ -1,6 +1,7 @@
 import type { ReplyToNudgeInput } from '@aido/validators';
 import { useErrorReporter, useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError, unwrap } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -10,11 +11,13 @@ export function useReplyToNudgeMutationOptions() {
   const todoNudgeService = useTodoNudgeService();
   const errorReporter = useErrorReporter();
   const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
 
   return mutationOptions({
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
       unwrap(await todoNudgeService.replyToNudge(nudgeId, input)),
     onSuccess: async (data, variables) => {
+      trackEvent('nudge_replied', { reply_kind: variables.input.replyKind });
       queryClient.setQueryData(TODO_QUERY_KEYS.nudgeInteraction(variables.nudgeId), data);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeInteractions() }),
