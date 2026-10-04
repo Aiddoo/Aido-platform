@@ -59,7 +59,6 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
 			friendId: payload.actorId,
 			campaignKey,
 			variantId: message.variantId,
-			metadata: { copyRevision: "1.11.0" },
 		});
 	}
 }
