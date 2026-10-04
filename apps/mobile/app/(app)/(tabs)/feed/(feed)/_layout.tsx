@@ -1,6 +1,5 @@
 import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
 import { CalendarProvider } from '@src/features/todo/presentations/providers/calendar-provider';
-import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
@@ -24,20 +23,18 @@ import { ScrollView, View } from 'react-native';
 
 export default function FeedGroupLayout() {
   return (
-    <FeedDateProvider>
-      <CalendarProvider>
-        <Box flex={1} className="bg-white">
-          <VStack>
-            <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
-              <Suspense fallback={<AvatarList.Loading />}>
-                <AvatarList />
-              </Suspense>
-            </QueryErrorBoundary>
-          </VStack>
-          <Slot />
-        </Box>
-      </CalendarProvider>
-    </FeedDateProvider>
+    <CalendarProvider>
+      <Box flex={1} className="bg-white">
+        <VStack>
+          <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
+            <Suspense fallback={<AvatarList.Loading />}>
+              <AvatarList />
+            </Suspense>
+          </QueryErrorBoundary>
+        </VStack>
+        <Slot />
+      </Box>
+    </CalendarProvider>
   );
 }
 

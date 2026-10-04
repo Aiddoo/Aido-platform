@@ -2,7 +2,12 @@ import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-cont
 import { track } from '@src/shared/analytics';
 import type { LocalDateChangeTrigger } from '@src/shared/analytics/events/lifecycle.events';
 import { toError } from '@src/shared/errors';
-import { formatDate } from '@src/shared/utils/date';
+import {
+  createLocalDateState,
+  isSameLocalDateState,
+  millisecondsUntilNextLocalMidnight,
+  type LocalDateState,
+} from '@src/shared/utils/local-date-clock';
 import {
   createContext,
   type PropsWithChildren,
@@ -14,24 +19,15 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
-const MIDNIGHT_GRACE_MS = 100;
-
-interface LocalDateState {
-  currentLocalDate: Date;
-  currentLocalDateKey: string;
-}
-
 const LocalDateContext = createContext<LocalDateState | null>(null);
 
-function createLocalDateState(now: Date): LocalDateState {
-  return { currentLocalDate: now, currentLocalDateKey: formatDate(now) };
-}
-
-/** 로컬 자정 직전의 타이머 조기 실행을 피하도록 작은 grace를 더한다. */
-export function millisecondsUntilNextLocalMidnight(now: Date): number {
-  const nextMidnight = new Date(now);
-  nextMidnight.setHours(24, 0, 0, 0);
-  return Math.max(MIDNIGHT_GRACE_MS, nextMidnight.getTime() - now.getTime() + MIDNIGHT_GRACE_MS);
+function readLocalDateState(): LocalDateState {
+  const now = new Date();
+  return createLocalDateState(
+    now,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    -now.getTimezoneOffset(),
+  );
 }
 
 /**
@@ -43,15 +39,8 @@ export function millisecondsUntilNextLocalMidnight(now: Date): number {
 export function LocalDateProvider({ children }: PropsWithChildren) {
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
-  const initialLocalDateStateRef = useRef<LocalDateState | null>(null);
-  if (initialLocalDateStateRef.current === null) {
-    initialLocalDateStateRef.current = createLocalDateState(new Date());
-  }
-
-  const [localDateState, setLocalDateState] = useState<LocalDateState>(
-    initialLocalDateStateRef.current,
-  );
-  const currentLocalDateKeyRef = useRef(localDateState.currentLocalDateKey);
+  const [localDateState, setLocalDateState] = useState(readLocalDateState);
+  const currentLocalDateStateRef = useRef(localDateState);
 
   const recordLocalDateChange = useCallback(
     (previousDate: string, nextDate: string, trigger: LocalDateChangeTrigger) => {
@@ -83,17 +72,36 @@ export function LocalDateProvider({ children }: PropsWithChildren) {
 
   const reconcileCurrentLocalDate = useCallback(
     (trigger: LocalDateChangeTrigger) => {
-      const nextLocalDateState = createLocalDateState(new Date());
-      if (nextLocalDateState.currentLocalDateKey === currentLocalDateKeyRef.current) {
+      const nextLocalDateState = readLocalDateState();
+      if (isSameLocalDateState(currentLocalDateStateRef.current, nextLocalDateState)) {
         return;
       }
 
-      const previousLocalDateKey = currentLocalDateKeyRef.current;
-      currentLocalDateKeyRef.current = nextLocalDateState.currentLocalDateKey;
+      const previousState = currentLocalDateStateRef.current;
+      currentLocalDateStateRef.current = nextLocalDateState;
       setLocalDateState(nextLocalDateState);
-      recordLocalDateChange(previousLocalDateKey, nextLocalDateState.currentLocalDateKey, trigger);
+      if (previousState.currentLocalDateKey !== nextLocalDateState.currentLocalDateKey) {
+        recordLocalDateChange(
+          previousState.currentLocalDateKey,
+          nextLocalDateState.currentLocalDateKey,
+          trigger,
+        );
+      } else {
+        try {
+          errorReporter.addBreadcrumb({
+            category: 'lifecycle',
+            message: 'local time zone changed',
+            data: {
+              previousTimeZone: previousState.currentTimeZone,
+              nextTimeZone: nextLocalDateState.currentTimeZone,
+              utcOffsetMinutes: nextLocalDateState.currentUtcOffsetMinutes,
+              trigger,
+            },
+          });
+        } catch {}
+      }
     },
-    [recordLocalDateChange],
+    [errorReporter, recordLocalDateChange],
   );
 
   useEffect(() => {
@@ -119,6 +127,9 @@ export function LocalDateProvider({ children }: PropsWithChildren) {
       }, millisecondsUntilNextLocalMidnight(new Date()));
     };
 
+    if (currentAppState === 'active') {
+      reconcileCurrentLocalDate('foreground');
+    }
     scheduleLocalMidnightTimer();
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       currentAppState = nextAppState;

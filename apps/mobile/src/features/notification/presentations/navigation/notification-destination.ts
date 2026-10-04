@@ -117,7 +117,7 @@ function toRouteDestination(
   today?: string,
 ): NotificationDestination {
   const feedHref = today
-    ? { pathname: '/feed' as const, params: { date: today } }
+    ? { pathname: '/feed' as const, params: { date: 'today' } }
     : ('/feed' as const);
   return match(routing)
     .with({ type: 'NUDGE_RECEIVED', nudgeId: P.number, todoId: P.number }, ({ nudgeId }) => ({
@@ -143,7 +143,7 @@ function toRouteDestination(
       kind: 'route' as const,
       href: {
         pathname: '/feed/friend/[friendId]' as const,
-        params: { friendId, ...(today && { date: today }) },
+        params: { friendId, ...(today && { date: 'today' }) },
       },
     }))
     .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER') }, () => ({
@@ -173,7 +173,7 @@ function toRouteDestination(
         kind: 'route' as const,
         href: {
           pathname: '/feed/friend/[friendId]' as const,
-          params: { friendId, ...(today && { date: today }) },
+          params: { friendId, ...(today && { date: 'today' }) },
         },
       }),
     )
