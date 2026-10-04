@@ -43,13 +43,47 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const isStale = props.state !== 'loggedOut' && props.date !== today;
+  const isSmallWidget = props.maxRows === 0;
+  const isLargeWidget = props.maxRows > 3;
+  const defaultWidth = isSmallWidget ? 160 : 340;
+  const defaultHeight = isSmallWidget || !isLargeWidget ? 160 : 380;
+  const resolveDimension = (dimension: number | undefined, fallback: number) =>
+    dimension != null && Number.isFinite(dimension) && dimension > 0 ? dimension : fallback;
+  const widgetWidth = resolveDimension(environment.widgetSize?.width, defaultWidth);
+  const widgetHeight = resolveDimension(environment.widgetSize?.height, defaultHeight);
+  const cardHeight = Math.min(
+    widgetHeight,
+    widgetWidth / (isSmallWidget ? 1 : isLargeWidget ? 0.97 : 2.05),
+  );
+  const layoutScale = Math.min(1, widgetWidth / defaultWidth, cardHeight / defaultHeight);
+  const scaled = (value: number) => value * layoutScale;
+  const contentPadding = scaled(isSmallWidget ? 28 : 32);
+  const contentWidth = widgetWidth - contentPadding * 2;
+  const countDigitCount = String(props.completedTodos).length + String(props.totalTodos).length;
+  const countFontScale = Math.min(1, 4 / countDigitCount);
+
+  const renderSurface = (children: ReactNode) => (
+    <Box contentAlignment="center" modifiers={[fillMaxSize()]}>
+      <Box
+        modifiers={[
+          fillMaxWidth(),
+          height(cardHeight),
+          background(palette.background),
+          cornerRadius(scaled(20)),
+          paddingAll(contentPadding),
+        ]}
+      >
+        {children}
+      </Box>
+    </Box>
+  );
 
   const renderPaw = () => (
     <Image
       source={{ uri: 'aido_widget_paw' }}
       tint={palette.brand}
       contentDescription={null}
-      modifiers={[size(24, 20)]}
+      modifiers={[size(scaled(24), scaled(20))]}
     />
   );
 
@@ -59,45 +93,32 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
     isStale ||
     (props.state === 'empty' && props.maxRows === 0)
   ) {
-    return (
-      <Column
-        horizontalAlignment="center"
-        verticalArrangement="center"
-        modifiers={[
-          fillMaxSize(),
-          background(palette.background),
-          cornerRadius(20),
-          paddingAll(16),
-        ]}
-      >
+    return renderSurface(
+      <Column horizontalAlignment="center" verticalArrangement="center" modifiers={[fillMaxSize()]}>
         {renderPaw()}
-        <Spacer modifiers={[height(6)]} />
-        <Text color={palette.foreground} style={{ fontSize: 14, fontWeight: '600' }} maxLines={2}>
+        <Spacer modifiers={[height(scaled(6))]} />
+        <Text
+          color={palette.foreground}
+          style={{ fontSize: scaled(14), fontWeight: '600' }}
+          maxLines={2}
+        >
           {isStale ? props.staleTitle : props.stateTitle}
         </Text>
-        <Spacer modifiers={[height(6)]} />
-        <Text color={palette.muted} style={{ fontSize: 12 }} maxLines={2}>
+        <Spacer modifiers={[height(scaled(6))]} />
+        <Text color={palette.muted} style={{ fontSize: scaled(12) }} maxLines={2}>
           {isStale ? props.staleCta : props.stateCta}
         </Text>
-      </Column>
+      </Column>,
     );
   }
 
   if (props.maxRows === 0) {
-    return (
-      <Column
-        verticalArrangement="top"
-        modifiers={[
-          fillMaxSize(),
-          background(palette.background),
-          cornerRadius(20),
-          paddingAll(14),
-        ]}
-      >
+    return renderSurface(
+      <Column verticalArrangement="center" modifiers={[fillMaxSize()]}>
         <Box modifiers={[fillMaxWidth()]} contentAlignment="centerStart">
           <Text
             color={palette.muted}
-            style={{ fontSize: 12, fontWeight: '500' }}
+            style={{ fontSize: scaled(12), fontWeight: '500' }}
             modifiers={[fillMaxWidth()]}
           >
             {props.progressTitle}
@@ -106,28 +127,33 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
             {renderPaw()}
           </Box>
         </Box>
-        <Spacer modifiers={[height(8)]} />
+        <Spacer modifiers={[height(scaled(8))]} />
         <Row verticalAlignment="bottom">
-          <Text color={palette.brand} style={{ fontSize: 34, fontWeight: 'bold' }}>
+          <Text
+            color={palette.brand}
+            style={{ fontSize: scaled(34) * countFontScale, fontWeight: 'bold' }}
+            maxLines={1}
+          >
             {props.completedTodos}
           </Text>
           <Text
             color={palette.muted}
-            style={{ fontSize: 18, fontWeight: '600' }}
+            style={{ fontSize: scaled(18) * countFontScale, fontWeight: '600' }}
+            maxLines={1}
           >{`/${props.totalTodos}`}</Text>
         </Row>
-        <Spacer modifiers={[height(8)]} />
+        <Spacer modifiers={[height(scaled(8))]} />
         <LinearProgressIndicator
           progress={props.completionRate / 100}
           color={palette.brand}
           trackColor={palette.track}
-          modifiers={[fillMaxWidth(), height(6)]}
+          modifiers={[fillMaxWidth(), height(scaled(6))]}
         />
-        <Spacer modifiers={[height(8)]} />
+        <Spacer modifiers={[height(scaled(8))]} />
         <Box modifiers={[fillMaxWidth()]} contentAlignment="centerStart">
           <Text
             color={props.isComplete ? palette.brand : palette.muted}
-            style={{ fontSize: 11, fontWeight: '500' }}
+            style={{ fontSize: scaled(11), fontWeight: '500' }}
             maxLines={1}
             modifiers={[fillMaxWidth()]}
           >
@@ -136,18 +162,18 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
           {props.currentStreak > 0 ? (
             <Text
               color={palette.brand}
-              style={{ fontSize: 11, fontWeight: '500', textAlign: 'end' }}
+              style={{ fontSize: scaled(11), fontWeight: '500', textAlign: 'end' }}
               maxLines={1}
               modifiers={[fillMaxWidth()]}
             >{`🔥 ${props.compactStreakLabel}`}</Text>
           ) : null}
         </Box>
-      </Column>
+      </Column>,
     );
   }
 
-  const isLargeWidget = props.maxRows > 3;
   const visibleTodos = props.topTodos.slice(0, isLargeWidget ? 4 : 2);
+  const hiddenTodoCount = Math.max(0, props.totalTodos - visibleTodos.length);
   const transparentButtonColors = {
     containerColor: 'transparent',
     contentColor: palette.foreground,
@@ -177,28 +203,38 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
       <Row verticalAlignment="center" modifiers={[fillMaxWidth()]}>
         <Box
           contentAlignment="center"
-          modifiers={[size(16, 16), background(todo.color), cornerRadius(5)]}
+          modifiers={[
+            size(scaled(16), scaled(16)),
+            background(todo.color),
+            cornerRadius(scaled(5)),
+          ]}
         >
           {!todo.completed ? (
-            <Box modifiers={[size(12, 12), background(palette.background), cornerRadius(3)]} />
+            <Box
+              modifiers={[
+                size(scaled(12), scaled(12)),
+                background(palette.background),
+                cornerRadius(scaled(3)),
+              ]}
+            />
           ) : null}
           {todo.completed ? (
-            <Text color="#FFFFFF" style={{ fontSize: 10, fontWeight: 'bold' }}>
+            <Text color="#FFFFFF" style={{ fontSize: scaled(10), fontWeight: 'bold' }}>
               ✓
             </Text>
           ) : null}
         </Box>
-        <Spacer modifiers={[width(8)]} />
+        <Spacer modifiers={[width(scaled(8))]} />
         <Text
           color={todo.completed ? palette.muted : palette.foreground}
-          style={{ fontSize: 13, textDecoration: todo.completed ? 'lineThrough' : 'none' }}
+          style={{ fontSize: scaled(13), textDecoration: todo.completed ? 'lineThrough' : 'none' }}
           maxLines={1}
           overflow="ellipsis"
         >
           {todo.title}
         </Text>
       </Row>,
-      isLargeWidget ? 22 : 26,
+      scaled(isLargeWidget ? 29 : 30),
     );
   };
 
@@ -206,81 +242,89 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
     const linkProps: ComponentProps<typeof Button> & { target?: string } = {
       target: props.addTodoUrl ?? props.openAppUrl ?? '__aido_widget_open_app',
       colors: { containerColor: palette.brandSurface, contentColor: palette.brand },
-      contentPadding: { start: 8, top: 4, end: 8, bottom: 4 },
-      modifiers: [cornerRadius(9), height(26)],
+      contentPadding: { start: scaled(10), top: scaled(6), end: scaled(10), bottom: scaled(6) },
+      modifiers: [cornerRadius(scaled(9)), height(scaled(28))],
       children: (
-        <Text
-          color={palette.brand}
-          style={{ fontSize: 12, fontWeight: '600' }}
-          maxLines={1}
-        >{`＋ ${props.addTodoLabel ?? props.stateCta}`}</Text>
+        <Row verticalAlignment="center">
+          <Text
+            color={palette.brand}
+            style={{ fontSize: scaled(12), fontWeight: '600' }}
+            maxLines={1}
+            overflow="ellipsis"
+          >{`＋ ${props.addTodoLabel ?? props.stateCta}`}</Text>
+        </Row>
       ),
     };
     return <Button {...linkProps} />;
   };
 
   if (!isLargeWidget) {
-    return (
-      <Box
-        modifiers={[
-          fillMaxSize(),
-          background(palette.background),
-          cornerRadius(20),
-          paddingAll(12),
-        ]}
-      >
-        <Row verticalAlignment="center" modifiers={[width(96), fillMaxHeight()]}>
-          <Column modifiers={[width(84)]}>
-            <Text color={palette.muted} style={{ fontSize: 11, fontWeight: '500' }} maxLines={1}>
+    return renderSurface(
+      <Box modifiers={[fillMaxSize()]}>
+        <Row verticalAlignment="center" modifiers={[width(scaled(99)), fillMaxHeight()]}>
+          <Column modifiers={[width(scaled(82))]}>
+            <Text
+              color={palette.muted}
+              style={{ fontSize: scaled(11), fontWeight: '500' }}
+              maxLines={1}
+            >
               {props.progressTitle}
             </Text>
-            <Spacer modifiers={[height(4)]} />
+            <Spacer modifiers={[height(scaled(4))]} />
             <Row verticalAlignment="bottom">
-              <Text color={palette.brand} style={{ fontSize: 32, fontWeight: 'bold' }}>
+              <Text
+                color={palette.brand}
+                style={{ fontSize: scaled(32) * countFontScale, fontWeight: 'bold' }}
+                maxLines={1}
+              >
                 {props.completedTodos}
               </Text>
               <Text
                 color={palette.muted}
-                style={{ fontSize: 17, fontWeight: '600' }}
+                style={{ fontSize: scaled(17) * countFontScale, fontWeight: '600' }}
+                maxLines={1}
               >{`/${props.totalTodos}`}</Text>
             </Row>
-            <Spacer modifiers={[height(6)]} />
+            <Spacer modifiers={[height(scaled(6))]} />
             <LinearProgressIndicator
               progress={props.completionRate / 100}
               color={palette.brand}
               trackColor={palette.track}
-              modifiers={[fillMaxWidth(), height(4)]}
+              modifiers={[fillMaxWidth(), height(scaled(4))]}
             />
-            <Spacer modifiers={[height(6)]} />
+            <Spacer modifiers={[height(scaled(6))]} />
             <Row verticalAlignment="center">
               {renderPaw()}
-              <Spacer modifiers={[width(4)]} />
-              <Text color={palette.brand} style={{ fontSize: 11 }} maxLines={1}>
+              <Spacer modifiers={[width(scaled(4))]} />
+              <Text color={palette.brand} style={{ fontSize: scaled(11) }} maxLines={1}>
                 {props.currentStreak > 0 ? props.compactStreakLabel : props.percentLabel}
               </Text>
             </Row>
           </Column>
-          <Spacer modifiers={[width(10)]} />
-          <Box modifiers={[width(1), fillMaxHeight(), background(palette.track)]} />
+          <Spacer modifiers={[width(scaled(16))]} />
+          <Box modifiers={[width(scaled(1)), fillMaxHeight(), background(palette.track)]} />
         </Row>
-        <Column verticalArrangement="center" modifiers={[fillMaxSize(), padding(112, 0, 0, 0)]}>
+        <Column
+          verticalArrangement="center"
+          modifiers={[fillMaxSize(), padding(scaled(115), 0, 0, 0)]}
+        >
           {props.state === 'empty' ? (
-            <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(56)]}>
-              <Text color={palette.muted} style={{ fontSize: 12 }} maxLines={2}>
+            <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(scaled(56))]}>
+              <Text color={palette.muted} style={{ fontSize: scaled(12) }} maxLines={2}>
                 {props.stateTitle}
               </Text>
             </Box>
           ) : (
             <Column modifiers={[fillMaxWidth()]}>
               {renderTodoRow(visibleTodos[0])}
-              {visibleTodos[1] ? <Spacer modifiers={[height(4)]} /> : null}
+              {visibleTodos[1] ? <Spacer modifiers={[height(scaled(4))]} /> : null}
               {renderTodoRow(visibleTodos[1])}
             </Column>
           )}
-          <Spacer modifiers={[height(4)]} />
+          <Spacer modifiers={[height(scaled(4))]} />
           {renderAddTodo()}
         </Column>
-      </Box>
+      </Box>,
     );
   }
 
@@ -290,39 +334,41 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
       target: day.destination,
       colors: transparentButtonColors,
       contentPadding: zeroContentPadding,
-      modifiers: [width(30), height(48)],
+      modifiers: [width(contentWidth / 7), height(scaled(64))],
       children: (
         <Column horizontalAlignment="center">
           <Text
             color={index === 0 ? '#FF5858' : index === 6 ? '#2598E8' : palette.muted}
-            style={{ fontSize: 10 }}
+            style={{ fontSize: scaled(10) }}
           >
             {day.weekdayLabel}
           </Text>
+          <Spacer modifiers={[height(scaled(4))]} />
           <Box
             contentAlignment="center"
             modifiers={[
-              size(24, 24),
-              cornerRadius(12),
+              size(scaled(28), scaled(28)),
+              cornerRadius(scaled(14)),
               background(day.isToday ? palette.brand : 'transparent'),
             ]}
           >
             <Text
               color={day.isToday ? '#FFFFFF' : palette.foreground}
-              style={{ fontSize: 13, fontWeight: day.isToday ? 'bold' : '500' }}
+              style={{ fontSize: scaled(14), fontWeight: day.isToday ? 'bold' : '500' }}
             >
               {day.dayLabel}
             </Text>
           </Box>
+          <Spacer modifiers={[height(scaled(4))]} />
           {day.isComplete ? (
             <Image
               source={{ uri: 'aido_widget_paw' }}
               tint={palette.brand}
               contentDescription={null}
-              modifiers={[size(16, 13)]}
+              modifiers={[size(scaled(16), scaled(13))]}
             />
           ) : (
-            <Text color={palette.brand} style={{ fontSize: 11 }}>
+            <Text color={palette.brand} style={{ fontSize: scaled(11) }}>
               {day.hasTodos ? '•' : ' '}
             </Text>
           )}
@@ -333,28 +379,39 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
   };
   const weekDays = props.weekDays ?? [];
 
-  return (
-    <Box
-      modifiers={[fillMaxSize(), background(palette.background), cornerRadius(20), paddingAll(14)]}
-    >
-      <Column modifiers={[fillMaxSize(), padding(0, 0, 0, 34)]}>
-        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(24)]}>
-          <Row verticalAlignment="center" modifiers={[fillMaxWidth(), padding(0, 0, 105, 0)]}>
+  const footerHeight = scaled(38);
+  const bodyHeight = scaled(266);
+  const footerSpacing = Math.max(
+    scaled(8),
+    cardHeight - contentPadding * 2 - bodyHeight - footerHeight,
+  );
+
+  return renderSurface(
+    <Column modifiers={[fillMaxSize()]}>
+      <Column modifiers={[fillMaxWidth()]}>
+        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(scaled(24))]}>
+          <Row
+            verticalAlignment="center"
+            modifiers={[fillMaxWidth(), padding(0, 0, scaled(100), 0)]}
+          >
             <Text
               color={palette.foreground}
-              style={{ fontSize: 13, fontWeight: '600' }}
+              style={{
+                fontSize: scaled((props.weekTitle?.length ?? 0) > 18 ? 12 : 14),
+                fontWeight: '600',
+              }}
               maxLines={1}
               overflow="ellipsis"
             >
               {props.weekTitle ?? props.progressTitle}
             </Text>
-            <Spacer modifiers={[width(4)]} />
+            <Spacer modifiers={[width(scaled(4))]} />
             {renderPaw()}
           </Row>
           {props.weekRangeLabel ? (
             <Text
               color={palette.muted}
-              style={{ fontSize: 9, textAlign: 'end' }}
+              style={{ fontSize: scaled(10), textAlign: 'end' }}
               maxLines={1}
               modifiers={[fillMaxWidth()]}
             >
@@ -362,8 +419,8 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
             </Text>
           ) : null}
         </Box>
-        <Spacer modifiers={[height(4)]} />
-        <Row horizontalArrangement="center" modifiers={[fillMaxWidth()]}>
+        <Spacer modifiers={[height(scaled(8))]} />
+        <Row modifiers={[fillMaxWidth()]}>
           {renderWeekDay(weekDays[0], 0)}
           {renderWeekDay(weekDays[1], 1)}
           {renderWeekDay(weekDays[2], 2)}
@@ -372,60 +429,76 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
           {renderWeekDay(weekDays[5], 5)}
           {renderWeekDay(weekDays[6], 6)}
         </Row>
-        <Spacer modifiers={[height(4)]} />
-        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
-          <Text color={palette.muted} style={{ fontSize: 12 }}>
+      </Column>
+      <Spacer modifiers={[height(scaled(8))]} />
+      <Column modifiers={[fillMaxWidth()]}>
+        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(scaled(26))]}>
+          <Text color={palette.muted} style={{ fontSize: scaled(12) }}>
             {props.progressTitle}
           </Text>
-          <Text
-            color={palette.brand}
-            style={{ fontSize: 16, fontWeight: 'bold', textAlign: 'end' }}
-            modifiers={[fillMaxWidth()]}
-          >{`${props.completedTodos}/${props.totalTodos}`}</Text>
+          <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
+            <Row verticalAlignment="bottom">
+              <Text
+                color={palette.brand}
+                style={{ fontSize: scaled(16) * countFontScale, fontWeight: 'bold' }}
+                maxLines={1}
+              >
+                {props.completedTodos}
+              </Text>
+              <Text
+                color={palette.muted}
+                style={{ fontSize: scaled(12) * countFontScale, fontWeight: '600' }}
+                maxLines={1}
+              >
+                {`/${props.totalTodos}`}
+              </Text>
+            </Row>
+          </Box>
         </Box>
-        <Spacer modifiers={[height(4)]} />
+        <Spacer modifiers={[height(scaled(8))]} />
         <LinearProgressIndicator
           progress={props.completionRate / 100}
           color={palette.brand}
           trackColor={palette.track}
-          modifiers={[fillMaxWidth(), height(4)]}
+          modifiers={[fillMaxWidth(), height(scaled(4))]}
         />
-        <Spacer modifiers={[height(4)]} />
-        <Column modifiers={[fillMaxWidth()]}>
-          {props.state === 'empty' ? (
-            <Box contentAlignment="center" modifiers={[fillMaxWidth(), height(88)]}>
-              <Text color={palette.muted} style={{ fontSize: 13 }} maxLines={2}>
-                {props.stateTitle}
-              </Text>
-            </Box>
-          ) : null}
-          {renderTodoRow(visibleTodos[0])}
-          {renderTodoRow(visibleTodos[1])}
-          {renderTodoRow(visibleTodos[2])}
-          {renderTodoRow(visibleTodos[3])}
-        </Column>
       </Column>
-      <Box contentAlignment="bottomEnd" modifiers={[fillMaxSize()]}>
-        <Column modifiers={[fillMaxWidth()]}>
-          <Box modifiers={[fillMaxWidth(), height(1), background(palette.track)]} />
-          <Spacer modifiers={[height(6)]} />
-          <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(26)]}>
-            <Text
-              color={palette.muted}
-              style={{ fontSize: 10 }}
-              maxLines={1}
-              overflow="ellipsis"
-              modifiers={[fillMaxWidth(), padding(0, 0, 118, 0)]}
-            >
-              {props.openTodoLabel ?? ''}
+      <Spacer modifiers={[height(scaled(8))]} />
+      <Column modifiers={[fillMaxWidth(), height(scaled(116))]}>
+        {props.state === 'empty' ? (
+          <Box contentAlignment="centerStart" modifiers={[fillMaxSize()]}>
+            <Text color={palette.muted} style={{ fontSize: scaled(13) }} maxLines={2}>
+              {props.stateTitle}
             </Text>
-            <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
-              {renderAddTodo()}
-            </Box>
           </Box>
-        </Column>
-      </Box>
-    </Box>
+        ) : null}
+        {renderTodoRow(visibleTodos[0])}
+        {renderTodoRow(visibleTodos[1])}
+        {renderTodoRow(visibleTodos[2])}
+        {renderTodoRow(visibleTodos[3])}
+      </Column>
+      <Spacer modifiers={[height(footerSpacing)]} />
+      <Column modifiers={[fillMaxWidth()]}>
+        <Box modifiers={[fillMaxWidth(), height(scaled(1)), background(palette.track)]} />
+        <Spacer modifiers={[height(scaled(8))]} />
+        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(scaled(28))]}>
+          <Text
+            color={palette.muted}
+            style={{ fontSize: scaled(10) }}
+            maxLines={1}
+            overflow="ellipsis"
+            modifiers={[fillMaxWidth(), padding(0, 0, scaled(118), 0)]}
+          >
+            {hiddenTodoCount > 0
+              ? props.moreLabelTemplate.replace('{count}', String(hiddenTodoCount))
+              : (props.openTodoLabel ?? '')}
+          </Text>
+          <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
+            {renderAddTodo()}
+          </Box>
+        </Box>
+      </Column>
+    </Column>,
   );
 }
 

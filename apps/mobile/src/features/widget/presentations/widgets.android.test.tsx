@@ -103,7 +103,10 @@ describe('Android 위젯 격리 렌더링', () => {
     });
     if (typeof render !== 'function') throw new Error('Widget layout is not callable');
     // When
-    const layout: unknown = render(props, { colorScheme: 'light' });
+    const layout: unknown = render(props, {
+      colorScheme: 'light',
+      widgetSize: { width: maxRows === 0 ? 178 : 374, height: maxRows <= 3 ? 210 : 420 },
+    });
     if (!isValidElement(layout)) throw new Error('Widget layout is not an element');
 
     inspectLayout(layout, titles, columnChildCounts);

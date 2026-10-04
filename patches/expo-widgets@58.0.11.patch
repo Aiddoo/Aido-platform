@@ -1,5 +1,20 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index 5d45632391fb80e1f0bacee99b87bac1a54aac2d..dbbd0eb54ef21fc0b91095f07284fb739ebc08cb 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -109,4 +109,10 @@ def generateExpoWidgetsLayoutRegistry = tasks.register("generateExpoWidgetsLayou
+   inputs.file file("$expoWidgetsPackageDir/scripts/build-layout-registry.mjs")
+   inputs.file file("$expoWidgetsPackageDir/bundle/layout-registry-entry.js")
+   inputs.files(expoWidgetsLayoutRegistryConfigFile)
++  inputs.files project.fileTree(expoWidgetsProjectRoot) {
++    include "**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.json"
++    exclude "node_modules/**", "android/**", "ios/**", ".expo/**", "dist/**", "build/**"
++  }
++  inputs.file file("$expoWidgetsProjectRoot/babel.config.js")
++  inputs.file file("$expoWidgetsProjectRoot/metro.config.js")
+   outputs.file(expoWidgetsLayoutRegistryOutput)
 diff --git a/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt b/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
-index 4c27e67e3039555b66a180fac5e59113ab627887..9d17f5f8c05f9face7b9650dc238f992578936d6 100644
+index 4c27e67e3039555b66a180fac5e59113ab627887..4992644e56c3821b7062eec794b12591229920b7 100644
 --- a/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
 +++ b/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
 @@ -5,6 +5,8 @@ import android.annotation.SuppressLint
@@ -11,8 +26,14 @@ index 4c27e67e3039555b66a180fac5e59113ab627887..9d17f5f8c05f9face7b9650dc238f992
  import androidx.glance.Emittable
  import androidx.glance.appwidget.AppWidgetId
  import androidx.glance.appwidget.SizeMode
-@@ -28,6 +30,14 @@ internal class ExpoWidgetsPeekWidget(
-     val environment = getWidgetEnvironment(appContext)
+@@ -25,9 +27,19 @@ internal class ExpoWidgetsPeekWidget(
+     val layout = WidgetsLayoutRegistry.layout(appContext, widgetName)
+       ?: return createErrorRoot("No layout found for $widgetName")
+     val props = WidgetsLayoutRegistry.props(appContext, widgetName)
+-    val environment = getWidgetEnvironment(appContext)
++    val environment = getWidgetEnvironment(appContext) + mapOf(
++      "widgetSize" to mapOf("width" to size.width.value, "height" to size.height.value)
++    )
      val node = evaluateLayout(appContext, layout, props, environment)
  
 -    return node.toPeekRoot(appContext, widgetName, size)
@@ -114,6 +135,19 @@ index f5dbbd210b059bc27259c13296ceaf11850d2929..32a0860d3b78add3aff25c893d4727af
    }
  
    fun set(context: Context, key: String, value: Map<String, Any?>) {
+diff --git a/build/Widgets.types.d.ts b/build/Widgets.types.d.ts
+index c9f4dfe1f10a3a65ab72bd7e639f6f6d148e5f95..4eb2f636a3bbc5a8ebb2c73df0ee1aaec047ff88 100644
+--- a/build/Widgets.types.d.ts
++++ b/build/Widgets.types.d.ts
+@@ -35,6 +35,8 @@ export type ActivityFamily = 'small' | 'medium';
+  */
+ export type WidgetFamily = 'systemSmall' | 'systemMedium' | 'systemLarge' | 'systemExtraLarge' | 'accessoryCircular' | 'accessoryRectangular' | 'accessoryInline';
+ export type WidgetEnvironment<T extends object | undefined = undefined> = {
++    /** Actual launcher dimensions in dp. Supplied by the Android compatibility patch. */
++    widgetSize?: { width: number; height: number };
+     /**
+      * The date of this timeline entry.
+      * @platform iOS
 diff --git a/scripts/build-layout-registry.mjs b/scripts/build-layout-registry.mjs
 index d52a60e342c8e0a8a1d78f7174da5e60e6bd1c53..2d20f788b971db5480a28e9eab2bd72099f1f2f8 100644
 --- a/scripts/build-layout-registry.mjs
@@ -135,3 +169,14 @@ index d52a60e342c8e0a8a1d78f7174da5e60e6bd1c53..2d20f788b971db5480a28e9eab2bd720
 +if (process.argv[1] && fs.realpathSync(process.argv[1]) === __filename) {
    await main();
  }
+diff --git a/src/Widgets.types.ts b/src/Widgets.types.ts
+index 07706139379384dae27befef4e3e5ae09d04a0db..616172f05af5d35db5e8652435ec529f59c0e328 100644
+--- a/src/Widgets.types.ts
++++ b/src/Widgets.types.ts
+@@ -50,4 +50,6 @@ export type WidgetFamily =
+ export type WidgetEnvironment<T extends object | undefined = undefined> = {
++  /** Actual launcher dimensions in dp. Supplied by the Android compatibility patch. */
++  widgetSize?: { width: number; height: number };
+   /**
+    * The date of this timeline entry.
+    * @platform iOS

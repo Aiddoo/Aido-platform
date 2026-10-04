@@ -50,6 +50,8 @@ AuthProvider
 - SDK 58의 Android `updateTimeline`은 no-op이다. Android에서는 `updateSnapshot`만 쓴다.
 - Android WidgetEnvironment에는 entry date·family가 없다. renderer 실행 경계에서 현재 날짜를
   읽어 snapshot 날짜와 비교하고, 위젯별 `maxRows` prop으로 정보량을 결정한다.
+- SDK 호환 패치는 Glance가 제공하는 실제 `DpSize`를 optional `environment.widgetSize`로 전달한다.
+  snapshot에 화면 크기를 저장하거나 앱의 screen width로 위젯 크기를 추정하지 않는다.
 - Expo의 Android XML은 updatePeriodMillis가 0이다. `withWidgetRefreshInterval`은 Expo의 `withFinalizedMod`에서 위젯 XML 생성이 끝난 뒤
   3개 XML에 최소 30분 갱신을 설정한다. 파일이나 갱신 속성이 없으면 prebuild를 실패시킨다.
 - Doze·launcher 정책으로 지연될 수 있으므로 정확한 자정이나 최대 30분을 보장하지 않는다.
@@ -63,6 +65,12 @@ AuthProvider
 - Android: Expo UI Jetpack Compose의 Glance 변환이 지원하는 Box/Column/Row/Text/Spacer/Progress 사용.
 - Android에서 `weight`, `alpha`, `spacedBy` 등을 지원한다고 가정하지 않는다. 명시적 Spacer 크기,
   지원되는 padding·size·Box alignment로 배치한다.
+- 세 크기는 iOS의 기본 content margin과 내부 padding을 합친 여백을 Android에도 적용한다.
+  Android 런처의 slot이 길면 카드 비율을 small 1:1, medium 약 2:1, large 약 1:1로 제한하고
+  slot 안에서 가운데 배치한다. 기존 host ID·slot 크기는 변경하지 않는다.
+- 실제 카드 크기로 날짜 칸 너비와 좁은 slot의 배율을 계산한다. 큰 위젯의 날짜 7칸은 같은
+  너비이며 오늘 할 일은 4행, 하단은 남은 개수와 생성 버튼을 표시한다. 이전 SDK에서 크기를
+  전달하지 않는 preview는 기본 크기로 렌더링한다.
 - 팔레트는 global.css의 고정 hex 값을 사용한다. 토큰 변경 시 양 renderer의 팔레트를 함께 갱신한다.
 - 시스템 테마를 따르고 뉴트럴 배경·타이포 위계·브랜드 오렌지 포인트를 유지한다.
 - Android 시스템 폰트와 Glance 제약을 따른다. 앱의 custom font와 동일 렌더링을 보장하지 않는다.
@@ -103,6 +111,9 @@ runtime dependency를 import하지 않는다.
 layout registry patch는 `initialLayout`의 상대 경로를 실제 파일 경로로 정규화한다.
 macOS EAS local build의 `/tmp`·`/private/tmp` 또는 `/var`·`/private/var` alias가
 Metro의 파일 경로와 달라져 기존 파일을 찾지 못하는 문제를 방지한다.
+Android registry task에는 앱의 JS·TS·JSON 소스와 Babel·Metro 설정을 input으로 선언한다.
+SDK 기본 task는 config 경로만 추적하므로 같은 경로의 renderer를 수정한 증분 빌드에서 이전
+registry를 재사용할 수 있다. 앱 데이터나 저장된 snapshot을 지우지 않고 빌드 캐시를 무효화한다.
 
 ## 제거한 레거시와 관측
 
