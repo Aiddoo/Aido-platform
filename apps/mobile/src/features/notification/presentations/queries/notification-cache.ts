@@ -60,8 +60,10 @@ function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
 export async function optimisticallyMarkNotificationsRead(
   queryClient: QueryClient,
   notificationId?: number,
+  { canApply }: { canApply?: () => boolean } = {},
 ): Promise<NotificationCacheSnapshot> {
   await queryClient.cancelQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all });
+  if (canApply && !canApply()) return [];
   const snapshot = queryClient.getQueriesData({ queryKey: NOTIFICATION_QUERY_KEYS.all });
   const listEntries = queryClient.getQueriesData<InfiniteData<NotificationListResult>>({
     queryKey: [...NOTIFICATION_QUERY_KEYS.all, 'list'],

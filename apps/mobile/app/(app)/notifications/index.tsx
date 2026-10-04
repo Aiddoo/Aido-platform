@@ -1,47 +1,34 @@
-import { NOTIFICATION_CATEGORY, type NotificationCategory } from '@aido/validators';
+import { NOTIFICATION_CATEGORY, getNotificationsQuerySchema } from '@aido/validators';
 import { NotificationList } from '@src/features/notification/presentations/components/notification-list';
 import { UnreadNotificationHeader } from '@src/features/notification/presentations/components/unread-notification-header';
 import { CATEGORY_TABS } from '@src/features/notification/presentations/constants/notification';
+import { NudgeInboxLink } from '@src/features/todo/presentations/components/nudge-interactions/NudgeInboxLink';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
-import { useNavigation, useRoute } from 'expo-router';
-import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { Suspense, useCallback } from 'react';
+import { Suspense } from 'react';
+import { z } from 'zod';
 
-type RouteParams = {
-  category?: NotificationCategory;
-};
+const notificationCategorySchema = getNotificationsQuerySchema.shape.category;
 
-type NotificationsRouteParams = {
-  notifications: RouteParams;
-};
-
-const useView = () => {
-  const route = useRoute<RouteProp<NotificationsRouteParams, 'notifications'>>();
-  const navigation = useNavigation<NavigationProp<NotificationsRouteParams>>();
-
-  const category = route.params?.category ?? NOTIFICATION_CATEGORY.ALL;
-
-  const setCategory = useCallback(
-    (newCategory: NotificationCategory) => {
-      navigation.setParams({ category: newCategory });
-    },
-    [navigation],
-  );
-
-  return [category, setCategory] as const;
-};
+const NotificationSearchSchema = z.object({
+  category: notificationCategorySchema.catch(NOTIFICATION_CATEGORY.ALL),
+});
 
 export default function NotificationsScreen() {
-  const [category, setCategory] = useView();
+  const { category } = NotificationSearchSchema.parse(useLocalSearchParams());
   const { t } = useTranslation('notification');
 
   return (
     <StyledSafeAreaView className="flex-1 bg-background" edges={['bottom']}>
+      <NudgeInboxLink />
       <Tabs
         value={category}
-        onValueChange={(value) => setCategory(value as NotificationCategory)}
+        onValueChange={(value) => {
+          const parsed = notificationCategorySchema.safeParse(value);
+          if (parsed.success) router.setParams({ category: parsed.data });
+        }}
         variant="secondary"
         className="flex-1"
       >

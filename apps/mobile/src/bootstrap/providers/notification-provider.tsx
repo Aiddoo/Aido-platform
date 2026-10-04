@@ -1,28 +1,29 @@
+import { pushNotificationDataSchema, type PushNotificationData } from '@aido/validators';
 import { useAutomaticPushRegistration } from '@src/features/activation/presentations/hooks/use-automatic-push-registration';
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
 import { getNotificationResponseDisposition } from '@src/features/notification/presentations/navigation/notification-response-disposition';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { toError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
+import { useQuery } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
+import { useNavigationContainerRef } from 'expo-router';
 import {
-  createContext,
   type PropsWithChildren,
-  use,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
+  useState,
+  useLayoutEffect,
 } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
 import { useLogger, useNotificationService } from './di-context';
 
-interface NotificationContextValue {
-  handleNotificationResponse: (response: Notifications.NotificationResponse) => Promise<void>;
-}
-
-const NotificationContext = createContext<NotificationContextValue | null>(null);
+type NotificationResponseHandler = ReturnType<
+  typeof useNotificationHandler
+>['handleNotificationResponse'];
 
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
@@ -42,7 +43,9 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   const { handleNotificationResponse, handleForegroundNotification } = useNotificationHandler({
     isAuthenticated,
   });
+  const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const processResponse = useNotificationResponseProcessor({
+    accountId: isAuthenticated ? (me?.id ?? null) : null,
     authStatus: status,
     handleNotificationResponse,
   });
@@ -63,66 +66,166 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   });
   useNotificationBadgeSync(isAuthenticated);
 
-  const value = useMemo(() => ({ handleNotificationResponse }), [handleNotificationResponse]);
-
-  return <NotificationContext value={value}>{children}</NotificationContext>;
+  return children;
 }
+
+type PendingNotificationResponse = {
+  responseId: string;
+  actionIdentifier: string;
+  data: PushNotificationData;
+  accountId: string | null;
+  receivedAt: number;
+};
+
+const MAX_PENDING_RESPONSES = 20;
+const MAX_HANDLED_RESPONSES = 100;
+const PENDING_RESPONSE_LIFETIME = 10 * 60_000;
 
 function useNotificationResponseProcessor({
   authStatus,
+  accountId,
   handleNotificationResponse,
 }: {
   authStatus: 'loading' | 'locked' | 'authenticated' | 'unauthenticated';
-  handleNotificationResponse: NotificationContextValue['handleNotificationResponse'];
+  accountId: string | null;
+  handleNotificationResponse: NotificationResponseHandler;
 }) {
   const logger = useLogger();
-  const pendingResponsesRef = useRef(new Map<string, Notifications.NotificationResponse>());
-  const handledResponseIdsRef = useRef(new Set<string>());
+  const navigationRef = useNavigationContainerRef();
+  const [isNavigationReady, setIsNavigationReady] = useState(() => navigationRef.isReady());
+  const pendingResponses = useRef(new Map<string, PendingNotificationResponse>());
+  const handledResponseIds = useRef(new Set<string>());
+  const processingResponseIds = useRef(new Set<string>());
+  const session = useRef({ authStatus, accountId });
+  const isMounted = useRef(false);
+
+  useLayoutEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      pendingResponses.current.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateReadiness = () => setIsNavigationReady(navigationRef.isReady());
+    updateReadiness();
+    const unsubscribeState = navigationRef.addListener('state', updateReadiness);
+    return () => {
+      unsubscribeState();
+    };
+  }, [navigationRef]);
+
+  useLayoutEffect(() => {
+    const previous = session.current;
+    session.current = { authStatus, accountId };
+    if (
+      (previous.authStatus === 'authenticated' && authStatus !== 'authenticated') ||
+      (previous.accountId !== null && accountId !== null && previous.accountId !== accountId)
+    ) {
+      pendingResponses.current.clear();
+      try {
+        Notifications.clearLastNotificationResponse();
+      } catch (error) {
+        logger.warn('[Notification] Session response cleanup failed', { error });
+      }
+    }
+  }, [accountId, authStatus, logger]);
+
+  const processPendingResponse = useCallback(
+    async (response: PendingNotificationResponse) => {
+      const { responseId } = response;
+      if (
+        handledResponseIds.current.has(responseId) ||
+        processingResponseIds.current.has(responseId)
+      )
+        return;
+      if (Date.now() - response.receivedAt > PENDING_RESPONSE_LIFETIME) {
+        pendingResponses.current.delete(responseId);
+        return;
+      }
+      const disposition = getNotificationResponseDisposition({
+        authStatus,
+        actionIdentifier: response.actionIdentifier,
+        isNavigationReady,
+      });
+      if (
+        disposition.status === 'defer' ||
+        (response.actionIdentifier !== 'MARKETING_OPT_OUT' && accountId === null)
+      )
+        return;
+      if (response.accountId !== null && response.accountId !== accountId) {
+        pendingResponses.current.delete(responseId);
+        return;
+      }
+
+      processingResponseIds.current.add(responseId);
+      try {
+        await handleNotificationResponse({
+          data: response.data,
+          actionIdentifier: response.actionIdentifier,
+          isCurrentSession: () =>
+            isMounted.current &&
+            session.current.authStatus === 'authenticated' &&
+            session.current.accountId === accountId,
+        });
+        pendingResponses.current.delete(responseId);
+        handledResponseIds.current.add(responseId);
+        if (handledResponseIds.current.size > MAX_HANDLED_RESPONSES) {
+          const oldest = handledResponseIds.current.values().next().value;
+          if (oldest !== undefined) handledResponseIds.current.delete(oldest);
+        }
+        Notifications.clearLastNotificationResponse();
+      } catch (error) {
+        logger.warn('[Notification] Response deferred after a failed attempt', {
+          error: toError(error),
+        });
+      } finally {
+        processingResponseIds.current.delete(responseId);
+      }
+    },
+    [accountId, authStatus, handleNotificationResponse, isNavigationReady, logger],
+  );
 
   const processResponse = useCallback(
     (response: Notifications.NotificationResponse) => {
       const responseId = response.notification.request.identifier;
-      if (handledResponseIdsRef.current.has(responseId)) {
-        return;
-      }
-
-      const disposition = getNotificationResponseDisposition({
-        authStatus,
-        actionIdentifier: response.actionIdentifier,
-      });
-      if (disposition.status === 'defer') {
-        pendingResponsesRef.current.set(responseId, response);
-        return;
-      }
-
-      handledResponseIdsRef.current.add(responseId);
-      pendingResponsesRef.current.delete(responseId);
-      try {
-        Notifications.clearLastNotificationResponse();
-      } catch (error) {
-        logger.warn('[Notification] Failed to clear the last response', {
-          error: toError(error),
-        });
-      }
-
-      if (disposition.status === 'discard') {
-        logger.info('[Notification] Protected response discarded without authentication');
-        return;
-      }
-
-      handleNotificationResponse(response).catch((error) =>
-        logger.error('[Notification] Response handling failed', toError(error)),
+      if (handledResponseIds.current.has(responseId)) return;
+      const parsed = pushNotificationDataSchema.safeParse(
+        response.notification.request.content.data,
       );
+      if (!parsed.success) {
+        logger.warn('[Notification] Invalid response payload', { error: parsed.error });
+        return;
+      }
+      const pending = pendingResponses.current.get(responseId) ?? {
+        responseId,
+        actionIdentifier: response.actionIdentifier,
+        data: parsed.data,
+        accountId,
+        receivedAt: Date.now(),
+      };
+      pendingResponses.current.set(responseId, pending);
+      if (pendingResponses.current.size > MAX_PENDING_RESPONSES) {
+        const oldest = pendingResponses.current.keys().next().value;
+        if (oldest !== undefined) pendingResponses.current.delete(oldest);
+      }
+      void processPendingResponse(pending);
     },
-    [authStatus, handleNotificationResponse, logger],
+    [accountId, logger, processPendingResponse],
   );
 
   useEffect(() => {
-    const pendingResponses = [...pendingResponsesRef.current.values()];
-    for (const pendingResponse of pendingResponses) {
-      processResponse(pendingResponse);
-    }
-  }, [processResponse]);
+    const retryPending = () => {
+      for (const response of pendingResponses.current.values())
+        void processPendingResponse(response);
+    };
+    retryPending();
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') retryPending();
+    });
+    return () => subscription.remove();
+  }, [processPendingResponse]);
 
   return processResponse;
 }
@@ -231,24 +334,8 @@ function useNotificationBadgeSync(isAuthenticated: boolean) {
 }
 
 function WebNotificationProvider({ children }: PropsWithChildren) {
-  const { status } = useAuth();
-  const { handleNotificationResponse } = useNotificationHandler({
-    isAuthenticated: status === 'authenticated',
-  });
-  const value = useMemo(() => ({ handleNotificationResponse }), [handleNotificationResponse]);
-
-  return <NotificationContext value={value}>{children}</NotificationContext>;
+  return children;
 }
 
 export const NotificationProvider =
   Platform.OS === 'web' ? WebNotificationProvider : NativeNotificationProvider;
-
-export function useNotificationContext(): NotificationContextValue {
-  const context = use(NotificationContext);
-
-  if (!context) {
-    throw new Error('useNotificationContext must be used within NotificationProvider');
-  }
-
-  return context;
-}

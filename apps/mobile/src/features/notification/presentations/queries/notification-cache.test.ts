@@ -105,4 +105,22 @@ describe('notification cache optimistic update', () => {
 
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
   });
+  test('조회 취소를 기다리는 동안 계정이 바뀌면 새 계정 캐시를 수정하지 않는다', async () => {
+    // Given
+    const listKey = NOTIFICATION_QUERY_KEYS.list({});
+    const data = makeData(1);
+    client.setQueryData(listKey, data);
+    let canApply = true;
+    const cancel = jest.spyOn(client, 'cancelQueries').mockImplementation(async () => {
+      canApply = false;
+    });
+    // When
+    const snapshot = await optimisticallyMarkNotificationsRead(client, 1, {
+      canApply: () => canApply,
+    });
+    // Then
+    expect(snapshot).toEqual([]);
+    expect(client.getQueryData(listKey)).toBe(data);
+    cancel.mockRestore();
+  });
 });
