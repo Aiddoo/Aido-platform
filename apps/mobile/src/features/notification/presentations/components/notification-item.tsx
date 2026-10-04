@@ -14,6 +14,7 @@ import { type Notification, NotificationPolicy } from '../../models/notification
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { resolveNotificationDestination } from '../navigation/notification-destination';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
+import { getCategoryKey } from '../view-models/notification-category.view-model';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -39,7 +40,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   shade={isUnread ? undefined : 5}
                   weight="medium"
                 >
-                  {t(`categories.${NotificationPolicy.categoryKey(notification)}`)}
+                  {t(`categories.${getCategoryKey(notification.type)}`)}
                 </Text>
                 <Text size="b4" shade={5}>
                   {formatRelativeTime(notification.createdAt)}

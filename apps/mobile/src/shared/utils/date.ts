@@ -4,6 +4,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { times } from 'es-toolkit/compat';
 
+import { getCalendarWeek } from './calendar-week';
 import { formatClockTime, formatDateLabel, type DateFormatContext } from './date-format';
 
 dayjs.extend(weekOfYear);
@@ -109,11 +110,10 @@ export const getWeekdayLabels = (): string[] =>
   );
 
 export const getWeekHeaderText = (date: Date): string => {
-  const d = dayjs(date);
-  const weekOfMonth = Math.ceil(d.date() / 7);
+  const week = getCalendarWeek(date);
   return t('common:calendar.weekHeader', {
-    month: formatDateLabel(d.toDate(), 'month', getDateFormatContext()),
-    week: weekOfMonth,
+    month: formatDateLabel(week.start, 'month', getDateFormatContext()),
+    week: week.weekOfMonth,
   });
 };
 
@@ -122,7 +122,7 @@ export const getMonthHeaderText = (date: Date): string => {
 };
 
 export const getWeekStart = (date: Date): Date => {
-  return dayjs(date).startOf('week').toDate();
+  return getCalendarWeek(date).start;
 };
 
 export const getMonthStart = (date: Date): Date => {
@@ -130,7 +130,7 @@ export const getMonthStart = (date: Date): Date => {
 };
 
 export const getWeekEnd = (date: Date): Date => {
-  return dayjs(date).endOf('week').toDate();
+  return getCalendarWeek(date).end;
 };
 
 export const getNextDay = (date: Date): Date => {

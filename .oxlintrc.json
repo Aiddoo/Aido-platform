@@ -20,6 +20,7 @@
     "**/coverage/**"
   ],
   "rules": {
+    "eslint/eqeqeq": ["error", "always", { "null": "ignore" }],
     "eslint/no-unused-vars": "error",
     "eslint/prefer-const": "error",
     "import/no-cycle": "error",
