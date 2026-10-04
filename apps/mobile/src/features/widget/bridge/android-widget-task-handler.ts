@@ -65,7 +65,9 @@ export function createAndroidWidgetTaskHandler({
           return;
         }
 
-        if (!hasOwner || !isAppActive()) await openApp(uri);
+        if (!hasOwner || !isAppActive()) {
+          await openApp(`${new URL(uri).protocol}//feed?date=today`);
+        }
         return;
       }
 

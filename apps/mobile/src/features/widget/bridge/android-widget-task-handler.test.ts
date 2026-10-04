@@ -74,7 +74,24 @@ describe('Android 위젯 작업 처리', () => {
     await handler(createTask());
 
     // Then
-    expect(openApp).toHaveBeenCalledWith('aido://todo/12');
+    expect(openApp).toHaveBeenCalledWith('aido://feed?date=today');
+  });
+
+  it.each([
+    ['aido://todo/12', 'aido://feed?date=today'],
+    ['aido-dev://feed?date=today&action=add-todo', 'aido-dev://feed?date=today'],
+    ['aido-preview://feed?date=2026-10-05', 'aido-preview://feed?date=today'],
+  ])('이전 계정의 %s 클릭도 인증 가드 전에는 일반 홈만 연다', async (uri, wakeUri) => {
+    // Given
+    const { handler, navigationRepository, openApp } = createHandler();
+
+    // When
+    await handler(createTask({ clickActionData: { uri, userId: 'previous-widget-owner' } }));
+
+    // Then
+    expect(openApp).toHaveBeenCalledWith(wakeUri);
+    expect(navigationRepository.getPendingCommand()?.uri).toBe(uri);
+    expect(navigationRepository.getPendingCommand()?.userId).toBe('previous-widget-owner');
   });
 
   it('이미 열린 앱은 저장된 명령만 소비하고 생성 링크를 중복 열지 않는다', async () => {

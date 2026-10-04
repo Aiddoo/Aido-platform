@@ -235,6 +235,28 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     expect(mockRepository.getPendingCommand()).toBeNull();
   });
 
+  it.each(['aido://todo/12', 'aido://feed?date=today&action=add-todo'])(
+    '일반 홈으로 앱을 깨워도 이전 계정의 %s 명령은 복원하지 않는다',
+    async (uri) => {
+      // Given
+      mockUrl = 'aido://feed?date=today';
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
+      mockRepository.store({ ...command, uri });
+      const hook = await renderHook(useWidgetAppEntry, { wrapper: Wrapper });
+
+      // When
+      authenticate();
+      await hook.rerender(undefined);
+      await flushFrames();
+      await hook.rerender(undefined);
+      await flushFrames();
+
+      // Then
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(mockRepository.getPendingCommand()).toBeNull();
+    },
+  );
+
   it('화면이 해제되면 예약한 frame을 취소하고 명령은 다음 진입에 남긴다', async () => {
     // Given
     authenticate();
