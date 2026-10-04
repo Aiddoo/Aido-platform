@@ -10,11 +10,11 @@ name: 한글 다크 모드의 받은 콕·답장·할 일·생성 시트를 검�
 # When: 동일한 기능을 다크 모드로 연다
 - openLink: aido-dev://nudges?direction=received
 - extendedWaitUntil:
-    visible: 받은 콕
+    visible: 알림
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 5000
-- takeScreenshot: 08-received-dark
+- takeScreenshot: 08-notification-inbox-dark
 - openLink: aido-dev://nudges/${QA_NUDGE_ID}
 - extendedWaitUntil:
     visible: 친구의 응원

@@ -1,0 +1,33 @@
+appId: com.aido.mobile
+name: 기존 위젯이 프로세스 종료와 최근 작업 유지 상태에서 정확히 이동한다
+---
+# Given: 호출자가 별도 확인한 process-only 종료 + retained recents task + 기존 launcher 위젯
+# QA-only debuggable manifest의 Release APK에서 run-as SIGKILL로 준비한다. force-stop은 다른 시나리오다.
+- assertVisible: ${QA_PENDING_TODO_TITLE}
+# When: 실제 launcher 중간 위젯의 할 일을 누른다
+- tapOn: ${QA_PENDING_TODO_TITLE}
+# Then: 정확한 상세와 제목을 표시하고 뒤로가기는 홈으로 돌아간다
+- extendedWaitUntil:
+    visible: 할 일 상세
+    timeout: 25000
+- assertVisible: ${QA_PENDING_TODO_TITLE}
+- takeScreenshot: widget-cold-todo
+- tapOn: 뒤로 가기
+- extendedWaitUntil:
+    visible: ${QA_WIDGET_WEEK_TITLE}
+    timeout: 10000
+- pressKey: Home
+# When: 실제 위젯에서 만들기를 누른다
+- tapOn: 할 일 만들기
+# Then: 생성 시트를 한 번 열고 닫으면 홈으로 복귀한다
+- extendedWaitUntil:
+    visible: AI로 할 일 만들기
+    timeout: 15000
+- takeScreenshot: widget-warm-create
+- pressKey: Back
+- pressKey: Back
+- extendedWaitUntil:
+    visible: ${QA_WIDGET_WEEK_TITLE}
+    timeout: 10000
+- assertNotVisible: AI로 할 일 만들기
+- takeScreenshot: widget-create-closed

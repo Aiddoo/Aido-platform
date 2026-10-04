@@ -4,13 +4,13 @@ name: 콕에 세 가지 답장을 보내도 할 일은 자동 완료되지 않�
 # Given: 현재 친구가 오늘의 공개 할 일에 보낸 콕
 - openLink: aido-dev://nudges/${QA_NUDGE_ID}
 - extendedWaitUntil:
-    visible: '지금 내 마음을 알려주세요|Let your friend know how you feel'
+    visible: '친구에게 한마디 전해볼까요?|Send a little reply'
     timeout: 20000
 - assertVisible: ${QA_TODO_TITLE}
 # When: 답장을 보내고 다른 답장으로 변경한다
 - tapOn: '시작해볼게|I’ll get started'
 - extendedWaitUntil:
-    visible: '답장을 바꿔도 알림은 한 번만 전해져요|Changing your reply won’t send another notification'
+    visible: '답장을 바꿔도 친구에게 알림이 또 가지 않아요|Changing your reply won’t send another notification'
     timeout: 15000
 - tapOn: '응원 고마워|Thanks for the cheer'
 - waitForAnimationToEnd:

@@ -1,0 +1,29 @@
+appId: com.aido.mobile
+name: 공개 범위 변경 안내와 친구 검색의 빈 상태를 검증한다
+---
+# Given: 콕을 받은 뒤 공개 범위가 비공개로 바뀐 할 일
+- openLink: aido-dev://nudges/${QA_UNAVAILABLE_NUDGE_ID}
+- extendedWaitUntil:
+    visible: 지금은 이 콕에 답할 수 없어요
+    timeout: 15000
+- assertNotVisible: 시작해볼게
+- takeScreenshot: 34-nudge-unavailable
+# When: 친구 검색 화면에서 검색어를 입력하고 지운다
+- openLink: aido-dev://friends/search
+- extendedWaitUntil:
+    visible: 이름이나 해시태그로 친구를 찾아보세요
+    timeout: 15000
+- takeScreenshot: 35-search-prompt
+- tapOn: 이름 또는 해시태그로 검색
+- inputText: AidoNoSuchFriend
+- extendedWaitUntil:
+    visible: .*AidoNoSuchFriend.*검색 결과가 없어요
+    timeout: 15000
+- hideKeyboard
+- takeScreenshot: 36-search-empty
+- tapOn: AidoNoSuchFriend
+- eraseText: 100
+# Then: 이전 검색 결과를 남기지 않고 입력 전 안내로 돌아온다
+- extendedWaitUntil:
+    visible: 이름이나 해시태그로 친구를 찾아보세요
+    timeout: 15000
