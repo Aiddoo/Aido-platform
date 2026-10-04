@@ -11,10 +11,13 @@ import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import { OverlayProvider, QueryErrorBoundary } from '@src/shared/ui';
+import { usePathname } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 export function AppProviders({ children }: PropsWithChildren) {
+  const pathname = usePathname();
+
   return (
     <GestureHandlerProvider>
       <KeyboardProvider>
@@ -30,7 +33,7 @@ export function AppProviders({ children }: PropsWithChildren) {
                           <NotificationProvider>
                             <BottomSheetModalProvider>
                               <QueryErrorBoundary>
-                                <OverlayProvider>{children}</OverlayProvider>
+                                <OverlayProvider resetKey={pathname}>{children}</OverlayProvider>
                               </QueryErrorBoundary>
                             </BottomSheetModalProvider>
                           </NotificationProvider>

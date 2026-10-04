@@ -1,11 +1,10 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { useFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/presentations/queries/get-feature-discovery-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useQuery } from '@tanstack/react-query';
 
 import { ActivationPolicy, type ActivationProgress } from '../../models/activation.model';
-import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys.constant';
+import { useGetActivationProgressQueryOptions } from '../queries/get-activation-progress-query-options';
 
 const EMPTY_PROGRESS: ActivationProgress = {
   todoCreatedAt: null,
@@ -15,7 +14,6 @@ const EMPTY_PROGRESS: ActivationProgress = {
 
 export function useActivationProgress() {
   const { status } = useAuth();
-  const activationService = useActivationService();
   const isAuthenticated = status === 'authenticated';
   const configOptions = useFeatureDiscoveryQueryOptions();
   const userOptions = useGetMeQueryOptions();
@@ -23,13 +21,13 @@ export function useActivationProgress() {
   const userQuery = useQuery({ ...userOptions, enabled: isAuthenticated });
   const identity = ActivationPolicy.activationIdentity(configQuery.data, userQuery.data);
 
+  const progressOptions = useGetActivationProgressQueryOptions({
+    config: configQuery.data,
+    user: userQuery.data,
+  });
   const progressQuery = useQuery({
-    queryKey: identity
-      ? ACTIVATION_QUERY_KEYS.progress(identity.accountId, identity.campaignId)
-      : [...ACTIVATION_QUERY_KEYS.all, 'inactive'],
-    queryFn: () => activationService.getProgress(configQuery.data, userQuery.data),
-    enabled: isAuthenticated && identity !== null,
-    staleTime: Number.POSITIVE_INFINITY,
+    ...progressOptions,
+    enabled: isAuthenticated && progressOptions.enabled,
   });
 
   // A public rollout-config failure must not disable the legacy push flow for

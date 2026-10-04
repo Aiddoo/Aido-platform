@@ -3,6 +3,7 @@ import {
   Fragment,
   type ReactNode,
   useCallback,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -19,9 +20,19 @@ export const OverlayContext = createContext<OverlayController | null>(null);
 
 type OverlayEntry = { element: ReactNode; version: number };
 
-export const OverlayProvider = ({ children }: { children: ReactNode }) => {
+export const OverlayProvider = ({
+  children,
+  resetKey,
+}: {
+  children: ReactNode;
+  resetKey?: string;
+}) => {
   const [overlays, setOverlays] = useState<Map<string, OverlayEntry>>(new Map());
   const versionRef = useRef(0);
+
+  useLayoutEffect(() => {
+    setOverlays((previous) => (previous.size === 0 ? previous : new Map()));
+  }, [resetKey]);
 
   const mount = useCallback((id: string, element: ReactNode) => {
     const version = ++versionRef.current;

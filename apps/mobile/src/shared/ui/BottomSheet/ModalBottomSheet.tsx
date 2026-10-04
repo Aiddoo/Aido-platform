@@ -14,6 +14,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
 import { resolveSheetAnimationDuration } from './motion';
+import { useAndroidSheetBackHandler } from './useAndroidSheetBackHandler';
 
 const DISMISS_DISPLACEMENT = 100;
 const DISMISS_VELOCITY = 500;
@@ -71,6 +72,10 @@ export const ModalBottomSheet = ({
   const callOnClose = useCallback(() => {
     onCloseRef.current();
   }, []);
+
+  useAndroidSheetBackHandler(true, () => {
+    if (isOpen) callOnClose();
+  });
 
   useEffect(
     () => () => {

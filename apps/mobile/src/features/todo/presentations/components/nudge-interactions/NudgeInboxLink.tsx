@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button } from '@src/shared/ui';
+import { Box, Button, HStack, PawIcon, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
@@ -12,7 +12,12 @@ export function NudgeInboxLink() {
   return (
     <Box px={16} py={8}>
       <Button variant="weak" color="primary" onPress={() => router.push('/nudges')}>
-        {t('interaction.entry')}
+        <HStack align="center" gap={8}>
+          <PawIcon width={18} height={18} colorClassName="text-main" />
+          <Text size="b3" weight="semibold" tone="brand">
+            {t('interaction.entry')}
+          </Text>
+        </HStack>
       </Button>
     </Box>
   );

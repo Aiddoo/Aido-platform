@@ -19,6 +19,7 @@ jest.mock('@src/features/user/presentations/queries/get-me-query-options', () =>
 }));
 
 jest.mock('@tanstack/react-query', () => ({
+  ...jest.requireActual('@tanstack/react-query'),
   useQuery: jest.fn(),
 }));
 
@@ -30,7 +31,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => ({
 
 const mockUseQuery = jest.mocked(useQuery);
 
-describe('useActivationProgress compatibility readiness', () => {
+describe('활성화 진행 상태의 기존 사용자 호환성', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

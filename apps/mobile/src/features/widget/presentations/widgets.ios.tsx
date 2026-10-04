@@ -49,6 +49,23 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
     ...(props.openAppUrl ? [widgetURL(props.openAppUrl)] : []),
   ];
 
+  const renderPaw = () => (
+    <HStack spacing={1} modifiers={[frame({ width: 24, height: 20 })]}>
+      <Image
+        systemName="pawprint.fill"
+        size={11}
+        color={palette.brand}
+        modifiers={[padding({ bottom: 6 })]}
+      />
+      <Image
+        systemName="pawprint.fill"
+        size={11}
+        color={palette.brand}
+        modifiers={[padding({ top: 6 })]}
+      />
+    </HStack>
+  );
+
   if (
     props.state === 'loggedOut' ||
     props.state === 'stale' ||
@@ -56,7 +73,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
   ) {
     return (
       <VStack spacing={6} modifiers={[padding({ all: 16 }), ...rootModifiers]}>
-        <Text modifiers={[font({ size: 28 })]}>🐾</Text>
+        {renderPaw()}
         <Text
           modifiers={[
             font({ size: 14, weight: 'semibold', design: 'rounded' }),
@@ -85,24 +102,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             {props.progressTitle}
           </Text>
           <Spacer />
-          {props.isComplete ? (
-            <Text modifiers={[font({ size: 16 })]}>🎉</Text>
-          ) : (
-            <HStack spacing={1} modifiers={[frame({ width: 24, height: 20 })]}>
-              <Image
-                systemName="pawprint.fill"
-                size={11}
-                color={palette.brand}
-                modifiers={[padding({ bottom: 6 })]}
-              />
-              <Image
-                systemName="pawprint.fill"
-                size={11}
-                color={palette.brand}
-                modifiers={[padding({ top: 6 })]}
-              />
-            </HStack>
-          )}
+          {renderPaw()}
         </HStack>
         <HStack alignment="lastTextBaseline" spacing={2}>
           <Text
@@ -166,22 +166,6 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
     <Link destination={destination ?? props.openAppUrl ?? 'aido://feed?date=today'}>
       {children}
     </Link>
-  );
-  const renderPaw = () => (
-    <HStack spacing={1} modifiers={[frame({ width: 24, height: 20 })]}>
-      <Image
-        systemName="pawprint.fill"
-        size={11}
-        color={palette.brand}
-        modifiers={[padding({ bottom: 6 })]}
-      />
-      <Image
-        systemName="pawprint.fill"
-        size={11}
-        color={palette.brand}
-        modifiers={[padding({ top: 6 })]}
-      />
-    </HStack>
   );
   const renderTodoRow = (todo?: WidgetProps['topTodos'][number]) => {
     if (!todo) return null;
