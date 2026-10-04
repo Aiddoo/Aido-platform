@@ -177,20 +177,22 @@ function NudgeDetail() {
               {t('interaction.replyCompletionHint')}
             </Text>
           </VStack>
-        ) : status === 'THANKED' ? (
-          <HStack align="center" gap={8}>
-            <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
-            <Text size="b3" tone="brand" className="shrink">
-              {t('interaction.thanked')}
-            </Text>
-          </HStack>
         ) : isReceived && nudge.isTodoCompleted ? (
           <VStack gap={12}>
-            <Text size="b3" shade={6}>
-              {t('interaction.completedThanksHint')}
-            </Text>
-            <NudgeThanksButton todoId={nudge.todoId} />
+            {status === 'THANKED' ? (
+              <NudgeDetail.ThanksStatus />
+            ) : (
+              <Text size="b3" shade={6}>
+                {t('interaction.completedThanksHint')}
+              </Text>
+            )}
+            <NudgeThanksButton
+              todoId={nudge.todoId}
+              className={status === 'THANKED' ? 'hidden' : undefined}
+            />
           </VStack>
+        ) : status === 'THANKED' ? (
+          <NudgeDetail.ThanksStatus />
         ) : (
           <Text size="b3" shade={6}>
             {nudge.replyKind !== null
@@ -202,6 +204,18 @@ function NudgeDetail() {
     </ScrollView>
   );
 }
+
+NudgeDetail.ThanksStatus = function ThanksStatus() {
+  const { t } = useTranslation('todo');
+  return (
+    <HStack align="center" gap={8}>
+      <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
+      <Text size="b3" tone="brand" className="shrink">
+        {t('interaction.thanked')}
+      </Text>
+    </HStack>
+  );
+};
 
 NudgeDetail.ReplyButton = function ReplyButton({
   value,
