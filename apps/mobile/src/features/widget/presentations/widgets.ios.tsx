@@ -102,6 +102,8 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             modifiers={[
               font({ size: 12, weight: 'medium', design: 'rounded' }),
               foregroundColor(palette.muted),
+              lineLimit(1),
+              minimumScaleFactor(0.7),
             ]}
           >
             {props.progressTitle}
