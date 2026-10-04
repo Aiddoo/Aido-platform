@@ -22,8 +22,8 @@ const copy = (title: string, body: string): NotificationCopy => ({ title, body }
 
 const REPLY_LABEL = {
 	STARTING: "I’ll get started",
-	THANKFUL: "Thanks for the cheer",
-	LATER: "I’ll do it a little later",
+	THANKFUL: "Thanks for cheering me on",
+	LATER: "I’ll do it later",
 };
 
 export const SCHEDULER_TEMPLATES = {
@@ -135,7 +135,7 @@ export const SCHEDULER_TEMPLATES = {
 	STREAK_AT_RISK: {
 		variants: [
 			({ streak }) => copy(`Keep your ${streak}-day streak 🔥`, "One finished task keeps it going"),
-			({ streak }) => copy("Another paw-step today?", `Check your ${streak}-day streak`),
+			({ streak }) => copy("One more small step today?", `Check your ${streak}-day streak`),
 			({ streak }) => copy(`${streak} days of steady progress`, "Choose one doable task for today"),
 		],
 	},
@@ -199,14 +199,17 @@ export const SOCIAL_TEMPLATES = {
 	},
 	NUDGE_THANKED: {
 		copy: ({ senderName, todoTitle }) =>
-			copy(`A thank-you from ${senderName} 🐾`, `“${todoTitle}” is done. Your nudge helped!`),
+			copy(
+				`A thank-you from ${senderName} 🐾`,
+				`“${todoTitle}” is done. Thanks for cheering them on!`,
+			),
 	},
 	FOLLOW_NEW: {
 		variants: [
 			({ senderName }) =>
-				copy(`A friend request from ${senderName}`, "Accept to share little cheers"),
+				copy(`A friend request from ${senderName}`, "Accept to cheer each other on"),
 			({ senderName }) =>
-				copy(`${senderName} wants to be friends`, "Share to-dos and little cheers 🐾"),
+				copy(`${senderName} wants to be friends`, "Share your plans and cheer each other on 🐾"),
 			({ senderName }) => copy("A new friend request", `Meet ${senderName} in Aido`),
 		],
 	},
@@ -224,7 +227,9 @@ export const SOCIAL_TEMPLATES = {
 			({ senderName, todoTitle }) =>
 				copy(
 					`A nudge from ${senderName} 🐾`,
-					todoTitle ? `A little cheer for “${todoTitle}”` : "A little cheer for today’s plans",
+					todoTitle
+						? `They’re cheering you on for “${todoTitle}”`
+						: "They’re cheering you on today",
 				),
 			({ senderName, todoTitle }) =>
 				copy(
@@ -233,10 +238,10 @@ export const SOCIAL_TEMPLATES = {
 				),
 			({ todoTitle, senderName }) =>
 				copy(
-					"A friend checked in with a nudge",
+					"A little encouragement from a friend",
 					todoTitle
 						? `${senderName} nudged “${todoTitle}”`
-						: `${senderName} is cheering on your day`,
+						: `${senderName} is cheering you on today`,
 				),
 		],
 	},
@@ -250,11 +255,11 @@ export const SOCIAL_TEMPLATES = {
 	REMIND_NUDGE_RECEIVED: {
 		variants: [
 			({ senderName }) =>
-				copy(`${senderName} asked about your plans`, "Write down one to-do for today 🐾"),
+				copy(`${senderName} is cheering you on today`, "Start with one small to-do 🐾"),
 			({ senderName }) =>
 				copy(`A nudge from ${senderName}`, "Start with a small thing on your mind"),
 			({ senderName }) =>
-				copy("A friend cheered on your day", `${senderName} sent a little check-in`),
+				copy("A friend is cheering you on", `${senderName} sent a little check-in`),
 		],
 	},
 	REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
@@ -361,7 +366,7 @@ export const SOCIAL_TEMPLATES = {
 export const SYSTEM_TEMPLATES = {
 	WINBACK_DAY3: {
 		variants: [
-			staticCopy("Meet today’s plans again?", "Write one small thing you need today"),
+			staticCopy("Ready to ease back in?", "Write one small thing you need today"),
 			staticCopy("Your progress is still here", "Start with one task that fits"),
 			staticCopy("One step with your cat? 🐾", "Choose your first to-do for today"),
 		],
@@ -382,7 +387,7 @@ export const SYSTEM_TEMPLATES = {
 	},
 	WINBACK_DAY21: {
 		variants: [
-			staticCopy("A gentle return today", "Write one task you can do now"),
+			staticCopy("Take your time getting started", "Write one task you can do now"),
 			staticCopy("Room for a new plan", "Start with what you need today"),
 			staticCopy("Ready when you are 🐾", "Make one small plan with your cat"),
 		],
@@ -391,7 +396,7 @@ export const SYSTEM_TEMPLATES = {
 		variants: [
 			staticCopy("A fresh plan for today?", "Choose what matters to you now"),
 			staticCopy("A familiar place to begin", "Write one to-do and take your time"),
-			staticCopy("A new paw-step with your cat 🐾", "Plan only what fits today"),
+			staticCopy("A fresh start with your cat 🐾", "Plan only what fits today"),
 		],
 	},
 	WEEKLY_ACHIEVEMENT: {
@@ -451,7 +456,7 @@ export const SYSTEM_TEMPLATES = {
 			copy("Your first week in Aido 🎉", `Look back at ${completedCount} finished to-dos`),
 	},
 	MILESTONE_FIRST_COMPLETE: {
-		copy: staticCopy("Your first to-do is done ✨", "That’s your first paw-step recorded"),
+		copy: staticCopy("Your first to-do is done ✨", "Your first little win, saved"),
 	},
 	MILESTONE_10: {
 		copy: staticCopy("Ten to-dos completed", "Your small wins are adding up 🐾"),

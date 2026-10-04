@@ -216,7 +216,7 @@ export const SOCIAL_TEMPLATES = {
 		copy: ({ senderName, todoTitle }) =>
 			copy(
 				`${attachJosa(senderName, "이/가")} 고마움을 전했어 🐾`,
-				`‘${todoTitle}’ 완료! 응원이 힘이 됐대`,
+				`‘${todoTitle}’를 마치고 네 응원에 고마움을 전했어`,
 			),
 	},
 	FOLLOW_NEW: {
@@ -257,7 +257,7 @@ export const SOCIAL_TEMPLATES = {
 				),
 			({ todoTitle, senderName }) =>
 				copy(
-					"할 일에 콕, 친구의 안부야",
+					"친구가 콕으로 응원을 보냈어",
 					todoTitle
 						? `${senderName}의 콕이 ‘${todoTitle}’에 왔어`
 						: `${attachJosa(senderName, "이/가")} 하루를 응원하고 있어`,
@@ -267,7 +267,7 @@ export const SOCIAL_TEMPLATES = {
 	NUDGE_RECEIVED_WITH_MESSAGE: {
 		copy: ({ senderName, todoTitle, message }) =>
 			copy(
-				`${senderName}의 콕과 한마디가 왔어`,
+				`${senderName}의 응원과 한마디가 도착했어`,
 				todoTitle ? `‘${todoTitle}’ · ${message}` : message,
 			),
 	},
@@ -275,7 +275,7 @@ export const SOCIAL_TEMPLATES = {
 		variants: [
 			({ senderName }) =>
 				copy(
-					`${attachJosa(senderName, "이/가")} 오늘 계획을 물었어`,
+					`${attachJosa(senderName, "이/가")} 오늘의 시작을 응원해`,
 					"할 일을 하나 적어보는 건 어때? 🐾",
 				),
 			({ senderName }) => copy(`${senderName}의 콕이 도착했어`, "생각나는 작은 일부터 하나 적어봐"),
@@ -287,7 +287,7 @@ export const SOCIAL_TEMPLATES = {
 		],
 	},
 	REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
-		copy: ({ senderName, message }) => copy(`${senderName}의 콕과 한마디가 왔어`, message),
+		copy: ({ senderName, message }) => copy(`${senderName}의 응원과 한마디가 도착했어`, message),
 	},
 	CHEER_RECEIVED: {
 		copy: ({ senderName, message }) => copy(`${senderName}의 응원이 왔어`, message),
