@@ -34,7 +34,8 @@
     "unreadTitle": "읽지 않은 알림",
     "unreadCount": "{{count}}건",
     "markAllRead": "모두 읽음",
-    "premiumDescription": "구독하면 AI 리포트와 제안을 확인할 수 있어요"
+    "premiumDescription": "구독하면 AI 리포트와 제안을 확인할 수 있어요",
+    "loadError": "알림을 불러오지 못했어요"
   },
   "settings": {
     "timeFormat24": "24시간제",

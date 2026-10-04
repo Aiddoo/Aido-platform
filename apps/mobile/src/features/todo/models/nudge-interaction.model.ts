@@ -61,6 +61,9 @@ export function getNudgeInteractionStatus(
 export const nudgeThanksPreviewSchema = z.object({
   todoId: z.number(),
   throughNudgeId: z.number().nullable(),
+  totalRecipients: z.number().int().nonnegative(),
+  nextCursor: z.number().nullable(),
+  hasNext: z.boolean(),
   recipients: z.array(
     z.object({
       id: z.string(),

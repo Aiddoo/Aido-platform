@@ -218,8 +218,8 @@
     "to": "{{name}}님에게 보낸 응원",
     "openTodo": "할 일 보기",
     "completed": "완료한 할 일이에요",
-    "replyTitle": "지금 내 마음을 알려주세요",
-    "replyHint": "답장은 친구에게만 보여요. 할 일은 직접 완료해 주세요.",
+    "replyTitle": "짧게 마음을 전해보세요",
+    "replyHint": "답장은 응원해 준 친구에게만 보여요",
     "replyChangedHint": "답장을 바꿔도 알림은 한 번만 전해져요",
     "starting": "시작해볼게",
     "thankful": "응원 고마워",
@@ -236,6 +236,12 @@
     "thanksSend": "감사 전하기",
     "thanksSent": "친구에게 감사를 전했어요",
     "alreadyThanked": "이미 감사를 전했어요",
-    "thanksLoadError": "감사할 친구를 불러오지 못했어요"
+    "thanksLoadError": "감사할 친구를 불러오지 못했어요",
+    "encouragementTitle": "오늘도 네 속도로, 응원할게!",
+    "replyCompletionHint": "답장을 보내도 할 일이 완료되지는 않아요",
+    "completedThanksHint": "할 일을 마쳤네요! 응원해 준 친구에게 감사를 전해보세요",
+    "sentEmptyTitle": "아직 보낸 콕이 없어요",
+    "thanksSelectionHint": "지금 목록에 있는 친구 모두에게 전해요. 이후 도착한 콕은 다음에 감사할 수 있어요",
+    "thanksSendCount": "{{count}}명에게 감사 전하기"
   }
 }

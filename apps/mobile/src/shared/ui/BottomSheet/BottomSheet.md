@@ -38,7 +38,7 @@ import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 
 ### ModalBottomSheet
 
-기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다.
+기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. 드래그 닫기는 상단 손잡이에서 동작하여 내부 목록 스크롤과 경쟁하지 않습니다. 시스템 Reduce Motion을 따르고, `reduceMotion`으로 애니메이션을 명시적으로 끌 수 있습니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다.
 
 ```tsx
 import { ModalBottomSheet } from '@src/shared/ui/BottomSheet';

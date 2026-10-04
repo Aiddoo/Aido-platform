@@ -2,6 +2,7 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import { type User, UserPolicy } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTodayKey } from '@src/shared/hooks/useToday';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { HStack, ListRow, Text, usePremiumDialog, VStack } from '@src/shared/ui';
@@ -22,7 +23,7 @@ interface NotificationItemProps {
 
 export function NotificationItem({ notification }: NotificationItemProps) {
   const isUnread = !notification.isRead;
-  const handlePress = useNotificationPress(notification);
+  const handlePress = useSingleTap(useNotificationPress(notification));
   const { t } = useTranslation('notification');
 
   return (

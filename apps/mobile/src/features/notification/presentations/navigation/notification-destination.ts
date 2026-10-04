@@ -133,7 +133,7 @@ function toRouteDestination(
     )
     .with({ type: P.union('NUDGE_REPLIED', 'NUDGE_THANKED') }, () => ({
       kind: 'route' as const,
-      href: '/nudges' as const,
+      href: '/notifications' as const,
     }))
     .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER'), todoId: P.number }, ({ todoId }) => ({
       kind: 'route' as const,

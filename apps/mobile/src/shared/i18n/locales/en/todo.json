@@ -223,8 +223,8 @@
     "to": "Encouragement for {{name}}",
     "openTodo": "View to-do",
     "completed": "This to-do is complete",
-    "replyTitle": "Let your friend know how you feel",
-    "replyHint": "Only your friend sees your reply. Complete the to-do yourself.",
+    "replyTitle": "Send a little reply",
+    "replyHint": "Only the friend who cheered you on can see your reply",
     "replyChangedHint": "Changing your reply won’t send another notification",
     "starting": "I’ll get started",
     "thankful": "Thanks for the cheer",
@@ -241,6 +241,13 @@
     "thanksSend": "Send thanks",
     "thanksSent": "Your thanks are on their way",
     "alreadyThanked": "You’ve already sent your thanks",
-    "thanksLoadError": "Could not load friends to thank"
+    "thanksLoadError": "Could not load friends to thank",
+    "encouragementTitle": "Cheering you on, at your own pace!",
+    "replyCompletionHint": "Sending a reply does not complete your to-do",
+    "completedThanksHint": "You did it! Thank the friends who cheered you on.",
+    "sentEmptyTitle": "No nudges sent yet",
+    "thanksSelectionHint": "This goes to everyone in this list. You can thank any new nudges later.",
+    "thanksSendCount_one": "Thank {{count}} friend",
+    "thanksSendCount_other": "Thank {{count}} friends"
   }
 }

@@ -34,7 +34,8 @@
     "unreadTitle": "Unread",
     "unreadCount": "{{count}}",
     "markAllRead": "Mark all read",
-    "premiumDescription": "Subscribe to unlock AI reports and suggestions"
+    "premiumDescription": "Subscribe to unlock AI reports and suggestions",
+    "loadError": "Could not load notifications"
   },
   "settings": {
     "timeFormat24": "24-hour time",

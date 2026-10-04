@@ -174,7 +174,7 @@ describe('콕과 오늘의 알림 이동', () => {
     // When
     const destination = resolveNotificationDestination(source);
     // Then
-    expect(destination).toEqual({ kind: 'route', href: '/nudges' });
+    expect(destination).toEqual({ kind: 'route', href: '/notifications' });
   });
 
   test('할 일 알림은 해당 할 일을 바로 열고 날짜 안내는 오늘 피드를 연다', () => {

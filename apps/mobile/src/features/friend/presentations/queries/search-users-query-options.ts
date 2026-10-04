@@ -8,11 +8,9 @@ import { FriendPolicy } from '../../models/friend.model';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 import { toSearchedUserViewModel } from '../view-models/searched-user.view-model';
 
-/**
- * 사용자 검색(이름/태그) 무한 쿼리 옵션.
- * `query`는 이미 디바운스된 값을 넘긴다. 2자 미만이면 쿼리를 실행하지 않는다(enabled).
- * 관련도 랭킹 때문에 서버 제공 불투명 `nextCursor`로 페이지네이션한다.
- */
+type SearchUsersPageParam = { cursor?: string };
+const INITIAL_SEARCH_USERS_PAGE_PARAM: SearchUsersPageParam = {};
+
 export function getSearchUsersQueryOptions(
   friendService: FriendService,
   { query, fallbackName }: { query: string; fallbackName: string },
@@ -22,16 +20,19 @@ export function getSearchUsersQueryOptions(
   return infiniteQueryOptions({
     queryKey: FRIEND_QUERY_KEYS.search(trimmed),
     queryFn: async ({ pageParam, signal }) => {
-      const result = await friendService.searchUsers({ query: trimmed, cursor: pageParam }, signal);
+      const result = await friendService.searchUsers(
+        { query: trimmed, cursor: pageParam.cursor },
+        signal,
+      );
       return unwrap(result);
     },
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: INITIAL_SEARCH_USERS_PAGE_PARAM,
     enabled: FriendPolicy.isValidSearchQuery({ query: trimmed }),
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore) {
         return undefined;
       }
-      return lastPage.nextCursor ?? undefined;
+      return lastPage.nextCursor === null ? undefined : { cursor: lastPage.nextCursor };
     },
     select: (data) => ({
       pages: data.pages.map((page) => ({

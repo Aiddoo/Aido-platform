@@ -242,17 +242,19 @@ export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd:
   };
 };
 
-/** 날짜를 섹션 라벨로 변환 ("오늘", "어제", "이번 주", "이번 달", "이전") */
-export const getDateSectionLabel = (date: Date, referenceDate: Date = new Date()): string => {
+export const getDateSectionKey = (date: Date, referenceDate: Date) => {
   const now = dayjs(referenceDate);
   const target = dayjs(date);
 
-  if (target.isSame(now, 'day')) return t('common:dateSections.today');
-  if (now.subtract(1, 'day').isSame(target, 'day')) return t('common:dateSections.yesterday');
-  if (target.isSame(now, 'isoWeek')) return t('common:dateSections.thisWeek');
-  if (target.isSame(now, 'month')) return t('common:dateSections.thisMonth');
-  return t('common:dateSections.earlier');
+  if (target.isSame(now, 'day')) return 'today';
+  if (now.subtract(1, 'day').isSame(target, 'day')) return 'yesterday';
+  if (target.isSame(now, 'isoWeek')) return 'thisWeek';
+  if (target.isSame(now, 'month')) return 'thisMonth';
+  return 'earlier';
 };
+
+export const getDateSectionLabel = (date: Date, referenceDate: Date = new Date()): string =>
+  t(`common:dateSections.${getDateSectionKey(date, referenceDate)}`);
 
 /** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025.1.5") */
 export const formatRelativeTime = (date: Date, referenceDate: Date = new Date()): string => {
