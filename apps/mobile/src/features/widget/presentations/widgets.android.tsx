@@ -1,440 +1,612 @@
-import {
-  Box,
-  Button,
-  Column,
-  Image,
-  LinearProgressIndicator,
-  Row,
-  Spacer,
-  Text,
-} from '@expo/ui/jetpack-compose';
-import {
-  background,
-  cornerRadius,
-  fillMaxSize,
-  fillMaxHeight,
-  fillMaxWidth,
-  height,
-  paddingAll,
-  padding,
-  size,
-  width,
-} from '@expo/ui/jetpack-compose/modifiers';
-import { createWidget, type WidgetEnvironment } from 'expo-widgets';
-import type { ComponentProps, ReactNode } from 'react';
+'use no memo';
 
+import type { ReactNode } from 'react';
+import {
+  FlexWidget,
+  ListWidget,
+  SvgWidget,
+  TextWidget,
+  type ClickActionProps,
+  type ColorProp,
+  type FlexWidgetStyle,
+  type TextWidgetStyle,
+  type WidgetInfo,
+  type WidgetRepresentation,
+} from 'react-native-android-widget';
+
+import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../bridge/android-widget.constant';
 import type { WidgetProps } from '../models/widget-props.model';
-import { createInitialWidgetProps } from './widget-initial-props';
 
-// The isolated widget runtime cannot capture module helpers or app providers.
-function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
-  'widget';
+// SvgWidget needs inline SVG; Metro otherwise transforms ic_paw.svg into a React component.
+const PAW_PATH =
+  'M19.3629 7.76445C19.1461 7.24922 18.7859 6.87773 18.3211 6.69062L18.3148 6.68828C18.1033 6.60545 17.878 6.56305 17.6508 6.56328H17.6258C16.5617 6.5793 15.4754 7.48359 14.923 8.81367C14.518 9.78633 14.4715 10.8324 14.7988 11.6121C15.0152 12.1277 15.3762 12.4992 15.843 12.6863L15.848 12.6883C16.0596 12.7711 16.2849 12.8135 16.5121 12.8133C17.5863 12.8133 18.684 11.909 19.2465 10.5613C19.6465 9.58984 19.6906 8.54453 19.3629 7.76445ZM15.1113 13.5012C14.4977 13.1324 13.9176 12.7836 13.5387 12.157C12.4934 10.4227 11.8621 9.37578 10.207 9.37578C8.55195 9.37578 7.91914 10.4227 6.87148 12.157C6.4918 12.7844 5.91055 13.1336 5.29492 13.5039C4.58906 13.9281 3.85977 14.3664 3.54492 15.2289C3.4225 15.5398 3.36084 15.8713 3.36328 16.2055C3.36328 17.6098 4.45703 18.7523 5.80078 18.7523C6.49414 18.7523 7.23203 18.5121 8.01289 18.2578C8.76367 18.0133 9.53984 17.7605 10.2109 17.7605C10.882 17.7605 11.6562 18.0133 12.4043 18.2578C13.1836 18.5105 13.918 18.7508 14.6133 18.7508C15.9551 18.7508 17.0469 17.6082 17.0469 16.2039C17.048 15.8695 16.985 15.538 16.8613 15.2273C16.5465 14.3641 15.8168 13.9254 15.1113 13.5012ZM6.06641 8.00273C6.53125 8.58594 7.12109 8.90703 7.72734 8.90703C7.81011 8.90701 7.89275 8.90088 7.97461 8.88867C9.23906 8.70273 10.027 7.15977 9.76836 5.37305C9.66016 4.62188 9.37109 3.92227 8.95703 3.40352C8.49297 2.82148 7.90234 2.50078 7.29648 2.50078C7.21372 2.5008 7.13108 2.50694 7.04922 2.51914C5.78477 2.70508 4.99688 4.24805 5.25547 6.03477C5.36328 6.78477 5.65234 7.48359 6.06641 8.00273ZM12.4398 8.88867C12.5217 8.90088 12.6043 8.90701 12.6871 8.90703C13.2937 8.90703 13.8832 8.58594 14.348 8.00273C14.7617 7.48359 15.0492 6.78477 15.1586 6.03398C15.4172 4.24805 14.6293 2.70508 13.3648 2.51836C13.283 2.50616 13.2003 2.50002 13.1176 2.5C12.5117 2.50078 11.9211 2.82148 11.457 3.40352C11.043 3.92227 10.7539 4.62188 10.6461 5.37383C10.3875 7.15977 11.1754 8.70273 12.4398 8.88867ZM4.56602 12.6883L4.57148 12.6863C5.0375 12.4992 5.39805 12.1281 5.61406 11.6129C5.94141 10.8316 5.89531 9.78672 5.49102 8.81406C4.93125 7.46797 3.83398 6.56328 2.76094 6.56328C2.53371 6.56295 2.30844 6.60536 2.09688 6.68828L2.09141 6.69023C1.62656 6.87578 1.26602 7.24844 1.05 7.76367C0.722657 8.54492 0.768751 9.58984 1.17305 10.5625C1.73281 11.9086 2.83008 12.8133 3.90313 12.8133C4.12996 12.8135 4.35482 12.7711 4.56602 12.6883Z';
+const BRAND = '#FF6B43';
 
-  const isDark = environment.colorScheme === 'dark';
-  const palette = {
-    background: isDark ? '#171310' : '#FFFFFF',
-    foreground: isDark ? '#F5F5F5' : '#333333',
-    muted: isDark ? '#B7B7B7' : '#8F8F8F',
-    track: isDark ? '#333333' : '#EBEBEB',
-    brand: '#FF6B43',
-    brandSurface: isDark ? '#3E2118' : '#FFF0EB',
+type Palette = {
+  background: ColorProp;
+  foreground: ColorProp;
+  muted: ColorProp;
+  track: ColorProp;
+  brandSurface: ColorProp;
+};
+
+type Layout = {
+  props: WidgetProps;
+  userId: string | null;
+  palette: Palette;
+  scale: number;
+  width: number;
+  height: number;
+  cardHeight: number;
+  padding: number;
+  contentWidth: number;
+  isSmall: boolean;
+  isLarge: boolean;
+};
+
+function navigation(
+  layout: Layout,
+  destination?: string,
+  accessibilityLabel?: string,
+): ClickActionProps {
+  return {
+    clickAction: ANDROID_WIDGET_NAVIGATION_ACTION,
+    clickActionData: {
+      uri: destination ?? layout.props.openAppUrl ?? 'aido://feed?date=today',
+      userId: layout.userId,
+    },
+    accessibilityLabel,
   };
-  // Android does not expose an entry date in WidgetEnvironment.
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const isStale = props.state !== 'loggedOut' && props.date !== today;
+}
 
-  const renderPaw = () => (
-    <Image
-      source={{ uri: 'aido_widget_paw' }}
-      tint={palette.brand}
-      contentDescription={null}
-      modifiers={[size(24, 20)]}
-    />
-  );
-
-  if (
-    props.state === 'loggedOut' ||
-    props.state === 'stale' ||
-    isStale ||
-    (props.state === 'empty' && props.maxRows === 0)
-  ) {
-    return (
-      <Column
-        horizontalAlignment="center"
-        verticalArrangement="center"
-        modifiers={[
-          fillMaxSize(),
-          background(palette.background),
-          cornerRadius(20),
-          paddingAll(16),
-        ]}
-      >
-        {renderPaw()}
-        <Spacer modifiers={[height(6)]} />
-        <Text color={palette.foreground} style={{ fontSize: 14, fontWeight: '600' }} maxLines={2}>
-          {isStale ? props.staleTitle : props.stateTitle}
-        </Text>
-        <Spacer modifiers={[height(6)]} />
-        <Text color={palette.muted} style={{ fontSize: 12 }} maxLines={2}>
-          {isStale ? props.staleCta : props.stateCta}
-        </Text>
-      </Column>
-    );
-  }
-
-  if (props.maxRows === 0) {
-    return (
-      <Column
-        verticalArrangement="top"
-        modifiers={[
-          fillMaxSize(),
-          background(palette.background),
-          cornerRadius(20),
-          paddingAll(14),
-        ]}
-      >
-        <Box modifiers={[fillMaxWidth()]} contentAlignment="centerStart">
-          <Text
-            color={palette.muted}
-            style={{ fontSize: 12, fontWeight: '500' }}
-            modifiers={[fillMaxWidth()]}
-          >
-            {props.progressTitle}
-          </Text>
-          <Box modifiers={[fillMaxWidth()]} contentAlignment="centerEnd">
-            {renderPaw()}
-          </Box>
-        </Box>
-        <Spacer modifiers={[height(8)]} />
-        <Row verticalAlignment="bottom">
-          <Text color={palette.brand} style={{ fontSize: 34, fontWeight: 'bold' }}>
-            {props.completedTodos}
-          </Text>
-          <Text
-            color={palette.muted}
-            style={{ fontSize: 18, fontWeight: '600' }}
-          >{`/${props.totalTodos}`}</Text>
-        </Row>
-        <Spacer modifiers={[height(8)]} />
-        <LinearProgressIndicator
-          progress={props.completionRate / 100}
-          color={palette.brand}
-          trackColor={palette.track}
-          modifiers={[fillMaxWidth(), height(6)]}
-        />
-        <Spacer modifiers={[height(8)]} />
-        <Box modifiers={[fillMaxWidth()]} contentAlignment="centerStart">
-          <Text
-            color={props.isComplete ? palette.brand : palette.muted}
-            style={{ fontSize: 11, fontWeight: '500' }}
-            maxLines={1}
-            modifiers={[fillMaxWidth()]}
-          >
-            {props.isComplete ? props.allDoneLabel : props.percentLabel}
-          </Text>
-          {props.currentStreak > 0 ? (
-            <Text
-              color={palette.brand}
-              style={{ fontSize: 11, fontWeight: '500', textAlign: 'end' }}
-              maxLines={1}
-              modifiers={[fillMaxWidth()]}
-            >{`🔥 ${props.compactStreakLabel}`}</Text>
-          ) : null}
-        </Box>
-      </Column>
-    );
-  }
-
-  const isLargeWidget = props.maxRows > 3;
-  const visibleTodos = props.topTodos.slice(0, isLargeWidget ? 4 : 2);
-  const transparentButtonColors = {
-    containerColor: 'transparent',
-    contentColor: palette.foreground,
-  };
-  const zeroContentPadding = { start: 0, top: 0, end: 0, bottom: 0 };
-
-  const renderAppLink = (
-    destination: string | undefined,
-    children: ReactNode,
-    buttonHeight: number,
-  ) => {
-    const linkProps: ComponentProps<typeof Button> & { target?: string } = {
-      target: destination ?? props.openAppUrl ?? '__aido_widget_open_app',
-      enabled: true,
-      colors: transparentButtonColors,
-      contentPadding: zeroContentPadding,
-      modifiers: [fillMaxWidth(), height(buttonHeight)],
-      children,
-    };
-    return <Button {...linkProps} />;
-  };
-
-  const renderTodoRow = (todo?: WidgetProps['topTodos'][number]) => {
-    if (!todo) return null;
-    const checkboxColor = todo.completed
-      ? todo.color
-      : `rgba(${Number.parseInt(todo.color.slice(1, 3), 16)}, ${Number.parseInt(todo.color.slice(3, 5), 16)}, ${Number.parseInt(todo.color.slice(5, 7), 16)}, 0.25)`;
-    return renderAppLink(
-      todo.destination,
-      <Row verticalAlignment="center" modifiers={[fillMaxWidth()]}>
-        <Box
-          contentAlignment="center"
-          modifiers={[size(16, 16), background(checkboxColor), cornerRadius(5)]}
-        >
-          {todo.completed ? (
-            <Text color="#FFFFFF" style={{ fontSize: 10, fontWeight: 'bold' }}>
-              ✓
-            </Text>
-          ) : null}
-        </Box>
-        <Spacer modifiers={[width(8)]} />
-        <Text
-          color={todo.completed ? palette.muted : palette.foreground}
-          style={{ fontSize: 13 }}
-          maxLines={1}
-          overflow="ellipsis"
-        >
-          {todo.title}
-        </Text>
-      </Row>,
-      isLargeWidget ? 22 : 26,
-    );
-  };
-
-  const renderAddTodo = () => {
-    const linkProps: ComponentProps<typeof Button> & { target?: string } = {
-      target: props.addTodoUrl ?? props.openAppUrl ?? '__aido_widget_open_app',
-      colors: { containerColor: palette.brandSurface, contentColor: palette.brand },
-      contentPadding: { start: 8, top: 4, end: 8, bottom: 4 },
-      modifiers: [cornerRadius(9), height(26)],
-      children: (
-        <Text
-          color={palette.brand}
-          style={{ fontSize: 12, fontWeight: '600' }}
-          maxLines={1}
-        >{`＋ ${props.addTodoLabel ?? props.stateCta}`}</Text>
-      ),
-    };
-    return <Button {...linkProps} />;
-  };
-
-  if (!isLargeWidget) {
-    return (
-      <Box
-        modifiers={[
-          fillMaxSize(),
-          background(palette.background),
-          cornerRadius(20),
-          paddingAll(12),
-        ]}
-      >
-        <Row verticalAlignment="center" modifiers={[width(96), fillMaxHeight()]}>
-          <Column modifiers={[width(84)]}>
-            <Text color={palette.muted} style={{ fontSize: 11, fontWeight: '500' }} maxLines={1}>
-              {props.progressTitle}
-            </Text>
-            <Spacer modifiers={[height(4)]} />
-            <Row verticalAlignment="bottom">
-              <Text color={palette.brand} style={{ fontSize: 32, fontWeight: 'bold' }}>
-                {props.completedTodos}
-              </Text>
-              <Text
-                color={palette.muted}
-                style={{ fontSize: 17, fontWeight: '600' }}
-              >{`/${props.totalTodos}`}</Text>
-            </Row>
-            <Spacer modifiers={[height(6)]} />
-            <LinearProgressIndicator
-              progress={props.completionRate / 100}
-              color={palette.brand}
-              trackColor={palette.track}
-              modifiers={[fillMaxWidth(), height(4)]}
-            />
-            <Spacer modifiers={[height(6)]} />
-            <Row verticalAlignment="center">
-              {renderPaw()}
-              <Spacer modifiers={[width(4)]} />
-              <Text color={palette.brand} style={{ fontSize: 11 }} maxLines={1}>
-                {props.currentStreak > 0 ? props.compactStreakLabel : props.percentLabel}
-              </Text>
-            </Row>
-          </Column>
-          <Spacer modifiers={[width(10)]} />
-          <Box modifiers={[width(1), fillMaxHeight(), background(palette.track)]} />
-        </Row>
-        <Column verticalArrangement="center" modifiers={[fillMaxSize(), padding(112, 0, 0, 0)]}>
-          {props.state === 'empty' ? (
-            <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(56)]}>
-              <Text color={palette.muted} style={{ fontSize: 12 }} maxLines={2}>
-                {props.stateTitle}
-              </Text>
-            </Box>
-          ) : (
-            <Column modifiers={[fillMaxWidth()]}>
-              {renderTodoRow(visibleTodos[0])}
-              {visibleTodos[1] ? <Spacer modifiers={[height(4)]} /> : null}
-              {renderTodoRow(visibleTodos[1])}
-            </Column>
-          )}
-          <Spacer modifiers={[height(4)]} />
-          {renderAddTodo()}
-        </Column>
-      </Box>
-    );
-  }
-
-  const renderWeekDay = (day?: NonNullable<WidgetProps['weekDays']>[number], index = 0) => {
-    if (!day) return null;
-    const linkProps: ComponentProps<typeof Button> & { target: string } = {
-      target: day.destination,
-      colors: transparentButtonColors,
-      contentPadding: zeroContentPadding,
-      modifiers: [width(30), height(48)],
-      children: (
-        <Column horizontalAlignment="center">
-          <Text
-            color={index === 0 ? '#FF5858' : index === 6 ? '#2598E8' : palette.muted}
-            style={{ fontSize: 10 }}
-          >
-            {day.weekdayLabel}
-          </Text>
-          <Box
-            contentAlignment="center"
-            modifiers={[
-              size(24, 24),
-              cornerRadius(12),
-              background(day.isToday ? palette.brand : 'transparent'),
-            ]}
-          >
-            <Text
-              color={day.isToday ? '#FFFFFF' : palette.foreground}
-              style={{ fontSize: 13, fontWeight: day.isToday ? 'bold' : '500' }}
-            >
-              {day.dayLabel}
-            </Text>
-          </Box>
-          {day.isComplete ? (
-            <Image
-              source={{ uri: 'aido_widget_paw' }}
-              tint={palette.brand}
-              contentDescription={null}
-              modifiers={[size(16, 13)]}
-            />
-          ) : (
-            <Text color={palette.brand} style={{ fontSize: 11 }}>
-              {day.hasTodos ? '•' : ' '}
-            </Text>
-          )}
-        </Column>
-      ),
-    };
-    return <Button {...linkProps} />;
-  };
-  const weekDays = props.weekDays ?? [];
-
+function Label({
+  layout,
+  text,
+  size,
+  color = layout.palette.foreground,
+  weight = 'normal',
+  maxLines = 1,
+  style,
+}: {
+  layout: Layout;
+  text: string;
+  size: number;
+  color?: ColorProp;
+  weight?: TextWidgetStyle['fontWeight'];
+  maxLines?: number;
+  style?: TextWidgetStyle;
+}) {
   return (
-    <Box
-      modifiers={[fillMaxSize(), background(palette.background), cornerRadius(20), paddingAll(14)]}
-    >
-      <Column modifiers={[fillMaxSize(), padding(0, 0, 0, 34)]}>
-        <Column modifiers={[fillMaxWidth()]}>
-          <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
-            <Text
-              color={palette.foreground}
-              style={{ fontSize: 13, fontWeight: '600' }}
-              maxLines={1}
-              modifiers={[fillMaxWidth(), padding(0, 0, 30, 0)]}
-            >
-              {props.weekTitle ?? props.progressTitle}
-            </Text>
-            <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
-              {renderPaw()}
-            </Box>
-          </Box>
-          {props.weekRangeLabel ? (
-            <Text color={palette.muted} style={{ fontSize: 9 }}>
-              {props.weekRangeLabel}
-            </Text>
-          ) : null}
-        </Column>
-        <Spacer modifiers={[height(4)]} />
-        <Row horizontalArrangement="center" modifiers={[fillMaxWidth()]}>
-          {renderWeekDay(weekDays[0], 0)}
-          {renderWeekDay(weekDays[1], 1)}
-          {renderWeekDay(weekDays[2], 2)}
-          {renderWeekDay(weekDays[3], 3)}
-          {renderWeekDay(weekDays[4], 4)}
-          {renderWeekDay(weekDays[5], 5)}
-          {renderWeekDay(weekDays[6], 6)}
-        </Row>
-        <Spacer modifiers={[height(4)]} />
-        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
-          <Text color={palette.muted} style={{ fontSize: 12 }}>
-            {props.progressTitle}
-          </Text>
-          <Text
-            color={palette.brand}
-            style={{ fontSize: 16, fontWeight: 'bold', textAlign: 'end' }}
-            modifiers={[fillMaxWidth()]}
-          >{`${props.completedTodos}/${props.totalTodos}`}</Text>
-        </Box>
-        <Spacer modifiers={[height(4)]} />
-        <LinearProgressIndicator
-          progress={props.completionRate / 100}
-          color={palette.brand}
-          trackColor={palette.track}
-          modifiers={[fillMaxWidth(), height(4)]}
-        />
-        <Spacer modifiers={[height(4)]} />
-        <Column modifiers={[fillMaxWidth()]}>
-          {props.state === 'empty' ? (
-            <Box contentAlignment="center" modifiers={[fillMaxWidth(), height(88)]}>
-              <Text color={palette.muted} style={{ fontSize: 13 }} maxLines={2}>
-                {props.stateTitle}
-              </Text>
-            </Box>
-          ) : null}
-          {renderTodoRow(visibleTodos[0])}
-          {renderTodoRow(visibleTodos[1])}
-          {renderTodoRow(visibleTodos[2])}
-          {renderTodoRow(visibleTodos[3])}
-        </Column>
-      </Column>
-      <Box contentAlignment="bottomEnd" modifiers={[fillMaxSize()]}>
-        <Row verticalAlignment="center" modifiers={[fillMaxWidth()]}>
-          <Text color={palette.muted} style={{ fontSize: 10 }} maxLines={1}>
-            {props.openTodoLabel ?? ''}
-          </Text>
-        </Row>
-        {renderAddTodo()}
-      </Box>
-    </Box>
+    <TextWidget
+      text={text}
+      maxLines={maxLines}
+      truncate="END"
+      allowFontScaling={false}
+      style={{ fontSize: size * layout.scale, fontWeight: weight, color, ...style }}
+    />
   );
 }
 
-const initialProps = createInitialWidgetProps();
+function Paw({ layout, size = 11 }: { layout: Layout; size?: number }) {
+  return (
+    <SvgWidget
+      svg={`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20"><g fill="${BRAND}"><path transform="translate(0 .5) scale(.6)" d="${PAW_PATH}"/><path transform="translate(11.5 7.5) scale(.6)" d="${PAW_PATH}"/></g></svg>`}
+      style={{
+        width: ((24 * size) / 11) * layout.scale,
+        height: ((20 * size) / 11) * layout.scale,
+      }}
+    />
+  );
+}
 
-export const aidoWidgets = [
-  {
-    widget: createWidget<WidgetProps>('AidoTodaySummary', AidoTodayLayout, {
-      ...initialProps,
-      maxRows: 0,
-    }),
-    maxRows: 0,
-  },
-  {
-    widget: createWidget<WidgetProps>('AidoTodayList', AidoTodayLayout, {
-      ...initialProps,
-      maxRows: 2,
-    }),
-    maxRows: 2,
-  },
-  {
-    widget: createWidget<WidgetProps>('AidoTodayLarge', AidoTodayLayout, {
-      ...initialProps,
-      maxRows: 4,
-    }),
-    maxRows: 4,
-  },
-];
+function Progress({ layout, width, height }: { layout: Layout; width: number; height: number }) {
+  const progress = Math.min(100, Math.max(0, layout.props.completionRate));
+  return (
+    <FlexWidget
+      style={{
+        width,
+        height: height * layout.scale,
+        backgroundColor: layout.palette.track,
+        borderRadius: height * layout.scale,
+        overflow: 'hidden',
+        flexDirection: 'row',
+      }}
+    >
+      {progress > 0 ? (
+        <FlexWidget
+          style={{
+            width: (width * progress) / 100,
+            height: 'match_parent',
+            backgroundColor: BRAND,
+            borderRadius: height * layout.scale,
+          }}
+        />
+      ) : null}
+    </FlexWidget>
+  );
+}
+
+function Count({ layout, size, width }: { layout: Layout; size: number; width: number }) {
+  const { completedTodos, totalTodos } = layout.props;
+  const digits = String(completedTodos).length + String(totalTodos).length;
+  const fontScale = Math.min(1, 4 / digits);
+  return (
+    <FlexWidget
+      style={{
+        width,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: layout.isLarge ? 'flex-end' : 'flex-start',
+        flexGap: 2 * layout.scale,
+      }}
+    >
+      <Label
+        layout={layout}
+        text={String(completedTodos)}
+        size={size * fontScale}
+        weight="bold"
+        color={BRAND}
+      />
+      <Label
+        layout={layout}
+        text={`/${totalTodos}`}
+        size={Math.round(size * 0.55) * fontScale}
+        weight="600"
+        color={layout.palette.muted}
+        style={{ paddingBottom: 2 * layout.scale }}
+      />
+    </FlexWidget>
+  );
+}
+
+function TodoRow({ layout, todo }: { layout: Layout; todo: WidgetProps['topTodos'][number] }) {
+  const { palette, scale } = layout;
+  const color: ColorProp = /^#[0-9a-f]{6}$/i.test(todo.color) ? (todo.color as ColorProp) : BRAND;
+  return (
+    <FlexWidget
+      {...navigation(layout, todo.destination, todo.title)}
+      style={{
+        width: 'match_parent',
+        height: (layout.isLarge ? 27 : 30) * scale,
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexGap: 8 * scale,
+      }}
+    >
+      <FlexWidget
+        style={{
+          width: 16 * scale,
+          height: 16 * scale,
+          borderRadius: 5 * scale,
+          borderWidth: todo.completed ? 0 : 2 * scale,
+          borderColor: color,
+          backgroundColor: todo.completed ? color : palette.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {todo.completed ? (
+          <Label layout={layout} text="✓" size={10} weight="bold" color="#FFFFFF" />
+        ) : null}
+      </FlexWidget>
+      <FlexWidget style={{ width: 0, flex: 1 }}>
+        <Label
+          layout={layout}
+          text={todo.title}
+          size={13}
+          color={todo.completed ? palette.muted : palette.foreground}
+          style={{ width: 'match_parent' }}
+        />
+      </FlexWidget>
+    </FlexWidget>
+  );
+}
+
+function CreateButton({ layout }: { layout: Layout }) {
+  const label = layout.props.addTodoLabel ?? layout.props.stateCta;
+  return (
+    <FlexWidget
+      {...navigation(layout, layout.props.addTodoUrl, label)}
+      style={{
+        backgroundColor: layout.palette.brandSurface,
+        borderRadius: 9 * layout.scale,
+        paddingHorizontal: 10 * layout.scale,
+        paddingVertical: 6 * layout.scale,
+      }}
+    >
+      <Label layout={layout} text={`＋ ${label}`} size={12} weight="600" color={BRAND} />
+    </FlexWidget>
+  );
+}
+
+function WeekDay({
+  layout,
+  day,
+  index,
+}: {
+  layout: Layout;
+  day: NonNullable<WidgetProps['weekDays']>[number];
+  index: number;
+}) {
+  const { scale, palette } = layout;
+  return (
+    <FlexWidget
+      {...navigation(layout, day.destination, `${day.weekdayLabel} ${day.dayLabel}`)}
+      style={{ width: layout.contentWidth / 7, alignItems: 'center', flexGap: 4 * scale }}
+    >
+      <Label
+        layout={layout}
+        text={day.weekdayLabel}
+        size={10}
+        color={index === 0 ? '#FF5858' : index === 6 ? '#2598E8' : palette.muted}
+      />
+      <FlexWidget
+        style={{
+          width: 28 * scale,
+          height: 28 * scale,
+          borderRadius: 14 * scale,
+          backgroundColor: day.isToday ? BRAND : '#00000000',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Label
+          layout={layout}
+          text={day.dayLabel}
+          size={14}
+          weight={day.isToday ? 'bold' : '500'}
+          color={day.isToday ? '#FFFFFF' : palette.foreground}
+        />
+      </FlexWidget>
+      <FlexWidget
+        style={{
+          width: 24 * scale,
+          height: 14 * scale,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {day.isComplete ? (
+          <Paw layout={layout} size={7} />
+        ) : (
+          <Label layout={layout} text={day.hasTodos ? '•' : ' '} size={14} color={BRAND} />
+        )}
+      </FlexWidget>
+    </FlexWidget>
+  );
+}
+
+function Surface({
+  layout,
+  children,
+  style,
+}: {
+  layout: Layout;
+  children: ReactNode;
+  style?: FlexWidgetStyle;
+}) {
+  return (
+    <FlexWidget
+      style={{
+        width: layout.width,
+        height: layout.height,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <FlexWidget
+        {...navigation(
+          layout,
+          undefined,
+          layout.props.state === 'data' ? layout.props.progressTitle : layout.props.stateTitle,
+        )}
+        style={{
+          width: layout.width,
+          height: layout.cardHeight,
+          padding: layout.padding,
+          backgroundColor: layout.palette.background,
+          borderRadius: 20 * layout.scale,
+          overflow: 'hidden',
+          ...style,
+        }}
+      >
+        {children}
+      </FlexWidget>
+    </FlexWidget>
+  );
+}
+
+function StateSurface({ layout }: { layout: Layout }) {
+  return (
+    <Surface
+      layout={layout}
+      style={{ alignItems: 'center', justifyContent: 'center', flexGap: 6 * layout.scale }}
+    >
+      <Paw layout={layout} />
+      <Label
+        layout={layout}
+        text={layout.props.stateTitle}
+        size={14}
+        weight="600"
+        maxLines={2}
+        style={{ width: 'match_parent', textAlign: 'center' }}
+      />
+      <Label
+        layout={layout}
+        text={layout.props.stateCta}
+        size={12}
+        color={layout.palette.muted}
+        maxLines={2}
+        style={{ width: 'match_parent', textAlign: 'center' }}
+      />
+    </Surface>
+  );
+}
+
+function SmallSurface({ layout }: { layout: Layout }) {
+  const { props, scale, palette, contentWidth } = layout;
+  return (
+    <Surface layout={layout} style={{ justifyContent: 'center', flexGap: 8 * scale }}>
+      <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
+        <FlexWidget style={{ width: 0, flex: 1 }}>
+          <Label
+            layout={layout}
+            text={props.progressTitle}
+            size={12}
+            weight="500"
+            color={palette.muted}
+            style={{ width: 'match_parent', adjustsFontSizeToFit: true }}
+          />
+        </FlexWidget>
+        <Paw layout={layout} />
+      </FlexWidget>
+      <Count layout={layout} size={34} width={contentWidth} />
+      <Progress layout={layout} width={contentWidth} height={6} />
+      <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
+        <FlexWidget style={{ width: 0, flex: 1 }}>
+          <Label
+            layout={layout}
+            text={props.isComplete ? props.allDoneLabel : props.percentLabel}
+            size={11}
+            weight="500"
+            color={props.isComplete ? BRAND : palette.muted}
+            style={{ width: 'match_parent', adjustsFontSizeToFit: true }}
+          />
+        </FlexWidget>
+        {props.currentStreak > 0 ? (
+          <Label
+            layout={layout}
+            text={`🔥 ${props.compactStreakLabel}`}
+            size={11}
+            weight="500"
+            color={BRAND}
+          />
+        ) : null}
+      </FlexWidget>
+    </Surface>
+  );
+}
+
+function MediumSurface({ layout }: { layout: Layout }) {
+  const { props, palette, scale } = layout;
+  const summaryWidth = 82 * scale;
+  return (
+    <Surface
+      layout={layout}
+      style={{ flexDirection: 'row', alignItems: 'center', flexGap: 16 * scale }}
+    >
+      <FlexWidget style={{ width: summaryWidth, flexGap: 8 * scale }}>
+        <Label
+          layout={layout}
+          text={props.progressTitle}
+          size={11}
+          weight="500"
+          color={palette.muted}
+          style={{ width: 'match_parent', adjustsFontSizeToFit: true }}
+        />
+        <Count layout={layout} size={32} width={summaryWidth} />
+        <Progress layout={layout} width={summaryWidth} height={4} />
+        <FlexWidget
+          style={{
+            width: 'match_parent',
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexGap: 4 * scale,
+          }}
+        >
+          <Paw layout={layout} />
+          <FlexWidget style={{ width: 0, flex: 1 }}>
+            <Label
+              layout={layout}
+              text={props.currentStreak > 0 ? props.compactStreakLabel : props.percentLabel}
+              size={11}
+              color={BRAND}
+              style={{ width: 'match_parent', adjustsFontSizeToFit: true }}
+            />
+          </FlexWidget>
+        </FlexWidget>
+      </FlexWidget>
+      <FlexWidget
+        style={{ width: scale, height: 'match_parent', backgroundColor: palette.track }}
+      />
+      <FlexWidget style={{ width: 0, flex: 1, flexGap: 4 * scale }}>
+        {props.state === 'empty' ? (
+          <Label
+            layout={layout}
+            text={props.stateTitle}
+            size={12}
+            color={palette.muted}
+            maxLines={2}
+            style={{ height: 60 * scale, width: 'match_parent' }}
+          />
+        ) : (
+          props.topTodos
+            .slice(0, 2)
+            .map((todo, index) => <TodoRow key={todo.id ?? index} layout={layout} todo={todo} />)
+        )}
+        <FlexWidget style={{ flexDirection: 'row' }}>
+          <CreateButton layout={layout} />
+        </FlexWidget>
+      </FlexWidget>
+    </Surface>
+  );
+}
+
+function LargeSurface({ layout }: { layout: Layout }) {
+  const { props, palette, scale, contentWidth } = layout;
+  const visibleTodos = props.topTodos.slice(0, 4);
+  const hiddenTodoCount = Math.max(0, props.totalTodos - visibleTodos.length);
+  return (
+    <Surface layout={layout} style={{ flexGap: 8 * scale }}>
+      <FlexWidget
+        style={{
+          width: 'match_parent',
+          flexDirection: 'row',
+          alignItems: 'center',
+          flexGap: 4 * scale,
+        }}
+      >
+        <FlexWidget
+          style={{
+            width: 0,
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexGap: 4 * scale,
+          }}
+        >
+          <Label
+            layout={layout}
+            text={props.weekTitle ?? props.progressTitle}
+            size={14}
+            weight="600"
+            style={{ adjustsFontSizeToFit: true }}
+          />
+          <Paw layout={layout} />
+        </FlexWidget>
+        {props.weekRangeLabel ? (
+          <Label layout={layout} text={props.weekRangeLabel} size={10} color={palette.muted} />
+        ) : null}
+      </FlexWidget>
+      <FlexWidget style={{ width: 'match_parent', flexDirection: 'row' }}>
+        {props.weekDays?.slice(0, 7).map((day, index) => (
+          <WeekDay key={day.date} layout={layout} day={day} index={index} />
+        ))}
+      </FlexWidget>
+      <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
+        <FlexWidget style={{ width: 0, flex: 1 }}>
+          <Label
+            layout={layout}
+            text={props.progressTitle}
+            size={12}
+            weight="500"
+            color={palette.muted}
+            style={{ width: 'match_parent', adjustsFontSizeToFit: true }}
+          />
+        </FlexWidget>
+        <Count layout={layout} size={22} width={Math.min(contentWidth * 0.4, 90 * scale)} />
+      </FlexWidget>
+      <Progress layout={layout} width={contentWidth} height={4} />
+      <FlexWidget style={{ width: 'match_parent', flexGap: 2 * scale }}>
+        {props.state === 'empty' ? (
+          <Label
+            layout={layout}
+            text={props.stateTitle}
+            size={13}
+            color={palette.muted}
+            maxLines={2}
+            style={{ height: 108 * scale, width: 'match_parent' }}
+          />
+        ) : (
+          visibleTodos.map((todo, index) => (
+            <TodoRow key={todo.id ?? index} layout={layout} todo={todo} />
+          ))
+        )}
+      </FlexWidget>
+      <FlexWidget style={{ height: 0, flex: 1 }} />
+      <FlexWidget
+        style={{ width: 'match_parent', height: scale, backgroundColor: palette.track }}
+      />
+      <FlexWidget
+        style={{
+          width: 'match_parent',
+          flexDirection: 'row',
+          alignItems: 'center',
+          flexGap: 8 * scale,
+        }}
+      >
+        <FlexWidget style={{ width: 0, flex: 1 }}>
+          <Label
+            layout={layout}
+            text={
+              hiddenTodoCount > 0
+                ? props.moreLabelTemplate.replace('{count}', String(hiddenTodoCount))
+                : (props.openTodoLabel ?? '')
+            }
+            size={10}
+            color={palette.muted}
+            style={{ width: 'match_parent' }}
+          />
+        </FlexWidget>
+        <CreateButton layout={layout} />
+      </FlexWidget>
+    </Surface>
+  );
+}
+
+export function renderAndroidWidget(
+  props: WidgetProps,
+  widgetInfo: WidgetInfo,
+  userId: string | null,
+): WidgetRepresentation {
+  const isSmall = props.maxRows === 0;
+  const isLarge = props.maxRows > 3;
+  const resolveDimension = (value: number, fallback: number) =>
+    Number.isFinite(value) && value > 0 ? value : fallback;
+  const width = resolveDimension(widgetInfo.width, isSmall ? 160 : 340);
+  const height = resolveDimension(widgetInfo.height, isLarge ? 380 : 160);
+  const cardHeight = Math.min(height, width / (isSmall ? 1 : isLarge ? 0.97 : 2.05));
+  const scale = Math.min(1, width / (isSmall ? 160 : 340), cardHeight / (isLarge ? 380 : 160));
+  // Include WidgetKit's content margins so all three cards keep the same visual spacing.
+  const padding = (isSmall ? 28 : 32) * scale;
+  const base = {
+    props,
+    userId,
+    width,
+    height,
+    cardHeight,
+    scale,
+    padding,
+    contentWidth: width - padding * 2,
+    isSmall,
+    isLarge,
+  };
+  const render = (dark: boolean) => {
+    const layout: Layout = {
+      ...base,
+      palette: {
+        background: dark ? '#171310' : '#FFFFFF',
+        foreground: dark ? '#F5F5F5' : '#333333',
+        muted: dark ? '#B7B7B7' : '#8F8F8F',
+        track: dark ? '#333333' : '#EBEBEB',
+        brandSurface: dark ? '#3E2118' : '#FFF0EB',
+      },
+    };
+    if (
+      props.state === 'loggedOut' ||
+      props.state === 'stale' ||
+      (props.state === 'empty' && isSmall)
+    )
+      return <StateSurface layout={layout} />;
+    if (isSmall) return <SmallSurface layout={layout} />;
+    return isLarge ? <LargeSurface layout={layout} /> : <MediumSurface layout={layout} />;
+  };
+  const collection = (dark: boolean) => (
+    <FlexWidget style={{ width: 'match_parent', height: 'match_parent' }}>
+      <ListWidget style={{ width: 'match_parent', height: 'match_parent' }}>
+        {render(dark)}
+      </ListWidget>
+    </FlexWidget>
+  );
+  return { light: collection(false), dark: collection(true) };
+}

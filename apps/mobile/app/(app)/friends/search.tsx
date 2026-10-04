@@ -1,31 +1,14 @@
-import { FriendPolicy } from '@src/features/friend/models/friend.model';
 import { FriendSearchList } from '@src/features/friend/presentations/components/FriendSearchList';
-import { useFriendSearchTracking } from '@src/features/friend/presentations/hooks/use-friend-search-tracking';
-import { useDebouncedValue } from '@src/shared/hooks/useDebouncedValue';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Flex, Input, QueryErrorBoundary, Result, SearchIcon } from '@src/shared/ui';
-import { router } from 'expo-router';
-import { Suspense, useState } from 'react';
-import { View } from 'react-native';
+import { Box, Input, QueryErrorBoundary, SearchIcon, VStack } from '@src/shared/ui';
+import { useState } from 'react';
 
-/**
- * 친구 찾기 화면.
- * 이름 또는 해시태그로 사용자를 검색해 바로 친구 추가/요청 취소한다.
- * 상단 검색창 + (유효 검색어면 결과 리스트, 아니면 입력 안내).
- */
-const SearchFriendScreen = () => {
-  const push = useSingleTap(router.push);
-
+export default function SearchFriendScreen() {
   const { t } = useTranslation('friend');
-
   const [query, setQuery] = useState('');
-  const debouncedQuery = useDebouncedValue(query);
-  const isValidQuery = FriendPolicy.isValidSearchQuery({ query: debouncedQuery });
-  useFriendSearchTracking(debouncedQuery);
 
   return (
-    <View className="flex-1 bg-white">
+    <VStack flex={1} className="bg-background">
       <Box px={16} py={12}>
         <Input
           leftContent={<SearchIcon width={20} height={20} colorClassName="text-gray-5" />}
@@ -39,31 +22,11 @@ const SearchFriendScreen = () => {
           renderErrorMessage={false}
         />
       </Box>
-
-      {isValidQuery ? (
-        <Box flex={1} px={16}>
-          <QueryErrorBoundary>
-            <Suspense fallback={<FriendSearchList.Loading />}>
-              <FriendSearchList query={debouncedQuery.trim()} />
-            </Suspense>
-          </QueryErrorBoundary>
-        </Box>
-      ) : (
-        <Flex flex={1} justify="center" align="center">
-          <Result
-            icon={<SearchIcon width={64} height={64} colorClassName="text-gray-4" />}
-            title={t('search.empty.prompt')}
-            description={t('search.empty.tagHint')}
-            button={
-              <Result.Button onPress={() => push('/friends/add')}>
-                {t('search.empty.addByTag')}
-              </Result.Button>
-            }
-          />
-        </Flex>
-      )}
-    </View>
+      <Box flex={1} px={16}>
+        <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
+          <FriendSearchList query={query} />
+        </QueryErrorBoundary>
+      </Box>
+    </VStack>
   );
-};
-
-export default SearchFriendScreen;
+}

@@ -60,6 +60,33 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
     expect(sentCount).toBe(2);
   });
 
+  test('감사 페이지 요청은 최초 기준 ID와 커서, 취소 신호를 전송한다', async () => {
+    // Given
+    const { httpClient, service } = setup();
+    const signal = new AbortController().signal;
+    const query = { limit: 20, cursor: 80, throughNudgeId: 100 };
+    httpClient.get.mockResolvedValue({
+      ok: true,
+      value: {
+        todoId: 1,
+        throughNudgeId: 100,
+        recipients: [],
+        totalRecipients: 40,
+        nextCursor: null,
+        hasNext: false,
+      },
+    });
+    // When
+    const preview = unwrap(await service.getThanksPreview(1, query, signal));
+    // Then
+    expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/todos/1/thanks', {
+      params: query,
+      signal,
+    });
+    expect(preview.throughNudgeId).toBe(100);
+    expect(preview.totalRecipients).toBe(40);
+  });
+
   test('현재 권한이 사라진 서버 오류는 번역하거나 다른 오류로 바꾸지 않는다', async () => {
     // Given
     const { httpClient, service } = setup();

@@ -58,6 +58,7 @@
       "tagHint": "Know the exact 8-character hashtag? Add them directly",
       "addByTag": "Add by hashtag",
       "noResults": "No results for '{{query}}'"
-    }
+    },
+    "loadError": "Could not load search results"
   }
 }

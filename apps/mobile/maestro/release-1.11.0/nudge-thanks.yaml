@@ -21,18 +21,20 @@ name: 할 일을 직접 완료한 뒤 친구에게 감사를 한 번만 전한�
     visible: '완료한 할 일이에요|This to-do is complete'
     timeout: 15000
 - scrollUntilVisible:
-    element: '응원해 준 친구에게 감사 보내기|Thank the friends who cheered you on'
+    element: '친구에게 고마움 전하기|Thank the friends who cheered you on'
     direction: DOWN
     centerElement: true
-- tapOn: '응원해 준 친구에게 감사 보내기|Thank the friends who cheered you on'
+- tapOn: '친구에게 고마움 전하기|Thank the friends who cheered you on'
 - extendedWaitUntil:
-    visible: '감사 전하기|Send thanks'
+    visible: '친구에게 고마움을 전해요|A thank-you for being there'
     timeout: 15000
 - assertVisible: ${QA_FRIEND_NAME}
 - takeScreenshot: 1.11.0-thanks-preview
-- tapOn: '감사 전하기|Send thanks'
-# Then: 감사 시트가 닫히고 전송 완료 상태를 표시한다
+- tapOn: '1명에게 고마움 전하기|Thank 1 friend'
+# Then: 시트 안에서 성공을 확인한 뒤 완료 버튼으로 닫는다
 - extendedWaitUntil:
-    visible: '완료 소식과 감사를 전했어요|You shared your finish and your thanks'
+    visible: '친구에게 고마운 마음을 전했어요|Your thanks are on their way'
     timeout: 15000
 - takeScreenshot: 1.11.0-thanks-sent
+- tapOn: '완료|Done'
+- assertNotVisible: '친구에게 고마움을 전해요|A thank-you for being there'

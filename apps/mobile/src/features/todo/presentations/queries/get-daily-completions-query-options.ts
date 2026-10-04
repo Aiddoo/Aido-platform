@@ -17,10 +17,13 @@ export const toCompletionsViewModel = (data: {
 
 export function getDailyCompletionsQueryOptions(
   service: TodoService,
-  { startDate, endDate }: { startDate: string; endDate: string },
+  { startDate, endDate, userId }: { startDate: string; endDate: string; userId?: string },
 ) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.completionsByRange(startDate, endDate),
+    queryKey:
+      userId === undefined
+        ? TODO_QUERY_KEYS.completionsByRange(startDate, endDate)
+        : [...TODO_QUERY_KEYS.completionsByRange(startDate, endDate), { userId }],
     queryFn: async ({ signal }) => {
       const result = await service.getDailyCompletions(startDate, endDate, signal);
       return unwrap(result);
@@ -29,6 +32,10 @@ export function getDailyCompletionsQueryOptions(
   });
 }
 
-export function useGetDailyCompletionsQueryOptions(startDate: string, endDate: string) {
-  return getDailyCompletionsQueryOptions(useTodoService(), { startDate, endDate });
+export function useGetDailyCompletionsQueryOptions(
+  startDate: string,
+  endDate: string,
+  userId?: string,
+) {
+  return getDailyCompletionsQueryOptions(useTodoService(), { startDate, endDate, userId });
 }

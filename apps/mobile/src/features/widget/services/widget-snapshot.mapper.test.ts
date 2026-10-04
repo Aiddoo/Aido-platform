@@ -150,3 +150,15 @@ describe('toLoggedOutWidgetSnapshot', () => {
     expect(snapshot.strings.loggedOutTitle).toBe('widget:state.loggedOutTitle');
   });
 });
+
+describe('위젯과 앱 달력의 주간 제목', () => {
+  it('월을 걸친 주는 일요일이 속한 달과 주차를 사용한다', () => {
+    // Given
+    const summary = buildWidgetSummary({ date: '2026-10-01' });
+    // When
+    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    // Then
+    expect(snapshot.weekDays?.[0]?.date).toBe('2026-09-27');
+    expect(snapshot.strings.weekTitle).toBe('widget:calendar.weekTitle({"month":"9월","week":4})');
+  });
+});

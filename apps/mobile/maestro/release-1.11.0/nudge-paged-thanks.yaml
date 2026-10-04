@@ -1,0 +1,38 @@
+appId: com.aido.mobile
+name: 응원 친구 22명의 추가 로딩과 감사 성공 화면을 검증한다
+---
+# Given: 완료한 공개 할 일과 응원 친구 22명
+- openLink: aido-dev://nudges/${QA_PAGING_NUDGE_ID}
+- extendedWaitUntil:
+    visible: .*완료한 할 일이에요.*
+    timeout: 15000
+- tapOn: .*친구에게 고마움 전하기.*
+- extendedWaitUntil:
+    visible: 친구에게 고마움을 전해요
+    timeout: 15000
+- assertVisible: 22명에게 고마움 전하기
+- takeScreenshot: 30-thanks-paged-first
+# When: 시트 내부의 친구 목록을 끝까지 스크롤한다
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: 50%, 76%
+          end: 50%, 50%
+          duration: 500
+      - waitForAnimationToEnd
+- assertVisible: 응원 친구 01
+- assertVisible: 22명에게 고마움 전하기
+- takeScreenshot: 31-thanks-paged-last
+- tapOn: 22명에게 고마움 전하기
+# Then: 서버 캐시가 갱신되어도 성공 메시지와 완료 버튼이 유지된다
+- extendedWaitUntil:
+    visible: 친구에게 고마운 마음을 전했어요
+    timeout: 15000
+- waitForAnimationToEnd
+- assertVisible: 완료
+- takeScreenshot: 32-thanks-paged-success
+- tapOn: 완료
+- assertNotVisible: 친구에게 고마움을 전해요
+- assertVisible: 완료 소식과 고마운 마음을 전했어요
+- takeScreenshot: 33-thanks-detail-complete

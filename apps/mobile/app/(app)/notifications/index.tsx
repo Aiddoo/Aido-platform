@@ -2,7 +2,6 @@ import { NOTIFICATION_CATEGORY, getNotificationsQuerySchema } from '@aido/valida
 import { NotificationList } from '@src/features/notification/presentations/components/notification-list';
 import { UnreadNotificationHeader } from '@src/features/notification/presentations/components/unread-notification-header';
 import { CATEGORY_TABS } from '@src/features/notification/presentations/constants/notification';
-import { NudgeInboxLink } from '@src/features/todo/presentations/components/nudge-interactions/NudgeInboxLink';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -22,7 +21,6 @@ export default function NotificationsScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-background" edges={['bottom']}>
-      <NudgeInboxLink />
       <Tabs
         value={category}
         onValueChange={(value) => {
@@ -58,7 +56,7 @@ export default function NotificationsScreen() {
         </QueryErrorBoundary>
 
         <Tabs.Content value={category} className="flex-1">
-          <QueryErrorBoundary>
+          <QueryErrorBoundary resetKeys={[category]} fallback={NotificationList.Error}>
             <Suspense fallback={<NotificationList.Loading />}>
               <NotificationList category={category} limit={10} />
             </Suspense>

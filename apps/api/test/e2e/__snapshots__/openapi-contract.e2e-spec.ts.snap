@@ -5363,6 +5363,17 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
     },
     "NudgeThanksPreviewResponseDto": {
       "properties": {
+        "hasNext": {
+          "description": "다음 페이지 존재 여부",
+          "type": "boolean",
+        },
+        "nextCursor": {
+          "description": "다음 페이지 커서",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "nullable": true,
+          "type": "integer",
+        },
         "recipients": {
           "description": "이번에 감사를 받을 친구 (중복과 이미 감사한 친구 제외)",
           "items": {
@@ -5416,6 +5427,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "todoId": {
           "description": "완료한 할 일 ID",
           "exclusiveMinimum": true,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "totalRecipients": {
+          "description": "미리보기 전체 친구 수",
           "maximum": 9007199254740991,
           "minimum": 0,
           "type": "integer",
@@ -31061,6 +31078,44 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "감사를 전할 할 일 ID",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        {
+          "description": "미리보기 페이지 크기",
+          "in": "query",
+          "name": "limit",
+          "required": false,
+          "schema": {
+            "description": "미리보기 페이지 크기",
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer",
+          },
+        },
+        {
+          "description": "이전 페이지의 마지막 콕 ID",
+          "in": "query",
+          "name": "cursor",
+          "required": false,
+          "schema": {
+            "description": "이전 페이지의 마지막 콕 ID",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        {
+          "description": "첫 미리보기 시점의 마지막 콕 ID",
+          "in": "query",
+          "name": "throughNudgeId",
+          "required": false,
+          "schema": {
+            "description": "첫 미리보기 시점의 마지막 콕 ID",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,

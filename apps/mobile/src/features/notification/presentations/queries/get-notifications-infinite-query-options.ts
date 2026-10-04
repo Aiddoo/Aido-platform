@@ -1,21 +1,13 @@
 import type { NotificationCategory } from '@aido/validators';
 import { useNotificationService } from '@src/bootstrap/providers/di-context';
-import type {
-  Notification,
-  NotificationListResult,
-} from '@src/features/notification/models/notification.model';
+import type { NotificationListResult } from '@src/features/notification/models/notification.model';
 import type { NotificationService } from '@src/features/notification/services/notification.service';
 import { unwrap } from '@src/shared/errors/result';
-import { getDateSectionLabel } from '@src/shared/utils/date';
 import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions } from '@tanstack/react-query';
-import { groupBy } from 'es-toolkit';
+import { uniqBy } from 'es-toolkit';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys.constant';
-
-export type SectionHeader = { type: 'header'; title: string };
-export type SectionItem = { type: 'item'; notification: Notification };
-export type NotificationListItem = SectionHeader | SectionItem;
 
 interface NotificationQueryParams {
   category?: NotificationCategory;
@@ -60,7 +52,7 @@ export function getNotificationsInfiniteQueryOptions(
         ? { cursor: lastPage.nextCursor }
         : undefined,
 
-    select: selectSectionedList,
+    select: selectNotifications,
   });
 }
 
@@ -68,17 +60,8 @@ export function useGetNotificationsInfiniteQueryOptions(params?: NotificationQue
   return getNotificationsInfiniteQueryOptions(useNotificationService(), { params });
 }
 
-const selectSectionedList = (
-  data: InfiniteData<NotificationListResult>,
-): NotificationListItem[] => {
-  const notifications = data.pages.flatMap((page) => page.notifications);
-
-  const grouped = groupBy(notifications, (n) => getDateSectionLabel(n.createdAt));
-
-  const toSortedSections = Object.entries(grouped).flatMap(([title, items]) => [
-    { type: 'header' as const, title },
-    ...items.map((notification) => ({ type: 'item' as const, notification })),
-  ]);
-
-  return toSortedSections;
-};
+const selectNotifications = (data: InfiniteData<NotificationListResult>) =>
+  uniqBy(
+    data.pages.flatMap((page) => page.notifications),
+    (notification) => notification.id,
+  );

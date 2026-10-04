@@ -554,7 +554,11 @@ function createCheerNotifier(): CheerNotifierPort {
 }
 
 function createNudgeNotifier(): NudgeNotifierPort {
-	return { notifyNudgeSent: () => undefined, recordInteraction: async () => undefined };
+	return {
+		notifyNudgeSent: () => undefined,
+		recordInteraction: async () => undefined,
+		recordInteractions: async () => undefined,
+	};
 }
 
 function createCheerLimitReader(limit: number | null): CheerLimitReaderPort {

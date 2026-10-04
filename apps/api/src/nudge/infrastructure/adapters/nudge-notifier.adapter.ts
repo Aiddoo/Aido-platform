@@ -5,10 +5,12 @@ import {
 	createNudgeReplyNotificationMessage,
 	createNudgeThanksNotificationMessage,
 	NotificationPublisher,
+	type CreateNotificationData,
 	NotificationRecipientLocaleReader,
 	TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/notification/index";
 import { NotificationQueueService } from "#api/notification/queue";
+import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
 	NudgeNotifierPort,
@@ -32,6 +34,25 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
 		const locale = await this.notificationRecipientLocaleReader.getRecipientLocale(
 			payload.recipientId,
 		);
+		await this.notificationPublisher.publish(this.#toNotificationData(payload, locale));
+	}
+
+	async recordInteractions(payloads: readonly NudgeInteractionNotification[]): Promise<void> {
+		if (payloads.length === 0) return;
+		const locales = await this.notificationRecipientLocaleReader.getRecipientLocales(
+			payloads.map((payload) => payload.recipientId),
+		);
+		await this.notificationPublisher.publishBatch(
+			payloads.map((payload) =>
+				this.#toNotificationData(payload, locales.get(payload.recipientId) ?? DEFAULT_LOCALE),
+			),
+		);
+	}
+
+	#toNotificationData(
+		payload: NudgeInteractionNotification,
+		locale: SupportedLocale,
+	): CreateNotificationData {
 		const type = payload.kind === "reply" ? "NUDGE_REPLIED" : "NUDGE_THANKED";
 		const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY[type];
 		const copyInput = {
@@ -50,8 +71,7 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
 			)
 			.with({ kind: "thanks" }, () => createNudgeThanksNotificationMessage(copyInput))
 			.exhaustive();
-		// 호출자의 UoW에 참여해 상태·알림·push outbox를 같은 커밋 경계에 저장한다.
-		await this.notificationPublisher.publish({
+		return {
 			userId: payload.recipientId,
 			type,
 			title: message.title,
@@ -61,6 +81,6 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
 			friendId: payload.actorId,
 			campaignKey,
 			variantId: message.variantId,
-		});
+		};
 	}
 }

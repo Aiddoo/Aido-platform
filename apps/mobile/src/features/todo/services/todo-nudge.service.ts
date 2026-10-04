@@ -1,6 +1,7 @@
 import {
   createNudgeResponseSchema,
   type GetNudgeInteractionsQuery,
+  type GetNudgeThanksPreviewQuery,
   nudgeInteractionAvailabilityResponseSchema,
   nudgeInteractionResponseSchema,
   nudgeInteractionsResponseSchema,
@@ -241,9 +242,13 @@ export class TodoNudgeService {
 
   getThanksPreview = async (
     todoId: number,
+    query: GetNudgeThanksPreviewQuery = {},
     signal?: AbortSignal,
   ): Promise<Result<NudgeThanksPreview, ApiError>> => {
-    const result = await this.#httpClient.get(`v1/nudges/todos/${todoId}/thanks`, { signal });
+    const result = await this.#httpClient.get(`v1/nudges/todos/${todoId}/thanks`, {
+      params: query,
+      signal,
+    });
     if (!result.ok) {
       return result;
     }

@@ -27,4 +27,5 @@ export type NudgeInteractionNotification = NudgeInteractionNotificationBase &
 export interface NudgeNotifierPort {
 	notifyNudgeSent(payload: NudgeSentNotification): void;
 	recordInteraction(payload: NudgeInteractionNotification): Promise<void>;
+	recordInteractions(payloads: readonly NudgeInteractionNotification[]): Promise<void>;
 }

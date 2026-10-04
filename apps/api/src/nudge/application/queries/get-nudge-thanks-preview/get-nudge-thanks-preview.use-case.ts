@@ -14,6 +14,9 @@ import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.re
 export interface GetNudgeThanksPreviewInput {
 	readonly userId: string;
 	readonly todoId: number;
+	readonly limit?: number;
+	readonly cursor?: number;
+	readonly throughNudgeId?: number;
 }
 
 @Injectable()
@@ -38,14 +41,47 @@ export class GetNudgeThanksPreviewUseCase {
 			throw new ApplicationException(ErrorCode.NUDGE_1110);
 		}
 
-		const throughNudgeId = await this.nudgeRepository.findLastReceivedNudgeId(
-			input.todoId,
-			input.userId,
-		);
+		if (input.throughNudgeId !== undefined) {
+			const cutoff = await this.nudgeRepository.findInteractionById(
+				input.throughNudgeId,
+				input.userId,
+			);
+			if (!cutoff || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
+				throw new ApplicationException(ErrorCode.NUDGE_1105);
+			}
+		}
+		const throughNudgeId =
+			input.throughNudgeId ??
+			(await this.nudgeRepository.findLastReceivedNudgeId(input.todoId, input.userId));
 		if (throughNudgeId === null || todo.visibility !== "PUBLIC") {
-			return { todoId: input.todoId, throughNudgeId, recipients: [] };
+			return {
+				todoId: input.todoId,
+				throughNudgeId,
+				recipients: [],
+				totalRecipients: 0,
+				nextCursor: null,
+				hasNext: false,
+			};
 		}
 		const friendIds = await this.followReader.getCurrentMutualFriendIds(input.userId);
+		if (input.limit !== undefined) {
+			const page = await this.nudgeRepository.findThanksCandidatePage({
+				userId: input.userId,
+				todoId: input.todoId,
+				throughNudgeId,
+				friendIds,
+				cursor: input.cursor,
+				size: input.limit,
+			});
+			return {
+				todoId: input.todoId,
+				throughNudgeId,
+				recipients: page.items.map((nudge) => nudge.sender),
+				totalRecipients: page.totalRecipients,
+				nextCursor: page.nextCursor,
+				hasNext: page.hasNext,
+			};
+		}
 		const candidates = await this.nudgeRepository.findThanksCandidates({
 			...input,
 			throughNudgeId,

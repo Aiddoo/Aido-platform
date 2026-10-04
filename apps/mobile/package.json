@@ -106,6 +106,7 @@
     "react-hook-form": "7.89.0",
     "react-i18next": "17.0.15",
     "react-native": "catalog:expo58",
+    "react-native-android-widget": "catalog:expo58",
     "react-native-draggable-flatlist": "4.0.3",
     "react-native-gesture-handler": "catalog:expo58",
     "react-native-keyboard-controller": "catalog:expo58",

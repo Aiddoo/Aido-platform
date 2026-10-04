@@ -34,6 +34,8 @@ jest.mock('@expo/ui/swift-ui/modifiers', () => ({
   gaugeStyle: jest.fn(),
   lineLimit: jest.fn(),
   monospacedDigit: jest.fn(),
+  minimumScaleFactor: jest.fn(),
+  strikethrough: jest.fn(),
   opacity: jest.fn(),
   padding: jest.fn(),
   tint: jest.fn(),

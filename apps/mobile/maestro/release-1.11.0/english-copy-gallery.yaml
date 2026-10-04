@@ -1,0 +1,60 @@
+appId: com.aido.mobile
+name: 영어 답장과 22명 감사 목록의 문구를 검증한다
+---
+# Given: 로그인된 QA 계정, 새 콕, 완료한 할 일의 응원 친구 22명
+- openLink: aido-dev://settings/language
+- extendedWaitUntil:
+    visible: English
+    timeout: 15000
+- tapOn: English
+- openLink: aido-dev://settings/theme
+- extendedWaitUntil:
+    visible: Light mode
+    timeout: 15000
+- tapOn: Light mode
+# When: 알림·답장·감사 친구 목록을 영어로 연다
+- openLink: aido-dev://notifications?category=SOCIAL
+- extendedWaitUntil:
+    visible: Notifications
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 40-inbox-en-light
+- openLink: aido-dev://nudges/${QA_NUDGE_ID}
+- extendedWaitUntil:
+    visible: What would you like to say\?
+    timeout: 15000
+- assertVisible: Thanks for cheering me on
+- assertVisible: I’ll do it later
+- waitForAnimationToEnd
+- takeScreenshot: 41-reply-en-light
+- openLink: aido-dev://nudges/${QA_PAGING_NUDGE_ID}
+- extendedWaitUntil:
+    visible: .*This to-do is complete.*
+    timeout: 15000
+- tapOn: .*Say thanks to your friends.*
+- extendedWaitUntil:
+    visible: Thank your friends
+    timeout: 15000
+- assertVisible: Thank 22 friends
+- waitForAnimationToEnd
+- takeScreenshot: 42-thanks-en-light
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: 50%, 65%
+          end: 50%, 97%
+          duration: 600
+# Then: 한국어로 되돌린 뒤 기존 화면을 계속 사용할 수 있다
+- openLink: aido-dev://settings/language
+- tapOn: 한국어
+- openLink: aido-dev://feed?date=today
+- extendedWaitUntil:
+    visible: 고양이 밥 챙기기
+    timeout: 15000

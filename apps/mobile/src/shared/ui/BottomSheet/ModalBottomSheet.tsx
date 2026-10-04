@@ -1,10 +1,11 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { type ReactNode, useCallback, useEffect, useRef } from 'react';
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
   runOnJS,
+  ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -49,14 +50,17 @@ export const ModalBottomSheet = ({
 
   const bottomInset = insets.bottom || 16;
   const maxHeight = Math.max(MIN_CONTENT_HEIGHT, windowHeight - insets.top - TOP_MARGIN);
+  const animationReduceMotion = reduceMotion ? ReduceMotion.Always : ReduceMotion.System;
   const enterDuration = resolveSheetAnimationDuration(reduceMotion, ANIMATION.duration.slow);
   const snapDuration = resolveSheetAnimationDuration(reduceMotion, ANIMATION.duration.normal);
 
   // Refs for callbacks — inline 함수가 매 렌더마다 바뀌어도 애니메이션이 리셋되지 않도록
   const onCloseRef = useRef(onClose);
   const onExitRef = useRef(onExit);
-  onCloseRef.current = onClose;
-  onExitRef.current = onExit;
+  useLayoutEffect(() => {
+    onCloseRef.current = onClose;
+    onExitRef.current = onExit;
+  }, [onClose, onExit]);
 
   // Animation shared values
   const translateY = useSharedValue(windowHeight);
@@ -92,24 +96,38 @@ export const ModalBottomSheet = ({
       // Animate in
       isAnimatingOut.value = false;
       dragY.value = 0;
-      translateY.value = withTiming(0, { duration: enterDuration });
-      backdropOpacity.value = withTiming(0.5, { duration: enterDuration });
+      translateY.value = withTiming(0, {
+        duration: enterDuration,
+        reduceMotion: animationReduceMotion,
+      });
+      backdropOpacity.value = withTiming(0.5, {
+        duration: enterDuration,
+        reduceMotion: animationReduceMotion,
+      });
     } else {
       // Animate out (한 번만 실행)
       if (!isAnimatingOut.value) {
         isAnimatingOut.value = true;
-        translateY.value = withTiming(windowHeight, { duration: enterDuration }, (finished) => {
-          // withTiming 콜백은 UI thread에서 실행 — JS 호출에 runOnJS 필요
-          if (finished) {
-            runOnJS(callOnExit)();
-          }
+        translateY.value = withTiming(
+          windowHeight,
+          { duration: enterDuration, reduceMotion: animationReduceMotion },
+          (finished) => {
+            // withTiming 콜백은 UI thread에서 실행 — JS 호출에 runOnJS 필요
+            if (finished) {
+              runOnJS(callOnExit)();
+            }
+          },
+        );
+        backdropOpacity.value = withTiming(0, {
+          duration: enterDuration,
+          reduceMotion: animationReduceMotion,
         });
-        backdropOpacity.value = withTiming(0, { duration: enterDuration });
       }
     }
     // 콜백은 ref로 안정화하며 windowHeight는 열림 애니메이션의 초기값만 사용한다.
   }, [
     isOpen,
+    animationReduceMotion,
     backdropOpacity,
     callOnExit,
     dragY,
@@ -132,7 +150,10 @@ export const ModalBottomSheet = ({
         runOnJS(callOnClose)();
       } else {
         // snap back
-        dragY.value = withTiming(0, { duration: snapDuration });
+        dragY.value = withTiming(0, {
+          duration: snapDuration,
+          reduceMotion: animationReduceMotion,
+        });
       }
     });
 
@@ -163,19 +184,19 @@ export const ModalBottomSheet = ({
       </Pressable>
 
       {/* Sheet */}
-      <GestureDetector gesture={panGesture}>
-        <Animated.View
-          style={[
-            sharedSheetStyles.detached,
-            { position: 'absolute', left: 0, right: 0, bottom: bottomInset, maxHeight },
-            sheetAnimatedStyle,
-          ]}
+      <Animated.View
+        style={[
+          sharedSheetStyles.detached,
+          { position: 'absolute', left: 0, right: 0, bottom: bottomInset, maxHeight },
+          sheetAnimatedStyle,
+        ]}
+      >
+        <View
+          style={[sharedSheetStyles.detachedBackground, backgroundStyle, { overflow: 'hidden' }]}
         >
-          <View
-            style={[sharedSheetStyles.detachedBackground, backgroundStyle, { overflow: 'hidden' }]}
-          >
-            {/* Handle */}
-            <View className="items-center pt-2 pb-1">
+          {/* Handle */}
+          <GestureDetector gesture={panGesture}>
+            <View className="items-center justify-center h-11" collapsable={false}>
               <View
                 style={[
                   sharedSheetStyles.handleIndicator,
@@ -184,12 +205,12 @@ export const ModalBottomSheet = ({
                 ]}
               />
             </View>
+          </GestureDetector>
 
-            {/* Content */}
-            <View style={sharedSheetStyles.content}>{children}</View>
-          </View>
-        </Animated.View>
-      </GestureDetector>
+          {/* Content */}
+          <View style={sharedSheetStyles.content}>{children}</View>
+        </View>
+      </Animated.View>
     </View>
   );
 };

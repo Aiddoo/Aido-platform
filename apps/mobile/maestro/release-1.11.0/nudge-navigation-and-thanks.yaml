@@ -9,11 +9,11 @@ name: 받은 콕·답장·할 일 이동·감사 시트의 한글 라이트 화�
 - tapOn: 라이트 모드
 - openLink: aido-dev://nudges?direction=received
 - extendedWaitUntil:
-    visible: 받은 콕
+    visible: 알림
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 5000
-- takeScreenshot: 01-received-light
+- takeScreenshot: 01-notification-inbox-light
 - tapOn: 보낸 콕
 - extendedWaitUntil:
     visible: 보낸 콕
@@ -21,10 +21,10 @@ name: 받은 콕·답장·할 일 이동·감사 시트의 한글 라이트 화�
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 02-sent-light
-- tapOn: 받은 콕
+- openLink: aido-dev://notifications?category=SOCIAL
 - openLink: aido-dev://nudges/${QA_NUDGE_ID}
 - extendedWaitUntil:
-    visible: 지금 내 마음을 알려주세요
+    visible: 친구에게 한마디 전해볼까요?
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 5000
@@ -32,15 +32,15 @@ name: 받은 콕·답장·할 일 이동·감사 시트의 한글 라이트 화�
 # When: 콕에 답장한 뒤 할 일로 이동하고 다시 돌아온다
 - tapOn: 시작해볼게
 - extendedWaitUntil:
-    visible: 답장을 바꿔도 알림은 한 번만 전해져요
+    visible: 답장을 바꿔도 친구에게 알림이 또 가지 않아요
     timeout: 15000
 - tapOn: 응원 고마워
 - tapOn: 조금 뒤에 할게
-- assertNotVisible: 완료한 할 일이에요
+- assertNotVisible: .*완료한 할 일이에요.*
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 04-replied-light
-- tapOn: 할 일 보기
+- tapOn: .*할 ?일 보기.*
 - extendedWaitUntil:
     visible: ${QA_TODO_TITLE}
     timeout: 15000
@@ -63,7 +63,7 @@ name: 받은 콕·답장·할 일 이동·감사 시트의 한글 라이트 화�
           end: 85%, 45%
           duration: 600
 - extendedWaitUntil:
-    visible: 지금 내 마음을 알려주세요
+    visible: 친구에게 한마디 전해볼까요?
     timeout: 15000
 # When: 앱에서 직접 완료하고 감사할 친구를 확인한다
 - openLink: aido-dev://feed?date=today
@@ -76,15 +76,15 @@ name: 받은 콕·답장·할 일 이동·감사 시트의 한글 라이트 화�
     id: todo-checkbox-${QA_TODO_ID}
 - openLink: aido-dev://nudges/${QA_NUDGE_ID}
 - extendedWaitUntil:
-    visible: 완료한 할 일이에요
+    visible: .*완료한 할 일이에요.*
     timeout: 15000
 - scrollUntilVisible:
-    element: 응원해 준 친구에게 감사 보내기
+    element: 친구에게 고마움 전하기
     direction: DOWN
     centerElement: true
-- tapOn: 응원해 준 친구에게 감사 보내기
+- tapOn: 친구에게 고마움 전하기
 - extendedWaitUntil:
-    visible: 감사 전하기
+    visible: 친구에게 고마움을 전해요
     timeout: 15000
 - assertVisible: ${QA_FRIEND_NAME}
 - waitForAnimationToEnd:
@@ -96,31 +96,35 @@ name: 받은 콕·답장·할 일 이동·감사 시트의 한글 라이트 화�
       platform: Android
     commands:
       - back
-      - assertNotVisible: 감사 전하기
+      - waitForAnimationToEnd
+      - assertNotVisible: 친구에게 고마움을 전해요
       - assertVisible: 친구의 응원
-      - tapOn: 응원해 준 친구에게 감사 보내기
+      - tapOn: 친구에게 고마움 전하기
       - extendedWaitUntil:
-          visible: 감사 전하기
+          visible: 친구에게 고마움을 전해요
           timeout: 15000
 # Then: 화면을 바꾸면 기존 감사 시트가 새 화면 위에 남지 않는다
 - openLink: aido-dev://nudges?direction=received
 - extendedWaitUntil:
-    visible: 받은 콕
+    visible: 알림
     timeout: 15000
-- assertNotVisible: 감사 전하기
+- assertNotVisible: 친구에게 고마움을 전해요
 - openLink: aido-dev://nudges/${QA_NUDGE_ID}
 - scrollUntilVisible:
-    element: 응원해 준 친구에게 감사 보내기
+    element: 친구에게 고마움 전하기
     direction: DOWN
     centerElement: true
-- tapOn: 응원해 준 친구에게 감사 보내기
+- tapOn: 친구에게 고마움 전하기
 - extendedWaitUntil:
-    visible: 감사 전하기
+    visible: 친구에게 고마움을 전해요
     timeout: 15000
-- tapOn: 감사 전하기
+- tapOn: 1명에게 고마움 전하기
 - extendedWaitUntil:
-    visible: 완료 소식과 감사를 전했어요
+    visible: 친구에게 고마운 마음을 전했어요
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 07-thanked-light
+- tapOn: 완료
+- assertNotVisible: 친구에게 고마움을 전해요
+- assertVisible: 완료 소식과 고마운 마음을 전했어요
