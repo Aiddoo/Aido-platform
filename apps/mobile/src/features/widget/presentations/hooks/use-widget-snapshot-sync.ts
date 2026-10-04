@@ -51,7 +51,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     throwOnError: false,
   });
   const { data: completions } = useQuery({
-    ...useGetDailyCompletionsQueryOptions(rangeStart, rangeEnd),
+    ...useGetDailyCompletionsQueryOptions(rangeStart, rangeEnd, userId),
     enabled: authState === 'authenticated' && userId != null,
     throwOnError: false,
   });

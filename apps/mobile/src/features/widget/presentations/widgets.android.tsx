@@ -172,16 +172,16 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
 
   const renderTodoRow = (todo?: WidgetProps['topTodos'][number]) => {
     if (!todo) return null;
-    const checkboxColor = todo.completed
-      ? todo.color
-      : `rgba(${Number.parseInt(todo.color.slice(1, 3), 16)}, ${Number.parseInt(todo.color.slice(3, 5), 16)}, ${Number.parseInt(todo.color.slice(5, 7), 16)}, 0.25)`;
     return renderAppLink(
       todo.destination,
       <Row verticalAlignment="center" modifiers={[fillMaxWidth()]}>
         <Box
           contentAlignment="center"
-          modifiers={[size(16, 16), background(checkboxColor), cornerRadius(5)]}
+          modifiers={[size(16, 16), background(todo.color), cornerRadius(5)]}
         >
+          {!todo.completed ? (
+            <Box modifiers={[size(12, 12), background(palette.background), cornerRadius(3)]} />
+          ) : null}
           {todo.completed ? (
             <Text color="#FFFFFF" style={{ fontSize: 10, fontWeight: 'bold' }}>
               ✓
@@ -191,7 +191,7 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
         <Spacer modifiers={[width(8)]} />
         <Text
           color={todo.completed ? palette.muted : palette.foreground}
-          style={{ fontSize: 13 }}
+          style={{ fontSize: 13, textDecoration: todo.completed ? 'lineThrough' : 'none' }}
           maxLines={1}
           overflow="ellipsis"
         >
@@ -338,26 +338,30 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
       modifiers={[fillMaxSize(), background(palette.background), cornerRadius(20), paddingAll(14)]}
     >
       <Column modifiers={[fillMaxSize(), padding(0, 0, 0, 34)]}>
-        <Column modifiers={[fillMaxWidth()]}>
-          <Box contentAlignment="centerStart" modifiers={[fillMaxWidth()]}>
+        <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(24)]}>
+          <Row verticalAlignment="center" modifiers={[fillMaxWidth(), padding(0, 0, 105, 0)]}>
             <Text
               color={palette.foreground}
               style={{ fontSize: 13, fontWeight: '600' }}
               maxLines={1}
-              modifiers={[fillMaxWidth(), padding(0, 0, 30, 0)]}
+              overflow="ellipsis"
             >
               {props.weekTitle ?? props.progressTitle}
             </Text>
-            <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
-              {renderPaw()}
-            </Box>
-          </Box>
+            <Spacer modifiers={[width(4)]} />
+            {renderPaw()}
+          </Row>
           {props.weekRangeLabel ? (
-            <Text color={palette.muted} style={{ fontSize: 9 }}>
+            <Text
+              color={palette.muted}
+              style={{ fontSize: 9, textAlign: 'end' }}
+              maxLines={1}
+              modifiers={[fillMaxWidth()]}
+            >
               {props.weekRangeLabel}
             </Text>
           ) : null}
-        </Column>
+        </Box>
         <Spacer modifiers={[height(4)]} />
         <Row horizontalArrangement="center" modifiers={[fillMaxWidth()]}>
           {renderWeekDay(weekDays[0], 0)}
@@ -402,12 +406,24 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
         </Column>
       </Column>
       <Box contentAlignment="bottomEnd" modifiers={[fillMaxSize()]}>
-        <Row verticalAlignment="center" modifiers={[fillMaxWidth()]}>
-          <Text color={palette.muted} style={{ fontSize: 10 }} maxLines={1}>
-            {props.openTodoLabel ?? ''}
-          </Text>
-        </Row>
-        {renderAddTodo()}
+        <Column modifiers={[fillMaxWidth()]}>
+          <Box modifiers={[fillMaxWidth(), height(1), background(palette.track)]} />
+          <Spacer modifiers={[height(6)]} />
+          <Box contentAlignment="centerStart" modifiers={[fillMaxWidth(), height(26)]}>
+            <Text
+              color={palette.muted}
+              style={{ fontSize: 10 }}
+              maxLines={1}
+              overflow="ellipsis"
+              modifiers={[fillMaxWidth(), padding(0, 0, 118, 0)]}
+            >
+              {props.openTodoLabel ?? ''}
+            </Text>
+            <Box contentAlignment="centerEnd" modifiers={[fillMaxWidth()]}>
+              {renderAddTodo()}
+            </Box>
+          </Box>
+        </Column>
       </Box>
     </Box>
   );

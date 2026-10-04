@@ -1,4 +1,5 @@
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
+import { getCalendarWeek } from '@src/shared/utils/calendar-week';
 import { formatDate, getWeekDates, getWeekStart, toDate } from '@src/shared/utils/date';
 import { formatDateLabel, type DateFormatContext } from '@src/shared/utils/date-format';
 import { keyBy } from 'es-toolkit';
@@ -134,11 +135,12 @@ function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContex
       hasTodos: date === summary.date ? summary.totalTodos > 0 : (completion?.totalTodos ?? 0) > 0,
     };
   });
-  const referenceDate = new Date(`${summary.date}T12:00:00.000Z`);
+  const week = getCalendarWeek(toDate(summary.date));
+  const referenceDate = new Date(`${formatDate(week.start)}T12:00:00.000Z`);
   const dateFormatContext = { locale, timeZone: 'UTC' };
   const title = context.t('widget:calendar.weekTitle', {
     month: formatDateLabel(referenceDate, 'month', dateFormatContext),
-    week: Math.ceil(referenceDate.getUTCDate() / 7),
+    week: week.weekOfMonth,
   });
   const rangeLabel = days.map((day) => day.date.slice(5).replace('-', '.'));
   return { days, title, rangeLabel: `${rangeLabel[0]} – ${rangeLabel[6]}` };
