@@ -13,7 +13,10 @@ import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
   Avatar,
   Button,
+  ClockIcon,
+  HeartFilledIcon,
   HStack,
+  PawIcon,
   QueryErrorBoundary,
   Result,
   ScreenTitleBar,
@@ -26,6 +29,7 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Suspense, type ComponentProps } from 'react';
 import { ScrollView } from 'react-native';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 const NudgeParamsSchema = z.object({ nudgeId: z.coerce.number().int().positive() });
@@ -177,6 +181,11 @@ NudgeDetail.ReplyButton = function ReplyButton({
   isSelected: boolean;
 }) {
   const { t } = useTranslation('todo');
+  const Icon = match(value)
+    .with('STARTING', () => PawIcon)
+    .with('THANKFUL', () => HeartFilledIcon)
+    .with('LATER', () => ClockIcon)
+    .exhaustive();
   return (
     <Button
       {...props}
@@ -184,7 +193,16 @@ NudgeDetail.ReplyButton = function ReplyButton({
       variant="weak"
       accessibilityState={{ selected: isSelected, disabled: props.isDisabled }}
     >
-      {t(getNudgeReplyLabelKey(value))}
+      <HStack gap={8} align="center" className={props.isDisabled ? 'opacity-40' : undefined}>
+        <Icon
+          width={18}
+          height={18}
+          colorClassName={props.isDisabled ? 'text-gray-5' : 'text-main'}
+        />
+        <Text size="b3" weight="semibold" className={isSelected ? 'text-main' : 'text-gray-9'}>
+          {t(getNudgeReplyLabelKey(value))}
+        </Text>
+      </HStack>
     </Button>
   );
 };

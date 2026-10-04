@@ -5,6 +5,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Avatar,
   Button,
+  HeartFilledIcon,
   HStack,
   ModalBottomSheet,
   QueryErrorBoundary,
@@ -64,9 +65,12 @@ NudgeThanksButton.Sheet = function Sheet({
   return (
     <ModalBottomSheet {...props}>
       <VStack gap={16} pb={16}>
-        <Text size="b2" weight="bold">
-          {t('interaction.thanksTitle')}
-        </Text>
+        <HStack align="center" gap={8}>
+          <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
+          <Text size="b2" weight="bold">
+            {t('interaction.thanksTitle')}
+          </Text>
+        </HStack>
         <QueryErrorBoundary
           resetKeys={[todoId]}
           fallback={(errorProps) => (

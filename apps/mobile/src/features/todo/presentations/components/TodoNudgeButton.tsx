@@ -76,7 +76,7 @@ export function TodoNudgeButton({
       accessibilityState={{ ...accessibilityState, disabled: isDisabled }}
       className={cn('min-h-11 min-w-11 items-center justify-center', className)}
     >
-      <PawIcon width={18} height={18} colorClassName="text-gray-6" />
+      <PawIcon width={18} height={18} colorClassName={isDisabled ? 'text-gray-5' : 'text-main'} />
     </PressableFeedback>
   );
 }
