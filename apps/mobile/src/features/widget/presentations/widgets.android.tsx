@@ -44,6 +44,15 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const isStale = props.state !== 'loggedOut' && props.date !== today;
 
+  const renderPaw = () => (
+    <Image
+      source={{ uri: 'aido_widget_paw' }}
+      tint={palette.brand}
+      contentDescription={null}
+      modifiers={[size(24, 20)]}
+    />
+  );
+
   if (
     props.state === 'loggedOut' ||
     props.state === 'stale' ||
@@ -61,7 +70,7 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
           paddingAll(16),
         ]}
       >
-        <Text style={{ fontSize: 28 }}>🐾</Text>
+        {renderPaw()}
         <Spacer modifiers={[height(6)]} />
         <Text color={palette.foreground} style={{ fontSize: 14, fontWeight: '600' }} maxLines={2}>
           {isStale ? props.staleTitle : props.stateTitle}
@@ -94,16 +103,7 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
             {props.progressTitle}
           </Text>
           <Box modifiers={[fillMaxWidth()]} contentAlignment="centerEnd">
-            {props.isComplete ? (
-              <Text style={{ fontSize: 16 }}>🎉</Text>
-            ) : (
-              <Image
-                source={{ uri: 'aido_widget_paw' }}
-                tint={palette.brand}
-                contentDescription={null}
-                modifiers={[size(24, 20)]}
-              />
-            )}
+            {renderPaw()}
           </Box>
         </Box>
         <Spacer modifiers={[height(8)]} />
@@ -169,15 +169,6 @@ function AidoTodayLayout(props: WidgetProps, environment: WidgetEnvironment) {
     };
     return <Button {...linkProps} />;
   };
-
-  const renderPaw = () => (
-    <Image
-      source={{ uri: 'aido_widget_paw' }}
-      tint={palette.brand}
-      contentDescription={null}
-      modifiers={[size(24, 20)]}
-    />
-  );
 
   const renderTodoRow = (todo?: WidgetProps['topTodos'][number]) => {
     if (!todo) return null;

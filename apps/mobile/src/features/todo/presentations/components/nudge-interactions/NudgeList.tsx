@@ -21,6 +21,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView } from 'react-native';
+import { match, P } from 'ts-pattern';
 
 import type { NudgeDirection, NudgeInteraction } from '../../../models/nudge-interaction.model';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '../../queries/get-nudge-interactions-infinite-query-options';
@@ -86,11 +87,12 @@ NudgeList.Item = function Item({
   const name = direction === 'received' ? nudge.senderName : nudge.receiverName;
   const profileImage =
     direction === 'received' ? nudge.senderProfileImage : nudge.receiverProfileImage;
-  const status = nudge.thankedAt
-    ? t('interaction.thanked')
-    : nudge.replyKind
-      ? t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(nudge.replyKind)) })
-      : t('interaction.waiting');
+  const status = match(nudge)
+    .with({ thankedAt: P.nonNullable }, () => t('interaction.thanked'))
+    .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
+      t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+    )
+    .otherwise(() => t('interaction.waiting'));
 
   return (
     <PressableFeedback

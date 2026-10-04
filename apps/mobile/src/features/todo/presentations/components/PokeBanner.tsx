@@ -63,7 +63,7 @@ export function PokeBanner() {
           <Text size="e1" shade={6}>
             {t('nudge.hintPrefix')}
           </Text>
-          <PawIcon width={12} height={12} colorClassName="text-gray-6" />
+          <PawIcon width={14} height={14} colorClassName="text-main" />
           <Text size="e1" shade={6}>
             {t('nudge.hintSuffix')}
           </Text>
