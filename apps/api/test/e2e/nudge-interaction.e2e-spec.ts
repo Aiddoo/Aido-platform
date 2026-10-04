@@ -509,4 +509,66 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 		expect(remaining.body.data.unreadCount).toBe(2);
 		expect(newReadAll.body.data.readCount).toBe(2);
 	});
+	it("페이지 미리보기는 같은 콕 경계를 유지하고 기존 요청은 모든 친구를 반환한다", async () => {
+		// Given
+		const owner = await ctx.helpers.createVerifiedUser("owner-page@test.com", "Test1234!");
+		const firstFriend = await ctx.helpers.createVerifiedUser("first-page@test.com", "Test1234!");
+		const secondFriend = await ctx.helpers.createVerifiedUser("second-page@test.com", "Test1234!");
+		await ctx.helpers.createFriendship(firstFriend, owner);
+		await ctx.helpers.createFriendship(secondFriend, owner);
+		const todo = await createTodo(owner);
+		await sendNudge(firstFriend, owner, todo.id);
+		await sendNudge(secondFriend, owner, todo.id);
+		await setCompleted(owner, todo.id, true);
+
+		// When
+		const firstResponse = await request(ctx.app.getHttpServer())
+			.get(`/v1/nudges/todos/${todo.id}/thanks`)
+			.set("Authorization", `Bearer ${owner.accessToken}`)
+			.query({ limit: 1 })
+			.expect(200);
+		const firstPage = nudgeThanksPreviewResponseSchema.parse(firstResponse.body.data);
+		const secondResponse = await request(ctx.app.getHttpServer())
+			.get(`/v1/nudges/todos/${todo.id}/thanks`)
+			.set("Authorization", `Bearer ${owner.accessToken}`)
+			.query({ limit: 1, cursor: firstPage.nextCursor, throughNudgeId: firstPage.throughNudgeId })
+			.expect(200);
+		const secondPage = nudgeThanksPreviewResponseSchema.parse(secondResponse.body.data);
+		const legacyPreview = await getThanksPreview(owner, todo.id);
+
+		// Then
+		expect(firstPage.totalRecipients).toBe(2);
+		expect(firstPage.hasNext).toBe(true);
+		expect(secondPage.hasNext).toBe(false);
+		expect(secondPage.throughNudgeId).toBe(firstPage.throughNudgeId);
+		expect(firstPage.recipients[0]?.id).not.toBe(secondPage.recipients[0]?.id);
+		expect(legacyPreview.recipients).toHaveLength(2);
+		const sent = await sendThanks(owner, todo.id, firstPage.throughNudgeId ?? 0).expect(200);
+		expect(sent.body.data.sentCount).toBe(2);
+	});
+
+	it("감사 배치 알림 저장에 실패하면 모든 감사 상태를 롤백한다", async () => {
+		// Given
+		const sender = await ctx.helpers.createVerifiedUser("thanks-sender@test.com", "Test1234!");
+		const owner = await ctx.helpers.createVerifiedUser("thanks-owner@test.com", "Test1234!");
+		await ctx.helpers.createFriendship(sender, owner);
+		const todo = await createTodo(owner);
+		const nudge = await sendNudge(sender, owner, todo.id);
+		await setCompleted(owner, todo.id, true);
+		const notifier = ctx.module.get<NudgeNotifierPort>(NUDGE_NOTIFIER);
+		vi.spyOn(notifier, "recordInteractions").mockRejectedValueOnce(
+			new Error("감사 알림 저장 실패"),
+		);
+
+		// When
+		await sendThanks(owner, todo.id, nudge.id).expect(500);
+
+		// Then
+		const stored = await ctx.testDatabase
+			.getPrisma()
+			.nudge.findUniqueOrThrow({ where: { id: nudge.id } });
+		expect(stored.thankedAt).toBeNull();
+		const retry = await sendThanks(owner, todo.id, nudge.id).expect(200);
+		expect(retry.body.data.sentCount).toBe(1);
+	});
 });

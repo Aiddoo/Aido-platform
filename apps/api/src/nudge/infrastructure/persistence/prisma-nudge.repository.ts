@@ -14,6 +14,8 @@ import type {
 	CreateNudgeInput,
 	CreateRemindNudgeInput,
 	FindNudgesParams,
+	FindNudgeThanksCandidatesInput,
+	NudgeThanksCandidatePage,
 	NudgeRepositoryPort,
 	NudgeWithRelations,
 	NudgeInteractionRecord,
@@ -214,10 +216,11 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		await this.saveRead(nudge);
 	}
 
-	async saveThanks(nudge: Nudge): Promise<void> {
-		await this.client.nudge.update({
-			where: { id: nudge.id },
-			data: { thankedAt: nudge.thankedAt },
+	async saveThanksBatch(nudgeIds: readonly number[], thankedAt: Date): Promise<void> {
+		if (nudgeIds.length === 0) return;
+		await this.client.nudge.updateMany({
+			where: { id: { in: [...nudgeIds] }, thankedAt: null },
+			data: { thankedAt },
 		});
 	}
 
@@ -297,12 +300,30 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		return row?.id ?? null;
 	}
 
-	async findThanksCandidates(input: {
-		userId: string;
-		todoId: number;
-		throughNudgeId: number;
-		friendIds: readonly string[];
-	}): Promise<NudgeInteractionRecord[]> {
+	async findThanksCandidates(
+		input: FindNudgeThanksCandidatesInput,
+	): Promise<NudgeInteractionRecord[]> {
+		const ids = await this.#findThanksCandidateIds(input);
+		return this.#findThanksCandidatesByIds(ids);
+	}
+
+	async findThanksCandidatePage(
+		input: FindNudgeThanksCandidatesInput & { cursor?: number; size: number },
+	): Promise<NudgeThanksCandidatePage> {
+		const ids = await this.#findThanksCandidateIds(input);
+		const { cursor } = input;
+		const remainingIds = cursor === undefined ? ids : ids.filter((id) => id < cursor);
+		const pageIds = remainingIds.slice(0, input.size);
+		const hasNext = remainingIds.length > pageIds.length;
+		return {
+			items: await this.#findThanksCandidatesByIds(pageIds),
+			totalRecipients: ids.length,
+			hasNext,
+			nextCursor: hasNext ? (pageIds.at(-1) ?? null) : null,
+		};
+	}
+
+	async #findThanksCandidateIds(input: FindNudgeThanksCandidatesInput): Promise<number[]> {
 		if (input.friendIds.length === 0) {
 			return [];
 		}
@@ -322,9 +343,13 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 			},
 			_max: { id: true },
 		});
-		const ids = compact(groups.map((group) => group._max.id));
+		return compact(groups.map((group) => group._max.id)).sort((left, right) => right - left);
+	}
+
+	async #findThanksCandidatesByIds(ids: readonly number[]): Promise<NudgeInteractionRecord[]> {
+		if (ids.length === 0) return [];
 		const rows = await this.client.nudge.findMany({
-			where: { id: { in: ids } },
+			where: { id: { in: [...ids] } },
 			include: NUDGE_INTERACTION_INCLUDE,
 			orderBy: { id: "desc" },
 		});

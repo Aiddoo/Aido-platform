@@ -73,6 +73,20 @@ export interface FindNudgesParams {
 	size: number;
 }
 
+export interface FindNudgeThanksCandidatesInput {
+	readonly userId: string;
+	readonly todoId: number;
+	readonly throughNudgeId: number;
+	readonly friendIds: readonly string[];
+}
+
+export interface NudgeThanksCandidatePage {
+	items: NudgeInteractionRecord[];
+	totalRecipients: number;
+	nextCursor: number | null;
+	hasNext: boolean;
+}
+
 /** 콕 찌르기 생성 입력 */
 export interface CreateNudgeInput {
 	senderId: string;
@@ -99,7 +113,7 @@ export interface NudgeRepositoryPort {
 	findTargetTodo(todoId: number): Promise<TargetTodoRecord | null>;
 	saveRead(nudge: Nudge): Promise<void>;
 	saveReply(nudge: Nudge): Promise<void>;
-	saveThanks(nudge: Nudge): Promise<void>;
+	saveThanksBatch(nudgeIds: readonly number[], thankedAt: Date): Promise<void>;
 	findInteractionById(id: number, userId: string): Promise<NudgeInteractionRecord | null>;
 	findInteractions(
 		params: FindNudgesParams & { direction: "received" | "sent" },
@@ -107,12 +121,10 @@ export interface NudgeRepositoryPort {
 	findInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null>;
 	lockInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null>;
 	findLastReceivedNudgeId(todoId: number, userId: string): Promise<number | null>;
-	findThanksCandidates(input: {
-		userId: string;
-		todoId: number;
-		throughNudgeId: number;
-		friendIds: readonly string[];
-	}): Promise<NudgeInteractionRecord[]>;
+	findThanksCandidates(input: FindNudgeThanksCandidatesInput): Promise<NudgeInteractionRecord[]>;
+	findThanksCandidatePage(
+		input: FindNudgeThanksCandidatesInput & { cursor?: number; size: number },
+	): Promise<NudgeThanksCandidatePage>;
 
 	findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
 	findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;

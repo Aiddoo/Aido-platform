@@ -85,6 +85,29 @@ export const getNudgeInteractionsQuerySchema = getNudgesQuerySchema.extend({
 
 export type GetNudgeInteractionsQuery = z.infer<typeof getNudgeInteractionsQuerySchema>;
 
+export const getNudgeThanksPreviewQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(50).optional().describe('미리보기 페이지 크기'),
+    cursor: z.coerce.number().int().positive().optional().describe('이전 페이지의 마지막 콕 ID'),
+    throughNudgeId: z.coerce
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe('첫 미리보기 시점의 마지막 콕 ID'),
+  })
+  .refine(
+    (query) =>
+      query.cursor === undefined ||
+      (query.limit !== undefined && query.throughNudgeId !== undefined),
+    {
+      message: '다음 페이지 조회에는 페이지 크기와 미리보기 시점의 콕 ID가 필요합니다',
+      path: ['cursor'],
+    },
+  );
+
+export type GetNudgeThanksPreviewQuery = z.infer<typeof getNudgeThanksPreviewQuerySchema>;
+
 export const replyToNudgeSchema = z.object({
   replyKind: nudgeReplyKindSchema.describe('콕에 대한 답장 종류'),
 });

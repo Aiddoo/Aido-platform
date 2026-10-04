@@ -21,6 +21,7 @@ import { SendNudgeThanksUseCase } from "../application/use-cases/send-nudge-than
 import { NudgeIdParamDto } from "./dtos/request/nudge-id-param.dto.js";
 import {
 	GetNudgeInteractionsQueryDto,
+	GetNudgeThanksPreviewQueryDto,
 	NudgeTodoIdParamDto,
 	ReplyToNudgeDto,
 	SendNudgeThanksDto,
@@ -139,11 +140,13 @@ export class NudgeInteractionController {
 	async getThanksPreview(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param({ schema: NudgeTodoIdParamDto }) params: NudgeTodoIdParamDto,
+		@Query({ schema: GetNudgeThanksPreviewQueryDto }) query: GetNudgeThanksPreviewQueryDto,
 		@Headers("x-app-version") appVersion?: string,
 	): Promise<NudgeThanksPreviewResponseDto> {
 		const preview = await this.getNudgeThanksPreviewUseCase.execute({
 			userId: user.userId,
 			todoId: params.todoId,
+			...query,
 		});
 		return NudgeInteractionMapper.toThanksPreviewDto(preview, appVersion);
 	}

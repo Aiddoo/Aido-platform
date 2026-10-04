@@ -9,4 +9,8 @@ export class NotificationRecipientLocaleReader {
 	getRecipientLocale(userId: string): Promise<SupportedLocale> {
 		return this.localeReader.getLocale(userId);
 	}
+
+	getRecipientLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+		return this.localeReader.getLocales(userIds);
+	}
 }
