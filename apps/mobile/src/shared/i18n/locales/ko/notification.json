@@ -4,7 +4,7 @@
   },
   "marketingOptIn": {
     "bannerTitle": "혜택·리마인드 알림 받기",
-    "bannerDescription": "연속 기록·놓친 할 일·이벤트 소식을 챙겨드려요",
+    "bannerDescription": "놓친 할 일과 연속 기록, Aido 소식을 챙겨드려요",
     "title": "이런 알림을 보내드려요",
     "description": "· 연속 기록이 끊기기 전 미리 리마인드\n· 놓친 할 일과 AI 맞춤 추천\n· 이벤트·혜택 소식\n\n언제든 설정에서 끌 수 있어요.\n(광고성 정보 수신 동의)",
     "agree": "네, 받을게요",
@@ -20,13 +20,13 @@
   "categories": {
     "all": "전체",
     "notice": "공지",
-    "todo": "할일",
-    "social": "소셜",
+    "todo": "할 일",
+    "social": "친구",
     "friend": "친구",
     "nudge": "콕 찌르기",
     "cheer": "응원",
     "achievement": "달성",
-    "reminder": "리마인더",
+    "reminder": "리마인드",
     "ai": "AI"
   },
   "list": {
@@ -57,9 +57,9 @@
     "weatherEveningDescription": "설정한 오후 시간에 내일의 날씨를 알려줘요",
     "reminderLabel": "리마인드 알림",
     "reminderMorningLabel": "오전 리마인드",
-    "reminderMorningDescription": "오전 시간대(00:00~11:59)에 오늘의 할일을 알려줘요",
+    "reminderMorningDescription": "오전 시간대(00:00~11:59)에 오늘의 할 일을 알려줘요",
     "reminderEveningLabel": "오후 리마인드",
-    "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할일을 알려줘요",
+    "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요",
     "reminderPremium": "리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요."
   },
   "errors": {

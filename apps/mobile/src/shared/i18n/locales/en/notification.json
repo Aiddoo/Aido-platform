@@ -1,27 +1,27 @@
 {
   "actions": {
-    "marketingOptOut": "Stop promotional pushes"
+    "marketingOptOut": "Turn off promotional notifications"
   },
   "marketingOptIn": {
-    "bannerTitle": "Get benefit & reminder alerts",
-    "bannerDescription": "Streak saves, missed to-dos, and event news",
-    "title": "Here's what you'll get",
-    "description": "· A reminder before your streak breaks\n· Missed to-dos & AI picks for you\n· Events & benefit news\n\nTurn it off anytime in Settings.\n(Consent to promotional messages)",
+    "bannerTitle": "Reminders, tips & Aido news",
+    "bannerDescription": "A little help with your streak, to-dos, and what’s new",
+    "title": "A little help along the way",
+    "description": "· Reminders to keep your streak going\n· Missed to-dos and AI suggestions for you\n· News, events, and special offers\n\nYou can turn these off anytime in Settings.\n(By agreeing, you consent to promotional notifications.)",
     "agree": "Yes, notify me",
     "later": "Later"
   },
   "titles": {
     "notifications": "Notifications",
-    "settings": "Notification Settings",
-    "push": "Push Notifications",
-    "weather": "Weather Alerts",
+    "settings": "Notification settings",
+    "push": "Push notifications",
+    "weather": "Weather alerts",
     "reminder": "Reminders"
   },
   "categories": {
     "all": "All",
     "notice": "Notices",
     "todo": "To-dos",
-    "social": "Social",
+    "social": "Friends",
     "friend": "Friends",
     "nudge": "Nudges",
     "cheer": "Cheers",
