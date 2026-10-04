@@ -12,7 +12,7 @@ import { Nudge } from "../../../domain/entities/nudge.aggregate.js";
 import {
 	NUDGE_INTERACTION_CONFIG,
 	type NudgeInteractionConfigPort,
-} from "../../ports/nudge-interaction-config.port.js";
+} from "../../ports/nudge-interaction.config.port.js";
 import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port.js";
 import {
 	NUDGE_REPOSITORY,
@@ -27,18 +27,18 @@ describe("ReplyToNudgeUseCase", () => {
 	let notifier: Mocked<NudgeNotifierPort>;
 	let followReader: Mocked<FollowReader>;
 	let record: NudgeInteractionRecord;
-	let interactionConfig: { enabled: boolean };
+	let nudgeInteractionConfig: { isEnabled: boolean };
 	const input = { userId: "receiver", nudgeId: 1, replyKind: "STARTING" } as const;
 
 	beforeEach(async () => {
-		interactionConfig = { enabled: true };
+		nudgeInteractionConfig = { isEnabled: true };
 		const { unit, unitRef } = await TestBed.solitary(ReplyToNudgeUseCase)
 			.mock<NudgeRepositoryPort>(NUDGE_REPOSITORY)
 			.impl(createNudgeRepositoryMock)
 			.mock<NudgeNotifierPort>(NUDGE_NOTIFIER)
 			.impl(() => ({ notifyNudgeSent: vi.fn(), recordInteraction: vi.fn() }))
 			.mock<NudgeInteractionConfigPort>(NUDGE_INTERACTION_CONFIG)
-			.impl(() => interactionConfig)
+			.impl(() => nudgeInteractionConfig)
 			.mock(UNIT_OF_WORK)
 			.impl(createUnitOfWorkMock)
 			.compile();
@@ -168,7 +168,7 @@ describe("ReplyToNudgeUseCase", () => {
 
 	it("기능이 꺼져 있으면 저장소에 접근하지 않는다", async () => {
 		// Given
-		interactionConfig.enabled = false;
+		nudgeInteractionConfig.isEnabled = false;
 
 		// When
 		const reply = useCase.execute(input);

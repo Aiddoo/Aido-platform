@@ -13,7 +13,7 @@ import type { NudgeInteractionResult } from "../../nudge-interaction.types.js";
 import {
 	NUDGE_INTERACTION_CONFIG,
 	type NudgeInteractionConfigPort,
-} from "../../ports/nudge-interaction-config.port.js";
+} from "../../ports/nudge-interaction.config.port.js";
 import {
 	NUDGE_REPOSITORY,
 	type NudgeRepositoryPort,
@@ -33,7 +33,7 @@ export class GetNudgeInteractionsUseCase {
 		@Inject(NUDGE_REPOSITORY)
 		private readonly nudgeRepository: NudgeRepositoryPort,
 		@Inject(NUDGE_INTERACTION_CONFIG)
-		private readonly interactionConfig: NudgeInteractionConfigPort,
+		private readonly nudgeInteractionConfig: NudgeInteractionConfigPort,
 		private readonly followReader: FollowReader,
 		private readonly paginationService: PaginationService,
 	) {}
@@ -41,7 +41,7 @@ export class GetNudgeInteractionsUseCase {
 	async execute(
 		input: GetNudgeInteractionsInput,
 	): Promise<CursorPaginatedResponse<NudgeInteractionResult, number>> {
-		if (!this.interactionConfig.enabled) {
+		if (!this.nudgeInteractionConfig.isEnabled) {
 			throw new ApplicationException(ErrorCode.NUDGE_1105);
 		}
 

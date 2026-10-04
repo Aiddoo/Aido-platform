@@ -19,17 +19,19 @@ import type {
 @Injectable()
 export class NudgeNotifierAdapter implements NudgeNotifierPort {
 	constructor(
-		private readonly queue: NotificationQueueService,
-		private readonly publisher: NotificationPublisher,
-		private readonly localeReader: NotificationRecipientLocaleReader,
+		private readonly notificationQueue: NotificationQueueService,
+		private readonly notificationPublisher: NotificationPublisher,
+		private readonly notificationRecipientLocaleReader: NotificationRecipientLocaleReader,
 	) {}
 
 	notifyNudgeSent(payload: NudgeSentNotification): void {
-		this.queue.enqueueNudgeSent(payload);
+		this.notificationQueue.enqueueNudgeSent(payload);
 	}
 
 	async recordInteraction(payload: NudgeInteractionNotification): Promise<void> {
-		const locale = await this.localeReader.getRecipientLocale(payload.recipientId);
+		const locale = await this.notificationRecipientLocaleReader.getRecipientLocale(
+			payload.recipientId,
+		);
 		const type = payload.kind === "reply" ? "NUDGE_REPLIED" : "NUDGE_THANKED";
 		const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY[type];
 		const copyInput = {
@@ -49,7 +51,7 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
 			.with({ kind: "thanks" }, () => createNudgeThanksNotificationMessage(copyInput))
 			.exhaustive();
 		// 호출자의 UoW에 참여해 상태·알림·push outbox를 같은 커밋 경계에 저장한다.
-		await this.publisher.publish({
+		await this.notificationPublisher.publish({
 			userId: payload.recipientId,
 			type,
 			title: message.title,

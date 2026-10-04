@@ -12,7 +12,7 @@ import {
 } from "@aido/validators";
 import request from "supertest";
 
-import { NUDGE_INTERACTION_CONFIG } from "#api/nudge/application/ports/nudge-interaction-config.port";
+import { NUDGE_INTERACTION_CONFIG } from "#api/nudge/application/ports/nudge-interaction.config.port";
 import {
 	NUDGE_NOTIFIER,
 	type NudgeNotifierPort,
@@ -31,7 +31,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 	beforeAll(async () => {
 		ctx = await createE2eApp({
 			customizeBuilder: (builder) =>
-				builder.overrideProvider(NUDGE_INTERACTION_CONFIG).useValue({ enabled: true }),
+				builder.overrideProvider(NUDGE_INTERACTION_CONFIG).useValue({ isEnabled: true }),
 		});
 	}, 60000);
 

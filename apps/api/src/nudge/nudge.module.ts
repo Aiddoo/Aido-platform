@@ -7,7 +7,7 @@ import { TypedConfigService } from "#api/shared/infrastructure/config/services/c
 import {
 	NUDGE_INTERACTION_CONFIG,
 	type NudgeInteractionConfigPort,
-} from "./application/ports/nudge-interaction-config.port.js";
+} from "./application/ports/nudge-interaction.config.port.js";
 import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit-reader.port.js";
 import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port.js";
 import { NUDGE_REPOSITORY } from "./application/ports/nudge.repository.port.js";
@@ -47,7 +47,7 @@ import { NudgeController } from "./presentation/nudge.controller.js";
 			provide: NUDGE_INTERACTION_CONFIG,
 			inject: [TypedConfigService],
 			useFactory: (config: TypedConfigService): NudgeInteractionConfigPort => ({
-				enabled: config.get("NUDGE_INTERACTIONS_ENABLED"),
+				isEnabled: config.get("NUDGE_INTERACTIONS_ENABLED"),
 			}),
 		},
 		{ provide: NUDGE_REPOSITORY, useClass: PrismaNudgeRepository },
