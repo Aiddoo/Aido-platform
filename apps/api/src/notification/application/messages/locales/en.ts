@@ -237,6 +237,20 @@ export const WEATHER_TEMPLATES = {
 } satisfies WeatherNotificationCopyCatalog;
 
 export const SOCIAL_TEMPLATES = {
+	NUDGE_REPLIED: {
+		copy: ({ senderName, todoTitle, replyKind }) =>
+			copy(
+				`${senderName} replied to your poke`,
+				`“${todoTitle}” · “${{ STARTING: "I'll get started", THANKFUL: "Thanks for cheering me on", LATER: "I'll do it later" }[replyKind]}”`,
+			),
+	},
+	NUDGE_THANKED: {
+		copy: ({ senderName, todoTitle }) =>
+			copy(
+				`${senderName} sent you a thank-you 🐾`,
+				`They finished “${todoTitle}”. Your support helped!`,
+			),
+	},
 	FOLLOW_NEW: {
 		variants: [
 			({ senderName }) =>

@@ -211,6 +211,20 @@ export const WEATHER_TEMPLATES = {
 } satisfies WeatherNotificationCopyCatalog;
 
 export const SOCIAL_TEMPLATES = {
+	NUDGE_REPLIED: {
+		copy: ({ senderName, todoTitle, replyKind }) =>
+			copy(
+				`${attachJosa(senderName, "이/가")} 콕에 답했어`,
+				`‘${todoTitle}’ · “${{ STARTING: "시작해볼게", THANKFUL: "응원 고마워", LATER: "나중에 할게" }[replyKind]}”`,
+			),
+	},
+	NUDGE_THANKED: {
+		copy: ({ senderName, todoTitle }) =>
+			copy(
+				`${attachJosa(senderName, "이/가")} 고마움을 전했어 🐾`,
+				`‘${todoTitle}’를 마쳤대. 네 응원이 힘이 됐어!`,
+			),
+	},
 	FOLLOW_NEW: {
 		variants: [
 			({ senderName }) => copy(`${senderName}의 친구 신청 👋`, "함께 하루를 나눠보고 싶대"),

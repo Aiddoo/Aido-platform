@@ -5,6 +5,7 @@ import type { CursorPaginatedResponse } from "#api/shared/application/pagination
 import { PaginationService } from "#api/shared/application/pagination/index";
 
 import type { NotificationRecord } from "../../../domain/records/notification.record.js";
+import { visibleNotificationTypes } from "../../../domain/services/notification-client-capability.js";
 import type { NotificationType } from "../../../domain/types/notification-type.js";
 import {
 	NOTIFICATION_INBOX_READER,
@@ -17,6 +18,7 @@ export interface GetNotificationsInput {
 	size?: number;
 	unreadOnly?: boolean;
 	category?: NotificationCategory;
+	appVersion?: string;
 }
 
 /**
@@ -52,7 +54,7 @@ export class GetNotificationsUseCase {
 			cursor,
 			size,
 			unreadOnly: input.unreadOnly,
-			types,
+			types: visibleNotificationTypes(input.appVersion, types),
 		});
 
 		this.#logger.debug(

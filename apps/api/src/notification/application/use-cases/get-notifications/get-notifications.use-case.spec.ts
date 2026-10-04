@@ -58,7 +58,7 @@ describe("GetNotificationsUseCase", () => {
 		];
 		notificationRepo.findNotificationsByUser.mockResolvedValue(notifications);
 
-		const result = await useCase.execute({ userId: mockUserId, size: 20 });
+		const result = await useCase.execute({ userId: mockUserId, size: 20, appVersion: "1.11.0" });
 
 		expect(paginationService.normalizeCursorPagination).toHaveBeenCalledWith({
 			cursor: undefined,
@@ -114,15 +114,32 @@ describe("GetNotificationsUseCase", () => {
 		);
 	});
 
-	it("category가 'ALL'이면 types를 undefined로 전달해야 한다", async () => {
+	it("1.11.0의 전체 목록은 모든 알림 타입을 조회한다", async () => {
 		notificationRepo.findNotificationsByUser.mockResolvedValue([]);
 
-		await useCase.execute({ userId: mockUserId, category: "ALL" });
+		await useCase.execute({ userId: mockUserId, category: "ALL", appVersion: "1.11.0" });
 
 		expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
 			expect.objectContaining({ types: undefined }),
 		);
 	});
+
+	it.each([undefined, "1.10.0", "1.10.1"])(
+		"앱 버전 %s의 목록 조회에서 새 알림은 페이지네이션 전에 제외한다",
+		async (appVersion) => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await useCase.execute({ userId: mockUserId, appVersion, cursor: 5 });
+
+			// Then
+			const types = notificationRepo.findNotificationsByUser.mock.calls[0]?.[0].types;
+			expect(types).toContain("NUDGE_RECEIVED");
+			expect(types).not.toContain("NUDGE_REPLIED");
+			expect(types).not.toContain("NUDGE_THANKED");
+		},
+	);
 
 	it("커서를 전달해야 한다", async () => {
 		paginationService.normalizeCursorPagination.mockReturnValue({

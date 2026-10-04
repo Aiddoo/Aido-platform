@@ -87,6 +87,7 @@ import { PushDeliveryQueueProcessor } from "./infrastructure/queue/push-delivery
 import { PushDeliveryQueueService } from "./infrastructure/queue/push-delivery-queue.service.js";
 import { createPushRateLimiter } from "./infrastructure/rate-limiter/push-rate-limiter.factory.js";
 import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/security/hmac-marketing-push-opt-out-token.adapter.js";
+import { NotificationInboxController } from "./presentation/notification-inbox.controller.js";
 import { NotificationController } from "./presentation/notification.controller.js";
 
 /**
@@ -103,7 +104,7 @@ import { NotificationController } from "./presentation/notification.controller.j
 	// 역방향(user-settings → notification)은 경량 `@/notification/queue` 서브엔트리로만
 	// 참조하므로 ES 초기화 순환이 없다 → forwardRef 불필요.
 	imports: [NotificationQueueModule, UserSettingsModule],
-	controllers: [NotificationController],
+	controllers: [NotificationController, NotificationInboxController],
 	providers: [
 		// 크로스 모듈 호환 경계 + endpoint UseCase
 		{

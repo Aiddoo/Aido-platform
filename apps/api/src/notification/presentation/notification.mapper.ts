@@ -1,6 +1,6 @@
 import {
 	type NotificationContext,
-	type Notification as NotificationDto,
+	type NotificationInboxItem as NotificationDto,
 	type NotificationMetadata,
 	notificationMetadataSchema,
 } from "@aido/validators";

@@ -13,9 +13,9 @@ export const notificationSchema = z
   .object({
     id: z.number().int().positive().describe('알림 ID (양의 정수)'),
     userId: z.string().describe('사용자 ID (CUID 25자)'),
-    type: notificationTypeSchema.describe(
-      '알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등)',
-    ),
+    type: notificationTypeSchema
+      .exclude(['NUDGE_REPLIED', 'NUDGE_THANKED'])
+      .describe('알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등)'),
     title: notificationTitleSchema,
     body: notificationBodySchema,
     isRead: z.boolean().describe('읽음 여부'),
@@ -77,6 +77,16 @@ export const notificationListResponseSchema = z
   });
 
 export type NotificationListResponse = z.infer<typeof notificationListResponseSchema>;
+
+export const notificationInboxItemSchema = notificationSchema.extend({
+  type: notificationTypeSchema,
+});
+export type NotificationInboxItem = z.infer<typeof notificationInboxItemSchema>;
+
+export const notificationInboxResponseSchema = notificationListResponseSchema.extend({
+  notifications: z.array(notificationInboxItemSchema).describe('알림 목록'),
+});
+export type NotificationInboxResponse = z.infer<typeof notificationInboxResponseSchema>;
 
 export const unreadCountResponseSchema = z
   .object({

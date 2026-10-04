@@ -12,7 +12,11 @@ export const NOTIFICATION_CACHE = Symbol("NOTIFICATION_CACHE");
  */
 export interface NotificationCachePort {
 	/** 미읽음 알림 개수 조회 (캐시 wrap). */
-	wrapUnreadCount(userId: string, factory: () => Promise<number>): Promise<number>;
+	wrapUnreadCount(
+		userId: string,
+		factory: () => Promise<number>,
+		scope?: NotificationInboxScope,
+	): Promise<number>;
 
 	/** 미읽음 알림 개수 캐시 무효화 (읽음/신규 알림 쓰기 경로). */
 	invalidateUnreadCount(userId: string): Promise<void>;
@@ -26,3 +30,4 @@ export interface NotificationCachePort {
 	 */
 	invalidateUserPreference(userId: string): Promise<void>;
 }
+import type { NotificationInboxScope } from "../../domain/services/notification-client-capability.js";

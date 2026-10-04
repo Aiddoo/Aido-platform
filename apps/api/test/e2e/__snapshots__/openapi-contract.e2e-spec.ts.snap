@@ -4432,6 +4432,169 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "NotificationInboxResponseDto": {
+      "properties": {
+        "hasMore": {
+          "description": "다음 페이지 존재 여부",
+          "type": "boolean",
+        },
+        "nextCursor": {
+          "description": "다음 커서 (양의 정수, 마지막 페이지는 null)",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "nullable": true,
+          "type": "integer",
+        },
+        "notifications": {
+          "description": "알림 목록",
+          "items": {
+            "properties": {
+              "action": {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "DEEP_LINK",
+                      "BROWSER",
+                      "WEBVIEW",
+                      "NONE",
+                    ],
+                    "type": "string",
+                  },
+                  "url": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "type",
+                ],
+                "type": "object",
+              },
+              "body": {
+                "description": "알림 본문 (최대 500자)",
+                "maxLength": 500,
+                "type": "string",
+              },
+              "context": {
+                "properties": {
+                  "cheerId": {
+                    "type": "number",
+                  },
+                  "friendId": {
+                    "type": "string",
+                  },
+                  "nudgeId": {
+                    "type": "number",
+                  },
+                  "todoId": {
+                    "type": "number",
+                  },
+                },
+                "type": "object",
+              },
+              "createdAt": {
+                "description": "생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string",
+              },
+              "id": {
+                "description": "알림 ID (양의 정수)",
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "isRead": {
+                "description": "읽음 여부",
+                "type": "boolean",
+              },
+              "metadata": {
+                "additionalProperties": {},
+                "description": "추가 메타데이터 (미설정 시 null)",
+                "nullable": true,
+                "propertyNames": {
+                  "type": "string",
+                },
+                "type": "object",
+              },
+              "readAt": {
+                "description": "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string",
+              },
+              "title": {
+                "description": "알림 제목 (최대 200자)",
+                "maxLength": 200,
+                "type": "string",
+              },
+              "type": {
+                "enum": [
+                  "FOLLOW_NEW",
+                  "FOLLOW_ACCEPTED",
+                  "NUDGE_RECEIVED",
+                  "NUDGE_REPLIED",
+                  "NUDGE_THANKED",
+                  "CHEER_RECEIVED",
+                  "DAILY_COMPLETE",
+                  "FRIEND_COMPLETED",
+                  "TODO_REMINDER",
+                  "TODO_SHARED",
+                  "MORNING_REMINDER",
+                  "EVENING_REMINDER",
+                  "WEEKLY_ACHIEVEMENT",
+                  "WEEKLY_REPORT",
+                  "MONTHLY_REPORT",
+                  "AI_SUGGESTION",
+                  "SYSTEM_NOTICE",
+                  "ADMIN_BROADCAST",
+                  "ADMIN_TARGETED",
+                  "WINBACK",
+                  "SOCIAL_DIGEST",
+                  "NUDGE_SUGGEST",
+                  "LUNCH_NUDGE",
+                  "STREAK_AT_RISK",
+                  "WEATHER_MORNING",
+                  "WEATHER_EVENING",
+                ],
+                "type": "string",
+              },
+              "userId": {
+                "description": "사용자 ID (CUID 25자)",
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "userId",
+              "type",
+              "title",
+              "body",
+              "isRead",
+              "metadata",
+              "createdAt",
+              "readAt",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "unreadCount": {
+          "description": "읽지 않은 알림 수 (음이 아닌 정수)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "notifications",
+        "unreadCount",
+        "hasMore",
+        "nextCursor",
+      ],
+      "type": "object",
+    },
     "NotificationListResponseDto": {
       "example": {
         "hasMore": true,
@@ -4671,6 +4834,492 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "NudgeInteractionAvailabilityResponseDto": {
+      "properties": {
+        "enabled": {
+          "description": "콕 주고받기 기능 사용 가능 여부",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "enabled",
+      ],
+      "type": "object",
+    },
+    "NudgeInteractionResponseDto": {
+      "properties": {
+        "createdAt": {
+          "description": "생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "id": {
+          "description": "찌르기 ID (양의 정수)",
+          "exclusiveMinimum": true,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "isAvailable": {
+          "description": "현재 친구 관계와 공개 할 일이 유지되는지 여부",
+          "type": "boolean",
+        },
+        "message": {
+          "description": "응원 메시지 (최대 200자, 미설정 시 null)",
+          "maxLength": 200,
+          "nullable": true,
+          "type": "string",
+        },
+        "readAt": {
+          "description": "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "receiver": {
+          "description": "콕을 받은 친구",
+          "example": {
+            "id": "clz7x5p8k0005qz0z8z8z8z8z",
+            "name": "존",
+            "profileImage": "https://example.com/profiles/john.jpg",
+            "userTag": "JOHN2026",
+          },
+          "properties": {
+            "id": {
+              "description": "사용자 ID (CUID 25자)",
+              "format": "cuid",
+              "pattern": "^[cC][^\\s-]{8,}$",
+              "type": "string",
+            },
+            "name": {
+              "description": "사용자 이름 (미설정 시 null)",
+              "nullable": true,
+              "type": "string",
+            },
+            "profileImage": {
+              "description": "프로필 이미지 URL (미설정 시 null)",
+              "nullable": true,
+              "type": "string",
+            },
+            "userTag": {
+              "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+              "maxLength": 8,
+              "minLength": 8,
+              "type": "string",
+            },
+          },
+          "required": [
+            "id",
+            "userTag",
+            "name",
+            "profileImage",
+          ],
+          "type": "object",
+        },
+        "receiverId": {
+          "description": "받은 사용자 ID (CUID 25자)",
+          "format": "cuid",
+          "pattern": "^[cC][^\\s-]{8,}$",
+          "type": "string",
+        },
+        "repliedAt": {
+          "description": "첫 답장 시각",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "replyKind": {
+          "description": "선택한 답장 (아직 답하지 않았으면 null)",
+          "enum": [
+            "STARTING",
+            "THANKFUL",
+            "LATER",
+            null,
+          ],
+          "nullable": true,
+          "type": "string",
+        },
+        "replyUpdatedAt": {
+          "description": "마지막 답장 변경 시각",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "sender": {
+          "description": "콕을 보낸 친구",
+          "example": {
+            "id": "clz7x5p8k0005qz0z8z8z8z8z",
+            "name": "존",
+            "profileImage": "https://example.com/profiles/john.jpg",
+            "userTag": "JOHN2026",
+          },
+          "properties": {
+            "id": {
+              "description": "사용자 ID (CUID 25자)",
+              "format": "cuid",
+              "pattern": "^[cC][^\\s-]{8,}$",
+              "type": "string",
+            },
+            "name": {
+              "description": "사용자 이름 (미설정 시 null)",
+              "nullable": true,
+              "type": "string",
+            },
+            "profileImage": {
+              "description": "프로필 이미지 URL (미설정 시 null)",
+              "nullable": true,
+              "type": "string",
+            },
+            "userTag": {
+              "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+              "maxLength": 8,
+              "minLength": 8,
+              "type": "string",
+            },
+          },
+          "required": [
+            "id",
+            "userTag",
+            "name",
+            "profileImage",
+          ],
+          "type": "object",
+        },
+        "senderId": {
+          "description": "보낸 사용자 ID (CUID 25자)",
+          "format": "cuid",
+          "pattern": "^[cC][^\\s-]{8,}$",
+          "type": "string",
+        },
+        "thankedAt": {
+          "description": "감사를 전한 시각",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "type": "string",
+        },
+        "todo": {
+          "description": "접근할 수 있는 대상 할 일 (비공개 등 접근 불가 시 null)",
+          "example": {
+            "completed": false,
+            "id": 1,
+            "title": "운동하기",
+          },
+          "nullable": true,
+          "properties": {
+            "completed": {
+              "description": "완료 여부",
+              "type": "boolean",
+            },
+            "id": {
+              "description": "할 일 ID (양의 정수)",
+              "exclusiveMinimum": true,
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "title": {
+              "description": "할 일 제목 (최대 200자)",
+              "maxLength": 200,
+              "type": "string",
+            },
+          },
+          "required": [
+            "id",
+            "title",
+            "completed",
+          ],
+          "type": "object",
+        },
+        "todoId": {
+          "description": "대상 할 일 ID (양의 정수)",
+          "exclusiveMinimum": true,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "id",
+        "senderId",
+        "receiverId",
+        "todoId",
+        "message",
+        "createdAt",
+        "readAt",
+        "sender",
+        "receiver",
+        "todo",
+        "replyKind",
+        "repliedAt",
+        "replyUpdatedAt",
+        "thankedAt",
+        "isAvailable",
+      ],
+      "type": "object",
+    },
+    "NudgeInteractionsResponseDto": {
+      "properties": {
+        "items": {
+          "description": "주고받은 콕 목록",
+          "items": {
+            "properties": {
+              "createdAt": {
+                "description": "생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string",
+              },
+              "id": {
+                "description": "찌르기 ID (양의 정수)",
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "isAvailable": {
+                "description": "현재 친구 관계와 공개 할 일이 유지되는지 여부",
+                "type": "boolean",
+              },
+              "message": {
+                "description": "응원 메시지 (최대 200자, 미설정 시 null)",
+                "maxLength": 200,
+                "nullable": true,
+                "type": "string",
+              },
+              "readAt": {
+                "description": "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string",
+              },
+              "receiver": {
+                "description": "콕을 받은 친구",
+                "example": {
+                  "id": "clz7x5p8k0005qz0z8z8z8z8z",
+                  "name": "존",
+                  "profileImage": "https://example.com/profiles/john.jpg",
+                  "userTag": "JOHN2026",
+                },
+                "properties": {
+                  "id": {
+                    "description": "사용자 ID (CUID 25자)",
+                    "format": "cuid",
+                    "pattern": "^[cC][^\\s-]{8,}$",
+                    "type": "string",
+                  },
+                  "name": {
+                    "description": "사용자 이름 (미설정 시 null)",
+                    "nullable": true,
+                    "type": "string",
+                  },
+                  "profileImage": {
+                    "description": "프로필 이미지 URL (미설정 시 null)",
+                    "nullable": true,
+                    "type": "string",
+                  },
+                  "userTag": {
+                    "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+                    "maxLength": 8,
+                    "minLength": 8,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "userTag",
+                  "name",
+                  "profileImage",
+                ],
+                "type": "object",
+              },
+              "receiverId": {
+                "description": "받은 사용자 ID (CUID 25자)",
+                "format": "cuid",
+                "pattern": "^[cC][^\\s-]{8,}$",
+                "type": "string",
+              },
+              "repliedAt": {
+                "description": "첫 답장 시각",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string",
+              },
+              "replyKind": {
+                "description": "선택한 답장 (아직 답하지 않았으면 null)",
+                "enum": [
+                  "STARTING",
+                  "THANKFUL",
+                  "LATER",
+                  null,
+                ],
+                "nullable": true,
+                "type": "string",
+              },
+              "replyUpdatedAt": {
+                "description": "마지막 답장 변경 시각",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string",
+              },
+              "sender": {
+                "description": "콕을 보낸 친구",
+                "example": {
+                  "id": "clz7x5p8k0005qz0z8z8z8z8z",
+                  "name": "존",
+                  "profileImage": "https://example.com/profiles/john.jpg",
+                  "userTag": "JOHN2026",
+                },
+                "properties": {
+                  "id": {
+                    "description": "사용자 ID (CUID 25자)",
+                    "format": "cuid",
+                    "pattern": "^[cC][^\\s-]{8,}$",
+                    "type": "string",
+                  },
+                  "name": {
+                    "description": "사용자 이름 (미설정 시 null)",
+                    "nullable": true,
+                    "type": "string",
+                  },
+                  "profileImage": {
+                    "description": "프로필 이미지 URL (미설정 시 null)",
+                    "nullable": true,
+                    "type": "string",
+                  },
+                  "userTag": {
+                    "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+                    "maxLength": 8,
+                    "minLength": 8,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "userTag",
+                  "name",
+                  "profileImage",
+                ],
+                "type": "object",
+              },
+              "senderId": {
+                "description": "보낸 사용자 ID (CUID 25자)",
+                "format": "cuid",
+                "pattern": "^[cC][^\\s-]{8,}$",
+                "type": "string",
+              },
+              "thankedAt": {
+                "description": "감사를 전한 시각",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                "type": "string",
+              },
+              "todo": {
+                "description": "접근할 수 있는 대상 할 일 (비공개 등 접근 불가 시 null)",
+                "example": {
+                  "completed": false,
+                  "id": 1,
+                  "title": "운동하기",
+                },
+                "nullable": true,
+                "properties": {
+                  "completed": {
+                    "description": "완료 여부",
+                    "type": "boolean",
+                  },
+                  "id": {
+                    "description": "할 일 ID (양의 정수)",
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "title": {
+                    "description": "할 일 제목 (최대 200자)",
+                    "maxLength": 200,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "completed",
+                ],
+                "type": "object",
+              },
+              "todoId": {
+                "description": "대상 할 일 ID (양의 정수)",
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "id",
+              "senderId",
+              "receiverId",
+              "todoId",
+              "message",
+              "createdAt",
+              "readAt",
+              "sender",
+              "receiver",
+              "todo",
+              "replyKind",
+              "repliedAt",
+              "replyUpdatedAt",
+              "thankedAt",
+              "isAvailable",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "pagination": {
+          "description": "콕 목록 커서 페이지네이션",
+          "properties": {
+            "hasNext": {
+              "description": "다음 페이지 존재 여부",
+              "type": "boolean",
+            },
+            "nextCursor": {
+              "description": "다음 페이지 커서",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991,
+              "nullable": true,
+              "type": "integer",
+            },
+            "size": {
+              "description": "요청한 페이지 크기",
+              "exclusiveMinimum": true,
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "nextCursor",
+            "hasNext",
+            "size",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "items",
+        "pagination",
+      ],
+      "type": "object",
+    },
     "NudgeLimitInfoDto": {
       "example": {
         "dailyLimit": 10,
@@ -4709,6 +5358,73 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "usedToday",
         "remainingToday",
         "isUnlimited",
+      ],
+      "type": "object",
+    },
+    "NudgeThanksPreviewResponseDto": {
+      "properties": {
+        "recipients": {
+          "description": "이번에 감사를 받을 친구 (중복과 이미 감사한 친구 제외)",
+          "items": {
+            "example": {
+              "id": "clz7x5p8k0005qz0z8z8z8z8z",
+              "name": "존",
+              "profileImage": "https://example.com/profiles/john.jpg",
+              "userTag": "JOHN2026",
+            },
+            "properties": {
+              "id": {
+                "description": "사용자 ID (CUID 25자)",
+                "format": "cuid",
+                "pattern": "^[cC][^\\s-]{8,}$",
+                "type": "string",
+              },
+              "name": {
+                "description": "사용자 이름 (미설정 시 null)",
+                "nullable": true,
+                "type": "string",
+              },
+              "profileImage": {
+                "description": "프로필 이미지 URL (미설정 시 null)",
+                "nullable": true,
+                "type": "string",
+              },
+              "userTag": {
+                "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+                "maxLength": 8,
+                "minLength": 8,
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "userTag",
+              "name",
+              "profileImage",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "throughNudgeId": {
+          "description": "미리보기 시점의 마지막 콕 ID",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "nullable": true,
+          "type": "integer",
+        },
+        "todoId": {
+          "description": "완료한 할 일 ID",
+          "exclusiveMinimum": true,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "todoId",
+        "throughNudgeId",
+        "recipients",
       ],
       "type": "object",
     },
@@ -6380,6 +7096,23 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "ReplyToNudgeDto": {
+      "properties": {
+        "replyKind": {
+          "description": "콕에 대한 답장 종류",
+          "enum": [
+            "STARTING",
+            "THANKFUL",
+            "LATER",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "replyKind",
+      ],
+      "type": "object",
+    },
     "ReportStatusResponseDto": {
       "properties": {
         "status": {
@@ -7138,6 +7871,35 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       "required": [
         "receiverId",
         "todoId",
+      ],
+      "type": "object",
+    },
+    "SendNudgeThanksDto": {
+      "properties": {
+        "throughNudgeId": {
+          "description": "미리보기 시점의 마지막 콕 ID",
+          "exclusiveMinimum": true,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "throughNudgeId",
+      ],
+      "type": "object",
+    },
+    "SendNudgeThanksResponseDto": {
+      "properties": {
+        "sentCount": {
+          "description": "이번 요청으로 감사를 전한 친구 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "sentCount",
       ],
       "type": "object",
     },
@@ -27189,6 +27951,455 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
+  "/v1/notifications/inbox": {
+    "get": {
+      "operationId": "getNotificationInbox",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 1.11.0 이상에서 콕 답장·감사 알림을 표시합니다.",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "description": "조회할 알림 개수 (1-100, 기본값: 20)",
+          "in": "query",
+          "name": "limit",
+          "required": false,
+          "schema": {
+            "default": 20,
+            "description": "조회할 알림 개수 (1-100, 기본값: 20)",
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer",
+          },
+        },
+        {
+          "description": "페이지네이션 커서 (선택, 0 이상의 정수)",
+          "in": "query",
+          "name": "cursor",
+          "required": false,
+          "schema": {
+            "description": "페이지네이션 커서 (선택, 0 이상의 정수)",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        {
+          "description": "읽지 않은 알림만 조회 여부 (기본값: false)",
+          "in": "query",
+          "name": "unreadOnly",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean",
+              },
+              {
+                "type": "string",
+              },
+            ],
+            "description": "읽지 않은 알림만 조회 여부 (기본값: false)",
+          },
+        },
+        {
+          "description": "알림 카테고리 필터 (ALL: 전체, NOTICE: 공지, TODO: 할일, SOCIAL: 소셜 / 기본값: ALL)",
+          "in": "query",
+          "name": "category",
+          "required": false,
+          "schema": {
+            "default": "ALL",
+            "description": "알림 카테고리 필터 (ALL: 전체, NOTICE: 공지, TODO: 할일, SOCIAL: 소셜 / 기본값: ALL)",
+            "enum": [
+              "ALL",
+              "NOTICE",
+              "TODO",
+              "SOCIAL",
+            ],
+            "type": "string",
+          },
+        },
+        {
+          "in": "header",
+          "name": "x-app-version",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/NotificationInboxResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "알림함 조회",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
+  "/v1/notifications/inbox/read-all": {
+    "patch": {
+      "operationId": "markNotificationInboxAsRead",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 1.11.0 이상에서 콕 답장·감사 알림을 표시합니다.",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "in": "header",
+          "name": "x-app-version",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/MarkReadResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "알림함 전체 읽음 처리",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
+  "/v1/notifications/inbox/unread-count": {
+    "get": {
+      "operationId": "getNotificationInboxUnreadCount",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 1.11.0 이상에서 콕 답장·감사 알림을 표시합니다.",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "in": "header",
+          "name": "x-app-version",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/UnreadCountResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "알림함의 미읽음 개수 조회",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
   "/v1/notifications/marketing-push/opt-out": {
     "post": {
       "description": "푸시 액션에 포함된 서명 토큰으로 로그인 없이 수신을 철회합니다.",
@@ -28654,6 +29865,345 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
+  "/v1/nudges/interactions": {
+    "get": {
+      "operationId": "getNudgeInteractions",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "description": "조회할 개수 (1-50, 기본값: 20)",
+          "in": "query",
+          "name": "limit",
+          "required": false,
+          "schema": {
+            "default": 20,
+            "description": "조회할 개수 (1-50, 기본값: 20)",
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer",
+          },
+        },
+        {
+          "description": "페이지네이션 커서 (0 이상의 정수)",
+          "in": "query",
+          "name": "cursor",
+          "required": false,
+          "schema": {
+            "description": "페이지네이션 커서 (0 이상의 정수)",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        {
+          "description": "콕을 주고받은 방향",
+          "in": "query",
+          "name": "direction",
+          "required": false,
+          "schema": {
+            "default": "received",
+            "description": "콕을 주고받은 방향",
+            "enum": [
+              "received",
+              "sent",
+            ],
+            "type": "string",
+          },
+        },
+        {
+          "in": "header",
+          "name": "x-app-version",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/NudgeInteractionsResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1105",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Nudge를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Nudge를 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "주고받은 콕 목록 조회",
+      "tags": [
+        "Nudges",
+      ],
+    },
+  },
+  "/v1/nudges/interactions/availability": {
+    "get": {
+      "operationId": "getNudgeInteractionAvailability",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/NudgeInteractionAvailabilityResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "콕 주고받기 기능 사용 가능 여부",
+      "tags": [
+        "Nudges",
+      ],
+    },
+  },
   "/v1/nudges/limit": {
     "get": {
       "description": "오늘 사용한 콕 찌르기 횟수와 남은 횟수를 확인합니다.
@@ -29491,6 +31041,677 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
       ],
     },
   },
+  "/v1/nudges/todos/{todoId}/thanks": {
+    "get": {
+      "operationId": "getNudgeThanksPreview",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "description": "감사를 전할 할 일 ID",
+          "in": "path",
+          "name": "todoId",
+          "required": true,
+          "schema": {
+            "description": "감사를 전할 할 일 ID",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        {
+          "in": "header",
+          "name": "x-app-version",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/NudgeThanksPreviewResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_0801",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Todo를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Nudge를 찾을 수 없습니다.
+
+Todo를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1110",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "할 일을 완료한 뒤 감사를 전해주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "할 일을 완료한 뒤 감사를 전해주세요.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "감사를 받을 친구 미리보기",
+      "tags": [
+        "Nudges",
+      ],
+    },
+    "put": {
+      "description": "미리보기 시점까지 콕을 보낸 현재 친구에게 감사를 전합니다. 같은 할 일·친구에게 한 번만 보내며 재요청은 성공한 결과 sentCount: 0을 반환합니다.",
+      "operationId": "sendNudgeThanks",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "description": "감사를 전할 할 일 ID",
+          "in": "path",
+          "name": "todoId",
+          "required": true,
+          "schema": {
+            "description": "감사를 전할 할 일 ID",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SendNudgeThanksDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/SendNudgeThanksResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_0801",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Todo를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Nudge를 찾을 수 없습니다.
+
+Todo를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1109",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금은 이 콕에 답장할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "할 일을 완료한 뒤 감사를 전해주세요.
+
+지금은 이 콕에 답장할 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "완료한 할 일의 콕에 감사 전하기",
+      "tags": [
+        "Nudges",
+      ],
+    },
+  },
+  "/v1/nudges/{id}/interaction": {
+    "get": {
+      "operationId": "getNudgeInteraction",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "description": "콕 찌름 고유 ID (양의 정수, 예: 1)",
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "description": "콕 찌름 고유 ID (양의 정수, 예: 1)",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        {
+          "in": "header",
+          "name": "x-app-version",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/NudgeInteractionResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1105",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Nudge를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Nudge를 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "콕 답장·감사 상태 조회",
+      "tags": [
+        "Nudges",
+      ],
+    },
+  },
   "/v1/nudges/{id}/read": {
     "patch": {
       "description": "받은 콕 찌름을 읽음 상태로 변경합니다.",
@@ -29660,6 +31881,254 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
         },
       ],
       "summary": "콕 찌름 읽음 처리",
+      "tags": [
+        "Nudges",
+      ],
+    },
+  },
+  "/v1/nudges/{id}/reply": {
+    "put": {
+      "description": "첫 답장에만 알림을 보냅니다. 답장을 변경해도 알림을 반복하지 않으며 할 일 완료 상태를 바꾸지 않습니다.",
+      "operationId": "replyToNudge",
+      "parameters": [
+        {
+          "description": "설치된 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+        {
+          "description": "콕 찌름 고유 ID (양의 정수, 예: 1)",
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "description": "콕 찌름 고유 ID (양의 정수, 예: 1)",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        {
+          "in": "header",
+          "name": "x-app-version",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ReplyToNudgeDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/NudgeInteractionResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1105",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Nudge를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "Nudge를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1109",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금은 이 콕에 답장할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "지금은 이 콕에 답장할 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "받은 콕에 답장",
       "tags": [
         "Nudges",
       ],
