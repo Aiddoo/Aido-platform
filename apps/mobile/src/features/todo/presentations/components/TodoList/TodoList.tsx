@@ -426,6 +426,8 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoItem
     <TodoRow
       left={
         <TodoCheckbox
+          testID={`todo-checkbox-${todo.id}`}
+          accessibilityLabel={todo.title}
           isSelected={todo.completed}
           onSelectedChange={todoActions.toggle}
           isDisabled={todoActions.isTogglePending || isOptimistic}

@@ -35,6 +35,8 @@ backups/
 
 # Documentation
 *.md
+**/*.md
+**/docs/
 myDocs/
 docs/
 

@@ -1,5 +1,6 @@
 const TIP_LABEL = 'ci:stack-tip';
 const STACK_LABEL_PATTERN = /^stack:\d+\.\d+\.\d+$/;
+const RELEASE_STACK_BRANCH_PATTERN = /^[^/]+\/\d+\.\d+(?:\.\d+)?-/;
 
 const hasLabel = (pull, name) => pull.labels.some((label) => label.name === name);
 
@@ -8,10 +9,7 @@ export function planPullRequestCI(current, openPulls, repository) {
   if (stackLabels.length > 1)
     throw new Error('A pull request must belong to only one release stack.');
   const stackLabel = stackLabels[0]?.name;
-  const isStack =
-    current.head.ref.startsWith('upgrade/1.10-') ||
-    current.head.ref.includes('/1.10.1-') ||
-    stackLabel !== undefined;
+  const isStack = RELEASE_STACK_BRANCH_PATTERN.test(current.head.ref) || stackLabel !== undefined;
   if (!isStack) {
     return {
       run: current.head.ref !== 'develop',

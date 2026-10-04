@@ -1,0 +1,12 @@
+appId: com.aido.mobile
+name: 앱이 꺼져 있어도 위젯 생성 링크를 한 번 처리한다
+---
+# Given: 로그인된 Release 앱을 종료한다
+- stopApp
+# When: 홈 위젯과 같은 생성 링크로 앱을 연다
+- openLink: aido-dev://feed?date=today&action=add-todo
+# Then: 인증 복원 후 기존 생성 시트가 나타난다
+- extendedWaitUntil:
+    visible: 'Create a to-do with AI|AI로 할 일 만들기'
+    timeout: 25000
+- takeScreenshot: 1.11.0-widget-cold-create
