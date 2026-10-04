@@ -17,16 +17,16 @@
     "openTodo": "할 일을 누르면 앱에서 열려요"
   },
   "entry": {
-    "loading": "할 일 작성 화면을 준비하고 있어요",
-    "loadError": "작성 화면을 준비하지 못했어요",
+    "loading": "할 일을 만들 준비 중이에요",
+    "loadError": "할 일 작성 화면을 열지 못했어요",
     "emptyCategory": "할 일을 담을 카테고리를 먼저 만들어 주세요",
     "manageCategories": "카테고리 만들기"
   },
   "state": {
-    "emptyTitle": "오늘 할 일이 없어요",
-    "emptyCta": "탭해서 추가하기",
+    "emptyTitle": "오늘은 아직 할 일이 없어요",
+    "emptyCta": "오늘의 첫 할 일 만들기",
     "loggedOutTitle": "로그인이 필요해요",
-    "loggedOutCta": "탭해서 시작하기",
+    "loggedOutCta": "앱을 열어 시작하기",
     "staleTitle": "새로운 하루가 시작됐어요",
     "staleCta": "앱을 열어 확인하기"
   }

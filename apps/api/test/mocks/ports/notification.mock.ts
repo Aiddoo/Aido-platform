@@ -68,7 +68,7 @@ export function createNotificationRecipientPreferenceReaderMock(): NotificationR
 }
 
 export function createNotificationRecipientLocaleReaderMock(): NotificationRecipientLocaleReaderPort {
-	return { getLocale: vi.fn() };
+	return { getLocale: vi.fn(), getLocales: vi.fn() };
 }
 
 export function createPushReceiptRepositoryMock(): PushReceiptRepositoryPort {

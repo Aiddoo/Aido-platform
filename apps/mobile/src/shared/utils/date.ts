@@ -4,6 +4,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { times } from 'es-toolkit/compat';
 
+import { getCalendarWeek } from './calendar-week';
 import { formatClockTime, formatDateLabel, type DateFormatContext } from './date-format';
 
 dayjs.extend(weekOfYear);
@@ -109,11 +110,10 @@ export const getWeekdayLabels = (): string[] =>
   );
 
 export const getWeekHeaderText = (date: Date): string => {
-  const d = dayjs(date);
-  const weekOfMonth = Math.ceil(d.date() / 7);
+  const week = getCalendarWeek(date);
   return t('common:calendar.weekHeader', {
-    month: formatDateLabel(d.toDate(), 'month', getDateFormatContext()),
-    week: weekOfMonth,
+    month: formatDateLabel(week.start, 'month', getDateFormatContext()),
+    week: week.weekOfMonth,
   });
 };
 
@@ -122,7 +122,7 @@ export const getMonthHeaderText = (date: Date): string => {
 };
 
 export const getWeekStart = (date: Date): Date => {
-  return dayjs(date).startOf('week').toDate();
+  return getCalendarWeek(date).start;
 };
 
 export const getMonthStart = (date: Date): Date => {
@@ -130,7 +130,7 @@ export const getMonthStart = (date: Date): Date => {
 };
 
 export const getWeekEnd = (date: Date): Date => {
-  return dayjs(date).endOf('week').toDate();
+  return getCalendarWeek(date).end;
 };
 
 export const getNextDay = (date: Date): Date => {
@@ -242,17 +242,19 @@ export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd:
   };
 };
 
-/** 날짜를 섹션 라벨로 변환 ("오늘", "어제", "이번 주", "이번 달", "이전") */
-export const getDateSectionLabel = (date: Date, referenceDate: Date = new Date()): string => {
+export const getDateSectionKey = (date: Date, referenceDate: Date) => {
   const now = dayjs(referenceDate);
   const target = dayjs(date);
 
-  if (target.isSame(now, 'day')) return t('common:dateSections.today');
-  if (now.subtract(1, 'day').isSame(target, 'day')) return t('common:dateSections.yesterday');
-  if (target.isSame(now, 'isoWeek')) return t('common:dateSections.thisWeek');
-  if (target.isSame(now, 'month')) return t('common:dateSections.thisMonth');
-  return t('common:dateSections.earlier');
+  if (target.isSame(now, 'day')) return 'today';
+  if (now.subtract(1, 'day').isSame(target, 'day')) return 'yesterday';
+  if (target.isSame(now, 'isoWeek')) return 'thisWeek';
+  if (target.isSame(now, 'month')) return 'thisMonth';
+  return 'earlier';
 };
+
+export const getDateSectionLabel = (date: Date, referenceDate: Date = new Date()): string =>
+  t(`common:dateSections.${getDateSectionKey(date, referenceDate)}`);
 
 /** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025.1.5") */
 export const formatRelativeTime = (date: Date, referenceDate: Date = new Date()): string => {

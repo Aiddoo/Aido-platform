@@ -1,4 +1,5 @@
 import { getNudgeInteractionsQuerySchema, nudgeReplyKindSchema } from '@aido/validators';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import type { TodoItem } from './todo.model';
@@ -32,9 +33,37 @@ export const nudgeInteractionPageSchema = z.object({
 });
 export type NudgeInteractionPage = z.infer<typeof nudgeInteractionPageSchema>;
 
+export const nudgeInteractionStatusSchema = z.enum([
+  'UNAVAILABLE',
+  'THANKED',
+  'COMPLETED',
+  'REPLIED',
+  'WAITING',
+]);
+export type NudgeInteractionStatus = z.infer<typeof nudgeInteractionStatusSchema>;
+
+export function getNudgeInteractionStatus(
+  isAvailable: boolean,
+  isTodoCompleted: boolean,
+  hasReply: boolean,
+  isThanked: boolean,
+): NudgeInteractionStatus {
+  return match({ isAvailable, isTodoCompleted, hasReply, isThanked })
+    .returnType<NudgeInteractionStatus>()
+    .with({ isAvailable: false }, () => 'UNAVAILABLE')
+    .with({ isThanked: true }, () => 'THANKED')
+    .with({ isTodoCompleted: true }, () => 'COMPLETED')
+    .with({ hasReply: true }, () => 'REPLIED')
+    .with({ hasReply: false }, () => 'WAITING')
+    .exhaustive();
+}
+
 export const nudgeThanksPreviewSchema = z.object({
   todoId: z.number(),
   throughNudgeId: z.number().nullable(),
+  totalRecipients: z.number().int().nonnegative(),
+  nextCursor: z.number().nullable(),
+  hasNext: z.boolean(),
   recipients: z.array(
     z.object({
       id: z.string(),
@@ -46,6 +75,15 @@ export const nudgeThanksPreviewSchema = z.object({
 export type NudgeThanksPreview = z.infer<typeof nudgeThanksPreviewSchema>;
 
 export const NudgeInteractionPolicy = {
+  getStatus: (
+    nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
+  ): NudgeInteractionStatus =>
+    getNudgeInteractionStatus(
+      nudge.isAvailable,
+      nudge.isTodoCompleted,
+      nudge.replyKind !== null,
+      nudge.thankedAt !== null,
+    ),
   isThankableTodo: (
     todo: Pick<TodoItem, 'completed' | 'visibility'>,
     { isOwner }: { isOwner: boolean },

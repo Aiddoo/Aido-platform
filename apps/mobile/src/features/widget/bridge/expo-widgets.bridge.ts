@@ -1,6 +1,5 @@
 import { formatDate } from '@src/shared/utils/date';
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 
 import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../models/widget-snapshot.model';
 import { aidoWidgets } from '../presentations/widgets';
@@ -25,13 +24,6 @@ export function createExpoWidgetsBridge(): WidgetBridge {
         WidgetSnapshotPolicy.renderState(snapshot, localDate),
         appScheme,
       );
-
-      if (Platform.OS === 'android') {
-        for (const { widget, maxRows } of aidoWidgets) {
-          widget.updateSnapshot({ ...currentProps, maxRows });
-        }
-        return;
-      }
 
       const entries =
         snapshot.state === 'loggedOut'

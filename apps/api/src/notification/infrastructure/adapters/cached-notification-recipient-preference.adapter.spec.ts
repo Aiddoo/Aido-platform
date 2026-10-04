@@ -142,4 +142,22 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 설정 cache-
 		// Then - 지원 언어만 반환하고 알 수 없는 값은 ko로 폴백
 		expect(result).toBe(expected);
 	});
+	it("여러 수신자의 언어를 한 번 조회하고 미등록 설정은 한국어로 채운다", async () => {
+		// Given
+		userSettings.getPreferenceRecordsByUserIds.mockResolvedValue([
+			{ ...createPreference(), userId: "english" },
+		]);
+
+		// When
+		const locales = await reader.getLocales(["english", "legacy", "english"]);
+
+		// Then
+		expect(userSettings.getPreferenceRecordsByUserIds).toHaveBeenCalledExactlyOnceWith([
+			"english",
+			"legacy",
+		]);
+		expect(userSettings.getPreferenceRecord).not.toHaveBeenCalled();
+		expect(locales.get("english")).toBe("en");
+		expect(locales.get("legacy")).toBe("ko");
+	});
 });

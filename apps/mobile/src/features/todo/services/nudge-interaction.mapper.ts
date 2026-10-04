@@ -37,6 +37,9 @@ export const toNudgeInteractionPage = (dto: NudgeInteractionsResponse): NudgeInt
 export const toNudgeThanksPreview = (dto: NudgeThanksPreviewResponse): NudgeThanksPreview => ({
   todoId: dto.todoId,
   throughNudgeId: dto.throughNudgeId,
+  totalRecipients: dto.totalRecipients ?? dto.recipients.length,
+  nextCursor: dto.nextCursor ?? null,
+  hasNext: dto.hasNext ?? false,
   recipients: dto.recipients.map((recipient) => ({
     id: recipient.id,
     name: recipient.name ?? recipient.userTag,

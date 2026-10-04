@@ -1,36 +1,30 @@
-import { dateSchema } from '@aido/validators';
 import type { Href } from 'expo-router';
-import { z } from 'zod';
 
-const WidgetFeedParametersSchema = z.object({
-  date: z.union([dateSchema, z.literal('today')]),
-  action: z.literal('add-todo').optional(),
-});
+import { parseWidgetNavigationUri } from '../../models/widget-navigation.model';
 
 export function resolveWidgetAppRoute(url: string | null): Href | null {
-  if (!url) return null;
-
-  try {
-    const parsed = new URL(url);
-    if (!['aido:', 'aido-dev:', 'aido-preview:'].includes(parsed.protocol)) return null;
-    if (parsed.username || parsed.password || parsed.hash) return null;
-
-    const routePath = `/${parsed.hostname}${parsed.pathname}`.replace(/\/$/, '');
-    if (routePath === '/feed') {
-      const parameters = Object.fromEntries(parsed.searchParams);
-      const result = WidgetFeedParametersSchema.strict().safeParse(parameters);
-      return result.success ? { pathname: '/feed', params: result.data } : null;
-    }
-
-    const todoId = /^\/todo\/([1-9]\d*)$/.exec(routePath)?.[1];
-    if (todoId && !parsed.search) {
-      const id = Number(todoId);
-      if (Number.isSafeInteger(id)) {
-        return { pathname: '/todo/[todoId]', params: { todoId } };
-      }
-    }
-    return null;
-  } catch {
-    return null;
+  const destination = parseWidgetNavigationUri(url);
+  if (!destination) return null;
+  if (destination.kind === 'todo') {
+    return { pathname: '/todo/[todoId]', params: { todoId: destination.todoId } };
   }
+  return {
+    pathname: '/feed',
+    params: { date: destination.date, ...(destination.action && { action: destination.action }) },
+  };
+}
+
+/** Linking이 이미 표시한 목적지는 bootstrap에서 다시 이동하지 않는다. */
+export function isWidgetAppRouteCurrent(
+  uri: string,
+  pathname: string,
+  { date, action }: { date?: string | string[]; action?: string | string[] },
+): boolean {
+  const destination = parseWidgetNavigationUri(uri);
+  if (!destination) return false;
+  if (destination.kind === 'todo') return pathname === `/todo/${destination.todoId}`;
+
+  return (
+    pathname === '/feed' && destination.date === (date ?? 'today') && destination.action === action
+  );
 }

@@ -40,6 +40,16 @@ export class CachedNotificationRecipientPreferenceAdapter
 		return toSupportedLocale(preference.locale);
 	}
 
+	async getLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+		const uniqueUserIds = [...new Set(userIds)];
+		if (uniqueUserIds.length === 0) return new Map();
+		const preferences = await this.userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
+		const locales = new Map(
+			preferences.map((preference) => [preference.userId, toSupportedLocale(preference.locale)]),
+		);
+		return new Map(uniqueUserIds.map((userId) => [userId, locales.get(userId) ?? DEFAULT_LOCALE]));
+	}
+
 	async #loadPreference(userId: string): Promise<CachedUserPreference> {
 		const preference = await this.userSettings.getPreferenceRecord(userId);
 		if (preference) {

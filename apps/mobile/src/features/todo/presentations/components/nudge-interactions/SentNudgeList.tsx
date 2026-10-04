@@ -3,6 +3,7 @@ import { FlashList } from '@shopify/flash-list';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { isApiError } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Avatar,
@@ -19,17 +20,20 @@ import {
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { PressableFeedback, Skeleton, Spinner } from 'heroui-native';
+import { PressableFeedback, Separator, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView } from 'react-native';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
-import type { NudgeDirection, NudgeInteraction } from '../../../models/nudge-interaction.model';
+import {
+  NudgeInteractionPolicy,
+  type NudgeInteraction,
+} from '../../../models/nudge-interaction.model';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '../../queries/get-nudge-interactions-infinite-query-options';
 import { getNudgeReplyLabelKey } from '../../utils/nudge-reply-label';
 
-export function NudgeList({ direction }: { direction: NudgeDirection }) {
+export function SentNudgeList() {
   const { t } = useTranslation('common');
-  const query = useSuspenseInfiniteQuery(useGetNudgeInteractionsInfiniteQueryOptions(direction));
+  const query = useSuspenseInfiniteQuery(useGetNudgeInteractionsInfiniteQueryOptions('sent'));
   const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
 
   const refreshControl = <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />;
@@ -41,7 +45,7 @@ export function NudgeList({ direction }: { direction: NudgeDirection }) {
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={refreshControl}
       >
-        <NudgeList.Empty />
+        <SentNudgeList.Empty />
       </ScrollView>
     );
   }
@@ -49,7 +53,7 @@ export function NudgeList({ direction }: { direction: NudgeDirection }) {
   return (
     <FlashList
       data={query.data}
-      renderItem={({ item }) => <NudgeList.Item nudge={item} direction={direction} />}
+      renderItem={({ item }) => <SentNudgeList.Item nudge={item} />}
       keyExtractor={(nudge) => String(nudge.id)}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
       refreshControl={refreshControl}
@@ -71,46 +75,46 @@ export function NudgeList({ direction }: { direction: NudgeDirection }) {
           void query.fetchNextPage({ cancelRefetch: false });
         }
       }}
+      ItemSeparatorComponent={() => <Separator className="mx-4" />}
       onEndReachedThreshold={0.5}
     />
   );
 }
 
-NudgeList.Item = function Item({
-  nudge,
-  direction,
-}: {
-  nudge: NudgeInteraction;
-  direction: NudgeDirection;
-}) {
+SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
   const { t } = useTranslation('todo');
-  const name = direction === 'received' ? nudge.senderName : nudge.receiverName;
-  const profileImage =
-    direction === 'received' ? nudge.senderProfileImage : nudge.receiverProfileImage;
-  const status = match(nudge)
-    .with({ thankedAt: P.nonNullable }, () => t('interaction.thanked'))
-    .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
-      t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+  const openDetail = useSingleTap(() =>
+    router.navigate({ pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } }),
+  );
+  const status = match(NudgeInteractionPolicy.getStatus(nudge))
+    .with('UNAVAILABLE', () => t('interaction.unavailable'))
+    .with('THANKED', () => t('interaction.thanked'))
+    .with('COMPLETED', () => t('interaction.completed'))
+    .with('REPLIED', () =>
+      nudge.replyKind === null
+        ? ''
+        : t('interaction.replyStatus', {
+            reply: t(getNudgeReplyLabelKey(nudge.replyKind)),
+          }),
     )
-    .otherwise(() => t('interaction.waiting'));
+    .with('WAITING', () => t('interaction.waiting'))
+    .exhaustive();
 
   return (
-    <PressableFeedback
-      onPress={() => router.push({ pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } })}
-    >
+    <PressableFeedback onPress={openDetail}>
       <ListRow
         horizontalPadding="medium"
         verticalPadding="large"
         left={
-          <Avatar alt={name} className="size-11">
-            <Avatar.Image source={getProfileIconSource(profileImage)} />
+          <Avatar alt={nudge.receiverName} className="size-11">
+            <Avatar.Image source={getProfileIconSource(nudge.receiverProfileImage)} />
           </Avatar>
         }
         contents={
           <VStack gap={6}>
             <HStack justify="between" align="center">
-              <Text size="b4" shade={5}>
-                {name}
+              <Text size="b4" shade={5} maxLines={1} className="shrink">
+                {nudge.receiverName}
               </Text>
               <Text size="e1" shade={5}>
                 {formatRelativeTime(nudge.createdAt)}
@@ -138,20 +142,20 @@ NudgeList.Item = function Item({
   );
 };
 
-NudgeList.Empty = function Empty() {
+SentNudgeList.Empty = function Empty() {
   const { t } = useTranslation('todo');
   return (
     <VStack flex={1} px={24} py={40}>
       <Result
         icon={<PawIcon width={64} height={64} colorClassName="text-main" />}
-        title={t('interaction.emptyTitle')}
+        title={t('interaction.sentEmptyTitle')}
         description={t('interaction.emptyDescription')}
       />
     </VStack>
   );
 };
 
-NudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   const isDisabled = isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
   return (
@@ -165,7 +169,7 @@ NudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps)
   );
 };
 
-NudgeList.Loading = function Loading() {
+SentNudgeList.Loading = function Loading() {
   return (
     <VStack p={24} gap={24} flex={1}>
       {Array.from({ length: 4 }, (_, index) => (

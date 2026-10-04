@@ -8,6 +8,10 @@ import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
+
 const AppLayout = () => {
   const { backgroundColor } = useResolveClassNames('bg-white');
 

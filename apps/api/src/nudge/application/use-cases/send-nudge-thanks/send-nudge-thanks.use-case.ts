@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable } from "@nestjs/common";
+import { chunk } from "es-toolkit";
 
 import { FollowReader } from "#api/follow/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -11,7 +12,11 @@ import {
 	NUDGE_INTERACTION_CONFIG,
 	type NudgeInteractionConfigPort,
 } from "../../ports/nudge-interaction.config.port.js";
-import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port.js";
+import {
+	NUDGE_NOTIFIER,
+	type NudgeNotifierPort,
+	type NudgeInteractionNotification,
+} from "../../ports/nudge-notifier.port.js";
 import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port.js";
 
 export interface SendNudgeThanksInput {
@@ -23,6 +28,8 @@ export interface SendNudgeThanksInput {
 export interface SendNudgeThanksResult {
 	sentCount: number;
 }
+
+const THANKS_BATCH_SIZE = 100;
 
 @Injectable()
 export class SendNudgeThanksUseCase {
@@ -71,22 +78,28 @@ export class SendNudgeThanksUseCase {
 			const thankedAt = now();
 			let sentCount = 0;
 
-			for (const record of candidates) {
-				const nudge = Nudge.reconstitute(record);
-				if (!nudge.markThanked(thankedAt)) {
-					continue;
-				}
-				await this.nudgeRepository.saveThanks(nudge);
-				await this.nudgeNotifier.recordInteraction({
-					kind: "thanks",
-					nudgeId: nudge.id,
-					todoId: todo.id,
-					actorId: input.userId,
-					recipientId: nudge.senderId,
-					actorName: record.receiver.profile?.name ?? record.receiver.userTag,
-					todoTitle: todo.title,
+			for (const records of chunk(candidates, THANKS_BATCH_SIZE)) {
+				const changed = records.flatMap((record) => {
+					const nudge = Nudge.reconstitute(record);
+					return nudge.markThanked(thankedAt) ? [{ nudge, record }] : [];
 				});
-				sentCount += 1;
+				if (changed.length === 0) continue;
+				await this.nudgeRepository.saveThanksBatch(
+					changed.map(({ nudge }) => nudge.id),
+					thankedAt,
+				);
+				await this.nudgeNotifier.recordInteractions(
+					changed.map<NudgeInteractionNotification>(({ nudge, record }) => ({
+						kind: "thanks",
+						nudgeId: nudge.id,
+						todoId: todo.id,
+						actorId: input.userId,
+						recipientId: nudge.senderId,
+						actorName: record.receiver.profile?.name ?? record.receiver.userTag,
+						todoTitle: todo.title,
+					})),
+				);
+				sentCount += changed.length;
 			}
 
 			return { sentCount };

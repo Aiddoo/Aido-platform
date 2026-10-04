@@ -7,8 +7,6 @@ import {
 } from '@aido/validators';
 import { z } from 'zod';
 
-import { getCategoryKey } from './notification-category.model';
-
 export const notificationSchema = z.object({
   id: z.number(),
   userId: z.string(),
@@ -54,15 +52,10 @@ const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
   'AI_SUGGESTION',
 ]);
 
-export function categoryKey(notification: Notification) {
-  return getCategoryKey(notification.type);
-}
-
 export function isAiFeature(notification: Notification) {
   return AI_FEATURE_TYPES.has(notification.type);
 }
 
 export const NotificationPolicy = {
-  categoryKey,
   isAiFeature,
 } as const;

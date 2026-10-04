@@ -20,6 +20,8 @@ import {
   gaugeStyle,
   lineLimit,
   monospacedDigit,
+  minimumScaleFactor,
+  strikethrough,
   opacity,
   padding,
   tint,
@@ -49,19 +51,22 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
     ...(props.openAppUrl ? [widgetURL(props.openAppUrl)] : []),
   ];
 
-  const renderPaw = () => (
-    <HStack spacing={1} modifiers={[frame({ width: 24, height: 20 })]}>
+  const renderPaw = (pawSize = 11) => (
+    <HStack
+      spacing={1}
+      modifiers={[frame({ width: (24 * pawSize) / 11, height: (20 * pawSize) / 11 })]}
+    >
       <Image
         systemName="pawprint.fill"
-        size={11}
+        size={pawSize}
         color={palette.brand}
-        modifiers={[padding({ bottom: 6 })]}
+        modifiers={[padding({ bottom: (6 * pawSize) / 11 })]}
       />
       <Image
         systemName="pawprint.fill"
-        size={11}
+        size={pawSize}
         color={palette.brand}
-        modifiers={[padding({ top: 6 })]}
+        modifiers={[padding({ top: (6 * pawSize) / 11 })]}
       />
     </HStack>
   );
@@ -97,6 +102,8 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             modifiers={[
               font({ size: 12, weight: 'medium', design: 'rounded' }),
               foregroundColor(palette.muted),
+              lineLimit(1),
+              minimumScaleFactor(0.7),
             ]}
           >
             {props.progressTitle}
@@ -109,6 +116,8 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             modifiers={[
               font({ size: 34, weight: 'bold', design: 'rounded' }),
               monospacedDigit(),
+              lineLimit(1),
+              minimumScaleFactor(0.6),
               foregroundColor(palette.brand),
             ]}
           >
@@ -118,6 +127,8 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             modifiers={[
               font({ size: 18, weight: 'semibold', design: 'rounded' }),
               monospacedDigit(),
+              lineLimit(1),
+              minimumScaleFactor(0.6),
               foregroundColor(palette.muted),
             ]}
           >
@@ -175,12 +186,14 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <ZStack modifiers={[frame({ width: 16, height: 16 })]}>
           <RoundedRectangle
             cornerRadius={5}
-            modifiers={[
-              foregroundColor(todo.color),
-              frame({ width: 16, height: 16 }),
-              opacity(todo.completed ? 1 : 0.25),
-            ]}
+            modifiers={[foregroundColor(todo.color), frame({ width: 16, height: 16 })]}
           />
+          {!todo.completed ? (
+            <RoundedRectangle
+              cornerRadius={3}
+              modifiers={[foregroundColor(palette.background), frame({ width: 12, height: 12 })]}
+            />
+          ) : null}
           {todo.completed ? (
             <Text modifiers={[font({ size: 10, weight: 'bold' }), foregroundColor('#FFFFFF')]}>
               ✓
@@ -191,6 +204,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           modifiers={[
             font({ size: 13 }),
             foregroundColor(todo.completed ? palette.muted : palette.foreground),
+            strikethrough({ isActive: todo.completed, pattern: 'solid', color: palette.muted }),
             lineLimit(1),
           ]}
         >
@@ -220,6 +234,8 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         modifiers={[
           font({ size, weight: 'bold', design: 'rounded' }),
           monospacedDigit(),
+          lineLimit(1),
+          minimumScaleFactor(0.6),
           foregroundColor(palette.brand),
         ]}
       >{`${props.completedTodos}`}</Text>
@@ -227,6 +243,8 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         modifiers={[
           font({ size: Math.round(size * 0.55), weight: 'semibold', design: 'rounded' }),
           monospacedDigit(),
+          lineLimit(1),
+          minimumScaleFactor(0.6),
           foregroundColor(palette.muted),
         ]}
       >{`/${props.totalTodos}`}</Text>
@@ -322,7 +340,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         </ZStack>
         <HStack modifiers={[frame({ width: 24, height: 14 })]}>
           {day.isComplete ? (
-            <Image systemName="pawprint.fill" size={12} color={palette.brand} />
+            renderPaw(7)
           ) : (
             <Text modifiers={[font({ size: 14 }), foregroundColor(palette.brand)]}>
               {day.hasTodos ? '•' : ' '}
@@ -342,18 +360,26 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             font({ size: 14, weight: 'semibold', design: 'rounded' }),
             foregroundColor(palette.foreground),
             lineLimit(1),
+            minimumScaleFactor(0.8),
           ]}
         >
           {props.weekTitle ?? props.progressTitle}
         </Text>
         {renderPaw()}
         <Spacer />
+        {props.weekRangeLabel ? (
+          <Text
+            modifiers={[
+              font({ size: 10, design: 'rounded' }),
+              foregroundColor(palette.muted),
+              lineLimit(1),
+              minimumScaleFactor(0.8),
+            ]}
+          >
+            {props.weekRangeLabel}
+          </Text>
+        ) : null}
       </HStack>
-      {props.weekRangeLabel ? (
-        <Text modifiers={[font({ size: 10, design: 'rounded' }), foregroundColor(palette.muted)]}>
-          {props.weekRangeLabel}
-        </Text>
-      ) : null}
       <HStack spacing={0}>
         {renderWeekDay(weekDays[0], 0)}
         <Spacer />

@@ -6,4 +6,7 @@ export interface NudgeThanksPreviewResult {
 	todoId: number;
 	throughNudgeId: number | null;
 	recipients: NudgeUserBrief[];
+	totalRecipients?: number;
+	nextCursor?: number | null;
+	hasNext?: boolean;
 }

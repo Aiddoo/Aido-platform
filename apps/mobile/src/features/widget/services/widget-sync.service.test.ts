@@ -35,24 +35,30 @@ const summary: WidgetSummaryInput = {
 
 describe('WidgetSyncService', () => {
   it('요약을 스냅샷으로 변환해 브리지에 기록한다', async () => {
+    // Given
     const bridge = createMockBridge();
     const errorReporter = createMockErrorReporter();
     const service = new WidgetSyncService(bridge, errorReporter);
 
+    // When
     await service.syncSummary(summary, context);
 
+    // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ state: 'data', totalTodos: 3, completedTodos: 1 }),
+      null,
     );
     expect(errorReporter.captureException).not.toHaveBeenCalled();
   });
 
   it('브리지 실패는 throw하지 않고 관측만 한다 (위젯 실패는 앱에 영향 없음)', async () => {
+    // Given
     const bridge = createMockBridge();
     bridge.writeSnapshot.mockRejectedValue(new Error('native failure'));
     const errorReporter = createMockErrorReporter();
     const service = new WidgetSyncService(bridge, errorReporter);
 
+    // When / Then
     await expect(service.syncSummary(summary, context)).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalledWith(
       expect.any(Error),
@@ -61,23 +67,29 @@ describe('WidgetSyncService', () => {
   });
 
   it('로그아웃 시 loggedOut 스냅샷을 기록한다', async () => {
+    // Given
     const bridge = createMockBridge();
     const errorReporter = createMockErrorReporter();
     const service = new WidgetSyncService(bridge, errorReporter);
 
+    // When
     await service.syncLoggedOut('2026-07-12', context);
 
+    // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ state: 'loggedOut', totalTodos: 0 }),
+      null,
     );
   });
 
   it('로그아웃 기록 실패도 throw하지 않는다', async () => {
+    // Given
     const bridge = createMockBridge();
     bridge.writeSnapshot.mockRejectedValue(new Error('native failure'));
     const errorReporter = createMockErrorReporter();
     const service = new WidgetSyncService(bridge, errorReporter);
 
+    // When / Then
     await expect(service.syncLoggedOut('2026-07-12', context)).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalledWith(
       expect.any(Error),
@@ -86,6 +98,7 @@ describe('WidgetSyncService', () => {
   });
 
   it('완료되지 않은 이전 쓰기 이후 로그아웃 스냅샷이 최종 상태가 된다', async () => {
+    // Given
     let finishWrite = () => {};
     let announceWrite = () => {};
     const firstWrite = new Promise<void>((resolve) => {
@@ -101,56 +114,73 @@ describe('WidgetSyncService', () => {
     });
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
+    // When
     const summaryWrite = service.syncSummary(summary, context);
     await writeStarted;
     const logoutWrite = service.syncLoggedOut(summary.date, context);
     finishWrite();
     await Promise.all([summaryWrite, logoutWrite]);
 
+    // Then
     expect(bridge.writeSnapshot).toHaveBeenLastCalledWith(
       expect.objectContaining({ state: 'loggedOut' }),
+      null,
     );
   });
 
   it('대기 중인 오래된 요약은 로그아웃보다 나중에 기록하지 않는다', async () => {
+    // Given
     const bridge = createMockBridge();
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
+    // When
     await Promise.all([
       service.syncSummary(summary, context),
       service.syncLoggedOut(summary.date, context),
     ]);
 
+    // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(1);
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ state: 'loggedOut' }),
+      null,
     );
   });
 
   it('표시 내용이 같으면 기록 시각만 달라져도 다시 쓰지 않는다', async () => {
+    // Given
     const bridge = createMockBridge();
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
+    // When
     await service.syncSummary(summary, context);
     await service.syncSummary(summary, { ...context, now: new Date('2026-07-12T09:01:00.000Z') });
 
+    // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(1);
   });
 
   it('기록에 실패한 같은 스냅샷은 다음 동기화에서 다시 시도한다', async () => {
+    // Given
     const bridge = createMockBridge();
     bridge.writeSnapshot.mockRejectedValueOnce(new Error('native failure'));
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
+    // When
     await service.syncSummary(summary, context);
+    // When
     await service.syncSummary(summary, context);
 
+    // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
   });
+
   it('번역 변환 실패도 인증 흐름으로 throw하지 않는다', async () => {
+    // Given
     const errorReporter = createMockErrorReporter();
     const service = new WidgetSyncService(createMockBridge(), errorReporter);
 
+    // When / Then
     await expect(
       service.syncSummary(summary, {
         ...context,
@@ -160,5 +190,37 @@ describe('WidgetSyncService', () => {
       }),
     ).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalled();
+  });
+
+  it('같은 표시 내용이어도 계정이 바뀌면 소유자와 함께 다시 기록한다', async () => {
+    // Given
+    const bridge = createMockBridge();
+    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+
+    // When
+    await service.syncSummary(summary, { ...context, userId: 'previous-user' });
+    await service.syncSummary(summary, { ...context, userId: 'current-user' });
+
+    // Then
+    expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
+    expect(bridge.writeSnapshot).toHaveBeenLastCalledWith(
+      expect.objectContaining({ state: 'data' }),
+      'current-user',
+    );
+  });
+
+  it('로그아웃은 이전 컨텍스트의 계정 식별자를 위젯으로 전달하지 않는다', async () => {
+    // Given
+    const bridge = createMockBridge();
+    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+
+    // When
+    await service.syncLoggedOut(summary.date, { ...context, userId: 'previous-user' });
+
+    // Then
+    expect(bridge.writeSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ state: 'loggedOut' }),
+      null,
+    );
   });
 });

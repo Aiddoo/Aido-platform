@@ -1,5 +1,6 @@
 import {
 	getNudgeInteractionsQuerySchema,
+	getNudgeThanksPreviewQuerySchema,
 	nudgeTodoIdParamSchema,
 	replyToNudgeSchema,
 	sendNudgeThanksSchema,
@@ -11,6 +12,12 @@ export const GetNudgeInteractionsQueryDto = getNudgeInteractionsQuerySchema.meta
 	apiParameter: true,
 });
 export type GetNudgeInteractionsQueryDto = z.infer<typeof GetNudgeInteractionsQueryDto>;
+
+export const GetNudgeThanksPreviewQueryDto = getNudgeThanksPreviewQuerySchema.meta({
+	id: "GetNudgeThanksPreviewQueryDto",
+	apiParameter: true,
+});
+export type GetNudgeThanksPreviewQueryDto = z.infer<typeof GetNudgeThanksPreviewQueryDto>;
 
 export const NudgeTodoIdParamDto = nudgeTodoIdParamSchema.meta({
 	id: "NudgeTodoIdParamDto",

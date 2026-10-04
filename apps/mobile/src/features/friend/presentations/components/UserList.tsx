@@ -18,6 +18,7 @@ interface UserListProps<T> {
   keyExtractor: (item: T) => string;
   emptyContent: ReactNode;
   header?: ReactElement;
+  footer?: ReactElement;
   hasNextPage: boolean;
   isFetching: boolean;
   isFetchingNextPage: boolean;
@@ -31,6 +32,7 @@ export function UserList<T>({
   keyExtractor,
   emptyContent,
   header,
+  footer,
   hasNextPage,
   isFetching,
   isFetchingNextPage,
@@ -51,11 +53,12 @@ export function UserList<T>({
         </Flex>
       }
       ListFooterComponent={
-        isFetchingNextPage ? (
+        footer ??
+        (isFetchingNextPage ? (
           <Flex py={16} align="center">
             <ActivityIndicator color={refreshTint} />
           </Flex>
-        ) : null
+        ) : null)
       }
       onEndReached={() => {
         if (hasNextPage && !isFetching) {
