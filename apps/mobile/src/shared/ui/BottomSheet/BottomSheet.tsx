@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
 import { MIN_CONTENT_HEIGHT, SHEET_INDEX, sharedSheetStyles, TOP_MARGIN } from './constants';
+import { useAndroidSheetBackHandler } from './useAndroidSheetBackHandler';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
+  useAndroidSheetBackHandler(isOpen, () => sheetRef.current?.close());
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');

@@ -23,13 +23,8 @@ import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
-const SHEET_INDEX = {
-  CLOSED: -1,
-  OPEN: 0,
-} as const;
-
-const MIN_CONTENT_HEIGHT = 280;
-const TOP_MARGIN = 24;
+import { MIN_CONTENT_HEIGHT, SHEET_INDEX, TOP_MARGIN } from './constants';
+import { useAndroidSheetBackHandler } from './useAndroidSheetBackHandler';
 
 interface KeyboardBottomSheetProps {
   isOpen: boolean;
@@ -60,6 +55,7 @@ export const KeyboardBottomSheet = ({
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
   const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resizeFrameRef = useRef<number | undefined>(undefined);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -67,6 +63,36 @@ export const KeyboardBottomSheet = ({
   const maxDynamicContentSize = Math.max(
     MIN_CONTENT_HEIGHT,
     windowHeight - insets.top - TOP_MARGIN,
+  );
+
+  const closeSheet = useCallback(() => {
+    isClosingRef.current = true;
+    Keyboard.dismiss();
+    sheetRef.current?.forceClose();
+    if (closeRetryTimerRef.current) clearTimeout(closeRetryTimerRef.current);
+    closeRetryTimerRef.current = setTimeout(() => {
+      closeRetryTimerRef.current = null;
+      if (isClosingRef.current) sheetRef.current?.forceClose();
+    }, 500);
+  }, []);
+
+  useAndroidSheetBackHandler(isOpen, closeSheet);
+
+  const resizeSheet = useCallback(() => {
+    if (isClosingRef.current) return;
+    if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+    resizeFrameRef.current = requestAnimationFrame(() => {
+      resizeFrameRef.current = undefined;
+      if (!isClosingRef.current) sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+    });
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+      if (closeRetryTimerRef.current) clearTimeout(closeRetryTimerRef.current);
+    },
+    [],
   );
 
   useLayoutEffect(() => {
@@ -79,11 +105,7 @@ export const KeyboardBottomSheet = ({
 
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
-      if (isClosingRef.current) return;
-
-      requestAnimationFrame(() => {
-        sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
-      });
+      resizeSheet();
     });
 
     const appStateSubscription = AppState.addEventListener(
@@ -99,10 +121,12 @@ export const KeyboardBottomSheet = ({
       hideSubscription.remove();
       appStateSubscription.remove();
     };
-  }, [isOpen]);
+  }, [isOpen, resizeSheet]);
 
   useEffect(() => {
     if (!isOpen) {
+      if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+      resizeFrameRef.current = undefined;
       lastContentHeightRef.current = 0;
       isClosingRef.current = false;
     }
@@ -119,18 +143,19 @@ export const KeyboardBottomSheet = ({
     if (isOpen) {
       isClosingRef.current = false;
       hasNotifiedCloseRef.current = false;
-      requestAnimationFrame(() => {
+      const frame = requestAnimationFrame(() => {
         sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
       });
-      return;
+      return () => cancelAnimationFrame(frame);
     }
 
     isClosingRef.current = true;
     hasNotifiedCloseRef.current = false;
     Keyboard.dismiss();
-    requestAnimationFrame(() => {
+    const frame = requestAnimationFrame(() => {
       sheetRef.current?.close();
     });
+    return () => cancelAnimationFrame(frame);
   }, [isOpen]);
 
   const handleAnimate = (_fromIndex: number, toIndex: number) => {
@@ -167,24 +192,10 @@ export const KeyboardBottomSheet = ({
         appearsOnIndex={SHEET_INDEX.OPEN}
         opacity={0.5}
         pressBehavior={'override' as 'none'}
-        onPress={() => {
-          isClosingRef.current = true;
-          Keyboard.dismiss();
-          sheetRef.current?.forceClose();
-          // 열기 애니메이션과 충돌 시 재시도
-          if (closeRetryTimerRef.current) {
-            clearTimeout(closeRetryTimerRef.current);
-          }
-          closeRetryTimerRef.current = setTimeout(() => {
-            closeRetryTimerRef.current = null;
-            if (isClosingRef.current) {
-              sheetRef.current?.forceClose();
-            }
-          }, 500);
-        }}
+        onPress={closeSheet}
       />
     ),
-    [],
+    [closeSheet],
   );
 
   const handleContentSizeChange = (_width: number, height: number) => {
@@ -200,9 +211,7 @@ export const KeyboardBottomSheet = ({
     }
 
     lastContentHeightRef.current = nextHeight;
-    requestAnimationFrame(() => {
-      sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
-    });
+    resizeSheet();
   };
 
   return (
