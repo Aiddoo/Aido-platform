@@ -210,6 +210,8 @@ export const ErrorCode = {
   NUDGE_1106: 'NUDGE_1106',
   NUDGE_1107: 'NUDGE_1107',
   NUDGE_1108: 'NUDGE_1108',
+  NUDGE_1109: 'NUDGE_1109',
+  NUDGE_1110: 'NUDGE_1110',
 
   // =========================================================================
   // 응원 (CHEER_1200-1299)
@@ -1064,6 +1066,18 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '리마인드 쿨다운 기간입니다. 1시간 후 다시 시도해주세요.',
     description: '같은 친구에게 1시간 이내 리마인드 콕 찌르기를 다시 보낼 수 없습니다.',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.NUDGE_1109]: {
+    code: 'NUDGE_1109',
+    message: '지금은 이 콕에 답장할 수 없습니다.',
+    description: '친구 관계 또는 공개 할 일 상태가 변경되었습니다.',
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.NUDGE_1110]: {
+    code: 'NUDGE_1110',
+    message: '할 일을 완료한 뒤 감사를 전해주세요.',
+    description: '아직 완료하지 않은 할 일에는 감사를 전할 수 없습니다.',
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // =========================================================================

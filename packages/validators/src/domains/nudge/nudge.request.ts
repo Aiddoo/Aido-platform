@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { nudgeReplyKindSchema } from './nudge.constants.js';
+
 export const createNudgeSchema = z.object({
   receiverId: z
     .cuid('유효하지 않은 사용자 ID입니다')
@@ -76,3 +78,35 @@ export const nudgeIdParamSchema = z.object({
 });
 
 export type NudgeIdParam = z.infer<typeof nudgeIdParamSchema>;
+
+export const getNudgeInteractionsQuerySchema = getNudgesQuerySchema.extend({
+  direction: z.enum(['received', 'sent']).default('received').describe('콕을 주고받은 방향'),
+});
+
+export type GetNudgeInteractionsQuery = z.infer<typeof getNudgeInteractionsQuerySchema>;
+
+export const replyToNudgeSchema = z.object({
+  replyKind: nudgeReplyKindSchema.describe('콕에 대한 답장 종류'),
+});
+
+export type ReplyToNudgeInput = z.infer<typeof replyToNudgeSchema>;
+
+export const sendNudgeThanksSchema = z.object({
+  throughNudgeId: z
+    .number()
+    .int()
+    .positive('유효하지 않은 콕 ID입니다')
+    .describe('미리보기 시점의 마지막 콕 ID'),
+});
+
+export type SendNudgeThanksInput = z.infer<typeof sendNudgeThanksSchema>;
+
+export const nudgeTodoIdParamSchema = z.object({
+  todoId: z.coerce
+    .number()
+    .int()
+    .positive('유효하지 않은 할 일 ID입니다')
+    .describe('감사를 전할 할 일 ID'),
+});
+
+export type NudgeTodoIdParam = z.infer<typeof nudgeTodoIdParamSchema>;
