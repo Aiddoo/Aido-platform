@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
+import { withNotificationCopyRevision } from "../../messages/notification-copy-revision.js";
 import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
 	NOTIFICATION_REPOSITORY,
@@ -39,7 +40,9 @@ export class PersistBatchNotificationUseCase {
 	}
 
 	async #persist(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResult> {
-		const created = await this.notificationRepository.createManyNotificationsAndReturn(dataList);
+		const created = await this.notificationRepository.createManyNotificationsAndReturn(
+			dataList.map(withNotificationCopyRevision),
+		);
 		const forceKey = (userId: string, type: string): string => `${userId}\u0000${type}`;
 		const forcedKeys = new Set(
 			dataList

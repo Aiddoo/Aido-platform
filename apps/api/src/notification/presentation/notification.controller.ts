@@ -224,12 +224,12 @@ export class NotificationController {
 			this.getUnreadCountUseCase.execute(user.userId),
 		]);
 
-		return {
+		return NotificationListResponseDto.parse({
 			notifications: NotificationMapper.toDtoList(result.items),
 			unreadCount,
 			hasMore: result.pagination.hasNext,
 			nextCursor: result.pagination.nextCursor ?? null,
-		};
+		});
 	}
 
 	@Get("unread-count")

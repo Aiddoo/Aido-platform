@@ -10,7 +10,7 @@ import {
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { ReminderNudge } from "../../../domain/entities/reminder-nudge.entity.js";
+import { ReminderNudge } from "../../../domain/entities/reminder-nudge.aggregate.js";
 import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port.js";
 import {
 	NUDGE_REPOSITORY,

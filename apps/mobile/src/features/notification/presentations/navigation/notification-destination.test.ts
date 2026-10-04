@@ -121,3 +121,100 @@ describe('resolveNotificationDestination', () => {
     });
   });
 });
+
+describe('콕과 오늘의 알림 이동', () => {
+  test('할 일이 있는 콕은 콕 상세 화면으로 이동한다', () => {
+    // Given
+    const context = { nudgeId: 7, todoId: 42 };
+    // When
+    const destination = resolveNotificationDestination({ type: 'NUDGE_RECEIVED', context });
+    // Then
+    expect(destination).toEqual({
+      kind: 'route',
+      href: { pathname: '/nudges/[nudgeId]', params: { nudgeId: 7 } },
+    });
+  });
+
+  test('리마인드 콕의 다른 테이블 ID를 일반 콕 ID로 해석하지 않는다', () => {
+    // Given
+    const context = { nudgeId: 7, friendId: 'friend' };
+    // When
+    const destination = resolveNotificationDestination(
+      { type: 'NUDGE_RECEIVED', context },
+      { today: '2026-10-04' },
+    );
+    // Then
+    expect(destination).toEqual({
+      kind: 'route',
+      href: {
+        pathname: '/feed/friend/[friendId]',
+        params: { friendId: 'friend', date: 'today' },
+      },
+    });
+  });
+
+  test.each(['NUDGE_REPLIED', 'NUDGE_THANKED'] as const)(
+    '%s 알림은 같은 콕 상세로 이동한다',
+    (type) => {
+      // Given
+      const context = { nudgeId: 7 };
+      // When
+      const destination = resolveNotificationDestination({ type, context });
+      // Then
+      expect(destination).toEqual({
+        kind: 'route',
+        href: { pathname: '/nudges/[nudgeId]', params: { nudgeId: 7 } },
+      });
+    },
+  );
+
+  test('과거 답장 알림에 콕 ID가 없으면 목록에서 확인할 수 있다', () => {
+    // Given
+    const source = { type: 'NUDGE_REPLIED' as const };
+    // When
+    const destination = resolveNotificationDestination(source);
+    // Then
+    expect(destination).toEqual({ kind: 'route', href: '/nudges' });
+  });
+
+  test('할 일 알림은 해당 할 일을 바로 열고 날짜 안내는 오늘 피드를 연다', () => {
+    // Given
+    const today = '2026-10-04';
+    // When
+    const todo = resolveNotificationDestination(
+      { type: 'TODO_REMINDER', context: { todoId: 42 } },
+      { today },
+    );
+    const morning = resolveNotificationDestination({ type: 'MORNING_REMINDER' }, { today });
+    // Then
+    expect(todo).toEqual({
+      kind: 'route',
+      href: { pathname: '/todo/[todoId]', params: { todoId: 42 } },
+    });
+    expect(morning).toEqual({
+      kind: 'route',
+      href: { pathname: '/feed', params: { date: 'today' } },
+    });
+  });
+
+  test.each(['WEATHER_MORNING', 'WEATHER_EVENING'] as const)(
+    '%s 알림은 날씨를 바로 연다',
+    (type) => {
+      // Given
+      const source = { type };
+      // When
+      const destination = resolveNotificationDestination(source);
+      // Then
+      expect(destination).toEqual({ kind: 'route', href: '/weather' });
+    },
+  );
+
+  test('잘못된 할 일 ID로 상세 화면을 열지 않는다', () => {
+    // Given
+    const source = { type: 'TODO_SHARED' as const, context: { todoId: -1 } };
+    // When
+    const destination = resolveNotificationDestination(source);
+    // Then
+    expect(destination).toEqual({ kind: 'none' });
+  });
+});

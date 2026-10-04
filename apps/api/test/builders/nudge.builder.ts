@@ -23,6 +23,7 @@
  * ```
  */
 import type { Nudge } from "#api/generated/prisma/client";
+import type { NudgeInteractionRecord } from "#api/nudge/application/ports/nudge.repository.port";
 
 /**
  * 사용자 프로필 정보
@@ -77,6 +78,10 @@ export class NudgeBuilder {
 			message: null,
 			createdAt: now,
 			readAt: null,
+			replyKind: null,
+			repliedAt: null,
+			replyUpdatedAt: null,
+			thankedAt: null,
 		};
 	}
 
@@ -190,6 +195,14 @@ export class NudgeBuilder {
 				title: "테스트 할 일",
 				completed: false,
 			},
+		};
+	}
+
+	buildInteraction(): NudgeInteractionRecord {
+		const nudge = this.buildWithRelations();
+		return {
+			...nudge,
+			todo: { ...nudge.todo, ownerId: nudge.receiverId, visibility: "PUBLIC" },
 		};
 	}
 

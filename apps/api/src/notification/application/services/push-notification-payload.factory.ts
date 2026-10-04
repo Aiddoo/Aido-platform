@@ -2,6 +2,7 @@ import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/valid
 import { Inject, Injectable } from "@nestjs/common";
 
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/services/feature-marketing-capability.js";
+import { isNudgeInteractionNotification } from "../../domain/services/notification-client-capability.js";
 import { toNotificationRouting } from "../../domain/services/notification-routing.js";
 import { isMarketingNotification } from "../../domain/services/push-eligibility.js";
 import {
@@ -21,6 +22,7 @@ export interface BatchPushNotificationPayload extends Omit<PushPayload, "token">
 	readonly userId: string;
 	readonly dispatchId: number;
 	readonly requiresFeatureCapability: boolean;
+	readonly requiresNudgeInteractionCapability?: boolean;
 }
 
 /** 모바일 라우팅·컨텍스트·마케팅 메타데이터를 푸시 provider payload로 변환한다. */
@@ -52,6 +54,9 @@ export class PushNotificationPayloadFactory {
 			userId: data.userId,
 			dispatchId,
 			requiresFeatureCapability: data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
+			...(isNudgeInteractionNotification(data.type) && {
+				requiresNudgeInteractionCapability: true,
+			}),
 			title: data.title,
 			body: data.body,
 			data: {

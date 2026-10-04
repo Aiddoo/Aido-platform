@@ -1,0 +1,16 @@
+appId: com.aido.mobile
+name: 라이트와 다크 설정이 화면과 홈 위젯에 반영된다
+---
+# Given: 로그인된 앱의 테마 화면
+- openLink: aido-dev://settings/theme
+- extendedWaitUntil:
+    visible: 'Dark Mode|다크 모드'
+    timeout: 15000
+# When: 다크 모드를 선택한다
+- tapOn: 'Dark Mode|다크 모드'
+- openLink: aido-dev://feed?date=today
+# Then: 피드와 위젯 데이터 갱신이 정상적으로 동작한다
+- extendedWaitUntil:
+    visible: 'Week 1 of Oct|10월 1주차'
+    timeout: 15000
+- takeScreenshot: 1.11.0-dark-feed

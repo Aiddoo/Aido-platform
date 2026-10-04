@@ -22,6 +22,7 @@ interface BottomSheetProps {
  */
 export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: BottomSheetProps) => {
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
+  const resizeFrameRef = useRef<number | undefined>(undefined);
   const lastContentHeightRef = useRef(0);
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
@@ -38,8 +39,17 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
   useEffect(() => {
     if (!isOpen) {
       lastContentHeightRef.current = 0;
+      if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+      resizeFrameRef.current = undefined;
     }
   }, [isOpen]);
+
+  useEffect(
+    () => () => {
+      if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     const wasOpen = prevIsOpenRef.current;
@@ -52,17 +62,18 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
     if (isOpen) {
       isClosingRef.current = false;
       hasNotifiedCloseRef.current = false;
-      requestAnimationFrame(() => {
+      const frame = requestAnimationFrame(() => {
         sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
       });
-      return;
+      return () => cancelAnimationFrame(frame);
     }
 
     isClosingRef.current = true;
     hasNotifiedCloseRef.current = false;
-    requestAnimationFrame(() => {
+    const frame = requestAnimationFrame(() => {
       sheetRef.current?.close();
     });
+    return () => cancelAnimationFrame(frame);
   }, [isOpen]);
 
   const handleAnimate = (_fromIndex: number, toIndex: number) => {
@@ -112,8 +123,10 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
     }
 
     lastContentHeightRef.current = nextHeight;
-    requestAnimationFrame(() => {
-      sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+    if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+    resizeFrameRef.current = requestAnimationFrame(() => {
+      resizeFrameRef.current = undefined;
+      if (!isClosingRef.current) sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
     });
   };
 

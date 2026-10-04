@@ -155,6 +155,10 @@ describe("SendNudgeUseCase", () => {
 				todoId: 10,
 				message: null,
 				readAt: null,
+				replyKind: null,
+				repliedAt: null,
+				replyUpdatedAt: null,
+				thankedAt: null,
 				createdAt: new Date(),
 			}),
 		);

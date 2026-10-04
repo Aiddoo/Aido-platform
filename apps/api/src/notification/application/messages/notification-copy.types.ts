@@ -1,3 +1,5 @@
+import type { NudgeReplyKind } from "@aido/validators";
+
 /** 로케일 카탈로그가 렌더링하는 제목과 본문. */
 export interface NotificationCopy {
 	readonly title: string;
@@ -75,6 +77,12 @@ export interface WeatherCopyVariablesByKey {
 export type WeatherNotificationCopyCatalog = ExactCatalog<WeatherCopyVariablesByKey>;
 
 export interface SocialCopyVariablesByKey {
+	readonly NUDGE_REPLIED: {
+		readonly senderName: string;
+		readonly todoTitle: string;
+		readonly replyKind: NudgeReplyKind;
+	};
+	readonly NUDGE_THANKED: { readonly senderName: string; readonly todoTitle: string };
 	readonly FOLLOW_NEW: { readonly senderName: string };
 	readonly FOLLOW_ACCEPTED: { readonly senderName: string };
 	readonly NUDGE_RECEIVED: {

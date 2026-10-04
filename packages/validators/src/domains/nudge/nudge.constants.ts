@@ -15,3 +15,8 @@ export const SUBSCRIPTION_NUDGE_LIMITS = {
   EXPIRED: NUDGE_LIMITS.FREE_DAILY_LIMIT,
   CANCELLED: NUDGE_LIMITS.FREE_DAILY_LIMIT,
 } as const;
+import { z } from 'zod';
+
+export const nudgeReplyKindSchema = z.enum(['STARTING', 'THANKFUL', 'LATER']);
+
+export type NudgeReplyKind = z.infer<typeof nudgeReplyKindSchema>;

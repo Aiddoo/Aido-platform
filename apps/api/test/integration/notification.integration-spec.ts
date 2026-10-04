@@ -1,23 +1,4 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-/**
- * NotificationService 통합 테스트
- *
- * @description
- * NotificationService가 NotificationRepository, PaginationService, PushProvider와 함께 올바르게 작동하는지 검증합니다.
- * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
- *
- * 통합 테스트의 목적:
- * - NestJS 의존성 주입이 올바르게 작동하는지 검증
- * - NotificationService와 NotificationRepository의 통합 검증
- * - PaginationService와의 통합 검증
- * - PushProvider와의 통합 검증
- * - BusinessException 에러 처리가 올바르게 작동하는지 검증
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test notification.integration-spec
- * ```
- */
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
@@ -219,6 +200,32 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	const mockUserId = "user-notification-123";
 	const mockNotificationId = 1;
 	const mockPushToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
+	const releasedNotificationTypes = [
+		"FOLLOW_NEW",
+		"FOLLOW_ACCEPTED",
+		"NUDGE_RECEIVED",
+		"CHEER_RECEIVED",
+		"DAILY_COMPLETE",
+		"FRIEND_COMPLETED",
+		"TODO_REMINDER",
+		"TODO_SHARED",
+		"MORNING_REMINDER",
+		"EVENING_REMINDER",
+		"WEEKLY_ACHIEVEMENT",
+		"WEEKLY_REPORT",
+		"MONTHLY_REPORT",
+		"AI_SUGGESTION",
+		"SYSTEM_NOTICE",
+		"ADMIN_BROADCAST",
+		"ADMIN_TARGETED",
+		"WINBACK",
+		"SOCIAL_DIGEST",
+		"NUDGE_SUGGEST",
+		"LUNCH_NUDGE",
+		"STREAK_AT_RISK",
+		"WEATHER_MORNING",
+		"WEATHER_EVENING",
+	];
 
 	beforeAll(async () => {
 		suppressLogger();
@@ -359,11 +366,10 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 						mget: vi.fn().mockImplementation(async (keys: string[]) => keys.map(() => undefined)),
 						mset: vi.fn().mockResolvedValue(undefined),
 						invalidatePushTokens: vi.fn().mockResolvedValue(undefined),
-						invalidateUnreadCount: vi.fn().mockResolvedValue(undefined),
 						invalidateUserPreference: vi.fn().mockResolvedValue(undefined),
-						wrapUnreadCount: vi
+						wrap: vi
 							.fn()
-							.mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn()),
+							.mockImplementation((_key: string, factory: () => Promise<unknown>) => factory()),
 						wrapUserPreference: vi
 							.fn()
 							.mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn()),
@@ -571,7 +577,29 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			);
 		});
 
-		it("category='ALL'이면 type 조건 없이 Repository를 호출해야 한다", async () => {
+		it.each([undefined, "1.10.0", "1.10.1"])(
+			"앱 버전 %s의 전체 목록은 구버전이 지원하는 알림만 페이지네이션한다",
+			async (appVersion) => {
+				// Given
+				mockNotificationDb.findMany.mockResolvedValue([]);
+
+				// When
+				await facade.getNotifications({
+					userId: mockUserId,
+					category: "ALL",
+					appVersion,
+				});
+
+				// Then
+				expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
+					expect.objectContaining({
+						where: { userId: mockUserId, type: { in: releasedNotificationTypes } },
+					}),
+				);
+			},
+		);
+
+		it("1.11.0의 전체 목록은 신규 답장·고마움 알림도 조회한다", async () => {
 			// Given
 			mockNotificationDb.findMany.mockResolvedValue([]);
 
@@ -579,6 +607,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			await facade.getNotifications({
 				userId: "user-1",
 				category: "ALL",
+				appVersion: "1.11.0",
 			});
 
 			// Then
@@ -671,7 +700,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	});
 
 	describe("읽지 않은 알림 수 조회 통합 테스트", () => {
-		it("읽지 않은 알림 수를 반환해야 함", async () => {
+		it("구버전이 지원하는 읽지 않은 알림 수만 반환한다", async () => {
 			// Given - 읽지 않은 알림 수 설정
 			mockNotificationDb.count.mockResolvedValue(5);
 
@@ -684,8 +713,38 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				where: {
 					userId: mockUserId,
 					isRead: false,
+					type: { in: releasedNotificationTypes },
 				},
 			});
+		});
+
+		it("1.11.0과 구버전의 읽지 않은 알림 수를 서로 다른 캐시 키로 조회한다", async () => {
+			// Given
+			mockNotificationDb.count.mockResolvedValueOnce(3).mockResolvedValueOnce(5);
+			const cacheService = module.get(CacheService);
+
+			// When
+			const releasedUnreadCount = await facade.getUnreadCount(mockUserId, "1.10.1");
+			const currentUnreadCount = await facade.getUnreadCount(mockUserId, "1.11.0");
+
+			// Then
+			expect(releasedUnreadCount).toBe(3);
+			expect(currentUnreadCount).toBe(5);
+			expect(mockNotificationDb.count).toHaveBeenLastCalledWith({
+				where: { userId: mockUserId, isRead: false },
+			});
+			expect(cacheService.wrap).toHaveBeenNthCalledWith(
+				1,
+				`aido:v1:notification:unread-count:${mockUserId}:legacy`,
+				expect.any(Function),
+				120_000,
+			);
+			expect(cacheService.wrap).toHaveBeenNthCalledWith(
+				2,
+				`aido:v1:notification:unread-count:${mockUserId}`,
+				expect.any(Function),
+				120_000,
+			);
 		});
 	});
 
@@ -766,7 +825,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 		});
 
-		it("전체 알림을 읽음 처리해야 함", async () => {
+		it("구버전에서 전체 읽음 처리해도 신규 답장·고마움 알림은 읽지 않는다", async () => {
 			// Given - 전체 읽음 처리 준비
 			mockNotificationDb.updateMany.mockResolvedValue({ count: 5 });
 
@@ -779,12 +838,36 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				where: {
 					userId: mockUserId,
 					isRead: false,
+					type: { in: releasedNotificationTypes },
 				},
 				data: {
 					isRead: true,
 					readAt: expect.any(Date),
 				},
 			});
+		});
+
+		it("1.11.0은 신규 알림까지 전체 읽음 처리하고 두 버전의 캐시를 무효화한다", async () => {
+			// Given
+			mockNotificationDb.updateMany.mockResolvedValue({ count: 7 });
+			const cacheService = module.get(CacheService);
+
+			// When
+			const result = await facade.markAllAsRead(mockUserId, "1.11.0");
+
+			// Then
+			expect(result.count).toBe(7);
+			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith({
+				where: { userId: mockUserId, isRead: false },
+				data: { isRead: true, readAt: expect.any(Date) },
+			});
+			expect(cacheService.del).toHaveBeenCalledTimes(2);
+			expect(cacheService.del).toHaveBeenCalledWith(
+				`aido:v1:notification:unread-count:${mockUserId}`,
+			);
+			expect(cacheService.del).toHaveBeenCalledWith(
+				`aido:v1:notification:unread-count:${mockUserId}:legacy`,
+			);
 		});
 	});
 

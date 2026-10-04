@@ -1,4 +1,7 @@
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
+import { formatDate, getWeekDates, getWeekStart, toDate } from '@src/shared/utils/date';
+import { formatDateLabel, type DateFormatContext } from '@src/shared/utils/date-format';
+import { keyBy } from 'es-toolkit';
 
 import type { WidgetSnapshot, WidgetSnapshotStrings } from '../models/widget-snapshot.model';
 
@@ -35,7 +38,10 @@ export type WidgetTranslateFn = (
     | 'widget:state.loggedOutTitle'
     | 'widget:state.loggedOutCta'
     | 'widget:state.staleTitle'
-    | 'widget:state.staleCta',
+    | 'widget:state.staleCta'
+    | 'widget:calendar.weekTitle'
+    | 'widget:actions.addTodo'
+    | 'widget:actions.openTodo',
   params?: Record<string, string | number>,
 ) => string;
 
@@ -43,6 +49,7 @@ export interface WidgetSnapshotContext {
   t: WidgetTranslateFn;
   locale: ResolvedLanguage;
   now: Date;
+  weekCompletions?: readonly { date: string; totalTodos: number; isComplete: boolean }[];
 }
 
 /** 표시할 상위 할 일 최대 개수 (Large 위젯 기준) */
@@ -61,7 +68,7 @@ function bakeStrings(
     streakLabel: t('widget:progress.streak', { count: summary.currentStreak }),
     compactStreakLabel: t('widget:progress.compactStreak', { count: summary.currentStreak }),
     allDoneLabel: t('widget:progress.allDone'),
-    // 표시 행 수(3~8행)는 위젯 크기에 따라 렌더 시점에 정해지므로 카운트는 굽지 않는다.
+    // 표시 행 수는 위젯 크기에 따라 렌더 시점에 정해지므로 카운트는 굽지 않는다.
     // 어순/번역은 카탈로그가 소유하고, 위젯은 {count}만 실제 초과분으로 치환한다.
     moreLabelTemplate: t('widget:list.more', { overflow: '{count}' }),
     emptyTitle: t('widget:state.emptyTitle'),
@@ -70,6 +77,8 @@ function bakeStrings(
     loggedOutCta: t('widget:state.loggedOutCta'),
     staleTitle: t('widget:state.staleTitle'),
     staleCta: t('widget:state.staleCta'),
+    addTodoLabel: t('widget:actions.addTodo'),
+    openTodoLabel: t('widget:actions.openTodo'),
   };
 }
 
@@ -84,6 +93,7 @@ export function toWidgetSnapshot(
     completed: todo.completed,
     categoryColor: todo.categoryColor,
   }));
+  const week = toWidgetWeek(summary, context);
 
   return {
     version: 1,
@@ -97,8 +107,41 @@ export function toWidgetSnapshot(
     currentStreak: summary.currentStreak,
     topTodos,
     locale: context.locale,
-    strings: bakeStrings(context.t, summary),
+    weekDays: week.days,
+    strings: {
+      ...bakeStrings(context.t, summary),
+      weekTitle: week.title,
+      weekRangeLabel: week.rangeLabel,
+    },
   };
+}
+
+function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContext) {
+  const completions = keyBy(context.weekCompletions ?? [], (completion) => completion.date);
+  const locale: DateFormatContext['locale'] = context.locale === 'ko' ? 'ko-KR' : 'en-US';
+  const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
+  const days = getWeekDates(getWeekStart(toDate(summary.date))).map((day) => {
+    const date = formatDate(day);
+    const completion = completions[date];
+    return {
+      date,
+      weekdayLabel: weekdayFormatter.format(new Date(`${date}T12:00:00.000Z`)),
+      dayLabel: String(day.getDate()),
+      isComplete:
+        date === summary.date
+          ? summary.isComplete && summary.totalTodos > 0
+          : completion?.isComplete === true && completion.totalTodos > 0,
+      hasTodos: date === summary.date ? summary.totalTodos > 0 : (completion?.totalTodos ?? 0) > 0,
+    };
+  });
+  const referenceDate = new Date(`${summary.date}T12:00:00.000Z`);
+  const dateFormatContext = { locale, timeZone: 'UTC' };
+  const title = context.t('widget:calendar.weekTitle', {
+    month: formatDateLabel(referenceDate, 'month', dateFormatContext),
+    week: Math.ceil(referenceDate.getUTCDate() / 7),
+  });
+  const rangeLabel = days.map((day) => day.date.slice(5).replace('-', '.'));
+  return { days, title, rangeLabel: `${rangeLabel[0]} – ${rangeLabel[6]}` };
 }
 
 /** 비로그인 상태 스냅샷 (로그아웃/세션 종료 시 기록) */

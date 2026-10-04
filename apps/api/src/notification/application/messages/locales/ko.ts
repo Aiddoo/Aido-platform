@@ -33,119 +33,119 @@ function attachJosa(value: string, particle: JosaParticle): string {
 	}
 }
 
+const REPLY_LABEL = { STARTING: "시작해볼게", THANKFUL: "응원 고마워", LATER: "조금 뒤에 할게" };
+
 export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER_60MIN: {
 		variants: [
-			({ todoTitle }) => copy("한 시간 뒤, 출발 준비 ⏰", `‘${todoTitle}’ 차례가 다가오고 있어`),
-			({ todoTitle }) => copy("할 일 시계가 한 칸 움직였어", `‘${todoTitle}’까지 한 시간 남았어`),
-			({ todoTitle }) => copy("한 시간 전 알림이 톡", `‘${todoTitle}’ 준비를 슬쩍 시작해볼까?`),
+			({ todoTitle }) => copy("한 시간 뒤에 만나요 ⏰", `‘${todoTitle}’ 준비를 시작해볼까?`),
+			({ todoTitle }) => copy("미리 챙겨두면 편해", `‘${todoTitle}’까지 한 시간 남았어`),
+			({ todoTitle }) => copy("다음 할 일을 알려줄게", `한 시간 뒤에는 ‘${todoTitle}’야`),
 		],
 	},
 	TODO_REMINDER_10MIN: {
 		variants: [
-			({ todoTitle }) => copy("이제 10분 남았어 ⏰", `‘${todoTitle}’ 준비할 시간이야`),
-			({ todoTitle }) => copy("할 일이 준비 운동 중이야", `‘${todoTitle}’까지 10분 남았어`),
-			({ todoTitle }) => copy("10분 뒤에 만날 할 일", `‘${todoTitle}’ 차례가 곧 와`),
+			({ todoTitle }) => copy("10분 뒤에 시작해요 ⏰", `곧 ‘${todoTitle}’ 할 시간이야`),
+			({ todoTitle }) => copy("잠깐, 다음 일정 확인", `‘${todoTitle}’까지 10분 남았어`),
+			({ todoTitle }) => copy("준비됐으면 천천히 가자", `10분 뒤 ‘${todoTitle}’를 시작해봐`),
 		],
 	},
 	TODO_REMINDER_IMMEDIATE: {
 		variants: [
-			({ todoTitle }) => copy("지금 시작할 시간이야 🚀", `‘${todoTitle}’ 차례가 왔어`),
-			({ todoTitle }) => copy("할 일이 문 앞에 도착했어", `‘${todoTitle}’ 지금 시작해볼까?`),
-			({ todoTitle }) => copy("출발 신호가 켜졌어", `‘${todoTitle}’ 첫 단추만 끼워보자`),
+			({ todoTitle }) => copy("할 시간이에요 🐾", `‘${todoTitle}’부터 시작해볼까?`),
+			({ todoTitle }) => copy("지금이 약속한 시간이야", `‘${todoTitle}’ 할 시간이 됐어`),
+			({ todoTitle }) => copy("첫걸음만 가볍게", `‘${todoTitle}’를 시작해보자`),
 		],
 	},
 	MORNING_REMINDER: {
 		variants: [
-			({ count }) => copy(`오늘 할 일 ${count}개 ☀️`, "가장 만만한 것부터 골라보자"),
-			({ count }) => copy(`오늘의 계획은 ${count}개`, "고양이는 이미 목록 옆에 앉았어"),
-			({ count }) => copy(`${count}개의 할 일이 기상했어`, "첫 번째 체크를 기다리는 중이야"),
-			({ count }) => copy(`좋은 아침, 오늘은 ${count}개`, "한 발자국이면 충분히 좋은 출발이야"),
-			({ count }) => copy(`할 일 ${count}개가 줄을 섰어`, "순서는 네가 정하면 돼 🐾"),
+			({ count }) => copy(`오늘은 할 일 ${count}개 ☀️`, "가장 가벼운 일부터 하나 골라봐"),
+			({ count }) => copy(`좋은 아침, 계획 ${count}개`, "오늘 필요한 순서대로 해보자"),
+			({ count }) => copy(`오늘 할 일 ${count}개를 챙겼어`, "목록을 보고 첫걸음을 정해볼까?"),
+			({ count }) => copy(`${count}개의 계획, 천천히`, "고양이도 네 속도에 맞춰 갈게 🐾"),
+			({ count }) => copy("오늘의 시작을 함께할게", `할 일 ${count}개 중 하나면 좋은 출발이야`),
 		],
 	},
 	EVENING_COMPLETE: {
 		variants: [
-			staticCopy("오늘 계획, 전부 완료 🎉", "고양이가 조용히 기립 박수 중이야"),
-			staticCopy("오늘 목록이 깨끗해졌어", "빈 체크박스가 한 개도 없어"),
-			staticCopy("오늘 할 일은 모두 퇴근", "이제 너도 편하게 쉬어도 돼"),
-			staticCopy("완료 도장, 아주 반듯해", "오늘의 네가 꽤 근사했어 🏆"),
-			staticCopy("올클리어가 살포시 도착", "오늘도 한 발자국 앞으로 갔어"),
+			staticCopy("오늘 할 일 모두 완료 🎉", "해낸 하루, 이제 편하게 쉬어"),
+			staticCopy("오늘도 잘 해냈어", "목록을 다 채운 네게 박수를 보낼게"),
+			staticCopy("체크를 모두 채웠어", "고양이와 함께 기분 좋게 마무리해 🐾"),
+			staticCopy("계획한 일을 다 마쳤어", "오늘 쌓인 기록을 한번 돌아봐"),
+			staticCopy("수고했어, 오늘의 너", "완료한 일들이 하루를 채웠어"),
 		],
 	},
 	EVENING_PARTIAL: {
 		variants: [
 			({ remaining }) =>
-				copy(`${remaining}개가 아직 자리를 지키는 중`, "여유가 있으면 하나만 더 만나볼까?"),
-			({ remaining }) => copy(`남은 할 일은 ${remaining}개`, "오늘 한 만큼도 분명히 기록됐어"),
-			({ remaining }) =>
-				copy(`${remaining}개의 체크박스가 깜빡`, "가장 작은 것부터 골라도 좋아 🐾"),
-			({ remaining }) =>
-				copy(`오늘 목록에 ${remaining}개 남았어`, "할 수 있는 만큼만 차분히 마무리하자"),
+				copy(`오늘 남은 할 일 ${remaining}개`, "시간이 괜찮다면 하나만 더 해볼까?"),
+			({ remaining }) => copy(`${remaining}개는 아직 진행 중`, "해낸 일도 함께 돌아봐"),
+			({ remaining }) => copy(`남은 계획은 ${remaining}개`, "작은 일부터 마무리해도 좋아 🐾"),
+			({ remaining }) => copy(`오늘 목록, ${remaining}개 남았어`, "할 수 있는 만큼만 해도 괜찮아"),
 		],
 	},
 	EVENING_NONE: {
 		variants: [
-			staticCopy("오늘 목록은 아직 고요해 🌙", "쉬는 날이어도 괜찮아, 필요하면 하나만 골라봐"),
-			staticCopy("체크박스들이 낮잠을 잤나 봐", "짧은 일 하나로 깨워도 좋아"),
-			staticCopy("오늘은 시작 전 화면 그대로", "지금 시작해도 전혀 늦지 않았어"),
-			staticCopy("고요한 목록도 하루의 기록이야", "힘이 남았다면 작은 일 하나만 만나보자"),
+			staticCopy("오늘은 아직 시작 전이야 🌙", "여유가 있다면 작은 일 하나부터 해봐"),
+			staticCopy("지금 시작해도 괜찮아", "가장 쉬운 일을 하나 골라볼까?"),
+			staticCopy("가볍게 하나만 해볼까?", "오늘 할 일 목록을 살펴봐"),
+			staticCopy("오늘도 네 속도로 가자", "쉬어야 하는 날엔 쉬어도 괜찮아"),
 		],
 	},
 	MORNING_NO_TODO: {
 		variants: [
-			staticCopy("오늘 목록이 아주 넓어 📭", "하고 싶은 일 하나를 먼저 놓아볼까?"),
-			staticCopy("빈 목록이 꼬리를 흔드는 중", "가장 작은 계획 하나면 충분해"),
-			staticCopy("오늘 계획 자리가 비어 있어", "떠오르는 일을 하나만 적어두자"),
+			staticCopy("오늘 계획을 하나 적어볼까? ☀️", "생각나는 작은 일부터 시작해봐"),
+			staticCopy("기억할 일을 남겨두자", "하고 싶은 일을 하나 적어봐"),
+			staticCopy("오늘의 첫 할 일은 뭐야?", "고양이와 함께 하나씩 정해보자 🐾"),
 		],
 	},
 	EVENING_STREAK: {
 		variants: [
-			({ streak, next }) => copy(`${streak}일 연속 올클리어 🔥`, `내일이면 ${next}일째 기록이야`),
-			({ streak, next }) => copy(`${streak}일째 차곡차곡`, `다음 칸은 ${next}일, 천천히 이어가자`),
-			({ streak }) =>
-				copy(`${streak}일 기록이 제법 길어졌어`, "꾸준함이 꼬리처럼 따라오고 있어 🐾"),
+			({ streak, next }) => copy(`${streak}일 연속 모두 완료 🔥`, `내일도 이어가면 ${next}일째야`),
+			({ streak, next }) =>
+				copy(`${streak}일 동안 꾸준히 해냈어`, `다음 발자국은 ${next}일째에 남겨보자`),
+			({ streak }) => copy(`${streak}일의 기록이 쌓였어`, "오늘도 네가 해낸 만큼 남겼어 🐾"),
 		],
 	},
 	EVENING_STREAK_7: {
-		copy: staticCopy("7일 연속, 한 주 완성 🎉", "일주일을 차근차근 채웠어"),
+		copy: staticCopy("일주일 연속 모두 완료 🎉", "7일 동안 차근차근 이어왔어"),
 	},
 	EVENING_STREAK_14: {
-		copy: staticCopy("14일 연속 기록 완성 🏆", "두 주 동안 이어온 발자국이 선명해"),
+		copy: staticCopy("2주 연속 모두 완료 🏆", "14일의 꾸준함이 기록으로 남았어"),
 	},
 	EVENING_STREAK_30: {
-		copy: ({ streak }) => copy(`${streak}일째 이어지는 기록 👑`, "꾸준함이 이제 제법 익숙해졌어"),
+		copy: ({ streak }) => copy(`${streak}일 연속 기록 달성 🐾`, "한 달의 발자국을 함께 돌아봐"),
 	},
 	EVENING_STREAK_RISK_PARTIAL: {
 		variants: [
 			({ streak, remaining }) =>
-				copy(`${streak}일 기록에 ${remaining}개 남았어`, "이어가고 싶다면 작은 것부터 골라봐"),
-			({ streak, remaining }) =>
-				copy(`${streak}일째 불꽃이 기다리는 중`, `${remaining}개를 마치면 오늘도 이어져 🔥`),
-			({ remaining }) => copy(`기록까지 남은 할 일 ${remaining}개`, "가능한 만큼만 차분히 해보자"),
+				copy(`${streak}일 기록, ${remaining}개 남았어`, "오늘도 이어가고 싶다면 하나씩 해보자"),
+			({ remaining, streak }) =>
+				copy(`${remaining}개를 마치면 기록이 이어져`, `${streak}일 동안 해낸 힘으로 천천히 🔥`),
+			({ remaining }) => copy(`오늘 남은 할 일 ${remaining}개`, "시간이 맞는 작은 일부터 골라봐"),
 		],
 	},
 	EVENING_STREAK_RISK_NONE: {
 		variants: [
-			({ streak }) =>
-				copy(`${streak}일 기록이 오늘을 기다려`, "이어가고 싶다면 할 일 하나면 충분해"),
-			({ streak }) => copy(`${streak}일 불꽃이 잠깐 졸고 있어`, "하나를 마치면 다시 반짝여 🔥"),
-			({ streak }) => copy(`${streak}일째 발자국 앞에 빈칸 하나`, "오늘 한 걸음으로 채울 수 있어"),
+			({ streak }) => copy(`${streak}일 기록을 이어갈까?`, "할 일 하나를 마치면 오늘도 이어져"),
+			({ streak }) => copy("오늘 한 걸음이면 충분해", `${streak}일의 기록에 발자국을 더해봐 🐾`),
+			({ streak }) => copy(`${streak}일 동안 잘 해왔어`, "가능한 작은 일부터 시작해봐"),
 		],
 	},
 	LUNCH_NUDGE: {
 		variants: [
-			staticCopy("점심 먹고, 할 일도 한입 🍚", "가장 작은 것부터 가볍게 시작해보자"),
-			staticCopy("오후 첫 체크가 기다리는 중", "고양이는 쉬운 것부터 고르는 편이야"),
-			staticCopy("오후가 슬쩍 문을 열었어", "할 일 하나와 같이 들어가볼까?"),
-			staticCopy("점심 뒤의 작은 출발", "첫 완료 하나면 흐름이 생겨 🐾"),
+			staticCopy("점심 뒤, 가볍게 시작해볼까?", "5분이면 되는 일을 하나 골라봐"),
+			staticCopy("오후 첫 체크를 해보자", "할 일 목록에서 쉬운 것부터 만나봐"),
+			staticCopy("잠깐 목록을 살펴볼까? 🐾", "지금 할 수 있는 일 하나면 충분해"),
+			staticCopy("오늘의 첫걸음은 작게", "하나를 마치고 흐름을 이어가봐"),
 		],
 	},
 	STREAK_AT_RISK: {
 		variants: [
-			({ streak }) => copy(`${streak}일 기록이 오늘을 기다려`, "이어가고 싶다면 하나만 완료해봐"),
-			({ streak }) => copy(`${streak}일 불꽃이 잠깐 졸고 있어`, "작은 완료 하나면 다시 반짝여 🔥"),
-			({ streak }) => copy(`${streak}번째 발자국 다음에 빈칸`, "오늘 한 걸음으로 이어갈 수 있어"),
+			({ streak }) =>
+				copy(`${streak}일 기록을 이어갈 시간 🔥`, "작은 일 하나를 마치면 오늘도 이어져"),
+			({ streak }) => copy("오늘도 발자국을 남겨볼까?", `${streak}일 동안 이어온 기록을 확인해봐`),
+			({ streak }) => copy(`${streak}일의 꾸준함이 쌓였어`, "오늘 할 수 있는 일부터 하나 골라봐"),
 		],
 	},
 } satisfies SchedulerNotificationCopyCatalog;
@@ -154,122 +154,120 @@ export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
 		variants: [
 			({ skyLabel, tempMin, tempMax }) =>
-				copy(`오늘 ${skyLabel}, ${tempMin}~${tempMax}°C ☀️`, "하늘도 오늘 계획을 확인한 모양이야"),
-			({ skyLabel, tempMin, tempMax }) =>
 				copy(
-					`아침 하늘은 ${skyLabel}, ${tempMin}~${tempMax}°C`,
-					"바깥 할 일이 있다면 날씨와 상의해봐",
+					`오늘 ${skyLabel}, ${tempMin}~${tempMax}°C ☀️`,
+					"외출 계획이 있다면 날씨부터 확인해봐",
 				),
+			({ tempMin, tempMax, skyLabel }) =>
+				copy(`오늘 기온은 ${tempMin}~${tempMax}°C`, `하늘은 ${skyLabel}. 옷차림을 챙겨봐`),
 		],
 	},
 	MORNING_RAIN: {
 		variants: [
 			({ precipProb, tempMin, tempMax }) =>
-				copy(`오늘 비 확률 ${precipProb}% ☔`, `우산 챙기기, ${tempMin}~${tempMax}°C`),
+				copy(`오늘 비 확률 ${precipProb}% ☔`, `${tempMin}~${tempMax}°C, 우산을 챙겨봐`),
 			({ precipProb, tempMin, tempMax }) =>
-				copy(`비 소식이 톡, ${precipProb}%`, `고양이는 실내파야. ${tempMin}~${tempMax}°C 🌧️`),
+				copy("비 예보가 있는 아침이야", `비 확률 ${precipProb}%, ${tempMin}~${tempMax}°C`),
 		],
 	},
 	MORNING_SNOW: {
 		variants: [
 			({ precipProb, tempMin, tempMax }) =>
-				copy(`오늘 눈 확률 ${precipProb}% ❄️`, `따뜻하게 입기, ${tempMin}~${tempMax}°C`),
+				copy(`오늘 눈 확률 ${precipProb}% ❄️`, `${tempMin}~${tempMax}°C, 따뜻하게 입어봐`),
 			({ precipProb, tempMin, tempMax }) =>
-				copy(`눈 소식이 살포시, ${precipProb}%`, `길은 천천히, ${tempMin}~${tempMax}°C ☃️`),
+				copy("눈 예보가 있는 아침이야", `눈 확률 ${precipProb}%, ${tempMin}~${tempMax}°C`),
 		],
 	},
 	EVENING_CLEAR: {
 		variants: [
 			({ skyLabel, tempMin, tempMax }) =>
-				copy(
-					`내일 ${skyLabel}, ${tempMin}~${tempMax}°C 🌙`,
-					"내일 계획도 날씨에 맞춰 가볍게 놓아두자",
-				),
-			({ skyLabel, tempMin, tempMax }) =>
-				copy(`내일은 ${skyLabel}, ${tempMin}~${tempMax}°C`, "날씨가 내일 일정표를 먼저 들여다봤어"),
+				copy(`내일 ${skyLabel}, ${tempMin}~${tempMax}°C 🌙`, "내일 계획에 맞춰 옷차림을 준비해봐"),
+			({ tempMin, tempMax, skyLabel }) =>
+				copy(`내일 기온은 ${tempMin}~${tempMax}°C`, `하늘은 ${skyLabel}. 외출 전에 참고해봐`),
 		],
 	},
 	EVENING_RAIN: {
 		variants: [
 			({ precipProb, tempMin, tempMax }) =>
-				copy(`내일 비 확률 ${precipProb}% ☔`, `우산을 문 앞에, ${tempMin}~${tempMax}°C`),
+				copy(`내일 비 확률 ${precipProb}% ☔`, `${tempMin}~${tempMax}°C, 우산을 미리 챙겨놔`),
 			({ precipProb, tempMin, tempMax }) =>
-				copy(`내일 비 소식, ${precipProb}%`, `실내 계획과 잘 맞겠어. ${tempMin}~${tempMax}°C`),
+				copy("내일은 비 예보가 있어", `비 확률 ${precipProb}%, ${tempMin}~${tempMax}°C`),
 		],
 	},
 	EVENING_SNOW: {
 		variants: [
 			({ precipProb, tempMin, tempMax }) =>
-				copy(`내일 눈 확률 ${precipProb}% ❄️`, `따뜻한 옷 준비, ${tempMin}~${tempMax}°C`),
+				copy(`내일 눈 확률 ${precipProb}% ❄️`, `${tempMin}~${tempMax}°C, 이동 시간을 여유 있게`),
 			({ precipProb, tempMin, tempMax }) =>
-				copy(
-					`내일 눈이 올지도 몰라, ${precipProb}%`,
-					`조금 일찍 움직여봐. ${tempMin}~${tempMax}°C`,
-				),
+				copy("내일은 눈 예보가 있어", `눈 확률 ${precipProb}%, ${tempMin}~${tempMax}°C`),
 		],
 	},
 } satisfies WeatherNotificationCopyCatalog;
 
 export const SOCIAL_TEMPLATES = {
+	NUDGE_REPLIED: {
+		copy: ({ senderName, todoTitle, replyKind }) =>
+			copy(
+				`${attachJosa(senderName, "이/가")} 콕에 답했어`,
+				`‘${todoTitle}’ · “${REPLY_LABEL[replyKind]}”`,
+			),
+	},
+	NUDGE_THANKED: {
+		copy: ({ senderName, todoTitle }) =>
+			copy(
+				`${attachJosa(senderName, "이/가")} 고마움을 전했어 🐾`,
+				`‘${todoTitle}’ 완료! 응원이 힘이 됐대`,
+			),
+	},
 	FOLLOW_NEW: {
 		variants: [
-			({ senderName }) => copy(`${senderName}의 친구 신청 👋`, "함께 하루를 나눠보고 싶대"),
+			({ senderName }) =>
+				copy(`${senderName}의 친구 신청이 왔어`, "수락하면 서로의 하루를 응원할 수 있어"),
 			({ senderName }) =>
 				copy(
-					`${attachJosa(senderName, "이/가")} 친구 문을 두드렸어`,
-					"수락하면 서로의 하루를 응원할 수 있어",
+					`${attachJosa(senderName, "이/가")} 친구가 되고 싶대`,
+					"함께 할 일을 나누며 응원해볼까? 🐾",
 				),
-			({ senderName }) =>
-				copy(
-					"새 친구 신청이 도착했어",
-					`${attachJosa(senderName, "이/가")} 문 앞에서 얌전히 기다리는 중 🐾`,
-				),
+			({ senderName }) => copy("새 친구 신청을 확인해봐", `${senderName}의 하루와 연결해볼까?`),
 		],
 	},
 	FOLLOW_ACCEPTED: {
 		variants: [
 			({ senderName }) =>
 				copy(
-					`${attachJosa(senderName, "와/과")} 이제 친구야 🎉`,
-					"서로의 하루에 작은 응원을 보낼 수 있어",
-				),
-			({ senderName }) =>
-				copy(
-					`${attachJosa(senderName, "와/과")} 친구가 됐어`,
-					"고양이가 연결선을 반듯하게 그어뒀어",
-				),
-			({ senderName }) =>
-				copy(
 					`${attachJosa(senderName, "이/가")} 친구 신청을 수락했어`,
-					"이제 함께 한 발자국씩 가보자 🐾",
+					"이제 서로의 할 일을 응원할 수 있어",
 				),
+			({ senderName }) =>
+				copy(`${senderName}와 친구가 됐어 🎉`, "서로의 하루에 작은 힘이 되어보자"),
+			({ senderName }) => copy("친구가 한 명 더 생겼어", `${senderName}에게 가볍게 인사해봐 🐾`),
 		],
 	},
 	NUDGE_RECEIVED: {
 		variants: [
 			({ senderName, todoTitle }) =>
 				copy(
-					`${attachJosa(senderName, "이/가")} 콕 건드렸어`,
-					todoTitle ? `‘${todoTitle}’ 생각나서 왔대 🐾` : "할 일 하나가 살짝 흔들렸어 🐾",
+					`${attachJosa(senderName, "이/가")} 콕을 보냈어 🐾`,
+					todoTitle ? `‘${todoTitle}’에 응원을 남겼어` : "오늘 할 일을 응원하고 있어",
 				),
 			({ senderName, todoTitle }) =>
 				copy(
-					`${senderName}의 콕이 도착했어`,
-					todoTitle ? `‘${todoTitle}’에 작은 발자국을 남겼어` : "가벼운 응원을 두고 갔어",
+					`${senderName}의 응원이 도착했어`,
+					todoTitle ? `‘${todoTitle}’, 같이 시작해볼까?` : "지금 할 수 있는 일부터 하나 골라봐",
 				),
-			({ senderName, todoTitle }) =>
+			({ todoTitle, senderName }) =>
 				copy(
-					"할 일이 방금 움찔했어",
+					"할 일에 콕, 친구의 안부야",
 					todoTitle
-						? `${senderName}의 콕이 ‘${todoTitle}’에 닿았어`
-						: `${attachJosa(senderName, "이/가")} 콕 눌렀어`,
+						? `${senderName}의 콕이 ‘${todoTitle}’에 왔어`
+						: `${attachJosa(senderName, "이/가")} 하루를 응원하고 있어`,
 				),
 		],
 	},
 	NUDGE_RECEIVED_WITH_MESSAGE: {
 		copy: ({ senderName, todoTitle, message }) =>
 			copy(
-				`${attachJosa(senderName, "이/가")} 콕과 한마디를 보냈어`,
+				`${senderName}의 콕과 한마디가 왔어`,
 				todoTitle ? `‘${todoTitle}’ · ${message}` : message,
 			),
 	},
@@ -277,89 +275,74 @@ export const SOCIAL_TEMPLATES = {
 		variants: [
 			({ senderName }) =>
 				copy(
-					`${attachJosa(senderName, "이/가")} 콕 건드렸어`,
-					"오늘 계획 자리가 비어 있다고 알려줬어 🐾",
+					`${attachJosa(senderName, "이/가")} 오늘 계획을 물었어`,
+					"할 일을 하나 적어보는 건 어때? 🐾",
 				),
-			({ senderName }) =>
-				copy(`${senderName}의 작은 알림`, "떠오르는 할 일을 하나 적어보는 건 어때?"),
+			({ senderName }) => copy(`${senderName}의 콕이 도착했어`, "생각나는 작은 일부터 하나 적어봐"),
 			({ senderName }) =>
 				copy(
-					"빈 목록에 콕이 도착했어",
-					`${attachJosa(senderName, "이/가")} 계획 하나를 기다리는 중이래`,
+					"친구가 오늘의 시작을 응원해",
+					`${attachJosa(senderName, "이/가")} 콕으로 안부를 전했어`,
 				),
 		],
 	},
 	REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
-		copy: ({ senderName, message }) =>
-			copy(`${attachJosa(senderName, "이/가")} 콕과 한마디를 보냈어`, message),
+		copy: ({ senderName, message }) => copy(`${senderName}의 콕과 한마디가 왔어`, message),
 	},
 	CHEER_RECEIVED: {
-		copy: ({ senderName, message }) => copy(`${senderName}의 응원이 도착했어`, message),
+		copy: ({ senderName, message }) => copy(`${senderName}의 응원이 왔어`, message),
 	},
 	CHEER_RECEIVED_NO_MESSAGE: {
 		variants: [
 			({ senderName }) =>
-				copy(`${attachJosa(senderName, "이/가")} 응원을 보냈어 📣`, "작은 힘 하나를 두고 갔어"),
-			({ senderName }) => copy(`${senderName}의 응원이 톡`, "고양이가 소중히 받아뒀어"),
+				copy(`${attachJosa(senderName, "이/가")} 응원을 보냈어 🐾`, "오늘도 네 속도로 해보자"),
+			({ senderName }) => copy(`${senderName}의 작은 응원이야`, "함께 해내는 하루가 되길 바란대"),
 			({ senderName }) =>
-				copy("응원 한 봉지가 도착했어", `보낸 사람은 ${senderName}, 무게는 아주 가벼워 🐾`),
+				copy("친구의 응원을 받아봐", `${attachJosa(senderName, "이/가")} 오늘의 너를 응원해`),
 		],
 	},
 	FRIEND_COMPLETED: {
 		variants: [
-			({ friendName }) => copy(`${friendName}의 오늘이 반짝였어 ✨`, "작은 응원을 보내도 좋아"),
+			({ friendName }) => copy(`${friendName}의 하루가 반짝였어 ✨`, "오늘 할 일을 모두 마쳤대"),
+			({ friendName }) => copy(`${friendName}의 오늘도 모두 완료`, "친구에게 응원 한마디를 건네봐"),
 			({ friendName }) =>
-				copy(`${friendName}의 하루가 살짝 반짝였어`, "안부 한마디가 잘 어울리는 날이야 🐾"),
-			({ friendName }) =>
-				copy(`${friendName}의 하루가 기분 좋게 빛났어`, "친구에게 가볍게 인사해봐"),
+				copy("친구의 완료 소식이 왔어", `${friendName}에게 잘했다고 말해볼까? 🐾`),
 		],
 	},
 	SOCIAL_DIGEST_MULTI: {
 		variants: [
 			({ completedFriendCount }) =>
-				copy(
-					`친구 ${completedFriendCount}명의 오늘이 반짝였어 ✨`,
-					"친구들에게 작은 응원을 보내도 좋아",
-				),
+				copy(`친구 ${completedFriendCount}명이 모두 완료 ✨`, "각자의 하루에 응원을 보내봐"),
 			({ completedFriendCount }) =>
-				copy(
-					`친구 ${completedFriendCount}명의 하루가 살짝 반짝였어`,
-					"가벼운 안부 한마디가 잘 어울려 🐾",
-				),
+				copy(`친구 ${completedFriendCount}명의 완료 소식`, "한 명씩 안부를 나눠볼까?"),
 			({ completedFriendCount }) =>
-				copy(
-					`친구 ${completedFriendCount}명의 하루가 기분 좋게 빛났어`,
-					"응원 한마디를 건네도 좋아",
-				),
+				copy(`${completedFriendCount}명이 오늘 계획을 마쳤어`, "친구들의 발자국을 함께 돌아봐 🐾"),
 		],
 	},
 	SOCIAL_DIGEST_SINGLE: {
 		variants: [
-			({ friendName }) => copy(`${friendName}의 오늘이 반짝였어 ✨`, "작은 응원을 보내도 좋아"),
 			({ friendName }) =>
-				copy(`${friendName}의 하루가 살짝 반짝였어`, "안부 한마디가 잘 어울리는 날이야 🐾"),
-			({ friendName }) =>
-				copy(`${friendName}의 하루가 기분 좋게 빛났어`, "작은 응원을 건네도 좋아"),
+				copy(`${friendName}의 오늘도 모두 완료 ✨`, "친구의 하루에 응원을 보내봐"),
+			({ friendName }) => copy(`${friendName}의 완료 소식이 왔어`, "잘했다고 한마디 건네볼까?"),
+			({ friendName }) => copy("친구가 오늘 계획을 마쳤어", `${friendName}의 하루를 응원해줘 🐾`),
 		],
 	},
 	NUDGE_SUGGEST: {
 		variants: [
 			({ friendName }) =>
-				copy(`${friendName}에게 안부를 건네볼까?`, "부담 없는 콕 하나면 충분해 🐾"),
-			({ friendName }) => copy(`${friendName}에게 작은 인사 어때?`, "가벼운 안부를 보내도 좋아"),
-			({ friendName }) => copy(`${friendName}에게 콕 하나 준비됐어`, "고양이가 살포시 건네줄게 🐾"),
+				copy(`${friendName}에게 안부를 전할까?`, "가벼운 콕 하나로 하루를 응원해봐 🐾"),
+			({ friendName }) =>
+				copy("친구에게 작은 응원을 보내봐", `${friendName}에게 콕으로 인사해볼까?`),
+			({ friendName }) => copy("오늘은 친구와 같이 해볼까?", `${friendName}의 할 일을 살펴봐`),
 		],
 	},
 	TODO_COMMENT: {
 		variants: [
 			({ senderName }) =>
-				copy(`${attachJosa(senderName, "이/가")} 댓글을 남겼어`, "새 이야기가 살포시 도착했어 🐾"),
-			({ senderName }) => copy(`${senderName}의 댓글이 도착했어`, "할 일에 대화 한 줄이 생겼어"),
+				copy(`${attachJosa(senderName, "이/가")} 댓글을 남겼어`, "할 일에 새 댓글이 도착했어"),
 			({ senderName }) =>
-				copy(
-					`${attachJosa(senderName, "이/가")} 이야기를 보탰어`,
-					"댓글이 앱 안에서 얌전히 기다리는 중",
-				),
+				copy(`${senderName}의 새 댓글이야`, "앱에서 이어지는 이야기를 확인해봐 🐾"),
+			({ senderName }) => copy("할 일에 새 이야기가 생겼어", `${senderName}의 댓글을 확인해봐`),
 		],
 	},
 	TODO_COMMENT_CHAIN: {
@@ -367,59 +350,42 @@ export const SOCIAL_TEMPLATES = {
 			({ senderName, count }) =>
 				copy(
 					`${attachJosa(senderName, "이/가")} 댓글 ${count}개를 남겼어`,
-					"대화가 꼬리를 물고 이어졌어 🐾",
+					"앱에서 새 댓글들을 확인해봐",
 				),
 			({ senderName, count }) =>
-				copy(`${senderName}의 댓글 ${count}개가 도착했어`, "할 일 아래가 조금 북적여졌어"),
-			({ senderName, count }) =>
-				copy(
-					`${attachJosa(senderName, "이/가")} 이야기 ${count}개를 보탰어`,
-					"새 댓글들이 앱 안에서 기다리는 중",
-				),
+				copy(`${senderName}의 댓글 ${count}개가 왔어`, "할 일의 이야기가 이어지고 있어 🐾"),
+			({ count, senderName }) =>
+				copy(`새 댓글 ${count}개를 확인해봐`, `${senderName}의 이야기가 도착했어`),
 		],
 	},
 	TODO_COMMENT_REPLY: {
 		variants: [
 			({ senderName }) =>
-				copy(`${attachJosa(senderName, "이/가")} 답글을 남겼어`, "대화가 한 칸 더 자랐어 🐾"),
-			({ senderName }) => copy(`${senderName}의 답글이 도착했어`, "댓글의 꼬리가 조금 길어졌어"),
-			({ senderName }) =>
-				copy(
-					`${attachJosa(senderName, "이/가")} 대화를 이어갔어`,
-					"새 답글이 앱 안에서 기다리는 중",
-				),
+				copy(`${attachJosa(senderName, "이/가")} 답글을 남겼어`, "네 댓글에 새 답글이 도착했어"),
+			({ senderName }) => copy(`${senderName}의 답글이 왔어`, "앱에서 대화를 이어가볼까? 🐾"),
+			({ senderName }) => copy("댓글에 새 답글이 생겼어", `${senderName}의 답글을 확인해봐`),
 		],
 	},
 	TODO_COMMENT_REPLY_CHAIN: {
 		variants: [
 			({ senderName, count }) =>
 				copy(
-					`${attachJosa(senderName, "이/가")} 답글 ${count}개를 이어 썼어`,
-					"대화가 제법 길게 자랐어 🐾",
+					`${attachJosa(senderName, "이/가")} 답글 ${count}개를 남겼어`,
+					"앱에서 이어진 대화를 확인해봐",
 				),
 			({ senderName, count }) =>
-				copy(`${senderName}의 답글 ${count}개가 도착했어`, "댓글의 꼬리가 조금 더 길어졌어"),
-			({ senderName, count }) =>
-				copy(
-					`${attachJosa(senderName, "이/가")} 대화 ${count}칸을 보탰어`,
-					"새 답글들이 앱 안에서 기다리는 중",
-				),
+				copy(`${senderName}의 답글 ${count}개가 왔어`, "새 답글들을 한 번에 읽어봐 🐾"),
+			({ count, senderName }) =>
+				copy(`새 답글 ${count}개를 확인해봐`, `${senderName}의 대화가 이어지고 있어`),
 		],
 	},
 	TODO_COMMENT_LIKE: {
 		variants: [
 			({ senderName }) =>
-				copy(
-					`${attachJosa(senderName, "이/가")} 네 댓글을 좋아해`,
-					"댓글에 작은 하트가 도착했어 ❤️",
-				),
+				copy(`${attachJosa(senderName, "이/가")} 네 댓글을 좋아해`, "댓글에 마음을 남겼어 ❤️"),
+			({ senderName }) => copy(`${senderName}의 댓글 공감이 왔어`, "네 이야기에 응원을 보냈어"),
 			({ senderName }) =>
-				copy(`${senderName}의 하트가 도착했어`, "네 댓글이 아무렇지 않은 척 뿌듯해하는 중"),
-			({ senderName }) =>
-				copy(
-					`${attachJosa(senderName, "이/가")} 댓글에 마음을 남겼어`,
-					"하트 하나가 조용히 자리를 잡았어",
-				),
+				copy("네 댓글에 공감이 더해졌어", `${attachJosa(senderName, "이/가")} 하트를 보냈어`),
 		],
 	},
 } satisfies SocialNotificationCopyCatalog;
@@ -427,109 +393,112 @@ export const SOCIAL_TEMPLATES = {
 export const SYSTEM_TEMPLATES = {
 	WINBACK_DAY3: {
 		variants: [
-			staticCopy("할 일들이 잠깐 낮잠 중이야 💤", "돌아오면 목록이 모른 척 반겨줄 거야"),
-			staticCopy("목록에 조용한 바람이 불었어", "오늘 필요한 일 하나만 놓아봐"),
-			staticCopy("Aido 고양이가 자리를 데워뒀어", "언제든 한 발자국부터 다시 시작해 🐾"),
+			staticCopy("오늘 계획부터 다시 만나볼까?", "지금 필요한 작은 일 하나를 적어봐"),
+			staticCopy("잠깐 쉬어도 기록은 남아 있어", "할 수 있는 일부터 가볍게 시작해봐"),
+			staticCopy("고양이와 한 걸음만 해볼까? 🐾", "오늘의 첫 할 일을 정해보자"),
 		],
 	},
 	WINBACK_DAY7: {
 		variants: [
-			staticCopy("목록이 일주일째 아주 얌전해", "새 계획 하나면 다시 움직이기 시작해 🐾"),
-			staticCopy("고양이가 달력 한 장을 넘겼어", "오늘 필요한 것부터 천천히 적어봐"),
-			staticCopy("쉬고 돌아온 자리도 네 자리야", "가장 작은 할 일 하나로 시작해도 좋아"),
+			staticCopy("새로운 한 주를 시작해볼까?", "이번 주에 필요한 일을 하나 적어봐"),
+			staticCopy("오늘부터 천천히 다시 해보자", "작은 계획 하나로 돌아와도 괜찮아"),
+			staticCopy("네 계획은 언제든 여기 있어 🐾", "지금 마음에 있는 일을 남겨봐"),
 		],
 	},
 	WINBACK_DAY14: {
 		variants: [
-			staticCopy("목록에 보름달이 두 번쯤 떴어 🌕", "오늘을 새로운 첫날로 정해도 좋아"),
-			staticCopy("오래 쉰 계획표가 기지개 중", "지금 필요한 일 하나만 새로 적어봐"),
-			staticCopy("다시 시작 버튼은 늘 여기 있어", "부담 없는 한 걸음부터 만나자 🐾"),
+			staticCopy("지금의 계획을 새로 적어볼까?", "오늘 필요한 일부터 다시 시작해봐"),
+			staticCopy("다시 시작하는 날도 소중해", "작은 할 일 하나면 좋은 출발이야"),
+			staticCopy("고양이와 오늘을 계획해봐 🐾", "지난 계획보다 지금 할 수 있는 일부터"),
 		],
 	},
 	WINBACK_DAY21: {
 		variants: [
-			staticCopy("달력이 세 장쯤 지나갔어", "돌아오는 데 필요한 건 계획 하나뿐이야 🐾"),
-			staticCopy("목록이 새 출발을 준비했어", "오늘 할 수 있는 만큼만 적어봐"),
-			staticCopy("고양이는 아직 네 자리를 기억해", "작은 일 하나부터 다시 시작해도 좋아"),
+			staticCopy("오늘, 가볍게 돌아와도 좋아", "지금 할 수 있는 일을 하나 적어봐"),
+			staticCopy("새 계획을 위한 자리가 있어", "오늘의 너에게 필요한 일부터 시작해"),
+			staticCopy("다시 만날 준비가 됐어 🐾", "고양이와 작은 계획 하나를 정해봐"),
 		],
 	},
 	WINBACK_DAY30: {
 		variants: [
-			staticCopy("달력이 한 바퀴 돌아왔어 🗓️", "새로운 오늘은 할 일 하나면 충분해"),
-			staticCopy("목록이 먼지를 톡 털었어", "지금 필요한 계획 하나만 놓아봐"),
-			staticCopy("다시 만난 첫날로 정해볼까?", "고양이는 늘 한 발자국부터 시작해 🐾"),
+			staticCopy("오늘부터 다시 계획해볼까?", "한 달 전보다 지금 필요한 일부터"),
+			staticCopy("익숙한 자리에서 새로 시작해", "작은 일 하나를 적고 천천히 해보자"),
+			staticCopy("고양이와 새 발자국을 남겨봐 🐾", "오늘 할 수 있는 만큼만 계획해도 좋아"),
 		],
 	},
 	WEEKLY_ACHIEVEMENT: {
 		variants: [
 			({ completedCount }) =>
-				copy(`이번 주 ${completedCount}개 완료 📊`, "작은 체크들이 제법 근사하게 모였어"),
+				copy(`이번 주 ${completedCount}개를 해냈어 🐾`, "차곡차곡 쌓인 완료를 돌아봐"),
 			({ completedCount }) =>
-				copy(`한 주 동안 ${completedCount}개를 해냈어`, "고양이가 숫자를 두 번 세어봤어"),
+				copy(`일주일 동안 ${completedCount}개 완료`, "한 주의 기록을 한눈에 확인해봐"),
 			({ completedCount }) =>
-				copy(`완료 ${completedCount}개가 나란히`, "이번 주의 발자국이 선명해 🐾"),
+				copy(`완료 ${completedCount}개, 잘 해왔어`, "이번 주의 작은 성취를 챙겨봐"),
 		],
 	},
 	WEEKLY_ACHIEVEMENT_PERFECT: {
 		variants: [
-			staticCopy("이번 주 100% 완료 🏆", "빈 체크박스를 찾았지만 하나도 없었어"),
-			staticCopy("한 주 계획을 전부 해냈어", "아주 반듯한 완료 기록이야"),
-			staticCopy("퍼펙트 위크가 도착했어", "고양이도 잠깐 자세를 고쳐 앉았어 🐾"),
+			staticCopy("이번 주 100% 완료 🏆", "계획한 일을 모두 해냈어, 수고했어"),
+			staticCopy("한 주 계획을 모두 마쳤어", "이번 주의 꾸준한 기록을 돌아봐"),
+			staticCopy("이번 주도 모두 완료했어", "고양이와 함께 해낸 한 주를 기억해 🐾"),
 		],
 	},
 	WEEKLY_ACHIEVEMENT_ALMOST: {
 		variants: [
-			({ rate }) => copy(`이번 주 완료율 ${rate}% 📊`, "해낸 만큼 또렷하게 기록됐어"),
-			({ rate }) => copy(`${rate}%의 계획을 마쳤어`, "거의 가득 찬 한 주였어"),
-			({ rate }) => copy(`한 주 기록이 ${rate}%까지 찼어`, "고양이는 충분히 뿌듯한 표정이야 🐾"),
+			({ rate }) => copy(`이번 주 완료율 ${rate}%`, "해낸 일들을 차근차근 돌아봐"),
+			({ rate }) => copy(`${rate}%만큼 계획을 해냈어`, "이번 주에 쌓은 발자국이야 🐾"),
+			({ rate }) => copy(`한 주의 기록, ${rate}% 완료`, "잘 해낸 일부터 함께 확인해봐"),
 		],
 	},
 	WEEKLY_REPORT: {
-		copy: staticCopy("주간 리포트가 도착했어 📊", "이번 주에 남긴 발자국을 살펴봐"),
+		copy: staticCopy("이번 주 리포트가 준비됐어 📊", "완료 기록과 네 흐름을 함께 살펴봐"),
 	},
 	MONTHLY_REPORT: {
-		copy: staticCopy("월간 리포트가 도착했어 📈", "한 달 동안 쌓인 기록을 살펴봐"),
+		copy: staticCopy("한 달의 기록이 모였어 📈", "이번 달의 변화와 꾸준함을 돌아봐"),
 	},
 	AI_SUGGESTION: {
-		copy: staticCopy("반복되는 패턴을 찾았어 ✨", "자주 만드는 일을 더 간단히 준비해볼 수 있어"),
+		copy: staticCopy("자주 하는 일을 발견했어 ✨", "반복 할 일로 더 쉽게 챙겨볼까?"),
 	},
 	BILLING_ISSUE: {
-		copy: staticCopy(
-			"결제 수단을 확인해 주세요",
-			"구독이 중단되지 않도록 결제 정보를 확인해 주세요.",
-		),
+		copy: staticCopy("결제 정보 확인이 필요해요", "구독을 이어가려면 결제 수단을 확인해 주세요."),
 	},
 	ONBOARDING_DAY0: {
-		copy: staticCopy("첫 할 일 자리가 준비됐어 🌱", "지금 떠오르는 작은 일 하나를 적어봐"),
+		copy: staticCopy("첫 할 일을 함께 적어볼까? 🌱", "지금 떠오르는 작은 일 하나면 충분해"),
 	},
 	ONBOARDING_DAY1: {
-		copy: staticCopy("오늘의 체크박스도 준비 완료", "할 수 있는 만큼만 천천히 이어가자 🐾"),
+		copy: staticCopy("오늘도 작은 계획 하나부터", "하고 싶은 일을 적고 하나씩 해보자 🐾"),
 	},
 	ONBOARDING_DAY2: {
-		copy: staticCopy("친구와 나눌 자리도 있어 🤝", "서로의 하루에 작은 응원을 보낼 수 있어"),
+		copy: staticCopy("친구와 하루를 나눠볼까?", "함께 할 일을 보고 응원할 수 있어"),
 	},
 	ONBOARDING_DAY3: {
-		copy: staticCopy("알림 시계가 기다리는 중 ⏰", "원하는 시간에 맞춰 소식을 받을 수 있어"),
+		copy: staticCopy("필요한 시간에 알려줄게 ⏰", "내 일정에 맞는 알림 시간을 정해봐"),
 	},
 	ONBOARDING_DAY5: {
 		copy: ({ completedCount }) =>
-			copy(`벌써 ${completedCount}개 완료했어`, "고양이가 숫자를 꼼꼼히 세어뒀어 🐾"),
+			copy(`지금까지 ${completedCount}개를 해냈어`, "작은 완료들이 차곡차곡 쌓이고 있어 🐾"),
 	},
 	ONBOARDING_DAY7: {
 		copy: ({ completedCount }) =>
-			copy("첫 주 기록이 완성됐어 🎉", `${completedCount}개의 완료가 차곡차곡 모였어`),
+			copy("첫 일주일의 기록이 모였어 🎉", `완료한 일 ${completedCount}개를 함께 돌아봐`),
 	},
 	MILESTONE_FIRST_COMPLETE: {
-		copy: staticCopy("첫 번째 완료가 반짝였어 ✨", "첫 발자국을 아주 잘 놓았어"),
+		copy: staticCopy("첫 할 일 완료, 잘 해냈어 ✨", "시작을 끝낸 첫 발자국이 남았어"),
 	},
-	MILESTONE_10: { copy: staticCopy("완료 10개가 모였어 🎉", "두 자릿수 발자국이 제법 든든해") },
-	MILESTONE_50: { copy: staticCopy("완료 50개를 지나왔어 🐾", "차곡차곡 쌓인 기록이 꽤 묵직해") },
-	MILESTONE_100: { copy: staticCopy("완료 100개 달성 👑", "고양이가 세다가 발가락이 모자랐어") },
+	MILESTONE_10: {
+		copy: staticCopy("완료 10개, 작은 성취가 모였어", "하나씩 해낸 기록을 돌아봐 🐾"),
+	},
+	MILESTONE_50: {
+		copy: staticCopy("어느새 완료한 일 50개 🎉", "꾸준히 쌓은 기록을 기억해봐"),
+	},
+	MILESTONE_100: {
+		copy: staticCopy("완료 100개를 함께 축하해 🏆", "하나씩 해내며 여기까지 왔어"),
+	},
 	MILESTONE_STREAK_3: {
-		copy: staticCopy("3일 연속 발자국 완성 🔥", "꾸준함이 작은 꼬리를 만들기 시작했어"),
+		copy: staticCopy("3일 연속, 좋은 흐름이야 🔥", "오늘도 작은 일을 하나 해냈어"),
 	},
 	MILESTONE_FIRST_FRIEND: {
-		copy: staticCopy("첫 친구가 생겼어 🎉", "이제 서로의 하루에 응원을 보낼 수 있어"),
+		copy: staticCopy("첫 친구와 연결됐어 🐾", "이제 서로의 하루에 응원을 보내봐"),
 	},
 } satisfies SystemNotificationCopyCatalog;
 
@@ -537,54 +506,54 @@ export const SKY_LABEL_MAP = { CLEAR: "맑음", PARTLY_CLOUDY: "구름 많음", 
 
 export const WEATHER_FALLBACK = {
 	MORNING: {
-		copy: staticCopy("오늘 날씨도 같이 볼까? ☀️", "위치를 설정하면 아침 날씨를 알려줄게"),
+		copy: staticCopy("오늘 날씨를 함께 챙겨볼까? ☀️", "한국 지역을 설정하면 날씨를 알려줄게"),
 	},
 	EVENING: {
-		copy: staticCopy("내일 날씨 자리가 비어 있어 🌙", "위치를 설정하면 내일 날씨를 미리 알려줄게"),
+		copy: staticCopy("내일의 날씨도 미리 챙겨봐 🌙", "한국 지역을 설정해 내일 예보를 확인해"),
 	},
 } satisfies WeatherFallbackCopyCatalog;
 
 export const RETENTION_TEMPLATES = {
 	"D0:d0_no_todo": {
 		variants: [
-			staticCopy("첫 할 일 자리가 준비됐어 🌱", "지금 떠오르는 한 가지만 적어봐"),
-			staticCopy("빈 목록이 꼬리를 흔드는 중", "작은 계획 하나면 시작하기 충분해 🐾"),
-			staticCopy("오늘의 첫 계획을 놓아볼까?", "가장 쉬운 일 하나부터 적어봐"),
+			staticCopy("처음엔 작은 할 일 하나면 돼 🌱", "지금 떠오르는 일을 적어보자"),
+			staticCopy("고양이와 첫 계획을 정해볼까?", "기억해둘 일을 하나 적어봐 🐾"),
+			staticCopy("첫 할 일을 만들어보자", "오늘 할 수 있는 작은 일이면 충분해"),
 		],
 	},
 	"D1:d1_no_todo": {
 		variants: [
-			staticCopy("오늘 목록이 아주 넓어 📝", "하고 싶은 일 하나를 먼저 놓아봐"),
-			staticCopy("계획 한 칸이 비어 있어", "가장 작은 할 일 하나면 충분해"),
-			staticCopy("고양이가 빈 목록 옆에 앉았어", "떠오르는 일을 하나 적어줄래? 🐾"),
+			staticCopy("오늘의 작은 계획은 뭐야?", "하고 싶은 일을 하나 적어봐"),
+			staticCopy("아직 정하지 않아도 괜찮아", "생각나는 일부터 하나 남겨봐 🐾"),
+			staticCopy("기억할 일을 함께 챙겨보자", "작은 계획부터 천천히 시작해봐"),
 		],
 	},
 	"D1:d1_has_todo_no_completion": {
 		variants: [
-			staticCopy("첫 체크가 자리를 기다리는 중 ✅", "가장 만만한 할 일부터 골라봐"),
-			staticCopy("적어둔 계획이 살짝 기지개", "5분짜리 일 하나로 시작해도 좋아"),
-			staticCopy("목록은 준비를 마쳤어", "첫 발자국만 놓으면 나머지는 천천히 따라와 🐾"),
+			staticCopy("첫 완료를 함께 해볼까? ✅", "가장 쉬운 할 일을 하나 골라봐"),
+			staticCopy("적어둔 일부터 가볍게 시작해", "5분이면 되는 일도 좋은 첫걸음이야"),
+			staticCopy("고양이와 첫 체크를 남겨봐 🐾", "할 수 있는 일 하나부터 해보자"),
 		],
 	},
 	"D3:d3_restart": {
 		variants: [
-			staticCopy("오늘을 새 첫날로 정해도 돼 🌱", "지금 필요한 일 하나만 적어봐"),
-			staticCopy("계획표가 새 페이지를 펼쳤어", "할 수 있는 만큼만 가볍게 시작하자"),
-			staticCopy("고양이가 다시 출발선에 앉았어", "가장 쉬운 한 걸음이면 충분해 🐾"),
+			staticCopy("다시 시작하는 오늘이야 🌱", "지금 필요한 일 하나를 적어봐"),
+			staticCopy("오늘의 계획만 가볍게 정해봐", "작은 일 하나부터 다시 해도 괜찮아"),
+			staticCopy("고양이와 다시 한 걸음 🐾", "할 수 있는 만큼만 시작해보자"),
 		],
 	},
 	"D7:d7_has_progress": {
 		variants: [
-			staticCopy("첫 주의 발자국이 모였어 🎉", "이번 주에 만든 변화를 살펴봐"),
-			staticCopy("일주일 기록이 한 장 완성됐어", "지금까지의 완료를 차근차근 확인해봐"),
-			staticCopy("첫 주를 함께 걸었어", "네가 해낸 일들이 한눈에 보여 🐾"),
+			staticCopy("첫 주의 기록을 돌아볼까? 🎉", "일주일 동안 해낸 일들이 모였어"),
+			staticCopy("작은 완료가 한 주를 채웠어", "지금까지 쌓인 발자국을 확인해봐 🐾"),
+			staticCopy("일주일의 네 흐름을 살펴봐", "해낸 일을 보며 다음 계획을 정해보자"),
 		],
 	},
 	"D7:d7_restart": {
 		variants: [
-			staticCopy("새로운 한 주 자리가 열렸어 🌱", "지금 필요한 할 일 하나만 적어봐"),
-			staticCopy("목록이 월요일 같은 표정을 지었어", "오늘 할 수 있는 일 하나면 충분해"),
-			staticCopy("다시 시작 버튼은 여전히 여기 있어", "부담 없는 작은 계획부터 만나자 🐾"),
+			staticCopy("새로운 한 주, 작은 계획부터", "지금 할 수 있는 일을 하나 적어봐"),
+			staticCopy("오늘부터 다시 해도 괜찮아", "필요한 일 하나면 다시 시작할 수 있어"),
+			staticCopy("고양이와 한 주를 열어볼까? 🐾", "부담 없는 첫 할 일을 정해봐"),
 		],
 	},
 } satisfies RetentionNotificationCopyCatalog;

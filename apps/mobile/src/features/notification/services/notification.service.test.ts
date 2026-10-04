@@ -155,7 +155,7 @@ describe('NotificationService', () => {
       const result = await service.getNotifications({ limit: 20 });
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/notifications', {
+      expect(httpClient.get).toHaveBeenCalledWith('v1/notifications/inbox', {
         params: expect.objectContaining({ limit: 20 }),
       });
       expect(result.ok).toBe(true);
@@ -186,7 +186,7 @@ describe('NotificationService', () => {
       const result = await service.getUnreadCount();
 
       // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/notifications/unread-count', {
+      expect(httpClient.get).toHaveBeenCalledWith('v1/notifications/inbox/unread-count', {
         signal: undefined,
       });
       expect(result).toEqual({ ok: true, value: 5 });
@@ -246,7 +246,7 @@ describe('NotificationService', () => {
       const result = await service.markAllAsRead();
 
       // Then
-      expect(httpClient.patch).toHaveBeenCalledWith('v1/notifications/read-all');
+      expect(httpClient.patch).toHaveBeenCalledWith('v1/notifications/inbox/read-all');
       expect(result).toEqual({ ok: true, value: dto });
     });
 

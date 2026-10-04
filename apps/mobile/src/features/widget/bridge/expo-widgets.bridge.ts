@@ -1,4 +1,5 @@
 import { formatDate } from '@src/shared/utils/date';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../models/widget-snapshot.model';
@@ -13,6 +14,8 @@ function nextLocalMidnight(now: Date): Date {
 }
 
 export function createExpoWidgetsBridge(): WidgetBridge {
+  const scheme = Constants.expoConfig?.scheme;
+  const appScheme = typeof scheme === 'string' ? scheme : (scheme?.[0] ?? 'aido');
   return {
     async writeSnapshot(snapshot: WidgetSnapshot): Promise<void> {
       const now = new Date();
@@ -20,6 +23,7 @@ export function createExpoWidgetsBridge(): WidgetBridge {
       const currentProps = toWidgetProps(
         snapshot,
         WidgetSnapshotPolicy.renderState(snapshot, localDate),
+        appScheme,
       );
 
       if (Platform.OS === 'android') {
@@ -34,7 +38,7 @@ export function createExpoWidgetsBridge(): WidgetBridge {
           ? [{ date: now, props: currentProps }]
           : [
               { date: now, props: currentProps },
-              { date: nextLocalMidnight(now), props: toWidgetProps(snapshot, 'stale') },
+              { date: nextLocalMidnight(now), props: toWidgetProps(snapshot, 'stale', appScheme) },
             ];
 
       for (const { widget } of aidoWidgets) {

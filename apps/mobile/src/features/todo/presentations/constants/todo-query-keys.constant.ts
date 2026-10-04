@@ -33,6 +33,15 @@ export const TODO_QUERY_KEYS = {
 
   // 콕 찌르기 (Nudge)
   nudges: () => [...TODO_QUERY_KEYS.all, 'nudge'] as const,
+  nudgeInteractions: () => [...TODO_QUERY_KEYS.nudges(), 'interaction'] as const,
+  nudgeInteractionAvailability: () =>
+    [...TODO_QUERY_KEYS.nudgeInteractions(), 'availability'] as const,
+  nudgeInteractionList: (direction: 'received' | 'sent') =>
+    [...TODO_QUERY_KEYS.nudgeInteractions(), 'list', { direction }] as const,
+  nudgeInteraction: (nudgeId: number) =>
+    [...TODO_QUERY_KEYS.nudgeInteractions(), 'detail', { nudgeId }] as const,
+  nudgeThanks: (todoId: number) =>
+    [...TODO_QUERY_KEYS.nudgeInteractions(), 'thanks', { todoId }] as const,
   nudgeLimit: () => [...TODO_QUERY_KEYS.nudges(), 'limit'] as const,
   nudgeCooldown: (userId: string) => [...TODO_QUERY_KEYS.nudges(), 'cooldown', userId] as const,
   remindNudgeCooldown: (userId: string) =>

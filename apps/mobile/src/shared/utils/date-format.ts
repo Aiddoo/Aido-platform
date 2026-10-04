@@ -57,3 +57,15 @@ export function formatClockTime(
   const dayPeriod = parts.find((part) => part.type === 'dayPeriod')?.value;
   return dayPeriod ? `${dayPeriod} ${hour}:${minute}` : `${hour}:${minute}`;
 }
+
+export function formatDateKey(date: Date, timeZone: string): string {
+  if (!Number.isFinite(date.getTime())) return '';
+  const parts = getFormatter(
+    { locale: 'en-US', timeZone },
+    { year: 'numeric', month: '2-digit', day: '2-digit' },
+  ).formatToParts(date);
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+  return year && month && day ? `${year}-${month}-${day}` : '';
+}

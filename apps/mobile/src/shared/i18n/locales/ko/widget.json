@@ -9,6 +9,19 @@
   "list": {
     "more": "+{{overflow}}개 더"
   },
+  "calendar": {
+    "weekTitle": "{{month}}, {{week}}주차 발자국"
+  },
+  "actions": {
+    "addTodo": "할 일 만들기",
+    "openTodo": "할 일을 누르면 앱에서 열려요"
+  },
+  "entry": {
+    "loading": "할 일 작성 화면을 준비하고 있어요",
+    "loadError": "작성 화면을 준비하지 못했어요",
+    "emptyCategory": "할 일을 담을 카테고리를 먼저 만들어 주세요",
+    "manageCategories": "카테고리 만들기"
+  },
   "state": {
     "emptyTitle": "오늘 할 일이 없어요",
     "emptyCta": "탭해서 추가하기",

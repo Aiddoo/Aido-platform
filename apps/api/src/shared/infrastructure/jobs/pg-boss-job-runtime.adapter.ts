@@ -2,18 +2,20 @@ import { createHash } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { type FactoryProvider, Inject, Injectable, Logger } from "@nestjs/common";
-import type {
-	Db,
-	FindJobsOptions,
-	JobWithMetadata,
-	PrismaTransactionLike,
-	QueueResult,
-	QueueOptions,
-	ScheduleOptions,
-	SendOptions,
-	StopOptions,
-	UpdateQueueOptions,
-	WorkOptions,
+import {
+	fromPrisma,
+	PgBoss,
+	type Db,
+	type FindJobsOptions,
+	type JobWithMetadata,
+	type PrismaTransactionLike,
+	type QueueResult,
+	type QueueOptions,
+	type ScheduleOptions,
+	type SendOptions,
+	type StopOptions,
+	type UpdateQueueOptions,
+	type WorkOptions,
 } from "pg-boss";
 
 import type {
@@ -56,7 +58,7 @@ export interface PgBossClient {
 	getQueues(names?: string[]): Promise<QueueResult[]>;
 }
 
-type PgBossClientLoader = () => Promise<PgBossClient>;
+type PgBossClientLoader = () => PgBossClient | Promise<PgBossClient>;
 
 export class LazyPgBossClient implements PgBossClient {
 	private client?: PgBossClient;
@@ -72,6 +74,8 @@ export class LazyPgBossClient implements PgBossClient {
 	async stop(options?: StopOptions): Promise<void> {
 		const client = this.starting ? await this.starting : this.client;
 		await client?.stop(options);
+		this.client = undefined;
+		this.starting = undefined;
 	}
 
 	on(event: "error", listener: (error: Error) => void): unknown {
@@ -145,7 +149,19 @@ export class LazyPgBossClient implements PgBossClient {
 		for (const listener of this.errorListeners) {
 			client.on("error", listener);
 		}
-		await client.start();
+		try {
+			await client.start();
+		} catch (startupError) {
+			try {
+				await client.stop({ graceful: false, close: true });
+			} catch (cleanupError) {
+				throw new AggregateError(
+					[startupError, cleanupError],
+					"pg-boss startup and cleanup failed",
+				);
+			}
+			throw startupError;
+		}
 		this.client = client;
 		return client;
 	}
@@ -165,18 +181,18 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
 	provide: PG_BOSS_CLIENT,
 	inject: [TypedConfigService],
 	useFactory: (config: TypedConfigService) =>
-		new LazyPgBossClient(async () => {
-			const { PgBoss } = await import("pg-boss");
-			return new PgBoss({
-				connectionString: config.databaseUrl,
-				schema: config.job.schema,
-				application_name: "aido-pg-boss",
-				max: 3,
-				migrate: false,
-				createSchema: false,
-				useListenNotify: false,
-			});
-		}),
+		new LazyPgBossClient(
+			() =>
+				new PgBoss({
+					connectionString: config.databaseUrl,
+					schema: config.job.schema,
+					application_name: "aido-pg-boss",
+					max: 3,
+					migrate: false,
+					createSchema: false,
+					useListenNotify: false,
+				}),
+		),
 };
 
 @Injectable()
@@ -361,13 +377,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 	}
 
 	private transactionDatabase(): Db {
-		const transaction = this.txHost.tx;
-		return {
-			async executeSql(text, values) {
-				const rows = await transaction.$queryRawUnsafe(text, ...(values ?? []));
-				return { rows: Array.isArray(rows) ? rows : [] };
-			},
-		};
+		return fromPrisma(this.txHost.tx);
 	}
 
 	private toPgBossOptions(options: EnqueueJobOptions, db: Db): SendOptions {

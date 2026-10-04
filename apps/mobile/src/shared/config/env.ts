@@ -4,6 +4,8 @@ import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
+import { resolveRevenueCatApiKey } from './revenuecat-api-key';
+
 // =============================================================================
 // Schema Definitions
 // =============================================================================
@@ -119,15 +121,6 @@ const resolveScheme = (): string => {
   return Array.isArray(scheme) ? (scheme[0] ?? 'aido') : (scheme ?? 'aido');
 };
 
-const resolveRevenueCatApiKey = (): string | undefined =>
-  match({ env: extra.env, platform: Platform.OS as PlatformType })
-    .with({ env: 'development' }, () => extra.revenueCatTestApiKey)
-    .with({ env: 'production', platform: 'ios' }, () => extra.revenueCatAppleApiKey)
-    .with({ env: 'production', platform: 'android' }, () => extra.revenueCatGoogleApiKey)
-    .with({ env: 'preview', platform: 'ios' }, () => extra.revenueCatAppleApiKey)
-    .with({ env: 'preview', platform: 'android' }, () => extra.revenueCatGoogleApiKey)
-    .otherwise(() => extra.revenueCatTestApiKey);
-
 // =============================================================================
 // Environment Configuration
 // =============================================================================
@@ -144,7 +137,14 @@ export const ENV = {
 
   API_URL: resolveApiUrl(),
   SCHEME: resolveScheme(),
-  REVENUECAT_API_KEY: resolveRevenueCatApiKey(),
+  REVENUECAT_API_KEY: resolveRevenueCatApiKey({
+    isDebugBuild: __DEV__,
+    isDevelopmentEnvironment: extra.isDevelopment,
+    platform: Platform.OS,
+    appleApiKey: extra.revenueCatAppleApiKey,
+    googleApiKey: extra.revenueCatGoogleApiKey,
+    testApiKey: extra.revenueCatTestApiKey,
+  }),
 
   SENTRY_DSN: extra.sentryDsn,
   // 프로덕션이면 항상 활성. 개발/preview는 기본 비활성이며 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성(테스트용).

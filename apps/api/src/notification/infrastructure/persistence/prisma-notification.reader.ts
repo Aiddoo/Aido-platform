@@ -14,6 +14,7 @@ import type { ExistsRecentNotificationQuery } from "../../application/ports/noti
 import type { NotificationInboxReaderPort } from "../../application/ports/notification-inbox.reader.port.js";
 import type { NotificationRecord } from "../../domain/records/notification.record.js";
 import type { NotificationMilestone } from "../../domain/types/notification-milestone.js";
+import type { NotificationType } from "../../domain/types/notification-type.js";
 
 @Injectable()
 export class PrismaNotificationReader
@@ -38,7 +39,7 @@ export class PrismaNotificationReader
 			where: {
 				userId,
 				...(unreadOnly && { isRead: false }),
-				...(types && types.length > 0 && { type: { in: types } }),
+				...(types && { type: { in: types } }),
 			},
 			take: size + 1,
 			...(cursor != null && { skip: 1, cursor: { id: cursor } }),
@@ -46,8 +47,10 @@ export class PrismaNotificationReader
 		});
 	}
 
-	async countUnread(userId: string): Promise<number> {
-		return this.client.notification.count({ where: { userId, isRead: false } });
+	async countUnread(userId: string, types?: readonly NotificationType[]): Promise<number> {
+		return this.client.notification.count({
+			where: { userId, isRead: false, ...(types && { type: { in: [...types] } }) },
+		});
 	}
 
 	async existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean> {

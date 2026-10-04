@@ -1,38 +1,17 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createMockAnalytics, createMockDIContainer } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { FeedDateProvider, useFeedDateContext } from './feed-date-provider';
 
-const mockSetParams = jest.fn();
-const mockNavigation = { setParams: mockSetParams };
-let mockRouteDate: string | undefined;
-
-jest.mock('expo-router', () => ({
-  useNavigation: () => mockNavigation,
-  useGlobalSearchParams: () => ({ date: mockRouteDate }),
-}));
-
 const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 
-function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
-  return {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb: jest.fn(),
-    setUserId: jest.fn(),
-  };
-}
-
-describe('FeedDateProvider', () => {
+describe('피드 날짜 선택', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    mockSetParams.mockReset();
-    mockRouteDate = undefined;
     Object.defineProperty(AppState, 'currentState', {
       configurable: true,
       writable: true,
@@ -40,79 +19,94 @@ describe('FeedDateProvider', () => {
     });
     jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() });
   });
-
   afterEach(() => {
     jest.useRealTimers();
-    if (originalCurrentStateDescriptor) {
+    jest.restoreAllMocks();
+    if (originalCurrentStateDescriptor)
       Object.defineProperty(AppState, 'currentState', originalCurrentStateDescriptor);
-    }
   });
 
-  async function setup() {
-    const analytics = createMockAnalytics();
-    const errorReporter = createMockErrorReporter();
-    const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createMockDIContainer({ analytics, errorReporter })}>
-        <LocalDateProvider>
-          <FeedDateProvider>{children}</FeedDateProvider>
-        </LocalDateProvider>
-      </StaticDIProvider>
-    );
-
-    return { ...(await renderHook(() => useFeedDateContext(), { wrapper })), errorReporter };
+  async function setup(initialDate?: string) {
+    const onDateChange = jest.fn();
+    const container = createMockDIContainer({
+      analytics: createMockAnalytics(),
+      errorReporter: {
+        captureException: jest.fn(),
+        captureMessage: jest.fn(),
+        addBreadcrumb: jest.fn(),
+        setUserId: jest.fn(),
+      },
+    });
+    const wrapper = ({ children }: PropsWithChildren) => {
+      const [date, setDate] = useState(initialDate);
+      return (
+        <StaticDIProvider container={container}>
+          <LocalDateProvider>
+            <FeedDateProvider
+              date={date}
+              onDateChange={(value) => {
+                onDateChange(value);
+                setDate(value);
+              }}
+            >
+              {children}
+            </FeedDateProvider>
+          </LocalDateProvider>
+        </StaticDIProvider>
+      );
+    };
+    return { ...(await renderHook(() => useFeedDateContext(), { wrapper })), onDateChange };
   }
 
-  it('콜드 스타트의 과거 route 날짜를 표시하지 않고 오늘로 정규화한다', async () => {
-    jest.setSystemTime(new Date(2026, 6, 15, 0, 0, 1));
-    mockRouteDate = '2026-07-14';
-
-    const { result, errorReporter } = await setup();
-
-    expect(result.current.selectedDateKey).toBe('2026-07-15');
-    expect(mockSetParams).toHaveBeenCalledWith({ date: undefined });
-    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith(
-      expect.objectContaining({
-        category: 'navigation',
-        data: expect.objectContaining({ reason: 'initial_route', previousDate: '2026-07-14' }),
-      }),
-    );
-  });
-
-  it('사용자가 과거 날짜를 보고 있어도 자정이 지나면 즉시 새 오늘로 돌아간다', async () => {
-    jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
-    const { result, errorReporter } = await setup();
-    await act(() => {
-      result.current.setSelectedDate(new Date(2026, 6, 13, 12));
-    });
+  test('날짜를 지정한 딥링크는 처음부터 지정한 날짜를 보여준다', async () => {
+    // Given
+    jest.setSystemTime(new Date(2026, 6, 15, 12));
+    // When
+    const { result, onDateChange } = await setup('2026-07-13');
+    // Then
     expect(result.current.selectedDateKey).toBe('2026-07-13');
-
-    await act(() => {
-      jest.advanceTimersByTime(200);
-    });
-
-    expect(result.current.selectedDateKey).toBe('2026-07-15');
-    expect(mockSetParams).toHaveBeenLastCalledWith({ date: undefined });
-    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith(
-      expect.objectContaining({
-        category: 'navigation',
-        data: expect.objectContaining({ reason: 'day_changed', nextDate: '2026-07-15' }),
-      }),
-    );
+    expect(onDateChange).not.toHaveBeenCalled();
   });
 
-  it('route 정규화 실패가 오늘 날짜 표시를 중단시키지 않는다', async () => {
-    jest.setSystemTime(new Date(2026, 6, 15, 0, 0, 1));
-    mockRouteDate = '2026-07-14';
-    mockSetParams.mockImplementation(() => {
-      throw new Error('navigation unavailable');
-    });
+  test.each([undefined, 'today'])(
+    '오늘 보기 모드 %s는 자정 뒤 새 오늘을 따라간다',
+    async (date) => {
+      // Given
+      jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
+      const { result, onDateChange } = await setup(date);
+      // When
+      await act(() => jest.advanceTimersByTime(200));
+      // Then
+      expect(result.current.selectedDateKey).toBe('2026-07-15');
+      expect(onDateChange).not.toHaveBeenCalled();
+    },
+  );
 
-    const { result, errorReporter } = await setup();
+  test.each(['2026-07-13', '2026-07-16'])(
+    '직접 고른 날짜 %s는 자정이 지나도 유지한다',
+    async (date) => {
+      // Given
+      jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
+      const { result, onDateChange } = await setup(date);
+      const selectedDate = result.current.selectedDate;
+      // When
+      await act(() => jest.advanceTimersByTime(200));
+      // Then
+      expect(result.current.selectedDateKey).toBe(date);
+      expect(result.current.selectedDate).toBe(selectedDate);
+      expect(onDateChange).not.toHaveBeenCalled();
+    },
+  );
 
+  test('오늘 버튼을 누르면 고정 날짜를 해제하고 다음 자정도 따라간다', async () => {
+    // Given
+    jest.setSystemTime(new Date(2026, 6, 14, 23, 59, 59, 900));
+    const { result, onDateChange } = await setup('2026-07-13');
+    // When
+    await act(() => result.current.setSelectedDate(new Date(2026, 6, 14)));
+    await act(() => jest.advanceTimersByTime(200));
+    // Then
+    expect(onDateChange).toHaveBeenCalledWith(undefined);
     expect(result.current.selectedDateKey).toBe('2026-07-15');
-    expect(errorReporter.captureException).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'navigation unavailable' }),
-      expect.objectContaining({ method: 'FeedDateProvider.setRouteDate' }),
-    );
   });
 });

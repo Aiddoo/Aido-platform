@@ -12,6 +12,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
 import { FollowReader } from "#api/follow/index";
+import { NotificationPublisher, NotificationRecipientLocaleReader } from "#api/notification/index";
 import { NotificationQueueService } from "#api/notification/queue";
 import { NUDGE_LIMIT_READER } from "#api/nudge/application/ports/nudge-limit-reader.port";
 import { NUDGE_NOTIFIER } from "#api/nudge/application/ports/nudge-notifier.port";
@@ -65,6 +66,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 		findFirst: vi.fn(),
 		findMany: vi.fn(),
 		update: vi.fn(),
+		updateMany: vi.fn(),
 		count: vi.fn(),
 	};
 	const mockReminderNudgeDb = {
@@ -123,6 +125,8 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				{ provide: NUDGE_REPOSITORY, useClass: PrismaNudgeRepository },
 				{ provide: NUDGE_NOTIFIER, useClass: NudgeNotifierAdapter },
 				{ provide: NUDGE_LIMIT_READER, useClass: NudgeLimitReaderAdapter },
+				{ provide: NotificationPublisher, useValue: { publish: vi.fn() } },
+				{ provide: NotificationRecipientLocaleReader, useValue: { getRecipientLocale: vi.fn() } },
 				PaginationService,
 				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
 				{
@@ -388,11 +392,11 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 			mockNudgeDb.findUnique.mockResolvedValue(
 				NudgeBuilder.create(senderId, receiverId, todoId).withId(nudgeId).asUnread().build(),
 			);
-			mockNudgeDb.update.mockResolvedValue({});
+			mockNudgeDb.updateMany.mockResolvedValue({ count: 1 });
 
 			await nudgeApi.markAsRead(receiverId, nudgeId);
-			expect(mockNudgeDb.update).toHaveBeenCalledWith(
-				expect.objectContaining({ where: { id: nudgeId } }),
+			expect(mockNudgeDb.updateMany).toHaveBeenCalledWith(
+				expect.objectContaining({ where: { id: nudgeId, readAt: null } }),
 			);
 		});
 

@@ -1,0 +1,38 @@
+appId: com.aido.mobile
+name: 할 일을 직접 완료한 뒤 친구에게 감사를 한 번만 전한다
+---
+# Given: 친구가 콕을 보낸 미완료 할 일
+- openLink: aido-dev://feed?date=today
+- extendedWaitUntil:
+    visible: ${QA_TODO_TITLE}
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: todo-checkbox-${QA_TODO_ID}
+    direction: DOWN
+    centerElement: true
+# When: 할 일을 완료하고 감사할 친구를 확인한다
+- tapOn:
+    id: todo-checkbox-${QA_TODO_ID}
+- waitForAnimationToEnd:
+    timeout: 3000
+- openLink: aido-dev://nudges/${QA_NUDGE_ID}
+- extendedWaitUntil:
+    visible: '완료한 할 일이에요|This to-do is complete'
+    timeout: 15000
+- scrollUntilVisible:
+    element: '응원해 준 친구에게 감사 보내기|Thank the friends who cheered you on'
+    direction: DOWN
+    centerElement: true
+- tapOn: '응원해 준 친구에게 감사 보내기|Thank the friends who cheered you on'
+- extendedWaitUntil:
+    visible: '감사 전하기|Send thanks'
+    timeout: 15000
+- assertVisible: ${QA_FRIEND_NAME}
+- takeScreenshot: 1.11.0-thanks-preview
+- tapOn: '감사 전하기|Send thanks'
+# Then: 감사 시트가 닫히고 전송 완료 상태를 표시한다
+- extendedWaitUntil:
+    visible: '완료 소식과 감사를 전했어요|You shared your finish and your thanks'
+    timeout: 15000
+- takeScreenshot: 1.11.0-thanks-sent

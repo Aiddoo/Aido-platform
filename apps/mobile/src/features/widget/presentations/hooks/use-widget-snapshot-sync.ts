@@ -1,10 +1,11 @@
 import { useWidgetSyncService } from '@src/bootstrap/providers/di-context';
+import { useGetDailyCompletionsQueryOptions } from '@src/features/todo/presentations/queries/get-daily-completions-query-options';
 import { useGetTodoSummaryQueryOptions } from '@src/features/todo/presentations/queries/get-todo-summary-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { useToday } from '@src/shared/hooks/useToday';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
-import { formatDate } from '@src/shared/utils/date';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
+import { getWeekRange } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
@@ -17,13 +18,26 @@ export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolvi
 
 const translate: WidgetTranslateFn = (key, params) => i18n.t(key, params);
 
-function buildContext(): WidgetSnapshotContext {
-  return { t: translate, locale: toResolvedLanguage(i18n.language), now: new Date() };
+function buildContext(
+  weekCompletions?: WidgetSnapshotContext['weekCompletions'],
+): WidgetSnapshotContext {
+  return {
+    t: translate,
+    locale: toResolvedLanguage(i18n.language),
+    now: new Date(),
+    weekCompletions,
+  };
 }
 
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
-  const date = formatDate(useToday());
+  const {
+    currentLocalDate,
+    currentLocalDateKey: date,
+    currentTimeZone,
+    currentUtcOffsetMinutes,
+  } = useLocalDate();
+  const { rangeStart, rangeEnd } = getWeekRange(currentLocalDate);
   const { data: user } = useQuery({
     ...useGetMeQueryOptions(),
     enabled: authState === 'authenticated',
@@ -36,6 +50,11 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     enabled: authState === 'authenticated' && userId != null,
     throwOnError: false,
   });
+  const { data: completions } = useQuery({
+    ...useGetDailyCompletionsQueryOptions(rangeStart, rangeEnd),
+    enabled: authState === 'authenticated' && userId != null,
+    throwOnError: false,
+  });
 
   useEffect(() => {
     if (authState === 'unauthenticated') {
@@ -43,12 +62,26 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
       return;
     }
     if (authState === 'authenticated' && userId != null && data?.date === date) {
-      void widgetSyncService.syncSummary(data, buildContext());
+      void widgetSyncService.syncSummary(
+        data,
+        buildContext(completions ? Object.values(completions) : undefined),
+      );
     }
-  }, [authState, data, date, userId, widgetSyncService]);
+  }, [
+    authState,
+    data,
+    completions,
+    date,
+    currentTimeZone,
+    currentUtcOffsetMinutes,
+    userId,
+    widgetSyncService,
+  ]);
 
-  const latestRef = useRef({ data, authState, userId, date });
-  latestRef.current = { data, authState, userId, date };
+  const latestRef = useRef({ data, completions, authState, userId, date });
+  useEffect(() => {
+    latestRef.current = { data, completions, authState, userId, date };
+  }, [data, completions, authState, userId, date]);
 
   useEffect(() => {
     const handleLanguageChanged = () => {
@@ -62,7 +95,10 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
         latest.userId != null &&
         latest.data?.date === latest.date
       ) {
-        void widgetSyncService.syncSummary(latest.data, buildContext());
+        void widgetSyncService.syncSummary(
+          latest.data,
+          buildContext(latest.completions ? Object.values(latest.completions) : undefined),
+        );
       }
     };
 

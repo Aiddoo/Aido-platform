@@ -1,5 +1,5 @@
-import type { Nudge } from "../../domain/entities/nudge.aggregate.js";
-import type { ReminderNudge } from "../../domain/entities/reminder-nudge.entity.js";
+import type { Nudge, NudgeProps } from "../../domain/entities/nudge.aggregate.js";
+import type { ReminderNudge } from "../../domain/entities/reminder-nudge.aggregate.js";
 
 /** 콕 찌르기 목록/응답에 필요한 사용자 요약 */
 export interface NudgeUserBrief {
@@ -31,6 +31,21 @@ export interface NudgeWithRelations extends NudgeRecord {
 	sender: NudgeUserBrief;
 	receiver: NudgeUserBrief;
 	todo: NudgeTodoBrief;
+}
+
+export interface NudgeInteractionRecord
+	extends
+		NudgeWithRelations,
+		Pick<NudgeProps, "replyKind" | "repliedAt" | "replyUpdatedAt" | "thankedAt"> {
+	todo: NudgeTodoBrief & { ownerId: string; visibility: string };
+}
+
+export interface NudgeInteractionTodo {
+	id: number;
+	ownerId: string;
+	title: string;
+	completed: boolean;
+	visibility: string;
 }
 
 /** 발신자 정보가 포함된 리마인드 콕 찌르기 읽기 프로젝션 */
@@ -82,7 +97,22 @@ export interface NudgeRepositoryPort {
 	findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null>;
 	findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null>;
 	findTargetTodo(todoId: number): Promise<TargetTodoRecord | null>;
-	markAsRead(id: number): Promise<void>;
+	saveRead(nudge: Nudge): Promise<void>;
+	saveReply(nudge: Nudge): Promise<void>;
+	saveThanks(nudge: Nudge): Promise<void>;
+	findInteractionById(id: number, userId: string): Promise<NudgeInteractionRecord | null>;
+	findInteractions(
+		params: FindNudgesParams & { direction: "received" | "sent" },
+	): Promise<NudgeInteractionRecord[]>;
+	findInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null>;
+	lockInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null>;
+	findLastReceivedNudgeId(todoId: number, userId: string): Promise<number | null>;
+	findThanksCandidates(input: {
+		userId: string;
+		todoId: number;
+		throughNudgeId: number;
+		friendIds: readonly string[];
+	}): Promise<NudgeInteractionRecord[]>;
 
 	findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
 	findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;

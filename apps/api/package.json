@@ -65,6 +65,7 @@
 		"bullmq": "6.3.11",
 		"dayjs": "catalog:",
 		"es-hangul": "2.4.0",
+		"es-toolkit": "catalog:",
 		"expo-server-sdk": "7.2.0",
 		"google-auth-library": "11.1.0",
 		"helmet": "8.3.0",
@@ -81,6 +82,7 @@
 		"resend": "6.31.0",
 		"rxjs": "7.8.2",
 		"swagger-ui-express": "5.0.1",
+		"ts-pattern": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

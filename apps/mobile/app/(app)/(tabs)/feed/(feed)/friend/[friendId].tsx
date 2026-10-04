@@ -1,4 +1,4 @@
-import { userIdParamSchema } from '@aido/validators';
+import { dateSchema, userIdParamSchema } from '@aido/validators';
 import { useFriendById } from '@src/features/friend/presentations/hooks/use-friend-by-id';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { FriendCalendar } from '@src/features/todo/presentations/components/Calendar/FriendCalendar';
@@ -6,26 +6,40 @@ import { FriendTodoList } from '@src/features/todo/presentations/components/Frie
 import { PokeBanner } from '@src/features/todo/presentations/components/PokeBanner';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedDateKey } from '@src/features/todo/presentations/hooks/use-feed-date';
+import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box, QueryErrorBoundary, Spacing, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { Redirect, useLocalSearchParams } from 'expo-router';
-import { Suspense } from 'react';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Suspense, useCallback } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
+import { z } from 'zod';
+
+const FriendFeedSearchSchema = z.object({
+  date: z
+    .union([dateSchema, z.literal('today')])
+    .optional()
+    .catch(undefined),
+});
 
 export default function FriendFeedScreen() {
-  const { friendId } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const { friendId } = params;
+  const { date } = FriendFeedSearchSchema.parse(params);
+  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
   const parsed = userIdParamSchema.shape.userId.safeParse(friendId);
   if (!parsed.success) return <Redirect href="/feed" />;
   return (
-    <QueryErrorBoundary
-      resetKeys={[parsed.data]}
-      fallback={(props) => <FriendFeedContent.Error {...props} />}
-    >
-      <Suspense fallback={<FriendFeedContent.Loading />}>
-        <FriendFeedContent />
-      </Suspense>
-    </QueryErrorBoundary>
+    <FeedDateProvider date={date} onDateChange={setDate}>
+      <QueryErrorBoundary
+        resetKeys={[parsed.data]}
+        fallback={(props) => <FriendFeedContent.Error {...props} />}
+      >
+        <Suspense fallback={<FriendFeedContent.Loading />}>
+          <FriendFeedContent />
+        </Suspense>
+      </QueryErrorBoundary>
+    </FeedDateProvider>
   );
 }
 

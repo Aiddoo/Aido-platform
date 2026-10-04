@@ -1,6 +1,8 @@
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import { type User, UserPolicy } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
+import { useTodayKey } from '@src/shared/hooks/useToday';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { HStack, ListRow, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
@@ -66,6 +68,8 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
 function useNotificationPress(notification: Notification) {
   const navigateToDestination = useNotificationNavigation();
+  const today = useTodayKey();
+  const logger = useLogger();
 
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const { trackEvent } = useTrack();
@@ -88,16 +92,30 @@ function useNotificationPress(notification: Notification) {
       }
     }
 
-    const destination = resolveNotificationDestination({
-      type: notification.type,
-      context: notification.context,
-      routing: notification.routing,
-      action: notification.action,
-    });
+    const destination = resolveNotificationDestination(
+      {
+        type: notification.type,
+        context: notification.context,
+        routing: notification.routing,
+        action: notification.action,
+      },
+      { today },
+    );
     trackEvent('notification_center_opened', {
       type: notification.type,
       destination: destination.kind,
     });
-    navigateToDestination(destination);
-  }, [notification, markAsRead, trackEvent, queryClient, premiumDialog, navigateToDestination]);
+    void navigateToDestination(destination).catch((error) =>
+      logger.warn('[Notification] Center navigation failed', { error }),
+    );
+  }, [
+    notification,
+    markAsRead,
+    trackEvent,
+    queryClient,
+    premiumDialog,
+    navigateToDestination,
+    today,
+    logger,
+  ]);
 }

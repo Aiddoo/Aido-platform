@@ -9,6 +9,19 @@
   "list": {
     "more": "+{{overflow}} more"
   },
+  "calendar": {
+    "weekTitle": "{{month}} · Week {{week}}"
+  },
+  "actions": {
+    "addTodo": "Add to-do",
+    "openTodo": "Tap a to-do to open it"
+  },
+  "entry": {
+    "loading": "Getting your to-do editor ready",
+    "loadError": "Could not open the to-do editor",
+    "emptyCategory": "Create a category for your to-dos first",
+    "manageCategories": "Create category"
+  },
   "state": {
     "emptyTitle": "Nothing to do today",
     "emptyCta": "Tap to add a todo",

@@ -1,6 +1,6 @@
 import {
-  type NotificationListResponse,
-  type Notification as ServerNotification,
+  type NotificationInboxResponse,
+  type NotificationInboxItem as ServerNotification,
   type NotificationRouting,
   notificationRoutingSchema,
 } from '@aido/validators';
@@ -36,7 +36,7 @@ function toNotificationRouting(metadata: unknown): NotificationRouting | undefin
 }
 
 export const toNotificationListResult = (
-  server: NotificationListResponse,
+  server: NotificationInboxResponse,
 ): NotificationListResult => ({
   notifications: server.notifications.map(toNotification),
   unreadCount: server.unreadCount,

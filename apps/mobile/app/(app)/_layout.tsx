@@ -24,6 +24,7 @@ const AppLayout = () => {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="friends" />
         <Stack.Screen name="notifications" />
+        <Stack.Screen name="nudges" />
         <Stack.Screen name="achievements" />
         <Stack.Screen name="reports" />
         <Stack.Screen name="suggestions" />

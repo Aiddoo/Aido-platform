@@ -13,6 +13,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { Nudge } from "../../../domain/entities/nudge.aggregate.js";
 import { evaluateNudgeCooldown } from "../../../domain/services/nudge-cooldown.js";
 import { NudgeMessage } from "../../../domain/value-objects/nudge-message.vo.js";
 import { NudgeTargetTodo } from "../../../domain/value-objects/nudge-target-todo.vo.js";
@@ -122,13 +123,15 @@ export class SendNudgeUseCase {
 				}
 			}
 
-			return this.nudgeRepository.createNudge({
-				senderId,
-				receiverId,
-				todoId,
-				message: nudgeMessage.raw,
-				createdAt: capturedAt,
-			});
+			return this.nudgeRepository.createNudge(
+				Nudge.planCreation({
+					senderId,
+					receiverId,
+					todoId,
+					message: nudgeMessage.raw,
+					createdAt: capturedAt,
+				}),
+			);
 		});
 
 		this.#logger.log(

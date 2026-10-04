@@ -2,7 +2,7 @@ import {
   type MarkReadResponse,
   marketingPushOptOutResponseSchema,
   markReadResponseSchema,
-  notificationListResponseSchema,
+  notificationInboxResponseSchema,
   notificationOpenedResponseSchema,
   type RegisterTokenResponse,
   registerTokenResponseSchema,
@@ -102,7 +102,7 @@ export class NotificationService {
     query?: GetNotificationsQuery,
     signal?: AbortSignal,
   ): Promise<Result<NotificationListResult, ApiError>> => {
-    const result = await this.#httpClient.get('v1/notifications', {
+    const result = await this.#httpClient.get('v1/notifications/inbox', {
       signal,
       params: {
         limit: query?.limit,
@@ -116,7 +116,7 @@ export class NotificationService {
       return result;
     }
 
-    const parsed = notificationListResponseSchema.safeParse(result.value);
+    const parsed = notificationInboxResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[NotificationService] Invalid getNotifications response: ${parsed.error.message}`,
@@ -127,7 +127,7 @@ export class NotificationService {
   };
 
   getUnreadCount = async (signal?: AbortSignal): Promise<Result<number, ApiError>> => {
-    const result = await this.#httpClient.get('v1/notifications/unread-count', { signal });
+    const result = await this.#httpClient.get('v1/notifications/inbox/unread-count', { signal });
 
     if (!result.ok) {
       return result;
@@ -161,7 +161,7 @@ export class NotificationService {
   };
 
   markAllAsRead = async (): Promise<Result<MarkReadResponse, ApiError>> => {
-    const result = await this.#httpClient.patch('v1/notifications/read-all');
+    const result = await this.#httpClient.patch('v1/notifications/inbox/read-all');
 
     if (!result.ok) {
       return result;

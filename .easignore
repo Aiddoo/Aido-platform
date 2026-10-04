@@ -1,0 +1,128 @@
+.git/
+# Worktrees
+.worktrees/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build Outputs
+dist/
+build/
+.next/
+.expo/
+web-build/
+out/
+*.tsbuildinfo
+.turbo/
+.nest/
+
+# Database & Prisma
+**/prisma/generated/
+**/src/generated/
+node_modules/.prisma/
+*.db
+*.sqlite
+*.sqlite3
+
+# Testing
+coverage/
+.jest-cache/
+test-results/
+junit.xml
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.preview
+.env.production
+.secrets/
+
+# Docker environment (실제 값이 들어간 파일 - example은 트래킹)
+.env.docker.dev
+.env.docker.prod
+
+# IDE & Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.cursor/
+.continue/
+*.swp
+*.swo
+*~
+
+# AI Tools
+.claude/
+!apps/*/.claude/
+.serena/
+
+# OS
+.DS_Store
+.AppleDouble
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Generated Files
+**/swagger-spec.json
+**/openapi.json
+**/*.generated.ts
+**/*.generated.js
+
+# Personal
+myDocs/
+PLAN.md
+settings.local.json
+my-docs
+약관
+
+# 마이그레이션 안전망 산출물 (로컬 전용)
+backups/
+
+# Vitest
+.vitest/
+
+/docs/releases/1.10.0.md
+
+# Mobile generated native projects and local credentials
+/apps/mobile/ios/
+/apps/mobile/android/
+/apps/mobile/.eas/
+/apps/mobile/.easrc
+/apps/mobile/expo-env.d.ts
+/apps/mobile/.env*
+!/apps/mobile/.env.example
+/apps/mobile/google-services*.json
+/apps/mobile/GoogleService-Info*.plist
+/apps/mobile/credentials/
+/apps/mobile/credentials.json
+/apps/mobile/*service-account*.json
+/apps/mobile/*-firebase-adminsdk-*.json
+**/*.keystore
+**/*.jks
+**/*.p8
+**/*.p12
+**/*.key
+**/*.pem
+**/*.mobileprovision
+**/*.ipa
+**/*.apk
+**/*.aab
+
+# Build-unrelated documentation and native QA artifacts
+**/docs/
+**/*.md
+**/.claude/
+/apps/mobile/maestro/
+/docs/
+/myDocs/

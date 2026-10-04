@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
+	resolveNotificationInboxScope,
+	visibleNotificationTypes,
+} from "../../../domain/services/notification-client-capability.js";
+import {
 	NOTIFICATION_CACHE,
 	type NotificationCachePort,
 } from "../../ports/notification-cache.port.js";
@@ -21,9 +25,11 @@ export class GetUnreadCountUseCase {
 		private readonly cache: NotificationCachePort,
 	) {}
 
-	async execute(userId: string): Promise<number> {
-		return this.cache.wrapUnreadCount(userId, () =>
-			this.notificationInboxReader.countUnread(userId),
+	async execute(userId: string, appVersion?: string): Promise<number> {
+		return this.cache.wrapUnreadCount(
+			userId,
+			() => this.notificationInboxReader.countUnread(userId, visibleNotificationTypes(appVersion)),
+			resolveNotificationInboxScope(appVersion),
 		);
 	}
 }

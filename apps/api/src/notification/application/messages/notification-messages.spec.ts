@@ -61,7 +61,7 @@ function graphemeCount(value: string): number {
 		.length;
 }
 
-describe("notification copy factories", () => {
+describe("알림 문구 생성", () => {
 	describe("createNotificationLabelPreview", () => {
 		it("한국어는 말줄임표를 포함해 최대 24 grapheme으로 줄인다", () => {
 			const preview = createNotificationLabelPreview({ label: "가".repeat(30), locale: "ko" });
@@ -247,13 +247,18 @@ describe("notification copy factories", () => {
 	});
 
 	it("결제 안내는 장난스러운 표현 없이 명확하다", () => {
+		// Given
+		const expected = {
+			title: "결제 정보 확인이 필요해요",
+			body: "구독을 이어가려면 결제 수단을 확인해 주세요.",
+			variantId: "default",
+		};
+
+		// When
 		const message = createBillingIssueNotificationMessage();
 
-		expect(message).toEqual({
-			title: "결제 수단을 확인해 주세요",
-			body: "구독이 중단되지 않도록 결제 정보를 확인해 주세요.",
-			variantId: "default",
-		});
+		// Then
+		expect(message).toEqual(expected);
 	});
 
 	it.each(EVENING_REMINDER_CASES)(

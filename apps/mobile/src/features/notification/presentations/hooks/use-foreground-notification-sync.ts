@@ -1,6 +1,7 @@
 import { pushNotificationDataSchema } from '@aido/validators';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { FRIEND_QUERY_KEYS } from '@src/features/friend/presentations/constants/friend-query-keys.constant';
+import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import type * as Notifications from 'expo-notifications';
@@ -46,6 +47,11 @@ export function useForegroundNotificationSync({
         ];
         const result = pushNotificationDataSchema.safeParse(notification?.request.content.data);
         const type = result.success ? result.data.type : undefined;
+        if (type === 'NUDGE_RECEIVED' || type === 'NUDGE_REPLIED' || type === 'NUDGE_THANKED') {
+          tasks.push(
+            queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeInteractions() }),
+          );
+        }
         if (type === 'FOLLOW_NEW' || type === 'FOLLOW_ACCEPTED') {
           tasks.push(queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.all }));
         }

@@ -449,12 +449,16 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 });
 
 describe("LazyPgBossClient — backend 비선택 시 무초기화", () => {
-	it("start 전에는 pg-boss 모듈과 연결을 생성하지 않는다", async () => {
+	it("start 전에는 pg-boss 인스턴스와 연결을 생성하지 않는다", async () => {
+		// Given
 		const client = new FakePgBossClient();
 		const load = vi.fn().mockResolvedValue(client);
 		const lazyClient = new LazyPgBossClient(load);
 
+		// When
 		lazyClient.on("error", vi.fn());
+
+		// Then
 		expect(load).not.toHaveBeenCalled();
 
 		await lazyClient.start();
@@ -474,5 +478,35 @@ describe("LazyPgBossClient — backend 비선택 시 무초기화", () => {
 		expect(load).toHaveBeenCalledTimes(1);
 		expect(client.createdQueues).toEqual([QUEUE]);
 		expect(client.handlers.has(QUEUE)).toBe(true);
+	});
+
+	it("선택하지 않은 runtime을 종료해도 인스턴스를 만들지 않는다", async () => {
+		// Given
+		const load = vi.fn(() => new FakePgBossClient());
+		const client = new LazyPgBossClient(load);
+
+		// When
+		await client.stop();
+
+		// Then
+		expect(load).not.toHaveBeenCalled();
+	});
+
+	it("시작 실패 시 열린 자원을 닫고 다음 요청에서 새 인스턴스로 재시도한다", async () => {
+		// Given
+		const first = new FakePgBossClient();
+		const next = new FakePgBossClient();
+		const failure = new Error("startup failed");
+		vi.spyOn(first, "start").mockRejectedValue(failure);
+		const load = vi.fn().mockReturnValueOnce(first).mockReturnValue(next);
+		const client = new LazyPgBossClient(load);
+
+		// When
+		await expect(client.start()).rejects.toBe(failure);
+		await client.start();
+
+		// Then
+		expect(first.stopCalls).toEqual([{ graceful: false, close: true }]);
+		expect(load).toHaveBeenCalledTimes(2);
 	});
 });

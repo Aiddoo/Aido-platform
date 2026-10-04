@@ -1,5 +1,5 @@
 diff --git a/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt b/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
-index 4c27e67e..9b238564 100644
+index 4c27e67e3039555b66a180fac5e59113ab627887..9d17f5f8c05f9face7b9650dc238f992578936d6 100644
 --- a/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
 +++ b/android/src/main/java/expo/modules/widgets/ExpoWidgetsPeekWidget.kt
 @@ -5,6 +5,8 @@ import android.annotation.SuppressLint
@@ -11,22 +11,71 @@ index 4c27e67e..9b238564 100644
  import androidx.glance.Emittable
  import androidx.glance.appwidget.AppWidgetId
  import androidx.glance.appwidget.SizeMode
-@@ -28,6 +30,12 @@ internal class ExpoWidgetsPeekWidget(
+@@ -28,6 +30,14 @@ internal class ExpoWidgetsPeekWidget(
      val environment = getWidgetEnvironment(appContext)
      val node = evaluateLayout(appContext, layout, props, environment)
  
 -    return node.toPeekRoot(appContext, widgetName, size)
 +    return node.toPeekRoot(appContext, widgetName, size).also { root ->
 +      if (props?.get("opensApp") == true) {
-+        appContext.packageManager.getLaunchIntentForPackage(appContext.packageName)?.let { intent ->
++        val intent = widgetAppLaunchIntent(appContext, props["openAppUrl"] as? String)
++          ?: appContext.packageManager.getLaunchIntentForPackage(appContext.packageName)
++        intent?.let {
 +          root.modifier = root.modifier.clickable(actionStartActivity(intent))
 +        }
 +      }
 +    }
    }
  }
+diff --git a/android/src/main/java/expo/modules/widgets/WidgetAppLaunchIntent.kt b/android/src/main/java/expo/modules/widgets/WidgetAppLaunchIntent.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..388e5b246cf0f5cc57196cf1fc53a73049189abf
+--- /dev/null
++++ b/android/src/main/java/expo/modules/widgets/WidgetAppLaunchIntent.kt
+@@ -0,0 +1,21 @@
++package expo.modules.widgets
++
++import android.content.Context
++import android.content.Intent
++import android.net.Uri
++
++private val widgetAppDestinationPattern = Regex(
++  """aido(?:-dev|-preview)?://(?:feed\?date=(?:today|\d{4}-\d{2}-\d{2})(?:&action=add-todo)?|todo/[1-9]\d*)"""
++)
++
++internal fun widgetAppLaunchIntent(context: Context, destination: String?): Intent? {
++  if (destination == "__aido_widget_open_app") {
++    return context.packageManager.getLaunchIntentForPackage(context.packageName)
++  }
++  if (destination == null || !widgetAppDestinationPattern.matches(destination)) return null
++  return context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
++    action = Intent.ACTION_VIEW
++    data = Uri.parse(destination)
++    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
++  }
++}
+diff --git a/android/src/main/java/expo/modules/widgets/WidgetInteractionAction.kt b/android/src/main/java/expo/modules/widgets/WidgetInteractionAction.kt
+index b747d9125c455d457e318093570cd86449d69778..61b35b807c31a23579bd4d97293c05673fa05119 100644
+--- a/android/src/main/java/expo/modules/widgets/WidgetInteractionAction.kt
++++ b/android/src/main/java/expo/modules/widgets/WidgetInteractionAction.kt
+@@ -4,6 +4,7 @@ import android.content.Context
+ import android.content.Intent
+ import androidx.glance.action.Action
+ import androidx.glance.appwidget.action.actionSendBroadcast
++import androidx.glance.appwidget.action.actionStartActivity
+ 
+ internal const val WIDGET_INTERACTION_ACTION = "expo.modules.widgets.ACTION_WIDGET_INTERACTION"
+ internal const val WIDGET_INTERACTION_SOURCE_EXTRA = "expo.modules.widgets.extra.SOURCE"
+@@ -15,6 +16,7 @@ internal data class WidgetInteraction(
+ )
+ 
+ internal fun WidgetInteraction.toGlanceAction(context: Context): Action {
++  widgetAppLaunchIntent(context, target)?.let { return actionStartActivity(it) }
+   val intent = Intent(WIDGET_INTERACTION_ACTION)
+     .setComponent(widgetProviderComponentName(context, source))
+     .putExtra(WIDGET_INTERACTION_SOURCE_EXTRA, source)
 diff --git a/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt b/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt
-index e36dfdf4..81326f4e 100644
+index e36dfdf4acca627b0ceb449436db4663fe7b5198..81326f4ec807a269afaad6e3619313a88b5db529 100644
 --- a/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt
 +++ b/android/src/main/java/expo/modules/widgets/WidgetProviderNames.kt
 @@ -1,10 +1,18 @@
@@ -50,7 +99,7 @@ index e36dfdf4..81326f4e 100644
 +  return registeredProvider?.provider ?: ComponentName(context.packageName, "${context.packageName}.$widgetName$PROVIDER_SUFFIX")
  }
 diff --git a/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt b/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt
-index f5dbbd21..32a0860d 100644
+index f5dbbd210b059bc27259c13296ceaf11850d2929..32a0860d3b78add3aff25c893d4727af8eab8b49 100644
 --- a/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt
 +++ b/android/src/main/java/expo/modules/widgets/WidgetsStorage.kt
 @@ -7,7 +7,10 @@ internal object WidgetsStorage {
@@ -66,7 +115,7 @@ index f5dbbd21..32a0860d 100644
  
    fun set(context: Context, key: String, value: Map<String, Any?>) {
 diff --git a/scripts/build-layout-registry.mjs b/scripts/build-layout-registry.mjs
-index d52a60e3..5b2da22d 100644
+index d52a60e342c8e0a8a1d78f7174da5e60e6bd1c53..2d20f788b971db5480a28e9eab2bd72099f1f2f8 100644
 --- a/scripts/build-layout-registry.mjs
 +++ b/scripts/build-layout-registry.mjs
 @@ -70,7 +70,7 @@ async function readExpectedWidgets(projectRoot, configPath) {
