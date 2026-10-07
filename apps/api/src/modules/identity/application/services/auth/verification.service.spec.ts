@@ -1,384 +1,211 @@
+import { ErrorCode } from "@aido/api/errors";
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi, type Mocked } from "vitest";
+import { mock } from "vitest-mock-extended";
 
 import type { VerificationType } from "#api/modules/identity/domain/types/auth/auth.types";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { VerificationFixture } from "#test/fixtures/index";
+import { FakeEmailService } from "#test/mocks/fake-email.service";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
-import { type AuthEmailSenderPort } from "../../ports/auth/auth-collaboration.port.js";
-import { type AuthVerificationRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
-import { type VerificationCodeSecurityPort } from "../../ports/auth/verification-code-security.port.js";
+import type { AuthVerificationRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
+import type { VerificationCodeSecurityPort } from "../../ports/auth/verification-code-security.port.js";
 import { VerificationService } from "./verification.service.js";
 
-describe("VerificationService — 인증 코드 서비스", () => {
+const currentTime = new Date("2026-12-31T23:59:00Z");
+const expiresAt = new Date("2027-01-01T00:09:00Z");
+const cooldownSince = new Date("2026-12-31T23:58:00Z");
+const userId = "user-123";
+const email = "test@example.com";
+const code = "123456";
+const digest = "hashed-token";
+const passwordScenarios = [
+  { method: "createAndSendPasswordReset", type: "PASSWORD_RESET", emailType: "password-reset" },
+  { method: "createAndSendPasswordSetup", type: "PASSWORD_SETUP", emailType: "password-setup" },
+] as const;
+
+describe("VerificationService — 인증 코드 발급과 계정 보호", () => {
   let service: VerificationService;
   let logger: Mocked<ApplicationLogger>;
-  let verificationRepo: Mocked<AuthVerificationRepositoryPort>;
-  let emailSender: Mocked<AuthEmailSenderPort>;
-  let verificationCodeSecurity: Mocked<VerificationCodeSecurityPort>;
+  let repository: Mocked<AuthVerificationRepositoryPort>;
+  let emailSender: FakeEmailService;
+  let security: Mocked<VerificationCodeSecurityPort>;
 
-  beforeEach(async () => {
-    // Given
-    const verificationServiceDependencies = mockDeep<
-      ConstructorParameters<typeof VerificationService>[0]
-    >({});
-    const unit = new VerificationService(verificationServiceDependencies);
-
-    service = unit;
-    logger = verificationServiceDependencies.logger;
-    verificationRepo = verificationServiceDependencies.verificationRepository;
-    emailSender = verificationServiceDependencies.emailSender;
-    verificationCodeSecurity = verificationServiceDependencies.verificationCodeSecurity;
-    verificationCodeSecurity.generate.mockReturnValue({
-      plaintext: "123456",
-      digest: "hashed-token",
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(currentTime);
+    logger = mock<ApplicationLogger>();
+    repository = mock<AuthVerificationRepositoryPort>();
+    security = mock<VerificationCodeSecurityPort>();
+    emailSender = new FakeEmailService();
+    service = new VerificationService({
+      logger,
+      verificationRepository: repository,
+      verificationCodeSecurity: security,
+      emailSender,
     });
-    verificationCodeSecurity.hash.mockReturnValue(
-      "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
-    );
+    security.generate.mockReturnValue({ plaintext: code, digest });
+    vi.when(security.hash, { onUnmatched: "throw" })
+      .calledWith(code)
+      .thenReturn(digest)
+      .calledWith("999999")
+      .thenReturn("wrong-hash");
   });
 
-  describe("createAndSendPasswordReset", () => {
-    const userId = "user-123";
-    const email = "test@example.com";
+  afterEach(() => vi.useRealTimers());
 
+  describe.each(passwordScenarios)("$type 발급", ({ method, type, emailType }) => {
     beforeEach(() => {
-      // Given - 기본 성공 시나리오 설정
-      verificationRepo.countRecentByUserIdAndType.mockResolvedValue(0);
-      verificationRepo.invalidateAllByUserIdAndType.mockResolvedValue(0);
-      verificationRepo.create.mockResolvedValue({
-        id: 1,
-        userId,
-        type: "PASSWORD_RESET",
-        token: "hashed-token",
-        expiresAt: new Date(),
-        attempts: 0,
-        usedAt: null,
-        createdAt: new Date(),
-      });
-      emailSender.sendPasswordResetCode.mockResolvedValue({
-        success: true,
-      });
+      vi.when(repository.countRecentByUserIdAndType, { onUnmatched: "throw" })
+        .calledWith(userId, type, cooldownSince)
+        .thenResolve(0);
+      repository.invalidateAllByUserIdAndType.mockResolvedValue(0);
+      repository.create.mockResolvedValue(
+        VerificationFixture.create({ userId, type, token: digest, expiresAt }),
+      );
     });
 
-    it("비밀번호 재설정 코드를 생성하고 발송한다", async () => {
-      // Given - beforeEach에서 기본 mock 설정됨
+    it("이전 코드를 무효화하고 해시를 저장하며 연말을 넘는 만료 시간과 평문 코드를 발송한다", async () => {
+      // Given - 고정된 연말 시간과 사용 가능한 발급 상태
 
       // When
-      const result = await service.createAndSendPasswordReset(userId, email);
+      const result = await service[method](userId, email);
 
       // Then
-      expect(result.code).toMatch(/^\d{6}$/);
-      expect(emailSender.sendPasswordResetCode).toHaveBeenCalledWith(email, {
-        code: expect.any(String),
-        expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
-      });
-    });
-
-    it("PASSWORD_RESET 타입으로 저장한다", async () => {
-      // Given - beforeEach에서 기본 mock 설정됨
-
-      // When
-      await service.createAndSendPasswordReset(userId, email);
-
-      // Then
-      expect(verificationRepo.create).toHaveBeenCalledWith(
+      expect(result).toEqual({ code, expiresAt });
+      expect(repository.invalidateAllByUserIdAndType).toHaveBeenCalledWith(userId, type);
+      expect(repository.create).toHaveBeenCalledWith({ userId, type, token: digest, expiresAt });
+      expect(emailSender.getSentEmail(email)).toEqual(
         expect.objectContaining({
-          userId,
-          type: "PASSWORD_RESET",
+          code,
+          type: emailType,
+          expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
+          sentAt: currentTime,
         }),
       );
     });
 
-    it("재발송 쿨다운을 확인한다", async () => {
-      // Given - beforeEach에서 쿨다운 카운트가 0으로 설정됨
-
-      // When
-      await service.createAndSendPasswordReset(userId, email);
-
-      // Then
-      expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
-        userId,
-        "PASSWORD_RESET",
-        expect.any(Date),
-      );
-    });
-
-    it("기존 미사용 코드를 무효화한다", async () => {
-      // Given - beforeEach에서 기본 mock 설정됨
-
-      // When
-      await service.createAndSendPasswordReset(userId, email);
-
-      // Then
-      expect(verificationRepo.invalidateAllByUserIdAndType).toHaveBeenCalledWith(
-        userId,
-        "PASSWORD_RESET",
-      );
-    });
-
-    it("재발송 쿨다운 중이면 VERIFICATION_COOLDOWN 에러를 던진다", async () => {
+    it("쿨다운 중이면 기존 코드를 무효화하거나 새 코드를 저장·발송하지 않는다", async () => {
       // Given
-      verificationRepo.countRecentByUserIdAndType.mockResolvedValue(1);
-
-      // When & Then
-      await expect(service.createAndSendPasswordReset(userId, email)).rejects.toThrow(
-        ApplicationException,
-      );
-    });
-  });
-
-  describe("createAndSendPasswordSetup", () => {
-    const userId = "user-123";
-    const email = "test@example.com";
-
-    beforeEach(() => {
-      // Given - 기본 성공 시나리오 설정
-      verificationRepo.countRecentByUserIdAndType.mockResolvedValue(0);
-      verificationRepo.invalidateAllByUserIdAndType.mockResolvedValue(0);
-      verificationRepo.create.mockResolvedValue({
-        id: 1,
-        userId,
-        type: "PASSWORD_SETUP",
-        token: "hashed-token",
-        expiresAt: new Date(),
-        attempts: 0,
-        usedAt: null,
-        createdAt: new Date(),
-      });
-      emailSender.sendPasswordSetupCode.mockResolvedValue({
-        success: true,
-      });
-    });
-
-    it("PASSWORD_SETUP 타입으로 인증 코드를 생성한다", async () => {
-      // Given - beforeEach에서 기본 mock 설정됨
+      vi.when(repository.countRecentByUserIdAndType)
+        .calledWith(userId, type, cooldownSince)
+        .thenResolve(1);
 
       // When
-      const result = await service.createAndSendPasswordSetup(userId, email);
+      const pending = service[method](userId, email);
 
       // Then
-      expect(result.code).toMatch(/^\d{6}$/);
-      expect(verificationRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId,
-          type: "PASSWORD_SETUP",
-        }),
-      );
-    });
-
-    it("이메일로 비밀번호 설정 코드를 발송한다", async () => {
-      // Given - beforeEach에서 이메일 서비스 mock 설정됨
-
-      // When
-      await service.createAndSendPasswordSetup(userId, email);
-
-      // Then
-      expect(emailSender.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
-        code: expect.any(String),
-        expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
+      await expect(pending).rejects.toMatchObject({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS },
       });
+      expect(repository.invalidateAllByUserIdAndType).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(emailSender.getSentCount()).toBe(0);
     });
 
-    it("재발송 쿨다운 중이면 에러를 던진다", async () => {
+    it("이메일 공급자가 실패해도 발급 결과는 유지하고 민감정보 없이 실패를 기록한다", async () => {
       // Given
-      verificationRepo.countRecentByUserIdAndType.mockResolvedValue(1);
-
-      // When & Then
-      await expect(service.createAndSendPasswordSetup(userId, email)).rejects.toThrow(
-        ApplicationException,
-      );
-    });
-
-    it("기존 미사용 코드를 무효화한다", async () => {
-      // Given - beforeEach에서 기본 mock 설정됨
+      emailSender.simulateFailures(1);
 
       // When
-      await service.createAndSendPasswordSetup(userId, email);
+      const result = await service[method](userId, email);
 
       // Then
-      expect(verificationRepo.invalidateAllByUserIdAndType).toHaveBeenCalledWith(
-        userId,
-        "PASSWORD_SETUP",
-      );
-    });
-
-    it("재발송 쿨다운을 확인한다", async () => {
-      // Given - beforeEach에서 쿨다운 카운트가 0으로 설정됨
-
-      // When
-      await service.createAndSendPasswordSetup(userId, email);
-
-      // Then
-      expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
-        userId,
-        "PASSWORD_SETUP",
-        expect.any(Date),
-      );
-    });
-
-    it("리포지토리 호출은 활성 트랜잭션(CLS)에 참여한다 — tx 인자를 전달하지 않는다", async () => {
-      // When
-      await service.createAndSendPasswordSetup(userId, email);
-
-      // Then
-      expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
-        userId,
-        "PASSWORD_SETUP",
-        expect.any(Date),
-      );
-      expect(verificationRepo.invalidateAllByUserIdAndType).toHaveBeenCalledWith(
-        userId,
-        "PASSWORD_SETUP",
-      );
-      expect(verificationRepo.create).toHaveBeenCalledWith(expect.any(Object));
-    });
-
-    it("이메일 발송 실패해도 결과를 반환한다", async () => {
-      // Given
-      emailSender.sendPasswordSetupCode.mockResolvedValue({
-        success: false,
-        error: `Rejected ${email} with code 123456`,
-      });
-
-      // When
-      const result = await service.createAndSendPasswordSetup(userId, email);
-
-      // Then
-      expect(result.code).toBeDefined();
-      expect(result.expiresAt).toBeDefined();
+      expect(result).toEqual({ code, expiresAt });
+      expect(emailSender.hasSentTo(email)).toBe(false);
       expect(logger.error).toHaveBeenCalledWith({
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
-        verificationType: "PASSWORD_SETUP",
+        verificationType: type,
         userId,
       });
       const logs = JSON.stringify(logger.error.mock.calls);
       expect(logs).not.toContain(email);
-      expect(logs).not.toContain("123456");
+      expect(logs).not.toContain(code);
     });
   });
 
-  describe("verifyCode", () => {
-    const userId = "user-123";
-    const code = "123456";
+  describe("인증 코드 확인", () => {
     const type: VerificationType = "EMAIL_VERIFY";
-
-    // SHA-256 hash of "123456"
-    const hashedCode = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
-
-    const mockVerification = {
-      id: 1,
-      userId,
-      type,
-      token: hashedCode,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-      attempts: 0,
-      usedAt: null,
-      createdAt: new Date(),
-    };
+    let verification: ReturnType<typeof VerificationFixture.create>;
 
     beforeEach(() => {
-      // Given - 기본 성공 시나리오 설정
-      verificationRepo.findValidByUserIdAndType.mockResolvedValue(mockVerification);
-      verificationRepo.markAsUsed.mockResolvedValue(mockVerification);
-      verificationRepo.incrementAttempts.mockResolvedValue(mockVerification);
+      verification = VerificationFixture.create({ userId, type, token: digest, expiresAt });
+      vi.when(repository.findValidByUserIdAndType, { onUnmatched: "throw" })
+        .calledWith(userId, type)
+        .thenResolve(verification);
+      repository.markAsUsed.mockResolvedValue(verification);
+      repository.incrementAttempts.mockResolvedValue(verification);
     });
 
-    it("올바른 코드로 인증에 성공한다", async () => {
-      // Given - beforeEach에서 유효한 인증 코드가 설정됨
+    it("올바른 코드는 인증에 성공하고 사용 처리한다", async () => {
+      // Given - 유효한 인증 코드 fixture
 
       // When
       const result = await service.verifyCode(userId, code, type);
 
       // Then
       expect(result).toBe(true);
-      expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(mockVerification.id);
+      expect(repository.markAsUsed).toHaveBeenCalledWith(verification.id);
+      expect(repository.incrementAttempts).not.toHaveBeenCalled();
     });
 
-    it("유효한 인증 코드가 없으면 VERIFICATION_CODE_NOT_FOUND 에러를 던진다", async () => {
+    it("유효한 코드가 없으면 인증을 거부하고 사용 처리하지 않는다", async () => {
       // Given
-      verificationRepo.findValidByUserIdAndType.mockResolvedValue(null);
-
-      // When & Then
-      await expect(service.verifyCode(userId, code, type)).rejects.toThrow(ApplicationException);
-    });
-
-    it("최대 시도 횟수 초과 시 VERIFICATION_MAX_ATTEMPTS 에러를 던진다", async () => {
-      // Given
-      verificationRepo.findValidByUserIdAndType.mockResolvedValue({
-        ...mockVerification,
-        attempts: VERIFICATION_CODE.MAX_ATTEMPTS,
-      });
-
-      // When & Then
-      await expect(service.verifyCode(userId, code, type)).rejects.toThrow(ApplicationException);
-    });
-
-    it("잘못된 코드면 시도 횟수를 증가시키고 INVALID_VERIFICATION_CODE 에러를 던진다", async () => {
-      // Given
-      const wrongCode = "999999";
-      verificationCodeSecurity.hash.mockReturnValue("wrong-hash");
-
-      // When & Then
-      await expect(service.verifyCode(userId, wrongCode, type)).rejects.toThrow(
-        ApplicationException,
-      );
-
-      expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(mockVerification.id);
-    });
-
-    it("인증 성공 시 코드를 사용됨으로 표시한다", async () => {
-      // Given - beforeEach에서 유효한 인증 코드가 설정됨
+      vi.when(repository.findValidByUserIdAndType).calledWith(userId, type).thenResolve(null);
 
       // When
-      await service.verifyCode(userId, code, type);
+      const pending = service.verifyCode(userId, code, type);
 
       // Then
-      expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(mockVerification.id);
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
+      expect(repository.markAsUsed).not.toHaveBeenCalled();
     });
 
-    it("리포지토리 호출은 활성 트랜잭션(CLS)에 참여한다 — tx 인자를 전달하지 않는다", async () => {
+    it("시도 한도를 채웠으면 코드가 일치해도 인증을 거부한다", async () => {
+      // Given
+      vi.when(repository.findValidByUserIdAndType)
+        .calledWith(userId, type)
+        .thenResolve(
+          VerificationFixture.create({ ...verification, attempts: VERIFICATION_CODE.MAX_ATTEMPTS }),
+        );
+
       // When
-      await service.verifyCode(userId, code, type);
+      const pending = service.verifyCode(userId, code, type);
 
       // Then
-      expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(userId, type);
-      expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(mockVerification.id);
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0754 });
+      expect(repository.markAsUsed).not.toHaveBeenCalled();
+      expect(repository.incrementAttempts).not.toHaveBeenCalled();
     });
 
-    it("실패 시 시도 횟수는 트랜잭션 외부에서 증가시킨다", async () => {
+    it("틀린 코드는 실패 횟수를 증가시키고 사용 처리 없이 인증을 거부한다", async () => {
       // Given
       const wrongCode = "999999";
-      verificationCodeSecurity.hash.mockReturnValue("wrong-hash");
 
-      // When & Then
-      await expect(service.verifyCode(userId, wrongCode, type)).rejects.toThrow(
-        ApplicationException,
-      );
+      // When
+      const pending = service.verifyCode(userId, wrongCode, type);
 
-      // incrementAttempts는 트랜잭션 없이(베이스 클라이언트로) 호출됨 (롤백 방지)
-      expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(mockVerification.id);
+      // Then
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
+      expect(repository.incrementAttempts).toHaveBeenCalledExactlyOnceWith(verification.id);
+      expect(repository.markAsUsed).not.toHaveBeenCalled();
     });
 
-    it("PASSWORD_RESET 타입도 검증한다", async () => {
+    it("비밀번호 재설정 코드도 해당 사용자·용도로 조회하여 검증한다", async () => {
       // Given
       const passwordResetType: VerificationType = "PASSWORD_RESET";
-      verificationRepo.findValidByUserIdAndType.mockResolvedValue({
-        ...mockVerification,
-        type: passwordResetType,
-      });
+      vi.when(repository.findValidByUserIdAndType)
+        .calledWith(userId, passwordResetType)
+        .thenResolve(VerificationFixture.create({ ...verification, type: passwordResetType }));
 
       // When
       const result = await service.verifyCode(userId, code, passwordResetType);
 
       // Then
       expect(result).toBe(true);
-      expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(
-        userId,
-        passwordResetType,
-      );
+      expect(repository.markAsUsed).toHaveBeenCalledWith(verification.id);
     });
   });
 });

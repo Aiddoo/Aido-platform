@@ -96,3 +96,36 @@ HTTP 로그는 공식 Pino 옵션으로 query/header 원문을 숨기면서 reqI
 Docker context 검사에서 root `.env*`가 중첩 환경 파일을 제외하지 못하는 문제를 발견해 `**/.env*`로 수정했다. 오래된 캐시 작업 계획을 제거하고 릴리스 문서는 코드 복사 대신 실제 소스 링크로 바꿨다(847줄→151줄). 기존 릴리스 QA 기록과 배포 client fixture는 보존한다.
 
 전체 18단계 중 00–03 구현·검증 완료, 04–17 14단계가 남았다. commit/PR 완료 시 Issue·담당자·Labels와 이 체크리스트를 갱신한다. 이 단계는 추가 script·패키지·Action job 없이 진행했다. 테스트 시간은 서로 다른 실행 조건의 기록이며 운영 성능 향상률과 billed Actions 절감률로 사용하지 않는다. 운영 배포·merge는 하지 않았다.
+
+## 03c fixture Port Stub와 HTTP 공급자 응답 검증
+
+Application 이메일 테스트는 `EmailSenderPort` Stub과 `AuthEmailSenderPort`를 구현한 기존
+Fake를 주입하고 발송 기록으로 검증한다. VerificationFixture를 재사용하며 코드·type·expiryMinutes의
+계약을 유지한다. FakeEmailService는 338줄에서 155줄로 줄였고 raw 주소/인증 코드 console 출력을
+제거했다. Repository/security/logger 등 나머지 typed mock은 Context별 전환 단계에 남아 있다.
+
+Resend SDK 전체 mock을 제거하고 실제 SDK와 JSON HTTP fixture를 조합했다. SDK의 fetch 주입
+옵션이 없어 비동시·격리된 spec에서 Vitest 공식 `vi.stubGlobal`을 사용하고 globals/env/timer를
+복원한다. 준비하지 않은 요청은 실패시키며 실제 외부 서비스로 전달하지 않는다. 운영 EmailModule을
+그대로 import하고, 수동 timer polling·결과 non-null assertion·provider 재작성을 제거했다.
+
+실제 wire 검증에서 Idempotency Key가 HTTP 헤더 대신 이메일 본문의 `headers`에 들어가는 버그를
+재현했다(기대 헤더 값 대신 null). 공식 SDK의 두 번째 인자 `idempotencyKey` 옵션으로 수정하고
+모든 retry의 헤더·본문, 병렬 요청의 독립된 key/body를 검증한다. 공개 REST 계약은 변경하지 않는다.
+SDK 전체 mock에서 기대하던 연결 오류 원문은 실제 SDK가 정규화하는 결과와 달랐다. 운영의 SDK
+오류 정규화는 유지하면서 테스트를 실제 경계로 바꿨다. 이 결과로 운영 공급자 SLA를 주장하지 않는다.
+
+- 전체 Unit: 448 files / 2,870 tests, 14.76초. 인증 코드 Unit 20→11: 중복 흐름과 mock만으로 CLS/rollback을 증명하던 검증을 정리하고 해시·만료·쿨다운·시도 한도·실패 결과를 유지했다.
+- 핵심 Unit: 3 files / 16 tests, seed 101/202/303 + UTC/Asia/Seoul/America/Los_Angeles 세 조건에서 모두 통과. fake Date는 연말 경계에 고정하고 conditional mock은 공식 Vitest 5 `vi.when`을 사용한다.
+- 실제 PostgreSQL service Integration: 43 files / 432 tests, 136.00초.
+- 전체 E2E: 34 files / 480 tests, 246.87초. 고정 구 앱 계약과 OpenAPI snapshot 변경 없음.
+- 이메일 HTTP fixture Integration: 1 file / 12 tests, 2.83초(최종 검토·seed 202·Asia/Seoul). 기존 13개 중 중복 설정/템플릿/태그 검증을 합치고 비 JSON·병렬 요청 검증을 보강했다.
+- lint·format·workspace typecheck 통과. 새 script·패키지·Action job 없음.
+
+최초 Stub 전환은 lazy deep mock의 spread에서 dependency가 누락되어 20개 Unit이 실패했고,
+명시적인 생성자 dependency 객체로 수정했다. 수신자 wire 형식을 배열로 가정한 기대값도 실제 SDK의
+기존 string 직렬화에 맞췄다. 이후 Idempotency 오류만 실패하는 상태를 확인한 뒤 운영 코드를 수정했다.
+Unit·Integration·E2E는 같은 시기에 별도 실행 DB로 진행했다. 실행 조건이 다른 수치로 성능 향상률을 주장하지 않는다.
+동시 HTTP 요청은 배열 순서 대신 Idempotency Key로 검증한다. 유한한 반복 통과로 전체 테스트의 flake 부재를 보장하지 않는다.
+전체 Stub 전환 완료나 운영 영향 없음의 보장을 뜻하지 않는다. 전체 상위 단계는 여전히 4/18 완료,
+04–17의 14단계가 남아 있다.

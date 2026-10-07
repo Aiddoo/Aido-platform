@@ -1,16 +1,16 @@
 # Aido API 종합 테스팅 가이드
 
-**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
+**Version**: 5.0.0 · **Last Updated**: 2026-10-07 · **Owner**: Aido Platform Team
 
 > 테스트 유형 선택 기준 + 공유 인프라 + 공통 규칙. 각 유형별 상세는 개별 가이드 참조.
 
 ## 관련 문서
 
-| 문서                                         | 내용                                        |
-| -------------------------------------------- | ------------------------------------------- |
-| [unit-test.md](./unit-test.md)               | 단위 테스트 상세 (typed mock, fixture, GWT) |
-| [integration-test.md](./integration-test.md) | 통합 테스트 상세 (Mock DB, 실제 DB)         |
-| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 상세 (createE2eApp, supertest)   |
+| 문서                                         | 내용                                       |
+| -------------------------------------------- | ------------------------------------------ |
+| [unit-test.md](./unit-test.md)               | 단위 테스트 상세 (Port Stub, fixture, GWT) |
+| [integration-test.md](./integration-test.md) | 통합 테스트 상세 (Mock DB, 실제 DB)        |
+| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 상세 (createE2eApp, supertest)  |
 
 ---
 
@@ -39,7 +39,7 @@
 
 | 검증하려는 것                           | 유형                  | 이유                                     |
 | --------------------------------------- | --------------------- | ---------------------------------------- |
-| 단일 메서드의 입력 검증 / 예외 분기     | Unit                  | 직접 생성 + typed mock으로 격리          |
+| 단일 메서드의 입력 검증 / 예외 분기     | Unit                  | 직접 생성 + Port Stub으로 격리           |
 | Repository 쿼리 파라미터                | Unit                  | `toHaveBeenCalledWith`로 충분            |
 | NestJS DI 연결 정합성                   | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요               |
 | `UNIT_OF_WORK.run` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증                  |
@@ -68,10 +68,11 @@ apps/api/
 
 ### 3.1 Application spec
 
-순수 Application은 `mockDeep<ConstructorParameters<typeof UseCase>[0]>()`로 의존성을 준비하고
-직접 생성한다. 콜백을 실행하는 UoW fixture 등 기존 업무 fixture를 주입하고 시나리오별 반환값만
-설정한다. Nest DI가 필요한 Infrastructure/Presentation은 기존 Suites를 사용한다.
-[Unit 가이드](./unit-test.md)에 실제 코드 형식을 정리했다.
+순수 Application은 fixture 기반 Port Stub/Fake와 명시적인 생성자 의존성 객체로 직접 생성한다.
+기존 Fake와 Builder를 재사용하고, 결과와 기록된 업무 상태를 검증한다. 호출 횟수 자체가 계약인
+retry·batch 같은 경우에만 typed mock/spy를 사용한다. Nest DI가 필요한 Infrastructure/Presentation은
+기존 Suites를 사용한다. 전체 기존 spec의 Stub 전환은 Context별 후속 작업으로 진행한다.
+[Unit 가이드](./unit-test.md)에 실제 코드와 HTTP fixture 형식을 정리했다.
 
 - 이벤트는 공개 `publishAll`에 전달되는 domain event로 검증한다. protected state에 spy하지 않는다.
 - `createUnitOfWorkMock()`은 CLS 기반 무인자 콜백을 실행한다. rollback은 실제 PG 테스트에서 검증한다.
@@ -136,7 +137,7 @@ apps/api/
 ### DON'T
 
 - ❌ Unit 테스트에서 실제 DB 연결
-- ❌ Integration 테스트에서 HTTP 요청
+- ❌ 서비스 HTTP endpoint 계약을 Integration에서 중복 검증 — 외부 공급자 HTTP Adapter wire 검증은 허용
 - ❌ 테스트 간 상태 공유
 - ❌ 하드코딩된 ID 사용 (Builder 사용)
 - ❌ 구현 세부사항 테스트 (공개 인터페이스만)
@@ -145,7 +146,7 @@ apps/api/
 
 ### 전역 설정 참고
 
-`vitest.config.ts`의 `clearMocks: true`, `restoreMocks: true`가 매 테스트 전에 적용된다. `vi.spyOn()`과 `suppressLogger()`는 `beforeEach`에서 생성한다. `beforeAll`에서 만든 spy는 첫 테스트 전에 복원되므로 사용하지 않는다. Fixture ID와 fake 상태는 setup의 `beforeEach`에서 초기화한다.
+`vitest.config.ts`의 `clearMocks: true`, `restoreMocks: true`가 매 테스트 전에 적용된다. `vi.spyOn()`과 `suppressLogger()`는 `beforeEach`에서 생성한다. `beforeAll`에서 만든 spy는 첫 테스트 전에 복원되므로 사용하지 않는다. 전역 setup은 fixture ID를 초기화한다. Fake 상태는 각 spec의 새 인스턴스 생성 또는 E2E resetter가 초기화한다.
 
 ---
 
@@ -183,15 +184,15 @@ pnpm --filter @aido/server test:e2e -- -t "패턴"    # 특정 테스트
 
 ---
 
-**문서 버전**: 4.0.0
-**최종 수정일**: 2026-10-01
+**문서 버전**: 5.0.0
+**최종 수정일**: 2026-10-07
 
 ## ESM과 격리
 
 - API는 NodeNext ESM이다. 내부 별칭은 `#api/*`, 테스트 별칭은 `#test/*`, 상대 경로에는 `.js`를 명시한다. `require`와 `__dirname`은 사용하지 않는다.
 - Unit, integration, E2E는 Vitest project로 나눈다. DB project는 파일을 직렬 실행하고 순서를 섞어 공유 상태 의존을 확인한다.
 - DB global setup은 `AIDO_TEST_POSTGRES_URL`이 있으면 공식 PostgreSQL service 안에 실행별 DB를 생성하고, 없으면 로컬 Testcontainers를 사용한다. 각 실행에 migration을 적용한다. `provide`/`inject`로 연결 정보를 worker에 전달하며, 자신이 만든 DB/컨테이너의 종료는 global setup의 반환 teardown이 소유한다.
-- SDK mock은 `vi.hoisted`와 `vi.mock`을 사용한다. 실제 오류 클래스, 토큰 검증, 순수 SDK 함수는 `importOriginal`로 유지한다. Constructor mock의 구현은 일반 함수나 class를 사용한다.
+- 외부 API Adapter는 실제 SDK + fixture HTTP 응답을 우선한다. SDK가 fetch 주입을 지원하지 않으면 격리된 비동시 spec 안에서만 `vi.stubGlobal`을 사용하며 `afterEach`에서 globals/env/timer를 복원한다. 준비되지 않은 요청은 실제 외부 서비스로 전달하지 않는다. 불가피한 module mock은 실제 오류 클래스와 순수 검증 함수를 유지한다.
 - Prisma query의 select 결과는 필요한 반환 필드를 명시한다. `asMock`의 partial mock 지원은 native ORM projection이 선택한 필드만 돌려주는 테스트에서 사용한다.
 - 동시성 테스트는 transaction barrier와 PostgreSQL lock 상태를 관찰한다. 한 번의 event loop tick이나 임의 sleep으로 순서를 가정하지 않는다.
 - E2E throttle은 해당 TestingModule의 provider override로만 격리한다. 전역 prototype이나 다른 suite의 guard를 변경하지 않는다.

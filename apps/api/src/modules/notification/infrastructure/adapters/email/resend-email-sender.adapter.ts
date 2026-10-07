@@ -79,15 +79,17 @@ export class ResendEmailSenderAdapter implements EmailSenderPort {
     const from = `${this.#fromName} <${this.#fromEmail}>`;
 
     try {
-      const result = await this.#resend.emails.send({
-        from,
-        to: message.to,
-        subject: message.subject,
-        html: message.html,
-        text: message.text,
-        tags: [...message.tags],
-        headers: message.idempotencyKey ? { "Idempotency-Key": message.idempotencyKey } : undefined,
-      });
+      const result = await this.#resend.emails.send(
+        {
+          from,
+          to: message.to,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+          tags: [...message.tags],
+        },
+        { idempotencyKey: message.idempotencyKey },
+      );
 
       if (result.error) {
         // 재시도 가능한 에러인지 확인

@@ -1,6 +1,6 @@
 # 통합 테스트 가이드
 
-**Version**: 2.0.0 · **Last Updated**: 2026-10-06 · **Owner**: Aido Platform Team
+**Version**: 3.0.0 · **Last Updated**: 2026-10-07 · **Owner**: Aido Platform Team
 
 통합 테스트는 실제 Nest DI 배선과 PostgreSQL의 데이터·트랜잭션 의미를 검증한다. HTTP 계약은 [E2E 가이드](./e2e-test.md), 단위 테스트는 [unit-test.md](./unit-test.md)를 따른다.
 
@@ -37,7 +37,7 @@ const providers = [
 
 ## 실제 DB와 native 트랜잭션
 
-Vitest integration project의 global setup은 실행마다 고유한 Testcontainers PostgreSQL을 만들고 검토된 native migration graph를 적용한다. TestDatabase는 관리형 URL 검증, 연결, truncate와 종료를 소유한다. 로컬·운영 DB를 테스트 대상으로 재사용하지 않는다.
+Vitest integration project의 global setup은 `AIDO_TEST_POSTGRES_URL`이 있으면 공식 CI PostgreSQL service 안에 고유 DB를 생성하고, 없으면 로컬 Testcontainers PostgreSQL을 생성한다. 실행별 DB에 검토된 native migration graph를 적용한다. TestDatabase는 관리형 URL 검증, 연결, truncate와 종료를 소유한다. 로컬·운영 DB를 테스트 대상으로 재사용하지 않는다.
 
 ```ts
 import { TestDatabase } from '#test/setup/test-database';
@@ -74,3 +74,15 @@ User의 profile/preference/consent 등 복합 fixture는 `createUserDatabaseFixt
 pnpm --filter @aido/server test:integration
 pnpm --filter @aido/server exec vitest run --project integration prisma8-transaction
 ```
+
+## 외부 API Adapter와 HTTP fixture
+
+이메일 Integration은 운영 `EmailModule`과 실제 Resend SDK를 조립하고 HTTP transport만
+`StubResendHttp`로 대체한다. JSON payload는 `test/fixtures/providers/resend`가 소유한다.
+200·422·429·500·비 JSON 오류·연결 실패, 재시도 횟수/백오프, HTTP 인증과 Idempotency
+헤더, 병렬 요청 격리를 검증한다. SDK method를 mock하면 실제 오류 정규화나 헤더 전달 오류를
+놓칠 수 있으므로 wire 요청을 검증한다.
+
+각 테스트는 새로운 Stub을 만들고 globals/env/fake timer를 반드시 복원한다. logger spy는
+`beforeEach`에서 생성한다. 테스트 대상 DI provider를 spec에 재작성하지 않고 실제 Module을
+import한다. 이 suite의 HTTP 응답은 가짜이므로 실제 공급자의 운영 동작·SLA를 증명하지 않는다.
