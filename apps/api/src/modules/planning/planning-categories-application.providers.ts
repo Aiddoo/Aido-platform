@@ -9,22 +9,44 @@ import { TODO_CATEGORY_REPOSITORY } from "./application/ports/categories/todo-ca
 import { TodoCategoryReader } from "./application/services/categories/todo-category.reader.js";
 import { CreateTodoCategory } from "./application/use-cases/categories/create-todo-category.use-case.js";
 import { DeleteTodoCategory } from "./application/use-cases/categories/delete-todo-category.use-case.js";
+import { GetTodoCategories } from "./application/use-cases/categories/get-todo-categories.use-case.js";
+import { GetTodoCategoryResourceLimit } from "./application/use-cases/categories/get-todo-category-resource-limit.use-case.js";
+import { GetTodoCategory } from "./application/use-cases/categories/get-todo-category.use-case.js";
 import { ReorderTodoCategory } from "./application/use-cases/categories/reorder-todo-category.use-case.js";
 import { UpdateTodoCategory } from "./application/use-cases/categories/update-todo-category.use-case.js";
 
 export const todoCategoryReaderProvider: FactoryProvider<TodoCategoryReader> = {
   provide: TodoCategoryReader,
-  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE, ENTITLEMENT_READER],
+  inject: [TODO_CATEGORY_REPOSITORY],
+  useFactory: (repository: ConstructorParameters<typeof TodoCategoryReader>[0]["repository"]) =>
+    new TodoCategoryReader({ repository }),
+};
+
+export const getTodoCategoriesProvider: FactoryProvider<GetTodoCategories> = {
+  provide: GetTodoCategories,
+  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE],
   useFactory: (
-    repository: ConstructorParameters<typeof TodoCategoryReader>[0]["repository"],
-    cache: ConstructorParameters<typeof TodoCategoryReader>[0]["cache"],
-    entitlementReader: ConstructorParameters<typeof TodoCategoryReader>[0]["entitlementReader"],
-  ) =>
-    new TodoCategoryReader({
-      repository,
-      cache,
-      entitlementReader,
-    }),
+    repository: ConstructorParameters<typeof GetTodoCategories>[0]["repository"],
+    cache: ConstructorParameters<typeof GetTodoCategories>[0]["cache"],
+  ) => new GetTodoCategories({ repository, cache }),
+};
+
+export const getTodoCategoryProvider: FactoryProvider<GetTodoCategory> = {
+  provide: GetTodoCategory,
+  inject: [TODO_CATEGORY_REPOSITORY],
+  useFactory: (repository: ConstructorParameters<typeof GetTodoCategory>[0]["repository"]) =>
+    new GetTodoCategory({ repository }),
+};
+
+export const getTodoCategoryResourceLimitProvider: FactoryProvider<GetTodoCategoryResourceLimit> = {
+  provide: GetTodoCategoryResourceLimit,
+  inject: [TODO_CATEGORY_REPOSITORY, ENTITLEMENT_READER],
+  useFactory: (
+    repository: ConstructorParameters<typeof GetTodoCategoryResourceLimit>[0]["repository"],
+    entitlementReader: ConstructorParameters<
+      typeof GetTodoCategoryResourceLimit
+    >[0]["entitlementReader"],
+  ) => new GetTodoCategoryResourceLimit({ repository, entitlementReader }),
 };
 
 export const createTodoCategoryProvider: FactoryProvider<CreateTodoCategory> = {
@@ -91,14 +113,18 @@ export const reorderTodoCategoryProvider: FactoryProvider<ReorderTodoCategory> =
 
 export const updateTodoCategoryProvider: FactoryProvider<UpdateTodoCategory> = {
   provide: UpdateTodoCategory,
-  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE],
+  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE, MUTATION_LOCK, UNIT_OF_WORK],
   useFactory: (
     repository: ConstructorParameters<typeof UpdateTodoCategory>[0]["repository"],
     cache: ConstructorParameters<typeof UpdateTodoCategory>[0]["cache"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoCategory>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof UpdateTodoCategory>[0]["unitOfWork"],
   ) =>
     new UpdateTodoCategory({
       repository,
       cache,
+      mutationLock,
+      unitOfWork,
       logger: new Logger(UpdateTodoCategory.name),
     }),
 };

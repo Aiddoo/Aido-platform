@@ -10,7 +10,7 @@ describe("TodoViewCacheInvalidator", () => {
     const readRepository = createTodoReadRepositoryMock();
     const cache = createTodoCacheMock();
     vi.mocked(readRepository.findOwnerId).mockResolvedValue("owner-1");
-    const invalidator = new TodoViewCacheInvalidator(readRepository, cache);
+    const invalidator = new TodoViewCacheInvalidator({ todoReadRepository: readRepository, cache });
 
     // When
     await invalidator.invalidateForTodo(42);
@@ -25,7 +25,7 @@ describe("TodoViewCacheInvalidator", () => {
     const readRepository = createTodoReadRepositoryMock();
     const cache = createTodoCacheMock();
     vi.mocked(readRepository.findOwnerId).mockResolvedValue(null);
-    const invalidator = new TodoViewCacheInvalidator(readRepository, cache);
+    const invalidator = new TodoViewCacheInvalidator({ todoReadRepository: readRepository, cache });
 
     // When
     await invalidator.invalidateForTodo(42);

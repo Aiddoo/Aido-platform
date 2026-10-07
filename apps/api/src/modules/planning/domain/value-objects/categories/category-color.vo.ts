@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
+import { hexColorRegex } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /** HEX 색상 코드 형식 (#RRGGBB) — @aido/api의 hexColorRegex와 동일 */
-const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
 /**
  * CategoryColor — 카테고리 색상 값 객체.
@@ -15,7 +15,7 @@ export class CategoryColor {
   private constructor(private readonly hex: string) {}
 
   static of(value: string): CategoryColor {
-    if (!HEX_COLOR.test(value)) {
+    if (!hexColorRegex.test(value)) {
       throw new DomainException(ErrorCode.SYS_0002, {
         message: "HEX 색상 코드 형식이 아닙니다",
       });

@@ -15,7 +15,7 @@ import {
   AdminEventNotifier,
   AdminNotificationModule,
 } from "#api/modules/operations/operations-notifications.public";
-import { TodoCategoryModule } from "#api/modules/planning/planning-categories.public";
+import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import {
@@ -129,7 +129,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     EmailModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
     UserSettingsModule,
-    TodoCategoryModule,
+    PlanningCategoriesModule,
     RetentionModule,
     TodoCommentModule,
   ],

@@ -1,115 +1,52 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi } from "vitest";
 
-import { TodoBuilder } from "#test/builders/index";
 import {
-  createTodoReadRepositoryMock,
-  createTodoRepositoryMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createPlanningTodoFixture,
+  createPlanningTodo,
+  PLANNING_TIME,
+} from "#test/fixtures/planning-todo.fixture";
 
-import { Todo } from "../../../domain/aggregates/todos/todo.aggregate.js";
-import { TodoItem } from "../../../domain/entities/todos/todo-item.entity.js";
-import { TodoId } from "../../../domain/value-objects/todos/todo-id.vo.js";
-import { TodoSchedule } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
-import { TodoMapper } from "../../../infrastructure/persistence/todos/todo-response.mapper.js";
-import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
-import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 import { DeleteTodoItem } from "./delete-todo-item.use-case.js";
 
-function buildItem(id: number): TodoItem {
-  return TodoItem.reconstitute({
-    id,
-    title: `항목 ${id}`,
-    completed: false,
-    sortOrder: id - 1,
-    createdAt: new Date("2026-02-20T00:00:00.000Z"),
-    updatedAt: new Date("2026-02-20T00:00:00.000Z"),
-  });
-}
-
-function buildEntity(items: TodoItem[]): Todo {
-  return Todo.reconstitute({
-    id: TodoId.create(1),
-    userId: "user-123",
-    title: "할 일",
-    categoryId: 1,
-    sortOrder: 0,
-    completed: false,
-    completedAt: null,
-    schedule: TodoSchedule.reconstitute({
-      startDate: new Date("2026-02-22"),
-      endDate: null,
-      scheduledTime: null,
-      isAllDay: true,
-    }),
-    visibility: "PUBLIC",
-    recurrenceGroupId: null,
-    items,
-    createdAt: new Date("2026-02-20T00:00:00.000Z"),
-    updatedAt: new Date("2026-02-20T00:00:00.000Z"),
-  });
-}
-
-function buildResponse(): TodoResponse {
-  return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
-}
-
-describe("DeleteTodoItem — 하위 항목 삭제 핸들러", () => {
+describe("하위 항목 삭제", () => {
+  let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: DeleteTodoItem;
-  let todoRepository: Mocked<TodoRepositoryPort>;
-  let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-
-  beforeEach(async () => {
-    const deleteTodoItemDependencies = mockDeep<ConstructorParameters<typeof DeleteTodoItem>[0]>({
-      todoRepository: createTodoRepositoryMock(),
-      todoReadRepository: createTodoReadRepositoryMock(),
-      unitOfWork: createUnitOfWorkMock(),
-    });
-    const unit = new DeleteTodoItem(deleteTodoItemDependencies);
-
-    useCase = unit;
-    todoRepository = deleteTodoItemDependencies.todoRepository;
-    todoReadRepository = deleteTodoItemDependencies.todoReadRepository;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(PLANNING_TIME);
+    fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
+    useCase = new DeleteTodoItem(fixture);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it("항목을 삭제하고 부모를 재조회한다", async () => {
+  it("요청한 항목만 삭제하고 다른 항목과 통계를 보존한다", async () => {
     // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity([buildItem(10)]));
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
-
+    await fixture.todoRepository.createInlineItems(1, [
+      { title: "첫 항목" },
+      { title: "둘째 항목" },
+    ]);
     // When
-    const result = await useCase.execute({
-      todoId: 1,
-      itemId: 10,
-      userId: "user-123",
-    });
-
+    const result = await useCase.execute({ todoId: 1, itemId: 1, userId: fixture.userId });
     // Then
-    expect(todoRepository.deleteItem).toHaveBeenCalledWith(10);
-    expect(result.id).toBe(1);
+    expect(result.items.map((item) => item.title)).toEqual(["둘째 항목"]);
+    expect(result.itemStats).toEqual({ total: 1, completed: 0 });
+    expect(fixture.records.get(1)?.items).toHaveLength(1);
   });
-
-  it("항목이 부모에 없으면 ApplicationException(TODO_0822)을 던진다", async () => {
+  it("없는 항목과 다른 소유자의 할 일은 상태를 바꾸지 않는다", async () => {
     // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity([buildItem(10)]));
-
-    // When & Then
+    await fixture.todoRepository.createItem(1, { title: "기존 항목", sortOrder: 0 });
+    const before = structuredClone(fixture.records.get(1));
+    // When / Then
     await expect(
-      useCase.execute({ todoId: 1, itemId: 999, userId: "user-123" }),
+      useCase.execute({ todoId: 1, itemId: 999, userId: fixture.userId }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0822 });
-    expect(todoRepository.deleteItem).not.toHaveBeenCalled();
-  });
-
-  it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {
-    // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(null);
-
-    // When & Then
     await expect(
-      useCase.execute({ todoId: 999, itemId: 1, userId: "user-123" }),
+      useCase.execute({ todoId: 1, itemId: 1, userId: "other-user" }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    expect(fixture.records.get(1)).toEqual(before);
   });
 });

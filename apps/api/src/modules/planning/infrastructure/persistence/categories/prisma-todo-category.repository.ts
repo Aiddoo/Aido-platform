@@ -6,8 +6,10 @@ import { all, and } from "@prisma/orm-postgres/orm-client";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import type * as PrismaModels from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
-import { isUniqueConstraintViolation } from "#api/platform/database/prisma-error.util";
+import {
+  requireRecord,
+  isUniqueConstraintViolation,
+} from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -62,10 +64,6 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
     };
   }
 
-  private static isUniqueViolation(error: unknown): boolean {
-    return isUniqueConstraintViolation(error);
-  }
-
   async create(input: CreateCategoryInput): Promise<TodoCategory> {
     try {
       const row = decodeRecord(
@@ -81,7 +79,7 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
       );
       return PrismaTodoCategoryRepository.toEntity(row);
     } catch (error) {
-      if (PrismaTodoCategoryRepository.isUniqueViolation(error)) {
+      if (isUniqueConstraintViolation(error)) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
           name: input.name,
         });
@@ -106,7 +104,7 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
       );
       return PrismaTodoCategoryRepository.toEntity(row);
     } catch (error) {
-      if (PrismaTodoCategoryRepository.isUniqueViolation(error)) {
+      if (isUniqueConstraintViolation(error)) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
           name: input.name ?? "",
         });
@@ -131,7 +129,7 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
         and(row.id.eq(id), row.userId.eq(userId)),
       ).first(),
     );
-    return row ? PrismaTodoCategoryRepository.toEntity(row) : null;
+    return row === null ? null : PrismaTodoCategoryRepository.toEntity(row);
   }
 
   async findByIdWithCount(id: number): Promise<TodoCategoryWithCountView | null> {
@@ -168,7 +166,7 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
         and(
           row.userId.eq(userId),
           row.name.eq(varchar(name, 50)),
-          excludeId != null ? row.id.neq(excludeId) : all(),
+          excludeId === undefined ? all() : row.id.neq(excludeId),
         ),
       ).first(),
     );
@@ -212,11 +210,8 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
   }
 
   async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<number> {
-    const result = {
-      count: await this.client.orm.public.Todo.where((row) =>
-        row.categoryId.eq(fromCategoryId),
-      ).updateAndCount(encodePatch("Todo", { categoryId: toCategoryId })),
-    };
-    return result.count;
+    return this.client.orm.public.Todo.where((row) =>
+      row.categoryId.eq(fromCategoryId),
+    ).updateAndCount(encodePatch("Todo", { categoryId: toCategoryId }));
   }
 }

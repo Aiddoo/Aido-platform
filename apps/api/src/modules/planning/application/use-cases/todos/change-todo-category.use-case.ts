@@ -4,36 +4,35 @@ import { TODO_LIMITS } from "@aido/api/vocabulary";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
+  MutationLockKeys,
+  type MutationLockPort,
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
+import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import { type CategoryOwnershipPort } from "../../ports/todos/category-ownership.port.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 
-/** Todo 카테고리 변경 입력. */
 export interface ChangeTodoCategoryInput {
-  id: number;
-  userId: string;
-  categoryId: number;
+  readonly id: number;
+  readonly userId: string;
+  readonly categoryId: number;
 }
 
-/**
- * Todo 카테고리 변경 use-case
- *
- * 소유권 확인 → 대상 카테고리 소유권 확인(TX 외부) →
- * 활성(미완료) 할 일이면 TX 안에서 한도 체크 후 이동(race 방지),
- * 완료된 할 일이면 TX 없이 이동 → 캐시 무효화 → 읽기 포트로 응답 재조회.
- */
 interface ChangeTodoCategoryDependencies {
-  readonly todoRepository: TodoRepositoryPort;
-  readonly todoReadRepository: TodoReadRepositoryPort;
+  readonly todoRepository: Pick<
+    TodoRepositoryPort,
+    "findByIdAndUserId" | "countActiveByCategory" | "updateCategory"
+  >;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly categoryOwnership: CategoryOwnershipPort;
-  readonly todoCache: TodoCachePort;
+  readonly mutationLock: MutationLockPort;
+  readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
+  readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
 }
@@ -48,13 +47,15 @@ export class ChangeTodoCategory {
   async execute(input: ChangeTodoCategoryInput): Promise<TodoResponse> {
     const { id, userId, categoryId } = input;
 
-    // 1. 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
-    await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
-
-    // 2. TX 안에서 로드 → 애그리게잇 전이 → 활성 할 일만 한도 체크 후 영속화 (race 방지)
     const events = await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.todoCategory(userId),
+        MutationLockKeys.todo(id),
+      ]);
+      await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
+
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (!todo) {
+      if (todo === null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
@@ -77,20 +78,20 @@ export class ChangeTodoCategory {
       return todo.pullDomainEvents();
     });
 
-    // 3. 저장(TX 커밋) 완료 후 이벤트 발행 (daily-completion 캐시 무효화 트리거)
     await this.#dependencies.eventPublisher.publishAll(events);
 
-    // 4. 캐시 무효화 (todoCount 변경)
     await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
-    this.#dependencies.logger.log(
-      `Todo category updated: ${id} -> ${categoryId} for user: ${userId}`,
-    );
+    this.#dependencies.logger.log({
+      event: PlanningTodoLogEvent.CATEGORY_CHANGED,
+      todoId: id,
+      userId,
+      categoryId,
+    });
 
-    // 5. 응답 재조회
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
-    if (!response) {
+    if (response === null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
     return response;

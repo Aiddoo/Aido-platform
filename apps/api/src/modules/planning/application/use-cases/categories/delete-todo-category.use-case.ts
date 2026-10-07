@@ -8,6 +8,7 @@ import {
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { PlanningCategoryLogEvent } from "../../observability/categories/planning-category-log.events.js";
 import { type TodoCategoryCachePort } from "../../ports/categories/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../../ports/categories/todo-category.repository.port.js";
 
@@ -24,7 +25,10 @@ export interface DeleteTodoCategoryInput {
  * 이동 후 삭제한다(Todo.category는 onDelete: Restrict). 커밋 후 목록 캐시를 무효화한다.
  */
 interface DeleteTodoCategoryDependencies {
-  readonly repository: TodoCategoryRepositoryPort;
+  readonly repository: Pick<
+    TodoCategoryRepositoryPort,
+    "findByIdAndUserId" | "countByUserId" | "getTodoCount" | "moveTodosToCategory" | "delete"
+  >;
   readonly cache: TodoCategoryCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -42,10 +46,13 @@ export class DeleteTodoCategory {
     const { userId, categoryId, moveToCategoryId } = input;
 
     await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.todoCategory(userId),
+        MutationLockKeys.todoSortOrder(userId),
+      ]);
 
       const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
-      if (!category) {
+      if (category === null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
           categoryId,
         });
@@ -58,7 +65,7 @@ export class DeleteTodoCategory {
 
       const todoCount = await this.#dependencies.repository.getTodoCount(categoryId);
       if (todoCount > 0) {
-        if (!moveToCategoryId) {
+        if (moveToCategoryId === undefined) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0855, {
             categoryId,
             todoCount,
@@ -75,7 +82,7 @@ export class DeleteTodoCategory {
           moveToCategoryId,
           userId,
         );
-        if (!moveTarget) {
+        if (moveTarget === null) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
             categoryId: moveToCategoryId,
           });
@@ -87,6 +94,10 @@ export class DeleteTodoCategory {
     });
 
     await this.#dependencies.cache.invalidate(userId);
-    this.#dependencies.logger.debug(`카테고리 삭제: id=${categoryId}, userId=${userId}`);
+    this.#dependencies.logger.debug({
+      event: PlanningCategoryLogEvent.DELETED,
+      userId,
+      categoryId: categoryId,
+    });
   }
 }

@@ -5,6 +5,7 @@ import postgres from "@prisma/orm-postgres/runtime";
 import { Pool, type PoolConfig } from "pg";
 import { mock } from "vitest-mock-extended";
 
+import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
 import type { DatabaseService } from "#api/platform/database/database.service";
 import {
   Prisma8TransactionalAdapter,
@@ -23,7 +24,11 @@ export function createTestClient(
   options: PoolConfig = {},
 ): TestDatabaseClient {
   const pool = new Pool({ ...options, connectionString });
-  const client = postgres<Contract>({ contractJson, pg: pool });
+  const client = postgres<Contract>({
+    contractJson,
+    pg: pool,
+    middleware: [utcTimestampParameters],
+  });
   let closed = false;
   return {
     ...client,

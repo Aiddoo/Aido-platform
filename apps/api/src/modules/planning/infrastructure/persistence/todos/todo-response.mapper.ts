@@ -1,12 +1,5 @@
 import type { Todo } from "@aido/api";
-/**
- * Todo 매퍼
- *
- * Prisma Todo 엔티티를 응답 DTO로 변환하는 Static 메서드를 제공합니다.
- * 모든 메서드는 부수 효과가 없으며, 동일한 입력에 대해 항상 동일한 출력을 반환합니다.
- *
- * @module todo.mapper
- */
+import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import {
@@ -18,25 +11,7 @@ import {
 
 import type { TodoWithCategory } from "./todo-row.types.js";
 
-/**
- * Todo 매퍼 클래스
- *
- * Prisma 엔티티를 API 응답 형식으로 변환하는 Static 메서드를 제공합니다.
- */
 export abstract class TodoMapper {
-  /**
-   * Prisma Todo 엔티티를 API 응답 형식으로 변환합니다.
-   *
-   * @param entity - Prisma에서 조회한 Todo 엔티티
-   * @returns API 응답용 Todo 객체
-   *
-   * @example
-   * ```typescript
-   * const todo = await prisma.todo.findUnique({ where: { id: 1 } });
-   * const response = TodoMapper.toResponse(todo);
-   * // 결과: { id: 1, title: '할 일', startDate: '2024-01-15', ... }
-   * ```
-   */
   static toResponse(entity: TodoWithCategory): Todo {
     const category = requireRecord(entity.category);
     const items = entity.items.map((item) => ({
@@ -71,7 +46,7 @@ export abstract class TodoMapper {
       items,
       itemStats: {
         total: items.length,
-        completed: items.filter((i) => i.completed).length,
+        completed: sumBy(items, (item) => Number(item.completed)),
       },
       commentCount: entity.commentCount,
       createdAt: toISOString(entity.createdAt),
@@ -79,19 +54,6 @@ export abstract class TodoMapper {
     };
   }
 
-  /**
-   * 여러 Todo 엔티티를 API 응답 형식으로 일괄 변환합니다.
-   *
-   * @param entities - Prisma에서 조회한 Todo 엔티티 배열
-   * @returns API 응답용 Todo 객체 배열
-   *
-   * @example
-   * ```typescript
-   * const todos = await prisma.todo.findMany({ where: { userId } });
-   * const responses = TodoMapper.toManyResponse(todos);
-   * // 결과: [{ id: 1, ... }, { id: 2, ... }]
-   * ```
-   */
   static toManyResponse(entities: TodoWithCategory[]): Todo[] {
     return entities.map((entity) => TodoMapper.toResponse(entity));
   }

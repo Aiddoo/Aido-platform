@@ -61,7 +61,11 @@ export interface TodoRepositoryPort {
    * 반복 그룹 일괄 생성 — 생성된 애그리게잇을 sortOrder 순으로 반환.
    * 다중 쓰기이므로 트랜잭션(UnitOfWork) 안에서 호출해야 합니다.
    */
-  createMany(items: TodoCreationPlan[], recurrenceGroupId: string): Promise<Todo[]>;
+  createMany(
+    items: readonly TodoCreationPlan[],
+    recurrenceGroupId: string,
+    inlineItems?: readonly { title: string }[],
+  ): Promise<Todo[]>;
 
   countActiveByCategory(userId: string, categoryId: number): Promise<number>;
 
@@ -76,5 +80,5 @@ export interface TodoRepositoryPort {
   deleteItem(itemId: number): Promise<void>;
 
   /** 배열 인덱스가 새 sortOrder가 되도록 일괄 재정렬 */
-  reorderItems(itemIds: number[]): Promise<void>;
+  reorderItems(itemIds: readonly number[]): Promise<void>;
 }

@@ -1,4 +1,4 @@
-import { planReorderRelativeTo, planReorderToEdge } from "./category-reorder.js";
+import { planReorderRelativeTo, planReorderToEdge } from "./category-reorder.policy.js";
 
 describe("category-reorder 도메인 서비스", () => {
   describe("planReorderRelativeTo", () => {

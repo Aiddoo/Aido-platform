@@ -3,18 +3,17 @@ import { TODO_LIMITS } from "@aido/api/vocabulary";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 
 export interface TodoResourceLimitResult {
-  activeCount?: number;
-  maxPerCategory: number;
+  readonly activeCount?: number;
+  readonly maxPerCategory: number;
 }
 
-/** 카테고리당 활성 Todo 리소스 제한 정보 조회 입력. */
 export interface GetTodoResourceLimitInput {
-  userId: string;
-  categoryId?: number;
+  readonly userId: string;
+  readonly categoryId?: number;
 }
 
 interface GetTodoResourceLimitDependencies {
-  readonly todoReadRepository: TodoReadRepositoryPort;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "countActiveByCategory">;
 }
 
 export class GetTodoResourceLimit {
@@ -25,7 +24,7 @@ export class GetTodoResourceLimit {
   }
 
   async execute(input: GetTodoResourceLimitInput): Promise<TodoResourceLimitResult> {
-    if (input.categoryId) {
+    if (input.categoryId !== undefined) {
       const activeCount = await this.#dependencies.todoReadRepository.countActiveByCategory(
         input.userId,
         input.categoryId,

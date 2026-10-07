@@ -2,31 +2,30 @@ import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
+import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 
-/** 하위 항목 삭제 입력. */
 export interface DeleteTodoItemInput {
-  todoId: number;
-  itemId: number;
-  userId: string;
+  readonly todoId: number;
+  readonly itemId: number;
+  readonly userId: string;
 }
 
-/**
- * 하위 항목 삭제 use-case
- *
- * TX 안에서 소유권·항목 존재 확인 후 삭제 → 읽기 포트로 부모 할 일 재조회
- * (itemStats 재계산 반영).
- */
 interface DeleteTodoItemDependencies {
-  readonly todoRepository: TodoRepositoryPort;
-  readonly todoReadRepository: TodoReadRepositoryPort;
+  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "deleteItem">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly todoCache: TodoCachePort;
+  readonly mutationLock: MutationLockPort;
+  readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly logger: ApplicationLogger;
 }
 
@@ -40,28 +39,29 @@ export class DeleteTodoItem {
   async execute(input: DeleteTodoItemInput): Promise<TodoResponse> {
     const { todoId, itemId, userId } = input;
 
-    // 1. TX 안에서 소유권·항목 존재 확인 후 삭제 (원자성)
     await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(todoId)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, userId);
-      if (!todo) {
+      if (todo === null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
-      // 애그리게잇이 존재를 검증하고 자식 엔티티를 제거
+
       todo.removeItem(itemId);
 
       await this.#dependencies.todoRepository.deleteItem(itemId);
     });
 
-    this.#dependencies.logger.log(
-      `Todo item deleted: todo=${todoId}, item=${itemId} for user: ${userId}`,
-    );
+    this.#dependencies.logger.log({
+      event: PlanningTodoLogEvent.ITEM_DELETED,
+      todoId,
+      itemId,
+      userId,
+    });
 
-    // 친구 공개 투두 캐시 무효화 (TX 커밋 후)
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
-    // 2. 부모 할 일 전체 재조회
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, userId);
-    if (!response) {
+    if (response === null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
     return response;

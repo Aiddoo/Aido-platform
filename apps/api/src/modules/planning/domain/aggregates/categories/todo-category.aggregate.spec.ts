@@ -1,3 +1,5 @@
+import { DomainException } from "#api/shared/domain/index";
+
 import { TodoCategory } from "./todo-category.aggregate.js";
 
 const props = {
@@ -11,6 +13,28 @@ const props = {
 };
 
 describe("TodoCategory", () => {
+  it("이름이 유효해도 색상 검증이 실패하면 모든 변경을 취소한다", () => {
+    // Given
+    const category = TodoCategory.reconstitute(props);
+    // When
+    const patch = () => category.updateDetails({ name: "변경된 업무", color: "invalid" });
+    // Then
+    expect(patch).toThrow(DomainException);
+    expect(category.name).toBe(props.name);
+    expect(category.color).toBe(props.color);
+  });
+
+  it("생성 입력과 getter의 Date 변경은 영속 상태를 변경하지 않는다", () => {
+    // Given
+    const createdAt = new Date(props.createdAt);
+    const category = TodoCategory.reconstitute({ ...props, createdAt });
+    // When
+    createdAt.setUTCFullYear(2030);
+    category.createdAt.setUTCFullYear(2031);
+    // Then
+    expect(category.createdAt).toEqual(props.createdAt);
+  });
+
   it("영속 상태를 복원하고 저장된 값을 조회한다", () => {
     const category = TodoCategory.reconstitute(props);
     expect(category.id).toBe(1);

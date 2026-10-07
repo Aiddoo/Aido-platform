@@ -1,189 +1,108 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
 import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
 
-import { type DomainEventPublisherPort } from "#api/shared/application/ports/index";
-import { TodoBuilder } from "#test/builders/index";
 import {
-  createTodoReadRepositoryMock,
-  createTodoRepositoryMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createPlanningTodoFixture,
+  createPlanningTodo,
+  PLANNING_TIME,
+} from "#test/fixtures/planning-todo.fixture";
 
-import { Todo } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import { TodoRescheduledEvent } from "../../../domain/events/todos/todo-rescheduled.event.js";
-import { TodoId } from "../../../domain/value-objects/todos/todo-id.vo.js";
-import {
-  TodoSchedule,
-  type TodoScheduleProps,
-} from "../../../domain/value-objects/todos/todo-schedule.vo.js";
-import { TodoMapper } from "../../../infrastructure/persistence/todos/todo-response.mapper.js";
-import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
-import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 import { UpdateTodoSchedule } from "./update-todo-schedule.use-case.js";
 
-function buildEntity(): Todo {
-  return Todo.reconstitute({
-    id: TodoId.create(1),
-    userId: "user-123",
-    title: "할 일",
-    categoryId: 1,
-    sortOrder: 0,
-    completed: false,
-    completedAt: null,
-    schedule: TodoSchedule.reconstitute({
-      startDate: new Date("2026-02-22"),
-      endDate: null,
-      scheduledTime: null,
-      isAllDay: true,
-    }),
-    visibility: "PUBLIC",
-    recurrenceGroupId: null,
-    items: [],
-    createdAt: new Date("2026-02-20T00:00:00.000Z"),
-    updatedAt: new Date("2026-02-20T00:00:00.000Z"),
-  });
-}
-
-function buildResponse(): TodoResponse {
-  return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
-}
-
-const timedSchedule: TodoScheduleProps = {
-  startDate: new Date("2026-03-01"),
-  endDate: null,
-  scheduledTime: new Date("2026-03-01T06:00:00.000Z"),
-  isAllDay: false,
-};
-
-const allDaySchedule: TodoScheduleProps = {
-  startDate: new Date("2026-03-02"),
-  endDate: new Date("2026-03-05"),
-  scheduledTime: null,
-  isAllDay: true,
-};
-
-describe("UpdateTodoSchedule — 할 일 일정 변경 핸들러", () => {
+describe("할 일 일정 수정", () => {
+  let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: UpdateTodoSchedule;
-  let todoRepository: Mocked<TodoRepositoryPort>;
-  let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-  let eventPublisher: Mocked<DomainEventPublisherPort>;
-
-  beforeEach(async () => {
-    const updateTodoScheduleDependencies = mockDeep<
-      ConstructorParameters<typeof UpdateTodoSchedule>[0]
-    >({
-      todoRepository: createTodoRepositoryMock(),
-      todoReadRepository: createTodoReadRepositoryMock(),
-      unitOfWork: createUnitOfWorkMock(),
-      eventPublisher: { publishAll: vi.fn().mockResolvedValue(undefined) },
-    });
-    const unit = new UpdateTodoSchedule(updateTodoScheduleDependencies);
-
-    useCase = unit;
-    todoRepository = updateTodoScheduleDependencies.todoRepository;
-    todoReadRepository = updateTodoScheduleDependencies.todoReadRepository;
-    eventPublisher = updateTodoScheduleDependencies.eventPublisher;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(PLANNING_TIME);
+    fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
+    useCase = new UpdateTodoSchedule(fixture);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it("시간 일정으로 변경하면 영속화하고 scheduledTime을 담은 이벤트를 발행한다", async () => {
+  it("시간 일정을 저장하고 리마인더 이벤트에 동일한 시간을 전달한다", async () => {
     // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
-
+    const scheduledTime = new Date("2026-05-16T03:30:00Z");
     // When
     const result = await useCase.execute({
       id: 1,
-      userId: "user-123",
-      schedule: timedSchedule,
+      userId: fixture.userId,
+      schedule: {
+        startDate: new Date("2026-05-16T00:00:00Z"),
+        endDate: null,
+        scheduledTime,
+        isAllDay: false,
+      },
     });
-
-    // Then - 영속화 + 이벤트(리마인더 재스케줄은 이벤트 핸들러 몫)
-    expect(todoRepository.updateSchedule).toHaveBeenCalledWith(1, timedSchedule);
-    expect(eventPublisher.publishAll).toHaveBeenCalledWith([
-      new TodoRescheduledEvent(1, "user-123", timedSchedule.scheduledTime),
-    ]);
-    expect(result.id).toBe(1);
-  });
-
-  it("종일 일정(scheduledTime=null)으로 변경하면 이벤트의 scheduledTime이 null이다 (리마인더 취소 트리거)", async () => {
-    // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
-
-    // When
-    await useCase.execute({
-      id: 1,
-      userId: "user-123",
-      schedule: allDaySchedule,
-    });
-
     // Then
-    expect(todoRepository.updateSchedule).toHaveBeenCalledWith(1, allDaySchedule);
-    expect(eventPublisher.publishAll).toHaveBeenCalledWith([
-      new TodoRescheduledEvent(1, "user-123", null),
+    expect(fixture.records.get(1)).toMatchObject({ scheduledTime, isAllDay: false });
+    expect(result).toMatchObject({
+      startDate: "2026-05-16",
+      scheduledTime: "2026-05-16T03:30:00.000Z",
+    });
+    expect(fixture.eventPublisher.events).toEqual([
+      new TodoRescheduledEvent(1, fixture.userId, scheduledTime),
     ]);
   });
-
-  it("post-commit 이벤트 발행 관측이 끝난 뒤 응답을 재조회한다", async () => {
-    // Given - 이벤트 publisher 완료를 외부 gate로 지연
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
-    let release: (() => void) | undefined;
-    const publication = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    eventPublisher.publishAll.mockReturnValue(publication);
-
-    // When - 일정 변경 실행
-    const execution = useCase.execute({
-      id: 1,
-      userId: "user-123",
-      schedule: allDaySchedule,
-    });
-    await new Promise((resolve) => setImmediate(resolve));
-
-    // Then - publisher 완료 전에는 post-commit 재조회로 진행하지 않음
-    expect(todoReadRepository.findByIdAndUserId).not.toHaveBeenCalled();
-    release?.();
-    await execution;
-    expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalled();
-  });
-
-  it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {
+  it("종일 일정으로 변경하면 시간을 지우고 역전된 기간은 저장하지 않는다", async () => {
     // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(null);
-
-    // When & Then
+    const input = {
+      id: 1,
+      userId: fixture.userId,
+      schedule: {
+        startDate: new Date("2026-05-16T00:00:00Z"),
+        endDate: null,
+        scheduledTime: null,
+        isAllDay: true,
+      },
+    };
+    // When
+    const result = await useCase.execute(input);
+    const before = structuredClone(fixture.records.get(1));
+    // Then
+    expect(result.scheduledTime).toBeNull();
+    expect(fixture.eventPublisher.events).toEqual([
+      new TodoRescheduledEvent(1, fixture.userId, null),
+    ]);
     await expect(
       useCase.execute({
-        id: 999,
-        userId: "user-123",
-        schedule: allDaySchedule,
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
-    expect(todoRepository.updateSchedule).not.toHaveBeenCalled();
-  });
-
-  it("역전된 날짜 범위면 DomainException으로 거부하고 영속화하지 않는다 (도메인 자기방어)", async () => {
-    // Given - endDate < startDate (Zod 통과를 우회한 비정상 입력 가정)
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
-
-    // When & Then
-    await expect(
-      useCase.execute({
-        id: 1,
-        userId: "user-123",
-        schedule: {
-          startDate: new Date("2026-03-05"),
-          endDate: new Date("2026-03-01"),
-          scheduledTime: null,
-          isAllDay: true,
-        },
+        ...input,
+        schedule: { ...input.schedule, endDate: new Date("2026-05-15T00:00:00Z") },
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    expect(todoRepository.updateSchedule).not.toHaveBeenCalled();
+    expect(fixture.records.get(1)).toEqual(before);
+    await expect(useCase.execute({ ...input, id: 999 })).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_0801,
+    });
+  });
+
+  it("이벤트 발행이 끝나기 전에 응답 조회를 진행하지 않는다", async () => {
+    // Given
+    const entered = Promise.withResolvers<void>();
+    const publication = Promise.withResolvers<void>();
+    fixture.eventPublisher.publishAll = async () => {
+      entered.resolve();
+      await publication.promise;
+    };
+    const responseRead = vi.spyOn(fixture.todoReadRepository, "findByIdAndUserId");
+    // When
+    const execution = useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      schedule: { startDate: PLANNING_TIME, endDate: null, scheduledTime: null, isAllDay: true },
+    });
+    try {
+      await Promise.race([entered.promise, execution]);
+      // Then
+      expect(responseRead).not.toHaveBeenCalled();
+    } finally {
+      publication.resolve();
+      await execution;
+    }
+    expect(responseRead).toHaveBeenCalledOnce();
   });
 });

@@ -12,21 +12,16 @@ import { type FriendPort } from "../../ports/todos/friend.port.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 
-/** 친구 Todo 목록 조회 입력. */
 export type GetFriendTodosInput = GetFriendTodosParams;
 
-/**
- * 친구의 PUBLIC Todo 목록 조회 use-case
- *
- * 맞팔 관계를 확인한 뒤 친구의 PUBLIC 투두만 커서 페이지네이션으로 조회합니다.
- * 첫 페이지(cursor 미지정)만 캐싱하며, 권한 확인은 캐시 히트와 무관하게 매 요청 수행합니다
- * (캐시 값은 소유자의 PUBLIC 첫 페이지로 뷰어 무관 공유).
- */
 interface GetFriendTodosDependencies {
-  readonly todoReadRepository: TodoReadRepositoryPort;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findPublicTodosByUserId">;
   readonly paginationService: PaginationService;
-  readonly friendPort: FriendPort;
-  readonly todoCache: TodoCachePort;
+  readonly friendPort: Pick<FriendPort, "isMutualFriend">;
+  readonly todoCache: Pick<
+    TodoCachePort,
+    "readFriendTodosFirstPage" | "storeFriendTodosFirstPageIfCurrent"
+  >;
 }
 
 export class GetFriendTodos {
@@ -41,7 +36,11 @@ export class GetFriendTodos {
   ): Promise<CursorPaginatedResponse<TodoResponse, number>> {
     const { userId, friendUserId } = input;
 
-    if (input.startDate && input.endDate && isAfter(input.startDate, input.endDate)) {
+    if (
+      input.startDate !== undefined &&
+      input.endDate !== undefined &&
+      isAfter(input.startDate, input.endDate)
+    ) {
       throw new ApplicationException(ErrorCode.SYS_0002, {
         message: "startDate must be less than or equal to endDate",
         startDate: input.startDate,
@@ -63,11 +62,9 @@ export class GetFriendTodos {
       },
     );
 
-    // 첫 페이지(cursor 미지정)만 캐싱 — normalizeCursorPagination은 cursor를 그대로 통과시킴.
-    // 스탬피드 락/지터 미적용 — 키가 사용자 단위라 글로벌 핫키 없음(과설계 방지).
     const isFirstPage = cursor === undefined;
-    const startDateKey = input.startDate ? toDateString(input.startDate) : "-";
-    const endDateKey = input.endDate ? toDateString(input.endDate) : "-";
+    const startDateKey = input.startDate !== undefined ? toDateString(input.startDate) : "-";
+    const endDateKey = input.endDate !== undefined ? toDateString(input.endDate) : "-";
     let cacheGeneration: string | undefined;
 
     if (isFirstPage) {
@@ -78,7 +75,7 @@ export class GetFriendTodos {
         size,
       );
       cacheGeneration = cached.generation;
-      if (cached.page) {
+      if (cached.page !== undefined) {
         return cached.page;
       }
     }

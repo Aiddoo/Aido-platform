@@ -32,6 +32,12 @@ export const MutationLockKeys = {
   todoCategory(userId: string): string {
     return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
   },
+  todo(todoId: number): string {
+    return `${MUTATION_KEY_PREFIX}:todo:${todoId}`;
+  },
+  todoSortOrder(userId: string): string {
+    return `${MUTATION_KEY_PREFIX}:todo-sort-order:${userId}`;
+  },
   todoComment(commentId: string): string {
     return `${MUTATION_KEY_PREFIX}:todo-comment:${commentId}`;
   },

@@ -64,6 +64,48 @@ function buildProps(overrides: Partial<TodoProps> = {}): TodoProps {
 }
 
 describe("Todo — 할 일 애그리게잇", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-02-22T12:00:00.000Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("복원 입력의 완료 상태·Date·항목 변경은 Aggregate 상태를 변경하지 않는다", () => {
+    // Given
+    const item = buildItem(10, 0);
+    const props = buildProps({ items: [item], completedAt: new Date("2026-02-21T12:00:00Z") });
+    const todo = Todo.reconstitute(props);
+    // When
+    props.completed = true;
+    props.completedAt?.setUTCFullYear(2030);
+    props.items.push(buildItem(11, 1));
+    item.rename("외부에서 변경");
+    // Then
+    expect(todo.isCompleted()).toBe(false);
+    expect(todo.getCompletedAt()).toEqual(new Date("2026-02-21T12:00:00Z"));
+    expect(todo.getItemIds()).toEqual([10]);
+    expect(todo.updateItem(10, {}).getTitle()).toBe("항목 10");
+  });
+
+  it("생성 입력 Date 변경은 검증된 생성 계획을 변경하지 않는다", () => {
+    // Given
+    const startDate = new Date("2026-02-22");
+    const endDate = new Date("2026-02-23");
+    const draft = Todo.planCreation({
+      userId: "user-123",
+      categoryId: 1,
+      title: "할 일",
+      startDate,
+      endDate,
+    });
+    // When
+    startDate.setUTCFullYear(2030);
+    endDate.setUTCFullYear(2031);
+    // Then
+    expect(draft.startDate).toEqual(new Date("2026-02-22"));
+    expect(draft.endDate).toEqual(new Date("2026-02-23"));
+  });
+
   describe("planCreation", () => {
     it("isAllDay·visibility 미지정 시 기본값(true, PUBLIC)을 파생한다", () => {
       // Given & When - 최소 입력으로 생성 계획

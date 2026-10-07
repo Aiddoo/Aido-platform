@@ -23,6 +23,18 @@ function buildProps(overrides: Partial<TodoItemProps> = {}): TodoItemProps {
 }
 
 describe("TodoItem — 하위 항목 자식 엔티티", () => {
+  it("복원 입력 변경은 엔티티 제목·완료 상태를 변경하지 않는다", () => {
+    // Given
+    const props = buildProps();
+    const item = TodoItem.reconstitute(props);
+    // When
+    props.title = "";
+    props.completed = true;
+    // Then
+    expect(item.getTitle()).toBe("하위 항목");
+    expect(item.isCompleted()).toBe(false);
+  });
+
   describe("reconstitute", () => {
     it("DB 행 프로퍼티를 그대로 복원한다", () => {
       // Given & When

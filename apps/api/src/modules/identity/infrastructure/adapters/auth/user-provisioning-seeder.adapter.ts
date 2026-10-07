@@ -4,7 +4,10 @@ import {
   USER_SETTINGS_PROVISIONER,
   type UserSettingsProvisionerPort,
 } from "#api/modules/identity/identity-settings.public";
-import { DefaultTodoCategorySeeder } from "#api/modules/planning/planning-categories.public";
+import {
+  TODO_CATEGORY_PROVISIONER,
+  type TodoCategoryProvisionerPort,
+} from "#api/modules/planning/planning-categories.public";
 
 import type {
   ProvisioningConsent,
@@ -20,7 +23,8 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
   constructor(
     @Inject(USER_SETTINGS_PROVISIONER)
     private readonly userSettingsProvisioner: UserSettingsProvisionerPort,
-    private readonly defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
+    @Inject(TODO_CATEGORY_PROVISIONER)
+    private readonly categoryProvisioner: TodoCategoryProvisionerPort,
   ) {}
 
   seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
@@ -28,6 +32,6 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
   }
 
   async seedDefaultCategories(userId: string): Promise<void> {
-    await this.defaultTodoCategorySeeder.seed(userId);
+    await this.categoryProvisioner.seed(userId);
   }
 }

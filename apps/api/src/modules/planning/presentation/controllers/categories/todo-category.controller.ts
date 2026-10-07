@@ -6,7 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Param,
   Patch,
   Post,
@@ -30,9 +29,11 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "../../../../identity/presentation/decorators/auth/index.js";
-import { TodoCategoryReader } from "../../../application/services/categories/todo-category.reader.js";
 import { CreateTodoCategory } from "../../../application/use-cases/categories/create-todo-category.use-case.js";
 import { DeleteTodoCategory } from "../../../application/use-cases/categories/delete-todo-category.use-case.js";
+import { GetTodoCategories } from "../../../application/use-cases/categories/get-todo-categories.use-case.js";
+import { GetTodoCategoryResourceLimit } from "../../../application/use-cases/categories/get-todo-category-resource-limit.use-case.js";
+import { GetTodoCategory } from "../../../application/use-cases/categories/get-todo-category.use-case.js";
 import { ReorderTodoCategory } from "../../../application/use-cases/categories/reorder-todo-category.use-case.js";
 import { UpdateTodoCategory } from "../../../application/use-cases/categories/update-todo-category.use-case.js";
 import { TodoCategoryMapper } from "../../mappers/categories/todo-category.mapper.js";
@@ -55,10 +56,10 @@ import {
 @ApiBearerAuth()
 @Controller("todo-categories")
 export class TodoCategoryController {
-  readonly #logger = new Logger(TodoCategoryController.name);
-
   constructor(
-    private readonly todoCategoryReader: TodoCategoryReader,
+    private readonly getTodoCategoriesUseCase: GetTodoCategories,
+    private readonly getTodoCategoryUseCase: GetTodoCategory,
+    private readonly getTodoCategoryResourceLimitUseCase: GetTodoCategoryResourceLimit,
     private readonly createTodoCategoryUseCase: CreateTodoCategory,
     private readonly updateTodoCategoryUseCase: UpdateTodoCategory,
     private readonly reorderTodoCategoryUseCase: ReorderTodoCategory,
@@ -80,7 +81,7 @@ export class TodoCategoryController {
   async getResourceLimit(
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<TodoCategoryResourceLimitResponseDto> {
-    return this.todoCategoryReader.getResourceLimitInfo(user.userId);
+    return this.getTodoCategoryResourceLimitUseCase.execute({ userId: user.userId });
   }
 
   @Post()
@@ -108,15 +109,11 @@ export class TodoCategoryController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateTodoCategoryDto }) dto: CreateTodoCategoryDto,
   ): Promise<CreateTodoCategoryResponseDto> {
-    this.#logger.debug(`카테고리 생성: user=${user.userId}, name=${dto.name}`);
-
     const category = await this.createTodoCategoryUseCase.execute({
       userId: user.userId,
       name: dto.name,
       color: dto.color,
     });
-
-    this.#logger.log(`카테고리 생성 완료: id=${category.id}, user=${user.userId}`);
 
     return {
       message: "카테고리가 생성되었습니다.",
@@ -142,9 +139,7 @@ export class TodoCategoryController {
   @ApiSuccessResponse({ type: TodoCategoryListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async findAll(@CurrentUser() user: CurrentUserPayload): Promise<TodoCategoryListResponseDto> {
-    this.#logger.debug(`카테고리 목록 조회: user=${user.userId}`);
-
-    const categories = await this.todoCategoryReader.findMany(user.userId);
+    const categories = await this.getTodoCategoriesUseCase.execute({ userId: user.userId });
 
     return {
       items: TodoCategoryMapper.toManyResponseWithCount(categories),
@@ -168,9 +163,10 @@ export class TodoCategoryController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
   ): Promise<TodoCategoryResponseDto> {
-    this.#logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
-
-    const category = await this.todoCategoryReader.findById(params.id, user.userId);
+    const category = await this.getTodoCategoryUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+    });
 
     return {
       category: TodoCategoryMapper.toResponseWithCount(category),
@@ -202,11 +198,11 @@ export class TodoCategoryController {
     @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
     @Body({ schema: UpdateTodoCategoryDto }) dto: UpdateTodoCategoryDto,
   ): Promise<UpdateTodoCategoryResponseDto> {
-    this.#logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
-
-    const category = await this.updateTodoCategoryUseCase.execute(params.id, user.userId, dto);
-
-    this.#logger.log(`카테고리 수정 완료: id=${params.id}`);
+    const category = await this.updateTodoCategoryUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      data: dto,
+    });
 
     return {
       message: "카테고리가 수정되었습니다.",
@@ -256,18 +252,12 @@ export class TodoCategoryController {
     @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
     @Body({ schema: ReorderTodoCategoryDto }) dto: ReorderTodoCategoryDto,
   ): Promise<ReorderTodoCategoryResponseDto> {
-    this.#logger.debug(
-      `카테고리 순서 변경: id=${params.id}, target=${dto.targetCategoryId}, position=${dto.position}`,
-    );
-
     const category = await this.reorderTodoCategoryUseCase.execute({
       userId: user.userId,
       categoryId: params.id,
       targetCategoryId: dto.targetCategoryId,
       position: dto.position,
     });
-
-    this.#logger.log(`카테고리 순서 변경 완료: id=${params.id}`);
 
     return {
       message: "카테고리 순서가 변경되었습니다.",
@@ -317,15 +307,11 @@ DELETE /todo-categories/3?moveToCategoryId=1
     @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
     @Query({ schema: DeleteTodoCategoryQueryDto }) query: DeleteTodoCategoryQueryDto,
   ): Promise<DeleteTodoCategoryResponseDto> {
-    this.#logger.debug(`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`);
-
     await this.deleteTodoCategoryUseCase.execute({
       userId: user.userId,
       categoryId: params.id,
       moveToCategoryId: query.moveToCategoryId,
     });
-
-    this.#logger.log(`카테고리 삭제 완료: id=${params.id}`);
 
     return {
       message: "카테고리가 삭제되었습니다.",

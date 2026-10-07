@@ -3,13 +3,21 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
+  MutationLockKeys,
+  type MutationLockPort,
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import type { TodoPersistenceSnapshot } from "../../../domain/aggregates/todos/todo.aggregate.js";
+import type {
+  TodoDetailsPatch,
+  TodoPersistenceSnapshot,
+} from "../../../domain/aggregates/todos/todo.aggregate.js";
 import type { UpdateTodoData } from "../../models/todos/todo.types.js";
+import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import { type CategoryOwnershipPort } from "../../ports/todos/category-ownership.port.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
@@ -18,29 +26,20 @@ import {
   type TodoUpdatePatch,
 } from "../../ports/todos/todo.repository.port.js";
 
-/** Todo 부분 수정 입력. */
 export interface UpdateTodoInput {
-  id: number;
-  userId: string;
-  data: UpdateTodoData;
+  readonly id: number;
+  readonly userId: string;
+  readonly data: UpdateTodoData;
+  readonly timezone: string;
 }
 
-/**
- * Todo 부분 수정 use-case
- *
- * 소유권 확인 → (카테고리 변경 시) 대상 카테고리 소유권 확인 → 애그리게잇 전이·패치 영속화 →
- * (카테고리 변경 시) 캐시 무효화 → TodoUpdatedEvent 발행(완료 요청이면 리마인더 취소) →
- * 읽기 포트로 응답 재조회.
- *
- * 주의(레거시 동작 보존): 카테고리 변경 시 활성 한도(MAX_PER_CATEGORY)를 재체크하지
- * 않습니다 — 한도 체크는 PATCH /todos/:id/category 전용입니다. 통일 여부는 별도 티켓.
- */
 interface UpdateTodoDependencies {
-  readonly todoRepository: TodoRepositoryPort;
-  readonly todoReadRepository: TodoReadRepositoryPort;
+  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateDetails">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly categoryOwnership: CategoryOwnershipPort;
-  readonly todoCache: TodoCachePort;
+  readonly mutationLock: MutationLockPort;
+  readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
+  readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
 }
@@ -53,26 +52,38 @@ export class UpdateTodo {
   }
 
   async execute(input: UpdateTodoInput): Promise<TodoResponse> {
-    const { id, userId, data } = input;
+    const { id, userId, data, timezone } = input;
 
-    // 1. 카테고리 변경 시 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
-    if (data.categoryId !== undefined) {
-      await this.#dependencies.categoryOwnership.validateOwnership(data.categoryId, userId);
-    }
-
-    // 2. TX 안에서 로드 → 애그리게잇 전이 → 애그리게잇 상태를 단일 소스로 영속화
-    //    (load-mutate-write를 한 트랜잭션으로 묶어 동시 수정 레이스 창 축소)
     const events = await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.todo(id),
+        ...(data.categoryId === undefined ? [] : [MutationLockKeys.todoCategory(userId)]),
+      ]);
+      if (data.categoryId !== undefined) {
+        // 일반 PATCH는 전용 category endpoint와 달리 활성 한도를 검사하지 않는다.
+        await this.#dependencies.categoryOwnership.validateOwnership(data.categoryId, userId);
+      }
+
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (!todo) {
+      if (todo === null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
       const wasCompleted = todo.isCompleted();
-      todo.updateDetails(data);
+      const details: TodoDetailsPatch = { ...data, scheduledTime: undefined };
+      if (data.scheduledTime !== undefined) {
+        details.scheduledTime =
+          data.scheduledTime === null
+            ? null
+            : parseLocalDateTime(
+                toDateString(data.startDate ?? todo.toPersistence().startDate),
+                data.scheduledTime,
+                timezone,
+              );
+      }
+      todo.updateDetails(details);
       const snapshot = todo.toPersistence();
 
-      // 요청에 포함된 필드만 쓰되, 값은 커맨드가 아닌 애그리게잇에서 가져옴
       const patch: TodoUpdatePatch = {};
       const copyField = <
         K extends keyof UpdateTodoData & keyof TodoPersistenceSnapshot & keyof TodoUpdatePatch,
@@ -101,20 +112,17 @@ export class UpdateTodo {
       return todo.pullDomainEvents();
     });
 
-    this.#dependencies.logger.log(`Todo updated: ${id} for user: ${userId}`);
+    this.#dependencies.logger.log({ event: PlanningTodoLogEvent.UPDATED, todoId: id, userId });
 
-    // 3. 카테고리 변경 시 캐시 무효화 + 친구 공개 투두 캐시는 항상 무효화
     if (data.categoryId !== undefined) {
       await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     }
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
-    // 저장(TX 커밋) 완료 후 이벤트 발행 (완료 상태면 이벤트 핸들러가 리마인더 취소)
     await this.#dependencies.eventPublisher.publishAll(events);
 
-    // 4. 응답 재조회
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
-    if (!response) {
+    if (response === null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
     return response;

@@ -1,4 +1,17 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { groupBy, sortBy } from "es-toolkit";
+
+import {
+  decodeRecord,
+  encodeCreate,
+  encodePatch,
+  type DatabasePatch,
+} from "#api/platform/database/database-records";
+import { databaseTimestamp } from "#api/platform/database/database-values";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import type {
   TodoRepositoryPort,
@@ -15,21 +28,24 @@ import {
   TodoSchedule,
   type TodoScheduleProps,
 } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
-import { TodoRowRepository } from "./todo-row.repository.js";
 import type { TodoAggregateRow } from "./todo-row.types.js";
 
-/**
- * Prisma Todo 쓰기 어댑터
- *
- * TodoRepositoryPort 구현체. 행 기반 TodoRowRepository의 쿼리를 재사용하되,
- * 행 ↔ 도메인 애그리게잇 매핑(toDomain/toPersistence)을 이 어댑터가 소유합니다.
- * 활성 트랜잭션은 TodoRowRepository가 CLS에서 직접 읽습니다.
- */
 @Injectable()
 export class PrismaTodoRepository implements TodoRepositoryPort {
-  constructor(private readonly todoRepository: TodoRowRepository) {}
+  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
-  /** DB 행 → 도메인 애그리게잇 (순수 도메인 상태와 하위 항목만 복원) */
+  private get client() {
+    return this.txHost.tx;
+  }
+
+  private get todos() {
+    return this.client.orm.public.Todo.include("items", (items) =>
+      items
+        .select("id", "title", "completed", "sortOrder", "createdAt", "updatedAt")
+        .orderBy((item) => item.sortOrder.asc()),
+    );
+  }
+
   private static toDomain(row: TodoAggregateRow): Todo {
     return Todo.reconstitute({
       id: TodoId.create(row.id),
@@ -39,7 +55,6 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
       sortOrder: row.sortOrder,
       completed: row.completed,
       completedAt: row.completedAt,
-      // 복원은 불변식 재검증 없음 (가드 도입 이전 데이터 보호)
       schedule: TodoSchedule.reconstitute({
         startDate: row.startDate,
         endDate: row.endDate,
@@ -48,83 +63,122 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
       }),
       visibility: row.visibility,
       recurrenceGroupId: row.recurrenceGroupId,
-      items: row.items.map((item) =>
-        TodoItem.reconstitute({
-          id: item.id,
-          title: item.title,
-          completed: item.completed,
-          sortOrder: item.sortOrder,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        }),
-      ),
+      items: row.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
   }
 
   async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
-    const row = await this.todoRepository.findByIdAndUserId(id, userId);
+    const row = decodeRecord("Todo", await this.todos.where({ id, userId }).first());
     return row === null ? null : PrismaTodoRepository.toDomain(row);
   }
 
   async create(data: TodoCreationPlan): Promise<Todo> {
-    const row = await this.todoRepository.create({
-      userId: data.userId,
-      categoryId: data.categoryId,
-      title: data.title,
-      sortOrder: data.sortOrder,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      scheduledTime: data.scheduledTime,
-      isAllDay: data.isAllDay,
-      visibility: data.visibility,
-    });
+    const row = decodeRecord("Todo", await this.todos.create(encodeCreate("Todo", data)));
     return PrismaTodoRepository.toDomain(row);
   }
 
   async createInlineItems(todoId: number, items: { title: string }[]): Promise<void> {
-    await this.todoRepository.createManyItems(todoId, items);
+    if (items.length === 0) return;
+    await this.client.orm.public.TodoItem.createAndCount(
+      items.map((item, sortOrder) =>
+        encodeCreate("TodoItem", { todoId, title: item.title, sortOrder }),
+      ),
+    );
+  }
+
+  async createMany(
+    items: readonly TodoCreationPlan[],
+    recurrenceGroupId: string,
+    inlineItems: readonly { title: string }[] = [],
+  ): Promise<Todo[]> {
+    const rows = decodeRecord(
+      "Todo",
+      await this.client.orm.public.Todo.createAll(
+        items.map((item) => encodeCreate("Todo", { ...item, recurrenceGroupId })),
+      ),
+    );
+    const itemRows =
+      inlineItems.length === 0
+        ? []
+        : decodeRecord(
+            "TodoItem",
+            await this.client.orm.public.TodoItem.createAll(
+              rows.flatMap((todo) =>
+                inlineItems.map((item, sortOrder) =>
+                  encodeCreate("TodoItem", {
+                    todoId: todo.id,
+                    title: item.title,
+                    sortOrder,
+                  }),
+                ),
+              ),
+            ),
+          );
+    const itemsByTodoId = groupBy(itemRows, (item) => item.todoId);
+    return sortBy(rows, [(row) => row.sortOrder]).map((row) =>
+      PrismaTodoRepository.toDomain({
+        ...row,
+        items: sortBy(itemsByTodoId[row.id] ?? [], [(item) => item.sortOrder]),
+      }),
+    );
   }
 
   async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
-    await this.todoRepository.update(id, { completed, completedAt });
+    await this.updateDetails(id, { completed, completedAt });
   }
 
   async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
-    // 인프라 경계에서 날짜와 문자열 codec을 변환한다.
-    await this.todoRepository.update(id, patch);
+    await this.updateTodoRow(id, patch);
   }
 
   async updateTitle(id: number, title: string): Promise<void> {
-    await this.todoRepository.update(id, { title });
+    await this.updateDetails(id, { title });
   }
 
   async updateVisibility(id: number, visibility: TodoVisibility): Promise<void> {
-    await this.todoRepository.update(id, { visibility });
+    await this.updateDetails(id, { visibility });
   }
 
   async updateSchedule(id: number, schedule: TodoScheduleProps): Promise<void> {
-    await this.todoRepository.update(id, {
-      startDate: schedule.startDate,
-      endDate: schedule.endDate,
-      scheduledTime: schedule.scheduledTime,
-      isAllDay: schedule.isAllDay,
-    });
+    await this.updateDetails(id, schedule);
   }
 
   async updateCategory(id: number, categoryId: number): Promise<void> {
-    await this.todoRepository.update(id, {
-      categoryId,
-    });
-  }
-
-  async delete(id: number): Promise<void> {
-    await this.todoRepository.delete(id);
+    await this.updateDetails(id, { categoryId });
   }
 
   async updateSortOrder(id: number, sortOrder: number): Promise<void> {
-    await this.todoRepository.updateSortOrder(id, sortOrder);
+    await this.updateTodoRow(id, { sortOrder });
+  }
+
+  private async updateTodoRow(id: number, patch: DatabasePatch<"Todo">): Promise<void> {
+    const affected = await this.client.orm.public.Todo.where({ id }).updateAndCount(
+      encodePatch("Todo", patch),
+    );
+    if (affected === 0) throw new DatabaseRecordNotFoundError();
+  }
+
+  async delete(id: number): Promise<void> {
+    const affected = await this.client.orm.public.Todo.where({ id }).deleteAndCount();
+    if (affected === 0) throw new DatabaseRecordNotFoundError();
+  }
+
+  async countActiveByCategory(userId: string, categoryId: number): Promise<number> {
+    const { count } = await this.client.orm.public.Todo.where({
+      userId,
+      categoryId,
+      completed: false,
+    }).aggregate((aggregate) => ({ count: aggregate.count() }));
+    return count;
+  }
+
+  async getMaxSortOrder(userId: string): Promise<number> {
+    const { maximum } = await this.client.orm.public.Todo.where({ userId }).aggregate(
+      (aggregate) => ({ maximum: aggregate.max("sortOrder") }),
+    );
+    return maximum ?? -1;
   }
 
   async shiftSortOrders(
@@ -133,51 +187,41 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
     to: number | null,
     delta: number,
   ): Promise<void> {
-    await this.todoRepository.shiftSortOrders(userId, from, to, delta);
-  }
-
-  async createMany(items: TodoCreationPlan[], recurrenceGroupId: string): Promise<Todo[]> {
-    const rows = await this.todoRepository.createManyBatch(
-      items.map((item) => ({
-        userId: item.userId,
-        categoryId: item.categoryId,
-        title: item.title,
-        sortOrder: item.sortOrder,
-        startDate: item.startDate,
-        endDate: item.endDate,
-        scheduledTime: item.scheduledTime,
-        isAllDay: item.isAllDay,
-        visibility: item.visibility,
-        recurrenceGroupId,
-      })),
-      recurrenceGroupId,
+    let query = this.client.sql.public.Todo.update((fields) => ({
+      sortOrder: this.client.raw.sql`${fields.sortOrder} + ${delta}`.returns("pg/int4@1"),
+      updatedAt: this.client.raw.sql`${databaseTimestamp(now())}`.returns("pg/timestamp-string@1"),
+    })).where((fields, functions) =>
+      functions.and(functions.eq(fields.userId, userId), functions.gte(fields.sortOrder, from)),
     );
-    return rows.map((row) => PrismaTodoRepository.toDomain(row));
+    if (to !== null)
+      query = query.where((fields, functions) => functions.lte(fields.sortOrder, to));
+    await this.client.execute(query.build());
   }
-
-  countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return this.todoRepository.countActiveByCategory(userId, categoryId);
-  }
-
-  getMaxSortOrder(userId: string): Promise<number> {
-    return this.todoRepository.getMaxSortOrder(userId);
-  }
-
-  // ===== 하위 항목 (체크리스트) =====
 
   async createItem(todoId: number, data: { title: string; sortOrder: number }): Promise<void> {
-    await this.todoRepository.createItem(todoId, data);
+    await this.client.orm.public.TodoItem.select("id").create(
+      encodeCreate("TodoItem", { todoId, ...data }),
+    );
   }
 
   async updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void> {
-    await this.todoRepository.updateItem(itemId, data);
+    const affected = await this.client.orm.public.TodoItem.where({ id: itemId }).updateAndCount(
+      encodePatch("TodoItem", data),
+    );
+    if (affected === 0) throw new DatabaseRecordNotFoundError();
   }
 
   async deleteItem(itemId: number): Promise<void> {
-    await this.todoRepository.deleteItem(itemId);
+    const affected = await this.client.orm.public.TodoItem.where({ id: itemId }).deleteAndCount();
+    if (affected === 0) throw new DatabaseRecordNotFoundError();
   }
 
-  async reorderItems(itemIds: number[]): Promise<void> {
-    await this.todoRepository.reorderItems(itemIds);
+  async reorderItems(itemIds: readonly number[]): Promise<void> {
+    for (const [sortOrder, id] of itemIds.entries()) {
+      const affected = await this.client.orm.public.TodoItem.where({ id }).updateAndCount(
+        encodePatch("TodoItem", { sortOrder }),
+      );
+      if (affected === 0) throw new DatabaseRecordNotFoundError();
+    }
   }
 }

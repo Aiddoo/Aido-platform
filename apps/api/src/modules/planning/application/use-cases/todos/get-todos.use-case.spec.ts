@@ -1,177 +1,96 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi } from "vitest";
 
-import { PaginationService } from "#api/shared/application/pagination/index";
-import { TodoBuilder } from "#test/builders/index";
-import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
+import {
+  createPlanningTodoFixture,
+  createPlanningTodo,
+  PLANNING_TIME,
+} from "#test/fixtures/planning-todo.fixture";
+import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 
-import { TodoMapper } from "../../../infrastructure/persistence/todos/todo-response.mapper.js";
-import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import { GetTodos } from "./get-todos.use-case.js";
 
-function buildResponse(id: number): TodoResponse {
-  return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(id).build());
-}
-
-describe("GetTodos — Todo 목록 커서 페이지네이션 조회", () => {
+describe("할 일 목록 조회", () => {
+  let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: GetTodos;
-  let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-  let paginationService: Mocked<PaginationService>;
-
-  const baseInput = { userId: "user-123" };
-
-  beforeEach(async () => {
-    const getTodosDependencies = mockDeep<ConstructorParameters<typeof GetTodos>[0]>({
-      todoReadRepository: createTodoReadRepositoryMock(),
-    });
-    const unit = new GetTodos(getTodosDependencies);
-
-    useCase = unit;
-    todoReadRepository = getTodosDependencies.todoReadRepository;
-    paginationService = getTodosDependencies.paginationService;
-
-    // PaginationService는 auto-mock이므로 실제 규칙과 동일하게 스텁한다
-    paginationService.normalizeCursorPagination.mockImplementation((params) => {
-      const size = params.size ?? 20;
-      return { cursor: params.cursor, size, take: size + 1 };
-    });
-    paginationService.createCursorPaginatedResponse.mockImplementation((params) => {
-      const { items, size } = params;
-      const hasNext = items.length > size;
-      const actualItems = hasNext ? items.slice(0, size) : items;
-      const lastItem = actualItems[actualItems.length - 1];
-      return {
-        items: actualItems,
-        pagination: {
-          nextCursor: hasNext && lastItem ? lastItem.id : null,
-          hasNext,
-          size,
-        },
-      };
-    });
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(PLANNING_TIME);
+    fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
+    useCase = new GetTodos(fixture);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it("필터·커서·날짜 범위를 정규화된 size와 함께 저장소 파라미터로 매핑한다", async () => {
+  it("필터와 정규화한 size를 읽기 경계에 전달한다", async () => {
     // Given
-    todoReadRepository.findManyByUserId.mockResolvedValue([buildResponse(1)]);
-    const startDate = new Date("2026-07-01T00:00:00.000Z");
-    const endDate = new Date("2026-07-31T00:00:00.000Z");
-
+    const query = vi.spyOn(fixture.todoReadRepository, "findManyByUserId");
+    const startDate = new Date("2026-05-01T00:00:00Z");
+    const endDate = new Date("2026-05-31T00:00:00Z");
     // When
     await useCase.execute({
-      ...baseInput,
+      userId: fixture.userId,
       cursor: 5,
       size: 10,
-      completed: true,
-      categoryId: 3,
+      categoryId: 1,
+      completed: false,
       startDate,
       endDate,
     });
-
-    // Then - 정규화된 cursor/size가 그대로 실린다
-    expect(todoReadRepository.findManyByUserId).toHaveBeenCalledWith({
-      userId: "user-123",
+    // Then
+    expect(query).toHaveBeenCalledWith({
+      userId: fixture.userId,
       cursor: 5,
       size: 10,
-      completed: true,
-      categoryId: 3,
+      categoryId: 1,
+      completed: false,
       startDate,
       endDate,
     });
   });
-
-  it("size 미지정 시 기본 size(20)로 정규화해 조회한다", async () => {
+  it("size+1 결과에서 다음 커서를 만들고 마지막 페이지는 null을 반환한다", async () => {
     // Given
-    todoReadRepository.findManyByUserId.mockResolvedValue([]);
-
-    // When
-    await useCase.execute(baseInput);
-
-    // Then
-    expect(paginationService.normalizeCursorPagination).toHaveBeenCalledWith({
-      cursor: undefined,
-      size: undefined,
-    });
-    expect(todoReadRepository.findManyByUserId).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user-123", size: 20 }),
+    fixture.todoReadRepository.queryResults = [3, 2, 1].map((id) =>
+      createTodoResponseFixture(createPlanningTodo(fixture.userId, id)),
     );
-  });
-
-  it("size+1개가 조회되면 초과분을 잘라내고 nextCursor를 마지막 항목 id로 채운다", async () => {
-    // Given - size=2 요청, 저장소는 다음 페이지 확인용으로 3개 반환
-    const items = [buildResponse(10), buildResponse(9), buildResponse(8)];
-    todoReadRepository.findManyByUserId.mockResolvedValue(items);
-
     // When
-    const result = await useCase.execute({ ...baseInput, size: 2 });
-
-    // Then - 2개만 노출, hasNext=true, nextCursor=마지막 노출 항목(9)
-    expect(result.items).toHaveLength(2);
-    expect(result.pagination).toEqual({
-      nextCursor: 9,
-      hasNext: true,
-      size: 2,
-    });
-  });
-
-  it("마지막 페이지는 hasNext=false, nextCursor=null이다", async () => {
-    // Given - size=20, 1개만 반환 (초과분 없음)
-    todoReadRepository.findManyByUserId.mockResolvedValue([buildResponse(1)]);
-
-    // When
-    const result = await useCase.execute(baseInput);
-
+    const first = await useCase.execute({ userId: fixture.userId, size: 2 });
+    fixture.todoReadRepository.queryResults = [
+      createTodoResponseFixture(createPlanningTodo(fixture.userId, 1)),
+    ];
+    const last = await useCase.execute({ userId: fixture.userId, cursor: 2, size: 2 });
     // Then
-    expect(result.items).toHaveLength(1);
-    expect(result.pagination).toEqual({
-      nextCursor: null,
-      hasNext: false,
-      size: 20,
-    });
+    expect(first.items.map((todo) => todo.id)).toEqual([3, 2]);
+    expect(first.pagination).toEqual({ nextCursor: 2, hasNext: true, size: 2 });
+    expect(last.pagination).toEqual({ nextCursor: null, hasNext: false, size: 2 });
   });
-
-  it("startDate > endDate이면 SYS_0002를 던지고 저장소를 조회하지 않는다", async () => {
-    // When & Then
+  it("size 생략은 기본20이며 날짜가 같거나 끝이 생략되어도 유효하다", async () => {
+    // Given
+    const today = new Date("2026-05-15T00:00:00Z");
+    // When
+    const sameDay = await useCase.execute({
+      userId: fixture.userId,
+      startDate: today,
+      endDate: today,
+    });
+    const openRange = await useCase.execute({ userId: fixture.userId, startDate: today });
+    // Then
+    expect(sameDay.pagination).toEqual({ nextCursor: null, hasNext: false, size: 20 });
+    expect(openRange.pagination.size).toBe(20);
+  });
+  it("역전된 기간은 저장소에 도달하기 전에 거부한다", async () => {
+    // Given
+    const query = vi.spyOn(fixture.todoReadRepository, "findManyByUserId");
+    // When / Then
     await expect(
       useCase.execute({
-        ...baseInput,
-        startDate: new Date("2026-07-31T00:00:00.000Z"),
-        endDate: new Date("2026-07-01T00:00:00.000Z"),
+        userId: fixture.userId,
+        startDate: new Date("2026-05-16"),
+        endDate: new Date("2026-05-15"),
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    expect(paginationService.normalizeCursorPagination).not.toHaveBeenCalled();
-    expect(todoReadRepository.findManyByUserId).not.toHaveBeenCalled();
-  });
-
-  it("startDate == endDate는 유효 범위로 통과시킨다 (경계값)", async () => {
-    // Given
-    const sameDay = new Date("2026-07-15T00:00:00.000Z");
-    todoReadRepository.findManyByUserId.mockResolvedValue([]);
-
-    // When
-    await useCase.execute({
-      ...baseInput,
-      startDate: sameDay,
-      endDate: sameDay,
-    });
-
-    // Then - 예외 없이 조회 진행
-    expect(todoReadRepository.findManyByUserId).toHaveBeenCalledTimes(1);
-  });
-
-  it("startDate만 있고 endDate가 없으면 범위 검증을 건너뛴다", async () => {
-    // Given
-    todoReadRepository.findManyByUserId.mockResolvedValue([]);
-
-    // When
-    await useCase.execute({
-      ...baseInput,
-      startDate: new Date("2026-07-31T00:00:00.000Z"),
-    });
-
-    // Then - endDate 부재 시 비교하지 않고 정상 조회
-    expect(todoReadRepository.findManyByUserId).toHaveBeenCalledTimes(1);
+    expect(query).not.toHaveBeenCalled();
   });
 });

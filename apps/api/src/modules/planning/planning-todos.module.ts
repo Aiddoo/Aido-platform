@@ -8,15 +8,18 @@ import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE, type TodoCachePort } from "./application/ports/todos/todo-cache.port.js";
+import { TODO_CREATOR, type TodoCreatorPort } from "./application/ports/todos/todo-creator.port.js";
 import { TODO_NOTIFICATION } from "./application/ports/todos/todo-notification.port.js";
 import {
   TODO_READ_REPOSITORY,
   type TodoReadRepositoryPort,
 } from "./application/ports/todos/todo-read.repository.port.js";
 import { TODO_REMINDER } from "./application/ports/todos/todo-reminder.port.js";
+import { TODO_VIEW_CACHE_INVALIDATOR } from "./application/ports/todos/todo-view-cache-invalidator.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
 import { TodoViewCacheInvalidator } from "./application/services/todos/todo-view-cache.invalidator.js";
-import { CreateRecurringTodos, CreateTodo } from "./application/use-cases/todos/index.js";
+import { CreateRecurringTodos } from "./application/use-cases/todos/create-recurring-todos.use-case.js";
+import { CreateTodo } from "./application/use-cases/todos/create-todo.use-case.js";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/todos/category-ownership.adapter.js";
 import { FriendAdapter } from "./infrastructure/adapters/todos/friend.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/todos/streak.adapter.js";
@@ -25,42 +28,20 @@ import { TodoNotificationAdapter } from "./infrastructure/adapters/todos/todo-no
 import { TodoReminderAdapter } from "./infrastructure/adapters/todos/todo-reminder.adapter.js";
 import { PrismaTodoReadRepository } from "./infrastructure/persistence/todos/prisma-todo-read.repository.js";
 import { PrismaTodoRepository } from "./infrastructure/persistence/todos/prisma-todo.repository.js";
-import { TodoRowRepository } from "./infrastructure/persistence/todos/todo-row.repository.js";
-import { TodoCategoryModule } from "./planning-categories.module.js";
+import { PlanningCategoriesModule } from "./planning-categories.module.js";
 import { TODO_PROVIDERS } from "./planning-todos.providers.js";
 import { TodoController } from "./presentation/controllers/todos/todo.controller.js";
 
-/**
- * Todo 모듈
- *
- * 할 일 관리 기능을 담당합니다.
- * - CRUD 작업 (생성, 조회, 수정, 삭제)
- * - 카테고리별 분류 및 필터링
- * - 순서 변경 (드래그 앤 드롭)
- * - 커서 기반 페이지네이션
- * - 날짜별 조회
- * - 친구의 PUBLIC 투두 조회
- * - 리마인더 즉시 스케줄링 (생성/수정/삭제 시 타이머 관리)
- * - 완료 시 스트릭 갱신
- *
- * ### 아키텍처 (클린아키텍처 마이그레이션 완료)
- * - 모든 유스케이스가 단일 execute(input)를 가진 use-case + 도메인 애그리게잇으로 처리됨
- * - 쓰기(애그리게잇)/읽기(응답 read model) 리포지토리를 포트로 분리
- * - 크로스모듈 의존(카테고리·친구·스트릭·알림·캐시)은 포트/어댑터로 역전
- * - Controller는 endpoint UseCase를 직접 주입
- * - 외부 모듈에는 실제로 필요한 생성 UseCase만 명시적으로 공개
- */
 @Module({
   imports: [
     FollowModule,
     NotificationModule,
-    TodoCategoryModule,
+    PlanningCategoriesModule,
     SchedulerModule,
     UserSettingsModule,
   ],
   controllers: [TodoController],
   providers: [
-    TodoRowRepository,
     PrismaTodoRepository,
     PrismaTodoReadRepository,
     { provide: TODO_REPOSITORY, useExisting: PrismaTodoRepository },
@@ -72,14 +53,28 @@ import { TodoController } from "./presentation/controllers/todos/todo.controller
     { provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
     { provide: TODO_REMINDER, useClass: TodoReminderAdapter },
     ...TODO_PROVIDERS,
-    // 크로스 모듈 호환 경계 — 다른 모듈은 이 capability만 본다
+    {
+      provide: TODO_CREATOR,
+      inject: [CreateTodo, CreateRecurringTodos],
+      useFactory: (
+        createTodo: CreateTodo,
+        createRecurringTodos: CreateRecurringTodos,
+      ): TodoCreatorPort => ({
+        createTodo: (input) => createTodo.execute(input),
+        createRecurringTodos: (data, timezone) => createRecurringTodos.execute({ data, timezone }),
+      }),
+    },
     {
       provide: TodoViewCacheInvalidator,
       inject: [TODO_READ_REPOSITORY, TODO_CACHE],
       useFactory: (readRepository: TodoReadRepositoryPort, cache: TodoCachePort) =>
-        new TodoViewCacheInvalidator(readRepository, cache),
+        new TodoViewCacheInvalidator({ todoReadRepository: readRepository, cache }),
+    },
+    {
+      provide: TODO_VIEW_CACHE_INVALIDATOR,
+      useExisting: TodoViewCacheInvalidator,
     },
   ],
-  exports: [CreateTodo, CreateRecurringTodos, TodoViewCacheInvalidator],
+  exports: [TODO_CREATOR, TODO_VIEW_CACHE_INVALIDATOR],
 })
-export class TodoModule {}
+export class PlanningTodosModule {}

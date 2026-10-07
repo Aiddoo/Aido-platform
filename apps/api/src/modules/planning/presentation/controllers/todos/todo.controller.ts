@@ -33,29 +33,25 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "../../../../identity/presentation/decorators/auth/index.js";
-import {
-  AddTodoItem,
-  ChangeTodoCategory,
-  CreateRecurringTodos,
-  CreateTodo,
-  DeleteTodoItem,
-  DeleteTodo,
-  ReorderTodoItems,
-  ReorderTodo,
-  ToggleTodoComplete,
-  UpdateTodoItem,
-  UpdateTodoSchedule,
-  UpdateTodoTitle,
-  UpdateTodo,
-  UpdateTodoVisibility,
-} from "../../../application/use-cases/todos/index.js";
-import {
-  GetFriendTodos,
-  GetTodoById,
-  GetTodoResourceLimit,
-  GetTodoSummary,
-  GetTodos,
-} from "../../../application/use-cases/todos/queries.public.js";
+import { AddTodoItem } from "../../../application/use-cases/todos/add-todo-item.use-case.js";
+import { ChangeTodoCategory } from "../../../application/use-cases/todos/change-todo-category.use-case.js";
+import { CreateRecurringTodos } from "../../../application/use-cases/todos/create-recurring-todos.use-case.js";
+import { CreateTodo } from "../../../application/use-cases/todos/create-todo.use-case.js";
+import { DeleteTodoItem } from "../../../application/use-cases/todos/delete-todo-item.use-case.js";
+import { DeleteTodo } from "../../../application/use-cases/todos/delete-todo.use-case.js";
+import { GetFriendTodos } from "../../../application/use-cases/todos/get-friend-todos.use-case.js";
+import { GetTodoById } from "../../../application/use-cases/todos/get-todo-by-id.use-case.js";
+import { GetTodoResourceLimit } from "../../../application/use-cases/todos/get-todo-resource-limit.use-case.js";
+import { GetTodoSummary } from "../../../application/use-cases/todos/get-todo-summary.use-case.js";
+import { GetTodos } from "../../../application/use-cases/todos/get-todos.use-case.js";
+import { ReorderTodoItems } from "../../../application/use-cases/todos/reorder-todo-items.use-case.js";
+import { ReorderTodo } from "../../../application/use-cases/todos/reorder-todo.use-case.js";
+import { ToggleTodoComplete } from "../../../application/use-cases/todos/toggle-todo-complete.use-case.js";
+import { UpdateTodoItem } from "../../../application/use-cases/todos/update-todo-item.use-case.js";
+import { UpdateTodoSchedule } from "../../../application/use-cases/todos/update-todo-schedule.use-case.js";
+import { UpdateTodoTitle } from "../../../application/use-cases/todos/update-todo-title.use-case.js";
+import { UpdateTodoVisibility } from "../../../application/use-cases/todos/update-todo-visibility.use-case.js";
+import { UpdateTodo } from "../../../application/use-cases/todos/update-todo.use-case.js";
 import {
   ChangeTodoCategoryDto,
   CreateRecurringTodoDto,
@@ -159,12 +155,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getSummary(
     @CurrentUser() user: CurrentUserPayload,
-    @Timezone() tz: string,
+    @Timezone() timezone: string,
   ): Promise<TodoSummaryResponseDto> {
     // 컨트롤러가 타임존 파싱을 소유: 로컬 "오늘"의 UTC midnight으로 변환해 전달
     return this.getTodoSummaryUseCase.execute({
       userId: user.userId,
-      today: todayInTimezone(tz),
+      today: todayInTimezone(timezone),
     });
   }
 
@@ -227,17 +223,19 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
-    @Timezone() tz: string,
+    @Timezone() timezone: string,
   ): Promise<CreateTodoResponseDto> {
     const todo = await this.createTodoUseCase.execute({
       userId: user.userId,
       title: dto.title,
       categoryId: dto.categoryId,
       startDate: parseDateOnly(dto.startDate),
-      endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-      scheduledTime: dto.scheduledTime
-        ? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-        : undefined,
+      endDate:
+        dto.endDate === undefined || dto.endDate === null ? undefined : parseDateOnly(dto.endDate),
+      scheduledTime:
+        dto.scheduledTime === undefined || dto.scheduledTime === null
+          ? undefined
+          : parseLocalDateTime(dto.startDate, dto.scheduledTime, timezone),
       isAllDay: dto.isAllDay,
       visibility: dto.visibility,
       items: dto.items,
@@ -283,7 +281,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   async createRecurring(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
-    @Timezone() tz: string,
+    @Timezone() timezone: string,
   ): Promise<CreateRecurringTodoResponseDto> {
     const result = await this.createRecurringTodosUseCase.execute({
       data: {
@@ -297,7 +295,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
       },
-      timezone: tz,
+      timezone,
     });
 
     return {
@@ -446,8 +444,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       completed: query.completed,
       categoryId: query.categoryId,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-      endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+      startDate: query.startDate === undefined ? undefined : parseDateOnly(query.startDate),
+      endDate: query.endDate === undefined ? undefined : parseDateOnly(query.endDate),
     });
 
     return {
@@ -528,8 +526,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       cursor: query.cursor,
       size: query.size,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-      endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+      startDate: query.startDate === undefined ? undefined : parseDateOnly(query.startDate),
+      endDate: query.endDate === undefined ? undefined : parseDateOnly(query.endDate),
     });
 
     return {
@@ -562,22 +560,23 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
-    @Timezone() tz: string,
+    @Timezone() timezone: string,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.updateTodoUseCase.execute({
       id: params.id,
       userId: user.userId,
+      timezone,
       data: {
         title: dto.title,
         categoryId: dto.categoryId,
-        startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
-        endDate: dto.endDate === null ? null : dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-        scheduledTime:
-          dto.scheduledTime === null
-            ? null
-            : dto.scheduledTime && dto.startDate
-              ? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-              : undefined,
+        startDate: dto.startDate === undefined ? undefined : parseDateOnly(dto.startDate),
+        endDate:
+          dto.endDate === undefined
+            ? undefined
+            : dto.endDate === null
+              ? null
+              : parseDateOnly(dto.endDate),
+        scheduledTime: dto.scheduledTime,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
         completed: dto.completed,
@@ -619,13 +618,13 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: ToggleTodoCompleteDto }) dto: ToggleTodoCompleteDto,
-    @Timezone() tz: string,
+    @Timezone() timezone: string,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.toggleTodoCompleteUseCase.execute({
       id: params.id,
       userId: user.userId,
       completed: dto.completed,
-      timezone: tz,
+      timezone,
     });
 
     return {
@@ -722,17 +721,19 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoScheduleDto }) dto: UpdateTodoScheduleDto,
-    @Timezone() tz: string,
+    @Timezone() timezone: string,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.updateTodoScheduleUseCase.execute({
       id: params.id,
       userId: user.userId,
       schedule: {
         startDate: parseDateOnly(dto.startDate),
-        endDate: dto.endDate ? parseDateOnly(dto.endDate) : null,
-        scheduledTime: dto.scheduledTime
-          ? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-          : null,
+        endDate:
+          dto.endDate === undefined || dto.endDate === null ? null : parseDateOnly(dto.endDate),
+        scheduledTime:
+          dto.scheduledTime === undefined || dto.scheduledTime === null
+            ? null
+            : parseLocalDateTime(dto.startDate, dto.scheduledTime, timezone),
         isAllDay: dto.isAllDay ?? true,
       },
     });
@@ -1034,20 +1035,5 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       message: "하위 항목이 삭제되었습니다.",
       todo,
     };
-  }
-
-  /**
-   * HH:mm 형식의 시간을 UTC Date 객체로 변환
-   *
-   * 사용자의 로컬 시간을 X-Timezone 헤더 기반으로 UTC 변환하여 저장합니다.
-   * Google Calendar 패턴: 시간 이벤트는 TIMESTAMPTZ(UTC)로 저장
-   *
-   * @param dateStr - YYYY-MM-DD 형식의 날짜 문자열
-   * @param timeStr - HH:mm 형식의 시간 문자열
-   * @param tz - IANA 타임존 (예: "Asia/Seoul", "America/New_York")
-   * @example parseScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
-   */
-  #parseScheduledTime(dateStr: string, timeStr: string, tz: string): Date {
-    return parseLocalDateTime(dateStr, timeStr, tz);
   }
 }

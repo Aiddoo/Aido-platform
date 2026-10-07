@@ -13,13 +13,6 @@ export interface TodoCategoryProps {
   updatedAt: Date;
 }
 
-/**
- * TodoCategory — 할 일 카테고리 애그리게잇.
- *
- * 사용자 소유의 카테고리 한 건을 나타내며 소유권 판별을 캡슐화한다. 세터는 없다(불변 조회 모델).
- * 이름·색상 불변식은 CategoryName·CategoryColor VO가, 정렬 재배치 계획은 category-reorder 도메인
- * 서비스가 소유한다.
- */
 export class TodoCategory extends AggregateRoot<{
   id: number;
   userId: string;
@@ -43,7 +36,9 @@ export class TodoCategory extends AggregateRoot<{
 
   static reconstitute(props: TodoCategoryProps): TodoCategory {
     return new TodoCategory({
-      ...props,
+      id: props.id,
+      userId: props.userId,
+      sortOrder: props.sortOrder,
       name: CategoryName.of(props.name),
       color: CategoryColor.of(props.color),
       createdAt: new Date(props.createdAt),
@@ -80,12 +75,10 @@ export class TodoCategory extends AggregateRoot<{
   }
 
   updateDetails(changes: { name?: string; color?: string }): void {
-    if (changes.name !== undefined) {
-      this.props.name = CategoryName.of(changes.name);
-    }
-    if (changes.color !== undefined) {
-      this.props.color = CategoryColor.of(changes.color);
-    }
+    const name = changes.name === undefined ? this.props.name : CategoryName.of(changes.name);
+    const color = changes.color === undefined ? this.props.color : CategoryColor.of(changes.color);
+    this.props.name = name;
+    this.props.color = color;
   }
 
   isOwnedBy(userId: string): boolean {

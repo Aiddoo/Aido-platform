@@ -4,7 +4,7 @@
  * GWT 패턴 — 마일스톤 정확 일치 매핑·오늘 전체 완료 판정 검증
  */
 
-import { isAllCompletedToday, milestoneForCount } from "./completion-policy.js";
+import { isAllCompletedToday, milestoneForCount } from "./completion.policy.js";
 
 describe("completion-policy — 완료 정책", () => {
   describe("milestoneForCount", () => {

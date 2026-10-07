@@ -1,53 +1,53 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi } from "vitest";
 
-import { TodoBuilder } from "#test/builders/index";
-import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
+import {
+  createPlanningTodoFixture,
+  createPlanningTodo,
+  PLANNING_TIME,
+} from "#test/fixtures/planning-todo.fixture";
 
-import { TodoMapper } from "../../../infrastructure/persistence/todos/todo-response.mapper.js";
-import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import { GetTodoById } from "./get-todo-by-id.use-case.js";
 
-function buildResponse(id: number, userId = "user-123"): TodoResponse {
-  return TodoMapper.toResponse(TodoBuilder.create(userId).withId(id).build());
-}
-
-describe("GetTodoById — 단일 Todo 조회", () => {
+describe("할 일 상세 조회", () => {
+  let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: GetTodoById;
-  let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-
-  beforeEach(async () => {
-    const getTodoByIdDependencies = mockDeep<ConstructorParameters<typeof GetTodoById>[0]>({
-      todoReadRepository: createTodoReadRepositoryMock(),
-    });
-    const unit = new GetTodoById(getTodoByIdDependencies);
-
-    useCase = unit;
-    todoReadRepository = getTodoByIdDependencies.todoReadRepository;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(PLANNING_TIME);
+    fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
+    useCase = new GetTodoById(fixture);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it("소유자 스코프로 조회한 read model을 그대로 반환한다", async () => {
+  it("소유한 할 일의 실제 저장 상태를 응답한다", async () => {
     // Given
-    const todo = buildResponse(42);
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(todo);
-
+    await fixture.todoRepository.createItem(1, { title: "하위 항목", sortOrder: 0 });
     // When
-    const result = await useCase.execute({ id: 42, userId: "user-123" });
-
-    // Then - id·userId를 그대로 저장소에 위임하고 결과를 손대지 않는다
-    expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(42, "user-123");
-    expect(result).toBe(todo);
+    const result = await useCase.execute({ id: 1, userId: fixture.userId });
+    // Then
+    expect(result).toMatchObject({
+      id: 1,
+      userId: fixture.userId,
+      startDate: "2026-05-15",
+      content: null,
+      category: { id: 1 },
+      itemStats: { total: 1, completed: 0 },
+    });
+    expect(result.items[0]?.title).toBe("하위 항목");
   });
-
-  it("조회 결과가 없으면 TODO_0801을 던지고 todoId를 컨텍스트에 담는다", async () => {
-    // Given - 미존재(또는 타인 소유)
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(null);
-
-    // When & Then
-    await expect(useCase.execute({ id: 999, userId: "user-123" })).rejects.toMatchObject({
+  it("없는 할 일과 다른 사용자의 할 일은 같은 오류를 반환한다", async () => {
+    // Given / When / Then
+    await expect(useCase.execute({ id: 999, userId: fixture.userId })).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_0801,
+      details: { todoId: 999 },
+    });
+    await expect(useCase.execute({ id: 1, userId: "other-user" })).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_0801,
+      details: { todoId: 1 },
     });
   });
 });

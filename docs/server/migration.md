@@ -19,13 +19,13 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 완료([PR #902](https://github.com/Aiddoo/Aido-platform/pull/902)), 04d OAuth 완료([PR #903](https://github.com/Aiddoo/Aido-platform/pull/903)), 04e 설정·동의 검증 완료([Issue #904](https://github.com/Aiddoo/Aido-platform/issues/904))
 - [x] 05 Billing: Webhook·구독 상태 전이·성공 원장·권한 정합성 검증([Issue #906](https://github.com/Aiddoo/Aido-platform/issues/906))
 - [x] 06 Access: Entitlement 정책·AI Quota 예약·보상·공개 capability 검증([Issue #908](https://github.com/Aiddoo/Aido-platform/issues/908))
-- [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
+- [x] 07 Planning: 할 일·항목·카테고리·반복 일정 정합성 검증([Issue #910](https://github.com/Aiddoo/Aido-platform/issues/910))
 - [ ] 08 Social: 친구·응원·넛지
 - [ ] 09 Notes: 메모와 전환
 - [ ] 10 Engagement: 댓글·반응·대화·정리
 - [ ] 11 Insights: 완료 집계·주간 달성·연속 기록
 - [ ] 12 Weather: 위치·좌표·격자·공급자 Port·지역별 선택 정책·도메인 응답 정규화; 한국 API 유지, 해외 공급자는 동일 인터페이스로 추가
-- [ ] 13 AI Assistance: 파싱·보고서·추천
+- [ ] 13 AI Assistance: 기존 모델 유지·유료 추천·기록 기반 습관 제안·한/영 prompt·언어 확장·파싱/보고서/추천 품질 검증
 - [ ] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker
 - [ ] 15 Support·Operations·App Config
 - [ ] 16 ORM·N+1·성능·컨테이너 검증
@@ -508,3 +508,89 @@ snapshot을 완화하지 않았다.
 07–17의 11단계가 남았다. merge·운영 배포는 하지 않았다.
 신규 schema·migration·실행 script·패키지·Action job은 없다. 공통 cache in-flight fill race,
 운영 latency·CPU/RSS·billed Actions 절감률은 검증 범위가 아니다.
+
+## 07 Planning 상태·일정·동시 변경
+
+[Issue #910](https://github.com/Aiddoo/Aido-platform/issues/910)의 구현이다. Todo·TodoItem·
+Category의 복원과 상태 전이는 Domain이 소유하고, endpoint UseCase는 최소 Port와 UoW를
+사용한다. 읽기 endpoint도 직접 UseCase로 연결한다. 외부 Context는 공개 Reader·Creator·
+Provisioner·CacheInvalidator capability를 사용하며 내부 UseCase나 Seeder를 주입하지 않는다.
+
+| 동일 조건의 실제 Before                                       | After                                                                         |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 항목 19개에서 동시 추가 2개가 성공해 21개·sortOrder 중복      | Todo 잠금 뒤 fresh 상태를 판정해 한도 20·서로 다른 정렬 값 유지               |
+| 미완료 Todo 동시 완료가 publisher event 2개를 생성            | 상태 전이와 publisher event 1개                                               |
+| 시간만 PATCH는 400, 제목+시간 PATCH는 시간 변경 누락          | Application에서 기존 날짜+입력 시간을 조합해 두 변경 반영                     |
+| 입력 Date/props alias, 잘못된 Category color로 부분 상태 변경 | 방어 복사와 전체 검증 후 전이                                                 |
+| Node KST/DB UTC에서 자동 updatedAt이 9시간 이동               | 공개 SDK middleware에서 timestamp-without-timezone Date 바인딩을 UTC로 정규화 |
+
+PG 경쟁 Before는 2개 실패(7.95초, seed 50702), LA에서도 동일 실패(11.48초, seed 50703)했다.
+실제 부모 행 잠금의 INSERT/UPDATE 대기를 관찰했으며 push/queue delivery 중복을 측정한 것은 아니다.
+동일 HTTP Before 4개 중 2개 실패(13.03초, seed 50713) → After 4개 통과(7.21초, seed 50714).
+Domain Before 8개 중 4개 실패를 재현했고 월말·윤년·기존 DST 동작을 유지했다.
+
+14개 Todo 쓰기는 기존 MutationLockPort로 필요한 key 배열을 한 번 획득한 뒤 같은 UoW에서
+조회·전이·저장한다. 소유권 오류 우선순위와 commit→cache→event→readback 순서를 보존했다.
+전체 PATCH의 category 한도와 완료 취소 한도를 새로 강화하지 않았다. Category 삭제와 정렬의
+복수 행 변경도 같은 keyspace를 사용한다. Policy 파일을 `.policy.ts`로 통일하고 중복 barrel,
+전달-only TodoRowRepository, Controller forwarding Unit과 미사용 Mock Repository를 제거했다.
+
+### 실제 SQL 수
+
+기준 revision `1f70336a`와 같은 fixture를 사용하고 공개 SDK `afterQuery/afterExecute`에서
+실제 driver 실행을 관찰했다. fixture 준비·검증과 TX 제어는 제외하고 신규 잠금 SQL은 포함했다.
+
+| 경로                          | Before 전체 SQL | After 전체 SQL | After 구성              |
+| ----------------------------- | --------------- | -------------- | ----------------------- |
+| TodoItem 3개 재정렬           | 8               | 6              | ORM 5 + advisory lock 1 |
+| 반복 Todo 3개 × item 2개 생성 | 9               | 7              | ORM 6 + advisory lock 1 |
+
+단건 ORM `updateAndCount/deleteAndCount`로 불필요한 PK 사전 조회를 제거하고 반복 생성은
+native `createAll` 반환 결과와 item 일괄 삽입을 사용한다. 기존 es-toolkit `groupBy/sortBy`를
+재사용한다. 원자적 정렬 산술과 잠금 SQL은 ORM 동등 기능을 확인할 수 없어 유지한다.
+실제 PG 8개는 seed 70707·America/Los_Angeles에서 통과했다(10.05초).
+조회 N+1·운영 p50/p95·CPU/RSS·처리량 개선률은 이 수치로 추정하지 않는다.
+
+### DB timestamp 보존
+
+Prisma 8의 기존 `update`와 새 `updateAndCount` 모두에서 KST Node/UTC DB의 자동 Date
+바인딩 오류를 재현했다. 전역 pg defaults나 SDK 파일을 수정하지 않는다. 공개 SqlMiddleware의
+`pg/timestamp-string@1` codec Date만 UTC 문자열로 변환하고 DATE·timestamptz·null·명시 문자열은
+보존한다. 운영·테스트 client factory에 동일 middleware를 등록했다. 동일 Before 2개는
+수정 후 2개 통과(3.45초, seed 70709)했고 UTC/KST/LA·단건/transaction/bulk·밀리초·다른 codec
+9개도 통과했다(5.18초, seed 70708). 쿼리 수 6/7도 middleware 적용 후 동일했다.
+
+### 최종 검증
+
+- 전체 Unit: 480 files / 2,923 tests, 21.07초, shuffle seed 70720.
+- 전체 Integration: 52 files / 484 tests, 196.56초, 같은 seed. 기존 Stub spec도 포함하며 신규 정합성 검증은 실제 PG다.
+- 전체 E2E: 37 files / 505 tests, 294.46초, 같은 seed. 고정 구 앱·OpenAPI 계약 fixture 변경 없음.
+- Todo Unit 19 files / 73 tests와 기존 Todo HTTP + 새 시간 PATCH 64 tests 통과. Unit은 state Stub·독립 REST fixture·실제 pagination을 사용한다.
+- Category 실제 PG 9개: 권한·부분 PATCH·동시 변경·unique 오류·삭제 이동·outer rollback·한도·Seeder rollback 통과.
+- Workspace lint·format·typecheck 통과. commit hook build를 확인한 뒤 Draft Stack PR를 게시한다.
+
+최초 PG fixture의 명시 ID와 sequence 충돌은 자동 ID로 수정했다. 중복 read provider 등록은
+검토에서 제거했으며 assertion·schema·retry·timeout을 완화하지 않았다. Date만 고정하고
+DB/socket timer는 실제 실행한다. 테스트 시간은 성능 benchmark가 아니고 유한한 실행으로
+flake 부재를 보장하지 않는다. 신규 schema·migration·실행 script·패키지·Action job은 없다.
+상위 8/18 구현·검증 완료, Social부터 10단계가 남았다. merge·운영 배포는 하지 않았다.
+
+## AI 후속 요구와 검증 범위
+
+현재 모델과 AI SDK·Zod를 유지하고 공식 공급자의 prompt/structured output 지침을 기준으로
+파싱·메모·보고서·추천을 검증한다. provider/데이터 수집/순수 정책/언어별 prompt/HTTP 표시의
+소유권을 분리한다. 새 locale을 추가할 때 endpoint UseCase에 언어 분기를 반복하지 않는다.
+
+유료 추천은 생성·조회·수락의 권한을 일관되게 확인한다. 기존 Todo 기록에서 반복 행동과 실행
+부담을 판단하고 제안 이유·요일·시간·작은 시작 단계를 제공한다. 기록이 적을 때 확신을 낮추고,
+기록이 없을 때 개인 습관·관심사·생활 조건을 발명하지 않는다. 기존 사용자 수락 흐름을 유지하며
+제안만으로 Todo를 자동 생성하지 않는다. 새로운 cold-start 표시/API가 필요하면 기존 앱의
+응답 계약·구독 정책을 기준으로 범위를 먼저 정한다.
+
+fixture/Stub의 결정적 검증과 실제 모델의 품질 평가를 구분한다. ko/en, 빈·적은·많은 기록,
+반복/미완료/중복/잘못된 category·날짜, 공급자 실패·잘못된 structured output을 검증한다.
+모델 응답은 schema 적합성 외에 사실 근거·언어·행동의 구체성·중복·수락 가능성을 평가한다.
+
+공식 근거: [Gemini prompt 지침](https://ai.google.dev/gemini-api/docs/prompting-strategies),
+[structured output](https://ai.google.dev/gemini-api/docs/structured-output).
+신규 라이브러리는 기존 도구로 충족되지 않는 필요와 Stable·ESM·모델 호환성을 확인한 뒤 도입한다.

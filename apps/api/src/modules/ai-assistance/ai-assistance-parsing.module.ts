@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AccessModule, AI_QUOTA as ACCESS_AI_QUOTA } from "#api/modules/access/access-quota.public";
 
-import { TodoCategoryModule } from "../planning/planning-categories.module.js";
+import { PlanningCategoriesModule } from "../planning/planning-categories.module.js";
 import { AI_PROVIDERS } from "./ai-assistance-parsing.providers.js";
 import { AI_PROVIDER } from "./application/ports/parsing/ai-provider.port.js";
 import { AI_QUOTA } from "./application/ports/parsing/ai-quota.port.js";
@@ -17,7 +17,7 @@ import { AiUsageGuard } from "./infrastructure/guards/parsing/ai-usage.guard.js"
 import { AiController } from "./presentation/controllers/parsing/ai.controller.js";
 
 @Module({
-  imports: [AccessModule, TodoCategoryModule],
+  imports: [AccessModule, PlanningCategoriesModule],
   controllers: [AiController],
   providers: [
     AiUsageGuard,

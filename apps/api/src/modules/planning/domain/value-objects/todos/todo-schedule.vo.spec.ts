@@ -219,3 +219,24 @@ describe("TodoSchedule — 일정 값 객체", () => {
     });
   });
 });
+
+describe("TodoSchedule 입력 상태 보호", () => {
+  it.each([TodoSchedule.create, TodoSchedule.reconstitute])(
+    "입력 Date 변경은 검증·복원된 일정에 영향을 주지 않는다",
+    (create) => {
+      // Given
+      const startDate = new Date("2026-03-01");
+      const endDate = new Date("2026-03-02");
+      const scheduledTime = new Date("2026-03-01T09:00:00Z");
+      const schedule = create({ startDate, endDate, scheduledTime, isAllDay: false });
+      // When
+      startDate.setUTCFullYear(2030);
+      endDate.setUTCFullYear(2031);
+      scheduledTime.setUTCFullYear(2032);
+      // Then
+      expect(schedule.getStartDate()).toEqual(new Date("2026-03-01"));
+      expect(schedule.getEndDate()).toEqual(new Date("2026-03-02"));
+      expect(schedule.getScheduledTime()).toEqual(new Date("2026-03-01T09:00:00Z"));
+    },
+  );
+});

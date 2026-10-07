@@ -5,14 +5,13 @@ import { ApplicationException } from "#api/shared/domain/index";
 
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 
-/** 단일 Todo 조회 입력. */
 export interface GetTodoByIdInput {
-  id: number;
-  userId: string;
+  readonly id: number;
+  readonly userId: string;
 }
 
 interface GetTodoByIdDependencies {
-  readonly todoReadRepository: TodoReadRepositoryPort;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
 }
 
 export class GetTodoById {
@@ -28,7 +27,7 @@ export class GetTodoById {
       input.userId,
     );
 
-    if (!todo) {
+    if (todo === null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: input.id });
     }
 

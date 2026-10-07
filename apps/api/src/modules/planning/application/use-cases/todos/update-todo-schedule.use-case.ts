@@ -3,6 +3,8 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
+  MutationLockKeys,
+  type MutationLockPort,
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -12,34 +14,23 @@ import {
   TodoSchedule,
   type TodoScheduleProps,
 } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
+import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 
-/**
- * 일정 변경 입력
- *
- * 날짜/시간 문자열 파싱(X-Timezone 반영)은 컨트롤러가 담당하고,
- * 입력은 파싱 완료된 Date 값만 운반합니다.
- */
 export interface UpdateTodoScheduleInput {
-  id: number;
-  userId: string;
-  schedule: TodoScheduleProps;
+  readonly id: number;
+  readonly userId: string;
+  readonly schedule: TodoScheduleProps;
 }
 
-/**
- * Todo 일정 변경 use-case
- *
- * 소유권 확인 → TodoSchedule VO로 일정 전이·영속화 →
- * TodoRescheduledEvent 발행(리마인더 재스케줄/취소는 이벤트 핸들러) →
- * 읽기 포트로 응답 재조회.
- */
 interface UpdateTodoScheduleDependencies {
-  readonly todoRepository: TodoRepositoryPort;
-  readonly todoReadRepository: TodoReadRepositoryPort;
+  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateSchedule">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly todoCache: TodoCachePort;
+  readonly mutationLock: MutationLockPort;
+  readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
 }
@@ -54,10 +45,10 @@ export class UpdateTodoSchedule {
   async execute(input: UpdateTodoScheduleInput): Promise<TodoResponse> {
     const { id, userId, schedule } = input;
 
-    // TX 안에서 로드 → 일정 전이(VO가 날짜 불변식 보장) → 애그리게잇 상태로 영속화
     const events = await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(id)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (!todo) {
+      if (todo === null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
@@ -73,17 +64,18 @@ export class UpdateTodoSchedule {
       return todo.pullDomainEvents();
     });
 
-    this.#dependencies.logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
+    this.#dependencies.logger.log({
+      event: PlanningTodoLogEvent.SCHEDULE_UPDATED,
+      todoId: id,
+      userId,
+    });
 
-    // 저장(TX 커밋) 완료 후 이벤트 발행 (리마인더 재스케줄/취소는 이벤트 핸들러)
     await this.#dependencies.eventPublisher.publishAll(events);
 
-    // 친구 공개 투두 캐시 무효화 (TX 커밋 후)
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
-    // 응답 재조회
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
-    if (!response) {
+    if (response === null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
     return response;

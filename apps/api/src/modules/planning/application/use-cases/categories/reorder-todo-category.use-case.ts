@@ -13,7 +13,8 @@ import {
   planReorderRelativeTo,
   planReorderToEdge,
   type ReorderPosition,
-} from "../../../domain/services/categories/category-reorder.js";
+} from "../../../domain/policies/categories/category-reorder.policy.js";
+import { PlanningCategoryLogEvent } from "../../observability/categories/planning-category-log.events.js";
 import { type TodoCategoryCachePort } from "../../ports/categories/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../../ports/categories/todo-category.repository.port.js";
 
@@ -31,7 +32,10 @@ export interface ReorderTodoCategoryInput {
  * 커밋 후 목록 캐시를 무효화한다.
  */
 interface ReorderTodoCategoryDependencies {
-  readonly repository: TodoCategoryRepositoryPort;
+  readonly repository: Pick<
+    TodoCategoryRepositoryPort,
+    "findByIdAndUserId" | "getMaxSortOrder" | "shiftSortOrders" | "update"
+  >;
   readonly cache: TodoCategoryCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -52,7 +56,7 @@ export class ReorderTodoCategory {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
 
       const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
-      if (!category) {
+      if (category === null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
           categoryId,
         });
@@ -68,7 +72,7 @@ export class ReorderTodoCategory {
           targetCategoryId,
           userId,
         );
-        if (!target) {
+        if (target === null) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
             categoryId: targetCategoryId,
           });
@@ -91,7 +95,11 @@ export class ReorderTodoCategory {
     });
 
     await this.#dependencies.cache.invalidate(userId);
-    this.#dependencies.logger.debug(`카테고리 재배치: id=${categoryId}, userId=${userId}`);
+    this.#dependencies.logger.debug({
+      event: PlanningCategoryLogEvent.REORDERED,
+      userId,
+      categoryId: categoryId,
+    });
     return result;
   }
 }

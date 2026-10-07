@@ -23,7 +23,7 @@ import { TodoToggledEvent } from "../../../domain/events/todos/todo-toggled.even
 import {
   isAllCompletedToday,
   milestoneForCount,
-} from "../../../domain/services/todos/completion-policy.js";
+} from "../../../domain/policies/todos/completion.policy.js";
 
 /**
  * Todo 완료 토글 이벤트 핸들러

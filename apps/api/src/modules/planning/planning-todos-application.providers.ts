@@ -1,7 +1,11 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { PaginationService } from "#api/shared/application/pagination/index";
-import { UNIT_OF_WORK, DOMAIN_EVENT_PUBLISHER } from "#api/shared/application/ports/index";
+import {
+  UNIT_OF_WORK,
+  DOMAIN_EVENT_PUBLISHER,
+  MUTATION_LOCK,
+} from "#api/shared/application/ports/index";
 
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
@@ -86,17 +90,19 @@ export const getTodosProvider: FactoryProvider<GetTodos> = {
 
 export const addTodoItemProvider: FactoryProvider<AddTodoItem> = {
   provide: AddTodoItem,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE],
+  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
     todoRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof AddTodoItem>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof AddTodoItem>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof AddTodoItem>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof AddTodoItem>[0]["todoCache"],
   ) =>
     new AddTodoItem({
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       logger: new Logger(AddTodoItem.name),
     }),
@@ -108,6 +114,7 @@ export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
+    MUTATION_LOCK,
     CATEGORY_OWNERSHIP,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
@@ -116,6 +123,7 @@ export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
     todoRepository: ConstructorParameters<typeof ChangeTodoCategory>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof ChangeTodoCategory>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof ChangeTodoCategory>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof ChangeTodoCategory>[0]["mutationLock"],
     categoryOwnership: ConstructorParameters<typeof ChangeTodoCategory>[0]["categoryOwnership"],
     todoCache: ConstructorParameters<typeof ChangeTodoCategory>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof ChangeTodoCategory>[0]["eventPublisher"],
@@ -124,6 +132,7 @@ export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       categoryOwnership,
       todoCache,
       eventPublisher,
@@ -137,6 +146,7 @@ export const createRecurringTodosProvider: FactoryProvider<CreateRecurringTodos>
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
+    MUTATION_LOCK,
     CATEGORY_OWNERSHIP,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
@@ -145,6 +155,7 @@ export const createRecurringTodosProvider: FactoryProvider<CreateRecurringTodos>
     todoRepository: ConstructorParameters<typeof CreateRecurringTodos>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof CreateRecurringTodos>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof CreateRecurringTodos>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof CreateRecurringTodos>[0]["mutationLock"],
     categoryOwnership: ConstructorParameters<typeof CreateRecurringTodos>[0]["categoryOwnership"],
     todoCache: ConstructorParameters<typeof CreateRecurringTodos>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof CreateRecurringTodos>[0]["eventPublisher"],
@@ -153,6 +164,7 @@ export const createRecurringTodosProvider: FactoryProvider<CreateRecurringTodos>
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       categoryOwnership,
       todoCache,
       eventPublisher,
@@ -166,6 +178,7 @@ export const createTodoProvider: FactoryProvider<CreateTodo> = {
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
+    MUTATION_LOCK,
     CATEGORY_OWNERSHIP,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
@@ -174,6 +187,7 @@ export const createTodoProvider: FactoryProvider<CreateTodo> = {
     todoRepository: ConstructorParameters<typeof CreateTodo>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof CreateTodo>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof CreateTodo>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof CreateTodo>[0]["mutationLock"],
     categoryOwnership: ConstructorParameters<typeof CreateTodo>[0]["categoryOwnership"],
     todoCache: ConstructorParameters<typeof CreateTodo>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof CreateTodo>[0]["eventPublisher"],
@@ -182,6 +196,7 @@ export const createTodoProvider: FactoryProvider<CreateTodo> = {
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       categoryOwnership,
       todoCache,
       eventPublisher,
@@ -191,17 +206,19 @@ export const createTodoProvider: FactoryProvider<CreateTodo> = {
 
 export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
   provide: DeleteTodo,
-  inject: [TODO_REPOSITORY, TODO_CACHE, UNIT_OF_WORK, DOMAIN_EVENT_PUBLISHER],
+  inject: [TODO_REPOSITORY, TODO_CACHE, UNIT_OF_WORK, MUTATION_LOCK, DOMAIN_EVENT_PUBLISHER],
   useFactory: (
     todoRepository: ConstructorParameters<typeof DeleteTodo>[0]["todoRepository"],
     todoCache: ConstructorParameters<typeof DeleteTodo>[0]["todoCache"],
     unitOfWork: ConstructorParameters<typeof DeleteTodo>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof DeleteTodo>[0]["mutationLock"],
     eventPublisher: ConstructorParameters<typeof DeleteTodo>[0]["eventPublisher"],
   ) =>
     new DeleteTodo({
       todoRepository,
       todoCache,
       unitOfWork,
+      mutationLock,
       eventPublisher,
       logger: new Logger(DeleteTodo.name),
     }),
@@ -209,17 +226,19 @@ export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
 
 export const deleteTodoItemProvider: FactoryProvider<DeleteTodoItem> = {
   provide: DeleteTodoItem,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE],
+  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
     todoRepository: ConstructorParameters<typeof DeleteTodoItem>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof DeleteTodoItem>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof DeleteTodoItem>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof DeleteTodoItem>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof DeleteTodoItem>[0]["todoCache"],
   ) =>
     new DeleteTodoItem({
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       logger: new Logger(DeleteTodoItem.name),
     }),
@@ -227,17 +246,19 @@ export const deleteTodoItemProvider: FactoryProvider<DeleteTodoItem> = {
 
 export const reorderTodoProvider: FactoryProvider<ReorderTodo> = {
   provide: ReorderTodo,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE],
+  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
     todoRepository: ConstructorParameters<typeof ReorderTodo>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof ReorderTodo>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof ReorderTodo>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof ReorderTodo>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof ReorderTodo>[0]["todoCache"],
   ) =>
     new ReorderTodo({
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       logger: new Logger(ReorderTodo.name),
     }),
@@ -245,17 +266,19 @@ export const reorderTodoProvider: FactoryProvider<ReorderTodo> = {
 
 export const reorderTodoItemsProvider: FactoryProvider<ReorderTodoItems> = {
   provide: ReorderTodoItems,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE],
+  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
     todoRepository: ConstructorParameters<typeof ReorderTodoItems>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof ReorderTodoItems>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof ReorderTodoItems>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof ReorderTodoItems>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof ReorderTodoItems>[0]["todoCache"],
   ) =>
     new ReorderTodoItems({
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       logger: new Logger(ReorderTodoItems.name),
     }),
@@ -263,11 +286,19 @@ export const reorderTodoItemsProvider: FactoryProvider<ReorderTodoItems> = {
 
 export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
   provide: ToggleTodoComplete,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    TODO_CACHE,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof ToggleTodoComplete>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof ToggleTodoComplete>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof ToggleTodoComplete>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof ToggleTodoComplete>[0]["eventPublisher"],
   ) =>
@@ -275,6 +306,7 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       eventPublisher,
       logger: new Logger(ToggleTodoComplete.name),
@@ -287,6 +319,7 @@ export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
     TODO_REPOSITORY,
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
+    MUTATION_LOCK,
     CATEGORY_OWNERSHIP,
     TODO_CACHE,
     DOMAIN_EVENT_PUBLISHER,
@@ -295,6 +328,7 @@ export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
     todoRepository: ConstructorParameters<typeof UpdateTodo>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof UpdateTodo>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof UpdateTodo>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodo>[0]["mutationLock"],
     categoryOwnership: ConstructorParameters<typeof UpdateTodo>[0]["categoryOwnership"],
     todoCache: ConstructorParameters<typeof UpdateTodo>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof UpdateTodo>[0]["eventPublisher"],
@@ -303,6 +337,7 @@ export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       categoryOwnership,
       todoCache,
       eventPublisher,
@@ -312,17 +347,19 @@ export const updateTodoProvider: FactoryProvider<UpdateTodo> = {
 
 export const updateTodoItemProvider: FactoryProvider<UpdateTodoItem> = {
   provide: UpdateTodoItem,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE],
+  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, MUTATION_LOCK, TODO_CACHE],
   useFactory: (
     todoRepository: ConstructorParameters<typeof UpdateTodoItem>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof UpdateTodoItem>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof UpdateTodoItem>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoItem>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof UpdateTodoItem>[0]["todoCache"],
   ) =>
     new UpdateTodoItem({
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       logger: new Logger(UpdateTodoItem.name),
     }),
@@ -330,11 +367,19 @@ export const updateTodoItemProvider: FactoryProvider<UpdateTodoItem> = {
 
 export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
   provide: UpdateTodoSchedule,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    TODO_CACHE,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof UpdateTodoSchedule>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoSchedule>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof UpdateTodoSchedule>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof UpdateTodoSchedule>[0]["eventPublisher"],
   ) =>
@@ -342,6 +387,7 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       eventPublisher,
       logger: new Logger(UpdateTodoSchedule.name),
@@ -350,11 +396,19 @@ export const updateTodoScheduleProvider: FactoryProvider<UpdateTodoSchedule> = {
 
 export const updateTodoTitleProvider: FactoryProvider<UpdateTodoTitle> = {
   provide: UpdateTodoTitle,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    TODO_CACHE,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof UpdateTodoTitle>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof UpdateTodoTitle>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof UpdateTodoTitle>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoTitle>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof UpdateTodoTitle>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof UpdateTodoTitle>[0]["eventPublisher"],
   ) =>
@@ -362,6 +416,7 @@ export const updateTodoTitleProvider: FactoryProvider<UpdateTodoTitle> = {
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       eventPublisher,
       logger: new Logger(UpdateTodoTitle.name),
@@ -370,11 +425,19 @@ export const updateTodoTitleProvider: FactoryProvider<UpdateTodoTitle> = {
 
 export const updateTodoVisibilityProvider: FactoryProvider<UpdateTodoVisibility> = {
   provide: UpdateTodoVisibility,
-  inject: [TODO_REPOSITORY, TODO_READ_REPOSITORY, UNIT_OF_WORK, TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    TODO_CACHE,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof UpdateTodoVisibility>[0]["todoRepository"],
     todoReadRepository: ConstructorParameters<typeof UpdateTodoVisibility>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof UpdateTodoVisibility>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateTodoVisibility>[0]["mutationLock"],
     todoCache: ConstructorParameters<typeof UpdateTodoVisibility>[0]["todoCache"],
     eventPublisher: ConstructorParameters<typeof UpdateTodoVisibility>[0]["eventPublisher"],
   ) =>
@@ -382,6 +445,7 @@ export const updateTodoVisibilityProvider: FactoryProvider<UpdateTodoVisibility>
       todoRepository,
       todoReadRepository,
       unitOfWork,
+      mutationLock,
       todoCache,
       eventPublisher,
       logger: new Logger(UpdateTodoVisibility.name),

@@ -1,122 +1,55 @@
-import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
 import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
 
-import { type DomainEventPublisherPort } from "#api/shared/application/ports/index";
-import { TodoBuilder } from "#test/builders/index";
 import {
-  createTodoCacheMock,
-  createTodoReadRepositoryMock,
-  createTodoRepositoryMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createPlanningTodoFixture,
+  createPlanningTodo,
+  PLANNING_TIME,
+} from "#test/fixtures/planning-todo.fixture";
 
-import { Todo } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import { TodoVisibilityChangedEvent } from "../../../domain/events/todos/todo-visibility-changed.event.js";
-import { TodoId } from "../../../domain/value-objects/todos/todo-id.vo.js";
-import { TodoSchedule } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
-import { TodoMapper } from "../../../infrastructure/persistence/todos/todo-response.mapper.js";
-import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
-import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
-import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 import { UpdateTodoVisibility } from "./update-todo-visibility.use-case.js";
 
-function buildEntity(): Todo {
-  return Todo.reconstitute({
-    id: TodoId.create(1),
-    userId: "user-123",
-    title: "할 일",
-    categoryId: 1,
-    sortOrder: 0,
-    completed: false,
-    completedAt: null,
-    schedule: TodoSchedule.reconstitute({
-      startDate: new Date("2026-02-22"),
-      endDate: null,
-      scheduledTime: null,
-      isAllDay: true,
-    }),
-    visibility: "PUBLIC",
-    recurrenceGroupId: null,
-    items: [],
-    createdAt: new Date("2026-02-20T00:00:00.000Z"),
-    updatedAt: new Date("2026-02-20T00:00:00.000Z"),
-  });
-}
-
-function buildResponse(): TodoResponse {
-  return TodoMapper.toResponse(TodoBuilder.create("user-123").withId(1).build());
-}
-
-describe("UpdateTodoVisibility — 할 일 공개 범위 변경 핸들러", () => {
+describe("할 일 공개 범위 수정", () => {
+  let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: UpdateTodoVisibility;
-  let todoRepository: Mocked<TodoRepositoryPort>;
-  let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-  let todoCache: Mocked<TodoCachePort>;
-  let eventPublisher: Mocked<DomainEventPublisherPort>;
-
-  beforeEach(async () => {
-    const updateTodoVisibilityDependencies = mockDeep<
-      ConstructorParameters<typeof UpdateTodoVisibility>[0]
-    >({
-      todoRepository: createTodoRepositoryMock(),
-      todoReadRepository: createTodoReadRepositoryMock(),
-      unitOfWork: createUnitOfWorkMock(),
-      todoCache: createTodoCacheMock(),
-      eventPublisher: { publishAll: vi.fn().mockResolvedValue(undefined) },
-    });
-    const unit = new UpdateTodoVisibility(updateTodoVisibilityDependencies);
-
-    useCase = unit;
-    todoRepository = updateTodoVisibilityDependencies.todoRepository;
-    todoReadRepository = updateTodoVisibilityDependencies.todoReadRepository;
-    todoCache = updateTodoVisibilityDependencies.todoCache;
-    eventPublisher = updateTodoVisibilityDependencies.eventPublisher;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(PLANNING_TIME);
+    fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
+    useCase = new UpdateTodoVisibility(fixture);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it("공개 범위를 영속화하고 이벤트를 발행한 뒤 공개 캐시를 무효화한다", async () => {
+  it("비공개 전이를 저장하고 친구 목록 캐시와 이벤트에 반영한다", async () => {
     // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
-
+    await fixture.todoCache.storeFriendTodosFirstPageIfCurrent(fixture.userId, "-", "-", 20, "0", {
+      items: [],
+      pagination: { hasNext: false, nextCursor: null, size: 20 },
+    });
     // When
-    const result = await useCase.execute({
-      id: 1,
-      userId: "user-123",
-      visibility: "PRIVATE",
-    });
-
+    const result = await useCase.execute({ id: 1, userId: fixture.userId, visibility: "PRIVATE" });
     // Then
-    expect(todoRepository.updateVisibility).toHaveBeenCalledWith(1, "PRIVATE");
-    expect(eventPublisher.publishAll).toHaveBeenCalledWith([
-      new TodoVisibilityChangedEvent(1, "user-123"),
-    ]);
-    expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
-    expect(result.id).toBe(1);
+    expect(result.visibility).toBe("PRIVATE");
+    expect(fixture.records.get(1)?.visibility).toBe("PRIVATE");
+    expect(
+      (await fixture.todoCache.readFriendTodosFirstPage(fixture.userId, "-", "-", 20)).page,
+    ).toBeUndefined();
+    expect(fixture.eventPublisher.events[0]).toBeInstanceOf(TodoVisibilityChangedEvent);
   });
-
-  it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {
+  it("없는 할 일과 저장 후 사라진 응답은 기존 오류를 반환한다", async () => {
     // Given
-    todoRepository.findByIdAndUserId.mockResolvedValue(null);
-
-    // When & Then
+    fixture.todoReadRepository.findByIdAndUserId = async () => null;
+    // When / Then
     await expect(
-      useCase.execute({ id: 999, userId: "user-123", visibility: "PUBLIC" }),
+      useCase.execute({ id: 999, userId: fixture.userId, visibility: "PRIVATE" }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
-    expect(todoRepository.updateVisibility).not.toHaveBeenCalled();
-    expect(eventPublisher.publishAll).not.toHaveBeenCalled();
-  });
-
-  it("재조회 응답이 없으면 ApplicationException(TODO_0801)을 던진다", async () => {
-    // Given - 영속화는 성공했지만 재조회가 비어 있는 비정상 상태
-    todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
-    todoReadRepository.findByIdAndUserId.mockResolvedValue(null);
-
-    // When & Then
     await expect(
-      useCase.execute({ id: 1, userId: "user-123", visibility: "PRIVATE" }),
+      useCase.execute({ id: 1, userId: fixture.userId, visibility: "PRIVATE" }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    expect(fixture.records.get(1)?.visibility).toBe("PRIVATE");
   });
 });

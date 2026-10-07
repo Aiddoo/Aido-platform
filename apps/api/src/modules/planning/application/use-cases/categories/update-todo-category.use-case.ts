@@ -1,24 +1,37 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { TodoCategory } from "../../../domain/aggregates/categories/todo-category.aggregate.js";
+import { PlanningCategoryLogEvent } from "../../observability/categories/planning-category-log.events.js";
 import { type TodoCategoryCachePort } from "../../ports/categories/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../../ports/categories/todo-category.repository.port.js";
 
-export interface UpdateTodoCategoryInput {
+export interface UpdateTodoCategoryData {
   name?: string;
   color?: string;
 }
 
-/**
- * 카테고리 수정 use-case.
- * 소유 검증 후 이름 변경 시 중복을 확인하고 갱신한다. 목록 캐시를 무효화한다.
- */
+export interface UpdateTodoCategoryInput {
+  readonly id: number;
+  readonly userId: string;
+  readonly data: UpdateTodoCategoryData;
+}
+
 interface UpdateTodoCategoryDependencies {
-  readonly repository: TodoCategoryRepositoryPort;
+  readonly repository: Pick<
+    TodoCategoryRepositoryPort,
+    "findByIdAndUserId" | "existsByUserIdAndName" | "update"
+  >;
   readonly cache: TodoCategoryCachePort;
+  readonly mutationLock: MutationLockPort;
+  readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -29,36 +42,44 @@ export class UpdateTodoCategory {
     this.#dependencies = dependencies;
   }
 
-  async execute(id: number, userId: string, data: UpdateTodoCategoryInput): Promise<TodoCategory> {
-    const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
-    if (!category) {
-      throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-        categoryId: id,
-      });
-    }
-
-    if (data.name && data.name !== category.name) {
-      const duplicate = await this.#dependencies.repository.existsByUserIdAndName(
-        userId,
-        data.name,
-        id,
-      );
-      if (duplicate) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
-          name: data.name,
+  async execute(input: UpdateTodoCategoryInput): Promise<TodoCategory> {
+    const { id, userId, data } = input;
+    const updated = await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+      const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
+      if (category === null) {
+        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
+          categoryId: id,
         });
       }
-    }
 
-    category.updateDetails(data);
+      if (data.name !== undefined && data.name !== category.name) {
+        const duplicate = await this.#dependencies.repository.existsByUserIdAndName(
+          userId,
+          data.name,
+          id,
+        );
+        if (duplicate) {
+          throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
+            name: data.name,
+          });
+        }
+      }
 
-    const updated = await this.#dependencies.repository.update(id, {
-      name: data.name === undefined ? undefined : category.name,
-      color: data.color === undefined ? undefined : category.color,
+      category.updateDetails(data);
+
+      return this.#dependencies.repository.update(id, {
+        name: data.name === undefined ? undefined : category.name,
+        color: data.color === undefined ? undefined : category.color,
+      });
     });
 
     await this.#dependencies.cache.invalidate(userId);
-    this.#dependencies.logger.debug(`카테고리 수정: id=${id}, userId=${userId}`);
+    this.#dependencies.logger.debug({
+      event: PlanningCategoryLogEvent.UPDATED,
+      userId,
+      categoryId: id,
+    });
     return updated;
   }
 }
